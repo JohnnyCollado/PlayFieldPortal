@@ -48,6 +48,13 @@ object BackupEntry {
     const val ACHIEVEMENT_SETS       = "achievement_sets.json"
     const val ACHIEVEMENT_COINS      = "achievement_coins.json"
     const val PROVIDER_GAME_LINKS    = "provider_game_links.json"
+
+    /**
+     * The picked Local Steam game folders. Its own entry, and restored under its own presence
+     * check, because the registry is not game-scoped: folding it into the achievement gate would
+     * let an archive that predates the registry wipe the folders on the device it restores onto.
+     */
+    const val LOCAL_STEAM_FOLDERS    = "local_steam_folders.json"
 }
 
 @Serializable

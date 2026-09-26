@@ -15,8 +15,6 @@ import com.playfieldportal.core.data.model.StorefrontIdentity
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameContentType
 import com.playfieldportal.core.domain.repository.GameRepository
-import com.playfieldportal.feature.achievements.provider.localsteam.EmuGameImportResult
-import com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamGameImporter
 import com.playfieldportal.feature.launcher.PcLauncherAdapters
 import com.playfieldportal.feature.launcher.PcLauncherCatalog
 import com.playfieldportal.feature.launcher.PcLauncherType
@@ -34,7 +32,6 @@ data class PcScanReport(
     val exportsAdded: Int,
     val exportsSkipped: Int,
     val pinsReconciled: Int,
-    val emu: EmuGameImportResult,
     val message: String,
     /** `.pfpgame` entries that created a game (C18). */
     val restoredCreated: Int = 0,
@@ -49,21 +46,28 @@ data class PcScanReport(
     /** Games whose artwork columns relink updated from those claims; null when relink did not run. */
     val artworkRelinkedGames: Int? = null,
 ) {
-    val newGames: Int get() = exportsAdded + pinsReconciled + emu.linked + restoredCreated
+    val newGames: Int get() = exportsAdded + pinsReconciled + restoredCreated
 }
 
 /**
  * The one full "scan for PC games" pass, shared by every entry point (Library Manager's card
  * action AND the XMB card's "Scan This Console"): setup self-heal, the OS pin sweep (pins missed
- * or updated in place), the `<windows>/import/` export drop-folder, and the emu game-folder
- * reconcile. Extracted from LibraryManagerViewModel so the XMB path can't drift.
+ * or updated in place), and the `<windows>/import/` export drop-folder. Extracted from
+ * LibraryManagerViewModel so the XMB path can't drift.
+ *
+ * **It does no emulator work at all, deliberately.** The emu folder reconcile used to run here, and
+ * that made every automatic pass — the first-run wizard, Auto-Detect, root autoload, Scan This
+ * Console — pay for a full recursive SAF walk of every windows surface to look for game folders that
+ * increasingly are not under those surfaces. Local Steam folders are POINTED AT now, once, and
+ * recorded in `local_steam_folders`; see `LocalSteamBatchMatcher` and `LocalSteamFolderLinker`. This
+ * pass reads `<ROM root>/windows/import` for exported game files and nothing else, and never writes
+ * into a game folder.
  */
 @Singleton
 class PcGameScanner @Inject constructor(
     @ApplicationContext private val context: Context,
     private val windowsLibrarySetup: WindowsLibrarySetup,
     private val pcShortcutImporter: PcShortcutImporter,
-    private val emuGameImporter: LocalSteamGameImporter,
     private val romScanner: RomScanner,
     private val gameRepository: GameRepository,
     private val artworkImportManager: ArtworkImportManager,
@@ -79,7 +83,7 @@ class PcGameScanner @Inject constructor(
         val setup = runCatching { windowsLibrarySetup.ensure() }.getOrNull()
         if (overrideFolder == null && setup is WindowsSetupState.NoRomRoot) {
             return PcScanReport(
-                setup, 0, 0, 0, EmuGameImportResult(0, 0),
+                setup, 0, 0, 0,
                 message = "Add a ROM Root first — PFP creates <root>/windows/import for exported games.",
             )
         }
@@ -145,18 +149,8 @@ class PcGameScanner @Inject constructor(
         val restore = restoreFromPfpExports(pfpExports, pm)
         val relink = relinkClaimedArtwork(restore.claims, restore.identitySeeds)
 
-        // Emu game folders reconcile with the library — mapped games link LOCAL_STEAM, unmapped
-        // folders stay tracked-only and load into Shiba Coins on sync (never game entities).
-        val emu = runCatching { emuGameImporter.import() }
-            .onFailure { Timber.e(it, "Emu folder reconcile failed") }
-            .getOrDefault(EmuGameImportResult(0, 0))
-
         runCatching { windowsLibrarySetup.ensure() }
 
-        val emuNote = if (emu.discovered > 0) {
-            " Found ${emu.discovered} emu game folder(s): ${emu.linked} linked to library games; " +
-                "the rest appear in Shiba Coins after a sync."
-        } else ""
         val pinNote = if (pins > 0) " $pins pinned shortcut(s) reconciled." else ""
         val restoreNote = buildString {
             if (restore.created + restore.matched > 0) {
@@ -172,22 +166,22 @@ class PcGameScanner @Inject constructor(
             ArtworkRelink.Failed -> " Reconnecting exported artwork failed — see the log."
         }
         val message = when {
-            importFolders.isEmpty() && emu.discovered == 0 && pins == 0 ->
+            importFolders.isEmpty() && pins == 0 ->
                 "Couldn't read that folder. Pick the folder your launcher exports games into."
-            added == 0 && skipped == 0 && emu.discovered == 0 && pins == 0 && pfpExports.isEmpty() ->
+            added == 0 && skipped == 0 && pins == 0 && pfpExports.isEmpty() ->
                 "No exported PC games found in the selected folder."
             else ->
                 "Imported $added PC game(s)" +
                     (if (skipped > 0) ", skipped $skipped (no matching launcher installed)" else "") +
-                    "." + restoreNote + relinkNote + pinNote + emuNote
+                    "." + restoreNote + relinkNote + pinNote
         }
         Timber.i(
             "PC scan — importFolders=${importFolders.size} added=$added skipped=$skipped pins=$pins " +
-                "emu=${emu.discovered}/${emu.linked} pfpgame=${pfpExports.size} restored=${restore.created}/${restore.matched} " +
+                "pfpgame=${pfpExports.size} restored=${restore.created}/${restore.matched} " +
                 "restoreSkipped=${restore.skipped} untrusted=${restore.untrusted} claims=${restore.claims.size}",
         )
         return PcScanReport(
-            setup, added, skipped, pins, emu, message,
+            setup, added, skipped, pins, message,
             restoredCreated = restore.created,
             restoredMatched = restore.matched,
             restoreSkipped = restore.skipped,

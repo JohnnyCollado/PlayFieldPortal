@@ -130,8 +130,42 @@ data class LibraryManagerUiState(
     val returnFocusKey: String? = null,
     // True when this manager was opened directly from the XMB Windows Games item.
     val windowsGamesOpenedFromXmb: Boolean = false,
+
+    // ── Local Windows (folder-picked Local Steam matching) ────────────────────
+    /** The game folders the user has pointed PFP at, newest listing first. */
+    val localSteamFolders: List<LocalSteamFolderRow> = emptyList(),
+    /** Mirrors the Shiba Coins toggle, so the group that needs it can turn it on in place. */
+    val goldbergInstallerEnabled: Boolean = false,
+    /** True while a batch match is running, so the row that starts one renders disabled. */
+    val batchMatching: Boolean = false,
 ) {
     val detailCard: LibraryCardRow? get() = cards.firstOrNull { it.platformId == detailPlatformId }
+}
+
+/**
+ * One registered Local Steam game folder, as the settings listing shows it.
+ *
+ * [appIdSource] is carried through because it is the difference between "this folder says it is app
+ * id 620" and "PFP worked that out from the title" — which is exactly what a user checking a wrong
+ * match needs to see.
+ */
+data class LocalSteamFolderRow(
+    val appId: String,
+    val folderName: String,
+    val appIdSource: String,
+    val hasSchema: Boolean,
+) {
+    /** `appid 620 · from steam_appid.txt · tracking`. */
+    val detail: String
+        get() = listOf(
+            "appid $appId",
+            when (appIdSource) {
+                "MARKER" -> "from steam_appid.txt"
+                "STORED_IDENTITY" -> "from its stored Steam match"
+                else -> "matched by title"
+            },
+            if (hasSchema) "tracking" else "no achievement list yet",
+        ).joinToString("  ·  ")
 }
 
 @HiltViewModel
@@ -147,6 +181,8 @@ class LibraryManagerViewModel @Inject constructor(
     private val windowsLibrarySetup: com.playfieldportal.core.data.repository.WindowsLibrarySetup,
     private val pcGameScanner: com.playfieldportal.feature.settings.pc.PcGameScanner,
     private val localSteamSchemaGenerator: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator,
+    private val localSteamBatchMatcher: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamBatchMatcher,
+    private val localSteamDiscovery: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamDiscovery,
     private val credentials: com.playfieldportal.core.data.achievement.AchievementCredentialsProvider,
     private val vita3KLibrary: com.playfieldportal.core.data.repository.Vita3KLibrary,
     private val ps3DataLibrary: com.playfieldportal.core.data.repository.Ps3DataLibrary,
@@ -171,10 +207,22 @@ class LibraryManagerViewModel @Inject constructor(
         convertPickerController.picker
 
     fun onConvertToggle(index: Int) = convertPickerController.toggle(index)
-    fun onConvertSelectAll() = convertPickerController.setAll(true)
-    fun onConvertSelectNone() = convertPickerController.setAll(false)
+    fun onConvertSelectAllNone() {
+        val picker = convertPickerController.picker.value ?: return
+        convertPickerController.setAll(picker.rows.any { !it.selected && !it.unselectable })
+    }
     fun onConvertConfirm() = convertPickerController.confirm()
+    fun onConvertSkip() = convertPickerController.skip()
     fun onConvertCancel() = convertPickerController.cancel()
+
+    /**
+     * Controller input while the convert panel is open. True when the panel took it.
+     *
+     * Routed through the scaffold's own intercept hook, so the panel captures Up/Down/Select before
+     * the settings rows behind it ever see them — the panel is modal, and has to behave like it.
+     */
+    fun onConvertGamepadAction(action: com.playfieldportal.core.domain.model.GamepadAction): Boolean =
+        convertPickerController.onGamepadAction(action)
 
     init {
         // Reactive, not one-shot: roots granted anywhere (the first-run wizard, a restore) show
@@ -756,6 +804,8 @@ class LibraryManagerViewModel @Inject constructor(
                 canAddById = PcLauncherAdapters.forType(def.type) != null,
             )
         }
+        // The Local Windows group's registry listing and installer toggle.
+        refreshLocalWindows()
         _scratch.update {
             it.copy(
                 step = LibraryStep.IMPORT_PC,
@@ -866,16 +916,86 @@ class LibraryManagerViewModel @Inject constructor(
             }
             if (report.newGames > 0) ensureWindowsCard()
             tasks.complete(taskId, report.message, NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID))
+            // No emulator work here, by design: Local Steam folders are pointed at once through
+            // Batch Match Local Games, not searched for on every scan.
+        }
+    }
 
-            // When the Goldberg installer is on, offer to convert every detected emu folder that
-            // carries steam_settings but no achievements.json yet — the user picks which to convert.
-            if (credentials.goldbergInstallerEnabled()) {
-                convertPickerController.start(report.emu.missingSchema) { outcome ->
+    // ── Local Windows: folder-picked Local Steam matching ─────────────────────
+
+    /** Loads the registry listing and the installer toggle — the group's own state. */
+    fun refreshLocalWindows() {
+        viewModelScope.launch {
+            val rows = localSteamDiscovery.registeredFolders().map { row ->
+                LocalSteamFolderRow(
+                    appId = row.appId,
+                    folderName = row.folderName,
+                    appIdSource = row.appIdSource,
+                    hasSchema = row.hasSchema,
+                )
+            }
+            val installer = credentials.goldbergInstallerEnabled()
+            _scratch.update { it.copy(localSteamFolders = rows, goldbergInstallerEnabled = installer) }
+        }
+    }
+
+    fun setGoldbergInstallerEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            credentials.setGoldbergInstallerEnabled(enabled)
+            _scratch.update { it.copy(goldbergInstallerEnabled = enabled) }
+        }
+    }
+
+    /**
+     * Forgets one registered folder.
+     *
+     * The game's provider link and its earned coins are deliberately untouched: forgetting where a
+     * folder is must never read as "you did not earn those". The next pick re-registers it.
+     */
+    fun forgetLocalSteamFolder(appId: String) {
+        viewModelScope.launch {
+            localSteamDiscovery.forget(appId)
+            refreshLocalWindows()
+        }
+    }
+
+    /**
+     * Batch Match Local Games: inspect every game folder inside the picked parent, register what it
+     * finds, link what it can, and offer the rest to the convert picker.
+     *
+     * Progress and the final report both go to the tray, because a pass over a real emulator library
+     * outlives this screen.
+     */
+    fun batchMatchLocalGames(parentFolder: Uri) {
+        viewModelScope.launch {
+            val taskId = "lm_local_steam_batch"
+            tasks.start(taskId, "Matching local Windows games", TaskKind.SCAN)
+            _scratch.update { it.copy(batchMatching = true) }
+            val report = runCatching { localSteamBatchMatcher.run(parentFolder) }
+                .onFailure { Timber.e(it, "Local Steam batch match failed") }
+                .getOrNull()
+            _scratch.update { it.copy(batchMatching = false) }
+            if (report == null) {
+                tasks.fail(taskId, "Batch match failed — see the log.")
+                return@launch
+            }
+            tasks.complete(taskId, report.message, NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID))
+            refreshLocalWindows()
+
+            // The convertible pile is the ONLY place a DLL swap is authorised, and only per game.
+            convertPickerController.start(report.convertible) { outcome ->
+                viewModelScope.launch {
+                    // Whatever was converted links and syncs in this same run, rather than waiting
+                    // for the next Update pass.
+                    val linked = runCatching { localSteamBatchMatcher.linkAndSync(outcome.convertedFolders) }
+                        .onFailure { Timber.e(it, "Linking converted Local Steam folders failed") }
+                        .getOrNull()
+                    refreshLocalWindows()
                     convertOutcomeMessage(outcome)?.let { msg ->
                         tasks.report(
                             id = "lm_convert",
                             label = "Goldberg convert",
-                            message = msg,
+                            message = msg + (linked?.let { " ${it.linkedToLibrary} linked to library games." } ?: ""),
                             severity = NotificationSeverity.SUCCESS,
                             action = NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID),
                         )

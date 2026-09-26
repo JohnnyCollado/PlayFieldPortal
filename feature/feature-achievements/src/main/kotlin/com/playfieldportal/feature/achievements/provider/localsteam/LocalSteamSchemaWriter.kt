@@ -66,6 +66,53 @@ class LocalSteamSchemaWriter @Inject constructor(
             }.getOrNull() != null
         }
 
+    /**
+     * Writes `steam_settings/steam_appid.txt` with [appId], creating `steam_settings` when absent.
+     *
+     * Create-only like everything else here: an existing marker is the folder's own statement of
+     * identity and is never overwritten. [MarkerWrite.AlreadyPresent] therefore reports success at
+     * the only thing the caller cares about — the folder now identifies itself.
+     *
+     * Written under [MIME_BINARY] for the same reason `configs.user.ini` is: `text/plain` makes
+     * `ExternalStorageProvider` append its canonical extension and the emu would never find the
+     * file.
+     */
+    suspend fun writeAppIdMarker(treeUri: String, settingsParentDocId: String, appId: String): MarkerWrite =
+        withContext(Dispatchers.IO) {
+            val tree = runCatching { Uri.parse(treeUri) }.getOrNull()
+                ?: return@withContext MarkerWrite.Failed
+            if (!ensureDir(treeUri, settingsParentDocId, SETTINGS_DIR)) return@withContext MarkerWrite.Failed
+            val settingsDir = context.contentResolver.querySafChildren(tree, settingsParentDocId)
+                .firstOrNull { it.isDirectory && it.name.equals(SETTINGS_DIR, ignoreCase = true) }
+                ?: return@withContext MarkerWrite.Failed
+
+            val existing = context.contentResolver.querySafChildren(tree, settingsDir.documentId)
+            if (existing.any { !it.isDirectory && it.name.equals(APPID_FILE, ignoreCase = true) }) {
+                return@withContext MarkerWrite.AlreadyPresent(settingsDir.documentId)
+            }
+            val parent = DocumentsContract.buildDocumentUriUsingTree(tree, settingsDir.documentId)
+            if (create(parent, KitFile(APPID_FILE, MIME_BINARY, appId))) {
+                MarkerWrite.Written(settingsDir.documentId)
+            } else {
+                MarkerWrite.Failed
+            }
+        }
+
+    /** What [writeAppIdMarker] did, carrying the `steam_settings` doc id it created or found. */
+    sealed interface MarkerWrite {
+        data class Written(val settingsDirDocId: String) : MarkerWrite
+        data class AlreadyPresent(val settingsDirDocId: String) : MarkerWrite
+        data object Failed : MarkerWrite
+
+        /** The `steam_settings` folder the marker now sits in, or null when nothing was written. */
+        val dirDocId: String?
+            get() = when (this) {
+                is Written -> settingsDirDocId
+                is AlreadyPresent -> settingsDirDocId
+                Failed -> null
+            }
+    }
+
     /** Outcome of the emu-DLL swap, for the caller's log/summary. */
     enum class DllResult {
         /** The real DLL was backed up and the emu DLL put in its place. */
@@ -180,6 +227,21 @@ class LocalSteamSchemaWriter @Inject constructor(
         val EMU_DLL: String = deobfuscate(
             0x29, 0x48, 0x14, 0x3B, 0x51, 0x2E, 0x3B, 0x4C, 0x18, 0x6C, 0x08, 0x5F, 0x3E, 0x50, 0x1D,
         )
+
+        /**
+         * The 32-bit Steam DLL name. Nothing is ever written to it — the app bundles only the x64
+         * emu build — but a folder carrying it IS a Steam build, so it anchors identification for
+         * a game whose emu swap will honestly report [DllResult.NoTargetDll].
+         */
+        val STEAM_DLL_32: String = deobfuscate(
+            0x29, 0x48, 0x14, 0x3B, 0x51, 0x2E, 0x3B, 0x4C, 0x18, 0x74, 0x58, 0x1D, 0x36,
+        )
+
+        /** The marker file that names a folder's Steam app id — the authoritative identity. */
+        const val APPID_FILE = "steam_appid.txt"
+
+        /** The settings folder the marker and the kit live in. */
+        const val SETTINGS_DIR = "steam_settings"
 
         /** The original DLL's backup name — also the emu's own load-through convention. */
         val EMU_BACKUP_DLL: String = deobfuscate(

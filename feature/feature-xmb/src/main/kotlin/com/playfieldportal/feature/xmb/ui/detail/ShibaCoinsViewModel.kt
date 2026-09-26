@@ -14,6 +14,10 @@ import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
+import com.playfieldportal.feature.achievements.provider.localsteam.AppIdSource
+import com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamFolderLinker
+import com.playfieldportal.feature.artwork.match.StorefrontMatchResult
+import timber.log.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,8 +43,40 @@ enum class CoinSort(val label: String) { TIER("Tier"), EARNED("Earned"), RAREST(
 /** The three views of a game's coins, switched with L1/R1 and shown as tabs beside Search. */
 enum class CoinFilter(val label: String) { ALL("All"), EARNED("Earned"), LOCKED("Locked") }
 
-/** The Auto-Match flow's current step (unlinked Steam-platform games only). */
-enum class AutoMatchStep { CONFIRM_COPY, ENTER_APPID }
+/**
+ * The Auto-Match flow's current step (unlinked Steam-platform games only).
+ *
+ * The four steps after [ENTER_APPID] are the folder-picked Local Steam path: answering "No" to the
+ * copy question no longer scans the windows library for a folder that probably is not there — it asks
+ * the user which folder the game is in, works out its Steam app id, and links from that.
+ */
+enum class AutoMatchStep {
+    CONFIRM_COPY,
+    ENTER_APPID,
+
+    /** Waiting for the user to pick this game's folder in the file manager. */
+    PICK_FOLDER,
+
+    /** The picked folder's app id is being worked out, or the user is choosing between matches. */
+    IDENTIFY,
+
+    /** Identified, but the folder has no achievement list — Install & Link / Link Only / Cancel. */
+    CONFIRM_KIT,
+
+    /** Terminal: nothing in that folder can be tracked, in the folder's own terms. */
+    NO_EMU_DATA,
+}
+
+/** The kit-missing prompt's own state, carried so the follow-up records the id truthfully. */
+data class LocalSteamKitPrompt(
+    val appId: String,
+    val folderName: String,
+    /** False with the Goldberg installer opt-in off: Install & Link is offered disabled. */
+    val installerEnabled: Boolean,
+    val source: AppIdSource,
+    /** Which of the two actions the controller cursor is on: true = Install & Link. */
+    val installSelected: Boolean = true,
+)
 
 /** The synthetic first row: the set-completion award, which is not one of the provider's coins. */
 internal const val PLATINUM_ROW_ID = "platinum"
@@ -175,6 +211,17 @@ data class ShibaCoinsUiState(
     val autoMatchStep: AutoMatchStep? = null,
     // Controller selection on the confirm prompt: true = "Yes, legit Steam copy".
     val autoMatchYes: Boolean = true,
+    // ── Folder-picked Local Steam matching ────────────────────────────────────
+    // The tree the user picked, held as a String so this state stays trivially immutable. Every
+    // follow-up step re-parses it rather than re-asking for the folder.
+    val pickedFolderUri: String? = null,
+    // Set for one composition so the screen launches the tree picker exactly once per attempt.
+    val requestFolderPick: Boolean = false,
+    // The ambiguous-match picker, reusing the storefront panel verbatim.
+    val storefrontMatch: StorefrontMatchUi? = null,
+    val kitPrompt: LocalSteamKitPrompt? = null,
+    // The terminal NO_EMU_DATA line, in the folder's own terms.
+    val noEmuDataReason: String? = null,
     // The branch the user picked, so manual appid entry links the matching provider.
     val isMatching: Boolean = false,
     val message: String? = null,
@@ -278,6 +325,7 @@ class ShibaCoinsViewModel @Inject constructor(
     private val gameRepository: GameRepository,
     private val achievementRepository: AchievementController,
     private val autoMatcher: AchievementAutoMatcher,
+    private val folderLinker: LocalSteamFolderLinker,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ShibaCoinsUiState())
@@ -303,6 +351,11 @@ class ShibaCoinsViewModel @Inject constructor(
                 autoMatchStep = null,
                 isMatching = false,
                 message = null,
+                pickedFolderUri = null,
+                requestFolderPick = false,
+                storefrontMatch = null,
+                kitPrompt = null,
+                noEmuDataReason = null,
             ).withRows()
         }
         loadJobs.forEach { it.cancel() }
@@ -430,6 +483,25 @@ class ShibaCoinsViewModel @Inject constructor(
             AutoMatchStep.ENTER_APPID -> {
                 // Text entry is touch/IME-driven; the controller can only back out.
                 if (action == GamepadAction.BACK) cancelAutoMatch()
+                return
+            }
+            // The system file picker owns the screen; there is nothing here to drive. Back cancels
+            // the attempt so a dismissed picker is not a dead end.
+            AutoMatchStep.PICK_FOLDER -> {
+                if (action == GamepadAction.BACK) cancelAutoMatch()
+                return
+            }
+            AutoMatchStep.IDENTIFY -> {
+                handleIdentifyAction(action)
+                return
+            }
+            AutoMatchStep.CONFIRM_KIT -> {
+                handleKitAction(action)
+                return
+            }
+            AutoMatchStep.NO_EMU_DATA -> {
+                // Terminal, and it has to be dismissible: Back and Confirm both close it.
+                if (action == GamepadAction.BACK || action == GamepadAction.SELECT) cancelAutoMatch()
                 return
             }
             null -> Unit
@@ -667,14 +739,28 @@ class ShibaCoinsViewModel @Inject constructor(
         }
     }
 
-    fun cancelAutoMatch() = _state.update { it.copy(autoMatchStep = null) }
+    /** Leaves the whole flow, at whichever step it was on. Nothing written is ever undone. */
+    fun cancelAutoMatch() = _state.update {
+        it.copy(
+            autoMatchStep = null,
+            requestFolderPick = false,
+            pickedFolderUri = null,
+            storefrontMatch = null,
+            kitPrompt = null,
+            noEmuDataReason = null,
+        )
+    }
 
     /**
-     * Runs the branch the user picked: a legit copy resolves against Steam (embedded appid,
-     * SteamGridDB, title) and falls through to manual appid entry when nothing matches. Any
-     * other copy scans the windows game folders for Steam-emu data — no match there means the
-     * game isn't set up for Local Steam yet, so instead of asking for an appid (which can't
-     * help without the emu kit in the game folder) the user is pointed at the setup steps.
+     * Runs the branch the user picked.
+     *
+     * A legit copy resolves against Steam (embedded appid, SteamGridDB, title) and falls through to
+     * manual appid entry when nothing matches — unchanged.
+     *
+     * Any other copy takes the folder-picked path: PFP asks which folder the game is in rather than
+     * walking the windows library for it, because that is no longer where Windows games live. The one
+     * short-circuit is the registry — a game whose folder was already pointed at (by a batch match,
+     * or by an earlier pick) links straight from it and is never asked again.
      */
     fun chooseAutoMatch(legit: Boolean) {
         viewModelScope.launch {
@@ -686,25 +772,263 @@ class ShibaCoinsViewModel @Inject constructor(
                 else _state.update { it.copy(autoMatchStep = AutoMatchStep.ENTER_APPID) }
                 return@launch
             }
-            val result = autoMatcher.matchSingleAsLocalSteam(gameId)
-            _state.update { it.copy(isMatching = false) }
-            when (result) {
-                AchievementAutoMatcher.LocalSteamMatchResult.Matched -> sync()
-                AchievementAutoMatcher.LocalSteamMatchResult.NoEmuFolders -> _state.update {
-                    it.copy(
-                        message = "This game isn't set up for Local Steam yet. Enable Track Local " +
-                            "Steam Games (Emulated) in Settings ▸ Shiba Coins, then scan your " +
-                            "Windows games so its achievement kit is set up, and Auto-Match again.",
-                    )
-                }
-                is AchievementAutoMatcher.LocalSteamMatchResult.NoNameMatch -> _state.update {
-                    val folders = result.folderNames.take(3).joinToString(", ")
-                    it.copy(
-                        message = "Steam-emu data was found ($folders) but no folder matches this " +
-                            "game's name. Rename the game to match its folder and Auto-Match again.",
-                    )
-                }
+            // The pre-check. A batch-matched game must not be asked for its folder a second time.
+            val registered = runCatching { folderLinker.registeredFolderFor(gameId) }.getOrNull()
+            if (registered != null) {
+                val outcome = runCatching { folderLinker.linkRegistered(gameId, registered) }
+                    .onFailure { Timber.w(it, "Linking the registered folder for game %d failed", gameId) }
+                    .getOrNull()
+                _state.update { it.copy(isMatching = false) }
+                applyLinkOutcome(outcome)
+                return@launch
             }
+            _state.update {
+                it.copy(
+                    isMatching = false,
+                    autoMatchStep = AutoMatchStep.PICK_FOLDER,
+                    requestFolderPick = true,
+                )
+            }
+        }
+    }
+
+    // ── Folder-picked Local Steam matching ─────────────────────────────────────
+
+    /** The screen has launched the tree picker; don't launch it again on the next recomposition. */
+    fun onFolderPickLaunched() = _state.update { it.copy(requestFolderPick = false) }
+
+    /**
+     * The user picked a folder (or dismissed the picker, which arrives as null).
+     *
+     * A dismissed picker returns the page to the copy question rather than to a dead end: the user
+     * may simply have opened the wrong storage volume.
+     */
+    fun onFolderPicked(uri: android.net.Uri?) {
+        if (uri == null) {
+            _state.update { it.copy(autoMatchStep = AutoMatchStep.CONFIRM_COPY, requestFolderPick = false) }
+            return
+        }
+        viewModelScope.launch {
+            _state.update {
+                it.copy(
+                    pickedFolderUri = uri.toString(),
+                    autoMatchStep = AutoMatchStep.IDENTIFY,
+                    storefrontMatch = StorefrontMatchUi(gameTitle = it.title),
+                    isMatching = true,
+                )
+            }
+            val outcome = runCatching { folderLinker.link(gameId, uri) }
+                .onFailure { Timber.w(it, "Local Steam folder link failed for game %d", gameId) }
+                .getOrNull()
+            _state.update { it.copy(isMatching = false) }
+            applyLinkOutcome(outcome)
+        }
+    }
+
+    /** One place every [LocalSteamFolderLinker.LinkOutcome] becomes screen state. */
+    private fun applyLinkOutcome(outcome: LocalSteamFolderLinker.LinkOutcome?) {
+        when (outcome) {
+            null -> _state.update {
+                it.copy(
+                    autoMatchStep = AutoMatchStep.NO_EMU_DATA,
+                    storefrontMatch = null,
+                    noEmuDataReason = "That folder could not be read. Pick it again, or remount the " +
+                        "storage it is on.",
+                )
+            }
+            is LocalSteamFolderLinker.LinkOutcome.Linked -> {
+                _state.update {
+                    it.copy(
+                        autoMatchStep = null,
+                        storefrontMatch = null,
+                        kitPrompt = null,
+                        message = "Linked to ${outcome.folderName} (appid ${outcome.appId}).",
+                    )
+                }
+                sync()
+            }
+            is LocalSteamFolderLinker.LinkOutcome.NeedsKit -> _state.update {
+                it.copy(
+                    autoMatchStep = AutoMatchStep.CONFIRM_KIT,
+                    storefrontMatch = null,
+                    kitPrompt = LocalSteamKitPrompt(
+                        appId = outcome.appId,
+                        folderName = outcome.folderName,
+                        installerEnabled = outcome.installerEnabled,
+                        source = outcome.source,
+                        // Default the cursor to Link Only when the installer is off, so Confirm
+                        // never lands on an action that would only explain why it cannot run.
+                        installSelected = outcome.installerEnabled,
+                    ),
+                )
+            }
+            is LocalSteamFolderLinker.LinkOutcome.NeedsConfirmation -> _state.update {
+                it.copy(
+                    autoMatchStep = AutoMatchStep.IDENTIFY,
+                    storefrontMatch = storefrontMatchUiFor(it.title, outcome.result, outcome.query),
+                )
+            }
+            is LocalSteamFolderLinker.LinkOutcome.NoEmuData -> _state.update {
+                it.copy(
+                    autoMatchStep = AutoMatchStep.NO_EMU_DATA,
+                    storefrontMatch = null,
+                    noEmuDataReason = outcome.reason,
+                )
+            }
+            is LocalSteamFolderLinker.LinkOutcome.Failed -> _state.update {
+                it.copy(
+                    autoMatchStep = AutoMatchStep.NO_EMU_DATA,
+                    storefrontMatch = null,
+                    noEmuDataReason = outcome.reason,
+                )
+            }
+        }
+    }
+
+    /** A resolver result as the shared storefront picker's state. */
+    private fun storefrontMatchUiFor(
+        gameTitle: String,
+        result: StorefrontMatchResult,
+        query: String,
+    ): StorefrontMatchUi {
+        val candidates = listOfNotNull(result.best) + result.alternatives
+        return StorefrontMatchUi(
+            loading = false,
+            gameTitle = gameTitle,
+            query = query,
+            storeLabel = result.store.label,
+            confidence = result.confidence,
+            rows = candidates.map(::storefrontRowOf),
+            focus = 0,
+        )
+    }
+
+    // The picker's own input. Rows, More Information and the always-present escape hatch — the same
+    // keys the Game Detail picker uses, because it is the same panel.
+    private fun handleIdentifyAction(action: GamepadAction) {
+        val ui = _state.value.storefrontMatch ?: return
+        // Back gets out even while the app id is still being worked out — a lookup the user no longer
+        // wants must not trap them on the step.
+        if (ui.loading) {
+            if (action == GamepadAction.BACK) cancelAutoMatch()
+            return
+        }
+        if (ui.confirming) return
+        if (ui.moreInfoOpen) {
+            when (action) {
+                GamepadAction.BACK -> closeStorefrontMoreInfo()
+                GamepadAction.SELECT -> chooseStorefrontCandidate(ui.focus)
+                else -> Unit
+            }
+            return
+        }
+        when (action) {
+            GamepadAction.NAVIGATE_UP -> moveStorefrontFocus(-1)
+            GamepadAction.NAVIGATE_DOWN -> moveStorefrontFocus(1)
+            GamepadAction.SELECT -> chooseStorefrontCandidate(ui.focus)
+            GamepadAction.OPEN_CONTEXT_MENU -> openStorefrontMoreInfo()
+            GamepadAction.BACK -> cancelAutoMatch()
+            else -> Unit
+        }
+    }
+
+    private fun moveStorefrontFocus(delta: Int) = updateMatch { ui ->
+        // stopCount includes "No correct match", which is always the last stop.
+        ui.copy(focus = (ui.focus + delta).coerceIn(0, ui.stopCount - 1))
+    }
+
+    fun openStorefrontMoreInfo() = updateMatch { if (it.focusedCandidate == null) it else it.copy(moreInfoOpen = true) }
+
+    fun closeStorefrontMoreInfo() = updateMatch { it.copy(moreInfoOpen = false) }
+
+    /** Tap on a candidate row: focus first, then activate — one path for touch and controller. */
+    fun onStorefrontRowTapped(index: Int) {
+        val ui = _state.value.storefrontMatch ?: return
+        if (ui.focus == index) chooseStorefrontCandidate(index) else updateMatch { it.copy(focus = index) }
+    }
+
+    /**
+     * The user chose a candidate. This is the one place a guessed app id gets written into a game
+     * folder, and it happens because a person picked it.
+     */
+    fun chooseStorefrontCandidate(index: Int) {
+        val state = _state.value
+        val ui = state.storefrontMatch ?: return
+        if (ui.confirming) return
+        val treeUri = state.pickedFolderUri?.let { android.net.Uri.parse(it) } ?: return cancelAutoMatch()
+        // "No correct match" is the picker's last stop. Nothing is written, and the page says so.
+        val row = ui.rows.getOrNull(index) ?: return _state.update {
+            it.copy(
+                autoMatchStep = AutoMatchStep.NO_EMU_DATA,
+                storefrontMatch = null,
+                noEmuDataReason = "Nothing was written. Set the game's Steam match from Game Detail " +
+                    "▸ Match Game, then Auto-Match again — PFP will use that id.",
+            )
+        }
+        _state.update { it.copy(storefrontMatch = ui.copy(confirming = true)) }
+        viewModelScope.launch {
+            // The row carries the store's own id, which for Steam IS the app id the marker needs.
+            val outcome = runCatching { folderLinker.confirmCandidate(gameId, treeUri, row.storeId) }
+                .onFailure { Timber.w(it, "Confirming the chosen Steam match failed") }
+                .getOrNull()
+            applyLinkOutcome(outcome)
+        }
+    }
+
+    private fun updateMatch(transform: (StorefrontMatchUi) -> StorefrontMatchUi) = _state.update { s ->
+        val ui = s.storefrontMatch ?: return@update s
+        if (ui.loading || ui.confirming) s else s.copy(storefrontMatch = transform(ui))
+    }
+
+    // The kit prompt: Left/Right choose between Install & Link and Link Only, Confirm takes it.
+    private fun handleKitAction(action: GamepadAction) {
+        val prompt = _state.value.kitPrompt ?: return
+        when (action) {
+            GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT ->
+                // With the installer off there is only one real action; the cursor stays on it
+                // rather than moving onto a button that would refuse.
+                if (prompt.installerEnabled) {
+                    _state.update { it.copy(kitPrompt = prompt.copy(installSelected = !prompt.installSelected)) }
+                }
+            GamepadAction.SELECT -> if (prompt.installSelected) installKit() else linkWithoutKit()
+            GamepadAction.BACK -> cancelAutoMatch()
+            else -> Unit
+        }
+    }
+
+    /** Install & Link: write the emulator kit into the folder, then link and sync. */
+    fun installKit() {
+        val state = _state.value
+        val prompt = state.kitPrompt ?: return
+        val treeUri = state.pickedFolderUri?.let { android.net.Uri.parse(it) } ?: return
+        if (!prompt.installerEnabled) return
+        viewModelScope.launch {
+            _state.update { it.copy(isMatching = true) }
+            val outcome = runCatching {
+                folderLinker.installKitAndLink(gameId, treeUri, prompt.appId, prompt.source)
+            }.onFailure { Timber.w(it, "Installing the Local Steam kit failed") }.getOrNull()
+            _state.update { it.copy(isMatching = false, kitPrompt = null) }
+            applyLinkOutcome(outcome)
+        }
+    }
+
+    /**
+     * Link Only: track the game at 0% with its real coin list and write nothing more.
+     *
+     * It exists so a user can SEE the achievement list before authorising a DLL swap. Nothing about
+     * the folder changes, so the kit prompt is offered again the next time they ask.
+     */
+    fun linkWithoutKit() {
+        val state = _state.value
+        val prompt = state.kitPrompt ?: return
+        val treeUri = state.pickedFolderUri?.let { android.net.Uri.parse(it) } ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(isMatching = true) }
+            val outcome = runCatching {
+                folderLinker.linkWithoutKit(gameId, treeUri, prompt.appId, prompt.source)
+            }.onFailure { Timber.w(it, "Linking without a kit failed") }.getOrNull()
+            _state.update { it.copy(isMatching = false, kitPrompt = null) }
+            applyLinkOutcome(outcome)
         }
     }
 

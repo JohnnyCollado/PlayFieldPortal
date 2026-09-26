@@ -708,68 +708,109 @@ account-wide wallet with **levels and ranks** shown on the **Player Card**.
 PFP can track achievements for Windows games run through Wine emulators (GameHub, Winlator,
 GameNative and friends) whose bundled Steam emulator (GSE / Goldberg) records unlocks in local
 files. Tracking is display-only: PFP reads what the game already wrote, joins it with the Steam
-schema, and shows the result in Shiba Coins — run *Update Installed Achievements* from the
-Player Card to load every tracked game.
+schema, and shows the result in Shiba Coins.
+
+**You point PFP at the game folders.** Your Windows games can live anywhere — a Wine prefix, an SD
+card, a USB drive — and they get into the library through pins, launcher exports, `.pfpgame`
+restores and Add-by-ID, none of which say where the install folder is. So PFP asks, once per folder
+or once per library, and then remembers: a picked folder is registered, and no later sync ever has
+to search for it again. Nothing is scanned for on your behalf, and the automatic scans
+(the first-run wizard, Auto-Detect, Scan This Console) never touch a game folder at all.
 
 > **Warning Note — back up your save files first.** This is opt-in behind
 > *Settings ▸ Shiba Coins ▸ Track Local Steam Games (Emulated)*, and enabling it shows the
-> same reminder. Turning it on lets a sync bring each emulator game up to the current setup:
-> it rewrites the game's `steam_settings` config and replaces its `steam_api` DLL so unlocks
-> can be recorded. A game you set up and played *before* this feature could lose access to its
-> existing save data once the emulator starts reading from the new save location. Open your
-> Windows emulator, back up the save files for those games, and only then enable the toggle and
-> run *Update installed achievements*.
+> same reminder. Installing the achievement kit into a game folder rewrites that game's
+> `steam_settings` config and replaces its `steam_api` DLL so unlocks can be recorded. A game you
+> set up and played *before* this feature could lose access to its existing save data once the
+> emulator starts reading from the new save location. Open your Windows emulator, back up the save
+> files for those games, and only then enable the toggle and convert them.
 >
 > **Use your own Steam Web API key at your own risk.** This feature reads achievement data with
 > the Steam Web API key you supply. Steam tracking is entirely optional — you do not have to
 > enable it, and should only do so if you accept the risks that come with using your own key.
 
-For a game folder to be tracked it must live under your windows library and carry the Steam-emu
-config; achievement progress is read from the emu's own save redirect, or from a `saves` folder
-you keep in the game directory:
+**The two ways in**
+
+| | Where | What you pick | What it writes |
+| --- | --- | --- | --- |
+| **One game** | Its Shiba Coins page ▸ *Auto-Match* ▸ **No** | That game's own folder | `steam_appid.txt`, and the kit only if you choose *Install & Link* |
+| **A whole library** | *Settings ▸ Library ▸ Import PC Games ▸ Local Windows ▸ Batch Match Local Games*, or the Windows card's ▲ menu | The folder that **contains** your game folders | `steam_appid.txt` for every game it identifies confidently, and the kit only for the games you check |
+
+Both end up in the same place: *Matched Local Games* under **Local Windows**, which lists every
+folder PFP knows about and how each one's app id was established. **Forget** on a row removes only
+PFP's note of where that folder is — the game keeps its coin list and every coin it earned.
+
+**How PFP works out which game a folder is**
+
+1. **`steam_settings/steam_appid.txt`.** The folder's own word, and always the last word. Nothing
+   else runs — including offline.
+2. **A Steam match you already confirmed** for that game (*Game Detail ▸ Match Game*). Free: no
+   request, no search, works offline.
+3. **The game's title, through the storefront matcher.** A confident match (exact title, or several
+   agreeing signals) is used; anything less opens the Match Game picker so you choose, with the
+   search terms PFP actually used shown on screen and *No correct match* always available.
+4. **PFP writes the confirmed id back** as `steam_settings/steam_appid.txt`, so the folder identifies
+   itself from then on — to PFP and to the emulator. An existing marker is never overwritten, and a
+   batch run never writes a guess: anything it cannot settle confidently is counted and left for the
+   per-game flow, where a person decides.
+
+A folder with no Steam library file (`steam_api64.dll` / `steam_api.dll`) anywhere in it is not a
+Steam build, and PFP says exactly that rather than offering setup steps that could not help.
+
+**What a tracked folder looks like**
 
 ```
-<ROM Root>/windows/
-├── import/                          ← exported launch files (.steam / .desktop / …)
-└── <Game>/
-    ├── steam_settings/
-    │   └── steam_appid.txt          ← REQUIRED: marks the game and names its Steam appid
-    ├── saves/
-    │   └── [<appid>/]achievements.json   ← unlock progress (either level works)
-    └── ...game files
+<wherever your game is installed>/<Game>/
+├── steam_settings/
+│   ├── steam_appid.txt          ← names the game's Steam appid (PFP writes this for you)
+│   ├── achievements.json        ← the coin list the emulator records against
+│   ├── stats.json               ← only when the game has stat-based achievements
+│   └── configs.user.ini         ← the save redirect, so progress stays in the game folder
+├── saves/
+│   └── [<appid>/]achievements.json   ← unlock progress (either level works)
+├── steam_api64_o.dll            ← your original DLL, renamed (never deleted)
+└── steam_api64.dll             ← the bundled emulator, loading through the backup
 ```
 
-To make the emulator RECORD unlocks into that folder (instead of its app-private global
-location, which PFP cannot read), set the GSE save redirect once per game — create or edit
-`steam_settings/configs.user.ini` and add:
+`steam_settings` may sit a few folders deep — Unity games keep it under
+`<Game>_Data/Plugins/x86_64/` — and PFP searches for it, and for the DLL beside it, the same few
+levels down. Everything in that tree is only ever created, never replaced: a `configs.user.ini`,
+a schema or a marker you already have is left exactly as it is.
+
+If you would rather set the save redirect by hand, create or edit
+`steam_settings/configs.user.ini`:
 
 ```ini
 [user::saves]
 local_save_path=./saves
 ```
 
-The path is relative to the folder holding the steam_api `.dll`/`.so`; with it set the emu
-ignores its global save folder entirely (fully portable) and writes
-`saves/<appid>/achievements.json` after each play session.
+The path is relative to the folder holding the steam_api `.dll`/`.so`; with it set the emu ignores
+its global save folder entirely (fully portable) and writes `saves/<appid>/achievements.json` after
+each play session.
 
 Notes:
 
-- `steam_settings/steam_appid.txt` may sit a few folders deep (Unity games keep it under
-  `<Game>_Data/Plugins/x86_64/`); PFP finds it automatically.
 - PFP follows whatever `local_save_path` the game already uses first (e.g. `./GSE Saves`) —
   the `saves/` folder is the fallback convention for hand-arranged files.
-- A game is tracked only once its save location exists (the redirect's target folder, or the
-  `saves/` folder). Before any unlocks it tracks at 0%; a game with `steam_settings` but no
-  save location at all stays untracked.
-- Reading the schema needs your Steam Web API key (*Settings ▸ Shiba Coins*).
-- Tracking is off until you enable *Track Local Steam Games (Emulated)* (see the Warning Note
-  above); with it off, no discovery, generation, DLL swap, or syncing runs.
-- A game folder with `steam_settings` but no `achievements.json` can't record unlocks —
-  the emulator needs that schema file. When a PC scan finds one missing, PFP offers to bring
-  the game up to the current emulator setup (per game: No / Yes / Yes to All for that scan):
-  it writes the schema and stat files from the Steam Web API, sets the save redirect, and
-  installs the bundled emulator over the game's original `steam_api` DLL (backed up alongside
-  it). This is the step the Warning Note's backup protects against.
+- Reading the coin list needs your Steam Web API key (*Settings ▸ Shiba Coins*). Without one, a
+  folder can still be registered and linked; it just cannot be converted yet.
+- The two opt-ins govern **writing and searching, not reading a folder you handed over.** Writing
+  `steam_appid.txt` sits behind *Track Local Steam Games (Emulated)*; installing the kit — the
+  schema, the stats, the config and the DLL swap — additionally needs *Install Goldberg Emulator*,
+  and **Install & Link** says so when it is off. A folder you pointed PFP at keeps syncing either
+  way: that pick is the game's consent, and reading the progress file the game wrote itself searches
+  nothing and changes nothing. With tracking off, what stops is PFP looking through your library on
+  its own. **Link Only** tracks the game at 0% with
+  its real coin list and writes nothing further into the folder, so you can see the list before
+  authorising anything.
+- A game with no achievement list on Steam is shown as **No list on Steam** and cannot be checked,
+  rather than being converted and then failing.
+- A folder that is unreachable right now — unmounted card, revoked grant, unreadable progress file —
+  is **unknown**, never "nothing earned". Its coins stay, and PFP offers a re-pick. Only **Forget**
+  removes a folder from the registry.
+- Run *Update Installed Achievements* from the Player Card to refresh every tracked game; a batch
+  match syncs what it links straight away.
 
 ### 4.21 Tracking PS3 trophies (ARMSX3)
 

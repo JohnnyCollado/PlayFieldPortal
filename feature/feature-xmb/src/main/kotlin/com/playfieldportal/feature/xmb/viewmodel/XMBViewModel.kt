@@ -758,6 +758,9 @@ data class XMBUiState(
 
     // ── Overlay screens ───────────────────────────────────────────────────
     val activeSettingsScreen: String? = null,
+    // Set for one composition when the Windows card's Batch Match Local Games is chosen: the shell
+    // owns the SAF tree launcher, so the ViewModel can only ask for the pick.
+    val requestLocalSteamFolderPick: Boolean = false,
     // The drilled-into Settings L1 section — non-null while its two-pane flyout shows the L2 rows,
     // null at the flat section root. Deliberately NOT part of hasBlockingOverlay: the flyout is
     // XMB foreground, so input keeps driving the item list exactly like every other drill.
@@ -1549,6 +1552,7 @@ class XMBViewModel @Inject constructor(
     private val pcGameExporter: com.playfieldportal.feature.settings.pc.PcGameExporter,
     private val localSteamSchemaGenerator: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator,
     private val localSteamDiscovery: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamDiscovery,
+    private val localSteamBatchMatcher: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamBatchMatcher,
     private val launchDispatcher: com.playfieldportal.feature.launcher.LaunchDispatcher,
     private val setupStateProvider: com.playfieldportal.feature.launcher.SetupStateProvider,
     private val customIconStore: CustomIconStore,
@@ -1579,10 +1583,74 @@ class XMBViewModel @Inject constructor(
         convertPickerController.picker
 
     fun onConvertToggle(index: Int) = convertPickerController.toggle(index)
-    fun onConvertSelectAll() = convertPickerController.setAll(true)
-    fun onConvertSelectNone() = convertPickerController.setAll(false)
+    fun onConvertSelectAllNone() {
+        val picker = convertPickerController.picker.value ?: return
+        convertPickerController.setAll(picker.rows.any { !it.selected && !it.unselectable })
+    }
     fun onConvertConfirm() = convertPickerController.confirm()
+    fun onConvertSkip() = convertPickerController.skip()
     fun onConvertCancel() = convertPickerController.cancel()
+
+    /**
+     * Controller input while the convert panel is open. True when the panel took it.
+     *
+     * The panel sits ABOVE the card it was opened from — the same layering the coins page uses — so
+     * this is checked before the XMB's own navigation, and before Start reaches the notification
+     * panel: inside this panel Start means Install.
+     */
+    fun onConvertGamepadAction(action: GamepadAction): Boolean =
+        convertPickerController.onGamepadAction(action)
+
+    /** True while the convert panel owns the screen. */
+    val convertPanelOpen: Boolean get() = convertPickerController.picker.value != null
+
+    /**
+     * Batch Match Local Games from the Windows card's context menu.
+     *
+     * The picked tree and everything after it are identical to the Library Manager's row — one
+     * matcher, one convert panel, one report — so the two surfaces cannot drift.
+     */
+    fun batchMatchLocalGames(parentFolder: android.net.Uri) {
+        viewModelScope.launch {
+            val taskId = "xmb_local_steam_batch"
+            addBackgroundTask(
+                BackgroundTaskInfo(id = taskId, label = "Matching local Windows games…", kind = TaskKind.SCAN)
+            )
+            val report = runCatching { localSteamBatchMatcher.run(parentFolder) }
+                .onFailure { Timber.e(it, "Local Steam batch match failed") }
+                .getOrNull()
+            if (report == null) {
+                failBackgroundTask(taskId, "Batch match failed — see the log.")
+                return@launch
+            }
+            completeBackgroundTask(
+                taskId,
+                report.message,
+                NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID),
+            )
+            // The convertible pile — the one place a DLL swap is ever authorised, per game.
+            convertPickerController.start(report.convertible) { outcome ->
+                viewModelScope.launch {
+                    val linked = runCatching { localSteamBatchMatcher.linkAndSync(outcome.convertedFolders) }
+                        .onFailure { Timber.e(it, "Linking converted Local Steam folders failed") }
+                        .getOrNull()
+                    convertOutcomeMessage(outcome)?.let { msg ->
+                        val id = "schema_gen_windows"
+                        addBackgroundTask(
+                            BackgroundTaskInfo(id = id, label = "Achievement schemas", kind = TaskKind.ACHIEVEMENT)
+                        )
+                        completeBackgroundTask(
+                            id,
+                            msg + (linked?.let { " ${it.linkedToLibrary} linked to library games." } ?: ""),
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    /** Asks the shell to open the folder picker for a batch match. Cleared once launched. */
+    fun onBatchMatchPickLaunched() = _uiState.update { it.copy(requestLocalSteamFolderPick = false) }
 
     private fun convertOutcomeMessage(
         outcome: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamConvertPickerController.Outcome,
@@ -5523,6 +5591,15 @@ class XMBViewModel @Inject constructor(
         markControllerInput()
         val state = _uiState.value
 
+        // ── Convert-detected-games panel captures ALL input while open ─────────
+        //
+        // Above everything, including the START branch below: inside this panel START means Install,
+        // and letting it open the notification panel instead would take the user off a screen that
+        // is about to write into their game folders.
+        if (convertPickerController.picker.value != null) {
+            if (onConvertGamepadAction(action)) return
+        }
+
         // ── Installed-app picker captures ALL input when open ──────────────────
         if (state.appPicker != null) {
             when (action) {
@@ -6020,7 +6097,13 @@ class XMBViewModel @Inject constructor(
             if (isAndroid) add(XMBContextMenuItem("find_games", "Find Games"))
             else           add(XMBContextMenuItem("scan_roms",  "Scan This Console"))
             // The Windows card is import-driven — surface its Import PC Games section here too.
-            if (platformId == "windows") add(XMBContextMenuItem("import_pc_games", "Import PC Games"))
+            if (platformId == "windows") {
+                add(XMBContextMenuItem("import_pc_games", "Import PC Games"))
+                // Achievement tracking for emulated Windows games: one folder pick covers a whole
+                // library. Offered here as well as in settings because this is the card those games
+                // live on, and the card's own scan deliberately does no emulator work.
+                add(XMBContextMenuItem("batch_match_local", "Batch Match Local Games"))
+            }
             add(XMBContextMenuItem("update_metadata",        "Update Metadata"))
             add(XMBContextMenuItem("scrape_missing_artwork", "Scrape Missing Artwork"))
             // Icon display for THIS console only. Games on other Memory Cards are untouched;
@@ -6586,6 +6669,8 @@ class XMBViewModel @Inject constructor(
             } else when (itemId) {
                 "find_games"       -> openAppPicker(AppPickerTarget.AndroidGames(menu.platformId), "Find Games")
                 "import_pc_games"  -> _uiState.update { it.copy(activeSettingsScreen = "settings_import_pc") }
+                // The shell owns the SAF launcher, so this only raises the request.
+                "batch_match_local" -> _uiState.update { it.copy(requestLocalSteamFolderPick = true) }
                 "icon_display_platform" -> openPlatformIconDisplayPickerMenu(menu.platformId)
                 "scan_roms"        -> scanCard(menu.platformId)
                 "scrape_missing_artwork" -> scrapeMissingArtworkForPlatform(menu.platformId)
@@ -7352,19 +7437,10 @@ class XMBViewModel @Inject constructor(
                         if (report.newGames == 0) "No new PC games found" else report.message,
                         NotificationAction.OpenMemoryCard(platformId),
                     )
-                    // When the Goldberg installer is on, offer to convert every detected emu folder
-                    // that has steam_settings but no achievements.json yet — the user picks which.
-                    if (achievementCredentials.goldbergInstallerEnabled()) {
-                        convertPickerController.start(report.emu.missingSchema) { outcome ->
-                            convertOutcomeMessage(outcome)?.let { msg ->
-                                val id = "schema_gen_$platformId"
-                                addBackgroundTask(
-                                    BackgroundTaskInfo(id = id, label = "Achievement schemas", kind = TaskKind.ACHIEVEMENT)
-                                )
-                                completeBackgroundTask(id, msg)
-                            }
-                        }
-                    }
+                    // No emulator work here, by design. Scanning for Steam-emu folders under the
+                    // windows surfaces meant walking trees the game folders are no longer under;
+                    // they are pointed at once through Batch Match Local Games instead, which is
+                    // its own item on this same context menu.
                 }
                 return@launch
             }

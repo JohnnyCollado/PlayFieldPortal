@@ -56,6 +56,10 @@ class LibraryManagerViewModelTest {
     private val windowsLibrarySetup = mockk<WindowsLibrarySetup>(relaxed = true)
     private val pcGameScanner = mockk<PcGameScanner>(relaxed = true)
     private val localSteamSchemaGenerator = mockk<LocalSteamSchemaGenerator>(relaxed = true)
+    private val localSteamBatchMatcher =
+        mockk<com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamBatchMatcher>(relaxed = true)
+    private val localSteamDiscovery =
+        mockk<com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamDiscovery>(relaxed = true)
     private val credentials = mockk<AchievementCredentialsProvider>(relaxed = true)
     private val vita3KLibrary = mockk<Vita3KLibrary>(relaxed = true)
     private val ps3DataLibrary =
@@ -89,6 +93,8 @@ class LibraryManagerViewModelTest {
             windowsLibrarySetup,
             pcGameScanner,
             localSteamSchemaGenerator,
+            localSteamBatchMatcher,
+            localSteamDiscovery,
             credentials,
             vita3KLibrary,
             ps3DataLibrary,

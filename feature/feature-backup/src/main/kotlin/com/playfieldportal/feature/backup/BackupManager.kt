@@ -153,6 +153,10 @@ open class BackupManager @Inject constructor(
             zip.writeJson(BackupEntry.ACHIEVEMENT_COINS,      json.encodeToString(listSerializer<com.playfieldportal.core.data.database.entity.AccountAchievementEntity>(), backupDao.getAchievementCoins()))
             zip.writeJson(BackupEntry.PROVIDER_GAME_LINKS,    json.encodeToString(listSerializer<com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity>(), backupDao.getProviderGameLinks()))
 
+            // The picked Local Steam game folders. Its own entry: the registry is not game-scoped,
+            // so it is restored under its own presence check (see restore below).
+            zip.writeJson(BackupEntry.LOCAL_STEAM_FOLDERS,    json.encodeToString(listSerializer<com.playfieldportal.core.data.database.entity.LocalSteamFolderEntity>(), backupDao.getLocalSteamFolders()))
+
             // Bundled internal-storage assets. Absolute paths in the DB point into filesDir; storing
             // them relative to filesDir lets restore relocate them into whatever package/data-dir the
             // backup lands in.
@@ -257,6 +261,11 @@ open class BackupManager @Inject constructor(
         val achCoins      = entries.decodeList<com.playfieldportal.core.data.database.entity.AccountAchievementEntity>(BackupEntry.ACHIEVEMENT_COINS)
         val achLinks      = entries.decodeList<com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity>(BackupEntry.PROVIDER_GAME_LINKS)
 
+        // Independent of hasAchievements: an archive from before the registry existed must leave
+        // the folders on THIS device alone rather than be read as an empty registry.
+        val hasLocalSteamFolders = entries.containsKey(BackupEntry.LOCAL_STEAM_FOLDERS)
+        val localSteamFolders = entries.decodeList<com.playfieldportal.core.data.database.entity.LocalSteamFolderEntity>(BackupEntry.LOCAL_STEAM_FOLDERS)
+
         val settings = entries[BackupEntry.SETTINGS]?.let {
             json.decodeFromString(SettingsSnapshot.serializer(), it)
         }
@@ -331,6 +340,9 @@ open class BackupManager @Inject constructor(
                 achLinks.filter { it.gameId in gameIds },
             )
         }
+
+        // Folder registry: keyed by app id, so it needs no game to exist and is never filtered.
+        if (hasLocalSteamFolders) backupDao.replaceLocalSteamFolders(localSteamFolders)
 
         // Platforms: merge only the user-editable columns onto the existing seeded catalog so an
         // older backup can never wipe platform definitions this build added.

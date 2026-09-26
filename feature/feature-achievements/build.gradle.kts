@@ -15,6 +15,10 @@ android {
     }
 
     testOptions {
+        // Robolectric 4.16 emulates up to SDK 36. Library modules default targetSdk to compileSdk
+        // (37), which Robolectric rejects outright, so pin the test target here. Unit tests only —
+        // the published library is unchanged. (Same note as feature-artwork.)
+        targetSdk = 36
         unitTests.all { test ->
             // Forward the RaHashVerification harness's -Dra.hash.* flags from the Gradle JVM into the
             // forked test JVM (Gradle does not propagate them by default). Env vars are inherited as-is.
@@ -61,4 +65,7 @@ dependencies {
     implementation(project(":feature:feature-launcher")) // PcGameAchievementLinker seam (shortcut imports)
 
     testImplementation(libs.bundles.test.unit)
+    // LocalSteamDiscovery's fake-SAF-tree tests need a real MatrixCursor and a real Uri.
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
 }

@@ -6,6 +6,31 @@ All notable changes to Play Field Portal are documented here. This project follo
 ## [Unreleased]
 
 ### Added
+- **Local Windows achievements now work by pointing PFP at the game folder.** Local Steam tracking
+  used to find a game by walking the windows library's scan surfaces. That was right when the Windows
+  card was a scanned root and is no longer true: games enter the library through pins, launcher
+  exports, `.pfpgame` restores and Add-by-ID, while the install folders sit wherever your
+  Wine/Winlator setup put them. So PFP asks instead, and then remembers.
+  Two ways in, one registry. On a game's Shiba Coins page, *Auto-Match ▸ No* asks for that game's
+  folder. *Library ▸ Import PC Games ▸ Local Windows ▸ Batch Match Local Games* — also on the Windows
+  card's ▲ menu — takes the folder that **contains** your game folders and does the whole library in
+  one pass. Every picked folder is recorded in a new `local_steam_folders` table (database v51), so a
+  sync that used to cost a deep recursive SAF walk to re-find a folder is now a primary-key read.
+  *Matched Local Games* lists what PFP knows, with per-entry **Forget** that removes only the note of
+  where a folder is — the game keeps its coin list and every coin it earned.
+  A folder's app id comes from its own `steam_appid.txt` when it has one; that is authoritative and
+  works offline. When it has none, PFP uses a Steam match you already confirmed, or resolves the title
+  through the 5-rule storefront matcher — and then **writes the confirmed id back** as
+  `steam_appid.txt`, so the folder identifies itself from then on, to PFP and to the emulator. A guess
+  is never written unattended: a batch run writes only at exact/high confidence and reports the rest
+  as needing identifying, deferred to the per-game flow where the Match Game picker shows the terms
+  PFP searched, the scored candidates, and *No correct match*. A folder with no `steam_api` library
+  anywhere in it is reported as not a Steam build, which is the honest version of the old
+  "no Steam-emulator data".
+  A folder with an app id but no coin list stops for you: **Install & Link** writes the kit and swaps
+  the DLL, **Link Only** tracks the game at 0% with its real coin list and writes nothing further —
+  so you can see the list before authorising anything.
+
 - **PS3 trophy tracking (ARMSX3), a fourth achievement provider.** Grant your ARMSX3 PS3 folder in
   *Library Manager ▸ PS3* and PFP reads real PS3 trophies out of the emulator's own files —
   definitions, hidden flags and icons from `TROPCONF.SFM`, earned state and unlock times from the
@@ -481,6 +506,28 @@ All notable changes to Play Field Portal are documented here. This project follo
   offers "Hide from All Games" — the game disappears from the aggregate view but stays
   on its own Memory Card, in collections, and in Favorites. Hidden games are recoverable
   from Settings ▸ Hidden Items, like every other per-location hide.
+
+### Changed
+- **Automatic scans no longer do any emulator work.** The first-run wizard, Auto-Detect, root autoload
+  and the Windows card's *Scan This Console* each used to pay for a full recursive SAF walk of every
+  windows surface, on every pass, looking for game folders that increasingly were not under those
+  surfaces. `PcGameScanner` now reads `<ROM root>/windows/import` for exported game files and nothing
+  else, and never writes into a game folder. *Scan Import Folder* says as much, and is now described
+  as the one-time pick for a folder somewhere else that it always was.
+- **The convert-games picker is a real panel instead of a Material dialog.** It had no focus model, no
+  controller input path and no touch/controller split. It is rebuilt in the storefront picker's idiom:
+  focus-driven rows framed by geometry rather than scroll arithmetic, `Up/Down · Select · △ All/None ·
+  Start Install · B Cancel` on a controller, a mirrored touch action row, and one shared panel for the
+  XMB card and the Library Manager so the two cannot drift.
+  Each row now states the game's achievement count, read from Steam before the panel opens, and a game
+  Steam keeps no list for is shown as **No list on Steam** and cannot be checked — rather than being
+  converted and then failing at write time. The panel also names the files a conversion writes, in the
+  files' own names, and carries a **Skip & Sync** exit that links the folders that were already ready
+  without writing into any game folder.
+- **A registered folder is never demoted to history behind your back.** Presence reconciliation reads
+  the registry as well as the legacy scan, and an unmounted card or a moved folder now leaves a
+  registered game exactly as it was — that is unknown, not "the game is gone". Forget is the only way
+  out.
 
 ## [1.2.0] - 2026-07-19
 

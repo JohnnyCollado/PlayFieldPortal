@@ -328,18 +328,42 @@ fun XMBShellContainer(
         onOpenAndroidLibraryPicker = viewModel::openAndroidLibraryPicker,
     )
 
-    // Multi-select picker to convert detected emu games after a Windows-card scan (when the
-    // Goldberg installer is on). Same dialog + controller the Library Manager uses.
+    // Batch Match Local Games from the Windows card's context menu. The shell owns the launcher
+    // because only a Composable can hold one; the ViewModel raises the request and clears it.
+    val batchMatchPicker = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree()
+    ) { uri -> uri?.let { viewModel.batchMatchLocalGames(it) } }
+
+    androidx.compose.runtime.LaunchedEffect(uiState.requestLocalSteamFolderPick) {
+        if (uiState.requestLocalSteamFolderPick) {
+            viewModel.onBatchMatchPickLaunched()
+            batchMatchPicker.launch(null)
+        }
+    }
+
+    // Multi-select picker for the convertible folders a batch match found — the one place a DLL swap
+    // is ever authorised. Same panel + controller the Library Manager uses.
     val convertPicker by viewModel.convertPicker.collectAsStateWithLifecycle()
     convertPicker?.let { picker ->
-        com.playfieldportal.core.ui.achievement.LocalSteamConvertPickerDialog(
+        com.playfieldportal.core.ui.achievement.LocalSteamConvertPanel(
             rows = picker.rows.map {
-                com.playfieldportal.core.ui.achievement.LocalSteamConvertRow(it.folderName, it.appId, it.selected)
+                com.playfieldportal.core.ui.achievement.LocalSteamConvertRow(
+                    folderName = it.folderName,
+                    note = it.note,
+                    selected = it.selected,
+                    unselectable = it.unselectable,
+                )
             },
-            onToggle = viewModel::onConvertToggle,
-            onSelectAll = viewModel::onConvertSelectAll,
-            onSelectNone = viewModel::onConvertSelectNone,
+            focus = picker.focus,
+            loading = picker.loading,
+            canConfirm = picker.canConfirm,
+            focusFill = com.playfieldportal.core.ui.theme.menuCursorFill(),
+            focusEdge = com.playfieldportal.core.ui.theme.menuCursorEdge(),
+            showTouchControls = uiState.resolvedShowTouchButton,
+            onRowClick = viewModel::onConvertToggle,
+            onSelectAllNone = viewModel::onConvertSelectAllNone,
             onConfirm = viewModel::onConvertConfirm,
+            onSkip = viewModel::onConvertSkip,
             onCancel = viewModel::onConvertCancel,
         )
     }

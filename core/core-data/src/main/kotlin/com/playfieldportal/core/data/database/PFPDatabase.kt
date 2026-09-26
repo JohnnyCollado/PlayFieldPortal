@@ -19,6 +19,7 @@ import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.dao.GameStorefrontIdentityDao
 import com.playfieldportal.core.data.database.dao.LaunchOutcomeDao
 import com.playfieldportal.core.data.database.dao.LibrarySourceDao
+import com.playfieldportal.core.data.database.dao.LocalSteamFolderDao
 import com.playfieldportal.core.data.database.dao.MemoryCardDao
 import com.playfieldportal.core.data.database.dao.MusicFolderDao
 import com.playfieldportal.core.data.database.dao.MusicTrackDao
@@ -53,6 +54,7 @@ import com.playfieldportal.core.data.database.entity.CollectionGameEntity
 import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.core.data.database.entity.LaunchOutcomeEntity
 import com.playfieldportal.core.data.database.entity.LibrarySourceEntity
+import com.playfieldportal.core.data.database.entity.LocalSteamFolderEntity
 import com.playfieldportal.core.data.database.entity.MemoryCardEntity
 import com.playfieldportal.core.data.database.entity.MusicFolderEntity
 import com.playfieldportal.core.data.database.entity.MusicTrackEntity
@@ -118,8 +120,9 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         com.playfieldportal.core.data.database.entity.AchievementMetadataCacheEntity::class,
         ArtworkOrphanFileEntity::class,
         GameStorefrontIdentityEntity::class,
+        LocalSteamFolderEntity::class,
     ],
-    version = 50,
+    version = 51,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -151,6 +154,7 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun artworkImportReportDao(): ArtworkImportReportDao
     abstract fun artworkOrphanFileDao(): ArtworkOrphanFileDao
     abstract fun gameStorefrontIdentityDao(): GameStorefrontIdentityDao
+    abstract fun localSteamFolderDao(): LocalSteamFolderDao
     abstract fun notificationDao(): NotificationDao
     abstract fun ssMediaCacheDao(): SsMediaCacheDao
     abstract fun accountAchievementSetDao(): AccountAchievementSetDao
@@ -1545,6 +1549,36 @@ abstract class PFPDatabase : RoomDatabase() {
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_game_storefront_identities_store_store_id " +
                         "ON game_storefront_identities(store, store_id)"
+                )
+            }
+        }
+
+        /**
+         * v51 — `local_steam_folders` (folder-picked Local Steam matching).
+         *
+         * The table is created EMPTY on purpose. Seeding it would mean running the very tree walk
+         * this table exists to retire, at migration time, against grants that may no longer be
+         * held. Existing LOCAL_STEAM links keep resolving through the fallback scan until their
+         * folder is re-picked or batch-matched, and every pick from then on is a primary-key read.
+         */
+        val MIGRATION_50_51 = object : Migration(50, 51) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_steam_folders (
+                        app_id TEXT NOT NULL,
+                        folder_name TEXT NOT NULL,
+                        tree_uri TEXT NOT NULL,
+                        folder_doc_id TEXT NOT NULL,
+                        settings_dir_doc_id TEXT,
+                        settings_parent_doc_id TEXT NOT NULL,
+                        progress_doc_id TEXT,
+                        has_schema INTEGER NOT NULL,
+                        appid_source TEXT NOT NULL,
+                        last_seen_at INTEGER NOT NULL,
+                        PRIMARY KEY(app_id)
+                    )
+                    """.trimIndent()
                 )
             }
         }

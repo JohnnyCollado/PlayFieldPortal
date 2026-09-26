@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.playfieldportal.core.domain.model.GamepadAction
-import com.playfieldportal.core.ui.achievement.LocalSteamConvertPickerDialog
+import com.playfieldportal.core.ui.achievement.LocalSteamConvertPanel
 import com.playfieldportal.core.ui.achievement.LocalSteamConvertRow
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.preview.CombinedPreviews
@@ -41,6 +41,7 @@ import com.playfieldportal.feature.settings.viewmodel.LibraryCardRow
 import com.playfieldportal.feature.settings.viewmodel.LibraryManagerUiState
 import com.playfieldportal.feature.settings.viewmodel.LibraryManagerViewModel
 import com.playfieldportal.feature.settings.viewmodel.LibraryStep
+import com.playfieldportal.feature.settings.viewmodel.LocalSteamFolderRow
 import com.playfieldportal.feature.settings.viewmodel.PcGameRow
 import com.playfieldportal.feature.settings.viewmodel.PcLauncherRow
 import com.playfieldportal.feature.settings.viewmodel.PlatformOption
@@ -121,10 +122,14 @@ fun LibraryManagerScreen(
         onTestLaunchPcGame = { l, id, s -> viewModel.testLaunchPcGame(l, id, s) },
         onAddPcGameById = { l, id, t, s -> viewModel.addPcGameById(l, id, t, s) },
         onConvertToggle = { viewModel.onConvertToggle(it) },
-        onConvertSelectAll = { viewModel.onConvertSelectAll() },
-        onConvertSelectNone = { viewModel.onConvertSelectNone() },
+        onConvertSelectAllNone = { viewModel.onConvertSelectAllNone() },
         onConvertConfirm = { viewModel.onConvertConfirm() },
+        onConvertSkip = { viewModel.onConvertSkip() },
         onConvertCancel = { viewModel.onConvertCancel() },
+        onConvertGamepadAction = { viewModel.onConvertGamepadAction(it) },
+        onBatchMatchLocalGames = { viewModel.batchMatchLocalGames(it) },
+        onForgetLocalSteamFolder = { viewModel.forgetLocalSteamFolder(it) },
+        onSetGoldbergInstaller = { viewModel.setGoldbergInstallerEnabled(it) },
         homeRoleIntentProvider = { viewModel.homeRoleIntent() },
         modifier = modifier
     )
@@ -174,10 +179,14 @@ private fun LibraryManagerContent(
     onTestLaunchPcGame: (PcLauncherRow, String, String?) -> Unit,
     onAddPcGameById: (PcLauncherRow, String, String, String?) -> Unit,
     onConvertToggle: (Int) -> Unit,
-    onConvertSelectAll: () -> Unit,
-    onConvertSelectNone: () -> Unit,
+    onConvertSelectAllNone: () -> Unit,
     onConvertConfirm: () -> Unit,
+    onConvertSkip: () -> Unit,
     onConvertCancel: () -> Unit,
+    onConvertGamepadAction: (GamepadAction) -> Boolean,
+    onBatchMatchLocalGames: (Uri) -> Unit,
+    onForgetLocalSteamFolder: (appId: String) -> Unit,
+    onSetGoldbergInstaller: (Boolean) -> Unit,
     homeRoleIntentProvider: () -> android.content.Intent?,
     modifier: Modifier = Modifier,
 ) {
@@ -189,17 +198,31 @@ private fun LibraryManagerContent(
         LibraryStep.PICK_EMULATOR -> PickEmulatorContent(state, onBack = handleBack, onEmulatorChosen = onEmulatorChosen, modifier = modifier)
         LibraryStep.SCAN_PROMPT   -> ScanPromptContent(state, onBack = handleBack, onConfirmAddConsole = onConfirmAddConsole, modifier = modifier)
         LibraryStep.CARD_DETAIL   -> CardDetailContent(state, onBack = handleBack, onAddAndroidApps = onAddAndroidApps, onLoadEmulatorOptions = onLoadEmulatorOptions, onRemoveExtension = onRemoveExtension, onAddExtension = onAddExtension, onScanConsole = onScanConsole, onBeginRename = onBeginRename, onToggleEnabled = onToggleEnabled, onTogglePinned = onTogglePinned, onMoveCard = onMoveCard, onRemoveCard = onRemoveCard, onSetEmulatorForDetail = onSetEmulatorForDetail, onOpenImportPcGames = onOpenImportPcGames, onSetVita3KFolder = onSetVita3KFolder, onSetPs3DataFolder = onSetPs3DataFolder, onScanVitaGames = onScanVitaGames, onRemoveApp = onRemoveApp, modifier = modifier)
-        LibraryStep.IMPORT_PC     -> ImportPcGamesContent(state, onBack = handleBack, onRefreshHomeStatus = onRefreshHomeStatus, onScanPcGamesFolder = onScanPcGamesFolder, onExportManualPcGames = onExportManualPcGames, onImportPcGame = onImportPcGame, onImportAllPcGames = onImportAllPcGames, onTestLaunchPcGame = onTestLaunchPcGame, onAddPcGameById = onAddPcGameById, onDismissMessage = onDismissMessage, homeRoleIntentProvider = homeRoleIntentProvider, modifier = modifier)
+        LibraryStep.IMPORT_PC     -> ImportPcGamesContent(state, onBack = handleBack, onRefreshHomeStatus = onRefreshHomeStatus, onScanPcGamesFolder = onScanPcGamesFolder, onExportManualPcGames = onExportManualPcGames, onImportPcGame = onImportPcGame, onImportAllPcGames = onImportAllPcGames, onTestLaunchPcGame = onTestLaunchPcGame, onAddPcGameById = onAddPcGameById, onDismissMessage = onDismissMessage, convertPickerOpen = convertPicker != null, onConvertGamepadAction = onConvertGamepadAction, onBatchMatchLocalGames = onBatchMatchLocalGames, onForgetLocalSteamFolder = onForgetLocalSteamFolder, onSetGoldbergInstaller = onSetGoldbergInstaller, homeRoleIntentProvider = homeRoleIntentProvider, modifier = modifier)
     }
 
-    // ── Convert-detected-games picker (after a PC scan, when the installer is on) ──
+    // ── Convert-detected-games picker (the convertible pile of a batch match) ──
     convertPicker?.let { picker ->
-        LocalSteamConvertPickerDialog(
-            rows = picker.rows.map { LocalSteamConvertRow(it.folderName, it.appId, it.selected) },
-            onToggle = onConvertToggle,
-            onSelectAll = onConvertSelectAll,
-            onSelectNone = onConvertSelectNone,
+        LocalSteamConvertPanel(
+            rows = picker.rows.map {
+                LocalSteamConvertRow(
+                    folderName = it.folderName,
+                    note = it.note,
+                    selected = it.selected,
+                    unselectable = it.unselectable,
+                )
+            },
+            focus = picker.focus,
+            loading = picker.loading,
+            canConfirm = picker.canConfirm,
+            focusFill = com.playfieldportal.core.ui.theme.menuCursorFill(),
+            focusEdge = com.playfieldportal.core.ui.theme.menuCursorEdge(),
+            // Settings is a controller-first surface; the panel's own touch row is for the XMB.
+            showTouchControls = false,
+            onRowClick = onConvertToggle,
+            onSelectAllNone = onConvertSelectAllNone,
             onConfirm = onConvertConfirm,
+            onSkip = onConvertSkip,
             onCancel = onConvertCancel,
         )
     }
@@ -692,6 +715,11 @@ private fun ImportPcGamesContent(
     onTestLaunchPcGame: (PcLauncherRow, String, String?) -> Unit,
     onAddPcGameById: (PcLauncherRow, String, String, String?) -> Unit,
     onDismissMessage: () -> Unit,
+    convertPickerOpen: Boolean,
+    onConvertGamepadAction: (GamepadAction) -> Boolean,
+    onBatchMatchLocalGames: (Uri) -> Unit,
+    onForgetLocalSteamFolder: (appId: String) -> Unit,
+    onSetGoldbergInstaller: (Boolean) -> Unit,
     homeRoleIntentProvider: () -> android.content.Intent?,
     modifier: Modifier,
 ) {
@@ -702,11 +730,23 @@ private fun ImportPcGamesContent(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri -> uri?.let { onScanPcGamesFolder(it) } }
 
+    // The parent folder your game folders live in — one pick, every game inside it.
+    val batchMatchPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri -> uri?.let { onBatchMatchLocalGames(it) } }
+
     val homeLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { onRefreshHomeStatus() }
 
-    SettingsScaffold(title = "Library", subtitle = "Import PC Games", onBack = onBack, modifier = modifier) {
+    SettingsScaffold(
+        title = "Library",
+        subtitle = "Import PC Games",
+        onBack = onBack,
+        // The convert panel is modal: it takes Up/Down/Select before the rows behind it see them.
+        onInterceptAction = { action -> convertPickerOpen && onConvertGamepadAction(action) },
+        modifier = modifier,
+    ) {
         // Registered like the list screens: the scaffold needs a scroll owner here for its
         // chrome drag-to-scroll and for controller keep-in-view. Registering is the whole fix;
         // the body itself is unchanged.
@@ -730,9 +770,10 @@ private fun ImportPcGamesContent(
             SettingsGroup("Exported Games")
             SettingsRow(
                 label    = "Scan Import Folder",
-                sublabel = "Pick the folder your launcher exports to — PFP scans it for GameNative / " +
-                    "Winlator exports (.steam · .epic · .gog · .amazon · .pcgame · .desktop) and PFP's own " +
-                    ".pfpgame exports, and imports them",
+                sublabel = "Every scan already reads <ROM Root>/windows/import on its own. This row is " +
+                    "a one-time pick for a folder somewhere else — PFP scans it for GameNative / " +
+                    "Winlator exports (.steam · .epic · .gog · .amazon · .pcgame · .desktop) and PFP's " +
+                    "own .pfpgame exports, and imports them",
                 onClick  = { importPicker.launch(null) },
             )
             SettingsRow(
@@ -740,6 +781,43 @@ private fun ImportPcGamesContent(
                 sublabel = "Writes a .pfpgame file into <windows>/import for each game added by ID or captured, " +
                     "and each pin with artwork, so a fresh install can bring them back with their artwork",
                 onClick  = onExportManualPcGames,
+            )
+
+            // ── Local Windows ────────────────────────────────────────────────────
+            // Achievement tracking for Windows games run through a Steam emulator. Separate from
+            // the groups above because it is about where the GAME FOLDERS are, not about how a game
+            // launches — and because those folders can live anywhere, so PFP has to be told.
+            SettingsGroup("Local Windows")
+            SettingsRow(
+                label    = "Batch Match Local Games",
+                sublabel = "Pick the folder that CONTAINS your game folders. PFP reads each one's " +
+                    "Steam app id, remembers where it is, and links it — no scan ever has to search " +
+                    "for them again",
+                onClick  = { batchMatchPicker.launch(null) },
+            )
+            SettingsValueRow(
+                label    = "Matched Local Games (${state.localSteamFolders.size})",
+                value    = if (state.localSteamFolders.isEmpty()) "None yet" else "",
+                sublabel = if (state.localSteamFolders.isEmpty()) {
+                    "Nothing pointed at yet — Batch Match above, or Auto-Match one game from its Shiba Coins page"
+                } else {
+                    "Forget removes only PFP's note of where a folder is; earned coins stay"
+                },
+            )
+            state.localSteamFolders.forEach { row ->
+                LocalSteamFolderSettingsRow(row, onForget = { onForgetLocalSteamFolder(row.appId) })
+            }
+            SettingsValueRow(
+                label    = "Goldberg Installer",
+                value    = if (state.goldbergInstallerEnabled) "On" else "Off",
+                sublabel = "Lets PFP write an achievement list into a game folder and swap in the " +
+                    "bundled Steam emulator. The same switch as Settings ▸ Shiba Coins",
+                onClick  = { onSetGoldbergInstaller(!state.goldbergInstallerEnabled) },
+            )
+            Hint(
+                "Back up the save files of any game you already played before converting it — the " +
+                    "emulator starts reading from a new save location, and PFP cannot put the old " +
+                    "one back for you."
             )
 
             SettingsGroup("PC Launchers")
@@ -842,6 +920,23 @@ private fun AddPcGameDialog(
     )
 }
 
+/**
+ * One registered folder, with its own Forget.
+ *
+ * Forget is deliberately narrow: it removes PFP's note of WHERE the folder is and nothing else. The
+ * game keeps its provider link, its coin list and every coin it earned, because forgetting a path
+ * must never read as "you did not earn those".
+ */
+@Composable
+private fun LocalSteamFolderSettingsRow(row: LocalSteamFolderRow, onForget: () -> Unit) {
+    SettingsValueRow(
+        label    = row.folderName,
+        value    = "Forget",
+        sublabel = row.detail,
+        onClick  = onForget,
+    )
+}
+
 // ── Shared bits ─────────────────────────────────────────────────────────────────
 
 private fun cardSublabel(card: LibraryCardRow): String = buildString {
@@ -913,10 +1008,14 @@ fun LibraryManagerScreenPreview() {
             onTestLaunchPcGame = { _, _, _ -> },
             onAddPcGameById = { _, _, _, _ -> },
             onConvertToggle = {},
-            onConvertSelectAll = {},
-            onConvertSelectNone = {},
+            onConvertSelectAllNone = {},
             onConvertConfirm = {},
+            onConvertSkip = {},
             onConvertCancel = {},
+            onConvertGamepadAction = { false },
+            onBatchMatchLocalGames = {},
+            onForgetLocalSteamFolder = {},
+            onSetGoldbergInstaller = {},
             homeRoleIntentProvider = { null }
         )
     }

@@ -10,47 +10,41 @@ import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Outcome of reconciling emu game folders with the library, for the settings message.
- *
- * [missingSchema] lists discovered folders that carry no `steam_settings/achievements.json` yet —
- * the UI offers to generate one per game so the emulator can start tracking (see
- * [LocalSteamSchemaGenerator]). Detection only; nothing is written here.
- */
+/** Outcome of reconciling emu game folders with the library, for the caller's summary. */
 data class EmuGameImportResult(
     val discovered: Int,
     val linked: Int,
-    val missingSchema: List<LocalSteamGame> = emptyList(),
+    /** The library games this pass linked, so the caller can sync exactly those and no others. */
+    val linkedGameIds: List<Long> = emptyList(),
 )
 
 /**
- * Reconciles the emu game folders [LocalSteamDiscovery] finds with the LIBRARY — it never
- * creates game entities (user decision 2026-07-16): a game enters the Windows card only through
- * a launchable handle (pin / export / Add by ID). A folder that maps onto an existing game
- * links LOCAL_STEAM with the folder's appid and gets its ownership classified; an unmapped
- * folder simply stays a TRACKED local game, synced into Shiba Coins as an account-style entry
- * by "Update installed achievements" (see `AchievementSyncCoordinator`).
+ * Reconciles emu game folders with the LIBRARY — it never creates game entities (user decision
+ * 2026-07-16): a game enters the Windows card only through a launchable handle (pin / export / Add by
+ * ID). A folder that maps onto an existing game links LOCAL_STEAM with the folder's appid and gets
+ * its ownership classified; an unmapped folder simply stays a TRACKED local game, synced into Shiba
+ * Coins as an account-style entry by "Update installed achievements" (see
+ * `AchievementSyncCoordinator`).
  *
- * Mapping is the shortcut-to-folder join (docs/windows-library-refactor-plan.md Phase 5):
- * normalized title first, then the STEAM-NAME BRIDGE — the appid's official store name matched
- * the same way — which survives renamed folders. No fuzzy matching, ever.
+ * Mapping is the shortcut-to-folder join: normalized title first, then the STEAM-NAME BRIDGE — the
+ * appid's official store name matched the same way — which survives renamed folders. No fuzzy
+ * matching, ever.
+ *
+ * **It is handed its folders rather than scanning for them.** The pass used to begin with
+ * `discovery.scanAll()`, and every automatic scan paid for that walk. Folders are POINTED AT now, so
+ * the batch matcher inspects the user's picked parent, registers what it finds, and hands the ready
+ * ones here. This class stays the one place the mapping ladder is written down.
  */
 @Singleton
 class LocalSteamGameImporter @Inject constructor(
-    private val discovery: LocalSteamDiscovery,
     private val gameRepository: GameRepository,
     private val achievements: AchievementController,
     private val ownership: LocalSteamOwnership,
     private val steamNames: SteamAppListResolver,
 ) {
-    suspend fun import(): EmuGameImportResult {
-        // The full scan: the schema prompt must also see untrackable folders (no save location
-        // yet), because generating the kit is exactly what creates their save location. Linking
-        // and the discovered count stay on the trackable subset.
-        val all = discovery.scanAll()
-        if (all.isEmpty()) return EmuGameImportResult(0, 0)
-        val found = all.filter { it.trackable }
-        val missingSchema = all.filterNot { it.hasSchema }
+    /** Links every folder in [folders] that maps onto a library game. */
+    suspend fun reconcile(folders: List<LocalSteamGame>): EmuGameImportResult {
+        if (folders.isEmpty()) return EmuGameImportResult(0, 0)
 
         // One-time hygiene for rows the pre-rework scan created: a windows GAME with no launch
         // handle at all (no package, no shortcut, no intent) is a folder import that can never
@@ -64,26 +58,23 @@ class LocalSteamGameImporter @Inject constructor(
             gameRepository.delete(it.id)
         }
         val byTitle = live.associateBy { normalizeTitle(it.displayTitle) }
-        var linked = 0
-        for (folder in found) {
+        val linkedIds = mutableListOf<Long>()
+        for (folder in folders) {
             val match = byTitle[normalizeTitle(folder.folderName)] ?: steamNameBridge(folder, byTitle)
                 ?: continue   // tracked, library-less — Shiba Coins picks it up on sync
             achievements.linkManually(match.id, AchievementProvider.LOCAL_STEAM, folder.appId)
-            linked++
+            linkedIds += match.id
             val owned = ownership.classify(match.id, folder.appId)
             // An owned copy played offline holds BOTH sets — appid equality beats any title ladder.
             if (owned == LocalCopyOwnership.OWNED) {
                 achievements.linkManually(match.id, AchievementProvider.STEAM, folder.appId)
             }
         }
-        Timber.i(
-            "Emu folder reconcile — ${found.size} folder(s), $linked linked to library games, " +
-                "${missingSchema.size} without a schema",
-        )
+        Timber.i("Emu folder reconcile — ${folders.size} folder(s), ${linkedIds.size} linked to library games")
         return EmuGameImportResult(
-            discovered = found.size,
-            linked = linked,
-            missingSchema = missingSchema,
+            discovered = folders.size,
+            linked = linkedIds.size,
+            linkedGameIds = linkedIds,
         )
     }
 

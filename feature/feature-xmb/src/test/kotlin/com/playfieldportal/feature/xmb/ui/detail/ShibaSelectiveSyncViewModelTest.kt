@@ -107,7 +107,7 @@ class ShibaSelectiveSyncViewModelTest {
         every { achievements.observeLink(game.id) } returns flowOf(
             ProviderGameLinkEntity(game.id, "RETRO_ACHIEVEMENTS", "319", "MANUAL", 0L),
         )
-        return ShibaCoinsViewModel(gameRepository, achievements, mockk<AchievementAutoMatcher>(relaxed = true))
+        return ShibaCoinsViewModel(gameRepository, achievements, mockk<AchievementAutoMatcher>(relaxed = true), mockk(relaxed = true))
     }
 
     @Test
@@ -130,7 +130,7 @@ class ShibaSelectiveSyncViewModelTest {
         every { achievements.observeIdentityStatus(AchievementProvider.STEAM, "220") } returns flowOf(
             TrackedIdentityStatus(isPresent = false, lastCheckedAt = 7L, lastDetailAt = 7L),
         )
-        val vm = ShibaCoinsViewModel(gameRepository, achievements, mockk(relaxed = true))
+        val vm = ShibaCoinsViewModel(gameRepository, achievements, mockk(relaxed = true), mockk(relaxed = true))
 
         vm.load(ShibaCoinsTarget.AccountEntry(AchievementProvider.STEAM, "220"))
 

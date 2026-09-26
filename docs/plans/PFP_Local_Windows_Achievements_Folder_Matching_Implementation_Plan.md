@@ -1,6 +1,6 @@
 # Play Field Portal — Local Windows Achievements: Folder-Picked Matching Implementation Plan
 
-**Status:** Master plan — proposed, awaiting approval (2026-09-25).
+**Status:** Implemented in one pass (2026-09-26). See §9 for the baseline note and §7 for how the open questions were resolved.
 **Repository baseline reviewed:** `achievement-ambience` at `2dfad125` (2026-09-25). Recheck HEAD before editing; this plan names a database version and file paths that move.
 **Primary modules:** `feature/feature-achievements`, `feature/feature-xmb`, `feature/feature-settings`, `core/core-data`, `core/core-ui`.
 **Mockup:** https://claude.ai/artifact/VHR428351LJo3EZR4LBUQ8 (10 artboards, 1920×1080 — architecture, the six per-game states, the three batch screens).
@@ -266,11 +266,20 @@ Each task is one reviewable change with its own tests. A task that discovers the
 
 **Done when:** the README no longer describes the retired model and the device checklist is recorded with outcomes.
 
-## 7. Open questions
+## 7. Open questions — resolved
 
-1. **Does `Link Only` earn its place?** It is extra state for a case that may be rare. Cutting it makes the kit-missing prompt a plain Yes/No.
-2. **Registry key.** `app_id` alone assumes one install per game. Two folders for the same app id (a second language build, a backup copy) would collide; `(app_id, tree_uri, folder_doc_id)` avoids it at the cost of a lookup that can return more than one row.
-3. **Marker consent.** This plan puts `steam_appid.txt` under the Local Steam tracking opt-in rather than the Goldberg installer opt-in, on the grounds that it touches no saves and no DLL. Moving it behind the installer toggle is a one-line gate either way.
+1. **`Link Only` was kept.** It is the only way to see a game's coin list before authorising a DLL swap, and refusing to show the list until the user agrees to one is the wrong trade. It costs one extra outcome and one extra button; `LocalSteamFolderLinker.linkWithoutKit` is the whole implementation.
+2. **Registry key: `app_id` alone**, as §3's table states. `findByAppId` is the one question every sync asks and the app id is the only thing a provider link carries, so the primary-key read is the point of the redesign. The consequence is recorded in `LocalSteamFolderEntity`'s KDoc: two installs of one app id collapse onto one row and the later pick wins. A composite key would make the lookup return more than one row and force a caller to choose between them, which is a choice no sync can make correctly.
+3. **Marker consent stays under Local Steam tracking.** `LocalSteamIdentityResolver.markerWriteAllowed()` is the single gate. With tracking off, an id that was established is still returned and still usable — it is simply not written into the folder (`Resolved(written = false)`), so turning tracking off never breaks a link that already exists.
+
+### Deviations from the plan, and why
+
+- **Task 7 / Task 8 — the mapping ladder lives in one place.** `LocalSteamGameImporter` was kept (as the plan said) but became `reconcile(folders)` instead of `import()`: it is handed the batch matcher's ready pile rather than calling `discovery.scanAll()` itself. `LocalSteamBatchMatcher` delegates to it and syncs exactly the game ids it reports, so the ladder and the Steam-name bridge are not duplicated. `EmuGameImportResult` lost `missingSchema` (the matcher partitions convertibles itself) and gained `linkedGameIds`.
+- **Task 8 — the convert picker's focus index lives in `LocalSteamConvertPickerController`.** The plan said "the hosting ViewModel's state"; the controller *is* per-ViewModel state, and putting focus there is what stops the XMB card and the Library Manager drifting apart on a controller. The controller also grew `onGamepadAction`, `skip()` and probed rows, so it is no longer "unchanged".
+- **Task 8 — rows are probed before the panel opens.** Showing an honest achievement count and an unselectable "No list on Steam" needs the schema up front, so `LocalSteamSchemaGenerator` gained `probe(appId)` with a per-process cache that the following `generate()` re-uses. One request per game, not two.
+- **Presence reconciliation was in scope after all.** `AchievementPresenceReconciler` read `discovery.scan()`, which no longer sees a picked folder, so registered links would have been demoted to history on the next pass. It now unions the registry in, and never demotes a *registered* app id even when its folder is unreachable — unmounted storage is unknown, not "the game is gone". Forget is the only way out.
+- **Robolectric was added to `feature-achievements`** (test-only, `targetSdk = 36` pinned the same way `feature-artwork` does it) so Task 3's fake-SAF-tree tests can use a real `MatrixCursor` and a real `Uri`.
+- **`GamepadAction.HOME` (Start) is claimed by the convert panel.** The XMB normally routes Start to the notification panel above every overlay; the convert panel is checked ahead of that branch, because inside it Start means Install and being taken off the screen mid-authorisation would be wrong.
 
 ## 8. Verification
 
@@ -289,3 +298,12 @@ Each task is one reviewable change with its own tests. A task that discovers the
 ```bash
 ./gradlew :app:assembleDebug
 ```
+
+## 9. Baseline confirmation (Task 1)
+
+Read-only pass at `252b0773` (2026-09-26), one commit past the `2dfad125` this plan was written against.
+
+- **Database version was 50**, so `local_steam_folders` is **v51** exactly as the plan says. `MIGRATION_50_51` is registered in `DatabaseModule` and `51.json` is exported by the build.
+- **`StorefrontMetadataResolver.resolve(game, allowAutoLink = true, ignoreStoredIdentity = false)`** — signature, `Resolution` shape (`Linked` / `NeedsConfirmation` / `NoMatch` / `Unavailable`) and `MatchConfidence.autoLinkable` (`EXACT || HIGH`) are all as described. `StorefrontMatchResult` carries `store`, `confidence`, `best`, `alternatives`; `ScoredStorefrontCandidate` takes `(candidate, signals)` and derives its score, so the plan's "5-rule candidates → scorer → auto-link at EXACT/HIGH" is accurate.
+- **Callers of `LocalSteamDiscovery`** were: `LocalSteamGameImporter.import()` (`scanAll`), `LocalSteamSource` (`findByAppId`, twice), `AchievementPresenceReconciler` (`scan`), `AchievementAutoMatcher` (`scanAll`, via its own folder cache) and `XMBViewModel:6987` (`scanAll`, for the per-game Install Goldberg action). The last two still use the legacy scan; both are explicit per-game actions on a game the user is looking at, so they degrade to "nothing found" rather than to a wrong answer, and the folder-pick flow is the replacement offered on the same page.
+- **Drift found — the plan's audit finding 1 is stale.** `XMBViewModel` did *not* silently discard `EmuGameImportResult.missingSchema`: it started the same convert picker the Library Manager does (at what was line 7358), gated on the Goldberg opt-in. Findings 2 and 3 were both accurate. Both scan paths now do no emulator work at all, and the dialog has been replaced.

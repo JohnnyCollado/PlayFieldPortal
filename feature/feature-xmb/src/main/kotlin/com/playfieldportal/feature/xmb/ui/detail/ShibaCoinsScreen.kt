@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -58,6 +60,8 @@ import com.playfieldportal.core.ui.components.PfpCheckMark
 import com.playfieldportal.core.ui.components.PspContextMenuOverlay
 import com.playfieldportal.core.ui.components.PspMenuRow
 import com.playfieldportal.core.ui.components.XmbHeaderPill
+import com.playfieldportal.core.ui.theme.menuCursorEdge
+import com.playfieldportal.core.ui.theme.menuCursorFill
 import com.playfieldportal.core.ui.detail.DetailContentPadding
 import com.playfieldportal.core.ui.detail.DetailLaunchFill
 import com.playfieldportal.core.ui.detail.DetailPalette
@@ -123,6 +127,20 @@ fun ShibaCoinsScreen(
         if (pendingGamepadAction != null) {
             viewModel.handleGamepadAction(pendingGamepadAction)
             onGamepadActionConsumed()
+        }
+    }
+
+    // The game folder pick. OpenDocumentTree rather than OpenDocument because a game is a FOLDER,
+    // and because the grant has to cover reading the progress file and creating steam_appid.txt
+    // inside it — the linker persists it the moment the result arrives.
+    val folderPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri -> viewModel.onFolderPicked(uri) }
+
+    LaunchedEffect(state.requestFolderPick) {
+        if (state.requestFolderPick) {
+            viewModel.onFolderPickLaunched()
+            folderPicker.launch(null)
         }
     }
 
@@ -226,6 +244,22 @@ fun ShibaCoinsScreen(
                     XmbHeaderPill(label = "Options", onClick = viewModel::openOptions)
                 }
             }
+        }
+
+        // The ambiguous-match picker, reused verbatim from Game Detail — same panel, same keys, and
+        // therefore the same controller-navigable screen for free.
+        state.storefrontMatch?.let { match ->
+            StorefrontMatchPanel(
+                ui                = match,
+                focusFill         = menuCursorFill(),
+                focusEdge         = menuCursorEdge(),
+                showTouchControls = showTouchControls,
+                onRowClick        = viewModel::onStorefrontRowTapped,
+                onMoreInfo        = viewModel::openStorefrontMoreInfo,
+                onCloseMoreInfo   = viewModel::closeStorefrontMoreInfo,
+                onChooseFocused   = { viewModel.chooseStorefrontCandidate(match.focus) },
+                onClose           = viewModel::cancelAutoMatch,
+            )
         }
 
         // Sort, Sync Now and Change Match: the same right-side menu the library opens on Triangle.
@@ -700,14 +734,24 @@ private fun LinkPanelRow(
                         ) { viewModel.autoMatchRaByHash() }
                     }
                 }
-                // Both of these link from a scan, not from anything the user can do on this page.
+                // Local Steam links from a folder the user points at — which is something they can
+                // do right here, so the panel offers it instead of sending them to settings.
                 AchievementProvider.LOCAL_STEAM -> {
                     PanelTitle("Not linked yet", palette)
                     PanelBody(
-                        "Local Steam-emu games link from the steam_appid.txt in their game folder. Run " +
-                            "Auto-match in Settings ▸ Shiba Coins to link this game.",
+                        "Pick this game's folder and PFP reads its Steam app id — from " +
+                            "steam_appid.txt when it is there, or by matching the title when it is not. " +
+                            "It remembers the folder, so nothing has to search for it again.",
                         palette,
                     )
+                    PanelActions {
+                        PanelButton(
+                            label = if (state.isMatching) "Matching…" else "Pick Game Folder",
+                            palette = palette,
+                            enabled = !state.isMatching,
+                            highlighted = focused,
+                        ) { viewModel.chooseAutoMatch(legit = false) }
+                    }
                 }
                 AchievementProvider.VITA_TROPHY -> {
                     PanelTitle("Not linked yet", palette)
@@ -739,7 +783,8 @@ private fun LinkPanelRow(
             AutoMatchStep.CONFIRM_COPY -> {
                 PanelTitle("Is this a legitimate Steam copy?", palette)
                 PanelBody(
-                    "A legit copy matches against Steam; anything else scans your game folders for Steam-emu data.",
+                    "A legit copy matches against your Steam account. Anything else is tracked from " +
+                        "the game's own folder, which PFP will ask you to point at.",
                     palette,
                 )
                 PanelActions {
@@ -751,6 +796,87 @@ private fun LinkPanelRow(
                     }
                 }
             }
+            // The picker owns the screen while it is up; the panel says what PFP is waiting for.
+            AutoMatchStep.PICK_FOLDER -> {
+                PanelTitle("Which folder is this game in?", palette)
+                PanelBody(
+                    "Pick the game's own folder — the one its .exe is in. PFP reads the Steam app id " +
+                        "from it and tracks the unlocks the emulator writes there. Your Windows games " +
+                        "can live anywhere; PFP remembers where this one is so it never has to search.",
+                    palette,
+                )
+                PanelActions {
+                    PanelButton("Cancel", palette, enabled = true) { viewModel.cancelAutoMatch() }
+                    PanelSpinner(palette)
+                }
+            }
+
+            // The picker panel renders over the page; this is what shows behind it while the app id
+            // is still being worked out.
+            AutoMatchStep.IDENTIFY -> {
+                PanelTitle("Working out the Steam app id…", palette)
+                PanelBody(
+                    "Reading steam_appid.txt from the folder, and matching the game's title against " +
+                        "Steam if it has none yet.",
+                    palette,
+                )
+                PanelActions {
+                    PanelButton("Cancel", palette, enabled = true) { viewModel.cancelAutoMatch() }
+                    if (state.isMatching) PanelSpinner(palette)
+                }
+            }
+
+            AutoMatchStep.CONFIRM_KIT -> {
+                val prompt = state.kitPrompt
+                PanelTitle("That folder has no achievement list yet", palette)
+                PanelBody(
+                    if (prompt == null) {
+                        "The emulator needs an achievement list before it can record unlocks."
+                    } else {
+                        "\"${prompt.folderName}\" is Steam app id ${prompt.appId}, but the emulator has " +
+                            "no achievement list to record against. Install & Link writes " +
+                            "achievements.json, stats.json and configs.user.ini into the folder, " +
+                            "creates a saves folder, and renames steam_api64.dll to steam_api64_o.dll " +
+                            "so the bundled emulator loads through it — back up this game's saves " +
+                            "first. Link Only tracks it at 0% and writes nothing more."
+                    },
+                    palette,
+                )
+                if (prompt != null && !prompt.installerEnabled) {
+                    PanelBody(
+                        "Install & Link needs Install Goldberg Emulator in Settings ▸ Shiba Coins.",
+                        palette,
+                    )
+                }
+                PanelActions {
+                    PanelButton(
+                        label = "Install & Link",
+                        palette = palette,
+                        enabled = prompt?.installerEnabled == true && !state.isMatching,
+                        highlighted = prompt?.installSelected == true,
+                    ) { viewModel.installKit() }
+                    PanelButton(
+                        label = "Link Only",
+                        palette = palette,
+                        enabled = !state.isMatching,
+                        highlighted = prompt?.installSelected == false,
+                    ) { viewModel.linkWithoutKit() }
+                    PanelButton("Cancel", palette, enabled = true) { viewModel.cancelAutoMatch() }
+                    if (state.isMatching) PanelSpinner(palette)
+                }
+            }
+
+            // Terminal, and it names the actual cause rather than listing setup steps that would not
+            // have helped.
+            AutoMatchStep.NO_EMU_DATA -> {
+                PanelTitle("Nothing to track in that folder", palette)
+                PanelBody(state.noEmuDataReason ?: "That folder holds no Steam-emulator data.", palette)
+                PanelActions {
+                    PanelButton("Try Another Folder", palette, enabled = true) { viewModel.startAutoMatch() }
+                    PanelButton("Close", palette, enabled = true) { viewModel.cancelAutoMatch() }
+                }
+            }
+
             AutoMatchStep.ENTER_APPID -> {
                 var draft by remember { mutableStateOf("") }
                 PanelTitle("No automatic match found", palette)

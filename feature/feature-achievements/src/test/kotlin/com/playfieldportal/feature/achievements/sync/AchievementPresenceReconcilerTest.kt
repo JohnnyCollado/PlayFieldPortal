@@ -21,7 +21,9 @@ import kotlin.test.assertEquals
 class AchievementPresenceReconcilerTest {
 
     private val dao = mockk<AchievementTrackingDao>(relaxed = true)
-    private val discovery = mockk<LocalSteamDiscovery>()
+    // Relaxed for the registry reads: every test here is about the windows-surface scan, and the
+    // registry defaults to empty, which is the pre-pick state.
+    private val discovery = mockk<LocalSteamDiscovery>(relaxed = true)
     private val reconciler = AchievementPresenceReconciler(dao, discovery, clock = { NOW })
 
     init {

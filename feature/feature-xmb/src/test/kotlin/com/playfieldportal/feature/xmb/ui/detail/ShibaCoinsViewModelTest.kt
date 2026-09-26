@@ -93,6 +93,7 @@ class ShibaCoinsViewModelTest {
 
     private lateinit var achievements: AchievementController
     private lateinit var autoMatcher: AchievementAutoMatcher
+    private lateinit var folderLinker: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamFolderLinker
     private lateinit var viewModel: ShibaCoinsViewModel
 
     @Before
@@ -109,10 +110,14 @@ class ShibaCoinsViewModelTest {
             // the sealed result, and the when over it would blow up at runtime.
             coEvery { matchSingleByHash(gameId) } returns AchievementAutoMatcher.RaMatchResult.Matched
         }
+        folderLinker = mockk(relaxed = true) {
+            // No folder has been pointed at, so the pre-check never short-circuits the flow.
+            coEvery { registeredFolderFor(any()) } returns null
+        }
         val games = mockk<GameRepository> {
             coEvery { getById(gameId) } returns Game(id = gameId, title = "Final Fantasy IX", platformId = "nds")
         }
-        viewModel = ShibaCoinsViewModel(games, achievements, autoMatcher)
+        viewModel = ShibaCoinsViewModel(games, achievements, autoMatcher, folderLinker)
     }
 
     @After

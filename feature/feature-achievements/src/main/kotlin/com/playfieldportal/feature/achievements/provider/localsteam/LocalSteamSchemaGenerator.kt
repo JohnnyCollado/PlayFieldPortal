@@ -31,6 +31,11 @@ class LocalSteamSchemaGenerator @Inject constructor(
     // Steam Web API back-to-back.
     private val rate = RateLimiter(1_100)
 
+    // One fetched schema per appid, kept for this process. The convert picker shows each game's
+    // achievement count BEFORE the user confirms, and without this the confirm would fetch the very
+    // same schema a second time for every row — doubling the requests to say nothing new.
+    private val schemaCache = mutableMapOf<String, Probe>()
+
     sealed interface Result {
         /** The schema was fetched and the kit written into steam_settings. */
         data object Written : Result
@@ -45,10 +50,54 @@ class LocalSteamSchemaGenerator @Inject constructor(
         data class Failed(val reason: String) : Result
     }
 
+    /** What the store says a game's achievement list looks like, before anything is written. */
+    sealed interface Probe {
+        /** [count] is always > 0 — an empty list is [NoAchievements], which reads differently. */
+        data class Count(val count: Int) : Probe
+
+        /** Steam has this app id and it has no achievements. Nothing to convert, ever. */
+        data object NoAchievements : Probe
+
+        /** No Steam Web API key stored, so no list can be fetched for any game. */
+        data object NoKey : Probe
+
+        /** The store could not be asked. Temporary — never "this game has no achievements". */
+        data object Unavailable : Probe
+    }
+
+    /**
+     * Asks Steam how many achievements [appId] has, without writing anything.
+     *
+     * The convert picker needs this to offer an honest row: a game Steam keeps no list for is shown
+     * as unselectable rather than checked, converted and then failed at write time. The answer is
+     * cached, so the conversion that follows re-uses this very response.
+     */
+    suspend fun probe(appId: String): Probe {
+        schemaCache[appId]?.let { return it }
+        val key = credentials.steamApiKey()?.takeIf { it.isNotBlank() } ?: return Probe.NoKey
+
+        rate.await()
+        val response = runCatching { webApi.getSchemaForGame(key, appId) }
+            .getOrElse { e ->
+                if (e is CancellationException) throw e
+                return Probe.Unavailable
+            }
+        val achievements = response.body()?.game?.availableGameStats?.achievements.orEmpty()
+        val probe = if (achievements.isEmpty()) Probe.NoAchievements else Probe.Count(achievements.size)
+        schemaCache[appId] = probe
+        return probe
+    }
+
     /** Fetches [game]'s schema and writes the steam_settings kit into its folder. */
     suspend fun generate(game: LocalSteamGame): Result {
         if (game.settingsTreeUri.isBlank() || game.settingsDirDocId.isBlank()) {
             return Result.Failed("no steam_settings location")
+        }
+        // A probe already ruled these out for this appid; asking again would change nothing.
+        when (schemaCache[game.appId]) {
+            Probe.NoAchievements -> return Result.NoAchievements
+            Probe.NoKey -> return Result.NoKey
+            else -> Unit
         }
         val key = credentials.steamApiKey()?.takeIf { it.isNotBlank() } ?: return Result.NoKey
 

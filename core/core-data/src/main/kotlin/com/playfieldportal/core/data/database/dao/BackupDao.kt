@@ -9,6 +9,7 @@ import com.playfieldportal.core.data.database.entity.AccountAchievementEntity
 import com.playfieldportal.core.data.database.entity.AccountAchievementSetEntity
 import com.playfieldportal.core.data.database.entity.AchievementProviderSyncStateEntity
 import com.playfieldportal.core.data.database.entity.AchievementTrackedIdentityEntity
+import com.playfieldportal.core.data.database.entity.LocalSteamFolderEntity
 import com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity
 import com.playfieldportal.core.data.database.entity.AppOverrideEntity
 import com.playfieldportal.core.data.database.entity.CollectionEntity
@@ -158,5 +159,25 @@ interface BackupDao {
         insertAchievementSets(sets)
         insertAchievementCoins(coins)
         insertProviderGameLinks(links)
+    }
+
+    // ── Local Steam folder registry (folder-picked matching) ────────────────
+    @Query("SELECT * FROM local_steam_folders") suspend fun getLocalSteamFolders(): List<LocalSteamFolderEntity>
+
+    @Query("DELETE FROM local_steam_folders") suspend fun clearLocalSteamFolders()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertLocalSteamFolders(rows: List<LocalSteamFolderEntity>)
+
+    /**
+     * Replaces the folder registry with a backup's, in one transaction.
+     *
+     * Rows are kept whole even when their SAF grant will not survive onto this device: an
+     * unreachable folder surfaces as unknown and offers a re-pick, which is strictly better than
+     * dropping the row and losing the fact that the user already told PFP where the game lives.
+     */
+    @Transaction
+    suspend fun replaceLocalSteamFolders(rows: List<LocalSteamFolderEntity>) {
+        clearLocalSteamFolders()
+        insertLocalSteamFolders(rows)
     }
 }

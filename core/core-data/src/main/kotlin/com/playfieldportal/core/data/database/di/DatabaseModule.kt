@@ -121,10 +121,12 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_47_48,
             PFPDatabase.MIGRATION_48_49,
             PFPDatabase.MIGRATION_49_50,
+            PFPDatabase.MIGRATION_50_51,
         )
         .build()
 
     @Provides fun provideGameDao(db: PFPDatabase): GameDao = db.gameDao()
+    @Provides fun provideLocalSteamFolderDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.LocalSteamFolderDao = db.localSteamFolderDao()
     @Provides fun provideLaunchOutcomeDao(db: PFPDatabase): LaunchOutcomeDao = db.launchOutcomeDao()
     @Provides fun provideSsMediaCacheDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.SsMediaCacheDao = db.ssMediaCacheDao()
     @Provides fun provideAccountAchievementSetDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.AccountAchievementSetDao = db.accountAchievementSetDao()
