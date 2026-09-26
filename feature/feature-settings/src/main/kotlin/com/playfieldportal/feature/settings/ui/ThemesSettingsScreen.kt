@@ -512,18 +512,23 @@ private fun FocusableStrip(
 
 @Composable
 private fun SavedThemeCardRow(themes: List<PfpThemeStore.SavedTheme>, focusedIndex: Int? = null, onApply: (String) -> Unit, onDelete: (String) -> Unit, onShare: (String) -> Unit) {
+    // Hand-rolled tap targets rather than settings rows, so they carry their own cues. Applying a
+    // theme repaints the whole launcher and Remove deletes a saved one: both are commits, not
+    // descents, so they take the confirm cue. Share hands off to another app, which is an ordinary
+    // activation.
+    val menuSounds = LocalMenuSounds.current
     Row(horizontalArrangement = Arrangement.spacedBy(18.dp), modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 48.dp, vertical = 10.dp)) {
         themes.forEachIndexed { index, theme ->
             val cardFocused = focusedIndex == index
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(modifier = Modifier.size(width = 168.dp, height = 96.dp).clip(RoundedCornerShape(10.dp)).background(Color(theme.accentArgb?.let { it and 0xFFFFFFFFL } ?: 0xFF20304AL)).border(width = if (cardFocused) 3.dp else 1.dp, color = if (cardFocused) SettingsAccent else Color(0x55FFFFFF), shape = RoundedCornerShape(10.dp)).clickable { onApply(theme.id) }) {
+                Box(modifier = Modifier.size(width = 168.dp, height = 96.dp).clip(RoundedCornerShape(10.dp)).background(Color(theme.accentArgb?.let { it and 0xFFFFFFFFL } ?: 0xFF20304AL)).border(width = if (cardFocused) 3.dp else 1.dp, color = if (cardFocused) SettingsAccent else Color(0x55FFFFFF), shape = RoundedCornerShape(10.dp)).clickable { menuSounds.play(MenuSound.CONFIRM); onApply(theme.id) }) {
                     theme.previewPath?.let { path -> AsyncImage(model = path, contentDescription = theme.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
                     theme.accentArgb?.let { accent -> Box(modifier = Modifier.padding(6.dp).size(14.dp).clip(CircleShape).background(Color(accent and 0xFFFFFFFFL)).border(1.dp, Color(0x88FFFFFF), CircleShape).align(Alignment.TopEnd)) }
                 }
                 Text(text = theme.name, color = if (cardFocused) SettingsAccent else SettingsSubtext, fontSize = 12.sp, maxLines = 1, modifier = Modifier.padding(top = 4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(text = "Share", color = SettingsAccent, fontSize = 12.sp, modifier = Modifier.clickable { onShare(theme.id) }.padding(horizontal = 10.dp, vertical = 8.dp))
-                    Text(text = "Remove", color = SettingsAccent, fontSize = 12.sp, modifier = Modifier.clickable { onDelete(theme.id) }.padding(horizontal = 10.dp, vertical = 8.dp))
+                    Text(text = "Share", color = SettingsAccent, fontSize = 12.sp, modifier = Modifier.clickable { menuSounds.play(MenuSound.SELECT); onShare(theme.id) }.padding(horizontal = 10.dp, vertical = 8.dp))
+                    Text(text = "Remove", color = SettingsAccent, fontSize = 12.sp, modifier = Modifier.clickable { menuSounds.play(MenuSound.CONFIRM); onDelete(theme.id) }.padding(horizontal = 10.dp, vertical = 8.dp))
                 }
             }
         }

@@ -10,6 +10,8 @@ import com.playfieldportal.core.data.database.entity.PlatformEntity
 import com.playfieldportal.core.data.repository.CollectionRepository
 import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.domain.model.Game
+import com.playfieldportal.core.domain.model.isDirectional
+import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerOption
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerUi
 import com.playfieldportal.core.domain.repository.GameRepository
@@ -526,8 +528,14 @@ class GameDetailViewModel @Inject constructor(
     }
 
     /** Confirm on the Overview row: expand or collapse the description. */
-    private fun toggleDescriptionExpanded() =
+    private fun toggleDescriptionExpanded() {
+        // Opening reads as a descent and closing as a level up, so the row voices both directions
+        // rather than giving one cue to two opposite outcomes.
+        menuSound.play(
+            if (_uiState.value.descriptionExpanded) MenuSound.BACK else MenuSound.SELECT
+        )
         _uiState.update { it.copy(descriptionExpanded = !it.descriptionExpanded) }
+    }
 
     /**
      * Publish the engine's result after an input: the modal stack (a confirm may have opened or
@@ -745,7 +753,16 @@ class GameDetailViewModel @Inject constructor(
     }
 
     /** Back on the base page: leave Game Detail. */
-    private fun close() = _uiState.update { it.copy(closed = true) }
+    /**
+     * Leave the page. Public because the breadcrumb's back arrow used to call the host's onBack
+     * directly, which skipped the cue — and, more to the point, skipped this ViewModel entirely.
+     * Everything now leaves through here and the host hand-off stays a single `closed` observer,
+     * so there is exactly one cue however the user backs out.
+     */
+    fun close() {
+        menuSound.play(MenuSound.BACK)
+        _uiState.update { it.copy(closed = true) }
+    }
 
     /** Back inside a modal: close the topmost overlay before anything else. */
     private fun closeActiveModal() {
@@ -933,6 +950,7 @@ class GameDetailViewModel @Inject constructor(
     // ── Disc picker ───────────────────────────────────────────────────────
 
     fun selectDisc(id: Long) {
+        menuSound.play(MenuSound.SELECT)
         val state = _uiState.value
         if (state.discMembers.any { it.id == id }) {
             _uiState.update { it.copy(selectedDiscId = id, actionMessage = null, launchError = null) }
@@ -946,6 +964,32 @@ class GameDetailViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    /**
+     * Dispatch one navigation action through the engine and tick when the cursor actually moved.
+     *
+     * The cue lives here rather than in [GameDetailNav] because that adapter is deliberately pure —
+     * no Android, no Compose, no player, unit-tested on the JVM — and everything on this screen that
+     * navigates by node (the page, the Options menu, the emulator, collection, storefront and
+     * metadata pickers) routes through this one function, so a new one cannot be added silent.
+     *
+     * Only a real move ticks: a boundary stop hands back the key the cursor was already on, so the
+     * ends of a row, the media strip and every picker are audible by their silence, exactly as the
+     * XMB's own lists are.
+     *
+     * Confirm is deliberately NOT voiced here. Each activation is voiced by the thing it does
+     * (toggleFavorite, openOptions, closeManualViewer and the rest), which is the only seam both the
+     * controller and a finger pass through — so a tap and a Confirm on the same affordance sound
+     * identical, and nothing sounds twice.
+     */
+    private fun navigate(action: GamepadAction): String? {
+        val before = nav.focusedKey
+        val landed = nav.handleAction(action)
+        if (action.isDirectional && landed != null && landed != before) {
+            menuSound.play(MenuSound.SCROLL)
+        }
+        return landed
     }
 
     // ── Controller input ──────────────────────────────────────────────────
@@ -983,7 +1027,7 @@ class GameDetailViewModel @Inject constructor(
         if (s.confirmRemove) {
             when (action) {
                 GamepadAction.SELECT -> confirmRemoveGame()
-                GamepadAction.BACK   -> _uiState.update { it.copy(confirmRemove = false) }
+                GamepadAction.BACK   -> cancelRemove()
                 else -> Unit
             }
             finishInput()
@@ -1032,19 +1076,23 @@ class GameDetailViewModel @Inject constructor(
             GamepadAction.BACK -> if (nav.isModalActive) closeActiveModal() else close()
             // HOME belongs to the shell (the XMB bar), never to this page.
             GamepadAction.HOME -> Unit
-            else -> nav.handleAction(action)
+            else -> navigate(action)
         }
         finishInput()
     }
 
     // ── Shiba Coins strip ─────────────────────────────────────────────────
 
-    fun requestOpenCoins() = _uiState.update { it.copy(openCoins = true) }
+    fun requestOpenCoins() {
+        menuSound.play(MenuSound.SELECT)
+        _uiState.update { it.copy(openCoins = true) }
+    }
     fun onOpenCoinsConsumed() = _uiState.update { it.copy(openCoins = false) }
 
     // ── Artwork Studio open / close ───────────────────────────────────────
 
     fun openArtworkManager() {
+        menuSound.play(MenuSound.SELECT)
         // The legacy in-detail manager is retired — the fullscreen Artwork Studio replaces it.
         _uiState.update { it.copy(showArtworkStudio = true) }
     }
@@ -1058,8 +1106,15 @@ class GameDetailViewModel @Inject constructor(
 
     // ── Options menu ──────────────────────────────────────────────────────
 
-    fun openOptions()  = _uiState.update { it.copy(showOptions = true, optionsIndex = 0, actionMessage = null) }
-    fun closeOptions() = _uiState.update { it.copy(showOptions = false) }
+    fun openOptions() {
+        menuSound.play(MenuSound.SELECT)
+        _uiState.update { it.copy(showOptions = true, optionsIndex = 0, actionMessage = null) }
+    }
+
+    fun closeOptions() {
+        menuSound.play(MenuSound.BACK)
+        _uiState.update { it.copy(showOptions = false) }
+    }
 
     fun onOptionClicked(action: DetailAction) {
         _uiState.update { it.copy(optionsIndex = it.visibleActions.indexOf(action).coerceAtLeast(0)) }
@@ -1081,21 +1136,28 @@ class GameDetailViewModel @Inject constructor(
             DetailAction.FAVORITE  -> toggleFavorite()
             DetailAction.COLLECTIONS -> openCollectionPicker()
             DetailAction.ARTWORK   -> openArtworkManager()
-            DetailAction.SAVES     -> showActionMessage("Save management isn't available yet")
+            // Not implemented yet, so this is a refusal rather than an activation.
+            DetailAction.SAVES     -> {
+                menuSound.play(MenuSound.ERROR)
+                showActionMessage("Save management isn't available yet")
+            }
             DetailAction.EMULATOR  -> openEmulatorPicker()
             DetailAction.MANUAL    -> openManual()
             DetailAction.FETCH_ARTWORK -> fetchArtwork()
             DetailAction.METADATA  -> openMetadataPreview()
             DetailAction.STOREFRONT -> openStorefrontRematch()
-            DetailAction.EXPORT    -> exportGame()
+            DetailAction.EXPORT    -> { menuSound.play(MenuSound.SELECT); exportGame() }
             DetailAction.RENAME    -> startEditTitle()
             DetailAction.EDIT      -> startEditNote()
-            DetailAction.LOCATION  -> showActionMessage(
-                _uiState.value.game?.romPath
-                    ?: _uiState.value.game?.packageName?.let { "Package: $it" }
-                    ?: "No file location on record"
-            )
-            DetailAction.REMOVE    -> _uiState.update { it.copy(confirmRemove = true) }
+            DetailAction.LOCATION  -> {
+                menuSound.play(MenuSound.SELECT)
+                showActionMessage(
+                    _uiState.value.game?.romPath
+                        ?: _uiState.value.game?.packageName?.let { "Package: $it" }
+                        ?: "No file location on record"
+                )
+            }
+            DetailAction.REMOVE    -> requestRemove()
         }
     }
 
@@ -1127,9 +1189,12 @@ class GameDetailViewModel @Inject constructor(
      */
     fun onVideoClicked() {
         val uri = _uiState.value.videoUri ?: run {
+            // A refusal, not an activation — the message is the only thing that happens.
+            menuSound.play(MenuSound.ERROR)
             _uiState.update { it.copy(actionMessage = "No video snap — enable Download Video Snaps and re-scrape") }
             return
         }
+        menuSound.play(MenuSound.SELECT)
         viewModelScope.launch {
             val playerPackage = runCatching {
                 context.pfpDataStore.data.first()[KEY_VIDEO_DEFAULT_PLAYER]
@@ -1159,26 +1224,39 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
-    fun closeVideoPlayer() = _uiState.update { it.copy(showVideoPlayer = false) }
+    fun closeVideoPlayer() {
+        menuSound.play(MenuSound.BACK)
+        _uiState.update { it.copy(showVideoPlayer = false) }
+    }
 
     /** Confirm/tap on a media-strip tile: videos route like the Video button, images open the
      *  fullscreen viewer — Steam-store-style previews. */
     fun openMediaAt(index: Int) {
         val media = _uiState.value.detailMedia.getOrNull(index) ?: return
+        // A video routes through onVideoClicked, which voices itself (including its refusal), so
+        // only the image branch needs a cue here — a tile must never sound twice.
         if (media.isVideo) onVideoClicked()
-        else _uiState.update { it.copy(imageViewerUri = media.uri) }
+        else {
+            menuSound.play(MenuSound.SELECT)
+            _uiState.update { it.copy(imageViewerUri = media.uri) }
+        }
     }
 
-    fun closeImageViewer() = _uiState.update { it.copy(imageViewerUri = null) }
+    fun closeImageViewer() {
+        menuSound.play(MenuSound.BACK)
+        _uiState.update { it.copy(imageViewerUri = null) }
+    }
 
     private fun openManual() {
         val game = _uiState.value.game ?: return
         viewModelScope.launch {
             val path = manualPath(game.id)
             if (path == null) {
+                menuSound.play(MenuSound.ERROR)
                 showActionMessage("No manual available for this game")
                 return@launch
             }
+            menuSound.play(MenuSound.SELECT)
             // Displayed in-app via PdfRenderer (ManualViewerOverlay) — no external PDF app needed.
             _uiState.update {
                 it.copy(
@@ -1200,32 +1278,50 @@ class GameDetailViewModel @Inject constructor(
         artworkStore.find(gameId, ArtworkKind.MANUAL)
             ?: artworkRecordDao.get(gameId, ArtworkKind.MANUAL.name)?.documentUri
 
-    fun closeManualViewer() = _uiState.update { it.copy(manualViewerUri = null) }
+    fun closeManualViewer() {
+        menuSound.play(MenuSound.BACK)
+        _uiState.update { it.copy(manualViewerUri = null) }
+    }
 
     fun setManualPageCount(count: Int) = _uiState.update {
         it.copy(manualPageCount = count, manualPage = it.manualPage.coerceIn(0, (count - 1).coerceAtLeast(0)))
     }
 
-    fun manualPrevPage() = _uiState.update {
-        it.copy(manualPage = (it.manualPage - 1).coerceAtLeast(0), manualScrollSteps = 0)
+    fun manualPrevPage() {
+        if (_uiState.value.manualPage > 0) menuSound.play(MenuSound.SCROLL)
+        _uiState.update {
+            it.copy(manualPage = (it.manualPage - 1).coerceAtLeast(0), manualScrollSteps = 0)
+        }
     }
 
-    fun manualNextPage() = _uiState.update {
-        it.copy(
-            manualPage = (it.manualPage + 1).coerceAtMost((it.manualPageCount - 1).coerceAtLeast(0)),
-            manualScrollSteps = 0,
-        )
+    fun manualNextPage() {
+        val s = _uiState.value
+        if (s.manualPage < (s.manualPageCount - 1).coerceAtLeast(0)) menuSound.play(MenuSound.SCROLL)
+        _uiState.update {
+            it.copy(
+                manualPage = (it.manualPage + 1).coerceAtMost((it.manualPageCount - 1).coerceAtLeast(0)),
+                manualScrollSteps = 0,
+            )
+        }
     }
 
     private fun handleManualViewerInput(action: GamepadAction) {
         when (action) {
             GamepadAction.NAVIGATE_LEFT  -> manualPrevPage()
             GamepadAction.NAVIGATE_RIGHT -> manualNextPage()
-            GamepadAction.NAVIGATE_DOWN  -> _uiState.update {
-                it.copy(manualScrollSteps = (it.manualScrollSteps + 1).coerceAtMost(MAX_PAGE_SCROLL_STEPS))
+            GamepadAction.NAVIGATE_DOWN  -> {
+                if (_uiState.value.manualScrollSteps < MAX_PAGE_SCROLL_STEPS) {
+                    menuSound.play(MenuSound.SCROLL)
+                }
+                _uiState.update {
+                    it.copy(manualScrollSteps = (it.manualScrollSteps + 1).coerceAtMost(MAX_PAGE_SCROLL_STEPS))
+                }
             }
-            GamepadAction.NAVIGATE_UP    -> _uiState.update {
-                it.copy(manualScrollSteps = (it.manualScrollSteps - 1).coerceAtLeast(0))
+            GamepadAction.NAVIGATE_UP    -> {
+                if (_uiState.value.manualScrollSteps > 0) menuSound.play(MenuSound.SCROLL)
+                _uiState.update {
+                    it.copy(manualScrollSteps = (it.manualScrollSteps - 1).coerceAtLeast(0))
+                }
             }
             GamepadAction.BACK           -> closeManualViewer()
             else -> Unit
@@ -1236,10 +1332,20 @@ class GameDetailViewModel @Inject constructor(
 
     // ── Remove ────────────────────────────────────────────────────────────
 
-    fun requestRemove() = _uiState.update { it.copy(confirmRemove = true) }
-    fun cancelRemove()  = _uiState.update { it.copy(confirmRemove = false) }
+    fun requestRemove() {
+        menuSound.play(MenuSound.SELECT)
+        _uiState.update { it.copy(confirmRemove = true) }
+    }
+
+    fun cancelRemove() {
+        menuSound.play(MenuSound.BACK)
+        _uiState.update { it.copy(confirmRemove = false) }
+    }
+
     fun confirmRemoveGame() {
         val game = _uiState.value.game ?: return
+        // Deleting the entry is the point of no return on this screen.
+        menuSound.play(MenuSound.CONFIRM)
         viewModelScope.launch {
             gameRepository.delete(game.id)
             _uiState.update { it.copy(confirmRemove = false, closed = true) }
@@ -1281,7 +1387,7 @@ class GameDetailViewModel @Inject constructor(
         // GameBoot off the launch stays silent — never the App Launch sfx, which is the same
         // sfx_launch sample the built-in sequence is timed to.
         if (playSound) {
-            menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.SELECT)
+            menuSound.play(MenuSound.SELECT)
         }
         _uiState.update {
             it.copy(
@@ -1484,9 +1590,11 @@ class GameDetailViewModel @Inject constructor(
             .filter { it.isAvailable && it.supportsPlatform(game.platformId) }
             .byLaunchPreference()
         if (options.isEmpty()) {
+            menuSound.play(MenuSound.ERROR)
             showActionMessage("No emulators installed for ${game.platformId.uppercase()}")
             return
         }
+        menuSound.play(MenuSound.SELECT)
         val stored = game.emulatorPackage
         val currentIndex = if (stored != null) {
             options.indexOfFirst { it.id == stored || it.packageName == stored }.coerceAtLeast(0)
@@ -1502,6 +1610,7 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun closeEmulatorPicker() {
+        menuSound.play(MenuSound.BACK)
         _uiState.update { it.copy(showEmulatorPicker = false) }
     }
 
@@ -1519,6 +1628,8 @@ class GameDetailViewModel @Inject constructor(
 
     fun confirmEmulatorPick(profileId: String) {
         val game = _uiState.value.game ?: return
+        // Writes a per-game override, so it commits rather than descends.
+        menuSound.play(MenuSound.CONFIRM)
         viewModelScope.launch {
             gameRepository.setPreferredEmulator(game.id, profileId)
             val updated = gameRepository.getById(game.id)
@@ -1547,6 +1658,7 @@ class GameDetailViewModel @Inject constructor(
 
     private fun openCollectionPicker() {
         val gameId = _uiState.value.game?.id ?: return
+        menuSound.play(MenuSound.SELECT)
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
@@ -1592,6 +1704,7 @@ class GameDetailViewModel @Inject constructor(
     /** Confirm on a picker row: toggle this game's membership of that collection. */
     private fun toggleCollection(collectionId: Long) {
         val gameId = _uiState.value.game?.id ?: return
+        menuSound.play(MenuSound.SELECT)
         viewModelScope.launch {
             collectionRepository.toggleGame(collectionId, gameId)
             _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(options = buildCollectionOptions(gameId))) }
@@ -1600,6 +1713,7 @@ class GameDetailViewModel @Inject constructor(
 
     /** The picker's last row opens the new-collection prompt. */
     private fun startCreateCollection() {
+        menuSound.play(MenuSound.SELECT)
         _uiState.update {
             it.copy(collectionPicker = it.collectionPicker.copy(showCreateDialog = true, createText = ""))
         }
@@ -1612,7 +1726,9 @@ class GameDetailViewModel @Inject constructor(
     fun confirmCreateCollection() {
         val gameId = _uiState.value.game?.id ?: return
         val name = _uiState.value.collectionPicker.createText
+        // An empty name is a cancel, and cancelCreateCollection voices it as one.
         if (name.isBlank()) { cancelCreateCollection(); return }
+        menuSound.play(MenuSound.CONFIRM)
         viewModelScope.launch {
             val id = collectionRepository.create(name)
             collectionRepository.addGame(id, gameId)
@@ -1627,10 +1743,12 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun cancelCreateCollection() {
+        menuSound.play(MenuSound.BACK)
         _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(showCreateDialog = false, createText = "")) }
     }
 
     fun closeCollectionPicker() {
+        menuSound.play(MenuSound.BACK)
         _uiState.update { it.copy(collectionPicker = CollectionPickerUi()) }
     }
 
@@ -1638,6 +1756,7 @@ class GameDetailViewModel @Inject constructor(
 
     fun toggleFavorite() {
         val game = _uiState.value.game ?: return
+        menuSound.play(MenuSound.SELECT)
         viewModelScope.launch {
             val next = !game.isFavorite
             gameRepository.setFavorite(game.id, next)
@@ -1648,6 +1767,7 @@ class GameDetailViewModel @Inject constructor(
     // ── Note editing ──────────────────────────────────────────────────────
 
     fun startEditNote() {
+        menuSound.play(MenuSound.SELECT)
         _uiState.update { it.copy(isEditingNote = true, noteText = it.game?.userNote ?: "") }
     }
 
@@ -1656,6 +1776,7 @@ class GameDetailViewModel @Inject constructor(
     fun saveNote() {
         val game = _uiState.value.game ?: return
         val note = _uiState.value.noteText.trim().ifEmpty { null }
+        menuSound.play(MenuSound.CONFIRM)
         viewModelScope.launch {
             gameRepository.updateNote(game.id, note)
             _uiState.update { it.copy(game = game.copy(userNote = note), isEditingNote = false) }
@@ -1663,6 +1784,7 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun cancelNote() {
+        menuSound.play(MenuSound.BACK)
         _uiState.update { it.copy(isEditingNote = false, noteText = _uiState.value.game?.userNote ?: "") }
     }
 
@@ -1670,6 +1792,7 @@ class GameDetailViewModel @Inject constructor(
 
     fun startEditTitle() {
         val game = _uiState.value.game ?: return
+        menuSound.play(MenuSound.SELECT)
         _uiState.update { it.copy(isEditingTitle = true, titleText = game.displayTitle) }
     }
 
@@ -1678,6 +1801,7 @@ class GameDetailViewModel @Inject constructor(
     fun saveTitle() {
         val game = _uiState.value.game ?: return
         val newTitle = _uiState.value.titleText.trim().ifEmpty { null }
+        menuSound.play(MenuSound.CONFIRM)
         viewModelScope.launch {
             gameRepository.updateUserTitleOverride(game.id, newTitle)
             val updated = gameRepository.getById(game.id)
@@ -1693,6 +1817,7 @@ class GameDetailViewModel @Inject constructor(
 
     fun resetTitleToDefault() {
         val game = _uiState.value.game ?: return
+        menuSound.play(MenuSound.CONFIRM)
         viewModelScope.launch {
             gameRepository.updateUserTitleOverride(game.id, null)
             val updated = gameRepository.getById(game.id)
@@ -1707,6 +1832,7 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun cancelTitleEdit() {
+        menuSound.play(MenuSound.BACK)
         _uiState.update { it.copy(isEditingTitle = false, titleText = _uiState.value.game?.displayTitle ?: "") }
     }
 
@@ -1715,6 +1841,7 @@ class GameDetailViewModel @Inject constructor(
     fun fetchArtwork() {
         val game = _uiState.value.game ?: return
         if (_uiState.value.isFetchingArtwork) return
+        menuSound.play(MenuSound.SELECT)
         viewModelScope.launch {
             _uiState.update { it.copy(isFetchingArtwork = true, artworkMessage = null) }
             // Shared with the XMB game menu; it evicts this game's refs from the image cache.
@@ -1746,6 +1873,7 @@ class GameDetailViewModel @Inject constructor(
     fun openMetadataPreview() {
         val game = _uiState.value.game ?: return
         if (_uiState.value.metadataPreview != null) return
+        menuSound.play(MenuSound.SELECT)
         val generation = ++metadataPreviewGeneration
         _uiState.update { it.copy(showOptions = false, metadataPreview = MetadataPreviewUi(), actionMessage = null) }
         viewModelScope.launch {
@@ -1795,22 +1923,41 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun closeMetadataPreview() {
+        menuSound.play(MenuSound.BACK)
         metadataPreviewGeneration++
         _uiState.update { it.copy(metadataPreview = null) }
     }
 
     fun selectMetadataPolicy(policy: MetadataApplyPolicy) = updateMetadataPreview { it.copy(policy = policy) }
 
-    fun cycleMetadataPolicy(delta: Int) = updateMetadataPreview { p ->
-        val all = MetadataApplyPolicy.entries
-        p.copy(policy = all[(p.policy.ordinal + delta).mod(all.size)])
+    fun cycleMetadataPolicy(delta: Int) {
+        if (metadataAcceptsInput()) menuSound.play(MenuSound.SCROLL)
+        updateMetadataPreview { p ->
+            val all = MetadataApplyPolicy.entries
+            p.copy(policy = all[(p.policy.ordinal + delta).mod(all.size)])
+        }
     }
+
+    /**
+     * The metadata overlay is on screen and taking input — the same gate [updateMetadataPreview]
+     * applies. Read here so a cue is never played for a press the overlay dropped.
+     */
+    private fun metadataAcceptsInput(): Boolean =
+        _uiState.value.metadataPreview?.let { !it.loading && !it.applying } == true
 
     /**
      * Switches source between the providers that answered and the Manual column; Choose Fields
      * re-ticks what THAT source would change.
      */
-    fun cycleMetadataSource(delta: Int) = updateMetadataPreview { p ->
+    fun cycleMetadataSource(delta: Int) {
+        // Decided from current state and played outside the update, like the other cycles here.
+        // Nothing to cycle between is a clamped move, and stays silent like every other one.
+        val sources = _uiState.value.metadataPreview?.sourceCount ?: 0
+        if (metadataAcceptsInput() && sources >= 2) menuSound.play(MenuSound.SCROLL)
+        cycleMetadataSourceState(delta)
+    }
+
+    private fun cycleMetadataSourceState(delta: Int) = updateMetadataPreview { p ->
         if (p.sourceCount < 2) return@updateMetadataPreview p
         val index = (p.presetIndex + delta).mod(p.sourceCount)
         val moved = p.copy(presetIndex = index)
@@ -1875,8 +2022,9 @@ class GameDetailViewModel @Inject constructor(
         edited.copy(chosen = if (field in changes) edited.chosen + field else edited.chosen - field)
     }
 
-    fun cancelMetadataEdit() = updateMetadataPreview { p ->
-        p.copy(editingField = null, editText = "")
+    fun cancelMetadataEdit() {
+        if (metadataAcceptsInput()) menuSound.play(MenuSound.BACK)
+        updateMetadataPreview { p -> p.copy(editingField = null, editText = "") }
     }
 
     /**
@@ -1953,13 +2101,18 @@ class GameDetailViewModel @Inject constructor(
         val p = _uiState.value.metadataPreview ?: return
         val preset = p.preset ?: return
         if (p.titleReplace == null || p.applying) return
+        // After every guard: a press that falls through them wrote nothing and must stay silent.
+        menuSound.play(MenuSound.CONFIRM)
         val approved = p.copy(titleReplace = null)
         _uiState.update { it.copy(metadataPreview = approved) }
         writeMetadataPreview(game, approved, preset)
     }
 
     /** "Keep Mine" on the title confirm — back to the preview, nothing written. */
-    fun cancelTitleReplace() = updateMetadataPreview { it.copy(titleReplace = null) }
+    fun cancelTitleReplace() {
+        if (metadataAcceptsInput()) menuSound.play(MenuSound.BACK)
+        updateMetadataPreview { it.copy(titleReplace = null) }
+    }
 
     private fun writeMetadataPreview(game: Game, p: MetadataPreviewUi, preset: MetadataPreset) {
         _uiState.update { it.copy(metadataPreview = p.copy(applying = true)) }
@@ -2014,6 +2167,7 @@ class GameDetailViewModel @Inject constructor(
     /** Options - Rematch Storefront. Lists what this game is linked to today. */
     fun openStorefrontRematch() {
         val gameId = _uiState.value.game?.id ?: return
+        menuSound.play(MenuSound.SELECT)
         val generation = ++storefrontGeneration
         _uiState.update {
             it.copy(
@@ -2041,6 +2195,7 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun closeStorefrontRematch() {
+        menuSound.play(MenuSound.BACK)
         storefrontGeneration++
         _uiState.update { it.copy(storefrontRematch = null) }
         syncNavStack()
@@ -2072,7 +2227,15 @@ class GameDetailViewModel @Inject constructor(
      * separate stops. On a TV a line of small targets is hard to hit and easy to mis-hit, and
      * Remove is not a button anyone should reach by accident.
      */
-    fun cycleRematchAction(delta: Int) = updateRematch { ui ->
+    fun cycleRematchAction(delta: Int) {
+        // Same reasoning as the metadata cycles: decided from current state, played outside the
+        // update. A row with one action has nothing to step to, so it stays silent.
+        val row = _uiState.value.storefrontRematch?.takeIf { !it.loading }?.focusedRow
+        if (row != null && row.actions.size > 1) menuSound.play(MenuSound.SCROLL)
+        cycleRematchActionState(delta)
+    }
+
+    private fun cycleRematchActionState(delta: Int) = updateRematch { ui ->
         val row = ui.focusedRow ?: return@updateRematch ui
         if (row.actions.size <= 1) return@updateRematch ui
         val next = (row.actions.indexOf(row.selectedAction) + delta).mod(row.actions.size)
@@ -2151,6 +2314,7 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun closeStorefrontMatch() {
+        menuSound.play(MenuSound.BACK)
         storefrontGeneration++
         _uiState.update {
             it.copy(storefrontMatch = null, storefrontRematch = it.storefrontRematch?.copy(searching = false))
@@ -2158,11 +2322,21 @@ class GameDetailViewModel @Inject constructor(
         syncNavStack()
     }
 
-    fun openStorefrontMoreInfo() = updateMatch { ui ->
-        if (ui.focusedCandidate == null) ui else ui.copy(moreInfoOpen = true)
+    fun openStorefrontMoreInfo() {
+        // Silent when there is no candidate to explain: nothing opens.
+        val ui = _uiState.value.storefrontMatch
+        if (matchAcceptsInput() && ui?.focusedCandidate != null) menuSound.play(MenuSound.SELECT)
+        updateMatch { if (it.focusedCandidate == null) it else it.copy(moreInfoOpen = true) }
     }
 
-    fun closeStorefrontMoreInfo() = updateMatch { it.copy(moreInfoOpen = false) }
+    fun closeStorefrontMoreInfo() {
+        if (matchAcceptsInput()) menuSound.play(MenuSound.BACK)
+        updateMatch { it.copy(moreInfoOpen = false) }
+    }
+
+    /** The match picker is on screen and taking input — the gate [updateMatch] applies. */
+    private fun matchAcceptsInput(): Boolean =
+        _uiState.value.storefrontMatch?.let { !it.loading && !it.confirming } == true
 
     /** Tap on a candidate row: focus first, then activate - one path for touch and controller. */
     fun onStorefrontRowTapped(index: Int) {
@@ -2181,7 +2355,11 @@ class GameDetailViewModel @Inject constructor(
         val gameId = _uiState.value.game?.id ?: return
         val ui = _uiState.value.storefrontMatch ?: return
         if (ui.confirming) return
+        // "No correct match" is the picker's last stop and closes it, which closeStorefrontMatch
+        // already voices as a back.
         val row = ui.rows.getOrNull(index) ?: return closeStorefrontMatch()
+        // The one place a storefront identity is written.
+        menuSound.play(MenuSound.CONFIRM)
         _uiState.update { it.copy(storefrontMatch = ui.copy(confirming = true)) }
         viewModelScope.launch {
             runCatching {
@@ -2272,7 +2450,7 @@ class GameDetailViewModel @Inject constructor(
             GamepadAction.OPEN_CONTEXT_MENU -> openStorefrontMoreInfo()
             GamepadAction.NAVIGATE_UP,
             GamepadAction.NAVIGATE_DOWN,
-            GamepadAction.SELECT -> nav.handleAction(action)
+            GamepadAction.SELECT -> navigate(action)
             else -> Unit
         }
     }
@@ -2285,7 +2463,7 @@ class GameDetailViewModel @Inject constructor(
             GamepadAction.NAVIGATE_RIGHT -> cycleRematchAction(+1)
             GamepadAction.NAVIGATE_UP,
             GamepadAction.NAVIGATE_DOWN,
-            GamepadAction.SELECT -> nav.handleAction(action)
+            GamepadAction.SELECT -> navigate(action)
             else -> Unit
         }
     }
@@ -2321,7 +2499,7 @@ class GameDetailViewModel @Inject constructor(
             GamepadAction.NEXT_CATEGORY  -> cycleMetadataSource(+1)
             GamepadAction.NAVIGATE_UP,
             GamepadAction.NAVIGATE_DOWN,
-            GamepadAction.SELECT         -> nav.handleAction(action)
+            GamepadAction.SELECT         -> navigate(action)
             else -> Unit
         }
     }

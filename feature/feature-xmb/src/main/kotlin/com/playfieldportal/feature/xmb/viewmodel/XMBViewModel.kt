@@ -211,6 +211,9 @@ data class XMBContextMenuItem(
     val isDestructive: Boolean = false,
     // Renders a checkmark (e.g. collections the game already belongs to).
     val checked: Boolean = false,
+    // The row's current setting, drawn dimmer and pinned to the panel's right edge. See
+    // [com.playfieldportal.core.ui.components.PspMenuRow.value].
+    val value: String? = null,
 )
 
 // How a media section names itself on screen — the memory card's own title, which is also what
@@ -1149,7 +1152,8 @@ internal fun gamesForDisplay(games: List<Game>, query: String, mode: XmbSortMode
 
 /**
  * The Games Filter menu's rows, shaped like the Shiba Library's Options menu: the root names each
- * list with its current choice ("Search  None", "Sort  Title"), and a group checks the active one.
+ * list with its current choice (label "Search", value "None"), and a group checks the active one.
+ * A naming row's value is a separate field, so the menu pins it to the panel's right edge.
  *
  * Pure and top-level so the rows can be asserted without a ViewModel, and so the menu can never
  * disagree with the state it describes.
@@ -1161,8 +1165,17 @@ fun gamesFilterRows(state: XMBUiState, group: GamesFilterGroup?): List<XMBContex
     when (group) {
         null -> buildList {
             val term = state.gameQuery.trim()
-            add(XMBContextMenuItem(GAMES_FILTER_SEARCH_ID, "Search" + if (term.isBlank()) "  None" else "  \"$term\""))
-            add(XMBContextMenuItem(GAMES_FILTER_SORT_ID, "Sort  ${state.gameSortMode.label}"))
+            // Label and value are separate fields so the values pin to the panel's right edge and
+            // line up with each other. They used to be one string joined by two spaces, which the
+            // approved mockup never showed: it puts the value at the far edge, dimmer than the label.
+            add(
+                XMBContextMenuItem(
+                    GAMES_FILTER_SEARCH_ID,
+                    "Search",
+                    value = if (term.isBlank()) "None" else "\"$term\"",
+                )
+            )
+            add(XMBContextMenuItem(GAMES_FILTER_SORT_ID, "Sort", value = state.gameSortMode.label))
             if (term.isNotBlank()) add(XMBContextMenuItem(GAMES_FILTER_CLEAR_ID, "Clear Search"))
         }
         GamesFilterGroup.SORT -> GAME_SORTS.map { mode ->
@@ -5684,13 +5697,29 @@ class XMBViewModel @Inject constructor(
 
         // ── Color-scheme picker captures ALL input when open (sits above Settings) ──
         if (state.customColorPicker != null) {
+            // The cues sit here rather than in the handlers below because the shared
+            // HsvColorPickerDialog voices its own taps (the knob, Apply, Cancel and the scrim).
+            // Moving them into confirmCustomColor/cancelCustomColor would double every tap.
             when (action) {
-                GamepadAction.NAVIGATE_UP -> moveCustomColorChannel(-1)
-                GamepadAction.NAVIGATE_DOWN -> moveCustomColorChannel(1)
-                GamepadAction.NAVIGATE_LEFT -> adjustCustomColor(-0.04f)
-                GamepadAction.NAVIGATE_RIGHT -> adjustCustomColor(0.04f)
-                GamepadAction.SELECT -> confirmCustomColor()
-                GamepadAction.BACK, GamepadAction.OPEN_CONTEXT_MENU -> cancelCustomColor()
+                GamepadAction.NAVIGATE_UP -> {
+                    menuSound.play(MenuSound.SCROLL); moveCustomColorChannel(-1)
+                }
+                GamepadAction.NAVIGATE_DOWN -> {
+                    menuSound.play(MenuSound.SCROLL); moveCustomColorChannel(1)
+                }
+                // Channel steps wrap hue and clamp the other two, so they always change something.
+                GamepadAction.NAVIGATE_LEFT -> {
+                    menuSound.play(MenuSound.SCROLL); adjustCustomColor(-0.04f)
+                }
+                GamepadAction.NAVIGATE_RIGHT -> {
+                    menuSound.play(MenuSound.SCROLL); adjustCustomColor(0.04f)
+                }
+                GamepadAction.SELECT -> {
+                    menuSound.play(MenuSound.CONFIRM); confirmCustomColor()
+                }
+                GamepadAction.BACK, GamepadAction.OPEN_CONTEXT_MENU -> {
+                    menuSound.play(MenuSound.BACK); cancelCustomColor()
+                }
                 else -> Unit
             }
             return
@@ -9217,6 +9246,9 @@ class XMBViewModel @Inject constructor(
         val picker = _uiState.value.colorSchemePicker ?: return
         val next = (picker.selectedIndex + delta).coerceIn(0, picker.options.lastIndex)
         if (next == picker.selectedIndex) { gamepadInputHandler.cancelRepeat(); return }
+        // After the clamp guard, so an end of the list is silent — the same rule every other
+        // cursor in the app follows.
+        menuSound.play(MenuSound.SCROLL)
         _uiState.update { it.copy(colorSchemePicker = picker.copy(selectedIndex = next)) }
         picker.options[next].scheme?.let(::previewColorScheme)
     }
@@ -9225,6 +9257,8 @@ class XMBViewModel @Inject constructor(
     fun onColorSchemeHighlightedAt(index: Int) {
         val picker = _uiState.value.colorSchemePicker ?: return
         if (index !in picker.options.indices || index == picker.selectedIndex) return
+        // Tapping a row moves the cursor there (and live-previews it), so it ticks like a move.
+        menuSound.play(MenuSound.SCROLL)
         _uiState.update { it.copy(colorSchemePicker = picker.copy(selectedIndex = index)) }
         picker.options[index].scheme?.let(::previewColorScheme)
     }
@@ -9245,9 +9279,13 @@ class XMBViewModel @Inject constructor(
         val selected = picker.options.getOrNull(picker.selectedIndex)
         val chosen = selected?.scheme
         if (selected?.isCustom == true) {
+            // Custom descends into the HSV picker rather than committing anything, so it takes the
+            // ordinary activation cue and the commit cue waits for Apply in there.
+            menuSound.play(MenuSound.SELECT)
             openCustomColorPicker()
             return
         }
+        menuSound.play(MenuSound.CONFIRM)
         viewModelScope.launch {
             if (chosen != null) {
                 context.pfpDataStore.edit {
@@ -9319,6 +9357,7 @@ class XMBViewModel @Inject constructor(
     }
 
     fun cancelColorSchemePicker() {
+        menuSound.play(MenuSound.BACK)
         val original = colorSchemeOriginal
         val accentOriginal = accentOverrideOriginal
         viewModelScope.launch {

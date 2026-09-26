@@ -1582,4 +1582,113 @@ class GameDetailViewModelTest {
         // Touch hides the controller cursor without losing the logical node.
         assertFalse(viewModel.uiState.value.cursorVisible)
     }
+
+    // ── Menu sounds ───────────────────────────────────────────────────────
+    //
+    // Game Detail used to be almost silent: the ViewModel played one cue, on Play, and nothing
+    // else — no tick on the cursor, no cue on confirm, no cue on back. The rules pinned below are
+    // the XMB's own, so a user cannot tell from the sound which screen they are on.
+
+    private val select = com.playfieldportal.core.ui.sound.MenuSound.SELECT
+    private val scroll = com.playfieldportal.core.ui.sound.MenuSound.SCROLL
+    private val back = com.playfieldportal.core.ui.sound.MenuSound.BACK
+    private val confirmCue = com.playfieldportal.core.ui.sound.MenuSound.CONFIRM
+
+    @Test
+    fun `moving the cursor ticks, and a clamped move is silent`() = runTest {
+        loadedAndLaidOut()
+        assertEquals(GameDetailKeys.LAUNCH, viewModel.uiState.value.navFocusKey)
+
+        // Launch is the first node, so UP has nowhere to go: the boundary is audible as silence.
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_UP)
+        assertEquals(GameDetailKeys.LAUNCH, viewModel.uiState.value.navFocusKey)
+        verify(exactly = 0) { menuSound.play(scroll, any()) }
+
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)
+        assertEquals(GameDetailKeys.FAVORITE, viewModel.uiState.value.navFocusKey)
+        verify(exactly = 1) { menuSound.play(scroll, any()) }
+
+        // Stepping along the quick-action row is a move like any other.
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_RIGHT)
+        assertEquals(GameDetailKeys.ARTWORK, viewModel.uiState.value.navFocusKey)
+        verify(exactly = 2) { menuSound.play(scroll, any()) }
+    }
+
+    @Test
+    fun `Options opens with the activation cue and closes with the back cue`() = runTest {
+        loadedAndLaidOut()
+
+        viewModel.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        assertTrue(viewModel.uiState.value.showOptions)
+        // Exactly once: the cue is on openOptions, never also on the press that called it.
+        verify(exactly = 1) { menuSound.play(select, any()) }
+
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+        assertFalse(viewModel.uiState.value.showOptions)
+        verify(exactly = 1) { menuSound.play(back, any()) }
+        // Still on the page — Back closed the overlay, not the screen.
+        assertFalse(viewModel.uiState.value.closed)
+    }
+
+    @Test
+    fun `Back on the page plays the back cue once and leaves`() = runTest {
+        loadedAndLaidOut()
+
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+        assertTrue(viewModel.uiState.value.closed)
+        verify(exactly = 1) { menuSound.play(back, any()) }
+    }
+
+    @Test
+    fun `a tap and a Confirm on the same affordance sound identically`() = runTest {
+        loadedAndLaidOut()
+
+        // Touch: straight at the node.
+        viewModel.onNodeTapped(GameDetailKeys.FAVORITE)
+        testDispatcher.scheduler.advanceUntilIdle()
+        verify(exactly = 1) { menuSound.play(select, any()) }
+
+        // Controller: move onto the same node and confirm it. One more cue, the same cue — because
+        // both paths end in toggleFavorite, which is where the sound lives.
+        viewModel.handleGamepadAction(GamepadAction.SELECT)
+        testDispatcher.scheduler.advanceUntilIdle()
+        verify(exactly = 2) { menuSound.play(select, any()) }
+    }
+
+    @Test
+    fun `removing a game descends, commits, and backs out with three different cues`() = runTest {
+        loadedAndLaidOut()
+
+        viewModel.requestRemove()
+        assertTrue(viewModel.uiState.value.confirmRemove)
+        verify(exactly = 1) { menuSound.play(select, any()) }
+
+        // Back out of the prompt: a level up, not a commit.
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+        assertFalse(viewModel.uiState.value.confirmRemove)
+        verify(exactly = 1) { menuSound.play(back, any()) }
+        verify(exactly = 0) { menuSound.play(confirmCue, any()) }
+
+        // And through with it: deleting the entry is the point of no return on this screen.
+        viewModel.requestRemove()
+        viewModel.handleGamepadAction(GamepadAction.SELECT)
+        testDispatcher.scheduler.advanceUntilIdle()
+        verify(exactly = 1) { menuSound.play(confirmCue, any()) }
+    }
+
+    @Test
+    fun `a refused action plays the error cue instead of an activation`() = runTest {
+        // Spelled out rather than left to the relaxed mock: this test is about the branch taken
+        // when there is NO video, so "no video" has to be a fact and not a default.
+        coEvery { artworkStore.findAll(any(), any()) } returns emptyList()
+        coEvery { artworkStore.find(any(), any(), any()) } returns null
+        loadedAndLaidOut()
+        assertNull(viewModel.uiState.value.videoUri)
+
+        viewModel.onVideoClicked()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify(exactly = 1) { menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.ERROR, any()) }
+        verify(exactly = 0) { menuSound.play(select, any()) }
+    }
 }

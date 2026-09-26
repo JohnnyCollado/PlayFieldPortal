@@ -206,8 +206,8 @@ fun XmbPspStatusStrip(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(StripHeight)
-            .padding(horizontal = 20.dp),
+            .height(XmbStatusStripHeight)
+            .padding(horizontal = XmbStatusStripSidePadding),
         verticalAlignment    = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -469,7 +469,22 @@ private fun StripSeparator() {
     )
 }
 
-private val StripHeight   = 28.dp
+/**
+ * Height of the status strip, measured from the top of the screen — it sits flush there, so this
+ * is also the Y of the first pixel below it.
+ *
+ * Internal rather than private because an overlay that wants to sit just clear of the strip
+ * (the Games search field) should derive its inset from the real height instead of copying the
+ * number, which is how two values drift apart.
+ */
+internal val XmbStatusStripHeight = 28.dp
+
+/**
+ * The strip's side inset — where its content actually starts and ends. Shared for the same reason
+ * as the height: an overlay tucked under the strip lines its edge up with the strip's, and two
+ * right edges that nearly agree look like a bug rather than a decision.
+ */
+internal val XmbStatusStripSidePadding = 20.dp
 private val StripFontSize = 12.sp
 
 // The strip's pill: one shape and one fill, shared by the sort chip and the notification button so

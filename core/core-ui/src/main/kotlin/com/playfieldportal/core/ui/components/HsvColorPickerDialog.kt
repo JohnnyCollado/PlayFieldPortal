@@ -35,6 +35,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.sound.LocalMenuSounds
+import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.theme.contrastRatio
 
 /**
@@ -71,11 +73,15 @@ fun HsvColorPickerDialog(
     contrastWarnBelow: Float = 3f,
 ) {
     val preview = hsvColor(hue, saturation, brightness)
+    val menuSounds = LocalMenuSounds.current
+    // Two ways out — the scrim and the Cancel label — so they share one lambda and cannot end up
+    // sounding different. Dismissing is a level up, whichever one the finger lands on.
+    val cancel: () -> Unit = { menuSounds.play(MenuSound.BACK); onCancel() }
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xCC000000))
-            .clickable(onClick = onCancel),
+            .clickable(onClick = cancel),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -148,13 +154,17 @@ fun HsvColorPickerDialog(
                     "Apply",
                     color = accent,
                     fontSize = 15.sp,
-                    modifier = Modifier.clickable(onClick = onConfirm).padding(vertical = 6.dp, horizontal = 10.dp),
+                    modifier = Modifier
+                        .clickable { menuSounds.play(MenuSound.CONFIRM); onConfirm() }
+                        .padding(vertical = 6.dp, horizontal = 10.dp),
                 )
                 Text(
                     "Cancel",
                     color = subtext,
                     fontSize = 15.sp,
-                    modifier = Modifier.clickable(onClick = onCancel).padding(vertical = 6.dp, horizontal = 10.dp),
+                    modifier = Modifier
+                        .clickable(onClick = cancel)
+                        .padding(vertical = 6.dp, horizontal = 10.dp),
                 )
             }
         }
@@ -211,6 +221,9 @@ private fun ChannelBar(
     subtext: Color,
     onFraction: (Float) -> Unit,
 ) {
+    // A tap lands the knob somewhere new, which is a move along the bar rather than a commit —
+    // the same reading the host gives LEFT/RIGHT on this channel.
+    val menuSounds = LocalMenuSounds.current
     Text(label, color = if (selected) accent else subtext, fontSize = 12.sp)
     Spacer(Modifier.height(6.dp))
     BoxWithConstraints(
@@ -225,7 +238,10 @@ private fun ChannelBar(
                 shape = RoundedCornerShape(14.dp),
             )
             .pointerInput(Unit) {
-                detectTapGestures { pos -> onFraction((pos.x / size.width).coerceIn(0f, 1f)) }
+                detectTapGestures { pos ->
+                    menuSounds.play(MenuSound.SCROLL)
+                    onFraction((pos.x / size.width).coerceIn(0f, 1f))
+                }
             },
     ) {
         val knobX = maxWidth * fraction.coerceIn(0f, 1f)
@@ -314,6 +330,7 @@ fun ColorSwatch(
     subtext: Color,
     onClick: () -> Unit,
 ) {
+    val menuSounds = LocalMenuSounds.current
     // The selection ring stays accent-coloured: a ring is a fill, not a text run, and the
     // affordance was always carried by the ring rather than by the label's colour.
     val ringColor = if (focused || selected) accent else Color(0x66FFFFFF)
@@ -331,7 +348,7 @@ fun ColorSwatch(
                     }
                 )
                 .border(BorderStroke(ringWidth, ringColor), CircleShape)
-                .clickable(onClick = onClick),
+                .clickable { menuSounds.play(MenuSound.SELECT); onClick() },
         )
         Text(
             text = label,

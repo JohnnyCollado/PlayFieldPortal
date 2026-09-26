@@ -23,7 +23,7 @@ fun ContextMenuOverlay(
 ) {
     PspContextMenuOverlay(
         title         = menu.title,
-        rows          = menu.items.map { PspMenuRow(it.label, it.isDestructive, it.checked) },
+        rows          = menu.items.map { PspMenuRow(it.label, it.isDestructive, it.checked, it.value) },
         selectedIndex = menu.selectedIndex,
         onRowActivated = onItemActivated,
         onDismiss     = onDismiss,

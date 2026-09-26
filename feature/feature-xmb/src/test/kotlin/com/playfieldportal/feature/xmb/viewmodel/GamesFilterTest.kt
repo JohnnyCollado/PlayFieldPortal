@@ -120,19 +120,33 @@ class GamesFilterTest {
 
     // ── gamesFilterRows: the menu ───────────────────────────────────────────────
 
+    // The setting is its own field, not two spaces inside the label: that is what lets the menu
+    // pin it to the panel's right edge, dim it against the label, and be read back here.
     @Test
     fun `root names each list with its current choice`() {
         val rows = gamesFilterRows(gamesState(sort = XmbSortMode.RECENT_PLAYED), group = null)
         assertEquals(listOf(GAMES_FILTER_SEARCH_ID, GAMES_FILTER_SORT_ID), rows.map { it.id })
-        assertEquals("Search  None", rows[0].label)
-        assertEquals("Sort  Recently Played", rows[1].label)
+        assertEquals("Search", rows[0].label)
+        assertEquals("None", rows[0].value)
+        assertEquals("Sort", rows[1].label)
+        assertEquals("Recently Played", rows[1].value)
     }
 
     @Test
     fun `root shows the active term and offers Clear Search only then`() {
         val rows = gamesFilterRows(gamesState(query = "zel"), group = null)
         assertEquals(listOf(GAMES_FILTER_SEARCH_ID, GAMES_FILTER_SORT_ID, GAMES_FILTER_CLEAR_ID), rows.map { it.id })
-        assertEquals("Search  \"zel\"", rows[0].label)
+        assertEquals("Search", rows[0].label)
+        assertEquals("\"zel\"", rows[0].value)
+    }
+
+    // Clear Search is an action, not a setting, so it has nothing to pin to the right — and the
+    // sort group's rows are named by their own labels with a checkmark instead of a value.
+    @Test
+    fun `only the rows that name a list carry a value`() {
+        val rows = gamesFilterRows(gamesState(query = "zel"), group = null)
+        assertNull(rows.first { it.id == GAMES_FILTER_CLEAR_ID }.value)
+        assertTrue(gamesFilterRows(gamesState(), GamesFilterGroup.SORT).all { it.value == null })
     }
 
     @Test

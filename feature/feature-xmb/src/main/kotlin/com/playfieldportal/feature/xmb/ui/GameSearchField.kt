@@ -36,18 +36,31 @@ import com.playfieldportal.core.ui.preview.PfpPreview
 
 // ── Games search field ────────────────────────────────────────────────────────
 //
-// The Games column's search term, typed over the top of the column it filters.
+// The Games column's search term, typed on the empty right half of the screen.
 //
 // Transient rather than permanent, unlike the music browser's field: the XMB column IS the screen
 // and has no header to host one. What carries the query once this closes is the status strip's
 // Filter chip, which is why that chip shows the term — between the two, a filtered column always
 // has something on screen saying so.
 //
-// The query is live: every keystroke re-filters the rows behind the field, so the keyboard's
-// Search key only dismisses. BACK (handled in the ViewModel) restores the query this opened with.
+// Pinned to the RIGHT edge, and that is the whole point: the query is live, so the rows it filters
+// have to stay visible while you type. On a handheld the keyboard already takes about half the
+// height (on an Odin 3 / AYN Thor, 833 × 468 dp, the IME is ~237 dp of it), which leaves the
+// column barely a row to show. Anchored on the left the field also sat on the column's first icon,
+// so it covered the one row that was still visible. The right half is empty on every XMB screen —
+// the cross puts items on the left — so this is the only place it costs nothing.
+//
+// The keyboard's Search key only dismisses, because there is nothing to submit. BACK (handled in
+// the ViewModel) restores the query this opened with.
 
-private val FieldTop = 96.dp
-private val FieldStart = 64.dp
+// Tucked just under the status strip, derived from the strip's own height so the gap survives any
+// change to it. It used to float at 96.dp — a third of the way down a 468 dp handheld screen, for
+// no reason the layout could explain.
+private val FieldGapBelowStrip = 10.dp
+private val FieldTop = XmbStatusStripHeight + FieldGapBelowStrip
+// Flush with the strip's own right edge, so the field and the battery reading above it share one
+// line rather than missing each other by a few dp.
+private val FieldEnd = XmbStatusStripSidePadding
 
 @Composable
 fun GameSearchField(
@@ -71,7 +84,8 @@ fun GameSearchField(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .padding(start = FieldStart, top = FieldTop)
+                .align(Alignment.TopEnd)
+                .padding(end = FieldEnd, top = FieldTop)
                 .widthIn(min = 320.dp)
                 .background(Color(0xE00A1428), RoundedCornerShape(6.dp))
                 .border(1.dp, Color.White.copy(alpha = 0.28f), RoundedCornerShape(6.dp))

@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.preview.CombinedPreviews
@@ -51,6 +52,15 @@ data class PspMenuRow(
     val isDestructive: Boolean = false,
     // Marks a current membership/selection (e.g. collections the item already belongs to).
     val checked: Boolean = false,
+    /**
+     * The row's current setting, pinned to the panel's right edge and dimmer than the label — a
+     * root row that names a list (label "Search", value "None") reads as label-and-value rather
+     * than as one long sentence, and the values line up in a column the eye can scan.
+     *
+     * Deliberately its own field rather than glue inside [label]: two spaces in a string cannot
+     * right-align, cannot be dimmed, and cannot be read back by a test asserting the setting.
+     */
+    val value: String? = null,
 )
 
 private val PanelWidth = 300.dp
@@ -177,8 +187,26 @@ private fun PspContextMenuRow(
                     else                            -> Color.White.copy(alpha = 0.62f)
                 },
                 style = TextStyle(shadow = TextDropShadow),
-                modifier = Modifier.weight(1f, fill = false),
+                // A value fills the row so it can be pushed to the far edge; without one the label
+                // keeps hugging its text, which is what puts a checkmark right beside the words
+                // instead of stranding it across the panel.
+                modifier = if (row.value != null) Modifier.weight(1f) else Modifier.weight(1f, fill = false),
             )
+            if (row.value != null) {
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    text = row.value,
+                    // One step below the label in both states, and dimmer: the label is what the
+                    // row IS and the value is what it currently says, so the value must never win
+                    // the row. Both brighten together when the cursor arrives.
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = Color.White.copy(alpha = if (isSelected) 0.85f else 0.55f),
+                    style = TextStyle(shadow = TextDropShadow),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             if (row.checked) {
                 Spacer(Modifier.width(10.dp))
                 PfpCheckMark(Color.White, size = 15.dp, shadow = TextDropShadow.color)
@@ -188,6 +216,25 @@ private fun PspContextMenuRow(
 }
 
 // ── Previews ──────────────────────────────────────────────────────────────────
+
+/** The Games Filter root: two rows that name a list, with the setting pinned to the right edge. */
+@CombinedPreviews
+@Composable
+fun PspContextMenuValueRowsPreview() {
+    PfpPreview {
+        PspContextMenuOverlay(
+            title = "Filter",
+            rows = listOf(
+                PspMenuRow("Search", value = "\"zel\""),
+                PspMenuRow("Sort", value = "Recently Played"),
+                PspMenuRow("Clear Search"),
+            ),
+            selectedIndex = 0,
+            onRowActivated = {},
+            onDismiss = {},
+        )
+    }
+}
 
 @CombinedPreviews
 @Composable

@@ -226,7 +226,7 @@ fun GameDetailScreen(
         PfpDetailScaffold(
             modifier = modifier,
             header = {
-                PfpDetailBreadcrumb(title = "Library", subtitle = "Game not found", onBack = onBack)
+                PfpDetailBreadcrumb(title = "Library", subtitle = "Game not found", onBack = viewModel::close)
             },
         ) {
             Spacer(Modifier.height(24.dp))
@@ -343,7 +343,9 @@ private fun GameDetailContent(
             PfpDetailBreadcrumb(
                 title = state.platform?.name ?: game.platformId.uppercase(),
                 subtitle = game.kindLabel(),
-                onBack = onBack,
+                // Through the ViewModel, not straight to the host: tapping the arrow is the same
+                // "leave this page" as pressing B, so it has to sound the same.
+                onBack = viewModel::close,
             )
         },
         footer = {

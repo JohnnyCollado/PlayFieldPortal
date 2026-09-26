@@ -1179,8 +1179,9 @@ fun XMBShell(
                 )
             }
 
-            // The Games search field, over the column it filters. Above the menus it was opened
-            // from (they close first) and below nothing — it is the only thing taking input.
+            // The Games search field, on the empty right half beside the column it filters. Above
+            // the menus it was opened from (they close first) and below nothing — it is the only
+            // thing taking input.
             uiState.gameSearchField?.let { field ->
                 GameSearchField(
                     text = field.text,
