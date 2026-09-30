@@ -675,6 +675,8 @@ class ArtworkImportManager @Inject constructor(
                             providerAssetId = prior?.providerAssetId,
                             cropRect = prior?.cropRect,
                             hasOriginal = prior?.hasOriginal ?: false,
+                            // An animated file framed at draw time stays that way through a relink.
+                            cropAtDraw = prior?.cropAtDraw ?: false,
                             cropProfileKey = prior?.cropProfileKey,
                             createdAt = prior?.createdAt ?: System.currentTimeMillis(),
                         )
@@ -716,6 +718,8 @@ class ArtworkImportManager @Inject constructor(
                             providerAssetId = prior?.providerAssetId,
                             cropRect = prior?.cropRect,
                             hasOriginal = prior?.hasOriginal ?: false,
+                            // An animated file framed at draw time stays that way through a relink.
+                            cropAtDraw = prior?.cropAtDraw ?: false,
                             cropProfileKey = prior?.cropProfileKey,
                             createdAt = prior?.createdAt ?: System.currentTimeMillis(),
                         )

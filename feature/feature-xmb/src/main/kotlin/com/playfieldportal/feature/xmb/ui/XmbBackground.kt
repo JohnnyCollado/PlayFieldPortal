@@ -30,7 +30,6 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
-import coil3.compose.AsyncImage
 import com.playfieldportal.core.ui.motion.MotionWallpaperBackground
 import com.playfieldportal.core.ui.motion.MotionWallpaperPolicy
 import com.playfieldportal.core.ui.theme.LocalPFPColors
@@ -144,7 +143,7 @@ private fun WallpaperBackground(
     modifier: Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        AsyncImage(
+        com.playfieldportal.core.ui.motion.ArtworkImage(
             model              = customWallpaperPath,
             contentDescription = null,
             contentScale       = ContentScale.Crop,

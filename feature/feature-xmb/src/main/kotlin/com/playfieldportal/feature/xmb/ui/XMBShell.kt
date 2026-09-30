@@ -64,8 +64,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import coil3.compose.AsyncImage
-import com.playfieldportal.core.ui.image.rememberArtworkModel
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.TouchSensitivity
 import com.playfieldportal.core.ui.motion.MotionWallpaperPolicy
@@ -641,8 +639,8 @@ fun XMBShell(
             Crossfade(targetState = selectedBg, animationSpec = tween(320), label = "xmbGameBackground") { bg ->
                 if (bg != null) {
                     Box(Modifier.fillMaxSize()) {
-                        AsyncImage(
-                            model = rememberArtworkModel(bg),
+                        com.playfieldportal.core.ui.motion.ArtworkImage(
+                            model = bg,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize(),
@@ -733,8 +731,8 @@ fun XMBShell(
                     } else {
                         0.dp
                     }
-                    AsyncImage(
-                        model = rememberArtworkModel(selectedLogo),
+                    com.playfieldportal.core.ui.motion.ArtworkImage(
+                        model = selectedLogo,
                         contentDescription = null,
                         contentScale = ContentScale.Fit,
                         modifier = Modifier

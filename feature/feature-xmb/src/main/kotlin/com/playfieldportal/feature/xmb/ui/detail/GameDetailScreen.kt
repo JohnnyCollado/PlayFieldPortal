@@ -582,8 +582,8 @@ private fun GameDetailOverlays(
                     .background(Color.Black.copy(alpha = 0.96f))
                     .clickable(onClick = viewModel::closeImageViewer),
             ) {
-                coil3.compose.AsyncImage(
-                    model = com.playfieldportal.core.ui.image.rememberArtworkModel(imageUri),
+                com.playfieldportal.core.ui.motion.ArtworkImage(
+                    model = imageUri,
                     contentDescription = "Media preview",
                     contentScale = androidx.compose.ui.layout.ContentScale.Fit,
                     modifier = Modifier.fillMaxSize().padding(12.dp),

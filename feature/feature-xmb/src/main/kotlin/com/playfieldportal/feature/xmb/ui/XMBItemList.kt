@@ -91,7 +91,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isUnspecified
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.playfieldportal.core.ui.achievement.BoneGlyph
 import com.playfieldportal.core.ui.components.ControllerPromptGlyphs
@@ -508,8 +507,8 @@ fun XMBItemList(
     // subtitles, so helper text stays readable over bright wallpaper regions. Default true —
     // without it the flat gray subtitle is the one label that washes out.
     textShadow: Boolean = true,
-    // Whether focused-row GIF icons may animate (battery saver / blocking overlays gate it).
-    // ANDed with per-row selection at the LocalIconAnimating provider.
+    // Whether this list's animated art may play at all (battery saver / blocking overlays gate
+    // it). Provided per row with the row's selection; see LocalMotionAllowed.
     iconAnimatingAllowed: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
@@ -682,11 +681,14 @@ private fun XmbVerticalListRow(
                 .padding(horizontal = ROW_HORIZONTAL_PADDING),
         ) {
             if (showIcon && !item.textOnly) {
-                // Per-row animation gate: the provider scope covers just this row's icon, so a
-                // GIF plays ONLY while its row is the selected one (decision 3).
+                // Per-row animation gate (Animated Images): this row's art counts as focused only
+                // while the row is selected — what Reduced plays — and nothing in it may animate
+                // while the list's own gate is shut (battery saver, a blocking overlay).
                 androidx.compose.runtime.CompositionLocalProvider(
-                    com.playfieldportal.core.ui.icons.LocalIconAnimating provides
-                        (isSelected && iconAnimatingAllowed),
+                    com.playfieldportal.core.ui.motion.LocalMotionFocused provides isSelected,
+                    com.playfieldportal.core.ui.motion.LocalIconFocused provides isSelected,
+                    com.playfieldportal.core.ui.motion.LocalMotionAllowed provides
+                        (com.playfieldportal.core.ui.motion.LocalMotionAllowed.current && iconAnimatingAllowed),
                 ) {
                 XmbItemLeadingIcon(
                     item = item,
@@ -820,7 +822,7 @@ private fun XmbItemLeadingIcon(
                 modifier = Modifier.width(LEADING_ICON_SLOT),
             ) {
                 if (item.coverUri != null) {
-                    AsyncImage(
+                    com.playfieldportal.core.ui.motion.ArtworkImage(
                         model = item.coverUri,
                         contentDescription = null,
                         modifier = Modifier.size(56.dp).clip(RoundedCornerShape(6.dp)),
@@ -881,7 +883,7 @@ private fun XmbItemLeadingIcon(
                 modifier = Modifier.width(LEADING_ICON_SLOT),
             ) {
                 if (item.coverUri != null) {
-                    AsyncImage(
+                    com.playfieldportal.core.ui.motion.ArtworkImage(
                         model = item.coverUri,
                         contentDescription = null,
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
@@ -910,7 +912,7 @@ private fun XmbItemLeadingIcon(
         item.type == XMBItemType.VIDEO_FOLDER -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
                 if (item.coverUri != null) {
-                    AsyncImage(
+                    com.playfieldportal.core.ui.motion.ArtworkImage(
                         model = item.coverUri,
                         contentDescription = null,
                         modifier = Modifier.size(LEADING_ICON_SIZE).clip(RoundedCornerShape(8.dp)),
@@ -955,7 +957,7 @@ private fun XmbItemLeadingIcon(
                 modifier = Modifier.width(LEADING_ICON_SLOT),
             ) {
                 if (item.coverUri != null) {
-                    AsyncImage(
+                    com.playfieldportal.core.ui.motion.ArtworkImage(
                         model = item.coverUri,
                         contentDescription = null,
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
@@ -1019,7 +1021,7 @@ private fun XmbItemLeadingIcon(
         item.type == XMBItemType.SOCIAL_ACCOUNT || item.type == XMBItemType.SOCIAL_FRIEND -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
                 if (item.coverUri != null) {
-                    AsyncImage(
+                    com.playfieldportal.core.ui.motion.ArtworkImage(
                         model = item.coverUri,
                         contentDescription = null,
                         modifier = Modifier.size(48.dp).clip(CircleShape),
@@ -1041,7 +1043,7 @@ private fun XmbItemLeadingIcon(
             item.type == XMBItemType.SOCIAL_VOICE_FRIEND_PICK -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
                 if (item.coverUri != null) {
-                    AsyncImage(
+                    com.playfieldportal.core.ui.motion.ArtworkImage(
                         model = item.coverUri,
                         contentDescription = null,
                         modifier = Modifier.size(48.dp).clip(CircleShape),
@@ -1168,7 +1170,7 @@ private fun XmbItemLeadingIcon(
                             modifier = Modifier.size(LEADING_ICON_SIZE),
                         )
                     } else {
-                        AsyncImage(
+                        com.playfieldportal.core.ui.motion.ArtworkImage(
                             model = memoryCardArt,
                             contentDescription = null,
                             modifier = Modifier.size(LEADING_ICON_SIZE),
@@ -1326,7 +1328,7 @@ internal fun BundledSilhouetteIcon(assetUri: String, modifier: Modifier = Modifi
             modifier = modifier,
         )
     } else {
-        AsyncImage(model = assetUri, contentDescription = null, modifier = modifier)
+        com.playfieldportal.core.ui.motion.ArtworkImage(model = assetUri, contentDescription = null, modifier = modifier)
     }
 }
 

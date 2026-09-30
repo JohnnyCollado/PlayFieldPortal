@@ -177,8 +177,12 @@ internal fun sgdbDimensionLabel(size: String): String = size.replace('x', '×')
 
 // ── Options menu rows ─────────────────────────────────────────────────────────
 
-/** A filter list opened from its root row. [multiSelect] lists stay open while toggling. */
+/**
+ * A filter list opened from a row. [FILTERS] is the one the menu's root opens, holding the active
+ * source's filters; the rest open from rows inside it. [multiSelect] lists stay open while toggling.
+ */
 enum class StudioFilterGroup(val title: String, val multiSelect: Boolean = false) {
+    FILTERS("Filters"),
     STYLE("Style", multiSelect = true),
     DIMENSIONS("Dimensions"),
     ANIMATION("Animation"),
@@ -213,9 +217,11 @@ private fun onOff(on: Boolean) = if (on) "On" else "Off"
 private fun regionLabel(code: String?) = code?.uppercase() ?: "All"
 
 /**
- * The filter rows of the Options menu for [state], Tracker style: the root names each list with its
- * current setting and toggles in place; a list checks its active choice. Empty for a source that has
- * no filters. [ssTypes] is the active tab's ScreenScraper media types, [regions] the Region list.
+ * The filter rows of the Options menu for [state], Tracker style. The menu's root ([group] null)
+ * gets one Filters row, reading "Active" while the source is filtered narrower than its defaults;
+ * it steps into [StudioFilterGroup.FILTERS], which names each list with its current setting and
+ * toggles in place; a list checks its active choice. Empty for a source that has no filters.
+ * [ssTypes] is the active tab's ScreenScraper media types, [regions] the Region list.
  */
 fun studioFilterRows(
     state: ArtworkStudioUiState,
@@ -229,7 +235,15 @@ fun studioFilterRows(
     val type = sgdbFilterType(kind)
     val defaultRegion = StudioFilters.ssRegionFor(state.game?.region)
     return when (group) {
-        null -> when (source) {
+        null -> {
+            val hasFilters = studioFilterRows(state, StudioFilterGroup.FILTERS, ssTypes, regions).isNotEmpty()
+            if (!hasFilters || source == null) emptyList()
+            else listOf(StudioFilterRow(
+                "Filters", StudioFilterOption.Open(StudioFilterGroup.FILTERS),
+                value = if (f.isActive(source, kind, state.includeNsfw)) "Active" else null,
+            ))
+        }
+        StudioFilterGroup.FILTERS -> when (source) {
             StudioSource.STEAMGRIDDB -> buildList {
                 val styles = type?.let { SGDB_STYLES[it] }.orEmpty()
                 if (styles.isNotEmpty()) {

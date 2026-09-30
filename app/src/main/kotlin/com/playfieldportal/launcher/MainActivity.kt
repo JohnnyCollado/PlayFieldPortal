@@ -17,6 +17,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
@@ -73,6 +75,10 @@ class MainActivity : ComponentActivity() {
     // provided here — see LocalMenuSounds for why that layer is the exception.
     @Inject
     lateinit var menuSoundPlayer: com.playfieldportal.core.ui.sound.MenuSoundPlayer
+
+    // Animated Images (Settings ▸ Artwork), provided to the whole UI below.
+    @Inject
+    lateinit var iconDisplayPreferences: com.playfieldportal.core.data.repository.IconDisplayPreferences
 
     // Same activity-scoped instance the shell's hiltViewModel() resolves — used to report when
     // the notification-permission dialog is out of the way so the boot sequence can start.
@@ -157,7 +163,23 @@ class MainActivity : ComponentActivity() {
                 // that need them are composables, not ViewModels. Remembered so the static local
                 // is written once — a fresh lambda per recomposition would invalidate the subtree.
                 val menuSounds = remember { MenuSoundSink { menuSoundPlayer.play(it) } }
-                CompositionLocalProvider(LocalMenuSounds provides menuSounds) {
+                // Animated Images: the setting, and "may anything animate at all" — false while PFP
+                // is behind a game (it is the HOME app, so its UI stays composed there), which
+                // holds every animated image still. Also feeds the shared gate that images drawn
+                // without ArtworkImage obey.
+                val imageMotion by iconDisplayPreferences.imageMotionFlow
+                    .collectAsState(initial = com.playfieldportal.core.domain.model.ImageMotion.DEFAULT)
+                val lifecycleState by lifecycle.currentStateFlow.collectAsState()
+                val appVisible = lifecycleState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)
+                androidx.compose.runtime.SideEffect {
+                    com.playfieldportal.core.ui.motion.MotionGate.Shared
+                        .update(imageMotion, focused = true, allowed = appVisible)
+                }
+                CompositionLocalProvider(
+                    LocalMenuSounds provides menuSounds,
+                    com.playfieldportal.core.ui.motion.LocalImageMotion provides imageMotion,
+                    com.playfieldportal.core.ui.motion.LocalMotionAllowed provides appVisible,
+                ) {
                     // Controller prompts are ambient: every footer resolves its glyphs from the
                     // live bindings supplied here, so none of them can contradict the pad.
                     ProvideControllerPrompts {

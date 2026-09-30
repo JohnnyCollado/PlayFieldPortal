@@ -40,7 +40,6 @@ import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.icons.CustomIcon
 import com.playfieldportal.core.ui.icons.CustomIconSurface
-import com.playfieldportal.core.ui.icons.LocalIconAnimating
 import com.playfieldportal.feature.xmb.viewmodel.CustomIconSession
 import com.playfieldportal.themekit.CustomizableIcons
 import com.playfieldportal.themekit.IconSlot
@@ -56,7 +55,7 @@ import com.playfieldportal.themekit.IconSlot
  * model: the whole point of a live editor is that the XMB behind updates as each pick lands.
  *
  * The centre strip previews each slot THROUGH the real render pipeline — CustomIconSurface
- * with LocalIconAnimating provided for the focused slot — so what the user sees here (matte,
+ * with LocalIconFocused provided for the focused slot — so what the user sees here (matte,
  * animation) is exactly what the XMB will draw.
  */
 @Composable
@@ -156,7 +155,7 @@ fun CustomIconsOverlay(
             val focused = slots.getOrNull(session.slotIndex)
             if (focused != null) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    CompositionLocalProvider(LocalIconAnimating provides true) {
+                    CompositionLocalProvider(com.playfieldportal.core.ui.motion.LocalIconFocused provides true) {
                         SlotPreview(
                             slot = focused,
                             icon = customIcons[focused.key] ?: themeIcons[focused.key],
@@ -179,7 +178,7 @@ fun CustomIconsOverlay(
             }
 
             // The group's slots, rendered through the real pipeline. The focused one animates
-            // (LocalIconAnimating=true) exactly as the XMB will draw it.
+            // (LocalIconFocused=true) exactly as the XMB will draw it, under Animated Images.
             LazyRow(
                 state = stripState,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -205,7 +204,7 @@ fun CustomIconsOverlay(
                             .clickable { onSlotFocused(index) }
                             .padding(8.dp),
                     ) {
-                        CompositionLocalProvider(LocalIconAnimating provides selected) {
+                        CompositionLocalProvider(com.playfieldportal.core.ui.motion.LocalIconFocused provides selected) {
                             SlotPreview(
                                 slot = slot,
                                 icon = customIcons[slot.key] ?: themeIcons[slot.key],

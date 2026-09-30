@@ -602,6 +602,8 @@ class PortableArtworkLibrary @Inject constructor(
     private fun mimeForExt(ext: String): String = when (ext.lowercase(Locale.ROOT)) {
         "png"  -> "image/png"
         "webp" -> "image/webp"
+        // Without it a GIF was created as image/jpeg, and some providers then append ".jpg".
+        "gif"  -> "image/gif"
         "pdf"  -> "application/pdf"
         "mp4"  -> "video/mp4"
         "webm" -> "video/webm"

@@ -2488,7 +2488,7 @@ class ArtworkStudioViewModel @Inject constructor(
                     info = info, actionsOpen = true, actionsIndex = 0, showFileInfo = false, filterGroup = null,
                 )
                 // The cursor starts on the first action, so Preview and Apply Changes stay one press
-                // away; the filter rows sit above it, reached with Up.
+                // away; the Filters row sits above it, reached with Up.
                 val items = opened.menuItems
                 val first = items.indexOfFirst { item -> item is StudioMenuItem.Action }.coerceAtLeast(0)
                 opened.copy(actionsIndex = first, actionsSelected = items.getOrNull(first))
@@ -2529,8 +2529,21 @@ class ArtworkStudioViewModel @Inject constructor(
         runFilter(row.option)
     }
 
-    /** B in a filter list: back to the menu's root, on the row that opened it. */
-    override fun closeFilterGroup() = _uiState.update { it.copy(filterGroup = null) }
+    /**
+     * B in a filter list: one level back, on the row that opened it. Style, Region and the other
+     * lists return to Filters; Filters returns to the menu's root, where the cursor is still on
+     * its row ([ArtworkStudioUiState.actionsSelected]).
+     */
+    override fun closeFilterGroup() = _uiState.update {
+        when (val open = it.filterGroup) {
+            null, StudioFilterGroup.FILTERS -> it.copy(filterGroup = null)
+            else -> {
+                val back = it.copy(filterGroup = StudioFilterGroup.FILTERS)
+                val opener = back.filterGroupRows.indexOfFirst { row -> row.option == StudioFilterOption.Open(open) }
+                back.copy(filterGroupIndex = opener.coerceAtLeast(0))
+            }
+        }
+    }
 
     private fun moveFilterCursor(delta: Int) = _uiState.update {
         val last = it.filterGroupRows.lastIndex.coerceAtLeast(0)
@@ -2921,27 +2934,43 @@ class ArtworkStudioViewModel @Inject constructor(
                     cropCandidate = null, cropProfileOverride = null, cropOptionsOpen = false,
                 )
             }
-            val baked = if (videoPath != null) {
-                // ICON1: re-encode the video cropped to the frame (Media3 Transformer + Crop).
-                val out = java.io.File.createTempFile("studio_crop_", ".mp4", appCacheDir)
-                val ok = videoSnapTranscoder.transcodeCropped(java.io.File(videoPath), out, l, t, r, b)
-                java.io.File(videoPath).delete()
-                if (ok) out else { out.delete(); null }
-            } else {
-                withContext(ioDispatcher) { bakeCrop(java.io.File(displayPath), l, t, r, b) }
-            }
-            java.io.File(displayPath).delete()
-            if (baked == null) {
-                _uiState.update { it.copy(applying = false, message = "Crop failed") }
-                return@launch
-            }
             val rect = "%.4f,%.4f,%.4f,%.4f".format(java.util.Locale.US, l, t, r, b)
-            val path = routingStore.saveCropBaked(
-                gameId, kind, baked, rect,
-                candidateOriginUrl = candidate?.url,
-                candidateProvider = candidate?.provider,
-                candidateAssetId = candidate?.providerAssetId,
-            )
+            // 32 bytes reaches a WebP's VP8X animation flag (byte 20).
+            val header = withContext(ioDispatcher) {
+                com.playfieldportal.feature.artwork.store.ArtworkTempIO.headerOf(java.io.File(displayPath), size = 32)
+            }
+            val path = when (CropSave.of(isVideo = videoPath != null, header = header)) {
+                // An animated image keeps its animation: the editor's copy of the original is saved
+                // whole, and the crop is applied while drawing (Animated Images).
+                CropSave.AT_DRAW -> routingStore.saveCropAtDraw(
+                    gameId, kind, java.io.File(displayPath), rect,
+                    candidateOriginUrl = candidate?.url,
+                    candidateProvider = candidate?.provider,
+                    candidateAssetId = candidate?.providerAssetId,
+                ).also { java.io.File(displayPath).delete() }
+                CropSave.REENCODE_VIDEO, CropSave.BAKE -> {
+                    val baked = if (videoPath != null) {
+                        // ICON1: re-encode the video cropped to the frame (Media3 Transformer + Crop).
+                        val out = java.io.File.createTempFile("studio_crop_", ".mp4", appCacheDir)
+                        val ok = videoSnapTranscoder.transcodeCropped(java.io.File(videoPath), out, l, t, r, b)
+                        java.io.File(videoPath).delete()
+                        if (ok) out else { out.delete(); null }
+                    } else {
+                        withContext(ioDispatcher) { bakeCrop(java.io.File(displayPath), l, t, r, b) }
+                    }
+                    java.io.File(displayPath).delete()
+                    if (baked == null) {
+                        _uiState.update { it.copy(applying = false, message = "Crop failed") }
+                        return@launch
+                    }
+                    routingStore.saveCropBaked(
+                        gameId, kind, baked, rect,
+                        candidateOriginUrl = candidate?.url,
+                        candidateProvider = candidate?.provider,
+                        candidateAssetId = candidate?.providerAssetId,
+                    )
+                }
+            }
             if (path == null) {
                 _uiState.update { it.copy(applying = false, message = "Could not save the cropped artwork") }
             } else {
@@ -3181,7 +3210,7 @@ class ArtworkStudioViewModel @Inject constructor(
             }
             return
         }
-        // A filter list opened from the Triangle menu: B returns to the menu's root.
+        // A filter list opened from the Triangle menu (Filters, or a list inside it): B steps back one level.
         if (s.actionsOpen && s.filterGroup != null) {
             when (action) {
                 GamepadAction.NAVIGATE_UP   -> moveFilterCursor(-1)

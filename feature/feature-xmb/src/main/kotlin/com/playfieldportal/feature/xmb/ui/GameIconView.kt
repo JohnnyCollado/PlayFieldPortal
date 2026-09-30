@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import com.playfieldportal.core.ui.motion.motionOnScreen
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,7 +48,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.aspectRatio
 import coil3.compose.AsyncImage
 import com.playfieldportal.core.ui.image.ArtworkRevisions
-import com.playfieldportal.core.ui.image.rememberArtworkModel
 import com.playfieldportal.core.domain.model.IconDisplayMode
 import com.playfieldportal.core.ui.icons.GameIconStyle
 import com.playfieldportal.feature.artwork.store.ArtworkDimensions
@@ -266,13 +266,20 @@ private fun NaturalAspectArtIcon(
 ) {
     // Size.ORIGINAL is load-bearing: the painter is only drawn AFTER it succeeds, so without
     // an explicit size the request would wait forever for draw-time constraints (blank tile).
+    // Animated Images: the painter is drawn directly rather than through ArtworkImage, so it
+    // carries its own gate (and the Image below reports its position to it).
+    val motionGate = com.playfieldportal.core.ui.motion.rememberMotionGate()
+    val context = LocalContext.current
     val painter = coil3.compose.rememberAsyncImagePainter(
-        model = coil3.request.ImageRequest.Builder(LocalContext.current)
-            .data(artworkUri)
-            .size(coil3.size.Size.ORIGINAL)
-            // Changes when the bytes behind artworkUri are replaced in place, so the tile reloads.
-            .memoryCacheKey(ArtworkRevisions.cacheKey(artworkUri))
-            .build()
+        model = remember(artworkUri, ArtworkRevisions.cacheKey(artworkUri), motionGate, context) {
+            coil3.request.ImageRequest.Builder(context)
+                .data(artworkUri)
+                .size(coil3.size.Size.ORIGINAL)
+                // Changes when the bytes behind artworkUri are replaced in place, so the tile reloads.
+                .memoryCacheKey(ArtworkRevisions.cacheKey(artworkUri))
+                .apply { extras[com.playfieldportal.core.ui.motion.MotionGateKey] = motionGate }
+                .build()
+        }
     )
     // Coil 3 exposes the painter state as a StateFlow rather than a plain value.
     val state by painter.state.collectAsState()
@@ -298,7 +305,9 @@ private fun NaturalAspectArtIcon(
                     painter            = painter,
                     contentDescription = null,
                     contentScale       = ContentScale.Fit,
-                    modifier           = Modifier.fillMaxSize(),
+                    modifier           = Modifier
+                        .fillMaxSize()
+                        .motionOnScreen(motionGate),
                 )
             }
             state is coil3.compose.AsyncImagePainter.State.Error -> PspIcon0Icon(
@@ -332,8 +341,8 @@ fun PspIcon0Icon(
     ) {
         if (artworkUri != null) {
             // Crop fills the 144:80 tile edge-to-edge with the (landscape) hero art.
-            AsyncImage(
-                model              = rememberArtworkModel(artworkUri),
+            com.playfieldportal.core.ui.motion.ArtworkImage(
+                model              = artworkUri,
                 contentDescription = null,
                 contentScale       = ContentScale.Crop,
                 modifier           = Modifier.fillMaxSize(),
@@ -386,8 +395,8 @@ fun PspRectangleIcon(
         contentAlignment = Alignment.Center,
     ) {
         if (artworkUri != null) {
-            AsyncImage(
-                model              = rememberArtworkModel(artworkUri),
+            com.playfieldportal.core.ui.motion.ArtworkImage(
+                model              = artworkUri,
                 contentDescription = null,
                 contentScale       = ContentScale.Crop,
                 modifier           = Modifier.fillMaxSize(),
@@ -477,8 +486,8 @@ fun CartridgeIcon(
             contentAlignment = Alignment.Center,
         ) {
             if (artworkUri != null) {
-                AsyncImage(
-                    model              = rememberArtworkModel(artworkUri),
+                com.playfieldportal.core.ui.motion.ArtworkImage(
+                    model              = artworkUri,
                     contentDescription = null,
                     contentScale       = ContentScale.Crop,
                     modifier           = Modifier.fillMaxSize(),

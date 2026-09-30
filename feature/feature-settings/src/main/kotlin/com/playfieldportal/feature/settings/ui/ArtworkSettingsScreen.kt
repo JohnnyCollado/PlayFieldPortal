@@ -205,6 +205,20 @@ fun ArtworkSettingsScreen(
                 onClick  = { viewModel.cycleIconDisplayMode() },
             )
 
+            SettingsValueRow(
+                label    = "Animated Images",
+                sublabel = when (state.imageMotion) {
+                    com.playfieldportal.core.domain.model.ImageMotion.ANIMATED ->
+                        "Every animated artwork, icon and wallpaper on screen plays — the most battery"
+                    com.playfieldportal.core.domain.model.ImageMotion.REDUCED ->
+                        "Only the focused game's animated art plays; the rest hold their first frame"
+                    com.playfieldportal.core.domain.model.ImageMotion.STATIC ->
+                        "Animated art never plays — every image shows its first frame"
+                } + ". Off-screen images never play.",
+                value    = state.imageMotion.label,
+                onClick  = { viewModel.cycleImageMotion() },
+            )
+
             SettingsToggleRow(
                 label    = "Animated Icons",
                 sublabel = "Play a game's video snap in its icon after resting on it (Custom Icon mode; skipped on low battery)",

@@ -122,7 +122,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         GameStorefrontIdentityEntity::class,
         LocalSteamFolderEntity::class,
     ],
-    version = 51,
+    version = 52,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -1580,6 +1580,17 @@ abstract class PFPDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
+            }
+        }
+
+        /**
+         * v52 — `artwork_records.crop_at_draw`: animated art in a cropped slot keeps its original
+         * file and is framed while drawing. Defaults to 0, so every existing (baked) crop is left
+         * exactly as it is and nothing is cropped twice.
+         */
+        val MIGRATION_51_52 = object : Migration(51, 52) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE artwork_records ADD COLUMN crop_at_draw INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

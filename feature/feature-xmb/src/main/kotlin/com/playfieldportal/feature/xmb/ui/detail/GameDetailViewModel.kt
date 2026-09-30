@@ -1403,13 +1403,14 @@ class GameDetailViewModel @Inject constructor(
             )
 
             // Harvested launcher shortcut (Windows Games card) — startShortcut is an API call,
-            // not an intent, so it can't ride the normal launch channel.
+            // not an intent, so the dispatcher runs it through its own shortcut path (GameBoot
+            // first, then the hand-off record).
             if (game.shortcutId != null && game.packageName != null) {
-                launcherShortcutRepository.launch(game.packageName!!, game.shortcutId!!)
+                launchDispatcher.launchShortcut(game) {
+                    launcherShortcutRepository.launch(game.packageName!!, game.shortcutId!!)
+                }
                     .onSuccess {
                         _uiState.update { it.copy(actionMessage = null) }
-                        // Shortcut launches bypass the dispatcher; record the hand-off for the return check.
-                        launchDispatcher.noteShortcutHandoff(game)
                         discordPresence.setCurrentGame(game.title)
                     }
                     .onFailure { e ->

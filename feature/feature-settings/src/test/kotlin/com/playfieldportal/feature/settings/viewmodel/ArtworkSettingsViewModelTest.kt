@@ -75,6 +75,7 @@ class ArtworkSettingsViewModelTest {
             every { modeFlow } returns flowOf(com.playfieldportal.core.domain.model.IconDisplayMode.DEFAULT)
             every { animatedIconsFlow } returns flowOf(true)
             every { lingerDelaySecondsFlow } returns flowOf(1.5f)
+            every { imageMotionFlow } returns flowOf(com.playfieldportal.core.domain.model.ImageMotion.STATIC)
         }
         coEvery { artworkRepository.computeStatus() }    returns ArtworkStatus(total = 10, complete = 8, missing = 2)
         coEvery { scrapePreferences.getOptions() }       returns ScrapeOptions()
@@ -297,6 +298,28 @@ class ArtworkSettingsViewModelTest {
 
         assertEquals(3.5f, viewModel.uiState.value.icon1LingerDelaySeconds)
         coVerify { iconDisplayPreferences.setLingerDelaySeconds(3.5f) }
+    }
+
+    // ── Animated Images ────────────────────────────────────────────────────────
+
+    @Test
+    fun `Animated Images shows the stored setting`() = runTest(testDispatcher) {
+        viewModel = activeViewModel()
+        advanceUntilIdle()
+
+        assertEquals(com.playfieldportal.core.domain.model.ImageMotion.STATIC, viewModel.uiState.value.imageMotion)
+    }
+
+    @Test
+    fun `cycling Animated Images wraps from Static to Animated and saves it`() = runTest(testDispatcher) {
+        viewModel = activeViewModel()
+        advanceUntilIdle()
+
+        viewModel.cycleImageMotion()
+        advanceUntilIdle()
+
+        assertEquals(com.playfieldportal.core.domain.model.ImageMotion.ANIMATED, viewModel.uiState.value.imageMotion)
+        coVerify { iconDisplayPreferences.setImageMotion(com.playfieldportal.core.domain.model.ImageMotion.ANIMATED) }
     }
 
     // ── IGDB credential test ───────────────────────────────────────────────────

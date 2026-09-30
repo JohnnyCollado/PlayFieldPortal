@@ -359,21 +359,27 @@ private fun EmptyDrawerMessage(
             },
             color = colors.textSecondary,
             fontSize = 16.sp,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = when {
-                hasQuery -> "Try a different search term"
-                filter == AppFilter.GAMES -> "Apps marked as games in the Play Store appear here"
-                filter == AppFilter.EMULATORS -> "Install RetroArch, PPSSPP, or another emulator"
-                filter == AppFilter.RECENT && !hasUsageAccess -> "Grant access so PFP can sort apps by last used time"
-                else -> ""
-            },
-            color = colors.textSecondary.copy(alpha = 0.6f),
-            fontSize = 13.sp,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 48.dp),
         )
+        val hint = when {
+            hasQuery -> "Try a different search term"
+            filter == AppFilter.GAMES -> "Apps marked as games in the Play Store appear here"
+            filter == AppFilter.EMULATORS -> "Install RetroArch, PPSSPP, or another emulator"
+            filter == AppFilter.RECENT && !hasUsageAccess -> "Grant access so PFP can sort apps by last used time"
+            else -> null
+        }
+        // No hint (e.g. Recently Used with nothing used yet) → skip the spacer and the empty line,
+        // otherwise they'd push the headline above the drawer's center.
+        if (hint != null) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = hint,
+                color = colors.textSecondary.copy(alpha = 0.6f),
+                fontSize = 13.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 48.dp),
+            )
+        }
         if (filter == AppFilter.RECENT && !hasUsageAccess) {
             Spacer(Modifier.height(16.dp))
             Text(

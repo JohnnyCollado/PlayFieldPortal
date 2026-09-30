@@ -88,7 +88,8 @@ class LaunchDispatcher @Inject constructor(
     suspend fun launch(game: Game, resolved: ResolvedLaunch?, intent: Intent): LaunchDispatchResult {
         // The ONE GameBoot seam. Here, and not at the confirm moment, because everything above
         // this line is preflight: a game that cannot launch must never show a presentation. Both
-        // game-launch call sites (Game Detail and the XMB's direct launch) get it for free.
+        // game-launch call sites (Game Detail and the XMB's direct launch) get it for free;
+        // shortcut launches pass the same gate through [launchShortcut].
         // No-op when GameBoot is disabled, and bounded by its own watchdog — see GameBootGate.
         gameBootGate.awaitPresentation(game.title)
         return try {
@@ -151,12 +152,16 @@ class LaunchDispatcher @Inject constructor(
     }
 
     /**
-     * A harvested launcher shortcut (Windows games) was started directly through LauncherApps,
-     * bypassing [launch]. Records the hand-off so the game's return is still recognized — without
-     * outcome recording or the recovery sheet, which only the intent path can classify.
+     * Starts a harvested launcher shortcut (BannerHub / GameHub and other Windows-game hosts).
+     * [start] is the LauncherApps.startShortcut call — an API call, not an intent, so it can't ride
+     * [launch] — but it still passes the same GameBoot seam first. On success the hand-off is
+     * recorded so the game's return is still recognized, without outcome recording or the recovery
+     * sheet, which only the intent path can classify. A failure is handed back for the caller's
+     * own preflight-failure handling.
      */
-    fun noteShortcutHandoff(game: Game) {
-        handoffTracker.onDispatched(game)
+    suspend fun launchShortcut(game: Game, start: () -> Result<Unit>): Result<Unit> {
+        gameBootGate.awaitPresentation(game.title)
+        return start().onSuccess { handoffTracker.onDispatched(game) }
     }
 
     fun dismissRecovery() {

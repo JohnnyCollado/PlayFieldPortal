@@ -232,8 +232,10 @@ private fun XMBCategoryItem(
             // The selected category's GIF (if the slot holds one) animates exactly while it is
             // the focused column — the same gate the item rows obey.
             androidx.compose.runtime.CompositionLocalProvider(
-                com.playfieldportal.core.ui.icons.LocalIconAnimating provides
-                    (isSelected && iconAnimatingAllowed),
+                com.playfieldportal.core.ui.motion.LocalMotionFocused provides isSelected,
+                com.playfieldportal.core.ui.motion.LocalIconFocused provides isSelected,
+                com.playfieldportal.core.ui.motion.LocalMotionAllowed provides
+                    (com.playfieldportal.core.ui.motion.LocalMotionAllowed.current && iconAnimatingAllowed),
             ) {
             // All category icons resolve through the shared core-ui catalog (catbar_* column
             // glyphs and sysicon_* console art) — selection is conveyed by size and alpha (no halo).

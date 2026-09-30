@@ -12,12 +12,14 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -50,19 +52,23 @@ class LaunchDispatcherTest {
         source = LaunchSource.PLATFORM_DEFAULT,
     )
 
-    private class Harness(val scope: TestScope) {
-        val context: Context = mockk(relaxed = true)
+    private class Harness(val scope: TestScope, gameBootOn: Boolean = false) {
+        val context: Context = mockk(relaxed = true) {
+            every { packageName } returns "com.test"
+        }
         val recorder: LaunchOutcomeRecorder = mockk(relaxed = true)
         val intent: Intent = mockk(relaxed = true)
         var now = 0L
 
-        // GameBoot switched off in every existing case: awaitPresentation returns immediately,
-        // so these tests keep pinning the dispatcher's own behaviour rather than the gate's.
+        // GameBoot switched off unless a case asks for it: awaitPresentation returns immediately,
+        // so most tests keep pinning the dispatcher's own behaviour rather than the gate's.
         val gameBootPreferences: com.playfieldportal.core.data.repository.GameBootPreferences =
             mockk(relaxed = true) {
-                every { gameBootEnabledFlow } returns kotlinx.coroutines.flow.flowOf(false)
+                every { gameBootEnabledFlow } returns kotlinx.coroutines.flow.flowOf(gameBootOn)
             }
-        val uiMediaStore: com.playfieldportal.core.data.repository.UiMediaStore = mockk(relaxed = true)
+        val uiMediaStore: com.playfieldportal.core.data.repository.UiMediaStore = mockk(relaxed = true) {
+            every { pathFor(any()) } returns null
+        }
         val gameBootAudioPlayer: com.playfieldportal.core.ui.media.UiMediaAudioPlayer = mockk(relaxed = true)
         val gameBootGate = GameBootGate(context, gameBootPreferences, uiMediaStore, gameBootAudioPlayer)
         val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer = mockk(relaxed = true)
@@ -80,7 +86,20 @@ class LaunchDispatcherTest {
         )
     }
 
-    private fun TestScope.harness() = Harness(this)
+    private fun TestScope.harness(gameBootOn: Boolean = false) = Harness(this, gameBootOn)
+
+    /**
+     * The gate reads its media paths on Dispatchers.IO, which the test scheduler cannot drive, so
+     * waiting on it polls with a real sleep (same pattern as GameBootGateTest.eventually).
+     */
+    private fun TestScope.eventually(what: String, timeoutMs: Long = 5_000, condition: () -> Boolean) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (!condition()) {
+            if (System.currentTimeMillis() > deadline) throw AssertionError("Timed out waiting for: $what")
+            Thread.sleep(20)
+            testScheduler.runCurrent()
+        }
+    }
 
     // runTest auto-advances the virtual clock; keep every dispatcher job on that same scheduler so
     // scope.launch work (verdict recording, watchdog) is driven by advanceUntilIdle/advanceTimeBy.
@@ -320,6 +339,46 @@ class LaunchDispatcherTest {
 
         h.dispatcher.dismissRecovery()
         assertNull(h.dispatcher.recoveryRequests.value)
+    }
+
+    // ── Shortcut launches (BannerHub / GameHub / any pinned launcher shortcut) ─────────────
+
+    @Test
+    fun `shortcut launch waits for GameBoot before starting the shortcut`() = runTest {
+        val h = harness(gameBootOn = true)
+        var started = false
+
+        val launching = async { h.dispatcher.launchShortcut(game) { started = true; Result.success(Unit) } }
+        eventually("the GameBoot presentation is raised") { h.gameBootGate.active.value != null }
+
+        assertFalse(started, "The shortcut must not start while GameBoot is on screen")
+        h.gameBootGate.onPresentationFinished()
+        eventually("the shortcut launch completes") { launching.isCompleted }
+
+        assertTrue(started, "The shortcut must start once GameBoot finishes")
+        assertTrue(launching.await().isSuccess)
+    }
+
+    @Test
+    fun `shortcut launch with GameBoot off starts immediately`() = runTest {
+        val h = harness()
+        var started = false
+
+        val result = h.dispatcher.launchShortcut(game) { started = true; Result.success(Unit) }
+
+        assertTrue(started)
+        assertTrue(result.isSuccess)
+        assertNull(h.gameBootGate.active.value)
+    }
+
+    @Test
+    fun `a failed shortcut start is handed back to the caller`() = runTest {
+        val h = harness()
+
+        val result = h.dispatcher.launchShortcut(game) { Result.failure(IllegalStateException("gone")) }
+
+        assertTrue(result.isFailure)
+        assertEquals("gone", result.exceptionOrNull()?.message)
     }
 
     private fun outcome(status: LaunchOutcomeStatus) = LaunchOutcome(

@@ -177,19 +177,27 @@ private fun MotionVideoSurface(motionPath: String, decision: MotionWallpaperPoli
  * key, so it is a distinct decode from any still request of the same file). The caller only
  * routes non-POSTER decisions into this background, so the request is unconditional. (REDUCED is
  * a no-op here: there is no frame-rate knob; the video's 0.5f playback-speed analogue would be
- * arbitrary.) If the animated decode fails outright, this layer renders nothing and the poster
+ * arbitrary.) Animated Images then decides whether it plays (see [rememberMotionGate]).
+ * If the animated decode fails outright, this layer renders nothing and the poster
  * beneath is simply what shows — the same degradation a corrupt video gets.
  */
 @Composable
 private fun AnimatedImageSurface(motionPath: String) {
+    // Animated Images also governs the wallpaper: it counts as focused (it is the backdrop of
+    // whatever is focused), so Animated and Reduced play it and Static holds its first frame.
+    val gate = rememberMotionGate(focused = true)
+    val context = LocalContext.current
     AsyncImage(
-        model = ImageRequest.Builder(LocalContext.current)
-            .data(motionPath)
-            .repeatCount(MovieDrawable.REPEAT_INFINITE)
-            .build(),
+        model = remember(motionPath, gate, context) {
+            ImageRequest.Builder(context)
+                .data(motionPath)
+                .repeatCount(MovieDrawable.REPEAT_INFINITE)
+                .motionGate(gate)
+                .build()
+        },
         contentDescription = null,
         contentScale = ContentScale.Crop,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().motionOnScreen(gate),
     )
 }
 

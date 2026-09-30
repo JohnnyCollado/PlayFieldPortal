@@ -74,8 +74,8 @@ object ArtworkTempIO {
         return tmp
     }
 
-    fun headerOf(file: File): ByteArray = runCatching {
-        val header = ByteArray(12)
+    fun headerOf(file: File, size: Int = 12): ByteArray = runCatching {
+        val header = ByteArray(size)
         val read = file.inputStream().use { it.read(header) }
         if (read <= 0) ByteArray(0) else header.copyOf(read)
     }.getOrDefault(ByteArray(0))

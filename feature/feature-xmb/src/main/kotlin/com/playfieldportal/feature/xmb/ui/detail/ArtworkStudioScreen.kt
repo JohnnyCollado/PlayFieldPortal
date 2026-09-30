@@ -80,7 +80,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import coil3.compose.AsyncImage
 import com.playfieldportal.core.common.logging.LogRedaction
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPrompt
@@ -152,7 +151,8 @@ fun ArtworkStudioScreen(
             com.playfieldportal.feature.artwork.store.ArtworkKind.MANUAL -> arrayOf("application/pdf")
             com.playfieldportal.feature.artwork.store.ArtworkKind.VIDEO,
             com.playfieldportal.feature.artwork.store.ArtworkKind.ICON1  -> arrayOf("video/mp4", "video/webm", "video/*")
-            else -> arrayOf("image/png", "image/jpeg", "image/webp")
+            // GIF too: animated art (GIF / animated WebP) plays under Animated Images.
+            else -> arrayOf("image/png", "image/jpeg", "image/webp", "image/gif")
         }
         if (com.playfieldportal.feature.artwork.store.ArtworkFileNaming.supportsMultiple(kind)) localMultiPicker.launch(mimes)
         else localPicker.launch(mimes)
@@ -418,7 +418,7 @@ internal fun ArtworkStudioContent(
                                 // key(previewVersion) forces a fresh AsyncImage after an apply so the
                                 // preview reloads even when the portable library reused the same URI.
                                 state.currentUri != null -> androidx.compose.runtime.key(state.previewVersion) {
-                                    AsyncImage(
+                                    com.playfieldportal.core.ui.motion.ArtworkImage(
                                         model = state.currentUri,
                                         contentDescription = null,
                                         contentScale = ContentScale.Fit,
@@ -811,8 +811,9 @@ internal fun ArtworkStudioContent(
                                                     color = Color.White.copy(alpha = 0.75f),
                                                     fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
                                                 )
-                                                else -> AsyncImage(
+                                                else -> com.playfieldportal.core.ui.motion.ArtworkImage(
                                                     model = art.thumb ?: art.url,
+                                                    focused = focused,
                                                     contentDescription = null,
                                                     contentScale = ContentScale.Crop,
                                                     modifier = Modifier.fillMaxSize(),
@@ -939,7 +940,7 @@ internal fun ArtworkStudioContent(
                     } else if (art.isVideo) {
                         Text("Video snap from ${art.provider}", color = Color.White, fontSize = 14.sp)
                     } else {
-                        AsyncImage(
+                        com.playfieldportal.core.ui.motion.ArtworkImage(
                             model = art.url,
                             contentDescription = null,
                             contentScale = ContentScale.Fit,
@@ -1283,13 +1284,14 @@ internal fun ArtworkStudioContent(
         }
 
         // ── Options menu overlay (Y / triangle) — the shared XMB-style context menu ──
-        // The active source's filter rows come first, Tracker style ("Style" · "3 of 5"), then the
-        // slot and source actions. A filter list (Style, Region, …) replaces the root while open.
+        // One Filters row comes first when the active source has filters, then the slot and source
+        // actions. Filters steps into the source's filter list, Tracker style ("Style" · "3 of 5"),
+        // and each list inside it (Style, Region, …) replaces it while open.
         if (state.actionsOpen && !state.showFileInfo && state.filterGroup != null) {
             com.playfieldportal.core.ui.components.PspContextMenuOverlay(
                 title = state.filterGroup?.title.orEmpty(),
                 rows = state.filterGroupRows.map {
-                    com.playfieldportal.core.ui.components.PspMenuRow(it.label, checked = it.checked)
+                    com.playfieldportal.core.ui.components.PspMenuRow(it.label, value = it.value, checked = it.checked)
                 },
                 selectedIndex = state.filterGroupIndex,
                 onRowActivated = actions::activateFilterRow,

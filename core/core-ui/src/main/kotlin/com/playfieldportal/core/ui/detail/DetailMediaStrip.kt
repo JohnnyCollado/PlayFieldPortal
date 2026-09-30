@@ -20,8 +20,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
-import com.playfieldportal.core.ui.image.rememberArtworkModel
 
 // ── Media preview tiles ───────────────────────────────────────────────────────
 //
@@ -68,11 +66,13 @@ fun PfpDetailMediaTile(
         contentAlignment = Alignment.Center,
     ) {
         if (poster != null) {
-            AsyncImage(
-                model = rememberArtworkModel(poster),
+            com.playfieldportal.core.ui.motion.ArtworkImage(
+                model = poster,
                 contentDescription = if (isVideo) null else contentDescription,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
+                // Under Reduced only the tile the cursor is on plays.
+                focused = focused,
             )
         }
         if (isVideo) {

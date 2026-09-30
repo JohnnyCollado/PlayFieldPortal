@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -25,12 +26,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -50,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.feature.xmb.R
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -69,16 +73,11 @@ object XmbStatusIcons {
     @DrawableRes val bluetooth: Int = R.drawable.ic_status_bluetooth
 
     /**
-     * Tier thresholds live in [batterySlotKey] and the key→drawable table in [forSlotKey];
-     * delegating through both keeps the mapping single-sourced — [forSlotKey]'s
-     * compile-time-checked drawable refs plus DefaultSlotGlyphTest guard the pair.
+     * Themeable icon slot (theme-kit IconSlots key) for a battery state. Tier thresholds live
+     * here and the key→drawable table in [forSlotKey]; the strip resolves through both so the
+     * mapping stays single-sourced — [forSlotKey]'s compile-time-checked drawable refs plus
+     * DefaultSlotGlyphTest guard the pair.
      */
-    @DrawableRes fun battery(level: Int, charging: Boolean): Int =
-        requireNotNull(forSlotKey(batterySlotKey(level, charging))) {
-            "batterySlotKey produced a key outside the status strip"
-        }
-
-    /** Themeable icon slot (theme-kit IconSlots key) matching [battery]'s tiers. */
     fun batterySlotKey(level: Int, charging: Boolean): String = when {
         charging       -> "status_battery_charging"
         level >= 76    -> "status_battery_full"
@@ -86,6 +85,21 @@ object XmbStatusIcons {
         level >= 26    -> "status_battery_medium"
         else           -> "status_battery_low"
     }
+
+    /**
+     * The frames of the charging animation: the fill tiers from [level]'s own tier up to full,
+     * so the cycle never dips below what the battery really holds. A full-tier battery that is
+     * still charging steps high → full so it visibly animates; at 100% it holds on full.
+     */
+    fun chargingCycleSlotKeys(level: Int): List<String> {
+        if (level >= 100) return listOf("status_battery_full")
+        val start = FillTiers.indexOf(batterySlotKey(level, charging = false))
+        return FillTiers.drop(minOf(start, FillTiers.lastIndex - 1))
+    }
+
+    private val FillTiers = listOf(
+        "status_battery_low", "status_battery_medium", "status_battery_high", "status_battery_full",
+    )
 
     /**
      * Built-in drawable behind a `status_*` slot key, or null when [slotKey] is not a status
@@ -103,9 +117,35 @@ object XmbStatusIcons {
     }
 }
 
+/**
+ * What the battery readout shows about power. Three states, not a charging flag, because "on the
+ * charger" and "gaining charge" genuinely diverge: a device drawing more than its charger supplies
+ * (the AYN Odin 3 on a 15 W brick), or one held by a charge limit, reports AC power alongside a
+ * DISCHARGING / NOT_CHARGING status.
+ */
+internal enum class BatteryPowerState {
+    /** Off the charger. */
+    UNPLUGGED,
+    /** On power but not gaining charge: the bolt shows, the fill animation does not. */
+    PLUGGED,
+    /** Gaining charge, or full on the charger: bolt plus the fill animation. */
+    CHARGING,
+}
+
+/** Classifies ACTION_BATTERY_CHANGED's EXTRA_STATUS and EXTRA_PLUGGED (0 = on battery). */
+internal fun batteryPowerStateOf(status: Int, plugged: Int): BatteryPowerState = when {
+    status == BatteryManager.BATTERY_STATUS_CHARGING ||
+        status == BatteryManager.BATTERY_STATUS_FULL -> BatteryPowerState.CHARGING
+    plugged != 0 -> BatteryPowerState.PLUGGED
+    else -> BatteryPowerState.UNPLUGGED
+}
+
 // ── PSP-style full-width status strip ────────────────────────────────────────
 //
-// Layout:  DATE  ┊  TIME  ┊  SORT        [🔔] [Ctrl] [BT] [WiFi] [Signal] [Bat] %
+// Layout:  DATE  ┊  TIME  ┊  SORT        [🔔] [Ctrl] [BT] [WiFi] [Signal] [Bat] [⚡]%
+//
+// On power the bolt appears before the %; while actually gaining charge [Bat] also cycles its
+// fill tiers up to full (see [BatteryPowerState]).
 //
 // The bell LEADS the right group, and that placement is the point rather than an accident: every
 // icon behind it is conditional — a controller connects, Bluetooth goes off, cellular drops — so
@@ -133,7 +173,7 @@ fun XmbPspStatusStrip(
 ) {
     val context = LocalContext.current
     var batteryLevel   by remember { mutableIntStateOf(0) }
-    var isCharging     by remember { mutableStateOf(false) }
+    var power          by remember { mutableStateOf(BatteryPowerState.UNPLUGGED) }
     var dateString     by remember { mutableStateOf(currentDateString()) }
     var timeString     by remember { mutableStateOf(currentTimeString()) }
 
@@ -144,8 +184,10 @@ fun XmbPspStatusStrip(
                 val scale  = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
                 val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
                 batteryLevel = if (level >= 0 && scale > 0) (level * 100 / scale) else 0
-                isCharging   = status == BatteryManager.BATTERY_STATUS_CHARGING ||
-                               status == BatteryManager.BATTERY_STATUS_FULL
+                power        = batteryPowerStateOf(
+                    status  = status,
+                    plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0),
+                )
             }
         }
         ContextCompat.registerReceiver(
@@ -277,19 +319,46 @@ fun XmbPspStatusStrip(
             sys.cellularLevel?.let { level ->
                 SignalBars(level, Modifier.size(width = 14.dp, height = 13.dp))
             }
+            // Low-battery red is a warning to plug in, so any time on power clears it.
+            val lowBattery = batteryLevel <= 20 && power == BatteryPowerState.UNPLUGGED
+            val batterySlot = if (power == BatteryPowerState.CHARGING) chargingFrameSlotKey(batteryLevel) else
+                XmbStatusIcons.batterySlotKey(batteryLevel, charging = false)
             StatusIcon(
-                res         = XmbStatusIcons.battery(batteryLevel, isCharging),
-                description = "Battery",
+                res         = requireNotNull(XmbStatusIcons.forSlotKey(batterySlot)) {
+                    "$batterySlot is not a status-strip slot"
+                },
+                description = when (power) {
+                    BatteryPowerState.CHARGING  -> "Battery, charging"
+                    BatteryPowerState.PLUGGED   -> "Battery, plugged in"
+                    BatteryPowerState.UNPLUGGED -> "Battery"
+                },
                 modifier    = Modifier.size(width = 24.dp, height = 11.dp),
-                tint        = if (batteryLevel <= 20 && !isCharging) LowBatteryTint else StripMuted,
-                slotKey     = XmbStatusIcons.batterySlotKey(batteryLevel, isCharging),
+                tint        = if (lowBattery) LowBatteryTint else StripMuted,
+                slotKey     = batterySlot,
             )
-            Text(
-                text       = "$batteryLevel%",
-                color      = if (batteryLevel <= 20 && !isCharging) LowBatteryTint else StripPrimary,
-                fontSize   = StripFontSize,
-                fontWeight = FontWeight.Medium,
-            )
+            // The bolt and the percentage sit tight together as one "⚡40%" readout, rather than
+            // taking the group's 7.dp gap as if the bolt were another status icon.
+            Row(
+                verticalAlignment     = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                if (power != BatteryPowerState.UNPLUGGED) {
+                    // Material's bolt, like the bell and controller glyphs in this strip. Not a
+                    // themeable slot.
+                    Icon(
+                        imageVector        = Icons.Filled.Bolt,
+                        contentDescription = null,
+                        tint               = StripPrimary,
+                        modifier           = Modifier.size(11.dp),
+                    )
+                }
+                Text(
+                    text       = "$batteryLevel%",
+                    color      = if (lowBattery) LowBatteryTint else StripPrimary,
+                    fontSize   = StripFontSize,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
         }
     }
 }
@@ -428,6 +497,39 @@ private fun WifiMeter(level: Int, modifier: Modifier = Modifier) {
         }
     }
 }
+
+/**
+ * The battery slot to show right now while charging: the fill tiers of
+ * [XmbStatusIcons.chargingCycleSlotKeys], stepped every [ChargingFrameMs] and looping.
+ *
+ * A theme that ships its own `status_battery_charging` icon gets exactly that icon, held still —
+ * the cycle is built from the built-in tier art, and swapping a themed charging icon for
+ * un-themed frames would quietly undo the theme.
+ */
+@Composable
+private fun chargingFrameSlotKey(level: Int): String {
+    val themed = com.playfieldportal.core.ui.icons.LocalCustomIcons.current["status_battery_charging"]
+        ?: com.playfieldportal.core.ui.icons.LocalXmbIconOverrides.current["status_battery_charging"]
+    if (themed != null) return "status_battery_charging"
+
+    val frames = XmbStatusIcons.chargingCycleSlotKeys(level)
+    var frame by remember(frames) { mutableIntStateOf(0) }
+    // Ticks only while the launcher is visible: this composition outlives ON_STOP (PFP is the
+    // HOME app), and a loop left running under a game would recompose the strip for nothing.
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(frames, lifecycle) {
+        if (frames.size < 2) return@LaunchedEffect
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                delay(ChargingFrameMs)
+                frame = (frame + 1) % frames.size
+            }
+        }
+    }
+    return frames[frame.coerceIn(0, frames.lastIndex)]
+}
+
+private const val ChargingFrameMs = 600L
 
 @Composable
 private fun StatusIcon(

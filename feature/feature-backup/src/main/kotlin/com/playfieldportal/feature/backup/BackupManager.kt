@@ -583,6 +583,8 @@ open class BackupManager @Inject constructor(
         stringPreferencesKey("display_icon_legibility"),
         stringPreferencesKey("display_xmb_layout_adjust"),
         stringPreferencesKey("pref_icon_display_mode"),
+        // Animated Images (Animated / Reduced / Static), stored by enum name.
+        stringPreferencesKey("pref_image_motion"),
         // Per-console icon display overrides, one encoded string for every Memory Card.
         stringPreferencesKey("pref_icon_display_mode_by_platform"),
         // Theme cascade values. The applied theme's NAME and layout are plain data; the theme's

@@ -2093,7 +2093,7 @@ class ArtworkStudioViewModelTest {
     }
 
     @Test
-    fun `on SteamGridDB the menu lists its filters first, then Change Match`() = runTest(testDispatcher) {
+    fun `on SteamGridDB the menu has one Filters row first, then Change Match`() = runTest(testDispatcher) {
         val vm = loadedOn(StudioSource.STEAMGRIDDB)
 
         vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
@@ -2101,15 +2101,87 @@ class ArtworkStudioViewModelTest {
 
         val items = vm.uiState.value.menuItems
         val filters = items.takeWhile { it is StudioMenuItem.Filter }.map { (it as StudioMenuItem.Filter).option }
+        assertEquals(listOf(StudioFilterOption.Open(StudioFilterGroup.FILTERS)), filters)
+        assertEquals("Filters", vm.uiState.value.filterRootRows.single().label)
+        assertTrue(StudioMenuItem.Action(StudioAction.CHANGE_MATCH) in items)
+    }
+
+    @Test
+    fun `A on Filters steps into SteamGridDB's filters`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+
+        openFilters(vm)
+
+        assertEquals(StudioFilterGroup.FILTERS, vm.uiState.value.filterGroup)
         assertEquals(
             listOf(
                 StudioFilterOption.Open(StudioFilterGroup.STYLE), StudioFilterOption.Open(StudioFilterGroup.DIMENSIONS),
                 StudioFilterOption.Open(StudioFilterGroup.ANIMATION), StudioFilterOption.Mature,
                 StudioFilterOption.Humor, StudioFilterOption.Epilepsy, StudioFilterOption.Clear,
             ),
-            filters,
+            vm.uiState.value.filterGroupRows.map { it.option },
         )
-        assertTrue(StudioMenuItem.Action(StudioAction.CHANGE_MATCH) in items)
+        assertEquals("the toggles still show their setting", "Off",
+            vm.uiState.value.filterGroupRows.first { it.option == StudioFilterOption.Humor }.value)
+    }
+
+    @Test
+    fun `B steps back one level at a time, landing on the row that opened each list`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+        pickFilter(vm, StudioFilterOption.Open(StudioFilterGroup.DIMENSIONS))
+        assertEquals(StudioFilterGroup.DIMENSIONS, vm.uiState.value.filterGroup)
+
+        vm.handleGamepadAction(GamepadAction.BACK)
+        assertEquals(StudioFilterGroup.FILTERS, vm.uiState.value.filterGroup)
+        assertEquals(
+            StudioFilterOption.Open(StudioFilterGroup.DIMENSIONS),
+            vm.uiState.value.filterGroupRows[vm.uiState.value.filterGroupIndex].option,
+        )
+
+        vm.handleGamepadAction(GamepadAction.BACK)
+        assertNull(vm.uiState.value.filterGroup)
+        assertTrue("B from Filters returns to the menu, not out of it", vm.uiState.value.actionsOpen)
+        assertEquals(
+            StudioMenuItem.Filter(StudioFilterOption.Open(StudioFilterGroup.FILTERS)),
+            vm.uiState.value.menuItems[vm.uiState.value.resolvedActionsIndex],
+        )
+    }
+
+    @Test
+    fun `the Filters row reads Active only while the source is filtered`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+        assertNull(vm.uiState.value.filterRootRows.single().value)
+
+        pickFilter(vm, StudioFilterOption.Humor)
+
+        assertEquals("Active", vm.uiState.value.filterRootRows.single().value)
+    }
+
+    @Test
+    fun `ScreenScraper's Filters list holds Region, Media and Clear Filters`() = runTest(testDispatcher) {
+        val vm = viewModel()
+        vm.load(1L)   // ICON0's first source is ScreenScraper
+        advanceUntilIdle()
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+
+        openFilters(vm)
+
+        // ICON0 browses several ScreenScraper media types, so Media is offered as well.
+        assertEquals(
+            listOf(
+                StudioFilterOption.Open(StudioFilterGroup.REGION),
+                StudioFilterOption.Open(StudioFilterGroup.MEDIA),
+                StudioFilterOption.Clear,
+            ),
+            vm.uiState.value.filterGroupRows.map { it.option },
+        )
     }
 
     @Test
@@ -3076,16 +3148,30 @@ class ArtworkStudioViewModelTest {
 
     // ── Per-source filters (2026-09-29) ───────────────────────────────────────
 
-    /** With the actions menu open, walks the cursor to the root filter row [option] and presses A. */
-    private fun kotlinx.coroutines.test.TestScope.pickFilter(vm: ArtworkStudioViewModel, option: StudioFilterOption) {
-        val index = vm.uiState.value.menuItems.indexOf(StudioMenuItem.Filter(option))
-        check(index >= 0) { "$option is not in the menu: ${vm.uiState.value.menuItems}" }
+    /** With the actions menu open at its root, walks to the Filters row and presses A. */
+    private fun kotlinx.coroutines.test.TestScope.openFilters(vm: ArtworkStudioViewModel) {
+        val filters = StudioMenuItem.Filter(StudioFilterOption.Open(StudioFilterGroup.FILTERS))
+        val index = vm.uiState.value.menuItems.indexOf(filters)
+        check(index >= 0) { "Filters is not in the menu: ${vm.uiState.value.menuItems}" }
         val delta = index - vm.uiState.value.resolvedActionsIndex
         repeat(kotlin.math.abs(delta)) {
             vm.handleGamepadAction(if (delta > 0) GamepadAction.NAVIGATE_DOWN else GamepadAction.NAVIGATE_UP)
         }
         vm.handleGamepadAction(GamepadAction.SELECT)
         advanceUntilIdle()
+    }
+
+    /**
+     * With the actions menu open, presses A on the filter row [option] of the Filters list —
+     * stepping into Filters first from the menu's root. A toggle leaves the list open, so a
+     * second call picks straight from it.
+     */
+    private fun kotlinx.coroutines.test.TestScope.pickFilter(vm: ArtworkStudioViewModel, option: StudioFilterOption) {
+        if (vm.uiState.value.filterGroup != StudioFilterGroup.FILTERS) {
+            check(vm.uiState.value.filterGroup == null) { "a sub-list is open: ${vm.uiState.value.filterGroup}" }
+            openFilters(vm)
+        }
+        pickInList(vm, option)
     }
 
     /** In an open filter list, walks to the row doing [option] and presses A. */

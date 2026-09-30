@@ -8989,9 +8989,8 @@ class XMBViewModel @Inject constructor(
         val shortcutId = game.shortcutId
         val packageName = game.packageName
         if (shortcutId != null && packageName != null) {
-            launcherShortcutRepository.launch(packageName, shortcutId)
-                // Shortcut launches bypass the dispatcher; record the hand-off for the return check.
-                .onSuccess { launchDispatcher.noteShortcutHandoff(game) }
+            // Through the dispatcher so GameBoot plays first and the hand-off is recorded.
+            launchDispatcher.launchShortcut(game) { launcherShortcutRepository.launch(packageName, shortcutId) }
                 .onFailure { e ->
                     Timber.w(e, "Direct shortcut launch failed")
                     launchDispatcher.recordPreflightFailure(game, null, "Couldn't launch: ${e.message}")

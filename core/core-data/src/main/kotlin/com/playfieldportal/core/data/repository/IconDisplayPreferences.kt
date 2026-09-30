@@ -46,6 +46,17 @@ class IconDisplayPreferences @Inject constructor(
     suspend fun setAnimatedIcons(enabled: Boolean) =
         context.pfpDataStore.edit { it[KEY_ANIMATED_ICONS] = enabled }
 
+    // Animated Images (Settings ▸ Artwork): how GIF / animated WebP artwork, custom icons and
+    // animated wallpapers play. ICON1 video snaps keep their own switch above.
+    val imageMotionFlow: Flow<com.playfieldportal.core.domain.model.ImageMotion> = context.pfpDataStore.data
+        .map {
+            com.playfieldportal.core.domain.model.ImageMotion.fromName(it[KEY_IMAGE_MOTION])
+                ?: com.playfieldportal.core.domain.model.ImageMotion.DEFAULT
+        }
+
+    suspend fun setImageMotion(motion: com.playfieldportal.core.domain.model.ImageMotion) =
+        context.pfpDataStore.edit { it[KEY_IMAGE_MOTION] = motion.name }
+
     // How long the cursor must rest on a game (ICON0 tile) before its ICON1 video snap plays.
     // Seconds, clamped to 1..5; the 1.5 s default keeps the PSP's rest-then-animate cadence.
     val lingerDelaySecondsFlow: Flow<Float> = context.pfpDataStore.data
@@ -58,6 +69,7 @@ class IconDisplayPreferences @Inject constructor(
         private val KEY_MODE = stringPreferencesKey("pref_icon_display_mode")
         private val KEY_PLATFORM_MODES = stringPreferencesKey("pref_icon_display_mode_by_platform")
         private val KEY_ANIMATED_ICONS = androidx.datastore.preferences.core.booleanPreferencesKey("pref_animated_icons")
+        private val KEY_IMAGE_MOTION = stringPreferencesKey("pref_image_motion")
         private val KEY_ICON1_LINGER_DELAY_SECONDS =
             floatPreferencesKey("pref_icon1_linger_delay_seconds")
 
