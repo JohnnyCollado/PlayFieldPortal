@@ -138,9 +138,13 @@ fun ArtworkStudioScreen(
         }
     }
 
-    // Local file picker — mime set follows the destination kind.
+    // Local file pickers — mime set follows the destination kind. A multi-asset kind takes several
+    // files in one trip through the picker; a single-art kind has one slot, so it takes one.
     val localPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) viewModel.applyLocal(uri)
+        if (uri != null) viewModel.applyLocal(listOf(uri))
+    }
+    val localMultiPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        viewModel.applyLocal(uris)
     }
     LaunchedEffect(state.localPickKind) {
         val kind = state.localPickKind ?: return@LaunchedEffect
@@ -150,7 +154,8 @@ fun ArtworkStudioScreen(
             com.playfieldportal.feature.artwork.store.ArtworkKind.ICON1  -> arrayOf("video/mp4", "video/webm", "video/*")
             else -> arrayOf("image/png", "image/jpeg", "image/webp")
         }
-        localPicker.launch(mimes)
+        if (com.playfieldportal.feature.artwork.store.ArtworkFileNaming.supportsMultiple(kind)) localMultiPicker.launch(mimes)
+        else localPicker.launch(mimes)
         viewModel.consumeLocalPick()
     }
 
@@ -199,7 +204,7 @@ internal fun ArtworkStudioContent(
             // Studio-local rather than the shared DetailBreadcrumb: this row carries a trailing
             // query field (L.3), and the breadcrumb's "Artwork Studio › category › source" trail
             // is what the approved mock replaces with flat tabs. The back arrow still walks the
-            // level ladder exactly like B (grid → sources → categories → close).
+            // level ladder exactly like B (grid → sources → close).
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth().height(36.dp),
@@ -327,17 +332,11 @@ internal fun ArtworkStudioContent(
                 ) {
                     lazyItemsIndexed(STUDIO_TABS) { index, tab ->
                         val selected = state.tabIndex == index
-                        val focusedZone = state.zone == StudioZone.TABS && selected
                         Box(
                             modifier = Modifier
                                 .height(24.dp)
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(if (selected) accent.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.07f))
-                                .border(
-                                    1.dp,
-                                    if (focusedZone) accent else Color.Transparent,
-                                    RoundedCornerShape(6.dp),
-                                )
                                 .clickable { actions.selectTab(index) }
                                 .padding(horizontal = 8.dp),
                             contentAlignment = Alignment.Center,
@@ -469,15 +468,16 @@ internal fun ArtworkStudioContent(
                                     .clip(RoundedCornerShape(6.dp))
                                     .background(if (selected) accent.copy(alpha = 0.24f) else Color.White.copy(alpha = 0.07f))
                                     .border(1.dp, if (focusedZone) accent else Color.Transparent, RoundedCornerShape(6.dp))
-                                    .clickable {
-                                        actions.selectSource(index)
-                                        if (source == StudioSource.LOCAL) actions.requestLocalPick()
-                                    }
+                                    // Local File's upload bar is the picker's one entry, so choosing
+                                    // the source only shows it (and the slot's files beneath).
+                                    .clickable { actions.selectSource(index) }
                                     .padding(horizontal = 8.dp),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
-                                    if (badge == null) source.label else "${source.label} · $badge",
+                                    // ● marks a source whose filters are narrower than its defaults.
+                                    (if (badge == null) source.label else "${source.label} · $badge") +
+                                        if (state.sourceFiltered(source)) " ●" else "",
                                     color = when {
                                         !available -> Color.White.copy(alpha = 0.28f)
                                         selected   -> Color.White
@@ -629,6 +629,37 @@ internal fun ArtworkStudioContent(
                     }
                     Spacer(Modifier.height(6.dp))
 
+                    // ── Local File's upload bar ───────────────────────────────
+                    // A thin bar the grid's width, above it and outside the measured slot, so the
+                    // slot's own files still page as whole gridfuls beneath it. A grid-zone stop:
+                    // up from the top row reaches it, A there opens the device picker.
+                    if (actions.sourcesForTab().getOrNull(state.sourceIndex) == StudioSource.LOCAL) {
+                        val barFocused = state.localBarFocused
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(28.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (barFocused) accent.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.06f))
+                                .border(
+                                    if (barFocused) 2.dp else 1.dp,
+                                    if (barFocused) accent else Color.White.copy(alpha = 0.22f),
+                                    RoundedCornerShape(6.dp),
+                                )
+                                .clickable(onClick = actions::requestLocalPick),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                if (state.selectsMultiple) "+  Add files from this device" else "+  Choose a file from this device",
+                                color = if (barFocused) Color.White else Color.White.copy(alpha = 0.75f),
+                                fontSize = 11.sp,
+                                maxLines = 1,
+                            )
+                        }
+                        Spacer(Modifier.height(6.dp))
+                    }
+
                     // ── Grid slot ─────────────────────────────────────────────
                     // Whatever height is left belongs to the grid. Its measured size decides how many
                     // tiles one page holds (AD-17); the ViewModel hears about it only when it changes.
@@ -673,18 +704,42 @@ internal fun ArtworkStudioContent(
                                     )
                                 }
                             }
-                            activeSource == StudioSource.LOCAL -> Box(
-                                Modifier
-                                    .fillMaxSize()
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(Color.White.copy(alpha = 0.05f))
-                                    .clickable(onClick = actions::requestLocalPick),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    "Press Confirm to choose a file from this device",
-                                    color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp,
-                                )
+                            // The upload bar above says how to add; this says what the slot holds.
+                            activeSource == StudioSource.LOCAL && state.results.isEmpty() ->
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Text(
+                                        if (state.selectsMultiple) {
+                                            "No ${STUDIO_TABS[state.tabIndex].label.lowercase()}s stored yet"
+                                        } else {
+                                            "The file you choose replaces this ${STUDIO_TABS[state.tabIndex].label}"
+                                        },
+                                        color = Color.White.copy(alpha = 0.45f), fontSize = 12.sp,
+                                    )
+                                }
+                            // The browse found art and the filters hid it: say so, and how to undo it.
+                            state.filtersHideEverything -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        "Nothing matches these filters · ${state.unfilteredTotal} hidden",
+                                        color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp,
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color.White.copy(alpha = 0.1f))
+                                            .clickable(onClick = actions::clearFilters)
+                                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                                    ) {
+                                        ControllerPrompt(
+                                            action = GamepadAction.SELECT,
+                                            label = "Clear Filters",
+                                            glyphSize = 14.dp,
+                                            labelColor = Color.White,
+                                        )
+                                    }
+                                }
                             }
                             state.results.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text(
@@ -714,7 +769,7 @@ internal fun ArtworkStudioContent(
                                     userScrollEnabled = false,
                                 ) {
                                     itemsIndexed(state.results) { index, art ->
-                                        val focused = state.zone == StudioZone.GRID && state.gridIndex == index
+                                        val focused = state.zone == StudioZone.GRID && state.gridIndex == index && !state.localBarFocused
                                         val previewing = art.isVideo && (focused || touchPreviewIndex == index)
                                         Box(
                                             modifier = Modifier
@@ -804,6 +859,7 @@ internal fun ArtworkStudioContent(
                         rangeStart = state.rangeStart,
                         rangeEnd = state.rangeEnd,
                         totalResults = state.totalResults,
+                        unfilteredTotal = state.unfilteredTotal,
                         picks = state.queueSummary,
                         page = state.page,
                         pageCount = state.pageCount,
@@ -829,13 +885,9 @@ internal fun ArtworkStudioContent(
             if (!showTouchControls) ControllerPromptBar(
                 items = buildList {
                     when (state.zone) {
-                        StudioZone.TABS -> {
-                            add(ControllerPromptItem(GamepadAction.SELECT, "sources"))
-                            add(ControllerPromptItem(GamepadAction.BACK, "close"))
-                        }
                         StudioZone.SOURCES -> {
                             add(ControllerPromptItem(GamepadAction.SELECT, "browse / pick file"))
-                            add(ControllerPromptItem(GamepadAction.BACK, "back"))
+                            add(ControllerPromptItem(GamepadAction.BACK, "close"))
                         }
                         StudioZone.GRID -> {
                             add(ControllerPromptItem(GamepadAction.SELECT, if (state.selectsMultiple) "check" else "preview / apply"))
@@ -1231,15 +1283,30 @@ internal fun ArtworkStudioContent(
         }
 
         // ── Options menu overlay (Y / triangle) — the shared XMB-style context menu ──
-        if (state.actionsOpen && !state.showFileInfo) {
-            val menuActions = state.availableActions
+        // The active source's filter rows come first, Tracker style ("Style" · "3 of 5"), then the
+        // slot and source actions. A filter list (Style, Region, …) replaces the root while open.
+        if (state.actionsOpen && !state.showFileInfo && state.filterGroup != null) {
+            com.playfieldportal.core.ui.components.PspContextMenuOverlay(
+                title = state.filterGroup?.title.orEmpty(),
+                rows = state.filterGroupRows.map {
+                    com.playfieldportal.core.ui.components.PspMenuRow(it.label, checked = it.checked)
+                },
+                selectedIndex = state.filterGroupIndex,
+                onRowActivated = actions::activateFilterRow,
+                onDismiss = actions::closeFilterGroup,
+                scrim = Color(0xA6000000),
+            )
+        } else if (state.actionsOpen && !state.showFileInfo) {
+            val filterRows = state.filterRootRows.map {
+                com.playfieldportal.core.ui.components.PspMenuRow(it.label, value = it.value)
+            }
             com.playfieldportal.core.ui.components.PspContextMenuOverlay(
                 title = STUDIO_TABS[state.tabIndex].label,
-                rows = menuActions.map {
+                rows = filterRows + state.availableActions.map {
                     com.playfieldportal.core.ui.components.PspMenuRow(it.label, isDestructive = it == StudioAction.CLEAR)
                 },
                 selectedIndex = state.resolvedActionsIndex,
-                onRowActivated = { index -> menuActions.getOrNull(index)?.let(actions::runAction) },
+                onRowActivated = actions::activateMenuItem,
                 onDismiss = actions::closeActions,
                 // Darker than the XMB default — the grid behind is busy, so let it recede.
                 scrim = Color(0xA6000000),
@@ -1261,7 +1328,7 @@ internal fun ArtworkStudioContent(
             )
         }
 
-        // ── Leave prompt (task 5.2): B from the categories while changes wait to be applied ──
+        // ── Leave prompt (task 5.2): B from the source row while changes wait to be applied ──
         if (state.leavePromptOpen) {
             val waiting = state.selection.size + state.removals.size
             com.playfieldportal.core.ui.components.PspContextMenuOverlay(

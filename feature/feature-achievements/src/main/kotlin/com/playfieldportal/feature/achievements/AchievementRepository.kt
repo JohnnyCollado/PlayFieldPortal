@@ -63,6 +63,8 @@ class AchievementRepository @Inject constructor(
 ) : AchievementController {
     /** This game's provider link (which provider + id it syncs from), or null if unlinked. */
     override fun observeLink(gameId: Long): Flow<ProviderGameLinkEntity?> = linkDao.observeForGame(gameId)
+
+    override fun observeLinks(gameId: Long): Flow<List<ProviderGameLinkEntity>> = linkDao.observeAllForGame(gameId)
     /** This game's coin summary (progress, tally, mastery), or null if never synced. */
     override fun observeGameCoins(gameId: Long): Flow<GameCoins?> =
         setDao.observeForGame(gameId).map { it?.toGameCoins() }

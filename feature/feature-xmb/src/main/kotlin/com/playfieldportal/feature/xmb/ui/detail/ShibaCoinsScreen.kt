@@ -171,7 +171,7 @@ fun ShibaCoinsScreen(
             },
     ) {
         Column(Modifier.fillMaxSize()) {
-            ShibaCoinsHeader(state, palette, onBack = viewModel::close)
+            ShibaCoinsHeader(state, palette, onBack = viewModel::close, onSelectSource = viewModel::selectSource)
 
             SearchRow(
                 query = state.query,
@@ -283,7 +283,12 @@ fun ShibaCoinsScreen(
  * shared breadcrumb would restyle the library and Game Detail along with it.
  */
 @Composable
-private fun ShibaCoinsHeader(state: ShibaCoinsUiState, palette: DetailPalette, onBack: () -> Unit) {
+private fun ShibaCoinsHeader(
+    state: ShibaCoinsUiState,
+    palette: DetailPalette,
+    onBack: () -> Unit,
+    onSelectSource: (AchievementProvider) -> Unit,
+) {
     Column(Modifier.fillMaxWidth().background(headerShade(palette))) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -321,6 +326,28 @@ private fun ShibaCoinsHeader(state: ShibaCoinsUiState, palette: DetailPalette, o
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+        }
+        // A game with two sets (Steam and Local Steam): one chip each, the shown one filled. L1/R1
+        // move between them; a tap picks one.
+        if (state.hasSourceSwitch) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.padding(start = DetailContentPadding + HeaderTitleIndent, bottom = 6.dp),
+            ) {
+                state.sources.forEach { source ->
+                    SourceTag(
+                        label = "${providerLabel(source.provider)} ${source.earned}/${source.total}",
+                        palette = palette,
+                        selected = source.provider == state.provider,
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            role = Role.Tab,
+                            onClick = { onSelectSource(source.provider) },
+                        ),
+                    )
+                }
+            }
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -368,7 +395,12 @@ private fun headerSubtitle(state: ShibaCoinsUiState): String {
         state.showLinkPanel -> "Not linked"
         else -> "Never synced"
     }
-    val source = listOfNotNull(state.platformLabel.takeIf { it.isNotBlank() }, ownershipTag(state))
+    val source = listOfNotNull(
+        state.platformLabel.takeIf { it.isNotBlank() },
+        // Two sets share the platform, so the line names which one is on screen.
+        providerLabel(state.provider).takeIf { state.hasSourceSwitch },
+        ownershipTag(state),
+    )
     return (source + freshness).joinToString(" · ")
 }
 

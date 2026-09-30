@@ -108,6 +108,8 @@ class ArtworkRepository @Inject constructor(
                 title           = before.title,
                 platformId      = before.platformId,
                 romPath         = before.romPath,
+                // An artwork action: it never changes the name the library shows.
+                options         = ScrapeOptions(fillTitle = false),
                 onAssetProgress = onAssetProgress,
             )
             val after = gameDao.getById(gameId)

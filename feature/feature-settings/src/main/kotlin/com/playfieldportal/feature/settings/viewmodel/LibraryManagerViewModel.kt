@@ -960,8 +960,9 @@ class LibraryManagerViewModel @Inject constructor(
     }
 
     /**
-     * Batch Match Local Games: inspect every game folder inside the picked parent, register what it
-     * finds, link what it can, and offer the rest to the convert picker.
+     * Batch Match Local Games: inspect every game folder inside the picked parent and, for those that
+     * map onto an installed library game, register and link them and offer the ones with no
+     * achievement list to the convert picker. Folders outside the library are left untouched.
      *
      * Progress and the final report both go to the tray, because a pass over a real emulator library
      * outlives this screen.

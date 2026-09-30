@@ -48,7 +48,7 @@ import kotlin.test.assertTrue
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
-@Config(manifest = Config.NONE)
+@Config(manifest = Config.NONE, sdk = [34])  // Robolectric tops out below the module's target SDK
 class ShibaCoinsFolderMatchTest {
 
     private val gameId = 1L

@@ -96,11 +96,9 @@ class SsMediaCatalog @Inject constructor(
                 ssId = matchedId,
                 romCrc32 = rom?.crc32,
             )
-            // Fill-only, like the main scrape: this lookup may name a game that has no name yet,
-            // but it must never rename one (see GameDao.fillScrapedTitleIfMissing).
-            if (game.userTitleOverride == null) {
-                info.title?.let { gameDao.fillScrapedTitleIfMissing(gameId, it) }
-            }
+            // No title, not even fill-only: this lookup lists art for the Studio, and filling
+            // scraped_title would rename the game on screen (user decision, 2026-09-29). Naming a
+            // game belongs to the library scrape and to the user.
             Timber.i("SS catalog live lookup for gameId=$gameId → ssId=$matchedId, ${info.medias.size} medias")
             info.medias
         }

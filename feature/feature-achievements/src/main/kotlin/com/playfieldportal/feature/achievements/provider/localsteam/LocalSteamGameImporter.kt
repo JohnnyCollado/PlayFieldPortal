@@ -2,7 +2,6 @@ package com.playfieldportal.feature.achievements.provider.localsteam
 
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.LocalCopyOwnership
-import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.provider.steam.SteamAppListResolver
@@ -57,10 +56,11 @@ class LocalSteamGameImporter @Inject constructor(
             Timber.i("Removing unlaunchable folder-import entity \"${it.displayTitle}\"")
             gameRepository.delete(it.id)
         }
-        val byTitle = live.associateBy { normalizeTitle(it.displayTitle) }
+        // Installed games only, the same set the batch matcher filtered its folders against.
+        val byTitle = live.filterNot { it.isMissing }.associateBy { normalizeLocalSteamTitle(it.displayTitle) }
         val linkedIds = mutableListOf<Long>()
         for (folder in folders) {
-            val match = byTitle[normalizeTitle(folder.folderName)] ?: steamNameBridge(folder, byTitle)
+            val match = matchInLibrary(folder.folderName, folder.appId, byTitle, steamNames)
                 ?: continue   // tracked, library-less — Shiba Coins picks it up on sync
             achievements.linkManually(match.id, AchievementProvider.LOCAL_STEAM, folder.appId)
             linkedIds += match.id
@@ -78,21 +78,34 @@ class LocalSteamGameImporter @Inject constructor(
         )
     }
 
-    // The bridge: folder appid -> official Steam name -> exact normalized match against the
-    // existing windows games (their shortcut labels come from Steam metadata too). Null when the
-    // store has no name or nothing matches — never guesses.
-    private suspend fun steamNameBridge(folder: LocalSteamGame, byTitle: Map<String, Game>): Game? {
-        val official = steamNames.officialNameOf(folder.appId) ?: return null
-        return byTitle[normalizeTitle(official)]
-            ?.also { Timber.i("Steam-name bridge: \"${folder.folderName}\" -> \"${it.displayTitle}\" (${folder.appId})") }
-    }
-
-    // Mirrors the Windows-card dedupe rule (normalizePcTitle): imports with different launch
-    // handles must converge on one game, and folder names count as titles.
-    private fun normalizeTitle(title: String): String =
-        title.lowercase().filter { it.isLetterOrDigit() }
-
     private companion object {
         const val WINDOWS_PLATFORM_ID = "windows"
     }
 }
+
+/**
+ * The mapping ladder, written down once: the folder's normalized name against [byTitle] (keys from
+ * [normalizeLocalSteamTitle]), then the STEAM-NAME BRIDGE — the app id's official store name matched
+ * the same way — which survives a renamed folder. Null when neither lands; never fuzzy, never a guess.
+ *
+ * [appId] is null for a folder with no marker yet: there is nothing to ask the store about, so only
+ * the name can map it. Generic over the row type so the importer (domain games) and the batch
+ * matcher (entities, which the identity resolver takes) share it.
+ */
+internal suspend fun <T> matchInLibrary(
+    folderName: String,
+    appId: String?,
+    byTitle: Map<String, T>,
+    steamNames: SteamAppListResolver,
+): T? {
+    byTitle[normalizeLocalSteamTitle(folderName)]?.let { return it }
+    val official = appId?.let { steamNames.officialNameOf(it) } ?: return null
+    return byTitle[normalizeLocalSteamTitle(official)]
+        ?.also { Timber.i("Steam-name bridge: \"$folderName\" -> \"$official\" ($appId)") }
+}
+
+/**
+ * Mirrors the Windows-card dedupe rule (normalizePcTitle): imports with different launch handles
+ * must converge on one game, and folder names count as titles.
+ */
+internal fun normalizeLocalSteamTitle(title: String): String = title.lowercase().filter { it.isLetterOrDigit() }

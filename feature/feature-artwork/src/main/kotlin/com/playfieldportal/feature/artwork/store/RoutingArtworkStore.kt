@@ -306,6 +306,31 @@ class RoutingArtworkStore @Inject constructor(
         )
     }
 
+    /**
+     * [studioAppendFromUrl] for a file already on disk: the write behind picking several local
+     * files onto a multi-asset slot. Single-art kinds land at position 0, a plain apply.
+     *
+     * The caller copies the picked document to [tempFile] first, so nothing slow runs between
+     * [nextSortOrder] deciding the position and [persistPortable] taking it. Without a portable
+     * library there are no records to number from, so the internal store's own count decides.
+     */
+    suspend fun studioAppendFromFile(
+        gameId: Long, kind: ArtworkKind, tempFile: java.io.File, provider: String?,
+    ): String? {
+        val target = portableTarget(gameId) ?: return internal.saveFromFile(
+            gameId, kind, tempFile,
+            sortOrder = if (ArtworkFileNaming.supportsMultiple(kind)) {
+                internal.findAll(gameId, kind).size.coerceAtMost(ArtworkFileNaming.MAX_SORT_ORDER)
+            } else 0,
+        )
+        val (tree, game) = target
+        return persistPortable(
+            tree, game, kind, tempFile, source = SOURCE_USER, userAssigned = true,
+            originUrl = null, provider = provider, backupPrevious = true,
+            sortOrder = nextSortOrder(gameId, kind),
+        )
+    }
+
     /** Brings the one backed-up previous version back, swapping it with the current (toggle-able). */
     suspend fun restorePrevious(gameId: Long, kind: ArtworkKind, sortOrder: Int = 0): String? {
         val (tree, game) = portableTarget(gameId) ?: return null

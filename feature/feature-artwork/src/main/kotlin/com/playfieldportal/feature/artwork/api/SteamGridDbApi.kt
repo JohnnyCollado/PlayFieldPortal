@@ -130,6 +130,11 @@ class SteamGridDbApi @Inject constructor(
         dimensions: List<String> = emptyList(),
         // SGDB filters adult-tagged art out by default; true includes it (web parity toggle).
         includeNsfw: Boolean = false,
+        // "static" and/or "animated"; empty leaves SteamGridDB's own default.
+        types: List<String> = emptyList(),
+        // "false" leaves humor / epilepsy-warning art out, "any" includes it; null sends nothing.
+        humor: String? = null,
+        epilepsy: String? = null,
     ): Result<List<SgdbArtItem>> = runCatching {
         val key = apiKeyProvider.getKey()
             ?: error("SteamGridDB API key not configured")
@@ -139,6 +144,9 @@ class SteamGridDbApi @Inject constructor(
             if (styles.isNotEmpty()) parameter("styles", styles.joinToString(","))
             if (dimensions.isNotEmpty()) parameter("dimensions", dimensions.joinToString(","))
             parameter("nsfw", if (includeNsfw) "any" else "false")
+            if (types.isNotEmpty()) parameter("types", types.joinToString(","))
+            humor?.let { parameter("humor", it) }
+            epilepsy?.let { parameter("epilepsy", it) }
         }.body()
 
         if (!response.success) error("SGDB art fetch failed for gameId=$gameId type=$type")

@@ -399,7 +399,10 @@ class ShibaCoinsViewModelTest {
         open()
         press(GamepadAction.OPEN_CONTEXT_MENU)
 
-        assertEquals(listOf("Sort (Tier)", "Refresh this game", "Change Match"), state.optionRows.map { it.label })
+        assertEquals(
+            listOf("Sort (Tier)", "Refresh this game", "Change Match", "Unlink Game"),
+            state.optionRows.map { it.label },
+        )
         viewModel.onOptionActivated(2)
 
         coVerify { achievements.unlink(gameId) }
@@ -493,5 +496,140 @@ class ShibaCoinsViewModelTest {
         open()
 
         assertEquals(1_000L, state.lastSyncedAt)
+    }
+
+    // ── Two sets for one game: Steam and Local Steam (owned, played locally) ───
+
+    private fun steamFamilyCoin(provider: AchievementProvider, id: String, earned: Boolean) =
+        entity(id, ShibaTier.BRONZE, 30.0, earned).copy(provider = provider.name, providerGameId = "524220")
+
+    private fun steamFamilyLink(provider: AchievementProvider) = ProviderGameLinkEntity(
+        gameId = gameId, provider = provider.name, providerGameId = "524220", source = "MANUAL", resolvedAt = 0L,
+    )
+
+    private fun steamFamilySummary(provider: AchievementProvider, earned: Int) = GameCoins(
+        provider = provider,
+        earned = CoinCounts(bronze = earned),
+        total = CoinCounts(bronze = 2),
+        isMastered = false,
+        lastSyncedAt = 1_000L,
+    )
+
+    private val bothLinks = MutableStateFlow(
+        listOf(steamFamilyLink(AchievementProvider.LOCAL_STEAM), steamFamilyLink(AchievementProvider.STEAM)),
+    )
+    private val firstOfBoth = MutableStateFlow<ProviderGameLinkEntity?>(steamFamilyLink(AchievementProvider.LOCAL_STEAM))
+
+    /** NieR, linked to both providers. The game-keyed reads report LOCAL_STEAM, as the DAO does. */
+    private fun stubBothSets() {
+        val local = AchievementProvider.LOCAL_STEAM
+        val steam = AchievementProvider.STEAM
+        val localCoins = listOf(steamFamilyCoin(local, "ACH_A", true), steamFamilyCoin(local, "ACH_B", false))
+        val steamCoins = listOf(steamFamilyCoin(steam, "ACH_A", true), steamFamilyCoin(steam, "ACH_B", true))
+        every { achievements.observeLinks(gameId) } returns bothLinks
+        every { achievements.observeLink(gameId) } returns firstOfBoth
+        every { achievements.observeGameCoins(gameId) } returns MutableStateFlow(steamFamilySummary(local, 1))
+        every { achievements.observeCoins(gameId) } returns MutableStateFlow(localCoins)
+        every { achievements.observeAccountGameCoins(local, "524220") } returns
+            MutableStateFlow(steamFamilySummary(local, 1))
+        every { achievements.observeAccountCoins(local, "524220") } returns MutableStateFlow(localCoins)
+        every { achievements.observeAccountGameCoins(steam, "524220") } returns
+            MutableStateFlow(steamFamilySummary(steam, 2))
+        every { achievements.observeAccountCoins(steam, "524220") } returns MutableStateFlow(steamCoins)
+    }
+
+    private val earnedCount get() = state.coins.count { it.isEarned }
+
+    @Test
+    fun `a game with both sets lists both sources and opens on the one its link reports`() {
+        stubBothSets()
+        open()
+
+        assertEquals(
+            listOf(
+                CoinSource(AchievementProvider.LOCAL_STEAM, earned = 1, total = 2),
+                CoinSource(AchievementProvider.STEAM, earned = 2, total = 2),
+            ),
+            state.sources,
+        )
+        assertTrue(state.hasSourceSwitch)
+        assertEquals(AchievementProvider.LOCAL_STEAM, state.provider)
+        assertEquals(1, earnedCount)
+    }
+
+    @Test
+    fun `L and R switch between the two sets, and the D-pad changes the view instead`() {
+        stubBothSets()
+        open()
+
+        press(GamepadAction.NEXT_CATEGORY)
+        assertEquals(AchievementProvider.STEAM, state.provider)
+        assertEquals(2, earnedCount)
+        assertEquals(CoinFilter.ALL, state.filter)
+
+        press(GamepadAction.NAVIGATE_RIGHT)
+        assertEquals(AchievementProvider.STEAM, state.provider)
+        assertEquals(CoinFilter.EARNED, state.filter)
+
+        press(GamepadAction.PREV_CATEGORY)
+        assertEquals(AchievementProvider.LOCAL_STEAM, state.provider)
+        assertEquals(1, earnedCount)
+    }
+
+    @Test
+    fun `opening a game on a named set starts there`() {
+        stubBothSets()
+        viewModel.load(ShibaCoinsTarget.LibraryGame(gameId, AchievementProvider.STEAM))
+
+        assertEquals(AchievementProvider.STEAM, state.provider)
+        assertEquals(2, earnedCount)
+    }
+
+    @Test
+    fun `a game with one set keeps L and R for the view`() {
+        open()
+
+        assertFalse(state.hasSourceSwitch)
+        press(GamepadAction.NEXT_CATEGORY)
+        assertEquals(CoinFilter.EARNED, state.filter)
+    }
+
+    // ── Unlink Game ────────────────────────────────────────────────────────────
+
+    private fun chooseOption(option: CoinOption) {
+        viewModel.openOptions()
+        val index = state.optionRows.indexOfFirst { it.option == option }
+        assertTrue("$option is not in the menu: ${state.optionRows.map { it.label }}", index >= 0)
+        viewModel.onOptionActivated(index)
+    }
+
+    @Test
+    fun `Unlink Game removes the link and the page falls back to the link panel`() {
+        open()
+
+        chooseOption(CoinOption.Unlink)
+        coVerify { achievements.unlink(gameId) }
+        link.value = null   // the stored link is gone
+
+        assertNull(state.options)
+        assertFalse(state.linked)
+        assertTrue(state.showLinkPanel)
+    }
+
+    @Test
+    fun `unlinking a game with two sets drops both and returns to its platform's match flow`() {
+        stubBothSets()
+        open()
+        press(GamepadAction.NEXT_CATEGORY)   // viewing the Steam set
+
+        chooseOption(CoinOption.Unlink)
+        bothLinks.value = emptyList()
+        firstOfBoth.value = null
+
+        assertFalse(state.hasSourceSwitch)
+        assertTrue(state.showLinkPanel)
+        // The page's own default for the platform ("nds" here), not the Local Steam it last showed:
+        // an unlinked page offers the match flow its platform has.
+        assertEquals(AchievementProvider.RETRO_ACHIEVEMENTS, state.provider)
     }
 }

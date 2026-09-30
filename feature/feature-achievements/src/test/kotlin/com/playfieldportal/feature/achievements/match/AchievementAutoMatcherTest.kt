@@ -254,7 +254,7 @@ class AchievementAutoMatcherTest {
         assertTrue(result is AchievementAutoMatcher.RaMatchResult.Unmatched)
         assertEquals(
             "ROM hash isn't registered on RetroAchievements",
-            (result as AchievementAutoMatcher.RaMatchResult.Unmatched).reason,
+            result.reason,
         )
         coVerify { matchNoteDao.upsert(match { it.gameId == 9L && it.reason.contains("isn't registered") }) }
         coVerify(exactly = 0) { repository.linkManually(any(), any(), any()) }

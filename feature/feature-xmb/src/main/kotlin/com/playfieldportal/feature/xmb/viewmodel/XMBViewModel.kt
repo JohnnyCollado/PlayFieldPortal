@@ -5675,7 +5675,7 @@ class XMBViewModel @Inject constructor(
                     // The Games Filter menu is the one menu here with a root worth returning to,
                     // so BACK inside a group climbs one level instead of closing outright. Every
                     // other submenu in the XMB is a one-shot picker, where closing IS the way out.
-                    if (state.activeContextMenu?.gamesFilterGroup != null) openGamesFilterGroup(null)
+                    if (state.activeContextMenu.gamesFilterGroup != null) openGamesFilterGroup(null)
                     else closeContextMenu()
                 else -> Unit
             }

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.database.entity.AccountAchievementEntity
+import com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.GameCoins
 import com.playfieldportal.core.domain.achievement.LocalCopyOwnership
@@ -19,11 +20,17 @@ import com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamFo
 import com.playfieldportal.feature.artwork.match.StorefrontMatchResult
 import timber.log.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -104,6 +111,13 @@ data class CoinRow(
     val isHideable: Boolean get() = isHidden && !isEarned
 }
 
+/**
+ * One of a game's achievement sets, for the page's source chips: a library game holding more than
+ * one (an owned Steam game also played locally) lists each with its own progress.
+ */
+@Immutable
+data class CoinSource(val provider: AchievementProvider, val earned: Int, val total: Int)
+
 /** A row of the coin list. Focus, the footer and Confirm all key off which kind this is. */
 @Immutable
 sealed interface CoinListItem {
@@ -144,6 +158,7 @@ sealed interface CoinOption {
     data class Sort(val sort: CoinSort) : CoinOption
     data object SyncNow : CoinOption
     data object ChangeMatch : CoinOption
+    data object Unlink : CoinOption
 }
 
 /** A row of the Options menu: its label, action, and whether it is the active choice. */
@@ -170,6 +185,9 @@ data class ShibaCoinsUiState(
     val platformLabel: String = "",
     val provider: AchievementProvider = AchievementProvider.RETRO_ACHIEVEMENTS,
     val linked: Boolean = false,
+    // Every set this library game holds, in link order; empty unless there are at least two. The
+    // shown one is [provider]. L1/R1 move between them, so the view moves to the D-pad alone.
+    val sources: List<CoinSource> = emptyList(),
     // LOCAL_STEAM only: owned-vs-local classification from the link row; null = unknown (the
     // owned-games cache was never populated) and the UI stays silent about ownership.
     val ownership: LocalCopyOwnership? = null,
@@ -227,6 +245,9 @@ data class ShibaCoinsUiState(
     val message: String? = null,
     val closed: Boolean = false,
 ) {
+    /** More than one set for this game: L1/R1 switch between them instead of changing the view. */
+    val hasSourceSwitch: Boolean get() = sources.size > 1
+
     /** Navigation position: 0 is the pinned Search row, 1 is the first list row. */
     val focusPosition: Int
         get() = focusedRowId?.let { id -> rows.indexOfFirst { it.id == id } + 1 } ?: 0
@@ -283,6 +304,9 @@ fun coinOptionRows(state: ShibaCoinsUiState): List<CoinOptionRow> = when (state.
         // says so and does nothing when picked.
         if (state.canSync) add(CoinOptionRow(if (state.isSyncing) "Refreshing…" else "Refresh this game", CoinOption.SyncNow))
         if (state.hasChangeMatch) add(CoinOptionRow("Change Match", CoinOption.ChangeMatch))
+        // Any linked library game can drop its link — both, for a game holding two sets — and go
+        // back to its Auto-Match panel. An account entry has no link of its own to remove.
+        if (state.linked && !state.accountOnly) add(CoinOptionRow("Unlink Game", CoinOption.Unlink))
     }
     CoinOptionGroup.SORT -> CoinSort.entries.map { sort ->
         CoinOptionRow(sort.label, CoinOption.Sort(sort), checked = sort == state.sort)
@@ -315,11 +339,17 @@ fun shibaCoinsHelperItems(state: ShibaCoinsUiState): List<ControllerPromptItem> 
         confirm?.let { add(ControllerPromptItem(GamepadAction.SELECT, it)) }
         add(ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"))
         add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
-        add(ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Change View"))
+        if (state.hasSourceSwitch) {
+            add(ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Switch Source"))
+            add(ControllerPromptItem(listOf(GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT), "Change View"))
+        } else {
+            add(ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Change View"))
+        }
         add(ControllerPromptItem(GamepadAction.BACK, "Back"))
     }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class ShibaCoinsViewModel @Inject constructor(
     private val gameRepository: GameRepository,
@@ -334,6 +364,12 @@ class ShibaCoinsViewModel @Inject constructor(
     private var gameId: Long = -1
     private var target: ShibaCoinsTarget = ShibaCoinsTarget.LibraryGame(-1)
     private val loadJobs = mutableListOf<Job>()
+
+    // The set the user chose on a game with more than one; null shows the one its link read reports.
+    private val selectedSource = MutableStateFlow<AchievementProvider?>(null)
+
+    // The provider this game's platform matches with — what an unlinked page shows and Auto-Matches.
+    private var platformProvider: AchievementProvider? = null
 
     fun load(target: ShibaCoinsTarget) {
         this.target = target
@@ -356,10 +392,12 @@ class ShibaCoinsViewModel @Inject constructor(
                 storefrontMatch = null,
                 kitPrompt = null,
                 noEmuDataReason = null,
+                sources = emptyList(),
             ).withRows()
         }
         loadJobs.forEach { it.cancel() }
         loadJobs.clear()
+        selectedSource.value = (target as? ShibaCoinsTarget.LibraryGame)?.provider
         when (target) {
             is ShibaCoinsTarget.LibraryGame -> loadLibraryGame(target.gameId)
             is ShibaCoinsTarget.AccountEntry -> loadAccountEntry(target)
@@ -368,15 +406,19 @@ class ShibaCoinsViewModel @Inject constructor(
 
     private fun loadLibraryGame(id: Long) {
         gameId = id
+        platformProvider = null   // the last game's platform must not stand in for this one's
         _state.update { it.copy(accountOnly = false, installed = true) }
         loadJobs += viewModelScope.launch {
             val game = gameRepository.getById(id)
             val installed = game?.isMissing != true
+            platformProvider = providerForPlatform(game?.platformId)
             _state.update {
                 it.copy(
                     title = game?.displayTitle ?: "",
                     platformLabel = game?.platformId?.let(::platformDisplay) ?: "",
-                    provider = providerForPlatform(game?.platformId),
+                    // The link, when it has already arrived, names the provider; the platform's
+                    // is only the unlinked default.
+                    provider = if (it.linked) it.provider else providerForPlatform(game?.platformId),
                     installed = installed,
                 )
             }
@@ -386,25 +428,80 @@ class ShibaCoinsViewModel @Inject constructor(
                 .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
         }
         loadJobs += viewModelScope.launch {
-            combine(
-                achievementRepository.observeGameCoins(id),
-                achievementRepository.observeCoins(id),
-                achievementRepository.observeLink(id),
-            ) { summary, coins, link ->
-                Triple(summary, coins, link)
-            }.collect { (summary, coins, link) ->
-                _state.update {
-                    it.copy(
-                        summary = summary,
-                        lastSyncedAt = summary?.lastSyncedAt,
-                        coins = coins.map { e -> e.toRow() },
-                        linked = link != null,
-                        provider = link?.let { l -> AchievementProvider.fromName(l.provider) } ?: it.provider,
-                        ownership = link?.ownership?.let(LocalCopyOwnership::fromName),
-                    ).withRows()
-                }
+            // Links drive which set is read. onStart: a page must render before (and without) them.
+            combine(achievementRepository.observeLinks(id).onStart { emit(emptyList()) }, selectedSource) { links, selected ->
+                links to selected
             }
+                .flatMapLatest { (links, selected) ->
+                    combine(gameSetFlow(id, links, selected), sourcesFlow(links)) { set, sources -> set to sources }
+                }
+                .collect { (set, sources) ->
+                    val (summary, coins, link) = set
+                    _state.update {
+                        it.copy(
+                            summary = summary,
+                            lastSyncedAt = summary?.lastSyncedAt,
+                            coins = coins.map { e -> e.toRow() },
+                            linked = link != null,
+                            // Unlinked, the page falls back to its platform's provider, so it offers
+                            // that platform's match flow rather than the link it just lost.
+                            provider = link?.let { l -> AchievementProvider.fromName(l.provider) }
+                                ?: platformProvider ?: it.provider,
+                            ownership = link?.ownership?.let(LocalCopyOwnership::fromName),
+                            sources = sources,
+                        ).withRows()
+                    }
+                }
         }
+    }
+
+    /**
+     * The set to show: the one the user chose among [links], read by its provider identity, or —
+     * with no choice, or a choice the game no longer links — the game-keyed reads, which report the
+     * game's first link.
+     */
+    private fun gameSetFlow(
+        gameId: Long,
+        links: List<ProviderGameLinkEntity>,
+        selected: AchievementProvider?,
+    ): Flow<Triple<GameCoins?, List<AccountAchievementEntity>, ProviderGameLinkEntity?>> {
+        val chosen = selected?.let { p -> links.firstOrNull { it.provider == p.name }?.let { p to it } }
+            ?: return combine(
+                achievementRepository.observeGameCoins(gameId),
+                achievementRepository.observeCoins(gameId),
+                achievementRepository.observeLink(gameId),
+            ) { summary, coins, link -> Triple(summary, coins, link) }
+        val (provider, link) = chosen
+        return combine(
+            achievementRepository.observeAccountGameCoins(provider, link.providerGameId),
+            achievementRepository.observeAccountCoins(provider, link.providerGameId),
+        ) { summary, coins -> Triple(summary, coins, link) }
+    }
+
+    /** Each set's progress for the source chips — only for a game with more than one set. */
+    private fun sourcesFlow(links: List<ProviderGameLinkEntity>): Flow<List<CoinSource>> {
+        val sets = links.mapNotNull { l -> AchievementProvider.fromName(l.provider)?.let { it to l.providerGameId } }
+        if (sets.size < 2) return flowOf(emptyList())
+        return combine(
+            sets.map { (provider, providerGameId) ->
+                achievementRepository.observeAccountGameCoins(provider, providerGameId).map { coins ->
+                    CoinSource(provider, earned = coins?.earned?.total ?: 0, total = coins?.total?.total ?: 0)
+                }
+            },
+        ) { it.toList() }
+    }
+
+    /** Touch: a source chip picks that set. */
+    fun selectSource(provider: AchievementProvider) {
+        if (_state.value.sources.any { it.provider == provider }) selectedSource.value = provider
+    }
+
+    /** L1/R1 on a game with more than one set: show the next one. */
+    private fun cycleSource(dir: Int) {
+        val s = _state.value
+        val providers = s.sources.map { it.provider }
+        val current = providers.indexOf(s.provider).coerceAtLeast(0)
+        selectedSource.value = providers[(current + dir).mod(providers.size)]
     }
 
     private fun loadAccountEntry(entry: ShibaCoinsTarget.AccountEntry) {
@@ -522,9 +619,12 @@ class ShibaCoinsViewModel @Inject constructor(
         when (action) {
             GamepadAction.NAVIGATE_UP -> moveFocus(-1)
             GamepadAction.NAVIGATE_DOWN -> moveFocus(1)
-            // L / R change the view. LEFT / RIGHT stay as quiet aliases, as in the library.
-            GamepadAction.PREV_CATEGORY, GamepadAction.NAVIGATE_LEFT -> cycleView(-1)
-            GamepadAction.NEXT_CATEGORY, GamepadAction.NAVIGATE_RIGHT -> cycleView(1)
+            // L / R change the view, with LEFT / RIGHT as quiet aliases, as in the library. A game
+            // with two sets gives L / R to the source instead, and the view keeps the D-pad.
+            GamepadAction.PREV_CATEGORY -> if (s.hasSourceSwitch) cycleSource(-1) else cycleView(-1)
+            GamepadAction.NEXT_CATEGORY -> if (s.hasSourceSwitch) cycleSource(1) else cycleView(1)
+            GamepadAction.NAVIGATE_LEFT -> cycleView(-1)
+            GamepadAction.NAVIGATE_RIGHT -> cycleView(1)
             GamepadAction.SELECT -> activateFocused()
             // Square always means "go to Search"; pressed on Search itself it starts typing.
             GamepadAction.CHANGE_SORT -> if (s.searchFocused) startSearchEdit() else focusSearch()
@@ -640,6 +740,7 @@ class ShibaCoinsViewModel @Inject constructor(
             // A sync already in flight: the row says "Syncing…" and picking it holds the menu open.
             CoinOption.SyncNow -> if (_state.value.isSyncing) return else sync()
             CoinOption.ChangeMatch -> changeLink()
+            CoinOption.Unlink -> unlinkGame()
         }
         closeOptions()
     }
@@ -1067,6 +1168,16 @@ class ShibaCoinsViewModel @Inject constructor(
         viewModelScope.launch { achievementRepository.unlink(gameId) }
     }
 
+    /**
+     * Options → Unlink Game: removes every link this game holds, so the page drops to its Auto-Match
+     * panel. The cached coins stay stored (see [AchievementController.unlink]), so matching it again
+     * brings them straight back.
+     */
+    fun unlinkGame() {
+        selectedSource.value = null
+        viewModelScope.launch { achievementRepository.unlink(gameId) }
+    }
+
     fun sync() {
         viewModelScope.launch {
             _state.update { it.copy(isSyncing = true) }
@@ -1075,7 +1186,9 @@ class ShibaCoinsViewModel @Inject constructor(
                 is ShibaCoinsTarget.AccountEntry ->
                     achievementRepository.syncAccountEntry(t.provider, t.providerGameId, _state.value.title)
             }
-            _state.update { it.copy(isSyncing = false, message = messageFor(result)) }
+            // A success has nothing to say, so it keeps what is already showing — the "Linked to …"
+            // line a folder link sets just before this sync would otherwise be wiped at once.
+            _state.update { it.copy(isSyncing = false, message = messageFor(result) ?: it.message) }
         }
     }
 

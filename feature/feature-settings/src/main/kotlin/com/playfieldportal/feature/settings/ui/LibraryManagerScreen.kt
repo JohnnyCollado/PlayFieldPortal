@@ -790,9 +790,9 @@ private fun ImportPcGamesContent(
             SettingsGroup("Local Windows")
             SettingsRow(
                 label    = "Batch Match Local Games",
-                sublabel = "Pick the folder that CONTAINS your game folders. PFP reads each one's " +
-                    "Steam app id, remembers where it is, and links it — no scan ever has to search " +
-                    "for them again",
+                sublabel = "Pick the folder that CONTAINS your game folders. Each one that is already " +
+                    "in your Windows library is identified, remembered and linked; the rest are left " +
+                    "untouched",
                 onClick  = { batchMatchPicker.launch(null) },
             )
             SettingsValueRow(

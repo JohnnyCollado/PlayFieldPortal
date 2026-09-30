@@ -481,7 +481,13 @@ class MetadataRepository @Inject constructor(
         // already shows under another name is not. Re-scrapes and Change Match therefore leave it
         // alone, and the only ways a title changes are the ones the user drove — the metadata
         // preview's chosen fields, or Edit Title (user_title_override, which outranks this column).
-        if (newScrapedTitle != null && existingOverride == null) {
+        //
+        // Filling is itself a visible rename — the library shows scraped_title over title — so it
+        // is narrower still (user decision, 2026-09-29): never from Fetch Artwork ([fillTitle]
+        // off), and never for a manual entry. PC imports, Add by ID and apps all arrive with a real
+        // name; only a game the scanner found as a file is named after its filename.
+        val mayName = options.fillTitle && gameEntity != null && !gameEntity.isManualEntry
+        if (mayName && newScrapedTitle != null && existingOverride == null) {
             gameDao.fillScrapedTitleIfMissing(gameId, newScrapedTitle)
         }
 

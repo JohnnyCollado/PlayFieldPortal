@@ -8,6 +8,7 @@ import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.core.data.saf.SafChild
 import com.playfieldportal.feature.achievements.AchievementController
+import com.playfieldportal.feature.achievements.provider.steam.SteamAppListResolver
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -22,12 +23,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * The batch pass over a picked parent folder: register everything identifiable, link what maps onto a
- * library game, hold back what has no achievement list, and DEFER what cannot be identified.
+ * The batch pass over a picked parent folder: only folders that map onto an INSTALLED library game
+ * are touched at all. Those are identified, registered and linked; what has no achievement list is
+ * held back; what cannot be identified is DEFERRED. Everything else is counted and left alone.
  *
- * The rule with teeth is the last one. A batch run must never write a guessed app id into somebody's
- * game folder, so anything below EXACT/HIGH is counted and left for the per-game flow where a person
- * decides.
+ * Two rules with teeth. A folder that is not in the library is never identified, registered or
+ * written to (user decision, 2026-09-29). And a batch run must never write a guessed app id into
+ * somebody's game folder, so anything below EXACT/HIGH is left for the per-game flow.
  *
  * Robolectric only for a real `Uri` and a real `DocumentsContract`; every collaborator is a mock.
  */
@@ -41,8 +43,10 @@ class LocalSteamBatchMatcherTest {
     private val importer = mockk<LocalSteamGameImporter>()
     private val achievements = mockk<AchievementController>(relaxed = true)
     private val games = mockk<GameDao>(relaxed = true)
+    private val steamNames = mockk<SteamAppListResolver>()
 
-    private val matcher = LocalSteamBatchMatcher(context, discovery, identity, importer, achievements, games)
+    private val matcher =
+        LocalSteamBatchMatcher(context, discovery, identity, importer, achievements, games, steamNames)
 
     private val treeUri: Uri =
         Uri.parse("content://com.android.externalstorage.documents/tree/primary%3AGames")
@@ -53,6 +57,19 @@ class LocalSteamBatchMatcherTest {
         every { context.contentResolver } returns mockk<ContentResolver>(relaxed = true)
         coEvery { games.getByPlatformOnce("windows") } returns emptyList()
         coEvery { importer.reconcile(any()) } returns EmuGameImportResult(0, 0)
+        coEvery { steamNames.officialNameOf(any()) } returns null
+    }
+
+    private fun game(id: Long, title: String, isMissing: Boolean = false) = GameEntity(
+        id = id, title = title, platformId = "windows", romPath = null,
+        packageName = null, emulatorPackage = null, artworkUri = null, heroUri = null,
+        logoUri = null, description = null, developer = null, publisher = null,
+        releaseYear = null, genre = null, steamGridDbId = null, isMissing = isMissing,
+    )
+
+    private fun library(vararg titles: String) {
+        coEvery { games.getByPlatformOnce("windows") } returns
+            titles.mapIndexed { i, t -> game(i + 1L, t) }
     }
 
     private fun child(name: String) = SafChild(
@@ -109,12 +126,13 @@ class LocalSteamBatchMatcherTest {
         coEvery { discovery.anchor(treeUriText, unknown.documentId) } returns anchor("Some Repack", null)
         // No Steam DLL anywhere: not a Steam build, and never counted as unidentified.
         coEvery { discovery.anchor(treeUriText, notSteam.documentId) } returns null
+        library("Portal 2", "Hades", "Some Repack")
 
-        coEvery { identity.identify(anchor("Portal 2", "620"), null) } returns
+        coEvery { identity.identify(anchor("Portal 2", "620"), any()) } returns
             LocalSteamIdentityResolver.Outcome.Resolved("620", AppIdSource.MARKER, written = false)
-        coEvery { identity.identify(anchor("Hades", "1145360"), null) } returns
+        coEvery { identity.identify(anchor("Hades", "1145360"), any()) } returns
             LocalSteamIdentityResolver.Outcome.Resolved("1145360", AppIdSource.MARKER, written = false)
-        coEvery { identity.identify(anchor("Some Repack", null), null) } returns
+        coEvery { identity.identify(anchor("Some Repack", null), any()) } returns
             LocalSteamIdentityResolver.Outcome.NoMatch
 
         coEvery { discovery.inspect(treeUriText, "primary:Games/Portal 2") } returns folder("Portal 2", "620", true)
@@ -136,6 +154,7 @@ class LocalSteamBatchMatcherTest {
         val vague = child("Bravely Default")
         coEvery { discovery.childFolders(treeUriText, "primary:Games") } returns listOf(vague)
         coEvery { discovery.anchor(treeUriText, vague.documentId) } returns anchor("Bravely Default", null)
+        library("Bravely Default")
         coEvery { identity.identify(any(), any()) } returns
             LocalSteamIdentityResolver.Outcome.NeedsConfirmation(mockk(relaxed = true), "bravely default")
 
@@ -150,6 +169,7 @@ class LocalSteamBatchMatcherTest {
     @Test
     fun `a folder that maps onto a library game links through the mapping ladder and syncs`() = runTest {
         val ready = child("Portal 2")
+        library("Portal 2")
         coEvery { discovery.childFolders(treeUriText, "primary:Games") } returns listOf(ready)
         coEvery { discovery.anchor(treeUriText, ready.documentId) } returns anchor("Portal 2", "620")
         coEvery { identity.identify(any(), any()) } returns
@@ -167,21 +187,55 @@ class LocalSteamBatchMatcherTest {
     }
 
     @Test
-    fun `a folder with no library game stays tracked and is never synced by id`() = runTest {
-        val ready = child("Portal 2")
-        coEvery { discovery.childFolders(treeUriText, "primary:Games") } returns listOf(ready)
-        coEvery { discovery.anchor(treeUriText, ready.documentId) } returns anchor("Portal 2", "620")
-        coEvery { identity.identify(any(), any()) } returns
-            LocalSteamIdentityResolver.Outcome.Resolved("620", AppIdSource.MARKER, written = false)
-        coEvery { discovery.inspect(any(), any()) } returns folder("Portal 2", "620", true)
-        coEvery { importer.reconcile(any()) } returns EmuGameImportResult(discovered = 1, linked = 0)
+    fun `a folder with no library game is skipped - never identified, registered, linked or synced`() =
+        runTest {
+            val orphan = child("Portal 2")
+            library("Half-Life")
+            coEvery { discovery.childFolders(treeUriText, "primary:Games") } returns listOf(orphan)
+            coEvery { discovery.anchor(treeUriText, orphan.documentId) } returns anchor("Portal 2", "620")
+
+            val report = matcher.run(treeUri)
+
+            assertEquals(1, report.discovered)
+            assertEquals(1, report.notInLibrary)
+            assertEquals(0, report.registered)
+            coVerify(exactly = 0) { identity.identify(any(), any()) }
+            coVerify(exactly = 0) { discovery.register(any(), any()) }
+            coVerify(exactly = 0) { achievements.syncGameById(any()) }
+            assertTrue(report.message.contains("not in your library"))
+        }
+
+    @Test
+    fun `a game marked missing is not installed, so its folder is skipped too`() = runTest {
+        val folder = child("Portal 2")
+        coEvery { games.getByPlatformOnce("windows") } returns listOf(game(1L, "Portal 2", isMissing = true))
+        coEvery { discovery.childFolders(treeUriText, "primary:Games") } returns listOf(folder)
+        coEvery { discovery.anchor(treeUriText, folder.documentId) } returns anchor("Portal 2", "620")
 
         val report = matcher.run(treeUri)
 
-        assertEquals(0, report.linkedToLibrary)
-        assertEquals(1, report.trackedWithoutLibrary)
-        coVerify(exactly = 0) { achievements.syncGameById(any()) }
+        assertEquals(1, report.notInLibrary)
+        coVerify(exactly = 0) { identity.identify(any(), any()) }
     }
+
+    @Test
+    fun `a renamed folder with a marker reaches its library game through the Steam-name bridge`() =
+        runTest {
+            val renamed = child("portal2_repack")
+            library("Portal 2")
+            coEvery { steamNames.officialNameOf("620") } returns "Portal 2"
+            coEvery { discovery.childFolders(treeUriText, "primary:Games") } returns listOf(renamed)
+            coEvery { discovery.anchor(treeUriText, renamed.documentId) } returns anchor("portal2_repack", "620")
+            coEvery { identity.identify(any(), any()) } returns
+                LocalSteamIdentityResolver.Outcome.Resolved("620", AppIdSource.MARKER, written = false)
+            coEvery { discovery.inspect(any(), any()) } returns folder("portal2_repack", "620", true)
+
+            val report = matcher.run(treeUri)
+
+            assertEquals(0, report.notInLibrary)
+            // By id: GameEntity.createdAt defaults to the clock, so two built rows never compare equal.
+            coVerify { identity.identify(anchor("portal2_repack", "620"), match { it.id == 1L }) }
+        }
 
     @Test
     fun `converted folders are re-read, linked and synced in the same run`() = runTest {
@@ -224,16 +278,18 @@ class LocalSteamBatchMatcherTest {
     }
 
     @Test
-    fun `a folder that maps onto no library game is resolved from the folder name alone`() = runTest {
+    fun `an unmarked folder that maps onto no library game is never resolved by its name`() = runTest {
         val orphan = child("Some Indie Game")
-        coEvery { games.getByPlatformOnce("windows") } returns emptyList()
+        library("Portal 2")
         coEvery { discovery.childFolders(treeUriText, "primary:Games") } returns listOf(orphan)
         coEvery { discovery.anchor(treeUriText, orphan.documentId) } returns anchor("Some Indie Game", null)
-        coEvery { identity.identify(any(), any()) } returns LocalSteamIdentityResolver.Outcome.NoMatch
 
-        matcher.run(treeUri)
+        val report = matcher.run(treeUri)
 
-        // null, not a fabricated game: the resolver decides what to do with only a folder name.
-        coVerify { identity.identify(anchor("Some Indie Game", null), null) }
+        // Resolving it would write steam_appid.txt into a folder the user never put in the library.
+        assertEquals(1, report.notInLibrary)
+        coVerify(exactly = 0) { identity.identify(any(), any()) }
+        // No marker means no app id, so there is nothing for the Steam-name bridge to ask about.
+        coVerify(exactly = 0) { steamNames.officialNameOf(any()) }
     }
 }

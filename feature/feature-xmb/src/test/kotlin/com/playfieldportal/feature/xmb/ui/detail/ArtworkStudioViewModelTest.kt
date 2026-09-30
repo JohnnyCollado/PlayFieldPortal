@@ -13,6 +13,10 @@ import com.playfieldportal.feature.artwork.api.SgdbArtItem
 import com.playfieldportal.feature.artwork.api.SgdbArtType
 import com.playfieldportal.feature.artwork.api.SsMediaCatalog
 import com.playfieldportal.feature.artwork.api.SteamGridDbApi
+import com.playfieldportal.feature.artwork.api.SteamResult
+import com.playfieldportal.feature.artwork.api.SteamScreenshot
+import com.playfieldportal.feature.artwork.api.SteamStoreMedia
+import com.playfieldportal.feature.artwork.api.SteamStorefrontApi
 import com.playfieldportal.feature.artwork.store.ArtworkKind
 import com.playfieldportal.feature.artwork.store.ArtworkStore
 import com.playfieldportal.feature.artwork.store.RoutingArtworkStore
@@ -61,6 +65,7 @@ class ArtworkStudioViewModelTest {
     private lateinit var sgdbKeyProvider: SgdbApiKeyProvider
     private lateinit var theGamesDb: TheGamesDbApi
     private lateinit var igdbApi: IgdbApi
+    private lateinit var steamStorefront: SteamStorefrontApi
     private lateinit var videoSnapTranscoder: VideoSnapTranscoder
     private lateinit var matchEvidence: com.playfieldportal.feature.artwork.match.ProviderMatchEvidence
 
@@ -85,6 +90,8 @@ class ArtworkStudioViewModelTest {
         sgdbKeyProvider = mockk(relaxed = true)
         theGamesDb = mockk(relaxed = true)
         igdbApi = mockk(relaxed = true)
+        steamStorefront = mockk(relaxed = true)
+        coEvery { steamStorefront.storeMedia(any(), any()) } returns SteamResult.Ok(null)
         videoSnapTranscoder = mockk(relaxed = true)
         matchEvidence = mockk(relaxed = true)
         coEvery { matchEvidence.searchByTitle(any(), any(), any()) } returns emptyList()
@@ -103,7 +110,7 @@ class ArtworkStudioViewModelTest {
         coEvery {
             matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB, any(), any())
         } returns listOf(sgdbCandidate("77", "Crash"))
-        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } returns Result.success(emptyList())
+        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any(), any(), any(), any()) } returns Result.success(emptyList())
         coEvery { theGamesDb.fetchGameInfo(any(), any()) } returns null
         coEvery { igdbApi.fetchGameInfo(any(), any()) } returns null
     }
@@ -118,10 +125,16 @@ class ArtworkStudioViewModelTest {
             every { enabledFlow } returns kotlinx.coroutines.flow.flowOf(true)
         }
 
+    // Remembered SteamGridDB styles: none, unless a test says otherwise.
+    private val sgdbStylePreferences =
+        mockk<com.playfieldportal.core.data.repository.SgdbStylePreferences>(relaxed = true) {
+            coEvery { styles() } returns emptyMap()
+        }
+
     private fun viewModel() = ArtworkStudioViewModel(
         context, gameRepository, artworkStore, routingStore, ssMediaCatalog,
-        steamGridDb, sgdbKeyProvider, theGamesDb, igdbApi, videoSnapTranscoder, matchEvidence,
-        cropPreviewPreferences,
+        steamGridDb, sgdbKeyProvider, theGamesDb, igdbApi, steamStorefront, videoSnapTranscoder, matchEvidence,
+        cropPreviewPreferences, sgdbStylePreferences,
         // Nothing kept between opens: these tests count what each open asks.
         com.playfieldportal.feature.artwork.match.TitleSearchStore.None,
     ).also {
@@ -235,7 +248,7 @@ class ArtworkStudioViewModelTest {
     fun `a slow source that finishes late never repaints the source that replaced it`() =
         runTest(testDispatcher) {
             val slow = CompletableDeferred<List<SgdbArtItem>>()
-            coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } coAnswers {
+            coEvery { steamGridDb.getArt(any(), any(), any(), any(), any(), any(), any(), any()) } coAnswers {
                 Result.success(slow.await())
             }
             coEvery { theGamesDb.fetchGameInfo(any(), any()) } returns tgdb("tgdb-hero")
@@ -271,7 +284,7 @@ class ArtworkStudioViewModelTest {
         runTest(testDispatcher) {
             val slow = CompletableDeferred<List<SgdbArtItem>>()
             coEvery { theGamesDb.fetchGameInfo(any(), any()) } returns tgdb("tgdb-hero")
-            coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } coAnswers {
+            coEvery { steamGridDb.getArt(any(), any(), any(), any(), any(), any(), any(), any()) } coAnswers {
                 Result.success(slow.await())
             }
 
@@ -333,7 +346,7 @@ class ArtworkStudioViewModelTest {
             advanceUntilIdle()
 
             assertTrue(vm.uiState.value.includeNsfw)
-            coVerify(exactly = 2) { steamGridDb.getArt(any(), any(), any(), any(), any()) }
+            coVerify(exactly = 2) { steamGridDb.getArt(any(), any(), any(), any(), any(), any(), any(), any()) }
 
             // TheGamesDB's page is still cached: going back does not re-hit it.
             vm.selectSource(sources.indexOf(StudioSource.THEGAMESDB))
@@ -364,7 +377,7 @@ class ArtworkStudioViewModelTest {
 
         assertFalse(vm.uiState.value.includeNsfw)
         assertTrue(vm.uiState.value.queue.isEmpty())
-        coVerify(exactly = 1) { steamGridDb.getArt(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 1) { steamGridDb.getArt(any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     // ── Paging (task 1.4) ─────────────────────────────────────────────────────
@@ -372,7 +385,7 @@ class ArtworkStudioViewModelTest {
     @Test
     fun `paging walks one gridful at a time and reports the range`() = runTest(testDispatcher) {
         val pageSize = StudioGridCapacity.UNMEASURED.pageSize
-        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } returns
+        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any(), any(), any(), any()) } returns
             Result.success((1..(pageSize + 5)).map { SgdbArtItem(id = it.toLong(), url = "art$it") })
 
         val vm = loadedOn(StudioSource.STEAMGRIDDB)
@@ -403,7 +416,7 @@ class ArtworkStudioViewModelTest {
 
     /** SteamGridDB on SCREENSHOT with the grid focused: [perType] results for each of its four art types. */
     private suspend fun kotlinx.coroutines.test.TestScope.screenshotGridOnSgdb(perType: Int): ArtworkStudioViewModel {
-        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } answers {
+        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any(), any(), any(), any()) } answers {
             val type = secondArg<SgdbArtType>()
             Result.success((1..perType).map { SgdbArtItem(id = it.toLong(), url = "${type.endpoint}$it") })
         }
@@ -465,7 +478,7 @@ class ArtworkStudioViewModelTest {
 
     @Test
     fun `A on a single-art tab still previews the tile and picks nothing`() = runTest(testDispatcher) {
-        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } returns
+        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any(), any(), any(), any()) } returns
             Result.success(listOf(SgdbArtItem(id = 1L, url = "art1")))
         val vm = loadedOn(StudioSource.STEAMGRIDDB)   // ICON0
         vm.handleGamepadAction(GamepadAction.SELECT)   // into the grid
@@ -636,7 +649,7 @@ class ArtworkStudioViewModelTest {
             assertTrue(StudioAction.CROP in actionsBefore)
             assertFalse(StudioAction.RETRY_FAILED in actionsBefore)
 
-            val cropIndex = actionsBefore.indexOf(StudioAction.CROP)
+            val cropIndex = vm.uiState.value.menuItems.indexOf(StudioMenuItem.Action(StudioAction.CROP))
             repeat(cropIndex - vm.uiState.value.actionsIndex) { vm.handleGamepadAction(GamepadAction.NAVIGATE_DOWN) }
             assertEquals(StudioAction.CROP, vm.uiState.value.actionsSelectedAction)
 
@@ -648,7 +661,7 @@ class ArtworkStudioViewModelTest {
             assertTrue(StudioAction.RETRY_FAILED in actionsAfter)
             assertTrue(
                 "the failure must actually move Crop for this test to prove anything",
-                actionsAfter.indexOf(StudioAction.CROP) != cropIndex,
+                vm.uiState.value.menuItems.indexOf(StudioMenuItem.Action(StudioAction.CROP)) != cropIndex,
             )
 
             vm.handleGamepadAction(GamepadAction.SELECT)
@@ -774,16 +787,17 @@ class ArtworkStudioViewModelTest {
         advanceUntilIdle()
         assertFalse(vm.uiState.value.includeNsfw)
 
-        vm.runAction(StudioAction.TOGGLE_MATURE)
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
         advanceUntilIdle()
+        pickFilter(vm, StudioFilterOption.Mature)
         assertTrue(vm.uiState.value.includeNsfw)
     }
 
     @Test
-    fun `B from the categories with picks asks first, and Stay or Discard do what they say`() = runTest(testDispatcher) {
+    fun `B from the source row with picks asks first, and Stay or Discard do what they say`() = runTest(testDispatcher) {
         val vm = screenshotGridOnSgdb(perType = 2)
         vm.toggleSelection(0)
-        repeat(3) { vm.handleGamepadAction(GamepadAction.BACK) }   // grid → sources → categories → prompt
+        repeat(2) { vm.handleGamepadAction(GamepadAction.BACK) }   // grid → sources → prompt
 
         assertTrue(vm.uiState.value.leavePromptOpen)
         assertFalse(vm.uiState.value.closed)
@@ -805,7 +819,7 @@ class ArtworkStudioViewModelTest {
     fun `Apply and Close queues the picks and closes`() = runTest(testDispatcher) {
         val vm = screenshotGridOnSgdb(perType = 2)
         vm.toggleSelection(0)
-        repeat(3) { vm.handleGamepadAction(GamepadAction.BACK) }
+        repeat(2) { vm.handleGamepadAction(GamepadAction.BACK) }
 
         vm.handleGamepadAction(GamepadAction.SELECT)   // Apply and Close is the first row
         advanceUntilIdle()
@@ -819,7 +833,7 @@ class ArtworkStudioViewModelTest {
     @Test
     fun `a capacity change keeps the focused result focused, on the page that now holds it`() =
         runTest(testDispatcher) {
-            coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } returns
+            coEvery { steamGridDb.getArt(any(), any(), any(), any(), any(), any(), any(), any()) } returns
                 Result.success((1..30).map { SgdbArtItem(id = it.toLong(), url = "art$it") })
             val vm = loadedOn(StudioSource.STEAMGRIDDB)
             vm.handleGamepadAction(GamepadAction.SELECT)   // into the grid
@@ -843,7 +857,7 @@ class ArtworkStudioViewModelTest {
 
     @Test
     fun `D-pad up and down move by the measured column count`() = runTest(testDispatcher) {
-        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } returns
+        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any(), any(), any(), any()) } returns
             Result.success((1..30).map { SgdbArtItem(id = it.toLong(), url = "art$it") })
         val vm = loadedOn(StudioSource.STEAMGRIDDB)
         vm.onGridMeasured(635f, 259f)
@@ -876,7 +890,7 @@ class ArtworkStudioViewModelTest {
     fun `skeletons fill the measured page`() = runTest(testDispatcher) {
         val slow = CompletableDeferred<List<SgdbArtItem>>()
         coEvery { theGamesDb.fetchGameInfo(any(), any()) } returns tgdb("tgdb-hero")
-        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } coAnswers {
+        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any(), any(), any(), any()) } coAnswers {
             Result.success(slow.await())
         }
         val vm = loadedOn(StudioSource.THEGAMESDB)
@@ -1426,7 +1440,7 @@ class ArtworkStudioViewModelTest {
             coVerify(exactly = 1) {
                 matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.SCREENSCRAPER, any(), any())
             }
-            coVerify(exactly = 0) { steamGridDb.getArt(any(), any(), any(), any(), any()) }
+            coVerify(exactly = 0) { steamGridDb.getArt(any(), any(), any(), any(), any(), any(), any(), any()) }
             coVerify(exactly = 0) { igdbApi.fetchGameInfoById(any()) }
         }
 
@@ -1555,8 +1569,8 @@ class ArtworkStudioViewModelTest {
             matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB, any(), any())
         }
         // ICON0 and BOX ART browse grids, HERO browses heroes: all three from the one hit.
-        coVerify(exactly = 2) { steamGridDb.getArt(77L, SgdbArtType.GRID, any(), any(), any()) }
-        coVerify(exactly = 1) { steamGridDb.getArt(77L, SgdbArtType.HERO, any(), any(), any()) }
+        coVerify(exactly = 2) { steamGridDb.getArt(77L, SgdbArtType.GRID, any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 1) { steamGridDb.getArt(77L, SgdbArtType.HERO, any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -1569,8 +1583,8 @@ class ArtworkStudioViewModelTest {
         val vm = loadedOn(StudioSource.STEAMGRIDDB)
 
         assertEquals(null, vm.uiState.value.match)
-        coVerify { steamGridDb.getArt(501L, any(), any(), any(), any()) }
-        coVerify(exactly = 0) { steamGridDb.getArt(502L, any(), any(), any(), any()) }
+        coVerify { steamGridDb.getArt(501L, any(), any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { steamGridDb.getArt(502L, any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -1580,14 +1594,14 @@ class ArtworkStudioViewModelTest {
             matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB, "Spyro", any())
         } returns listOf(sgdbCandidate("88", "Spyro the Dragon"))
         val vm = loadedOn(StudioSource.STEAMGRIDDB)
-        coVerify { steamGridDb.getArt(77L, any(), any(), any(), any()) }
+        coVerify { steamGridDb.getArt(77L, any(), any(), any(), any(), any(), any(), any()) }
 
         vm.openSearch()
         vm.onQueryDraftChanged("Spyro")
         vm.submitSearch()
         advanceUntilIdle()
 
-        coVerify { steamGridDb.getArt(88L, any(), any(), any(), any()) }
+        coVerify { steamGridDb.getArt(88L, any(), any(), any(), any(), any(), any(), any()) }
         coVerify(exactly = 0) { steamGridDb.searchGame(any()) }
     }
 
@@ -1769,7 +1783,7 @@ class ArtworkStudioViewModelTest {
         // One provider column, named explicitly — never a blanket write over all four.
         coVerify { gameRepository.updateProviderMatch(1L, "STEAMGRIDDB", 9001L) }
         // And the grid now asks SteamGridDB about THAT game, not the one its own search picked.
-        coVerify { steamGridDb.getArt(9001L, any(), any(), any(), any()) }
+        coVerify { steamGridDb.getArt(9001L, any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -1977,7 +1991,7 @@ class ArtworkStudioViewModelTest {
     fun `close cancels a suspended browse, and reopening does not show a stale spinner`() =
         runTest(testDispatcher) {
             val slow = CompletableDeferred<List<SgdbArtItem>>()
-            coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } coAnswers {
+            coEvery { steamGridDb.getArt(any(), any(), any(), any(), any(), any(), any(), any()) } coAnswers {
                 Result.success(slow.await())
             }
 
@@ -2079,15 +2093,23 @@ class ArtworkStudioViewModelTest {
     }
 
     @Test
-    fun `on SteamGridDB the menu lists the mature filter, then Change Match`() = runTest(testDispatcher) {
+    fun `on SteamGridDB the menu lists its filters first, then Change Match`() = runTest(testDispatcher) {
         val vm = loadedOn(StudioSource.STEAMGRIDDB)
 
         vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
         advanceUntilIdle()
 
-        val actions = vm.uiState.value.availableActions
-        assertTrue(StudioAction.TOGGLE_MATURE in actions)
-        assertEquals(actions.indexOf(StudioAction.TOGGLE_MATURE) + 1, actions.indexOf(StudioAction.CHANGE_MATCH))
+        val items = vm.uiState.value.menuItems
+        val filters = items.takeWhile { it is StudioMenuItem.Filter }.map { (it as StudioMenuItem.Filter).option }
+        assertEquals(
+            listOf(
+                StudioFilterOption.Open(StudioFilterGroup.STYLE), StudioFilterOption.Open(StudioFilterGroup.DIMENSIONS),
+                StudioFilterOption.Open(StudioFilterGroup.ANIMATION), StudioFilterOption.Mature,
+                StudioFilterOption.Humor, StudioFilterOption.Epilepsy, StudioFilterOption.Clear,
+            ),
+            filters,
+        )
+        assertTrue(StudioMenuItem.Action(StudioAction.CHANGE_MATCH) in items)
     }
 
     @Test
@@ -2120,6 +2142,7 @@ class ArtworkStudioViewModelTest {
                     assertEquals("$source on ${tab.label}", tab.kind !in noImageTabs, vm.isSourceAvailable(source))
                 }
                 assertTrue(vm.isSourceAvailable(StudioSource.SCREENSCRAPER))
+                assertEquals("STEAM on ${tab.label}", tab.kind != ArtworkKind.MANUAL, vm.isSourceAvailable(StudioSource.STEAM))
                 assertTrue(vm.isSourceAvailable(StudioSource.LOCAL))
             }
         }
@@ -2134,11 +2157,15 @@ class ArtworkStudioViewModelTest {
         assertEquals("SteamGridDB has no VIDEO artwork", vm.uiState.value.message)
         assertEquals(StudioSource.SCREENSCRAPER, vm.sourcesForTab()[vm.uiState.value.sourceIndex])
 
-        // From ScreenScraper, cycling right steps over all three image providers to Local.
+        // From ScreenScraper, cycling right steps over all three image providers to Steam, which
+        // has trailers, and then to Local.
+        vm.cycleSource(+1)
+        advanceUntilIdle()
+        assertEquals(StudioSource.STEAM, vm.sourcesForTab()[vm.uiState.value.sourceIndex])
         vm.cycleSource(+1)
         advanceUntilIdle()
         assertEquals(StudioSource.LOCAL, vm.sourcesForTab()[vm.uiState.value.sourceIndex])
-        coVerify(exactly = 0) { steamGridDb.getArt(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { steamGridDb.getArt(any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -2149,7 +2176,7 @@ class ArtworkStudioViewModelTest {
         advanceUntilIdle()
 
         SgdbArtType.entries.forEach { type ->
-            coVerify { steamGridDb.getArt(77L, type, any(), any(), any()) }
+            coVerify { steamGridDb.getArt(77L, type, any(), any(), any(), any(), any(), any()) }
         }
     }
 
@@ -2167,6 +2194,112 @@ class ArtworkStudioViewModelTest {
         assertEquals(listOf("tgdb-box", "tgdb-fanart", "tgdb-logo"), vm.uiState.value.results.map { it.url })
     }
 
+    // ── Steam store media: keyless, on every tab but Manual ───────────────────
+
+    private val steamMedia = SteamStoreMedia(
+        appId = "620",
+        libraryCapsule = "steam-capsule",
+        libraryHero = "steam-hero",
+        logo = "steam-logo",
+        header = "steam-header",
+        mainCapsule = "steam-capsule616",
+        pageBackground = null,
+        screenshots = listOf(SteamScreenshot("steam-ss1", "steam-ss1-thumb")),
+        trailers = emptyList(),
+    )
+
+    private fun steamCandidate(id: String, title: String) =
+        com.playfieldportal.feature.artwork.match.GameCandidate(
+            provider = com.playfieldportal.feature.artwork.match.MatchProvider.STEAM,
+            providerGameId = id,
+            title = title,
+        )
+
+    private fun steamGame() {
+        coEvery { gameRepository.getById(1L) } returns game.copy(storefront = "STEAM", storefrontGameId = "620")
+        coEvery {
+            matchEvidence.candidateByStorefront(com.playfieldportal.feature.artwork.match.MatchProvider.STEAM, "STEAM", "620")
+        } returns steamCandidate("620", "Portal 2")
+        coEvery { steamStorefront.storeMedia("620", any()) } returns SteamResult.Ok(steamMedia)
+    }
+
+    @Test
+    fun `Steam needs no key and is offered even when no other provider has one`() = runTest(testDispatcher) {
+        coEvery { sgdbKeyProvider.getKey() } returns null
+        coEvery { igdbApi.hasCredentials() } returns false
+        coEvery { theGamesDb.hasApiKey() } returns false
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+
+        assertFalse(StudioSource.STEAM in vm.uiState.value.unavailableSources)
+        assertNull(vm.sourceBadge(StudioSource.STEAM))
+        vm.selectTab(STUDIO_TABS.indexOfFirst { it.kind == ArtworkKind.MANUAL })
+        advanceUntilIdle()
+        assertEquals("n/a", vm.sourceBadge(StudioSource.STEAM))
+    }
+
+    @Test
+    fun `a Steam game browses Steam by its own appid`() = runTest(testDispatcher) {
+        steamGame()
+
+        val vm = loadedOn(StudioSource.STEAM)   // ICON0
+
+        assertEquals("STEAM:620", vm.uiState.value.match?.matchKey)
+        assertEquals(listOf("steam-header", "steam-capsule616", "steam-hero"), vm.uiState.value.results.map { it.url })
+        coVerify(exactly = 0) {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.STEAM, any(), any())
+        }
+    }
+
+    @Test
+    fun `a game with no appid browses Steam's first title hit`() = runTest(testDispatcher) {
+        // Two hits, neither the exact title: no match, but the first still browses.
+        coEvery {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.STEAM, any(), any())
+        } returns listOf(steamCandidate("731490", "Crash Bandicoot N. Sane Trilogy"), steamCandidate("1", "Crash Team"))
+        coEvery { steamStorefront.storeMedia("731490", any()) } returns SteamResult.Ok(steamMedia)
+
+        val vm = loadedOn(StudioSource.STEAM)
+
+        assertNull(vm.uiState.value.match)
+        assertEquals(listOf("steam-header", "steam-capsule616", "steam-hero"), vm.uiState.value.results.map { it.url })
+        coVerify(exactly = 0) { steamStorefront.storeMedia("1", any()) }
+    }
+
+    @Test
+    fun `Steam's media is fetched once however many tabs are browsed`() = runTest(testDispatcher) {
+        steamGame()
+        val vm = loadedOn(StudioSource.STEAM)
+
+        for (kind in listOf(ArtworkKind.BOX_ART, ArtworkKind.HERO, ArtworkKind.LOGO, ArtworkKind.SCREENSHOT)) {
+            vm.selectTab(STUDIO_TABS.indexOfFirst { it.kind == kind })
+            advanceUntilIdle()
+            vm.selectSource(vm.sourcesForTab().indexOf(StudioSource.STEAM))
+            advanceUntilIdle()
+        }
+
+        assertEquals(listOf("steam-ss1"), vm.uiState.value.results.take(1).map { it.url })
+        coVerify(exactly = 1) { steamStorefront.storeMedia("620", any()) }
+    }
+
+    @Test
+    fun `a failed Steam request is not remembered as an empty answer`() = runTest(testDispatcher) {
+        steamGame()
+        coEvery { steamStorefront.storeMedia("620", any()) } returns
+            SteamResult.Failure(com.playfieldportal.feature.artwork.api.SteamFailureKind.NETWORK_ERROR)
+        val vm = loadedOn(StudioSource.STEAM)
+        assertTrue(vm.uiState.value.results.isEmpty())
+
+        coEvery { steamStorefront.storeMedia("620", any()) } returns SteamResult.Ok(steamMedia)
+        vm.selectTab(STUDIO_TABS.indexOfFirst { it.kind == ArtworkKind.BOX_ART })
+        advanceUntilIdle()
+        vm.selectSource(vm.sourcesForTab().indexOf(StudioSource.STEAM))
+        advanceUntilIdle()
+
+        assertEquals(listOf("steam-capsule"), vm.uiState.value.results.map { it.url })
+    }
+
     // ── Duplicate detection on the single-art tabs (task 5.3) ─────────────────
 
     /**
@@ -2176,7 +2309,7 @@ class ArtworkStudioViewModelTest {
     private suspend fun kotlinx.coroutines.test.TestScope.boxArtGridOnSgdb(
         stored: com.playfieldportal.feature.artwork.store.StudioArtworkSlot? = null,
     ): ArtworkStudioViewModel {
-        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } answers {
+        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any(), any(), any(), any()) } answers {
             val type = secondArg<SgdbArtType>()
             Result.success((1..2).map { SgdbArtItem(id = it.toLong(), url = "${type.endpoint}$it") })
         }
@@ -2413,30 +2546,215 @@ class ArtworkStudioViewModelTest {
         assertTrue(vm.uiState.value.applyConfirmOpen)
     }
 
-    // ── Horizontal controls: which pair owns what (C23 follow-up) ────────────
-    //
-    // LB/RB are the artwork type everywhere except the grid, which takes them back for paging.
-    // D-pad Left/Right act on the current level and are inert on the tab row, so arrowing around
-    // can never change the artwork type by accident. These pin that matrix zone by zone.
+    // ──────────────── Local File: add several, remove any (screenshots polish) ────────────────
 
-    @Test
-    fun `the D-pad cannot change the artwork type from the tab row`() = runTest(testDispatcher) {
-        val vm = viewModel()
-        vm.load(1L)
+    private fun storedLocal(sortOrder: Int) =
+        com.playfieldportal.feature.artwork.store.StudioArtworkSlot(
+            sortOrder = sortOrder, documentUri = "content://s$sortOrder", provider = "Local file",
+            originUrl = null, providerAssetId = null, sizeBytes = 10,
+        )
+
+    /** [kind]'s tab with Local File chosen and [stored] in the slot, still on the source row. */
+    private suspend fun kotlinx.coroutines.test.TestScope.onLocal(
+        kind: ArtworkKind,
+        stored: List<com.playfieldportal.feature.artwork.store.StudioArtworkSlot> = emptyList(),
+    ): ArtworkStudioViewModel {
+        coEvery { routingStore.studioAssetsOnDisk(1L, kind) } returns stored
+        coEvery { routingStore.studioAssets(1L, kind) } returns stored
+        val vm = loadedOnTab(kind)
+        vm.selectSource(vm.sourcesForTab().indexOf(StudioSource.LOCAL))
         advanceUntilIdle()
-        val tab = vm.uiState.value.tabIndex
-        assertEquals(StudioZone.TABS, vm.uiState.value.zone)
+        return vm
+    }
 
-        vm.handleGamepadAction(GamepadAction.NAVIGATE_RIGHT)
-        vm.handleGamepadAction(GamepadAction.NAVIGATE_LEFT)
-        advanceUntilIdle()
-
-        assertEquals("the tab row is inert to the D-pad", tab, vm.uiState.value.tabIndex)
-        assertEquals(StudioZone.TABS, vm.uiState.value.zone)
+    /** [count] picked documents that each copy as three bytes of PNG. */
+    private fun pickedFiles(count: Int): List<android.net.Uri> {
+        every { context.cacheDir } returns kotlin.io.path.createTempDirectory("studio_local").toFile()
+        val resolver = mockk<android.content.ContentResolver>()
+        every { context.contentResolver } returns resolver
+        every { resolver.getType(any()) } returns "image/png"
+        every { resolver.openInputStream(any()) } answers { java.io.ByteArrayInputStream(byteArrayOf(1, 2, 3)) }
+        return List(count) { mockk<android.net.Uri>() }
     }
 
     @Test
-    fun `the shoulders change the artwork type from the tab row`() = runTest(testDispatcher) {
+    fun `Local on a multi-asset tab lists every stored asset as a checked tile`() = runTest(testDispatcher) {
+        val vm = onLocal(ArtworkKind.SCREENSHOT, listOf(storedLocal(0), storedLocal(1), storedScreenshot(2)))
+
+        val results = vm.uiState.value.results
+        assertEquals(listOf("content://s0", "content://s1", "content://s2"), results.map { it.url })
+        assertTrue(results.all { it.provider == LOCAL_ART })
+        assertTrue(results.all { vm.uiState.value.tileMarkOf(it) == StudioTileMark.ADDED })
+    }
+
+    @Test
+    fun `Confirm on Local enters the grid on the upload bar, and A there opens the picker`() = runTest(testDispatcher) {
+        val vm = onLocal(ArtworkKind.SCREENSHOT, listOf(storedLocal(0)))
+
+        vm.handleGamepadAction(GamepadAction.SELECT)
+        assertEquals(StudioZone.GRID, vm.uiState.value.zone)
+        assertTrue(vm.uiState.value.localBarFocused)
+        assertNull("entering the grid is not a pick", vm.uiState.value.localPickKind)
+
+        vm.handleGamepadAction(GamepadAction.SELECT)
+        assertEquals(ArtworkKind.SCREENSHOT, vm.uiState.value.localPickKind)
+    }
+
+    @Test
+    fun `the D-pad moves between the upload bar and the grid's top row`() = runTest(testDispatcher) {
+        val vm = onLocal(ArtworkKind.SCREENSHOT, listOf(storedLocal(0), storedLocal(1)))
+        vm.handleGamepadAction(GamepadAction.SELECT)
+
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)
+        assertFalse(vm.uiState.value.localBarFocused)
+        assertEquals(0, vm.uiState.value.gridIndex)
+
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_RIGHT)
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_UP)
+        assertTrue("up from anywhere on the top row", vm.uiState.value.localBarFocused)
+
+        // A on the bar picks files; it never toggles the tile the grid cursor was last on.
+        vm.handleGamepadAction(GamepadAction.SELECT)
+        assertTrue(vm.uiState.value.removals.isEmpty())
+    }
+
+    @Test
+    fun `the upload bar is the Local grid on a single-art tab too`() = runTest(testDispatcher) {
+        val vm = onLocal(ArtworkKind.BOX_ART)
+
+        vm.handleGamepadAction(GamepadAction.SELECT)
+        assertEquals(StudioZone.GRID, vm.uiState.value.zone)
+        assertTrue(vm.uiState.value.localBarFocused)
+        assertTrue(vm.uiState.value.results.isEmpty())
+
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)   // nothing below it to move to
+        assertTrue(vm.uiState.value.localBarFocused)
+
+        vm.handleGamepadAction(GamepadAction.SELECT)
+        assertEquals(ArtworkKind.BOX_ART, vm.uiState.value.localPickKind)
+    }
+
+    @Test
+    fun `unchecking a local tile and applying deletes that position and downloads nothing`() = runTest(testDispatcher) {
+        val slots = listOf(storedLocal(0), storedLocal(1), storedLocal(2))
+        val vm = onLocal(ArtworkKind.SCREENSHOT, slots)
+        coEvery { routingStore.deleteAssetAt(any(), any(), any()) } returns true
+
+        vm.toggleSelection(1)
+        assertEquals(StudioTileMark.TO_REMOVE, vm.uiState.value.tileMarkOf(vm.uiState.value.results[1]))
+        assertEquals(StudioQueueSummary(toRemove = 1), vm.uiState.value.queueSummary)
+
+        vm.handleGamepadAction(GamepadAction.HOME)
+        vm.handleGamepadAction(GamepadAction.SELECT)   // Apply
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { routingStore.deleteAssetAt(1L, ArtworkKind.SCREENSHOT, 1) }
+        coVerify(exactly = 0) { routingStore.studioAppendFromUrl(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `the Local grid re-reads the slot after a change`() = runTest(testDispatcher) {
+        val vm = onLocal(ArtworkKind.SCREENSHOT, listOf(storedLocal(0)))
+        val uris = pickedFiles(1)
+        coEvery { routingStore.studioAppendFromFile(any(), any(), any(), any()) } returns "content://s1"
+        coEvery { routingStore.studioAssetsOnDisk(1L, ArtworkKind.SCREENSHOT) } returns listOf(storedLocal(0), storedLocal(1))
+
+        vm.applyLocal(uris)
+        advanceUntilIdle()
+
+        assertEquals(listOf("content://s0", "content://s1"), vm.uiState.value.results.map { it.url })
+    }
+
+    @Test
+    fun `picking several files on a multi-asset tab appends each one and replaces nothing`() = runTest(testDispatcher) {
+        val vm = onLocal(ArtworkKind.SCREENSHOT, listOf(storedLocal(0)))
+        val uris = pickedFiles(3)
+        coEvery { routingStore.studioAppendFromFile(any(), any(), any(), any()) } returns "content://new"
+
+        vm.applyLocal(uris)
+        advanceUntilIdle()
+
+        coVerify(exactly = 3) { routingStore.studioAppendFromFile(1L, ArtworkKind.SCREENSHOT, any(), "Local file") }
+        coVerify(exactly = 0) { routingStore.studioApplyFromFile(any(), any(), any(), any(), any(), any()) }
+        assertEquals("Added 3 screenshots", vm.uiState.value.message)
+        assertFalse(vm.uiState.value.applying)
+    }
+
+    @Test
+    fun `a local pick on a single-art tab still replaces the one asset`() = runTest(testDispatcher) {
+        val vm = onLocal(ArtworkKind.BOX_ART)
+        val uris = pickedFiles(1)
+        coEvery { routingStore.studioApplyFromFile(any(), any(), any(), any(), any(), any()) } returns "content://box"
+
+        vm.applyLocal(uris)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { routingStore.studioApplyFromFile(1L, ArtworkKind.BOX_ART, any(), "Local file", null, 0) }
+        coVerify(exactly = 0) { routingStore.studioAppendFromFile(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `local picks past the 100-asset cap are dropped, never written over position 99`() = runTest(testDispatcher) {
+        val vm = onLocal(ArtworkKind.SCREENSHOT, (0..97).map(::storedLocal))   // 98 held, room for 2
+        val uris = pickedFiles(3)
+        coEvery { routingStore.studioAppendFromFile(any(), any(), any(), any()) } returns "content://new"
+
+        vm.applyLocal(uris)
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) { routingStore.studioAppendFromFile(1L, ArtworkKind.SCREENSHOT, any(), any()) }
+        assertEquals("Added 2 screenshots — a game holds 100 at most", vm.uiState.value.message)
+    }
+
+    @Test
+    fun `a file that fails to add is counted, and the rest still land`() = runTest(testDispatcher) {
+        val vm = onLocal(ArtworkKind.SCREENSHOT)
+        val uris = pickedFiles(2)
+        coEvery { routingStore.studioAppendFromFile(any(), any(), any(), any()) } returnsMany listOf(null, "content://s0")
+
+        vm.applyLocal(uris)
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) { routingStore.studioAppendFromFile(any(), any(), any(), any()) }
+        assertEquals("Added 1 screenshot · 1 file could not be added", vm.uiState.value.message)
+    }
+
+    @Test
+    fun `a local tile offers neither Preview nor Crop Before Applying`() = runTest(testDispatcher) {
+        val vm = onLocal(ArtworkKind.SCREENSHOT, listOf(storedLocal(0)))
+        vm.handleGamepadAction(GamepadAction.SELECT)
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)   // off the bar, onto the tile
+
+        val actions = vm.uiState.value.availableActions
+        assertFalse(StudioAction.PREVIEW in actions)
+        assertFalse(StudioAction.CROP_BEFORE_APPLY in actions)
+    }
+
+    // ── Horizontal controls: which pair owns what (C23 follow-up) ────────────
+    //
+    // LB/RB are the artwork type everywhere except the grid, which takes them back for paging.
+    // D-pad Left/Right act on the current level only — the source row, then the tile cursor — so
+    // arrowing around can never change the artwork type by accident. These pin that matrix zone by zone.
+
+    @Test
+    fun `the Studio opens on the source row, where the D-pad cannot change the artwork type`() =
+        runTest(testDispatcher) {
+            val vm = viewModel()
+            vm.load(1L)
+            advanceUntilIdle()
+            val tab = vm.uiState.value.tabIndex
+            assertEquals(StudioZone.SOURCES, vm.uiState.value.zone)
+
+            vm.handleGamepadAction(GamepadAction.NAVIGATE_RIGHT)
+            vm.handleGamepadAction(GamepadAction.NAVIGATE_LEFT)
+            advanceUntilIdle()
+
+            assertEquals("the D-pad never reaches the artwork type", tab, vm.uiState.value.tabIndex)
+            assertEquals(StudioZone.SOURCES, vm.uiState.value.zone)
+        }
+
+    @Test
+    fun `the shoulders change the artwork type from the source row`() = runTest(testDispatcher) {
         val vm = viewModel()
         vm.load(1L)
         advanceUntilIdle()
@@ -2468,18 +2786,90 @@ class ArtworkStudioViewModelTest {
                 assertNotEquals(source, vm.uiState.value.sourceIndex)
             }
 
-            // The shoulders reach past this level to the artwork type, which is what returns the
-            // cursor to the tab row: a source index belongs to one type and cannot be carried.
+            // The shoulders reach past this level to the artwork type, which lands on that type's
+            // first available source: a source index belongs to one type and cannot be carried.
             vm.handleGamepadAction(GamepadAction.NEXT_CATEGORY)
             advanceUntilIdle()
             assertEquals((tab + 1).mod(STUDIO_TABS.size), vm.uiState.value.tabIndex)
-            assertEquals(StudioZone.TABS, vm.uiState.value.zone)
-            assertEquals(0, vm.uiState.value.sourceIndex)
+            assertEquals(StudioZone.SOURCES, vm.uiState.value.zone)
+            assertEquals(
+                vm.sourcesForTab().indexOfFirst { vm.isSourceAvailable(it) },
+                vm.uiState.value.sourceIndex,
+            )
+        }
+
+    // ── The level ladder: sources is the floor, B from it leaves (C24) ────────
+
+    @Test
+    fun `B on the source row with nothing picked closes the Studio`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+
+        vm.handleGamepadAction(GamepadAction.BACK)
+
+        assertTrue(vm.uiState.value.closed)
+        assertFalse(vm.uiState.value.leavePromptOpen)
+    }
+
+    @Test
+    fun `B walks the grid back to the source row, and a second B closes`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+        vm.handleGamepadAction(GamepadAction.SELECT)   // into the grid
+        assertEquals(StudioZone.GRID, vm.uiState.value.zone)
+
+        vm.handleGamepadAction(GamepadAction.BACK)
+        assertEquals(StudioZone.SOURCES, vm.uiState.value.zone)
+        assertFalse(vm.uiState.value.closed)
+
+        vm.handleGamepadAction(GamepadAction.BACK)
+        assertTrue(vm.uiState.value.closed)
+    }
+
+    // ── Every open starts fresh: first tab, first available source (C24) ─────
+
+    @Test
+    fun `reopening the same game returns to the first tab and its first available source`() =
+        runTest(testDispatcher) {
+            val vm = screenshotGridOnSgdb(perType = 2)
+            assertTrue("the screenshot grid is showing", vm.uiState.value.results.isNotEmpty())
+            vm.handleGamepadAction(GamepadAction.BACK)
+            vm.handleGamepadAction(GamepadAction.BACK)
+            assertTrue(vm.uiState.value.closed)
+
+            vm.load(1L)
+            advanceUntilIdle()
+
+            val s = vm.uiState.value
+            assertEquals(0, s.tabIndex)
+            assertEquals(vm.sourcesForTab().indexOfFirst { vm.isSourceAvailable(it) }, s.sourceIndex)
+            assertEquals(StudioZone.SOURCES, s.zone)
+            // The grid follows the reset: the last open's SteamGridDB screenshots must not sit under
+            // the first tab's header. ScreenScraper has nothing for this game in these tests.
+            assertTrue(
+                "stale results from the last open: ${s.results.map { it.url }}",
+                s.results.none { it.provider == "SteamGridDB" || it.url.startsWith("grids") },
+            )
+        }
+
+    @Test
+    fun `opening another game also starts on the first tab and its first available source`() =
+        runTest(testDispatcher) {
+            coEvery { gameRepository.getById(2L) } returns game.copy(id = 2L)
+            val vm = screenshotGridOnSgdb(perType = 2)
+            vm.handleGamepadAction(GamepadAction.BACK)
+            vm.handleGamepadAction(GamepadAction.BACK)
+
+            vm.load(2L)
+            advanceUntilIdle()
+
+            val s = vm.uiState.value
+            assertEquals(0, s.tabIndex)
+            assertEquals(vm.sourcesForTab().indexOfFirst { vm.isSourceAvailable(it) }, s.sourceIndex)
+            assertEquals(StudioZone.SOURCES, s.zone)
         }
 
     @Test
     fun `in the grid the shoulders page and leave the artwork type alone`() = runTest(testDispatcher) {
-        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } returns
+        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any(), any(), any(), any()) } returns
             Result.success((1..30).map { SgdbArtItem(id = it.toLong(), url = "art$it") })
         val vm = loadedOn(StudioSource.STEAMGRIDDB)
         vm.handleGamepadAction(GamepadAction.SELECT)   // into the grid
@@ -2504,7 +2894,7 @@ class ArtworkStudioViewModelTest {
 
     @Test
     fun `in the grid the D-pad moves the tile cursor, not the page`() = runTest(testDispatcher) {
-        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } returns
+        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any(), any(), any(), any()) } returns
             Result.success((1..30).map { SgdbArtItem(id = it.toLong(), url = "art$it") })
         val vm = loadedOn(StudioSource.STEAMGRIDDB)
         vm.handleGamepadAction(GamepadAction.SELECT)
@@ -2530,8 +2920,8 @@ class ArtworkStudioViewModelTest {
 
     /** With the actions menu open, walks the cursor to [action] with the D-pad and presses A. */
     private fun kotlinx.coroutines.test.TestScope.pickFromMenu(vm: ArtworkStudioViewModel, action: StudioAction) {
-        val index = vm.uiState.value.availableActions.indexOf(action)
-        check(index >= 0) { "$action is not in the menu: ${vm.uiState.value.availableActions}" }
+        val index = vm.uiState.value.menuItems.indexOf(StudioMenuItem.Action(action))
+        check(index >= 0) { "$action is not in the menu: ${vm.uiState.value.menuItems}" }
         repeat(index - vm.uiState.value.actionsIndex) { vm.handleGamepadAction(GamepadAction.NAVIGATE_DOWN) }
         vm.handleGamepadAction(GamepadAction.SELECT)
         advanceUntilIdle()
@@ -2682,5 +3072,150 @@ class ArtworkStudioViewModelTest {
         assertEquals(CropShapeChoice.PLATFORM_DEFAULT, CropShapeChoice.of("ICON:nonesuch"))
         assertEquals(CropShapeChoice.PLATFORM_DEFAULT, CropShapeChoice.of(null))
         assertEquals(CropShapeChoice.ORIGINAL_IMAGE, CropShapeChoice.of(originalKey))
+    }
+
+    // ── Per-source filters (2026-09-29) ───────────────────────────────────────
+
+    /** With the actions menu open, walks the cursor to the root filter row [option] and presses A. */
+    private fun kotlinx.coroutines.test.TestScope.pickFilter(vm: ArtworkStudioViewModel, option: StudioFilterOption) {
+        val index = vm.uiState.value.menuItems.indexOf(StudioMenuItem.Filter(option))
+        check(index >= 0) { "$option is not in the menu: ${vm.uiState.value.menuItems}" }
+        val delta = index - vm.uiState.value.resolvedActionsIndex
+        repeat(kotlin.math.abs(delta)) {
+            vm.handleGamepadAction(if (delta > 0) GamepadAction.NAVIGATE_DOWN else GamepadAction.NAVIGATE_UP)
+        }
+        vm.handleGamepadAction(GamepadAction.SELECT)
+        advanceUntilIdle()
+    }
+
+    /** In an open filter list, walks to the row doing [option] and presses A. */
+    private fun kotlinx.coroutines.test.TestScope.pickInList(vm: ArtworkStudioViewModel, option: StudioFilterOption) {
+        val index = vm.uiState.value.filterGroupRows.indexOfFirst { it.option == option }
+        check(index >= 0) { "$option is not in the list: ${vm.uiState.value.filterGroupRows}" }
+        val delta = index - vm.uiState.value.filterGroupIndex
+        repeat(kotlin.math.abs(delta)) {
+            vm.handleGamepadAction(if (delta > 0) GamepadAction.NAVIGATE_DOWN else GamepadAction.NAVIGATE_UP)
+        }
+        vm.handleGamepadAction(GamepadAction.SELECT)
+        advanceUntilIdle()
+    }
+
+    private fun styledGrids() {
+        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any(), any(), any(), any()) } returns Result.success(
+            listOf("material", "blurred", "material", "alternate").mapIndexed { i, style ->
+                SgdbArtItem(id = i.toLong(), url = "grid$i", style = style, width = 600, height = 900)
+            },
+        )
+    }
+
+    @Test
+    fun `Style keeps the chosen styles without asking SteamGridDB again, and is remembered`() = runTest(testDispatcher) {
+        styledGrids()
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)   // ICON0 browses grids
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+
+        pickFilter(vm, StudioFilterOption.Open(StudioFilterGroup.STYLE))
+        assertEquals(StudioFilterGroup.STYLE, vm.uiState.value.filterGroup)
+        pickInList(vm, StudioFilterOption.Style("material"))
+
+        assertEquals("a multi-select list stays open", StudioFilterGroup.STYLE, vm.uiState.value.filterGroup)
+        assertEquals(listOf("grid0", "grid2"), vm.uiState.value.results.map { it.url })
+        assertEquals(2, vm.uiState.value.totalResults)
+        assertEquals(4, vm.uiState.value.unfilteredTotal)
+        coVerify(exactly = 1) { steamGridDb.getArt(any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify { sgdbStylePreferences.setStyles("grids", setOf("material")) }
+    }
+
+    @Test
+    fun `Humor is asked of SteamGridDB, so turning it on refetches`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+        coVerify { steamGridDb.getArt(any(), SgdbArtType.GRID, any(), any(), false, listOf("static"), "false", "false") }
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+
+        pickFilter(vm, StudioFilterOption.Humor)
+
+        assertTrue(vm.uiState.value.filters.sgdbHumor)
+        assertTrue("a toggle keeps the menu open", vm.uiState.value.actionsOpen)
+        coVerify { steamGridDb.getArt(any(), SgdbArtType.GRID, any(), any(), false, listOf("static"), "any", "false") }
+    }
+
+    @Test
+    fun `a reopen resets session filters, keeps remembered styles and keeps Mature`() = runTest(testDispatcher) {
+        coEvery { sgdbStylePreferences.styles() } returns mapOf("grids" to setOf("material"))
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+        pickFilter(vm, StudioFilterOption.Humor)
+        pickFilter(vm, StudioFilterOption.Mature)
+        vm.closeActions()
+
+        vm.load(1L)
+        advanceUntilIdle()
+
+        val s = vm.uiState.value
+        assertFalse(s.filters.sgdbHumor)
+        assertEquals(mapOf(SgdbArtType.GRID to setOf("material")), s.filters.sgdbStyles)
+        assertTrue(s.includeNsfw)
+    }
+
+    @Test
+    fun `ScreenScraper starts on the disc's region and keeps world media`() = runTest(testDispatcher) {
+        coEvery { gameRepository.getById(1L) } returns game.copy(region = com.playfieldportal.core.domain.model.GameRegion.PAL)
+        coEvery { ssMediaCatalog.mediasFor(any(), any()) } returns listOf("us", "eu", "wor").map {
+            com.playfieldportal.feature.artwork.api.SsCachedMedia(type = "mixrbv2", region = it, url = "ss-$it", format = "png")
+        }
+
+        val vm = viewModel()
+        vm.load(1L)   // ICON0's first source is ScreenScraper
+        advanceUntilIdle()
+
+        assertEquals("eu", vm.uiState.value.filters.ssRegion)
+        assertEquals(listOf("ss-eu", "ss-wor"), vm.uiState.value.results.map { it.url })
+        assertEquals(3, vm.uiState.value.unfilteredTotal)
+        assertTrue(vm.uiState.value.sourceFiltered(StudioSource.SCREENSCRAPER))
+
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+        pickFilter(vm, StudioFilterOption.Open(StudioFilterGroup.REGION))
+        pickInList(vm, StudioFilterOption.Region(null))
+
+        assertNull("a single-choice list closes the menu", vm.uiState.value.filterGroup)
+        assertFalse(vm.uiState.value.actionsOpen)
+        assertEquals(listOf("ss-us", "ss-eu", "ss-wor"), vm.uiState.value.results.map { it.url })
+    }
+
+    @Test
+    fun `Clear Filters on SteamGridDB forgets remembered styles and turns Mature off`() = runTest(testDispatcher) {
+        styledGrids()
+        coEvery { sgdbStylePreferences.styles() } returns mapOf("grids" to setOf("blurred"))
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+        assertEquals(listOf("grid1"), vm.uiState.value.results.map { it.url })
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+        pickFilter(vm, StudioFilterOption.Mature)
+
+        pickFilter(vm, StudioFilterOption.Clear)
+
+        assertFalse(vm.uiState.value.includeNsfw)
+        assertTrue(vm.uiState.value.filters.sgdbStyles.isEmpty())
+        assertEquals(4, vm.uiState.value.totalResults)
+        coVerify { sgdbStylePreferences.clear() }
+    }
+
+    @Test
+    fun `when the filters hide everything, A in the grid clears them`() = runTest(testDispatcher) {
+        styledGrids()
+        coEvery { sgdbStylePreferences.styles() } returns mapOf("grids" to setOf("no_logo"))
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+        assertTrue(vm.uiState.value.filtersHideEverything)
+
+        vm.handleGamepadAction(GamepadAction.SELECT)   // into the grid
+        vm.handleGamepadAction(GamepadAction.SELECT)
+        advanceUntilIdle()
+
+        assertFalse(vm.uiState.value.filtersHideEverything)
+        assertEquals(4, vm.uiState.value.results.size)
     }
 }

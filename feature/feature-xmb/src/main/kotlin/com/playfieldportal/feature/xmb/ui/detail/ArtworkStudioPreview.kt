@@ -62,6 +62,10 @@ private object PreviewStudioActions : ArtworkStudioActions {
     override fun openActions() = Unit
     override fun closeActions() = Unit
     override fun runAction(action: StudioAction) = Unit
+    override fun activateMenuItem(index: Int) = Unit
+    override fun activateFilterRow(index: Int) = Unit
+    override fun closeFilterGroup() = Unit
+    override fun clearFilters() = Unit
     override fun panCrop(dx: Float, dy: Float) = Unit
     override fun zoomCrop(factor: Float) = Unit
     override fun applyCrop() = Unit

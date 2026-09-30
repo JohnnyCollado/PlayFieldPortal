@@ -33,7 +33,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmarks
@@ -41,7 +43,6 @@ import androidx.compose.material.icons.filled.CallEnd
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Headset
-import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Link
@@ -54,7 +55,6 @@ import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.QrCode2
-import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Star
@@ -306,7 +306,7 @@ private fun SiblingIcon(item: XMBItem, selected: Boolean, solidUnfocusedIcons: B
         // Missing takes the vector path rather than console art: there is no sysicon for it, and
         // the console fallback is the blank sysicon_default. Same "?" glyph the Untracked row in
         // the Shiba hub uses — both mean "we know about this entry but can't account for it".
-        XMBItemType.MISSING         -> Icons.Filled.HelpOutline
+        XMBItemType.MISSING         -> Icons.AutoMirrored.Filled.HelpOutline
         XMBItemType.VIDEO_FOLDER    -> Icons.Filled.Folder
         XMBItemType.VIDEO_LIBRARY   -> Icons.Filled.VideoLibrary
         XMBItemType.VIDEO_APPS        -> Icons.Filled.Movie
@@ -317,7 +317,7 @@ private fun SiblingIcon(item: XMBItem, selected: Boolean, solidUnfocusedIcons: B
         XMBItemType.PHOTO_ALBUMS    -> Icons.Filled.PhotoLibrary
         XMBItemType.PHOTO_APPS      -> Icons.Filled.Collections
         // The video "Playlists" section row (PLAYLIST type with no playlistId) uses a playlist glyph.
-        XMBItemType.PLAYLIST        -> Icons.Filled.QueueMusic
+        XMBItemType.PLAYLIST        -> Icons.AutoMirrored.Filled.QueueMusic
         else                        -> null
     }
     Box(
@@ -852,7 +852,7 @@ private fun XmbItemLeadingIcon(
             ) {
                 ThemedGlyph(
                     slotKey = itemSlotKeyFor(item.type) ?: "",
-                    defaultVector = Icons.Filled.QueueMusic,
+                    defaultVector = Icons.AutoMirrored.Filled.QueueMusic,
                     contentDescription = null,
                     tint = iconTint,
                     modifier = Modifier.size(48.dp),
@@ -1100,7 +1100,7 @@ private fun XmbItemLeadingIcon(
                 ) {
                     ThemedGlyph(
                         itemSlotKeyFor(item.type) ?: "",
-                        Icons.Filled.HelpOutline,
+                        Icons.AutoMirrored.Filled.HelpOutline,
                         null,
                         iconTint,
                         Modifier.size(LEADING_ICON_SIZE),
@@ -1332,7 +1332,7 @@ internal fun BundledSilhouetteIcon(assetUri: String, modifier: Modifier = Modifi
 
 // The leading glyph for a Shiba Coins hub lens row, or null if the id isn't one of them.
 private fun achievementsGlyphFor(id: String): androidx.compose.ui.graphics.vector.ImageVector? = when (id) {
-    "ach_untracked" -> Icons.Filled.HelpOutline
+    "ach_untracked" -> Icons.AutoMirrored.Filled.HelpOutline
     "ach_connect" -> Icons.Filled.Link
     else -> null
 }

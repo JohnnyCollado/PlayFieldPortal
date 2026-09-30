@@ -36,9 +36,11 @@ object StudioQuery {
  * other's state. That equality is the whole race fix (AD-6): the disappearing-artwork bug was a
  * single shared result list written by whichever unkeyed job happened to finish last.
  *
- * [includeNsfw] is deliberately part of the key, but only SteamGridDB ever sets it — every other
- * source builds its key with `false`, so toggling mature can never invalidate ScreenScraper's or
- * IGDB's cached pages (task 1.3).
+ * [sgdb] is what SteamGridDB is asked to leave out (Mature, Humor, Epilepsy Warning, Animation). It
+ * is part of the key, but only SteamGridDB's: every other source's key carries null, so changing one
+ * of those filters can never invalidate ScreenScraper's or IGDB's cached pages (task 1.3). Filters
+ * applied to a fetched list (Style, Dimensions, Region, Media) are not in any key: the cached list
+ * stays whole and is filtered as it is shown.
  *
  * [matchId] is the confirmed game match the results were fetched for. It is always null today;
  * Phase 2's tiered matcher fills it, and because it is already in the key, changing the match
@@ -48,7 +50,7 @@ data class StudioRequestKey(
     val normalizedQuery: String,
     val source: StudioSource,
     val kind: ArtworkKind,
-    val includeNsfw: Boolean = false,
+    val sgdb: SgdbRequestFilter? = null,
     val matchId: String? = null,
 ) {
     companion object {
@@ -57,14 +59,14 @@ data class StudioRequestKey(
             query: String,
             source: StudioSource,
             kind: ArtworkKind,
-            includeNsfw: Boolean,
+            sgdb: SgdbRequestFilter,
             matchId: String? = null,
         ) = StudioRequestKey(
             normalizedQuery = StudioQuery.normalize(query),
             source = source,
             kind = kind,
-            // Mature is a SteamGridDB filter and nothing else's business.
-            includeNsfw = includeNsfw && source == StudioSource.STEAMGRIDDB,
+            // What SteamGridDB is asked to leave out is nothing else's business.
+            sgdb = sgdb.takeIf { source == StudioSource.STEAMGRIDDB },
             matchId = matchId,
         )
     }
@@ -138,9 +140,89 @@ internal fun screenScraperTiles(
                 label = listOfNotNull(media.type, regions.joinToString("/").ifEmpty { null }).joinToString(" · "),
                 isVideo = kind == ArtworkKind.VIDEO || kind == ArtworkKind.ICON1,
                 providerAssetId = ScreenScraperAssetId.of(url),
+                facets = StudioArtFacets(
+                    mediaType = media.type,
+                    regions = copies.mapNotNull { (copy, _) -> copy.region?.lowercase() }.distinct(),
+                ),
             )
         }
 }
+
+/**
+ * Steam's store media as tiles for [kind]. Each tab gets the asset Steam made for that shape where
+ * there is one (library capsule for Box Art, library hero for Hero, logo for Logo); ICON0 is
+ * cropped from the landscape art; the show-all tabs get everything, screenshots first on the
+ * Screenshot tab. [StudioArt.providerAssetId] is the app plus the asset's role, so the same file
+ * reads as the same asset on every tab.
+ */
+internal fun steamTiles(kind: ArtworkKind, media: com.playfieldportal.feature.artwork.api.SteamStoreMedia): List<StudioArt> {
+    fun tile(role: String, url: String?, label: String) =
+        url?.let { StudioArt(url = it, thumb = null, provider = STEAM_ART, label = label, providerAssetId = "${media.appId}:$role") }
+    val capsule = tile("library_capsule", media.libraryCapsule, "library capsule")
+    val hero = tile("library_hero", media.libraryHero, "library hero")
+    val logo = tile("logo", media.logo, "logo")
+    val header = tile("header", media.header, "header")
+    val mainCapsule = tile("main_capsule", media.mainCapsule, "store capsule")
+    val background = tile("page_background", media.pageBackground, "store background")
+    val shots = media.screenshots.mapIndexed { index, shot ->
+        StudioArt(
+            url = shot.url, thumb = shot.thumb, provider = STEAM_ART, label = "screenshot ${index + 1}",
+            providerAssetId = "${media.appId}:ss:${shot.url.substringAfterLast('/').substringBefore('?')}",
+        )
+    }
+    val stills = listOfNotNull(capsule, hero, header, mainCapsule, background, logo)
+    return when (kind) {
+        ArtworkKind.ICON           -> listOfNotNull(header, mainCapsule, hero)
+        ArtworkKind.BOX_ART        -> listOfNotNull(capsule)
+        ArtworkKind.HERO           -> listOfNotNull(hero)
+        ArtworkKind.BACKGROUND     -> listOfNotNull(hero, background) + shots
+        ArtworkKind.LOGO           -> listOfNotNull(logo)
+        ArtworkKind.SCREENSHOT     -> shots + stills
+        ArtworkKind.BOX_3D,
+        ArtworkKind.PHYSICAL_MEDIA -> stills + shots
+        // Both video tabs list both cuts (user decision, 2026-09-29). The store download turns the
+        // full stream into a 720p mp4 on Video and a silent first-minute snap on ICON1.
+        ArtworkKind.ICON1,
+        ArtworkKind.VIDEO          -> media.trailers.flatMap { trailer ->
+            val id = "${media.appId}:trailer:${trailer.id}"
+            listOfNotNull(
+                trailer.fullUrl?.let {
+                    StudioArt(it, trailer.poster, STEAM_ART, trailer.name, isVideo = true, providerAssetId = id)
+                },
+                trailer.shortUrl?.let {
+                    StudioArt(it, trailer.poster, STEAM_ART, "${trailer.name} · short", isVideo = true, providerAssetId = "$id:short")
+                },
+            )
+        }
+        else                       -> emptyList()
+    }
+}
+
+private const val STEAM_ART = "Steam"
+
+/**
+ * [StudioArt.provider] of a tile that stands for a file the slot already stores, not for a provider's
+ * asset. Local File has nothing to browse, so on a multi-asset tab its grid is the slot itself: every
+ * stored asset, whatever it came from, so one checklist can remove any of them.
+ */
+const val LOCAL_ART = "local_art"
+
+/**
+ * [library]'s stored assets as [LOCAL_ART] tiles, in position order. The URL is the stored file's own
+ * URI: what the tile draws, and what [StudioLibraryAssets.holds] matches it back to its slot by.
+ * Empty while [library] still describes another kind, since a tab switch re-reads it a moment later.
+ */
+internal fun localArtTiles(kind: ArtworkKind, library: StudioLibraryAssets): List<StudioArt> =
+    if (library.kind != kind) emptyList()
+    else library.slots.map { slot ->
+        StudioArt(
+            url = slot.documentUri,
+            thumb = slot.documentUri,
+            provider = LOCAL_ART,
+            label = slot.provider,
+            isVideo = kind == ArtworkKind.VIDEO,
+        )
+    }
 
 /**
  * What one multi-asset slot already holds (found on device during task 5.2; the queue's own states last
@@ -164,8 +246,10 @@ data class StudioLibraryAssets(
         fun of(kind: ArtworkKind, slots: List<com.playfieldportal.feature.artwork.store.StudioArtworkSlot>) =
             StudioLibraryAssets(kind, slots)
 
+        // A LOCAL_ART tile is one stored file, so it is held by that file and by nothing else.
         private fun com.playfieldportal.feature.artwork.store.StudioArtworkSlot.holds(art: StudioArt): Boolean =
-            (providerAssetId != null && providerAssetId == art.providerAssetId) ||
+            if (art.provider == LOCAL_ART) documentUri == art.url
+            else (providerAssetId != null && providerAssetId == art.providerAssetId) ||
                 originUrl?.let(::originOf) == originOf(art.url)
 
         private fun originOf(url: String): String = ScreenScraperAssetId.of(url) ?: url

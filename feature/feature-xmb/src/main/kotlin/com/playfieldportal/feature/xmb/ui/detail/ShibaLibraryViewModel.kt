@@ -139,6 +139,11 @@ data class ShibaLibraryRow(
     val awaitingSync: Boolean = false,
     /** Set on the pinned action row instead of a game; such a row has no progress and no coins. */
     val action: LibraryRowAction? = null,
+    /**
+     * The set's source ("Steam", "Local Steam"), shown only when one library game has more than one
+     * tracked set — otherwise the two rows would be indistinguishable.
+     */
+    val sourceTag: String? = null,
 ) {
     /** Tracked rows show progress; [reason] rows (untracked, or awaiting sync) show the reason. */
     val isTracked: Boolean get() = reason == null && action == null
@@ -487,9 +492,15 @@ class ShibaLibraryViewModel @Inject constructor(
         // Rows are built unsorted; the provider filter, query and sort all apply in pushRows, so a
         // filter or sort change never needs a rebuild.
         currentModeRows = when (_state.value.mode) {
-            ShibaLibraryMode.TRACKED ->
-                standing.tracked.map { it.toRow(it.libraryGameId?.let(byId::get)) } +
-                    standing.awaitingSync.map { it.toRow(byId[it.gameId]) }
+            ShibaLibraryMode.TRACKED -> {
+                // Library games holding more than one tracked set: each of their rows says which.
+                val multiSet = standing.tracked.mapNotNull { it.libraryGameId }
+                    .groupingBy { it }.eachCount().filterValues { it > 1 }.keys
+                val tracked = standing.tracked.map {
+                    it.toRow(it.libraryGameId?.let(byId::get), namesItsSource = it.libraryGameId in multiSet)
+                }
+                tracked + standing.awaitingSync.map { it.toRow(byId[it.gameId]) }
+            }
             ShibaLibraryMode.UNTRACKED -> standing.untracked.map { it.toRow(byId[it.gameId]) }
         }
         val wallet = standing.wallet
@@ -555,10 +566,12 @@ class ShibaLibraryViewModel @Inject constructor(
         }
     }
 
-    private fun GameStanding.toRow(game: Game?) = ShibaLibraryRow(
+    private fun GameStanding.toRow(game: Game?, namesItsSource: Boolean) = ShibaLibraryRow(
         id = "${coins.provider.name}:$providerGameId",
-        coinsTarget = libraryGameId?.let { ShibaCoinsTarget.LibraryGame(it) }
+        // One of several sets for the game: open THIS set, or both rows would open the same page.
+        coinsTarget = libraryGameId?.let { ShibaCoinsTarget.LibraryGame(it, coins.provider.takeIf { namesItsSource }) }
             ?: ShibaCoinsTarget.AccountEntry(coins.provider, providerGameId),
+        sourceTag = providerLabel(coins.provider).takeIf { namesItsSource },
         title = game?.displayTitle ?: title,
         // A removed game keeps its cached coins as history; the label says why it never refreshes.
         platformLabel = (game?.platformId?.let(::platformDisplay) ?: providerLabel(coins.provider)) +

@@ -7,7 +7,11 @@ import com.playfieldportal.core.domain.achievement.AchievementProvider
  * account entry with no library copy (keyed directly by provider identity).
  */
 sealed interface ShibaCoinsTarget {
-    data class LibraryGame(val gameId: Long) : ShibaCoinsTarget
+    /**
+     * [provider] names which set to open for a game that holds more than one (an owned Steam game
+     * also played locally); null opens the one the game's link read reports.
+     */
+    data class LibraryGame(val gameId: Long, val provider: AchievementProvider? = null) : ShibaCoinsTarget
 
     data class AccountEntry(
         val provider: AchievementProvider,

@@ -224,3 +224,29 @@ internal fun relativeTime(atMillis: Long, now: Long = System.currentTimeMillis()
         else -> "$days days ago"
     }
 }
+
+/**
+ * A set's source ("Steam", "Local Steam") as a small tag: beside a list row's platform when one
+ * library game holds two sets, and as the coins page's source chips. [selected] fills it in the
+ * focus color; an unselected chip is only outlined.
+ */
+@Composable
+internal fun SourceTag(
+    label: String,
+    palette: DetailPalette,
+    modifier: Modifier = Modifier,
+    selected: Boolean = true,
+) {
+    val shape = RoundedCornerShape(4.dp)
+    Text(
+        label,
+        color = palette.textPrimary,
+        fontSize = 11.sp,
+        maxLines = 1,
+        modifier = modifier
+            .clip(shape)
+            .background(if (selected) palette.focus.copy(alpha = 0.28f) else Color.Transparent)
+            .border(1.dp, if (selected) Color.Transparent else palette.rowEdge, shape)
+            .padding(horizontal = 6.dp, vertical = 1.dp),
+    )
+}

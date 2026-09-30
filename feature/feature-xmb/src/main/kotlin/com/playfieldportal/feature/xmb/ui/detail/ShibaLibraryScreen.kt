@@ -306,7 +306,20 @@ private fun GameRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(row.platformLabel, color = palette.textMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        row.platformLabel,
+                        color = palette.textMuted,
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    row.sourceTag?.let {
+                        Spacer(Modifier.width(6.dp))
+                        SourceTag(it, palette)
+                    }
+                }
             }
             Spacer(Modifier.width(16.dp))
             if (row.isTracked) TrackedStats(row, focused, palette) else UntrackedReason(row.reason.orEmpty(), palette)

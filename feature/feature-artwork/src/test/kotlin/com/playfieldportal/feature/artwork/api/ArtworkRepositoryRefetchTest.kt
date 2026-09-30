@@ -82,6 +82,17 @@ class ArtworkRepositoryRefetchTest {
         assertEquals(listOf("TheGamesDB" to "Box Art"), ticks)
     }
 
+    /** Fetch Artwork is an artwork action: it must never change the name the library shows. */
+    @Test
+    fun `Fetch Artwork asks the scrape not to name the game`() = runTest {
+        coEvery { gameDao.getById(1L) } returns entity()
+        coEvery { metadataRepository.fetchForGame(any(), any(), any(), any(), any(), any()) } returns found
+
+        repo.refetchArtworkForGame(1L)
+
+        coVerify { metadataRepository.fetchForGame(1L, any(), any(), any(), match { !it.fillTitle }, any()) }
+    }
+
     @Test
     fun `a scrape that finds nothing reports the scraper's message`() = runTest {
         coEvery { gameDao.getById(1L) } returns entity()

@@ -350,6 +350,44 @@ class ShibaLibraryViewModelTest {
         assertEquals(ShibaCoinsTarget.AccountEntry(AchievementProvider.RETRO_ACHIEVEMENTS, "crash"), state.openCoins)
     }
 
+    /**
+     * An owned game played locally has a Steam and a Local Steam set for ONE library game. Both are
+     * listed (user decision, 2026-09-29), each tagged with its source and each opening its own set —
+     * without the provider, both rows opened the same page and the Steam set was unreachable.
+     */
+    @Test
+    fun `a game with both a Steam and a Local Steam set lists both, tagged, each opening its own set`() {
+        standing.value = standing.value.copy(
+            tracked = listOf(
+                tracked("524220", "NieR:Automata", AchievementProvider.STEAM, earned = 2, total = 2)
+                    .copy(libraryGameId = 20L),
+                tracked("524220", "NieR:Automata", AchievementProvider.LOCAL_STEAM, earned = 1, total = 2)
+                    .copy(libraryGameId = 20L),
+                tracked("hl2", "Half-Life 2", AchievementProvider.STEAM, earned = 10, total = 10)
+                    .copy(libraryGameId = 21L),
+            ),
+        )
+        viewModel.load(ShibaLibraryMode.TRACKED)
+
+        val nier = state.rows.filter { it.title == "NieR:Automata" }.associateBy { it.provider }
+        assertEquals(setOf(AchievementProvider.STEAM, AchievementProvider.LOCAL_STEAM), nier.keys)
+        assertEquals("Steam", nier.getValue(AchievementProvider.STEAM).sourceTag)
+        assertEquals("Local Steam", nier.getValue(AchievementProvider.LOCAL_STEAM).sourceTag)
+        assertEquals(
+            ShibaCoinsTarget.LibraryGame(20L, AchievementProvider.STEAM),
+            nier.getValue(AchievementProvider.STEAM).coinsTarget,
+        )
+        assertEquals(
+            ShibaCoinsTarget.LibraryGame(20L, AchievementProvider.LOCAL_STEAM),
+            nier.getValue(AchievementProvider.LOCAL_STEAM).coinsTarget,
+        )
+
+        // A game with one set is untouched: no tag, and it opens the game as before.
+        val hl2 = state.rows.single { it.title == "Half-Life 2" }
+        assertNull(hl2.sourceTag)
+        assertEquals(ShibaCoinsTarget.LibraryGame(21L), hl2.coinsTarget)
+    }
+
     @Test
     fun `Confirm on a matchable untracked game opens the existing match flow`() {
         viewModel.load(ShibaLibraryMode.UNTRACKED)

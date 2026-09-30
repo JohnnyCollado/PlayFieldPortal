@@ -114,8 +114,8 @@ object ProviderCapabilities {
         ),
         // Steam's keyless storefront (C23 T6). appdetails is addressed by appid; storesearch is a
         // real multi-result title endpoint, which is what the 5-rule normalizer feeds. No saved id
-        // on `games` — its identity lives in `game_storefront_identities` — and no artwork: the
-        // Artwork Manager owns images and Steam header art is not offered through this path.
+        // on `games` — its identity lives in `game_storefront_identities`. Artwork too: the
+        // Artwork Studio browses its store media (library art, screenshots, trailers) keyless.
         ProviderCapability(
             provider = MatchProvider.STEAM,
             addressableBySavedId = false,
@@ -123,7 +123,7 @@ object ProviderCapabilities {
             addressableByStorefrontId = true,
             supportsTitleSearch = true,
             suppliesMetadata = true,
-            suppliesArtwork = false,
+            suppliesArtwork = true,
         ),
         // The user. No endpoint to address, nothing to search, no artwork — the Artwork Studio
         // owns images and overrides are text only (Non-Goals). It supplies metadata, which is the

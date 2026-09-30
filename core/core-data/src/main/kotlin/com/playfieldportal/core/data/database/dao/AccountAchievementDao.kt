@@ -32,11 +32,14 @@ data class RecentCoinRow(
 @Dao
 interface AccountAchievementDao {
 
-    // Game-keyed read resolves through provider_game_links, same as the set summary.
+    // Game-keyed read resolves through the game's ONE link — the one ProviderGameLinkDao.observeForGame
+    // reports — same as the set summary. Joining every link unioned an owned double-link's STEAM and
+    // LOCAL_STEAM sets, which share apinames, and listed each coin twice.
     @Query(
         "SELECT a.* FROM account_achievements a " +
-            "JOIN provider_game_links l ON l.provider = a.provider AND l.provider_game_id = a.provider_game_id " +
-            "WHERE l.game_id = :gameId"
+            "JOIN (SELECT provider, provider_game_id FROM provider_game_links " +
+            "WHERE game_id = :gameId ORDER BY provider LIMIT 1) l " +
+            "ON l.provider = a.provider AND l.provider_game_id = a.provider_game_id"
     )
     fun observeForGame(gameId: Long): Flow<List<AccountAchievementEntity>>
 

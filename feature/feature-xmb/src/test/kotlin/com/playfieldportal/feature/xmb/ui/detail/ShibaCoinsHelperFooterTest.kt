@@ -71,6 +71,29 @@ class ShibaCoinsHelperFooterTest {
     }
 
     @Test
+    fun `a game with two sets gives L and R to the source and moves the view to the D-pad`() {
+        val state = state(platinum, coin("a"), focusedRowId = null).copy(
+            sources = listOf(
+                CoinSource(AchievementProvider.LOCAL_STEAM, earned = 1, total = 2),
+                CoinSource(AchievementProvider.STEAM, earned = 2, total = 2),
+            ),
+        )
+
+        assertEquals(listOf("Type", "Search", "Options", "Switch Source", "Change View", "Back"), labels(state))
+        assertEquals(
+            listOf(
+                listOf(GamepadAction.SELECT),
+                listOf(GamepadAction.CHANGE_SORT),
+                listOf(GamepadAction.OPEN_CONTEXT_MENU),
+                listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY),
+                listOf(GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT),
+                listOf(GamepadAction.BACK),
+            ),
+            shibaCoinsHelperItems(state).map { it.actions },
+        )
+    }
+
+    @Test
     fun `a hidden unearned coin offers Reveal, and Hide once revealed`() {
         val hidden = coin("secret", hidden = true)
         val focused = state(hidden, focusedRowId = "secret")

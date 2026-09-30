@@ -64,6 +64,9 @@ class InstalledAppRepository @Inject constructor(
                 val label = resolveInfo.loadLabel(pm).toString()
                 val icon  = resolveInfo.loadIcon(pm)
 
+                // FLAG_IS_GAME is deprecated for CATEGORY_GAME, but older games still declare only
+                // android:isGame, so both are read.
+                @Suppress("DEPRECATION")
                 val isGame = appInfo.category == ApplicationInfo.CATEGORY_GAME ||
                              (appInfo.flags and ApplicationInfo.FLAG_IS_GAME) != 0
 
@@ -105,6 +108,9 @@ class InstalledAppRepository @Inject constructor(
 
     fun hasUsageAccess(): Boolean {
         val appOps = context.getSystemService(AppOpsManager::class.java) ?: return false
+        // Every AppOps check-by-name is deprecated at this compile SDK; this one still works on
+        // every version PFP supports and answers exactly the question asked.
+        @Suppress("DEPRECATION")
         val mode = appOps.unsafeCheckOpNoThrow(
             AppOpsManager.OPSTR_GET_USAGE_STATS,
             Process.myUid(),

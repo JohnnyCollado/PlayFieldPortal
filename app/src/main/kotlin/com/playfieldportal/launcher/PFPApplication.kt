@@ -7,6 +7,7 @@ import com.playfieldportal.core.data.database.seeder.StartupDataPrep
 import com.playfieldportal.feature.appbar.InstalledAppReconciler
 import com.playfieldportal.feature.appbar.InstalledPackageMonitor
 import com.playfieldportal.feature.artwork.api.ArtworkImageCache
+import com.playfieldportal.feature.artwork.api.ArtworkImportManager
 import com.playfieldportal.feature.launcher.EmulatorAutoConfigService
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import dagger.hilt.android.HiltAndroidApp
@@ -28,6 +29,7 @@ class PFPApplication : Application(), Configuration.Provider {
     @Inject lateinit var artworkImageCache: ArtworkImageCache
     @Inject lateinit var installedPackageMonitor: InstalledPackageMonitor
     @Inject lateinit var installedAppReconciler: InstalledAppReconciler
+    @Inject lateinit var artworkImportManager: ArtworkImportManager
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -47,6 +49,16 @@ class PFPApplication : Application(), Configuration.Provider {
         // actually installed. Started here for the same reason: a lazily-built singleton nobody
         // injects never runs.
         installedAppReconciler.start()
+        initArtworkLibrary()
+    }
+
+    // The library "opens" with the process: mark its artwork folders .nomedia, including ones no
+    // write has passed through since the marker was introduced.
+    private fun initArtworkLibrary() {
+        appScope.launch {
+            runCatching { artworkImportManager.markLibraryFolders() }
+                .onFailure { Timber.w(it, "Marking artwork folders .nomedia failed") }
+        }
     }
 
     private fun initDatabase() {

@@ -104,7 +104,19 @@ class ArtworkImportManager @Inject constructor(
         folderRepository.setStorageMode(ArtworkStorageMode.PORTABLE)
         folderRepository.setLibraryUuid(manifest.libraryUuid)
         library.clearDirCache()
+        markLibraryFolders()
         return LinkResult(manifest, existingLibrary = existing != null)
+    }
+
+    /**
+     * Marks the linked library's artwork folders `.nomedia` (see [PortableArtworkLibrary.markArtworkFolders]).
+     * Run when a library is linked and on every app start; a folder already marked costs one listing.
+     */
+    suspend fun markLibraryFolders() {
+        val tree = linkedTree() ?: return
+        if (!folderRepository.hasLiveGrant()) return
+        val marked = library.markArtworkFolders(tree)
+        if (marked > 0) Timber.i("Artwork library: marked $marked folder(s) .nomedia")
     }
 
     /** Releases the grant and clears the stored folder. Files on disk are never touched. */

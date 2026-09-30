@@ -30,18 +30,18 @@ class ShibaCoinsOptionsTest {
     private fun labels(state: ShibaCoinsUiState) = coinOptionRows(state).map { it.label }
 
     @Test
-    fun `a linked RetroAchievements game offers Sort and Sync Now`() {
-        assertEquals(listOf("Sort (Tier)", "Refresh this game"), labels(state()))
+    fun `a linked RetroAchievements game offers Sort, Refresh and Unlink`() {
+        assertEquals(listOf("Sort (Tier)", "Refresh this game", "Unlink Game"), labels(state()))
     }
 
     @Test
     fun `a linked Steam game adds Change Match`() {
         val rows = labels(state(provider = AchievementProvider.STEAM))
-        assertEquals(listOf("Sort (Tier)", "Refresh this game", "Change Match"), rows)
+        assertEquals(listOf("Sort (Tier)", "Refresh this game", "Change Match", "Unlink Game"), rows)
     }
 
     @Test
-    fun `an account entry can sync but has no match to change`() {
+    fun `an account entry can sync but has no match to change or link to remove`() {
         val rows = labels(state(provider = AchievementProvider.STEAM, linked = false, accountOnly = true))
         assertEquals(listOf("Sort (Tier)", "Refresh this game"), rows)
     }
