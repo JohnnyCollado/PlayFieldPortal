@@ -19,6 +19,7 @@ import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.resume
 
 /**
  * Converts a full gameplay video into an ICON1-sized snap: first [MAX_SNAP_MS] only, video
@@ -62,7 +63,7 @@ class VideoSnapTranscoder @Inject constructor(
                     .addListener(object : Transformer.Listener {
                         override fun onCompleted(composition: Composition, exportResult: ExportResult) {
                             Timber.d("Video snap transcoded: ${output.length() / 1024} KB")
-                            if (cont.isActive) cont.resume(true) { _ -> }
+                            if (cont.isActive) cont.resume(true)
                         }
 
                         override fun onError(
@@ -72,7 +73,7 @@ class VideoSnapTranscoder @Inject constructor(
                         ) {
                             Timber.w(exportException, "Video snap transcode failed")
                             output.delete()
-                            if (cont.isActive) cont.resume(false) { _ -> }
+                            if (cont.isActive) cont.resume(false)
                         }
                     })
                     .build()
@@ -107,7 +108,7 @@ class VideoSnapTranscoder @Inject constructor(
                 .addListener(object : Transformer.Listener {
                     override fun onCompleted(composition: Composition, exportResult: ExportResult) {
                         Timber.d("Cropped icon snap transcoded: ${output.length() / 1024} KB")
-                        if (cont.isActive) cont.resume(true) { _ -> }
+                        if (cont.isActive) cont.resume(true)
                     }
 
                     override fun onError(
@@ -117,7 +118,7 @@ class VideoSnapTranscoder @Inject constructor(
                     ) {
                         Timber.w(exportException, "Cropped icon snap transcode failed")
                         output.delete()
-                        if (cont.isActive) cont.resume(false) { _ -> }
+                        if (cont.isActive) cont.resume(false)
                     }
                 })
                 .build()

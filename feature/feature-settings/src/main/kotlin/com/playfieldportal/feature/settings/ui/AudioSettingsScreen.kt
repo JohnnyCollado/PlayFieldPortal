@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.ui.components.PfpModalSpec
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -8,10 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.LaunchedEffect
@@ -122,6 +120,28 @@ fun AudioSettingsScreen(
     // The face-button shortcuts are consumed by the interceptor, so they voice themselves.
     val menuSounds = LocalMenuSounds.current
 
+    val message = state.message
+    val modal = rememberSettingsModal(
+        when {
+            message != null -> PfpModalSpec.Notice(
+                key = "sound_rejected:$message",
+                title = "Couldn't use that sound",
+                message = message,
+                onDismiss = viewModel::dismissMessage,
+            )
+            state.confirmResetVisible -> PfpModalSpec.Confirm(
+                key = "reset_sound",
+                title = "Reset Sound to Defaults?",
+                message = "Every menu and boot sound returns to the bundled PFP sample and Menu Sounds " +
+                    "is turned back on. Your Boot Video and GameBoot media are not affected.",
+                confirmLabel = "Reset",
+                onConfirm = viewModel::confirmReset,
+                onCancel = viewModel::dismissReset,
+            )
+            else -> null
+        },
+    )
+
     Box(modifier = modifier) {
         SettingsScaffold(
             title = "Settings",
@@ -130,7 +150,10 @@ fun AudioSettingsScreen(
             helperFooterItems = focusedSlot?.let { slot ->
                 MediaRowShortcuts.promptsFor(state.xyLayout, isAssigned = slot in state.assignedSlots)
             } ?: emptyList(),
+            modalOpen = modal.open,
             onInterceptAction = { action ->
+                // A modal is a hard input boundary: nothing behind it sees a press.
+                if (modal.intercept(action)) return@SettingsScaffold true
                 val slot = focusedSlot ?: return@SettingsScaffold false
                 when {
                     MediaRowShortcuts.isNorthFace(action, state.xyLayout) &&
@@ -253,35 +276,6 @@ fun AudioSettingsScreen(
             }
         }
 
-    }
-
-    state.message?.let { message ->
-        AlertDialog(
-            onDismissRequest = viewModel::dismissMessage,
-            title = { Text("Couldn't use that sound") },
-            text = { Text(message) },
-            confirmButton = {
-                TextButton(onClick = viewModel::dismissMessage) { Text("OK") }
-            },
-        )
-    }
-
-    if (state.confirmResetVisible) {
-        AlertDialog(
-            onDismissRequest = viewModel::dismissReset,
-            title = { Text("Reset Sound to Defaults?") },
-            text = {
-                Text(
-                    "Every menu and boot sound returns to the bundled PFP sample and Menu Sounds " +
-                        "is turned back on. Your Boot Video and GameBoot media are not affected."
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = viewModel::confirmReset) { Text("Reset") }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::dismissReset) { Text("Cancel") }
-            },
-        )
+        modal.Content()
     }
 }

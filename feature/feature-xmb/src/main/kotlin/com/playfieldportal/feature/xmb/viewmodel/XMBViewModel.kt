@@ -937,6 +937,9 @@ data class XMBUiState(
     // One-shot forwarded pad action for the icon editor (SELECT / OPTIONS / BACK); the overlay
     // consumes it via onCustomIconsActionConsumed.
     val pendingCustomIconsAction: GamepadAction? = null,
+    // One-shot forwarded pad action for the shell's shared modal (name entry, info notice, Windows
+    // setup prompt); XMBShell consumes it via onShellModalActionConsumed.
+    val pendingShellModalAction: GamepadAction? = null,
     // Non-null while the "Save as Theme…" name dialog is up over the icon editor.
     val saveThemeNameDialog: PlaylistNameDialogState? = null,
     // Per-theme XMB geometry (crossbar line, headroom, previous-item rise). DEFAULT holds the
@@ -1207,17 +1210,20 @@ internal fun cursorAfterRefresh(previous: List<XMBItem>, previousIndex: Int, nex
     return if (kept >= 0) kept else previousIndex.coerceIn(0, (next.size - 1).coerceAtLeast(0))
 }
 
-// Projects a raw game snapshot for display-only counts. DAO-backed list flows already apply the
-// same rule, but the category collector also drives card subtitles and must not count every disc.
+// One row per logical game for display-only counts (card subtitles, the All Games total). The
+// snapshot is the DAO's projection (GameDao.observeAll): present singles, plus the primary of every
+// set that still has a present disc. That primary can itself be missing while another disc is
+// present — the card's list shows the row, so it counts here too; dropping it made a card read
+// "1 Game" over a list of two. Without a primary row the set falls back to a present disc.
 internal fun List<Game>.projectGamesForDisplay(): List<Game> {
     val singles = filter { it.discSetKey == null && !it.isMissing }
     val sets = groupBy { it.discSetKey }
         .filterKeys { it != null }
         .values
         .mapNotNull { members ->
-            val present = members.filterNot { it.isMissing }
-            if (present.isEmpty()) return@mapNotNull null
-            val display = members.firstOrNull { it.isDiscPrimary } ?: present.first()
+            val display = members.firstOrNull { it.isDiscPrimary }
+                ?: members.firstOrNull { !it.isMissing }
+                ?: return@mapNotNull null
             // A favorite on any member makes the logical set favorite; preserve that signal when
             // this snapshot feeds the Favorites count and card badges.
             display.copy(isFavorite = members.any { it.isFavorite })
@@ -5813,18 +5819,15 @@ class XMBViewModel @Inject constructor(
             return
         }
 
-        // ── Modal text dialogs capture ALL input — text entry needs a keyboard, so
-        //    only BACK is meaningful (cancel). The XMB behind must never move. ──────
-        if (state.renameAppTarget != null) {
-            if (action == GamepadAction.BACK) onCancelAppRename()
-            return
-        }
-        if (state.collectionNameDialog != null) {
-            if (action == GamepadAction.BACK) onCancelCollectionName()
-            return
-        }
-        if (state.playlistNameDialog != null) {
-            if (action == GamepadAction.BACK) onCancelPlaylistName()
+        // ── The shared name modals capture ALL input. The XMB behind must never move. The cursor
+        //    and the text live in the modal's host in XMBShell (PfpModalHost), so the press is
+        //    parked for it rather than interpreted here — the same hand-off the icon editor uses. ──
+        if (state.renameAppTarget != null ||
+            state.collectionNameDialog != null ||
+            state.playlistNameDialog != null ||
+            state.saveThemeNameDialog != null
+        ) {
+            forwardToShellModal(action)
             return
         }
         // The Games search field owns input while it is up, like the name dialogs above it. BACK
@@ -5837,9 +5840,10 @@ class XMBViewModel @Inject constructor(
             }
             return
         }
-        // Read-only info dialog (e.g. file location) — A or B closes it.
+        // Read-only info notice (e.g. file location) — A or B closes it, up/down scroll a long
+        // one. Forwarded to the shared notice modal's host, like the name modals above.
         if (state.infoDialog != null) {
-            if (action == GamepadAction.BACK || action == GamepadAction.SELECT) dismissInfoDialog()
+            forwardToShellModal(action)
             return
         }
         // Launch recovery sheet (B1) — A confirms the highlighted action, B dismisses.
@@ -5851,13 +5855,10 @@ class XMBViewModel @Inject constructor(
             }
             return
         }
-        // Windows Library setup prompt — A sets up (Library Manager), B defers.
+        // Windows Library setup prompt — opens on Set Up, so A sets up (Library Manager) and B
+        // defers, as before; left/right now reach Later too. Forwarded to the shared confirm modal.
         if (state.showWindowsSetupPrompt) {
-            when (action) {
-                GamepadAction.SELECT -> confirmWindowsSetupPrompt()
-                GamepadAction.BACK   -> dismissWindowsSetupPrompt()
-                else                 -> Unit
-            }
+            forwardToShellModal(action)
             return
         }
 
@@ -9638,12 +9639,23 @@ class XMBViewModel @Inject constructor(
 
     fun confirmSaveCurrentLookAsTheme(name: String) {
         _uiState.update { it.copy(saveThemeNameDialog = null) }
-        menuSound.play(MenuSound.CONFIRM)
+        // No cue here: the shared modal voices its own Save, for a tap and for the pad alike.
         saveCurrentLookAsTheme(name)
     }
 
     fun dismissSaveThemeNameDialog() {
         _uiState.update { it.copy(saveThemeNameDialog = null) }
+    }
+
+    // Parks one press for the shell's shared modal (a name entry, the info notice, the Windows
+    // setup prompt). XMBShell hands it to the modal's host and calls [onShellModalActionConsumed].
+    private fun forwardToShellModal(action: GamepadAction) {
+        _uiState.update { it.copy(pendingShellModalAction = action) }
+    }
+
+    /** XMBShell calls once the shared modal has handled a forwarded [pendingShellModalAction]. */
+    fun onShellModalActionConsumed() {
+        _uiState.update { it.copy(pendingShellModalAction = null) }
     }
 
     /** The overlay calls once it has handled a forwarded [pendingCustomIconsAction]. */

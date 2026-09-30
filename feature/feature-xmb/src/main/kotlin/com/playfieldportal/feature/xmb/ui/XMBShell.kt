@@ -68,7 +68,9 @@ import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.TouchSensitivity
 import com.playfieldportal.core.ui.motion.MotionWallpaperPolicy
 import com.playfieldportal.core.ui.motion.rememberAppVisible
+import com.playfieldportal.core.ui.components.PfpModalSpec
 import com.playfieldportal.core.ui.components.XmbTouchButton
+import com.playfieldportal.core.ui.components.rememberPfpModalHost
 import com.playfieldportal.core.ui.preview.DevicePreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.core.ui.theme.DefaultPFPColors
@@ -211,6 +213,7 @@ fun XMBShellContainer(
         onGameBootComplete = viewModel::onGameBootComplete,
         onCloseCustomIcons = viewModel::closeCustomIcons,
         onCustomIconsActionConsumed = viewModel::onCustomIconsActionConsumed,
+        onShellModalActionConsumed = viewModel::onShellModalActionConsumed,
         onCustomIconsSlotFocused = viewModel::onCustomIconSlotFocused,
         onCustomIconGroupMove = viewModel::onCustomIconGroupMove,
         onCustomIconPicked = viewModel::onIconPicked,
@@ -394,6 +397,7 @@ fun XMBShell(
     onGameBootComplete: () -> Unit = {},
     onCloseCustomIcons: () -> Unit = {},
     onCustomIconsActionConsumed: () -> Unit = {},
+    onShellModalActionConsumed: () -> Unit = {},
     onCustomIconsSlotFocused: (Int) -> Unit = {},
     onCustomIconGroupMove: (Int) -> Unit = {},
     onCustomIconPicked: (String, android.net.Uri) -> Unit = { _, _ -> },
@@ -1174,33 +1178,6 @@ fun XMBShell(
                 )
             }
 
-            // Save-as-theme name dialog — reuses the shell's rename-dialog pattern.
-            uiState.saveThemeNameDialog?.let { dialog ->
-                CollectionNameDialog(
-                    title = dialog.title,
-                    initialText = dialog.initialText,
-                    onConfirm = onConfirmSaveAsTheme,
-                    onCancel = onDismissSaveAsTheme,
-                )
-            }
-
-            uiState.renameAppTarget?.let {
-                AppRenameDialog(
-                    currentLabel = uiState.renameAppCurrent.orEmpty(),
-                    onConfirm = onConfirmAppRename,
-                    onCancel = onCancelAppRename,
-                )
-            }
-
-            uiState.collectionNameDialog?.let { dialog ->
-                CollectionNameDialog(
-                    title = dialog.title,
-                    initialText = dialog.initialText,
-                    onConfirm = onConfirmCollectionName,
-                    onCancel = onCancelCollectionName,
-                )
-            }
-
             // The Games search field, on the empty right half beside the column it filters. Above
             // the menus it was opened from (they close first) and below nothing — it is the only
             // thing taking input.
@@ -1212,40 +1189,6 @@ fun XMBShell(
                 )
             }
 
-            uiState.playlistNameDialog?.let { dialog ->
-                CollectionNameDialog(
-                    title = dialog.title,
-                    initialText = dialog.initialText,
-                    onConfirm = onConfirmPlaylistName,
-                    onCancel = onCancelPlaylistName,
-                )
-            }
-
-            uiState.infoDialog?.let { dialog ->
-                InfoDialog(
-                    title = dialog.title,
-                    message = dialog.message,
-                    onDismiss = onDismissInfoDialog,
-                )
-            }
-
-            // One-time follow-up to the pin workflow: a PC game was saved before the Windows
-            // Library had a directory; offer to finish setup now (A) or later (B).
-            if (uiState.showWindowsSetupPrompt) {
-                AlertDialog(
-                    onDismissRequest = onWindowsSetupDismiss,
-                    title = { Text("Finish your Windows Library") },
-                    text = {
-                        Text(
-                            "A PC game was added, but the Windows Games library has no folder " +
-                                "yet. Set it up in Library Manager so game folders and " +
-                                "achievements can be scanned.",
-                        )
-                    },
-                    confirmButton = { TextButton(onClick = onWindowsSetupConfirm) { Text("Set Up") } },
-                    dismissButton = { TextButton(onClick = onWindowsSetupDismiss) { Text("Later") } },
-                )
-            }
 
             // Launch recovery sheet (B1): raised by the shared LaunchDispatcher when a game-path
             // launch failed or the emulator never reached the foreground. Offers a retry, a
@@ -1437,52 +1380,127 @@ fun XMBShell(
             } // end: base-density reset — non-XMB screens render unscaled
         } // end: XMB canvas Box
             } // end: CompositionLocalProvider (XMB-only canvas scale)
+
+            // Last, so it draws over every other overlay: a name entry can be opened from inside
+            // the music browser or the icon editor, which are composed above.
+            // The shell's name entries, its info notice and the Windows setup prompt, all through the
+            // shared modals. One is up at a time; the view model parks each press for the host (see
+            // XMBViewModel.forwardToShellModal), in the same order it checks these states.
+            val shellModal = rememberPfpModalHost(
+                spec = shellModalSpec(
+                    uiState = uiState,
+                    onConfirmAppRename = onConfirmAppRename,
+                    onCancelAppRename = onCancelAppRename,
+                    onConfirmCollectionName = onConfirmCollectionName,
+                    onCancelCollectionName = onCancelCollectionName,
+                    onConfirmPlaylistName = onConfirmPlaylistName,
+                    onCancelPlaylistName = onCancelPlaylistName,
+                    onConfirmSaveAsTheme = onConfirmSaveAsTheme,
+                    onDismissSaveAsTheme = onDismissSaveAsTheme,
+                    onDismissInfoDialog = onDismissInfoDialog,
+                    onWindowsSetupConfirm = onWindowsSetupConfirm,
+                    onWindowsSetupDismiss = onWindowsSetupDismiss,
+                ),
+                // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
+                showHints = !uiState.resolvedShowTouchButton,
+            )
+            shellModal.Content(
+                forwardedAction = uiState.pendingShellModalAction,
+                onActionConsumed = onShellModalActionConsumed,
+            )
         } // end: BoxWithConstraints (uniform canvas scale)
       } // end: CompositionLocalProvider (LocalXmbIconOverrides)
     }
 
 }
 
-@Composable
-private fun AppRenameDialog(
-    currentLabel: String,
-    onConfirm: (String) -> Unit,
-    onCancel: () -> Unit,
-) {
-    var text by remember(currentLabel) { mutableStateOf(currentLabel) }
-    AlertDialog(
-        onDismissRequest = onCancel,
-        title = { Text("Rename Shortcut") },
-        text = {
-            OutlinedTextField(value = text, onValueChange = { text = it }, singleLine = true)
-        },
-        confirmButton = { TextButton(onClick = { onConfirm(text) }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onCancel) { Text("Cancel") } },
-    )
-}
-
-@Composable
-private fun CollectionNameDialog(
-    title: String,
-    initialText: String,
-    onConfirm: (String) -> Unit,
-    onCancel: () -> Unit,
-) {
-    var text by remember(initialText) { mutableStateOf(initialText) }
-    AlertDialog(
-        onDismissRequest = onCancel,
-        title = { Text(title) },
-        text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                singleLine = true,
-                placeholder = { Text("e.g. RPGs, Currently Playing") },
+/**
+ * Which shared modal the shell is showing, if any — checked in the same order the view model
+ * checks these states when it forwards a press, so the modal on screen is the one being driven.
+ *
+ * Internal and free of composition so the mapping from UI state to modal can be tested directly.
+ */
+internal fun shellModalSpec(
+    uiState: XMBUiState,
+    onConfirmAppRename: (String) -> Unit,
+    onCancelAppRename: () -> Unit,
+    onConfirmCollectionName: (String) -> Unit,
+    onCancelCollectionName: () -> Unit,
+    onConfirmPlaylistName: (String) -> Unit,
+    onCancelPlaylistName: () -> Unit,
+    onConfirmSaveAsTheme: (String) -> Unit,
+    onDismissSaveAsTheme: () -> Unit,
+    onDismissInfoDialog: () -> Unit,
+    onWindowsSetupConfirm: () -> Unit,
+    onWindowsSetupDismiss: () -> Unit,
+): PfpModalSpec? {
+    val renameApp = uiState.renameAppTarget
+    val collection = uiState.collectionNameDialog
+    val playlist = uiState.playlistNameDialog
+    val saveTheme = uiState.saveThemeNameDialog
+    val info = uiState.infoDialog
+    return when {
+        renameApp != null -> PfpModalSpec.TextEntry(
+            key = "rename_app:$renameApp",
+            title = "Rename Shortcut",
+            initial = uiState.renameAppCurrent.orEmpty(),
+            // Blank reverts to the real app label.
+            allowBlank = true,
+            onConfirm = onConfirmAppRename,
+            onCancel = onCancelAppRename,
+        )
+        collection != null -> {
+            // Edit Title and Edit Note reuse this dialog, and there a blank value clears the
+            // override or the note. A collection's name itself can never be blank.
+            val editsGameText = collection.editTitleGameId != null || collection.editNoteGameId != null
+            PfpModalSpec.TextEntry(
+                key = collection,
+                title = collection.title,
+                initial = collection.initialText,
+                placeholder = if (editsGameText) "" else "e.g. RPGs, Currently Playing",
+                allowBlank = editsGameText,
+                onConfirm = onConfirmCollectionName,
+                onCancel = onCancelCollectionName,
             )
-        },
-        confirmButton = { TextButton(onClick = { onConfirm(text) }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onCancel) { Text("Cancel") } },
-    )
+        }
+        playlist != null -> PfpModalSpec.TextEntry(
+            key = playlist,
+            title = playlist.title,
+            initial = playlist.initialText,
+            placeholder = "Playlist name",
+            onConfirm = onConfirmPlaylistName,
+            onCancel = onCancelPlaylistName,
+        )
+        saveTheme != null -> PfpModalSpec.TextEntry(
+            key = saveTheme,
+            title = saveTheme.title,
+            initial = saveTheme.initialText,
+            placeholder = "Theme name",
+            onConfirm = onConfirmSaveAsTheme,
+            onCancel = onDismissSaveAsTheme,
+        )
+        info != null -> PfpModalSpec.Notice(
+            key = info,
+            title = info.title,
+            message = info.message,
+            buttonLabel = "Close",
+            onDismiss = onDismissInfoDialog,
+        )
+        // One-time follow-up to the pin workflow: a PC game was saved before the Windows Library
+        // had a directory; offer to finish setup now or later.
+        uiState.showWindowsSetupPrompt -> PfpModalSpec.Confirm(
+            key = "windows_setup",
+            title = "Finish your Windows Library",
+            message = "A PC game was added, but the Windows Games library has no folder " +
+                "yet. Set it up in Library Manager so game folders and " +
+                "achievements can be scanned.",
+            confirmLabel = "Set Up",
+            cancelLabel = "Later",
+            onConfirm = onWindowsSetupConfirm,
+            onCancel = onWindowsSetupDismiss,
+        )
+        else -> null
+    }
 }
 
 /** Bottom-corner touch button that opens the app drawer — a 2×2 grid glyph drawn on a Canvas
@@ -1522,20 +1540,6 @@ private fun AppDrawerButton(
     }
 }
 
-
-@Composable
-private fun InfoDialog(
-    title: String,
-    message: String,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = { Text(message) },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
-    )
-}
 
 @Composable
 private fun LaunchRecoverySheet(

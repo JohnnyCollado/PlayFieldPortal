@@ -122,7 +122,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         GameStorefrontIdentityEntity::class,
         LocalSteamFolderEntity::class,
     ],
-    version = 52,
+    version = 53,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -1591,6 +1591,17 @@ abstract class PFPDatabase : RoomDatabase() {
         val MIGRATION_51_52 = object : Migration(51, 52) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE artwork_records ADD COLUMN crop_at_draw INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /**
+         * v53 — `games.is_disc_preferred`: the disc picked with Choose Disc, so a scan keeps it as
+         * the set's primary instead of re-deriving the primary from disc numbers. Defaults to 0: an
+         * existing primary cannot be told apart from a derived one, so none is treated as a pick.
+         */
+        val MIGRATION_52_53 = object : Migration(52, 53) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN is_disc_preferred INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

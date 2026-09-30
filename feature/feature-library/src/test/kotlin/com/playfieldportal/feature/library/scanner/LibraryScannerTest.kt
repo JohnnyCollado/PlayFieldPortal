@@ -92,7 +92,7 @@ class LibraryScannerTest {
         reconciler,
         // Real reconciler over the real builder + mocked reader, so the integration test drives
         // the actual union derivation while playlist reads stay context-free.
-        DiscSetReconciler(discSetBuilder, m3uPlaylistReader, discRegionReader, gameRepository),
+        DiscSetReconciler(discSetBuilder, m3uPlaylistReader, discRegionReader, mockk(relaxed = true), gameRepository),
         ioDispatcher = StandardTestDispatcher(testScheduler),
     )
 
@@ -329,6 +329,67 @@ class LibraryScannerTest {
                     it.discNumber == null &&
                     !it.isDiscPrimary
             })
+        }
+    }
+
+    private val ff7Key = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+    private val ff7Disc1 = Game(
+        title = "Final Fantasy VII (Disc 1)", platformId = "psx",
+        romPath = "/roms/psx/Final Fantasy VII (Disc 1).cue",
+        discSetKey = ff7Key, discNumber = 1, isDiscPrimary = true,
+    )
+    private val ff7Disc2 = Game(
+        title = "Final Fantasy VII (Disc 2)", platformId = "psx",
+        romPath = "/roms/psx/Final Fantasy VII (Disc 2).cue",
+        discSetKey = ff7Key, discNumber = 2, isDiscPrimary = false,
+    )
+
+    @Test
+    fun `a disc this scan finds gone hands the primary to a present disc in the same scan`() = runTest {
+        // The stored flags still say disc 1 is present — only this scan's survey knows it is gone.
+        // The disc-set derivation must read the survey, not wait a scan for the flag to be written.
+        val scanner = scannerFor()
+        coEvery { gameRepository.getByPlatform("psx") } returns listOf(ff7Disc1, ff7Disc2)
+        coEvery { scanSourceResolver.sourcesFor(card) } returns listOf(
+            completeSource(present = setOf(ff7Disc2.romPath!!)),
+        )
+
+        scanner.scanPlatform("psx", removeMissing = true)
+
+        coVerify(exactly = 1) {
+            gameRepository.upsert(match { it.romPath == ff7Disc2.romPath && it.isDiscPrimary })
+        }
+        coVerify(exactly = 1) {
+            gameRepository.upsert(match { it.romPath == ff7Disc1.romPath && !it.isDiscPrimary && it.isMissing })
+        }
+    }
+
+    @Test
+    fun `an untrusted survey never moves the primary`() = runTest {
+        // A source that could not survey (null present set) says nothing about what is gone.
+        val scanner = scannerFor()
+        coEvery { gameRepository.getByPlatform("psx") } returns listOf(ff7Disc1, ff7Disc2)
+        coEvery { scanSourceResolver.sourcesFor(card) } returns listOf(completeSource(present = null))
+
+        scanner.scanPlatform("psx", removeMissing = true)
+
+        coVerify(exactly = 0) {
+            gameRepository.upsert(match { it.romPath == ff7Disc2.romPath && it.isDiscPrimary })
+        }
+    }
+
+    @Test
+    fun `a scan that does not remove missing games leaves the primary on the stored flags`() = runTest {
+        val scanner = scannerFor()
+        coEvery { gameRepository.getByPlatform("psx") } returns listOf(ff7Disc1, ff7Disc2)
+        coEvery { scanSourceResolver.sourcesFor(card) } returns listOf(
+            completeSource(present = setOf(ff7Disc2.romPath!!)),
+        )
+
+        scanner.scanPlatform("psx", removeMissing = false)
+
+        coVerify(exactly = 0) {
+            gameRepository.upsert(match { it.romPath == ff7Disc2.romPath && it.isDiscPrimary })
         }
     }
 

@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.ui.components.PfpModalSpec
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -197,7 +198,7 @@ private fun LibraryManagerContent(
         LibraryStep.PICK_PLATFORM -> PickPlatformContent(state, onBack = handleBack, onPlatformChosen = onPlatformChosen, modifier = modifier)
         LibraryStep.PICK_EMULATOR -> PickEmulatorContent(state, onBack = handleBack, onEmulatorChosen = onEmulatorChosen, modifier = modifier)
         LibraryStep.SCAN_PROMPT   -> ScanPromptContent(state, onBack = handleBack, onConfirmAddConsole = onConfirmAddConsole, modifier = modifier)
-        LibraryStep.CARD_DETAIL   -> CardDetailContent(state, onBack = handleBack, onAddAndroidApps = onAddAndroidApps, onLoadEmulatorOptions = onLoadEmulatorOptions, onRemoveExtension = onRemoveExtension, onAddExtension = onAddExtension, onScanConsole = onScanConsole, onBeginRename = onBeginRename, onToggleEnabled = onToggleEnabled, onTogglePinned = onTogglePinned, onMoveCard = onMoveCard, onRemoveCard = onRemoveCard, onSetEmulatorForDetail = onSetEmulatorForDetail, onOpenImportPcGames = onOpenImportPcGames, onSetVita3KFolder = onSetVita3KFolder, onSetPs3DataFolder = onSetPs3DataFolder, onScanVitaGames = onScanVitaGames, onRemoveApp = onRemoveApp, modifier = modifier)
+        LibraryStep.CARD_DETAIL   -> CardDetailContent(state, onBack = handleBack, onAddAndroidApps = onAddAndroidApps, onLoadEmulatorOptions = onLoadEmulatorOptions, onRemoveExtension = onRemoveExtension, onAddExtension = onAddExtension, onScanConsole = onScanConsole, onBeginRename = onBeginRename, onCancelRename = onCancelRename, onConfirmRename = onConfirmRename, onToggleEnabled = onToggleEnabled, onTogglePinned = onTogglePinned, onMoveCard = onMoveCard, onRemoveCard = onRemoveCard, onSetEmulatorForDetail = onSetEmulatorForDetail, onOpenImportPcGames = onOpenImportPcGames, onSetVita3KFolder = onSetVita3KFolder, onSetPs3DataFolder = onSetPs3DataFolder, onScanVitaGames = onScanVitaGames, onRemoveApp = onRemoveApp, modifier = modifier)
         LibraryStep.IMPORT_PC     -> ImportPcGamesContent(state, onBack = handleBack, onRefreshHomeStatus = onRefreshHomeStatus, onScanPcGamesFolder = onScanPcGamesFolder, onExportManualPcGames = onExportManualPcGames, onImportPcGame = onImportPcGame, onImportAllPcGames = onImportAllPcGames, onTestLaunchPcGame = onTestLaunchPcGame, onAddPcGameById = onAddPcGameById, onDismissMessage = onDismissMessage, convertPickerOpen = convertPicker != null, onConvertGamepadAction = onConvertGamepadAction, onBatchMatchLocalGames = onBatchMatchLocalGames, onForgetLocalSteamFolder = onForgetLocalSteamFolder, onSetGoldbergInstaller = onSetGoldbergInstaller, homeRoleIntentProvider = homeRoleIntentProvider, modifier = modifier)
     }
 
@@ -224,21 +225,6 @@ private fun LibraryManagerContent(
             onConfirm = onConvertConfirm,
             onSkip = onConvertSkip,
             onCancel = onConvertCancel,
-        )
-    }
-
-    // ── Rename dialog ─────────────────────────────────────────────────────────
-    state.renameTargetPlatformId?.let { targetId ->
-        val current = state.cards.firstOrNull { it.platformId == targetId }?.displayName ?: ""
-        var text by remember(targetId) { mutableStateOf(current) }
-        AlertDialog(
-            onDismissRequest = onCancelRename,
-            title   = { Text("Rename Memory Card") },
-            text    = {
-                OutlinedTextField(value = text, onValueChange = { text = it }, singleLine = true)
-            },
-            confirmButton = { TextButton(onClick = { onConfirmRename(text) }) { Text("Save") } },
-            dismissButton = { TextButton(onClick = onCancelRename) { Text("Cancel") } },
         )
     }
 }
@@ -466,6 +452,8 @@ private fun CardDetailContent(
     onAddExtension: (String, String) -> Unit,
     onScanConsole: (String) -> Unit,
     onBeginRename: (String) -> Unit,
+    onCancelRename: () -> Unit,
+    onConfirmRename: (String) -> Unit,
     onToggleEnabled: (String, Boolean) -> Unit,
     onTogglePinned: (String, Boolean) -> Unit,
     onMoveCard: (String, Boolean) -> Unit,
@@ -495,7 +483,40 @@ private fun CardDetailContent(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri -> uri?.let { onSetPs3DataFolder(it) } }
 
-    SettingsScaffold(title = "Library Manager", subtitle = card.displayName, onBack = onBack, modifier = modifier) {
+    // Renaming and removing both start from this step, so its scaffold hosts both modals.
+    val renameTargetId = state.renameTargetPlatformId
+    val modal = rememberSettingsModal(
+        when {
+            renameTargetId != null -> PfpModalSpec.TextEntry(
+                key = "rename:$renameTargetId",
+                title = "Rename Memory Card",
+                initial = state.cards.firstOrNull { it.platformId == renameTargetId }?.displayName.orEmpty(),
+                placeholder = "Memory Card name",
+                onConfirm = onConfirmRename,
+                onCancel = onCancelRename,
+            )
+            showRemoveConfirm -> PfpModalSpec.Confirm(
+                key = "remove:${card.platformId}",
+                title = "Remove ${card.displayName}?",
+                message = "This removes the console and its scanned games from the library. " +
+                    "ROM files on disk are not deleted.",
+                confirmLabel = "Remove",
+                destructive = true,
+                onConfirm = { showRemoveConfirm = false; onRemoveCard(card.platformId) },
+                onCancel = { showRemoveConfirm = false },
+            )
+            else -> null
+        },
+    )
+
+    SettingsScaffold(
+        title = "Library Manager",
+        subtitle = card.displayName,
+        onBack = onBack,
+        modifier = modifier,
+        modalOpen = modal.open,
+        onInterceptAction = modal.intercept,
+    ) {
         // Registered like the list screens: the scaffold needs a scroll owner here for its
         // chrome drag-to-scroll and for controller keep-in-view. Registering is the whole fix;
         // the body itself is unchanged.
@@ -670,15 +691,7 @@ private fun CardDetailContent(
         )
     }
 
-    if (showRemoveConfirm) {
-        AlertDialog(
-            onDismissRequest = { showRemoveConfirm = false },
-            title   = { Text("Remove ${card.displayName}?") },
-            text    = { Text("This removes the console and its scanned games from the library. ROM files on disk are not deleted.") },
-            confirmButton = { TextButton(onClick = { showRemoveConfirm = false; onRemoveCard(card.platformId) }) { Text("Remove") } },
-            dismissButton = { TextButton(onClick = { showRemoveConfirm = false }) { Text("Cancel") } },
-        )
-    }
+    modal.Content()
 }
 
 @Composable

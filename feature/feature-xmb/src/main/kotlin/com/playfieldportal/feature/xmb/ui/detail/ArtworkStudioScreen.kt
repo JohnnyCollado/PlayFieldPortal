@@ -1289,7 +1289,7 @@ internal fun ArtworkStudioContent(
         // and each list inside it (Style, Region, …) replaces it while open.
         if (state.actionsOpen && !state.showFileInfo && state.filterGroup != null) {
             com.playfieldportal.core.ui.components.PspContextMenuOverlay(
-                title = state.filterGroup?.title.orEmpty(),
+                title = state.filterGroup.title,
                 rows = state.filterGroupRows.map {
                     com.playfieldportal.core.ui.components.PspMenuRow(it.label, value = it.value, checked = it.checked)
                 },

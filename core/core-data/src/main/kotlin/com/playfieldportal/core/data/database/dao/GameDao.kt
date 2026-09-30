@@ -123,7 +123,16 @@ interface GameDao {
     @Query("UPDATE games SET is_disc_primary = 0 WHERE disc_set_key = :discSetKey AND id != :gameId")
     suspend fun clearOtherDiscPrimaries(discSetKey: String, gameId: Long)
 
-    @Query("UPDATE games SET is_disc_primary = CASE WHEN id = :discId THEN 1 ELSE 0 END WHERE disc_set_key = (SELECT disc_set_key FROM games WHERE id = :id)")
+    // The Choose Disc pick: the chosen disc becomes the set's primary and is marked preferred, which
+    // is what lets DiscSetBuilder keep it across scans rather than re-derive the primary.
+    @Query(
+        """
+        UPDATE games
+        SET is_disc_primary = CASE WHEN id = :discId THEN 1 ELSE 0 END,
+            is_disc_preferred = CASE WHEN id = :discId THEN 1 ELSE 0 END
+        WHERE disc_set_key = (SELECT disc_set_key FROM games WHERE id = :id)
+        """
+    )
     suspend fun setPreferredDisc(id: Long, discId: Long)
 
     @Query("SELECT * FROM games WHERE rom_path = :romPath LIMIT 1")

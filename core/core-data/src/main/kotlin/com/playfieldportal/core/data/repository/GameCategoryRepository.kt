@@ -39,7 +39,7 @@ class GameCategoryRepository @Inject constructor(
     // Emits whenever category item assignments change (games in any category)
     // We watch all app items as a proxy since item_type differentiates; items are stored together
     fun changes(): Flow<Unit> =
-        categoryDao.observeAppItems().map { Unit }
+        categoryDao.observeAppItems().map { }
 
     // Resolves all games assigned to a gaming category, sorted with pinned first.
     suspend fun itemsForCategory(categoryId: String): List<GameCategoryItem> {

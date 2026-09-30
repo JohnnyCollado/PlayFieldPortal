@@ -294,6 +294,11 @@ fun SettingsScaffold(
     // Return true to consume the action (suppresses back/select/focus movement).
     // Used by ControllerSettingsScreen to capture button presses during remap mode.
     onInterceptAction: ((GamepadAction) -> Boolean)? = null,
+    // True while the screen shows a modal over this scaffold (PfpTextEntryModal / PfpConfirmModal),
+    // driven through [onInterceptAction]. The modal may hold Compose focus — its text field has the
+    // keyboard — so while this is set a controller press does not pull focus back to the cursor's
+    // row, and when it clears the row takes focus again so the cursor is where it was left.
+    modalOpen: Boolean = false,
     onTouchInput: () -> Unit = {},
     // ── Chrome overrides — the first-run wizard's PSP skin (see WizardScaffold) ──
     // Replaces the ◀ breadcrumb header (the wizard draws a step badge + title instead).
@@ -554,6 +559,19 @@ fun SettingsScaffold(
         }
     }
 
+    // A modal that held focus has closed: hand it back to the cursor's row. A frame later, so the
+    // modal's field has left composition and released focus first.
+    var modalWasOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(modalOpen) {
+        if (modalOpen) {
+            modalWasOpen = true
+        } else if (modalWasOpen) {
+            modalWasOpen = false
+            withFrameNanos { }
+            requestFocusFor(navigationState.focusedKey)
+        }
+    }
+
     LaunchedEffect(pendingAction) {
         if (pendingAction == null) return@LaunchedEffect
         // Every controller action is a source transition, including actions intercepted by a
@@ -579,7 +597,7 @@ fun SettingsScaffold(
             touchScrolled.value = false
         }
         val focusedKey = navigationState.focusedKey
-        if (focusedKey != null) {
+        if (focusedKey != null && !modalOpen) {
             requestFocusFor(focusedKey)
         }
         Timber.d("Settings focus: action=$pendingAction focusedClick=${focusedRowClick.value != null}")

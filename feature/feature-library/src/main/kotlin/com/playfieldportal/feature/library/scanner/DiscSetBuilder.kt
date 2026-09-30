@@ -17,8 +17,9 @@ import javax.inject.Singleton
  *  - an `.m3u` whose playlist entries resolve to scanned games becomes that set's primary row
  *    (disc number NULL — the emulator handles disc swapping from the playlist), and the listed
  *    discs join the same set as non-primary rows; entries without a disc tag take playlist order
- *  - every set gets exactly one primary: the `.m3u` when present, otherwise the lowest-numbered
- *    disc (ties broken by path for determinism)
+ *  - every set gets exactly one primary: the disc the user picked with Choose Disc
+ *    ([Game.isDiscPreferred]), else the `.m3u` when present, otherwise the lowest-numbered disc
+ *    that is not missing (ties broken by path for determinism)
  *
  * The containing folder is part of the key so two dumps of the same game in different folders do
  * not merge (over-merging is worse than under-merging — see the plan's Risks). The folder's
@@ -50,6 +51,15 @@ class DiscSetBuilder @Inject constructor() {
         fun read(game: Game): GameRegion?
     }
 
+    /**
+     * Reads a `.cue` / `.gdi` game's raw sheet lines, so rows for the files that sheet lists can be
+     * recognised as its companions. Same per-path variation as [M3uReader]. Null means unreadable —
+     * nothing is then treated as a companion of that sheet.
+     */
+    fun interface SheetReader {
+        fun read(game: Game): List<String>?
+    }
+
     private data class Candidate(
         val game: Game,
         val stem: String,     // raw filename stem, disc tag still present
@@ -73,7 +83,7 @@ class DiscSetBuilder @Inject constructor() {
         games: List<Game>,
         regionReader: RegionReader = RegionReader { null },
         m3uReader: M3uReader,
-    ): List<Game> = derive(games, m3uReader, regionReader)
+    ): List<Game> = derive(games, m3uReader, regionReader, SheetReader { null })
 
     /**
      * Re-derives set identity over a batch that mixes already-scanned rows with newly added ones
@@ -82,24 +92,35 @@ class DiscSetBuilder @Inject constructor() {
      * the rows whose disc fields (or detected region) changed, so the caller upserts just those.
      * The derivation is deterministic, so reconcile is a no-op on a fully correct batch — stored
      * values are never trusted, they are only diffed against.
+     *
+     * [sheetReader] exists for the stored rows only: a scan never emits a sheet's companion files,
+     * but a library scanned before that suppression existed still holds a row per `.bin`. Those
+     * rows are not discs, so they are taken out of the set here (see [companionPaths]).
      */
     fun reconcile(
         games: List<Game>,
         regionReader: RegionReader = RegionReader { null },
+        sheetReader: SheetReader = SheetReader { null },
         m3uReader: M3uReader,
     ): List<Game> {
-        val derived = derive(games, m3uReader, regionReader)
+        val derived = derive(games, m3uReader, regionReader, sheetReader)
         return games.zip(derived)
             .filter { (before, after) ->
                 before.discSetKey != after.discSetKey ||
                     before.discNumber != after.discNumber ||
                     before.isDiscPrimary != after.isDiscPrimary ||
+                    before.isDiscPreferred != after.isDiscPreferred ||
                     before.region != after.region
             }
             .map { it.second }
     }
 
-    private fun derive(games: List<Game>, m3uReader: M3uReader, regionReader: RegionReader): List<Game> {
+    private fun derive(
+        games: List<Game>,
+        m3uReader: M3uReader,
+        regionReader: RegionReader,
+        sheetReader: SheetReader,
+    ): List<Game> {
         if (games.isEmpty()) return games
 
         // Region is detected from the disc image (never the filename), read once per path within
@@ -130,8 +151,10 @@ class DiscSetBuilder @Inject constructor() {
         // its own set. The split only fires when EVERY member carries a known region — an unknown
         // (unreadable, or a compressed container like .chd) disc keeps the group merged rather
         // than breaking a set on a detection gap.
+        val companions = companionPaths(candidates, sheetReader)
         val tagged = ArrayList<Triple<Candidate, DiscTag, String>>()
         for (c in candidates) {
+            if (c.game.romPath!! in companions) continue
             val tag = parseDiscTag(c.stem) ?: continue
             tagged.add(Triple(c, tag, setKey(c, keyTitleFor(c, tag))))
         }
@@ -177,13 +200,30 @@ class DiscSetBuilder @Inject constructor() {
             }
         }
 
-        // Step C — one primary per set: the .m3u when present, else the lowest disc number.
+        // Step C — one primary per set: the disc the user picked with Choose Disc, else the .m3u
+        // when present, else the lowest-numbered disc that is present. The primary is the row the
+        // library shows and launches, so a missing disc — picked or not — only leads a set whose
+        // discs are all missing (an unplugged card reshuffles nothing). A missing pick keeps its
+        // mark, so it takes the primary back when its file returns.
+        // Two rows can share a disc number when a sheet's companion could not be ruled out above
+        // (its sheet was unreadable); the sheet is the launch file, so raw track data sorts behind
+        // it rather than winning on the path tie-break (".bin" < ".cue").
+        val missingPaths = candidates.filter { it.game.isMissing }.mapTo(HashSet()) { it.game.romPath!! }
+        val preferredPaths = candidates.filter { it.game.isDiscPreferred }.mapTo(HashSet()) { it.game.romPath!! }
         val primaryByKey = assignments.entries
             .groupBy { it.value.key }
             .mapNotNull { (key, members) ->
-                val primary = members.firstOrNull { it.value.viaM3u && it.value.discNumber == null }
+                val primary = members
+                    .filter { it.key in preferredPaths && it.key !in missingPaths }
+                    .minByOrNull { it.key }
+                    ?: members.firstOrNull { it.value.viaM3u && it.value.discNumber == null }
                     ?: members.minWithOrNull(
-                        compareBy({ it.value.discNumber ?: Int.MAX_VALUE }, { it.key }),
+                        compareBy(
+                            { it.key in missingPaths },
+                            { it.value.discNumber ?: Int.MAX_VALUE },
+                            { it.key.substringAfterLast('.', "").lowercase() in RAW_TRACK_EXTENSIONS },
+                            { it.key },
+                        ),
                     )
                 primary?.let { key to it.key }
             }
@@ -197,8 +237,14 @@ class DiscSetBuilder @Inject constructor() {
                 // A previously linked playlist can become unreadable, disappear, or stop listing
                 // this row. Do not leave stale primary/set fields behind; otherwise a missing m3u
                 // can continue to project itself over the real disc rows.
-                if (game.discSetKey != null || game.discNumber != null || game.isDiscPrimary) {
-                    game.copy(region = regionOf(game), discSetKey = null, discNumber = null, isDiscPrimary = false)
+                if (game.discSetKey != null || game.discNumber != null || game.isDiscPrimary || game.isDiscPreferred) {
+                    game.copy(
+                        region = regionOf(game),
+                        discSetKey = null,
+                        discNumber = null,
+                        isDiscPrimary = false,
+                        isDiscPreferred = false,
+                    )
                 } else {
                     game.copy(region = regionOf(game))
                 }
@@ -211,6 +257,27 @@ class DiscSetBuilder @Inject constructor() {
                 )
             }
         }
+    }
+
+    // The rows that are a sheet's companion files — a `.bin` a sibling `.cue` lists, a track file a
+    // `.gdi` references. Content-based and same-folder only, exactly like the scan-time suppression
+    // (DiscCompanionSuppressor / DiscImageResolver), so a sheet-less `.bin` dump stays a real disc.
+    // A sheet is only read when its folder holds a row that could be its companion.
+    private fun companionPaths(candidates: List<Candidate>, sheetReader: SheetReader): Set<String> {
+        val companions = HashSet<String>()
+        for ((_, inFolder) in candidates.groupBy { it.folder }) {
+            val sheets = inFolder.filter { it.ext in SHEET_EXTENSIONS }
+            if (sheets.isEmpty() || sheets.size == inFolder.size) continue
+            val byBasename = inFolder.associateBy { it.basename }
+            for (sheet in sheets) {
+                val lines = sheetReader.read(sheet.game) ?: continue
+                val referenced = if (sheet.ext == "cue") cueSheetReferences(lines) else gdiSheetTrackNames(lines)
+                for (name in referenced) {
+                    byBasename[name]?.takeIf { it !== sheet }?.let { companions.add(it.game.romPath!!) }
+                }
+            }
+        }
+        return companions
     }
 
     private fun Game.candidate(): Candidate? {
@@ -265,5 +332,10 @@ class DiscSetBuilder @Inject constructor() {
         if (entry.isBlank()) return null
         val name = entry.substringAfterLast('/').substringAfterLast('\\')
         return name.lowercase().takeIf { it.isNotBlank() }
+    }
+
+    private companion object {
+        val SHEET_EXTENSIONS = setOf("cue", "gdi")
+        val RAW_TRACK_EXTENSIONS = setOf("bin", "img")
     }
 }

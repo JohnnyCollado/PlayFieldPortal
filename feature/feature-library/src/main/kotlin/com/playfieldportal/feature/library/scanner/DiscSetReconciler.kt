@@ -26,6 +26,7 @@ class DiscSetReconciler @Inject constructor(
     private val discSetBuilder: DiscSetBuilder,
     private val m3uPlaylistReader: M3uPlaylistReader,
     private val discRegionReader: DiscRegionReader,
+    private val discSheetReader: DiscSheetReader,
     private val gameRepository: GameRepository,
 ) {
 
@@ -35,17 +36,21 @@ class DiscSetReconciler @Inject constructor(
      */
     suspend fun reconcilePlatform(platformId: String, existingRows: List<Game>, newRows: List<Game>): Int {
         var corrected = 0
-        discSetBuilder.reconcile(existingRows + newRows, discRegionReader::read, m3uPlaylistReader::read)
-            .forEach { changed ->
-                try {
-                    gameRepository.upsert(changed)
-                    corrected++
-                } catch (ce: CancellationException) {
-                    throw ce
-                } catch (e: Exception) {
-                    Timber.e(e, "Library scan — disc-set reconcile upsert failed for $platformId")
-                }
+        discSetBuilder.reconcile(
+            games = existingRows + newRows,
+            regionReader = discRegionReader::read,
+            sheetReader = discSheetReader::read,
+            m3uReader = m3uPlaylistReader::read,
+        ).forEach { changed ->
+            try {
+                gameRepository.upsert(changed)
+                corrected++
+            } catch (ce: CancellationException) {
+                throw ce
+            } catch (e: Exception) {
+                Timber.e(e, "Library scan — disc-set reconcile upsert failed for $platformId")
             }
+        }
         return corrected
     }
 }

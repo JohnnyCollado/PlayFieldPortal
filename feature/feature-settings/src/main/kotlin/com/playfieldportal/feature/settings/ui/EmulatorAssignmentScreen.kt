@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.ui.components.PfpModalSpec
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,9 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -146,11 +145,30 @@ private fun AssignmentDetailContent(
     onConfirmClear: () -> Unit,
     modifier: Modifier,
 ) {
+    val modal = rememberSettingsModal(
+        if (confirmClearCount != null && confirmClearCount > 0) {
+            PfpModalSpec.Confirm(
+                key = "clear_overrides:${row.platformId}",
+                title = "Clear $confirmClearCount override${if (confirmClearCount == 1) "" else "s"}?",
+                message = "These ${row.platformName} games have their own pinned emulator and ignore this " +
+                    "platform's default. Clear them so every game on ${row.platformName} uses the default.",
+                confirmLabel = "Clear",
+                destructive = true,
+                onConfirm = onConfirmClear,
+                onCancel = onCancelClear,
+            )
+        } else {
+            null
+        },
+    )
+
     SettingsScaffold(
         title    = "Emulators",
         subtitle = row.platformName,
         onBack   = onBack,
         modifier = modifier,
+        modalOpen = modal.open,
+        onInterceptAction = modal.intercept,
     ) {
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
@@ -217,39 +235,7 @@ private fun AssignmentDetailContent(
         }
     }
 
-    if (confirmClearCount != null && confirmClearCount > 0) {
-        ClearOverridesDialog(
-            platformName = row.platformName,
-            count        = confirmClearCount,
-            onConfirm    = onConfirmClear,
-            onCancel     = onCancelClear,
-        )
-    }
-}
-
-@Composable
-private fun ClearOverridesDialog(
-    platformName: String,
-    count: Int,
-    onConfirm: () -> Unit,
-    onCancel: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onCancel,
-        title = { Text("Clear $count override${if (count == 1) "" else "s"}?") },
-        text = {
-            Text(
-                "These $platformName games have their own pinned emulator and ignore this " +
-                    "platform's default. Clear them so every game on $platformName uses the default."
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm) { Text("Clear", color = WarnColor) }
-        },
-        dismissButton = {
-            TextButton(onClick = onCancel) { Text("Cancel") }
-        },
-    )
+    modal.Content()
 }
 
 @Composable

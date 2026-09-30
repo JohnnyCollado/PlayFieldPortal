@@ -210,7 +210,11 @@ class LibraryScanner @Inject constructor(
         // already-scanned .m3u set (or a new .m3u adopting existing discs) needs the union
         // re-derived. Deterministic and idempotent — only rows whose disc fields changed are
         // rewritten, and a failure here is non-fatal (the next scan re-derives the same union).
-        discSetReconciler.reconcilePlatform(platformId, dbGames, scannedGames)
+        // A set's primary must be a present disc, and this scan's survey is newer than the stored
+        // missing flags (written just below), so the derivation reads the flags the survey implies.
+        val surveyedGames =
+            if (removeMissing) LibraryReconciler.withSurveyedFlags(dbGames, present, scanErrored) else dbGames
+        discSetReconciler.reconcilePlatform(platformId, surveyedGames, scannedGames)
 
         // Non-destructive reconcile: present files are marked seen, gone files are marked
         // missing (never deleted). The reconciler internally skips removals when the survey is

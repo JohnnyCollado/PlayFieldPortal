@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.ui.components.PfpModalSpec
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -118,37 +119,24 @@ private fun ThemesSettingsContent(
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { onCreateThemeFromPhoto(it) } }
     val pfpPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { onImportPfpTheme(it) } }
 
-    // "Save Current Look as Theme" name entry (reuses the app's rename-dialog pattern).
+    // "Save Current Look as Theme" name entry, through the shared text entry modal.
     var showSaveNameDialog by remember { mutableStateOf(false) }
-    var saveName by remember { mutableStateOf("") }
-    if (showSaveNameDialog) {
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showSaveNameDialog = false },
-            title = { androidx.compose.material3.Text("Save Current Look as Theme") },
-            text = {
-                androidx.compose.material3.OutlinedTextField(
-                    value = saveName,
-                    onValueChange = { saveName = it },
-                    singleLine = true,
-                    placeholder = { androidx.compose.material3.Text("Theme name") },
-                )
-            },
-            confirmButton = {
-                androidx.compose.material3.TextButton(
-                    onClick = {
-                        showSaveNameDialog = false
-                        onSaveCurrentLook(saveName)
-                        saveName = ""
-                    },
-                ) { androidx.compose.material3.Text("Save") }
-            },
-            dismissButton = {
-                androidx.compose.material3.TextButton(onClick = { showSaveNameDialog = false }) {
-                    androidx.compose.material3.Text("Cancel")
-                }
-            },
-        )
-    }
+    val saveNameModal = rememberSettingsModal(
+        if (showSaveNameDialog) {
+            PfpModalSpec.TextEntry(
+                key = "save_current_look",
+                title = "Save Current Look as Theme",
+                placeholder = "Theme name",
+                onConfirm = { name ->
+                    showSaveNameDialog = false
+                    onSaveCurrentLook(name)
+                },
+                onCancel = { showSaveNameDialog = false },
+            )
+        } else {
+            null
+        },
+    )
 
     var menu by remember { mutableStateOf<ThemeMenu?>(null) }
     var menuIndex by remember { mutableStateOf(0) }
@@ -192,9 +180,12 @@ private fun ThemesSettingsContent(
             subtitle = "Themes",
             onBack   = onBack,
             modifier = Modifier.fillMaxSize(),
+            modalOpen = saveNameModal.open,
             onInterceptAction = { action ->
                 val m = menu
                 when {
+                    // A modal is a hard input boundary: nothing behind it sees a press.
+                    saveNameModal.intercept(action) -> true
                     customPicker -> {
                         when (action) {
                             GamepadAction.NAVIGATE_UP   -> {
@@ -437,6 +428,8 @@ private fun ThemesSettingsContent(
                 onCancel = { customPicker = false },
             )
         }
+
+        saveNameModal.Content()
     }
 }
 

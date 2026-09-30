@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.ui.components.PfpModalSpec
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
@@ -11,12 +12,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -59,11 +57,29 @@ fun ArtworkSettingsScreen(
         uri?.let { viewModel.loadDebugCredentials(it) }
     }
 
+    val modal = rememberSettingsModal(
+        if (state.confirmRescrapeAll) {
+            PfpModalSpec.Confirm(
+                key = "rescrape_all",
+                title = "Re-Scrape All Games?",
+                message = "This will clear and re-scrape artwork for all ${state.status.total} games. " +
+                    "Existing artwork will be replaced. Continue?",
+                confirmLabel = "Re-Scrape All",
+                onConfirm = { viewModel.confirmRescrapeAll() },
+                onCancel = { viewModel.cancelRescrapeAll() },
+            )
+        } else {
+            null
+        },
+    )
+
     SettingsScaffold(
         title    = "Settings",
         subtitle = "Artwork",
         onBack   = onBack,
         modifier = modifier,
+        modalOpen = modal.open,
+        onInterceptAction = modal.intercept,
     ) {
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
@@ -490,20 +506,7 @@ fun ArtworkSettingsScreen(
         }
     }
 
-    if (state.confirmRescrapeAll) {
-        AlertDialog(
-            onDismissRequest = { viewModel.cancelRescrapeAll() },
-            title   = { Text("Re-Scrape All Games?") },
-            text    = {
-                Text(
-                    "This will clear and re-scrape artwork for all ${state.status.total} games. " +
-                        "Existing artwork will be replaced. Continue?"
-                )
-            },
-            confirmButton = { TextButton(onClick = { viewModel.confirmRescrapeAll() }) { Text("Re-Scrape All") } },
-            dismissButton = { TextButton(onClick = { viewModel.cancelRescrapeAll() }) { Text("Cancel") } },
-        )
-    }
+    modal.Content()
 }
 
 private fun formatSnapDelay(seconds: Float): String =

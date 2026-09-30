@@ -40,11 +40,9 @@ class LibraryReconciler @Inject constructor(
         val romPaths = dbGames.mapNotNull { it.romPath }
 
         // Untrustworthy survey → touch nothing.
-        if (scanErrored || present == null) return Result(0, 0, skipped = true)
-
-        // Half-mounted guard: an empty survey against a non-empty library is a mount problem, not a
-        // real mass deletion. Bail rather than flag everything missing.
-        if (present.isEmpty() && romPaths.isNotEmpty()) return Result(0, 0, skipped = true)
+        if (present == null || !isTrustedSurvey(romPaths, present, scanErrored)) {
+            return Result(0, 0, skipped = true)
+        }
 
         val seen = romPaths.filter { it in present }
         val gone = romPaths.filterNot { it in present }
@@ -53,5 +51,31 @@ class LibraryReconciler @Inject constructor(
         if (gone.isNotEmpty()) gameRepository.markMissing(gone)
 
         return Result(markedSeen = seen.size, markedMissing = gone.size, skipped = false)
+    }
+
+    companion object {
+        /**
+         * Whether [present] can be trusted to say which of [romPaths] are gone: the scan didn't
+         * error, the survey ran, and it isn't empty against a non-empty library (the half-mounted
+         * guard — that is a mount problem, not a real mass deletion).
+         */
+        fun isTrustedSurvey(romPaths: List<String>, present: Set<String>?, scanErrored: Boolean): Boolean =
+            !scanErrored && present != null && !(present.isEmpty() && romPaths.isNotEmpty())
+
+        /**
+         * [dbGames] carrying the missing flags [reconcile] writes for this survey, for a caller that
+         * must decide on them before they are stored. An untrustworthy survey returns the rows
+         * unchanged, exactly as [reconcile] then touches nothing.
+         */
+        fun withSurveyedFlags(dbGames: List<Game>, present: Set<String>?, scanErrored: Boolean): List<Game> {
+            if (present == null || !isTrustedSurvey(dbGames.mapNotNull { it.romPath }, present, scanErrored)) {
+                return dbGames
+            }
+            return dbGames.map { game ->
+                val path = game.romPath ?: return@map game
+                val missing = path !in present
+                if (game.isMissing == missing) game else game.copy(isMissing = missing)
+            }
+        }
     }
 }

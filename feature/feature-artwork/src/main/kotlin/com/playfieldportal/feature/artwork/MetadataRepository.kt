@@ -151,7 +151,7 @@ class MetadataRepository @Inject constructor(
             // Media-URL cache: a previously matched game whose text metadata is already stored
             // needs no jeuInfos — the cached medias list serves every kind's URL (the response
             // it came from carried URLs for ALL kinds, so coverage equals a live call).
-            if (!options.bypassSsCache && cachedSsId != null && gameEntity?.description != null) {
+            if (!options.bypassSsCache && cachedSsId != null && gameEntity.description != null) {
                 ssMediaCacheDao.get(cachedSsId)?.let { row ->
                     SsMediaSelection.decode(row.mediasJson)?.let { medias ->
                         ssInfo = SsMediaSelection.infoFromCache(cachedSsId, medias, scrapePreferences.getArtworkRegion())

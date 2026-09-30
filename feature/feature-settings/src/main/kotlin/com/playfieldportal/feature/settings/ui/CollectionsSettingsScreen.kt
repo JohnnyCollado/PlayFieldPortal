@@ -16,7 +16,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.res.painterResource
@@ -32,6 +31,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameCollection
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.components.PfpConfirmModal
+import com.playfieldportal.core.ui.components.PfpModalFocus
+import com.playfieldportal.core.ui.components.PfpModalNav
+import com.playfieldportal.core.ui.components.PfpTextEntryModal
+import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import com.playfieldportal.core.ui.icons.CATEGORY_ICON_CATALOG
 import com.playfieldportal.core.ui.icons.categoryIconFor
 import com.playfieldportal.feature.settings.viewmodel.CollectionsSettingsViewModel
@@ -39,8 +44,9 @@ import com.playfieldportal.feature.settings.viewmodel.CollectionsSettingsViewMod
 // A two-level, fully controller-navigable manager:
 //   • List step  — create a collection, or open one.
 //   • Detail step — rename / reorder / delete the collection, and remove its games.
-// Naming uses a text dialog (a keyboard is unavoidable for free-text); every other action is
-// a focusable row that works with D-Pad + A/B.
+// Naming uses the shared text entry modal (a keyboard is unavoidable for free-text) and deleting
+// asks first through the shared confirm modal; both are driven by the scaffold's interceptor, so
+// D-Pad + A/B work inside them. Every other action is a focusable row.
 @Composable
 fun CollectionsSettingsScreen(
     onBack: () -> Unit,
@@ -56,12 +62,85 @@ fun CollectionsSettingsScreen(
     var selectedCategoryForNewCollection by remember { mutableStateOf<String?>(null) }
     // Non-null while the icon picker is open for that collection id.
     var iconPickerFor by remember { mutableStateOf<Long?>(null) }
+    // The name modal's text and cursor, and the collection a delete is being confirmed for.
+    var nameText by remember { mutableStateOf("") }
+    var modalFocus by remember { mutableStateOf(PfpModalFocus.FIELD) }
+    var deleteConfirmFor by remember { mutableStateOf<Long?>(null) }
 
     val openCollection = collections.firstOrNull { it.id == openCollectionId }
+    val deleteTarget = collections.firstOrNull { it.id == deleteConfirmFor }
+
+    // The name modal is up until a name is confirmed; for a new collection the category picker
+    // then takes over while the pending name waits in [dialog].
+    val nameDialog = dialog?.takeIf { selectedCategoryForNewCollection == null }
+    val nameConfirmEnabled = PfpModalNav.textEntryConfirmEnabled(nameText, error = null, maxLength = null)
+    val showHints = LocalSettingsShowControllerHint.current
+    val menuSounds = LocalMenuSounds.current
+
+    val openNameDialog: (CollectionDialog) -> Unit = { d ->
+        nameText = d.initial
+        modalFocus = PfpModalFocus.FIELD
+        dialog = d
+    }
+    val confirmName: () -> Unit = {
+        nameDialog?.let { d ->
+            val name = nameText.trim()
+            if (d.renameId != null) {
+                viewModel.rename(d.renameId, name)
+                dialog = null
+            } else {
+                // Creating new collection — ask which category to add to
+                d.pendingName = name
+                selectedCategoryForNewCollection = gamingCategories.firstOrNull()?.id ?: "games"
+            }
+        }
+    }
+    val confirmDelete: () -> Unit = {
+        deleteConfirmFor?.let { id ->
+            viewModel.delete(id)
+            deleteConfirmFor = null
+            openCollectionId = null
+        }
+    }
+
+    // A modal is a hard input boundary: while one is up, nothing behind it sees a press.
+    val modalOpen = nameDialog != null || deleteTarget != null
+    val interceptModal: (GamepadAction) -> Boolean = { action ->
+        when {
+            nameDialog != null -> {
+                PfpModalNav.handle(
+                    action = action,
+                    focus = modalFocus,
+                    hasField = true,
+                    confirmEnabled = nameConfirmEnabled,
+                    sounds = menuSounds,
+                    onFocusChange = { modalFocus = it },
+                    onConfirm = confirmName,
+                    onCancel = { dialog = null },
+                )
+                true
+            }
+            deleteTarget != null -> {
+                PfpModalNav.handle(
+                    action = action,
+                    focus = modalFocus,
+                    hasField = false,
+                    confirmEnabled = true,
+                    sounds = menuSounds,
+                    onFocusChange = { modalFocus = it },
+                    onConfirm = confirmDelete,
+                    onCancel = { deleteConfirmFor = null },
+                )
+                true
+            }
+            else -> false
+        }
+    }
 
     // BACK collapses the current sub-step before leaving the screen.
     val handleBack: () -> Unit = {
         when {
+            deleteConfirmFor != null  -> deleteConfirmFor = null
             iconPickerFor != null     -> iconPickerFor = null
             selectedCategoryForNewCollection != null -> selectedCategoryForNewCollection = null
             dialog != null            -> dialog = null
@@ -76,46 +155,62 @@ fun CollectionsSettingsScreen(
     if (openCollection == null) {
         CollectionListStep(
             collections = collections,
-            onCreate    = { dialog = CollectionDialog(title = "New Collection") },
+            onCreate    = { openNameDialog(CollectionDialog(title = "New Collection")) },
             onOpen      = { openCollectionId = it.id },
             onBack      = handleBack,
+            modalOpen   = modalOpen,
+            onInterceptAction = interceptModal,
             modifier    = modifier,
         )
     } else {
         CollectionDetailStep(
             collection  = openCollection,
             gamesFlow   = { viewModel.gamesIn(openCollection.id) },
-            onRename    = { dialog = CollectionDialog(title = "Rename Collection", renameId = openCollection.id, initial = openCollection.name) },
+            onRename    = { openNameDialog(CollectionDialog(title = "Rename Collection", renameId = openCollection.id, initial = openCollection.name)) },
             onChangeIcon = { iconPickerFor = openCollection.id },
             onMoveUp    = { viewModel.moveUp(openCollection.id) },
             onMoveDown  = { viewModel.moveDown(openCollection.id) },
-            onDelete    = { viewModel.delete(openCollection.id); openCollectionId = null },
+            onDelete    = {
+                // Opens on Cancel: a stray second press must not delete the collection.
+                modalFocus = PfpModalNav.initialConfirmFocus(destructive = true)
+                deleteConfirmFor = openCollection.id
+            },
             onRemoveGame = { game -> viewModel.removeGame(openCollection.id, game.id) },
             onBack      = handleBack,
+            modalOpen   = modalOpen,
+            onInterceptAction = interceptModal,
             modifier    = modifier,
         )
     }
 
-    // Show text dialog for name entry (new or rename)
-    if (selectedCategoryForNewCollection == null) {
-        dialog?.let { d ->
-            CollectionTextDialog(
-                title = d.title,
-                initial = d.initial,
-                onConfirm = { name ->
-                    if (d.renameId != null) {
-                        // Rename existing collection
-                        viewModel.rename(d.renameId, name)
-                        dialog = null
-                    } else {
-                        // Creating new collection — ask which category to add to
-                        d.pendingName = name
-                        selectedCategoryForNewCollection = gamingCategories.firstOrNull()?.id ?: "games"
-                    }
-                },
-                onCancel = { dialog = null },
-            )
-        }
+    // Name entry (new or rename)
+    nameDialog?.let { d ->
+        PfpTextEntryModal(
+            title = d.title,
+            value = nameText,
+            onValueChange = { nameText = it },
+            focus = modalFocus,
+            onFocusChange = { modalFocus = it },
+            onConfirm = confirmName,
+            onCancel = { dialog = null },
+            placeholder = "Collection name",
+            // A new collection still has its category to pick, so its name is not yet a save.
+            confirmLabel = if (d.renameId != null) "Save" else "Next",
+            showHints = showHints,
+        )
+    }
+
+    deleteTarget?.let { target ->
+        PfpConfirmModal(
+            title = "Delete Collection",
+            message = "\"${target.name}\" will be deleted. The games in it stay in your library.",
+            confirmLabel = "Delete",
+            focus = modalFocus,
+            destructive = true,
+            onConfirm = confirmDelete,
+            onCancel = { deleteConfirmFor = null },
+            showHints = showHints,
+        )
     }
 
     // Show category picker for new collection
@@ -158,9 +253,18 @@ private fun CollectionListStep(
     onCreate: () -> Unit,
     onOpen: (GameCollection) -> Unit,
     onBack: () -> Unit,
+    modalOpen: Boolean,
+    onInterceptAction: (GamepadAction) -> Boolean,
     modifier: Modifier = Modifier,
 ) {
-    SettingsScaffold(title = "Settings", subtitle = "Collections", onBack = onBack, modifier = modifier) {
+    SettingsScaffold(
+        title = "Settings",
+        subtitle = "Collections",
+        onBack = onBack,
+        modifier = modifier,
+        modalOpen = modalOpen,
+        onInterceptAction = onInterceptAction,
+    ) {
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
@@ -201,11 +305,20 @@ private fun CollectionDetailStep(
     onDelete: () -> Unit,
     onRemoveGame: (Game) -> Unit,
     onBack: () -> Unit,
+    modalOpen: Boolean,
+    onInterceptAction: (GamepadAction) -> Boolean,
     modifier: Modifier = Modifier,
 ) {
     val games by remember(collection.id) { gamesFlow() }.collectAsState(initial = emptyList())
 
-    SettingsScaffold(title = "Settings", subtitle = collection.name, onBack = onBack, modifier = modifier) {
+    SettingsScaffold(
+        title = "Settings",
+        subtitle = collection.name,
+        onBack = onBack,
+        modifier = modifier,
+        modalOpen = modalOpen,
+        onInterceptAction = onInterceptAction,
+    ) {
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
@@ -237,30 +350,6 @@ private fun CollectionDetailStep(
             }
         }
     }
-}
-
-@Composable
-private fun CollectionTextDialog(
-    title: String,
-    initial: String,
-    onConfirm: (String) -> Unit,
-    onCancel: () -> Unit,
-) {
-    var text by remember(initial) { mutableStateOf(initial) }
-    AlertDialog(
-        onDismissRequest = onCancel,
-        title = { Text(title) },
-        text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                singleLine = true,
-                placeholder = { Text("Collection name") },
-            )
-        },
-        confirmButton = { TextButton(onClick = { onConfirm(text) }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onCancel) { Text("Cancel") } },
-    )
 }
 
 @Composable

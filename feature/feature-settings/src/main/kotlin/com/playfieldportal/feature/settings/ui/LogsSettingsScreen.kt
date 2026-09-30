@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.ui.components.PfpModalSpec
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -12,10 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -94,13 +93,35 @@ fun LogsSettingsScreen(
     // Consumed by the interceptor below, so the scaffold never sees it to voice it.
     val menuSounds = LocalMenuSounds.current
 
+    val logCount = state.logFiles.size
+    val modal = rememberSettingsModal(
+        if (state.confirmClearVisible) {
+            PfpModalSpec.Confirm(
+                key = "clear_logs",
+                title = "Clear All Logs?",
+                message = "${if (logCount == 1) "The log file" else "All $logCount log files"} " +
+                    "(${state.totalSize}) will be deleted. If you're " +
+                    "about to report a problem, share the log first. A cleared log can't be recovered.",
+                confirmLabel = "Clear",
+                destructive = true,
+                onConfirm = viewModel::confirmClear,
+                onCancel = viewModel::dismissClear,
+            )
+        } else {
+            null
+        },
+    )
+
     SettingsScaffold(
         title = "Settings",
         subtitle = "Logs",
         onBack = onBack,
         modifier = modifier,
         helperFooterItems = footerItems,
+        modalOpen = modal.open,
         onInterceptAction = { action ->
+            // A modal is a hard input boundary: nothing behind it sees a press.
+            if (modal.intercept(action)) return@SettingsScaffold true
             val target = shareTarget
             if (target != null && !state.confirmClearVisible &&
                 MediaRowShortcuts.isNorthFace(action, state.xyLayout)
@@ -183,26 +204,7 @@ fun LogsSettingsScreen(
         }
     }
 
-    if (state.confirmClearVisible) {
-        val count = state.logFiles.size
-        AlertDialog(
-            onDismissRequest = viewModel::dismissClear,
-            title = { Text("Clear All Logs?") },
-            text = {
-                Text(
-                    "${if (count == 1) "The log file" else "All $count log files"} " +
-                        "(${state.totalSize}) will be deleted. If you're " +
-                        "about to report a problem, share the log first. A cleared log can't be recovered."
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = viewModel::confirmClear) { Text("Clear") }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::dismissClear) { Text("Cancel") }
-            },
-        )
-    }
+    modal.Content()
 }
 
 /**

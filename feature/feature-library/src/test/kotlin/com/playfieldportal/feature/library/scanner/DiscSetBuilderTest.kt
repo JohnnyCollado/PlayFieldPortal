@@ -487,6 +487,223 @@ class DiscSetBuilderTest {
         assertFalse(updated.single().isDiscPrimary)
     }
 
+    // ── Stale companion rows ────────────────────────────────────────────────────────────────────
+    // A library scanned before companion suppression existed still holds a row for every .bin
+    // beside its .cue. A scan never adds those rows now, but reconcile runs over the stored rows.
+
+    private fun sheets(vararg linesByPath: Pair<String, List<String>>): DiscSetBuilder.SheetReader {
+        val byPath = linesByPath.toMap()
+        return DiscSetBuilder.SheetReader { game -> byPath[game.romPath] }
+    }
+
+    @Test
+    fun `reconcile drops a stale bin companion from its cue's set and makes the cue primary`() {
+        // The device layout: one folder per disc, each holding a .cue and the .bin it lists. The
+        // stored state is what the path tie-break produced — ".bin" sorts before ".cue".
+        val key = "psx\u0001/roms/psx/Parasite Eve II\u0001Parasite Eve II"
+        val bin1 = "/roms/psx/Parasite Eve II (USA) (Disc 1)/Parasite Eve II (USA) (Disc 1).bin"
+        val cue1 = "/roms/psx/Parasite Eve II (USA) (Disc 1)/Parasite Eve II (USA) (Disc 1).cue"
+        val bin2 = "/roms/psx/Parasite Eve II (Disc 2)/Parasite Eve II (Disc 2).bin"
+        val cue2 = "/roms/psx/Parasite Eve II (Disc 2)/Parasite Eve II (Disc 2).cue"
+        val rows = listOf(
+            setGame(bin1, key, 1, true),
+            setGame(cue1, key, 1, false),
+            setGame(bin2, key, 2, false),
+            setGame(cue2, key, 2, false),
+        )
+
+        val updated = builder.reconcile(
+            rows,
+            sheetReader = sheets(
+                cue1 to listOf("FILE \"Parasite Eve II (USA) (Disc 1).bin\" BINARY", "  TRACK 01 MODE2/2352"),
+                cue2 to listOf("FILE \"Parasite Eve II (Disc 2).bin\" BINARY", "  TRACK 01 MODE2/2352"),
+            ),
+        ) { null }.associateBy { it.romPath }
+
+        // Both .bin rows leave the set entirely; disc 1's .cue takes the primary. Disc 2's .cue
+        // was already correct, so it is not rewritten.
+        assertEquals(setOf(bin1, bin2, cue1), updated.keys)
+        for (bin in listOf(bin1, bin2)) {
+            assertNull(updated.getValue(bin).discSetKey)
+            assertNull(updated.getValue(bin).discNumber)
+            assertFalse(updated.getValue(bin).isDiscPrimary)
+        }
+        assertEquals(key, updated.getValue(cue1).discSetKey)
+        assertTrue(updated.getValue(cue1).isDiscPrimary)
+    }
+
+    @Test
+    fun `reconcile drops disc-tagged track files listed by a cue`() {
+        // A multi-track dump: the track files carry the disc tag too, so they would join the set.
+        val key = "psx\u0001/roms/psx\u0001Game"
+        val cue = "/roms/psx/Game (Disc 1).cue"
+        val track1 = "/roms/psx/Game (Disc 1) (Track 1).bin"
+        val track2 = "/roms/psx/Game (Disc 1) (Track 2).bin"
+        val rows = listOf(
+            setGame(track1, key, 1, true),
+            setGame(track2, key, 1, false),
+            setGame(cue, key, 1, false),
+        )
+
+        val updated = builder.reconcile(
+            rows,
+            sheetReader = sheets(
+                cue to listOf(
+                    "FILE \"Game (Disc 1) (Track 1).bin\" BINARY",
+                    "FILE \"Game (Disc 1) (Track 2).bin\" BINARY",
+                ),
+            ),
+        ) { null }.associateBy { it.romPath }
+
+        assertNull(updated.getValue(track1).discSetKey)
+        assertNull(updated.getValue(track2).discSetKey)
+        assertTrue(updated.getValue(cue).isDiscPrimary)
+    }
+
+    @Test
+    fun `a bin no sheet lists stays a disc of its set`() {
+        // Sheet-less .bin dumps are real discs. A sheet in the folder that lists other files must
+        // not take them out of the set.
+        val key = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val rows = listOf(
+            setGame("/roms/psx/Final Fantasy VII (Disc 1).bin", key, 1, true),
+            setGame("/roms/psx/Final Fantasy VII (Disc 2).bin", key, 2, false),
+            game("/roms/psx/Resident Evil.cue"),
+        )
+
+        val updated = builder.reconcile(
+            rows,
+            sheetReader = sheets("/roms/psx/Resident Evil.cue" to listOf("FILE \"Resident Evil.bin\" BINARY")),
+        ) { null }
+
+        assertTrue(updated.isEmpty())
+    }
+
+    @Test
+    fun `an unreadable cue still beats its same-numbered bin for the primary`() {
+        // With no sheet contents the .bin cannot be proven a companion, so it stays in the set —
+        // but the sheet is the launch file and must not lose the primary to a path tie-break.
+        val key = "psx\u0001/roms/psx\u0001Parasite Eve II"
+        val bin = "/roms/psx/Parasite Eve II (Disc 1).bin"
+        val cue = "/roms/psx/Parasite Eve II (Disc 1).cue"
+
+        val updated = builder.reconcile(
+            listOf(setGame(bin, key, 1, true), setGame(cue, key, 1, false)),
+        ) { null }.associateBy { it.romPath }
+
+        assertFalse(updated.getValue(bin).isDiscPrimary)
+        assertEquals(key, updated.getValue(bin).discSetKey)
+        assertTrue(updated.getValue(cue).isDiscPrimary)
+    }
+
+    // ── Missing discs ───────────────────────────────────────────────────────────────────────────
+    // The primary is the row the library shows and launches, so it must be a disc that is there.
+
+    @Test
+    fun `a present disc takes the primary from a missing lower disc`() {
+        val key = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val disc1 = setGame("/roms/psx/Final Fantasy VII (Disc 1).cue", key, 1, true).copy(isMissing = true)
+        val disc2 = setGame("/roms/psx/Final Fantasy VII (Disc 2).cue", key, 2, false)
+        val disc3 = setGame("/roms/psx/Final Fantasy VII (Disc 3).cue", key, 3, false)
+
+        val updated = builder.reconcile(listOf(disc1, disc2, disc3)) { null }.associateBy { it.romPath }
+
+        // Disc 1 stays in the set under its own number; the lowest PRESENT disc leads.
+        assertEquals(setOf(disc1.romPath, disc2.romPath), updated.keys)
+        assertFalse(updated.getValue(disc1.romPath).isDiscPrimary)
+        assertEquals(key, updated.getValue(disc1.romPath).discSetKey)
+        assertEquals(1, updated.getValue(disc1.romPath).discNumber)
+        assertTrue(updated.getValue(disc2.romPath).isDiscPrimary)
+    }
+
+    @Test
+    fun `the lowest disc takes the primary back once it is present again`() {
+        val key = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val disc1 = setGame("/roms/psx/Final Fantasy VII (Disc 1).cue", key, 1, false)
+        val disc2 = setGame("/roms/psx/Final Fantasy VII (Disc 2).cue", key, 2, true)
+
+        val updated = builder.reconcile(listOf(disc1, disc2)) { null }.associateBy { it.romPath }
+
+        assertTrue(updated.getValue(disc1.romPath).isDiscPrimary)
+        assertFalse(updated.getValue(disc2.romPath).isDiscPrimary)
+    }
+
+    @Test
+    fun `a set whose discs are all missing keeps the lowest disc primary`() {
+        // An unplugged card flags every disc missing; that must not reshuffle the set.
+        val key = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val rows = listOf(
+            setGame("/roms/psx/Final Fantasy VII (Disc 1).cue", key, 1, true).copy(isMissing = true),
+            setGame("/roms/psx/Final Fantasy VII (Disc 2).cue", key, 2, false).copy(isMissing = true),
+        )
+
+        assertTrue(builder.reconcile(rows) { null }.isEmpty())
+    }
+
+    // ── The Choose Disc pick ────────────────────────────────────────────────────────────────────
+    // Picking a disc makes it the set's primary. A scan re-derives the primary from disc numbers,
+    // so the pick is stored on the row (isDiscPreferred) and honored here, or it would not survive.
+
+    @Test
+    fun `a preferred disc stays primary across reconcile`() {
+        val key = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val rows = listOf(
+            setGame("/roms/psx/Final Fantasy VII (Disc 1).cue", key, 1, false),
+            setGame("/roms/psx/Final Fantasy VII (Disc 2).cue", key, 2, true).copy(isDiscPreferred = true),
+        )
+
+        assertTrue(builder.reconcile(rows) { null }.isEmpty())
+    }
+
+    @Test
+    fun `a preferred disc stays primary over the playlist`() {
+        val key = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val rows = listOf(
+            setGame("/roms/psx/Final Fantasy VII.m3u", key, null, false),
+            setGame("/roms/psx/Final Fantasy VII (Disc 1).cue", key, 1, false),
+            setGame("/roms/psx/Final Fantasy VII (Disc 2).cue", key, 2, true).copy(isDiscPreferred = true),
+        )
+
+        val updated = builder.reconcile(rows) {
+            m3u(listOf("Final Fantasy VII (Disc 1).cue", "Final Fantasy VII (Disc 2).cue")).read(it)
+        }
+
+        assertTrue(updated.isEmpty())
+    }
+
+    @Test
+    fun `a missing preferred disc yields the primary and keeps the pick for its return`() {
+        val key = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val disc1 = setGame("/roms/psx/Final Fantasy VII (Disc 1).cue", key, 1, false)
+        val disc2 = setGame("/roms/psx/Final Fantasy VII (Disc 2).cue", key, 2, true)
+            .copy(isDiscPreferred = true, isMissing = true)
+
+        val gone = builder.reconcile(listOf(disc1, disc2)) { null }.associateBy { it.romPath }
+
+        assertTrue(gone.getValue(disc1.romPath).isDiscPrimary)
+        assertFalse(gone.getValue(disc2.romPath).isDiscPrimary)
+        assertTrue(gone.getValue(disc2.romPath).isDiscPreferred)
+
+        // The file comes back: the pick is still on the row, so it takes the primary again.
+        val back = builder.reconcile(
+            listOf(gone.getValue(disc1.romPath), gone.getValue(disc2.romPath).copy(isMissing = false)),
+        ) { null }.associateBy { it.romPath }
+
+        assertFalse(back.getValue(disc1.romPath).isDiscPrimary)
+        assertTrue(back.getValue(disc2.romPath).isDiscPrimary)
+    }
+
+    @Test
+    fun `a row that leaves its set loses the pick`() {
+        val key = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val playlist = setGame("/roms/psx/Final Fantasy VII.m3u", key, null, true).copy(isDiscPreferred = true)
+
+        val updated = builder.reconcile(listOf(playlist)) { null }
+
+        assertNull(updated.single().discSetKey)
+        assertFalse(updated.single().isDiscPreferred)
+    }
+
     @Test
     fun `untagged playlist entries take playlist order for disc numbers`() {
         val games = listOf(
