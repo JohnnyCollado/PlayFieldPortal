@@ -2,6 +2,7 @@ package com.playfieldportal.feature.xmb.ui.detail
 
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.ui.components.PfpModalSpec
+import com.playfieldportal.feature.artwork.match.MetadataField
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerUi
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -31,7 +32,73 @@ class GameDetailModalSpecTest {
         onCancelRemove = { events += "cancel-remove" },
         onCreateCollection = { events += "collection:$it" },
         onCancelCreateCollection = { events += "cancel-collection" },
+        onSaveMetadataField = { events += "meta:$it" },
+        onCancelMetadataField = { events += "cancel-meta" },
+        onConfirmTitleReplace = { events += "replace" },
+        onCancelTitleReplace = { events += "keep" },
     )
+
+    // ── Manual metadata (the Current-vs-Incoming overlay) ──────────────────────
+
+    private fun editing(field: MetadataField, text: String, scraped: Any? = null) = baseState.copy(
+        metadataPreview = MetadataPreviewUi(
+            loading = false,
+            editingField = field,
+            editText = text,
+            current = mapOf(field to scraped),
+        ),
+    )
+
+    @Test
+    fun `a manual field opens the shared text entry with what was typed`() {
+        val spec = specFor(editing(MetadataField.DEVELOPER, "Squaresoft", scraped = "Square")) as PfpModalSpec.TextEntry
+
+        assertEquals("Edit Developer", spec.title)
+        assertEquals("Developer", spec.label)
+        assertEquals("Squaresoft", spec.initial)
+        // Empty is allowed: it means "use the scraped value", which the empty field shows.
+        assertTrue(spec.allowBlank)
+        assertEquals("Square", spec.placeholder)
+
+        spec.onConfirm("Square Co.")
+        spec.onCancel()
+        assertEquals(listOf("meta:Square Co.", "cancel-meta"), events)
+    }
+
+    @Test
+    fun `the description is edited on several lines, numbers on the number keyboard`() {
+        val description = specFor(editing(MetadataField.DESCRIPTION, "")) as PfpModalSpec.TextEntry
+        val year = specFor(editing(MetadataField.RELEASE_YEAR, "2000")) as PfpModalSpec.TextEntry
+
+        assertTrue(description.multiline)
+        assertFalse(description.numeric)
+        assertTrue(year.numeric)
+        assertFalse(year.multiline)
+    }
+
+    @Test
+    fun `replacing a hand-typed title asks first, opening on Keep Mine`() {
+        val state = baseState.copy(
+            metadataPreview = MetadataPreviewUi(
+                loading = false,
+                editingField = MetadataField.DEVELOPER, // the confirm outranks an open editor
+                titleReplace = TitleReplaceConfirm(current = "PE2", incoming = "Parasite Eve II"),
+            ),
+        )
+
+        val spec = specFor(state) as PfpModalSpec.Confirm
+
+        assertEquals("Replace your title?", spec.title)
+        assertTrue(spec.message.contains("PE2"))
+        assertTrue(spec.message.contains("Parasite Eve II"))
+        assertEquals("Replace", spec.confirmLabel)
+        assertEquals("Keep Mine", spec.cancelLabel)
+        assertTrue(spec.openOnCancel)
+
+        spec.onConfirm()
+        spec.onCancel()
+        assertEquals(listOf("replace", "keep"), events)
+    }
 
     @Test
     fun `a new collection starts empty and can never be blank`() {

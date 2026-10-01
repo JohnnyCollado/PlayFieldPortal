@@ -5,10 +5,15 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -131,6 +136,8 @@ fun LibraryManagerScreen(
         onBatchMatchLocalGames = { viewModel.batchMatchLocalGames(it) },
         onForgetLocalSteamFolder = { viewModel.forgetLocalSteamFolder(it) },
         onSetGoldbergInstaller = { viewModel.setGoldbergInstallerEnabled(it) },
+        onCycleUnknownLauncher = { viewModel.cycleUnknownLauncher(it) },
+        onShowHiddenUnknownLaunchers = { viewModel.showHiddenUnknownLaunchers() },
         homeRoleIntentProvider = { viewModel.homeRoleIntent() },
         modifier = modifier
     )
@@ -188,6 +195,8 @@ private fun LibraryManagerContent(
     onBatchMatchLocalGames: (Uri) -> Unit,
     onForgetLocalSteamFolder: (appId: String) -> Unit,
     onSetGoldbergInstaller: (Boolean) -> Unit,
+    onCycleUnknownLauncher: (packageName: String) -> Unit,
+    onShowHiddenUnknownLaunchers: () -> Unit,
     homeRoleIntentProvider: () -> android.content.Intent?,
     modifier: Modifier = Modifier,
 ) {
@@ -199,7 +208,7 @@ private fun LibraryManagerContent(
         LibraryStep.PICK_EMULATOR -> PickEmulatorContent(state, onBack = handleBack, onEmulatorChosen = onEmulatorChosen, modifier = modifier)
         LibraryStep.SCAN_PROMPT   -> ScanPromptContent(state, onBack = handleBack, onConfirmAddConsole = onConfirmAddConsole, modifier = modifier)
         LibraryStep.CARD_DETAIL   -> CardDetailContent(state, onBack = handleBack, onAddAndroidApps = onAddAndroidApps, onLoadEmulatorOptions = onLoadEmulatorOptions, onRemoveExtension = onRemoveExtension, onAddExtension = onAddExtension, onScanConsole = onScanConsole, onBeginRename = onBeginRename, onCancelRename = onCancelRename, onConfirmRename = onConfirmRename, onToggleEnabled = onToggleEnabled, onTogglePinned = onTogglePinned, onMoveCard = onMoveCard, onRemoveCard = onRemoveCard, onSetEmulatorForDetail = onSetEmulatorForDetail, onOpenImportPcGames = onOpenImportPcGames, onSetVita3KFolder = onSetVita3KFolder, onSetPs3DataFolder = onSetPs3DataFolder, onScanVitaGames = onScanVitaGames, onRemoveApp = onRemoveApp, modifier = modifier)
-        LibraryStep.IMPORT_PC     -> ImportPcGamesContent(state, onBack = handleBack, onRefreshHomeStatus = onRefreshHomeStatus, onScanPcGamesFolder = onScanPcGamesFolder, onExportManualPcGames = onExportManualPcGames, onImportPcGame = onImportPcGame, onImportAllPcGames = onImportAllPcGames, onTestLaunchPcGame = onTestLaunchPcGame, onAddPcGameById = onAddPcGameById, onDismissMessage = onDismissMessage, convertPickerOpen = convertPicker != null, onConvertGamepadAction = onConvertGamepadAction, onBatchMatchLocalGames = onBatchMatchLocalGames, onForgetLocalSteamFolder = onForgetLocalSteamFolder, onSetGoldbergInstaller = onSetGoldbergInstaller, homeRoleIntentProvider = homeRoleIntentProvider, modifier = modifier)
+        LibraryStep.IMPORT_PC     -> ImportPcGamesContent(state, onBack = handleBack, onRefreshHomeStatus = onRefreshHomeStatus, onScanPcGamesFolder = onScanPcGamesFolder, onExportManualPcGames = onExportManualPcGames, onImportPcGame = onImportPcGame, onImportAllPcGames = onImportAllPcGames, onTestLaunchPcGame = onTestLaunchPcGame, onAddPcGameById = onAddPcGameById, onDismissMessage = onDismissMessage, convertPickerOpen = convertPicker != null, onConvertGamepadAction = onConvertGamepadAction, onBatchMatchLocalGames = onBatchMatchLocalGames, onForgetLocalSteamFolder = onForgetLocalSteamFolder, onSetGoldbergInstaller = onSetGoldbergInstaller, onCycleUnknownLauncher = onCycleUnknownLauncher, onShowHiddenUnknownLaunchers = onShowHiddenUnknownLaunchers, homeRoleIntentProvider = homeRoleIntentProvider, modifier = modifier)
     }
 
     // ── Convert-detected-games picker (the convertible pile of a batch match) ──
@@ -733,6 +742,8 @@ private fun ImportPcGamesContent(
     onBatchMatchLocalGames: (Uri) -> Unit,
     onForgetLocalSteamFolder: (appId: String) -> Unit,
     onSetGoldbergInstaller: (Boolean) -> Unit,
+    onCycleUnknownLauncher: (packageName: String) -> Unit,
+    onShowHiddenUnknownLaunchers: () -> Unit,
     homeRoleIntentProvider: () -> android.content.Intent?,
     modifier: Modifier,
 ) {
@@ -847,6 +858,39 @@ private fun ImportPcGamesContent(
                         label    = launcher.name,
                         value    = "Installed",
                         sublabel = "No add-by-ID support — export the game to <windows>/import instead",
+                    )
+                }
+            }
+
+            // Apps PFP cannot identify with confidence: the user says what each one is. A choice
+            // is stored per install and outranks every automatic rule.
+            if (state.unknownLaunchers.isNotEmpty() || state.hiddenUnknownLaunchers.isNotEmpty()) {
+                SettingsGroup("Unknown Windows Emulators")
+                state.unknownLaunchers.forEach { app ->
+                    SettingsRow(
+                        label    = app.label,
+                        sublabel = app.sublabel,
+                        focusKey = "unknown_${app.packageName}",
+                        leading  = { AppIcon(app.packageName) },
+                        trailing = {
+                            Text(
+                                text = "◀  ${app.value}  ▶",
+                                color = SettingsText,
+                                fontSize = 13.sp,
+                                style = TextStyle(shadow = SettingsTextShadow),
+                            )
+                        },
+                        onClick  = { onCycleUnknownLauncher(app.packageName) },
+                    )
+                }
+                val hidden = state.hiddenUnknownLaunchers.size
+                if (hidden > 0) {
+                    SettingsValueRow(
+                        label    = "Show Hidden Apps",
+                        value    = hidden.toString(),
+                        sublabel = (if (hidden == 1) "1 app" else "$hidden apps") +
+                            " marked Not a launcher — bring them back to choose again",
+                        onClick  = onShowHiddenUnknownLaunchers,
                     )
                 }
             }
@@ -1029,7 +1073,32 @@ fun LibraryManagerScreenPreview() {
             onBatchMatchLocalGames = {},
             onForgetLocalSteamFolder = {},
             onSetGoldbergInstaller = {},
+            onCycleUnknownLauncher = {},
+            onShowHiddenUnknownLaunchers = {},
             homeRoleIntentProvider = { null }
         )
+    }
+}
+
+// Rendered once per row at a size that stays sharp at 32dp on high-density screens.
+private const val APP_ICON_PX = 128
+
+/** An installed app's own launcher icon, at the size of a settings row's leading slot. */
+@Composable
+private fun AppIcon(packageName: String) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val icon = remember(packageName) {
+        runCatching {
+            val drawable = context.packageManager.getApplicationIcon(packageName)
+            val bitmap = android.graphics.Bitmap.createBitmap(APP_ICON_PX, APP_ICON_PX, android.graphics.Bitmap.Config.ARGB_8888)
+            drawable.setBounds(0, 0, APP_ICON_PX, APP_ICON_PX)
+            drawable.draw(android.graphics.Canvas(bitmap))
+            bitmap.asImageBitmap()
+        }.getOrNull()
+    }
+    if (icon != null) {
+        Image(bitmap = icon, contentDescription = null, modifier = Modifier.size(32.dp))
+    } else {
+        Spacer(Modifier.size(32.dp))
     }
 }

@@ -30,11 +30,16 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.keyboard.SuppressPlatformKeyboard
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardEdit
+import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
 import com.playfieldportal.core.ui.theme.StorefrontColors
 
 // ── Header / breadcrumb bar ───────────────────────────────────────────────────
@@ -59,6 +64,8 @@ internal fun AppDrawerHeader(
     onSearchDone: () -> Unit,
     onBack: () -> Unit,
     colors: StorefrontColors,
+    // PFP's keyboard wiring for the field; null (previews) leaves it a plain system-keyboard field.
+    searchEdit: VirtualKeyboardEdit? = null,
 ) {
     Row(
         modifier = Modifier
@@ -103,9 +110,12 @@ internal fun AppDrawerHeader(
         // Search field — temporarily expands within the header while active (PSP-era mode feel,
         // not a floating Material component).
         AnimatedVisibility(visible = searchActive, enter = fadeIn(), exit = fadeOut()) {
+            SuppressPlatformKeyboard(active = searchEdit?.holdsSystemKeyboard == true) {
             BasicTextField(
-                value = searchQuery,
-                onValueChange = onSearchChange,
+                value = searchEdit?.fieldValue ?: TextFieldValue(searchQuery, TextRange(searchQuery.length)),
+                onValueChange = { next ->
+                    if (searchEdit != null) searchEdit.onFieldValueChange(next) else onSearchChange(next.text)
+                },
                 singleLine = true,
                 textStyle = TextStyle(color = colors.textPrimary, fontSize = 14.sp),
                 cursorBrush = SolidColor(colors.searchBorder),
@@ -123,11 +133,13 @@ internal fun AppDrawerHeader(
                 },
                 modifier = Modifier
                     .width(220.dp)
+                    .then(if (searchEdit != null) Modifier.virtualKeyboardField(searchEdit) else Modifier)
                     .focusRequester(searchFocus)
                     .background(colors.searchField, RoundedCornerShape(FIELD_CORNER))
                     .border(FIELD_BORDER, colors.searchBorder, RoundedCornerShape(FIELD_CORNER))
                     .padding(horizontal = 10.dp, vertical = 6.dp),
             )
+            }
         }
 
         Spacer(Modifier.width(16.dp))

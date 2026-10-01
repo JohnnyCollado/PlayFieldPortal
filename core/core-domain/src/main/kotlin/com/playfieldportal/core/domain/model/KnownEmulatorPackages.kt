@@ -50,6 +50,7 @@ object KnownEmulatorPackages {
         "it.dbtecno.pizzaboypro", "it.dbtecno.pizzaboy", "com.pixelrespawn.linkboy",
         "org.mupen64plusae.v3.fzurita.pro", "org.mupen64plusae.v3.fzurita",
         "org.mupen64plusae.v3.fzurita.amazon", "org.mupen64plusae.v3.alpha",
+        "io.github.gopher64.gopher64",
         "com.fms.ines.free", "com.simongellis.vvb",
         // Sega and other consoles
         "it.dbtecno.pizzaboyscpro", "it.dbtecno.pizzaboyscbasic", "com.fms.mg",
@@ -63,7 +64,7 @@ object KnownEmulatorPackages {
         "com.explusalpha.SwanEmu", "com.explusalpha.LynxEmu", "com.explusalpha.A2600Emu",
         "com.explusalpha.C64Emu",
         // Microsoft
-        "com.izzy2lost.x1box", "emu.x360.mobile", "aenu.ax360e", "aenu.ax360e.free",
+        "com.izzy2lost.x1box", "emu.x360mobile.com", "aenu.ax360e", "aenu.ax360e.free",
         // Other systems
         "com.github.eka2l1", "org.scummvm.scummvm", "io.wip.pico8", "com.rfandango.haku_x",
         // PC runtimes (Winlator is a family above)

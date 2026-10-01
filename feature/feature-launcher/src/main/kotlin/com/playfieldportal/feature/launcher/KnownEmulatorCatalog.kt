@@ -796,9 +796,11 @@ internal object KnownEmulatorCatalog {
 
         // ── Xbox 360 ──────────────────────────────────────────────────────────
         // X360 Mobile exposes X360MobileGameLaunchActivity with an ACTION_VIEW filter
-        // (file/content scheme, */* type, pathPattern *.iso/.xex/.zar/.xbla).
+        // (file/content scheme, */* type, pathPattern *.iso/.xex/.zar/.xbla). The published
+        // application id is emu.x360mobile.com (Obtainium pack v7.18.0); the activity keeps its
+        // emu.x360.mobile class namespace, which an application id does not rename.
         KnownEmulator(
-            packageNames  = listOf("emu.x360.mobile"),
+            packageNames  = listOf("emu.x360mobile.com"),
             suggestedName = "X360 Mobile",
             platformIds   = listOf("x360", "xbox360"),
             activityClass = "emu.x360.mobile.X360MobileGameLaunchActivity",

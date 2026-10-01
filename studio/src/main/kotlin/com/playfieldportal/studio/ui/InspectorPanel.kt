@@ -86,7 +86,7 @@ fun InspectorPanel(
             Text("Custom", fontSize = 13.sp)
         }
         if (state.iconColor is IconColorChoice.Custom) {
-            val customArgb = (state.iconColor as IconColorChoice.Custom).argb
+            val customArgb = state.iconColor.argb
             HexField(
                 label = "Icon color",
                 argb = customArgb,
@@ -118,7 +118,7 @@ fun InspectorPanel(
             Text("Custom", fontSize = 13.sp)
         }
         if (state.textColor is TextColorChoice.Custom) {
-            val customArgb = (state.textColor as TextColorChoice.Custom).argb
+            val customArgb = state.textColor.argb
             HexField(
                 label = "Text color",
                 argb = customArgb,

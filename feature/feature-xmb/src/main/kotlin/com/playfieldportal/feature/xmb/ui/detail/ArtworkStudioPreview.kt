@@ -30,6 +30,7 @@ private object PreviewStudioActions : ArtworkStudioActions {
     override fun submitSearch() = Unit
     override fun cancelSearch() = Unit
     override fun resetSearchToTitle() = Unit
+    override fun leaveSearchField() = Unit
     override fun onChangeMatchPressed() = Unit
     override fun onChangeMatchDraftChanged(text: String) = Unit
     override fun startChangeMatchEdit() = Unit

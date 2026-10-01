@@ -126,7 +126,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         com.playfieldportal.core.data.database.entity.UmdSlotEntity::class,
         com.playfieldportal.core.data.database.entity.AppUsageEntity::class,
     ],
-    version = 54,
+    version = 55,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -1665,6 +1665,21 @@ abstract class PFPDatabase : RoomDatabase() {
                 )
                 db.execSQL("ALTER TABLE category_items ADD COLUMN added_at INTEGER NOT NULL DEFAULT 0")
                 ListStateBackfill.run(db)
+            }
+        }
+
+        /**
+         * v55 — the Xbox 360 platform default moves to X360 Mobile's published application id,
+         * `emu.x360mobile.com` (Obtainium Emulation Pack v7.18.0). The seeded `emu.x360.mobile`
+         * matched no build, and an uninstalled platform default fails the launch rather than
+         * falling back, so the stale seed is rewritten. A default the user changed is kept.
+         */
+        val MIGRATION_54_55 = object : Migration(54, 55) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "UPDATE platforms SET preferred_emulator_package = 'emu.x360mobile.com' " +
+                        "WHERE id = 'x360' AND preferred_emulator_package = 'emu.x360.mobile'"
+                )
             }
         }
     }

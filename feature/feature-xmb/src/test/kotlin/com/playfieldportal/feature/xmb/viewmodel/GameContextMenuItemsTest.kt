@@ -144,6 +144,14 @@ class GameContextMenuItemsTest {
     }
 
     @Test
+    fun `the recently played UMD can be ejected, or inserted to keep it`() {
+        val ids = menu(umd = UmdMenuState.RECENT).map { it.id }
+        assertTrue(ids.contains("eject_umd"))
+        assertTrue(ids.contains("insert_umd"))
+        assertTrue(ids.indexOf("insert_umd") < ids.indexOf("eject_umd"))
+    }
+
+    @Test
     fun `outside a gaming column there is no UMD row`() {
         val ids = menu(umd = UmdMenuState.NONE).map { it.id }
         assertFalse(ids.contains("insert_umd"))

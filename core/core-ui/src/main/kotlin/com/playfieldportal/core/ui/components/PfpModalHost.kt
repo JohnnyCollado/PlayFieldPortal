@@ -83,6 +83,11 @@ sealed interface PfpModalSpec {
         val placeholder: String = "",
         val confirmLabel: String = "Save",
         val allowBlank: Boolean = false,
+        val label: String = "Name",
+        /** Several lines (a description), rather than one name. */
+        val multiline: Boolean = false,
+        /** The system keyboard opens on its number page. */
+        val numeric: Boolean = false,
         val onConfirm: (String) -> Unit,
         val onCancel: () -> Unit,
     ) : PfpModalSpec
@@ -310,6 +315,9 @@ fun rememberPfpModalHost(spec: PfpModalSpec?, showHints: Boolean = true): PfpMod
                 placeholder = spec.placeholder,
                 confirmLabel = spec.confirmLabel,
                 allowBlank = spec.allowBlank,
+                label = spec.label,
+                multiline = spec.multiline,
+                numeric = spec.numeric,
                 showHints = showHints,
             )
             is PfpModalSpec.Notes -> PfpNotesSheet(

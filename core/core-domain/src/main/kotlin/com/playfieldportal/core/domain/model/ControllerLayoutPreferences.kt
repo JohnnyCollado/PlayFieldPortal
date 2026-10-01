@@ -69,4 +69,7 @@ data class ControllerLayoutPrefs(
     // no-op today, and it is what was asked for. Gates the D-pad only — the leftward touch swipe
     // is unconditional, the way the left-edge pull always has been.
     val leftBacksOut: Boolean                  = true,
+    // Controller-started text entry opens PFP's own on-screen keyboard; touch always gets the
+    // system keyboard. Defaults ON, read from an absent key.
+    val virtualKeyboard: Boolean               = true,
 )

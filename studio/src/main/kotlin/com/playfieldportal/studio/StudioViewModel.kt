@@ -681,8 +681,11 @@ class StudioViewModel(private val scope: CoroutineScope) {
     // ── Plumbing ─────────────────────────────────────────────────────────────
 
     internal fun runBusy(block: suspend () -> Unit) {
+        // Busy is raised before the launch, not inside it: the flag must be true the moment the
+        // call returns, or anyone waiting on it (the UI, the tests' awaitIdle) can see an idle
+        // VM in the gap before the coroutine is scheduled and miss the work entirely.
+        _state.update { it.copy(busy = true) }
         scope.launch {
-            _state.update { it.copy(busy = true) }
             try {
                 withContext(Dispatchers.IO) { block() }
             } finally {

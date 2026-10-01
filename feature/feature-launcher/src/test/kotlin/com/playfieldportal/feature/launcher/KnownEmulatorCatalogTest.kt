@@ -45,6 +45,13 @@ class KnownEmulatorCatalogTest {
     }
 
     @Test
+    fun `X360 Mobile is recognised under its published package id`() {
+        val packages = KnownEmulatorCatalog.entries.flatMap { it.packageNames }
+        assertTrue("emu.x360mobile.com" in packages)
+        assertTrue("emu.x360.mobile" !in packages)
+    }
+
+    @Test
     fun `component entries pin an activity`() {
         val missing = KnownEmulatorCatalog.entries
             .filter { it.intentType == IntentType.COMPONENT && it.activityClass == null }

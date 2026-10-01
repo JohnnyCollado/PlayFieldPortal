@@ -18,7 +18,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -32,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPrompt
+import com.playfieldportal.feature.settings.ui.LocalSettingsLeftBacksOut
 import com.playfieldportal.feature.settings.ui.LocalSettingsScrollStateRegistrar
 import com.playfieldportal.feature.settings.ui.SettingsScaffold
 
@@ -57,9 +61,11 @@ internal val WizardAmber = Color(0xFFFFC857)
  * optional constraint hint, and the Enter / Back prompt footer pinned under the content. The scrim
  * is light so the XMB wave reads through, like the PSP original's rich blue backdrop.
  *
- * Strongly controller driven: BACK steps to the previous page, SELECT activates the
- * focused row to advance/confirm. Touch works everywhere — rows tap, fields tap to edit, and
- * pages may expose their own ▶ affordance.
+ * Strongly controller driven: BACK steps to the previous page, SELECT activates the focused row
+ * to advance/confirm, and RB ([GamepadAction.NEXT_CATEGORY]) skips to the next page unchanged.
+ * ◀ ▶ belong to a row's inline actions (a root row's ✎ / 🗑) and never turn the page — not even
+ * with Settings ▸ Controller ▸ Left Backs Out on. Touch works everywhere — rows tap, fields tap
+ * to edit.
  */
 @Composable
 fun WizardScaffold(
@@ -76,46 +82,62 @@ fun WizardScaffold(
     /** Transient wizard message — rendered as an amber row under the heading. */
     message: String? = null,
     onDismissMessage: (() -> Unit)? = null,
-    /** Overrides the footer's guidance line (defaults to the PSP ◀▶/▶ wording). */
-    footerNote: String? = null,
+    /** RB: advance without changing anything. Null (Finish) hides the Skip prompt and ignores RB. */
+    onSkip: (() -> Unit)? = null,
+    /** The Ⓐ prompt's label — "Enter", or "Change" on a page whose rows cycle values. */
+    confirmLabel: String = "Enter",
     /** The page [content] currently shows. Changing it returns the page to the top. */
     contentKey: Any? = null,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    SettingsScaffold(
-        title = title,
-        subtitle = "",
-        onBack = onBack,
-        modifier = modifier,
-        // The wave reads through — the wizard sits on a light scrim, not the dark settings one.
-        lightScrim = true,
-        header = { WizardHeader(stepNumber, title) },
-        footer = { WizardFooter(backEnabled, footerNote) },
-        contentKey = contentKey,
-    ) {
-        // The wizard owns the shared scrollable column (registered with the scaffold so
-        // controller boundary navigation and keep-in-view share one scroll owner).
-        val scrollState = rememberScrollState()
-        LocalSettingsScrollStateRegistrar.current(scrollState)
-        // One scroll state serves all eleven pages, so without this a tall page's offset carries
-        // into the short page after it and opens it scrolled past its own content. Every page
-        // starts at the top, going forward and back alike.
-        //
-        // scrollTo, not animateScrollTo: a page turn is a cut, not a movement, and animating it
-        // would race the scaffold's keep-in-view clamp as the new page's focus lands.
-        LaunchedEffect(contentKey) { scrollState.scrollTo(0) }
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState),
+    // Read through State so the interceptor installed once always reaches this page's skip.
+    val skip by rememberUpdatedState(onSkip)
+    // LEFT never pages the wizard: a row without inline actions leaves LEFT a no-op here.
+    CompositionLocalProvider(LocalSettingsLeftBacksOut provides false) {
+        SettingsScaffold(
+            title = title,
+            subtitle = "",
+            onBack = onBack,
+            modifier = modifier,
+            onInterceptAction = { action ->
+                val onSkipNow = skip
+                if (action == GamepadAction.NEXT_CATEGORY && onSkipNow != null) {
+                    onSkipNow()
+                    true
+                } else {
+                    false
+                }
+            },
+            // The wave reads through — the wizard sits on a light scrim, not the dark settings one.
+            lightScrim = true,
+            header = { WizardHeader(stepNumber, title) },
+            footer = { WizardFooter(backEnabled, showSkip = onSkip != null, confirmLabel = confirmLabel) },
+            contentKey = contentKey,
         ) {
-            WizardHeading(heading, hint)
-            if (message != null && onDismissMessage != null) {
-                WizardMessageRow(message, onDismissMessage)
+            // The wizard owns the shared scrollable column (registered with the scaffold so
+            // controller boundary navigation and keep-in-view share one scroll owner).
+            val scrollState = rememberScrollState()
+            LocalSettingsScrollStateRegistrar.current(scrollState)
+            // One scroll state serves every page, so without this a tall page's offset carries
+            // into the short page after it and opens it scrolled past its own content. Every page
+            // starts at the top, going forward and back alike.
+            //
+            // scrollTo, not animateScrollTo: a page turn is a cut, not a movement, and animating it
+            // would race the scaffold's keep-in-view clamp as the new page's focus lands.
+            LaunchedEffect(contentKey) { scrollState.scrollTo(0) }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState),
+            ) {
+                WizardHeading(heading, hint)
+                if (message != null && onDismissMessage != null) {
+                    WizardMessageRow(message, onDismissMessage)
+                }
+                content()
+                Spacer(Modifier.height(24.dp))
             }
-            content()
-            Spacer(Modifier.height(24.dp))
         }
     }
 }
@@ -190,27 +212,21 @@ private fun WizardHeading(heading: String, hint: String?) {
 }
 
 @Composable
-private fun WizardFooter(backEnabled: Boolean, note: String?) {
+private fun WizardFooter(backEnabled: Boolean, showSkip: Boolean, confirmLabel: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             // Subtle band so the chrome reads over the wave without hiding it.
             .background(Color.Black.copy(alpha = 0.22f))
-            .padding(top = 10.dp, bottom = 14.dp),
+            .padding(vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            text = note ?: "Press the ◀▶ buttons to go back, or the ▶ button to continue.",
-            color = Color.White.copy(alpha = 0.85f),
-            fontSize = 12.sp,
-        )
-        Spacer(Modifier.height(6.dp))
         // The PSP-era colour language survives on the labels; the glyphs themselves
         // are now the user's own pad, and Back follows a reversed Confirm/Back setting.
         Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
             ControllerPrompt(
                 action = GamepadAction.SELECT,
-                label = "Enter",
+                label = confirmLabel,
                 labelColor = WizardEnterBlue,
                 labelStyle = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold),
                 glyphSize = 16.dp,
@@ -225,6 +241,16 @@ private fun WizardFooter(backEnabled: Boolean, note: String?) {
                 spacing = 5.dp,
                 modifier = Modifier.alpha(if (backEnabled) 1f else 0.4f),
             )
+            if (showSkip) {
+                ControllerPrompt(
+                    action = GamepadAction.NEXT_CATEGORY,
+                    label = "Skip",
+                    labelColor = Color.White.copy(alpha = 0.88f),
+                    labelStyle = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold),
+                    glyphSize = 16.dp,
+                    spacing = 5.dp,
+                )
+            }
         }
     }
 }

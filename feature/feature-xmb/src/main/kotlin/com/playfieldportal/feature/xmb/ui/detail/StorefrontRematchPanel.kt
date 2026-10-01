@@ -31,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +48,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
+import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
+import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
 import com.playfieldportal.feature.xmb.ui.SearchGlyph
 
 // ── Rematch Storefront Metadata (C23 T6, Phase 18) ───────────────────────────
@@ -72,6 +77,9 @@ fun StorefrontRematchPanel(
     onStartQueryEdit: () -> Unit,
     onSearchByName: () -> Unit,
     onClose: () -> Unit,
+    // BACK on PFP's keyboard: stop typing, keep the text (the system keyboard's own Back does this
+    // through the ViewModel's next press).
+    onStopQueryEdit: () -> Unit = {},
 ) {
     Box(
         Modifier.fillMaxSize().background(Color(0xCC000000)).clickable(onClick = onClose),
@@ -128,6 +136,7 @@ fun StorefrontRematchPanel(
                 focusEdge = focusEdge,
                 onQueryChange = onQueryChange,
                 onStartEdit = onStartQueryEdit,
+                onStopEdit = onStopQueryEdit,
                 onSearch = onSearchByName,
             )
 
@@ -213,18 +222,33 @@ private fun NameSearchBar(
     focusEdge: Color,
     onQueryChange: (String) -> Unit,
     onStartEdit: () -> Unit,
+    onStopEdit: () -> Unit,
     onSearch: () -> Unit,
 ) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
     val editing by rememberUpdatedState(ui.editingQuery)
+    // PFP's keyboard for an edit the controller started: Done searches by name, as the system
+    // keyboard's Search key does; BACK stops typing and keeps the text.
+    val queryEdit = rememberVirtualKeyboardEdit(
+        text = ui.query,
+        onTextChange = onQueryChange,
+        placement = KeyboardPlacement.BOTTOM_CENTER,
+        onDone = onSearch,
+        onClose = onStopEdit,
+    )
 
     LaunchedEffect(ui.editingQuery) {
         if (ui.editingQuery) {
+            // PFP's keyboard opens first, so the field's own keyboard request is already held when
+            // focus arrives.
+            val virtual = queryEdit.start()
+            if (virtual) withFrameNanos { }
             runCatching { focusRequester.requestFocus() }
-            keyboard?.show()
+            if (!virtual) keyboard?.show()
         } else {
+            queryEdit.stop()
             focusManager.clearFocus()
         }
     }
@@ -244,9 +268,10 @@ private fun NameSearchBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             SearchGlyph()
+            VirtualKeyboardTextInput(queryEdit) {
             BasicTextField(
-                value = ui.query,
-                onValueChange = onQueryChange,
+                value = queryEdit.fieldValue,
+                onValueChange = queryEdit::onFieldValueChange,
                 readOnly = !ui.editingQuery,
                 singleLine = true,
                 textStyle = TextStyle(color = TextPrimary, fontSize = 14.sp),
@@ -263,10 +288,12 @@ private fun NameSearchBar(
                 },
                 modifier = Modifier
                     .weight(1f)
+                    .virtualKeyboardField(queryEdit)
                     .focusRequester(focusRequester)
                     // A tap focuses the field; that is touch asking to type, so enter edit mode.
                     .onFocusChanged { if (it.isFocused && !editing) onStartEdit() },
             )
+            }
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))

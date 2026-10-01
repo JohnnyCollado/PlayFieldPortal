@@ -891,6 +891,9 @@ class GameDetailViewModel @Inject constructor(
     // Which loadGame owns the page, and the coin stream that belongs to it.
     private var loadGeneration = 0L
     private var coinsJob: Job? = null
+    // Follows the page's game row, so a write from elsewhere (a background scrape, an artwork
+    // import or relink, the XMB's Fetch Artwork) reaches the open page instead of waiting for a reopen.
+    private var gameRowJob: Job? = null
 
     /**
      * Writes a result back only while the page still shows the game it was produced for.
@@ -943,6 +946,20 @@ class GameDetailViewModel @Inject constructor(
         coinsJob = viewModelScope.launch {
             achievementRepository.observeGameCoins(id).collect { coins ->
                 _uiState.update { it.copy(coins = coins) }
+            }
+        }
+        gameRowJob?.cancel()
+        gameRowJob = viewModelScope.launch {
+            gameRepository.observeById(id).collect { fresh ->
+                // Null is a removed row; the page's own Remove path closes it. A row that arrives
+                // before this load has seeded the page is skipped by updateWhileShowing.
+                if (fresh == null || generation != loadGeneration) return@collect
+                updateWhileShowing(id) { s ->
+                    if (s.game == fresh) s else s.copy(
+                        game = fresh,
+                        discMembers = s.discMembers.map { if (it.id == fresh.id) fresh else it },
+                    )
+                }
             }
         }
         viewModelScope.launch {
@@ -1515,7 +1532,7 @@ class GameDetailViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 launchError = null,
-                actionMessage = "Launching ${selectedGame.title}...",
+                actionMessage = "Launching ${selectedGame.displayTitle}...",
             )
         }
         viewModelScope.launch {
@@ -1534,7 +1551,7 @@ class GameDetailViewModel @Inject constructor(
                 }
                     .onSuccess {
                         _uiState.update { it.copy(actionMessage = null) }
-                        discordPresence.setCurrentGame(game.title)
+                        discordPresence.setCurrentGame(game.displayTitle)
                     }
                     .onFailure { e ->
                         Timber.e(e, "Shortcut launch failed: ${game.packageName}/${game.shortcutId}")
@@ -1657,7 +1674,7 @@ class GameDetailViewModel @Inject constructor(
                 // the opt-in Discord presence (no-op unless the user connected Discord and
                 // enabled sharing).
                 _uiState.update { it.copy(actionMessage = null) }
-                discordPresence.setCurrentGame(game.title)
+                discordPresence.setCurrentGame(game.displayTitle)
             }
         }
     }

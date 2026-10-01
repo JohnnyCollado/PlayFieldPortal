@@ -26,6 +26,11 @@ import kotlinx.coroutines.CoroutineScope
 import com.playfieldportal.feature.appbar.LauncherShortcutRepository
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.launcher.PcLauncherAdapters
+import com.playfieldportal.feature.launcher.InstalledPcLauncher
+import com.playfieldportal.feature.launcher.LauncherChoice
+import com.playfieldportal.feature.launcher.LauncherChoiceRepository
+import com.playfieldportal.feature.launcher.LauncherChoices
+import com.playfieldportal.feature.launcher.UnknownLauncher
 import com.playfieldportal.feature.launcher.PcLauncherCatalog
 import com.playfieldportal.feature.launcher.PcLauncherType
 import com.playfieldportal.feature.library.scanner.LibraryScanner
@@ -75,6 +80,65 @@ data class PcLauncherRow(
     val canAddById: Boolean,
 )
 
+/**
+ * The PC Launchers group: every verified install under its Android label (side-by-side variants
+ * each get a row), then each catalog brand with nothing installed as "Not installed".
+ */
+internal fun pcLauncherRows(installed: List<InstalledPcLauncher>): List<PcLauncherRow> =
+    // An install no rule identifies waits in Unknown Windows Emulators for the user's word.
+    installed.filterNot { it.ambiguous }.map { launcher ->
+        PcLauncherRow(
+            type = launcher.type,
+            name = launcher.label,
+            installed = true,
+            packageName = launcher.packageName,
+            canAddById = PcLauncherAdapters.forType(launcher.type) != null,
+        )
+    } + PcLauncherCatalog.entries
+        .filter { def -> installed.none { it.type == def.type } }
+        .map { def ->
+            PcLauncherRow(
+                type = def.type,
+                name = def.displayName,
+                installed = false,
+                packageName = null,
+                canAddById = PcLauncherAdapters.forType(def.type) != null,
+            )
+        }
+
+/** One row of Import PC Games ▸ Unknown Windows Emulators. */
+data class UnknownLauncherRow(
+    val packageName: String,
+    val label: String,
+    val signerSha256: String?,
+    /** "com.xiaoji.egggame · could be GameHub or BannerHub". */
+    val sublabel: String,
+    val choice: LauncherChoice?,
+) {
+    /** The cycling value: the choice, or "Choose…" while undecided. */
+    val value: String get() = choice?.label ?: "Choose…"
+}
+
+internal fun unknownLauncherRow(app: UnknownLauncher): UnknownLauncherRow = UnknownLauncherRow(
+    packageName = app.packageName,
+    label = app.label,
+    signerSha256 = app.signerSha256,
+    sublabel = "${app.packageName} · ${app.reason}",
+    choice = app.choice,
+)
+
+/** The group as a visit opens it: undecided apps show; Not a launcher ones wait behind Show Hidden Apps. */
+internal data class UnknownLauncherGroup(
+    val visible: List<UnknownLauncherRow>,
+    val hidden: List<UnknownLauncherRow>,
+)
+
+// An app the user named a launcher has moved up to PC Launchers, so it belongs to neither list.
+internal fun unknownLauncherGroup(apps: List<UnknownLauncher>): UnknownLauncherGroup = UnknownLauncherGroup(
+    visible = apps.filter { it.choice == null }.map(::unknownLauncherRow),
+    hidden = apps.filter { it.choice == LauncherChoice.NOT_A_LAUNCHER }.map(::unknownLauncherRow),
+)
+
 // One PC game already captured from a launcher (via pin/INSTALL_SHORTCUT), importable into the
 // Windows Games card. gameId references the existing games row.
 data class PcGameRow(val gameId: Long, val title: String, val launcherName: String)
@@ -119,6 +183,10 @@ data class LibraryManagerUiState(
 
     // Import PC Games section
     val pcLaunchers: List<PcLauncherRow> = emptyList(),
+    // Unknown Windows Emulators: the rows on screen (decided ones stay put for the visit) and the
+    // Not-a-launcher ones Show Hidden Apps brings back.
+    val unknownLaunchers: List<UnknownLauncherRow> = emptyList(),
+    val hiddenUnknownLaunchers: List<UnknownLauncherRow> = emptyList(),
     val pcGames: List<PcGameRow> = emptyList(),
     // Display name of the granted Vita3K ux0 folder (null = not set).
     val vita3KFolderLabel: String? = null,
@@ -200,6 +268,7 @@ class LibraryManagerViewModel @Inject constructor(
     // Scan and import outcomes go to the tray (row + notification cue) rather than a dismissible
     // row that dies with the screen. Progress and validation stay in-screen.
     private val tasks: BackgroundTaskCenter,
+    private val launcherChoices: LauncherChoiceRepository,
     // Scans run here, not in viewModelScope: the tray owns them now, so leaving Settings must not
     // kill one mid-way — it is stopped from the panel instead.
     @TaskScope private val taskScope: CoroutineScope,
@@ -307,10 +376,11 @@ class LibraryManagerViewModel @Inject constructor(
             // launchable reference (shortcut id or stored intent) back into the source app.
             // Entries already living in the Windows Games card are done; only strays show here.
             pcGames = games.mapNotNull { g ->
-                val launcher = PcLauncherCatalog.forPackage(g.packageName) ?: return@mapNotNull null
+                val pkg = g.packageName ?: return@mapNotNull null
+                PcLauncherCatalog.forPackage(pkg) ?: return@mapNotNull null
                 if (g.shortcutId == null && g.launchIntentUri == null) return@mapNotNull null
                 if (g.platformId == WINDOWS_PLATFORM_ID) return@mapNotNull null
-                PcGameRow(g.id, g.displayTitle, launcher.displayName)
+                PcGameRow(g.id, g.displayTitle, PcLauncherCatalog.displayName(pkg, context.packageManager))
             }.sortedBy { it.title.lowercase() },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LibraryManagerUiState())
@@ -398,6 +468,8 @@ class LibraryManagerViewModel @Inject constructor(
                 detailPlatformId = null,
                 androidApps = emptyList(),
                 pcLaunchers = emptyList(),
+                unknownLaunchers = emptyList(),
+                hiddenUnknownLaunchers = emptyList(),
                 pcGames = emptyList(),
                 renameTargetPlatformId = null,
                 awaitingRomRootSetup   = false,
@@ -831,29 +903,57 @@ class LibraryManagerViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { windowsLibrarySetup.ensure() }
         }
-        val pm = context.packageManager
-        val launchers = PcLauncherCatalog.entries.map { def ->
-            // Fingerprint-verified: GameHub-family variants ship under genuine AnTuTu/PUBG/Genshin
-            // package names, so a package match alone would flag the real apps as launchers.
-            val installedPkg = PcLauncherCatalog.verifiedInstalledPackage(def, pm)
-            PcLauncherRow(
-                type = def.type,
-                name = def.displayName,
-                installed = installedPkg != null,
-                packageName = installedPkg,
-                canAddById = PcLauncherAdapters.forType(def.type) != null,
-            )
-        }
         // The Local Windows group's registry listing and installer toggle.
         refreshLocalWindows()
         _scratch.update {
             it.copy(
                 step = LibraryStep.IMPORT_PC,
-                pcLaunchers = launchers,
                 isHomeLauncher = launcherShortcutRepository.isDefaultLauncher(),
                 returnFocusKey = IMPORT_PC_FOCUS_KEY,
             )
         }
+        // Both launcher groups are read once per visit, off the main thread: the unknown group
+        // walks every installed app. Reading once is also what keeps a row decided this visit in
+        // place — it moves to PC Launchers, or behind Show Hidden Apps, on the next visit.
+        taskScope.launch { loadLaunchers() }
+    }
+
+    private suspend fun loadLaunchers() {
+        val pm = context.packageManager
+        val choices = runCatching { launcherChoices.snapshot() }.getOrDefault(LauncherChoices.EMPTY)
+        // Fingerprint-verified: GameHub-family variants ship under genuine AnTuTu/PUBG/Genshin
+        // package names, so a package match alone would flag the real apps as launchers.
+        val launchers = pcLauncherRows(PcLauncherCatalog.installedLaunchers(pm, choices))
+        val unknown = unknownLauncherGroup(PcLauncherCatalog.unknownLaunchers(pm, choices, context.packageName))
+        _scratch.update {
+            it.copy(
+                pcLaunchers = launchers,
+                unknownLaunchers = unknown.visible,
+                hiddenUnknownLaunchers = unknown.hidden,
+            )
+        }
+    }
+
+    /** Confirm on an unknown app: store the next choice for this install; the row stays this visit. */
+    fun cycleUnknownLauncher(packageName: String) {
+        val row = _scratch.value.unknownLaunchers.firstOrNull { it.packageName == packageName } ?: return
+        val next = LauncherChoice.next(row.choice)
+        _scratch.update { state ->
+            state.copy(
+                unknownLaunchers = state.unknownLaunchers.map {
+                    if (it.packageName == packageName) it.copy(choice = next) else it
+                },
+            )
+        }
+        viewModelScope.launch { launcherChoices.set(packageName, row.signerSha256, next) }
+    }
+
+    /** Show Hidden Apps: the Not-a-launcher apps rejoin the group so they can be chosen again. */
+    fun showHiddenUnknownLaunchers() = _scratch.update {
+        it.copy(
+            unknownLaunchers = it.unknownLaunchers + it.hiddenUnknownLaunchers,
+            hiddenUnknownLaunchers = emptyList(),
+        )
     }
 
     /** Re-reads the Home-app status (after returning from the role/settings request). */

@@ -32,6 +32,8 @@ import kotlin.test.assertTrue
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
+// SingletonImageLoader.reset() is Coil's delicate API: fine here, where each test owns the singleton.
+@OptIn(coil3.annotation.DelicateCoilApi::class)
 class ArtworkImageCacheTest {
 
     private val context: Context = ApplicationProvider.getApplicationContext()

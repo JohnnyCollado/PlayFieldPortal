@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import com.playfieldportal.feature.artwork.match.MetadataField
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -211,6 +212,13 @@ fun GameDetailScreen(
             onCancelRemove = viewModel::cancelRemove,
             onCreateCollection = viewModel::confirmCreateCollection,
             onCancelCreateCollection = viewModel::cancelCreateCollection,
+            onSaveMetadataField = { text ->
+                viewModel.onMetadataEditChanged(text)
+                viewModel.saveMetadataEdit()
+            },
+            onCancelMetadataField = viewModel::cancelMetadataEdit,
+            onConfirmTitleReplace = viewModel::confirmTitleReplace,
+            onCancelTitleReplace = viewModel::cancelTitleReplace,
         ),
         // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
         showHints = !showTouchControls,
@@ -279,6 +287,48 @@ fun GameDetailScreen(
 }
 
 /**
+ * The Current-vs-Incoming overlay's two dialogs on the shared modals: the yes/no on replacing a
+ * hand-typed title (which outranks an open editor — it is the last thing between the user and
+ * losing what they typed, so it opens on Keep Mine), and one field's text entry. An empty field is
+ * a valid answer — it means "use the scraped value", which the empty field shows.
+ */
+internal fun metadataModalSpec(
+    preview: MetadataPreviewUi,
+    gameId: Long,
+    onSaveField: (String) -> Unit,
+    onCancelField: () -> Unit,
+    onConfirmTitleReplace: () -> Unit,
+    onCancelTitleReplace: () -> Unit,
+): PfpModalSpec? {
+    preview.titleReplace?.let { confirm ->
+        return PfpModalSpec.Confirm(
+            key = "metadata_title_replace:$gameId",
+            title = "Replace your title?",
+            message = "You set this title by hand. Applying the new one clears yours.\n\n" +
+                "Yours: ${confirm.current.ifBlank { "—" }}\nNew: ${confirm.incoming.ifBlank { "—" }}",
+            confirmLabel = "Replace",
+            cancelLabel = "Keep Mine",
+            openOnCancel = true,
+            onConfirm = onConfirmTitleReplace,
+            onCancel = onCancelTitleReplace,
+        )
+    }
+    val field = preview.editingField ?: return null
+    return PfpModalSpec.TextEntry(
+        key = "metadata_edit:$gameId:${field.name}",
+        title = "Edit ${field.label}",
+        initial = preview.editText,
+        placeholder = formatMetadataValue(preview.current[field]).orEmpty(),
+        allowBlank = true,
+        label = field.label,
+        multiline = field == MetadataField.DESCRIPTION,
+        numeric = field.isNumeric,
+        onConfirm = onSaveField,
+        onCancel = onCancelField,
+    )
+}
+
+/**
  * Which shared modal the page is showing, if any — checked in the same order the view model checks
  * these states, so the modal on screen is the one being driven.
  *
@@ -297,8 +347,23 @@ internal fun gameDetailModalSpec(
     onCancelRemove: () -> Unit,
     onCreateCollection: (String) -> Unit,
     onCancelCreateCollection: () -> Unit,
+    onSaveMetadataField: (String) -> Unit = {},
+    onCancelMetadataField: () -> Unit = {},
+    onConfirmTitleReplace: () -> Unit = {},
+    onCancelTitleReplace: () -> Unit = {},
 ): PfpModalSpec? {
     val game = state.game ?: return null
+    // The metadata overlay's two dialogs come first: they sit on top of that overlay.
+    state.metadataPreview?.let { preview ->
+        metadataModalSpec(
+            preview = preview,
+            gameId = game.id,
+            onSaveField = onSaveMetadataField,
+            onCancelField = onCancelMetadataField,
+            onConfirmTitleReplace = onConfirmTitleReplace,
+            onCancelTitleReplace = onCancelTitleReplace,
+        )?.let { return it }
+    }
     return when {
         state.confirmRemove -> PfpModalSpec.Confirm(
             key = "remove:${game.id}",
@@ -702,11 +767,6 @@ private fun GameDetailOverlays(
                     onToggleField     = viewModel::toggleMetadataField,
                     onEditField       = viewModel::startEditMetadataField,
                     onRevertField     = viewModel::revertMetadataField,
-                    onEditTextChanged = viewModel::onMetadataEditChanged,
-                    onSaveEdit        = viewModel::saveMetadataEdit,
-                    onCancelEdit      = viewModel::cancelMetadataEdit,
-                    onConfirmTitleReplace = viewModel::confirmTitleReplace,
-                    onCancelTitleReplace  = viewModel::cancelTitleReplace,
                     onApply           = viewModel::applyMetadataPreview,
                     onClose           = viewModel::closeMetadataPreview,
                 )
@@ -729,6 +789,7 @@ private fun GameDetailOverlays(
                     onStartQueryEdit  = viewModel::startRematchQueryEdit,
                     onSearchByName    = viewModel::searchStorefrontsByName,
                     onClose           = viewModel::closeStorefrontRematch,
+                    onStopQueryEdit   = viewModel::stopRematchQueryEdit,
                 )
             }
         }

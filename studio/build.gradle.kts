@@ -20,6 +20,9 @@ dependencies {
     // Same Material glyph set the launcher's item rows use — drives default icon-slot
     // rendering and the editable template export.
     implementation(libs.compose.mp.icons.extended)
+    // Byte-array decoders for the bundled XMB art (StudioIconSet): the supported replacement for
+    // the deprecated androidx.compose.ui.res loaders. Same version as the Compose plugin.
+    implementation(libs.compose.mp.resources)
     implementation(libs.kotlinx.coroutines.swing)
     // Video -> GIF motion wallpapers (VideoCodecs). Pure Java, ~1.5 MB, no native libraries:
     // it keeps this module's pure-JVM rule intact and keeps the jpackage installer small.

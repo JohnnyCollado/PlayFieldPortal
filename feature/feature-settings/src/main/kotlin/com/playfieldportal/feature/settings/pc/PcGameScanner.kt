@@ -15,6 +15,7 @@ import com.playfieldportal.core.data.model.StorefrontIdentity
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameContentType
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.feature.launcher.LauncherIdentity
 import com.playfieldportal.feature.launcher.PcLauncherAdapters
 import com.playfieldportal.feature.launcher.PcLauncherCatalog
 import com.playfieldportal.feature.launcher.PcLauncherType
@@ -366,7 +367,9 @@ class PcGameScanner @Inject constructor(
             // Fingerprint-verified family lookup — covers every side-by-side spoof variant without
             // mistaking the genuine AnTuTu/PUBG/Genshin apps for a launcher.
             gameHub = PcLauncherCatalog.installedGameHubFamilyPackages(pm).firstOrNull(),
-            winlator = installed("com.winlator", "com.winlator.cmod"),
+            winlator = installed(
+                *PcLauncherCatalog.entries.first { it.type == PcLauncherType.WINLATOR }.packageNames.toTypedArray(),
+            ),
         )
     }
 
@@ -402,7 +405,7 @@ class PcGameScanner @Inject constructor(
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             } ?: return null
             // A .desktop shortcut is a path into a Wine prefix — it names no storefront.
-            return PcLaunch(intent, "Winlator", pkg)
+            return PcLaunch(intent, PcLauncherCatalog.displayName(pkg, pm), pkg)
         }
 
         val id = file.idContent?.trim()?.takeIf { it.toIntOrNull()?.let { n -> n > 0 } == true } ?: return null
@@ -412,12 +415,14 @@ class PcGameScanner @Inject constructor(
 
         gameNativePkg?.let { pkg ->
             val intent = PcLauncherAdapters.forType(PcLauncherType.GAMENATIVE)?.buildLaunchIntent(pkg, id, source) ?: return null
-            return PcLaunch(intent, "GameNative", pkg, storefront, storefrontId)
+            return PcLaunch(intent, PcLauncherCatalog.displayName(pkg, pm), pkg, storefront, storefrontId)
         }
         // Only Steam titles are launchable by the GameHub family; other stores need GameNative.
         if (file.extension == "steam" && gameHubPkg != null) {
-            val type = if (gameHubPkg == "gamehub.lite") PcLauncherType.GAMEHUB_LITE else PcLauncherType.BANNERHUB_V6
-            val name = if (gameHubPkg == "gamehub.lite") "GameHub Lite" else "BannerHub"
+            // The family shares one launch adapter, so an undecided brand still launches.
+            val type = (PcLauncherCatalog.identify(gameHubPkg, pm) as? LauncherIdentity.Known)?.type
+                ?: PcLauncherType.GAMEHUB
+            val name = PcLauncherCatalog.displayName(gameHubPkg, pm)
             val intent = PcLauncherAdapters.forType(type, pm)?.buildLaunchIntent(gameHubPkg, id, "STEAM") ?: return null
             return PcLaunch(intent, name, gameHubPkg, storefront = "STEAM", storefrontGameId = storefrontId)
         }

@@ -262,8 +262,11 @@ fun PfpDetailHelperFooter(
     modifier: Modifier = Modifier,
     visible: Boolean = true,
 ) {
-    // The XMB pill's timing: fades in, and is gone the instant it stops applying.
-    val alpha = com.playfieldportal.core.ui.components.idleHintAlpha(visible)
+    // The XMB pill's timing: fades in, and is gone the instant it stops applying. PFP's keyboard,
+    // when open over the page, brings its own prompts in this footer's place.
+    val alpha = com.playfieldportal.core.ui.components.idleHintAlpha(
+        visible && !com.playfieldportal.core.ui.keyboard.isVirtualKeyboardOverlayOpen(),
+    )
     // See-through like the App Drawer's footer. Content cannot slide underneath it: the body above
     // clips to its own viewport, so the footer row only ever shows the page background.
     Column(modifier = modifier.fillMaxWidth().height(DetailFooterHeight).background(detailFooterSurface())) {

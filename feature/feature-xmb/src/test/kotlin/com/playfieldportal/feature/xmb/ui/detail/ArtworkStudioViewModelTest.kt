@@ -100,6 +100,11 @@ class ArtworkStudioViewModelTest {
         coEvery { matchEvidence.candidateByStorefront(any(), any(), any()) } returns null
 
         coEvery { gameRepository.getById(1L) } returns game
+        // The live row, by default just whatever getById is stubbed to now: one emission, a no-op.
+        every { gameRepository.observeById(any()) } answers {
+            val id = firstArg<Long>()
+            kotlinx.coroutines.flow.flow { emit(gameRepository.getById(id)) }
+        }
         coEvery { sgdbKeyProvider.getKey() } returns "sgdb-key"
         coEvery { igdbApi.hasCredentials() } returns true
         coEvery { theGamesDb.hasApiKey() } returns true
@@ -220,6 +225,112 @@ class ArtworkStudioViewModelTest {
             assertFalse(vm.uiState.value.queryIsCustom)
         }
 
+    // ── Search card buttons (Search · Use game title · Cancel) by controller ────────
+
+    @Test
+    fun `leaving the field puts the cursor on Search, and Use game title is one step right`() =
+        runTest(testDispatcher) {
+            val vm = loadedOn(StudioSource.IGDB)
+            vm.openSearch()
+            vm.onQueryDraftChanged("Crash Bandicoot")
+            vm.submitSearch()
+            advanceUntilIdle()
+            vm.openSearch()
+            assertEquals(null, vm.uiState.value.searchButton)
+
+            // BACK on PFP's keyboard leaves the field for the buttons.
+            vm.leaveSearchField()
+            assertEquals(StudioSearchButton.SEARCH, vm.uiState.value.searchButton)
+            vm.handleGamepadAction(GamepadAction.NAVIGATE_RIGHT)
+            assertEquals(StudioSearchButton.USE_GAME_TITLE, vm.uiState.value.searchButton)
+
+            vm.handleGamepadAction(GamepadAction.SELECT)
+            advanceUntilIdle()
+
+            assertFalse(vm.uiState.value.searchOpen)
+            assertEquals("cr4sh bandicoot (u) [!]", vm.uiState.value.query)
+            assertFalse(vm.uiState.value.queryIsCustom)
+        }
+
+    @Test
+    fun `down from the field also reaches the buttons`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.IGDB)
+        vm.openSearch()
+
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)
+
+        assertEquals(StudioSearchButton.SEARCH, vm.uiState.value.searchButton)
+        assertTrue(vm.uiState.value.searchOpen)
+    }
+
+    @Test
+    fun `the button row clamps at its ends`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.IGDB)
+        vm.openSearch()
+        vm.leaveSearchField()
+
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_LEFT)
+        assertEquals(StudioSearchButton.SEARCH, vm.uiState.value.searchButton)
+        repeat(4) { vm.handleGamepadAction(GamepadAction.NAVIGATE_RIGHT) }
+        assertEquals(StudioSearchButton.CANCEL, vm.uiState.value.searchButton)
+    }
+
+    @Test
+    fun `up from the buttons returns to the field`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.IGDB)
+        vm.openSearch()
+        vm.leaveSearchField()
+
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_UP)
+
+        assertEquals(null, vm.uiState.value.searchButton)
+        assertTrue(vm.uiState.value.searchOpen)
+    }
+
+    @Test
+    fun `back on the buttons cancels the search`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.IGDB)
+        vm.openSearch()
+        vm.onQueryDraftChanged("Crash")
+        vm.leaveSearchField()
+
+        vm.handleGamepadAction(GamepadAction.BACK)
+
+        assertFalse(vm.uiState.value.searchOpen)
+        assertEquals("cr4sh bandicoot (u) [!]", vm.uiState.value.queryDraft)
+    }
+
+    @Test
+    fun `select on Search and Cancel do what they say`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.IGDB)
+        vm.openSearch()
+        vm.onQueryDraftChanged("Crash Bandicoot")
+        vm.leaveSearchField()
+        vm.handleGamepadAction(GamepadAction.SELECT)
+        advanceUntilIdle()
+        assertEquals("Crash Bandicoot", vm.uiState.value.query)
+
+        vm.openSearch()
+        vm.onQueryDraftChanged("Spyro")
+        vm.leaveSearchField()
+        repeat(2) { vm.handleGamepadAction(GamepadAction.NAVIGATE_RIGHT) }
+        vm.handleGamepadAction(GamepadAction.SELECT)
+        assertFalse(vm.uiState.value.searchOpen)
+        assertEquals("Crash Bandicoot", vm.uiState.value.query)
+    }
+
+    @Test
+    fun `reopening the search starts back in the field`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.IGDB)
+        vm.openSearch()
+        vm.leaveSearchField()
+        vm.cancelSearch()
+
+        vm.openSearch()
+
+        assertEquals(null, vm.uiState.value.searchButton)
+    }
+
     @Test
     fun `reset puts the game's own title back and browses for it`() = runTest(testDispatcher) {
         val vm = loadedOn(StudioSource.IGDB)
@@ -236,6 +347,92 @@ class ArtworkStudioViewModelTest {
         assertEquals("cr4sh bandicoot (u) [!]", vm.uiState.value.query)
         assertFalse(vm.uiState.value.queryIsCustom)
         coVerify(exactly = 0) { gameRepository.upsert(any()) }
+    }
+
+    @Test
+    fun `a title renamed by a metadata update is what reopening the same game uses`() = runTest(testDispatcher) {
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+
+        coEvery { gameRepository.getById(1L) } returns game.copy(scrapedTitle = "Crash Bandicoot")
+        vm.load(1L)
+        advanceUntilIdle()
+
+        assertEquals("Crash Bandicoot", vm.uiState.value.game?.displayTitle)
+        assertEquals("Crash Bandicoot", vm.uiState.value.query)
+        assertFalse(vm.uiState.value.queryIsCustom)
+
+        vm.openSearch()
+        vm.onQueryDraftChanged("Spyro")
+        vm.resetSearchToTitle()
+        assertEquals("Crash Bandicoot", vm.uiState.value.query)
+    }
+
+    @Test
+    fun `a rename while the Studio is open moves the query to the new title and browses for it`() =
+        runTest(testDispatcher) {
+            val row = kotlinx.coroutines.flow.MutableStateFlow<Game?>(game)
+            every { gameRepository.observeById(1L) } returns row
+            val vm = loadedOn(StudioSource.IGDB)
+
+            row.value = game.copy(scrapedTitle = "Crash Bandicoot")
+            advanceUntilIdle()
+
+            assertEquals("Crash Bandicoot", vm.uiState.value.game?.displayTitle)
+            assertEquals("Crash Bandicoot", vm.uiState.value.query)
+            assertFalse(vm.uiState.value.queryIsCustom)
+            coVerify(exactly = 1) { igdbApi.fetchGameInfo("psx", "Crash Bandicoot") }
+        }
+
+    @Test
+    fun `a rename while open leaves a custom query alone and does not browse`() = runTest(testDispatcher) {
+        val row = kotlinx.coroutines.flow.MutableStateFlow<Game?>(game)
+        every { gameRepository.observeById(1L) } returns row
+        val vm = loadedOn(StudioSource.IGDB)
+        vm.openSearch()
+        vm.onQueryDraftChanged("Spyro")
+        vm.submitSearch()
+        advanceUntilIdle()
+
+        row.value = game.copy(scrapedTitle = "Crash Bandicoot")
+        advanceUntilIdle()
+
+        assertEquals("Spyro", vm.uiState.value.query)
+        assertEquals("Crash Bandicoot", vm.uiState.value.game?.displayTitle)
+        coVerify(exactly = 0) { igdbApi.fetchGameInfo("psx", "Crash Bandicoot") }
+    }
+
+    @Test
+    fun `nothing is watched once the Studio is closed`() = runTest(testDispatcher) {
+        val row = kotlinx.coroutines.flow.MutableStateFlow<Game?>(game)
+        every { gameRepository.observeById(1L) } returns row
+        val vm = loadedOn(StudioSource.IGDB)
+        vm.close()
+
+        row.value = game.copy(scrapedTitle = "Crash Bandicoot")
+        advanceUntilIdle()
+
+        assertEquals("cr4sh bandicoot (u) [!]", vm.uiState.value.query)
+        coVerify(exactly = 0) { igdbApi.fetchGameInfo("psx", "Crash Bandicoot") }
+    }
+
+    @Test
+    fun `a custom query survives a rename on reopen`() = runTest(testDispatcher) {
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+        vm.openSearch()
+        vm.onQueryDraftChanged("Spyro")
+        vm.submitSearch()
+        advanceUntilIdle()
+
+        coEvery { gameRepository.getById(1L) } returns game.copy(scrapedTitle = "Crash Bandicoot")
+        vm.load(1L)
+        advanceUntilIdle()
+
+        assertEquals("Spyro", vm.uiState.value.query)
+        assertTrue(vm.uiState.value.queryIsCustom)
     }
 
     // ── Race safety (task 1.2) ────────────────────────────────────────────────

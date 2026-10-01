@@ -31,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,9 +48,16 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardBottomReserve
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
+import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
+import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
 import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.core.ui.sound.LocalMenuSounds
@@ -392,6 +400,9 @@ fun PfpNoticeModal(
     }
 }
 
+/** How far a [PfpTextEntryModal] with `multiline` grows before it scrolls. */
+private const val MULTILINE_MAX_LINES = 6
+
 /**
  * A modal that takes one line of text — a collection or category name.
  *
@@ -421,16 +432,40 @@ fun PfpTextEntryModal(
     allowBlank: Boolean = false,
     accent: Color = Color.White,
     showHints: Boolean = true,
+    // A description rather than a name: wraps onto up to six lines and grows to fit them.
+    multiline: Boolean = false,
+    // The system keyboard opens on its number page (a year, a rating).
+    numeric: Boolean = false,
 ) {
     val confirmEnabled = PfpModalNav.textEntryConfirmEnabled(value, error, maxLength, allowBlank)
     val fieldFocused = focus == PfpModalFocus.FIELD
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val currentFocus by rememberUpdatedState(focus)
+    val currentConfirmEnabled by rememberUpdatedState(confirmEnabled)
+    // PFP's keyboard, for a field the controller reached: its Done saves (or, with nothing valid
+    // to save, steps to Cancel); its BACK closes only the keyboard and leaves the cursor on the
+    // buttons, so a second BACK cancels the modal as it always has.
+    val edit = rememberVirtualKeyboardEdit(
+        text = value,
+        onTextChange = onValueChange,
+        placement = KeyboardPlacement.BOTTOM_CENTER,
+        maxLength = maxLength,
+        onDone = { if (currentConfirmEnabled) onConfirm() else onFocusChange(PfpModalFocus.CANCEL) },
+        onClose = { onFocusChange(if (currentConfirmEnabled) PfpModalFocus.CONFIRM else PfpModalFocus.CANCEL) },
+    )
 
-    // The host's focus is the truth: taking the field raises the keyboard, leaving it drops it.
+    // The host's focus is the truth: taking the field raises a keyboard, leaving it drops it. PFP's
+    // is opened first and given a frame, so the field's own keyboard request is already held when
+    // focus arrives (VirtualKeyboardTextInput).
     LaunchedEffect(fieldFocused) {
-        if (fieldFocused) focusRequester.requestFocus() else focusManager.clearFocus()
+        if (fieldFocused) {
+            if (edit.start()) withFrameNanos { }
+            focusRequester.requestFocus()
+        } else {
+            edit.stop()
+            focusManager.clearFocus()
+        }
     }
 
     PfpModalScaffold(
@@ -438,23 +473,36 @@ fun PfpTextEntryModal(
         onCancel = onCancel,
         showHints = showHints && !fieldFocused,
         modifier = modifier,
+        keyboardReserve = if (edit.isOpen) VirtualKeyboardBottomReserve else 0.dp,
     ) { cancel ->
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(label, color = ModalSubtext, fontSize = 13.sp)
+            VirtualKeyboardTextInput(edit) {
             BasicTextField(
-                value = value,
-                onValueChange = { typed -> onValueChange(if (maxLength != null) typed.take(maxLength) else typed) },
-                singleLine = true,
+                value = edit.fieldValue,
+                onValueChange = { typed ->
+                    edit.onFieldValueChange(
+                        if (maxLength != null && typed.text.length > maxLength) {
+                            typed.copy(text = typed.text.take(maxLength))
+                        } else {
+                            typed
+                        },
+                    )
+                },
+                singleLine = !multiline,
+                maxLines = if (multiline) MULTILINE_MAX_LINES else 1,
                 textStyle = TextStyle(color = Color.White, fontSize = 16.sp),
                 cursorBrush = SolidColor(accent),
                 keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Words,
+                    capitalization = if (multiline) KeyboardCapitalization.Sentences else KeyboardCapitalization.Words,
+                    keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text,
                     imeAction = ImeAction.Done,
                 ),
                 keyboardActions = KeyboardActions(onDone = { if (confirmEnabled) onConfirm() }),
                 modifier = Modifier
                     .testTag(PfpModalTags.FIELD)
                     .fillMaxWidth()
+                    .virtualKeyboardField(edit)
                     .focusRequester(focusRequester)
                     // A tap lands here before the host knows about it; tell it, so its cursor follows.
                     .onFocusChanged { state ->
@@ -464,7 +512,7 @@ fun PfpTextEntryModal(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp)
+                            .then(if (multiline) Modifier.heightIn(min = 48.dp) else Modifier.height(48.dp))
                             .clip(ModalControlShape)
                             .background(Color.White.copy(alpha = 0.06f))
                             .border(
@@ -476,8 +524,8 @@ fun PfpTextEntryModal(
                                 },
                                 shape = ModalControlShape,
                             )
-                            .padding(horizontal = 14.dp),
-                        contentAlignment = Alignment.CenterStart,
+                            .padding(horizontal = 14.dp, vertical = if (multiline) 12.dp else 0.dp),
+                        contentAlignment = if (multiline) Alignment.TopStart else Alignment.CenterStart,
                     ) {
                         if (value.isEmpty() && placeholder.isNotEmpty()) {
                             Text(placeholder, color = Color.White.copy(alpha = 0.45f), fontSize = 16.sp)
@@ -486,6 +534,7 @@ fun PfpTextEntryModal(
                     }
                 },
             )
+            }
             if (error != null || maxLength != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     Box(Modifier.weight(1f)) {
@@ -532,6 +581,9 @@ private fun PfpModalScaffold(
     showHints: Boolean,
     modifier: Modifier = Modifier,
     hintItems: List<ControllerPromptItem> = ChoiceHintItems,
+    // Room kept at the bottom for PFP's keyboard, which — unlike the system one — imePadding()
+    // cannot see.
+    keyboardReserve: Dp = 0.dp,
     content: @Composable ColumnScope.(cancel: () -> Unit) -> Unit,
 ) {
     val menuSounds = LocalMenuSounds.current
@@ -546,7 +598,8 @@ private fun PfpModalScaffold(
             // would fold the whole modal into one node for accessibility and for tests.
             .pointerInput(Unit) { detectTapGestures { currentCancel() } }
             // Centres the card in what the keyboard leaves, so the field is never under it.
-            .imePadding(),
+            .imePadding()
+            .padding(bottom = keyboardReserve),
         contentAlignment = Alignment.Center,
     ) {
         Column(

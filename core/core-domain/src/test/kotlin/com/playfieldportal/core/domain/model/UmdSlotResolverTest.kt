@@ -51,6 +51,30 @@ class UmdSlotResolverTest {
         assertEquals(3L, UmdSlotResolver.resolve(inserted = null, columnGames = column)?.id)
     }
 
+    // ── Ejected: empty until the next game played ─────────────────────────────
+
+    @Test
+    fun `an ejected slot stays empty while nothing was played since`() {
+        val column = listOf(game(1, lastPlayedAt = 100), game(2, lastPlayedAt = 300))
+
+        assertNull(UmdSlotResolver.resolve(inserted = null, columnGames = column, ejectedAt = 400))
+    }
+
+    @Test
+    fun `the next game played after an eject fills the slot`() {
+        val column = listOf(game(1, lastPlayedAt = 100), game(2, lastPlayedAt = 500))
+
+        assertEquals(2L, UmdSlotResolver.resolve(inserted = null, columnGames = column, ejectedAt = 400)?.id)
+    }
+
+    @Test
+    fun `an inserted game fills an ejected slot`() {
+        // Insert clears the eject in storage; the resolver still lets an insert win outright.
+        val column = listOf(game(1, lastPlayedAt = 100), game(2))
+
+        assertEquals(2L, UmdSlotResolver.resolve(inserted = game(2), columnGames = column, ejectedAt = 400)?.id)
+    }
+
     @Test
     fun `nothing inserted and nothing played leaves the slot empty`() {
         assertNull(UmdSlotResolver.resolve(inserted = null, columnGames = listOf(game(1), game(2))))

@@ -7,7 +7,6 @@ import android.media.MediaMetadataRetriever
 import android.net.Uri
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
@@ -58,11 +57,10 @@ private val KEY_SHOW_BOOT          = booleanPreferencesKey("display_show_boot")
 private val KEY_BOOT_ON_RESUME     = booleanPreferencesKey("display_boot_on_resume")
 private val KEY_THERMAL_AWARE      = booleanPreferencesKey("display_thermal_aware")
 private val KEY_RESPECT_BATTERY    = booleanPreferencesKey("display_battery_saver")
-// Must match XMBViewModel.KEY_TOUCH_NAV_BUTTON — both read/write this same pref.
-private val KEY_TOUCH_NAV_BUTTON   = stringPreferencesKey("interface_touch_nav_button")
-// Must match XMBViewModel.KEY_CONTEXT_MENU_HINT — both read/write this same pref.
-private val KEY_CONTEXT_MENU_HINT  = booleanPreferencesKey("interface_context_menu_hint")
-private val KEY_CONTEXT_MENU_HINT_DELAY_SECONDS = floatPreferencesKey("interface_context_menu_hint_delay_seconds")
+// Shared with Initial Setup's Hints & Touch page (and read by the XMB) — see InterfaceHintPrefs.
+private val KEY_TOUCH_NAV_BUTTON   = InterfaceHintPrefs.KEY_TOUCH_NAV_BUTTON
+private val KEY_CONTEXT_MENU_HINT  = InterfaceHintPrefs.KEY_CONTEXT_MENU_HINT
+private val KEY_CONTEXT_MENU_HINT_DELAY_SECONDS = InterfaceHintPrefs.KEY_CONTEXT_MENU_HINT_DELAY_SECONDS
 // Must match XMBViewModel.KEY_TOUCH_SENSITIVITY — both read/write this same pref.
 private val KEY_TOUCH_SENSITIVITY  = stringPreferencesKey("interface_touch_sensitivity")
 // Must match GameLaunchPreferences.KEY_DIRECT_LAUNCH — both read/write this same pref.

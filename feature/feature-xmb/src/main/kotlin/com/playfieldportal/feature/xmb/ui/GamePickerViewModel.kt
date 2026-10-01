@@ -4,64 +4,44 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameCollection
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.model.IconDisplayMode
 import com.playfieldportal.core.domain.model.MemoryCard
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.data.repository.CollectionRepository
 import com.playfieldportal.core.data.repository.MemoryCardRepository
+import com.playfieldportal.core.ui.sound.MenuSoundPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// Stable, namespaced identities for picker rows. Games and collections come from separate
-// tables with overlapping numeric IDs, so they MUST be namespaced — otherwise a game and a
-// collection that share an id collide, highlighting two rows at once and trapping the cursor.
-internal const val PICKER_COLLECTIONS_HEADER = "COLLECTIONS_HEADER"
-internal fun pickerPlatformId(platformId: String) = "platform_$platformId"
-internal fun pickerGameId(gameId: Long) = "game_$gameId"
-internal fun pickerCollectionId(collectionId: Long) = "collection_$collectionId"
-
-data class GamePickerState(
-    val platformGroups: List<PlatformGameGroup> = emptyList(),
-    val pcShortcuts: List<GameCollection> = emptyList(),
-    val selectedGameIds: Set<Long> = emptySet(),
-    val selectedCollectionIds: Set<Long> = emptySet(),
-    val platformExpandedStates: Map<String, Boolean> = emptyMap(),
-    val isLoading: Boolean = false,
-    val selectedItemId: String? = null,  // Identity of selected item (platform/game/collection ID)
-    // The custom memory cards that can be moved into the category being filled: cards of the
-    // same kind that are not already in it. Null until the picker has been told its category.
-    val movableCollectionIds: Set<Long>? = null,
-) {
-    /** The custom memory cards the picker offers — picking one moves it into the category. */
-    val visibleCollections: List<GameCollection>
-        get() = movableCollectionIds?.let { ids -> pcShortcuts.filter { it.id in ids } } ?: pcShortcuts
-}
-
-data class PlatformGameGroup(
-    val platform: MemoryCard,
-    val games: List<Game>,
-    val isExpanded: Boolean = true,
-    val selectedCount: Int = 0,
-) {
-    val isAllSelected: Boolean get() = selectedCount == games.size && games.isNotEmpty()
-}
-
+/**
+ * Holds the library-shelf game picker. The rules live in GamePickerLogic; this class owns the
+ * library inputs, rebuilds the shelves when they or the category change, and keeps the cursor
+ * and checkmarks across library updates.
+ */
 @HiltViewModel
 class GamePickerViewModel @Inject constructor(
     private val gameRepository: GameRepository,
     private val collectionRepository: CollectionRepository,
     private val memoryCardRepository: MemoryCardRepository,
+    private val menuSound: MenuSoundPlayer,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(GamePickerState(isLoading = true, selectedItemId = null))
+    private val _state = MutableStateFlow(GamePickerState(isLoading = true))
     val state: StateFlow<GamePickerState> = _state.asStateFlow()
+
+    // Library inputs and the category being filled; the shelves are rebuilt from these.
+    private var cards: List<MemoryCard> = emptyList()
+    private var games: List<Game> = emptyList()
+    private var collections: List<GameCollection> = emptyList()
+    private var movableCollectionIds: Set<Long>? = null
+    private var categoryTitle: String = ""
 
     init {
         loadData()
@@ -70,70 +50,14 @@ class GamePickerViewModel @Inject constructor(
     private fun loadData() {
         viewModelScope.launch {
             try {
-                // Combine memory cards and games streams to listen for updates
-                memoryCardRepository.observeEnabled().combine(gameRepository.observeAll()) { cards, allGames ->
-                    Pair(cards, allGames)
-                }.collect { (cards, allGames) ->
-                    try {
-                        val collections = try {
-                            collectionRepository.getAll()
-                        } catch (e: Exception) {
-                            emptyList()
-                        }
-
-                        // Group games by platform, excluding empty platforms. Real games only —
-                        // standard (unmarked) apps can't join gaming categories/collections.
-                        val platformGroups = cards.mapNotNull { card ->
-                            val platformGames = allGames.filter {
-                                it.platformId == card.platformId &&
-                                    it.contentType == com.playfieldportal.core.domain.model.GameContentType.GAME
-                            }
-                            if (platformGames.isNotEmpty()) {
-                                PlatformGameGroup(
-                                    platform = card,
-                                    games = platformGames,
-                                    isExpanded = true,
-                                )
-                            } else {
-                                null
-                            }
-                        }
-
-                        // All user collections available to add
-                        val allCollections = collections
-
-                        val newExpandedStates = platformGroups.associate { group ->
-                            group.platform.platformId to false
-                        }
-
-                        // Initialize selectedItemId to first item if not already set. What the
-                        // user has checked survives a library update: this collector fires on
-                        // any games-table write, and a fresh state would drop the selection —
-                        // including the games that opened checked.
-                        val current = _state.value
-                        val newState = GamePickerState(
-                            platformGroups = platformGroups.map { group ->
-                                group.copy(selectedCount = group.games.count { it.id in current.selectedGameIds })
-                            },
-                            pcShortcuts = allCollections,
-                            selectedGameIds = current.selectedGameIds,
-                            selectedCollectionIds = current.selectedCollectionIds,
-                            movableCollectionIds = current.movableCollectionIds,
-                            isLoading = false,
-                            platformExpandedStates = newExpandedStates + current.platformExpandedStates
-                                .filterKeys { it in newExpandedStates },
-                            selectedItemId = if (_state.value.selectedItemId == null) {
-                                platformGroups.firstOrNull()?.platform?.platformId?.let { pickerPlatformId(it) }
-                            } else {
-                                _state.value.selectedItemId
-                            }
-                        )
-
-                        _state.update { newState }
-                    } catch (e: Exception) {
-                        android.util.Log.e("GamePickerViewModel", "Error processing picker data", e)
+                memoryCardRepository.observeEnabled()
+                    .combine(gameRepository.observeAll()) { cards, games -> cards to games }
+                    .collect { (newCards, newGames) ->
+                        cards = newCards
+                        games = newGames
+                        collections = runCatching { collectionRepository.getAll() }.getOrDefault(emptyList())
+                        rebuild()
                     }
-                }
             } catch (e: Exception) {
                 android.util.Log.e("GamePickerViewModel", "Error loading picker data", e)
                 _state.update { it.copy(isLoading = false) }
@@ -141,193 +65,102 @@ class GamePickerViewModel @Inject constructor(
         }
     }
 
+    // What the user has checked survives a rebuild: the collector fires on any games-table write.
+    private fun rebuild() {
+        _state.update { current ->
+            current.copy(
+                shelves = buildShelves(
+                    cards = cards,
+                    games = games,
+                    collections = collections,
+                    preselectedGameIds = current.preselectedGameIds,
+                    movableCollectionIds = movableCollectionIds,
+                    categoryTitle = categoryTitle,
+                ),
+                isLoading = false,
+            ).clampFocus()
+        }
+    }
+
     /**
      * Readies the picker for one category: [preselectedGameIds] (the games already in it) open
-     * checked, and only [movableCollectionIds] are offered as custom memory cards to move in.
+     * checked, only [movableCollectionIds] are offered as custom memory cards to move in, and
+     * every tile starts in [initialView] (the user's global icon display mode).
      */
-    fun prepare(preselectedGameIds: Set<Long>, movableCollectionIds: Set<Long>) {
+    fun prepare(
+        preselectedGameIds: Set<Long>,
+        movableCollectionIds: Set<Long>,
+        categoryTitle: String,
+        initialView: IconDisplayMode,
+    ) {
+        this.movableCollectionIds = movableCollectionIds
+        this.categoryTitle = categoryTitle
         _state.update {
             it.copy(
                 selectedGameIds = preselectedGameIds,
                 selectedCollectionIds = emptySet(),
-                movableCollectionIds = movableCollectionIds,
+                preselectedGameIds = preselectedGameIds,
+                viewMode = initialView,
             )
         }
-        updateGroupCounts()
+        rebuild()
     }
 
-    fun toggleGameSelection(gameId: Long) {
-        _state.update { state ->
-            val newSelected = if (gameId in state.selectedGameIds) {
-                state.selectedGameIds - gameId
-            } else {
-                state.selectedGameIds + gameId
+    /** Every controller action except Done (Start) and B, which the screen routes. */
+    fun onAction(action: GamepadAction) {
+        transition { state ->
+            when (action) {
+                GamepadAction.NAVIGATE_UP,
+                GamepadAction.NAVIGATE_DOWN,
+                GamepadAction.NAVIGATE_LEFT,
+                GamepadAction.NAVIGATE_RIGHT -> state.move(action)
+                GamepadAction.SELECT -> state.activate()
+                GamepadAction.OPEN_CONTEXT_MENU -> state.toggleWholeShelf()
+                GamepadAction.CHANGE_SORT -> state.cycleView()
+                else -> state
             }
-            state.copy(selectedGameIds = newSelected)
-        }
-        updateGroupCounts()
-    }
-
-    fun toggleCollectionSelection(collectionId: Long) {
-        _state.update { state ->
-            val newSelected = if (collectionId in state.selectedCollectionIds) {
-                state.selectedCollectionIds - collectionId
-            } else {
-                state.selectedCollectionIds + collectionId
-            }
-            state.copy(selectedCollectionIds = newSelected)
         }
     }
 
-    fun togglePlatformAllSelection(platformId: String, selectAll: Boolean) {
-        val group = _state.value.platformGroups.firstOrNull { it.platform.platformId == platformId } ?: return
-
-        _state.update { state ->
-            val newSelected = if (selectAll) {
-                state.selectedGameIds + group.games.map { it.id }
-            } else {
-                state.selectedGameIds - group.games.map { it.id }.toSet()
-            }
-            state.copy(selectedGameIds = newSelected)
-        }
-        updateGroupCounts()
+    /** B. Returns false when there is no level left to climb, and the picker should close. */
+    fun back(): Boolean {
+        if (_state.value.back() == null) return false
+        transition { it.back() ?: it }
+        return true
     }
 
-    fun togglePlatformExpanded(platformId: String) {
-        _state.update { state ->
-            val newExpandedStates = state.platformExpandedStates.toMutableMap()
-            newExpandedStates[platformId] = !(newExpandedStates[platformId] ?: true)
-            state.copy(platformExpandedStates = newExpandedStates)
-        }
+    fun tapTile(index: Int) = transition { it.tapTile(index) }
+
+    fun tapShelf(index: Int) = transition { it.tapShelf(index) }
+
+    // Settling a finger scroll only parks the hidden cursor, so it stays silent.
+
+    fun touchBrowse(index: Int) = _state.update { it.touchBrowse(index) }
+
+    // Applies one user input and plays its sound through the user's assigned Navigation slot.
+    private fun transition(transform: (GamePickerState) -> GamePickerState) {
+        val before = _state.value
+        _state.update(transform)
+        gamePickerSound(before, _state.value)?.let { menuSound.play(it) }
     }
 
-    private fun updateGroupCounts() {
-        _state.update { state ->
-            val updatedGroups = state.platformGroups.map { group ->
-                val count = group.games.count { it.id in state.selectedGameIds }
-                group.copy(selectedCount = count)
-            }
-            state.copy(platformGroups = updatedGroups)
-        }
-    }
-
-    fun getSelectedItems(): Pair<Set<Long>, Set<Long>> {
-        return _state.value.selectedGameIds to _state.value.selectedCollectionIds
-    }
+    fun getSelectedItems(): Pair<Set<Long>, Set<Long>> =
+        _state.value.selectedGameIds to _state.value.selectedCollectionIds
 
     // Resets the picker to a fresh state. The ViewModel is retained across open/close cycles,
     // so this must run when the picker is cancelled or its selection confirmed — otherwise the
-    // previous checkmarks, cursor, and expanded groups carry over the next time it opens.
+    // previous checkmarks, cursor, shelf and view carry over the next time it opens.
     fun clearSelection() {
-        _state.update { state ->
-            state.copy(
+        _state.update {
+            it.copy(
                 selectedGameIds = emptySet(),
                 selectedCollectionIds = emptySet(),
-                platformGroups = state.platformGroups.map { it.copy(selectedCount = 0) },
-                platformExpandedStates = state.platformGroups.associate { it.platform.platformId to false },
-                selectedItemId = state.platformGroups.firstOrNull()?.platform?.platformId?.let { pickerPlatformId(it) },
+                preselectedGameIds = emptySet(),
+                shelfIndex = 0,
+                focusZone = PickerZone.RAIL,
+                focusByShelf = emptyMap(),
+                usingTouch = false,
             )
         }
     }
-
-    fun moveSelection(delta: Int) {
-        val state = _state.value
-
-        // Build a list of all selectable item IDs in order
-        val itemIds = buildPickerItemIds(state)
-        if (itemIds.isEmpty()) return
-
-        // Find current position
-        val currentId = state.selectedItemId
-        val currentIndex = if (currentId != null) itemIds.indexOf(currentId) else -1
-
-        // Calculate new position
-        val newIndex = if (currentIndex < 0) {
-            // No selection yet, start at first item
-            0
-        } else {
-            (currentIndex + delta).coerceIn(0, itemIds.size - 1)
-        }
-
-        if (newIndex >= 0 && newIndex < itemIds.size) {
-            _state.update { it.copy(selectedItemId = itemIds[newIndex]) }
-        }
-    }
-
-    fun activateSelection() {
-        val state = _state.value
-        val selectedId = state.selectedItemId ?: return
-
-        // Determine what type of item was selected
-        for (group in state.platformGroups) {
-            if (pickerPlatformId(group.platform.platformId) == selectedId) {
-                // Platform headers are actionable in the picker.
-                val selectAll = !group.isAllSelected
-                togglePlatformAllSelection(group.platform.platformId, selectAll)
-                return
-            }
-
-            for (game in group.games) {
-                if (pickerGameId(game.id) == selectedId) {
-                    // Game selected
-                    toggleGameSelection(game.id)
-                    return
-                }
-            }
-        }
-
-        // Check collections
-        if (selectedId == PICKER_COLLECTIONS_HEADER) {
-            // Header selected, no action
-            return
-        }
-
-        for (collection in state.visibleCollections) {
-            if (pickerCollectionId(collection.id) == selectedId) {
-                toggleCollectionSelection(collection.id)
-                return
-            }
-        }
-    }
-
-    fun toggleSelectedPlatform() {
-        val state = _state.value
-        val selectedId = state.selectedItemId ?: return
-
-        // If the selected item is a platform header, toggle its expanded state
-        for (group in state.platformGroups) {
-            if (pickerPlatformId(group.platform.platformId) == selectedId) {
-                // Platform headers can still expand/collapse in the picker.
-                togglePlatformExpanded(group.platform.platformId)
-                return
-            }
-        }
-    }
-
-}
-
-// Ordered, namespaced list of every navigable picker row ID — the single source of truth for
-// cursor movement (ViewModel.moveSelection) and scroll positioning (GamePickerScreen). The IDs
-// here MUST match the per-row identities rendered by the screen (pickerPlatformId/GameId/etc.).
-internal fun buildPickerItemIds(state: GamePickerState): List<String> {
-    val ids = mutableListOf<String>()
-
-    for (group in state.platformGroups) {
-        ids.add(pickerPlatformId(group.platform.platformId))
-        if (state.platformExpandedStates[group.platform.platformId] == true) {
-            for (game in group.games) {
-                ids.add(pickerGameId(game.id))
-            }
-        }
-    }
-
-    val collections = state.visibleCollections
-    if (collections.isNotEmpty()) {
-        ids.add(PICKER_COLLECTIONS_HEADER)
-        for (collection in collections) {
-            ids.add(pickerCollectionId(collection.id))
-        }
-    }
-
-    return ids
 }

@@ -7,18 +7,25 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -26,13 +33,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.itemsIndexed as lazyItemsIndexed
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.itemsIndexed as lazyItemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -40,43 +46,36 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.isImeVisible
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.withFrameNanos
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.ui.input.pointer.pointerInput
-import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -85,9 +84,18 @@ import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPrompt
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardBottomReserve
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
+import com.playfieldportal.core.ui.keyboard.isVirtualKeyboardOverlayOpen
+import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
+import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
 import com.playfieldportal.core.ui.theme.LocalPFPColors
+import com.playfieldportal.core.ui.theme.menuCursor
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.feature.artwork.store.ArtworkKind
+import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 // The gap between grid tiles. Must equal StudioGridCapacity's GAP_DP, or the tiles drawn here stop
 // matching the capacity the ViewModel paged for.
@@ -900,7 +908,8 @@ internal fun ArtworkStudioContent(
                     add(ControllerPromptItem(GamepadAction.CHANGE_SORT, "search"))
                     add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "options"))
                 },
-                modifier = Modifier.padding(top = 6.dp),
+                // PFP's keyboard brings its own prompts while it is up.
+                modifier = Modifier.padding(top = 6.dp).alpha(if (isVirtualKeyboardOverlayOpen()) 0f else 1f),
                 labelColor = Color.White.copy(alpha = 0.35f),
                 labelStyle = TextStyle(fontSize = 10.sp),
                 glyphSize = 14.dp,
@@ -990,15 +999,28 @@ internal fun ArtworkStudioContent(
             val keyboard = LocalSoftwareKeyboardController.current
             val focusManager = LocalFocusManager.current
             val editing by rememberUpdatedState(state.changeMatchEditing)
+            // PFP's keyboard for an edit the controller started: Done looks the title up, as the
+            // system keyboard's Search key does; BACK just ends editing, leaving the draft.
+            val matchEdit = rememberVirtualKeyboardEdit(
+                text = state.changeMatchDraft,
+                onTextChange = actions::onChangeMatchDraftChanged,
+                placement = KeyboardPlacement.BOTTOM_CENTER,
+                onDone = { actions.submitChangeMatch() },
+                onClose = { actions.stopChangeMatchEdit() },
+            )
             LaunchedEffect(state.changeMatchEditing) {
                 if (state.changeMatchEditing) {
-                    // Settle a frame around the readOnly→editable flip before showing the keyboard —
-                    // the same sequence as WizardTextField / SettingsTextFieldRow.
+                    // Settle a frame around the readOnly→editable flip before raising a keyboard —
+                    // the same sequence as WizardTextField / SettingsTextFieldRow. PFP's opens
+                    // first, so the field's own keyboard request is already held when focus lands.
                     withFrameNanos { }
+                    val virtual = matchEdit.start()
+                    if (virtual) withFrameNanos { }
                     runCatching { matchFocus.requestFocus() }
                     withFrameNanos { }
-                    keyboard?.show()
+                    if (!virtual) keyboard?.show()
                 } else {
+                    matchEdit.stop()
                     keyboard?.hide()
                     focusManager.clearFocus()
                 }
@@ -1050,10 +1072,11 @@ internal fun ArtworkStudioContent(
                         color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp,
                     )
                     Spacer(Modifier.height(12.dp))
+                    VirtualKeyboardTextInput(matchEdit) {
                     BasicTextField(
-                        value = state.changeMatchDraft,
+                        value = matchEdit.fieldValue,
                         readOnly = !state.changeMatchEditing,
-                        onValueChange = actions::onChangeMatchDraftChanged,
+                        onValueChange = matchEdit::onFieldValueChange,
                         singleLine = true,
                         textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
                         cursorBrush = SolidColor(accent),
@@ -1086,10 +1109,12 @@ internal fun ArtworkStudioContent(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
+                            .virtualKeyboardField(matchEdit)
                             .focusRequester(matchFocus)
                             // A tap focuses the field; that is touch asking to type, so enter edit mode.
                             .onFocusChanged { if (it.isFocused && !editing) actions.startChangeMatchEdit() },
                     )
+                    }
                     Spacer(Modifier.height(12.dp))
                     // A cross-platform list is offered, never assumed: another release's artwork may
                     // not be what this game uses, so say where the list came from.
@@ -1193,12 +1218,32 @@ internal fun ArtworkStudioContent(
         // ── Search overlay (X / tap) ──────────────────────────────────────────
         if (state.searchOpen) {
             val focusRequester = remember { FocusRequester() }
-            LaunchedEffect(Unit) { runCatching { focusRequester.requestFocus() } }
+            // PFP's keyboard while the controller's cursor is on the field: Done searches; BACK
+            // leaves the field for the buttons (Search · Use game title · Cancel), and UP from them
+            // brings the cursor — and the keyboard — back.
+            val queryEdit = rememberVirtualKeyboardEdit(
+                text = state.queryDraft,
+                onTextChange = actions::onQueryDraftChanged,
+                placement = KeyboardPlacement.BOTTOM_CENTER,
+                onDone = { actions.submitSearch() },
+                onClose = { actions.leaveSearchField() },
+            )
+            val onField = state.searchButton == null
+            LaunchedEffect(onField) {
+                if (onField) {
+                    if (!queryEdit.isOpen && queryEdit.start()) withFrameNanos { }
+                    runCatching { focusRequester.requestFocus() }
+                } else {
+                    queryEdit.stop()
+                }
+            }
             Box(
                 Modifier
                     .fillMaxSize()
                     .background(Color(0xC0000000))
-                    .clickable(onClick = actions::cancelSearch),
+                    .clickable(onClick = actions::cancelSearch)
+                    // Keeps the card above PFP's keyboard, which imePadding() cannot see.
+                    .padding(bottom = if (queryEdit.isOpen) VirtualKeyboardBottomReserve else 0.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(
@@ -1220,9 +1265,10 @@ internal fun ArtworkStudioContent(
                         color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp,
                     )
                     Spacer(Modifier.height(12.dp))
+                    VirtualKeyboardTextInput(queryEdit) {
                     BasicTextField(
-                        value = state.queryDraft,
-                        onValueChange = actions::onQueryDraftChanged,
+                        value = queryEdit.fieldValue,
+                        onValueChange = queryEdit::onFieldValueChange,
                         singleLine = true,
                         textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
                         cursorBrush = SolidColor(accent),
@@ -1246,8 +1292,12 @@ internal fun ArtworkStudioContent(
                                 inner()
                             }
                         },
-                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .virtualKeyboardField(queryEdit)
+                            .focusRequester(focusRequester),
                     )
+                    }
                     Spacer(Modifier.height(14.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
@@ -1256,6 +1306,7 @@ internal fun ArtworkStudioContent(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(accent.copy(alpha = 0.30f))
+                                .menuCursor(state.searchButton == StudioSearchButton.SEARCH)
                                 .clickable(onClick = actions::submitSearch)
                                 .padding(horizontal = 16.dp, vertical = 7.dp),
                         )
@@ -1266,6 +1317,7 @@ internal fun ArtworkStudioContent(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color.White.copy(alpha = 0.07f))
+                                .menuCursor(state.searchButton == StudioSearchButton.USE_GAME_TITLE)
                                 .clickable(onClick = actions::resetSearchToTitle)
                                 .padding(horizontal = 14.dp, vertical = 7.dp),
                         )
@@ -1275,6 +1327,7 @@ internal fun ArtworkStudioContent(
                             color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
+                                .menuCursor(state.searchButton == StudioSearchButton.CANCEL)
                                 .clickable(onClick = actions::cancelSearch)
                                 .padding(horizontal = 12.dp, vertical = 7.dp),
                         )

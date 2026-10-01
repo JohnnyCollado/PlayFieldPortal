@@ -25,6 +25,8 @@ interface ArtworkStudioActions {
     fun submitSearch()
     fun cancelSearch()
     fun resetSearchToTitle()
+    /** BACK on PFP's keyboard: the cursor leaves the query field for the card's buttons. */
+    fun leaveSearchField()
 
     // Match
     fun onChangeMatchPressed()

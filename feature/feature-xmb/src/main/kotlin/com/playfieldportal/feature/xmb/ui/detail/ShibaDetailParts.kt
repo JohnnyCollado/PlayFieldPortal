@@ -45,13 +45,17 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.input.ImeAction
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.ui.detail.DetailContentPadding
 import com.playfieldportal.core.ui.detail.DetailPalette
+import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
+import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
+import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
 
 // ── Shared achievement-page parts ─────────────────────────────────────────────
 //
@@ -110,19 +114,33 @@ internal fun SearchRow(
     val keyboard = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     val isEditing by rememberUpdatedState(editing)
+    // PFP's keyboard for an edit the controller started: Done and BACK both end text entry, as the
+    // system keyboard's Search key and its own Back do.
+    val searchEdit = rememberVirtualKeyboardEdit(
+        text = query,
+        onTextChange = onQueryChange,
+        placement = KeyboardPlacement.BOTTOM_CENTER,
+        onDone = onEditEnded,
+        onClose = onEditEnded,
+    )
     LaunchedEffect(editing) {
         if (editing) {
-            // Settle a frame around the readOnly → editable flip before raising the keyboard.
+            // Settle a frame around the readOnly → editable flip before raising a keyboard. PFP's
+            // opens first, so the field's own keyboard request is already held when focus arrives.
             withFrameNanos { }
+            val virtual = searchEdit.start()
+            if (virtual) withFrameNanos { }
             runCatching { fieldFocus.requestFocus() }
             withFrameNanos { }
-            keyboard?.show()
+            if (!virtual) keyboard?.show()
         } else {
+            searchEdit.stop()
             keyboard?.hide()
             focusManager.clearFocus()
         }
     }
     // The keyboard dismissed by its own Back key ends text entry, so the pad drives the list again.
+    // PFP's keyboard never raises the IME, so this only ever reacts to the system keyboard.
     val imeVisible = WindowInsets.isImeVisible
     var imeWasShown by remember { mutableStateOf(false) }
     LaunchedEffect(imeVisible) {
@@ -148,9 +166,10 @@ internal fun SearchRow(
             ) {
                 Icon(Icons.Filled.Search, contentDescription = null, tint = palette.textMuted, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(12.dp))
+                VirtualKeyboardTextInput(searchEdit) {
                 BasicTextField(
-                    value = query,
-                    onValueChange = onQueryChange,
+                    value = searchEdit.fieldValue,
+                    onValueChange = searchEdit::onFieldValueChange,
                     readOnly = !editing,
                     singleLine = true,
                     textStyle = TextStyle(color = palette.textPrimary, fontSize = 15.sp),
@@ -167,10 +186,12 @@ internal fun SearchRow(
                     },
                     modifier = Modifier
                         .weight(1f)
+                        .virtualKeyboardField(searchEdit)
                         .focusRequester(fieldFocus)
                         // A tap lands on the field itself: treat it as the touch path into text entry.
                         .onFocusChanged { if (it.isFocused && !isEditing) onClick() },
                 )
+                }
             }
             if (trailing != null) {
                 Spacer(Modifier.width(16.dp))

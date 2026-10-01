@@ -250,6 +250,14 @@ internal fun List<CategorizedApp>.appSorted(mode: XmbSortMode, listState: ListSt
 }
 
 /**
+ * An app column's loose apps: an app placed in one of the column's own custom memory cards has
+ * moved there, so it no longer shows at the root. It stays in the category, so leaving the card
+ * (or deleting it) brings it straight back.
+ */
+internal fun List<CategorizedApp>.notInCards(cardedPackages: Set<String>): List<CategorizedApp> =
+    if (cardedPackages.isEmpty()) this else filterNot { it.packageName in cardedPackages }
+
+/**
  * [rows] (in the list's default order) as the list shows them: untouched in default order, or by
  * the stored Custom order with pinned rows gathered at the top.
  */
@@ -318,6 +326,8 @@ enum class UmdMenuState {
     CAN_INSERT,
     /** The game is the one inserted; it can be ejected. */
     INSERTED,
+    /** The UMD row shows the recently played fallback: insert it to keep it, or eject it. */
+    RECENT,
 }
 
 /** The UMD row of a game's menu, or none. */
@@ -325,6 +335,10 @@ internal fun umdMenuItems(state: UmdMenuState): List<XMBContextMenuItem> = when 
     UmdMenuState.NONE -> emptyList()
     UmdMenuState.CAN_INSERT -> listOf(XMBContextMenuItem("insert_umd", "Insert as UMD"))
     UmdMenuState.INSERTED -> listOf(XMBContextMenuItem("eject_umd", "Eject UMD"))
+    UmdMenuState.RECENT -> listOf(
+        XMBContextMenuItem("insert_umd", "Insert as UMD"),
+        XMBContextMenuItem("eject_umd", "Eject UMD"),
+    )
 }
 
 /**

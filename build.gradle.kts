@@ -10,6 +10,15 @@ plugins {
     alias(libs.plugins.jetbrains.compose)       apply false
 }
 
+// Test JVMs get an agent appended to the boot classpath (MockK's inline mocking), which makes the
+// JVM drop class-data sharing and print a "Sharing is only supported for boot loader classes"
+// warning per test process. Turning sharing off up front is the same runtime, minus the noise.
+subprojects {
+    tasks.withType<Test>().configureEach {
+        jvmArgs("-Xshare:off")
+    }
+}
+
 // One command to build every shippable release artifact into <root>/dist (gitignored):
 // the full + lite launcher APKs and the Theme Studio installer for the current OS. The
 // per-module copy tasks (finalizing each release build) do the actual placing.

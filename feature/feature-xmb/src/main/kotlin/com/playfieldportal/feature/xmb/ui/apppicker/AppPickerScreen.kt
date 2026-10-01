@@ -66,6 +66,11 @@ import com.playfieldportal.core.domain.model.ControllerIcon
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
+import com.playfieldportal.core.ui.keyboard.isVirtualKeyboardOverlayOpen
+import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
+import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
 import com.playfieldportal.core.ui.theme.StorefrontColors
 import com.playfieldportal.core.ui.theme.deriveStorefrontColors
 import com.playfieldportal.feature.xmb.viewmodel.AppPickerEntry
@@ -190,16 +195,30 @@ private fun AppPickerHeader(
 ) {
     val searchFocus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
+    // PFP's keyboard for a search the controller opened: Done is the IME's Search key (the query
+    // is already live), BACK closes the search as BACK does without a keyboard.
+    val searchEdit = rememberVirtualKeyboardEdit(
+        text = state.query,
+        onTextChange = onSearchChange,
+        placement = KeyboardPlacement.BOTTOM_CENTER,
+        onDone = onSearchDone,
+        onClose = { onSearchToggle(false) },
+    )
 
     // Two-frame focus idiom (AppDrawerScreen): the field must be composed before the
-    // FocusRequester can grab it.
-    LaunchedEffect(state.searchActive) {
+    // FocusRequester can grab it. PFP's keyboard opens first, so the field's own keyboard request
+    // is already held when focus arrives.
+    // Keyed on searchReopens too: X on an open search with text brings a keyboard back.
+    LaunchedEffect(state.searchActive, state.searchReopens) {
         if (state.searchActive) {
             withFrameNanos {}
             withFrameNanos {}
+            val virtual = searchEdit.isOpen || searchEdit.start()
+            if (virtual) withFrameNanos {}
             runCatching { searchFocus.requestFocus() }
-            keyboard?.show()
+            if (!virtual) keyboard?.show()
         } else {
+            searchEdit.stop()
             keyboard?.hide()
         }
     }
@@ -242,9 +261,10 @@ private fun AppPickerHeader(
         )
 
         AnimatedVisibility(visible = state.searchActive, enter = fadeIn(), exit = fadeOut()) {
+            VirtualKeyboardTextInput(searchEdit) {
             BasicTextField(
-                value = state.query,
-                onValueChange = onSearchChange,
+                value = searchEdit.fieldValue,
+                onValueChange = searchEdit::onFieldValueChange,
                 singleLine = true,
                 textStyle = TextStyle(color = colors.textPrimary, fontSize = 14.sp),
                 cursorBrush = SolidColor(colors.searchBorder),
@@ -262,11 +282,13 @@ private fun AppPickerHeader(
                 },
                 modifier = Modifier
                     .width(220.dp)
+                    .virtualKeyboardField(searchEdit)
                     .focusRequester(searchFocus)
                     .background(colors.searchField, RoundedCornerShape(2.dp))
                     .border(1.dp, colors.searchBorder, RoundedCornerShape(2.dp))
                     .padding(horizontal = 10.dp, vertical = 6.dp),
             )
+            }
         }
 
         Spacer(Modifier.width(16.dp))
@@ -521,7 +543,8 @@ private fun AppPickerFooter(
         labelStyle = TextStyle(fontSize = 12.sp),
         glyphSize = 16.dp,
         arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
-        modifier = modifier,
+        // PFP's keyboard brings its own prompts while it is up.
+        modifier = modifier.alpha(if (isVirtualKeyboardOverlayOpen()) 0f else 1f),
     )
 }
 

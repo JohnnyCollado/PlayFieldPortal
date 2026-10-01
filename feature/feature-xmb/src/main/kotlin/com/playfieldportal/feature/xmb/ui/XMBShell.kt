@@ -196,6 +196,7 @@ fun XMBShellContainer(
 
     XMBShell(
         uiState = uiState,
+        virtualKeyboard = viewModel.virtualKeyboard,
         onCategorySelected = viewModel::onCategoryTapped,
         onStepCategory = viewModel::stepCategory,
         onStepItem = viewModel::stepItem,
@@ -260,6 +261,7 @@ fun XMBShellContainer(
         onContextMenuDismiss = viewModel::closeContextMenu,
         onGameSearchChanged = viewModel::onGameSearchChanged,
         onGameSearchConfirmed = viewModel::onGameSearchConfirmed,
+        onGameSearchCancelled = viewModel::onGameSearchCancelled,
         onOpenColorSchemePicker = viewModel::openColorSchemePicker,
         onColorSchemeHighlightedAt = viewModel::onColorSchemeHighlightedAt,
         onColorSchemeConfirm = viewModel::confirmColorSchemePicker,
@@ -463,6 +465,7 @@ fun XMBShell(
     onContextMenuDismiss: () -> Unit = {},
     onGameSearchChanged: (String) -> Unit = {},
     onGameSearchConfirmed: () -> Unit = {},
+    onGameSearchCancelled: () -> Unit = {},
     onMusicPlayPause: () -> Unit = {},
     onMusicPrev: () -> Unit = {},
     onMusicNext: () -> Unit = {},
@@ -545,6 +548,8 @@ fun XMBShell(
     onNotificationOptions: () -> Unit = {},
     onNotificationPanelDismiss: () -> Unit = {},
     notificationCallbacks: NotificationModalCallbacks = NotificationModalCallbacks(),
+    // PFP's on-screen keyboard: provided to every field below, drawn over everything.
+    virtualKeyboard: com.playfieldportal.core.ui.keyboard.VirtualKeyboardController? = null,
 ) {
     PFPTheme(colors = uiState.themeColors) {
       // The applied theme's custom icon slots ride alongside the palette: every themeable
@@ -562,6 +567,7 @@ fun XMBShell(
           // The icon-legibility treatment: PortalIcon + the theme-override glyph branches read
           // it ambiently, so every XMB silhouette glyph gets the matte from one provider.
           com.playfieldportal.core.ui.icons.LocalIconLegibility provides uiState.iconLegibility,
+          com.playfieldportal.core.ui.keyboard.LocalVirtualKeyboard provides virtualKeyboard,
       ) {
         // XMB-ONLY canvas scale. On screens taller than the handheld baseline (tablets), the
         // XMB cross is magnified so the tuned layout fills the screen. The override scope ends
@@ -1285,6 +1291,7 @@ fun XMBShell(
                     text = field.text,
                     onTextChange = onGameSearchChanged,
                     onConfirm = onGameSearchConfirmed,
+                    onCancel = onGameSearchCancelled,
                 )
             }
 
@@ -1335,6 +1342,7 @@ fun XMBShell(
                 val gamingCategoryIds = uiState.categories.filter { it.isGamingCategory }.map { it.id }.toSet()
                 GamePickerScreen(
                     categoryId = pickerCategoryId,
+                    categoryTitle = uiState.categories.firstOrNull { it.id == pickerCategoryId }?.name.orEmpty(),
                     preselectedGameIds = uiState.gamePickerPreselected,
                     movableCollectionIds = uiState.collections
                         .filter { it.categoryId in gamingCategoryIds && it.categoryId != pickerCategoryId }
@@ -1517,6 +1525,11 @@ fun XMBShell(
                 forwardedAction = uiState.pendingShellModalAction,
                 onActionConsumed = onShellModalActionConsumed,
             )
+            // Above the modals too: a modal's name field can open the keyboard. Settings draws its
+            // own footer-placed sessions; this layer draws the rest, at the device's own density.
+            if (virtualKeyboard != null) {
+                com.playfieldportal.core.ui.keyboard.VirtualKeyboardOverlay(virtualKeyboard)
+            }
         } // end: BoxWithConstraints (uniform canvas scale)
       } // end: CompositionLocalProvider (LocalXmbIconOverrides)
     }

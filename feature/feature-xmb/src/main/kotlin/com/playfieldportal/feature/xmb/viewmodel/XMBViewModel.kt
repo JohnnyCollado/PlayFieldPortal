@@ -384,6 +384,8 @@ data class AppPickerState(
     val focusedIndex: Int = 0,
     val query: String = "",
     val searchActive: Boolean = false,
+    // Bumped when X brings PFP's keyboard back to an open search that still holds text.
+    val searchReopens: Int = 0,
     val confirmingRemovals: Boolean = false,
     /**
      * Which confirm-panel option the gamepad cursor sits on while [confirmingRemovals] is up.
@@ -934,6 +936,9 @@ data class XMBUiState(
     // Raised by the pin workflow when a PC shortcut arrived before setup was complete
     // (docs/windows-library-refactor-plan.md section 3); consumed on first XMB open.
     val showWindowsSetupPrompt: Boolean = false,
+    // PFP's virtual keyboard is open (VirtualKeyboardController owns the session; mirrored here
+    // so the blocking-overlay guard sees it).
+    val virtualKeyboardOpen: Boolean = false,
     /** A legacy INSTALL_SHORTCUT request waiting for Add / Ignore (it used to be asked in the shade). */
     val shortcutReview: com.playfieldportal.core.data.repository.PendingShortcutRequest? = null,
 
@@ -1111,6 +1116,7 @@ data class XMBUiState(
             infoDialog != null ||
             launchRecovery != null ||
             showWindowsSetupPrompt ||
+            virtualKeyboardOpen ||
             shortcutReview != null ||
             // A move in progress owns the D-pad: nothing else may act on the list under it.
             moveSession != null ||
@@ -1698,6 +1704,8 @@ class XMBViewModel @Inject constructor(
     private val pfpThemeStore: PfpThemeStore,
     private val uiMediaStore: com.playfieldportal.core.data.repository.UiMediaStore,
     private val gameBootGate: com.playfieldportal.feature.launcher.GameBootGate,
+    /** The app's one virtual-keyboard session; fields reach it through LocalVirtualKeyboard. */
+    val virtualKeyboard: com.playfieldportal.core.ui.keyboard.VirtualKeyboardController,
     // The preview plays its own audio: the gate owns playback for a real launch, and a preview
     // must never touch the gate. Same singleton player, so the two can never sound different.
     private val uiMediaAudioPlayer: com.playfieldportal.core.ui.media.UiMediaAudioPlayer,
@@ -1946,6 +1954,7 @@ class XMBViewModel @Inject constructor(
         observeEmulatorProfiles()
         collectGamepadActions()
         consumeWindowsSetupPrompt()
+        observeVirtualKeyboard()
         observeLaunchRecoveryRequests()
         observeSetupState()
         observeNotifications()
@@ -2000,6 +2009,17 @@ class XMBViewModel @Inject constructor(
                     kind = com.playfieldportal.core.domain.model.NotificationKind.LAUNCH,
                     action = NotificationAction.OpenGame(request.gameId),
                 )
+            }
+        }
+    }
+
+    // The keyboard's presses sound through the same menu cues as every other tier, and its open
+    // state joins the blocking-overlay guard.
+    private fun observeVirtualKeyboard() {
+        virtualKeyboard.soundSink = { menuSound.play(it) }
+        viewModelScope.launch {
+            virtualKeyboard.session.collect { session ->
+                _uiState.update { it.copy(virtualKeyboardOpen = session != null) }
             }
         }
     }
@@ -2400,6 +2420,8 @@ class XMBViewModel @Inject constructor(
 
     // The game inserted as each gaming column's UMD, resolved from umdInserted's ids.
     private var umdInsertedGames: Map<String, Game> = emptyMap()
+    // When each gaming column's UMD was ejected: its slot stays empty until a game is played since.
+    private var umdEjectedAt: Map<String, Long> = emptyMap()
 
     // A column's first visit lands on the row under the UMD slot rather than on the slot itself,
     // so opening Game does not put a game's art behind the whole screen unasked.
@@ -2444,6 +2466,14 @@ class XMBViewModel @Inject constructor(
                 }
             }
         }
+        viewModelScope.launch {
+            umdSlotRepository.ejectedAt.collect { ejected ->
+                umdEjectedAt = ejected
+                if (currentCategory()?.isGamingCategory == true && _uiState.value.currentListKind() == XmbListKind.ROOT) {
+                    refreshArrangedList()
+                }
+            }
+        }
     }
 
     private data class ListArrangementSnapshot(
@@ -2476,7 +2506,7 @@ class XMBViewModel @Inject constructor(
      */
     private fun umdSlotItem(columnId: String, columnGames: List<Game>): XMBItem? {
         val game = com.playfieldportal.core.domain.model.UmdSlotResolver
-            .resolve(umdInsertedGames[columnId], columnGames) ?: return null
+            .resolve(umdInsertedGames[columnId], columnGames, umdEjectedAt[columnId]) ?: return null
         return listOf(game).toXmbItems().single().copy(id = UMD_SLOT_ITEM_ID, type = XMBItemType.UMD_SLOT)
     }
 
@@ -2811,8 +2841,10 @@ class XMBViewModel @Inject constructor(
                         // The rows stay ANDROID_APP, so this never makes them appear in All Games.
                         val listKey = com.playfieldportal.core.domain.model.ListKeys.root(category.id)
                         val mode = _uiState.value.activeSortFor(listKey, XmbListKind.APPS)
+                        // Apps put in one of this category's own custom cards live there, not here.
                         val apps = appCategoryRepository.appsForCategory(category.id)
                             .notHiddenAt(HideLocationType.CATEGORY, category.id)
+                            .notInCards(cardedPackagesIn(category.id))
                             .appSorted(mode, listState(listKey))
                         val appItems = apps.map { it.toXmbItem(gameRepository.getAppEntry(it.packageName)) }
                         // Custom memory cards homed in this category (categoryId is the single
@@ -2905,6 +2937,14 @@ class XMBViewModel @Inject constructor(
                     type = XMBItemType.COLLECTION,
                 )
             }
+
+    // Packages of the apps sitting in [categoryId]'s own custom memory cards. A one-shot read, like
+    // the root's: the collections collector re-runs the root when a card's membership changes.
+    private suspend fun cardedPackagesIn(categoryId: String): Set<String> =
+        _uiState.value.collections
+            .filter { it.categoryId == categoryId }
+            .flatMap { collectionRepository.observeGames(it.id).first() }
+            .mapNotNullTo(mutableSetOf()) { it.packageName }
 
     // "Custom" tells a custom memory card apart from the Memory Card rows it shares a glyph with.
     private fun customCardSubtitle(pinned: Boolean, count: String): String =
@@ -5983,6 +6023,7 @@ class XMBViewModel @Inject constructor(
                 // Prompt glyphs are supplied ambiently by ProvideControllerPrompts at the
                 // app root, so the display type no longer needs mirroring into UI state.
                 gamepadInputHandler.scrollSpeed = prefs.scrollSpeed
+                virtualKeyboard.setEnabled(prefs.virtualKeyboard)
                 _uiState.update { it.copy(leftBacksOut = prefs.leftBacksOut) }
             }
         }
@@ -6066,6 +6107,12 @@ class XMBViewModel @Inject constructor(
         markControllerInput()
         val state = _uiState.value
 
+        // ── The virtual keyboard captures ALL input while open ─────────────────
+        //
+        // Above every other tier, START included: while it is up the pad types, and nothing behind
+        // it — a picker, a settings screen, the crossbar — may move.
+        if (keyboardCaptures(virtualKeyboard, action)) return
+
         // ── Convert-detected-games panel captures ALL input while open ─────────
         //
         // Above everything, including the START branch below: inside this panel START means Install,
@@ -6095,9 +6142,7 @@ class XMBViewModel @Inject constructor(
                 // Start applies the diff (with a confirmation pass when removals are pending).
                 GamepadAction.HOME -> requestApplyAppPicker()
                 GamepadAction.CHANGE_SORT -> _uiState.update { s ->
-                    s.copy(appPicker = s.appPicker?.let { p ->
-                        (if (p.searchActive) closeAppPickerSearch(p) else p.copy(searchActive = true)).clampFocus()
-                    })
+                    s.copy(appPicker = s.appPicker?.pressSearch()?.clampFocus())
                 }
                 // Back unwinds one layer: search → removal confirmation → picker.
                 GamepadAction.BACK,
@@ -6127,15 +6172,9 @@ class XMBViewModel @Inject constructor(
 
         // ── Game picker captures ALL input when open ───────────────────────────
         if (state.gamePickerCategoryId != null) {
-            when (action) {
-                GamepadAction.NAVIGATE_UP,
-                GamepadAction.NAVIGATE_DOWN,
-                GamepadAction.SELECT,
-                GamepadAction.HOME,
-                GamepadAction.BACK,
-                GamepadAction.OPEN_CONTEXT_MENU -> _uiState.update { it.copy(pendingGamePickerAction = action) }
-                else -> Unit
-            }
+            // Every action belongs to the picker: GamePickerScreen owns Done/Cancel and hands the
+            // rest (grid, rail, shelf, whole-shelf and view) to GamePickerViewModel.
+            _uiState.update { it.copy(pendingGamePickerAction = action) }
             return
         }
 
@@ -6446,27 +6485,7 @@ class XMBViewModel @Inject constructor(
             }
             state.activeSettingsScreen != null -> {
                 Timber.d("Gamepad → settings(${state.activeSettingsScreen}): $action")
-                // BACK is forwarded into the settings layer (not handled here) so the active
-                // screen can do one-level-up navigation through its own back handler — exactly
-                // like the on-screen Back button. The screen calls onCloseSettingsScreen() only
-                // when it's already at its top level, which returns to the XMB.
-                when (action) {
-                    GamepadAction.BACK,
-                    GamepadAction.NAVIGATE_UP,
-                    GamepadAction.NAVIGATE_DOWN,
-                    // Left/Right and the two secondary face buttons are ignored by the
-                    // scaffold's default nav but reachable via onInterceptAction — screens with
-                    // horizontal strips, per-row context menus or per-row shortcuts (Themes,
-                    // Sound) consume them there. Both presses arrive whichever way the X/Y
-                    // layout binds them, so both are forwarded (they're treated identically,
-                    // as everywhere else).
-                    GamepadAction.NAVIGATE_LEFT,
-                    GamepadAction.NAVIGATE_RIGHT,
-                    GamepadAction.OPEN_CONTEXT_MENU,
-                    GamepadAction.CHANGE_SORT,
-                    GamepadAction.SELECT -> _uiState.update { it.copy(pendingSettingsAction = action) }
-                    else -> Unit
-                }
+                if (forwardsToSettings(action)) _uiState.update { it.copy(pendingSettingsAction = action) }
                 return
             }
             state.activeAppDrawerFilter != null -> {
@@ -7072,7 +7091,7 @@ class XMBViewModel @Inject constructor(
         val column = currentCat?.takeIf { it.isGamingCategory }?.id
         val umd = when {
             column == null || item.gameId == null || !item.isRealGame -> UmdMenuState.NONE
-            isUmdRow -> if (column in state.umdInserted) UmdMenuState.INSERTED else UmdMenuState.CAN_INSERT
+            isUmdRow -> if (column in state.umdInserted) UmdMenuState.INSERTED else UmdMenuState.RECENT
             state.umdInserted[column] == item.gameId -> UmdMenuState.INSERTED
             else -> UmdMenuState.CAN_INSERT
         }
@@ -8009,6 +8028,7 @@ class XMBViewModel @Inject constructor(
         markTouchInput()
         // While the confirmation modal is up, the grid behind the scrim is inert.
         if (_uiState.value.appPicker?.confirmingRemovals == true) return
+        val before = _uiState.value.appPicker
         _uiState.update {
             val picker = it.appPicker ?: return@update it
             val visible = picker.visibleApps()
@@ -8016,6 +8036,7 @@ class XMBViewModel @Inject constructor(
             it.copy(appPicker = picker.copy(focusedIndex = index, usingTouch = true)
                 .toggle(app.packageName))
         }
+        appPickerSound(before, _uiState.value.appPicker)?.let(menuSound::play)
     }
 
     // Touch: finger-scroll settled (or drag started) on a tile — park the hidden cursor there.
@@ -8080,20 +8101,24 @@ class XMBViewModel @Inject constructor(
     }
 
     private fun moveAppPicker(action: GamepadAction) {
+        val before = _uiState.value.appPicker
         _uiState.update { state ->
             val picker = state.appPicker ?: return@update state
             // While the removal-confirmation modal is up, the dpad belongs to the modal's
             // Cancel/Remove cursor — the grid behind the scrim must not move.
             state.copy(appPicker = if (picker.confirmingRemovals) picker.moveConfirm(action) else picker.move(action))
         }
+        appPickerSound(before, _uiState.value.appPicker)?.let(menuSound::play)
     }
 
     private fun toggleFocusedApp() {
+        val before = _uiState.value.appPicker
         _uiState.update {
             val picker = it.appPicker ?: return@update it
             val app = picker.visibleApps().getOrNull(picker.focusedIndex) ?: return@update it
             it.copy(appPicker = picker.toggle(app.packageName))
         }
+        appPickerSound(before, _uiState.value.appPicker)?.let(menuSound::play)
     }
 
     private fun cancelConfirm() {
@@ -8968,6 +8993,7 @@ class XMBViewModel @Inject constructor(
      *  [lastInteractionMs] so the idle context-menu hint resets. */
     fun markTouchInput() {
         lastInteractionMs = SystemClock.elapsedRealtime()
+        mirrorInputSource(virtualKeyboard, touch = true)
         // One write for both flags: the hints must clear on the SAME frame as the input (see
         // noteInteraction), and a second update() here would cost an extra recomposition.
         _uiState.update {
@@ -8991,6 +9017,7 @@ class XMBViewModel @Inject constructor(
 
     private fun markControllerInput() {
         lastInteractionMs = SystemClock.elapsedRealtime()
+        mirrorInputSource(virtualKeyboard, touch = false)
         _uiState.update {
             if (!it.lastInputWasTouch &&
                 !it.showContextMenuHint &&
@@ -10210,7 +10237,7 @@ class XMBViewModel @Inject constructor(
     private suspend fun launchIntentFromXmb(intent: Intent, game: Game, resolved: ResolvedLaunch?) {
         when (val result = launchDispatcher.launch(game, resolved, intent)) {
             is LaunchDispatchResult.Rejected -> Timber.w("Direct launch rejected: ${result.message}")
-            LaunchDispatchResult.Accepted -> discordPresence.setCurrentGame(game.title)
+            LaunchDispatchResult.Accepted -> discordPresence.setCurrentGame(game.displayTitle)
         }
     }
 
@@ -11594,4 +11621,43 @@ class XMBViewModel @Inject constructor(
         categories.indexOfFirst { it.id == BuiltInCategory.GAMES }
             .takeIf { it >= 0 }
             ?: 0
+}
+
+/**
+ * The presses an open settings screen receives. BACK is forwarded into the settings layer (not
+ * handled here) so the active screen can do one-level-up navigation through its own back handler
+ * — exactly like the on-screen Back button; the screen calls onCloseSettingsScreen() only at its
+ * top level. Left/Right, the two secondary face buttons and the shoulders are ignored by the
+ * scaffold's default nav but reachable via onInterceptAction — screens with horizontal strips,
+ * per-row menus or shortcuts (Themes, Sound) consume them there, and Initial Setup's RB Skip.
+ * Both X/Y presses arrive whichever way the layout binds them, so both are forwarded.
+ */
+internal fun forwardsToSettings(action: GamepadAction): Boolean = when (action) {
+    GamepadAction.BACK,
+    GamepadAction.NAVIGATE_UP,
+    GamepadAction.NAVIGATE_DOWN,
+    GamepadAction.NAVIGATE_LEFT,
+    GamepadAction.NAVIGATE_RIGHT,
+    GamepadAction.OPEN_CONTEXT_MENU,
+    GamepadAction.CHANGE_SORT,
+    GamepadAction.PREV_CATEGORY,
+    GamepadAction.NEXT_CATEGORY,
+    GamepadAction.SELECT -> true
+    GamepadAction.HOME -> false
+}
+
+/** True when the open virtual keyboard took [action] — every press, while one is open. */
+internal fun keyboardCaptures(
+    keyboard: com.playfieldportal.core.ui.keyboard.VirtualKeyboardController,
+    action: GamepadAction,
+): Boolean = keyboard.onGamepadAction(action)
+
+/** The shell's single input-source owner, mirrored into the keyboard for fields an action opens. */
+internal fun mirrorInputSource(
+    keyboard: com.playfieldportal.core.ui.keyboard.VirtualKeyboardController,
+    touch: Boolean,
+) {
+    keyboard.inputSource =
+        if (touch) com.playfieldportal.core.ui.keyboard.InputSource.TOUCH
+        else com.playfieldportal.core.ui.keyboard.InputSource.CONTROLLER
 }

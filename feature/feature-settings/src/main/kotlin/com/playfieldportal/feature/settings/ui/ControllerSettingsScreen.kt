@@ -119,6 +119,15 @@ fun ControllerSettingsScreen(
                 onToggle = { viewModel.setLeftBacksOut(it) },
             )
 
+            SettingsGroup("Keyboard")
+            SettingsToggleRow(
+                label    = "Virtual Keyboard",
+                sublabel = "Type with the controller on PFP's own keyboard. Off, or when you use " +
+                    "touch, the system keyboard opens instead",
+                checked  = state.layoutPrefs.virtualKeyboard,
+                onToggle = { viewModel.setVirtualKeyboard(it) },
+            )
+
             SettingsGroup("Reset")
             SettingsRow(
                 label    = "Reset All Controller Settings",

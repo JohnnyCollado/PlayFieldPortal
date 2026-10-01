@@ -1151,6 +1151,39 @@ class GameDetailViewModelTest {
     }
 
     @Test
+    fun `a write from elsewhere reaches the open page`() = runTest {
+        val row = kotlinx.coroutines.flow.MutableStateFlow<Game?>(fakeGame)
+        every { gameRepository.observeById(1L) } returns row
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        row.value = fakeGame.copy(scrapedTitle = "Crash Bandicoot", artworkUri = "file:///art/crash_box.png")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val game = viewModel.uiState.value.game
+        assertEquals("Crash Bandicoot", game?.displayTitle)
+        assertEquals("file:///art/crash_box.png", game?.artworkUri)
+        assertEquals("Crash Bandicoot", viewModel.uiState.value.discMembers.single().displayTitle)
+    }
+
+    @Test
+    fun `the previous game's row never lands on the next game's page`() = runTest {
+        val first = kotlinx.coroutines.flow.MutableStateFlow<Game?>(fakeGame)
+        every { gameRepository.observeById(1L) } returns first
+        every { gameRepository.observeById(2L) } returns kotlinx.coroutines.flow.MutableStateFlow(windowsGame)
+        coEvery { gameRepository.getById(2L) } returns windowsGame
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.loadGame(2L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        first.value = fakeGame.copy(scrapedTitle = "Crash Bandicoot")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(windowsGame, viewModel.uiState.value.game)
+    }
+
+    @Test
     fun `fetchArtwork shows the scraper's message when nothing is found`() = runTest {
         coEvery { artworkRepository.refetchArtworkForGame(1L, any()) } returns
             ArtworkFetchResult(1L, "Crash Bandicoot", success = false, errorMessage = "Not found on any source")

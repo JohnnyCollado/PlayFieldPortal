@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.sound.MenuSound
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -30,6 +31,35 @@ class AppPickerLogicTest {
         focusedIndex = focusedIndex,
         query = query,
     )
+
+    // ── X: the controller's search button ─────────────────────────────────────────
+
+    @Test
+    fun `X opens a closed search`() {
+        val opened = state().pressSearch()
+        assertTrue(opened.searchActive)
+        assertEquals(0, opened.searchReopens)
+    }
+
+    @Test
+    fun `X on an open search with text brings the keyboard back and keeps the text`() {
+        // PFP's keyboard Done leaves the search open with the keyboard down; X must not wipe it.
+        val open = state(query = "dolph").copy(searchActive = true)
+
+        val pressed = open.pressSearch()
+
+        assertTrue(pressed.searchActive)
+        assertEquals("dolph", pressed.query)
+        assertEquals(1, pressed.searchReopens)
+    }
+
+    @Test
+    fun `X on an open empty search closes it`() {
+        val pressed = state().copy(searchActive = true).pressSearch()
+
+        assertEquals(false, pressed.searchActive)
+        assertEquals("", pressed.query)
+    }
 
     // ── visibleApps / search ──────────────────────────────────────────────────────
 
@@ -240,5 +270,38 @@ class AppPickerLogicTest {
         val cancelled = s.cancelConfirm()
         assertEquals(false, cancelled.confirmingRemovals)
         assertEquals(AppPickerState.CONFIRM_CANCEL, cancelled.confirmFocusedOption)
+    }
+
+    // ── Navigation sounds ───────────────────────────────────────────────────────
+
+    @Test
+    fun `a cursor move plays the navigation sound`() {
+        val s = state()
+        assertEquals(MenuSound.SCROLL, appPickerSound(s, s.move(GamepadAction.NAVIGATE_RIGHT)))
+    }
+
+    @Test
+    fun `a blocked move is silent`() {
+        val s = state()
+        assertEquals(null, appPickerSound(s, s.move(GamepadAction.NAVIGATE_LEFT)))
+    }
+
+    @Test
+    fun `a toggle plays select`() {
+        val s = state()
+        assertEquals(MenuSound.SELECT, appPickerSound(s, s.toggle("a")))
+    }
+
+    @Test
+    fun `stepping the removal modal plays the navigation sound`() {
+        val s = state().openConfirm()
+        assertEquals(MenuSound.SCROLL, appPickerSound(s, s.moveConfirm(GamepadAction.NAVIGATE_RIGHT)))
+        assertEquals(null, appPickerSound(s, s.moveConfirm(GamepadAction.NAVIGATE_LEFT)))
+    }
+
+    @Test
+    fun `no picker means no sound`() {
+        assertEquals(null, appPickerSound(null, state()))
+        assertEquals(null, appPickerSound(state(), null))
     }
 }

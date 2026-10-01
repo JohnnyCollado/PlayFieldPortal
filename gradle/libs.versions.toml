@@ -160,6 +160,7 @@ accompanist-drawablepainter     = { group = "com.google.accompanist",  name = "a
 # `compose.material3` / `compose.materialIconsExtended` shorthand, which CMP deprecated.
 compose-mp-material3            = { group = "org.jetbrains.compose.material3", name = "material3",              version.ref = "compose-mp-material3" }
 compose-mp-icons-extended       = { group = "org.jetbrains.compose.material",  name = "material-icons-extended", version.ref = "compose-mp-icons" }
+compose-mp-resources            = { group = "org.jetbrains.compose.components", name = "components-resources", version.ref = "compose-multiplatform" }
 jcodec                          = { group = "org.jcodec",                    name = "jcodec",                  version.ref = "jcodec" }
 jcodec-javase                   = { group = "org.jcodec",                    name = "jcodec-javase",           version.ref = "jcodec" }
 

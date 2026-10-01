@@ -62,6 +62,10 @@ class ControllerSettingsViewModel @Inject constructor(
         viewModelScope.launch { layoutRepository.setLeftBacksOut(enabled) }
     }
 
+    fun setVirtualKeyboard(enabled: Boolean) {
+        viewModelScope.launch { layoutRepository.setVirtualKeyboard(enabled) }
+    }
+
     fun cycleDisplayType() {
         val types = listOf(
             ControllerDisplayType.XBOX,

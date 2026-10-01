@@ -118,11 +118,12 @@ private val GAME_ICON_HEIGHT = 70.dp
 // row, and it can only do that if it measures the row the same way the column lays it out.
 internal val ROW_HEIGHT = 88.dp
 
-// The inserted UMD, focused and read, at the PSP's own scale: ICON0 is three times the selected
-// caticon's width (288 px against the Game icon's 97 px on the hardware), in ICON0's 144:80 shape.
-// Its row grows to hold it, with the same breathing room above and below a normal row's icon has.
-private val UMD_ICON_WIDTH = (XmbLayoutSpec.DEFAULT.categoryIconSelectedDp * 3).dp
-private val UMD_ICON_HEIGHT = UMD_ICON_WIDTH * (80f / 144f)
+// The inserted UMD, focused and read: ICON0's native 144 × 80, read as dp — a step up from a game
+// row's 126 × 70 icon. The PSP's own scale (three caticons wide, 216 dp here) read far too big on a
+// handheld (device feedback, 2026-10-01). Its row grows to hold it, with the same breathing room
+// above and below a normal row's icon has.
+private val UMD_ICON_WIDTH = 144.dp
+private val UMD_ICON_HEIGHT = 80.dp
 private val UMD_ROW_HEIGHT = UMD_ICON_HEIGHT + 16.dp
 
 // The selected row's grow, pivoted on the icon line (see XmbVerticalListRow).

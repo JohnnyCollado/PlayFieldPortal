@@ -24,6 +24,7 @@ private val KEY_XY_LAYOUT    = stringPreferencesKey("controller_xy_layout")
 private val KEY_DISPLAY_TYPE = stringPreferencesKey("controller_display_type")
 private val KEY_SCROLL_SPEED = stringPreferencesKey("controller_scroll_speed")
 private val KEY_LEFT_BACKS_OUT = booleanPreferencesKey("controller_left_backs_out")
+private val KEY_VIRTUAL_KEYBOARD = booleanPreferencesKey("controller_virtual_keyboard")
 
 @Singleton
 class ControllerLayoutRepository @Inject constructor(
@@ -47,6 +48,7 @@ class ControllerLayoutRepository @Inject constructor(
                 ?: ScrollSpeed.STANDARD,
             // Absent key reads as the default (on) — no migration needed for existing installs.
             leftBacksOut = store[KEY_LEFT_BACKS_OUT] ?: true,
+            virtualKeyboard = store[KEY_VIRTUAL_KEYBOARD] ?: true,
         )
     }
 
@@ -105,6 +107,13 @@ class ControllerLayoutRepository @Inject constructor(
         Timber.i("LeftBacksOut set: $enabled")
     }
 
+    // ── Virtual keyboard ──────────────────────────────────────────────────────
+
+    suspend fun setVirtualKeyboard(enabled: Boolean) {
+        context.pfpDataStore.edit { it[KEY_VIRTUAL_KEYBOARD] = enabled }
+        Timber.i("VirtualKeyboard set: $enabled")
+    }
+
     // ── Reset ─────────────────────────────────────────────────────────────────
 
     suspend fun resetAllPrefs() {
@@ -114,6 +123,7 @@ class ControllerLayoutRepository @Inject constructor(
             store.remove(KEY_DISPLAY_TYPE)
             store.remove(KEY_SCROLL_SPEED)
             store.remove(KEY_LEFT_BACKS_OUT)
+            store.remove(KEY_VIRTUAL_KEYBOARD)
         }
         mappingRepository.resetToDefaults()
         Timber.i("Controller layout prefs reset to defaults")

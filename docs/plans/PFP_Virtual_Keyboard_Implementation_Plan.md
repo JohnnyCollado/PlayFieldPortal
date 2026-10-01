@@ -3,8 +3,8 @@
 A PFP-drawn on-screen keyboard for typing with a controller. Touch keeps the system keyboard, and a
 new setting turns the PFP keyboard off entirely.
 
-**Status: planned, nothing implemented.** The look is approved (mockup below). This document is the
-handoff: read §1–§5, then work the tasks in §7 in order, writing each task's tests (§6) first.
+**Status: T1–T3, T5, T6 implemented (tests green, 2026-10-01). T1–T9 done and device-verified; T10 (phase 2, batched at the user's choice) and T11 (phase 3) implemented with tests green, awaiting one device pass (2026-10-01).**
+The look is approved (mockup below). Work the tasks in §7 in order, writing each task's tests (§6) first.
 
 **Mockup (approved 2026-09-30):** https://claude.ai/artifact/MYh5ZB3wfGdVbh6qYSWiZy — five
 1920×1080 artboards: settings field / symbols layer / game search / touch (system keyboard) /
@@ -56,9 +56,8 @@ repeats every number from it, so the build does not depend on opening it.
   ([XMBViewModel.kt#L5593](../../feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/viewmodel/XMBViewModel.kt#L5593)),
   which routes by overlay tier. Pickers at the top "capture ALL input"; that is the tier the
   keyboard joins.
-- **Settings forwarding drops L1/R1.** The `activeSettingsScreen` branch (#L5965) forwards
-  directions, SELECT, BACK, `OPEN_CONTEXT_MENU`, `CHANGE_SORT` as `pendingSettingsAction` and
-  ignores `PREV_CATEGORY` / `NEXT_CATEGORY`. Capturing above that branch makes this moot.
+- **Settings forwarding** (`forwardsToSettings` in `XMBViewModel.kt`) now includes L1/R1 — fixed
+  2026-10-01 for Initial Setup's RB Skip. Capturing above that branch still applies.
 - **Input source** has one owner: `XMBViewModel.markTouchInput()` / `markControllerInput()` →
   `XMBUiState.lastInputWasTouch` (#L7852). Settings receives it as `LocalSettingsLastInputWasTouch`.
 - **Confirm-to-edit field.** `SettingsTextFieldRow`
@@ -376,4 +375,85 @@ they inherit T10's behaviour.
 
 ## 11. Findings log
 
-_Empty. Record the T4 outcome and anything the code forced that this plan did not anticipate._
+- **2026-10-01 — T2 API.** `spanGridMove(rows: List<List<Int>>, from: SpanGridCursor, direction)`;
+  `SpanGridCursor(row, cell, anchorColumn)` carries the column a vertical move travelled through.
+- **2026-10-01 — T3.** `core-ui` takes `core-navigation` as `api` (the keyboard state exposes
+  `SpanGridCursor`). Shift is one-shot and clears after any typed character (§10 Q1 still open).
+  Caret moves emit `KeyboardEffect.CaretMoved` with a `SCROLL` cue; text changes emit `Edit(text, caret)`.
+- **2026-10-01 — T4 spike built, not yet judged.** `SuppressPlatformKeyboard` (core-ui) wraps a field in
+  `InterceptPlatformTextInput` and *holds* its input-session request while active, releasing it when
+  active turns false — so the touch handover is just lifting the hold. It is always installed, never
+  added on demand, so the field keeps its call site and focus. Wired into `SettingsTextFieldRow` behind
+  `holdSystemKeyboardForController`, set only on Library Manager ▸ a console ▸ Add Extension.
+- **2026-10-01 — T5/T6 built ahead of the T4 verdict** at the user's go-ahead; neither depends on how
+  the field suppresses the system keyboard. `VirtualKeyboardController.release(token)` is the quiet
+  drop for a field leaving composition; `close` happens only through BACK, a newer session or the
+  setting turning off. `VirtualKeyboardRequest.anchor` carries the field's bottom-right for
+  `BELOW_FIELD`. The shell's capture is `keyboardCaptures()` at the top of `dispatchGamepadAction`;
+  the overlay mounts after the shell modals, inside the base-density scope.
+- **2026-10-01 — T4 verdict (Odin3): first choice works.** Holding the session request in
+  `InterceptPlatformTextInput` keeps the system keyboard down **and the caret blinks** (an earlier
+  "no caret" report was a misread). Touch-only editing is unchanged. One gap: lifting the hold on a
+  tap does not by itself show the system keyboard — the held request starts the session but nothing
+  asks for the keyboard. T7's handover therefore calls `keyboard.show()` a frame after the hold lifts.
+  No fallback; no visual change.
+- **2026-10-01 — T7.** Every `SettingsTextFieldRow` now splits controller and touch: SELECT opens a
+  `SETTINGS_FOOTER` session when `modeFor(CONTROLLER)` is `VIRTUAL`, a tap keeps the system keyboard.
+  The field edits a `TextFieldValue` so the keyboard places the caret; `BringIntoViewRequester`
+  frames the row above the grown footer. The T4 flag on Add Extension is gone.
+- **2026-10-01 — T8.** `GameSearchField` decides its keyboard once, on open, from the shell's mirrored
+  input source; the panel's anchor is the field's bottom-right in root px. New `onCancel` param, wired
+  to `onGameSearchCancelled`, because the keyboard takes BACK before the ViewModel's search branch.
+- **2026-10-01 — T9 device pass 1 passed** on the Odin3: all nine §8 checks (settings field, game
+  search, touch and setting-off regressions, password mask, swapped layouts, START isolation).
+- **2026-10-01 — §10 Q1 settled: caps lock.** Approved mockup: Shift cycles off → one-shot → locked;
+  lit Shift takes white 34%, a lock adds a bar under the arrow. `ShiftMode` replaces the boolean.
+- **2026-10-01 — T10 shared wiring.** `rememberVirtualKeyboardEdit` / `VirtualKeyboardTextInput` /
+  `Modifier.virtualKeyboardField` (core-ui) hold the field value + caret, the session, the held system
+  keyboard and the tap handover; a field calls `edit.start()` where it used to call `keyboard.show()`.
+  `VirtualKeyboardBottomReserve` (256 dp) is what centred cards pad by while a `BOTTOM_CENTER` panel
+  is up — `imePadding()` cannot see PFP's keyboard.
+- **2026-10-01 — T10 sites (batched, one device pass).** Wizard field (footer band; the scaffold now
+  swaps any footer, the wizard's included, for the keyboard). `PfpTextEntryModal` — so Collections,
+  Game Detail note / title / new collection and App Detail name / new collection — with Done = save
+  (or step to Cancel when invalid) and BACK = close the keyboard and move to the buttons. Music
+  Browser, App Picker, the Shiba `SearchRow` (Shiba Coins, Shiba Library, Search Online), Artwork
+  Studio change-match and search, Storefront Rematch (new `onStopQueryEdit`), App Drawer (new quiet
+  `onCloseSearch`). All `BOTTOM_CENTER`.
+- **Not converted, needs the user:** tap-only fields with no controller entry today — Artwork
+  Orphans search, Shiba Coins' Enter App ID, the Metadata field editor — and Library Manager's
+  Add by ID dialog (two fields + store chips + three buttons; too much for `PfpTextEntryModal`, so a
+  redesign with a mockup). `StorefrontAppDrawer` is dead code.
+- **2026-10-01 — T11.** The shell's App Rename / Collection Name dialogs had already moved to the
+  shared modals, so they inherit T10; Library Manager's other dialogs no longer hold text fields.
+- **2026-10-01 — test-harness note.** `DisplaySettingsViewModelFontColorTest`'s legibility case began
+  failing every run once core-ui grew (more classes to load in a class's first test — the hazard
+  `ViewModelTestWaits` documents). It now takes `observeUntilSettled`, as that helper prescribes for a
+  test whose action reads `uiState.value`. Verified failing at the change and passing after, 3/3.
+- **2026-10-01 — fixes from the phase 2 device pass.** (1) Games search raised both keyboards: it
+  focused the field before opening the session, so the field's system-keyboard request went out
+  unheld. It now opens the session, waits a frame, then focuses — the order every other site uses.
+  (2) Artwork Studio's search card: with PFP's keyboard open, "Use game title" (and the other card
+  buttons) were unreachable — the system IME had let Android focus wander onto them. The card now has
+  controller navigation: keyboard BACK or DOWN moves to the buttons (Search · Use game title · Cancel,
+  LEFT/RIGHT, A presses), UP returns to the field and reopens the keyboard, BACK on the buttons cancels.
+- **2026-10-01 — §10 Q3 settled: START is Done.** The reducer maps `HOME` to Done (CONFIRM cue), and
+  the prompt pill gains a sixth item, `HOME` Done, before Close.
+- **2026-10-01 — the hold outlives the session.** After Done/BACK/stop the field could keep focus
+  and its own request then raised the system keyboard (seen as "keyboard comes straight back after B"
+  on Artwork Studio's search). `VirtualKeyboardEdit.holdsSystemKeyboard` now stays true until the
+  field loses focus or a tap hands over; `VirtualKeyboardTextInput` follows it.
+- **2026-10-01 — Manual metadata dialogs on the shared modals.** Game Detail's Current-vs-Incoming
+  overlay drew its own field editor and title-replace confirm; both are now `metadataModalSpec` →
+  `PfpTextEntryModal` / `PfpConfirmModal`, so they get PFP's keyboard. `PfpModalSpec.TextEntry`
+  gained `label`, `multiline` (Description) and `numeric` (Year, Rating). The editor's "Revert to …"
+  button is gone — each row already has its own revert, and an empty field saves as "use scraped".
+- **2026-10-01 — legibility (device feedback).** Key fills 22% / function keys 14% / lit Shift 45%
+  (from the mockup's 10 / 5 / 34); panel 96% black (from 86%); prompt pill 92% (from 70%). While
+  the overlay keyboard is up, a screen's own bottom prompt bar fades out (`isVirtualKeyboardOverlayOpen`):
+  App Drawer, Music Browser, App Picker, Artwork Studio and every `PfpDetailHelperFooter` screen.
+- **2026-10-01 — X on an open search with text.** PFP's keyboard Done leaves a search open with the
+  keyboard down; X used to then close it and wipe the query. App Drawer (`drawerSearchButton`) and
+  App Picker (`AppPickerState.pressSearch`) now bring the keyboard back when the field holds text,
+  close only an empty search, and leave touch's toggle as it was.
+

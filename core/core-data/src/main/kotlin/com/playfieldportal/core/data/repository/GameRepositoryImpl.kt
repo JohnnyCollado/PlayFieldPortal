@@ -70,6 +70,9 @@ class GameRepositoryImpl @Inject constructor(
     override suspend fun getById(id: Long): Game? =
         gameDao.getById(id)?.toDomain()
 
+    override fun observeById(id: Long): Flow<Game?> =
+        gameDao.observeById(id).map { it?.toDomain() }
+
     override suspend fun getDiscSetMembers(discSetKey: String): List<Game> =
         gameDao.getDiscSetMembers(discSetKey).map { it.toDomain() }
 

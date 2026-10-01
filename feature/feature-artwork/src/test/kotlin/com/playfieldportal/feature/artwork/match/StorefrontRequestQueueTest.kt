@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * The two exist for the two halves of one problem: the queue stops fifty games asking the same
  * question AT ONCE, and the cache stops them asking it again AFTERWARDS.
  */
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class StorefrontRequestQueueTest {
 
     private fun queue(

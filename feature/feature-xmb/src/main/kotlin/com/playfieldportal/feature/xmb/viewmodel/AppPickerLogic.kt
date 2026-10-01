@@ -3,6 +3,7 @@ package com.playfieldportal.feature.xmb.viewmodel
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.navigation.NavigationDirection
 import com.playfieldportal.core.navigation.gridMove
+import com.playfieldportal.core.ui.sound.MenuSound
 
 // ── Installed-app picker: pure logic ──────────────────────────────────────────
 //
@@ -62,6 +63,17 @@ internal fun AppPickerState.clampFocus(): AppPickerState {
 /** Newly-checked packages — what Apply adds. */
 internal fun AppPickerState.pendingAdds(): Set<String> = selected - initialSelected
 
+/**
+ * X, the controller's search button. A closed search opens; an open one that still holds text
+ * brings PFP's keyboard back for more typing rather than wiping it (the keyboard's Done leaves the
+ * search open with the keyboard down); an open, empty one closes.
+ */
+internal fun AppPickerState.pressSearch(): AppPickerState = when {
+    !searchActive -> copy(searchActive = true)
+    query.isNotBlank() -> copy(searchReopens = searchReopens + 1)
+    else -> copy(searchActive = false, query = "")
+}
+
 /** Newly-unchecked packages — what Apply removes (after confirmation). */
 internal fun AppPickerState.pendingRemovals(): Set<String> = initialSelected - selected
 
@@ -89,3 +101,17 @@ internal fun AppPickerState.moveConfirm(action: GamepadAction): AppPickerState {
 /** Closes the modal and re-parks the cursor on Cancel for the next prompt. */
 internal fun AppPickerState.cancelConfirm(): AppPickerState =
     copy(confirmingRemovals = false, confirmFocusedOption = AppPickerState.CONFIRM_CANCEL)
+
+/**
+ * The menu sound for one picker input, from the state before and after it. Both resolve through
+ * the Navigation slot the user assigns in Interface ▸ Sound ([MenuSound.slot]). A toggle reads as
+ * SELECT, a cursor that actually moved (grid or modal option) as SCROLL; an input that changed
+ * nothing — a blocked edge, an empty grid — is silent.
+ */
+internal fun appPickerSound(before: AppPickerState?, after: AppPickerState?): MenuSound? = when {
+    before == null || after == null -> null
+    before.selected != after.selected -> MenuSound.SELECT
+    before.focusedIndex != after.focusedIndex -> MenuSound.SCROLL
+    before.confirmingRemovals && before.confirmFocusedOption != after.confirmFocusedOption -> MenuSound.SCROLL
+    else -> null
+}

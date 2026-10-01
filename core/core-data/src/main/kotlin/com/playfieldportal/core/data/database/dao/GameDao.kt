@@ -114,6 +114,9 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE id = :id")
     suspend fun getById(id: Long): GameEntity?
 
+    @Query("SELECT * FROM games WHERE id = :id")
+    fun observeById(id: Long): Flow<GameEntity?>
+
     @Query("SELECT * FROM games WHERE disc_set_key = :discSetKey " +
             "ORDER BY is_disc_primary DESC, disc_number IS NULL ASC, disc_number ASC, id ASC"
     )

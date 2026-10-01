@@ -1,7 +1,15 @@
 package com.playfieldportal.studio.preview
 
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.platform.LocalDensity
+import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.decodeToImageVector
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmarks
@@ -9,7 +17,6 @@ import androidx.compose.material.icons.filled.CallEnd
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Headset
-import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.LibraryMusic
@@ -23,7 +30,6 @@ import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QrCode2
-import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Star
@@ -33,7 +39,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.res.painterResource
 
 /**
  * The Studio's copy of the launcher's default icon set, keyed by
@@ -79,7 +84,7 @@ object StudioIconSet {
      */
     val ITEM_VECTORS: Map<String, ImageVector> = mapOf(
         "item_add" to Icons.Filled.Add,
-        "item_missing" to Icons.Filled.HelpOutline,
+        "item_missing" to Icons.AutoMirrored.Filled.HelpOutline,
         "item_video_folder" to Icons.Filled.Folder,
         "item_video_library" to Icons.Filled.VideoLibrary,
         "item_video_recent" to Icons.Filled.History,
@@ -93,7 +98,7 @@ object StudioIconSet {
         "item_photo_apps" to Icons.Filled.Collections,
         "item_camera" to Icons.Filled.PhotoCamera,
         "item_music_track" to Icons.Filled.MusicNote,
-        "item_playlist" to Icons.Filled.QueueMusic,
+        "item_playlist" to Icons.AutoMirrored.Filled.QueueMusic,
         "item_music_apps" to Icons.Filled.LibraryMusic,
         "item_social_add" to Icons.Filled.QrCode2,
         "item_social_account" to Icons.Filled.AccountCircle,
@@ -108,13 +113,35 @@ object StudioIconSet {
         "item_social_signout" to Icons.AutoMirrored.Filled.Logout,
         // Shiba Coins (achievements) hub rows.
         "item_shiba_connect" to Icons.Filled.Link,
-        "item_shiba_untracked" to Icons.Filled.HelpOutline,
+        "item_shiba_untracked" to Icons.AutoMirrored.Filled.HelpOutline,
     )
 
     /** Default painter for a slot key, or a play-arrow stand-in for unknown keys. */
     @Composable
     fun defaultPainter(key: String): Painter {
-        RESOURCE_SLOTS[key]?.let { return painterResource(it) }
+        RESOURCE_SLOTS[key]?.let { return resourcePainter(it) }
         return rememberVectorPainter(ITEM_VECTORS[key] ?: Icons.Filled.PlayArrow)
     }
+
+    // Classpath art for the bundled slots: PNGs decode through Skia (as ImageCodecs does) and the
+    // one Android vector drawable through the Compose resources decoder.
+    @OptIn(ExperimentalResourceApi::class)
+    @Composable
+    private fun resourcePainter(path: String): Painter {
+        val density = LocalDensity.current
+        if (path.endsWith(".xml")) {
+            val vector = remember(path, density) {
+                readResource(path).decodeToImageVector(density)
+            }
+            return rememberVectorPainter(vector)
+        }
+        val bitmap = remember(path) {
+            org.jetbrains.skia.Image.makeFromEncoded(readResource(path)).toComposeImageBitmap()
+        }
+        return remember(bitmap) { BitmapPainter(bitmap) }
+    }
+
+    private fun readResource(path: String): ByteArray =
+        checkNotNull(StudioIconSet::class.java.classLoader.getResourceAsStream(path)) { "Missing resource $path" }
+            .use { it.readBytes() }
 }

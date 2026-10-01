@@ -382,7 +382,7 @@ class PlatformSeeder @Inject constructor(
                 iconRes       = "ic_platform_xbox360",
                 accentColor   = 0xFF107C10L,
                 romExtensions = "iso,xex,zar,xbla",
-                preferredEmulatorPackage = "emu.x360.mobile",
+                preferredEmulatorPackage = "emu.x360mobile.com",
             ),
 
             // ── Windows / Android ──────────────────────────────────────────

@@ -262,6 +262,8 @@ data class ArtworkStudioUiState(
     // What is in the text field while the search overlay is open, before it is submitted.
     val queryDraft: String = "",
     val searchOpen: Boolean = false,
+    // The search card's controller cursor: null while it is on the query field, else the button.
+    val searchButton: StudioSearchButton? = null,
     // True while the active query differs from the game's own title — drives the "Reset" affordance.
     val queryIsCustom: Boolean = false,
     // ── Game match (C16 task 2.3) ────────────────────────────────────────────
@@ -683,6 +685,15 @@ private val BACKGROUND_SOURCES = listOf(
     StudioSource.IGDB to MatchProvider.IGDB,
 )
 
+// The saved id each provider resolves from first (tier 1). One changing under the Studio makes the
+// matches remembered for that provider stale.
+private val PROVIDER_IDS: List<Pair<MatchProvider, (Game) -> Long?>> = listOf(
+    MatchProvider.SCREENSCRAPER to { it.ssId },
+    MatchProvider.STEAMGRIDDB to { it.steamGridDbId },
+    MatchProvider.THEGAMESDB to { it.tgdbId },
+    MatchProvider.IGDB to { it.igdbId },
+)
+
 // Tabs with no provider art type of their own. Rather than hide a provider there, it offers every
 // image it has for the game and the crop editor shapes the pick (user decision, 2026-09-10).
 private val SHOW_ALL_ART_KINDS = setOf(ArtworkKind.BOX_3D, ArtworkKind.PHYSICAL_MEDIA, ArtworkKind.SCREENSHOT)
@@ -796,6 +807,9 @@ class ArtworkStudioViewModel @Inject constructor(
 
     private var gameId: Long = -1
 
+    /** Follows the open game's row so a write from elsewhere (a scrape, a rename) lands here live. */
+    private var gameWatchJob: kotlinx.coroutines.Job? = null
+
     /** The grid slot's last reported size in dp; null until the screen has measured it. */
     private var gridSlotDp: Pair<Float, Float>? = null
 
@@ -827,6 +841,10 @@ class ArtworkStudioViewModel @Inject constructor(
             // since the last open has to be re-read here — reading it once per game is what kept a
             // freshly entered TheGamesDB key from ever taking effect.
             viewModelScope.launch {
+                // The row too: a metadata update since the last open may have renamed the game,
+                // and the held copy would keep "Use game title" on the old name.
+                gameRepository.getById(gameId)?.let(::adoptGame)
+                watchGame(gameId)
                 refreshProviderAvailability()
                 resetFilters(_uiState.value.game)
                 // Always, not only when a key changed: the reset above moved the tab and source, so
@@ -862,6 +880,31 @@ class ArtworkStudioViewModel @Inject constructor(
             refreshCurrent()
             loadResults()
             resolveInBackground()
+            watchGame(gameId)
+        }
+    }
+
+    /**
+     * Keeps the held row current while the Studio is open. Started only after load() has seeded
+     * the game, so the first emission (the row as it is now) is a no-op rather than a second seed.
+     */
+    private fun watchGame(id: Long) {
+        gameWatchJob?.cancel()
+        gameWatchJob = viewModelScope.launch {
+            gameRepository.observeById(id).collect { fresh ->
+                val held = _uiState.value.game
+                if (fresh == null || held == null || fresh == held || this@ArtworkStudioViewModel.gameId != id) {
+                    return@collect
+                }
+                // A provider id written from outside makes every match remembered for it stale.
+                val movedIds = PROVIDER_IDS.filter { (_, idOf) -> idOf(fresh) != idOf(held) }.map { it.first }
+                movedIds.forEach(::forgetMatches)
+                val queryBefore = _uiState.value.query
+                adoptGame(fresh)
+                if (movedIds.isNotEmpty() || !StudioQuery.sameQuery(queryBefore, _uiState.value.query)) {
+                    loadResults()
+                }
+            }
         }
     }
 
@@ -887,6 +930,19 @@ class ArtworkStudioViewModel @Inject constructor(
 
     /** The game's own title — what Reset returns the query to, and what "custom" is measured against. */
     private fun gameTitle(): String = _uiState.value.game?.displayTitle.orEmpty()
+
+    /**
+     * Takes a fresh read of the game row. A query that still follows the title follows it to the
+     * new one; a custom query is the user's and stays, re-measured against the new title.
+     */
+    private fun adoptGame(fresh: Game) = _uiState.update { s ->
+        val title = fresh.displayTitle
+        if (s.queryIsCustom) {
+            s.copy(game = fresh, queryIsCustom = !StudioQuery.sameQuery(s.query, title))
+        } else {
+            s.copy(game = fresh, query = title, queryDraft = if (s.searchOpen) s.queryDraft else title)
+        }
+    }
 
     private fun tab() = STUDIO_TABS[_uiState.value.tabIndex]
 
@@ -1903,7 +1959,7 @@ class ArtworkStudioViewModel @Inject constructor(
         }
         viewModelScope.launch {
             gameRepository.updateProviderMatch(gameId, provider.name, candidate.providerGameId.toLongOrNull())
-            _uiState.update { it.copy(game = gameRepository.getById(gameId) ?: it.game) }
+            gameRepository.getById(gameId)?.let(::adoptGame)
             loadResults()
         }
     }
@@ -1921,7 +1977,7 @@ class ArtworkStudioViewModel @Inject constructor(
         _uiState.update { it.copy(match = null, changeMatchOpen = false, actionsOpen = false) }
         viewModelScope.launch {
             gameRepository.updateProviderMatch(gameId, provider.name, null)
-            _uiState.update { it.copy(game = gameRepository.getById(gameId) ?: it.game) }
+            gameRepository.getById(gameId)?.let(::adoptGame)
             // Nothing is confirmed or remembered for this provider now, so this re-derives.
             loadResults()
         }
@@ -1931,7 +1987,20 @@ class ArtworkStudioViewModel @Inject constructor(
 
     /** Opens the search field, pre-filled with the active query and fully selectable. */
     override fun openSearch() = _uiState.update {
-        it.copy(searchOpen = true, queryDraft = it.query, actionsOpen = false, showFileInfo = false)
+        it.copy(
+            searchOpen = true, searchButton = null, queryDraft = it.query, actionsOpen = false, showFileInfo = false,
+        )
+    }
+
+    /** BACK on PFP's keyboard: off the field and onto the card's buttons, starting at Search. */
+    override fun leaveSearchField() = _uiState.update {
+        if (it.searchOpen) it.copy(searchButton = StudioSearchButton.SEARCH) else it
+    }
+
+    private fun moveSearchButton(step: Int) = _uiState.update { s ->
+        val current = s.searchButton ?: return@update s
+        val next = StudioSearchButton.entries.getOrNull(current.ordinal + step) ?: return@update s
+        s.copy(searchButton = next)
     }
 
     override fun onQueryDraftChanged(text: String) = _uiState.update { it.copy(queryDraft = text.take(MAX_QUERY_LENGTH)) }
@@ -3106,6 +3175,8 @@ class ArtworkStudioViewModel @Inject constructor(
         // The ViewModel outlives the screen, so work started for this open must stop here. The
         // download queue is deliberately left running (see load()'s comment on queueJob).
         cancelBackgroundResolutions()
+        // Reopening re-reads the row, so nothing written while closed is missed.
+        gameWatchJob?.cancel()
         // cancelLoad() only clears matchResolving — resultsLoading is cleared by showPage(), which a
         // cancelled loadJob never reaches, so a reopen of the same game (load()'s early-return path)
         // would otherwise show a spinner over a browse that is never coming back.
@@ -3129,12 +3200,31 @@ class ArtworkStudioViewModel @Inject constructor(
 
     override fun handleGamepadAction(action: GamepadAction) {
         val s = _uiState.value
-        // Search field: the IME owns typing; the pad only confirms or cancels.
+        // Search card. On the field the keyboard owns typing, so the pad only confirms, cancels or
+        // steps down to the buttons; on the buttons it moves between Search · Use game title ·
+        // Cancel, and UP goes back to the field (which reopens PFP's keyboard).
         if (s.searchOpen) {
-            when (action) {
-                GamepadAction.SELECT -> submitSearch()
-                GamepadAction.BACK   -> cancelSearch()
-                else -> Unit
+            val button = s.searchButton
+            if (button == null) {
+                when (action) {
+                    GamepadAction.SELECT        -> submitSearch()
+                    GamepadAction.BACK          -> cancelSearch()
+                    GamepadAction.NAVIGATE_DOWN -> leaveSearchField()
+                    else -> Unit
+                }
+            } else {
+                when (action) {
+                    GamepadAction.NAVIGATE_LEFT  -> moveSearchButton(-1)
+                    GamepadAction.NAVIGATE_RIGHT -> moveSearchButton(1)
+                    GamepadAction.NAVIGATE_UP    -> _uiState.update { it.copy(searchButton = null) }
+                    GamepadAction.BACK           -> cancelSearch()
+                    GamepadAction.SELECT -> when (button) {
+                        StudioSearchButton.SEARCH         -> submitSearch()
+                        StudioSearchButton.USE_GAME_TITLE -> resetSearchToTitle()
+                        StudioSearchButton.CANCEL         -> cancelSearch()
+                    }
+                    else -> Unit
+                }
             }
             return
         }
@@ -3346,3 +3436,6 @@ class ArtworkStudioViewModel @Inject constructor(
         }
     }
 }
+
+/** The search card's buttons, left to right. */
+enum class StudioSearchButton { SEARCH, USE_GAME_TITLE, CANCEL }

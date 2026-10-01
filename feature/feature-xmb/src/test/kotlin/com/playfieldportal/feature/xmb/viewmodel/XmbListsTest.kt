@@ -265,6 +265,18 @@ class XmbListsTest {
         assertEquals("com.c", withPin.appSorted(XmbSortMode.RECENT_PLAYED, ListState.EMPTY).first().packageName)
     }
 
+    @Test
+    fun `an app moved into one of its column's custom cards leaves the column's root`() {
+        val loose = stores.notInCards(cardedPackages = setOf("com.b"))
+        assertEquals(listOf("com.b"), stores.map { it.packageName } - loose.map { it.packageName }.toSet())
+        assertEquals(stores.size - 1, loose.size)
+    }
+
+    @Test
+    fun `with no carded apps every app stays loose`() {
+        assertEquals(stores, stores.notInCards(cardedPackages = emptySet()))
+    }
+
     // ── Roots ─────────────────────────────────────────────────────────────────
 
     private val umd = XMBItem("umd_slot", "FF6", gameId = 3, type = XMBItemType.UMD_SLOT)

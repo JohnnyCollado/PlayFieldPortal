@@ -32,6 +32,8 @@ interface GameRepository {
     suspend fun getByPlatform(platformId: String): List<Game>
     fun observeRecentPlatforms(limit: Int): Flow<List<RecentPlatform>>
     suspend fun getById(id: Long): Game?
+    /** One game row, re-emitted on every write to it; null once the row is gone. */
+    fun observeById(id: Long): Flow<Game?>
     /** All rows in one multi-disc set, ordered with its projected primary first. */
     suspend fun getDiscSetMembers(discSetKey: String): List<Game>
     suspend fun getByPackageName(packageName: String): Game?

@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -32,7 +33,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -43,9 +43,13 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.lightBackgroundAnchors
+import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
+import com.playfieldportal.core.ui.keyboard.isVirtualKeyboardOverlayOpen
+import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
 import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.core.ui.theme.PFPColors
@@ -88,7 +92,21 @@ fun AppDrawerScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var searchActive by remember { mutableStateOf(false) }
+    // Bumped to bring the keyboard back to an open search that still holds text.
+    var searchReopens by remember { mutableIntStateOf(0) }
     val keyboard = LocalSoftwareKeyboardController.current
+
+    // X's rule (see drawerSearchButton). The magnifier keeps its plain toggle.
+    fun pressSearchButton() {
+        when (drawerSearchButton(searchActive, state.searchQuery)) {
+            DrawerSearchButton.OPEN -> searchActive = true
+            DrawerSearchButton.REOPEN -> searchReopens++
+            DrawerSearchButton.CLOSE -> {
+                searchActive = false
+                viewModel.setSearchQuery("")
+            }
+        }
+    }
     val lifecycleOwner = LocalLifecycleOwner.current
 
     LaunchedEffect(pendingGamepadAction) {
@@ -102,13 +120,10 @@ fun AppDrawerScreen(
                 overlayOpen -> viewModel.handleGamepadAction(pendingGamepadAction)
                 // BACK on the plain grid closes the drawer (its only controller escape).
                 pendingGamepadAction == GamepadAction.BACK -> onBack()
-                pendingGamepadAction == GamepadAction.CHANGE_SORT -> {
-                    // X / Square — toggle search (App Drawer remap). Deliberately NOT routed
-                    // through onSearchToggle: that path reports touch input, and this is
-                    // controller input.
-                    searchActive = !searchActive
-                    if (!searchActive) viewModel.setSearchQuery("")
-                }
+                // X / Square — the search button (App Drawer remap). Deliberately NOT routed
+                // through onSearchToggle: that path reports touch input, and this is controller
+                // input.
+                pendingGamepadAction == GamepadAction.CHANGE_SORT -> pressSearchButton()
                 else -> viewModel.handleGamepadAction(pendingGamepadAction)
             }
             onGamepadActionConsumed()
@@ -133,6 +148,7 @@ fun AppDrawerScreen(
     AppDrawerContent(
         state = state,
         searchActive = searchActive,
+        searchReopens = searchReopens,
         showControllerHint = showControllerHint,
         // The back breadcrumb is a touch target; controller BACK closes the drawer at the XMB
         // layer (never through this lambda), so reporting touch here is always accurate.
@@ -141,12 +157,20 @@ fun AppDrawerScreen(
             onBack()
         },
         onSearchQueryChange = { viewModel.setSearchQuery(it) },
+        // Touch keeps its plain toggle: the reopen rule is for X, whose press PFP's keyboard has
+        // already let go of by the time it reaches the drawer.
         onSearchToggle = { active ->
             onTouchInteraction()
             searchActive = active
             if (!active) viewModel.setSearchQuery("")
         },
         onSearchDone = { keyboard?.hide() },
+        // BACK on PFP's keyboard: the search closes like X closes it — no touch report, the
+        // controller is still in charge.
+        onCloseSearch = {
+            searchActive = false
+            viewModel.setSearchQuery("")
+        },
         onFilterSelected = { filter ->
             onTouchInteraction()
             viewModel.setFilter(filter)
@@ -195,18 +219,36 @@ internal fun AppDrawerContent(
     onCancelUninstall: () -> Unit,
     onGrantUsageAccess: () -> Unit,
     modifier: Modifier = Modifier,
+    onCloseSearch: () -> Unit = {},
+    searchReopens: Int = 0,
 ) {
     val searchFocus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     val sf = deriveStorefrontColors()
+    // PFP's keyboard for a search the controller opened: Done is the IME's Search key (the query
+    // is already live), BACK closes the search.
+    val searchEdit = rememberVirtualKeyboardEdit(
+        text = state.searchQuery,
+        onTextChange = onSearchQueryChange,
+        placement = KeyboardPlacement.BOTTOM_CENTER,
+        onDone = onSearchDone,
+        onClose = onCloseSearch,
+    )
 
-    LaunchedEffect(searchActive) {
+    // PFP's keyboard opens first, so the field's own keyboard request is already held when focus
+    // arrives.
+    // Keyed on searchReopens too: the search button on an open search with text brings a keyboard
+    // back instead of closing it.
+    LaunchedEffect(searchActive, searchReopens) {
         if (searchActive) {
             withFrameNanos {}
             withFrameNanos {}
+            val virtual = searchEdit.isOpen || searchEdit.start()
+            if (virtual) withFrameNanos {}
             runCatching { searchFocus.requestFocus() }
-            keyboard?.show()
+            if (!virtual) keyboard?.show()
         } else {
+            searchEdit.stop()
             keyboard?.hide()
         }
     }
@@ -234,6 +276,7 @@ internal fun AppDrawerContent(
                 onSearchDone = onSearchDone,
                 onBack = onBack,
                 colors = sf,
+                searchEdit = searchEdit,
             )
             // Thin accent divider under the header
             Box(
@@ -309,7 +352,9 @@ internal fun AppDrawerContent(
                     .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                AppDrawerHintBar(modifier = Modifier.alpha(hintAlpha))
+                // PFP's keyboard brings its own prompts; the drawer's would stack under them.
+                val keyboardOpen = isVirtualKeyboardOverlayOpen()
+                AppDrawerHintBar(modifier = Modifier.alpha(if (keyboardOpen) 0f else hintAlpha))
             }
         }
 
@@ -520,4 +565,18 @@ private fun accentPreviewColors(waveArgb: Long): PFPColors {
         backgroundTop = Color(top),
         backgroundBottom = Color(bottom),
     )
+}
+
+/** What the drawer's search button does next. */
+internal enum class DrawerSearchButton { OPEN, REOPEN, CLOSE }
+
+/**
+ * X, the controller's search button. A closed search opens; an open one that still holds text
+ * brings PFP's keyboard back for more typing rather than wiping it (its Done leaves the search open
+ * with the keyboard down); an open, empty one closes.
+ */
+internal fun drawerSearchButton(searchActive: Boolean, query: String): DrawerSearchButton = when {
+    !searchActive -> DrawerSearchButton.OPEN
+    query.isNotBlank() -> DrawerSearchButton.REOPEN
+    else -> DrawerSearchButton.CLOSE
 }

@@ -1,6 +1,6 @@
 # Play Field Portal — Setup Wizard Additions & PC Launcher Identity Implementation Plan
 
-**Status:** Master plan — approved in design review (2026-10-01). Section §6 (Unknown Windows Emulators) awaits sign-off on its artboard.
+**Status:** Implemented and device-verified on the Odin3 2026-10-01 (T1–T11). §6's artboard was signed off the same day with a *Show Hidden Apps* row added. See §9 for where the build departs from this plan.
 **Repository baseline reviewed:** `final-polish` at `5960678c` (2026-10-01).
 **Primary modules:** `feature/feature-settings` (wizard, Library Manager), `feature/feature-launcher` (`PcLauncherCatalog`, `KnownEmulatorCatalog`), `core/core-domain` (`KnownEmulatorPackages`), `core/core-data` (`Ps3DataLibrary`, `Vita3KLibrary`), `feature/feature-xmb` (Windows setup prompt).
 **Design reference:** Design canvas *Setup Wizard Additions* — https://claude.ai/artifact/8WdLDgMeykWyQitqKyLp69 (Odin3, 1920×1080).
@@ -140,7 +140,7 @@ The display name everywhere (PC Launchers rows, wizard *Detected* row, imported 
 
 ## 6. Unknown Windows Emulators (Import PC Games)
 
-**Awaiting artboard sign-off.** A new group directly under *PC Launchers* on Settings ▸ Library Manager ▸ Import PC Games:
+**Artboard signed off 2026-10-01.** A new group directly under *PC Launchers* on Settings ▸ Library Manager ▸ Import PC Games:
 
 ```
 UNKNOWN WINDOWS EMULATORS
@@ -190,3 +190,17 @@ Build and test commands are run by the user (`:feature:feature-settings:testDebu
 ## 8. Future: importable emulator packs (not in this plan)
 
 Direction recorded so this plan does not work against it: move `KnownEmulatorCatalog` (already pure data) to a bundled `emulators.json` read by the same parser imports will use; schema-versioned packs carrying `emulators`, `pcLaunchers` and `appIdentities` (signer SHA-256, label patterns, version ranges — i.e. §5's rules as data); precedence *user choice > imported pack > built-in*; intents restricted to the entry's own packages, flag allowlist, preview + one-step rollback; SAF import first, URL subscription later. §5 should therefore keep its rules in one table-shaped structure that can later be loaded instead of compiled.
+
+## 9. As built (2026-10-01)
+
+Where the implementation departs from, or settles, the plan above:
+
+- **X360 Mobile.** No build using `emu.x360.mobile` was confirmed, so it is replaced outright. Migration 54→55 rewrites the seeded Xbox 360 platform default, because an uninstalled platform default fails a launch instead of falling back. A default the user changed is kept. The recipe keeps its `emu.x360.mobile.X360MobileGameLaunchActivity` class name (an application id does not rename classes); this is unverified on a device.
+- **Identity (§5).** `resolveIdentity` takes `(signer, label, package, generation)`. No rule needed the version, so it was left out. The rules are one ordered table in `PcLauncherCatalog`, ready for §8 packs.
+- **§6 listing rule "fingerprint fails but label names a family launcher".** It can't occur: `resolveGeneration`'s label fallback already verifies such an install, so it lands in rule 5 (ambiguous) or a named brand.
+- **§6 values.** An undecided row reads *Choose…*; the first confirm sets *Not a launcher*. Each confirm is stored straight away (per package + signer). A decided row stays in the group for the rest of the visit, then moves to PC Launchers or behind *Show Hidden Apps*. *Show Hidden Apps* replaces the per-row Options reset.
+- **§6 scope.** A user choice shapes Import PC Games' PC Launchers list. The Windows export scan, shortcut routing (`isVerifiedPcLauncher`) and Initial Setup's *Detected* row still use the automatic rules only.
+- **Windows Games page (§3.4).** *Set Windows Games Folder* points the Windows Memory Card at the picked tree (`WindowsLibrarySetup.usePickedFolder`). It also drops any pending *Finish your Windows Library* prompt. No Library Manager row did this before. The info line no longer promises achievement matching, which this pick does not start.
+- **Emulators page (§3.3).** Rows come from Emulator Assignment's own row builder (`PlatformAssignRowsBuilder`), so they never disagree with Settings ▸ Emulators. A console needs games and a standalone emulator to get a row. Before the ROM scan has found anything, the page explains that instead.
+- **Controller page (§3.1).** It drives `ControllerSettingsViewModel` itself rather than copying its writes.
+- **Hints & Touch (§3.5).** The prefs moved behind `InterfaceHintPrefs`, which Display settings now shares.

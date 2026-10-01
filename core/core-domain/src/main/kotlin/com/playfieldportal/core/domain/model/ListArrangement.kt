@@ -95,14 +95,18 @@ object UmdSlotResolver {
     /**
      * The game a column's UMD slot shows. [columnGames] is the column's displayable games (disc
      * sets already projected to one row). [inserted] wins while it — or its disc set — is still
-     * there; otherwise the most recently played game; otherwise none.
+     * there; otherwise the most recently played game; otherwise none. After an eject ([ejectedAt],
+     * epoch ms) the slot stays empty until a game is played again, as if that disc went in.
      */
-    fun resolve(inserted: Game?, columnGames: List<Game>): Game? {
+    fun resolve(inserted: Game?, columnGames: List<Game>, ejectedAt: Long? = null): Game? {
         inserted?.let { pick ->
             columnGames.firstOrNull {
                 it.id == pick.id || (pick.discSetKey != null && it.discSetKey == pick.discSetKey)
             }?.let { return it }
         }
-        return columnGames.filter { it.lastPlayedAt != null }.maxByOrNull { it.lastPlayedAt ?: 0L }
+        val playedSince = ejectedAt ?: Long.MIN_VALUE
+        return columnGames
+            .filter { (it.lastPlayedAt ?: return@filter false) > playedSince }
+            .maxByOrNull { it.lastPlayedAt ?: 0L }
     }
 }

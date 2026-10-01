@@ -6,6 +6,7 @@ import android.net.Uri
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.data.repository.MediaRootKind
 import com.playfieldportal.core.data.repository.MediaRootRepository
+import com.playfieldportal.core.data.repository.Ps3DataLibrary
 import com.playfieldportal.core.data.repository.CoreInventory
 import com.playfieldportal.core.data.repository.RetroArchLink
 import com.playfieldportal.core.data.repository.RomRootRepository
@@ -64,6 +65,8 @@ class InitialSetupViewModelTest {
     private val scanRunner = mockk<com.playfieldportal.feature.settings.media.WizardMediaScanRunner>(relaxed = true)
     private val romRootScanRunner = mockk<RomRootScanRunner>(relaxed = true)
     private val tasks = mockk<com.playfieldportal.core.ui.notification.BackgroundTaskCenter>(relaxed = true)
+    private val ps3DataLibrary = mockk<Ps3DataLibrary>(relaxed = true)
+    private val environment = mockk<SetupEnvironment>(relaxed = true)
     private lateinit var vm: InitialSetupViewModel
 
     private fun buildVm() = InitialSetupViewModel(
@@ -74,18 +77,20 @@ class InitialSetupViewModelTest {
         mockk(relaxed = true), // folderHintResolver
         mockk(relaxed = true), // memoryCardRepository
         tasks,
+        ps3DataLibrary,
+        environment,
     )
 
     @Before fun setUp() {
         Dispatchers.setMain(dispatcher)
         every { context.packageManager } returns packageManager
-        // Default: RetroArch NOT installed (the tests below override to enable its page).
-        every { packageManager.getPackageInfo(any<String>(), any<Int>()) } throws
-            PackageManager.NameNotFoundException()
         every { romRoots.roots } returns flowOf(emptyList())
         every { mediaRoots.roots(any()) } returns flowOf(emptyList())
         every { artworkImport.folderTreeUri } returns flowOf(null)
         every { vita3KLibrary.ux0TreeUriFlow } returns flowOf(null)
+        every { ps3DataLibrary.dataTreeUriFlow } returns flowOf(null)
+        // Default: nothing optional installed, PFP not yet Home (tests override per case).
+        every { environment.availability() } returns SetupAvailability()
         every { sgdbKeys.apiKeyFlow } returns flowOf(null)
         every { metadataKeys.tgdbKeyFlow } returns flowOf(null)
         every { metadataKeys.igdbClientIdFlow } returns flowOf(null)
@@ -104,17 +109,18 @@ class InitialSetupViewModelTest {
 
     // ── Step navigation ─────────────────────────────────────────────────────────
 
-    @Test fun `steps advance through every page, skipping conditional emulator pages when not installed`() =
+    @Test fun `steps advance through every page, skipping conditional pages when nothing is installed`() =
         runTest(dispatcher) {
             val job = collectState()
             advanceUntilIdle()
             val expected = listOf(
-                SetupStep.WELCOME, SetupStep.ROM_ROOTS, SetupStep.MUSIC, SetupStep.VIDEO,
-                SetupStep.PHOTO, SetupStep.ARTWORK, SetupStep.SERVICES, SetupStep.ACHIEVEMENTS,
-                SetupStep.FINISH,
+                SetupStep.WELCOME, SetupStep.CONTROLLER, SetupStep.ROM_ROOTS, SetupStep.MUSIC,
+                SetupStep.VIDEO, SetupStep.PHOTO, SetupStep.ARTWORK, SetupStep.SERVICES,
+                SetupStep.ACHIEVEMENTS, SetupStep.HINTS, SetupStep.HOME_APP, SetupStep.FINISH,
             )
             expected.forEachIndexed { index, step ->
                 assertEquals("landing on step $index", step, vm.uiState.value.step)
+                assertEquals(index + 1, vm.uiState.value.stepNumber)
                 if (index < expected.lastIndex) {
                     vm.nextStep()
                     advanceUntilIdle()
@@ -131,7 +137,7 @@ class InitialSetupViewModelTest {
 
         vm.nextStep()
         advanceUntilIdle()
-        assertEquals(SetupStep.ROM_ROOTS, vm.uiState.value.step)
+        assertEquals(SetupStep.CONTROLLER, vm.uiState.value.step)
 
         assertTrue(vm.previousStep())
         advanceUntilIdle()
@@ -141,63 +147,81 @@ class InitialSetupViewModelTest {
         job.cancel()
     }
 
-    @Test fun `RetroArch and Vita3K pages are included when both apps are installed`() =
+    @Test fun `every optional page is included when its app is installed`() =
         runTest(dispatcher) {
-            // Both RetroArch and Vita3K installed for this run (any getPackageInfo call succeeds).
-            every { packageManager.getPackageInfo(any<String>(), any<Int>()) } returns mockk()
+            every { environment.availability() } returns SetupAvailability(
+                retroArch = true, vita3K = true, armsx3 = true, knownEmulator = true, pcLauncher = true,
+            )
             vm = buildVm()
 
             val job = collectState()
             advanceUntilIdle()
             assertTrue(vm.uiState.value.retroArchInstalled)
             assertTrue(vm.uiState.value.vita3KInstalled)
+            assertTrue(vm.uiState.value.armsx3Installed)
 
             listOf(
-                SetupStep.ROM_ROOTS, SetupStep.MUSIC, SetupStep.VIDEO, SetupStep.PHOTO,
-                SetupStep.ARTWORK, SetupStep.SERVICES, SetupStep.ACHIEVEMENTS,
-                SetupStep.VITA, SetupStep.RETROARCH, SetupStep.FINISH,
+                SetupStep.CONTROLLER, SetupStep.ROM_ROOTS, SetupStep.MUSIC, SetupStep.VIDEO,
+                SetupStep.PHOTO, SetupStep.ARTWORK, SetupStep.SERVICES, SetupStep.ACHIEVEMENTS,
+                SetupStep.TROPHIES, SetupStep.RETROARCH, SetupStep.EMULATORS, SetupStep.WINDOWS,
+                SetupStep.HINTS, SetupStep.HOME_APP, SetupStep.FINISH,
             ).forEach { step ->
                 vm.nextStep()
                 advanceUntilIdle()
                 assertEquals(step, vm.uiState.value.step)
             }
+            assertEquals(16, vm.uiState.value.stepNumber)
             job.cancel()
         }
 
-    @Test fun `Vita page is gated on Vita3K installed but included even when RetroArch is not`() =
+    @Test fun `Home App stays in the flow once the role is granted on its own page`() =
         runTest(dispatcher) {
-            // Only Vita3K installed: getPackageInfo succeeds for the vita package, throws otherwise.
-            every { packageManager.getPackageInfo(any<String>(), any<Int>()) } answers {
-                if (firstArg<String>().startsWith("org.vita3k")) mockk<android.content.pm.PackageInfo>()
-                else throw PackageManager.NameNotFoundException()
-            }
-            vm = buildVm()
-
+            // Visibility is decided when the wizard opens: becoming Home ON the Home App page must
+            // not pull the page out from under the cursor.
             val job = collectState()
             advanceUntilIdle()
-            assertTrue(vm.uiState.value.vita3KInstalled)
-            assertFalse(vm.uiState.value.retroArchInstalled)
+            repeat(10) { vm.nextStep() }
+            advanceUntilIdle()
+            assertEquals(SetupStep.HOME_APP, vm.uiState.value.step)
 
-            listOf(
-                SetupStep.ROM_ROOTS, SetupStep.MUSIC, SetupStep.VIDEO, SetupStep.PHOTO,
-                SetupStep.ARTWORK, SetupStep.SERVICES, SetupStep.ACHIEVEMENTS,
-                SetupStep.VITA, SetupStep.FINISH,
-            ).forEach { step ->
-                vm.nextStep()
-                advanceUntilIdle()
-                assertEquals(step, vm.uiState.value.step)
-            }
-            // The list above ends at FINISH without RETROARCH — landing here proves the RetroArch
-            // page stayed hidden (it would have been reached before FINISH if it were present).
+            every { environment.availability() } returns SetupAvailability(alreadyHome = true)
+            vm.nextStep()
+            advanceUntilIdle()
+            assertEquals(SetupStep.FINISH, vm.uiState.value.step)
+            assertTrue(vm.previousStep())
+            advanceUntilIdle()
+            assertEquals(SetupStep.HOME_APP, vm.uiState.value.step)
             job.cancel()
         }
+
+    @Test fun `skip advances one page without writing anything`() = runTest(dispatcher) {
+        val job = collectState()
+        advanceUntilIdle()
+        vm.skipStep()
+        advanceUntilIdle()
+        assertEquals(SetupStep.CONTROLLER, vm.uiState.value.step)
+        job.cancel()
+    }
+
+    @Test fun `skip does nothing on Finish`() = runTest(dispatcher) {
+        val job = collectState()
+        advanceUntilIdle()
+        repeat(20) { vm.nextStep() }
+        advanceUntilIdle()
+        assertEquals(SetupStep.FINISH, vm.uiState.value.step)
+
+        vm.skipStep()
+        advanceUntilIdle()
+        assertEquals(SetupStep.FINISH, vm.uiState.value.step)
+        job.cancel()
+    }
 
     @Test fun `resetWizard returns to the welcome page for the next run`() = runTest(dispatcher) {
         val job = collectState()
         vm.nextStep()
         vm.nextStep()
         advanceUntilIdle()
-        assertEquals(SetupStep.MUSIC, vm.uiState.value.step)
+        assertEquals(SetupStep.ROM_ROOTS, vm.uiState.value.step)
 
         vm.resetWizard()
         advanceUntilIdle()
@@ -387,6 +411,54 @@ class InitialSetupViewModelTest {
         advanceUntilIdle()
 
         coVerify { vita3KLibrary.clear() }
+        job.cancel()
+    }
+
+    // ── Trophies: PS3 (ARMSX3) data folder ─────────────────────────────────────
+
+    @Test fun `linkPs3Folder grants through the same Ps3DataLibrary Library Manager uses`() =
+        runTest(dispatcher) {
+            val uri = mockk<Uri>()
+            val job = collectState()
+
+            vm.linkPs3Folder(uri)
+            advanceUntilIdle()
+
+            coVerify { ps3DataLibrary.setDataFolder(uri) }
+            io.mockk.verify { tasks.report(id = "setup_ps3", label = any(), message = any(), severity = any(), kind = any(), action = any()) }
+            job.cancel()
+        }
+
+    @Test fun `forgetPs3Folder releases the grant`() = runTest(dispatcher) {
+        val job = collectState()
+        advanceUntilIdle()
+
+        vm.forgetPs3Folder()
+        advanceUntilIdle()
+
+        coVerify { ps3DataLibrary.clear() }
+        job.cancel()
+    }
+
+    @Test fun `a linked PS3 data folder is mirrored as its display name`() = runTest(dispatcher) {
+        every { ps3DataLibrary.dataTreeUriFlow } returns
+            flowOf("content://com.android.externalstorage.documents/tree/primary%3APS3%2Fconfig%2Fdev_hdd0")
+        vm = buildVm()
+        val job = collectState()
+        advanceUntilIdle()
+
+        assertNotNull(vm.uiState.value.ps3FolderName)
+        job.cancel()
+    }
+
+    @Test fun `Trophies sections follow which emulator is installed`() = runTest(dispatcher) {
+        every { environment.availability() } returns SetupAvailability(armsx3 = true)
+        vm = buildVm()
+        val job = collectState()
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.armsx3Installed)
+        assertFalse(vm.uiState.value.vita3KInstalled)
         job.cancel()
     }
 

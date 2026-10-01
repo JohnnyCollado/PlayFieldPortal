@@ -43,6 +43,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.aspectRatio
@@ -79,6 +80,8 @@ fun GameIcon(
     item: XMBItem,
     iconStyle: GameIconStyle,
     modifier: Modifier = Modifier,
+    // Drawing height for the natural-aspect modes; the game picker's shelf grid draws smaller.
+    naturalArtHeight: Dp = NATURAL_ART_HEIGHT,
 ) {
     when {
         // Non-game app rows keep their treatment (decorated tile or launcher squircle).
@@ -99,7 +102,7 @@ fun GameIcon(
 
         // Legacy global icon style — the whole slot becomes the platform's media image. Drawn to
         // the same NATURAL_ART_HEIGHT as Physical Media mode so the two read at one size.
-        iconStyle == GameIconStyle.CARTRIDGE -> NaturalArtSlot(modifier) { artModifier ->
+        iconStyle == GameIconStyle.CARTRIDGE -> NaturalArtSlot(modifier, naturalArtHeight) { artModifier ->
             PhysicalMediaIcon(
                 platformId  = item.platformId,
                 accentColor = item.accentColor?.let { Color(it) },
@@ -121,7 +124,7 @@ fun GameIcon(
             when {
                 // Physical Media with nothing scraped: the bundled per-platform cartridge/disc.
                 resolved.mode == IconDisplayMode.PHYSICAL_MEDIA && resolved.uri == null ->
-                    NaturalArtSlot(modifier) { artModifier ->
+                    NaturalArtSlot(modifier, naturalArtHeight) { artModifier ->
                         PhysicalMediaIcon(
                             platformId  = item.platformId,
                             accentColor = item.accentColor?.let { Color(it) },
@@ -136,7 +139,7 @@ fun GameIcon(
                 // branch, whose PspIcon0Icon draws the 144:80 landscape letter tile.)
                 resolved.uri == null &&
                     (resolved.mode == IconDisplayMode.BOX_ART || resolved.mode == IconDisplayMode.BOX_3D) ->
-                    NaturalArtSlot(modifier) { artModifier ->
+                    NaturalArtSlot(modifier, naturalArtHeight) { artModifier ->
                         BoxArtPlaceholderIcon(
                             platformId  = item.platformId,
                             accentColor = item.accentColor?.let { Color(it) },
@@ -145,7 +148,7 @@ fun GameIcon(
                         )
                     }
 
-                resolved.naturalAspect -> NaturalArtSlot(modifier) { artModifier ->
+                resolved.naturalAspect -> NaturalArtSlot(modifier, naturalArtHeight) { artModifier ->
                     NaturalAspectArtIcon(
                         artworkUri  = resolved.uri!!,
                         // Box fronts are opaque rectangles and get the PSP frame; 3D boxes and
@@ -192,7 +195,7 @@ fun GameIcon(
  * 84 dp is the practical ceiling: XMBItemList's ROW_HEIGHT is 88 dp, so anything more and the
  * tiles in adjacent rows touch.
  */
-private val NATURAL_ART_HEIGHT = 84.dp
+internal val NATURAL_ART_HEIGHT = 84.dp
 
 /**
  * Keeps the LAYOUT slot exactly as the caller sized it (126 × 70) — row pitch, label alignment
@@ -202,10 +205,11 @@ private val NATURAL_ART_HEIGHT = 84.dp
 @Composable
 private fun NaturalArtSlot(
     modifier: Modifier,
+    artHeight: Dp,
     content: @Composable (Modifier) -> Unit,
 ) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        content(Modifier.fillMaxWidth().requiredHeight(NATURAL_ART_HEIGHT))
+        content(Modifier.fillMaxWidth().requiredHeight(artHeight))
     }
 }
 
