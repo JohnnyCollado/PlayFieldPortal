@@ -64,11 +64,20 @@ class ContextMenuHintStateTest {
         assertFalse(shouldShowContextMenuHint(s, XMBViewModel.IDLE_HINT_DELAY_MS))
     }
 
+    /** A list with nothing to arrange and a row with no menu: Settings, on a plain row. */
+    private fun nothingToOfferState(): XMBUiState {
+        val plain = XMBItem(id = "x", title = "Plain", type = XMBItemType.STANDARD)
+        return eligibleState().copy(
+            categories = listOf(
+                Category(BuiltInCategory.SETTINGS, "Settings", "settings", type = CategoryType.BUILT_IN, position = 0),
+            ),
+            currentItems = listOf(plain),
+        )
+    }
+
     @Test
     fun `does not show when the focused item has no context menu and the list cannot sort`() {
-        val plain = XMBItem(id = "x", title = "Plain", type = XMBItemType.STANDARD)
-        val s = eligibleState().copy(currentItems = listOf(plain))
-        assertFalse(shouldShowContextMenuHint(s, XMBViewModel.IDLE_HINT_DELAY_MS))
+        assertFalse(shouldShowContextMenuHint(nothingToOfferState(), XMBViewModel.IDLE_HINT_DELAY_MS))
     }
 
     @Test
@@ -82,9 +91,14 @@ class ContextMenuHintStateTest {
     // ── Sort half of the pill ───────────────────────────────────────────────
 
     @Test
-    fun `an unsortable root list offers no sort prompt`() {
-        // The Games memory-card root: no platform or collection drilled into.
-        assertFalse(eligibleState().canSortCurrentList)
+    fun `a section with nothing to arrange offers no sort prompt`() {
+        assertFalse(nothingToOfferState().canSortCurrentList)
+    }
+
+    @Test
+    fun `the games root offers Sort, to put its cards in a custom order`() {
+        // The memory-card root: no platform or custom card drilled into.
+        assertTrue(eligibleState().canSortCurrentList)
     }
 
     @Test
@@ -105,8 +119,7 @@ class ContextMenuHintStateTest {
 
     @Test
     fun `neither half applicable means no pill`() {
-        val plain = XMBItem(id = "x", title = "Plain", type = XMBItemType.STANDARD)
-        val s = eligibleState().copy(currentItems = listOf(plain))
+        val s = nothingToOfferState()
         assertFalse(s.focusedItemHasContextMenu)
         assertFalse(s.canSortCurrentList)
         assertFalse(shouldShowContextMenuHint(s, XMBViewModel.IDLE_HINT_DELAY_MS))
@@ -269,5 +282,63 @@ class ContextMenuHintStateTest {
         val delayed = settingsEligibleState().copy(contextMenuHintDelaySeconds = 4.5f)
         assertFalse(shouldShowSettingsHint(delayed, 4_499))
         assertTrue(shouldShowSettingsHint(delayed, 4_500))
+    }
+
+    // ── Media screens (video, photo, music) ──────────────────────────────────
+
+    // The music player alone: the media screens share one gate, and any one of them qualifies.
+    private fun mediaEligibleState() = XMBUiState(
+        musicPlayerVisible = true,
+        lastInputWasTouch = false,
+        showBootSequence = false,
+    ).let { it.copy(showMediaHint = false) }
+
+    @Test
+    fun `media hint shows after the shared idle delay`() {
+        assertTrue(shouldShowMediaHint(mediaEligibleState(), XMBViewModel.IDLE_HINT_DELAY_MS))
+    }
+
+    @Test
+    fun `media hint does not show before the shared idle delay`() {
+        assertFalse(shouldShowMediaHint(mediaEligibleState(), XMBViewModel.IDLE_HINT_DELAY_MS - 1))
+    }
+
+    @Test
+    fun `media hint does not show after touch input`() {
+        assertFalse(
+            shouldShowMediaHint(
+                mediaEligibleState().copy(lastInputWasTouch = true),
+                XMBViewModel.IDLE_HINT_DELAY_MS,
+            )
+        )
+    }
+
+    @Test
+    fun `media hint shows on the video, photo and music browser screens too`() {
+        val none = mediaEligibleState().copy(musicPlayerVisible = false)
+        assertTrue(shouldShowMediaHint(none.copy(activeVideoId = "v1"), XMBViewModel.IDLE_HINT_DELAY_MS))
+        assertTrue(shouldShowMediaHint(none.copy(activePhotoViewer = PhotoViewerRequest("p1", libraryId = null)), XMBViewModel.IDLE_HINT_DELAY_MS))
+        assertTrue(shouldShowMediaHint(none.copy(musicBrowser = MusicBrowserState(MusicBrowserView.AllMusic, "All Music")), XMBViewModel.IDLE_HINT_DELAY_MS))
+        assertTrue(shouldShowMediaHint(none.copy(musicTrackPicker = MusicTrackPickerState(1L, "Mix", tracks = emptyList())), XMBViewModel.IDLE_HINT_DELAY_MS))
+    }
+
+    @Test
+    fun `media hint does not show when no media screen is open`() {
+        assertFalse(
+            shouldShowMediaHint(
+                mediaEligibleState().copy(musicPlayerVisible = false),
+                XMBViewModel.IDLE_HINT_DELAY_MS,
+            )
+        )
+    }
+
+    @Test
+    fun `media hint respects the shared setting and configured delay`() {
+        val disabled = mediaEligibleState().copy(contextMenuHintEnabled = false)
+        assertFalse(shouldShowMediaHint(disabled, XMBViewModel.IDLE_HINT_DELAY_MS))
+
+        val delayed = mediaEligibleState().copy(contextMenuHintDelaySeconds = 4.5f)
+        assertFalse(shouldShowMediaHint(delayed, 4_499))
+        assertTrue(shouldShowMediaHint(delayed, 4_500))
     }
 }

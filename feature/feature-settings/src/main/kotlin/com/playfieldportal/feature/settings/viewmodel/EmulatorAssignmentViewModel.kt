@@ -100,7 +100,7 @@ class EmulatorAssignmentViewModel @Inject constructor(
     private val tasks: BackgroundTaskCenter,
 ) : ViewModel() {
 
-    // Assignment outcomes post to the tray (row + shade + cue) rather than an in-screen row.
+    // Assignment outcomes post to the tray (row + cue) rather than an in-screen row.
     private fun report(message: String) = tasks.report(
         id = "emu_assign",
         label = "Emulator Assignment",

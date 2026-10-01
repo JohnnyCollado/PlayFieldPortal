@@ -865,7 +865,7 @@ private fun ImportPcGamesContent(
                 }
                 SettingsRow(
                     label    = "Import All",
-                    sublabel = "Add every found game to a collection named after its launcher",
+                    sublabel = "Add every found game to a custom memory card named after its launcher",
                     onClick  = onImportAllPcGames,
                 )
             }

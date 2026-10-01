@@ -53,6 +53,8 @@ import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.ui.icons.GameIconStyle
 import com.playfieldportal.core.domain.model.BackgroundTaskInfo
 import com.playfieldportal.core.domain.model.NotificationAction
+import com.playfieldportal.core.domain.model.DetailAction
+import com.playfieldportal.core.domain.model.toNotificationAction
 import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.PfpNotification
 import com.playfieldportal.core.domain.model.TaskKind
@@ -81,6 +83,13 @@ import com.playfieldportal.feature.library.scanner.LibraryScanner
 import com.playfieldportal.feature.library.scanner.ScanStatus
 import com.playfieldportal.feature.library.scanner.isScannable
 import com.playfieldportal.feature.library.scanner.scanOutcomeMessage
+import com.playfieldportal.feature.library.scanner.PlatformScanOutcome
+import com.playfieldportal.feature.library.scanner.failureNotes
+import com.playfieldportal.feature.library.scanner.scanResults
+import com.playfieldportal.feature.artwork.api.GameScrapeOutcome
+import com.playfieldportal.feature.artwork.api.scrapeResults
+import com.playfieldportal.core.domain.model.NotificationDetail
+import com.playfieldportal.core.domain.model.PfpErrorCode
 import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
 import com.playfieldportal.core.navigation.NavigationCommand
@@ -157,7 +166,7 @@ data class XMBContextMenu(
     val categoryContext: String? = null,
     // Set on the category-picker submenu: "move" or "add"
     val pendingAppAction: String? = null,
-    // Set on the "Add to Collection" submenu — the game being added.
+    // Set on the "Add to Card" submenu — the game being added.
     val collectionGameId: Long? = null,
     // Set on a collection row's own options menu (rename / delete / open).
     val collectionRowId: Long? = null,
@@ -202,6 +211,21 @@ data class XMBContextMenu(
     // rather than closing. See the two-level Options menu in ShibaLibraryViewModel.
     val gamesFilterMenu: Boolean = false,
     val gamesFilterGroup: GamesFilterGroup? = null,
+    // The list row this menu was opened for, by its key in the list's stored order — what the
+    // shared Move row acts on. A touch long-press opens a menu without moving the cursor, so the
+    // focused row is not always the row the menu is about.
+    val rowKey: String? = null,
+    // Set on a list's Sort picker: the list whose own sort the rows set, and what it holds.
+    val sortListKey: String? = null,
+    val sortListKind: XmbListKind? = null,
+    // Set on the global Sort picker: which global sort (games' or apps') the rows set.
+    val globalSortKind: XmbListKind? = null,
+    // Set on a custom category's own Memory Card row's menu.
+    val categoryCardMenu: Boolean = false,
+    // Set on the Favorites / Missing row's menu in the Games root.
+    val rootRowMenu: Boolean = false,
+    // Set on the "Add N Games to Card" picker opened from multi-select — the marked games.
+    val markedGameIds: Set<Long> = emptySet(),
     // The menu this one was opened from, exactly as it was left. Set on a second-level picker
     // (Icon Display, Choose Emulator, Add to Collection…) so BACK climbs to it — see [afterBack].
     val parent: XMBContextMenu? = null,
@@ -251,6 +275,8 @@ data class CollectionNameDialogState(
     val title: String,
     val initialText: String = "",
     val forGameId: Long? = null,
+    // The games marked in multi-select: all of them go into the card being created.
+    val forGameIds: Set<Long> = emptySet(),
     // When set, confirming renames this collection instead of creating a new one.
     val renameCollectionId: Long? = null,
     // When set, confirming saves a display-title override for this game (blank resets it).
@@ -465,7 +491,7 @@ enum class SettingsSection(
     val title: String,
     val subtitle: String,
 ) {
-    LIBRARY     ("settings_section_library",      "Library",      "Library Manager, collections, artwork & hidden games"),
+    LIBRARY     ("settings_section_library",      "Library",      "Library Manager, custom memory cards, artwork & hidden games"),
     EMULATORS   ("settings_section_emulators",    "Emulators",    "Launch profiles & RetroArch cores"),
     INTERFACE   ("settings_section_interface",    "Interface",    "Categories, themes, display & controller"),
     ACHIEVEMENTS("settings_section_achievements", "Achievements", "RetroAchievements & Steam"),
@@ -483,7 +509,7 @@ fun settingsSectionItems(section: SettingsSection): List<XMBItem> = when (sectio
     SettingsSection.LIBRARY -> listOf(
         XMBItem(id = "settings_library",        title = "Library Manager",    subtitle = "ROM sources & scanning"),
         XMBItem(id = "settings_windows_games",  title = "Windows Games", subtitle = "PC games, launchers & imports"),
-        XMBItem(id = "settings_collections",    title = "Collections",  subtitle = "Create & manage game collections"),
+        XMBItem(id = "settings_collections",    title = "Custom Memory Cards", subtitle = "Create & manage custom memory cards"),
         XMBItem(id = "settings_artwork",        title = "Artwork",      subtitle = "Scraping sources & cache"),
         XMBItem(id = "settings_app_visibility", title = "Hidden Games", subtitle = "Review apps & games you've hidden"),
     )
@@ -505,7 +531,7 @@ fun settingsSectionItems(section: SettingsSection): List<XMBItem> = when (sectio
         XMBItem(id = "settings_audio",      title = "Sound",      subtitle = "Menu & boot sounds"),
         // Sits with Display and Sound: the panel is part of how the launcher presents itself,
         // not a library concern.
-        XMBItem(id = "settings_notifications", title = "Notifications", subtitle = "Panel history, retention & the Android shade"),
+        XMBItem(id = "settings_notifications", title = "Notifications", subtitle = "Panel history & retention"),
         XMBItem(id = "settings_categories", title = "Categories", subtitle = "Manage XMB categories"),
         XMBItem(id = "settings_themes",     title = "Themes",     subtitle = "XMB appearance & color scheme"),
         XMBItem(id = "settings_controller", title = "Controller", subtitle = "Button mapping"),
@@ -664,7 +690,22 @@ data class XMBUiState(
     val videoPlaylists: List<com.playfieldportal.core.domain.model.VideoPlaylist> = emptyList(),
     // PSP-style sort (X / Square). Tracked per context so switching categories doesn't carry a
     // music sort into games. sortLabel is the status-bar hint, non-null only on a sortable list.
+    // gameSortMode and appSortMode are the GLOBAL sorts; a list with a sort of its own is in
+    // listSortOverrides. Read the sort in force through activeGameSort / activeSortFor.
     val gameSortMode: XmbSortMode = XmbSortMode.TITLE,
+    val appSortMode: XmbSortMode = XmbSortMode.TITLE,
+    val listSortOverrides: Map<String, XmbSortMode> = emptyMap(),
+    // Each list's stored Custom order and pinned games, by list key.
+    val listStates: Map<String, com.playfieldportal.core.domain.model.ListState> = emptyMap(),
+    // Non-null while a row is being moved (Move in a Custom-sorted list).
+    val moveSession: MoveSession? = null,
+    // A category lifted on the crossbar, sliding left / right until placed or cancelled.
+    val categoryMoveSession: CategoryMoveSession? = null,
+    // Multi-select in a games list: the marked games, and whether marking is on at all.
+    val markMode: Boolean = false,
+    val markedGameIds: Set<Long> = emptySet(),
+    // The game the user inserted as each gaming column's UMD, by category id.
+    val umdInserted: Map<String, Long> = emptyMap(),
     val musicSortMode: XmbSortMode = XmbSortMode.TITLE,
     val videoSortMode: XmbSortMode = XmbSortMode.TITLE,
     val sortLabel: String? = null,
@@ -720,6 +761,9 @@ data class XMBUiState(
     // for the same reason the App Drawer's is: the panel is a blocking overlay, so the XMB pill's
     // gate is false exactly while the panel is open, and this one is true only then.
     val showNotificationHint: Boolean = false,
+    // True when the user has been idle on a media screen (video, photo, music browser, player or
+    // track picker) with a controller. Those screens are overlays too, so they need their own flag.
+    val showMediaHint: Boolean = false,
     // User setting (Display ▸ Context Menu Hint). When false the idle hint never shows.
     val contextMenuHintEnabled: Boolean = true,
     // User-configured idle delay in seconds, clamped to 1..5 and defaulting to the original 2.5s.
@@ -890,6 +934,8 @@ data class XMBUiState(
     // Raised by the pin workflow when a PC shortcut arrived before setup was complete
     // (docs/windows-library-refactor-plan.md section 3); consumed on first XMB open.
     val showWindowsSetupPrompt: Boolean = false,
+    /** A legacy INSTALL_SHORTCUT request waiting for Add / Ignore (it used to be asked in the shade). */
+    val shortcutReview: com.playfieldportal.core.data.repository.PendingShortcutRequest? = null,
 
     // ── Launch recovery sheet (B1) ─────────────────────────────────────────
     // Non-null while the recovery sheet should be drawn over the shell.
@@ -900,6 +946,9 @@ data class XMBUiState(
 
     // ── Game picker (for adding games to gaming categories) ────────────────
     val gamePickerCategoryId: String? = null,
+    // The games already put in that category — the picker opens with them checked, and only
+    // one of these that the user unchecks is removed.
+    val gamePickerPreselected: Set<Long> = emptySet(),
     val pendingGamePickerAction: GamepadAction? = null,
 
     // ── Notification panel (START, or the bell leading the status strip) ──
@@ -1012,7 +1061,7 @@ data class XMBUiState(
     // half of the hint pill. Computed, like focusedItemHasContextMenu, so it tracks the cursor
     // and the drill level without plumbing.
     val canSortCurrentList: Boolean
-        get() = activeSortModes() != null
+        get() = activeSortModes() != null || arrangeableRootKind() != null
 
     // What the CHANGE_SORT half of the hint pill is called here. Games opens a Filter menu rather
     // than cycling, and the pill names actions — so it has to say which action.
@@ -1061,7 +1110,11 @@ data class XMBUiState(
             musicPlayerVisible ||
             infoDialog != null ||
             launchRecovery != null ||
-            showWindowsSetupPrompt
+            showWindowsSetupPrompt ||
+            shortcutReview != null ||
+            // A move in progress owns the D-pad: nothing else may act on the list under it.
+            moveSession != null ||
+            categoryMoveSession != null
 }
 
 enum class XMBItemType {
@@ -1073,6 +1126,12 @@ enum class XMBItemType {
     MISSING,
     MEMORY_CARD,
     COLLECTION,
+    // A custom gaming category's own Memory Card: every game in the category, loose or in one of
+    // its custom memory cards. The category's counterpart of All Games.
+    CATEGORY_CARD,
+    // The game "inserted" in a gaming column, always its first row. Drawn as the PSP's UMD until
+    // focused, when it becomes the game's own icon over the game's art.
+    UMD_SLOT,
     MUSIC_FOLDER,
     MUSIC_TRACK,
     PLAYLIST,
@@ -1122,6 +1181,8 @@ enum class XmbSortMode(val label: String) {
     ALBUM("Album"),
     RECENT_PLAYED("Recently Played"),
     DATE_ADDED("Date Added"),
+    // The user's own arrangement of one list, saved per list. Never part of a sort cycle.
+    CUSTOM("Custom"),
 }
 
 private val MUSIC_SORTS = listOf(XmbSortMode.TITLE, XmbSortMode.ARTIST, XmbSortMode.ALBUM, XmbSortMode.DATE_ADDED)
@@ -1163,10 +1224,35 @@ internal fun Game.matchesGameQuery(query: String): Boolean =
  * Filtering first is both cheaper and clearer: the sort then provably orders exactly what is on
  * screen. A blank or whitespace-only query filters nothing at all.
  */
-internal fun gamesForDisplay(games: List<Game>, query: String, mode: XmbSortMode): List<Game> {
+internal fun gamesForDisplay(
+    games: List<Game>,
+    query: String,
+    mode: XmbSortMode,
+    listState: com.playfieldportal.core.domain.model.ListState = com.playfieldportal.core.domain.model.ListState.EMPTY,
+    // When each game was added to THIS list (a custom memory card, a category's Memory Card), by
+    // game id. Empty for lists with no such moment — Date Added is then when the game joined the
+    // library.
+    dateAdded: Map<Long, Long> = emptyMap(),
+): List<Game> {
     val q = query.trim().lowercase()
     val filtered = if (q.isBlank()) games else games.filter { it.matchesGameQuery(q) }
-    return filtered.gameSorted(mode)
+    val sorted = when {
+        // Custom is the stored order laid over title order, so a list nobody has arranged yet —
+        // and any game the order has never seen — still lands alphabetically.
+        mode == XmbSortMode.CUSTOM -> com.playfieldportal.core.domain.model.ListArrangement.customOrder(
+            filtered.gameSorted(XmbSortMode.TITLE), listState.positions,
+        ) { com.playfieldportal.core.domain.model.ListKeys.game(it.id) }
+        // Newest addition to this list first; games with no recorded time fall back to the
+        // library order, after the ones that have one.
+        mode == XmbSortMode.DATE_ADDED && dateAdded.isNotEmpty() -> filtered.sortedWith(
+            compareByDescending<Game> { dateAdded[it.id] ?: 0L }.thenByDescending { it.id }
+        )
+        else -> filtered.gameSorted(mode)
+    }
+    // A pin outranks every sort.
+    return com.playfieldportal.core.domain.model.ListArrangement.pinnedFirst(sorted) {
+        com.playfieldportal.core.domain.model.ListKeys.game(it.id) in listState.pinned
+    }
 }
 
 /**
@@ -1194,22 +1280,24 @@ fun gamesFilterRows(state: XMBUiState, group: GamesFilterGroup?): List<XMBContex
                     value = if (term.isBlank()) "None" else "\"$term\"",
                 )
             )
-            add(XMBContextMenuItem(GAMES_FILTER_SORT_ID, "Sort", value = state.gameSortMode.label))
+            // The sort belongs to the list on screen: its own, or "Global: …" while it follows the
+            // global setting.
+            val sortValue = state.currentListKey()?.let { state.sortValueLabel(it, XmbListKind.GAMES) }
+                ?: state.activeGameSort.label
+            add(XMBContextMenuItem(GAMES_FILTER_SORT_ID, "Sort", value = sortValue))
             if (term.isNotBlank()) add(XMBContextMenuItem(GAMES_FILTER_CLEAR_ID, "Clear Search"))
         }
-        GamesFilterGroup.SORT -> GAME_SORTS.map { mode ->
-            XMBContextMenuItem(
-                id = GAMES_FILTER_SORT_PREFIX + mode.name,
-                label = mode.label,
-                checked = mode == state.gameSortMode,
-            )
-        }
+        // The list's own Sort picker: follow the global setting, take a sort of its own, or Custom.
+        GamesFilterGroup.SORT -> listSortMenuItems(
+            kind = XmbListKind.GAMES,
+            global = state.gameSortMode,
+            override = state.listSortOverrides[state.currentListKey()],
+        )
     }
 
 const val GAMES_FILTER_SEARCH_ID = "games_filter_search"
 const val GAMES_FILTER_SORT_ID = "games_filter_sort"
 const val GAMES_FILTER_CLEAR_ID = "games_filter_clear"
-const val GAMES_FILTER_SORT_PREFIX = "games_filter_sort_"
 
 /**
  * Where the cursor belongs after the list it is on is refreshed: on the same row, found by id.
@@ -1301,6 +1389,10 @@ fun XMBItem.hasContextMenu(state: XMBUiState): Boolean {
         gameId != null -> true
         collectionId != null && type == XMBItemType.COLLECTION -> true
         type == XMBItemType.ALL_GAMES -> true
+        // Sort for the list behind the row, and Move while the root is Custom sorted.
+        type == XMBItemType.CATEGORY_CARD ||
+            type == XMBItemType.FAVORITES ||
+            type == XMBItemType.MISSING -> true
         type == XMBItemType.SOCIAL_ACCOUNT -> true
         platformId != null -> true
         packageName != null -> true
@@ -1325,12 +1417,20 @@ fun XMBUiState.activeSortModes(): List<XmbSortMode>? {
         cat.id == BuiltInCategory.VIDEO &&
             (videoNav == VideoNav.AllVideos || videoNav == VideoNav.Favorites ||
                 videoNav is VideoNav.Library) -> VIDEO_SORTS
-        cat.id == BuiltInCategory.GAMES &&
+        // A games list: any drilled-in card or custom memory card. A column's root holds cards,
+        // not games — it is arranged through [arrangeableRootKind] instead.
+        categoryShowsCollections(cat) &&
             (selectedPlatformId != null || selectedCollectionId != null) -> GAME_SORTS
-        cat.isGamingCategory -> GAME_SORTS
         else -> null
     }
 }
+
+/**
+ * What the list on screen holds when it is one that Sort opens a plain Sort picker for — a gaming
+ * column's root or an app list — rather than the Games Filter menu. Null everywhere else.
+ */
+fun XMBUiState.arrangeableRootKind(): XmbListKind? =
+    currentListKind()?.takeIf { it == XmbListKind.ROOT || it == XmbListKind.APPS }
 
 /**
  * Pure decision: should the idle context-menu hint be visible right now? Top-level so unit tests
@@ -1411,7 +1511,24 @@ fun shouldShowNotificationHint(state: XMBUiState, idleMs: Long): Boolean =
     state.contextMenuHintEnabled &&
         !state.lastInputWasTouch &&
         state.notificationPanel != null &&
+        !state.notificationPanel.hasLayer &&
         state.activeContextMenu == null &&
+        idleMs >= (state.contextMenuHintDelaySeconds * 1_000f).toLong()
+
+/**
+ * Pure decision for the media screens' prompt rows: video (detail and player), the photo viewer,
+ * the music browser, the music player and its track picker. They used to show their prompts
+ * permanently; they now keep the crossbar's contract — fade in after the idle delay, gone on the
+ * next press — on the same clock and the same Display ▸ Context Menu Hint setting.
+ */
+fun shouldShowMediaHint(state: XMBUiState, idleMs: Long): Boolean =
+    state.contextMenuHintEnabled &&
+        !state.lastInputWasTouch &&
+        (state.activeVideoId != null ||
+            state.activePhotoViewer != null ||
+            state.musicBrowser != null ||
+            state.musicPlayerVisible ||
+            state.musicTrackPicker != null) &&
         idleMs >= (state.contextMenuHintDelaySeconds * 1_000f).toLong()
 
 data class XMBItem(
@@ -1469,6 +1586,8 @@ data class XMBItem(
     // Prestige Bones earned (player-card summary row only); renders "• N [bone glyph]" after the
     // title when greater than zero.
     val boneCount: Int = 0,
+    // Pinned to the top of its list. Rows only ever move among rows of the same pinned state.
+    val pinned: Boolean = false,
     val type: XMBItemType = XMBItemType.STANDARD,
 )
 
@@ -1573,6 +1692,7 @@ class XMBViewModel @Inject constructor(
     private val localSteamDiscovery: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamDiscovery,
     private val localSteamBatchMatcher: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamBatchMatcher,
     private val launchDispatcher: com.playfieldportal.feature.launcher.LaunchDispatcher,
+    private val shortcutRequests: com.playfieldportal.feature.launcher.ShortcutRequestResolver,
     private val setupStateProvider: com.playfieldportal.feature.launcher.SetupStateProvider,
     private val customIconStore: CustomIconStore,
     private val pfpThemeStore: PfpThemeStore,
@@ -1590,6 +1710,11 @@ class XMBViewModel @Inject constructor(
     // background work rather than only what the XMB itself started.
     private val backgroundTasks: BackgroundTaskCenter,
     private val gameArtworkFetchRunner: GameArtworkFetchRunner,
+    // Per-list arrangement: each list's Custom order, pinned games and own sort; the two global
+    // sorts; and the game inserted as each gaming column's UMD.
+    private val listStateRepository: com.playfieldportal.core.data.repository.ListStateRepository,
+    private val sortPreferences: com.playfieldportal.core.data.repository.SortPreferences,
+    private val umdSlotRepository: com.playfieldportal.core.data.repository.UmdSlotRepository,
 ) : ViewModel() {
 
     // Drives the "convert detected games?" multi-select picker after a Windows-card scan; the same
@@ -1632,21 +1757,32 @@ class XMBViewModel @Inject constructor(
     fun batchMatchLocalGames(parentFolder: android.net.Uri) {
         viewModelScope.launch {
             val taskId = "xmb_local_steam_batch"
-            addBackgroundTask(
-                BackgroundTaskInfo(id = taskId, label = "Matching local Windows games…", kind = TaskKind.SCAN)
-            )
-            val report = runCatching { localSteamBatchMatcher.run(parentFolder) }
-                .onFailure { Timber.e(it, "Local Steam batch match failed") }
-                .getOrNull()
+            val open = NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID)
+            backgroundTasks.startStoppable(taskId, "Matching local Windows games…", TaskKind.SCAN,
+                stopNote = "Games already matched stay linked.")
+            var error: Throwable? = null
+            val report = try {
+                runCatching { localSteamBatchMatcher.run(parentFolder) }
+                    .onFailure {
+                        if (it is kotlinx.coroutines.CancellationException) throw it
+                        Timber.e(it, "Local Steam batch match failed"); error = it
+                    }
+                    .getOrNull()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                backgroundTasks.settleCancelled(taskId, "Stopped before it finished", open,
+                    title = "Windows achievements match stopped")
+                throw e
+            }
             if (report == null) {
-                failBackgroundTask(taskId, "Batch match failed — see the log.")
+                backgroundTasks.fail(
+                    taskId, "Batch match failed", open,
+                    detail = NotificationDetail.notes(PfpErrorCode.AC_2001, summary = error?.message,
+                        diagnostic = error?.stackTraceToString()?.take(4_000)),
+                    title = "Windows achievements match failed",
+                )
                 return@launch
             }
-            completeBackgroundTask(
-                taskId,
-                report.message,
-                NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID),
-            )
+            backgroundTasks.complete(taskId, report.message, open, title = "Windows achievements match finished")
             // The convertible pile — the one place a DLL swap is ever authorised, per game.
             convertPickerController.start(report.convertible) { outcome ->
                 viewModelScope.launch {
@@ -1795,6 +1931,7 @@ class XMBViewModel @Inject constructor(
         observeColorScheme()
         observeCategoryBar()
         observeCategories()
+        observeListArrangement()
         observeMissingGames()
         observeAppChanges()
         warmInstalledAppCache()
@@ -1812,6 +1949,7 @@ class XMBViewModel @Inject constructor(
         observeLaunchRecoveryRequests()
         observeSetupState()
         observeNotifications()
+        observeShortcutRequests()
         // Live pin reconcile: an emulator UPDATING an already-pinned shortcut never fires the
         // confirm activity, so the OS callback is the only signal — import it the moment it lands.
         pcShortcutImporter.watchPinChanges(viewModelScope)
@@ -2094,31 +2232,44 @@ class XMBViewModel @Inject constructor(
     private fun observeCategoryBar() {
         viewModelScope.launch {
             categoryRepository.observeVisible().collect { categories ->
-                val allCategories = canonicalXmbCategories(categories.ifEmpty { FALLBACK_CATEGORIES })
-                    // The "lite" build ships without the Discord SDK — drop the Social column there.
-                    .let { cats ->
-                        if (discordAuthRepository.isDiscordAvailable()) cats
-                        else cats.filterNot { it.id == BuiltInCategory.SOCIAL }
-                    }
-                val prevId   = _uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex)?.id
-                val isInitialSelection = _uiState.value.categories.isEmpty()
-                // Keep the same category selected across reorders/hides when possible.
-                val newIndex = if (isInitialSelection) {
-                    defaultXmbCategoryIndex(allCategories)
-                } else {
-                    allCategories.indexOfFirst { it.id == prevId }
-                        .takeIf { it >= 0 }
-                        ?: defaultXmbCategoryIndex(allCategories)
+                // The bar on screen IS the move in progress; rebuilding it from the store would
+                // snap the lifted category back. Applied once the move ends instead.
+                if (_uiState.value.categoryMoveSession != null) {
+                    deferredCategoryBar = categories
+                    return@collect
                 }
-                val newId    = allCategories.getOrNull(newIndex)?.id
-
-                _uiState.update { it.copy(categories = allCategories, selectedCategoryIndex = newIndex) }
-
-                if (newId != prevId || _uiState.value.currentItems.isEmpty()) {
-                    tintWaveForCategory(allCategories.getOrNull(newIndex))
-                    loadItemsForCategory(allCategories.getOrNull(newIndex))
-                }
+                applyCategoryBar(categories)
             }
+        }
+    }
+
+    // What the store last said while a category was lifted (see observeCategoryBar).
+    private var deferredCategoryBar: List<Category>? = null
+
+    private fun applyCategoryBar(categories: List<Category>) {
+        val allCategories = canonicalXmbCategories(categories.ifEmpty { FALLBACK_CATEGORIES }, FALLBACK_CATEGORIES)
+            // The "lite" build ships without the Discord SDK — drop the Social column there.
+            .let { cats ->
+                if (discordAuthRepository.isDiscordAvailable()) cats
+                else cats.filterNot { it.id == BuiltInCategory.SOCIAL }
+            }
+        val prevId   = _uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex)?.id
+        val isInitialSelection = _uiState.value.categories.isEmpty()
+        // Keep the same category selected across reorders/hides when possible.
+        val newIndex = if (isInitialSelection) {
+            defaultXmbCategoryIndex(allCategories)
+        } else {
+            allCategories.indexOfFirst { it.id == prevId }
+                .takeIf { it >= 0 }
+                ?: defaultXmbCategoryIndex(allCategories)
+        }
+        val newId    = allCategories.getOrNull(newIndex)?.id
+
+        _uiState.update { it.copy(categories = allCategories, selectedCategoryIndex = newIndex) }
+
+        if (newId != prevId || _uiState.value.currentItems.isEmpty()) {
+            tintWaveForCategory(allCategories.getOrNull(newIndex))
+            loadItemsForCategory(allCategories.getOrNull(newIndex))
         }
     }
 
@@ -2164,6 +2315,8 @@ class XMBViewModel @Inject constructor(
                     val counts = displayGames.filter { it.contentType == GameContentType.GAME }
                         .groupBy { it.platformId }.mapValues { it.value.size }
                     val gamesOnlyTotal = displayGames.count { it.contentType == GameContentType.GAME }
+                    // What Main Game's UMD slot falls back over: every real game, one row per set.
+                    allRealGames = displayGames.filter { it.contentType == GameContentType.GAME }
                     // The display snapshot contains only primaries, so a favorite on a secondary
                     // disc would otherwise be lost. observeFavorites already applies the set-level
                     // projection and is the authoritative count for this folder.
@@ -2176,6 +2329,8 @@ class XMBViewModel @Inject constructor(
                             id == ALL_GAMES_PLATFORM_ID ||
                                 id == FAVORITES_PLATFORM_ID ||
                                 id == MISSING_PLATFORM_ID ||
+                                // A custom category's own Memory Card is not a platform card.
+                                id == CATEGORY_CARD_PLATFORM_ID ||
                                 cards.any { c -> c.platformId == id }
                         }
                     // Drop a stale collection folder if the collection was deleted.
@@ -2238,19 +2393,106 @@ class XMBViewModel @Inject constructor(
     private fun isAppCategory(categoryId: String): Boolean =
         categoryId != BuiltInCategory.SETTINGS && categoryId != BuiltInCategory.GAMES
 
-    // Categories with their own dedicated loadItemsForCategory branch — these never render
-    // collection rows (media/system sections own their layouts).
-    private val nonCollectionCategoryIds = setOf(
-        BuiltInCategory.FAVORITES, BuiltInCategory.RECENTLY_PLAYED, BuiltInCategory.MUSIC,
-        BuiltInCategory.VIDEO, BuiltInCategory.PHOTO, BuiltInCategory.ANDROID,
-        BuiltInCategory.APP_DRAWER, BuiltInCategory.SETTINGS, BuiltInCategory.ACHIEVEMENTS,
+    // ── List arrangement (sorts, Custom order, pins, the UMD slot) ───────────────
+
+    // Every real game, one row per disc set — what Main Game's UMD slot falls back over.
+    private var allRealGames: List<Game> = emptyList()
+
+    // The game inserted as each gaming column's UMD, resolved from umdInserted's ids.
+    private var umdInsertedGames: Map<String, Game> = emptyMap()
+
+    // A column's first visit lands on the row under the UMD slot rather than on the slot itself,
+    // so opening Game does not put a game's art behind the whole screen unasked.
+    private var freshRootVisit = true
+
+    // Set when a reload was asked for while a row was being moved; honoured when the move ends.
+    private var reloadAfterMove = false
+
+    private fun observeListArrangement() {
+        viewModelScope.launch {
+            combine(
+                listStateRepository.states,
+                listStateRepository.sortOverrides,
+                sortPreferences.gamesSortFlow,
+                sortPreferences.appsSortFlow,
+            ) { states, overrides, gamesSort, appsSort ->
+                ListArrangementSnapshot(states, overrides.mapValues { it.value.toXmbSort() }, gamesSort.toXmbSort(), appsSort.toXmbSort())
+            }.collect { snapshot ->
+                val before = _uiState.value
+                val unchanged = before.listStates == snapshot.states &&
+                    before.listSortOverrides == snapshot.overrides &&
+                    before.gameSortMode == snapshot.gamesSort &&
+                    before.appSortMode == snapshot.appsSort
+                if (unchanged) return@collect
+                _uiState.update { it.copy(
+                    listStates = snapshot.states,
+                    listSortOverrides = snapshot.overrides,
+                    gameSortMode = snapshot.gamesSort,
+                    appSortMode = snapshot.appsSort,
+                )}
+                refreshArrangedList()
+            }
+        }
+        viewModelScope.launch {
+            umdSlotRepository.insertedGameIds.collect { ids ->
+                umdInsertedGames = ids.mapNotNull { (columnId, gameId) ->
+                    gameRepository.getById(gameId)?.let { columnId to it }
+                }.toMap()
+                _uiState.update { it.copy(umdInserted = ids) }
+                if (currentCategory()?.isGamingCategory == true && _uiState.value.currentListKind() == XmbListKind.ROOT) {
+                    refreshArrangedList()
+                }
+            }
+        }
+    }
+
+    private data class ListArrangementSnapshot(
+        val states: Map<String, com.playfieldportal.core.domain.model.ListState>,
+        val overrides: Map<String, XmbSortMode>,
+        val gamesSort: XmbSortMode,
+        val appsSort: XmbSortMode,
     )
 
-    /** True for categories that render collection rows: gaming categories, and the generic app
-     *  categories (Network / App Store / custom non-gaming) served by the `else` item branch. */
-    private fun categoryShowsCollections(category: Category?): Boolean {
-        if (category == null) return false
-        return category.isGamingCategory || category.id !in nonCollectionCategoryIds
+    /**
+     * Re-renders the list on screen after its arrangement changed (a sort, a saved order, a pin).
+     * Skipped while a row is being moved: the list on screen IS the move in progress, and
+     * rebuilding it from the store would snap the row back under the user's thumb.
+     */
+    private fun refreshArrangedList() {
+        if (_uiState.value.moveSession != null) return
+        if (_uiState.value.currentListKey() == null) return
+        _uiState.update { it.copy(sortLabel = currentSortLabel()) }
+        // A pin or a sort change moves rows; the cursor stays on the row it was on.
+        loadItemsForCategory(currentCategory(), keepCursorOnRow = true)
+    }
+
+    private fun listState(listKey: String?): com.playfieldportal.core.domain.model.ListState =
+        _uiState.value.listStates[listKey] ?: com.playfieldportal.core.domain.model.ListState.EMPTY
+
+    /**
+     * The UMD slot row for [columnId] (a gaming category's id), or null when nothing fills it.
+     * [columnGames] is the column's own games: the inserted game wins while it is among them,
+     * otherwise the most recently played of them.
+     */
+    private fun umdSlotItem(columnId: String, columnGames: List<Game>): XMBItem? {
+        val game = com.playfieldportal.core.domain.model.UmdSlotResolver
+            .resolve(umdInsertedGames[columnId], columnGames) ?: return null
+        return listOf(game).toXmbItems().single().copy(id = UMD_SLOT_ITEM_ID, type = XMBItemType.UMD_SLOT)
+    }
+
+    /**
+     * Publishes a column's top level. The cursor follows its row by id, so a row arriving above
+     * it (the UMD slot, once a game has been played) does not shift what is focused; and a
+     * column's first visit starts on the row under the UMD slot.
+     */
+    private fun publishRootItems(items: List<XMBItem>) = _uiState.update { state ->
+        val startsOnUmd = items.firstOrNull()?.type == XMBItemType.UMD_SLOT && items.size > 1
+        val index = when {
+            freshRootVisit && startsOnUmd && state.selectedItemIndex == 0 -> 1
+            else -> cursorAfterRefresh(state.currentItems, state.selectedItemIndex, items)
+        }
+        if (items.isNotEmpty()) freshRootVisit = false
+        state.copy(currentItems = items, selectedItemIndex = index)
     }
 
     /** The category a collection created from the current context should live in: the current
@@ -2281,6 +2523,12 @@ class XMBViewModel @Inject constructor(
      *   for a caller that reloads the list already on screen, like Edit Title.
      */
     private fun loadItemsForCategory(category: Category?, keepCursorOnRow: Boolean = false) {
+        // A row being moved IS the list on screen; rebuilding it would snap the row back. The
+        // reload runs once the move ends instead.
+        if (_uiState.value.moveSession != null) {
+            reloadAfterMove = true
+            return
+        }
         currentItemsJob?.cancel()
         // Dropped before the new list is built: a builder left over from the previous view would
         // rebuild a column that is no longer on screen. Each Games branch installs its own.
@@ -2362,7 +2610,11 @@ class XMBViewModel @Inject constructor(
                         var keepCursor = keepCursorOnRow
                         collectionRepository.observeGames(collectionId).collect { games ->
                             val visible = games.notHiddenAt(HideLocationType.COLLECTION, collectionId.toString())
-                            publishGames(keepCursor) { gameRowsOrEmpty(visible, ::emptyCollectionItem) }
+                            // Date Added inside a card is when the game went onto the card.
+                            val addedAt = collectionRepository.addedAtByGame(collectionId)
+                            publishGames(keepCursor) {
+                                gameRowsOrEmpty(visible, ::emptyCollectionItem, dateAdded = addedAt)
+                            }
                             keepCursor = true
                         }
                     } else if (platformId == ALL_GAMES_PLATFORM_ID) {
@@ -2390,12 +2642,12 @@ class XMBViewModel @Inject constructor(
                         var keepCursor = keepCursorOnRow
                         gameRepository.observeMissing().collect { games ->
                             publishGames(keepCursor) {
-                                gameRowsOrEmpty(games, ::emptyMissingItem) { rows ->
+                                gameRowsOrEmpty(games, ::emptyMissingItem, mapRows = { rows ->
                                     // Each row states why it is here, per the plan. The subtitle
                                     // would otherwise carry play stats that are meaningless for a
                                     // file that isn't there.
                                     rows.map { it.copy(subtitle = MISSING_REASON) }
-                                }
+                                })
                             }
                             keepCursor = true
                         }
@@ -2427,7 +2679,7 @@ class XMBViewModel @Inject constructor(
                             gameRepository.observeAll(),
                             collectionRepository.observeCollections(),
                         ) { _, _, _ -> }.collect {
-                            _uiState.update { it.copy(currentItems = memoryCardItems()) }
+                            publishRootItems(memoryCardItems())
                         }
                     }
                 }
@@ -2505,88 +2757,76 @@ class XMBViewModel @Inject constructor(
                         var keepCursor = keepCursorOnRow
                         collectionRepository.observeGames(openCollectionId).collect { games ->
                             val visible = games.notHiddenAt(HideLocationType.COLLECTION, openCollectionId.toString())
-                            publishGames(keepCursor) { gameRowsOrEmpty(visible, ::emptyCollectionItem) }
+                            // Date Added inside a card is when the game went onto the card.
+                            val addedAt = collectionRepository.addedAtByGame(openCollectionId)
+                            publishGames(keepCursor) {
+                                gameRowsOrEmpty(visible, ::emptyCollectionItem, dateAdded = addedAt)
+                            }
                             keepCursor = true
                         }
                         return@launch
                     }
                     if (category.isGamingCategory) {
-                        // Games are assigned via the junction table (echo/copy model). Reuse the
-                        // canonical Game→XMBItem mapping so icons/artwork/launch fields match the
-                        // Main Game category exactly; only overlay the "Pinned" marker.
-                        val gameRows = gameCategoryRepository.itemsForCategory(category.id)
-                            .filterIsInstance<com.playfieldportal.core.data.repository.GameCategoryItem.GameItem>()
+                        // Every game in the category — put there directly or sitting in one of
+                        // its custom memory cards — once each. A one-shot read: the collectors
+                        // over games and collections re-run this branch when either changes.
+                        val cardGames = gameCategoryRepository.categoryCardGames(category.id)
                             .filterNot { isHiddenAt(HiddenPlacement.gameKey(it.game.id), HideLocationType.CATEGORY, category.id) }
-                        val pinnedGameIds = gameRows.filter { it.pinned }.map { it.game.id }.toSet()
-                        // A one-shot read: the junction rows above are fetched once, and the
-                        // builder below re-runs against them whenever the query or sort changes.
-                        publishGames(keepCursorOnRow) {
-                            // The same funnel as every other Games list, but this one assembles its
-                            // own empty state: the column is games AND collections, so an empty-row
-                            // helper that only knows about the games half would draw "no matches"
-                            // over a column that still has collections in it.
-                            val gameItems = gamesForDisplay(
-                                gameRows.map { it.game },
-                                _uiState.value.gameQuery,
-                                _uiState.value.gameSortMode,
-                            ).toXmbItems().map { xmb ->
-                                if (xmb.gameId in pinnedGameIds) xmb.copy(subtitle = "Pinned") else xmb
+                        if (_uiState.value.selectedPlatformId == CATEGORY_CARD_PLATFORM_ID) {
+                            // The category's own Memory Card: the same funnel as every other
+                            // Games list, each row saying where in the category the game lives.
+                            val sources = cardGames.associate { it.game.id to it.cardNames }
+                            val addedAt = cardGames.associate { it.game.id to it.addedAt }
+                            publishGames(keepCursorOnRow) {
+                                gameRowsOrEmpty(
+                                    games = cardGames.map { it.game },
+                                    emptyItem = ::emptyCategoryCardItem,
+                                    mapRows = { rows ->
+                                        rows.map { row ->
+                                            row.copy(subtitle = categoryCardSubtitle(row.subtitle, sources[row.gameId].orEmpty()))
+                                        }
+                                    },
+                                    dateAdded = addedAt,
+                                )
                             }
-                            // Collections belong to exactly one category, tracked by categoryId —
-                            // the single source of truth for placement (not the junction table).
-                            // Pinned collections sort to the top.
-                            val collectionItems = _uiState.value.collections
-                                .filter { it.categoryId == category.id }
-                                .sortedByDescending { it.isPinned }
-                                .map { collection ->
-                                    val games = "${collection.gameCount} ${if (collection.gameCount == 1) "Game" else "Games"}"
-                                    XMBItem(
-                                        id = "col_${collection.id}",
-                                        title = collection.name,
-                                        subtitle = if (collection.isPinned) "Pinned · $games" else games,
-                                        collectionId = collection.id,
-                                        iconKey = collection.iconKey,
-                                        type = XMBItemType.COLLECTION,
-                                    )
-                                }
-                            val combined = collectionItems + gameItems
-                            val activeQuery = _uiState.value.gameQuery.trim()
-                            val items = when {
-                                combined.isNotEmpty()    -> combined
-                                activeQuery.isNotBlank() -> listOf(noGameMatchesItem(activeQuery))
-                                else                     -> listOf(emptyCategoryItem(category))
-                            }
-                            items + addGamesItem()
+                            return@launch
                         }
+                        // The root holds containers only — the UMD slot is the one game row. Every
+                        // other game is reached through the Memory Card or a custom memory card.
+                        val rootKey = com.playfieldportal.core.domain.model.ListKeys.root(category.id)
+                        publishRootItems(
+                            assembleRoot(
+                                umd = umdSlotItem(category.id, cardGames.map { it.game }),
+                                movable = listOf(categoryCardItem(category, cardGames.size)) +
+                                    customCardRows(category.id, noun = "Game"),
+                                trailing = listOf(addGamesItem()),
+                                listState = listState(rootKey),
+                                custom = _uiState.value.isCustomSorted(rootKey, XmbListKind.ROOT),
+                            )
+                        )
                     } else {
                         // Non-gaming categories show apps (Photo / Music / Video / Network / App Store / custom).
                         // Apps the user has given artwork (via Edit App Details → a games-table row keyed
                         // by package, typed ANDROID_APP) render that art so the category looks uniform.
                         // The rows stay ANDROID_APP, so this never makes them appear in All Games.
+                        val listKey = com.playfieldportal.core.domain.model.ListKeys.root(category.id)
+                        val mode = _uiState.value.activeSortFor(listKey, XmbListKind.APPS)
                         val apps = appCategoryRepository.appsForCategory(category.id)
                             .notHiddenAt(HideLocationType.CATEGORY, category.id)
+                            .appSorted(mode, listState(listKey))
                         val appItems = apps.map { it.toXmbItem(gameRepository.getAppEntry(it.packageName)) }
-                        // App collections homed in this category (categoryId is the single source
-                        // of truth for placement, same as gaming categories). Pinned sort first.
-                        val collectionItems = _uiState.value.collections
-                            .filter { it.categoryId == category.id }
-                            .sortedByDescending { it.isPinned }
-                            .map { collection ->
-                                val count = "${collection.gameCount} ${if (collection.gameCount == 1) "App" else "Apps"}"
-                                XMBItem(
-                                    id = "col_${collection.id}",
-                                    title = collection.name,
-                                    subtitle = if (collection.isPinned) "Pinned · $count" else count,
-                                    collectionId = collection.id,
-                                    iconKey = collection.iconKey,
-                                    type = XMBItemType.COLLECTION,
-                                )
-                            }
-                        val combined = collectionItems + appItems
-                        val items = if (combined.isEmpty()) listOf(emptyCategoryItem(category)) else combined
+                        // Custom memory cards homed in this category (categoryId is the single
+                        // source of truth for placement, same as gaming categories) come first in
+                        // the default order; under Custom they are arranged with the apps.
+                        val rows = arrangeRows(
+                            customCardRows(category.id, noun = "App") + appItems,
+                            listState(listKey),
+                            custom = mode == XmbSortMode.CUSTOM,
+                        )
+                        val items = if (rows.isEmpty()) listOf(emptyCategoryItem(category)) else rows
                         // "Add Apps" is offered on every app section so the same picker serves
                         // Video, Music, Network, App Store and custom categories alike.
-                        _uiState.update { it.copy(currentItems = items + addAppsItem()) }
+                        publishListItems(items + addAppsItem(), keepCursorOnRow)
                     }
                 }
             }
@@ -2604,6 +2844,7 @@ class XMBViewModel @Inject constructor(
         subtitle     = if (pinned) "Pinned" else null,
         packageName  = packageName,
         isAndroidApp = true,
+        pinned       = pinned,
         iconUri      = artwork?.let { it.iconUri ?: it.heroUri ?: it.artworkUri },
         // The XMB hover background reads artworkUri — populate it (with a hero fallback) so a
         // non-gaming category app shows its assigned background, like games do.
@@ -2622,9 +2863,71 @@ class XMBViewModel @Inject constructor(
     private fun addGamesItem(): XMBItem = XMBItem(
         id       = ADD_GAMES_ITEM_ID,
         title    = "Add Games",
-        subtitle = "Pick games and collections to add to this category",
+        subtitle = "Pick games and custom memory cards to add to this category",
         type     = XMBItemType.ADD_ACTION,
     )
+
+    // A custom gaming category's own Memory Card row — the category's counterpart of All Games.
+    private fun categoryCardItem(category: Category, count: Int): XMBItem = XMBItem(
+        id       = CATEGORY_CARD_ITEM_ID,
+        title    = "${category.name} Memory Card",
+        subtitle = "Total Games $count",
+        type     = XMBItemType.CATEGORY_CARD,
+    )
+
+    // Where a game lives inside its category, after the row's own platform line: "Loose" when it
+    // was put in the category directly, otherwise the custom memory card(s) holding it.
+    private fun categoryCardSubtitle(base: String?, cardNames: List<String>): String =
+        listOfNotNull(base, cardNames.joinToString(", ").ifBlank { "Loose" }).joinToString(" · ")
+
+    private fun emptyCategoryCardItem(): XMBItem = XMBItem(
+        id       = EMPTY_CATEGORY_ITEM_ID,
+        title    = "No games in this category yet",
+        subtitle = "Go back and choose Add Games.",
+        type     = XMBItemType.EMPTY,
+    )
+
+    // The custom memory cards homed in [categoryId], pinned first, as root rows. [noun] is what
+    // they hold in this kind of column ("Game" / "App").
+    private fun customCardRows(categoryId: String, noun: String): List<XMBItem> =
+        _uiState.value.collections
+            .filter { it.categoryId == categoryId }
+            .sortedByDescending { it.isPinned }
+            .map { collection ->
+                val count = "${collection.gameCount} ${if (collection.gameCount == 1) noun else "${noun}s"}"
+                XMBItem(
+                    id = "col_${collection.id}",
+                    title = collection.name,
+                    subtitle = customCardSubtitle(collection.isPinned, count),
+                    collectionId = collection.id,
+                    iconKey = collection.iconKey,
+                    pinned = collection.isPinned,
+                    type = XMBItemType.COLLECTION,
+                )
+            }
+
+    // "Custom" tells a custom memory card apart from the Memory Card rows it shares a glyph with.
+    private fun customCardSubtitle(pinned: Boolean, count: String): String =
+        if (pinned) "Custom · Pinned · $count" else "Custom · $count"
+
+    // A media section's app rows (Music / Video / Photo Apps), in that list's own sort.
+    private suspend fun sectionAppItems(sectionId: String): List<XMBItem> {
+        val listKey = com.playfieldportal.core.domain.model.ListKeys.apps(sectionId)
+        val mode = _uiState.value.activeSortFor(listKey, XmbListKind.APPS)
+        return appCategoryRepository.appsForCategory(sectionId)
+            .notHiddenAt(HideLocationType.CATEGORY, sectionId)
+            .appSorted(mode, listState(listKey))
+            .map { it.toXmbItem(gameRepository.getAppEntry(it.packageName)) }
+    }
+
+    /** Publishes a non-Games list; with [keepCursorOnRow] the cursor follows its row by id. */
+    private fun publishListItems(items: List<XMBItem>, keepCursorOnRow: Boolean) = _uiState.update {
+        if (!keepCursorOnRow) it.copy(currentItems = items)
+        else it.copy(
+            currentItems = items,
+            selectedItemIndex = cursorAfterRefresh(it.currentItems, it.selectedItemIndex, items),
+        )
+    }
 
     // ── Music ───────────────────────────────────────────────────────────────────
 
@@ -2736,9 +3039,7 @@ class XMBViewModel @Inject constructor(
     // Music Apps: the apps the user added (stored under a dedicated pseudo-category so they don't
     // mix with the built-in Music category), plus an "Add Music Apps" row.
     private suspend fun musicAppItems(): List<XMBItem> {
-        val apps = appCategoryRepository.appsForCategory(MUSIC_APPS_CATEGORY_ID)
-            .notHiddenAt(HideLocationType.CATEGORY, MUSIC_APPS_CATEGORY_ID)
-        val appItems = apps.map { it.toXmbItem(gameRepository.getAppEntry(it.packageName)) }
+        val appItems = sectionAppItems(MUSIC_APPS_CATEGORY_ID)
         return appItems + XMBItem(
             id       = ADD_MUSIC_APPS_ITEM_ID,
             title    = "Add Music Apps",
@@ -2855,7 +3156,7 @@ class XMBViewModel @Inject constructor(
         val cat = currentCategory()
         return when {
             s.selectedCollectionId != null -> {
-                val name = s.collections.firstOrNull { it.id == s.selectedCollectionId }?.name ?: "Collection"
+                val name = s.collections.firstOrNull { it.id == s.selectedCollectionId }?.name ?: "Custom Card"
                 Triple(HideLocationType.COLLECTION, s.selectedCollectionId.toString(), name)
             }
             s.selectedPlatformId == FAVORITES_PLATFORM_ID || cat?.id == BuiltInCategory.FAVORITES ->
@@ -2864,6 +3165,10 @@ class XMBViewModel @Inject constructor(
             // is offered, so hiding a row here would strand the entry: invisible everywhere (it is
             // already filtered out of normal views by is_missing) and no longer removable.
             s.selectedPlatformId == MISSING_PLATFORM_ID -> null
+            // A custom category's own Memory Card hides from the category, as its games did
+            // when they were listed at the category's root.
+            s.selectedPlatformId == CATEGORY_CARD_PLATFORM_ID ->
+                cat?.let { Triple(HideLocationType.CATEGORY, it.id, it.name) }
             s.selectedPlatformId == ANDROID_PLATFORM_ID -> Triple(HideLocationType.ANDROID_PLATFORM, "", "Android")
             // The aggregated All Games card — hides from THIS view only; the game stays on its
             // own Memory Card, in collections, and in Favorites.
@@ -3005,9 +3310,7 @@ class XMBViewModel @Inject constructor(
     }
 
     private suspend fun videoAppItems(): List<XMBItem> {
-        val apps = appCategoryRepository.appsForCategory(VIDEO_APPS_CATEGORY_ID)
-            .notHiddenAt(HideLocationType.CATEGORY, VIDEO_APPS_CATEGORY_ID)
-        val appItems = apps.map { it.toXmbItem(gameRepository.getAppEntry(it.packageName)) }
+        val appItems = sectionAppItems(VIDEO_APPS_CATEGORY_ID)
         return appItems + XMBItem(
             id       = ADD_VIDEO_APPS_ITEM_ID,
             title    = "Add Video Apps",
@@ -3183,7 +3486,8 @@ class XMBViewModel @Inject constructor(
             // changes which list is on screen passes through here, so this is the one place the
             // query has to be dropped — see [clearGameQuery].
             val query = if (viewCursorKey(next) == viewCursorKey(state)) next.gameQuery else ""
-            next.copy(selectedItemIndex = remembered, gameQuery = query)
+            // Marks belong to the list they were made in, like the query.
+            next.copy(selectedItemIndex = remembered, gameQuery = query, markMode = false, markedGameIds = emptySet())
         }
         loadItemsForCategory(currentCategory())
     }
@@ -3475,9 +3779,7 @@ class XMBViewModel @Inject constructor(
     // Photo Apps: the apps the user added (stored under a dedicated pseudo-category so they don't
     // mix with the built-in Photo category), plus an "Add Photo Apps" row. Mirrors Music/Video Apps.
     private suspend fun photoAppItems(): List<XMBItem> {
-        val apps = appCategoryRepository.appsForCategory(PHOTO_APPS_CATEGORY_ID)
-            .notHiddenAt(HideLocationType.CATEGORY, PHOTO_APPS_CATEGORY_ID)
-        val appItems = apps.map { it.toXmbItem(gameRepository.getAppEntry(it.packageName)) }
+        val appItems = sectionAppItems(PHOTO_APPS_CATEGORY_ID)
         return appItems + XMBItem(
             id       = ADD_PHOTO_APPS_ITEM_ID,
             title    = "Add Photo Apps",
@@ -4706,6 +5008,13 @@ class XMBViewModel @Inject constructor(
             rebuildBrowserTrackRows()
             return
         }
+        // A column's root and an app list have no search, so Sort opens their Sort picker directly.
+        _uiState.value.arrangeableRootKind()?.let { kind ->
+            val key = _uiState.value.currentListKey() ?: return
+            menuSound.play(MenuSound.SYSTEM_BROWSE)
+            openListSortMenu(key, kind, title = "Sort", withGlobalRow = kind == XmbListKind.APPS)
+            return
+        }
         val cycle = activeSortContext() ?: return
         // Games doesn't cycle any more: it opens the Filter menu, where Sort is one of two rows
         // and the active mode carries a checkmark. Music and Video keep the cycle — their lists
@@ -4782,30 +5091,120 @@ class XMBViewModel @Inject constructor(
             itemId == GAMES_FILTER_SORT_ID   -> openGamesFilterGroup(GamesFilterGroup.SORT)
             itemId == GAMES_FILTER_SEARCH_ID -> { closeContextMenu(); openGameSearchField() }
             itemId == GAMES_FILTER_CLEAR_ID  -> { closeContextMenu(); applyGameQuery("") }
-            itemId.startsWith(GAMES_FILTER_SORT_PREFIX) -> {
-                val mode = XmbSortMode.entries
-                    .firstOrNull { it.name == itemId.removePrefix(GAMES_FILTER_SORT_PREFIX) }
-                    ?: return true
+            // The Sort group sets the sort of the list on screen, and only that list.
+            itemId.startsWith(LIST_SORT_PREFIX) -> {
+                val listKey = _uiState.value.currentListKey() ?: return true
                 closeContextMenu()
-                applyGameSortMode(mode)
+                applyListSort(listKey, sortChoice(itemId))
             }
         }
         return true
     }
 
-    /** Applies a sort mode chosen from the menu, and re-renders the column from the top. */
-    private fun applyGameSortMode(mode: XmbSortMode) {
-        if (_uiState.value.gameSortMode == mode) return
+    /** The sort a Sort-picker row stands for; null is "Use Global Setting" / "Default Order". */
+    private fun sortChoice(itemId: String): XmbSortMode? =
+        if (itemId == LIST_SORT_DEFAULT_ID) null
+        else XmbSortMode.entries.firstOrNull { it.name == itemId.removePrefix(LIST_SORT_PREFIX) }
+
+    /**
+     * Gives [listKey] a sort of its own ([mode] null clears it back to the global setting). When
+     * the list is the one on screen it re-renders from the top at once; the write then lands in
+     * the store, and the collector finds the state already matches.
+     */
+    private fun applyListSort(listKey: String, mode: XmbSortMode?) {
+        val state = _uiState.value
+        if (state.listSortOverrides[listKey] == mode) return
         menuSound.play(MenuSound.SYSTEM_BROWSE)
-        _uiState.update { it.copy(
-            gameSortMode = mode,
-            selectedItemIndex = 0,
-            scrollToTopToken = it.scrollToTopToken + 1,
-        )}
+        val onScreen = state.currentListKey() == listKey
+        _uiState.update {
+            val overrides = if (mode == null) it.listSortOverrides - listKey else it.listSortOverrides + (listKey to mode)
+            if (onScreen) it.copy(listSortOverrides = overrides, selectedItemIndex = 0, scrollToTopToken = it.scrollToTopToken + 1)
+            else it.copy(listSortOverrides = overrides)
+        }
+        viewModelScope.launch { listStateRepository.setSort(listKey, mode?.toListSort()) }
+        if (!onScreen) return
         // Second pass on purpose: currentSortLabel() reads _uiState.value, which inside the update
         // above is still the pre-change state — it would label the column with the old mode.
         _uiState.update { it.copy(sortLabel = currentSortLabel()) }
-        rebuildGameColumn()
+        if (state.currentListKind() == XmbListKind.GAMES) rebuildGameColumn()
+        else loadItemsForCategory(currentCategory())
+    }
+
+    /**
+     * Opens the Sort picker for [listKey]. [withGlobalRow] appends the row that opens the global
+     * picker for lists of this kind — app lists have no All Games menu to carry it.
+     */
+    private fun openListSortMenu(
+        listKey: String,
+        kind: XmbListKind,
+        title: String,
+        withGlobalRow: Boolean = false,
+        parent: XMBContextMenu? = null,
+    ) {
+        val state = _uiState.value
+        val global = if (kind == XmbListKind.APPS) state.appSortMode else state.gameSortMode
+        val rows = listSortMenuItems(kind, global, state.listSortOverrides[listKey])
+        val items = if (!withGlobalRow) rows else rows + XMBContextMenuItem(
+            id = GLOBAL_SORT_ROW_ID,
+            label = "Global Sort",
+            value = sortLabel(global, kind),
+            header = "All Lists",
+        )
+        _uiState.update { it.copy(
+            activeContextMenu = XMBContextMenu(
+                title = title,
+                items = items,
+                selectedIndex = rows.indexOfFirst { row -> row.checked }.coerceAtLeast(0),
+                sortListKey = listKey,
+                sortListKind = kind,
+                parent = parent,
+            )
+        )}
+    }
+
+    /** Opens the global Sort picker for every list of [kind] that has no sort of its own. */
+    private fun openGlobalSortMenu(kind: XmbListKind, parent: XMBContextMenu? = null) {
+        val state = _uiState.value
+        val current = if (kind == XmbListKind.APPS) state.appSortMode else state.gameSortMode
+        val items = globalSortMenuItems(kind, current)
+        _uiState.update { it.copy(
+            activeContextMenu = XMBContextMenu(
+                title = "Global Sort",
+                items = items,
+                selectedIndex = items.indexOfFirst { row -> row.checked }.coerceAtLeast(0),
+                globalSortKind = kind,
+                parent = parent,
+            )
+        )}
+    }
+
+    /**
+     * Handles a row of a Sort picker (a list's own, or the global one). Returns false when the
+     * menu is neither, so [activateContextMenuItem] falls through to every other menu unchanged.
+     */
+    private fun handleSortMenuItem(menu: XMBContextMenu, itemId: String): Boolean {
+        val globalKind = menu.globalSortKind
+        if (globalKind != null && itemId.startsWith(GLOBAL_SORT_PREFIX)) {
+            val mode = XmbSortMode.entries.firstOrNull { it.name == itemId.removePrefix(GLOBAL_SORT_PREFIX) }
+            closeContextMenu()
+            val listSort = mode?.toListSort() ?: return true
+            menuSound.play(MenuSound.SYSTEM_BROWSE)
+            viewModelScope.launch {
+                if (globalKind == XmbListKind.APPS) sortPreferences.setAppsSort(listSort)
+                else sortPreferences.setGamesSort(listSort)
+            }
+            return true
+        }
+        val listKey = menu.sortListKey ?: return false
+        val kind = menu.sortListKind ?: return false
+        if (itemId == GLOBAL_SORT_ROW_ID) {
+            openGlobalSortMenu(kind, parent = menu)
+            return true
+        }
+        if (!itemId.startsWith(LIST_SORT_PREFIX)) return false
+        closeContextMenu()
+        applyListSort(listKey, sortChoice(itemId))
+        return true
     }
 
     /**
@@ -4822,7 +5221,7 @@ class XMBViewModel @Inject constructor(
             selectedItemIndex = 0,
             scrollToTopToken = it.scrollToTopToken + 1,
         )}
-        // As in [applyGameSortMode]: the label has to be computed from the state after the write.
+        // As in [applyListSort]: the label has to be computed from the state after the write.
         _uiState.update { it.copy(sortLabel = currentSortLabel()) }
         rebuildGameColumn()
     }
@@ -4925,10 +5324,12 @@ class XMBViewModel @Inject constructor(
         if (socialTitle != null) return socialTitle
         return when {
             s.selectedCollectionId != null ->
-                s.collections.firstOrNull { it.id == s.selectedCollectionId }?.name ?: "Collection"
+                s.collections.firstOrNull { it.id == s.selectedCollectionId }?.name ?: "Custom Card"
             s.selectedPlatformId == ALL_GAMES_PLATFORM_ID -> "All Games"
             s.selectedPlatformId == FAVORITES_PLATFORM_ID -> "Favorites"
             s.selectedPlatformId == MISSING_PLATFORM_ID   -> "Missing"
+            s.selectedPlatformId == CATEGORY_CARD_PLATFORM_ID ->
+                currentCategory()?.let { "${it.name} Memory Card" }
             s.selectedPlatformId != null ->
                 enabledCards.firstOrNull { it.platformId == s.selectedPlatformId }?.displayName
                     ?: platformCache[s.selectedPlatformId]?.name
@@ -5099,22 +5500,39 @@ class XMBViewModel @Inject constructor(
             }.coerceAtLeast(0)
             return sibs to idx
         }
-        // Custom gaming category drilled into a collection — just show the single collection icon.
-        val parent = XMBItem(id = "drill_parent", title = computeDrillTitle().orEmpty(), type = XMBItemType.COLLECTION)
+        // Custom category drilled into its Memory Card or a custom memory card — just show the
+        // single parent icon (both draw the memory-card glyph; an open card keeps its own icon).
+        val openCard = s.collections.firstOrNull { it.id == s.selectedCollectionId }
+        val parent = XMBItem(
+            id = "drill_parent",
+            title = computeDrillTitle().orEmpty(),
+            iconKey = openCard?.iconKey,
+            type = if (s.selectedPlatformId == CATEGORY_CARD_PLATFORM_ID) XMBItemType.CATEGORY_CARD else XMBItemType.COLLECTION,
+        )
         return listOf(parent) to 0
     }
 
     // Status-bar hint for the current list ("Sort: Title"), or null when the list isn't sortable.
     private fun currentSortLabel(): String? {
-        val cycle = activeSortContext() ?: return null
         val state = _uiState.value
+        // A column's root or an app list: named only once it has left its default, so the chip
+        // does not appear on every root that has never been arranged.
+        state.arrangeableRootKind()?.let { kind ->
+            val key = state.currentListKey() ?: return null
+            val mode = state.activeSortFor(key, kind)
+            return when {
+                kind == XmbListKind.ROOT -> if (state.isCustomSorted(key, kind)) "Sort: Custom" else null
+                else -> "Sort: ${sortLabel(mode, kind)}"
+            }
+        }
+        val cycle = activeSortContext() ?: return null
         // Games: the chip names the menu it opens, and carries the active search term. That term
         // is not decoration — a column missing four fifths of its games has nothing else on screen
         // explaining why, and this chip is the only thing the eye can find it in.
         if (cycle === GAME_SORTS) {
             val term = state.gameQuery.trim()
-            return if (term.isBlank()) "Filter: ${state.gameSortMode.label}"
-                   else "Filter: \"$term\" · ${state.gameSortMode.label}"
+            return if (term.isBlank()) "Filter: ${state.activeGameSort.label}"
+                   else "Filter: \"$term\" · ${state.activeGameSort.label}"
         }
         val mode = if (cycle === MUSIC_SORTS) state.musicSortMode else state.videoSortMode
         return "Sort: ${mode.label}"
@@ -5188,19 +5606,25 @@ class XMBViewModel @Inject constructor(
             XMBItem(
                 id           = "collection_${collection.id}",
                 title        = collection.name,
-                subtitle     = if (collection.isPinned) "Pinned · $games" else games,
+                subtitle     = customCardSubtitle(collection.isPinned, games),
                 collectionId = collection.id,
                 iconKey      = collection.iconKey,
+                pinned       = collection.isPinned,
                 type         = XMBItemType.COLLECTION,
             )
         }
 
         if (enabledCards.isEmpty()) {
-            return header + collectionItems + XMBItem(
-                id       = NO_CONSOLES_ITEM_ID,
-                title    = "No consoles configured",
-                subtitle = "Open Library Manager to add a Memory Card",
-                type     = XMBItemType.EMPTY,
+            return gamesRoot(
+                movable = header + collectionItems,
+                trailing = listOf(
+                    XMBItem(
+                        id       = NO_CONSOLES_ITEM_ID,
+                        title    = "No consoles configured",
+                        subtitle = "Open Library Manager to add a Memory Card",
+                        type     = XMBItemType.EMPTY,
+                    )
+                ),
             )
         }
 
@@ -5211,17 +5635,33 @@ class XMBViewModel @Inject constructor(
                 (_uiState.value.platformGameCounts[WINDOWS_PLATFORM_ID] ?: card.gameCount) > 0
         }
 
-        return header + collectionItems + visibleCards.map { card ->
-            val count = _uiState.value.platformGameCounts[card.platformId] ?: card.gameCount
-            XMBItem(
-                id          = "card_${card.platformId}",
-                title       = if (card.platformId == WINDOWS_PLATFORM_ID) "Windows Games" else card.displayName,
-                subtitle    = "$count ${if (count == 1) "Game" else "Games"}",
-                platformId  = card.platformId,
-                accentColor = platformCache[card.platformId]?.accentColor,
-                type        = XMBItemType.MEMORY_CARD,
-            )
-        }
+        return gamesRoot(
+            movable = header + collectionItems + visibleCards.map { card ->
+                val count = _uiState.value.platformGameCounts[card.platformId] ?: card.gameCount
+                XMBItem(
+                    id          = "card_${card.platformId}",
+                    title       = if (card.platformId == WINDOWS_PLATFORM_ID) "Windows Games" else card.displayName,
+                    subtitle    = "$count ${if (count == 1) "Game" else "Games"}",
+                    platformId  = card.platformId,
+                    accentColor = platformCache[card.platformId]?.accentColor,
+                    pinned      = card.pinned,
+                    type        = XMBItemType.MEMORY_CARD,
+                )
+            },
+        )
+    }
+
+    // The Games root as it is shown: the UMD slot, then [movable] in its default order or the
+    // user's Custom one, then [trailing].
+    private fun gamesRoot(movable: List<XMBItem>, trailing: List<XMBItem> = emptyList()): List<XMBItem> {
+        val rootKey = com.playfieldportal.core.domain.model.ListKeys.root(BuiltInCategory.GAMES)
+        return assembleRoot(
+            umd = umdSlotItem(BuiltInCategory.GAMES, allRealGames),
+            movable = movable,
+            trailing = trailing,
+            listState = listState(rootKey),
+            custom = _uiState.value.isCustomSorted(rootKey, XmbListKind.ROOT),
+        )
     }
 
     // B3: the empty All Games row names the FIRST unmet setup step and confirms through to the
@@ -5246,7 +5686,7 @@ class XMBViewModel @Inject constructor(
 
     private fun emptyCollectionItem(): XMBItem = XMBItem(
         id       = EMPTY_COLLECTION_ITEM_ID,
-        title    = "This collection is empty",
+        title    = "This custom memory card is empty",
         subtitle = "Add games from any console with the options (△) menu.",
         type     = XMBItemType.EMPTY,
     )
@@ -5328,11 +5768,20 @@ class XMBViewModel @Inject constructor(
         games: List<Game>,
         emptyItem: (() -> XMBItem)? = null,
         mapRows: (List<XMBItem>) -> List<XMBItem> = { it },
+        // When each game was added to this list, for lists that have such a moment.
+        dateAdded: Map<Long, Long> = emptyMap(),
     ): List<XMBItem> {
         val state = _uiState.value
-        val visible = gamesForDisplay(games, state.gameQuery, state.gameSortMode)
+        val arrangement = listState(state.currentListKey())
+        val visible = gamesForDisplay(games, state.gameQuery, state.activeGameSort, arrangement, dateAdded)
         return when {
-            visible.isNotEmpty()         -> mapRows(visible.toXmbItems())
+            visible.isNotEmpty()         -> mapRows(
+                visible.toXmbItems().map { row ->
+                    val pinned = row.gameId != null &&
+                        com.playfieldportal.core.domain.model.ListKeys.game(row.gameId) in arrangement.pinned
+                    if (pinned) row.copy(pinned = true) else row
+                }
+            )
             state.gameQuery.isNotBlank() -> listOf(noGameMatchesItem(state.gameQuery.trim()))
             else                         -> listOfNotNull(emptyItem?.invoke())
         }
@@ -5588,10 +6037,16 @@ class XMBViewModel @Inject constructor(
                         state = s,
                         idleMs = idleMs,
                     )
+                // Fifth: the media screens' prompt rows.
+                val shouldShowMedia = com.playfieldportal.feature.xmb.viewmodel.shouldShowMediaHint(
+                    state = s,
+                    idleMs = idleMs,
+                )
                 if (shouldShow != s.showContextMenuHint ||
                     shouldShowDrawer != s.showAppDrawerHint ||
                     shouldShowSettings != s.showSettingsHint ||
-                    shouldShowNotifications != s.showNotificationHint
+                    shouldShowNotifications != s.showNotificationHint ||
+                    shouldShowMedia != s.showMediaHint
                 ) {
                     _uiState.update {
                         it.copy(
@@ -5599,6 +6054,7 @@ class XMBViewModel @Inject constructor(
                             showAppDrawerHint = shouldShowDrawer,
                             showSettingsHint = shouldShowSettings,
                             showNotificationHint = shouldShowNotifications,
+                            showMediaHint = shouldShowMedia,
                         )
                     }
                 }
@@ -5723,6 +6179,12 @@ class XMBViewModel @Inject constructor(
         // Below the context-menu branch, so the △ menu it opens wins over the panel beneath it.
         // Running rows are skipped by the cursor — they are a readout, not a list you act on.
         if (state.notificationPanel != null) {
+            // A Notes/Results sheet or the Stop confirm is up over the panel: it owns every press,
+            // through the shell's modal host, and BACK there returns to the panel.
+            if (state.notificationPanel.hasLayer) {
+                forwardToShellModal(action)
+                return
+            }
             when (action) {
                 GamepadAction.NAVIGATE_UP   -> moveNotificationCursor(-1)
                 GamepadAction.NAVIGATE_DOWN -> moveNotificationCursor(+1)
@@ -5875,6 +6337,11 @@ class XMBViewModel @Inject constructor(
         // Windows Library setup prompt — opens on Set Up, so A sets up (Library Manager) and B
         // defers, as before; left/right now reach Later too. Forwarded to the shared confirm modal.
         if (state.showWindowsSetupPrompt) {
+            forwardToShellModal(action)
+            return
+        }
+        // A shortcut request's Add / Ignore — forwarded to the shared confirm modal.
+        if (state.shortcutReview != null) {
             forwardToShellModal(action)
             return
         }
@@ -6039,6 +6506,29 @@ class XMBViewModel @Inject constructor(
         // Defensive net: the main XMB navigation below must NEVER run while any overlay,
         // menu, or modal dialog is on screen. Each case above returns for its own handling;
         // this guards against a future overlay being added without its own branch.
+        // A row being moved owns the D-pad: up / down slide it, confirm places it, back puts it
+        // back. Everything else is swallowed until the move ends.
+        // A lifted category owns left / right the same way: slide it, place it, or put it back.
+        if (state.categoryMoveSession != null) {
+            when (action) {
+                GamepadAction.NAVIGATE_LEFT  -> if (!shiftMovingCategory(-1)) gamepadInputHandler.cancelRepeat()
+                GamepadAction.NAVIGATE_RIGHT -> if (!shiftMovingCategory(+1)) gamepadInputHandler.cancelRepeat()
+                GamepadAction.SELECT         -> placeMovingCategory()
+                GamepadAction.BACK           -> cancelMovingCategory()
+                else -> Unit
+            }
+            return
+        }
+        if (state.moveSession != null) {
+            when (action) {
+                GamepadAction.NAVIGATE_UP   -> if (!shiftMovingRow(-1)) gamepadInputHandler.cancelRepeat()
+                GamepadAction.NAVIGATE_DOWN -> if (!shiftMovingRow(+1)) gamepadInputHandler.cancelRepeat()
+                GamepadAction.SELECT        -> placeMovingRow()
+                GamepadAction.BACK          -> cancelMovingRow()
+                else -> Unit
+            }
+            return
+        }
         if (state.hasBlockingOverlay) return
 
         when (action) {
@@ -6070,9 +6560,13 @@ class XMBViewModel @Inject constructor(
                 if (next != state.selectedCategoryIndex) onCategorySelected(next)
                 else gamepadInputHandler.cancelRepeat()
             }
-            GamepadAction.SELECT     -> onItemSelected(state.selectedItemIndex)
+            // Multi-select: confirm marks the focused game instead of opening it.
+            GamepadAction.SELECT     ->
+                if (state.markMode) toggleMark(state.focusedItem) else onItemSelected(state.selectedItemIndex)
             GamepadAction.BACK       -> {
                 menuSound.play(MenuSound.BACK)
+                // Multi-select ends first, leaving the list exactly where it is.
+                if (state.markMode) { exitMarkMode(); return }
                 // One level up, or the App Drawer when there is no level left to leave.
                 if (!backOutOfDrill(state)) onOpenAppDrawer()
             }
@@ -6084,9 +6578,12 @@ class XMBViewModel @Inject constructor(
                     item != null && openVideoContextMenu(item) -> Unit
                     item != null && openPhotoContextMenu(item) -> Unit
                     item != null && openAchievementsContextMenu(item) -> Unit
+                    // Multi-select: Options acts on everything marked, not on the focused row.
+                    state.markMode -> openMarkedCollectionPicker()
                     item?.gameId != null -> openGameContextMenu(item)
                     item?.collectionId != null && item.type == XMBItemType.COLLECTION -> openCollectionRowContextMenu(item.collectionId)
                     item?.type == XMBItemType.ALL_GAMES -> openAllGamesContextMenu()
+                    item != null && item.isRootRow() -> openRootRowContextMenu(item)
                     item?.type == XMBItemType.SOCIAL_ACCOUNT -> openSocialAccountContextMenu()
                     item?.platformId != null -> openPlatformContextMenu(item.platformId)
                     item?.packageName != null -> openAppContextMenu(item)
@@ -6109,10 +6606,18 @@ class XMBViewModel @Inject constructor(
 
     private fun openPlatformContextMenu(platformId: String) {
         val card = enabledCards.firstOrNull { it.platformId == platformId } ?: return
+        val cardListKey = com.playfieldportal.core.domain.model.ListKeys.card(platformId)
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
                 title      = card.displayName,
-                items      = platformCardMenuItems(platformId, card.pinned, platformIconDisplayLabel(platformId)),
+                items      = platformCardMenuItems(
+                    platformId       = platformId,
+                    pinned           = card.pinned,
+                    iconDisplayLabel = platformIconDisplayLabel(platformId),
+                    sortLabel        = it.sortValueLabel(cardListKey, XmbListKind.GAMES),
+                    canMove          = canMoveRootRows(),
+                ),
+                rowKey     = com.playfieldportal.core.domain.model.ListKeys.cardItem(platformId),
                 platformId = platformId,
             )
         )}
@@ -6123,10 +6628,275 @@ class XMBViewModel @Inject constructor(
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
                 title      = "All Games",
-                items      = allGamesMenuItems(it.iconDisplayMode.label),
+                items      = allGamesMenuItems(
+                    iconDisplayLabel = it.iconDisplayMode.label,
+                    sortLabel        = it.sortValueLabel(com.playfieldportal.core.domain.model.ListKeys.ALL_GAMES, XmbListKind.GAMES),
+                    globalSortLabel  = it.gameSortMode.label,
+                    canMove          = canMoveRootRows(),
+                ),
+                rowKey     = com.playfieldportal.core.domain.model.ListKeys.ROW_ALL_GAMES,
                 isAllGames = true,
             )
         )}
+    }
+
+    // The menu of a root row that is not a record of its own: a custom category's Memory Card,
+    // Favorites, Missing. Open it, sort the list behind it, move it while the root is Custom.
+    private fun openRootRowContextMenu(item: XMBItem) {
+        val state = _uiState.value
+        val listKey = when (item.type) {
+            XMBItemType.CATEGORY_CARD -> currentCategory()?.id?.let { com.playfieldportal.core.domain.model.ListKeys.categoryCard(it) }
+            XMBItemType.FAVORITES -> com.playfieldportal.core.domain.model.ListKeys.FAVORITES
+            // The Missing bucket is a holding pen: it is listed, never arranged.
+            else -> null
+        }
+        _uiState.update { it.copy(
+            activeContextMenu = XMBContextMenu(
+                title            = item.title,
+                items            = rootRowMenuItems(
+                    sortValue = listKey?.let { key -> state.sortValueLabel(key, XmbListKind.GAMES) },
+                    canMove   = canMoveRootRows(),
+                ),
+                rowKey           = item.rowKey(),
+                sortListKey      = null,
+                categoryCardMenu = item.type == XMBItemType.CATEGORY_CARD,
+                rootRowMenu      = true,
+            )
+        )}
+    }
+
+    /** Whether the rows of the list on screen can be moved: only a root or app list in Custom. */
+    private fun canMoveRootRows(): Boolean {
+        val state = _uiState.value
+        val kind = state.arrangeableRootKind() ?: return false
+        return state.isCustomSorted(state.currentListKey(), kind)
+    }
+
+    // The list a container row's "Sort" row sets the sort of, and what that list holds.
+    private fun sortTargetOf(menu: XMBContextMenu): Pair<String, XmbListKind>? {
+        val keys = com.playfieldportal.core.domain.model.ListKeys
+        val key = when {
+            menu.collectionRowId != null -> keys.collection(menu.collectionRowId)
+            menu.isAllGames -> keys.ALL_GAMES
+            menu.categoryCardMenu -> currentCategory()?.id?.let { keys.categoryCard(it) }
+            menu.rootRowMenu && menu.rowKey == keys.ROW_FAVORITES -> keys.FAVORITES
+            menu.platformId != null -> keys.card(menu.platformId)
+            else -> null
+        } ?: return null
+        return key to XmbListKind.GAMES
+    }
+
+    /**
+     * The rows every arrangeable row's menu shares, whichever menu they are on: Move, the Sort of
+     * the list behind a container row, a game's Pin to Top, its UMD slot, and Open on a root row.
+     * Returns false for any other id, so the menu's own handler still sees it.
+     */
+    private fun handleArrangeMenuItem(menu: XMBContextMenu, itemId: String): Boolean {
+        when (itemId) {
+            MOVE_ROW_ID -> {
+                closeContextMenu()
+                menu.rowKey?.let(::startMove)
+            }
+            LIST_SORT_ROW_ID -> {
+                val (listKey, kind) = sortTargetOf(menu) ?: return false
+                openListSortMenu(listKey, kind, title = "Sort", parent = menu)
+            }
+            GLOBAL_SORT_ROW_ID -> {
+                if (menu.sortListKey != null) return false   // the Sort picker's own Global row
+                openGlobalSortMenu(XmbListKind.GAMES, parent = menu)
+            }
+            "pin_top", "unpin_top" -> {
+                val gameKey = menu.gameId?.let { com.playfieldportal.core.domain.model.ListKeys.game(it) } ?: return false
+                val listKey = _uiState.value.currentListKey() ?: return false
+                closeContextMenu()
+                appAction { listStateRepository.setPinned(listKey, gameKey, pinned = itemId == "pin_top") }
+            }
+            "insert_umd" -> {
+                val gameId = menu.gameId ?: return false
+                val column = currentCategory()?.takeIf { it.isGamingCategory }?.id ?: return false
+                closeContextMenu()
+                appAction { umdSlotRepository.insert(column, gameId) }
+            }
+            "eject_umd" -> {
+                val column = currentCategory()?.takeIf { it.isGamingCategory }?.id ?: return false
+                closeContextMenu()
+                appAction { umdSlotRepository.eject(column) }
+            }
+            "select_multiple" -> {
+                val gameId = menu.gameId ?: return false
+                closeContextMenu()
+                _uiState.update { it.copy(markMode = true, markedGameIds = setOf(gameId)) }
+            }
+            "open_row" -> {
+                if (!menu.rootRowMenu) return false
+                closeContextMenu()
+                when (menu.rowKey) {
+                    com.playfieldportal.core.domain.model.ListKeys.ROW_CATEGORY_CARD -> openCategoryCardFolder()
+                    com.playfieldportal.core.domain.model.ListKeys.ROW_FAVORITES -> openFavoritesFolder()
+                    com.playfieldportal.core.domain.model.ListKeys.ROW_MISSING -> openMissingFolder()
+                }
+            }
+            else -> return false
+        }
+        return true
+    }
+
+    // ── Move mode ─────────────────────────────────────────────────────────────
+    // One row, lifted. Up / down slide it among the rows it may pass, confirm saves the list's
+    // whole order, back puts everything where it was.
+
+    private fun startMove(rowKey: String) {
+        val state = _uiState.value
+        val listKey = state.currentListKey() ?: return
+        val index = state.currentItems.indexOfFirst { it.rowKey() == rowKey }
+        if (index < 0) return
+        menuSound.play(MenuSound.SELECT)
+        _uiState.update { it.copy(
+            selectedItemIndex = index,
+            moveSession = MoveSession(listKey, originalItems = it.currentItems, originalIndex = index),
+        )}
+    }
+
+    private fun shiftMovingRow(delta: Int): Boolean {
+        val state = _uiState.value
+        if (state.moveSession == null) return false
+        val (items, index) = moveRow(state.currentItems, state.selectedItemIndex, delta) ?: return false
+        menuSound.play(MenuSound.SCROLL)
+        _uiState.update { it.copy(currentItems = items, selectedItemIndex = index) }
+        return true
+    }
+
+    /** Saves the list as it now stands as its Custom order. */
+    fun placeMovingRow() {
+        val state = _uiState.value
+        val session = state.moveSession ?: return
+        menuSound.play(MenuSound.CONFIRM)
+        val keys = state.currentItems.orderKeys()
+        // The order just made is already on screen; write it before the session ends so the
+        // collector that follows finds the store agreeing with the list.
+        _uiState.update {
+            val saved = it.listStates[session.listKey] ?: com.playfieldportal.core.domain.model.ListState.EMPTY
+            it.copy(
+                moveSession = null,
+                listStates = it.listStates + (session.listKey to saved.copy(
+                    positions = keys.withIndex().associate { (index, key) -> key to index },
+                )),
+            )
+        }
+        viewModelScope.launch { listStateRepository.replaceOrder(session.listKey, keys) }
+        reloadDeferredDuringMove()
+    }
+
+    private fun reloadDeferredDuringMove() {
+        if (!reloadAfterMove) return
+        reloadAfterMove = false
+        loadItemsForCategory(currentCategory(), keepCursorOnRow = true)
+    }
+
+    /** Puts the row — and the cursor — back where the move started. */
+    fun cancelMovingRow() {
+        val session = _uiState.value.moveSession ?: return
+        menuSound.play(MenuSound.BACK)
+        _uiState.update { it.copy(
+            currentItems = session.originalItems,
+            selectedItemIndex = session.originalIndex,
+            moveSession = null,
+        )}
+        reloadDeferredDuringMove()
+    }
+
+    /** Touch: nudge the lifted row one place up (-1) or down (+1). */
+    fun onMoveRowBy(delta: Int) {
+        markTouchInput()
+        shiftMovingRow(delta)
+    }
+
+    // ── Category move ─────────────────────────────────────────────────────────
+    // Category Manager's Move closes Settings and lifts the category on the crossbar itself, so
+    // the user sees the bar they are arranging. Left / right slide it, confirm saves the bar's
+    // order, back puts it where it was.
+
+    /** Closes Settings and lifts [categoryId] on the crossbar. A category not on the bar is ignored. */
+    fun startCategoryMove(categoryId: String) {
+        val index = _uiState.value.categories.indexOfFirst { it.id == categoryId }
+        if (index < 0) return
+        _uiState.update { it.copy(activeSettingsScreen = null, pendingSettingsAction = null) }
+        onCategorySelected(index)
+        menuSound.play(MenuSound.SELECT)
+        _uiState.update { it.copy(
+            categoryMoveSession = CategoryMoveSession(originalCategories = it.categories, originalIndex = index),
+        )}
+    }
+
+    private fun shiftMovingCategory(delta: Int): Boolean {
+        val state = _uiState.value
+        if (state.categoryMoveSession == null) return false
+        val (categories, index) = moveCategory(state.categories, state.selectedCategoryIndex, delta) ?: return false
+        menuSound.play(MenuSound.SCROLL)
+        // The same category stays selected, so its column stays on screen as it travels.
+        _uiState.update { it.copy(categories = categories, selectedCategoryIndex = index) }
+        return true
+    }
+
+    /** Saves the bar's order as it now stands. */
+    fun placeMovingCategory() {
+        val state = _uiState.value
+        if (state.categoryMoveSession == null) return
+        menuSound.play(MenuSound.CONFIRM)
+        val order = state.categories.map { it.id }
+        // Whatever the store said mid-move is superseded: the save below makes it emit again.
+        deferredCategoryBar = null
+        _uiState.update { it.copy(categoryMoveSession = null) }
+        viewModelScope.launch { categoryRepository.reorder(order) }
+    }
+
+    /** Puts the category — and the bar — back where the move started. */
+    fun cancelMovingCategory() {
+        val session = _uiState.value.categoryMoveSession ?: return
+        menuSound.play(MenuSound.BACK)
+        _uiState.update { it.copy(
+            categories = session.originalCategories,
+            selectedCategoryIndex = session.originalIndex,
+            categoryMoveSession = null,
+        )}
+        deferredCategoryBar?.let { deferredCategoryBar = null; applyCategoryBar(it) }
+    }
+
+    /** Touch: nudge the lifted category one slot left (-1) or right (+1). */
+    fun onMoveCategoryBy(delta: Int) {
+        markTouchInput()
+        shiftMovingCategory(delta)
+    }
+
+    // ── Multi-select ──────────────────────────────────────────────────────────
+
+    private fun toggleMark(item: XMBItem?) {
+        val gameId = item?.gameId ?: return
+        menuSound.play(MenuSound.SELECT)
+        _uiState.update {
+            val marked = if (gameId in it.markedGameIds) it.markedGameIds - gameId else it.markedGameIds + gameId
+            it.copy(markedGameIds = marked)
+        }
+    }
+
+    private fun exitMarkMode() = _uiState.update {
+        if (!it.markMode && it.markedGameIds.isEmpty()) it else it.copy(markMode = false, markedGameIds = emptySet())
+    }
+
+    /** Touch: leave multi-select from the hint bar. */
+    fun onExitMarkMode() {
+        markTouchInput()
+        exitMarkMode()
+    }
+
+    /** Touch: open "Add N Games to Card" from the hint bar. */
+    fun onAddMarkedToCard() {
+        markTouchInput()
+        openMarkedCollectionPicker()
+    }
+
+    private fun openCategoryCardFolder() = navigateRememberingCursor {
+        it.copy(selectedPlatformId = CATEGORY_CARD_PLATFORM_ID, selectedCollectionId = null)
     }
 
     // The label shown on a console's Icon Display row: its own override when it has one,
@@ -6292,20 +7062,41 @@ class XMBViewModel @Inject constructor(
     private fun openGameContextMenuCore(item: XMBItem, discCount: Int) {
         val currentCat = currentCategory()
         val inGamingCategory = currentCat?.isGamingCategory == true
+        val state = _uiState.value
+        val listKey = state.currentListKey()
+        val isUmdRow = item.type == XMBItemType.UMD_SLOT
+        // A games list that can be arranged: any drilled-in card or custom memory card. The
+        // Missing bucket is a holding pen, not a list anyone arranges.
+        val inGamesList = !isUmdRow && state.currentListKind() == XmbListKind.GAMES &&
+            state.selectedPlatformId != MISSING_PLATFORM_ID
+        val column = currentCat?.takeIf { it.isGamingCategory }?.id
+        val umd = when {
+            column == null || item.gameId == null || !item.isRealGame -> UmdMenuState.NONE
+            isUmdRow -> if (column in state.umdInserted) UmdMenuState.INSERTED else UmdMenuState.CAN_INSERT
+            state.umdInserted[column] == item.gameId -> UmdMenuState.INSERTED
+            else -> UmdMenuState.CAN_INSERT
+        }
         val items = gameContextMenuItems(
             item            = item,
             discCount       = discCount,
-            inCollection    = _uiState.value.selectedCollectionId != null,
+            inCollection    = state.selectedCollectionId != null,
             currentCategory = currentCat,
-            categories      = _uiState.value.categories,
-            inMissingBucket = _uiState.value.selectedPlatformId == MISSING_PLATFORM_ID,
+            categories      = state.categories,
+            inMissingBucket = state.selectedPlatformId == MISSING_PLATFORM_ID,
             hideLabel       = currentHideLocation()?.third,
+            pinned          = if (inGamesList) item.pinned else null,
+            // A search shows part of the list; saving that as the whole order would drop the rest.
+            canMove         = inGamesList && state.isCustomSorted(listKey, XmbListKind.GAMES) &&
+                state.gameQuery.isBlank(),
+            umd             = umd,
+            canSelectMultiple = inGamesList && !state.markMode,
         )
 
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
                 title       = item.title,
                 items       = items,
+                rowKey      = item.rowKey(),
                 gameId      = item.gameId,
                 packageName = item.packageName,
                 shortcutId  = item.shortcutId,
@@ -6320,26 +7111,51 @@ class XMBViewModel @Inject constructor(
     // stays open while toggling so the user can add to several collections at once.
     private fun openCollectionPicker(gameId: Long, selectIndex: Int = 0, parent: XMBContextMenu? = null) {
         viewModelScope.launch {
-            val collections = collectionRepository.getAll()
             val memberOf = collectionRepository.getCollectionIdsForGame(gameId).toSet()
-            val items = buildList {
-                collections.forEach { c ->
-                    add(XMBContextMenuItem(
-                        id      = "col_${c.id}",
-                        label   = c.name,
-                        checked = c.id in memberOf,
-                    ))
-                }
-                add(XMBContextMenuItem("col_new", "Create New Collection"))
-            }
+            val items = addToCardRows(memberOf)
             _uiState.update { it.copy(
                 activeContextMenu = XMBContextMenu(
-                    title            = "Add to Collection",
+                    title            = "Add to Card",
                     items            = items,
                     selectedIndex    = selectIndex.coerceIn(0, items.lastIndex.coerceAtLeast(0)),
                     gameId           = gameId,
                     collectionGameId = gameId,
                     parent           = parent,
+                )
+            )}
+        }
+    }
+
+    // The Add to Card rows for the column being browsed: its own custom memory cards first. Cards
+    // of the other kind (game cards from an app column, and the reverse) are never offered.
+    private suspend fun addToCardRows(memberOf: Set<Long>): List<XMBContextMenuItem> {
+        val state = _uiState.value
+        val current = currentCategory()
+        val gamingByCategory = state.categories.associate { it.id to it.isGamingCategory }
+        val wantGaming = current?.takeIf { categoryShowsCollections(it) }?.isGamingCategory ?: true
+        val collections = collectionRepository.getAll()
+            .filter { (gamingByCategory[it.categoryId] ?: (it.categoryId == BuiltInCategory.GAMES)) == wantGaming }
+            .map { Triple(it.id, it.name, it.categoryId) }
+        return addToCardMenuItems(
+            collections = collections,
+            currentCategoryId = collectionHomeCategoryId(),
+            categoryNames = state.categories.associate { it.id to it.name },
+            memberOf = memberOf,
+        )
+    }
+
+    // "Add N Games to Card" for the games marked in multi-select: picking a card adds them all.
+    private fun openMarkedCollectionPicker() {
+        val marked = _uiState.value.markedGameIds
+        if (marked.isEmpty()) return
+        viewModelScope.launch {
+            val items = addToCardRows(memberOf = emptySet())
+            val noun = if (marked.size == 1) "Game" else "Games"
+            _uiState.update { it.copy(
+                activeContextMenu = XMBContextMenu(
+                    title         = "Add ${marked.size} $noun to Card",
+                    items         = items,
+                    markedGameIds = marked,
                 )
             )}
         }
@@ -6357,11 +7173,19 @@ class XMBViewModel @Inject constructor(
             // references the app by package) so it can live in Favorites / Collections without
             // duplicating the app's metadata. Works for every Android app, GameHub included.
             add(XMBContextMenuItem("favorite",          "Add to Favorites"))
-            add(XMBContextMenuItem("add_to_collection", "Add to Collection"))
+            add(XMBContextMenuItem("add_to_collection", "Add to Card…"))
+            // Pin to Top works both ways (a pinned app could not be unpinned before), and Move
+            // appears while the app's list is Custom sorted.
+            if (categoryId != null) {
+                add(XMBContextMenuItem(if (item.pinned) "unpin" else "pin", "Pin to Top", value = if (item.pinned) "On" else "Off"))
+                val state = _uiState.value
+                if (state.currentListKind() == XmbListKind.APPS && state.isCustomSorted(state.currentListKey(), XmbListKind.APPS)) {
+                    add(XMBContextMenuItem(MOVE_ROW_ID, "Move"))
+                }
+            }
             add(XMBContextMenuItem("move",     "Move To Category"))
             add(XMBContextMenuItem("add",      "Add To Category"))
             if (categoryId != null) add(XMBContextMenuItem("remove", "Remove From Category"))
-            if (categoryId != null) add(XMBContextMenuItem("pin",    "Pin To Category"))
             // Per-location hide (recoverable in Settings ▸ Hidden Items) + global hide-everywhere.
             if (categoryId != null) add(XMBContextMenuItem("hide_from_category", "Hide from ${categoryDisplayName(categoryId)}"))
             add(XMBContextMenuItem("hide_everywhere", "Hide Everywhere"))
@@ -6371,6 +7195,7 @@ class XMBViewModel @Inject constructor(
             activeContextMenu = XMBContextMenu(
                 title           = item.title,
                 items           = items,
+                rowKey          = item.rowKey(),
                 gameId          = item.gameId,
                 packageName     = pkg,
                 categoryContext = categoryId,
@@ -6384,21 +7209,19 @@ class XMBViewModel @Inject constructor(
         // Move is only meaningful when there's another category of the same kind to move into
         // (game collections move between gaming categories, app collections between app ones).
         val hasOtherCategory = collectionMoveTargets(collection.categoryId).isNotEmpty()
-        val items = buildList {
-            add(XMBContextMenuItem("open_collection",   "Open"))
-            add(XMBContextMenuItem("rename_collection", "Rename Collection"))
-            if (hasOtherCategory) add(XMBContextMenuItem("move_collection_category", "Move to Category"))
-            add(XMBContextMenuItem(
-                if (collection.isPinned) "unpin_collection" else "pin_collection",
-                if (collection.isPinned) "Unpin" else "Pin",
-            ))
-            add(XMBContextMenuItem("manage_collections", "Manage Collections"))
-            add(XMBContextMenuItem("delete_collection",  "Delete Collection", isDestructive = true))
-        }
+        val state = _uiState.value
+        val cardListKey = com.playfieldportal.core.domain.model.ListKeys.collection(collectionId)
+        val items = customCardMenuItems(
+            pinned = collection.isPinned,
+            canMoveToCategory = hasOtherCategory,
+            sortValue = state.sortValueLabel(cardListKey, XmbListKind.GAMES),
+            canMove = canMoveRootRows(),
+        )
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
                 title           = collection.name,
                 items           = items,
+                rowKey          = com.playfieldportal.core.domain.model.ListKeys.collectionItem(collectionId),
                 collectionRowId = collectionId,
             )
         )}
@@ -6423,7 +7246,7 @@ class XMBViewModel @Inject constructor(
         if (items.isEmpty()) return
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
-                title           = "Move Collection To",
+                title           = "Move Custom Card To",
                 items           = items,
                 collectionRowId = collectionId,
             )
@@ -6462,6 +7285,12 @@ class XMBViewModel @Inject constructor(
         // ── Games Filter menu — owns its own rows, and its groups stay open ──
         if (handleGamesFilterItem(menu, itemId)) return
 
+        // ── A list's Sort picker / the global Sort picker ──
+        if (handleSortMenuItem(menu, itemId)) return
+
+        // ── Rows every arrangeable row's menu shares: Move, Sort, Pin to Top, the UMD slot ──
+        if (handleArrangeMenuItem(menu, itemId)) return
+
         // ── Notification panel menus (one row, or the list) ──
         if (handleNotificationMenuItem(menu, itemId)) return
 
@@ -6481,6 +7310,23 @@ class XMBViewModel @Inject constructor(
                 }
                 if (currentCategory()?.id == fromCategory) {
                     loadItemsForCategory(currentCategory())
+                }
+            }
+            return
+        }
+
+        // ── "Add N Games to Card" (multi-select) — one pick adds every marked game ──
+        if (menu.markedGameIds.isNotEmpty()) {
+            val marked = menu.markedGameIds
+            closeContextMenu()
+            when {
+                itemId == "col_new" -> promptCreateCollection(forGameIds = marked)
+                itemId.startsWith("col_") -> {
+                    val collectionId = itemId.removePrefix("col_").toLongOrNull() ?: return
+                    appAction {
+                        marked.forEach { collectionRepository.addGame(collectionId, it) }
+                        exitMarkMode()
+                    }
                 }
             }
             return
@@ -6601,10 +7447,22 @@ class XMBViewModel @Inject constructor(
                 itemId == "pin_collection"   -> appAction { collectionRepository.setPinned(collectionId, true) }
                 itemId == "unpin_collection" -> appAction { collectionRepository.setPinned(collectionId, false) }
                 itemId == "manage_collections" -> _uiState.update { it.copy(activeSettingsScreen = "settings_collections") }
-                itemId == "delete_collection"  -> appAction {
+                // Two-step delete, saying outright that the games are safe: a console card's
+                // Remove takes its games with it, and this must never read as that.
+                itemId == "delete_collection"  -> _uiState.update { it.copy(activeContextMenu = XMBContextMenu(
+                    title  = "Delete \"${menu.title}\"? Its games stay in your library.",
+                    items  = listOf(
+                        XMBContextMenuItem("confirm_delete_collection", "Delete Custom Card", isDestructive = true),
+                        XMBContextMenuItem("cancel_delete_collection",  "Cancel"),
+                    ),
+                    selectedIndex   = 1,
+                    collectionRowId = collectionId,
+                ))}
+                itemId == "confirm_delete_collection" -> appAction {
                     collectionRepository.delete(collectionId)
                     if (_uiState.value.selectedCollectionId == collectionId) closePlatformFolder()
                 }
+                itemId == "cancel_delete_collection" -> Unit   // menu already closed
             }
             return
         }
@@ -6719,27 +7577,41 @@ class XMBViewModel @Inject constructor(
                 "manage_collections"     -> _uiState.update { it.copy(activeSettingsScreen = "settings_collections") }
                 "add_category"           -> menu.categoryContext?.let { openGameCategoryPicker(menu.gameId, it, "add", menu) }
                 "move_category"          -> menu.categoryContext?.let { openGameCategoryPicker(menu.gameId, it, "move", menu) }
+                // Leaving a category means leaving its custom memory cards too — the game would
+                // otherwise stay on the category's Memory Card through them. When it sits in
+                // any, a confirm names them first; a loose game just goes.
                 "remove_category"        -> menu.categoryContext?.let { cat ->
                     val gid = menu.gameId
+                    val title = menu.title
                     appAction {
-                        gameCategoryRepository.removeGameFromCategory(gid, cat)
-                        loadItemsForCategory(currentCategory())
+                        val cards = gameCategoryRepository.categoryCardGames(cat)
+                            .firstOrNull { it.game.id == gid }?.cardNames.orEmpty()
+                        if (cards.isEmpty()) {
+                            gameCategoryRepository.removeGameFromCategoryEverywhere(gid, cat)
+                            loadItemsForCategory(currentCategory(), keepCursorOnRow = true)
+                        } else {
+                            _uiState.update { it.copy(activeContextMenu = XMBContextMenu(
+                                title  = "Remove \"$title\" from ${categoryDisplayName(cat)}? " +
+                                    "It also leaves: ${cards.joinToString(", ")}.",
+                                items  = listOf(
+                                    XMBContextMenuItem("confirm_remove_category", "Remove", isDestructive = true),
+                                    XMBContextMenuItem("cancel_remove_category",  "Cancel"),
+                                ),
+                                selectedIndex   = 1,
+                                gameId          = gid,
+                                categoryContext = cat,
+                            ))}
+                        }
                     }
                 }
-                "pin_category"           -> menu.categoryContext?.let { cat ->
+                "confirm_remove_category" -> menu.categoryContext?.let { cat ->
                     val gid = menu.gameId
                     appAction {
-                        gameCategoryRepository.pinGameInCategory(gid, cat, true)
-                        loadItemsForCategory(currentCategory())
+                        gameCategoryRepository.removeGameFromCategoryEverywhere(gid, cat)
+                        loadItemsForCategory(currentCategory(), keepCursorOnRow = true)
                     }
                 }
-                "unpin_category"         -> menu.categoryContext?.let { cat ->
-                    val gid = menu.gameId
-                    appAction {
-                        gameCategoryRepository.pinGameInCategory(gid, cat, false)
-                        loadItemsForCategory(currentCategory())
-                    }
-                }
+                "cancel_remove_category" -> Unit   // menu already closed
                 "file_location"          -> showGameFileLocation(menu.gameId)
                 "change_emulator"        -> openEmulatorPickerMenu(menu.gameId, parent = menu)
                 "icon_display"           -> openIconDisplayPickerMenu(menu.gameId, parent = menu)
@@ -6838,6 +7710,7 @@ class XMBViewModel @Inject constructor(
                     "add"       -> openCategoryPicker(pkg, menu.categoryContext, "add")
                     "remove"    -> menu.categoryContext?.let { cat -> appAction { appCategoryRepository.removeFromCategory(pkg, cat) } }
                     "pin"       -> menu.categoryContext?.let { cat -> appAction { appCategoryRepository.pinToCategory(pkg, cat) } }
+                    "unpin"     -> menu.categoryContext?.let { cat -> appAction { appCategoryRepository.unpinFromCategory(pkg, cat) } }
                     "hide_from_category" -> menu.categoryContext?.let { cat ->
                         persistHide(HiddenPlacement.appKey(pkg), menu.title, HideLocationType.CATEGORY, cat, categoryDisplayName(cat))
                     }
@@ -6953,9 +7826,13 @@ class XMBViewModel @Inject constructor(
 
     // ── Create-collection dialog ───────────────────────────────────────────────
 
-    private fun promptCreateCollection(forGameId: Long? = null) {
+    private fun promptCreateCollection(forGameId: Long? = null, forGameIds: Set<Long> = emptySet()) {
         _uiState.update { it.copy(
-            collectionNameDialog = CollectionNameDialogState(title = "New Collection", forGameId = forGameId)
+            collectionNameDialog = CollectionNameDialogState(
+                title = "New Custom Memory Card",
+                forGameId = forGameId,
+                forGameIds = forGameIds,
+            )
         )}
     }
 
@@ -6963,7 +7840,7 @@ class XMBViewModel @Inject constructor(
         val name = _uiState.value.collections.firstOrNull { it.id == collectionId }?.name.orEmpty()
         _uiState.update { it.copy(
             collectionNameDialog = CollectionNameDialogState(
-                title = "Rename Collection",
+                title = "Rename Custom Memory Card",
                 initialText = name,
                 renameCollectionId = collectionId,
             )
@@ -6998,6 +7875,8 @@ class XMBViewModel @Inject constructor(
                 // App Store, custom) is homed there; other contexts default to Main Game.
                 val id = collectionRepository.create(name, collectionHomeCategoryId())
                 dialog.forGameId?.let { collectionRepository.addGame(id, it) }
+                dialog.forGameIds.forEach { collectionRepository.addGame(id, it) }
+                if (dialog.forGameIds.isNotEmpty()) exitMarkMode()
             }
             // Reflect the new/renamed collection in the XMB right away instead of waiting on the
             // reactive collection stream.
@@ -7304,11 +8183,21 @@ class XMBViewModel @Inject constructor(
     // ── Game picker (for gaming categories) ────────────────────────────────────
 
     fun openGamePicker(categoryId: String) {
-        _uiState.update { it.copy(gamePickerCategoryId = categoryId) }
+        // The games already put in the category open checked, so the picker shows membership
+        // rather than a blank slate. Loaded first: the picker reads them as it appears.
+        viewModelScope.launch {
+            val preselected = runCatching { gameCategoryRepository.looseGameIds(categoryId).toSet() }
+                .getOrDefault(emptySet())
+            _uiState.update { it.copy(gamePickerCategoryId = categoryId, gamePickerPreselected = preselected) }
+        }
     }
 
     fun closeGamePicker() {
-        _uiState.update { it.copy(gamePickerCategoryId = null, pendingGamePickerAction = null) }
+        _uiState.update { it.copy(
+            gamePickerCategoryId = null,
+            gamePickerPreselected = emptySet(),
+            pendingGamePickerAction = null,
+        )}
     }
 
     fun consumeGamePickerAction() {
@@ -7316,13 +8205,22 @@ class XMBViewModel @Inject constructor(
     }
 
     fun confirmGamePicker(selectedGameIds: Set<Long>, selectedCollectionIds: Set<Long>) {
+        val preselectedGameIds = _uiState.value.gamePickerPreselected
         val categoryId = _uiState.value.gamePickerCategoryId ?: return
         menuSound.play(MenuSound.CONFIRM)
         closeGamePicker()
 
         viewModelScope.launch {
-            selectedGameIds.forEach { gameId ->
+            // The picker opens with the category's games already checked. Add what is new and
+            // leave what is already there alone — re-adding it would reset when it was added.
+            // Only a game the picker itself pre-checked, and the user then unchecked, is removed:
+            // judging by absence alone would empty the category if the pre-check never loaded.
+            val already = gameCategoryRepository.looseGameIds(categoryId).toSet()
+            (selectedGameIds - already).forEach { gameId ->
                 gameCategoryRepository.addGameToCategory(gameId, categoryId)
+            }
+            (preselectedGameIds - selectedGameIds).forEach { gameId ->
+                gameCategoryRepository.removeGameFromCategory(gameId, categoryId)
             }
             // Collections are placed by categoryId (one category each), not the junction table.
             selectedCollectionIds.forEach { collectionId ->
@@ -7421,20 +8319,36 @@ class XMBViewModel @Inject constructor(
             // <windows>/import exports, emu folder reconcile) — extension scanning means nothing
             // to it, and "Scan for Games" must behave exactly like the Library Manager action.
             if (platformId == WINDOWS_PLATFORM_ID) {
-                addBackgroundTask(
-                    BackgroundTaskInfo(id = taskId, label = "Scanning ${card.displayName}…", kind = TaskKind.SCAN)
-                )
-                val report = runCatching { pcGameScanner.scan() }
-                    .onFailure { Timber.e(it, "PC scan failed") }
-                    .getOrNull()
+                val title = "${card.displayName.removeSuffix(" Memory Card")} scan finished"
+                backgroundTasks.startStoppable(taskId, "Scanning ${card.displayName}…", TaskKind.SCAN,
+                    stopNote = "Games found so far are kept.")
+                var error: Throwable? = null
+                val report = try {
+                    runCatching { pcGameScanner.scan() }
+                        .onFailure {
+                            if (it is kotlinx.coroutines.CancellationException) throw it
+                            Timber.e(it, "PC scan failed"); error = it
+                        }
+                        .getOrNull()
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    backgroundTasks.settleCancelled(taskId, "Stopped before it finished",
+                        NotificationAction.OpenMemoryCard(platformId), title = "${card.displayName} scan stopped")
+                    throw e
+                }
                 if (report == null) {
-                    failBackgroundTask(taskId, "PC scan failed", NotificationAction.OpenMemoryCard(platformId))
+                    backgroundTasks.fail(
+                        taskId, "PC scan failed", NotificationAction.OpenMemoryCard(platformId),
+                        detail = NotificationDetail.notes(PfpErrorCode.SC_9001, summary = error?.message,
+                            diagnostic = error?.stackTraceToString()?.take(4_000)),
+                        title = "${card.displayName} scan failed",
+                    )
                 } else {
                     memoryCardRepository.recordScan(platformId, System.currentTimeMillis())
-                    completeBackgroundTask(
+                    backgroundTasks.complete(
                         taskId,
                         if (report.newGames == 0) "No new PC games found" else report.message,
                         NotificationAction.OpenMemoryCard(platformId),
+                        title = title,
                     )
                     // No emulator work here, by design. Scanning for Steam-emu folders under the
                     // windows surfaces meant walking trees the game folders are no longer under;
@@ -7448,20 +8362,25 @@ class XMBViewModel @Inject constructor(
             // progress, so this bar is honestly indeterminate rather than faked. "n of m Memory
             // Cards" is the named upgrade path (plan section 4.3) — it needs no counting pre-pass,
             // which is the one thing the media-scan performance work must not pay for again.
-            addBackgroundTask(
-                BackgroundTaskInfo(id = taskId, label = "Scanning ${card.displayName}…", kind = TaskKind.SCAN)
-            )
-            val outcome = libraryScanner.scanPlatform(platformId, removeMissing = true)
+            val name = card.displayName.removeSuffix(" Memory Card")
+            backgroundTasks.startStoppable(taskId, "Scanning ${card.displayName}…", TaskKind.SCAN,
+                stopNote = "Games found so far are kept.")
+            val outcome = try {
+                libraryScanner.scanPlatform(platformId, removeMissing = true)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                backgroundTasks.settleCancelled(taskId, "Stopped before it finished",
+                    NotificationAction.OpenMemoryCard(platformId), title = "$name scan stopped")
+                throw e
+            }
+            val body = scanOutcomeMessage(outcome, removeMissing = true).removePrefix("${outcome.displayName}: ")
             when (outcome.status) {
-                ScanStatus.COMPLETED -> completeBackgroundTask(
-                    taskId,
-                    scanOutcomeMessage(outcome, removeMissing = true),
-                    NotificationAction.OpenMemoryCard(platformId),
+                ScanStatus.COMPLETED -> backgroundTasks.complete(
+                    taskId, body, NotificationAction.OpenMemoryCard(platformId), title = "$name scan finished",
                 )
-                else -> failBackgroundTask(
-                    taskId,
-                    scanOutcomeMessage(outcome, removeMissing = true),
-                    NotificationAction.OpenMemoryCard(platformId),
+                else -> backgroundTasks.fail(
+                    taskId, body, NotificationAction.OpenMemoryCard(platformId),
+                    detail = outcome.failureNotes(),
+                    title = if (outcome.status == ScanStatus.FAILED) "$name scan failed" else "$name scan skipped",
                 )
             }
         }
@@ -7483,36 +8402,59 @@ class XMBViewModel @Inject constructor(
         viewModelScope.launch {
             val cards = enabledCards.filter { it.platformId == WINDOWS_PLATFORM_ID || it.isScannable() }
             val taskId = "scan_all"
-            addBackgroundTask(
-                BackgroundTaskInfo(id = taskId, label = "Scanning all Memory Cards…", kind = TaskKind.SCAN)
-            )
+            backgroundTasks.startStoppable(taskId, "Scanning all Memory Cards…", TaskKind.SCAN,
+                stopNote = "Cards already scanned keep their new games.")
             if (cards.isEmpty()) {
-                failBackgroundTask(taskId, "No Memory Card has a folder to scan")
+                backgroundTasks.fail(taskId, "No Memory Card has a folder to scan",
+                    detail = NotificationDetail.notes(PfpErrorCode.SC_1001), title = "Nothing to scan")
                 return@launch
             }
             var added = 0
             var failed = 0
-            cards.forEachIndexed { index, card ->
-                updateBackgroundTask(taskId, index + 1, cards.size, card.displayName)
-                // The same pass each card's own Scan for Games runs — see scanCard.
-                if (card.platformId == WINDOWS_PLATFORM_ID) {
-                    val report = runCatching { pcGameScanner.scan() }
-                        .onFailure {
-                            if (it is kotlinx.coroutines.CancellationException) throw it
-                            Timber.e(it, "PC scan failed")
+            // One outcome per card, kept for the Results sheet — which cards failed, and why.
+            val outcomes = mutableListOf<PlatformScanOutcome>()
+            try {
+                cards.forEachIndexed { index, card ->
+                    updateBackgroundTask(taskId, index + 1, cards.size, card.displayName)
+                    // The same pass each card's own Scan for Games runs — see scanCard.
+                    if (card.platformId == WINDOWS_PLATFORM_ID) {
+                        var error: Throwable? = null
+                        val report = runCatching { pcGameScanner.scan() }
+                            .onFailure {
+                                if (it is kotlinx.coroutines.CancellationException) throw it
+                                Timber.e(it, "PC scan failed"); error = it
+                            }
+                            .getOrNull()
+                        if (report == null) {
+                            failed++
+                            outcomes += PlatformScanOutcome(card.platformId, card.displayName, ScanStatus.FAILED,
+                                errorMessage = error?.message ?: "PC scan failed")
+                        } else {
+                            memoryCardRepository.recordScan(card.platformId, System.currentTimeMillis())
+                            added += report.newGames
+                            outcomes += PlatformScanOutcome(card.platformId, card.displayName, ScanStatus.COMPLETED,
+                                added = report.newGames)
                         }
-                        .getOrNull()
-                    if (report == null) failed++ else {
-                        memoryCardRepository.recordScan(card.platformId, System.currentTimeMillis())
-                        added += report.newGames
+                    } else {
+                        val outcome = libraryScanner.scanPlatform(card.platformId, removeMissing = true)
+                        outcomes += outcome
+                        if (outcome.status == ScanStatus.COMPLETED) added += outcome.added else failed++
                     }
-                } else {
-                    val outcome = libraryScanner.scanPlatform(card.platformId, removeMissing = true)
-                    if (outcome.status == ScanStatus.COMPLETED) added += outcome.added else failed++
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                backgroundTasks.settleCancelled(
+                    taskId, "Stopped after ${outcomes.size} of ${cards.size} cards",
+                    detail = scanResults(outcomes), title = "Scan All Memory Cards stopped",
+                )
+                throw e
             }
             val summary = scanAllSummary(added, cards.size, failed)
-            if (failed == cards.size) failBackgroundTask(taskId, summary) else completeBackgroundTask(taskId, summary)
+            val detail = scanResults(outcomes)
+            if (failed == cards.size) {
+                backgroundTasks.fail(taskId, summary, detail = detail, title = "Scan All Memory Cards failed")
+            } else {
+                backgroundTasks.complete(taskId, summary, detail = detail, title = "Scan All Memory Cards finished")
+            }
         }
     }
 
@@ -7521,33 +8463,44 @@ class XMBViewModel @Inject constructor(
     private fun scrapeMissingArtwork(platformId: String?) {
         viewModelScope.launch {
             val taskId = "scrape_missing_${platformId ?: "all"}"
-            addBackgroundTask(
-                BackgroundTaskInfo(
-                    id = taskId,
-                    label = "Fetching missing artwork: ${jobScopeName(platformId)}",
-                    kind = TaskKind.ARTWORK,
-                )
-            )
+            backgroundTasks.startStoppable(taskId, "Fetching missing artwork: ${jobScopeName(platformId)}",
+                TaskKind.ARTWORK, stopNote = "Artwork already fetched is kept.")
+            // Every game's result, for the Results sheet — which games failed, and why.
+            val outcomes = mutableListOf<GameScrapeOutcome>()
             runCatching {
                 // ScrapeProgress is the richest producer in the app: counts, per-item tallies and
                 // the title being fetched. All three reach the row now instead of being divided
                 // into a fraction and dropped.
                 val onProgress: (ScrapeProgress) -> Unit = { p ->
+                    p.finished?.let(outcomes::add)
                     updateBackgroundTask(taskId, p.current, p.total, p.title)
                 }
                 if (platformId == null) artworkRepository.scrapeMissingOnly(onProgress)
                 else artworkRepository.scrapeMissingForPlatform(platformId, onProgress)
             }.onSuccess { result ->
-                completeBackgroundTask(
+                backgroundTasks.complete(
                     taskId,
                     if (result.total == 0) "No games are missing artwork"
                     else "${result.succeeded} of ${result.total} game(s) updated",
                     jobScopeAction(platformId),
+                    detail = outcomes.takeIf { it.isNotEmpty() }?.let(::scrapeResults),
+                    title = "Artwork fetch finished: ${jobScopeName(platformId)}",
                 )
                 loadItemsForCategory(currentCategory())
             }.onFailure {
-                if (it is kotlinx.coroutines.CancellationException) throw it
-                failBackgroundTask(taskId, "Artwork fetch failed", jobScopeAction(platformId))
+                if (it is kotlinx.coroutines.CancellationException) {
+                    backgroundTasks.settleCancelled(
+                        taskId, "Stopped after ${outcomes.size} game(s)", jobScopeAction(platformId),
+                        detail = scrapeResults(outcomes), title = "Artwork fetch stopped: ${jobScopeName(platformId)}",
+                    )
+                    throw it
+                }
+                backgroundTasks.fail(
+                    taskId, "Artwork fetch failed", jobScopeAction(platformId),
+                    detail = NotificationDetail.notes(PfpErrorCode.AR_9001, summary = it.message,
+                        diagnostic = it.stackTraceToString().take(4_000)),
+                    title = "Artwork fetch failed: ${jobScopeName(platformId)}",
+                )
             }
         }
     }
@@ -7557,21 +8510,18 @@ class XMBViewModel @Inject constructor(
     private fun updateMetadata(platformId: String?) {
         viewModelScope.launch {
             val taskId = "update_metadata_${platformId ?: "all"}"
-            addBackgroundTask(
-                BackgroundTaskInfo(
-                    id = taskId,
-                    label = "Updating metadata: ${jobScopeName(platformId)}",
-                    kind = TaskKind.METADATA,
-                )
-            )
+            backgroundTasks.startStoppable(taskId, "Updating metadata: ${jobScopeName(platformId)}",
+                TaskKind.METADATA, stopNote = "Games already updated keep their details.")
+            val outcomes = mutableListOf<GameScrapeOutcome>()
             runCatching {
                 val onProgress: (ScrapeProgress) -> Unit = { p ->
+                    p.finished?.let(outcomes::add)
                     updateBackgroundTask(taskId, p.current, p.total)
                 }
                 if (platformId == null) artworkRepository.updateMetadataForAllGames(onProgress)
                 else artworkRepository.updateMetadataForPlatform(platformId, onProgress)
             }.onSuccess { result ->
-                completeBackgroundTask(
+                backgroundTasks.complete(
                     taskId,
                     when {
                         result.total > 0 -> "${result.succeeded} of ${result.total} game(s) updated"
@@ -7579,11 +8529,24 @@ class XMBViewModel @Inject constructor(
                         else -> "No games on this card"
                     },
                     jobScopeAction(platformId),
+                    detail = outcomes.takeIf { it.isNotEmpty() }?.let(::scrapeResults),
+                    title = "Metadata update finished: ${jobScopeName(platformId)}",
                 )
                 loadItemsForCategory(currentCategory())
             }.onFailure {
-                if (it is kotlinx.coroutines.CancellationException) throw it
-                failBackgroundTask(taskId, "Metadata update failed", jobScopeAction(platformId))
+                if (it is kotlinx.coroutines.CancellationException) {
+                    backgroundTasks.settleCancelled(
+                        taskId, "Stopped after ${outcomes.size} game(s)", jobScopeAction(platformId),
+                        detail = scrapeResults(outcomes), title = "Metadata update stopped: ${jobScopeName(platformId)}",
+                    )
+                    throw it
+                }
+                backgroundTasks.fail(
+                    taskId, "Metadata update failed", jobScopeAction(platformId),
+                    detail = NotificationDetail.notes(PfpErrorCode.AR_9001, summary = it.message,
+                        diagnostic = it.stackTraceToString().take(4_000)),
+                    title = "Metadata update failed: ${jobScopeName(platformId)}",
+                )
             }
         }
     }
@@ -7665,11 +8628,14 @@ class XMBViewModel @Inject constructor(
 
     // ── Notification panel ──────────────────────────────────────────────
 
-    /** Keeps the cursor on a selectable row when the list changes under it (a clear, a new post). */
+    /**
+     * Keeps the panel consistent when the lists change under it (a clear, a new post, a task
+     * settling): the cursor stays on a selectable row and a sheet or Stop confirm for something
+     * that is gone closes. See [NotificationPanelState.reconcile].
+     */
     private fun XMBUiState.withClampedNotificationCursor(): XMBUiState {
         val panel = notificationPanel ?: return this
-        val rows = buildNotificationRows(runningTasks, notifications)
-        return copy(notificationPanel = panel.copy(cursor = rows.clampCursor(panel.cursor)))
+        return copy(notificationPanel = panel.reconcile(runningTasks, notifications))
     }
 
     private fun notificationRows(state: XMBUiState = _uiState.value) =
@@ -7710,46 +8676,143 @@ class XMBViewModel @Inject constructor(
         activateNotificationRow()
     }
 
-    /** Confirm on a history row: mark it read, then go wherever it points. */
+    /**
+     * Confirm on the panel. Every row Confirm lands on is marked read (never deleted): a Notes or
+     * Results row opens its sheet, a Simple row goes where it points, and a stoppable running row
+     * asks before stopping. See [panelConfirm].
+     */
     private fun activateNotificationRow() {
         val state = _uiState.value
         val panel = state.notificationPanel ?: return
-        val notification = notificationRows(state).notificationAt(panel.cursor) ?: return
-        menuSound.play(MenuSound.SELECT)
-        viewModelScope.launch { notificationRepository.markRead(notification.id) }
-        runNotificationAction(notification)
+        when (val confirm = panelConfirm(notificationRows(state), panel.cursor)) {
+            is PanelConfirm.OpenSheet -> {
+                menuSound.play(MenuSound.SELECT)
+                viewModelScope.launch { notificationRepository.markRead(confirm.notificationId) }
+                _uiState.update {
+                    it.copy(notificationPanel = it.notificationPanel?.copy(sheetNotificationId = confirm.notificationId))
+                }
+            }
+            is PanelConfirm.RunAction -> {
+                menuSound.play(MenuSound.SELECT)
+                viewModelScope.launch { notificationRepository.markRead(confirm.notification.id) }
+                runNotificationAction(confirm.notification.action)
+            }
+            is PanelConfirm.AskStop -> {
+                menuSound.play(MenuSound.SELECT)
+                _uiState.update {
+                    it.copy(notificationPanel = it.notificationPanel?.copy(stopConfirm = confirm.state))
+                }
+            }
+            PanelConfirm.Nothing -> Unit
+        }
     }
 
     /**
-     * Where a row goes when it is opened.
-     *
-     * [NotificationAction.None] and the not-yet-implemented [NotificationAction.OpenUrl] both
-     * degrade to the read-only info dialog rather than doing nothing: a row that looks inert when
-     * pressed is worse than one that admits it has only text to offer.
+     * Where an action goes. Every real destination closes the panel first; a row with nowhere to
+     * go ([NotificationAction.None], or the not-yet-implemented [NotificationAction.OpenUrl])
+     * leaves the panel open — it was marked read, and anything it had to say is in its sheet.
      */
-    private fun runNotificationAction(notification: PfpNotification) {
-        _uiState.update { it.copy(notificationPanel = null) }
-        when (val action = notification.action) {
+    private fun runNotificationAction(action: NotificationAction) {
+        when (action) {
+            NotificationAction.None, is NotificationAction.OpenUrl -> return
+            else -> _uiState.update { it.copy(notificationPanel = null) }
+        }
+        when (action) {
             is NotificationAction.OpenCategory -> {
                 val index = _uiState.value.categories.indexOfFirst { it.id == action.categoryId }
-                if (index >= 0) onCategorySelected(index) else showNotificationText(notification)
+                if (index >= 0) onCategorySelected(index)
             }
             is NotificationAction.OpenMemoryCard -> openPlatformFolder(action.platformId)
             is NotificationAction.OpenGame ->
                 _uiState.update { it.copy(activeGameId = action.gameId, activeGameAutoLaunch = false) }
             is NotificationAction.OpenSettingsScreen ->
                 _uiState.update { it.copy(activeSettingsScreen = action.routeId) }
-            // The only action that leaves the app, so it waits for the RSS channel that will own
-            // it (plan section 8).
-            is NotificationAction.OpenUrl -> showNotificationText(notification)
-            NotificationAction.None -> showNotificationText(notification)
+            is NotificationAction.ReviewShortcut -> openShortcutReview(action.requestId)
+            NotificationAction.None, is NotificationAction.OpenUrl -> Unit
         }
     }
 
-    private fun showNotificationText(notification: PfpNotification) {
-        _uiState.update {
-            it.copy(infoDialog = InfoDialogState(notification.title, notification.body.orEmpty()))
+    // ── Shortcut requests (the Add / Ignore that used to live in the Android shade) ──
+
+    /** Asks about waiting requests one at a time, oldest first, whenever the XMB is free. */
+    private fun observeShortcutRequests() {
+        viewModelScope.launch {
+            shortcutRequests.requests.collect { maybeShowShortcutReview(it) }
         }
+    }
+
+    private suspend fun maybeShowShortcutReview(
+        waiting: List<com.playfieldportal.core.data.repository.PendingShortcutRequest>? = null,
+    ) {
+        val state = _uiState.value
+        if (state.shortcutReview != null || state.hasBlockingOverlay) return
+        val next = (waiting ?: runCatching { shortcutRequests.requests.first() }.getOrDefault(emptyList()))
+            .firstOrNull() ?: return
+        _uiState.update { if (it.shortcutReview == null && !it.hasBlockingOverlay) it.copy(shortcutReview = next) else it }
+    }
+
+    /** The request's tray row was opened: ask about it now. */
+    private fun openShortcutReview(requestId: String) {
+        viewModelScope.launch {
+            val request = shortcutRequests.get(requestId)
+            _uiState.update {
+                if (request != null) {
+                    it.copy(shortcutReview = request)
+                } else {
+                    it.copy(infoDialog = InfoDialogState("Shortcut request", "This request was already handled."))
+                }
+            }
+        }
+    }
+
+    fun confirmShortcutReview(requestId: String) = resolveShortcutReview { shortcutRequests.add(requestId) }
+
+    fun ignoreShortcutReview(requestId: String) = resolveShortcutReview { shortcutRequests.ignore(requestId) }
+
+    private fun resolveShortcutReview(resolve: suspend () -> Unit) {
+        _uiState.update { it.copy(shortcutReview = null) }
+        viewModelScope.launch {
+            runCatching { resolve() }.onFailure {
+                if (it is kotlinx.coroutines.CancellationException) throw it
+                Timber.e(it, "Resolving a shortcut request failed")
+            }
+            maybeShowShortcutReview()
+        }
+    }
+
+    // ── Notification sheets and the Stop confirm (called from the shell's modal host) ──
+
+    /** BACK on a Notes or Results sheet: back to the panel, cursor where it was. */
+    fun closeNotificationSheet() {
+        _uiState.update { it.copy(notificationPanel = it.notificationPanel?.copy(sheetNotificationId = null)) }
+    }
+
+    /** ✕ on a sheet with no item action: the row's own action. */
+    fun onNotificationSheetAction(notificationId: Long) {
+        val row = _uiState.value.notifications.firstOrNull { it.id == notificationId } ?: return
+        runNotificationAction(row.action)
+    }
+
+    /** ✕ on a Results item that carries its own destination (a Memory Card, a game). */
+    fun onNotificationSheetItemAction(action: DetailAction) {
+        runNotificationAction(action.toNotificationAction())
+    }
+
+    /** △ Copy Details / Copy List. The sheet's hint reads "Copied" for a moment. */
+    fun copyNotificationText(text: String) {
+        val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        cm.setPrimaryClip(android.content.ClipData.newPlainText("PFP notification", text))
+    }
+
+    /** Stop on the Stop confirm: the task freezes as "Stopping…" until its producer settles. */
+    fun confirmStopTask(taskId: String) {
+        backgroundTasks.requestStop(taskId)
+        cancelStopTask()
+    }
+
+    /** Keep Running (or BACK) on the Stop confirm. */
+    fun cancelStopTask() {
+        _uiState.update { it.copy(notificationPanel = it.notificationPanel?.copy(stopConfirm = null)) }
     }
 
     fun onNotificationOptionsTapped() {
@@ -7807,7 +8870,11 @@ class XMBViewModel @Inject constructor(
         // always a root-level list position for that category.
         prev.categories.getOrNull(prev.selectedCategoryIndex)?.id?.let { categoryCursor[it] = prev.selectedItemIndex }
         val category = prev.categories.getOrNull(index)
-        val restore = category?.id?.let { categoryCursor[it] } ?: 0
+        val remembered = category?.id?.let { categoryCursor[it] }
+        // A column never visited starts on the row under its UMD slot — see publishRootItems.
+        freshRootVisit = remembered == null
+        val restore = remembered ?: 0
+        exitMarkMode()
         // activeAppDrawerFilter is cleared as an invariant: landing on a category always shows the
         // plain XMB (the drawer can't normally be open here, but this keeps the contextual button
         // state correct no matter which path selected the category).
@@ -7907,13 +8974,17 @@ class XMBViewModel @Inject constructor(
             if (it.lastInputWasTouch &&
                 !it.showContextMenuHint &&
                 !it.showAppDrawerHint &&
-                !it.showSettingsHint
+                !it.showSettingsHint &&
+                !it.showNotificationHint &&
+                !it.showMediaHint
             ) it
             else it.copy(
                 lastInputWasTouch = true,
                 showContextMenuHint = false,
                 showAppDrawerHint = false,
                 showSettingsHint = false,
+                showNotificationHint = false,
+                showMediaHint = false,
             )
         }
     }
@@ -7924,13 +8995,17 @@ class XMBViewModel @Inject constructor(
             if (!it.lastInputWasTouch &&
                 !it.showContextMenuHint &&
                 !it.showAppDrawerHint &&
-                !it.showSettingsHint
+                !it.showSettingsHint &&
+                !it.showNotificationHint &&
+                !it.showMediaHint
             ) it
             else it.copy(
                 lastInputWasTouch = false,
                 showContextMenuHint = false,
                 showAppDrawerHint = false,
                 showSettingsHint = false,
+                showNotificationHint = false,
+                showMediaHint = false,
             )
         }
     }
@@ -7972,6 +9047,8 @@ class XMBViewModel @Inject constructor(
         val s = _uiState.value
         if (s.hasBlockingOverlay) return
         menuSound.play(MenuSound.BACK)
+        // Multi-select ends first, as it does for the controller's BACK.
+        if (s.markMode) { exitMarkMode(); return }
         if (!backOutOfDrill(s)) onOpenAppDrawer()
     }
 
@@ -8691,6 +9768,13 @@ class XMBViewModel @Inject constructor(
         val category = _uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex)
         val item     = _uiState.value.currentItems.getOrNull(index)
 
+        // Multi-select: activating a row marks it instead of opening it (a second tap on the
+        // focused row arrives here too).
+        if (_uiState.value.markMode) {
+            toggleMark(item)
+            return
+        }
+
         // Music rows are handled together (static items, the All Music card, playlists, tracks,
         // and the various add/setup rows), each owning its sound and returning early.
         if (category?.id == BuiltInCategory.MUSIC && item != null && handleMusicSelection(item)) return
@@ -8764,6 +9848,10 @@ class XMBViewModel @Inject constructor(
             }
             ADD_GAMES_ITEM_ID -> {
                 category?.id?.let { openGamePicker(it) }
+                return
+            }
+            CATEGORY_CARD_ITEM_ID -> {
+                openCategoryCardFolder()
                 return
             }
             FIND_GAMES_ITEM_ID -> {
@@ -8877,11 +9965,16 @@ class XMBViewModel @Inject constructor(
             item?.gameId != null -> openGameContextMenu(item)
             item?.collectionId != null && item.type == XMBItemType.COLLECTION -> openCollectionRowContextMenu(item.collectionId)
             item?.type == XMBItemType.ALL_GAMES -> openAllGamesContextMenu()
+            item != null && item.isRootRow() -> openRootRowContextMenu(item)
             item?.type == XMBItemType.SOCIAL_ACCOUNT -> openSocialAccountContextMenu()
             item?.platformId != null -> openPlatformContextMenu(item.platformId)
             item?.packageName != null -> openAppContextMenu(item)
         }
     }
+
+    // A custom category's Memory Card, Favorites or Missing: container rows with no record.
+    private fun XMBItem.isRootRow(): Boolean =
+        type == XMBItemType.CATEGORY_CARD || type == XMBItemType.FAVORITES || type == XMBItemType.MISSING
 
     private fun openPlatformFolder(platformId: String) {
         val gamesCategoryIndex = _uiState.value.categories.indexOfFirst { it.id == BuiltInCategory.GAMES }
@@ -9080,6 +10173,7 @@ class XMBViewModel @Inject constructor(
                 game, null,
                 "No emulator is set up for ${game.platformId.uppercase()}. " +
                     "Assign one under Settings ▸ Emulators ▸ Per-System Defaults.",
+                code = com.playfieldportal.core.domain.model.PfpErrorCode.LN_1001,
             )
             return
         }
@@ -9203,6 +10297,8 @@ class XMBViewModel @Inject constructor(
                     label = label,
                     message = "Couldn't add to Favorites: ${e.message}",
                     severity = NotificationSeverity.ERROR,
+                    detail = NotificationDetail.notes(PfpErrorCode.SY_9001, summary = e.message,
+                        diagnostic = e.stackTraceToString().take(4_000)),
                 )
             }
         }
@@ -9219,6 +10315,8 @@ class XMBViewModel @Inject constructor(
                         label = label,
                         message = "Couldn't create shortcut: ${e.message}",
                         severity = NotificationSeverity.ERROR,
+                        detail = NotificationDetail.notes(PfpErrorCode.SY_9001, summary = e.message,
+                            diagnostic = e.stackTraceToString().take(4_000)),
                     )
                 }
         }
@@ -9234,6 +10332,10 @@ class XMBViewModel @Inject constructor(
                 message = "Couldn't launch: ${e.message}",
                 severity = NotificationSeverity.ERROR,
                 kind = com.playfieldportal.core.domain.model.NotificationKind.LAUNCH,
+                detail = NotificationDetail.notes(
+                    if (e is android.content.ActivityNotFoundException) PfpErrorCode.LN_4001 else PfpErrorCode.LN_9001,
+                    summary = e.message, diagnostic = e.stackTraceToString().take(4_000),
+                ),
             )
         }
     }
@@ -9257,6 +10359,10 @@ class XMBViewModel @Inject constructor(
                 message = "Couldn't launch: ${e.message}",
                 severity = NotificationSeverity.ERROR,
                 kind = com.playfieldportal.core.domain.model.NotificationKind.LAUNCH,
+                detail = NotificationDetail.notes(
+                    if (e is android.content.ActivityNotFoundException) PfpErrorCode.LN_4001 else PfpErrorCode.LN_9001,
+                    summary = e.message, diagnostic = e.stackTraceToString().take(4_000),
+                ),
             )
         }
     }
@@ -9805,6 +10911,7 @@ class XMBViewModel @Inject constructor(
      */
     fun onHostResumed() {
         scheduleAchievementCheck()
+        viewModelScope.launch { maybeShowShortcutReview() }
         if (!bootEnabled || !bootOnResume) return
         _uiState.update { it.copy(showBootSequence = true) }
     }
@@ -10080,13 +11187,17 @@ class XMBViewModel @Inject constructor(
         lastInteractionMs = SystemClock.elapsedRealtime()
         if (_uiState.value.showContextMenuHint ||
             _uiState.value.showAppDrawerHint ||
-            _uiState.value.showSettingsHint
+            _uiState.value.showSettingsHint ||
+            _uiState.value.showNotificationHint ||
+            _uiState.value.showMediaHint
         ) {
             _uiState.update {
                 it.copy(
                     showContextMenuHint = false,
                     showAppDrawerHint = false,
                     showSettingsHint = false,
+                    showNotificationHint = false,
+                    showMediaHint = false,
                 )
             }
         }
@@ -10356,6 +11467,8 @@ class XMBViewModel @Inject constructor(
         // guarantees scrolling through the row never spins up a video decoder.
         private const val ICON1_LINGER_MS = 1_500L
         private const val SETUP_ITEM_ID = "library_setup"
+        private const val UMD_SLOT_ITEM_ID = "umd_slot"
+        private const val CATEGORY_CARD_ITEM_ID = "category_card"
         private const val NO_CONSOLES_ITEM_ID = "no_consoles"
         // B3: empty All Games row while setup still has an unmet step (names + fixes the gap).
         private const val SETUP_GAP_ITEM_ID = "setup_gap"
@@ -10369,11 +11482,11 @@ class XMBViewModel @Inject constructor(
         internal const val ACH_ALL_ITEM_ID      = "ach_all"
         internal const val ACH_UNTRACKED_ITEM_ID = "ach_untracked"
         private const val ALL_GAMES_ITEM_ID = "all_games"
-        private const val ALL_GAMES_PLATFORM_ID = "__all_games__"
+        internal const val ALL_GAMES_PLATFORM_ID = "__all_games__"
         private const val FAVORITES_ITEM_ID = "favorites_folder"
-        private const val FAVORITES_PLATFORM_ID = "__favorites__"
+        internal const val FAVORITES_PLATFORM_ID = "__favorites__"
         private const val MISSING_ITEM_ID = "missing_folder"
-        private const val MISSING_PLATFORM_ID = "__missing__"
+        internal const val MISSING_PLATFORM_ID = "__missing__"
         private const val EMPTY_MISSING_ITEM_ID = "empty_missing"
         // Shown as each missing row's subtitle. Phrased around the scan rather than the file
         // ("File not found" alone reads as permanent) because dropping the file back reactivates it.
@@ -10476,29 +11589,6 @@ class XMBViewModel @Inject constructor(
     // absent from [byId] and dropped here — that's what makes "Show On Bar" work for Main categories.
     // Settings is the one exception: it's always kept, since it's the only route back into category
     // management and hiding it would soft-lock the user out.
-    private fun canonicalXmbCategories(categories: List<Category>): List<Category> {
-        val byId = categories.associateBy { it.id }
-        val builtInIds = FALLBACK_CATEGORIES.map { it.id }.toSet()
-
-        val builtIns = FALLBACK_CATEGORIES.mapNotNull { fallback ->
-            val stored = byId[fallback.id]
-            // Drop hidden built-ins (absent from the visible set); never drop Settings.
-            if (stored == null && fallback.id != BuiltInCategory.SETTINGS) return@mapNotNull null
-            fallback.copy(
-                accentColor      = stored?.accentColor,
-                customIconUri    = stored?.customIconUri,
-                filterRules      = stored?.filterRules,
-                // Preserve the system-defined gaming flag from the DB (reconciled each launch);
-                // without this the rebuilt Main Game category loses isGamingCategory, which hides
-                // "Move to Category" for collections and suppresses live refresh.
-                isGamingCategory = stored?.isGamingCategory ?: fallback.isGamingCategory,
-            )
-        }
-
-        val customCategories = categories.filter { it.id !in builtInIds }
-
-        return (builtIns + customCategories).sortedBy { it.position }
-    }
 
     private fun defaultXmbCategoryIndex(categories: List<Category>): Int =
         categories.indexOfFirst { it.id == BuiltInCategory.GAMES }

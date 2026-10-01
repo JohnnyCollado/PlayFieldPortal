@@ -121,8 +121,12 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         ArtworkOrphanFileEntity::class,
         GameStorefrontIdentityEntity::class,
         LocalSteamFolderEntity::class,
+        com.playfieldportal.core.data.database.entity.ListItemEntity::class,
+        com.playfieldportal.core.data.database.entity.ListSettingEntity::class,
+        com.playfieldportal.core.data.database.entity.UmdSlotEntity::class,
+        com.playfieldportal.core.data.database.entity.AppUsageEntity::class,
     ],
-    version = 53,
+    version = 54,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -163,6 +167,9 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun providerGameLinkDao(): ProviderGameLinkDao
     abstract fun achievementMatchNoteDao(): com.playfieldportal.core.data.database.dao.AchievementMatchNoteDao
     abstract fun achievementTrackingDao(): com.playfieldportal.core.data.database.dao.AchievementTrackingDao
+    abstract fun listStateDao(): com.playfieldportal.core.data.database.dao.ListStateDao
+    abstract fun umdSlotDao(): com.playfieldportal.core.data.database.dao.UmdSlotDao
+    abstract fun appUsageDao(): com.playfieldportal.core.data.database.dao.AppUsageDao
 
     companion object {
         const val DATABASE_NAME = "pfp_database"
@@ -1602,6 +1609,62 @@ abstract class PFPDatabase : RoomDatabase() {
         val MIGRATION_52_53 = object : Migration(52, 53) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE games ADD COLUMN is_disc_preferred INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /**
+         * v54 — per-list state. `list_items` holds a list's Custom order and its pinned games,
+         * `list_settings` its sort override, `umd_slots` the game inserted as a gaming column's
+         * UMD, and `app_usage` when an app was last launched from PFP. `category_items.added_at`
+         * backs Date Added inside a category. [ListStateBackfill] then re-homes collections whose
+         * category is gone and makes collection order per-category.
+         */
+        val MIGRATION_53_54 = object : Migration(53, 54) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS list_items (
+                        list_key TEXT NOT NULL,
+                        item_key TEXT NOT NULL,
+                        position INTEGER,
+                        pinned INTEGER NOT NULL,
+                        PRIMARY KEY(list_key, item_key)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_list_items_item_key ON list_items (item_key)")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS list_settings (
+                        list_key TEXT NOT NULL,
+                        sort_mode TEXT NOT NULL,
+                        PRIMARY KEY(list_key)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS umd_slots (
+                        column_id TEXT NOT NULL,
+                        game_id INTEGER NOT NULL,
+                        inserted_at INTEGER NOT NULL,
+                        PRIMARY KEY(column_id),
+                        FOREIGN KEY(column_id) REFERENCES categories(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS app_usage (
+                        package_name TEXT NOT NULL,
+                        last_launched_at INTEGER NOT NULL,
+                        launch_count INTEGER NOT NULL,
+                        PRIMARY KEY(package_name)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("ALTER TABLE category_items ADD COLUMN added_at INTEGER NOT NULL DEFAULT 0")
+                ListStateBackfill.run(db)
             }
         }
     }

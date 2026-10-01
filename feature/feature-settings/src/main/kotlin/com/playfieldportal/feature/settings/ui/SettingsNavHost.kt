@@ -74,6 +74,8 @@ fun SettingsNavHost(
     onOpenLibraryManager: () -> Unit = {},
     onOpenArtworkOrphans: () -> Unit = {},
     onGoToLibrary: () -> Unit = {},
+    // Category Manager ▸ Move: close Settings and lift the category on the crossbar.
+    onMoveCategoryOnBar: (categoryId: String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     CompositionLocalProvider(
@@ -111,7 +113,7 @@ fun SettingsNavHost(
             "settings_music"      -> MusicSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_video"      -> VideoSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_photo"      -> PhotoSettingsScreen(onBack = onBack, modifier = modifier)
-            "settings_categories" -> CategoryManagerScreen(onBack = onBack, modifier = modifier)
+            "settings_categories" -> CategoryManagerScreen(onBack = onBack, onMoveOnBar = onMoveCategoryOnBar, modifier = modifier)
             "settings_artwork"    -> ArtworkSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_artwork_import" -> ArtworkImportScreen(
                 onBack = onBack,

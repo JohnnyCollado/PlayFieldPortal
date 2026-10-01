@@ -277,6 +277,19 @@ interface GameDao {
     )
     suspend fun addPlayTime(id: Long, durationMillis: Long, playedAt: Long)
 
+    // Stamps a launch. No play time is known at dispatch, so only the recency moves. Every disc
+    // of the launched game's set is stamped: lists show a set as its primary disc, which is not
+    // always the disc that was booted.
+    @Query(
+        """
+        UPDATE games SET last_played_at = :playedAt
+        WHERE id = :id
+           OR (disc_set_key IS NOT NULL
+               AND disc_set_key = (SELECT disc_set_key FROM games WHERE id = :id))
+    """
+    )
+    suspend fun markLaunched(id: Long, playedAt: Long)
+
     @Query(
         """
         UPDATE games SET emulator_package = :emulatorPackage WHERE id = :id

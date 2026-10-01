@@ -34,6 +34,9 @@ class AchievementMatchAndUpdate @Inject constructor(
                 reporter.matchProgress(done, total)
                 onMatchProgress(done, total)
             }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            reporter.matchStopped()
+            throw e
         } catch (e: Throwable) {
             reporter.gamesRecognized(0)
             throw e

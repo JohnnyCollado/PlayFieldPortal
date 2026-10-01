@@ -35,7 +35,14 @@ data class GamePickerState(
     val platformExpandedStates: Map<String, Boolean> = emptyMap(),
     val isLoading: Boolean = false,
     val selectedItemId: String? = null,  // Identity of selected item (platform/game/collection ID)
-)
+    // The custom memory cards that can be moved into the category being filled: cards of the
+    // same kind that are not already in it. Null until the picker has been told its category.
+    val movableCollectionIds: Set<Long>? = null,
+) {
+    /** The custom memory cards the picker offers — picking one moves it into the category. */
+    val visibleCollections: List<GameCollection>
+        get() = movableCollectionIds?.let { ids -> pcShortcuts.filter { it.id in ids } } ?: pcShortcuts
+}
 
 data class PlatformGameGroup(
     val platform: MemoryCard,
@@ -99,12 +106,22 @@ class GamePickerViewModel @Inject constructor(
                             group.platform.platformId to false
                         }
 
-                        // Initialize selectedItemId to first item if not already set
+                        // Initialize selectedItemId to first item if not already set. What the
+                        // user has checked survives a library update: this collector fires on
+                        // any games-table write, and a fresh state would drop the selection —
+                        // including the games that opened checked.
+                        val current = _state.value
                         val newState = GamePickerState(
-                            platformGroups = platformGroups,
+                            platformGroups = platformGroups.map { group ->
+                                group.copy(selectedCount = group.games.count { it.id in current.selectedGameIds })
+                            },
                             pcShortcuts = allCollections,
+                            selectedGameIds = current.selectedGameIds,
+                            selectedCollectionIds = current.selectedCollectionIds,
+                            movableCollectionIds = current.movableCollectionIds,
                             isLoading = false,
-                            platformExpandedStates = newExpandedStates,
+                            platformExpandedStates = newExpandedStates + current.platformExpandedStates
+                                .filterKeys { it in newExpandedStates },
                             selectedItemId = if (_state.value.selectedItemId == null) {
                                 platformGroups.firstOrNull()?.platform?.platformId?.let { pickerPlatformId(it) }
                             } else {
@@ -122,6 +139,21 @@ class GamePickerViewModel @Inject constructor(
                 _state.update { it.copy(isLoading = false) }
             }
         }
+    }
+
+    /**
+     * Readies the picker for one category: [preselectedGameIds] (the games already in it) open
+     * checked, and only [movableCollectionIds] are offered as custom memory cards to move in.
+     */
+    fun prepare(preselectedGameIds: Set<Long>, movableCollectionIds: Set<Long>) {
+        _state.update {
+            it.copy(
+                selectedGameIds = preselectedGameIds,
+                selectedCollectionIds = emptySet(),
+                movableCollectionIds = movableCollectionIds,
+            )
+        }
+        updateGroupCounts()
     }
 
     fun toggleGameSelection(gameId: Long) {
@@ -198,21 +230,6 @@ class GamePickerViewModel @Inject constructor(
         }
     }
 
-    fun addNewCollection(name: String) {
-        viewModelScope.launch {
-            try {
-                val newCollection = com.playfieldportal.core.domain.model.GameCollection(
-                    name = name,
-                    gameCount = 0,
-                )
-                // Note: This assumes collectionRepository has a method to create collections
-                // If not, this will need to be implemented
-            } catch (e: Exception) {
-                android.util.Log.e("GamePickerViewModel", "Error creating collection", e)
-            }
-        }
-    }
-
     fun moveSelection(delta: Int) {
         val state = _state.value
 
@@ -265,7 +282,7 @@ class GamePickerViewModel @Inject constructor(
             return
         }
 
-        for (collection in state.pcShortcuts) {
+        for (collection in state.visibleCollections) {
             if (pickerCollectionId(collection.id) == selectedId) {
                 toggleCollectionSelection(collection.id)
                 return
@@ -304,9 +321,10 @@ internal fun buildPickerItemIds(state: GamePickerState): List<String> {
         }
     }
 
-    if (state.pcShortcuts.isNotEmpty()) {
+    val collections = state.visibleCollections
+    if (collections.isNotEmpty()) {
         ids.add(PICKER_COLLECTIONS_HEADER)
-        for (collection in state.pcShortcuts) {
+        for (collection in collections) {
             ids.add(pickerCollectionId(collection.id))
         }
     }

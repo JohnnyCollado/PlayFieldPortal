@@ -31,7 +31,7 @@ class ArtworkImportWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted params: WorkerParameters,
     private val executor: ArtworkImportExecutor,
-    // The shared sink: the in-app notification panel and the Android shade at once.
+    // The shared sink: the in-app notification panel (PFP's notifications are launcher-only).
     // Building a BackgroundTaskNotifier here reached the shade only, so this work ran and
     // finished without the panel ever hearing about it.
     private val tasks: BackgroundTaskCenter,
@@ -47,7 +47,11 @@ class ArtworkImportWorker @AssistedInject constructor(
         }.getOrDefault(PortableArtworkLibrary.Transfer.COPY)
 
         val label = "Importing artwork — ${plan.sourceLabel}"
-        tasks.start(TASK_ID, label, TaskKind.ARTWORK)
+        tasks.start(
+            TASK_ID, label, TaskKind.ARTWORK,
+            onStop = { WorkManager.getInstance(applicationContext).cancelUniqueWork(UNIQUE_NAME) },
+            stopNote = "Artwork already imported is kept.",
+        )
         var lastShown = 0
 
         return try {
@@ -71,12 +75,19 @@ class ArtworkImportWorker @AssistedInject constructor(
             planFile.delete()
             Result.success(workDataOf(KEY_IMPORTED to summary.imported, KEY_FAILED to summary.failed))
         } catch (e: CancellationException) {
-            tasks.complete(TASK_ID, "Import cancelled")
+            // The executor records the cancelled import itself (quietly, with what got in).
+            tasks.cancel(TASK_ID)
             planFile.delete()
             throw e
         } catch (e: Exception) {
             Timber.e(e, "Artwork import failed")
-            tasks.fail(TASK_ID, e.message ?: "Unexpected error")
+            tasks.fail(
+                TASK_ID, e.message ?: "Unexpected error",
+                detail = com.playfieldportal.core.domain.model.NotificationDetail.notes(
+                    com.playfieldportal.core.domain.model.PfpErrorCode.AR_9001, summary = e.message,
+                    diagnostic = e.stackTraceToString().take(4_000)),
+                title = "Artwork import failed",
+            )
             planFile.delete()
             Result.failure(workDataOf(KEY_ERROR to (e.message ?: "Unexpected error")))
         }

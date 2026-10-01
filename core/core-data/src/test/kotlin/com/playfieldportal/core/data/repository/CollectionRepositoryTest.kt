@@ -2,6 +2,9 @@ package com.playfieldportal.core.data.repository
 
 import com.playfieldportal.core.data.database.dao.CollectionDao
 import com.playfieldportal.core.data.database.dao.CollectionWithCount
+import com.playfieldportal.core.data.database.dao.ListStateDao
+import io.mockk.coVerify
+import io.mockk.mockk
 import com.playfieldportal.core.data.database.entity.CollectionEntity
 import com.playfieldportal.core.data.database.entity.CollectionGameEntity
 import com.playfieldportal.core.data.database.entity.GameEntity
@@ -21,7 +24,105 @@ import kotlin.test.assertTrue
  */
 class CollectionRepositoryTest {
 
-    private fun repo(dao: CollectionDao = FakeCollectionDao()) = CollectionRepository(dao)
+    private val listStateDao: ListStateDao = mockk(relaxed = true)
+
+    private fun repo(dao: CollectionDao = FakeCollectionDao()) = CollectionRepository(dao, listStateDao)
+
+    // ── Custom memory cards live in one category, ordered within it ───────────
+
+    @Test
+    fun `a new card goes to the end of its own category`() = runTest {
+        val repo = repo()
+        val gamesA = repo.create("A", categoryId = "games")
+        val rpgA = repo.create("RPG A", categoryId = "custom_rpg_9")
+        val gamesB = repo.create("B", categoryId = "games")
+
+        val byId = repo.getAll().associateBy { it.id }
+        assertEquals(0, byId.getValue(gamesA).sortOrder)
+        assertEquals(0, byId.getValue(rpgA).sortOrder)
+        assertEquals(1, byId.getValue(gamesB).sortOrder)
+    }
+
+    @Test
+    fun `move swaps only with a neighbour in the same category`() = runTest {
+        val repo = repo()
+        val a = repo.create("A", categoryId = "games")
+        val other = repo.create("Other", categoryId = "custom_rpg_9")
+        val b = repo.create("B", categoryId = "games")
+
+        assertTrue(repo.move(b, up = true))
+
+        val games = repo.getAll().filter { it.categoryId == "games" }.sortedBy { it.sortOrder }
+        assertEquals(listOf(b, a), games.map { it.id })
+        assertEquals(0, repo.getAll().first { it.id == other }.sortOrder)
+    }
+
+    @Test
+    fun `move at the edge of its category does nothing`() = runTest {
+        val repo = repo()
+        val only = repo.create("Only", categoryId = "custom_rpg_9")
+        repo.create("Elsewhere", categoryId = "games")
+
+        assertFalse(repo.move(only, up = true))
+        assertFalse(repo.move(only, up = false))
+    }
+
+    @Test
+    fun `rehoming moves every card of a category after the target's own, keeping their order`() = runTest {
+        val repo = repo()
+        val existing = repo.create("Existing", categoryId = "games")
+        val first = repo.create("First", categoryId = "custom_ff_5")
+        val second = repo.create("Second", categoryId = "custom_ff_5")
+        repo.addGame(first, gameId = 3)
+
+        repo.rehomeAll(fromCategoryId = "custom_ff_5", toCategoryId = "games")
+
+        val games = repo.getAll().filter { it.categoryId == "games" }.sortedBy { it.sortOrder }
+        assertEquals(listOf(existing, first, second), games.map { it.id })
+        assertTrue(repo.getCollectionIdsForGame(3).contains(first))
+    }
+
+    @Test
+    fun `deleting all cards in a category leaves other categories' cards`() = runTest {
+        val repo = repo()
+        val kept = repo.create("Kept", categoryId = "games")
+        repo.create("Gone 1", categoryId = "custom_ff_5")
+        repo.create("Gone 2", categoryId = "custom_ff_5")
+
+        repo.deleteAllIn("custom_ff_5")
+
+        assertEquals(listOf(kept), repo.getAll().map { it.id })
+    }
+
+    @Test
+    fun `deleting a card forgets its stored order, sort and place in other lists`() = runTest {
+        val repo = repo()
+        val id = repo.create("Temp")
+
+        repo.delete(id)
+
+        coVerify { listStateDao.deleteLists(listOf("collection:$id")) }
+        coVerify { listStateDao.deleteItemEverywhere("collection:$id") }
+    }
+
+    @Test
+    fun `moving a card to another category drops its place in the old root's order`() = runTest {
+        val repo = repo()
+        val id = repo.create("Tactics", categoryId = "custom_ff_5")
+
+        repo.setCategory(id, "games")
+
+        coVerify { listStateDao.deleteItemEverywhere("collection:$id") }
+        assertEquals("games", repo.getAll().single().categoryId)
+    }
+
+    @Test
+    fun `a blank name becomes Untitled Custom Card`() = runTest {
+        val repo = repo()
+        val id = repo.create("   ")
+
+        assertEquals("Untitled Custom Card", repo.getAll().first { it.id == id }.name)
+    }
 
     @Test
     fun `create assigns incrementing sort order and trims name`() = runTest {
@@ -151,10 +252,19 @@ private class FakeCollectionDao : CollectionDao {
     override suspend fun getGameIdsInCollection(collectionId: Long): List<Long> =
         memberships.filter { it.collectionId == collectionId }.map { it.gameId }
 
+    override suspend fun getMemberships(collectionId: Long): List<CollectionGameEntity> =
+        memberships.filter { it.collectionId == collectionId }
+
     override suspend fun isGameInCollection(collectionId: Long, gameId: Long): Int =
         memberships.count { it.collectionId == collectionId && it.gameId == gameId }
 
     override suspend fun maxSortOrder(): Int = collections.values.maxOfOrNull { it.sortOrder } ?: -1
+
+    override suspend fun maxSortOrderIn(categoryId: String): Int =
+        collections.values.filter { it.categoryId == categoryId }.maxOfOrNull { it.sortOrder } ?: -1
+
+    override suspend fun getByCategory(categoryId: String): List<CollectionEntity> =
+        ordered().filter { it.categoryId == categoryId }
 
     override suspend fun insert(collection: CollectionEntity): Long {
         val id = nextId++

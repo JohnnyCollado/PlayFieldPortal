@@ -15,7 +15,6 @@ import kotlinx.coroutines.launch
 
 data class NotificationSettingsUiState(
     val enabled: Boolean = NotificationPreferences.DEFAULT_ENABLED,
-    val mirrorToShade: Boolean = NotificationPreferences.DEFAULT_MIRROR_TO_SHADE,
     val autoClearDays: Int = NotificationRetention.DEFAULT_AUTO_CLEAR_DAYS,
     val storedCount: Int = 0,
     val unreadCount: Int = 0,
@@ -29,14 +28,12 @@ class NotificationSettingsViewModel @Inject constructor(
 
     val uiState: StateFlow<NotificationSettingsUiState> = combine(
         preferences.enabled,
-        preferences.mirrorToShade,
         preferences.autoClearDaysFlow,
         repository.observeAll(),
         repository.observeUnreadCount(),
-    ) { enabled, mirror, days, rows, unread ->
+    ) { enabled, days, rows, unread ->
         NotificationSettingsUiState(
             enabled = enabled,
-            mirrorToShade = mirror,
             autoClearDays = days,
             storedCount = rows.size,
             unreadCount = unread,
@@ -48,9 +45,6 @@ class NotificationSettingsViewModel @Inject constructor(
     )
 
     fun setEnabled(enabled: Boolean) = viewModelScope.launch { preferences.setEnabled(enabled) }
-
-    fun setMirrorToShade(mirror: Boolean) =
-        viewModelScope.launch { preferences.setMirrorToShade(mirror) }
 
     /** Cycles the retention window, ending on Never so "keep everything" is reachable in one row. */
     fun cycleAutoClearDays() = viewModelScope.launch {

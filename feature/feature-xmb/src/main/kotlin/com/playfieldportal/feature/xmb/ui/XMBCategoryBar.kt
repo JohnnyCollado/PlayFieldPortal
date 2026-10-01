@@ -3,6 +3,7 @@ package com.playfieldportal.feature.xmb.ui
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -26,6 +27,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
@@ -106,6 +109,10 @@ fun XMBCategoryBar(
     solidUnfocusedIcons: Boolean = false,
     // Whether the selected category's GIF icon may animate (battery saver / overlays gate it).
     iconAnimatingAllowed: Boolean = false,
+    // The selected category is lifted (Category Manager ▸ Move): it wears the move outline, and
+    // the bar snaps rather than glides so the lifted icon holds still while its neighbours swap
+    // round it — gliding would carry it a slot away and back on every press.
+    moving: Boolean = false,
 ) {
     // The slots the row actually lays out (see [visibleCategories] for why drilled-in categories are
     // dropped rather than emptied).
@@ -141,7 +148,7 @@ fun XMBCategoryBar(
     // failure the old effect existed to prevent is now unavailable rather than prevented.
     val slide by animateDpAsState(
         targetValue = -CategorySlotWidth * selectedIndex.coerceIn(0, rowCategories.lastIndex.coerceAtLeast(0)),
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        animationSpec = if (moving) snap() else spring(stiffness = Spring.StiffnessMediumLow),
         label = "xmbCategorySlide",
     )
 
@@ -166,6 +173,7 @@ fun XMBCategoryBar(
                     XMBCategoryItem(
                         category = category,
                         isSelected = index == selectedIndex,
+                        lifted = moving && index == selectedIndex,
                         onClick = { onCategorySelected(index) },
                         onLongPress = { onCategoryLongPress(index) },
                         solidUnfocusedIcons = solidUnfocusedIcons,
@@ -185,6 +193,7 @@ private fun XMBCategoryItem(
     isSelected: Boolean,
     onClick: () -> Unit,
     onLongPress: () -> Unit,
+    lifted: Boolean = false,
     solidUnfocusedIcons: Boolean,
     iconAnimatingAllowed: Boolean = false,
     modifier: Modifier = Modifier,
@@ -227,7 +236,20 @@ private fun XMBCategoryItem(
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .size(82.dp)
-                .alpha(itemAlpha),
+                .alpha(itemAlpha)
+                // Being moved: the item move's outline turned on its side, chevrons in the left
+                // and right edges because left and right are where it can go.
+                .drawWithContent {
+                    drawContent()
+                    if (lifted) {
+                        val side = iconSize.toPx()
+                        drawMoveOutline(
+                            icon = Rect(center.x - side / 2f, center.y - side / 2f, center.x + side / 2f, center.y + side / 2f),
+                            corner = 8.dp,
+                            horizontal = true,
+                        )
+                    }
+                },
         ) {
             // The selected category's GIF (if the slot holds one) animates exactly while it is
             // the focused column — the same gate the item rows obey.

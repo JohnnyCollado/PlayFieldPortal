@@ -12,6 +12,7 @@ import dagger.hilt.components.SingletonComponent
 import com.playfieldportal.feature.artwork.api.ArtworkImageCache
 import com.playfieldportal.feature.library.scanner.RescanApplicationScope
 import com.playfieldportal.core.data.repository.CustomIconCacheEvictor
+import com.playfieldportal.core.ui.notification.TaskScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -37,6 +38,14 @@ object AppModule {
     @RescanApplicationScope
     fun provideRescanApplicationScope(): CoroutineScope =
         CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    // Work the notification tray owns: it outlives the screen that started it and is stopped from
+    // the panel (BackgroundTaskCenter.requestStop), not by navigating away.
+    @Provides
+    @Singleton
+    @TaskScope
+    fun provideTaskScope(): CoroutineScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     // CustomIconStore (core-data) must evict Coil's path-keyed cache when a replaced GIF lands
     // at a stable path — but core-data can't see feature-artwork's ArtworkImageCache. The app

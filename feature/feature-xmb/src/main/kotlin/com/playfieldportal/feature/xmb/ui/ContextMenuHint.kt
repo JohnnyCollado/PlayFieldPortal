@@ -51,6 +51,13 @@ val HintPillBottomPadding = 24.dp
 /** Raised clear of the touch App Drawer button on the surfaces where that button is also up. */
 val HintPillBottomPaddingAboveDrawerButton = 76.dp
 
+/**
+ * Whether the media screens (video, photo, music) should show their controller prompts: true once
+ * the user has idled there with a controller, false again on the next press. Provided by the shell
+ * so each screen reads it without a parameter of its own; apply it through `idleHintAlpha`.
+ */
+val LocalMediaHintVisible = androidx.compose.runtime.compositionLocalOf { false }
+
 @Composable
 fun ContextMenuHint(
     modifier: Modifier = Modifier,
@@ -79,7 +86,7 @@ fun ContextMenuHint(
         if (showOptions) add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
         if (showNotifications) add(ControllerPromptItem(GamepadAction.HOME, "Notifications"))
     }
-    ControllerHintBar(items = items, modifier = modifier)
+    ControllerHintBar(items = items, modifier = modifier, compact = true)
 }
 
 // ── Previews ──────────────────────────────────────────────────────────────────

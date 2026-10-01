@@ -22,12 +22,45 @@ data class PfpNotification(
      */
     val sourceKey: String? = null,
     val action: NotificationAction = NotificationAction.None,
-    /** Opaque JSON, unused today. The seam a later RSS item uses for its enclosure url/size/mime. */
+    /**
+     * The row's [NotificationDetail] as JSON (see [NotificationDetailCodec]): Notes or Results.
+     * Null for a Simple row and for every row written before details existed.
+     */
     val payload: String? = null,
     val createdAt: Long,
     val readAt: Long? = null,
 ) {
     val isRead: Boolean get() = readAt != null
+
+    /**
+     * What Confirm opens. A stored payload wins; failing that, a body with no action to run becomes a
+     * one-section note, so every row with something to say stays readable — including rows written
+     * before payloads existed, whose body was only reachable through the old info dialog.
+     */
+    val detail: NotificationDetail? by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        NotificationDetailCodec.decode(payload)
+            ?: body?.takeIf { it.isNotBlank() && action == NotificationAction.None }
+                ?.let { NotificationDetail.Notes(summary = it) }
+    }
+
+    val depth: NotificationDepth
+        get() = when (detail) {
+            is NotificationDetail.Notes -> NotificationDepth.NOTES
+            is NotificationDetail.Results -> NotificationDepth.RESULTS
+            null -> NotificationDepth.SIMPLE
+        }
+
+    /**
+     * The one line the panel shows. Titles stand alone now that the body lives in the sheet, but a
+     * Simple row with an action has no sheet, so its body rides along after a dash rather than vanish.
+     */
+    val displayTitle: String
+        // endsWith: rows recorded before the split already carry "title — body" in the title.
+        get() = if (depth == NotificationDepth.SIMPLE && !body.isNullOrBlank() && !title.endsWith(body)) {
+            "$title — $body"
+        } else {
+            title
+        }
 }
 
 /**
@@ -90,6 +123,12 @@ sealed interface NotificationAction {
         override val arg = routeId
     }
 
+    /** Opens the in-launcher confirm for a pending INSTALL_SHORTCUT request (the shade Add/Ignore it replaced). */
+    data class ReviewShortcut(val requestId: String) : NotificationAction {
+        override val typeKey = TYPE_REVIEW_SHORTCUT
+        override val arg = requestId
+    }
+
     /** The only action that leaves the app. Unimplemented until the RSS channel lands (plan §8). */
     data class OpenUrl(val url: String) : NotificationAction {
         override val typeKey = TYPE_URL
@@ -103,6 +142,7 @@ sealed interface NotificationAction {
         const val TYPE_GAME = "open_game"
         const val TYPE_SETTINGS = "open_settings"
         const val TYPE_URL = "open_url"
+        const val TYPE_REVIEW_SHORTCUT = "review_shortcut"
 
         fun decode(typeKey: String?, arg: String?): NotificationAction = when (typeKey) {
             TYPE_CATEGORY -> arg?.let(::OpenCategory) ?: None
@@ -110,6 +150,7 @@ sealed interface NotificationAction {
             TYPE_GAME -> arg?.toLongOrNull()?.let(::OpenGame) ?: None
             TYPE_SETTINGS -> arg?.let(::OpenSettingsScreen) ?: None
             TYPE_URL -> arg?.let(::OpenUrl) ?: None
+            TYPE_REVIEW_SHORTCUT -> arg?.let(::ReviewShortcut) ?: None
             else -> None
         }
     }

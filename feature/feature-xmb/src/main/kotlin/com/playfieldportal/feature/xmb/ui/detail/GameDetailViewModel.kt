@@ -407,7 +407,7 @@ enum class DetailAction(
     val opens: DetailMenu? = null,
 ) {
     FAVORITE("Favorite", group = DetailGroup.LIBRARY),
-    COLLECTIONS("Collections", group = DetailGroup.LIBRARY),
+    COLLECTIONS("Custom Memory Cards", group = DetailGroup.LIBRARY),
     EMULATOR("Emulator", group = DetailGroup.PLAY),
     MANUAL("Manual", group = DetailGroup.PLAY),
     MENU_ARTWORK("Artwork", group = DetailGroup.CUSTOMIZE, opens = DetailMenu.ARTWORK),

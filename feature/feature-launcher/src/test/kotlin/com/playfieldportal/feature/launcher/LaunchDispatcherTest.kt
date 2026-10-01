@@ -73,6 +73,7 @@ class LaunchDispatcherTest {
         val gameBootGate = GameBootGate(context, gameBootPreferences, uiMediaStore, gameBootAudioPlayer)
         val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer = mockk(relaxed = true)
         val autoCoreMemory: AutoCoreMemory = mockk(relaxed = true)
+        val gameRepository: com.playfieldportal.core.domain.repository.GameRepository = mockk(relaxed = true)
 
         val dispatcher = LaunchDispatcher(
             context = context,
@@ -83,6 +84,7 @@ class LaunchDispatcherTest {
             menuSound = menuSound,
             autoCoreMemory = autoCoreMemory,
             handoffTracker = GameHandoffTracker({ now }, emptySet()),
+            gameRepository = gameRepository,
         )
     }
 
@@ -135,6 +137,53 @@ class LaunchDispatcherTest {
         coVerify(exactly = 1) {
             h.autoCoreMemory.remember("psx", "auto_retroarch_gambatte_libretro_android")
         }
+    }
+
+    // ── Last played ───────────────────────────────────────────────────────────
+    // The launch is the only moment PFP knows a game was played, so this stamp is what
+    // "Recently Played" and the UMD slot's fallback rest on.
+
+    @Test
+    fun `an accepted launch stamps the game as played`() = runTest {
+        val h = harness()
+        coEvery { h.recorder.record(any()) } returns Unit
+
+        h.dispatcher.launch(game, resolved, h.intent)
+
+        coVerify(exactly = 1) { h.gameRepository.markLaunched(7L, any()) }
+    }
+
+    @Test
+    fun `a launch that never started does not stamp the game`() = runTest {
+        val h = harness()
+        coEvery { h.recorder.record(any()) } returns Unit
+        every { h.context.startActivity(any()) } throws android.content.ActivityNotFoundException()
+
+        h.dispatcher.launch(game, resolved, h.intent)
+
+        coVerify(exactly = 0) { h.gameRepository.markLaunched(any(), any()) }
+    }
+
+    @Test
+    fun `a failed stamp never fails the launch`() = runTest {
+        val h = harness()
+        coEvery { h.recorder.record(any()) } returns Unit
+        coEvery { h.gameRepository.markLaunched(any(), any()) } throws IllegalStateException("db closed")
+
+        val result = h.dispatcher.launch(game, resolved, h.intent)
+
+        assertIs<LaunchDispatchResult.Accepted>(result)
+    }
+
+    @Test
+    fun `a shortcut launch stamps the game only when it started`() = runTest {
+        val h = harness()
+
+        h.dispatcher.launchShortcut(game) { Result.failure(IllegalStateException("no shortcut")) }
+        coVerify(exactly = 0) { h.gameRepository.markLaunched(any(), any()) }
+
+        h.dispatcher.launchShortcut(game) { Result.success(Unit) }
+        coVerify(exactly = 1) { h.gameRepository.markLaunched(7L, any()) }
     }
 
     @Test
@@ -379,6 +428,46 @@ class LaunchDispatcherTest {
 
         assertTrue(result.isFailure)
         assertEquals("gone", result.exceptionOrNull()?.message)
+    }
+
+    // ── Error codes (notification details plan §10) ─────────────────────────────────────────
+
+    @Test
+    fun `each immediate failure carries its error code`() = runTest {
+        val cases = listOf(
+            android.content.ActivityNotFoundException("nope") to "LN-4001",
+            SecurityException("denied") to "LN-4002",
+            IllegalStateException("weird") to "LN-9001",
+        )
+        for ((thrown, code) in cases) {
+            val h = harness()
+            every { h.context.startActivity(any()) } throws thrown
+            h.dispatcher.launch(game, resolved, h.intent)
+            coVerify { h.recorder.record(match { it.errorCode == code }) }
+        }
+    }
+
+    @Test
+    fun `a launch that never came to the front carries LN-4003`() = runTest {
+        val h = harness()
+        h.launchAccepted()
+        h.now = LaunchDispatcher.STOP_WINDOW_MS + 1
+        advanceTimeBy(LaunchDispatcher.STOP_WINDOW_MS + 1)
+        advanceUntilIdle()
+
+        coVerify { h.recorder.record(match { it.errorCode == "LN-4003" }) }
+    }
+
+    @Test
+    fun `a successful launch carries no error code`() = runTest {
+        val h = harness()
+        h.launchAccepted()
+        h.dispatcher.onHostStopped()
+        h.now = 60_000
+        h.dispatcher.onHostResumed()
+        advanceUntilIdle()
+
+        coVerify { h.recorder.record(match { it.status == LaunchOutcomeStatus.SUCCEEDED && it.errorCode == null }) }
     }
 
     private fun outcome(status: LaunchOutcomeStatus) = LaunchOutcome(

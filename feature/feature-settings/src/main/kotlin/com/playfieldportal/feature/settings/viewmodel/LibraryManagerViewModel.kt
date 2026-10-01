@@ -17,6 +17,12 @@ import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
+import com.playfieldportal.core.ui.notification.TaskScope
+import com.playfieldportal.core.domain.model.NotificationDetail
+import com.playfieldportal.core.domain.model.PfpErrorCode
+import com.playfieldportal.feature.library.scanner.failureNotes
+import com.playfieldportal.feature.library.scanner.scanResults
+import kotlinx.coroutines.CoroutineScope
 import com.playfieldportal.feature.appbar.LauncherShortcutRepository
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.launcher.PcLauncherAdapters
@@ -24,6 +30,7 @@ import com.playfieldportal.feature.launcher.PcLauncherCatalog
 import com.playfieldportal.feature.launcher.PcLauncherType
 import com.playfieldportal.feature.library.scanner.LibraryScanner
 import com.playfieldportal.feature.library.scanner.RomScanner
+import com.playfieldportal.feature.library.scanner.ScanStatus
 import com.playfieldportal.feature.library.scanner.isScannable
 import com.playfieldportal.feature.library.scanner.scanOutcomeMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -190,9 +197,12 @@ class LibraryManagerViewModel @Inject constructor(
     private val libraryScanner: LibraryScanner,
     private val romRootScanRunner: RomRootScanRunner,
     private val pcGameExporter: com.playfieldportal.feature.settings.pc.PcGameExporter,
-    // Scan and import outcomes go to the tray (row + shade + notification cue) rather than a
-    // dismissible row that dies with the screen. Progress and validation stay in-screen.
+    // Scan and import outcomes go to the tray (row + notification cue) rather than a dismissible
+    // row that dies with the screen. Progress and validation stay in-screen.
     private val tasks: BackgroundTaskCenter,
+    // Scans run here, not in viewModelScope: the tray owns them now, so leaving Settings must not
+    // kill one mid-way — it is stopped from the panel instead.
+    @TaskScope private val taskScope: CoroutineScope,
 ) : ViewModel() {
 
     private val _scratch = MutableStateFlow(LibraryManagerUiState())
@@ -636,22 +646,38 @@ class LibraryManagerViewModel @Inject constructor(
     /** Scans Vita3K's granted ux0/app for installed titles onto the PS Vita card. */
     fun scanVitaGames() {
         if (PSVITA_PLATFORM_ID in _scratch.value.scanningPlatformIds) return
-        viewModelScope.launch {
+        taskScope.launch {
             _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds + PSVITA_PLATFORM_ID) }
             val taskId = "lm_scan_$PSVITA_PLATFORM_ID"
-            tasks.start(taskId, "Scanning PS Vita", TaskKind.SCAN)
-            val result = runCatching { vitaGameScanner.scan() }
-                .onFailure { Timber.e(it, "Vita scan failed") }
-                .getOrNull()
-            if (result != null && (result.added > 0 || result.updated > 0)) {
-                runCatching { memoryCardRepository.recountGames(PSVITA_PLATFORM_ID) }
+            val open = NotificationAction.OpenMemoryCard(PSVITA_PLATFORM_ID)
+            tasks.startStoppable(taskId, "Scanning PS Vita", TaskKind.SCAN, stopNote = "Games found so far are kept.")
+            var error: Throwable? = null
+            try {
+                val result = runCatching { vitaGameScanner.scan() }
+                    .onFailure {
+                        if (it is kotlinx.coroutines.CancellationException) throw it
+                        Timber.e(it, "Vita scan failed"); error = it
+                    }
+                    .getOrNull()
+                if (result != null && (result.added > 0 || result.updated > 0)) {
+                    runCatching { memoryCardRepository.recountGames(PSVITA_PLATFORM_ID) }
+                }
+                if (result != null) {
+                    tasks.complete(taskId, result.message, open, title = "PS Vita scan finished")
+                } else {
+                    tasks.fail(
+                        taskId, "Vita scan failed", open,
+                        detail = NotificationDetail.notes(PfpErrorCode.SC_9001, summary = error?.message,
+                            diagnostic = error?.stackTraceToString()?.take(4_000)),
+                        title = "PS Vita scan failed",
+                    )
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                tasks.settleCancelled(taskId, "Stopped before it finished", open, title = "PS Vita scan stopped")
+                throw e
+            } finally {
+                _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds - PSVITA_PLATFORM_ID) }
             }
-            if (result != null) {
-                tasks.complete(taskId, result.message, NotificationAction.OpenMemoryCard(PSVITA_PLATFORM_ID))
-            } else {
-                tasks.fail(taskId, "Vita scan failed — see the log.")
-            }
-            _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds - PSVITA_PLATFORM_ID) }
         }
     }
 
@@ -696,16 +722,30 @@ class LibraryManagerViewModel @Inject constructor(
         if (platformId == PSVITA_PLATFORM_ID) {
             scanVitaGames(); return
         }
-        viewModelScope.launch {
+        taskScope.launch {
             _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds + platformId) }
             val taskId = "lm_scan_$platformId"
-            tasks.start(taskId, "Scanning ${scanLabel(platformId)}", TaskKind.SCAN)
-            val outcome = libraryScanner.scanPlatform(platformId, removeMissing)
-            tasks.complete(
-                taskId,
-                scanOutcomeMessage(outcome, removeMissing),
-                NotificationAction.OpenMemoryCard(platformId),
-            )
+            val name = scanLabel(platformId)
+            val open = NotificationAction.OpenMemoryCard(platformId)
+            tasks.startStoppable(taskId, "Scanning $name", TaskKind.SCAN, stopNote = "Games found so far are kept.")
+            val outcome = try {
+                libraryScanner.scanPlatform(platformId, removeMissing)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                tasks.settleCancelled(taskId, "Stopped before it finished", open, title = "$name scan stopped")
+                _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds - platformId) }
+                throw e
+            }
+            val body = scanOutcomeMessage(outcome, removeMissing).removePrefix("${outcome.displayName}: ")
+            val cardName = outcome.displayName.removeSuffix(" Memory Card")
+            // A failed or skipped card used to be reported as a success; it is a failure, with its code.
+            if (outcome.status == ScanStatus.COMPLETED) {
+                tasks.complete(taskId, body, open, null, "$cardName scan finished")
+            } else {
+                tasks.fail(
+                    taskId, body, open, outcome.failureNotes(),
+                    if (outcome.status == ScanStatus.FAILED) "$cardName scan failed" else "$cardName scan skipped",
+                )
+            }
             _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds - platformId) }
             Timber.i(
                 "Library Manager scan complete for $platformId: " +
@@ -903,19 +943,34 @@ class LibraryManagerViewModel @Inject constructor(
      * `<ROM Root>/windows/import` drop-folders.
      */
     fun scanPcGamesFolder(folder: Uri? = null) {
-        viewModelScope.launch {
+        taskScope.launch {
             if (folder != null) romRootRepository.persist(folder)
             val taskId = "lm_pc_scan"
-            tasks.start(taskId, "Scanning Windows Games", TaskKind.SCAN)
-            val report = runCatching { pcGameScanner.scan(folder) }
-                .onFailure { Timber.e(it, "PC scan failed") }
-                .getOrNull()
+            val open = NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID)
+            tasks.startStoppable(taskId, "Scanning Windows Games", TaskKind.SCAN, stopNote = "Games found so far are kept.")
+            var error: Throwable? = null
+            val report = try {
+                runCatching { pcGameScanner.scan(folder) }
+                    .onFailure {
+                        if (it is kotlinx.coroutines.CancellationException) throw it
+                        Timber.e(it, "PC scan failed"); error = it
+                    }
+                    .getOrNull()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                tasks.settleCancelled(taskId, "Stopped before it finished", open, title = "Windows Games scan stopped")
+                throw e
+            }
             if (report == null) {
-                tasks.fail(taskId, "PC scan failed — see the log.")
+                tasks.fail(
+                    taskId, "PC scan failed", open,
+                    detail = NotificationDetail.notes(PfpErrorCode.SC_9001, summary = error?.message,
+                        diagnostic = error?.stackTraceToString()?.take(4_000)),
+                    title = "Windows Games scan failed",
+                )
                 return@launch
             }
             if (report.newGames > 0) ensureWindowsCard()
-            tasks.complete(taskId, report.message, NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID))
+            tasks.complete(taskId, report.message, open, title = "Windows Games scan finished")
             // No emulator work here, by design: Local Steam folders are pointed at once through
             // Batch Match Local Games, not searched for on every scan.
         }
@@ -968,19 +1023,37 @@ class LibraryManagerViewModel @Inject constructor(
      * outlives this screen.
      */
     fun batchMatchLocalGames(parentFolder: Uri) {
-        viewModelScope.launch {
+        taskScope.launch {
             val taskId = "lm_local_steam_batch"
-            tasks.start(taskId, "Matching local Windows games", TaskKind.SCAN)
+            val open = NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID)
+            tasks.startStoppable(taskId, "Matching local Windows games", TaskKind.SCAN,
+                stopNote = "Games already matched stay linked.")
             _scratch.update { it.copy(batchMatching = true) }
-            val report = runCatching { localSteamBatchMatcher.run(parentFolder) }
-                .onFailure { Timber.e(it, "Local Steam batch match failed") }
-                .getOrNull()
-            _scratch.update { it.copy(batchMatching = false) }
+            var error: Throwable? = null
+            val report = try {
+                runCatching { localSteamBatchMatcher.run(parentFolder) }
+                    .onFailure {
+                        if (it is kotlinx.coroutines.CancellationException) throw it
+                        Timber.e(it, "Local Steam batch match failed"); error = it
+                    }
+                    .getOrNull()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                tasks.settleCancelled(taskId, "Stopped before it finished", open,
+                    title = "Windows achievements match stopped")
+                throw e
+            } finally {
+                _scratch.update { it.copy(batchMatching = false) }
+            }
             if (report == null) {
-                tasks.fail(taskId, "Batch match failed — see the log.")
+                tasks.fail(
+                    taskId, "Batch match failed", open,
+                    detail = NotificationDetail.notes(PfpErrorCode.AC_2001, summary = error?.message,
+                        diagnostic = error?.stackTraceToString()?.take(4_000)),
+                    title = "Windows achievements match failed",
+                )
                 return@launch
             }
-            tasks.complete(taskId, report.message, NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID))
+            tasks.complete(taskId, report.message, open, title = "Windows achievements match finished")
             refreshLocalWindows()
 
             // The convertible pile is the ONLY place a DLL swap is authorised, and only per game.
@@ -1163,11 +1236,21 @@ class LibraryManagerViewModel @Inject constructor(
     // don't map to a supported platform are skipped. The scan loop lives in [RomRootScanRunner]
     // so the first-run wizard's ROM-root pick triggers the exact same pass without duplicating it.
     fun scanRomRoot() {
-        viewModelScope.launch {
+        taskScope.launch {
             val taskId = "lm_rom_root_scan"
-            tasks.start(taskId, "Scanning ROM Root", TaskKind.SCAN)
-            val report = romRootScanRunner.scan()
-            tasks.complete(taskId, report.message)
+            tasks.startStoppable(taskId, "Scanning ROM Root", TaskKind.SCAN,
+                stopNote = "Systems already scanned keep their new games.")
+            val report = try {
+                romRootScanRunner.scan()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                tasks.settleCancelled(taskId, "Stopped before it finished", title = "ROM Root scan stopped")
+                throw e
+            }
+            tasks.complete(
+                taskId, report.message,
+                detail = report.outcomes.takeIf { it.isNotEmpty() }?.let { scanResults(it) },
+                title = "ROM Root scan finished",
+            )
         }
     }
 

@@ -1,11 +1,8 @@
 package com.playfieldportal.launcher
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -13,7 +10,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
 import androidx.compose.runtime.CompositionLocalProvider
@@ -100,19 +96,16 @@ class MainActivity : ComponentActivity() {
     // so unplugging fires no MEDIA_MOUNTED. USB_STATE's disconnect edge is the actual unplug signal.
     private val usbDisconnectReceiver = UsbDisconnectReceiver()
 
-    private val requestNotificationPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-            // Best-effort grant; either way the dialog is resolved and startup can continue.
-            xmbViewModel.onStartupPermissionsSettled()
-        }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
         hideSystemBars()
-        requestNotificationPermissionIfNeeded()
+        // No runtime prompt any more: PFP's notifications are launcher-only, and the one shade item
+        // left (music playback) is a media-session notification, which needs no POST_NOTIFICATIONS.
+        // The boot sequence still waits on this signal, so it is reported settled straight away.
+        xmbViewModel.onStartupPermissionsSettled()
         ContextCompat.registerReceiver(
             this,
             installShortcutReceiver,
@@ -238,23 +231,6 @@ class MainActivity : ComponentActivity() {
         runCatching { unregisterReceiver(mediaMountReceiver) }
         runCatching { unregisterReceiver(usbDisconnectReceiver) }
         super.onDestroy()
-    }
-
-    // Background-task notifications need the POST_NOTIFICATIONS runtime grant on API 33+.
-    // Every early-return path reports the permission flow settled so the boot sequence
-    // (which holds until then) can start.
-    private fun requestNotificationPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            xmbViewModel.onStartupPermissionsSettled()
-            return
-        }
-        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            xmbViewModel.onStartupPermissionsSettled()
-            return
-        }
-        requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     private fun hideSystemBars() {

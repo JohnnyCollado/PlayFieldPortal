@@ -2,6 +2,7 @@ package com.playfieldportal.feature.appbar
 
 import android.graphics.drawable.Drawable
 import com.playfieldportal.core.data.database.dao.AppOverrideDao
+import com.playfieldportal.core.data.database.dao.AppUsageDao
 import com.playfieldportal.core.data.database.dao.CategoryDao
 import com.playfieldportal.core.data.database.entity.AppOverrideEntity
 import com.playfieldportal.core.data.database.entity.CategoryItemEntity
@@ -25,6 +26,10 @@ data class CategorizedApp(
     val icon: Drawable,
     val pinned: Boolean,
     val isEmulator: Boolean,
+    // Newest of the last launch from PFP and the system's usage record — the "Recently Used" sort.
+    val lastUsedAt: Long = 0L,
+    // When the app was first installed — the "Date Added" sort.
+    val installedAt: Long = 0L,
 )
 
 private const val ITEM_TYPE_APP = "app"
@@ -52,8 +57,9 @@ class AppCategoryRepository @Inject constructor(
     private val classifier: AppClassifier,
     private val categoryDao: CategoryDao,
     private val appOverrideDao: AppOverrideDao,
+    private val appUsageDao: AppUsageDao,
     packageMonitor: InstalledPackageMonitor,
-    @AppCatalogScope scope: CoroutineScope,
+    @AppCatalogScope private val scope: CoroutineScope,
 ) {
     @Volatile private var cache: List<InstalledApp> = emptyList()
 
@@ -134,6 +140,7 @@ class AppCategoryRepository @Inject constructor(
         val apps      = installedApps()
         val overrides = appOverrideDao.getAll().associateBy { it.packageName }
         val itemsByPkg = categoryDao.getAppItems().groupBy { it.itemId }
+        val launchedAt = appUsageDao.getAll().associate { it.packageName to it.lastLaunchedAt }
 
         return apps.mapNotNull { app ->
             val ov = overrides[app.packageName]
@@ -155,6 +162,8 @@ class AppCategoryRepository @Inject constructor(
                 icon        = app.icon,
                 pinned      = pinned,
                 isEmulator  = app.isEmulator,
+                lastUsedAt  = maxOf(app.lastUsedAt, launchedAt[app.packageName] ?: 0L),
+                installedAt = app.installedAt,
             )
         }.sortedWith(compareByDescending<CategorizedApp> { it.pinned }.thenBy { it.label.lowercase() })
     }
@@ -188,6 +197,12 @@ class AppCategoryRepository @Inject constructor(
         categoryDao.setItemPinned(categoryId, pkg, true)
     }
 
+    /** Takes the pin off; the app stays in the category. */
+    suspend fun unpinFromCategory(pkg: String, categoryId: String) {
+        materialize(pkg)
+        categoryDao.setItemPinned(categoryId, pkg, false)
+    }
+
     suspend fun setHidden(pkg: String, hidden: Boolean) {
         val ov = appOverrideDao.getByPackage(pkg) ?: AppOverrideEntity(pkg)
         appOverrideDao.upsert(ov.copy(isHidden = hidden))
@@ -198,7 +213,14 @@ class AppCategoryRepository @Inject constructor(
         appOverrideDao.upsert(ov.copy(customLabel = label?.trim()?.takeIf { it.isNotBlank() }))
     }
 
-    fun launch(pkg: String) = installedAppRepository.launchApp(pkg)
+    /** Launches the app and, when it actually started, records the use for "Recently Used". */
+    fun launch(pkg: String) {
+        if (!installedAppRepository.launchApp(pkg)) return
+        scope.launch {
+            runCatching { appUsageDao.recordLaunch(pkg, System.currentTimeMillis()) }
+                .onFailure { Timber.w(it, "Could not record app launch for $pkg") }
+        }
+    }
 
     // Converts an app's automatic placement into explicit rows the first time the user edits
     // it, so subsequent automatic classification never overrides the user's choice.

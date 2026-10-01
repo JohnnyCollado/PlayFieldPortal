@@ -39,6 +39,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
@@ -304,7 +305,7 @@ fun VideoDetailScreen(
                     labelStyle = TextStyle(fontSize = 12.sp),
                     glyphSize = 16.dp,
                     arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
-                    modifier = Modifier.padding(horizontal = 24.dp),
+                    modifier = Modifier.alpha(com.playfieldportal.core.ui.components.idleHintAlpha(com.playfieldportal.feature.xmb.ui.LocalMediaHintVisible.current)).padding(horizontal = 24.dp),
                 )
             }
         }

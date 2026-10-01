@@ -66,7 +66,7 @@ class ThemesSettingsViewModel @Inject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ThemesSettingsUiState())
 
-    // Theme import/create/reset outcomes land in the tray (row + shade + notification cue), keyed so
+    // Theme import/create/reset outcomes land in the tray (row + notification cue), keyed so
     // a repeat replaces its row. INFO for plain results, ERROR when the store reported a failure.
     private fun reportTheme(message: String, severity: NotificationSeverity = NotificationSeverity.SUCCESS) {
         tasks.report(

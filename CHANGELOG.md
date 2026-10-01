@@ -6,6 +6,36 @@ All notable changes to Play Field Portal are documented here. This project follo
 ## [Unreleased]
 
 ### Added
+- **Notifications now explain themselves, list what happened, and can stop running work.** Two
+  new kinds of notification row join the panel. A **Notes** row (marked with a small page) opens a
+  sheet that says what happened, why, and what to do, with a Sony-style error code such as
+  `LN-4003` — launch failures, scan and fetch errors, backup failures, achievement pauses. A
+  **Results** row (marked with a tally of failures and skips) opens a sheet listing every item the
+  work touched, failures first, filtered with L1/R1, with each item's reason, code and a jump to
+  the card or game — Scan All, ROM Root, artwork and metadata passes, artwork import, export and
+  move, achievement updates and restore. Confirm opens the sheet and marks the row read; the row's
+  destination moves into the sheet as the ✕ button, and △ copies the details. The 33 codes are in
+  `docs/plans/PFP_Notification_Error_Codes.md`.
+  Running work can be stopped from the panel: scans, artwork and metadata passes, relink, export,
+  import, storefront sync and achievement updates focus in the RUNNING list, and ✕ asks before
+  stopping (Keep Running is focused). A stopped task records what it finished as a quiet, already
+  read row. Library Manager scans now keep running after you leave Settings.
+
+### Changed
+- **PFP's notifications are launcher-only.** Background work no longer mirrors to the Android
+  shade (the *Also Show in Android Shade* setting is gone), the "finish setting up your Windows
+  Library" notice is a tray row, and the Add / Ignore for shortcuts other apps request is asked in
+  a launcher modal (Ignore focused) with a tray row to come back to. Music playback keeps its media
+  notification, the one shade item left. The notification permission prompt at first start is
+  gone, since nothing needs it any more.
+
+### Fixed
+- **A Library Manager console scan that failed or was skipped reported success.** It now settles
+  as a failure with its error code.
+- **Launch failures and artwork imports did not play the notification sound.** They posted to the
+  history directly; they go through the shared task center like every other row now.
+
+### Added
 - **Local Windows achievements now work by pointing PFP at the game folder.** Local Steam tracking
   used to find a game by walking the windows library's scan surfaces. That was right when the Windows
   card was a scanned root and is no longer true: games enter the library through pins, launcher

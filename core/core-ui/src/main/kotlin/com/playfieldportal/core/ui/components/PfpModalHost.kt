@@ -10,10 +10,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.model.NotificationDetail
+import com.playfieldportal.core.domain.model.ResultItem
 import com.playfieldportal.core.ui.sound.LocalMenuSounds
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 // ── The shared modals, as a screen uses them ──────────────────────────────────
@@ -81,6 +86,42 @@ sealed interface PfpModalSpec {
         val onConfirm: (String) -> Unit,
         val onCancel: () -> Unit,
     ) : PfpModalSpec
+
+    /**
+     * A notification's Notes sheet. [actionLabel] names the row's action ("Go to Game") on ✕;
+     * null when the row has nowhere to go. [onCopy] receives the plain-text details.
+     */
+    class Notes(
+        override val key: Any,
+        val title: String,
+        val meta: String?,
+        val detail: NotificationDetail.Notes,
+        val accent: Color,
+        val icon: ImageVector?,
+        val actionLabel: String?,
+        val onAction: () -> Unit,
+        val onCopy: (String) -> Unit,
+        val onClose: () -> Unit,
+    ) : PfpModalSpec
+
+    /**
+     * A notification's Results sheet. ✕ runs the focused item's action ([itemActionLabel] names
+     * it), or else the row's ([actionLabel]). [onCopy] receives the list as currently filtered.
+     */
+    class Results(
+        override val key: Any,
+        val title: String,
+        val meta: String?,
+        val detail: NotificationDetail.Results,
+        val accent: Color,
+        val icon: ImageVector?,
+        val actionLabel: String?,
+        val onAction: () -> Unit,
+        val itemActionLabel: (ResultItem) -> String?,
+        val onItemAction: (ResultItem) -> Unit,
+        val onCopy: (String) -> Unit,
+        val onClose: () -> Unit,
+    ) : PfpModalSpec
 }
 
 /** What [rememberPfpModalHost] hands back for the screen to plug in. */
@@ -131,6 +172,20 @@ fun rememberPfpModalHost(spec: PfpModalSpec?, showHints: Boolean = true): PfpMod
     }
     var text by remember(key) { mutableStateOf((spec as? PfpModalSpec.TextEntry)?.initial.orEmpty()) }
     val messageScroll = remember(key) { ScrollState(0) }
+    // The detail sheets' own state: the diagnostic disclosure, the Results filter and list cursor,
+    // and the brief "Copied" acknowledgement on the △ hint.
+    var diagnosticOpen by remember(key) { mutableStateOf(false) }
+    var filter by remember(key) {
+        mutableStateOf((spec as? PfpModalSpec.Results)?.detail?.let(PfpDetailSheetNav::initialFilter) ?: ResultFilter.ALL)
+    }
+    var cursor by remember(key) { mutableStateOf(0) }
+    var copiedAt by remember(key) { mutableStateOf(0L) }
+    LaunchedEffect(copiedAt) {
+        if (copiedAt != 0L) {
+            delay(COPIED_ACK_MS)
+            copiedAt = 0L
+        }
+    }
 
     // Up and down have nothing to move to in a confirm or a notice, so they scroll a long message.
     fun scrollMessage(action: GamepadAction): Boolean {
@@ -180,6 +235,44 @@ fun rememberPfpModalHost(spec: PfpModalSpec?, showHints: Boolean = true): PfpMod
                 )
                 true
             }
+            is PfpModalSpec.Notes -> {
+                PfpDetailSheetNav.handleNotes(
+                    action = action,
+                    hasAction = spec.actionLabel != null,
+                    hasDiagnostic = spec.detail.diagnostic != null,
+                    sounds = menuSounds,
+                    onScroll = { step -> scope.launch { messageScroll.animateScrollBy(step * scrollStepPx) } },
+                    onAction = spec.onAction,
+                    onCopy = {
+                        spec.onCopy(DetailSheetText.notes(spec.title, spec.detail))
+                        copiedAt = System.currentTimeMillis()
+                    },
+                    onToggleDiagnostic = { diagnosticOpen = !diagnosticOpen },
+                    onClose = spec.onClose,
+                )
+                true
+            }
+            is PfpModalSpec.Results -> {
+                PfpDetailSheetNav.handleResults(
+                    action = action,
+                    detail = spec.detail,
+                    filter = filter,
+                    cursor = cursor,
+                    hasFallbackAction = spec.actionLabel != null,
+                    sounds = menuSounds,
+                    onCursorChange = { cursor = it },
+                    onFilterChange = { filter = it },
+                    onItemAction = spec.onItemAction,
+                    onFallbackAction = spec.onAction,
+                    onCopy = {
+                        val shown = PfpDetailSheetNav.visible(spec.detail, filter)
+                        spec.onCopy(DetailSheetText.results(spec.title, shown, spec.detail.labels))
+                        copiedAt = System.currentTimeMillis()
+                    },
+                    onClose = spec.onClose,
+                )
+                true
+            }
         }
     }
 
@@ -219,6 +312,51 @@ fun rememberPfpModalHost(spec: PfpModalSpec?, showHints: Boolean = true): PfpMod
                 allowBlank = spec.allowBlank,
                 showHints = showHints,
             )
+            is PfpModalSpec.Notes -> PfpNotesSheet(
+                title = spec.title,
+                meta = spec.meta,
+                detail = spec.detail,
+                accent = spec.accent,
+                icon = spec.icon,
+                actionLabel = spec.actionLabel,
+                diagnosticOpen = diagnosticOpen,
+                copied = copiedAt != 0L,
+                scroll = messageScroll,
+                showHints = showHints,
+                onAction = spec.onAction,
+                onToggleDiagnostic = { diagnosticOpen = !diagnosticOpen },
+                onClose = spec.onClose,
+            )
+            is PfpModalSpec.Results -> {
+                val focused = PfpDetailSheetNav.visible(spec.detail, filter).getOrNull(cursor)
+                PfpResultsSheet(
+                    title = spec.title,
+                    meta = spec.meta,
+                    detail = spec.detail,
+                    accent = spec.accent,
+                    icon = spec.icon,
+                    filter = filter,
+                    cursor = cursor,
+                    actionLabel = focused?.takeIf { it.action != null }?.let(spec.itemActionLabel)
+                        ?: spec.actionLabel,
+                    copied = copiedAt != 0L,
+                    showHints = showHints,
+                    onFilterTapped = { filter = it; cursor = 0 },
+                    onRowTapped = { index ->
+                        // A tap on the focused row acts, like ✕; a tap elsewhere focuses it.
+                        if (index == cursor) {
+                            val item = PfpDetailSheetNav.visible(spec.detail, filter).getOrNull(index)
+                            if (item?.action != null) spec.onItemAction(item)
+                        } else {
+                            cursor = index
+                        }
+                    },
+                    onClose = spec.onClose,
+                )
+            }
         }
     }
 }
+
+/** How long the △ hint reads "Copied" after a copy. */
+private const val COPIED_ACK_MS = 1_200L

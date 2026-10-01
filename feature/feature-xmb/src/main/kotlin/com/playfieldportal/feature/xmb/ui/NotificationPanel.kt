@@ -52,7 +52,10 @@ import com.playfieldportal.core.ui.components.ControllerHintBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.domain.model.BackgroundTaskInfo
+import com.playfieldportal.core.domain.model.NotificationDetail
 import com.playfieldportal.feature.xmb.viewmodel.NotificationPanelState
+import com.playfieldportal.feature.xmb.viewmodel.PanelSelection
+import com.playfieldportal.feature.xmb.viewmodel.panelSelection
 import kotlinx.coroutines.delay
 
 /**
@@ -124,7 +127,11 @@ fun NotificationPanel(
                 itemsIndexed(rows) { index, row ->
                     when (row) {
                         is NotificationRow.Header -> SectionHeader(row.title)
-                        is NotificationRow.Running -> RunningRow(row.task)
+                        is NotificationRow.Running -> RunningRow(
+                            task = row.task,
+                            isSelected = index == state.cursor && row.isSelectable,
+                            onTap = { onRowTapped(index) },
+                        )
                         is NotificationRow.History -> HistoryRow(
                             notification = row.notification,
                             isSelected = index == state.cursor,
@@ -173,7 +180,7 @@ fun NotificationPanel(
                 // beside it — this pill always takes the lower slot.
                 .padding(bottom = HintPillBottomPadding, end = HintPillEndPadding),
         ) {
-            NotificationPanelHint(hasSelection = state.cursor >= 0)
+            NotificationPanelHint(selection = panelSelection(rows, state.cursor))
         }
     }
 }
@@ -204,34 +211,42 @@ private fun EmptyRow() {
 /**
  * A live task: glyph, label, the `n / m` its producer reports, and a bar.
  *
- * Not selectable, deliberately — it is a readout, not something to act on, and the cursor skips it
- * (see [buildNotificationRows] and [moveCursor]).
+ * A readout unless the producer can stop it: then the cursor may land here and ✕ asks to stop.
+ * Once a stop is under way the row greys out and its bar freezes until the producer settles.
  */
 @Composable
-private fun RunningRow(task: BackgroundTaskInfo) {
+private fun RunningRow(task: BackgroundTaskInfo, isSelected: Boolean, onTap: () -> Unit) {
+    val stopping = task.stopping
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 5.dp),
+            .clip(RoundedCornerShape(6.dp))
+            .background(if (isSelected) Color.White.copy(alpha = 0.14f) else Color.Transparent)
+            .then(if (task.stoppable && !stopping) Modifier.clickable(onClick = onTap) else Modifier)
+            .padding(horizontal = 6.dp, vertical = 5.dp),
     ) {
         KindRing(
             glyph = { tint ->
                 Icon(
                     imageVector = taskGlyph(task.kind),
                     contentDescription = null,
-                    tint = tint,
+                    tint = if (stopping) Color.White.copy(alpha = 0.55f) else tint,
                     modifier = Modifier.size(17.dp),
                 )
             },
-            ringColor = Color.White.copy(alpha = 0.35f),
+            ringColor = Color.White.copy(alpha = if (stopping) 0.22f else 0.35f),
         )
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = task.detail?.let { "${task.label} — $it" } ?: task.label,
-                    color = Color.White.copy(alpha = 0.92f),
+                    text = when {
+                        stopping -> "${task.label.trimEnd('…', '.', ' ')} — Stopping…"
+                        task.detail != null -> "${task.label} — ${task.detail}"
+                        else -> task.label
+                    },
+                    color = Color.White.copy(alpha = if (stopping) 0.55f else if (isSelected) 0.95f else 0.92f),
                     fontSize = 13.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -239,11 +254,11 @@ private fun RunningRow(task: BackgroundTaskInfo) {
                 )
                 task.countLabel?.let {
                     Spacer(Modifier.width(10.dp))
-                    Text(it, color = Color.White.copy(alpha = 0.70f), fontSize = 12.sp, maxLines = 1)
+                    Text(it, color = Color.White.copy(alpha = if (stopping) 0.45f else 0.70f), fontSize = 12.sp, maxLines = 1)
                 }
             }
             Spacer(Modifier.height(5.dp))
-            ProgressBar(task.fraction)
+            ProgressBar(task.fraction, frozen = stopping)
         }
     }
 }
@@ -256,9 +271,9 @@ private fun RunningRow(task: BackgroundTaskInfo) {
  * 4.3).
  */
 @Composable
-private fun ProgressBar(fraction: Float?) {
-    val track = Color.White.copy(alpha = 0.18f)
-    val fill = LocalPFPColors.current.accentColor
+private fun ProgressBar(fraction: Float?, frozen: Boolean = false) {
+    val track = Color.White.copy(alpha = if (frozen) 0.10f else 0.18f)
+    val fill = if (frozen) Color.White.copy(alpha = 0.40f) else LocalPFPColors.current.accentColor
     Box(
         Modifier
             .fillMaxWidth()
@@ -266,7 +281,10 @@ private fun ProgressBar(fraction: Float?) {
             .clip(RoundedCornerShape(2.dp))
             .background(track),
     ) {
-        if (fraction != null) {
+        // A frozen bar with no count holds a fixed band rather than sweeping: nothing is moving.
+        if (frozen && fraction == null) {
+            Box(Modifier.fillMaxHeight().fillMaxWidth(BAND_FRACTION).background(fill))
+        } else if (fraction != null) {
             Box(
                 Modifier
                     .fillMaxHeight()
@@ -330,7 +348,7 @@ private fun HistoryRow(
         )
         Spacer(Modifier.width(12.dp))
         Text(
-            text = notification.title,
+            text = notification.displayTitle,
             // Read rows step back rather than disappearing: the history is the record, and a row
             // the user has already seen is still one they may need to find again.
             color = Color.White.copy(alpha = if (notification.isRead) 0.62f else 0.95f),
@@ -340,6 +358,18 @@ private fun HistoryRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
+        // What Confirm opens: a page mark for a Notes sheet, a tally for a Results sheet.
+        when (val detail = notification.detail) {
+            is NotificationDetail.Notes -> {
+                Spacer(Modifier.width(8.dp))
+                NotesMark()
+            }
+            is NotificationDetail.Results -> {
+                Spacer(Modifier.width(8.dp))
+                TallyChip(detail, read = notification.isRead)
+            }
+            null -> Unit
+        }
         if (!notification.isRead) {
             Spacer(Modifier.width(8.dp))
             Box(
@@ -368,9 +398,13 @@ private fun HistoryRow(
  * has nowhere to be. Options (the list menu) and Close are always true.
  */
 @Composable
-private fun NotificationPanelHint(hasSelection: Boolean) {
+private fun NotificationPanelHint(selection: PanelSelection) {
     val items = buildList {
-        if (hasSelection) add(ControllerPromptItem(GamepadAction.SELECT, "Open"))
+        when (selection) {
+            PanelSelection.HISTORY -> add(ControllerPromptItem(GamepadAction.SELECT, "Open"))
+            PanelSelection.RUNNING -> add(ControllerPromptItem(GamepadAction.SELECT, "Stop"))
+            PanelSelection.NONE -> Unit
+        }
         add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
         add(ControllerPromptItem(GamepadAction.BACK, "Close"))
     }

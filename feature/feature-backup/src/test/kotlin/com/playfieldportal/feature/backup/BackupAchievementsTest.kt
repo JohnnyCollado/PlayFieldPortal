@@ -88,7 +88,7 @@ class BackupAchievementsTest {
 
     private inner class Manager : BackupManager(
         context, gameDao, categoryDao, playSessionDao, backupDao, backupFolderRepository,
-        mockk(relaxed = true), mockk(relaxed = true),
+        mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
     ) {
         var lastExported: File? = null
         override suspend fun exportToBackupFolder(treeUri: String, source: File, name: String): Uri {

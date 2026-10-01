@@ -18,12 +18,16 @@ private const val GROUP_MANAGE = "Manage"
 /**
  * One platform Memory Card's menu.
  *
- * [iconDisplayLabel] is the card's own override, or the global mode it is following.
+ * [iconDisplayLabel] is the card's own override, or the global mode it is following; [sortLabel]
+ * is the same for the sort of the card's game list. [canMove] is true only while the Games root
+ * is Custom sorted.
  */
 internal fun platformCardMenuItems(
     platformId: String,
     pinned: Boolean,
     iconDisplayLabel: String,
+    sortLabel: String? = null,
+    canMove: Boolean = false,
 ): List<XMBContextMenuItem> = buildList {
     val isWindows = platformId == XMBViewModel.WINDOWS_PLATFORM_ID
 
@@ -46,9 +50,12 @@ internal fun platformCardMenuItems(
         // Icon display for THIS console only. Games on other Memory Cards are untouched;
         // "Use Global Setting" in its picker clears the console's override.
         add(XMBContextMenuItem("icon_display_platform", "Icon Display", value = iconDisplayLabel))
+        // Sort for THIS card's games only, the same way: its own, or the global one it follows.
+        if (sortLabel != null) add(XMBContextMenuItem(LIST_SORT_ROW_ID, "Sort", value = sortLabel))
         // One name whichever way it is set: a label that flips leaves a user nothing to learn
         // but the row's position.
         add(XMBContextMenuItem(if (pinned) "unpin" else "pin", "Pin to Top", value = if (pinned) "On" else "Off"))
+        if (canMove) add(XMBContextMenuItem(MOVE_ROW_ID, "Move"))
     }
     group(GROUP_MANAGE) {
         add(XMBContextMenuItem("library_manager", "Library Manager"))
@@ -61,8 +68,16 @@ internal fun platformCardMenuItems(
 /**
  * The "All Games" card's menu. It is not a real Memory Card, so it has nothing to pin, hide or
  * remove — and nothing platform-specific either: Import PC Games lives on the Windows card.
+ *
+ * It carries both sort rows, as it does for Icon Display: [sortLabel] for the All Games list
+ * itself, and [globalSortLabel] for every game list that has no sort of its own.
  */
-internal fun allGamesMenuItems(iconDisplayLabel: String): List<XMBContextMenuItem> = buildList {
+internal fun allGamesMenuItems(
+    iconDisplayLabel: String,
+    sortLabel: String? = null,
+    globalSortLabel: String? = null,
+    canMove: Boolean = false,
+): List<XMBContextMenuItem> = buildList {
     group(GROUP_GAMES) {
         add(XMBContextMenuItem("scan_all", "Scan All Cards"))
     }
@@ -75,6 +90,9 @@ internal fun allGamesMenuItems(iconDisplayLabel: String): List<XMBContextMenuIte
     }
     group(GROUP_DISPLAY) {
         add(XMBContextMenuItem("icon_display_global", "Icon Display", value = iconDisplayLabel))
+        if (sortLabel != null) add(XMBContextMenuItem(LIST_SORT_ROW_ID, "Sort", value = sortLabel))
+        if (globalSortLabel != null) add(XMBContextMenuItem(GLOBAL_SORT_ROW_ID, "Global Sort", value = globalSortLabel))
+        if (canMove) add(XMBContextMenuItem(MOVE_ROW_ID, "Move"))
     }
     group(GROUP_MANAGE) {
         add(XMBContextMenuItem("library_manager", "Library Manager"))

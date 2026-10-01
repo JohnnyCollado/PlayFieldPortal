@@ -34,7 +34,7 @@ enum class AppDetailOption(val label: String, val isDestructive: Boolean = false
     CHANGE_NAME("Change Display Name"),
     CHANGE_ICON("Change Game Icon"),
     CHANGE_BACKGROUND("Change Background"),
-    ADD_TO_COLLECTION("Add to Collection"),
+    ADD_TO_COLLECTION("Add to Card"),
     RESET_ARTWORK("Reset All Artwork", isDestructive = true),
     ;
 

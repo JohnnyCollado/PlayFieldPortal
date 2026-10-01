@@ -55,7 +55,7 @@ class AppDetailModalSpecTest {
 
         val spec = specFor(baseState.copy(collectionPicker = picker)) as PfpModalSpec.TextEntry
 
-        assertEquals("New Collection", spec.title)
+        assertEquals("New Custom Memory Card", spec.title)
         assertEquals("", spec.initial)
         assertEquals("Create", spec.confirmLabel)
         assertFalse(spec.allowBlank)

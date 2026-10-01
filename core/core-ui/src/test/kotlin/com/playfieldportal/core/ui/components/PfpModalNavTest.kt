@@ -27,6 +27,22 @@ class PfpModalNavTest {
         assertEquals(PfpModalFocus.CANCEL, PfpModalNav.initialConfirmFocus(destructive = true))
     }
 
+    // ── The choice modal: up / down pick the option, left / right pick the button ──
+
+    @Test
+    fun `up and down step through a choice modal's options without wrapping`() {
+        assertEquals(1, PfpModalNav.moveChoice(0, GamepadAction.NAVIGATE_DOWN, optionCount = 2))
+        assertEquals(1, PfpModalNav.moveChoice(1, GamepadAction.NAVIGATE_DOWN, optionCount = 2))
+        assertEquals(0, PfpModalNav.moveChoice(1, GamepadAction.NAVIGATE_UP, optionCount = 2))
+        assertEquals(0, PfpModalNav.moveChoice(0, GamepadAction.NAVIGATE_UP, optionCount = 2))
+    }
+
+    @Test
+    fun `only up and down change a choice modal's option`() {
+        assertEquals(1, PfpModalNav.moveChoice(1, GamepadAction.NAVIGATE_LEFT, optionCount = 3))
+        assertEquals(1, PfpModalNav.moveChoice(1, GamepadAction.SELECT, optionCount = 3))
+    }
+
     @Test
     fun `left and right move between cancel and confirm`() {
         assertEquals(PfpModalFocus.CONFIRM, move(PfpModalFocus.CANCEL, GamepadAction.NAVIGATE_RIGHT))

@@ -36,6 +36,7 @@ class PinShortcutActivity : ComponentActivity() {
     @Inject lateinit var gameRepository: GameRepository
     @Inject lateinit var collectionRepository: CollectionRepository
     @Inject lateinit var pcShortcutImporter: PcShortcutImporter
+    @Inject lateinit var shortcutRequestResolver: com.playfieldportal.feature.launcher.ShortcutRequestResolver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,7 +92,7 @@ class PinShortcutActivity : ComponentActivity() {
     ) {
         if (pcShortcutImporter.isPcLauncher(hostPackage)) {
             val result = pcShortcutImporter.importPinnedShortcut(hostPackage, shortcutId, label, changedAt)
-            if (result.needsSetup) WindowsSetupNotifications.post(applicationContext, label)
+            if (result.needsSetup) shortcutRequestResolver.windowsSetupNeeded(label)
             return
         }
 

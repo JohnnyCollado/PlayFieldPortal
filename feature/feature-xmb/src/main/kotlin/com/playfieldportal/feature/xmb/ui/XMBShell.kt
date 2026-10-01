@@ -68,6 +68,9 @@ import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.TouchSensitivity
 import com.playfieldportal.core.ui.motion.MotionWallpaperPolicy
 import com.playfieldportal.core.ui.motion.rememberAppVisible
+import com.playfieldportal.core.domain.model.DetailAction
+import com.playfieldportal.core.domain.model.NotificationDetail
+import com.playfieldportal.core.domain.model.toNotificationAction
 import com.playfieldportal.core.ui.components.PfpModalSpec
 import com.playfieldportal.core.ui.components.XmbTouchButton
 import com.playfieldportal.core.ui.components.rememberPfpModalHost
@@ -92,6 +95,7 @@ import com.playfieldportal.feature.xmb.ui.detail.VideoDetailScreen
 import com.playfieldportal.feature.xmb.ui.photo.PhotoViewerScreen
 import com.playfieldportal.feature.xmb.viewmodel.XMBUiState
 import com.playfieldportal.feature.xmb.viewmodel.XMBViewModel
+import com.playfieldportal.feature.xmb.viewmodel.rowKey
 
 // Uniform canvas-scale baseline = the handheld reference height in dp (AYN Thor landscape,
 // 1080×1920 / 369dpi ⇒ 1080 / (369/160) ≈ 468dp). The scale resolves so the post-scale layout
@@ -306,11 +310,30 @@ fun XMBShellContainer(
         onGamePickerConfirm = viewModel::confirmGamePicker,
         onGamePickerDismiss = viewModel::closeGamePicker,
         onGamePickerActionConsumed = viewModel::consumeGamePickerAction,
+        onMoveRowBy = viewModel::onMoveRowBy,
+        onPlaceMovingRow = viewModel::placeMovingRow,
+        onCancelMovingRow = viewModel::cancelMovingRow,
+        onMoveCategoryBy = viewModel::onMoveCategoryBy,
+        onStartCategoryMove = viewModel::startCategoryMove,
+        onPlaceMovingCategory = viewModel::placeMovingCategory,
+        onCancelMovingCategory = viewModel::cancelMovingCategory,
+        onAddMarkedToCard = viewModel::onAddMarkedToCard,
+        onExitMarkMode = viewModel::onExitMarkMode,
         onDismissInfoDialog = viewModel::dismissInfoDialog,
         onNotificationsTapped = viewModel::onToggleNotificationPanel,
         onNotificationRowTapped = viewModel::onNotificationRowTapped,
         onNotificationOptions = viewModel::onNotificationOptionsTapped,
         onNotificationPanelDismiss = viewModel::closeNotificationPanel,
+        notificationCallbacks = NotificationModalCallbacks(
+            onCloseSheet = viewModel::closeNotificationSheet,
+            onSheetAction = viewModel::onNotificationSheetAction,
+            onSheetItemAction = viewModel::onNotificationSheetItemAction,
+            onCopyText = viewModel::copyNotificationText,
+            onConfirmStop = viewModel::confirmStopTask,
+            onCancelStop = viewModel::cancelStopTask,
+            onShortcutAdd = viewModel::confirmShortcutReview,
+            onShortcutIgnore = viewModel::ignoreShortcutReview,
+        ),
         onWindowsSetupConfirm = viewModel::confirmWindowsSetupPrompt,
         onWindowsSetupDismiss = viewModel::dismissWindowsSetupPrompt,
         onLaunchRecoveryAction = viewModel::onLaunchRecoveryAction,
@@ -503,6 +526,16 @@ fun XMBShell(
     onGamePickerConfirm: (Set<Long>, Set<Long>) -> Unit = { _, _ -> },
     onGamePickerDismiss: () -> Unit = {},
     onGamePickerActionConsumed: () -> Unit = {},
+    // Touch's way to drive a Move in progress and multi-select; a controller uses the D-pad.
+    onMoveRowBy: (Int) -> Unit = {},
+    onPlaceMovingRow: () -> Unit = {},
+    onCancelMovingRow: () -> Unit = {},
+    onMoveCategoryBy: (Int) -> Unit = {},
+    onStartCategoryMove: (String) -> Unit = {},
+    onPlaceMovingCategory: () -> Unit = {},
+    onCancelMovingCategory: () -> Unit = {},
+    onAddMarkedToCard: () -> Unit = {},
+    onExitMarkMode: () -> Unit = {},
     onDismissInfoDialog: () -> Unit = {},
     onWindowsSetupConfirm: () -> Unit = {},
     onWindowsSetupDismiss: () -> Unit = {},
@@ -511,6 +544,7 @@ fun XMBShell(
     onNotificationRowTapped: (Int) -> Unit = {},
     onNotificationOptions: () -> Unit = {},
     onNotificationPanelDismiss: () -> Unit = {},
+    notificationCallbacks: NotificationModalCallbacks = NotificationModalCallbacks(),
 ) {
     PFPTheme(colors = uiState.themeColors) {
       // The applied theme's custom icon slots ride alongside the palette: every themeable
@@ -637,9 +671,12 @@ fun XMBShell(
             )
 
             // Per-game background art (XMB hover): reads only artworkUri — the dedicated
-            // background slot. heroUri is reserved for the Game Detail hero banner.
-            val selectedBg = uiState.currentItems.getOrNull(uiState.selectedItemIndex)
-                ?.artworkUri
+            // background slot. heroUri is reserved for the Game Detail hero banner. A focused UMD
+            // slot shows none until its disc has been read, as the PSP does.
+            val focusedItem = uiState.currentItems.getOrNull(uiState.selectedItemIndex)
+            val umdRead = rememberUmdRead(umdReadKey(focusedItem, uiState.selectedCategoryIndex))
+            val focusedArtItem = focusedItem?.afterUmdRead(umdRead)
+            val selectedBg = focusedArtItem?.artworkUri
             Crossfade(targetState = selectedBg, animationSpec = tween(320), label = "xmbGameBackground") { bg ->
                 if (bg != null) {
                     Box(Modifier.fillMaxSize()) {
@@ -693,8 +730,7 @@ fun XMBShell(
             // PIC0-style logo overlay — the focused game's clear logo fades in center-right
             // over the hover background, a beat AFTER the background lands (the PSP's
             // icon → PIC1 → PIC0 stagger). Fades out instantly with any focus move.
-            val selectedLogo = uiState.currentItems.getOrNull(uiState.selectedItemIndex)
-                ?.takeIf { it.artworkUri != null }?.logoUri
+            val selectedLogo = focusedArtItem?.takeIf { it.artworkUri != null }?.logoUri
             var pic0Visible by remember(selectedLogo) { mutableStateOf(false) }
             androidx.compose.runtime.LaunchedEffect(selectedLogo) {
                 if (selectedLogo != null) {
@@ -782,6 +818,23 @@ fun XMBShell(
                         onSwipeBack = onTouchBack,
                     ),
             ) {
+                // What the rows need to know about arranging: the lifted row's position line while
+                // a Move is in progress, and which games are marked in multi-select.
+                val rowDecor = remember(
+                    uiState.moveSession != null,
+                    uiState.selectedItemIndex,
+                    uiState.currentItems,
+                    uiState.markMode,
+                    uiState.markedGameIds,
+                ) {
+                    val movingLabel = if (uiState.moveSession == null) null else {
+                        val movable = uiState.currentItems.filter { it.rowKey() != null }
+                        val position = movable.indexOf(uiState.currentItems.getOrNull(uiState.selectedItemIndex)) + 1
+                        "Moving · $position of ${movable.size}"
+                    }
+                    XmbRowDecor(movingLabel, uiState.markMode, uiState.markedGameIds)
+                }
+                CompositionLocalProvider(LocalXmbRowDecor provides rowDecor) {
                 BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                     // The XMB cross: the crossbar sits toward the vertical centre so first-level items
                     // appear BOTH above it (scrolled-past, dissolving) and below it. The bar is drawn
@@ -893,6 +946,7 @@ fun XMBShell(
                             drilledIn = uiState.drillTitle != null,
                             solidUnfocusedIcons = uiState.solidUnfocusedIcons,
                             iconAnimatingAllowed = iconAnimatingAllowed,
+                            moving = uiState.categoryMoveSession != null,
                             modifier = Modifier
                                 .align(Alignment.TopStart)
                                 .offset(y = barTop)
@@ -901,6 +955,7 @@ fun XMBShell(
                         )
                     }
                 }
+                } // end: LocalXmbRowDecor
             }
             } // end: XMB foreground hidden while music browser is open
 
@@ -936,9 +991,12 @@ fun XMBShell(
             val drawerButtonVisible =
                 uiState.resolvedShowTouchButton && !uiState.hasBlockingOverlay && !uiState.isInSubItem
             AnimatedVisibility(
+                // A move or multi-select puts its own chip in this corner instead.
                 visible = uiState.showContextMenuHint &&
                     uiState.activeContextMenu == null &&
-                    !uiState.hasBlockingOverlay,
+                    !uiState.hasBlockingOverlay &&
+                    uiState.moveSession == null &&
+                    !uiState.markMode,
                 enter = fadeIn(tween(200)),
                 exit = ExitTransition.None,
                 modifier = Modifier.align(Alignment.BottomEnd),
@@ -958,12 +1016,52 @@ fun XMBShell(
                 )
             }
 
+            // While a row is lifted or games are being marked the buttons mean something else, so
+            // the bar naming them stays up throughout rather than waiting for an idle moment. It
+            // takes the idle pill's corner: bottom-centre put it over the rows under the lifted one.
+            val arrangeBarModifier = Modifier.align(Alignment.BottomEnd).padding(
+                bottom = if (drawerButtonVisible) HintPillBottomPaddingAboveDrawerButton
+                         else HintPillBottomPadding,
+                end = HintPillEndPadding,
+            )
+            val moveSession = uiState.moveSession
+            if (uiState.categoryMoveSession != null) {
+                MoveModeBar(
+                    touch = uiState.lastInputWasTouch,
+                    onMoveUp = { onMoveCategoryBy(-1) },
+                    onMoveDown = { onMoveCategoryBy(+1) },
+                    onPlace = onPlaceMovingCategory,
+                    onCancel = onCancelMovingCategory,
+                    horizontal = true,
+                    modifier = arrangeBarModifier,
+                )
+            } else if (moveSession != null) {
+                MoveModeBar(
+                    touch = uiState.lastInputWasTouch,
+                    onMoveUp = { onMoveRowBy(-1) },
+                    onMoveDown = { onMoveRowBy(+1) },
+                    onPlace = onPlaceMovingRow,
+                    onCancel = onCancelMovingRow,
+                    modifier = arrangeBarModifier,
+                )
+            } else if (uiState.markMode && !uiState.hasBlockingOverlay) {
+                MarkModeBar(
+                    count = uiState.markedGameIds.size,
+                    touch = uiState.lastInputWasTouch,
+                    onAddToCard = onAddMarkedToCard,
+                    onDone = onExitMarkMode,
+                    modifier = arrangeBarModifier,
+                )
+            }
+
             // Everything from here down is a separate screen or overlay (Settings, app
             // drawer, music, pickers, dialogs, detail screens) — not part of the XMB cross.
             // Reset to the device's base density so the XMB-only canvas scale above stops at
             // the cross: scaling the XMB never rescales any of these.
             CompositionLocalProvider(
                 LocalDensity provides Density(baseDensity.density, baseDensity.fontScale),
+                // The media screens' prompt rows idle in and blink out like the crossbar's pill.
+                LocalMediaHintVisible provides uiState.showMediaHint,
             ) {
 
             // The Settings screen is suppressed while the color-scheme picker is open so
@@ -992,6 +1090,7 @@ fun XMBShell(
                         onOpenLibraryManager = onOpenLibraryManager,
                         onOpenArtworkOrphans = onOpenArtworkOrphans,
                         onGoToLibrary = onGoToLibrary,
+                        onMoveCategoryOnBar = onStartCategoryMove,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -1230,8 +1329,17 @@ fun XMBShell(
                 )
             }
 
-            uiState.gamePickerCategoryId?.let {
+            uiState.gamePickerCategoryId?.let { pickerCategoryId ->
+                // Custom memory cards that can move into this category: game cards living in
+                // another gaming category. App cards never belong in a gaming column.
+                val gamingCategoryIds = uiState.categories.filter { it.isGamingCategory }.map { it.id }.toSet()
                 GamePickerScreen(
+                    categoryId = pickerCategoryId,
+                    preselectedGameIds = uiState.gamePickerPreselected,
+                    movableCollectionIds = uiState.collections
+                        .filter { it.categoryId in gamingCategoryIds && it.categoryId != pickerCategoryId }
+                        .map { it.id }
+                        .toSet(),
                     onConfirm = onGamePickerConfirm,
                     onCancel = onGamePickerDismiss,
                     pendingGamepadAction = uiState.pendingGamePickerAction,
@@ -1400,6 +1508,7 @@ fun XMBShell(
                     onDismissInfoDialog = onDismissInfoDialog,
                     onWindowsSetupConfirm = onWindowsSetupConfirm,
                     onWindowsSetupDismiss = onWindowsSetupDismiss,
+                    notificationCallbacks = notificationCallbacks,
                 ),
                 // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
                 showHints = !uiState.resolvedShowTouchButton,
@@ -1433,7 +1542,11 @@ internal fun shellModalSpec(
     onDismissInfoDialog: () -> Unit,
     onWindowsSetupConfirm: () -> Unit,
     onWindowsSetupDismiss: () -> Unit,
+    notificationCallbacks: NotificationModalCallbacks = NotificationModalCallbacks(),
 ): PfpModalSpec? {
+    // The notification panel's layers come first: they sit over the panel, which sits over all of
+    // the states below, and the view model forwards the panel's presses before it reaches them.
+    notificationModalSpec(uiState, notificationCallbacks)?.let { return it }
     val renameApp = uiState.renameAppTarget
     val collection = uiState.collectionNameDialog
     val playlist = uiState.playlistNameDialog
@@ -1486,6 +1599,22 @@ internal fun shellModalSpec(
             buttonLabel = "Close",
             onDismiss = onDismissInfoDialog,
         )
+        // A legacy INSTALL_SHORTCUT request: the Add / Ignore that used to be asked in the shade.
+        // Opens on Ignore, so a stray double press never adds a shortcut another app asked for.
+        uiState.shortcutReview != null -> {
+            val request = uiState.shortcutReview
+            PfpModalSpec.Confirm(
+                key = "shortcut:${request.id}",
+                title = "Add Shortcut?",
+                message = "${request.hostLabel} wants to add a shortcut for \"${request.name}\" to " +
+                    "PlayFieldPortal. Only add it if you just asked ${request.hostLabel} to.",
+                confirmLabel = "Add",
+                cancelLabel = "Ignore",
+                openOnCancel = true,
+                onConfirm = { notificationCallbacks.onShortcutAdd(request.id) },
+                onCancel = { notificationCallbacks.onShortcutIgnore(request.id) },
+            )
+        }
         // One-time follow-up to the pin workflow: a PC game was saved before the Windows Library
         // had a directory; offer to finish setup now or later.
         uiState.showWindowsSetupPrompt -> PfpModalSpec.Confirm(
@@ -1500,6 +1629,73 @@ internal fun shellModalSpec(
             onCancel = onWindowsSetupDismiss,
         )
         else -> null
+    }
+}
+
+/** What the notification panel's sheets and Stop confirm call back into the view model. */
+data class NotificationModalCallbacks(
+    val onCloseSheet: () -> Unit = {},
+    /** ✕ on a sheet with no item action: the row's own action, by notification id. */
+    val onSheetAction: (Long) -> Unit = {},
+    val onSheetItemAction: (DetailAction) -> Unit = {},
+    val onCopyText: (String) -> Unit = {},
+    val onConfirmStop: (String) -> Unit = {},
+    val onCancelStop: () -> Unit = {},
+    /** Add / Ignore on a waiting shortcut request, by request id. */
+    val onShortcutAdd: (String) -> Unit = {},
+    val onShortcutIgnore: (String) -> Unit = {},
+)
+
+/** The notification panel's open sheet or Stop confirm, if either is up. */
+private fun notificationModalSpec(uiState: XMBUiState, callbacks: NotificationModalCallbacks): PfpModalSpec? {
+    val panel = uiState.notificationPanel ?: return null
+    panel.stopConfirm?.let { stop ->
+        return PfpModalSpec.Confirm(
+            key = "stop:${stop.taskId}",
+            title = stop.title,
+            message = stop.message,
+            confirmLabel = "Stop",
+            cancelLabel = "Keep Running",
+            // Not destructive, but a double ✕ must never stop work by accident.
+            openOnCancel = true,
+            onConfirm = { callbacks.onConfirmStop(stop.taskId) },
+            onCancel = callbacks.onCancelStop,
+        )
+    }
+    val id = panel.sheetNotificationId ?: return null
+    val row = uiState.notifications.firstOrNull { it.id == id } ?: return null
+    val meta = notificationKindLabel(row.kind) + " · " + notificationTimestamp(row.createdAt)
+    val accent = severityColor(row.severity)
+    val icon = notificationGlyph(row.kind)
+    val actionLabel = notificationActionLabel(row.action)
+    return when (val detail = row.detail) {
+        is NotificationDetail.Notes -> PfpModalSpec.Notes(
+            key = "notes:${row.id}:${row.createdAt}",
+            title = row.title,
+            meta = meta,
+            detail = detail,
+            accent = accent,
+            icon = icon,
+            actionLabel = actionLabel,
+            onAction = { callbacks.onSheetAction(row.id) },
+            onCopy = callbacks.onCopyText,
+            onClose = callbacks.onCloseSheet,
+        )
+        is NotificationDetail.Results -> PfpModalSpec.Results(
+            key = "results:${row.id}:${row.createdAt}",
+            title = row.title,
+            meta = meta,
+            detail = detail,
+            accent = accent,
+            icon = icon,
+            actionLabel = actionLabel,
+            onAction = { callbacks.onSheetAction(row.id) },
+            itemActionLabel = { item -> item.action?.let { notificationActionLabel(it.toNotificationAction()) } },
+            onItemAction = { item -> item.action?.let(callbacks.onSheetItemAction) },
+            onCopy = callbacks.onCopyText,
+            onClose = callbacks.onCloseSheet,
+        )
+        null -> null
     }
 }
 

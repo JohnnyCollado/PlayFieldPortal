@@ -52,8 +52,9 @@ class ArtworkImportExecutor @Inject constructor(
     private val videoSnapTranscoder: com.playfieldportal.feature.artwork.video.VideoSnapTranscoder,
     private val identityRecorder: com.playfieldportal.feature.artwork.portable.ArtworkIdentityRecorder,
     // The import report already summarises what was rejected; this puts that summary where the
-    // user will actually meet it, instead of only in a table nothing surfaces.
-    private val notificationRepository: com.playfieldportal.core.domain.repository.NotificationRepository,
+    // user will actually meet it, instead of only in a table nothing surfaces. Through the shared
+    // center, so the row rings the notification cue and carries its Results list.
+    private val tasks: com.playfieldportal.core.ui.notification.BackgroundTaskCenter,
 ) {
     data class Progress(val done: Int, val total: Int, val label: String)
 
@@ -195,20 +196,23 @@ class ArtworkImportExecutor @Inject constructor(
             rejected > 0 -> "Artwork imported, ${rejected} item(s) need review"
             else -> "Artwork imported"
         }
-        notificationRepository.post(
+        tasks.report(
+            // Keyed by the source, so re-importing the same folder replaces its row rather than
+            // stacking one per attempt.
+            id = "artwork_import:${summary.sourceLabel}",
             kind = com.playfieldportal.core.domain.model.NotificationKind.ARTWORK,
             severity = severity,
-            title = "$headline — ${summary.imported} file(s) from ${summary.sourceLabel}",
-            body = buildString {
+            label = "$headline: ${summary.sourceLabel}",
+            message = buildString {
                 append("${summary.imported} imported, ${summary.skipped} skipped, ")
                 append("${summary.failed} failed, ${summary.ambiguous} ambiguous, ")
                 append("${summary.unmatched} unmatched.")
             },
-            // Keyed by the source, so re-importing the same folder replaces its row rather than
-            // stacking one per attempt.
-            sourceKey = "artwork_import:${summary.sourceLabel}",
             action = com.playfieldportal.core.domain.model.NotificationAction
                 .OpenSettingsScreen("settings_artwork"),
+            detail = importResults(summary),
+            // A cancelled import was stopped by the user, who already knows.
+            read = summary.cancelled,
         )
     }
 
@@ -393,4 +397,33 @@ class ArtworkImportExecutor @Inject constructor(
     companion object {
         private const val MAX_CONCURRENT_GAMES = 3
     }
+}
+
+/**
+ * The import's Results list: each recorded failure, and each system folder the import could not
+ * place (AR-2003). Null when there is nothing to list — the counts in the body say the rest.
+ */
+internal fun importResults(summary: ImportSummary): com.playfieldportal.core.domain.model.NotificationDetail.Results? {
+    val failures = summary.errors.map { message ->
+        val code = com.playfieldportal.feature.artwork.api.classifyScrapeFailure(message)
+        com.playfieldportal.core.domain.model.ResultItem(
+            primary = message.substringBefore(':').take(80),
+            outcome = com.playfieldportal.core.domain.model.ResultOutcome.FAILED,
+            reason = message,
+            code = code.id,
+        )
+    }
+    val unknown = summary.unknownSystemFolders.map { folder ->
+        com.playfieldportal.core.domain.model.ResultItem(
+            primary = folder,
+            outcome = com.playfieldportal.core.domain.model.ResultOutcome.SKIPPED,
+            code = com.playfieldportal.core.domain.model.PfpErrorCode.AR_2003.id,
+        )
+    }
+    if (failures.isEmpty() && unknown.isEmpty()) return null
+    return com.playfieldportal.core.domain.model.NotificationDetail.results(
+        failures + unknown,
+        summary = "${summary.imported} imported, ${summary.skipped} skipped",
+        labels = com.playfieldportal.core.domain.model.ResultsLabels(done = "Imported"),
+    )
 }

@@ -3,6 +3,8 @@ package com.playfieldportal.feature.settings.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.repository.CategoryRepositoryImpl
+import com.playfieldportal.core.data.repository.CollectionRepository
+import com.playfieldportal.core.data.repository.CollectionsOnDelete
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.CategoryType
 import com.playfieldportal.core.ui.icons.CATEGORY_ICON_CATALOG
@@ -33,6 +35,10 @@ data class CategoryRow(
     // Settings is the only route back into category management, so it can never be hidden from the
     // XMB bar — the "Show On Bar" toggle is suppressed for it.
     val canHide: Boolean = true,
+    // Custom memory cards homed in this category — deleting it has to say what becomes of them.
+    val customCardCount: Int = 0,
+    // The column those cards would move to if the category is deleted and they are kept.
+    val cardHomeName: String = "",
 )
 
 data class IconOption(val key: String, val label: String)
@@ -66,14 +72,18 @@ const val CREATE_CATEGORY_FOCUS_KEY = "create_category"
 @HiltViewModel
 class CategoryManagerViewModel @Inject constructor(
     private val categoryRepository: CategoryRepositoryImpl,
+    private val collectionRepository: CollectionRepository,
 ) : ViewModel() {
 
     private val _scratch = MutableStateFlow(CategoryManagerUiState())
 
     val uiState: StateFlow<CategoryManagerUiState> = combine(
         categoryRepository.observeAll(),
+        collectionRepository.observeCollections(),
         _scratch,
-    ) { categories, scratch ->
+    ) { categories, collections, scratch ->
+        val cardCounts = collections.groupingBy { it.categoryId }.eachCount()
+        val names = categories.associate { it.id to it.name }
         scratch.copy(
             // Legacy hidden "*_apps" pseudo-categories (from older builds) are never user-editable —
             // keep them out of the manager so they can't be renamed/deleted/toggled.
@@ -86,6 +96,9 @@ class CategoryManagerViewModel @Inject constructor(
                     protected          = categoryRepository.isProtected(it.id),
                     isGamingCategory   = it.isGamingCategory,
                     canHide            = it.id != BuiltInCategory.SETTINGS,
+                    customCardCount    = cardCounts[it.id] ?: 0,
+                    cardHomeName       = CategoryRepositoryImpl.collectionHomeFor(it.isGamingCategory)
+                        .let { home -> names[home] ?: if (it.isGamingCategory) "Game" else "App Store" },
                 )
             },
         )
@@ -192,17 +205,10 @@ class CategoryManagerViewModel @Inject constructor(
         viewModelScope.launch { categoryRepository.setVisible(id, visible) }
     }
 
-    fun setGamingCategory(id: String, isGaming: Boolean) {
-        viewModelScope.launch { categoryRepository.setGamingCategory(id, isGaming) }
-    }
-
-    fun move(id: String, up: Boolean) {
-        viewModelScope.launch { categoryRepository.move(id, up) }
-    }
-
-    fun delete(id: String) {
+    /** Deletes the category; [collections] is the user's answer for its custom memory cards. */
+    fun delete(id: String, collections: CollectionsOnDelete = CollectionsOnDelete.MOVE) {
         viewModelScope.launch {
-            categoryRepository.delete(id)
+            categoryRepository.delete(id, collections)
             if (_scratch.value.detailId == id) {
                 _scratch.update { it.copy(step = CategoryStep.LIST, detailId = null) }
             }

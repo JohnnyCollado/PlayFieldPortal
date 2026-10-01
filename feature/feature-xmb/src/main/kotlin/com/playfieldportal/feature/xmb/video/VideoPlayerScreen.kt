@@ -36,6 +36,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -518,6 +519,8 @@ private fun ControlsOverlay(
                         labelStyle = TextStyle(fontSize = 12.sp),
                         glyphSize = 16.dp,
                         arrangement = Arrangement.spacedBy(16.dp),
+                        // Idles in and blinks out like the crossbar pill (see shouldShowMediaHint).
+                        modifier = Modifier.alpha(com.playfieldportal.core.ui.components.idleHintAlpha(com.playfieldportal.feature.xmb.ui.LocalMediaHintVisible.current)),
                     )
                     // Status, not a prompt - no button changes it from here.
                     Text("${speed}\u00D7 \u00B7 $screenMode", color = Color(0xFFCCCCCC), fontSize = 12.sp)
@@ -599,7 +602,7 @@ private fun OptionsOverlay(
                     labelStyle = TextStyle(fontSize = 11.sp),
                     glyphSize = 15.dp,
                     arrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                    modifier = Modifier.alpha(com.playfieldportal.core.ui.components.idleHintAlpha(com.playfieldportal.feature.xmb.ui.LocalMediaHintVisible.current)).padding(horizontal = 20.dp, vertical = 4.dp),
                 )
             }
         }

@@ -13,7 +13,9 @@ import com.playfieldportal.feature.artwork.match.MetadataPreset
 import com.playfieldportal.feature.artwork.match.MetadataPreview
 import com.playfieldportal.feature.artwork.store.ArtworkStore
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.Collections
@@ -46,6 +48,16 @@ data class ScrapeProgress(
     val title: String,
     val scrapeSource: String = "",   // e.g. "TheGamesDB", "SteamGridDB"
     val scrapeAsset: String = "",    // e.g. "Box Art", "Hero", "Logo"
+    /** Set on the tick emitted right after a game settles: what happened to it, for a Results list. */
+    val finished: GameScrapeOutcome? = null,
+)
+
+/** One game's result in a scrape pass. [message] is the provider's or the exception's words. */
+data class GameScrapeOutcome(
+    val gameId: Long,
+    val title: String,
+    val success: Boolean,
+    val message: String? = null,
 )
 
 @Singleton
@@ -407,8 +419,11 @@ class ArtworkRepository @Inject constructor(
         var ok = 0
         var fail = 0
         games.forEachIndexed { index, (id, info) ->
+            // A stop from the notification panel lands here, between games, not mid-write.
+            currentCoroutineContext().ensureActive()
             val (title, platformId, romPath) = info
             onProgress(ScrapeProgress(index + 1, games.size, ok, fail, title))
+            var error: Throwable? = null
             val result = runCatching {
                 metadataRepository.fetchForGame(
                     gameId   = id,
@@ -421,8 +436,18 @@ class ArtworkRepository @Inject constructor(
                             scrapeSource = source, scrapeAsset = asset))
                     },
                 )
+            }.onFailure {
+                if (it is kotlinx.coroutines.CancellationException) throw it
+                error = it
             }.getOrNull()
-            if (result?.success == true) ok++ else fail++
+            val success = result?.success == true
+            if (success) ok++ else fail++
+            onProgress(
+                ScrapeProgress(
+                    index + 1, games.size, ok, fail, title,
+                    finished = GameScrapeOutcome(id, title, success, result?.message ?: error?.message),
+                )
+            )
             if (index < games.size - 1) delay(500)
         }
         return ScrapeProgress(games.size, games.size, ok, fail, "")

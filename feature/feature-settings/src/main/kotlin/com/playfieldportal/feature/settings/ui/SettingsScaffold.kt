@@ -253,11 +253,8 @@ val SettingsDefaultHelperItems = listOf(
 @Composable
 private fun SettingsHelperFooter(items: List<ControllerPromptItem>) {
     val showHint = LocalSettingsShowControllerHint.current
-    val alpha by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (showHint) 1f else 0f,
-        animationSpec = androidx.compose.animation.core.tween(200),
-        label = "settingsHelperFooter",
-    )
+    // The XMB pill's timing: fades in after the idle delay, gone the instant a button is pressed.
+    val alpha = com.playfieldportal.core.ui.components.idleHintAlpha(showHint)
     Column(
         modifier = Modifier
             .fillMaxWidth()

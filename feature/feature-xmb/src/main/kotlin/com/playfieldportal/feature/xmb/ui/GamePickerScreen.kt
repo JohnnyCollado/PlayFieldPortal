@@ -40,10 +40,17 @@ fun GamePickerScreen(
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
+    // The category being filled: its games open checked, and only custom memory cards of the
+    // same kind that are not already in it are offered.
+    categoryId: String = "",
+    preselectedGameIds: Set<Long> = emptySet(),
+    movableCollectionIds: Set<Long> = emptySet(),
     viewModel: GamePickerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     val listState = rememberLazyListState()
+
+    LaunchedEffect(categoryId) { viewModel.prepare(preselectedGameIds, movableCollectionIds) }
 
     // Confirm/cancel both clear the picker — the ViewModel is retained across open/close, so
     // selections must not carry over to the next time the picker is opened.
@@ -138,7 +145,7 @@ fun GamePickerScreen(
                     // bar is fixed chrome — a prompt that comes and goes as the cursor moves down
                     // a list reads as flicker.
                     ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Expand / Collapse"),
-                    ControllerPromptItem(GamepadAction.HOME, "Add"),
+                    ControllerPromptItem(GamepadAction.HOME, "Done"),
                     ControllerPromptItem(GamepadAction.BACK, "Cancel"),
                 ),
                 labelColor = Color(0xFFC9C7E8),
@@ -184,10 +191,12 @@ fun GamePickerScreen(
             }
 
             // Collections section
-            if (state.pcShortcuts.isNotEmpty()) {
+            val movableCards = state.visibleCollections
+            if (movableCards.isNotEmpty()) {
                 item {
                     Text(
-                        text = "Collections",
+                        // A card lives in one category, so picking one moves it — say so.
+                        text = "Custom Memory Cards (moved here)",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White,
@@ -203,7 +212,7 @@ fun GamePickerScreen(
                     )
                 }
 
-                items(state.pcShortcuts) { collection ->
+                items(movableCards) { collection ->
                     GamePickerRow(
                         title = collection.name,
                         isSelected = pickerCollectionId(collection.id) == state.selectedItemId,
@@ -233,7 +242,7 @@ fun GamePickerScreen(
                 onClick = confirmAndClear,
                 modifier = Modifier.weight(1f),
             ) {
-                Text("Add (${state.selectedGameIds.size + state.selectedCollectionIds.size})", color = Color.White)
+                Text("Done (${state.selectedGameIds.size + state.selectedCollectionIds.size})", color = Color.White)
             }
         }
     }

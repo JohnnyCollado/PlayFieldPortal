@@ -35,4 +35,9 @@ data class LaunchOutcome(
     val failureReason: String? = null,
     val launchedAtMs: Long,
     val returnedAtMs: Long? = null,
+    /**
+     * The [com.playfieldportal.core.domain.model.PfpErrorCode] id for a failure ("LN-4003"). Carried
+     * to the notification only; not stored in launch_outcomes.
+     */
+    val errorCode: String? = null,
 )

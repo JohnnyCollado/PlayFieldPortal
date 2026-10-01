@@ -79,6 +79,16 @@ class NotificationPanelGateTest {
     }
 
     @Test
+    fun `the panel hint yields to a sheet or stop confirm opened over it`() {
+        val withSheet = openPanel.copy(notificationPanel = NotificationPanelState(cursor = 2, sheetNotificationId = 4))
+        val withStop = openPanel.copy(
+            notificationPanel = NotificationPanelState(cursor = 1, stopConfirm = StopConfirmState("psx", "Stop?", "m")),
+        )
+        assertEquals(false, shouldShowNotificationHint(withSheet, idleMs = 10_000))
+        assertEquals(false, shouldShowNotificationHint(withStop, idleMs = 10_000))
+    }
+
+    @Test
     fun `turning the hint setting off silences the panel hint too`() {
         val off = openPanel.copy(contextMenuHintEnabled = false)
         assertEquals(false, shouldShowNotificationHint(off, idleMs = 10_000))

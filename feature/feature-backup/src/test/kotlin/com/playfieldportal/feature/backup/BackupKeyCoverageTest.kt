@@ -48,6 +48,13 @@ class BackupKeyCoverageTest {
     }
 
     @Test
+    fun `the global sorts are backed up`() {
+        // A list's own sort and its Custom order travel as database rows (list_settings,
+        // list_items); only the two global sorts are preferences.
+        assertCovered("pref_sort_mode_games", "pref_sort_mode_apps")
+    }
+
+    @Test
     fun `XMB geometry is backed up`() {
         assertCovered(
             "display_xmb_scale",

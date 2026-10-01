@@ -155,7 +155,7 @@ fun CollectionsSettingsScreen(
     if (openCollection == null) {
         CollectionListStep(
             collections = collections,
-            onCreate    = { openNameDialog(CollectionDialog(title = "New Collection")) },
+            onCreate    = { openNameDialog(CollectionDialog(title = "New Custom Memory Card")) },
             onOpen      = { openCollectionId = it.id },
             onBack      = handleBack,
             modalOpen   = modalOpen,
@@ -166,7 +166,7 @@ fun CollectionsSettingsScreen(
         CollectionDetailStep(
             collection  = openCollection,
             gamesFlow   = { viewModel.gamesIn(openCollection.id) },
-            onRename    = { openNameDialog(CollectionDialog(title = "Rename Collection", renameId = openCollection.id, initial = openCollection.name)) },
+            onRename    = { openNameDialog(CollectionDialog(title = "Rename Custom Memory Card", renameId = openCollection.id, initial = openCollection.name)) },
             onChangeIcon = { iconPickerFor = openCollection.id },
             onMoveUp    = { viewModel.moveUp(openCollection.id) },
             onMoveDown  = { viewModel.moveDown(openCollection.id) },
@@ -193,7 +193,7 @@ fun CollectionsSettingsScreen(
             onFocusChange = { modalFocus = it },
             onConfirm = confirmName,
             onCancel = { dialog = null },
-            placeholder = "Collection name",
+            placeholder = "Card name",
             // A new collection still has its category to pick, so its name is not yet a save.
             confirmLabel = if (d.renameId != null) "Save" else "Next",
             showHints = showHints,
@@ -202,7 +202,7 @@ fun CollectionsSettingsScreen(
 
     deleteTarget?.let { target ->
         PfpConfirmModal(
-            title = "Delete Collection",
+            title = "Delete Custom Card",
             message = "\"${target.name}\" will be deleted. The games in it stay in your library.",
             confirmLabel = "Delete",
             focus = modalFocus,
@@ -259,7 +259,7 @@ private fun CollectionListStep(
 ) {
     SettingsScaffold(
         title = "Settings",
-        subtitle = "Collections",
+        subtitle = "Custom Memory Cards",
         onBack = onBack,
         modifier = modifier,
         modalOpen = modalOpen,
@@ -270,15 +270,15 @@ private fun CollectionListStep(
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
             SettingsGroup("Manage")
             SettingsRow(
-                label    = "Create New Collection",
+                label    = "New Custom Memory Card",
                 sublabel = "e.g. RPGs, Currently Playing, Best PSP Games",
                 onClick  = onCreate,
             )
 
-            SettingsGroup("Your Collections")
+            SettingsGroup("Your Custom Memory Cards")
             if (collections.isEmpty()) {
                 SettingsRow(
-                    label    = "No collections yet",
+                    label    = "No custom memory cards yet",
                     sublabel = "Create one above, or add a game from its Options menu.",
                 )
             } else {
@@ -322,7 +322,7 @@ private fun CollectionDetailStep(
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
-            SettingsGroup("Collection")
+            SettingsGroup("Custom Memory Card")
             SettingsRow(label = "Rename", onClick = onRename)
             SettingsRow(
                 label    = "Change Icon",
@@ -331,19 +331,19 @@ private fun CollectionDetailStep(
             )
             SettingsRow(label = "Move Up", onClick = onMoveUp)
             SettingsRow(label = "Move Down", onClick = onMoveDown)
-            SettingsRow(label = "Delete Collection", sublabel = "Removes the collection; games are kept", onClick = onDelete)
+            SettingsRow(label = "Delete Custom Card", sublabel = "Removes the card; its games stay in your library", onClick = onDelete)
 
             SettingsGroup("Games (${games.size})")
             if (games.isEmpty()) {
                 SettingsRow(
-                    label    = "No games in this collection",
+                    label    = "No games on this card",
                     sublabel = "Add games from their Options menu.",
                 )
             } else {
                 games.forEach { game ->
                     SettingsRow(
                         label    = game.displayTitle,
-                        sublabel = "${game.platformId.uppercase()}  ·  tap to remove from collection",
+                        sublabel = "${game.platformId.uppercase()}  ·  tap to remove from card",
                         onClick  = { onRemoveGame(game) },
                     )
                 }
@@ -399,7 +399,7 @@ private fun CollectionIconPickerDialog(
 ) {
     AlertDialog(
         onDismissRequest = onCancel,
-        title = { Text("Collection Icon") },
+        title = { Text("Card Icon") },
         confirmButton = {},
         dismissButton = { TextButton(onClick = onCancel) { Text("Cancel") } },
         text = {

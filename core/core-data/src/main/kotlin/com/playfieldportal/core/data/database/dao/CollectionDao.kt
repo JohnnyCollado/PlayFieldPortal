@@ -133,11 +133,22 @@ interface CollectionDao {
     @Query("SELECT game_id FROM collection_games WHERE collection_id = :collectionId")
     suspend fun getGameIdsInCollection(collectionId: Long): List<Long>
 
+    // Memberships with when each game was added — "Date Added" inside a card.
+    @Query("SELECT * FROM collection_games WHERE collection_id = :collectionId")
+    suspend fun getMemberships(collectionId: Long): List<CollectionGameEntity>
+
     @Query("SELECT COUNT(*) FROM collection_games WHERE collection_id = :collectionId AND game_id = :gameId")
     suspend fun isGameInCollection(collectionId: Long, gameId: Long): Int
 
     @Query("SELECT COALESCE(MAX(sort_order), -1) FROM collections")
     suspend fun maxSortOrder(): Int
+
+    // Order is per category since v54: a card's slot only means something among its siblings.
+    @Query("SELECT COALESCE(MAX(sort_order), -1) FROM collections WHERE category_id = :categoryId")
+    suspend fun maxSortOrderIn(categoryId: String): Int
+
+    @Query("SELECT * FROM collections WHERE category_id = :categoryId ORDER BY sort_order ASC, created_at ASC")
+    suspend fun getByCategory(categoryId: String): List<CollectionEntity>
 
     @Insert
     suspend fun insert(collection: CollectionEntity): Long

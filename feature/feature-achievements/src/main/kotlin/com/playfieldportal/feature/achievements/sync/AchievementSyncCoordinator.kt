@@ -204,6 +204,7 @@ class AchievementSyncCoordinator @Inject constructor(
                 is ProviderSyncResult.Failed -> {
                     Timber.i("Achievement update %s: %s", entry.identity, result.reason)
                     counts.failed++
+                    counts.failedGames += FailedAchievementGame(entry.title, result.reason)
                 }
             }
             counts.advance(1)
@@ -411,6 +412,7 @@ class AchievementSyncCoordinator @Inject constructor(
         var skipped = 0
         var failed = 0
         val pauses = mutableSetOf<UpdatePause>()
+        val failedGames = mutableListOf<FailedAchievementGame>()
         val newPauses = mutableSetOf<UpdatePause>()
 
         fun pause(pause: UpdatePause, repeat: Boolean) {
@@ -432,6 +434,7 @@ class AchievementSyncCoordinator @Inject constructor(
             skipped = skipped,
             failed = failed,
             pauses = pauses.toSet(),
+            failedGames = failedGames.toList(),
         )
     }
 

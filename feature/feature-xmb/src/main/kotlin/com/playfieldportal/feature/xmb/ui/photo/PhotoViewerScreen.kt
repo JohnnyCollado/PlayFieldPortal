@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -238,6 +239,8 @@ fun PhotoViewerScreen(
                         labelStyle = TextStyle(fontSize = 12.sp),
                         glyphSize = 16.dp,
                         arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
+                        // Idles in and blinks out like the crossbar pill (see shouldShowMediaHint).
+                        modifier = Modifier.alpha(com.playfieldportal.core.ui.components.idleHintAlpha(com.playfieldportal.feature.xmb.ui.LocalMediaHintVisible.current)),
                     )
                 }
             }

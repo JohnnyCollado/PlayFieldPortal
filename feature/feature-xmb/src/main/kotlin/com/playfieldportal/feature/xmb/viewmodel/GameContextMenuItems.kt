@@ -8,8 +8,13 @@ import com.playfieldportal.core.domain.model.Category
  * its contents can be pinned without building the ViewModel; `openGameContextMenuCore` supplies
  * the state and opens the menu.
  *
- * [hideLabel] is the name of the place this row is shown ("Favorites", a card, a collection), or
- * null where per-location hide is not offered.
+ * [hideLabel] is the name of the place this row is shown ("Favorites", a card, a custom memory
+ * card), or null where per-location hide is not offered.
+ *
+ * [pinned] is the row's Pin to Top state in the list it is shown in, or null where the list
+ * cannot pin (a column's root, the Missing bucket). [canMove] is true only while that list is
+ * Custom sorted. [umd] is what the row can do about its column's UMD slot, and [canSelectMultiple]
+ * offers marking several games to add to a custom memory card at once.
  */
 internal fun gameContextMenuItems(
     item: XMBItem,
@@ -19,6 +24,10 @@ internal fun gameContextMenuItems(
     categories: List<Category>,
     inMissingBucket: Boolean,
     hideLabel: String?,
+    pinned: Boolean? = null,
+    canMove: Boolean = false,
+    umd: UmdMenuState = UmdMenuState.NONE,
+    canSelectMultiple: Boolean = false,
 ): List<XMBContextMenuItem> = buildList {
     // The explicit path to the edit surface, essential when direct launch makes confirm skip
     // straight into the game. Launch/title/note editing lives in Game Detail; the one-tap
@@ -39,6 +48,8 @@ internal fun gameContextMenuItems(
         // artwork (C18 task X.7). Offered on every PC game; the exporter explains a refusal.
         add(XMBContextMenuItem("export_game", "Export Game"))
     }
+    // The column's UMD slot: put this game in it, or take it out.
+    addAll(umdMenuItems(umd))
     // No "Edit App Details" here: package-backed GAME entries (PC shortcuts, Android
     // gaming apps) are games — art/title/note editing lives in Game Detail and the
     // game rows below, never the slim standard-app editor.
@@ -46,15 +57,20 @@ internal fun gameContextMenuItems(
         id    = if (item.isFavorite) "unfavorite" else "favorite",
         label = if (item.isFavorite) "Remove from Favorites" else "Add to Favorites",
     ))
-    add(XMBContextMenuItem("add_to_collection", "Add to Collection"))
-    // Only offer removal when viewing the game from inside a collection.
-    if (inCollection) add(XMBContextMenuItem("remove_from_collection", "Remove from Collection"))
-    add(XMBContextMenuItem("manage_collections", "Manage Collections"))
+    add(XMBContextMenuItem("add_to_collection", "Add to Card…"))
+    // Only offer removal when viewing the game from inside a custom memory card.
+    if (inCollection) add(XMBContextMenuItem("remove_from_collection", "Remove from Card"))
+    // Mark several games, then add them all to a custom memory card in one go.
+    if (canSelectMultiple) add(XMBContextMenuItem("select_multiple", "Select Multiple"))
+    add(XMBContextMenuItem("manage_collections", "Manage Custom Cards"))
+
+    // Where the row sits in the list it is shown in.
+    addAll(arrangeMenuItems(pinned, canMove))
 
     // Gaming category options. Games in the Main Game category can only be COPIED into
     // another category (never moved out or removed); custom gaming categories allow
-    // move / remove / pin. Move/Add only appear when a real destination exists — a
-    // custom gaming category other than the current one (Main Game is never a target).
+    // move / remove. Move/Add only appear when a real destination exists — a custom gaming
+    // category other than the current one (Main Game is never a target).
     if (currentCategory?.isGamingCategory == true) {
         val hasOtherCustomCategory = categories.any {
             it.isGamingCategory && it.id != BuiltInCategory.GAMES && it.id != currentCategory.id
@@ -64,11 +80,6 @@ internal fun gameContextMenuItems(
         } else {
             if (hasOtherCustomCategory) add(XMBContextMenuItem("move_category", "Move to Category"))
             add(XMBContextMenuItem("remove_category", "Remove from Category"))
-            val pinned = item.subtitle == "Pinned"
-            add(XMBContextMenuItem(
-                if (pinned) "unpin_category" else "pin_category",
-                if (pinned) "Unpin" else "Pin",
-            ))
         }
     }
 

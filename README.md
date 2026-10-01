@@ -253,14 +253,22 @@ only drives the overlay on top. Every binding is remappable in *Settings ▸ Con
 
 Selecting **Game** shows, in order:
 
-1. **All Games** — every real game across all consoles, aggregated. Only actual games appear here;
+1. **The UMD slot** — one game, like a disc in a PSP's drive. It shows the UMD icon until you
+   focus it, when it becomes the game's own icon over the game's artwork. Put a game in it with
+   **△ ▸ Insert as UMD** and take it out with **Eject UMD**; with nothing inserted it shows the
+   game you played most recently.
+2. **All Games** — every real game across all consoles, aggregated. Only actual games appear here;
    Android / Video / Music apps never show up automatically.
-2. **Favorites** — appears directly under All Games **only when you have favorited at least one
+3. **Favorites** — appears directly under All Games **only when you have favorited at least one
    game**, and hides again when you have none.
-3. **Your Collections** — user-made folders (see [4.4](#44-favorites--collections)).
-4. **Memory Cards** — one row per console you have configured.
+4. **Your Custom Memory Cards** — cards you make yourself (see
+   [4.4](#44-favorites--collections)).
+5. **Memory Cards** — one row per console you have configured.
 
-Open All Games, Favorites, a collection, or a console to drill in; press **B / ◯** to go back. On
+That is the default order. Press **X / □ ▸ Custom** to arrange the rows yourself (see
+[Sorting and arranging lists](#sorting-and-arranging-lists)).
+
+Open All Games, Favorites, a custom card, or a console to drill in; press **B / ◯** to go back. On
 wide and foldable screens the crossbar slides to the left edge while drilled in, giving the game
 list and its artwork the center-right of the screen.
 
@@ -346,9 +354,12 @@ Memory Card, or per-game emulator.
 
 - **Favorites** — mark any game from its **△** options (*Add to Favorites*). A **Favorites** folder
   appears under All Games and hides automatically when empty.
-- **Collections** — custom folders (e.g. "RPGs", "Currently Playing"). A game can live in several at
-  once. Create one from *Settings ▸ Collections* or a game's **△ ▸ Add to Collection**; toggle
-  membership with a ✓. Manage (rename, reorder, delete) from *Settings ▸ Collections*.
+- **Custom Memory Cards** — cards you make yourself (e.g. "RPGs", "Currently Playing"), formerly
+  called Collections. A game can live on several at once. Create one from *Settings ▸ Custom
+  Memory Cards* or a game's **△ ▸ Add to Card…**; toggle membership with a ✓. The picker lists
+  the cards of the category you are in first. Deleting a custom card never removes its games.
+- **Several games at once** — in any game list choose **△ ▸ Select Multiple**, mark games with
+  **A / ✕**, then press **Y / △** to add them all to one card.
 
 ### 4.5 Game & app options (△)
 
@@ -495,10 +506,32 @@ Each section shows a single "＋ Add" getting-started row until a root has been 
 
 Categories are the horizontal bar. Manage them in *Settings ▸ Categories*:
 
-- **Create** a category, choose a **content type** (Gaming = games & collections, Non-gaming =
-  apps), and pick an **icon** from the image-based picker.
+- **Create** a category, choose a **content type** (Gaming = games & custom memory cards,
+  Non-gaming = apps), and pick an **icon** from the image-based picker. The content type is
+  fixed once the category exists.
 - **Rename, reorder** (move left/right), **hide/show,** or **delete** custom categories. Built-in
-  categories are protected from deletion.
+  categories are protected from deletion. Deleting a category that holds custom memory cards
+  asks whether to move them to **Game** (or **App Store**, for an app category) or delete them
+  too; its games and apps always stay in your library.
+
+A **gaming** category opens on its own **Memory Card** — every game in the category, whether you
+added it directly or it sits on one of the category's custom cards — followed by those custom
+cards and **Add Games**. Like Main Game, it has a UMD slot at the top.
+
+#### Sorting and arranging lists
+
+Sorting works in tiers, the same way Icon Display does:
+
+- **Global** — the default for every game list (**All Games ▸ △ ▸ Global Sort**) and for every
+  app list (**X / □ ▸ Global Sort** in an app column).
+- **Per list** — each Memory Card, custom card and app column can take its own sort: **△ ▸ Sort**
+  on the card, or **X / □** inside it. **Use Global Setting** hands it back.
+- **Custom** — your own order for that one list. It starts alphabetical; then **△ ▸ Move** lifts
+  a row, **▲ / ▼** slide it, **A / ✕** places it and **B / ◯** puts it back.
+
+**Pin to Top** (in a row's **△** menu) keeps a row above the rest under any sort, and can be
+switched off again. A column's top level can be arranged the same way — only the UMD slot and
+the **Add** row stay where they are.
 
 ### 4.12 Themes & personalization
 

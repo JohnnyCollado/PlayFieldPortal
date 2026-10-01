@@ -140,6 +140,9 @@ class GameRepositoryImpl @Inject constructor(
         Timber.d("Play session recorded: gameId=${session.gameId}, platform=${session.platformId}")
     }
 
+    override suspend fun markLaunched(id: Long, playedAt: Long) =
+        gameDao.markLaunched(id, playedAt)
+
     override suspend fun updateScrapedTitle(id: Long, scrapedTitle: String?) =
         gameDao.updateScrapedTitle(id, scrapedTitle)
 

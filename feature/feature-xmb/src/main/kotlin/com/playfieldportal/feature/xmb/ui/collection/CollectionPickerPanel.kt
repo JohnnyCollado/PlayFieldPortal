@@ -75,7 +75,7 @@ fun CollectionPickerPanel(
                 .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text("Add to Collection", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text("Add to Card", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Text(
                 "Up/Down  Navigate  •  Select  Toggle  •  B  Close",
                 color = TextMuted.copy(alpha = 0.5f),
@@ -96,7 +96,7 @@ fun CollectionPickerPanel(
                 }
                 // Final row — create a brand-new collection.
                 PickerRow(
-                    label = "＋  Create New Collection",
+                    label = "＋  New Custom Memory Card",
                     trailingCheck = false,
                     isFocused = ui.isCreateRow,
                     onClick = { onRowClick(ui.options.size) },
@@ -104,7 +104,7 @@ fun CollectionPickerPanel(
 
                 if (ui.options.isEmpty()) {
                     Text(
-                        "No collections yet — create one to get started.",
+                        "No custom memory cards yet — create one to get started.",
                         color = TextMuted,
                         fontSize = 12.sp,
                         modifier = Modifier.padding(top = 4.dp, start = 4.dp),
@@ -124,7 +124,7 @@ fun collectionNameModalSpec(
     onCancel: () -> Unit,
 ): PfpModalSpec.TextEntry = PfpModalSpec.TextEntry(
     key = "new_collection",
-    title = "New Collection",
+    title = "New Custom Memory Card",
     placeholder = "e.g. RPGs, Currently Playing",
     confirmLabel = "Create",
     onConfirm = onCreate,

@@ -103,6 +103,7 @@ class LibraryManagerViewModelTest {
             romRootScanRunner,
             pcGameExporter,
             tasks,
+            kotlinx.coroutines.CoroutineScope(dispatcher),
         )
     }
 
@@ -174,13 +175,48 @@ class LibraryManagerViewModelTest {
         io.mockk.verify {
             tasks.complete(
                 "lm_scan_psx",
-                "PlayStation Memory Card: 3 new ROM(s) added",
+                "3 new ROM(s) added",
                 com.playfieldportal.core.domain.model.NotificationAction.OpenMemoryCard("psx"),
+                null,
+                "PlayStation scan finished",
             )
         }
         assertNull(vm.uiState.value.message)
         assertTrue("psx" !in vm.uiState.value.scanningPlatformIds)
         job.cancel()
+    }
+
+    @Test
+    fun `scanConsole reports a failed or skipped card as a failure with its code, not a success`() = runTest(dispatcher) {
+        coEvery { libraryScanner.scanPlatform("psx", false) } returns
+            PlatformScanOutcome("psx", "PlayStation Memory Card", ScanStatus.FAILED, errorMessage = "Folder not found")
+        coEvery { libraryScanner.scanPlatform("snes", false) } returns
+            PlatformScanOutcome("snes", "SNES Memory Card", ScanStatus.SKIPPED_NO_SOURCE)
+
+        vm.scanConsole("psx")
+        vm.scanConsole("snes")
+        advanceUntilIdle()
+
+        io.mockk.verify(exactly = 0) { tasks.complete("lm_scan_psx", any(), any(), any(), any()) }
+        io.mockk.verify {
+            tasks.fail("lm_scan_psx", any(), any(),
+                match { (it as com.playfieldportal.core.domain.model.NotificationDetail.Notes).code == "SC-2002" },
+                "PlayStation scan failed")
+            tasks.fail("lm_scan_snes", any(), any(),
+                match { (it as com.playfieldportal.core.domain.model.NotificationDetail.Notes).code == "SC-1001" },
+                "SNES scan skipped")
+        }
+    }
+
+    @Test
+    fun `a scan runs on the task scope and registers itself as stoppable`() = runTest(dispatcher) {
+        coEvery { libraryScanner.scanPlatform("psx", false) } returns
+            PlatformScanOutcome("psx", "PlayStation Memory Card", ScanStatus.COMPLETED)
+
+        vm.scanConsole("psx")
+        advanceUntilIdle()
+
+        coVerify { tasks.startStoppable("lm_scan_psx", any(), any(), any(), any(), any()) }
     }
 
     // ── scanOutcomeMessage mapping ────────────────────────────────────────────────

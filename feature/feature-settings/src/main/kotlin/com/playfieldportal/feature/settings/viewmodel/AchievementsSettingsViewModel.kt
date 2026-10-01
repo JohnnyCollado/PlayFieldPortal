@@ -33,7 +33,7 @@ data class AchievementsSettingsUiState(
     val hasSteam: Boolean = false,
     val steamId64: String = "",
     val lastSyncedLabel: String = "Never",
-    // Match/update/clear/connection OUTCOMES are tray-only (row + shade + notification cue); the
+    // Match/update/clear/connection OUTCOMES are tray-only (row + notification cue); the
     // screen keeps only live progress, the paused state and the clear confirmation.
     val isMatching: Boolean = false,
     val matchDone: Int = 0,
@@ -153,7 +153,7 @@ class AchievementsSettingsViewModel @Inject constructor(
     }
 
     /**
-     * Records a connection outcome in the tray (row + shade + notification cue) — no in-screen row.
+     * Records a connection outcome in the tray (row + notification cue) — no in-screen row.
      *
      * "Steam connected" is worth finding again an hour later, which is what the tray is for; a
      * dismissible row that dies with the screen is exactly what the user asked to stop seeing here.

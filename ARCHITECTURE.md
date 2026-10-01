@@ -144,10 +144,21 @@ per-system defaults, and copyable diagnostics instead of a dead end.
   exposes a single `XMBUiState` `StateFlow`. The stateless
   [`XMBShell`](feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/ui/XMBShell.kt)
   renders it; `XMBShellContainer` wires the ViewModel's callbacks in.
-- **Navigation model:** the Games category root lists synthetic folders — **All Games**,
-  **Favorites** (shown only when something is favorited), user collections, then one row per
-  enabled Memory Card. Folders are entered by setting `selectedPlatformId` (sentinels
-  `__all_games__` / `__favorites__`) or `selectedCollectionId`; BACK clears them.
+- **Navigation model:** the Games category root lists the UMD slot, then synthetic folders —
+  **All Games**, **Favorites** (shown only when something is favorited), user collections (shown
+  as Custom Memory Cards), then one row per enabled Memory Card. Folders are entered by setting
+  `selectedPlatformId` (sentinels `__all_games__` / `__favorites__` / `__category_card__`) or
+  `selectedCollectionId`; BACK clears them. A custom gaming category's root is the UMD slot, its
+  own Memory Card (`__category_card__`: junction games ∪ the games on its custom cards), its
+  custom cards and Add Games — never loose game rows.
+- **List arrangement:** every arrangeable list has a string key (`ListKeys`: `root:<category>`,
+  `card:<platform>`, `all_games`, `favorites`, `catcard:<category>`, `collection:<id>`,
+  `apps:<section>`). `list_settings` holds a list's own sort (no row = follow the global sort in
+  `SortPreferences`), `list_items` its Custom order and pinned games, `umd_slots` the inserted
+  game per gaming column. The pure rules live in `ListArrangement` (core-domain) and
+  [`XmbLists.kt`](feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/viewmodel/XmbLists.kt);
+  `XMBViewModel` owns the state and the writes. Pins for cards, custom cards and apps stay in
+  their own tables' columns.
 - **Settings hierarchy:** two levels. L1 sections (Library, Media, Emulators, Interface, System)
   open as nested XMB items; L2 entries route to settings screens through the
   `SETTINGS_SCREEN_ROUTES` allowlist in `SettingsNavHost`. The structure is pinned by

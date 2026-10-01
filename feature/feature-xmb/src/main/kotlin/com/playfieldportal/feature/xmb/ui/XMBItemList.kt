@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
@@ -73,6 +74,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
@@ -115,6 +117,23 @@ private val GAME_ICON_HEIGHT = 70.dp
 // Internal because XMBShell needs it too: the drill flyout's PIC0 logo centres on the active
 // row, and it can only do that if it measures the row the same way the column lays it out.
 internal val ROW_HEIGHT = 88.dp
+
+// The inserted UMD, focused and read, at the PSP's own scale: ICON0 is three times the selected
+// caticon's width (288 px against the Game icon's 97 px on the hardware), in ICON0's 144:80 shape.
+// Its row grows to hold it, with the same breathing room above and below a normal row's icon has.
+private val UMD_ICON_WIDTH = (XmbLayoutSpec.DEFAULT.categoryIconSelectedDp * 3).dp
+private val UMD_ICON_HEIGHT = UMD_ICON_WIDTH * (80f / 144f)
+private val UMD_ROW_HEIGHT = UMD_ICON_HEIGHT + 16.dp
+
+// The selected row's grow, pivoted on the icon line (see XmbVerticalListRow).
+private const val SELECTED_ROW_SCALE = 1.06f
+
+// The first-level column clips only top, bottom and right. Its left edge is where the column
+// starts, not the screen's, and the focused UMD's ICON0 runs past it to be cut by the screen edge,
+// as on the PSP. Nothing else in the column reaches left of its own start.
+private val ClipAllButLeft = androidx.compose.foundation.shape.GenericShape { size, _ ->
+    addRect(androidx.compose.ui.geometry.Rect(-size.width * 8, 0f, size.width, size.height))
+}
 
 // Gap between a wide artwork tile and its title. Small-icon rows get this spacing for free from
 // their 58dp icon box; the 126dp artwork tiles have none, so the text butts against the art.
@@ -166,6 +185,9 @@ val XmbTextShadow = Shadow(
 // of their own (collections). Mirrors the ViewModel's MEMORY_CARD_ASSET_URI.
 internal const val MEMORY_CARD_DEFAULT_ART = "file:///android_asset/systems/physical-media/_default.png"
 
+// The UMD slot's unfocused icon: the PSP's physical media, for a game of any platform.
+internal const val UMD_SLOT_ART = "file:///android_asset/systems/physical-media/psp.png"
+
 // ── Drill flyout layout ──────────────────────────────────────────────────────
 // Left inset of the game-card column, measured from the flyout's left edge (which the caller has
 // already shifted under the caticon). Clears the icon-only memory-card column and the ◀ that trails
@@ -215,6 +237,8 @@ fun XmbDrillFlyout(
         // active (drilled-into) card. Static while navigating games. Labels are hidden here so the
         // drilled console reads as a bare icon and the ◀ sits tight against it — the games are the
         // focus while drilled in, and the name already showed at the parent level.
+        // A Move or a mark belongs to the game column; the parent card must not wear either.
+        androidx.compose.runtime.CompositionLocalProvider(LocalXmbRowDecor provides XmbRowDecor()) {
         XMBItemList(
             items = siblings,
             selectedIndex = siblingIndex,
@@ -228,6 +252,7 @@ fun XmbDrillFlyout(
             iconAnimatingAllowed = iconAnimatingAllowed,
             modifier = Modifier.fillMaxHeight().width(DRILL_GAME_COLUMN_LEFT - 10.dp),
         )
+        }
 
         // RIGHT: the game cards — a single continuous column laid out (not scrolled) so the active
         // game sits exactly on the belowTopY / ◀ line, with the previous card contiguous directly
@@ -396,6 +421,7 @@ internal fun itemSlotKeyFor(type: XMBItemType): String? = when (type) {
 // Maps a memory-card-style item to its sysicon key (mirrors XmbItemLeadingIcon's mapping).
 private fun consoleIconKeyFor(item: XMBItem): String? = when (item.type) {
     XMBItemType.ALL_GAMES   -> "allgames"
+    XMBItemType.CATEGORY_CARD -> "allgames"
     XMBItemType.FAVORITES   -> "favorites"
     XMBItemType.MEMORY_CARD -> item.platformId
     else                    -> null   // collections / unknown fall back to sysicon_default
@@ -523,7 +549,15 @@ fun XMBItemList(
     // Pressing down slides the whole column up one: the old selected becomes the previous (above the
     // bar) and the next becomes selected (below it). The bar is taller than a row, so the column is
     // rendered in two pieces — one item above, selected + following below — rather than one list.
-    BoxWithConstraints(modifier = modifier.fillMaxWidth().fillMaxHeight().clipToBounds()) {
+    BoxWithConstraints(modifier = modifier.fillMaxWidth().fillMaxHeight().clip(ClipAllButLeft)) {
+        // The focused UMD's row grows once its disc is read, as the PSP's does, pushing the rows
+        // under it down rather than covering them. Same read clock as the row's own swap.
+        val umdRead = rememberUmdRead(umdReadKey(items.getOrNull(selectedIndex), columnIndex = 0))
+        val umdRowHeight by androidx.compose.animation.core.animateDpAsState(
+            targetValue = if (umdRead) UMD_ROW_HEIGHT else ROW_HEIGHT,
+            animationSpec = tween(200),
+            label = "umdRowHeight",
+        )
         // Render only rows that FULLY fit below the anchor — the active row plus however many whole
         // rows remain in the space beneath it. No trailing partial row is composed, so nothing gets
         // clipped to a half-height sliver at the bottom edge (on any screen size).
@@ -551,7 +585,7 @@ fun XMBItemList(
                         solidUnfocusedIcons = solidUnfocusedIcons,
                         textShadow = textShadow,
                         iconAnimatingAllowed = iconAnimatingAllowed,
-                        modifier = Modifier.fillMaxWidth().height(ROW_HEIGHT),
+                        modifier = Modifier.fillMaxWidth().height(if (i == selectedIndex) umdRowHeight else ROW_HEIGHT),
                     )
                 }
             }
@@ -623,7 +657,7 @@ private fun XmbVerticalListRow(
     // Strong size delta between the locked selection and the rows scrolling past it — the PSP
     // "the cursor stays, the list breathes" feel.
     val scale by animateFloatAsState(
-        targetValue = if (isSelected) 1.06f else 0.9f,
+        targetValue = if (isSelected) SELECTED_ROW_SCALE else 0.9f,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "xmbListRowScale",
     )
@@ -680,6 +714,12 @@ private fun XmbVerticalListRow(
                 )
                 .padding(horizontal = ROW_HORIZONTAL_PADDING),
         ) {
+            // Arrangement state for this row: lifted (being moved) or marked (multi-select).
+            val decor = LocalXmbRowDecor.current
+            val moving = isSelected && decor.movingLabel != null
+            val marked = decor.markMode && item.gameId != null && item.gameId in decor.markedGameIds
+            // A focused UMD slot stays the UMD, named, until the disc has been read.
+            val umdShowsGame = isSelected && rememberUmdRead(umdReadKey(item.takeIf { isSelected }, columnIndex = 0))
             if (showIcon && !item.textOnly) {
                 // Per-row animation gate (Animated Images): this row's art counts as focused only
                 // while the row is selected — what Reduced plays — and nothing in it may animate
@@ -690,11 +730,23 @@ private fun XmbVerticalListRow(
                     com.playfieldportal.core.ui.motion.LocalMotionAllowed provides
                         (com.playfieldportal.core.ui.motion.LocalMotionAllowed.current && iconAnimatingAllowed),
                 ) {
+                Box(
+                    modifier = Modifier.arrangeDecoration(
+                        moving = moving,
+                        marked = marked,
+                        // App icons are clipped to a rounded square (APP_ICON_CORNER), so their
+                        // outline follows that shape; everything else is a tile or a glyph.
+                        appIcon = item.isAndroidApp && item.gameId == null && item.iconUri == null,
+                        accent = LocalPFPColors.current.accentColor,
+                    ),
+                ) {
                 XmbItemLeadingIcon(
                     item = item,
                     iconStyle = iconStyle,
                     isSelected = isSelected,
+                    umdShowsGame = umdShowsGame,
                 )
+                }
                 }
             }
 
@@ -703,7 +755,16 @@ private fun XmbVerticalListRow(
             // overlay to wait for, so the old PIC0-timeline fade only made the identity late.
             // Games with a logo never show text — the logo overlay IS the identity. Non-game
             // rows keep their labels as always. A textOnly row (e.g. Untracked) always labels.
-            val showGameText = item.textOnly || !item.isRealGame || (isSelected && item.logoUri == null)
+            val showGameText = when {
+                // The UMD slot is the reverse of a game row: named while it is the UMD glyph,
+                // bare once the read turns it into the game's own icon over the game's art.
+                item.type == XMBItemType.UMD_SLOT -> !umdShowsGame
+                // A row being moved always says so, logo or not.
+                moving -> true
+                else -> item.textOnly || !item.isRealGame || (isSelected && item.logoUri == null)
+            }
+            // "Moving · 2 of 5" replaces the subtitle on the lifted row.
+            val subtitleText = if (moving) decor.movingLabel else item.subtitle
             if (showText && showGameText) {
                 // start padding pushes the label clear of the wallpaper's vertical cross bar, so the
                 // text doesn't butt against the black band (a small gap, PSP-style).
@@ -739,7 +800,7 @@ private fun XmbVerticalListRow(
                             BoneGlyph(tint = titleColor, size = 14.dp)
                         }
                     }
-                    if (!item.subtitle.isNullOrBlank() || item.subtitleHintIcon != null) {
+                    if (!subtitleText.isNullOrBlank() || item.subtitleHintIcon != null) {
                         // Discord friend rows prefix the subtitle with a colored presence dot; every
                         // other row keeps the plain subtitle.
                         Row(
@@ -755,7 +816,7 @@ private fun XmbVerticalListRow(
                                 )
                                 Spacer(Modifier.width(6.dp))
                             }
-                            item.subtitle?.takeIf { it.isNotBlank() }?.let { subtitle ->
+                            subtitleText?.takeIf { it.isNotBlank() }?.let { subtitle ->
                                 Text(
                                     text = subtitle,
                                     color = SecondaryText,
@@ -803,11 +864,74 @@ private fun XmbVerticalListRow(
 // Icon shadows/blooms dropped per design — selection is conveyed by the row's scale alone.
 private fun Modifier.selectedIconBloom(isSelected: Boolean): Modifier = this
 
+/**
+ * What the list tells its rows about arranging: [movingLabel] is the lifted row's position line
+ * ("Moving · 2 of 5") while a Move is in progress, and [markedGameIds] are the games marked in
+ * multi-select. Provided by the shell so the rows need no extra parameters.
+ */
+data class XmbRowDecor(
+    val movingLabel: String? = null,
+    val markMode: Boolean = false,
+    val markedGameIds: Set<Long> = emptySet(),
+)
+
+val LocalXmbRowDecor = androidx.compose.runtime.compositionLocalOf { XmbRowDecor() }
+
+/**
+ * Draws a row's arrangement state over its icon. A row being moved gets a white outline hugging
+ * the icon with a chevron set into its top and bottom edges; a marked game gets a check badge on the icon's top
+ * left. Drawn, not laid out, so neither changes the row's size or shifts its neighbours.
+ */
+private fun Modifier.arrangeDecoration(
+    moving: Boolean,
+    marked: Boolean,
+    appIcon: Boolean,
+    accent: Color,
+): Modifier = if (!moving && !marked) this else drawWithContent {
+    drawContent()
+    // The icon's own bounds inside this box: a wide box is a game tile followed by its text gap,
+    // anything else is a glyph or app icon centred in the icon slot. The gap is taken off before
+    // comparing: an app row's slot (74×48dp) is wide too, but only because the slot is.
+    val isTile = size.width - ARTWORK_TEXT_GAP.toPx() > size.height * 1.5f
+    val iconWidth = if (isTile) size.width - ARTWORK_TEXT_GAP.toPx() else size.height
+    val left = if (isTile) 0f else (size.width - iconWidth) / 2f
+    if (moving) {
+        drawMoveOutline(
+            icon = androidx.compose.ui.geometry.Rect(left, 0f, left + iconWidth, size.height),
+            // An app's outline is concentric with its icon's clip: the same corner, grown by the
+            // gap between them.
+            corner = if (appIcon) APP_ICON_CORNER + 4.dp else 8.dp,
+        )
+    }
+    if (marked) {
+        val radius = 10.dp.toPx()
+        val center = Offset(left + 2.dp.toPx(), 2.dp.toPx())
+        drawCircle(accent, radius = radius, center = center)
+        drawCircle(Color.White, radius = radius, center = center, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx()))
+        val check = androidx.compose.ui.graphics.Path().apply {
+            moveTo(center.x - radius * 0.45f, center.y)
+            lineTo(center.x - radius * 0.1f, center.y + radius * 0.38f)
+            lineTo(center.x + radius * 0.5f, center.y - radius * 0.35f)
+        }
+        drawPath(
+            check,
+            Color.White,
+            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                width = 2.dp.toPx(),
+                cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                join = androidx.compose.ui.graphics.StrokeJoin.Round,
+            ),
+        )
+    }
+}
+
 @Composable
 private fun XmbItemLeadingIcon(
     item: XMBItem,
     iconStyle: GameIconStyle,
     isSelected: Boolean,
+    // A focused UMD slot whose read has finished — see rememberUmdRead.
+    umdShowsGame: Boolean = false,
 ) {
     // Material glyph rows follow the theme's unified icon color, matching the tinted
     // silhouette art (PortalIcon) — row alpha handles the unselected dimming.
@@ -1110,9 +1234,44 @@ private fun XmbItemLeadingIcon(
                 }
             }
         }
+        // The UMD slot, unfocused or still being read: the PSP's own physical media — the UMD —
+        // whatever platform the inserted game is from. Once read, it falls through to the game
+        // branch below and becomes the game's icon.
+        item.type == XMBItemType.UMD_SLOT && !umdShowsGame -> {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.width(LEADING_ICON_SLOT),
+            ) {
+                BundledSilhouetteIcon(
+                    assetUri = UMD_SLOT_ART,
+                    modifier = Modifier.size(LEADING_ICON_SIZE),
+                )
+            }
+        }
+        // The UMD slot, focused and read: the game's ICON0 at the PSP's size, anchored the way the
+        // PSP draws it — its right edge on the selected caticon's right edge, the extra width
+        // running off to the left and out past the screen edge. The slot shares the caticon's
+        // centre line, so that is half the width difference.
+        item.type == XMBItemType.UMD_SLOT -> {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.width(LEADING_ICON_SLOT).height(UMD_ICON_HEIGHT),
+            ) {
+                GameIcon(
+                    item = item,
+                    iconStyle = iconStyle,
+                    modifier = Modifier
+                        .requiredSize(width = UMD_ICON_WIDTH, height = UMD_ICON_HEIGHT)
+                        // Divided back out of the row's selected scale, which grows the icon about
+                        // that same line, so the right edge lands on the caticon's once scaled.
+                        .offset(x = (XmbLayoutSpec.DEFAULT.categoryIconSelectedDp.dp / SELECTED_ROW_SCALE - UMD_ICON_WIDTH) / 2),
+                )
+            }
+        }
         item.type == XMBItemType.ALL_GAMES ||
             item.type == XMBItemType.FAVORITES ||
             item.type == XMBItemType.MEMORY_CARD ||
+            item.type == XMBItemType.CATEGORY_CARD ||
             item.type == XMBItemType.COLLECTION -> {
             Box(
                 contentAlignment = Alignment.Center,
@@ -1183,6 +1342,8 @@ private fun XmbItemLeadingIcon(
                     val iconKey = when (item.type) {
                         XMBItemType.MEMORY_CARD -> item.platformId
                         XMBItemType.ALL_GAMES   -> "allgames"
+                        // A category's own Memory Card is its All Games: the same glyph.
+                        XMBItemType.CATEGORY_CARD -> "allgames"
                         XMBItemType.FAVORITES   -> "favorites"
                         else                    -> null
                     }
@@ -1351,6 +1512,9 @@ private fun AppListIcon(
     Image(
         painter = rememberDrawablePainter(drawable),
         contentDescription = null,
-        modifier = modifier.clip(RoundedCornerShape(6.dp)),
+        modifier = modifier.clip(RoundedCornerShape(APP_ICON_CORNER)),
     )
 }
+
+// The rounded square every installed app's icon is clipped to; the Move outline follows it.
+private val APP_ICON_CORNER = 6.dp

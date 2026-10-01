@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -136,6 +137,48 @@ object PfpModalNav {
     }
 
     /**
+     * Which option of a [PfpChoiceModal] [action] selects, from [selected]. Up / down step through
+     * the options without wrapping; anything else leaves the selection alone.
+     */
+    fun moveChoice(selected: Int, action: GamepadAction, optionCount: Int): Int = when (action) {
+        GamepadAction.NAVIGATE_UP -> (selected - 1).coerceAtLeast(0)
+        GamepadAction.NAVIGATE_DOWN -> (selected + 1).coerceAtMost((optionCount - 1).coerceAtLeast(0))
+        else -> selected
+    }
+
+    /**
+     * A host's interceptor while a [PfpChoiceModal] is open. Up / down pick the option, left /
+     * right move between Cancel and Confirm, SELECT activates the focused button and BACK cancels.
+     */
+    fun handleChoice(
+        action: GamepadAction,
+        focus: PfpModalFocus,
+        selected: Int,
+        optionCount: Int,
+        sounds: MenuSoundSink,
+        onFocusChange: (PfpModalFocus) -> Unit,
+        onSelectedChange: (Int) -> Unit,
+        onConfirm: () -> Unit,
+        onCancel: () -> Unit,
+    ) {
+        if (action == GamepadAction.NAVIGATE_UP || action == GamepadAction.NAVIGATE_DOWN) {
+            val moved = moveChoice(selected, action, optionCount)
+            if (moved != selected) { sounds.play(MenuSound.SCROLL); onSelectedChange(moved) }
+            return
+        }
+        handle(
+            action = action,
+            focus = focus,
+            hasField = false,
+            confirmEnabled = true,
+            sounds = sounds,
+            onFocusChange = onFocusChange,
+            onConfirm = onConfirm,
+            onCancel = onCancel,
+        )
+    }
+
+    /**
      * A host's interceptor while a [PfpNoticeModal] is open. There is one button and nothing to
      * choose, so SELECT and BACK both dismiss — as a back, since nothing was committed — and every
      * other press is swallowed.
@@ -176,9 +219,9 @@ object PfpModalTags {
     const val HINTS = "pfp_modal_hints"
 }
 
-private val ModalScrim = Color(0xCC000000)
-private val ModalSurface = Color(0xFF15151F)
-private val ModalSubtext = Color.White.copy(alpha = 0.7f)
+internal val ModalScrim = Color(0xCC000000)
+internal val ModalSurface = Color(0xFF15151F)
+internal val ModalSubtext = Color.White.copy(alpha = 0.7f)
 private val ModalDanger = Color(0xFFFF7070)
 private val ModalCardWidth = 440.dp
 private val ModalControlShape = RoundedCornerShape(8.dp)
@@ -222,6 +265,92 @@ fun PfpConfirmModal(
             onConfirm = onConfirm,
             onCancel = cancel,
         )
+    }
+}
+
+/** One answer in a [PfpChoiceModal]: its label and an optional detail pinned to the row's end. */
+data class PfpChoiceOption(val label: String, val detail: String? = null)
+
+/**
+ * A confirm that also asks a question: a title, a message, a short list of [options] of which
+ * exactly one is [selected], and Cancel / Confirm. The selected option carries the accent ring.
+ *
+ * [focus] and [selected] are the host's; drive them with [PfpModalNav.handleChoice].
+ */
+@Composable
+fun PfpChoiceModal(
+    title: String,
+    message: String,
+    options: List<PfpChoiceOption>,
+    selected: Int,
+    onSelectedChange: (Int) -> Unit,
+    confirmLabel: String,
+    focus: PfpModalFocus,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier,
+    cancelLabel: String = "Cancel",
+    destructive: Boolean = false,
+    accent: Color = Color.White,
+    showHints: Boolean = true,
+    messageScroll: ScrollState = rememberScrollState(),
+) {
+    PfpModalScaffold(title = title, onCancel = onCancel, showHints = showHints, modifier = modifier) { cancel ->
+        ModalMessage(message, messageScroll)
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            options.forEachIndexed { index, option ->
+                ModalChoiceRow(
+                    option = option,
+                    selected = index == selected,
+                    accent = accent,
+                    onClick = { onSelectedChange(index) },
+                )
+            }
+        }
+        ModalButtonRow(
+            cancelLabel = cancelLabel,
+            confirmLabel = confirmLabel,
+            focus = focus,
+            confirmEnabled = true,
+            destructive = destructive,
+            accent = accent,
+            onConfirm = onConfirm,
+            onCancel = cancel,
+        )
+    }
+}
+
+// One option row. The selected row wears the same ring and fill a focused button does; the others
+// sit on a faint fill so the list reads as a set of rows rather than loose text.
+@Composable
+private fun ModalChoiceRow(
+    option: PfpChoiceOption,
+    selected: Boolean,
+    accent: Color,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 40.dp)
+            .clip(ModalControlShape)
+            .background(Color.White.copy(alpha = if (selected) 0.10f else 0.05f))
+            .then(if (selected) Modifier.border(2.dp, accent, ModalControlShape) else Modifier)
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            option.label,
+            fontSize = 15.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (selected) Color.White else ModalSubtext,
+            modifier = Modifier.weight(1f),
+        )
+        option.detail?.let {
+            Text(it, fontSize = 12.sp, color = ModalSubtext, maxLines = 1)
+        }
     }
 }
 
@@ -562,14 +691,14 @@ private fun ModalButton(
 fun PfpTextEntryModalPreview() {
     PfpPreview {
         PfpTextEntryModal(
-            title = "New Collection",
+            title = "New Custom Memory Card",
             value = "Survival Horror",
             onValueChange = {},
             focus = PfpModalFocus.FIELD,
             onFocusChange = {},
             onConfirm = {},
             onCancel = {},
-            placeholder = "Collection name",
+            placeholder = "Card name",
             maxLength = 40,
         )
     }
@@ -626,7 +755,7 @@ fun PfpNoticeModalPreview() {
 fun PfpConfirmModalDestructivePreview() {
     PfpPreview {
         PfpConfirmModal(
-            title = "Delete Collection",
+            title = "Delete Custom Card",
             message = "\"Survival Horror\" will be deleted. The games in it stay in your library.",
             confirmLabel = "Delete",
             focus = PfpModalFocus.CANCEL,

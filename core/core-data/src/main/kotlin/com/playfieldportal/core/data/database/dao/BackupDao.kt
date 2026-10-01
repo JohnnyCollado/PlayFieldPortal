@@ -180,4 +180,38 @@ interface BackupDao {
         clearLocalSteamFolders()
         insertLocalSteamFolders(rows)
     }
+
+    // ── Per-list state (v54): Custom order + pins, sort overrides, UMD slots, app launches ──
+    @Query("SELECT * FROM list_items")    suspend fun getListItems(): List<com.playfieldportal.core.data.database.entity.ListItemEntity>
+    @Query("SELECT * FROM list_settings") suspend fun getListSettings(): List<com.playfieldportal.core.data.database.entity.ListSettingEntity>
+    @Query("SELECT * FROM umd_slots")     suspend fun getUmdSlots(): List<com.playfieldportal.core.data.database.entity.UmdSlotEntity>
+    @Query("SELECT * FROM app_usage")     suspend fun getAppUsage(): List<com.playfieldportal.core.data.database.entity.AppUsageEntity>
+
+    @Query("DELETE FROM list_items")    suspend fun clearListItems()
+    @Query("DELETE FROM list_settings") suspend fun clearListSettings()
+    @Query("DELETE FROM umd_slots")     suspend fun clearUmdSlots()
+    @Query("DELETE FROM app_usage")     suspend fun clearAppUsage()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertListItems(rows: List<com.playfieldportal.core.data.database.entity.ListItemEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertListSettings(rows: List<com.playfieldportal.core.data.database.entity.ListSettingEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertUmdSlots(rows: List<com.playfieldportal.core.data.database.entity.UmdSlotEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAppUsage(rows: List<com.playfieldportal.core.data.database.entity.AppUsageEntity>)
+
+    /** Replaces all per-list state in one step, so a restore never leaves half of it behind. */
+    @Transaction
+    suspend fun replaceListState(
+        items: List<com.playfieldportal.core.data.database.entity.ListItemEntity>,
+        settings: List<com.playfieldportal.core.data.database.entity.ListSettingEntity>,
+        umdSlots: List<com.playfieldportal.core.data.database.entity.UmdSlotEntity>,
+        appUsage: List<com.playfieldportal.core.data.database.entity.AppUsageEntity>,
+    ) {
+        clearListItems()
+        clearListSettings()
+        clearUmdSlots()
+        clearAppUsage()
+        insertListItems(items)
+        insertListSettings(settings)
+        insertUmdSlots(umdSlots)
+        insertAppUsage(appUsage)
+    }
 }

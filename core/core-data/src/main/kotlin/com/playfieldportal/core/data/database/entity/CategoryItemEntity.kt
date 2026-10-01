@@ -38,4 +38,8 @@ data class CategoryItemEntity(
 
     // Pinned items sort to the top of their category.
     val pinned: Boolean = false,
+
+    // When the item was put in the category — Date Added inside it. 0 on rows older than v54.
+    @ColumnInfo(name = "added_at", defaultValue = "0")
+    val addedAt: Long = System.currentTimeMillis(),
 )

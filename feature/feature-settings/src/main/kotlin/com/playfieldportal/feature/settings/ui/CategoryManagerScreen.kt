@@ -18,6 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.data.repository.CollectionsOnDelete
+import com.playfieldportal.core.ui.components.PfpChoiceModal
+import com.playfieldportal.core.ui.components.PfpChoiceOption
 import com.playfieldportal.core.ui.components.PfpConfirmModal
 import com.playfieldportal.core.ui.components.PfpModalFocus
 import com.playfieldportal.core.ui.components.PfpModalNav
@@ -34,6 +37,8 @@ import com.playfieldportal.feature.settings.viewmodel.CategoryStep
 fun CategoryManagerScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    // Closes Settings and lifts the category on the XMB's crossbar, where it is moved live.
+    onMoveOnBar: (categoryId: String) -> Unit = {},
     viewModel: CategoryManagerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -43,6 +48,9 @@ fun CategoryManagerScreen(
     var modalFocus by remember { mutableStateOf(PfpModalFocus.FIELD) }
     var deleteConfirmId by remember { mutableStateOf<String?>(null) }
     val deleteTarget = state.categories.firstOrNull { it.id == deleteConfirmId }
+    // The answer for the category's custom memory cards: 0 keeps them (the default), 1 deletes
+    // them too. Only asked when the category has some.
+    var deleteCardsChoice by remember { mutableStateOf(0) }
 
     val handleBack: () -> Unit = {
         if (deleteConfirmId != null) deleteConfirmId = null else if (!viewModel.onBack()) onBack()
@@ -67,6 +75,7 @@ fun CategoryManagerScreen(
     val askDelete: (CategoryRow) -> Unit = { cat ->
         // Opens on Cancel: a stray second press must not delete the category.
         modalFocus = PfpModalNav.initialConfirmFocus(destructive = true)
+        deleteCardsChoice = 0
         deleteConfirmId = cat.id
     }
     val confirmName: () -> Unit = {
@@ -78,7 +87,10 @@ fun CategoryManagerScreen(
     val confirmDelete: () -> Unit = {
         deleteConfirmId?.let { id ->
             deleteConfirmId = null
-            viewModel.delete(id)
+            viewModel.delete(
+                id,
+                if (deleteCardsChoice == 1) CollectionsOnDelete.DELETE else CollectionsOnDelete.MOVE,
+            )
         }
     }
 
@@ -100,13 +112,15 @@ fun CategoryManagerScreen(
                 true
             }
             deleteTarget != null -> {
-                PfpModalNav.handle(
+                PfpModalNav.handleChoice(
                     action = action,
                     focus = modalFocus,
-                    hasField = false,
-                    confirmEnabled = true,
+                    selected = deleteCardsChoice,
+                    // No custom cards means no question: up / down then have nothing to move.
+                    optionCount = if (deleteTarget.customCardCount > 0) 2 else 1,
                     sounds = menuSounds,
                     onFocusChange = { modalFocus = it },
+                    onSelectedChange = { deleteCardsChoice = it },
                     onConfirm = confirmDelete,
                     onCancel = { deleteConfirmId = null },
                 )
@@ -121,7 +135,7 @@ fun CategoryManagerScreen(
         CategoryStep.PICK_ICON -> PickIconContent(state, viewModel, handleBack, modifier)
         CategoryStep.PICK_TYPE -> PickTypeContent(state, viewModel, handleBack, modifier)
         CategoryStep.DETAIL    ->
-            CategoryDetailContent(state, viewModel, handleBack, modifier, beginRename, askDelete, modalOpen, interceptModal)
+            CategoryDetailContent(state, viewModel, handleBack, modifier, beginRename, askDelete, modalOpen, interceptModal, onMoveOnBar)
     }
 
     // Name entry (new or rename)
@@ -142,16 +156,39 @@ fun CategoryManagerScreen(
     }
 
     deleteTarget?.let { target ->
-        PfpConfirmModal(
-            title = "Delete Category",
-            message = "\"${target.name}\" and its app assignments will be removed. Apps are not uninstalled.",
-            confirmLabel = "Delete",
-            focus = modalFocus,
-            destructive = true,
-            onConfirm = confirmDelete,
-            onCancel = { deleteConfirmId = null },
-            showHints = showHints,
-        )
+        val kept = if (target.isGamingCategory) "Its games stay in your library." else "Its apps are not uninstalled."
+        if (target.customCardCount > 0) {
+            // The category's custom memory cards are not deleted with it by the database, so the
+            // user decides: keep them in the home column of the same kind, or delete them too.
+            val cards = if (target.customCardCount == 1) "1 custom memory card" else "${target.customCardCount} custom memory cards"
+            PfpChoiceModal(
+                title = "Delete Category",
+                message = "\"${target.name}\" will be deleted. $kept What should happen to its $cards?",
+                options = listOf(
+                    PfpChoiceOption("Move Custom Cards to ${target.cardHomeName}"),
+                    PfpChoiceOption("Delete Custom Cards Too"),
+                ),
+                selected = deleteCardsChoice,
+                onSelectedChange = { deleteCardsChoice = it },
+                confirmLabel = "Delete",
+                focus = modalFocus,
+                destructive = true,
+                onConfirm = confirmDelete,
+                onCancel = { deleteConfirmId = null },
+                showHints = showHints,
+            )
+        } else {
+            PfpConfirmModal(
+                title = "Delete Category",
+                message = "\"${target.name}\" will be deleted. $kept",
+                confirmLabel = "Delete",
+                focus = modalFocus,
+                destructive = true,
+                onConfirm = confirmDelete,
+                onCancel = { deleteConfirmId = null },
+                showHints = showHints,
+            )
+        }
     }
 }
 
@@ -249,7 +286,7 @@ private fun PickTypeContent(
             SettingsGroup(state.pendingName ?: "Category Type")
             SettingsRow(
                 label    = "Gaming",
-                sublabel = "For games and collections",
+                sublabel = "For games and custom memory cards",
                 onClick  = { vm.chooseType(isGaming = true) },
             )
             SettingsRow(
@@ -273,6 +310,7 @@ private fun CategoryDetailContent(
     onAskDelete: (CategoryRow) -> Unit,
     modalOpen: Boolean,
     onInterceptAction: (GamepadAction) -> Boolean,
+    onMoveOnBar: (categoryId: String) -> Unit,
 ) {
     val cat = state.detail
     if (cat == null) { LaunchedEffect(Unit) { vm.onBack() }; return }
@@ -302,22 +340,39 @@ private fun CategoryDetailContent(
                     onToggle = { vm.toggleVisible(cat.id, it) },
                 )
             }
-            SettingsToggleRow(
-                label    = "Gaming Category",
-                sublabel = "Gaming: games & collections · Non-gaming: apps",
-                checked  = cat.isGamingCategory,
-                onToggle = { vm.setGamingCategory(cat.id, it) },
+            // Read-only: the kind is chosen when the category is created. Flipping it later left
+            // games in an app column (and the reverse) with nothing to migrate them.
+            SettingsValueRow(
+                label    = "Type",
+                value    = if (cat.isGamingCategory) "Gaming" else "Apps",
+                sublabel = if (cat.isGamingCategory) {
+                    "Holds games and custom memory cards. Set when the category is created."
+                } else {
+                    "Holds apps and custom memory cards. Set when the category is created."
+                },
             )
 
             SettingsGroup("Order")
-            SettingsRow(label = "Move Left",  onClick = { vm.move(cat.id, up = true) })
-            SettingsRow(label = "Move Right", onClick = { vm.move(cat.id, up = false) })
+            // Moved on the crossbar itself, so the user sees the bar they are arranging; a hidden
+            // category has no slot there to move. Settings always shows, hidden or not.
+            if (cat.visible || cat.id == com.playfieldportal.core.domain.model.BuiltInCategory.SETTINGS) {
+                SettingsRow(
+                    label    = "Move",
+                    sublabel = "Slide it along the XMB with left and right, then confirm to place it",
+                    onClick  = { onMoveOnBar(cat.id) },
+                )
+            } else {
+                SettingsRow(
+                    label    = "Move",
+                    sublabel = "Turn on Show On Bar to move this category",
+                )
+            }
 
             if (!cat.protected) {
                 SettingsGroup("Danger Zone")
                 SettingsRow(
                     label    = "Delete Category",
-                    sublabel = "Removes this custom category. Apps are not uninstalled.",
+                    sublabel = "Removes this custom category. Games and apps stay in your library.",
                     trailing = { Text("Delete", color = SettingsAccent) },
                     onClick  = { onAskDelete(cat) },
                 )

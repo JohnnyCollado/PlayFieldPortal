@@ -31,6 +31,8 @@ data class InstalledApp(
     // True for pre-installed system apps. Used as a guard rail: uninstall isn't offered for these
     // (Android would reject it anyway), only "App Info".
     val isSystemApp: Boolean = false,
+    // PackageInfo.firstInstallTime — "Date Added" for the app sorts. 0 when it could not be read.
+    val installedAt: Long = 0L,
 )
 
 @Singleton
@@ -85,6 +87,8 @@ class InstalledAppRepository @Inject constructor(
                     lastUsedAt     = lastUsedByPackage[packageName] ?: 0L,
                     systemCategory = appInfo.category,
                     isSystemApp    = isSystem,
+                    installedAt    = runCatching { pm.getPackageInfo(packageName, 0).firstInstallTime }
+                        .getOrDefault(0L),
                 )
             } catch (e: Exception) {
                 Timber.w("Failed to load app info: ${e.message}")
@@ -96,14 +100,16 @@ class InstalledAppRepository @Inject constructor(
             .also { Timber.d("Installed apps loaded: ${it.size} total") }
     }
 
-    fun launchApp(packageName: String) {
+    /** Returns true when the app was handed to the system, false when it has no launch intent. */
+    fun launchApp(packageName: String): Boolean {
         val intent = context.packageManager.getLaunchIntentForPackage(packageName)
-        if (intent != null) {
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
-        } else {
+        if (intent == null) {
             Timber.w("No launch intent for $packageName")
+            return false
         }
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+        return true
     }
 
     fun hasUsageAccess(): Boolean {

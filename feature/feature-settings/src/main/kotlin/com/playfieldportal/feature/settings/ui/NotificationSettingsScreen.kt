@@ -16,8 +16,8 @@ import com.playfieldportal.feature.settings.viewmodel.NotificationSettingsViewMo
  *
  * Deliberately small. The panel's real controls live in the panel itself (Mark All Read, Clear
  * Read, Clear All are one button press away there); what belongs here is the handful of choices a
- * user makes once: whether to record at all, whether to keep mirroring to the Android shade, and
- * how long the history is kept.
+ * user makes once: whether to record at all and how long the history is kept. (There is no shade
+ * mirror any more: PFP's notifications are launcher-only.)
  */
 @Composable
 fun NotificationSettingsScreen(
@@ -49,16 +49,6 @@ fun NotificationSettingsScreen(
                 focusKey = "notifications_enabled",
                 checked = state.enabled,
                 onToggle = { viewModel.setEnabled(it) },
-            )
-
-            // On by default. The shade is not being replaced — it simply cannot offer history,
-            // actions or a clear on a device whose home screen is this launcher.
-            SettingsToggleRow(
-                label = "Also Show in Android Shade",
-                sublabel = "Mirror background work to the system notification bar, as it has always been",
-                focusKey = "notifications_mirror",
-                checked = state.mirrorToShade,
-                onToggle = { viewModel.setMirrorToShade(it) },
             )
 
             SettingsGroup("History")
