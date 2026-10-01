@@ -3,6 +3,7 @@ package com.playfieldportal.feature.xmb.ui.detail
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GamepadAction
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -57,10 +58,23 @@ class GameDetailHelperFooterTest {
     }
 
     @Test
-    fun `the removal prompt says Remove and Cancel`() {
-        val state = baseState.copy(confirmRemove = true)
-
-        assertEquals(listOf("Remove", "Cancel"), labels(state))
+    fun `the footer steps aside for a shared modal, which carries its own hints`() {
+        assertTrue(gameDetailFooterVisible(baseState, showTouchControls = false))
+        assertFalse(gameDetailFooterVisible(baseState.copy(confirmRemove = true), showTouchControls = false))
+        assertFalse(gameDetailFooterVisible(baseState.copy(isEditingNote = true), showTouchControls = false))
+        assertFalse(gameDetailFooterVisible(baseState.copy(isEditingTitle = true), showTouchControls = false))
+        assertFalse(
+            gameDetailFooterVisible(
+                baseState.copy(
+                    collectionPicker = com.playfieldportal.feature.xmb.ui.collection.CollectionPickerUi(
+                        visible = true, showCreateDialog = true,
+                    ),
+                ),
+                showTouchControls = false,
+            ),
+        )
+        // Touch never shows it: the hints are for the pad.
+        assertFalse(gameDetailFooterVisible(baseState, showTouchControls = true))
     }
 
     @Test

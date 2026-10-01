@@ -81,6 +81,8 @@ class ShibaCoinsFolderMatchTest {
             achievements,
             mockk<AchievementAutoMatcher>(relaxed = true),
             linker,
+            // Ownership unknown: the flow starts at the copy question, as these tests expect.
+            mockk(relaxed = true),
         )
         viewModel.load(ShibaCoinsTarget.LibraryGame(gameId))
     }

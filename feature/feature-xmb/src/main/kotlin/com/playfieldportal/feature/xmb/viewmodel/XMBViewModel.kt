@@ -75,9 +75,11 @@ import com.playfieldportal.feature.launcher.LaunchSource
 import com.playfieldportal.feature.launcher.ResolvedLaunch
 import com.playfieldportal.feature.launcher.corePathFor
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
+import com.playfieldportal.feature.artwork.api.ScrapeProgress
 import com.playfieldportal.feature.artwork.api.relinkAll
 import com.playfieldportal.feature.library.scanner.LibraryScanner
 import com.playfieldportal.feature.library.scanner.ScanStatus
+import com.playfieldportal.feature.library.scanner.isScannable
 import com.playfieldportal.feature.library.scanner.scanOutcomeMessage
 import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
@@ -200,7 +202,16 @@ data class XMBContextMenu(
     // rather than closing. See the two-level Options menu in ShibaLibraryViewModel.
     val gamesFilterMenu: Boolean = false,
     val gamesFilterGroup: GamesFilterGroup? = null,
+    // The menu this one was opened from, exactly as it was left. Set on a second-level picker
+    // (Icon Display, Choose Emulator, Add to Collection…) so BACK climbs to it — see [afterBack].
+    val parent: XMBContextMenu? = null,
 )
+
+/**
+ * What BACK leaves on screen: the menu this one was opened from, cursor where it was left, or
+ * null — closed — when this is a root menu.
+ */
+internal fun XMBContextMenu.afterBack(): XMBContextMenu? = parent
 
 /** A second-level list inside the Games Filter menu, opened from its root row. */
 enum class GamesFilterGroup(val title: String) { SORT("Sort") }
@@ -214,6 +225,8 @@ data class XMBContextMenuItem(
     // The row's current setting, drawn dimmer and pinned to the panel's right edge. See
     // [com.playfieldportal.core.ui.components.PspMenuRow.value].
     val value: String? = null,
+    // A group name drawn above this row — set on the first row of each group.
+    val header: String? = null,
 )
 
 // How a media section names itself on screen — the memory card's own title, which is also what
@@ -5255,7 +5268,7 @@ class XMBViewModel @Inject constructor(
     )
 
     // Shown when an opened Memory Card has no games yet. Keeps the platformId so the
-    // context menu (Triangle) can still offer "Scan This Console".
+    // context menu (Triangle) can still offer "Scan for Games".
     private fun emptyFolderItem(platformId: String): XMBItem {
         // Android-style libraries pick installed apps instead of scanning folders.
         if (platformId == ANDROID_PLATFORM_ID) {
@@ -5678,11 +5691,15 @@ class XMBViewModel @Inject constructor(
                 GamepadAction.SELECT        -> activateContextMenuItem()
                 GamepadAction.BACK,
                 GamepadAction.OPEN_CONTEXT_MENU      ->
-                    // The Games Filter menu is the one menu here with a root worth returning to,
-                    // so BACK inside a group climbs one level instead of closing outright. Every
-                    // other submenu in the XMB is a one-shot picker, where closing IS the way out.
-                    if (state.activeContextMenu.gamesFilterGroup != null) openGamesFilterGroup(null)
-                    else closeContextMenu()
+                    // BACK inside a second level climbs one level instead of closing outright: a
+                    // Games Filter group returns to its root, and a picker opened from a menu
+                    // returns to that menu. Triangle is the way out from any depth.
+                    when {
+                        state.activeContextMenu.gamesFilterGroup != null -> openGamesFilterGroup(null)
+                        action == GamepadAction.BACK ->
+                            _uiState.update { it.copy(activeContextMenu = state.activeContextMenu.afterBack()) }
+                        else -> closeContextMenu()
+                    }
                 else -> Unit
             }
             return
@@ -6092,55 +6109,21 @@ class XMBViewModel @Inject constructor(
 
     private fun openPlatformContextMenu(platformId: String) {
         val card = enabledCards.firstOrNull { it.platformId == platformId } ?: return
-        val isAndroid = platformId == ANDROID_PLATFORM_ID
-        val items = buildList {
-            // Android libraries pick installed apps; consoles scan ROM folders.
-            if (isAndroid) add(XMBContextMenuItem("find_games", "Find Games"))
-            else           add(XMBContextMenuItem("scan_roms",  "Scan This Console"))
-            // The Windows card is import-driven — surface its Import PC Games section here too.
-            if (platformId == "windows") {
-                add(XMBContextMenuItem("import_pc_games", "Import PC Games"))
-                // Achievement tracking for emulated Windows games: one folder pick covers a whole
-                // library. Offered here as well as in settings because this is the card those games
-                // live on, and the card's own scan deliberately does no emulator work.
-                add(XMBContextMenuItem("batch_match_local", "Batch Match Local Games"))
-            }
-            add(XMBContextMenuItem("update_metadata",        "Update Metadata"))
-            add(XMBContextMenuItem("scrape_missing_artwork", "Scrape Missing Artwork"))
-            // Icon display for THIS console only. Games on other Memory Cards are untouched;
-            // "Use Global Setting" here clears the console's override.
-            add(XMBContextMenuItem("icon_display_platform", "Icon Display (${platformIconDisplayLabel(platformId)})"))
-            if (card.pinned) add(XMBContextMenuItem("unpin", "Unpin"))
-            else             add(XMBContextMenuItem("pin",   "Pin To Top"))
-            add(XMBContextMenuItem("library_manager",  "Open in Library Manager"))
-            add(XMBContextMenuItem("hide",             "Hide From Games"))
-            // The Windows Memory Card is managed by the PC import system and cannot be removed.
-            if (platformId != "windows") add(XMBContextMenuItem("remove", "Remove Memory Card", isDestructive = true))
-        }
-
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
                 title      = card.displayName,
-                items      = items,
+                items      = platformCardMenuItems(platformId, card.pinned, platformIconDisplayLabel(platformId)),
                 platformId = platformId,
             )
         )}
     }
 
-    // The "All Games" card isn't a real Memory Card, so it gets its own slim menu.
+    // The "All Games" card isn't a real Memory Card; its menu is the whole-library version of one.
     private fun openAllGamesContextMenu() {
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
                 title      = "All Games",
-                items      = listOf(
-                    // Scanning (missing-ROM pass, full re-scan) lives in the Library settings.
-                    XMBContextMenuItem("library_manager", "Manage Library"),
-                    XMBContextMenuItem("import_pc_games", "Import PC Games"),
-                    // Full-library Scan & Relink from the card the whole collection lives on
-                    // (C22 task T3). Runs as a worker, so it survives leaving this screen.
-                    XMBContextMenuItem("relink_artwork", "Relink Artwork"),
-                    XMBContextMenuItem("icon_display_global", "Icon Display (${it.iconDisplayMode.label})"),
-                ),
+                items      = allGamesMenuItems(it.iconDisplayMode.label),
                 isAllGames = true,
             )
         )}
@@ -6156,7 +6139,7 @@ class XMBViewModel @Inject constructor(
 
     // Second-level menu: the icon display mode for ONE console. "Use Global Setting" clears the
     // override so the card follows the global mode again; per-game overrides still win.
-    private fun openPlatformIconDisplayPickerMenu(platformId: String) {
+    private fun openPlatformIconDisplayPickerMenu(platformId: String, parent: XMBContextMenu? = null) {
         val state = _uiState.value
         val override = state.iconDisplayModeByPlatform[platformId]
         val items = buildList {
@@ -6174,13 +6157,14 @@ class XMBViewModel @Inject constructor(
                 title      = "Icon Display",
                 items      = items,
                 platformId = platformId,   // routes selection through the platform handler branch
+                parent     = parent,
             )
         )}
     }
 
     // Second-level menu: the GLOBAL icon display mode (mirrors Artwork Settings ▸ Game Icon
     // Display). Per-game and per-console overrides keep winning; everything else follows live.
-    private fun openGlobalIconDisplayPickerMenu() {
+    private fun openGlobalIconDisplayPickerMenu(parent: XMBContextMenu? = null) {
         val current = _uiState.value.iconDisplayMode
         val items = IconDisplayMode.entries.map { mode ->
             XMBContextMenuItem("gicondisp_${mode.name}", mode.label, checked = mode == current)
@@ -6190,6 +6174,7 @@ class XMBViewModel @Inject constructor(
                 title      = "Icon Display",
                 items      = items,
                 isAllGames = true,   // routes selection through the All Games handler branch
+                parent     = parent,
             )
         )}
     }
@@ -6333,7 +6318,7 @@ class XMBViewModel @Inject constructor(
     // Second-level menu: the collections a game can be added to (checkmarks show current
     // membership), plus "Create New Collection". Opened from the game options menu. The menu
     // stays open while toggling so the user can add to several collections at once.
-    private fun openCollectionPicker(gameId: Long, selectIndex: Int = 0) {
+    private fun openCollectionPicker(gameId: Long, selectIndex: Int = 0, parent: XMBContextMenu? = null) {
         viewModelScope.launch {
             val collections = collectionRepository.getAll()
             val memberOf = collectionRepository.getCollectionIdsForGame(gameId).toSet()
@@ -6354,6 +6339,7 @@ class XMBViewModel @Inject constructor(
                     selectedIndex    = selectIndex.coerceIn(0, items.lastIndex.coerceAtLeast(0)),
                     gameId           = gameId,
                     collectionGameId = gameId,
+                    parent           = parent,
                 )
             )}
         }
@@ -6514,7 +6500,7 @@ class XMBViewModel @Inject constructor(
                     viewModelScope.launch {
                         collectionRepository.toggleGame(collectionId, gameId)
                         // Re-open so the checkmark reflects the new membership.
-                        openCollectionPicker(gameId, keepIndex)
+                        openCollectionPicker(gameId, keepIndex, menu.parent)
                     }
                 }
             }
@@ -6654,10 +6640,13 @@ class XMBViewModel @Inject constructor(
                 }
             } else when (itemId) {
                 "library_manager" -> _uiState.update { it.copy(activeSettingsScreen = "settings_library") }
-                "import_pc_games" -> _uiState.update { it.copy(activeSettingsScreen = "settings_import_pc") }
+                // The same rows a platform card offers, over every card at once.
+                "scan_all"               -> scanAllCards()
+                "update_metadata"        -> updateMetadata(platformId = null)
+                "scrape_missing_artwork" -> scrapeMissingArtwork(platformId = null)
                 // Progress lands in the notification panel, not here.
                 "relink_artwork" -> artworkRelinkLauncher.relinkAll()
-                "icon_display_global" -> openGlobalIconDisplayPickerMenu()
+                "icon_display_global" -> openGlobalIconDisplayPickerMenu(parent = menu)
             }
             menu.platformId != null -> if (itemId.startsWith("picondisp_")) {
                 // Icon display picked for this console ("default" clears the console override so
@@ -6672,10 +6661,10 @@ class XMBViewModel @Inject constructor(
                 "import_pc_games"  -> _uiState.update { it.copy(activeSettingsScreen = "settings_import_pc") }
                 // The shell owns the SAF launcher, so this only raises the request.
                 "batch_match_local" -> _uiState.update { it.copy(requestLocalSteamFolderPick = true) }
-                "icon_display_platform" -> openPlatformIconDisplayPickerMenu(menu.platformId)
+                "icon_display_platform" -> openPlatformIconDisplayPickerMenu(menu.platformId, parent = menu)
                 "scan_roms"        -> scanCard(menu.platformId)
-                "scrape_missing_artwork" -> scrapeMissingArtworkForPlatform(menu.platformId)
-                "update_metadata"        -> updatePlatformMetadata(menu.platformId)
+                "scrape_missing_artwork" -> scrapeMissingArtwork(menu.platformId)
+                "update_metadata"        -> updateMetadata(menu.platformId)
                 "pin"              -> setCardPinned(menu.platformId, true)
                 "unpin"            -> setCardPinned(menu.platformId, false)
                 "library_manager"  -> _uiState.update { it.copy(activeSettingsScreen = "settings_library") }
@@ -6711,7 +6700,7 @@ class XMBViewModel @Inject constructor(
                 "game_details"           -> _uiState.update {
                     it.copy(activeGameId = menu.gameId, activeGameAutoLaunch = false)
                 }
-                "choose_disc"             -> openDiscPickerMenu(menu.gameId)
+                "choose_disc"             -> openDiscPickerMenu(menu.gameId, parent = menu)
                 "view_shiba_coins"       -> _uiState.update {
                     it.copy(activeShibaCoinsTarget = com.playfieldportal.feature.xmb.ui.detail.ShibaCoinsTarget.LibraryGame(menu.gameId))
                 }
@@ -6720,7 +6709,7 @@ class XMBViewModel @Inject constructor(
                 "edit_app"               -> openAppDetail(menu.gameId, menu.packageName ?: return)
                 "favorite"               -> toggleGameFavorite(menu.gameId, true)
                 "unfavorite"             -> toggleGameFavorite(menu.gameId, false)
-                "add_to_collection"      -> openCollectionPicker(menu.gameId)
+                "add_to_collection"      -> openCollectionPicker(menu.gameId, parent = menu)
                 "remove_from_collection" -> {
                     val gid = menu.gameId   // local val so it smart-casts inside the lambda
                     _uiState.value.selectedCollectionId?.let { cid ->
@@ -6728,8 +6717,8 @@ class XMBViewModel @Inject constructor(
                     }
                 }
                 "manage_collections"     -> _uiState.update { it.copy(activeSettingsScreen = "settings_collections") }
-                "add_category"           -> menu.categoryContext?.let { openGameCategoryPicker(menu.gameId, it, "add") }
-                "move_category"          -> menu.categoryContext?.let { openGameCategoryPicker(menu.gameId, it, "move") }
+                "add_category"           -> menu.categoryContext?.let { openGameCategoryPicker(menu.gameId, it, "add", menu) }
+                "move_category"          -> menu.categoryContext?.let { openGameCategoryPicker(menu.gameId, it, "move", menu) }
                 "remove_category"        -> menu.categoryContext?.let { cat ->
                     val gid = menu.gameId
                     appAction {
@@ -6752,8 +6741,8 @@ class XMBViewModel @Inject constructor(
                     }
                 }
                 "file_location"          -> showGameFileLocation(menu.gameId)
-                "change_emulator"        -> openEmulatorPickerMenu(menu.gameId)
-                "icon_display"           -> openIconDisplayPickerMenu(menu.gameId)
+                "change_emulator"        -> openEmulatorPickerMenu(menu.gameId, parent = menu)
+                "icon_display"           -> openIconDisplayPickerMenu(menu.gameId, parent = menu)
                 "fetch_artwork"          -> fetchArtworkFromMenu(menu.gameId)
                 // Two-step delete: a confirm menu first, matching the Game Detail page's guard.
                 "remove_game"            -> _uiState.update { it.copy(activeContextMenu = XMBContextMenu(
@@ -6867,7 +6856,7 @@ class XMBViewModel @Inject constructor(
     // dispatches "emu_pick_<profileId>" (or "emu_pick_default" to clear the per-game override).
     // Second-level menu: how this game's XMB tile is drawn. Checkmark shows the current choice;
     // "Use Global Setting" clears the per-game override.
-    private fun openIconDisplayPickerMenu(gameId: Long) {
+    private fun openIconDisplayPickerMenu(gameId: Long, parent: XMBContextMenu? = null) {
         viewModelScope.launch {
             val game = gameRepository.getById(gameId) ?: return@launch
             val override = IconDisplayMode.fromName(game.iconDisplayMode)
@@ -6888,11 +6877,12 @@ class XMBViewModel @Inject constructor(
                 title  = "Icon Display",
                 items  = items,
                 gameId = gameId,
+                parent = parent,
             ))}
         }
     }
 
-    private fun openEmulatorPickerMenu(gameId: Long) {
+    private fun openEmulatorPickerMenu(gameId: Long, parent: XMBContextMenu? = null) {
         viewModelScope.launch {
             val game = gameRepository.getById(gameId) ?: return@launch
             val profiles = emulatorProfileRepository.getProfilesForPlatform(game.platformId)
@@ -6904,6 +6894,7 @@ class XMBViewModel @Inject constructor(
                 title  = "Choose Emulator",
                 items  = items,
                 gameId = gameId,
+                parent = parent,
             ))}
         }
     }
@@ -6911,7 +6902,7 @@ class XMBViewModel @Inject constructor(
     // Second-level menu: the discs of a multi-disc set. Picking one boots that disc directly
     // (direct-launch-consistent — the Game Detail picker remains the select-then-play path). The
     // primary row is marked, matching the detail page's default selection.
-    private fun openDiscPickerMenu(gameId: Long) {
+    private fun openDiscPickerMenu(gameId: Long, parent: XMBContextMenu? = null) {
         viewModelScope.launch {
             val game = gameRepository.getById(gameId) ?: return@launch
             val key = game.discSetKey ?: return@launch
@@ -6931,6 +6922,7 @@ class XMBViewModel @Inject constructor(
                 title  = "Choose Disc",
                 items  = items,
                 gameId = gameId,
+                parent = parent,
             ))}
         }
     }
@@ -7347,7 +7339,12 @@ class XMBViewModel @Inject constructor(
     // Shows a menu of other gaming categories for moving/adding a game. Main Game is never a
     // destination for an individual game — every game already lives there via its platform, so
     // moving a game "to Main Game" is redundant (and would only leave a stray junction row).
-    private fun openGameCategoryPicker(gameId: Long, fromCategoryId: String, action: String) {
+    private fun openGameCategoryPicker(
+        gameId: Long,
+        fromCategoryId: String,
+        action: String,
+        parent: XMBContextMenu? = null,
+    ) {
         val items = buildList {
             _uiState.value.categories
                 .filter { it.isGamingCategory && it.id != fromCategoryId && it.id != BuiltInCategory.GAMES }
@@ -7365,6 +7362,7 @@ class XMBViewModel @Inject constructor(
                 gameId      = gameId,
                 categoryContext = fromCategoryId,
                 pendingAppAction = action,  // reuse this field to store the action type
+                parent      = parent,
             )
         )}
     }
@@ -7421,7 +7419,7 @@ class XMBViewModel @Inject constructor(
 
             // The Windows card runs the full PC pass (pin sweep incl. pins never added, the
             // <windows>/import exports, emu folder reconcile) — extension scanning means nothing
-            // to it, and "Scan This Console" must behave exactly like the Library Manager action.
+            // to it, and "Scan for Games" must behave exactly like the Library Manager action.
             if (platformId == WINDOWS_PLATFORM_ID) {
                 addBackgroundTask(
                     BackgroundTaskInfo(id = taskId, label = "Scanning ${card.displayName}…", kind = TaskKind.SCAN)
@@ -7440,7 +7438,7 @@ class XMBViewModel @Inject constructor(
                     )
                     // No emulator work here, by design. Scanning for Steam-emu folders under the
                     // windows surfaces meant walking trees the game folders are no longer under;
-                    // they are pointed at once through Batch Match Local Games instead, which is
+                    // they are pointed at once through Match Achievements instead, which is
                     // its own item on this same context menu.
                 }
                 return@launch
@@ -7472,15 +7470,61 @@ class XMBViewModel @Inject constructor(
     private fun cardName(platformId: String): String =
         enabledCards.firstOrNull { it.platformId == platformId }?.displayName ?: platformId.uppercase()
 
-    // Scans this card's games for missing/broken primary artwork and scrapes only those —
-    // valid artwork is never re-downloaded or overwritten.
-    private fun scrapeMissingArtworkForPlatform(platformId: String) {
+    // The scope a card job names in its tray row, and where tapping that row leads. A null
+    // platform is the All Games card: every card at once, with no single card to open.
+    private fun jobScopeName(platformId: String?): String = platformId?.let(::cardName) ?: "All Games"
+
+    private fun jobScopeAction(platformId: String?): NotificationAction =
+        platformId?.let { NotificationAction.OpenMemoryCard(it) } ?: NotificationAction.None
+
+    // Scan All Cards: every enabled card that has something to scan, one after another, as ONE
+    // tray row. A per-card row each would bury the tray and ring once per console.
+    private fun scanAllCards() {
         viewModelScope.launch {
-            val taskId = "scrape_missing_$platformId"
+            val cards = enabledCards.filter { it.platformId == WINDOWS_PLATFORM_ID || it.isScannable() }
+            val taskId = "scan_all"
+            addBackgroundTask(
+                BackgroundTaskInfo(id = taskId, label = "Scanning all Memory Cards…", kind = TaskKind.SCAN)
+            )
+            if (cards.isEmpty()) {
+                failBackgroundTask(taskId, "No Memory Card has a folder to scan")
+                return@launch
+            }
+            var added = 0
+            var failed = 0
+            cards.forEachIndexed { index, card ->
+                updateBackgroundTask(taskId, index + 1, cards.size, card.displayName)
+                // The same pass each card's own Scan for Games runs — see scanCard.
+                if (card.platformId == WINDOWS_PLATFORM_ID) {
+                    val report = runCatching { pcGameScanner.scan() }
+                        .onFailure {
+                            if (it is kotlinx.coroutines.CancellationException) throw it
+                            Timber.e(it, "PC scan failed")
+                        }
+                        .getOrNull()
+                    if (report == null) failed++ else {
+                        memoryCardRepository.recordScan(card.platformId, System.currentTimeMillis())
+                        added += report.newGames
+                    }
+                } else {
+                    val outcome = libraryScanner.scanPlatform(card.platformId, removeMissing = true)
+                    if (outcome.status == ScanStatus.COMPLETED) added += outcome.added else failed++
+                }
+            }
+            val summary = scanAllSummary(added, cards.size, failed)
+            if (failed == cards.size) failBackgroundTask(taskId, summary) else completeBackgroundTask(taskId, summary)
+        }
+    }
+
+    // Scans this card's games — or, from All Games, every game — for missing/broken primary
+    // artwork and fetches only those. Valid artwork is never re-downloaded or overwritten.
+    private fun scrapeMissingArtwork(platformId: String?) {
+        viewModelScope.launch {
+            val taskId = "scrape_missing_${platformId ?: "all"}"
             addBackgroundTask(
                 BackgroundTaskInfo(
                     id = taskId,
-                    label = "Scraping missing artwork: ${cardName(platformId)}",
+                    label = "Fetching missing artwork: ${jobScopeName(platformId)}",
                     kind = TaskKind.ARTWORK,
                 )
             )
@@ -7488,50 +7532,58 @@ class XMBViewModel @Inject constructor(
                 // ScrapeProgress is the richest producer in the app: counts, per-item tallies and
                 // the title being fetched. All three reach the row now instead of being divided
                 // into a fraction and dropped.
-                artworkRepository.scrapeMissingForPlatform(platformId) { p ->
+                val onProgress: (ScrapeProgress) -> Unit = { p ->
                     updateBackgroundTask(taskId, p.current, p.total, p.title)
                 }
+                if (platformId == null) artworkRepository.scrapeMissingOnly(onProgress)
+                else artworkRepository.scrapeMissingForPlatform(platformId, onProgress)
             }.onSuccess { result ->
                 completeBackgroundTask(
                     taskId,
                     if (result.total == 0) "No games are missing artwork"
                     else "${result.succeeded} of ${result.total} game(s) updated",
-                    NotificationAction.OpenMemoryCard(platformId),
+                    jobScopeAction(platformId),
                 )
                 loadItemsForCategory(currentCategory())
             }.onFailure {
                 if (it is kotlinx.coroutines.CancellationException) throw it
-                failBackgroundTask(taskId, "Artwork scrape failed", NotificationAction.OpenMemoryCard(platformId))
+                failBackgroundTask(taskId, "Artwork fetch failed", jobScopeAction(platformId))
             }
         }
     }
 
-    // Text-only metadata pass over the card's games — artwork files and columns are untouched.
-    private fun updatePlatformMetadata(platformId: String) {
+    // Text-only metadata pass over the card's games — or, from All Games, every real game.
+    // Artwork files and columns are untouched.
+    private fun updateMetadata(platformId: String?) {
         viewModelScope.launch {
-            val taskId = "update_metadata_$platformId"
+            val taskId = "update_metadata_${platformId ?: "all"}"
             addBackgroundTask(
                 BackgroundTaskInfo(
                     id = taskId,
-                    label = "Updating metadata: ${cardName(platformId)}",
+                    label = "Updating metadata: ${jobScopeName(platformId)}",
                     kind = TaskKind.METADATA,
                 )
             )
             runCatching {
-                artworkRepository.updateMetadataForPlatform(platformId) { p ->
+                val onProgress: (ScrapeProgress) -> Unit = { p ->
                     updateBackgroundTask(taskId, p.current, p.total)
                 }
+                if (platformId == null) artworkRepository.updateMetadataForAllGames(onProgress)
+                else artworkRepository.updateMetadataForPlatform(platformId, onProgress)
             }.onSuccess { result ->
                 completeBackgroundTask(
                     taskId,
-                    if (result.total == 0) "No games on this card"
-                    else "${result.succeeded} of ${result.total} game(s) updated",
-                    NotificationAction.OpenMemoryCard(platformId),
+                    when {
+                        result.total > 0 -> "${result.succeeded} of ${result.total} game(s) updated"
+                        platformId == null -> "No games in the library"
+                        else -> "No games on this card"
+                    },
+                    jobScopeAction(platformId),
                 )
                 loadItemsForCategory(currentCategory())
             }.onFailure {
                 if (it is kotlinx.coroutines.CancellationException) throw it
-                failBackgroundTask(taskId, "Metadata update failed", NotificationAction.OpenMemoryCard(platformId))
+                failBackgroundTask(taskId, "Metadata update failed", jobScopeAction(platformId))
             }
         }
     }

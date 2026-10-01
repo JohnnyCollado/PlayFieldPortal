@@ -29,12 +29,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -74,6 +68,9 @@ import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.feature.xmb.ui.DetailContextMenu
 import com.playfieldportal.feature.xmb.ui.DetailMenuRow
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerPanel
+import com.playfieldportal.feature.xmb.ui.collection.collectionNameModalSpec
+import com.playfieldportal.core.ui.components.PfpModalSpec
+import com.playfieldportal.core.ui.components.rememberPfpModalHost
 import com.playfieldportal.feature.xmb.ui.detail.ArtworkType
 import com.playfieldportal.feature.xmb.ui.detail.displayLabel
 import com.playfieldportal.core.ui.detail.DetailRowSpacing
@@ -130,9 +127,23 @@ fun AppDetailScreen(
             onBack()
         }
     }
+    // Change Display Name and New Collection are the shared text entry modal. Its cursor and the
+    // text being typed live in the host, so a press goes there first while one is up and only
+    // otherwise reaches the page.
+    val modal = rememberPfpModalHost(
+        spec = appDetailModalSpec(
+            state = state,
+            onSaveName = viewModel::confirmNameEdit,
+            onCancelName = viewModel::cancelNameEdit,
+            onCreateCollection = viewModel::confirmCreateCollection,
+            onCancelCreateCollection = viewModel::cancelCreateCollection,
+        ),
+        // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
+        showHints = !showTouchControls,
+    )
     LaunchedEffect(pendingGamepadAction) {
         if (pendingGamepadAction != null) {
-            viewModel.handleGamepadAction(pendingGamepadAction)
+            if (!modal.intercept(pendingGamepadAction)) viewModel.handleGamepadAction(pendingGamepadAction)
             onGamepadActionConsumed()
         }
     }
@@ -172,7 +183,8 @@ fun AppDetailScreen(
         footer = {
             PfpDetailHelperFooter(
                 items = appDetailHelperItems(),
-                visible = !showTouchControls,
+                // A shared modal draws its own hints under its card.
+                visible = !showTouchControls && !modal.open,
             )
         },
         overlay = {
@@ -194,26 +206,6 @@ fun AppDetailScreen(
                 onRowClick = { viewModel.activateOption(AppDetailOption.ARTWORK_MENU[it]) },
                 onDismiss = viewModel::closeMenus,
             )
-        }
-
-        // Name editor overlay
-        AnimatedVisibility(
-            visible = state.isEditingName,
-            enter   = fadeIn(),
-            exit    = fadeOut(),
-        ) {
-            Box(
-                Modifier.fillMaxSize().background(Color(0xCC000000)),
-                contentAlignment = Alignment.Center,
-            ) {
-                AppNameEditor(
-                    text      = state.nameText,
-                    onChange  = viewModel::onNameTextChanged,
-                    onSave    = viewModel::confirmNameEdit,
-                    onReset   = viewModel::resetNameToDefault,
-                    onCancel  = viewModel::cancelNameEdit,
-                )
-            }
         }
 
         // Artwork picker overlay
@@ -241,11 +233,11 @@ fun AppDetailScreen(
                 ui                  = state.collectionPicker,
                 onRowClick          = viewModel::onCollectionRowClick,
                 onClose             = viewModel::closeCollectionPicker,
-                onCreateTextChanged = viewModel::onCreateCollectionTextChanged,
-                onConfirmCreate     = viewModel::confirmCreateCollection,
-                onCancelCreate      = viewModel::cancelCreateCollection,
             )
         }
+
+        // Change Display Name and New Collection. Last, so it draws over every other overlay.
+        modal.Content()
         },
     ) {
         Spacer(Modifier.height(16.dp))
@@ -506,63 +498,34 @@ private fun AppArtworkPicker(
     }
 }
 
-@Composable
-private fun AppNameEditor(
-    text: String,
-    onChange: (String) -> Unit,
-    onSave: () -> Unit,
-    onReset: () -> Unit,
-    onCancel: () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .widthIn(max = 480.dp)
-            .fillMaxWidth(0.9f)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xF20A0A14))
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text("Change Display Name", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-        Text(
-            "Sets the display name used in the launcher and for artwork scraping.",
-            color    = TextMuted,
-            fontSize = 11.sp,
+/**
+ * Which shared modal the page is showing, if any — checked in the same order the view model checks
+ * these states, so the modal on screen is the one being driven. Clearing the display name drops
+ * the override; the placeholder shows the name that comes back.
+ *
+ * Internal and free of composition so the mapping from UI state to modal can be tested directly.
+ */
+internal fun appDetailModalSpec(
+    state: AppDetailUiState,
+    onSaveName: (String) -> Unit,
+    onCancelName: () -> Unit,
+    onCreateCollection: (String) -> Unit,
+    onCancelCreateCollection: () -> Unit,
+): PfpModalSpec? {
+    val app = state.game ?: return null
+    return when {
+        state.isEditingName -> PfpModalSpec.TextEntry(
+            key = "display_name:${app.id}",
+            title = "Change Display Name",
+            initial = app.displayTitle,
+            placeholder = app.scrapedTitle ?: app.title,
+            allowBlank = true,
+            onConfirm = onSaveName,
+            onCancel = onCancelName,
         )
-        OutlinedTextField(
-            value          = text,
-            onValueChange  = onChange,
-            label          = { Text("Display Name", color = TextMuted) },
-            modifier       = Modifier.fillMaxWidth(),
-            colors         = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor   = menuCursorEdge(),
-                unfocusedBorderColor = Color(0x44FFFFFF),
-                focusedTextColor     = TextPrimary,
-                unfocusedTextColor   = TextPrimary,
-                cursorColor          = menuCursorEdge(),
-            ),
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.Words,
-                imeAction      = ImeAction.Done,
-            ),
-            keyboardActions = KeyboardActions(onDone = { onSave() }),
-            singleLine      = true,
-        )
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment     = Alignment.CenterVertically,
-        ) {
-            TextButton(onClick = onReset) {
-                Text("Reset to Default", color = TextMuted, fontSize = 12.sp)
-            }
-            Row {
-                TextButton(onClick = onCancel) { Text("Cancel", color = TextMuted) }
-                TextButton(onClick = onSave) {
-                    Text("Save", color = menuCursorEdge(), fontWeight = FontWeight.SemiBold)
-                }
-            }
-        }
+        state.collectionPicker.showCreateDialog ->
+            collectionNameModalSpec(onCreate = onCreateCollection, onCancel = onCancelCreateCollection)
+        else -> null
     }
 }
 

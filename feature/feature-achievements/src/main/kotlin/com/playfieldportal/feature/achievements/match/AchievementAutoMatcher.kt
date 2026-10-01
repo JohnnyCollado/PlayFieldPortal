@@ -11,6 +11,7 @@ import com.playfieldportal.feature.achievements.provider.ps3.Ps3TropDirReader
 import com.playfieldportal.feature.achievements.provider.retro.RaHashLookup
 import com.playfieldportal.feature.achievements.provider.retro.RaHashResolver
 import com.playfieldportal.feature.achievements.provider.steam.SteamShortcut
+import com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate
 import kotlinx.coroutines.flow.first
 import timber.log.Timber
 import javax.inject.Inject
@@ -50,10 +51,12 @@ class AchievementAutoMatcher @Inject constructor(
     private val steamNames: com.playfieldportal.feature.achievements.provider.steam.SteamAppListResolver,
     private val ps3TropDirReader: com.playfieldportal.feature.achievements.provider.ps3.Ps3TropDirReader,
     private val ps3TrophyDiscovery: com.playfieldportal.feature.achievements.provider.ps3.Ps3TrophyDiscovery,
+    private val steamGate: WindowsSteamGate,
 ) {
     private sealed interface Outcome {
         data object Matched : Outcome
-        data class Unmatched(val reason: String) : Outcome
+        /** [ownReason]: the reason already says what to do, and a caller must not reword it. */
+        data class Unmatched(val reason: String, val ownReason: Boolean = false) : Outcome
     }
 
     // How the ROM/disc hashing step turned out, so the failure reason can name the actual cause.
@@ -102,7 +105,9 @@ class AchievementAutoMatcher @Inject constructor(
      */
     suspend fun matchSingleAsSteam(gameId: Long): Boolean {
         val game = gameRepository.getById(gameId) ?: return false
-        return matchSteam(game) is Outcome.Matched
+        // The user just said this is their Steam copy — family-shared and hidden games are missing
+        // from the owned list — so their answer is not checked against it.
+        return matchSteam(game, ownershipChecked = false) is Outcome.Matched
     }
 
     /** Outcome of the explicit per-game RetroAchievements hash match. */
@@ -287,7 +292,7 @@ class AchievementAutoMatcher @Inject constructor(
     // Windows games are folder-first (docs/windows-library-refactor-plan.md section 5): an
     // emu-marked game folder mapping to this game by normalized title links LOCAL_STEAM with the
     // folder's own appid — no guessing — and gets its ownership classified. No folder means the
-    // copy is launcher-managed ("most likely legit") and the STEAM ladder decides.
+    // STEAM ladder decides, and it links only a game in the user's Steam library.
     private suspend fun matchWindows(game: Game): Outcome {
         emuFolders().firstOrNull { folder ->
             steamTitleCandidates(game).any { normalizePc(it) == normalizePc(folder.folderName) }
@@ -296,8 +301,8 @@ class AchievementAutoMatcher @Inject constructor(
             localSteamOwnership.classify(game.id, folder.appId)
             return Outcome.Matched
         }
-        val steam = matchSteam(game)
-        if (steam is Outcome.Unmatched) {
+        val steam = matchSteam(game, ownershipChecked = true)
+        if (steam is Outcome.Unmatched && !steam.ownReason) {
             return Outcome.Unmatched(
                 "Not found on Steam, and no Steam-emulator data in your windows game folders " +
                     "(a DRM-free or non-Steam copy has no achievement data)",
@@ -316,23 +321,41 @@ class AchievementAutoMatcher @Inject constructor(
 
     // Steam PC games resolve down a ladder: the appid the shortcut already carries (deterministic),
     // then SteamGridDB's platform data (if we have an SGDB id), then the title match.
-    private suspend fun matchSteam(game: Game): Outcome {
-        SteamShortcut.appIdFrom(game)?.let { appId ->
-            repository.linkManually(game.id, AchievementProvider.STEAM, appId)
+    //
+    // With [ownershipChecked], a found appid links only when the user owns it ([WindowsSteamGate]):
+    // Steam serves nothing for a game not on the account. The first appid found is the answer — a
+    // lower rung is never tried to get round a refusal.
+    private suspend fun matchSteam(game: Game, ownershipChecked: Boolean): Outcome {
+        val found = SteamShortcut.appIdFrom(game)
+            ?: game.steamGridDbId?.let { steamGridDb.getSteamAppId(it) }
+        if (found != null) {
+            if (ownershipChecked) steamRefusal(found)?.let { return it }
+            repository.linkManually(game.id, AchievementProvider.STEAM, found)
             return Outcome.Matched
-        }
-        game.steamGridDbId?.let { sgdbId ->
-            steamGridDb.getSteamAppId(sgdbId)?.let { appId ->
-                repository.linkManually(game.id, AchievementProvider.STEAM, appId)
-                return Outcome.Matched
-            }
         }
         // Try each title variant — a user's shortened display override (e.g. "Resonance of Fate")
         // must not hide the full store name ("RESONANCE OF FATE.../4K/HD EDITION") that Steam lists.
         for (title in steamTitleCandidates(game)) {
+            if (ownershipChecked) {
+                val appId = steamNames.resolveAppId(title) ?: continue
+                steamRefusal(appId)?.let { return it }
+            }
             if (repository.resolveSteamLink(game.id, title) != null) return Outcome.Matched
         }
         return Outcome.Unmatched("Not found on Steam (no embedded appid, no SteamGridDB or title match)")
+    }
+
+    /** Why [appId] may not be linked to Steam without asking, or null when the user owns it. */
+    private suspend fun steamRefusal(appId: String): Outcome.Unmatched? = when (steamGate.verdict(appId)) {
+        WindowsSteamGate.Verdict.OWNED -> null
+        WindowsSteamGate.Verdict.LOCAL -> Outcome.Unmatched(
+            "Not in your Steam library — open its achievements to pick the game's folder",
+            ownReason = true,
+        )
+        WindowsSteamGate.Verdict.UNKNOWN -> Outcome.Unmatched(
+            "Couldn't check your Steam library — open its achievements and say whether it's a legit Steam copy",
+            ownReason = true,
+        )
     }
 
     // Full title first (most complete), then any scraped title, then the display override.

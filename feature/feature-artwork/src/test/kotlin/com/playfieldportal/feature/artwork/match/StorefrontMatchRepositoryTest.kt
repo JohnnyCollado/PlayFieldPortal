@@ -88,6 +88,140 @@ class StorefrontMatchRepositoryTest {
         coVerify { resolver.resolve(any(), allowAutoLink = false, ignoreStoredIdentity = true) }
     }
 
+    // -- More than one store ---------------------------------------------------
+
+    private fun needsChoice(store: Storefront, id: String, title: String) =
+        StorefrontMetadataResolver.Resolution.NeedsConfirmation(
+            StorefrontMatchResult(
+                store = store,
+                confidence = MatchConfidence.AMBIGUOUS,
+                best = ScoredStorefrontCandidate(StorefrontCandidate(store, id, title), listOf(MatchSignal.EXACT_TITLE)),
+            )
+        )
+
+    @Test
+    fun `every store with something to choose is offered, in the order the stores are asked`() = runTest {
+        coEvery { gameDao.getById(1L) } returns game()
+        coEvery { resolver.resolve(any(), any(), any(), any(), any()) } returns resolution(
+            Storefront.STEAM to needsChoice(Storefront.STEAM, "379720", "DOOM"),
+            Storefront.GOG to needsChoice(Storefront.GOG, "1390579243", "DOOM (2016)"),
+        )
+
+        val lookup = repo.lookup(1L) as StorefrontMatchRepository.Lookup.NeedsChoice
+
+        assertEquals(listOf(Storefront.STEAM, Storefront.GOG), lookup.pending.map { it.store })
+    }
+
+    @Test
+    fun `a store that could not be reached is named beside the one that needs a choice`() = runTest {
+        // Steam having candidates must not hide that GOG timed out: read on its own, a picker
+        // showing only Steam says "GOG has nothing", which is a different thing and the wrong one.
+        coEvery { gameDao.getById(1L) } returns game()
+        coEvery { resolver.resolve(any(), any(), any(), any(), any()) } returns resolution(
+            Storefront.STEAM to needsChoice(Storefront.STEAM, "379720", "DOOM"),
+            Storefront.GOG to StorefrontMetadataResolver.Resolution.Unavailable(
+                Storefront.GOG,
+                StorefrontOutcome.Failure(StorefrontFailure.NETWORK_ERROR),
+            ),
+        )
+
+        val lookup = repo.lookup(1L) as StorefrontMatchRepository.Lookup.NeedsChoice
+
+        assertEquals(listOf(Storefront.STEAM), lookup.pending.map { it.store })
+        assertEquals(listOf(Storefront.GOG), lookup.unavailable)
+    }
+
+    @Test
+    fun `a store already linked is named beside the one that needs a choice`() = runTest {
+        coEvery { gameDao.getById(1L) } returns game()
+        coEvery { resolver.resolve(any(), any(), any(), any(), any()) } returns resolution(
+            Storefront.STEAM to StorefrontMetadataResolver.Resolution.Linked(
+                identity = StorefrontIdentityRecord(Storefront.STEAM, "379720", resolvedTitle = "DOOM"),
+                preset = MetadataPreset(provider = MatchProvider.STEAM, title = "DOOM"),
+                newlyLinked = false,
+            ),
+            Storefront.GOG to needsChoice(Storefront.GOG, "1390579243", "DOOM (2016)"),
+        )
+
+        val lookup = repo.lookup(1L) as StorefrontMatchRepository.Lookup.NeedsChoice
+
+        assertEquals(listOf(Storefront.GOG), lookup.pending.map { it.store })
+        assertEquals(listOf("379720"), lookup.settled.map { it.record.storeId })
+    }
+
+    @Test
+    fun `a lookup for one store asks that store only`() = runTest {
+        // Replace on the Steam row must not look past a GOG link the user is happy with.
+        coEvery { gameDao.getById(1L) } returns game()
+        coEvery { resolver.resolve(any(), any(), any(), any(), any()) } returns resolution()
+
+        repo.lookup(1L, ignoreStoredIdentity = true, store = Storefront.STEAM)
+
+        coVerify {
+            resolver.resolve(
+                any(),
+                allowAutoLink = false,
+                ignoreStoredIdentity = true,
+                titleOverride = null,
+                stores = setOf(Storefront.STEAM),
+            )
+        }
+    }
+
+    @Test
+    fun `a lookup with no store named asks them all`() = runTest {
+        coEvery { gameDao.getById(1L) } returns game()
+        coEvery { resolver.resolve(any(), any(), any(), any(), any()) } returns resolution()
+
+        repo.lookup(1L)
+
+        coVerify { resolver.resolve(any(), allowAutoLink = false, ignoreStoredIdentity = false, titleOverride = null, stores = null) }
+    }
+
+    // -- A name the user typed -------------------------------------------------
+
+    @Test
+    fun `a typed name is handed to the resolver and always looks past the stored id`() = runTest {
+        coEvery { gameDao.getById(1L) } returns game()
+        coEvery { resolver.resolve(any(), any(), any(), any()) } returns resolution()
+
+        repo.lookup(1L, query = "  Bravely Default ")
+
+        coVerify {
+            resolver.resolve(any(), allowAutoLink = false, ignoreStoredIdentity = true, titleOverride = "Bravely Default")
+        }
+    }
+
+    @Test
+    fun `a blank search is no search at all`() = runTest {
+        coEvery { gameDao.getById(1L) } returns game()
+        coEvery { resolver.resolve(any(), any(), any(), any()) } returns resolution()
+
+        repo.lookup(1L, query = "   ")
+
+        coVerify {
+            resolver.resolve(any(), allowAutoLink = false, ignoreStoredIdentity = false, titleOverride = null)
+        }
+    }
+
+    @Test
+    fun `Searched as reports the typed name, not the game's title`() = runTest {
+        coEvery { gameDao.getById(1L) } returns game()
+        coEvery { resolver.resolve(any(), any(), any(), any()) } returns resolution(
+            Storefront.STEAM to StorefrontMetadataResolver.Resolution.NeedsConfirmation(
+                StorefrontMatchResult(
+                    store = Storefront.STEAM,
+                    confidence = MatchConfidence.LOW,
+                    best = scored("2310", "QUAKE", MatchSignal.PARTIAL_TITLE),
+                )
+            )
+        )
+
+        val lookup = repo.lookup(1L, query = "Quake") as StorefrontMatchRepository.Lookup.NeedsChoice
+
+        assertEquals("quake", lookup.query)
+    }
+
     @Test
     fun `a game already linked is Settled, not a question`() = runTest {
         coEvery { gameDao.getById(1L) } returns game()
@@ -103,6 +237,54 @@ class StorefrontMatchRepositoryTest {
 
         assertEquals("379720", lookup.identities.single().record.storeId)
         assertEquals("Steam", lookup.identities.single().storeLabel)
+    }
+
+    @Test
+    fun `a certain match nobody stored is offered as a choice, not reported as already matched`() = runTest {
+        // Looking never links, so a match the resolver was sure of is still only a finding. Calling
+        // it Settled told the user the game was matched while the table held nothing.
+        coEvery { gameDao.getById(1L) } returns game()
+        coEvery { resolver.resolve(any(), any(), any()) } returns resolution(
+            Storefront.STEAM to StorefrontMetadataResolver.Resolution.Linked(
+                identity = StorefrontIdentityRecord(Storefront.STEAM, "379720", resolvedTitle = "DOOM"),
+                preset = MetadataPreset(provider = MatchProvider.STEAM, title = "DOOM"),
+                newlyLinked = true,
+                match = StorefrontMatchResult(
+                    store = Storefront.STEAM,
+                    confidence = MatchConfidence.EXACT,
+                    best = scored("379720", "DOOM", MatchSignal.EXACT_TITLE),
+                    alternatives = listOf(scored("2300", "DOOM II", MatchSignal.PARTIAL_TITLE)),
+                ),
+            )
+        )
+
+        val lookup = repo.lookup(1L, ignoreStoredIdentity = true) as StorefrontMatchRepository.Lookup.NeedsChoice
+
+        val pending = lookup.pending.single()
+        assertEquals(MatchConfidence.EXACT, pending.confidence)
+        assertEquals(listOf("379720", "2300"), pending.candidates.map { it.candidate.storeId })
+    }
+
+    @Test
+    fun `an id PFP was handed but has not stored is offered as the one candidate`() = runTest {
+        // The import-captured pair: no search ran, so there is no scored field to show — only the
+        // game the store says that id is.
+        coEvery { gameDao.getById(1L) } returns game()
+        coEvery { resolver.resolve(any(), any(), any()) } returns resolution(
+            Storefront.STEAM to StorefrontMetadataResolver.Resolution.Linked(
+                identity = StorefrontIdentityRecord(Storefront.STEAM, "379720", resolvedTitle = "DOOM"),
+                preset = MetadataPreset(
+                    provider = MatchProvider.STEAM, title = "DOOM", developer = "id Software", releaseYear = 2016,
+                ),
+                newlyLinked = true,
+            )
+        )
+
+        val lookup = repo.lookup(1L) as StorefrontMatchRepository.Lookup.NeedsChoice
+
+        val only = lookup.pending.single().candidates.single()
+        assertEquals(StorefrontCandidate(Storefront.STEAM, "379720", "DOOM", 2016, "id Software"), only.candidate)
+        assertEquals(listOf(MatchSignal.AUTHORITATIVE_ID), only.signals)
     }
 
     @Test
@@ -160,22 +342,47 @@ class StorefrontMatchRepositoryTest {
     // -- Rematch rows ----------------------------------------------------------
 
     @Test
-    fun `every store gets a row, linked or not, searchable or not`() = runTest {
+    fun `every searchable store gets a row, linked or not`() = runTest {
         coEvery { resolver.linkedIdentities(1L) } returns listOf(
             StorefrontIdentityRecord(Storefront.STEAM, "379720", userConfirmed = true, resolvedTitle = "DOOM")
         )
-        every { resolver.availableStores() } returns listOf(Storefront.STEAM)
+        every { resolver.availableStores() } returns listOf(Storefront.STEAM, Storefront.GOG)
 
         val rows = repo.rematchRows(1L)
 
-        // All three, because "not built yet" and "nothing to know" are different answers.
-        assertEquals(Storefront.entries, rows.map { it.store })
+        assertEquals(listOf(Storefront.STEAM, Storefront.GOG), rows.map { it.store })
         val steam = rows.single { it.store == Storefront.STEAM }
         assertEquals("379720", steam.identity?.record?.storeId)
         assertTrue(steam.searchable)
         val gog = rows.single { it.store == Storefront.GOG }
         assertNull(gog.identity)
-        assertFalse(gog.searchable)
+        assertTrue(gog.searchable)
+    }
+
+    @Test
+    fun `a store with no provider has no row`() = runTest {
+        coEvery { resolver.linkedIdentities(1L) } returns emptyList()
+        every { resolver.availableStores() } returns listOf(Storefront.STEAM, Storefront.GOG)
+
+        val rows = repo.rematchRows(1L)
+
+        // Epic has no catalog to search, so a row for it could only ever say so.
+        assertFalse(rows.any { it.store == Storefront.EPIC })
+    }
+
+    @Test
+    fun `a link on a store with no provider keeps its row so it can still be removed`() = runTest {
+        coEvery { resolver.linkedIdentities(1L) } returns listOf(
+            StorefrontIdentityRecord(Storefront.EPIC, "fortnite")
+        )
+        every { resolver.availableStores() } returns listOf(Storefront.STEAM)
+
+        val rows = repo.rematchRows(1L)
+
+        assertEquals(listOf(Storefront.STEAM, Storefront.EPIC), rows.map { it.store })
+        val epic = rows.single { it.store == Storefront.EPIC }
+        assertEquals("fortnite", epic.identity?.record?.storeId)
+        assertFalse(epic.searchable)
     }
 
     // -- Writes ----------------------------------------------------------------

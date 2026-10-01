@@ -14,9 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -45,6 +43,8 @@ import com.playfieldportal.core.domain.model.Photo
 import com.playfieldportal.core.domain.model.TouchGesture
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.components.PfpModalSpec
+import com.playfieldportal.core.ui.components.rememberPfpModalHost
 import com.playfieldportal.core.ui.components.TouchPromptBar
 import com.playfieldportal.core.ui.components.TouchPromptItem
 import com.playfieldportal.core.ui.components.XmbHeaderPill
@@ -94,9 +94,21 @@ fun PhotoViewerScreen(
     // Reset `closed` after handling it — the ViewModel is retained across open/close, so a stale
     // closed=true would otherwise instantly re-close the viewer the next time it's opened.
     LaunchedEffect(state.closed) { if (state.closed) { onBack(); viewModel.onClosedHandled() } }
+    // Information and the removal prompt are the shared modals. Their cursor lives in the host, so
+    // a press goes there first while one is up and only otherwise reaches the viewer.
+    val modal = rememberPfpModalHost(
+        spec = photoViewerModalSpec(
+            state = state,
+            onDismissInfo = viewModel::closeInfo,
+            onConfirmRemove = viewModel::confirmRemove,
+            onCancelRemove = viewModel::cancelRemove,
+        ),
+        // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
+        showHints = !showTouchControls,
+    )
     LaunchedEffect(pendingGamepadAction) {
         val action = pendingGamepadAction ?: return@LaunchedEffect
-        viewModel.handleGamepadAction(action)
+        if (!modal.intercept(action)) viewModel.handleGamepadAction(action)
         onGamepadActionConsumed()
     }
 
@@ -300,22 +312,6 @@ fun PhotoViewerScreen(
             }
         }
 
-        // ── Info dialog ──────────────────────────────────────────────────────
-        if (state.infoVisible) {
-            InfoDialog(photo = photo, onDismiss = { viewModel.handleGamepadAction(GamepadAction.BACK) })
-        }
-
-        // ── Remove confirmation ──────────────────────────────────────────────
-        if (state.confirmRemove) {
-            AlertDialog(
-                onDismissRequest = viewModel::cancelRemove,
-                confirmButton = { TextButton(onClick = viewModel::confirmRemove) { Text("Remove") } },
-                dismissButton = { TextButton(onClick = viewModel::cancelRemove) { Text("Cancel") } },
-                title = { Text("Remove from library?") },
-                text = { Text("\"${photo.displayName}\" will be removed from this library. The photo on disk is not deleted.") },
-            )
-        }
-
         state.actionMessage?.let { msg ->
             Text(
                 msg,
@@ -350,36 +346,57 @@ fun PhotoViewerScreen(
                 )
             }
         }
+
+        // Information and the removal prompt. Last, so it draws over everything else.
+        modal.Content()
     }
 }
 
-@Composable
-private fun InfoDialog(photo: Photo, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } },
-        title = { Text(photo.displayName) },
-        text = {
-            Column {
-                photo.resolutionLabel?.let { InfoRow("Resolution", it) }
-                photo.dateTaken?.let { InfoRow("Taken", fmtDate(it)) }
-                photo.lastModified?.let { InfoRow("Modified", fmtDate(it)) }
-                photo.sizeBytes?.let { InfoRow("Size", fmtSize(it)) }
-                photo.mimeType?.let { InfoRow("Type", it) }
-                photo.relativePath?.let { InfoRow("Location", it) }
-                InfoRow("File", photo.displayName)
-            }
-        },
-    )
+/**
+ * Which shared modal the viewer is showing, if any — checked in the same order the view model
+ * checks these states, so the modal on screen is the one being driven. The wallpaper preview owns
+ * the screen while it is up, so nothing is shown over it.
+ *
+ * Internal and free of composition so the mapping from UI state to modal can be tested directly.
+ */
+internal fun photoViewerModalSpec(
+    state: PhotoViewerUiState,
+    onDismissInfo: () -> Unit,
+    onConfirmRemove: () -> Unit,
+    onCancelRemove: () -> Unit,
+): PfpModalSpec? {
+    val photo = state.photo ?: return null
+    if (state.applyingWallpaper || state.wallpaperPreviewVisible) return null
+    return when {
+        state.confirmRemove -> PfpModalSpec.Confirm(
+            key = "remove:${photo.id}",
+            title = "Remove from Library",
+            message = "\"${photo.displayName}\" will be removed from this library. The photo on disk is not deleted.",
+            confirmLabel = "Remove",
+            destructive = true,
+            onConfirm = onConfirmRemove,
+            onCancel = onCancelRemove,
+        )
+        state.infoVisible -> PfpModalSpec.Notice(
+            key = "info:${photo.id}",
+            title = photo.displayName,
+            message = photoInfoLines(photo).joinToString("\n"),
+            buttonLabel = "Close",
+            onDismiss = onDismissInfo,
+        )
+        else -> null
+    }
 }
 
-@Composable
-private fun InfoRow(label: String, value: String) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, color = TextMuted, fontSize = 13.sp)
-        Spacer(Modifier.width(12.dp))
-        Text(value, color = TextPrimary, fontSize = 13.sp)
-    }
+// What is known about the file, one fact per line; unknown values are left out.
+private fun photoInfoLines(photo: Photo): List<String> = buildList {
+    photo.resolutionLabel?.let { add("Resolution: $it") }
+    photo.dateTaken?.let { add("Taken: ${fmtDate(it)}") }
+    photo.lastModified?.let { add("Modified: ${fmtDate(it)}") }
+    photo.sizeBytes?.let { add("Size: ${fmtSize(it)}") }
+    photo.mimeType?.let { add("Type: $it") }
+    photo.relativePath?.let { add("Location: $it") }
+    add("File: ${photo.displayName}")
 }
 
 private fun fmtDate(ms: Long): String =

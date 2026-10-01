@@ -30,6 +30,7 @@ enum class MatchProvider(val label: String) {
     IGDB("IGDB"),
     STEAMGRIDDB("SteamGridDB"),
     STEAM("Steam"),
+    GOG("GOG"),
     MANUAL("Manual"),
 }
 
@@ -124,6 +125,19 @@ object ProviderCapabilities {
             supportsTitleSearch = true,
             suppliesMetadata = true,
             suppliesArtwork = true,
+        ),
+        // GOG's keyless catalog. Found by title and by nothing else: there is no id column on
+        // `games`, and the import-captured pair is not trusted as a gog.com product id until that
+        // is confirmed, so it is deliberately NOT addressable by a storefront pair. Text only —
+        // the Artwork Studio has no GOG source.
+        ProviderCapability(
+            provider = MatchProvider.GOG,
+            addressableBySavedId = false,
+            addressableByRomHash = false,
+            addressableByStorefrontId = false,
+            supportsTitleSearch = true,
+            suppliesMetadata = true,
+            suppliesArtwork = false,
         ),
         // The user. No endpoint to address, nothing to search, no artwork — the Artwork Studio
         // owns images and overrides are text only (Non-Goals). It supplies metadata, which is the

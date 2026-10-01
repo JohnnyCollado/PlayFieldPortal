@@ -40,8 +40,20 @@ class StorefrontMatchRepository @Inject constructor(
     /** What asking about one game produced. Exactly one of these, never a mixture. */
     sealed interface Lookup {
 
-        /** Somebody has to choose. [query] is what the normalizer actually sent. */
-        data class NeedsChoice(val query: String, val pending: List<PendingMatch>) : Lookup
+        /**
+         * Somebody has to choose. [query] is what the normalizer actually sent, and [pending] is
+         * in the order the stores are asked.
+         *
+         * [unavailable] and [settled] are the stores that did NOT need a choice, carried because
+         * one store having candidates must not speak for the others: a store that timed out is not
+         * a store without the game, and a store already linked is not a store that was skipped.
+         */
+        data class NeedsChoice(
+            val query: String,
+            val pending: List<PendingMatch>,
+            val unavailable: List<Storefront> = emptyList(),
+            val settled: List<LinkedIdentity> = emptyList(),
+        ) : Lookup
 
         /** Every store that answered was already settled, or settled itself. Nothing to ask. */
         data class Settled(val identities: List<LinkedIdentity>) : Lookup
@@ -64,42 +76,96 @@ class StorefrontMatchRepository @Inject constructor(
      *
      * [ignoreStoredIdentity] is Rematch's "search again": it is the only way past a stored id, it
      * still writes nothing, and the existing link survives until the user picks a replacement.
+     *
+     * [query] is a name the user typed into the Store Match search bar. The stores are asked for
+     * that name instead of the game's title, the stored id is looked past, and the game itself is
+     * not renamed. A blank one is no search at all.
+     *
+     * [store] limits the lookup to one store — what a Store Match row's own Search or Replace
+     * passes, so that looking past that store's link leaves every other store's alone. Null asks
+     * them all.
      */
-    suspend fun lookup(gameId: Long, ignoreStoredIdentity: Boolean = false): Lookup {
+    suspend fun lookup(
+        gameId: Long,
+        ignoreStoredIdentity: Boolean = false,
+        query: String? = null,
+        store: Storefront? = null,
+    ): Lookup {
         val game = gameDao.getById(gameId) ?: return Lookup.Unknown
         if (game.platformId != WINDOWS_PLATFORM_ID) return Lookup.NotApplicable
 
+        val typed = query?.trim()?.takeIf { it.isNotEmpty() }
         val resolution = runCatching {
-            resolver.resolve(game, allowAutoLink = false, ignoreStoredIdentity = ignoreStoredIdentity)
+            resolver.resolve(
+                game,
+                allowAutoLink = false,
+                ignoreStoredIdentity = ignoreStoredIdentity || typed != null,
+                titleOverride = typed,
+                stores = store?.let(::setOf),
+            )
         }.onFailure { Timber.w(it, "Storefront lookup failed for game %d", gameId) }
             .getOrNull() ?: return Lookup.Unknown
 
-        val pending = resolution.byStore.values
-            .filterIsInstance<StorefrontMetadataResolver.Resolution.NeedsConfirmation>()
-            .mapNotNull { needs ->
-                val result = needs.result
-                val candidates = listOfNotNull(result.best) + result.alternatives
-                candidates.takeIf { it.isNotEmpty() }?.let {
-                    PendingMatch(result.store, result.confidence, it)
-                }
-            }
-        if (pending.isNotEmpty()) {
-            val query = StorefrontTitleNormalizer.normalize(displayTitleOf(game)).searchTitle
-            return Lookup.NeedsChoice(query, pending)
-        }
-
+        // A stored link, as opposed to one this look merely found (which is pending — see pendingOf).
         val linked = resolution.byStore.values
             .filterIsInstance<StorefrontMetadataResolver.Resolution.Linked>()
+            .filter { !it.newlyLinked }
             .map { LinkedIdentity(it.identity, it.identity.store.label) }
+        val unavailable = resolution.unavailableStores
+
+        // byStore keeps the order the providers were asked in, so `pending` does too.
+        val pending = resolution.byStore.values.mapNotNull(::pendingOf)
+        if (pending.isNotEmpty()) {
+            val searchedAs = StorefrontTitleNormalizer.normalize(typed ?: displayTitleOf(game)).searchTitle
+            return Lookup.NeedsChoice(searchedAs, pending, unavailable = unavailable, settled = linked)
+        }
+
         if (linked.isNotEmpty()) return Lookup.Settled(linked)
 
         // A store being down outranks an empty answer, the same precedence the provider uses:
         // "Steam timed out" and "Steam does not have this game" lead to opposite actions.
-        val unavailable = resolution.unavailableStores
         if (unavailable.isNotEmpty()) return Lookup.Unavailable(unavailable)
 
         return Lookup.NoMatch
     }
+
+    /**
+     * One store's answer as something to choose from, or null when there is nothing to ask.
+     *
+     * A link this run "made" is in here too. [lookup] never writes, so such a link exists only in
+     * the resolver's answer: reporting it as settled told the user their game was matched while
+     * the table still held the old id, or none. It is a finding, and it is shown as one.
+     */
+    private fun pendingOf(resolution: StorefrontMetadataResolver.Resolution): PendingMatch? = when (resolution) {
+        is StorefrontMetadataResolver.Resolution.NeedsConfirmation -> resolution.result.toPending()
+        is StorefrontMetadataResolver.Resolution.Linked -> when {
+            !resolution.newlyLinked -> null
+            resolution.match != null -> resolution.match.toPending()
+            // An id PFP was handed rather than searched for: no field was scored, so the one
+            // candidate is the game the store says that id is.
+            else -> PendingMatch(
+                store = resolution.identity.store,
+                confidence = resolution.identity.confidence,
+                candidates = listOf(
+                    ScoredStorefrontCandidate(
+                        StorefrontCandidate(
+                            store = resolution.identity.store,
+                            storeId = resolution.identity.storeId,
+                            title = resolution.identity.resolvedTitle ?: resolution.identity.storeId,
+                            releaseYear = resolution.preset.releaseYear,
+                            developer = resolution.preset.developer,
+                            publisher = resolution.preset.publisher,
+                        ),
+                        listOf(MatchSignal.AUTHORITATIVE_ID),
+                    )
+                ),
+            )
+        }
+        else -> null
+    }
+
+    private fun StorefrontMatchResult.toPending(): PendingMatch? =
+        (listOfNotNull(best) + alternatives).takeIf { it.isNotEmpty() }?.let { PendingMatch(store, confidence, it) }
 
     /** Every store this game is linked on today — what the Rematch screen lists. */
     suspend fun identities(gameId: Long): List<LinkedIdentity> =
@@ -134,7 +200,10 @@ class StorefrontMatchRepository @Inject constructor(
     suspend fun rematchRows(gameId: Long): List<RematchRow> {
         val linked = identities(gameId).associateBy { it.record.store }
         val searchable = resolver.availableStores().toSet()
-        return Storefront.entries.map { store ->
+        // A store with no provider (Epic) has nothing to offer here but a disabled Search, so it is
+        // left off — unless the game is somehow linked there, when its row stays so the link can
+        // still be removed.
+        return Storefront.entries.filter { it in searchable || it in linked }.map { store ->
             RematchRow(
                 store = store,
                 identity = linked[store],

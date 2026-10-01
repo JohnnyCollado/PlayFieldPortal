@@ -31,8 +31,6 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Brush
@@ -41,13 +39,9 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Monitor
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -68,8 +62,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -81,6 +73,9 @@ import com.playfieldportal.core.domain.model.ControllerIcon
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.components.PfpModalHost
+import com.playfieldportal.core.ui.components.PfpModalSpec
+import com.playfieldportal.core.ui.components.rememberPfpModalHost
 import com.playfieldportal.core.ui.detail.DetailRowSpacing
 import com.playfieldportal.core.ui.detail.PfpDetailBackground
 import com.playfieldportal.core.ui.detail.detailPalette
@@ -104,6 +99,7 @@ import com.playfieldportal.core.ui.theme.menuCursorFill
 import com.playfieldportal.feature.xmb.ui.DetailContextMenu
 import com.playfieldportal.feature.xmb.ui.DetailMenuRow
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerPanel
+import com.playfieldportal.feature.xmb.ui.collection.collectionNameModalSpec
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -201,10 +197,28 @@ fun GameDetailScreen(
             viewModel.onOpenCoinsConsumed()
         }
     }
+    // Edit Title, Edit Note and the removal prompt are the shared modals. The cursor and the text
+    // being typed live in the host, so a press goes there first while one is up and only otherwise
+    // reaches the page.
+    val modal = rememberPfpModalHost(
+        spec = gameDetailModalSpec(
+            state = state,
+            onSaveTitle = viewModel::saveTitle,
+            onCancelTitle = viewModel::cancelTitleEdit,
+            onSaveNote = viewModel::saveNote,
+            onCancelNote = viewModel::cancelNote,
+            onConfirmRemove = viewModel::confirmRemoveGame,
+            onCancelRemove = viewModel::cancelRemove,
+            onCreateCollection = viewModel::confirmCreateCollection,
+            onCancelCreateCollection = viewModel::cancelCreateCollection,
+        ),
+        // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
+        showHints = !showTouchControls,
+    )
     // While the Artwork Studio is open, its screen consumes the actions instead.
     LaunchedEffect(pendingGamepadAction) {
         if (pendingGamepadAction != null && !state.showArtworkStudio) {
-            viewModel.handleGamepadAction(pendingGamepadAction)
+            if (!modal.intercept(pendingGamepadAction)) viewModel.handleGamepadAction(pendingGamepadAction)
             onGamepadActionConsumed()
         }
     }
@@ -259,8 +273,63 @@ fun GameDetailScreen(
         showTouchControls = showTouchControls,
         onTouchInput = onTouchInput,
         viewModel = viewModel,
+        modal = modal,
         modifier = modifier,
     )
+}
+
+/**
+ * Which shared modal the page is showing, if any — checked in the same order the view model checks
+ * these states, so the modal on screen is the one being driven.
+ *
+ * Edit Title and Edit Note match the XMB's own: the field starts from what is saved, and clearing
+ * it drops the title override (the placeholder shows the title that comes back) or the note.
+ *
+ * Internal and free of composition so the mapping from UI state to modal can be tested directly.
+ */
+internal fun gameDetailModalSpec(
+    state: GameDetailUiState,
+    onSaveTitle: (String) -> Unit,
+    onCancelTitle: () -> Unit,
+    onSaveNote: (String) -> Unit,
+    onCancelNote: () -> Unit,
+    onConfirmRemove: () -> Unit,
+    onCancelRemove: () -> Unit,
+    onCreateCollection: (String) -> Unit,
+    onCancelCreateCollection: () -> Unit,
+): PfpModalSpec? {
+    val game = state.game ?: return null
+    return when {
+        state.confirmRemove -> PfpModalSpec.Confirm(
+            key = "remove:${game.id}",
+            title = "Remove from Library",
+            message = "\"${game.displayTitle}\" will be removed from your library. ROM/app files are not deleted.",
+            confirmLabel = "Remove",
+            destructive = true,
+            onConfirm = onConfirmRemove,
+            onCancel = onCancelRemove,
+        )
+        state.collectionPicker.showCreateDialog ->
+            collectionNameModalSpec(onCreate = onCreateCollection, onCancel = onCancelCreateCollection)
+        state.isEditingNote -> PfpModalSpec.TextEntry(
+            key = "edit_note:${game.id}",
+            title = "Edit Note",
+            initial = game.userNote.orEmpty(),
+            allowBlank = true,
+            onConfirm = onSaveNote,
+            onCancel = onCancelNote,
+        )
+        state.isEditingTitle -> PfpModalSpec.TextEntry(
+            key = "edit_title:${game.id}",
+            title = "Edit Title",
+            initial = game.displayTitle,
+            placeholder = game.scrapedTitle ?: game.title,
+            allowBlank = true,
+            onConfirm = onSaveTitle,
+            onCancel = onCancelTitle,
+        )
+        else -> null
+    }
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -273,6 +342,7 @@ private fun GameDetailContent(
     showTouchControls: Boolean,
     onTouchInput: () -> Unit,
     viewModel: GameDetailViewModel,
+    modal: PfpModalHost,
     modifier: Modifier = Modifier,
 ) {
     val focus = state.navFocusKey
@@ -351,7 +421,7 @@ private fun GameDetailContent(
         footer = {
             PfpDetailHelperFooter(
                 items = gameDetailHelperItems(state),
-                visible = !showTouchControls && state.cursorVisible,
+                visible = gameDetailFooterVisible(state, showTouchControls),
             )
         },
         // Overlays live here rather than in the scrolling body: they must cover the whole page and
@@ -363,6 +433,7 @@ private fun GameDetailContent(
                 game = game,
                 viewModel = viewModel,
                 showTouchControls = showTouchControls,
+                modal = modal,
             )
         },
     ) {
@@ -573,6 +644,7 @@ private fun GameDetailOverlays(
     // The storefront panels swap their glyph hint line for XmbHeaderPills under touch, so the
     // flag has to reach this far down rather than stopping at the page content.
     showTouchControls: Boolean,
+    modal: PfpModalHost,
 ) {
     Box(Modifier.fillMaxSize()) {
         state.imageViewerUri?.let { imageUri ->
@@ -600,16 +672,12 @@ private fun GameDetailOverlays(
 
         AnimatedVisibility(state.showOptions, enter = fadeIn(), exit = fadeOut()) {
             DetailContextMenu(
-                title = "Options",
-                rows = state.visibleActions.map { action ->
-                    DetailMenuRow(
-                        label = action.dynamicLabel(game.isFavorite, state.isFetchingArtwork),
-                        isDestructive = action == DetailAction.REMOVE,
-                    )
-                },
+                title = state.optionsMenu.title,
+                rows = detailMenuRows(state, emulatorName = state.resolvedLaunch?.profile?.name),
                 selectedIndex = state.optionsIndex,
                 onRowClick = { viewModel.onOptionRowTapped(state.visibleActions[it]) },
                 onDismiss = viewModel::closeOptions,
+                panelAlpha = 0.88f,
             )
         }
 
@@ -657,6 +725,9 @@ private fun GameDetailOverlays(
                     onRowClick        = viewModel::onRematchRowTapped,
                     onActionClick     = viewModel::onRematchActionTapped,
                     onSearchAll       = viewModel::searchAllStorefronts,
+                    onQueryChange     = viewModel::onRematchQueryChanged,
+                    onStartQueryEdit  = viewModel::startRematchQueryEdit,
+                    onSearchByName    = viewModel::searchStorefrontsByName,
                     onClose           = viewModel::closeStorefrontRematch,
                 )
             }
@@ -670,6 +741,7 @@ private fun GameDetailOverlays(
                     focusEdge         = menuCursorEdge(),
                     showTouchControls = showTouchControls,
                     onRowClick        = viewModel::onStorefrontRowTapped,
+                    onStoreClick      = viewModel::onStorefrontStoreTapped,
                     onMoreInfo        = viewModel::openStorefrontMoreInfo,
                     onCloseMoreInfo   = viewModel::closeStorefrontMoreInfo,
                     onChooseFocused   = { viewModel.chooseStorefrontCandidate(match.focus) },
@@ -683,28 +755,7 @@ private fun GameDetailOverlays(
                 ui                  = state.collectionPicker,
                 onRowClick          = viewModel::onCollectionRowClick,
                 onClose             = viewModel::closeCollectionPicker,
-                onCreateTextChanged = viewModel::onCreateCollectionTextChanged,
-                onConfirmCreate     = viewModel::confirmCreateCollection,
-                onCancelCreate      = viewModel::cancelCreateCollection,
             )
-        }
-
-        AnimatedVisibility(state.isEditingNote, enter = fadeIn(), exit = fadeOut()) {
-            Box(Modifier.fillMaxSize().background(Color(0xCC000000)), contentAlignment = Alignment.Center) {
-                NoteEditor(state.noteText, viewModel::onNoteChanged, viewModel::saveNote, viewModel::cancelNote)
-            }
-        }
-
-        AnimatedVisibility(state.isEditingTitle, enter = fadeIn(), exit = fadeOut()) {
-            Box(Modifier.fillMaxSize().background(Color(0xCC000000)), contentAlignment = Alignment.Center) {
-                TitleEditor(
-                    text       = state.titleText,
-                    onChange   = viewModel::onTitleChanged,
-                    onSave     = viewModel::saveTitle,
-                    onReset    = viewModel::resetTitleToDefault,
-                    onCancel   = viewModel::cancelTitleEdit,
-                )
-            }
         }
 
         // Topmost overlay — the ViewModel routes all gamepad input here while it's open.
@@ -721,15 +772,8 @@ private fun GameDetailOverlays(
             )
         }
 
-        if (state.confirmRemove) {
-            AlertDialog(
-                onDismissRequest = viewModel::cancelRemove,
-                title = { Text("Remove ${game.title}?") },
-                text = { Text("Removes this game from your library. ROM/app files are not deleted.") },
-                confirmButton = { TextButton(onClick = viewModel::confirmRemoveGame) { Text("Remove") } },
-                dismissButton = { TextButton(onClick = viewModel::cancelRemove) { Text("Cancel") } },
-            )
-        }
+        // The removal prompt, Edit Note and Edit Title. Last, so it draws over every other overlay.
+        modal.Content()
     }
 }
 
@@ -864,9 +908,20 @@ private fun GameInformationBand(
 // ── Helper footer ─────────────────────────────────────────────────────────────
 
 /**
+ * Whether the footer's hints show. They are for the pad only, and they step aside for a shared
+ * modal (the removal prompt, New Collection, Edit Note, Edit Title), which draws its own under
+ * its card.
+ */
+internal fun gameDetailFooterVisible(state: GameDetailUiState, showTouchControls: Boolean): Boolean {
+    val sharedModalOpen = state.confirmRemove || state.collectionPicker.showCreateDialog ||
+        state.isEditingNote || state.isEditingTitle
+    return !showTouchControls && state.cursorVisible && !sharedModalOpen
+}
+
+/**
  * The contextual helper footer: only the actions that are actually available, named for what they
  * do in the current context (the design's Confirm/Options/Back on the base page, "Apply" in the
- * metadata overlay, "Remove"/"Cancel" on the removal prompt).
+ * metadata overlay).
  *
  * Pure function of the state so it can be unit-tested without a composition.
  */
@@ -883,13 +938,6 @@ internal fun gameDetailHelperItems(state: GameDetailUiState): List<ControllerPro
             ControllerPromptItem(GamepadAction.NEXT_CATEGORY, "Next page"),
             ControllerPromptItem(GamepadAction.BACK, "Close"),
         )
-    state.confirmRemove ->
-        listOf(
-            ControllerPromptItem(GamepadAction.SELECT, "Remove"),
-            ControllerPromptItem(GamepadAction.BACK, "Cancel"),
-        )
-    state.isEditingNote || state.isEditingTitle ->
-        listOf(ControllerPromptItem(GamepadAction.BACK, "Cancel"))
     // The title confirm owns the overlay while it is up, so it owns the hints too.
     state.metadataPreview?.titleReplace != null ->
         listOf(
@@ -920,7 +968,11 @@ internal fun gameDetailHelperItems(state: GameDetailUiState): List<ControllerPro
         listOf(
             ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Navigate"),
             ControllerPromptItem(GamepadAction.SELECT, "Select"),
-            ControllerPromptItem(GamepadAction.BACK, "Close"),
+            // Inside a sub-panel Back goes up a level rather than out of the menu.
+            ControllerPromptItem(
+                GamepadAction.BACK,
+                if (state.optionsMenu == DetailMenu.ROOT) "Close" else "Back",
+            ),
         )
     else -> listOf(
         ControllerPromptItem(GamepadAction.SELECT, confirmLabelFor(state)),
@@ -1000,97 +1052,33 @@ private fun relativeDays(epochMillis: Long): String {
 private val OptionsPanelMaxHeight: Dp = 440.dp
 private val OptionsRowScrollStep: Dp = 58.dp
 
-internal fun DetailAction.dynamicLabel(favorite: Boolean, refreshing: Boolean): String = when (this) {
-    DetailAction.FAVORITE -> if (favorite) "Unfavorite" else "Favorite"
+internal fun DetailAction.dynamicLabel(refreshing: Boolean): String = when (this) {
     DetailAction.FETCH_ARTWORK -> if (refreshing) "Fetching Artwork..." else label
     else -> label
 }
 
-@Composable
-private fun NoteEditor(text: String, onChange: (String) -> Unit, onSave: () -> Unit, onCancel: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .widthIn(max = 420.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xF20A0A14))
-            .padding(16.dp),
-    ) {
-        Text("Edit Note", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = text,
-            onValueChange = onChange,
-            label = { Text("Note", color = TextMuted) },
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = menuCursorEdge(),
-                unfocusedBorderColor = Color(0x44FFFFFF),
-                focusedTextColor = TextPrimary,
-                unfocusedTextColor = TextPrimary,
-                cursorColor = menuCursorEdge(),
-            ),
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { onSave() }),
-            maxLines = 4,
+/**
+ * The Options panel on screen as menu rows.
+ *
+ * A group header goes on the first row of each group, so a sub-panel — whose actions belong to no
+ * group — draws none. Favorite keeps one name and states its value beside it: a label that flips
+ * to "Unfavorite" makes the row's position the only thing a user can learn.
+ */
+internal fun detailMenuRows(state: GameDetailUiState, emulatorName: String?): List<DetailMenuRow> {
+    val actions = state.visibleActions
+    return actions.mapIndexed { index, action ->
+        DetailMenuRow(
+            label = action.dynamicLabel(refreshing = state.isFetchingArtwork),
+            isDestructive = action == DetailAction.REMOVE,
+            value = when (action) {
+                DetailAction.FAVORITE -> if (state.game?.isFavorite == true) "On" else "Off"
+                DetailAction.EMULATOR -> emulatorName
+                DetailAction.STOREFRONT -> state.storeLinks?.let { if (it.isEmpty()) "None" else it.joinToString(" · ") }
+                else -> null
+            },
+            opensMenu = action.opens != null,
+            header = action.group?.takeIf { it != actions.getOrNull(index - 1)?.group }?.label,
         )
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = onCancel) { Text("Cancel", color = TextMuted) }
-            TextButton(onClick = onSave) { Text("Save", color = menuCursorEdge(), fontWeight = FontWeight.SemiBold) }
-        }
-    }
-}
-
-// ── Title Editor ─────────────────────────────────────────────────────────────
-
-@Composable
-private fun TitleEditor(
-    text: String,
-    onChange: (String) -> Unit,
-    onSave: () -> Unit,
-    onReset: () -> Unit,
-    onCancel: () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .widthIn(max = 420.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xF20A0A14))
-            .padding(16.dp),
-    ) {
-        Text("Edit Title", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(4.dp))
-        Text(
-            "Changes the display name only — the ROM file is not renamed.",
-            color = TextMuted,
-            fontSize = 11.sp,
-        )
-        Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = text,
-            onValueChange = onChange,
-            label = { Text("Display Title", color = TextMuted) },
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = menuCursorEdge(),
-                unfocusedBorderColor = Color(0x44FFFFFF),
-                focusedTextColor = TextPrimary,
-                unfocusedTextColor = TextPrimary,
-                cursorColor = menuCursorEdge(),
-            ),
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.Words,
-                imeAction = ImeAction.Done,
-            ),
-            keyboardActions = KeyboardActions(onDone = { onSave() }),
-            singleLine = true,
-        )
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            TextButton(onClick = onReset) { Text("Reset to Default", color = TextMuted, fontSize = 12.sp) }
-            Row {
-                TextButton(onClick = onCancel) { Text("Cancel", color = TextMuted) }
-                TextButton(onClick = onSave) { Text("Save", color = menuCursorEdge(), fontWeight = FontWeight.SemiBold) }
-            }
-        }
     }
 }
 

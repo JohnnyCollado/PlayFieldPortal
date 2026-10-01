@@ -124,7 +124,7 @@ fun GameSearchField(
 
 /** Hand-drawn magnifier, matching the app picker's — no icon vector. */
 @Composable
-private fun SearchGlyph() {
+internal fun SearchGlyph() {
     Canvas(modifier = Modifier.size(16.dp)) {
         val stroke = 1.8f.dp.toPx()
         val r = size.width * 0.30f

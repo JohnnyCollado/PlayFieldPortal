@@ -73,11 +73,17 @@ object GameDetailKeys {
 
     const val STOREFRONT_SEARCH_ALL = "game-detail:storefront:search-all"
 
-    const val CONFIRM_REMOVE = "game-detail:confirm-remove"
-    const val CONFIRM_CANCEL = "game-detail:confirm-cancel"
+    /** The Store Match search bar — the first stop, above the store rows. */
+    const val STOREFRONT_QUERY = "game-detail:storefront:query"
 
     // ── Modal context ids ─────────────────────────────────────────────────────
     const val MODAL_OPTIONS = "game-detail:modal:options"
+
+    /**
+     * The context of one Options panel. Each sub-panel is its own context, so stepping into one
+     * and back out re-seats the cursor the way opening any other overlay does.
+     */
+    fun optionsModal(menuName: String): String = "$MODAL_OPTIONS:$menuName"
     const val MODAL_EMULATOR_PICKER = "game-detail:modal:emulator-picker"
     const val MODAL_COLLECTION_PICKER = "game-detail:modal:collection-picker"
     const val MODAL_METADATA = "game-detail:modal:metadata"

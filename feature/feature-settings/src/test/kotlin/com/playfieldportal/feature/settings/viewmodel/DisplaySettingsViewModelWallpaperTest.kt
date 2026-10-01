@@ -168,7 +168,7 @@ class DisplaySettingsViewModelWallpaperTest {
         var snapshot: Preferences? = null
         eventually(reason) {
             snapshot = context.pfpDataStore.data.first()
-            predicate(snapshot!!)
+            predicate(snapshot)
         }
         return snapshot!!
     }

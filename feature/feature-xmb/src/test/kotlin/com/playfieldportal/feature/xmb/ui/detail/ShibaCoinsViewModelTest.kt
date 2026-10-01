@@ -19,6 +19,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -92,8 +93,10 @@ class ShibaCoinsViewModelTest {
     )
 
     private lateinit var achievements: AchievementController
+    private lateinit var games: GameRepository
     private lateinit var autoMatcher: AchievementAutoMatcher
     private lateinit var folderLinker: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamFolderLinker
+    private lateinit var steamGate: com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate
     private lateinit var viewModel: ShibaCoinsViewModel
 
     @Before
@@ -114,10 +117,88 @@ class ShibaCoinsViewModelTest {
             // No folder has been pointed at, so the pre-check never short-circuits the flow.
             coEvery { registeredFolderFor(any()) } returns null
         }
-        val games = mockk<GameRepository> {
+        games = mockk {
             coEvery { getById(gameId) } returns Game(id = gameId, title = "Final Fantasy IX", platformId = "nds")
         }
-        viewModel = ShibaCoinsViewModel(games, achievements, autoMatcher, folderLinker)
+        steamGate = mockk {
+            coEvery { isLocalCopy(any()) } returns false
+        }
+        viewModel = ShibaCoinsViewModel(games, achievements, autoMatcher, folderLinker, steamGate)
+    }
+
+    // ── A local copy of a Steam game ────────────────────────────────────────────
+    //
+    // A Windows game whose Steam id is not in the user's Steam library is never linked to Steam —
+    // Steam would serve it nothing. Its progress is in its own folder, so its page asks for that
+    // folder as soon as it opens, rather than asking whether the copy is a Steam one first.
+
+    private val windowsGame = Game(id = gameId, title = "Digimon Story Time Stranger", platformId = "windows")
+
+    private fun openWindows(local: Boolean, links: List<ProviderGameLinkEntity> = emptyList()) {
+        coEvery { games.getById(gameId) } returns windowsGame
+        coEvery { steamGate.isLocalCopy(windowsGame) } returns local
+        every { achievements.observeLinks(gameId) } returns flowOf(links)
+        open()
+    }
+
+    @Test
+    fun `an unlinked local copy opens on the folder picker`() {
+        openWindows(local = true)
+
+        assertEquals(AutoMatchStep.PICK_FOLDER, state.autoMatchStep)
+        assertTrue(state.requestFolderPick)
+    }
+
+    @Test
+    fun `a game whose ownership is unknown waits for the user to say what it is`() {
+        openWindows(local = false)
+
+        assertNull(state.autoMatchStep)
+        assertFalse(state.requestFolderPick)
+    }
+
+    @Test
+    fun `a local copy that is already linked is not asked again`() {
+        openWindows(
+            local = true,
+            links = listOf(
+                ProviderGameLinkEntity(
+                    gameId = gameId,
+                    provider = AchievementProvider.LOCAL_STEAM.name,
+                    providerGameId = "1984270",
+                    source = "MANUAL",
+                    resolvedAt = 0L,
+                ),
+            ),
+        )
+
+        assertNull(state.autoMatchStep)
+    }
+
+    // ── A result that arrives after the page moved on ───────────────────────────
+
+    @Test
+    fun `a manual app id that fails after the page moved on unlinks the game it was entered for`() {
+        // The ViewModel is reused from game to game and keeps the open game in a field. A sync is
+        // a network call — long enough to back out and open another game — and a failed one
+        // unlinks. It has to unlink the game the id was typed for, not whichever is open now.
+        val otherGameId = 2L
+        coEvery { games.getById(otherGameId) } returns Game(id = otherGameId, title = "Chrono Trigger", platformId = "nds")
+        every { achievements.observeGameCoins(otherGameId) } returns MutableStateFlow(null)
+        every { achievements.observeCoins(otherGameId) } returns MutableStateFlow(emptyList())
+        every { achievements.observeLink(otherGameId) } returns MutableStateFlow(null)
+        val sync = kotlinx.coroutines.CompletableDeferred<ProviderSyncResult>()
+        coEvery { achievements.syncGameById(gameId) } coAnswers { sync.await() }
+        open()
+
+        viewModel.submitManualAppId("480490")
+        viewModel.load(ShibaCoinsTarget.LibraryGame(otherGameId))
+        sync.complete(ProviderSyncResult.NotFound)
+
+        coVerify(exactly = 1) { achievements.unlink(gameId) }
+        coVerify(exactly = 0) { achievements.unlink(otherGameId) }
+        // And the other game's page is not told that an app id it never saw "doesn't match".
+        assertFalse(state.message.orEmpty().contains("doesn't match"))
     }
 
     @After

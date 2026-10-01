@@ -52,7 +52,6 @@ data class VideoDetailUiState(
     val optionsIndex: Int = 0,
     val confirmRemove: Boolean = false,
     val isEditingTitle: Boolean = false,
-    val titleText: String = "",
     val infoVisible: Boolean = false,
     val actionMessage: String? = null,
     // Non-null triggers the system image picker for a custom thumbnail.
@@ -62,7 +61,6 @@ data class VideoDetailUiState(
     val playlistOptions: List<VideoPlaylistOption> = emptyList(),
     val playlistPickerIndex: Int = 0,
     val creatingPlaylist: Boolean = false,
-    val newPlaylistName: String = "",
     // Playback overlay.
     val playing: Boolean = false,
     val playStartPositionMs: Long = 0,
@@ -133,21 +131,20 @@ class VideoDetailViewModel @Inject constructor(
     // for the detail page itself.
     fun handleGamepadAction(action: GamepadAction) {
         val s = _uiState.value
-        // The launch overlay swallows input; a launch error dialog dismisses on A/B.
+        // The launch overlay swallows input.
         if (s.externalLaunch != null) return
+        // The launch error, the removal prompt, New Playlist, Information and Rename Title are the
+        // shared modals (see videoDetailModalSpec): the screen hands every press to their host
+        // while one is up, so those branches only see a press that raced the modal onto the
+        // screen. Back is the one safe reading of that — a Confirm must never skip the removal
+        // prompt's opening on Cancel.
         if (s.launchError != null) {
             if (action == GamepadAction.SELECT || action == GamepadAction.BACK) dismissLaunchError()
             return
         }
         when {
-            s.confirmRemove -> when (action) {
-                GamepadAction.SELECT -> confirmRemove()
-                GamepadAction.BACK   -> _uiState.update { it.copy(confirmRemove = false) }
-                else -> Unit
-            }
-            s.creatingPlaylist -> if (action == GamepadAction.BACK) {
-                _uiState.update { it.copy(creatingPlaylist = false, newPlaylistName = "") }
-            }
+            s.confirmRemove -> if (action == GamepadAction.BACK) cancelRemove()
+            s.creatingPlaylist -> if (action == GamepadAction.BACK) cancelCreatePlaylist()
             s.showPlaylistPicker -> {
                 val count = s.playlistOptions.size + 1  // +1 for "Create New Playlist"
                 when (action) {
@@ -158,9 +155,7 @@ class VideoDetailViewModel @Inject constructor(
                     else -> Unit
                 }
             }
-            s.infoVisible -> if (action == GamepadAction.SELECT || action == GamepadAction.BACK) {
-                _uiState.update { it.copy(infoVisible = false) }
-            }
+            s.infoVisible -> if (action == GamepadAction.SELECT || action == GamepadAction.BACK) closeInfo()
             s.isEditingTitle -> if (action == GamepadAction.BACK) cancelTitleEdit()
             s.showOptions -> {
                 val count = s.optionsActions.size
@@ -245,7 +240,7 @@ class VideoDetailViewModel @Inject constructor(
         val v = s.video ?: return
         if (index >= s.playlistOptions.size) {
             // "Create New Playlist" row.
-            _uiState.update { it.copy(creatingPlaylist = true, newPlaylistName = "") }
+            _uiState.update { it.copy(creatingPlaylist = true) }
             return
         }
         val option = s.playlistOptions.getOrNull(index) ?: return
@@ -257,20 +252,19 @@ class VideoDetailViewModel @Inject constructor(
 
     fun closePlaylistPicker() = _uiState.update { it.copy(showPlaylistPicker = false) }
 
-    fun onNewPlaylistNameChange(text: String) = _uiState.update { it.copy(newPlaylistName = text) }
-
-    fun confirmCreatePlaylist() {
+    // [text] is what was typed in the shared text entry modal, which owns it until Create.
+    fun confirmCreatePlaylist(text: String) {
         val v = _uiState.value.video ?: return
-        val name = _uiState.value.newPlaylistName.trim()
+        val name = text.trim()
         if (name.isBlank()) { _uiState.update { it.copy(creatingPlaylist = false) }; return }
         viewModelScope.launch {
             val id = videoRepository.createPlaylist(name)
             videoRepository.addVideoToPlaylist(id, v.id)
-            _uiState.update { it.copy(creatingPlaylist = false, newPlaylistName = "", playlistOptions = buildPlaylistOptions(v.id)) }
+            _uiState.update { it.copy(creatingPlaylist = false, playlistOptions = buildPlaylistOptions(v.id)) }
         }
     }
 
-    fun cancelCreatePlaylist() = _uiState.update { it.copy(creatingPlaylist = false, newPlaylistName = "") }
+    fun cancelCreatePlaylist() = _uiState.update { it.copy(creatingPlaylist = false) }
 
     // ── Playback ──────────────────────────────────────────────────────────────
 
@@ -349,13 +343,13 @@ class VideoDetailViewModel @Inject constructor(
     // ── Title ───────────────────────────────────────────────────────────────
 
     fun startEditTitle() {
-        val v = _uiState.value.video ?: return
-        _uiState.update { it.copy(isEditingTitle = true, titleText = v.displayTitle) }
+        if (_uiState.value.video == null) return
+        _uiState.update { it.copy(isEditingTitle = true) }
     }
-    fun onTitleChanged(text: String) = _uiState.update { it.copy(titleText = text) }
-    fun saveTitle() {
+    // [text] is what was typed in the shared text entry modal; blank goes back to the file name.
+    fun saveTitle(text: String) {
         val v = _uiState.value.video ?: return
-        val newTitle = _uiState.value.titleText.trim().ifEmpty { null }
+        val newTitle = text.trim().ifEmpty { null }
         viewModelScope.launch {
             videoRepository.setCustomTitle(v.id, newTitle)
             _uiState.update { it.copy(video = videoRepository.getVideo(v.id) ?: it.video, isEditingTitle = false) }
@@ -388,7 +382,13 @@ class VideoDetailViewModel @Inject constructor(
         }.getOrElse { Timber.w(it, "Thumbnail import failed"); null }
     }
 
+    // ── Information ───────────────────────────────────────────────────────────
+
+    fun closeInfo() = _uiState.update { it.copy(infoVisible = false) }
+
     // ── Remove ────────────────────────────────────────────────────────────────
+
+    fun cancelRemove() = _uiState.update { it.copy(confirmRemove = false) }
 
     fun confirmRemove() {
         val v = _uiState.value.video ?: return

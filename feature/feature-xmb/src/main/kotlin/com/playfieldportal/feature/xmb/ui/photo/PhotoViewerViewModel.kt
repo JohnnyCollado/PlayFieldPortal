@@ -134,14 +134,12 @@ class PhotoViewerViewModel @Inject constructor(
                 GamepadAction.BACK   -> _uiState.update { it.copy(wallpaperPreviewVisible = false) }
                 else -> Unit
             }
-            s.confirmRemove -> when (action) {
-                GamepadAction.SELECT -> confirmRemove()
-                GamepadAction.BACK   -> _uiState.update { it.copy(confirmRemove = false) }
-                else -> Unit
-            }
-            s.infoVisible -> if (action == GamepadAction.SELECT || action == GamepadAction.BACK) {
-                _uiState.update { it.copy(infoVisible = false) }
-            }
+            // The removal prompt and Information are the shared modals (see photoViewerModalSpec):
+            // the screen hands every press to their host while one is up, so these two only see a
+            // press that raced the modal onto the screen. A Confirm must never skip the removal
+            // prompt's opening on Cancel, so only Back is read there.
+            s.confirmRemove -> if (action == GamepadAction.BACK) cancelRemove()
+            s.infoVisible -> if (action == GamepadAction.SELECT || action == GamepadAction.BACK) closeInfo()
             s.showOptions -> {
                 val count = PhotoViewerAction.entries.size
                 when (action) {
@@ -406,6 +404,8 @@ class PhotoViewerViewModel @Inject constructor(
     fun cancelWallpaperPreview() = _uiState.update { it.copy(wallpaperPreviewVisible = false) }
 
     // ── Remove ────────────────────────────────────────────────────────────────
+
+    fun closeInfo() = _uiState.update { it.copy(infoVisible = false) }
 
     fun requestRemove() = _uiState.update { it.copy(confirmRemove = true) }
     fun cancelRemove() = _uiState.update { it.copy(confirmRemove = false) }

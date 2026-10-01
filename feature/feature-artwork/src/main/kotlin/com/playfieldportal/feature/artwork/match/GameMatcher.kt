@@ -187,6 +187,8 @@ class GameMatcher(private val evidence: MatchEvidenceSource) {
         // and is read by StorefrontMetadataResolver, not from the game row (C23 T6). Its capability
         // says addressableBySavedId = false, so the matcher never reaches this branch anyway.
         MatchProvider.STEAM -> null
+        // The same for GOG: its resolved identity lives in `game_storefront_identities`.
+        MatchProvider.GOG -> null
         // The user is not addressed by an id — a hand-typed preset is built, never fetched.
         MatchProvider.MANUAL -> null
     }?.takeIf { it > 0 }?.toString()

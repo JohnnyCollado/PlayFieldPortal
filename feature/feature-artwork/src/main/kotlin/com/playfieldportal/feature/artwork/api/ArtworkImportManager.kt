@@ -18,6 +18,7 @@ import com.playfieldportal.feature.artwork.importer.ArtworkImportWorker
 import com.playfieldportal.feature.artwork.importer.DetectedImportSource
 import com.playfieldportal.feature.artwork.importer.ImportPlan
 import com.playfieldportal.feature.artwork.importer.ImportSummary
+import com.playfieldportal.feature.artwork.importer.RelinkBackgroundRule
 import com.playfieldportal.feature.artwork.importer.RelinkOwnerLookup
 import com.playfieldportal.feature.artwork.importer.RelinkSlotOrdering
 import com.playfieldportal.feature.artwork.portable.ArtworkIdentityIndex
@@ -494,7 +495,11 @@ class ArtworkImportManager @Inject constructor(
                     ArtworkPathResolver.kindForMediaDir(child.name)?.let { mediaDirs += it to child }
                 }
             }
-            for ((kind, mediaDir) in mediaDirs) {
+            // Games this walk linked a fanart file for. A hero may stand in for a background the
+            // library lacks, never for one it has — and `games` was read before the walk, so its
+            // columns cannot answer that once fanart has been linked (see RelinkBackgroundRule).
+            val fanartLinkedIds = HashSet<Long>()
+            for ((kind, mediaDir) in RelinkBackgroundRule.walkOrder(mediaDirs)) {
                 val records = mutableListOf<ArtworkRecordEntity>()
                 val stemsInDir = HashSet<String>()
                 // Multi-asset files (D1): collected per game while the directory is walked, then
@@ -613,8 +618,22 @@ class ArtworkImportManager @Inject constructor(
                             // A library file outranks a remote URL: http refs pass isValidRef
                             // forever (never checked against the network), so a rotted CDN link
                             // would otherwise block the repoint and the game shows no art.
-                            val replaceable = !artworkStore.isValidRef(current) ||
-                                current?.startsWith("http", ignoreCase = true) == true
+                            val usable = artworkStore.isValidRef(current) &&
+                                current?.startsWith("http", ignoreCase = true) != true
+                            val replaceable = if (kind == ArtworkKind.BACKGROUND) {
+                                // A background column that only holds the hero is a stand-in, and
+                                // the game's own fanart displaces it however valid the ref is.
+                                RelinkBackgroundRule.fanartTakesColumn(
+                                    current = current,
+                                    currentUsable = usable,
+                                    heroRefs = setOfNotNull(
+                                        game.heroUri,
+                                        priorRecords[Triple(gameId, ArtworkKind.HERO.name, 0)]?.documentUri,
+                                    ),
+                                )
+                            } else {
+                                !usable
+                            }
                             if (replaceable) {
                                 when (kind) {
                                     ArtworkKind.ICON -> gameDao.updateIconUri(gameId, uri)
@@ -628,16 +647,23 @@ class ArtworkImportManager @Inject constructor(
                                 linkedIds.add(gameId)
                             }
                         }
+                        // Remembered whether or not the column moved (it may be locked, or already
+                        // this file): either way the game HAS a background of its own.
+                        if (kind == ArtworkKind.BACKGROUND) fanartLinkedIds.add(gameId)
                         // The scrape reuses the hero file as the full-screen background
                         // (artworkUri = heroPath) whenever a hero exists, so most games have no
                         // fanart/ file of their own — after a wipe there is nothing under
                         // BACKGROUND for the walk to refill artworkUri from. Mirror the scrape's
-                        // rule: a HERO file also repoints a missing/dead background column.
+                        // rule: a HERO file also repoints a missing/dead background column — but
+                        // only for a game with no fanart. fanart/ is walked first, so by here the
+                        // walk knows; `game.artworkUri` does not, being the value from before it.
                         if (kind == ArtworkKind.HERO && sortOrder == 0 &&
                             ArtworkKind.BACKGROUND.name !in lockedTypes(gameId)
                         ) {
                             val bg = game.artworkUri
-                            if (!artworkStore.isValidRef(bg) || bg?.startsWith("http", ignoreCase = true) == true) {
+                            val bgUsable = artworkStore.isValidRef(bg) &&
+                                bg?.startsWith("http", ignoreCase = true) != true
+                            if (RelinkBackgroundRule.heroStandsIn(bgUsable, fanartLinked = gameId in fanartLinkedIds)) {
                                 gameDao.updateArtwork(gameId, uri)
                                 linkedIds.add(gameId)
                             }
@@ -755,13 +781,22 @@ class ArtworkImportManager @Inject constructor(
             if (prior.id in matchedPriorIds) continue
             missingFiles++
             artworkRecordDao.deleteById(prior.id)
-            val game = games.firstOrNull { it.id == prior.gameId } ?: continue
             // Only the primary is ever wired to a game column; a vanished extra screenshot must
             // not clear a column it never owned.
             if (prior.sortOrder != 0) continue
+            // Read NOW, not from `games`: the walk above may have repointed this very column
+            // (a hero standing in for a fanart file that has gone), and the pre-walk row still
+            // shows the dead reference — comparing against it would clear what was just written.
+            val game = gameDao.getById(prior.gameId) ?: continue
             when (prior.artworkType) {
                 ArtworkKind.ICON.name -> if (game.iconUri == prior.documentUri) gameDao.updateIconUri(game.id, null)
-                ArtworkKind.HERO.name -> if (game.heroUri == prior.documentUri) gameDao.updateHero(game.id, null)
+                ArtworkKind.HERO.name -> {
+                    if (game.heroUri == prior.documentUri) gameDao.updateHero(game.id, null)
+                    // A background that was this hero standing in is just as dead as the hero.
+                    if (RelinkBackgroundRule.isHeroStandIn(game.artworkUri, prior.documentUri)) {
+                        gameDao.updateArtwork(game.id, null)
+                    }
+                }
                 ArtworkKind.BACKGROUND.name -> if (game.artworkUri == prior.documentUri) gameDao.updateArtwork(game.id, null)
                 ArtworkKind.LOGO.name -> if (game.logoUri == prior.documentUri) gameDao.updateLogo(game.id, null)
                 ArtworkKind.BOX_ART.name -> if (game.boxArtUri == prior.documentUri) gameDao.updateBoxArt(game.id, null)
@@ -863,8 +898,15 @@ class ArtworkImportManager @Inject constructor(
                 ArtworkKind.BOX_3D -> game.box3dUri
                 else -> null
             }
-            val replaceable = !artworkStore.isValidRef(current) ||
-                current?.startsWith("http", ignoreCase = true) == true
+            val usable = artworkStore.isValidRef(current) &&
+                current?.startsWith("http", ignoreCase = true) != true
+            // The walk's rule exactly, fanart included: a background column that only holds the
+            // hero is a stand-in, and the file the user just assigned displaces it.
+            val replaceable = if (kind == ArtworkKind.BACKGROUND) {
+                RelinkBackgroundRule.fanartTakesColumn(current, usable, setOfNotNull(game.heroUri))
+            } else {
+                !usable
+            }
             if (replaceable) {
                 when (kind) {
                     ArtworkKind.ICON -> gameDao.updateIconUri(gameId, orphan.documentUri)

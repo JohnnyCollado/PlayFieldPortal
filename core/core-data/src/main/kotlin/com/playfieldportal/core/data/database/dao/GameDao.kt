@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.playfieldportal.core.data.database.entity.GameEntity
 import kotlinx.coroutines.flow.Flow
@@ -141,9 +142,19 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE package_name = :packageName LIMIT 1")
     suspend fun getByPackageName(packageName: String): GameEntity?
 
-    // The plain app-launch row (no launcher shortcut). Distinguishes the "open the app" entry
-    // from per-game launcher-shortcut rows that share the same package_name.
-    @Query("SELECT * FROM games WHERE package_name = :packageName AND launch_shortcut_id IS NULL LIMIT 1")
+    // The plain app-launch row. Distinguishes the "open the app" entry from the per-game rows that
+    // share its package_name: a harvested shortcut carries a shortcut id, and a launcher export
+    // (GameNative) or legacy INSTALL_SHORTCUT row carries a launch intent instead — without the
+    // second test, GameNative resolved to the first game it exported.
+    @Query(
+        """
+        SELECT * FROM games
+        WHERE package_name = :packageName
+          AND launch_shortcut_id IS NULL
+          AND launch_intent_uri IS NULL
+        LIMIT 1
+        """
+    )
     suspend fun getAppEntry(packageName: String): GameEntity?
 
     // A specific harvested launcher-shortcut row (package + shortcut id) — used to dedupe imports.
@@ -170,8 +181,34 @@ interface GameDao {
     )
     fun observeRecentByPlatform(platformId: String, limit: Int): Flow<List<GameEntity>>
 
+    /**
+     * Insert [game], or update the game it already is — in place, keeping its id.
+     *
+     * Never a REPLACE on an existing row: SQLite resolves a REPLACE by deleting the row first,
+     * and with foreign keys on that delete cascades to everything hanging off `games.id` — play
+     * sessions, collections, achievement links, storefront identities. Every rescan and every
+     * mark-as-game used to wipe them.
+     *
+     * "Already is" means the same id or, for a freshly built row (id 0), the same rom_path — the
+     * unique key a scanner re-finding a file collides on. A different row holding [game]'s
+     * rom_path under another id is removed, which is what REPLACE did with that conflict.
+     */
+    @Transaction
+    suspend fun upsert(game: GameEntity): Long {
+        val pathOwner = game.romPath?.let { getByRomPath(it) }
+        val target = when {
+            game.id != 0L && getById(game.id) != null -> game.id
+            game.id == 0L && pathOwner != null -> pathOwner.id
+            else -> return insertReplacing(game)
+        }
+        if (pathOwner != null && pathOwner.id != target) deleteById(pathOwner.id)
+        update(game.copy(id = target))
+        return target
+    }
+
+    /** A row that is not in the table yet. Only [upsert] calls this. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(game: GameEntity): Long
+    suspend fun insertReplacing(game: GameEntity): Long
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(games: List<GameEntity>)

@@ -259,6 +259,8 @@ fun ShibaCoinsScreen(
                 onCloseMoreInfo   = viewModel::closeStorefrontMoreInfo,
                 onChooseFocused   = { viewModel.chooseStorefrontCandidate(match.focus) },
                 onClose           = viewModel::cancelAutoMatch,
+                // Coins only ever matches Steam, so the picker has one store and no chips to tap.
+                onStoreClick      = {},
             )
         }
 

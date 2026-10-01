@@ -42,6 +42,26 @@ private val LAUNCHER_COLLECTION_NAMES = setOf(
 private const val PC_COLLECTION_ICON = "ic_desktop"
 
 /**
+ * [survivor] with everything worth keeping from [loser]: the survivor's own value where it has
+ * one, the loser's otherwise; play time summed, the later last-played kept.
+ */
+internal fun mergedSurvivor(survivor: GameEntity, loser: GameEntity): GameEntity = survivor.copy(
+    launchShortcutId  = survivor.launchShortcutId ?: loser.launchShortcutId,
+    launchIntentUri   = survivor.launchIntentUri ?: loser.launchIntentUri,
+    artworkUri        = survivor.artworkUri ?: loser.artworkUri,
+    heroUri           = survivor.heroUri ?: loser.heroUri,
+    logoUri           = survivor.logoUri ?: loser.logoUri,
+    iconUri           = survivor.iconUri ?: loser.iconUri,
+    userTitleOverride = survivor.userTitleOverride ?: loser.userTitleOverride,
+    scrapedTitle      = survivor.scrapedTitle ?: loser.scrapedTitle,
+    userNote          = survivor.userNote ?: loser.userNote,
+    isFavorite        = survivor.isFavorite || loser.isFavorite,
+    totalPlayTimeMillis = survivor.totalPlayTimeMillis + loser.totalPlayTimeMillis,
+    lastPlayedAt      = maxOf(survivor.lastPlayedAt ?: 0L, loser.lastPlayedAt ?: 0L)
+        .takeIf { it > 0L },
+)
+
+/**
  * One-shot follow-up to [PFPDatabase.MIGRATION_21_22][com.playfieldportal.core.data.database.PFPDatabase]:
  * the parts of the Windows-card consolidation that need application logic (label checks,
  * best-row scoring) rather than SQL. Idempotent and guarded by a DataStore flag; nothing here
@@ -124,9 +144,14 @@ class LibraryConsolidation @Inject constructor(
                     .thenBy { it.id }
             ).first()
 
+            // The survivor AS MERGED SO FAR. Each loser has to be folded onto what the previous one
+            // left, not onto the row read before the pass: that copy knows nothing of the earlier
+            // merges, and writing a row rebuilt from it would undo them — after their losers,
+            // the only other place those values lived, have already been deleted.
+            var current = survivor
             for (loser in rows) {
                 if (loser.id == survivor.id) continue
-                mergeInto(survivor, loser)
+                current = mergeInto(current, loser)
                 gameDao.deleteById(loser.id)
                 merged++
             }
@@ -134,24 +159,12 @@ class LibraryConsolidation @Inject constructor(
         if (merged > 0) Timber.i("Merged $merged duplicate Windows game row(s)")
     }
 
-    /** Moves everything worth keeping from [loser] onto [survivor] before the loser is deleted. */
-    private suspend fun mergeInto(survivor: GameEntity, loser: GameEntity) {
-        // Union of attributes: keep the survivor's value when set, adopt the loser's otherwise.
-        val enriched = survivor.copy(
-            launchShortcutId  = survivor.launchShortcutId ?: loser.launchShortcutId,
-            launchIntentUri   = survivor.launchIntentUri ?: loser.launchIntentUri,
-            artworkUri        = survivor.artworkUri ?: loser.artworkUri,
-            heroUri           = survivor.heroUri ?: loser.heroUri,
-            logoUri           = survivor.logoUri ?: loser.logoUri,
-            iconUri           = survivor.iconUri ?: loser.iconUri,
-            userTitleOverride = survivor.userTitleOverride ?: loser.userTitleOverride,
-            scrapedTitle      = survivor.scrapedTitle ?: loser.scrapedTitle,
-            userNote          = survivor.userNote ?: loser.userNote,
-            isFavorite        = survivor.isFavorite || loser.isFavorite,
-            totalPlayTimeMillis = survivor.totalPlayTimeMillis + loser.totalPlayTimeMillis,
-            lastPlayedAt      = maxOf(survivor.lastPlayedAt ?: 0L, loser.lastPlayedAt ?: 0L)
-                .takeIf { it > 0L },
-        )
+    /**
+     * Moves everything worth keeping from [loser] onto [survivor] before the loser is deleted, and
+     * returns the survivor as it now stands — which is what the next loser must be merged onto.
+     */
+    private suspend fun mergeInto(survivor: GameEntity, loser: GameEntity): GameEntity {
+        val enriched = mergedSurvivor(survivor, loser)
         if (enriched != survivor) gameDao.update(enriched)
 
         // Collection memberships follow the survivor (composite-PK IGNORE makes re-adds no-ops).
@@ -164,6 +177,7 @@ class LibraryConsolidation @Inject constructor(
                 )
             )
         }
+        return enriched
     }
 
     // ── 3. Windows Memory Card ────────────────────────────────────────────────

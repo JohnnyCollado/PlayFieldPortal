@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,6 +17,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,6 +26,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,6 +66,7 @@ fun StorefrontMatchPanel(
     focusEdge: Color,
     showTouchControls: Boolean,
     onRowClick: (Int) -> Unit,
+    onStoreClick: (Int) -> Unit,
     onMoreInfo: () -> Unit,
     onCloseMoreInfo: () -> Unit,
     onChooseFocused: () -> Unit,
@@ -89,14 +95,29 @@ fun StorefrontMatchPanel(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
-                ui.storeLabel?.let {
-                    Text(it, color = TextMuted, fontSize = 12.sp)
+                if (ui.hasOtherStores) {
+                    // One store on screen at a time; these say which, and which others are waiting.
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        ui.stores.forEachIndexed { index, tab ->
+                            StoreChip(
+                                label = tab.label,
+                                shown = index == ui.storeIndex,
+                                edge = focusEdge,
+                                onClick = { onStoreClick(index) },
+                            )
+                        }
+                    }
+                } else {
+                    ui.storeLabel?.let {
+                        Text(it, color = TextMuted, fontSize = 12.sp)
+                    }
                 }
             }
 
             if (!showTouchControls) {
                 Text(
-                    "Up/Down  Rows  •  Select  Choose  •  △  More Information  •  B  Cancel",
+                    if (ui.hasOtherStores) "Up/Down  Rows  •  L1/R1  Store  •  Select  Choose  •  △  More Information  •  B  Cancel"
+                    else "Up/Down  Rows  •  Select  Choose  •  △  More Information  •  B  Cancel",
                     color = TextMuted.copy(alpha = 0.55f),
                     fontSize = 10.sp,
                 )
@@ -117,33 +138,39 @@ fun StorefrontMatchPanel(
                 return@Column
             }
 
-            LocalGameStrip(ui)
-
-            when {
-                ui.confidence == MatchConfidence.AMBIGUOUS && ui.tiedOnExactTitle -> Notice(
-                    "Two store entries carry this exact title. A tie on an identical name can't be " +
-                        "broken by evidence, so nothing is linked until you choose.",
-                    AttentionAmber,
-                )
-                // Below the bar PFP would ever link on. Said plainly, because these rows would
-                // otherwise read as recommendations: `Bravely Default` finds `BRAVELY DEFAULT II`,
-                // which is a different game, and only the user knows whether one of these is theirs.
-                ui.confidence == MatchConfidence.LOW -> Notice(
-                    "None of these is a confident match — the names only partly agree. Check the " +
-                        "year and the developer before choosing, or leave it unlinked.",
-                    AttentionAmber,
-                )
-                else -> Unit
-            }
-
-            // One scroll region for the list, taking all the space the action row leaves. See the
-            // note in StorefrontRematchPanel for why a `fill = false` weighted list with siblings
-            // below it lands them on top of its last row — the picker had the same shape and only
-            // escaped it by usually returning two candidates.
+            // One scroll region for everything below the header, taking all the space the action row
+            // leaves. See the note in StorefrontRematchPanel for why a `fill = false` weighted list
+            // with siblings below it lands them on top of its last row — the picker had the same
+            // shape and only escaped it by usually returning two candidates.
+            //
+            // The strip and the notices scroll WITH the rows rather than sitting pinned above them:
+            // on a landscape handheld the card is barely 400dp tall, and pinned they left the list
+            // room for about one row.
             Column(
                 modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
+                LocalGameStrip(ui)
+
+                storefrontOtherStoresNote(ui)?.let { Notice(it, AttentionAmber) }
+
+                when {
+                    ui.confidence == MatchConfidence.AMBIGUOUS && ui.tiedOnExactTitle -> Notice(
+                        "Two store entries carry this exact title. A tie on an identical name can't be " +
+                            "broken by evidence, so nothing is linked until you choose.",
+                        AttentionAmber,
+                    )
+                    // Below the bar PFP would ever link on. Said plainly, because these rows would
+                    // otherwise read as recommendations: `Bravely Default` finds `BRAVELY DEFAULT II`,
+                    // which is a different game, and only the user knows whether one of these is theirs.
+                    ui.confidence == MatchConfidence.LOW -> Notice(
+                        "None of these is a confident match — the names only partly agree. Check the " +
+                            "year and the developer before choosing, or leave it unlinked.",
+                        AttentionAmber,
+                    )
+                    else -> Unit
+                }
+
                 ui.rows.forEachIndexed { index, row ->
                     CandidateRow(
                         row = row,
@@ -185,22 +212,53 @@ fun StorefrontMatchPanel(
     }
 }
 
+/**
+ * What an empty picker says, as a headline and the line under it.
+ *
+ * Pure, so the wording a user acts on can be pinned without a composition. The order is the
+ * precedence: a store that could not be reached outranks everything, because "didn't answer" and
+ * "doesn't have it" lead to opposite actions.
+ */
+internal fun storefrontEmptyMessage(ui: StorefrontMatchUi): Pair<String, String> = when {
+    ui.unavailableStores.isNotEmpty() ->
+        "${ui.unavailableStores.joinToString(", ")} didn't answer." to
+            "Nothing was changed. This is a connection problem, not a missing game — try again later."
+    ui.notApplicable ->
+        "This isn't a Windows game." to
+            "Storefront identities only exist for PC games. Console ROMs are matched by their file."
+    ui.settledLabel != null ->
+        "Already matched." to
+            "${ui.settledLabel} — there was nothing to choose between. Use Store Match to change it."
+    // A name the user typed found nothing. Named, so they can see what was asked for, and pointed
+    // back at the search bar rather than at the title: the bar exists so the title can stay.
+    ui.typedQuery != null ->
+        "No store has “${ui.typedQuery}”." to
+            "Nothing was changed, and nothing is linked. Go back to try another name."
+    else ->
+        "No store has this game." to
+            "Nothing was changed, and nothing is linked. Use the search bar in Store Match to try another name."
+}
+
+/**
+ * What the stores NOT on this list have to say, or null when every store asked is in the tabs.
+ *
+ * One store having candidates must not speak for the others. A store that timed out is named
+ * first, because its absence reads as "that store doesn't have the game" and means the opposite;
+ * a store already linked is named so it is not taken for one that was skipped.
+ */
+internal fun storefrontOtherStoresNote(ui: StorefrontMatchUi): String? {
+    val unreachable = ui.unavailableStores.takeIf { it.isNotEmpty() && ui.rows.isNotEmpty() }
+        ?.joinToString(", ")
+        ?.let { names -> "$names didn't answer, so this list is ${ui.storeLabel.orEmpty()}'s alone. Try again later for $names." }
+    val linked = ui.settledStores.takeIf { it.isNotEmpty() }
+        ?.joinToString(", ")
+        ?.let { names -> "Already linked on $names. That link is not changed here." }
+    return listOfNotNull(unreachable, linked).joinToString(" ").takeIf { it.isNotBlank() }
+}
+
 @Composable
 private fun EmptyState(ui: StorefrontMatchUi) {
-    val (headline, detail) = when {
-        ui.unavailableStores.isNotEmpty() ->
-            "${ui.unavailableStores.joinToString(", ")} didn't answer." to
-                "Nothing was changed. This is a connection problem, not a missing game — try again later."
-        ui.notApplicable ->
-            "This isn't a Windows game." to
-                "Storefront identities only exist for PC games. Console ROMs are matched by their file."
-        ui.settledLabel != null ->
-            "Already matched." to
-                "${ui.settledLabel} — there was nothing to choose between. Use Rematch Storefront to change it."
-        else ->
-            "No store has this game." to
-                "Nothing was changed, and nothing is linked. You can try again after editing the title."
-    }
+    val (headline, detail) = storefrontEmptyMessage(ui)
     Text(
         headline,
         color = TextPrimary,
@@ -209,6 +267,23 @@ private fun EmptyState(ui: StorefrontMatchUi) {
         modifier = Modifier.padding(top = 8.dp),
     )
     Text(detail, color = TextMuted, fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp, bottom = 4.dp))
+}
+
+/** One store in the header. The shown one is outlined; the others are taps away, or L1/R1. */
+@Composable
+private fun StoreChip(label: String, shown: Boolean, edge: Color, onClick: () -> Unit) {
+    Text(
+        label,
+        color = if (shown) TextPrimary else TextMuted,
+        fontSize = 12.sp,
+        fontWeight = if (shown) FontWeight.SemiBold else FontWeight.Normal,
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(if (shown) Color(0x33FFFFFF) else Color(0x14FFFFFF))
+            .then(if (shown) Modifier.border(1.dp, edge, RoundedCornerShape(50)) else Modifier)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 3.dp),
+    )
 }
 
 @Composable
@@ -260,6 +335,7 @@ private fun Notice(text: String, dotColor: Color) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CandidateRow(
     row: StorefrontCandidateRow,
@@ -268,9 +344,14 @@ private fun CandidateRow(
     focusEdge: Color,
     onClick: () -> Unit,
 ) {
+    // Keyed on the candidate too: switching store keeps the cursor on row 0, and row 0 of the new
+    // store must still be framed, from wherever the last store's list was scrolled to.
+    val requester = remember { BringIntoViewRequester() }
+    LaunchedEffect(focused, row.store, row.storeId) { if (focused) requester.bringIntoView() }
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .bringIntoViewRequester(requester)
             .clip(RoundedCornerShape(8.dp))
             .background(if (focused) focusFill else RowFill)
             .then(if (focused) Modifier.border(1.5.dp, focusEdge, RoundedCornerShape(8.dp)) else Modifier)
@@ -329,6 +410,7 @@ private fun SignalChip(label: String) {
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun NoMatchRow(
     focused: Boolean,
@@ -337,9 +419,12 @@ private fun NoMatchRow(
     focusEdge: Color,
     onClick: () -> Unit,
 ) {
+    val requester = remember { BringIntoViewRequester() }
+    LaunchedEffect(focused) { if (focused) requester.bringIntoView() }
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .bringIntoViewRequester(requester)
             .clip(RoundedCornerShape(8.dp))
             .background(if (focused) focusFill else RowFill)
             .then(if (focused) Modifier.border(1.5.dp, focusEdge, RoundedCornerShape(8.dp)) else Modifier)

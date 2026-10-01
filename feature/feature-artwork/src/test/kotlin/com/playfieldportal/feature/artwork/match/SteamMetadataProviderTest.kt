@@ -177,7 +177,7 @@ class SteamMetadataProviderTest {
         assertEquals("Valve", preset.developer)
         assertEquals("Valve", preset.publisher)
         assertEquals("Action, Adventure", preset.genre)
-        assertEquals(2011, preset.releaseYear!!.toInt())
+        assertEquals(2011, preset.releaseYear)
         assertEquals("2011-04-18", preset.releaseDate)
         assertEquals(0.95f, preset.communityRating!!, 0.001f)
         // required_age 0 is "no gate", which is not a rating and must not be invented into one.
@@ -194,7 +194,7 @@ class SteamMetadataProviderTest {
 
         val preset = (provider.getMetadata("620") as StorefrontOutcome.Ok).value
 
-        assertEquals(2026, preset.releaseYear!!.toInt())
+        assertEquals(2026, preset.releaseYear)
         assertNull(preset.releaseDate)
     }
 

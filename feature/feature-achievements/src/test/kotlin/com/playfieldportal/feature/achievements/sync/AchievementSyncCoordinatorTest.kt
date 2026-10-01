@@ -274,6 +274,56 @@ class AchievementSyncCoordinatorTest {
         coVerify { reporter.finished(SyncTrigger.AUTOMATIC, any(), newPauses = emptySet()) }
     }
 
+    // A pause can also surface from a single game's fetch (Steam lists the library but refuses a
+    // game's achievements). It is the same condition, so it follows the same once-only rule.
+
+    private val steam1 = AchievementIdentity(STEAM, "570")
+
+    @Test
+    fun `a pause found while fetching a game is reported and remembered for the provider`() = runTest {
+        present(entry(steam1))
+        coEvery { steamStrategy.plan(any(), any(), any()) } returns ProviderCheckPlan(toFetch = setOf(steam1))
+        coEvery { fetcher.fetch(steam1, any()) } returns ProviderSyncResult.ProfileNotPublic
+
+        coordinator().updateInstalled(SyncTrigger.AUTOMATIC)
+
+        coVerify { reporter.finished(SyncTrigger.AUTOMATIC, any(), newPauses = setOf(UpdatePause.SteamPrivate)) }
+        coVerify { store.recordProviderPause(STEAM, UpdatePause.SteamPrivate) }
+    }
+
+    @Test
+    fun `a scheduled repeat of a pause found while fetching a game is not reported again`() = runTest {
+        present(entry(steam1))
+        coEvery { store.providerState(STEAM) } returns AchievementProviderSyncStateEntity(
+            provider = "STEAM", lastCheckedAt = now - 2 * DAY,
+            pausedReason = UpdatePause.SteamPrivate.code,
+        )
+        coEvery { steamStrategy.plan(any(), any(), any()) } returns ProviderCheckPlan(toFetch = setOf(steam1))
+        coEvery { fetcher.fetch(steam1, any()) } returns ProviderSyncResult.ProfileNotPublic
+
+        val summary = coordinator().updateInstalled(SyncTrigger.AUTOMATIC)
+
+        coVerify { reporter.finished(SyncTrigger.AUTOMATIC, any(), newPauses = emptySet()) }
+        // Still paused, and still remembered: the check that opened this run cleared the reason.
+        assertEquals(setOf<UpdatePause>(UpdatePause.SteamPrivate), summary.pauses)
+        coVerify { store.recordProviderPause(STEAM, UpdatePause.SteamPrivate) }
+    }
+
+    @Test
+    fun `a manual update reports a pause found while fetching a game even when it is a repeat`() = runTest {
+        present(entry(steam1))
+        coEvery { store.providerState(STEAM) } returns AchievementProviderSyncStateEntity(
+            provider = "STEAM", lastCheckedAt = now - 2 * DAY,
+            pausedReason = UpdatePause.SteamPrivate.code,
+        )
+        coEvery { steamStrategy.plan(any(), any(), any()) } returns ProviderCheckPlan(toFetch = setOf(steam1))
+        coEvery { fetcher.fetch(steam1, any()) } returns ProviderSyncResult.ProfileNotPublic
+
+        coordinator().updateInstalled(SyncTrigger.MANUAL)
+
+        coVerify { reporter.finished(SyncTrigger.MANUAL, any(), newPauses = setOf(UpdatePause.SteamPrivate)) }
+    }
+
     @Test
     fun `clear during an in-flight fetch cancels it and nothing is written late`() = runTest {
         present(entry(ra1))

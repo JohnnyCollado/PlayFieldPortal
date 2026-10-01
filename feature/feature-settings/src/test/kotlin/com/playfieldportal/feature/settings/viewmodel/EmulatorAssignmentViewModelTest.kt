@@ -282,7 +282,7 @@ class EmulatorAssignmentViewModelTest {
         io.mockk.verify {
             tasks.report(
                 id = "emu_assign", label = any(),
-                message = match { it?.contains("DuckStation") == true },
+                message = match { it.contains("DuckStation") },
                 severity = any(), kind = any(), action = any(),
             )
         }
@@ -340,7 +340,7 @@ class EmulatorAssignmentViewModelTest {
         io.mockk.verify {
             tasks.report(
                 id = "emu_assign", label = any(),
-                message = match { it?.contains("cleared 1 per-game override") == true },
+                message = match { it.contains("cleared 1 per-game override") },
                 severity = any(), kind = any(), action = any(),
             )
         }

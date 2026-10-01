@@ -16,6 +16,7 @@ import com.playfieldportal.core.data.repository.ArtworkFolderRepository
 import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.feature.artwork.importer.ImportSummary
+import com.playfieldportal.feature.artwork.importer.RelinkBackgroundRule
 import com.playfieldportal.feature.artwork.store.ArtworkKind
 import com.playfieldportal.feature.artwork.store.ArtworkTempIO
 import com.playfieldportal.feature.artwork.store.InternalArtworkStore
@@ -153,8 +154,14 @@ class InternalArtworkMigrationWorker @AssistedInject constructor(
         when (kind) {
             ArtworkKind.ICON ->
                 if (game.iconUri == oldPath || !routing.isValidRef(game.iconUri)) gameDao.updateIconUri(gameId, uri)
-            ArtworkKind.HERO ->
+            ArtworkKind.HERO -> {
                 if (game.heroUri == oldPath || !routing.isValidRef(game.heroUri)) gameDao.updateHero(gameId, uri)
+                // A scrape stores the hero file as the background too. The caller deletes the old
+                // file next, so a background still naming it has to move with it.
+                if (RelinkBackgroundRule.isHeroStandIn(game.artworkUri, oldPath)) {
+                    gameDao.updateArtwork(gameId, uri)
+                }
+            }
             ArtworkKind.BACKGROUND ->
                 if (game.artworkUri == oldPath || !routing.isValidRef(game.artworkUri)) gameDao.updateArtwork(gameId, uri)
             ArtworkKind.LOGO ->

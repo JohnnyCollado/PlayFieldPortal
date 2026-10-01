@@ -2,6 +2,7 @@ package com.playfieldportal.feature.artwork.api
 
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.entity.GameEntity
+import com.playfieldportal.core.domain.model.GameContentType
 import com.playfieldportal.core.domain.model.MetadataOverrides
 import com.playfieldportal.feature.artwork.MetadataRepository
 import com.playfieldportal.feature.artwork.match.MatchProvider
@@ -382,6 +383,15 @@ class ArtworkRepository @Inject constructor(
     suspend fun updateMetadataForPlatform(platformId: String, onProgress: (ScrapeProgress) -> Unit): ScrapeProgress =
         withContext(Dispatchers.IO) {
             val games = gameDao.getAll().filter { it.platformId == platformId }
+            fetchForGames(games.map { it.id to Triple(it.title, it.platformId, it.romPath) }, onProgress, metadataOnly = true)
+        }
+
+    // The same text-only pass over the whole library — the All Games card's menu action. Real games
+    // only, which is what All Games shows: an app row backs a shortcut's artwork and has no game
+    // metadata to look up.
+    suspend fun updateMetadataForAllGames(onProgress: (ScrapeProgress) -> Unit): ScrapeProgress =
+        withContext(Dispatchers.IO) {
+            val games = gameDao.getAll().filter { it.contentType == GameContentType.GAME.name }
             fetchForGames(games.map { it.id to Triple(it.title, it.platformId, it.romPath) }, onProgress, metadataOnly = true)
         }
 

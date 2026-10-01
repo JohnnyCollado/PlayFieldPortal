@@ -68,7 +68,6 @@ data class AppDetailUiState(
     val artworkMessage: String? = null,
     val artworkPendingLocal: ArtworkType? = null,
     val isEditingName: Boolean = false,
-    val nameText: String = "",
     val closed: Boolean = false,
 )
 
@@ -269,29 +268,20 @@ class AppDetailViewModel @Inject constructor(
 
     // ── Display name editing ──────────────────────────────────────────────────
 
+    // The editor is the shared text entry modal (see appDetailModalSpec), which owns the text being
+    // typed and hands it over on Save.
+
     fun startEditingName() {
-        val current = _uiState.value.game?.displayTitle ?: ""
-        _uiState.update { it.copy(isEditingName = true, nameText = current) }
+        if (_uiState.value.game == null) return
+        _uiState.update { it.copy(isEditingName = true) }
     }
 
-    fun onNameTextChanged(text: String) {
-        _uiState.update { it.copy(nameText = text) }
-    }
-
-    fun confirmNameEdit() {
+    /** A blank [text] drops the override, which puts the app's own label back. */
+    fun confirmNameEdit(text: String) {
         val gameId = _uiState.value.game?.id ?: return
-        val newName = _uiState.value.nameText.trim()
+        val newName = text.trim()
         viewModelScope.launch {
             gameRepository.updateUserTitleOverride(gameId, newName.ifBlank { null })
-            val updated = gameRepository.getById(gameId)
-            _uiState.update { it.copy(game = updated ?: it.game, isEditingName = false) }
-        }
-    }
-
-    fun resetNameToDefault() {
-        val gameId = _uiState.value.game?.id ?: return
-        viewModelScope.launch {
-            gameRepository.updateUserTitleOverride(gameId, null)
             val updated = gameRepository.getById(gameId)
             _uiState.update { it.copy(game = updated ?: it.game, isEditingName = false) }
         }
@@ -305,6 +295,9 @@ class AppDetailViewModel @Inject constructor(
 
     fun handleGamepadAction(action: GamepadAction) {
         val s = _uiState.value
+        // Change Display Name and New Collection are the shared text entry modal: the screen hands
+        // every press to its host while one is up, so these branches only see a press that raced
+        // the modal onto the screen.
         if (s.isEditingName) {
             if (action == GamepadAction.BACK) cancelNameEdit()
             return
@@ -454,7 +447,7 @@ class AppDetailViewModel @Inject constructor(
         val cp = _uiState.value.collectionPicker
         val gameId = _uiState.value.game?.id ?: return
         if (cp.isCreateRow) {
-            _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(showCreateDialog = true, createText = "")) }
+            _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(showCreateDialog = true)) }
             return
         }
         val option = cp.options.getOrNull(cp.selectedIndex) ?: return
@@ -464,13 +457,9 @@ class AppDetailViewModel @Inject constructor(
         }
     }
 
-    fun onCreateCollectionTextChanged(text: String) {
-        _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(createText = text)) }
-    }
-
-    fun confirmCreateCollection() {
+    // [name] is what was typed in the shared text entry modal, which owns it until Create.
+    fun confirmCreateCollection(name: String) {
         val gameId = _uiState.value.game?.id ?: return
-        val name = _uiState.value.collectionPicker.createText
         if (name.isBlank()) { cancelCreateCollection(); return }
         viewModelScope.launch {
             val id = collectionRepository.create(name, collectionCategoryId)
@@ -478,7 +467,6 @@ class AppDetailViewModel @Inject constructor(
             _uiState.update {
                 it.copy(collectionPicker = it.collectionPicker.copy(
                     showCreateDialog = false,
-                    createText = "",
                     options = buildCollectionOptions(gameId),
                 ))
             }
@@ -486,7 +474,7 @@ class AppDetailViewModel @Inject constructor(
     }
 
     fun cancelCreateCollection() {
-        _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(showCreateDialog = false, createText = "")) }
+        _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(showCreateDialog = false)) }
     }
 
     fun closeCollectionPicker() {

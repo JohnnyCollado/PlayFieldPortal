@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -356,6 +357,7 @@ class ShibaCoinsViewModel @Inject constructor(
     private val achievementRepository: AchievementController,
     private val autoMatcher: AchievementAutoMatcher,
     private val folderLinker: LocalSteamFolderLinker,
+    private val steamGate: com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ShibaCoinsUiState())
@@ -422,6 +424,8 @@ class ShibaCoinsViewModel @Inject constructor(
                     installed = installed,
                 )
             }
+            // Before the refresh below, which is a network call the prompt must not wait on.
+            if (game != null && installed) askForFolderIfLocalCopy(game)
             // Cached rows are already showing; at most one check if the detail is over a day
             // old. Never blocks the page and never runs for a game that isn't on this device.
             if (installed) runCatching { achievementRepository.refreshGameIfStale(id) }
@@ -797,6 +801,24 @@ class ShibaCoinsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * A Windows game whose Steam id is not in the user's Steam library is never linked to Steam —
+     * Steam would serve it nothing — so its progress can only come from its own folder. An unlinked
+     * one goes straight to that folder rather than being asked whether it is a Steam copy: the
+     * owned list has already answered. Same path as answering No, registry short-circuit included.
+     */
+    private suspend fun askForFolderIfLocalCopy(game: com.playfieldportal.core.domain.model.Game) {
+        if (game.platformId != "windows") return
+        val unlinked = runCatching { achievementRepository.observeLinks(game.id).first().isEmpty() }
+            .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
+            .getOrDefault(false)
+        if (!unlinked) return
+        val local = runCatching { steamGate.isLocalCopy(game) }
+            .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
+            .getOrDefault(false)
+        if (local && gameId == game.id) chooseAutoMatch(legit = false)
+    }
+
     /** Opens the Auto-Match flow: first ask whether this is a legitimate Steam copy. */
     fun startAutoMatch() = _state.update { it.copy(autoMatchStep = AutoMatchStep.CONFIRM_COPY, autoMatchYes = true) }
 
@@ -1143,20 +1165,29 @@ class ShibaCoinsViewModel @Inject constructor(
             _state.update { it.copy(message = "A Steam app id is a number — check steamdb.info for more information on the game") }
             return
         }
+        // The game this id was typed for. `gameId` is a field that load() repoints, and the sync
+        // below is a network call — long enough to back out and open another game. Reading the
+        // field again afterwards would unlink THAT game, and leave this one on the wrong id.
+        val linkedGameId = gameId
         viewModelScope.launch {
             _state.update { it.copy(isMatching = true) }
             // Manual appid entry is only reachable from the legit-copy branch: the Local Steam
             // branch resolves from the emu folders (or explains what to set up) and never asks.
-            achievementRepository.linkManually(gameId, AchievementProvider.STEAM, id)
-            when (val result = achievementRepository.syncGameById(gameId)) {
+            achievementRepository.linkManually(linkedGameId, AchievementProvider.STEAM, id)
+            val result = achievementRepository.syncGameById(linkedGameId)
+            if (result == ProviderSyncResult.NotFound || result is ProviderSyncResult.Failed) {
+                achievementRepository.unlink(linkedGameId)
+            }
+            // The write above always belongs to the game it was for. The page state below belongs
+            // to whichever game is open, so it is only touched when that is still this one.
+            if (gameId != linkedGameId) return@launch
+            when (result) {
                 is ProviderSyncResult.Success ->
                     _state.update { it.copy(isMatching = false, autoMatchStep = null, message = null) }
-                ProviderSyncResult.NotFound, is ProviderSyncResult.Failed -> {
-                    achievementRepository.unlink(gameId)
+                ProviderSyncResult.NotFound, is ProviderSyncResult.Failed ->
                     _state.update {
                         it.copy(isMatching = false, message = "App id $id doesn't match — check steamdb.info for more information on the game")
                     }
-                }
                 // Credentials/profile problems aren't the appid's fault — keep the link, surface why.
                 else -> _state.update { it.copy(isMatching = false, autoMatchStep = null, message = messageFor(result)) }
             }

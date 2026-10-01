@@ -98,7 +98,7 @@ class LocalSteamIdentityResolverTest {
     fun `an EXACT title match writes the marker and records it as a title match`() = runTest {
         trackingOn()
         coEvery { identities.get(any(), any()) } returns null
-        coEvery { storefront.resolve(game, false, false) } returns linkedResolution("620", MatchConfidence.EXACT)
+        coEvery { storefront.resolve(game, false, false, stores = steamOnly) } returns linkedResolution("620", MatchConfidence.EXACT)
         coEvery { writer.writeAppIdMarker(any(), any(), "620") } returns
             LocalSteamSchemaWriter.MarkerWrite.Written("Portal 2/steam_settings")
 
@@ -120,7 +120,7 @@ class LocalSteamIdentityResolverTest {
             best = candidate("620", "Portal 2"),
             alternatives = listOf(candidate("400", "Portal")),
         )
-        coEvery { storefront.resolve(game, false, false) } returns
+        coEvery { storefront.resolve(game, false, false, stores = steamOnly) } returns
             StorefrontMetadataResolver.GameResolution(
                 7L,
                 mapOf(Storefront.STEAM to StorefrontMetadataResolver.Resolution.NeedsConfirmation(result)),
@@ -137,7 +137,7 @@ class LocalSteamIdentityResolverTest {
     fun `an unreachable store is Unavailable, never NoMatch`() = runTest {
         trackingOn()
         coEvery { identities.get(any(), any()) } returns null
-        coEvery { storefront.resolve(game, false, false) } returns
+        coEvery { storefront.resolve(game, false, false, stores = steamOnly) } returns
             StorefrontMetadataResolver.GameResolution(
                 7L,
                 mapOf(
@@ -159,7 +159,7 @@ class LocalSteamIdentityResolverTest {
     fun `a store that answered with nothing is NoMatch, and still writes nothing`() = runTest {
         trackingOn()
         coEvery { identities.get(any(), any()) } returns null
-        coEvery { storefront.resolve(game, false, false) } returns
+        coEvery { storefront.resolve(game, false, false, stores = steamOnly) } returns
             StorefrontMetadataResolver.GameResolution(
                 7L,
                 mapOf(Storefront.STEAM to StorefrontMetadataResolver.Resolution.NoMatch),
@@ -213,7 +213,7 @@ class LocalSteamIdentityResolverTest {
     fun `a folder with no library game resolves against its own folder name`() = runTest {
         trackingOn()
         coEvery { identities.get(any(), any()) } returns null
-        coEvery { storefront.resolve(any(), false, false) } answers {
+        coEvery { storefront.resolve(any(), false, false, stores = steamOnly) } answers {
             // The synthetic row carries the folder name as its title, and nothing else PFP invented.
             val subject = firstArg<GameEntity>()
             assertEquals("Portal 2", subject.title)
@@ -230,6 +230,26 @@ class LocalSteamIdentityResolverTest {
             outcome,
         )
     }
+
+    @Test
+    fun `only Steam is asked, whatever other stores the resolver knows`() = runTest {
+        // A Local Steam folder is identified by a Steam appid and nothing else. Every stub above
+        // answers only a Steam-scoped resolve; this states it outright, because an unscoped one
+        // would spend a search and up to three detail requests per folder on every other store.
+        trackingOn()
+        coEvery { identities.get(any(), any()) } returns null
+        coEvery { storefront.resolve(game, false, false, stores = steamOnly) } returns
+            linkedResolution("620", MatchConfidence.EXACT)
+        coEvery { writer.writeAppIdMarker(any(), any(), "620") } returns
+            LocalSteamSchemaWriter.MarkerWrite.Written("Portal 2/steam_settings")
+
+        resolver.identify(anchor(), game)
+
+        coVerify(exactly = 1) { storefront.resolve(game, false, false, null, steamOnly) }
+    }
+
+    /** The scope Local Steam resolves in. */
+    private val steamOnly = setOf(Storefront.STEAM)
 
     private fun storedIdentity(storeId: String) = GameStorefrontIdentityEntity(
         gameId = 7L,

@@ -64,6 +64,15 @@ class AchievementSyncStore @Inject constructor(
         )
     }
 
+    /**
+     * A pause that only showed up while fetching a game, after the provider's check was already
+     * recorded. Remembers the reason alone, so the next scheduled run can tell it is a repeat.
+     */
+    suspend fun recordProviderPause(provider: AchievementProvider, pause: UpdatePause) {
+        val state = providerState(provider) ?: AchievementProviderSyncStateEntity(provider = provider.name)
+        dao.upsertProviderState(state.copy(pausedReason = pause.code))
+    }
+
     /** RetroAchievements finished [day]'s summary cohort; [next] is tomorrow's. */
     suspend fun recordCohort(provider: AchievementProvider, next: Int, day: Long) {
         val state = providerState(provider) ?: AchievementProviderSyncStateEntity(provider = provider.name)

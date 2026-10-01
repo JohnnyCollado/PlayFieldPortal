@@ -2365,15 +2365,16 @@ class ArtworkStudioViewModel @Inject constructor(
             appendLocal(kind, uris)
             return
         }
+        val gid = gameId
         viewModelScope.launch {
             _uiState.update { it.copy(applying = true) }
             val tmp = copyLocalToCache(uri)
             val path = if (tmp != null) {
-                routingStore.studioApplyFromFile(gameId, kind, tmp, provider = LOCAL_FILE_PROVIDER, originUrl = null)
+                routingStore.studioApplyFromFile(gid, kind, tmp, provider = LOCAL_FILE_PROVIDER, originUrl = null)
             } else {
-                artworkStore.saveVersionedFromUri(gameId, kind, uri)
+                artworkStore.saveVersionedFromUri(gid, kind, uri)
             }
-            finishApply(kind, path, LOCAL_FILE_PROVIDER)
+            finishApply(gid, kind, path, LOCAL_FILE_PROVIDER)
         }
     }
 
@@ -2446,20 +2447,21 @@ class ArtworkStudioViewModel @Inject constructor(
         val art = _uiState.value.candidate ?: return
         val kind = tab().kind
         val manualFile = _uiState.value.candidateManualPath?.let { java.io.File(it) }
+        val gid = gameId
         viewModelScope.launch {
             _uiState.update { it.copy(applying = true) }
             // A previewed manual is already on disk — store that file instead of re-downloading.
             val path = if (kind == ArtworkKind.MANUAL && manualFile?.exists() == true) {
-                routingStore.studioApplyFromFile(gameId, kind, manualFile, provider = art.provider, originUrl = art.url)
+                routingStore.studioApplyFromFile(gid, kind, manualFile, provider = art.provider, originUrl = art.url)
             } else {
                 // Without the asset id a single-art record carries only origin_url, and the holds
                 // comparison this task adds would be URL-only forever on the tabs it serves.
                 routingStore.studioApplyFromUrl(
-                    gameId, kind, art.url, provider = art.provider, providerAssetId = art.providerAssetId,
+                    gid, kind, art.url, provider = art.provider, providerAssetId = art.providerAssetId,
                 )
             }
             _uiState.update { it.copy(candidateManualPath = null) }
-            finishApply(kind, path, art.provider)
+            finishApply(gid, kind, path, art.provider)
         }
     }
 
@@ -2656,13 +2658,14 @@ class ArtworkStudioViewModel @Inject constructor(
 
     private fun restorePrevious() {
         val kind = tab().kind
+        val gid = gameId
         viewModelScope.launch {
             _uiState.update { it.copy(applying = true, actionsOpen = false) }
-            val path = routingStore.restorePrevious(gameId, kind)
+            val path = routingStore.restorePrevious(gid, kind)
             if (path == null) {
                 _uiState.update { it.copy(applying = false, message = "No previous version to restore") }
             } else {
-                repointColumn(kind, path)
+                repointColumn(gid, kind, path)
                 _uiState.update {
                     it.copy(applying = false, currentUri = path, previewVersion = it.previewVersion + 1,
                         message = "${tab().label} restored to previous")
@@ -2673,13 +2676,14 @@ class ArtworkStudioViewModel @Inject constructor(
 
     private fun resetToScrapedDefault() {
         val kind = tab().kind
+        val gid = gameId
         viewModelScope.launch {
             _uiState.update { it.copy(applying = true, actionsOpen = false) }
-            val path = routingStore.resetToScrapedDefault(gameId, kind)
+            val path = routingStore.resetToScrapedDefault(gid, kind)
             if (path == null) {
                 _uiState.update { it.copy(applying = false, message = "Could not re-download the scraped default") }
             } else {
-                repointColumn(kind, path)
+                repointColumn(gid, kind, path)
                 _uiState.update {
                     it.copy(applying = false, currentUri = path, previewVersion = it.previewVersion + 1,
                         message = "${tab().label} reset to scraped default")
@@ -2921,6 +2925,9 @@ class ArtworkStudioViewModel @Inject constructor(
      *  for ICON1 videos — keeping the untouched original for future re-crops. */
     override fun applyCrop() {
         val kind = tab().kind
+        // Captured with the kind: an ICON1 re-encode takes long enough to close the Studio and open
+        // another game's, and `gameId` would then name that game when the clip is finally saved.
+        val gid = gameId
         val s = _uiState.value
         val displayPath = s.cropEditorPath ?: return
         val videoPath = s.cropVideoSourcePath
@@ -2943,7 +2950,7 @@ class ArtworkStudioViewModel @Inject constructor(
                 // An animated image keeps its animation: the editor's copy of the original is saved
                 // whole, and the crop is applied while drawing (Animated Images).
                 CropSave.AT_DRAW -> routingStore.saveCropAtDraw(
-                    gameId, kind, java.io.File(displayPath), rect,
+                    gid, kind, java.io.File(displayPath), rect,
                     candidateOriginUrl = candidate?.url,
                     candidateProvider = candidate?.provider,
                     candidateAssetId = candidate?.providerAssetId,
@@ -2964,7 +2971,7 @@ class ArtworkStudioViewModel @Inject constructor(
                         return@launch
                     }
                     routingStore.saveCropBaked(
-                        gameId, kind, baked, rect,
+                        gid, kind, baked, rect,
                         candidateOriginUrl = candidate?.url,
                         candidateProvider = candidate?.provider,
                         candidateAssetId = candidate?.providerAssetId,
@@ -2974,7 +2981,7 @@ class ArtworkStudioViewModel @Inject constructor(
             if (path == null) {
                 _uiState.update { it.copy(applying = false, message = "Could not save the cropped artwork") }
             } else {
-                repointColumn(kind, path)
+                repointColumn(gid, kind, path)
                 _uiState.update {
                     it.copy(applying = false, currentUri = path, previewVersion = it.previewVersion + 1,
                         message = "${tab().label} cropped")
@@ -3021,27 +3028,39 @@ class ArtworkStudioViewModel @Inject constructor(
             out.takeIf { it.length() > 0 } ?: run { out.delete(); null }
         }.onFailure { Timber.w(it, "bakeCrop failed") }.getOrNull()
 
-    /** Repoints the column-backed game row for [kind] to [path]; record-only kinds no-op. */
-    private suspend fun repointColumn(kind: ArtworkKind, path: String?) {
+    /**
+     * Repoints the column-backed row of game [gid] for [kind] to [path]; record-only kinds no-op.
+     *
+     * The game is a parameter, never the `gameId` field: every caller reaches this after a
+     * download, a copy or a re-encode, and the Studio is reused from game to game. Reading the
+     * field here pointed whichever game was open by then at the first game's file.
+     */
+    private suspend fun repointColumn(gid: Long, kind: ArtworkKind, path: String?) {
         when (kind) {
-            ArtworkKind.ICON           -> gameRepository.updateIconArt(gameId, path)
-            ArtworkKind.BOX_ART        -> gameRepository.updateBoxArtTile(gameId, path)
-            ArtworkKind.BOX_3D         -> gameRepository.updateBox3dArt(gameId, path)
-            ArtworkKind.PHYSICAL_MEDIA -> gameRepository.updatePhysicalMediaArt(gameId, path)
-            ArtworkKind.HERO           -> gameRepository.updateHeroArt(gameId, path)
-            ArtworkKind.BACKGROUND     -> gameRepository.updateBoxArt(gameId, path)
-            ArtworkKind.LOGO           -> gameRepository.updateLogoArt(gameId, path)
+            ArtworkKind.ICON           -> gameRepository.updateIconArt(gid, path)
+            ArtworkKind.BOX_ART        -> gameRepository.updateBoxArtTile(gid, path)
+            ArtworkKind.BOX_3D         -> gameRepository.updateBox3dArt(gid, path)
+            ArtworkKind.PHYSICAL_MEDIA -> gameRepository.updatePhysicalMediaArt(gid, path)
+            ArtworkKind.HERO           -> gameRepository.updateHeroArt(gid, path)
+            ArtworkKind.BACKGROUND     -> gameRepository.updateBoxArt(gid, path)
+            ArtworkKind.LOGO           -> gameRepository.updateLogoArt(gid, path)
             else                       -> Unit
         }
     }
 
-    private suspend fun finishApply(kind: ArtworkKind, path: String?, provider: String) {
+    private suspend fun finishApply(gid: Long, kind: ArtworkKind, path: String?, provider: String) {
         if (path == null) {
             _uiState.update { it.copy(applying = false, message = "Could not apply — download or file was rejected") }
             return
         }
         // Column-backed kinds repoint the game row; record-only kinds resolve by fixed name.
-        repointColumn(kind, path)
+        repointColumn(gid, kind, path)
+        // The write belonged to the game it was for. What follows redraws the Studio, which may
+        // be showing another game by now — and is then not this apply's to redraw.
+        if (gid != gameId) {
+            _uiState.update { it.copy(applying = false) }
+            return
+        }
         refreshLibrary()
         val game = gameRepository.getById(gameId)
         _uiState.update {
@@ -3058,10 +3077,11 @@ class ArtworkStudioViewModel @Inject constructor(
 
     fun clearCurrent() {
         val kind = tab().kind
+        val gid = gameId
         viewModelScope.launch {
             // Delete the stored file, its backup + original, and the record; then unwire the column.
-            routingStore.clearArtwork(gameId, kind)
-            repointColumn(kind, null)
+            routingStore.clearArtwork(gid, kind)
+            repointColumn(gid, kind, null)
             refreshLibrary()
             _uiState.update {
                 it.copy(currentUri = null, info = null, previewVersion = it.previewVersion + 1,

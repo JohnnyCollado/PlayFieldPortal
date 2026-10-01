@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import com.playfieldportal.feature.artwork.match.MatchConfidence
 import com.playfieldportal.feature.artwork.match.MatchSignal
 import com.playfieldportal.feature.artwork.match.ScoredStorefrontCandidate
 import com.playfieldportal.feature.artwork.match.Storefront
@@ -152,6 +153,119 @@ class StorefrontMatchUiTest {
         assertNull(ui.focusedCandidate)
     }
 
+    // -- More than one store ---------------------------------------------------
+
+    private fun tab(store: Storefront, confidence: MatchConfidence, vararg ids: String) = StorefrontStoreTab(
+        store = store,
+        label = store.label,
+        confidence = confidence,
+        rows = ids.map { id ->
+            storefrontRowOf(
+                ScoredStorefrontCandidate(StorefrontCandidate(store, id, "DOOM"), listOf(MatchSignal.EXACT_TITLE))
+            )
+        },
+    )
+
+    private val twoStores = StorefrontMatchUi(loading = false, gameTitle = "DOOM").withStores(
+        listOf(
+            tab(Storefront.STEAM, MatchConfidence.AMBIGUOUS, "379720", "2280"),
+            tab(Storefront.GOG, MatchConfidence.EXACT, "1390579243"),
+        )
+    )
+
+    @Test
+    fun `the picker opens on the first store and carries the rest`() {
+        assertEquals("Steam", twoStores.storeLabel)
+        assertEquals(MatchConfidence.AMBIGUOUS, twoStores.confidence)
+        assertEquals(listOf("379720", "2280"), twoStores.rows.map { it.storeId })
+        assertEquals(2, twoStores.stores.size)
+        assertTrue(twoStores.hasOtherStores)
+    }
+
+    @Test
+    fun `showing another store swaps the rows, the label and the confidence, and resets the cursor`() {
+        val onGog = twoStores.copy(focus = 1).showingStore(1)
+
+        assertEquals("GOG", onGog.storeLabel)
+        assertEquals(MatchConfidence.EXACT, onGog.confidence)
+        assertEquals(listOf("1390579243"), onGog.rows.map { it.storeId })
+        assertEquals(0, onGog.focus)
+        assertEquals(1, onGog.storeIndex)
+    }
+
+    @Test
+    fun `a store index past either end stays on the nearest store`() {
+        assertEquals("Steam", twoStores.showingStore(-1).storeLabel)
+        assertEquals("GOG", twoStores.showingStore(5).storeLabel)
+    }
+
+    @Test
+    fun `a store that has been answered leaves the picker on the ones still waiting`() {
+        val afterSteam = twoStores.withoutStore(Storefront.STEAM)
+
+        assertEquals(listOf("GOG"), afterSteam.stores.map { it.label })
+        assertEquals("GOG", afterSteam.storeLabel)
+        assertFalse(afterSteam.hasOtherStores)
+        // And with the last one answered there is nothing left to show.
+        assertTrue(afterSteam.withoutStore(Storefront.GOG).stores.isEmpty())
+    }
+
+    @Test
+    fun `one store is no tabs at all`() {
+        val one = StorefrontMatchUi(loading = false).withStores(listOf(tab(Storefront.STEAM, MatchConfidence.LOW, "1")))
+
+        assertFalse(one.hasOtherStores)
+        assertNull(storefrontOtherStoresNote(one))
+    }
+
+    @Test
+    fun `stores that did not need a choice are named, unreachable ones first`() {
+        assertEquals(
+            "GOG didn't answer, so this list is Steam's alone. Try again later for GOG.",
+            storefrontOtherStoresNote(
+                StorefrontMatchUi(loading = false, unavailableStores = listOf("GOG"))
+                    .withStores(listOf(tab(Storefront.STEAM, MatchConfidence.LOW, "1")))
+            ),
+        )
+        assertEquals(
+            "Already linked on GOG. That link is not changed here.",
+            storefrontOtherStoresNote(
+                StorefrontMatchUi(loading = false, settledStores = listOf("GOG"))
+                    .withStores(listOf(tab(Storefront.STEAM, MatchConfidence.LOW, "1")))
+            ),
+        )
+    }
+
+    // -- A typed search --------------------------------------------------------
+
+    @Test
+    fun `a typed name that finds nothing says so by name and points back to the bar`() {
+        val (headline, detail) = storefrontEmptyMessage(
+            StorefrontMatchUi(loading = false, gameTitle = "Brave Default FF", typedQuery = "Bravely Defalt")
+        )
+
+        assertEquals("No store has “Bravely Defalt”.", headline)
+        // Not "edit the title": the search bar exists so the title never has to change.
+        assertEquals("Nothing was changed, and nothing is linked. Go back to try another name.", detail)
+    }
+
+    @Test
+    fun `an unreachable store outranks a typed name that found nothing`() {
+        val (headline, _) = storefrontEmptyMessage(
+            StorefrontMatchUi(loading = false, typedQuery = "Quake", unavailableStores = listOf("Steam"))
+        )
+
+        assertEquals("Steam didn't answer.", headline)
+    }
+
+    @Test
+    fun `while the search bar holds the cursor no store row is the focused one`() {
+        val row = storefrontRematchRowOf(repoRow(Storefront.STEAM))
+
+        assertNull(StorefrontRematchUi(loading = false, rows = listOf(row), queryFocused = true).focusedRow)
+        assertEquals(row, StorefrontRematchUi(loading = false, rows = listOf(row), queryFocused = false).focusedRow)
+    }
+
     // -- Rematch rows ----------------------------------------------------------
 
     private fun repoRow(
@@ -194,7 +308,8 @@ class StorefrontMatchUiTest {
         val row = storefrontRematchRowOf(repoRow(Storefront.GOG, searchable = false))
 
         assertFalse(row.enabled)
-        assertEquals("No provider yet — coming after Steam is proven", row.note)
+        // Said as what it is, not as a promise: there may never be a way to search this store.
+        assertEquals("Can't be searched — this store has no public catalog to ask", row.note)
     }
 
     @Test

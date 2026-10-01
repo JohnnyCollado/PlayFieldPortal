@@ -61,6 +61,12 @@ data class PspMenuRow(
      * right-align, cannot be dimmed, and cannot be read back by a test asserting the setting.
      */
     val value: String? = null,
+    /**
+     * A group name drawn above this row, set on the first row of each group. It lives on the row
+     * rather than as a list entry of its own so [PspContextMenuOverlay]'s `selectedIndex` stays a
+     * row index: a caller's controller navigation never has to step over a header.
+     */
+    val header: String? = null,
 )
 
 private val PanelWidth = 300.dp
@@ -137,6 +143,7 @@ fun PspContextMenuOverlay(
                 modifier = Modifier.padding(top = 10.dp),
             ) {
                 itemsIndexed(rows) { index, row ->
+                    row.header?.let { PspContextMenuGroupHeader(it, first = index == 0) }
                     PspContextMenuRow(
                         row        = row,
                         isSelected = index == selectedIndex,
@@ -215,7 +222,54 @@ private fun PspContextMenuRow(
     }
 }
 
+/** A group's name, with a faint rule above every group but the first (the title has its own). */
+@Composable
+private fun PspContextMenuGroupHeader(label: String, first: Boolean) {
+    Column(Modifier.fillMaxWidth().padding(top = if (first) 0.dp else 8.dp)) {
+        if (!first) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(end = 8.dp)
+                    .height(1.dp)
+                    .background(Color.White.copy(alpha = 0.14f)),
+            )
+        }
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            color = Color.White.copy(alpha = 0.45f),
+            style = TextStyle(shadow = TextDropShadow),
+            modifier = Modifier.padding(top = if (first) 0.dp else 8.dp),
+        )
+    }
+}
+
 // ── Previews ──────────────────────────────────────────────────────────────────
+
+/** A card menu: four headed groups, settings as values, the destructive row last. */
+@CombinedPreviews
+@Composable
+fun PspContextMenuGroupedPreview() {
+    PfpPreview {
+        PspContextMenuOverlay(
+            title = "PSP Memory Card",
+            rows = listOf(
+                PspMenuRow("Scan for Games", header = "Games"),
+                PspMenuRow("Update Metadata", header = "Update"),
+                PspMenuRow("Fetch Missing Artwork"),
+                PspMenuRow("Icon Display", value = "Global: Box Art", header = "Display"),
+                PspMenuRow("Pin to Top", value = "Off"),
+                PspMenuRow("Library Manager", header = "Manage"),
+                PspMenuRow("Hide Card"),
+                PspMenuRow("Remove Card", isDestructive = true),
+            ),
+            selectedIndex = 0,
+            onRowActivated = {},
+            onDismiss = {},
+        )
+    }
+}
 
 /** The Games Filter root: two rows that name a list, with the setting pinned to the right edge. */
 @CombinedPreviews
