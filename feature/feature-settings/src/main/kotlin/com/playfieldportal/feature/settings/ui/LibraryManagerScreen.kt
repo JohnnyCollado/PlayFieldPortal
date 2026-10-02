@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Row
@@ -43,6 +44,7 @@ import com.playfieldportal.feature.launcher.PcLauncherAdapters
 import com.playfieldportal.feature.settings.viewmodel.ADD_CONSOLE_FOCUS_KEY
 import com.playfieldportal.feature.settings.viewmodel.EmulatorOption
 import com.playfieldportal.feature.settings.viewmodel.IMPORT_PC_FOCUS_KEY
+import com.playfieldportal.feature.settings.viewmodel.LibraryAppRow
 import com.playfieldportal.feature.settings.viewmodel.LibraryCardRow
 import com.playfieldportal.feature.settings.viewmodel.LibraryManagerUiState
 import com.playfieldportal.feature.settings.viewmodel.LibraryManagerViewModel
@@ -479,6 +481,8 @@ private fun CardDetailContent(
 
     var showEmulatorDialog by remember { mutableStateOf(false) }
     var showRemoveConfirm  by remember { mutableStateOf(false) }
+    var appToRemove        by remember { mutableStateOf<LibraryAppRow?>(null) }
+    val itemMenu = rememberSettingsItemMenu()
     var newExt             by remember(card.platformId) { mutableStateOf("") }
     val isScanning = card.platformId in state.scanningPlatformIds
     val isAndroid = card.platformId == "android"
@@ -514,17 +518,29 @@ private fun CardDetailContent(
                 onConfirm = { showRemoveConfirm = false; onRemoveCard(card.platformId) },
                 onCancel = { showRemoveConfirm = false },
             )
+            appToRemove != null -> appToRemove?.let { app ->
+                PfpModalSpec.Confirm(
+                    key = "removeApp:${app.gameId}",
+                    title = "Remove ${app.label}?",
+                    message = "This removes the app from this library. The app itself stays installed.",
+                    confirmLabel = "Remove",
+                    destructive = true,
+                    onConfirm = { appToRemove = null; onRemoveApp(app.gameId) },
+                    onCancel = { appToRemove = null },
+                )
+            }
             else -> null
         },
     )
 
+    Box(modifier = modifier) {
     SettingsScaffold(
         title = "Library Manager",
         subtitle = card.displayName,
         onBack = onBack,
-        modifier = modifier,
+        modifier = Modifier.fillMaxSize(),
         modalOpen = modal.open,
-        onInterceptAction = modal.intercept,
+        onInterceptAction = { modal.intercept(it) || itemMenu.intercept(it) },
     ) {
         // Registered like the list screens: the scaffold needs a scroll owner here for its
         // chrome drag-to-scroll and for controller keep-in-view. Registering is the whole fix;
@@ -579,10 +595,13 @@ private fun CardDetailContent(
                     Hint("No apps yet — use Add Apps to pick installed apps for this library.")
                 } else {
                     state.androidApps.forEach { app ->
+                        val openMenu = {
+                            itemMenu.show(app.label, libraryAppMenuRows(app.gameId) { appToRemove = app })
+                        }
                         SettingsRow(
-                            label    = app.label,
-                            trailing = { Text("Remove", color = SettingsAccent) },
-                            onClick  = { onRemoveApp(app.gameId) },
+                            label       = app.label,
+                            onClick     = openMenu,
+                            onLongPress = openMenu,
                         )
                     }
                 }
@@ -606,10 +625,13 @@ private fun CardDetailContent(
                     Hint("No extensions set — add at least one so scanning can match this console's ROMs.")
                 } else {
                     card.extensions.forEach { ext ->
+                        val openMenu = {
+                            itemMenu.show(".$ext", libraryExtensionMenuRows(card.platformId, ext, onRemoveExtension))
+                        }
                         SettingsRow(
-                            label    = ".$ext",
-                            trailing = { Text("Remove", color = SettingsAccent) },
-                            onClick  = { onRemoveExtension(card.platformId, ext) },
+                            label       = ".$ext",
+                            onClick     = openMenu,
+                            onLongPress = openMenu,
                         )
                     }
                 }
@@ -666,13 +688,13 @@ private fun CardDetailContent(
             if (isAndroid) SettingsGroup("Actions")
             SettingsRow(label = "Rename Memory Card", onClick = { onBeginRename(card.platformId) })
             SettingsToggleRow(
-                label    = "Show In Games",
+                label    = SettingsLabels.SHOW_IN_GAMES,
                 sublabel = "Enable or hide this Memory Card",
                 checked  = card.enabled,
                 onToggle = { onToggleEnabled(card.platformId, it) },
             )
             SettingsToggleRow(
-                label    = "Pin To Top",
+                label    = SettingsLabels.PIN_TO_TOP,
                 checked  = card.pinned,
                 onToggle = { onTogglePinned(card.platformId, it) },
             )
@@ -691,6 +713,8 @@ private fun CardDetailContent(
             }
         }
     }
+    itemMenu.Content()
+    }
 
     if (showEmulatorDialog) {
         EmulatorPickerDialog(
@@ -702,6 +726,20 @@ private fun CardDetailContent(
 
     modal.Content()
 }
+
+/** An Android app row's menu. Removing drops the game from the library, so the row is red and the screen confirms it. */
+internal fun libraryAppMenuRows(gameId: Long, onRequestRemove: (Long) -> Unit): List<SettingsMenuItem> = listOf(
+    SettingsMenuItem("Remove from Library", destructive = true) { onRequestRemove(gameId) },
+)
+
+/** An extension row's menu. Removing is reversible (add it back), so the row is plain and unconfirmed. */
+internal fun libraryExtensionMenuRows(
+    platformId: String,
+    ext: String,
+    onRemove: (platformId: String, ext: String) -> Unit,
+): List<SettingsMenuItem> = listOf(
+    SettingsMenuItem("Remove Extension") { onRemove(platformId, ext) },
+)
 
 @Composable
 private fun EmulatorPickerDialog(

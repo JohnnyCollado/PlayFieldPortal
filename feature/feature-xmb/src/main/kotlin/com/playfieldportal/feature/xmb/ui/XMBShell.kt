@@ -70,6 +70,8 @@ import com.playfieldportal.core.ui.motion.MotionWallpaperPolicy
 import com.playfieldportal.core.ui.motion.rememberAppVisible
 import com.playfieldportal.core.domain.model.DetailAction
 import com.playfieldportal.core.domain.model.NotificationDetail
+import com.playfieldportal.core.domain.model.NotificationKind
+import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.toNotificationAction
 import com.playfieldportal.core.ui.components.PfpModalSpec
 import com.playfieldportal.core.ui.components.XmbTouchButton
@@ -93,9 +95,14 @@ import com.playfieldportal.feature.xmb.ui.detail.ShibaCoinsTarget
 import com.playfieldportal.feature.xmb.ui.detail.ShibaLibraryScreen
 import com.playfieldportal.feature.xmb.ui.detail.VideoDetailScreen
 import com.playfieldportal.feature.xmb.ui.photo.PhotoViewerScreen
+import com.playfieldportal.feature.xmb.viewmodel.PlaylistImportQueue
+import com.playfieldportal.feature.xmb.viewmodel.PlaylistImportReport
 import com.playfieldportal.feature.xmb.viewmodel.XMBUiState
 import com.playfieldportal.feature.xmb.viewmodel.XMBViewModel
+import com.playfieldportal.feature.xmb.viewmodel.XmbConfirm
+import com.playfieldportal.feature.xmb.viewmodel.xmbConfirmCopy
 import com.playfieldportal.feature.xmb.viewmodel.rowKey
+import com.playfieldportal.feature.xmb.viewmodel.viewCursorKey
 
 // Uniform canvas-scale baseline = the handheld reference height in dp (AYN Thor landscape,
 // 1080×1920 / 369dpi ⇒ 1080 / (369/160) ≈ 468dp). The scale resolves so the post-scale layout
@@ -128,7 +135,8 @@ private val CAT_BAR_HEIGHT = 112.dp
 @Composable
 fun XMBShellContainer(
     viewModel: XMBViewModel = hiltViewModel(),
-    onSettingsLongPress: () -> Unit = {},
+    // Debug builds only: the Settings icon's long-press opens the debug menu instead of its category menu.
+    onSettingsLongPress: (() -> Unit)? = null,
 ) {
     // Lifecycle-aware collection: state observation stops while PFP is STOPPED (backgrounded behind
     // a game/emulator), so the shell isn't recomposing off-screen — less CPU/battery under load.
@@ -210,6 +218,8 @@ fun XMBShellContainer(
         onUserInteraction = viewModel::onUserInteraction,
         onBootComplete = viewModel::onBootSequenceComplete,
         onSettingsLongPress = onSettingsLongPress,
+        onCategoryLongPress = viewModel::onCategoryLongPress,
+        onCategoryTargetConsumed = viewModel::onCategoryTargetConsumed,
         onCloseSettingsScreen = viewModel::onCloseSettingsScreen,
         onOpenXmbLayoutAdjust = viewModel::openXmbLayoutAdjust,
         onOpenCustomIcons = viewModel::openCustomIcons,
@@ -232,6 +242,9 @@ fun XMBShellContainer(
         onSettingsActionConsumed = viewModel::consumeSettingsAction,
         onCloseAppDrawer = viewModel::onCloseAppDrawer,
         onDrawerActionConsumed = viewModel::consumeDrawerAction,
+        onDrawerEditAppDetails = viewModel::onDrawerEditAppDetails,
+        onDrawerAddAppToCard = viewModel::onDrawerAddAppToCard,
+        onDrawerToggleAppFavorite = viewModel::onDrawerToggleAppFavorite,
         onCloseGameDetail = viewModel::onCloseGameDetail,
         onCloseShibaCoins = viewModel::onCloseShibaCoins,
         onOpenShibaCoins = { gameId -> viewModel.openShibaCoins(gameId) },
@@ -250,6 +263,7 @@ fun XMBShellContainer(
         onOpenLibraryManager = viewModel::openLibraryManager,
         onOpenArtworkOrphans = viewModel::openArtworkOrphans,
         onGoToLibrary = viewModel::goToLibrary,
+        onOpenGameDetailFromSettings = viewModel::openGameDetailFromSettings,
         onGameDetailActionConsumed = viewModel::consumeGameDetailAction,
         onCloseVideoDetail = viewModel::onCloseVideoDetail,
         onVideoDetailActionConsumed = viewModel::consumeVideoDetailAction,
@@ -336,6 +350,15 @@ fun XMBShellContainer(
             onShortcutAdd = viewModel::confirmShortcutReview,
             onShortcutIgnore = viewModel::ignoreShortcutReview,
         ),
+        playlistImportCallbacks = PlaylistImportCallbacks(
+            onOpen = viewModel::openImportedPlaylist,
+            onClose = viewModel::closePlaylistImportSheet,
+            onCopy = viewModel::copyNotificationText,
+        ),
+        confirmCallbacks = XmbConfirmCallbacks(
+            onConfirm = viewModel::confirmPendingConfirm,
+            onCancel = viewModel::cancelPendingConfirm,
+        ),
         onWindowsSetupConfirm = viewModel::confirmWindowsSetupPrompt,
         onWindowsSetupDismiss = viewModel::dismissWindowsSetupPrompt,
         onLaunchRecoveryAction = viewModel::onLaunchRecoveryAction,
@@ -364,6 +387,28 @@ fun XMBShellContainer(
         if (uiState.requestLocalSteamFolderPick) {
             viewModel.onBatchMatchPickLaunched()
             batchMatchPicker.launch(null)
+        }
+    }
+
+    // Import Playlist: the system picker takes any file (no reliable MIME type for .m3u8 / .pls /
+    // .xspf across providers); the runner rejects what is not a playlist by extension afterwards.
+    // The kind is held here (saved, as the Activity can be recreated while the picker is up) so the
+    // result knows which playlists the files fill.
+    var playlistImportKind by androidx.compose.runtime.saveable.rememberSaveable {
+        androidx.compose.runtime.mutableStateOf<com.playfieldportal.core.domain.playlist.PlaylistKind?>(null)
+    }
+    val playlistImportPicker = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenMultipleDocuments()
+    ) { uris ->
+        playlistImportKind?.let { kind -> viewModel.onPlaylistFilesPicked(kind, uris) }
+        playlistImportKind = null
+    }
+
+    androidx.compose.runtime.LaunchedEffect(uiState.requestPlaylistImportPick) {
+        uiState.requestPlaylistImportPick?.let { kind ->
+            viewModel.onPlaylistImportPickLaunched()
+            playlistImportKind = kind
+            playlistImportPicker.launch(arrayOf("*/*"))
         }
     }
 
@@ -413,7 +458,9 @@ fun XMBShell(
     onPlatformLongPress: (Int) -> Unit = {},
     onUserInteraction: () -> Unit = {},
     onBootComplete: () -> Unit = {},
-    onSettingsLongPress: () -> Unit = {},
+    onSettingsLongPress: (() -> Unit)? = null,
+    onCategoryLongPress: (Int) -> Unit = {},
+    onCategoryTargetConsumed: () -> Unit = {},
     onCloseSettingsScreen: () -> Unit = {},
     onOpenXmbLayoutAdjust: () -> Unit = {},
     onOpenCustomIcons: () -> Unit = {},
@@ -436,6 +483,9 @@ fun XMBShell(
     onSettingsActionConsumed: () -> Unit = {},
     onCloseAppDrawer: () -> Unit = {},
     onDrawerActionConsumed: () -> Unit = {},
+    onDrawerEditAppDetails: (packageName: String) -> Unit = {},
+    onDrawerAddAppToCard: (packageName: String, label: String) -> Unit = { _, _ -> },
+    onDrawerToggleAppFavorite: (packageName: String, label: String) -> Unit = { _, _ -> },
     onCloseGameDetail: () -> Unit = {},
     onCloseShibaCoins: () -> Unit = {},
     onOpenShibaCoins: (Long) -> Unit = {},
@@ -454,6 +504,7 @@ fun XMBShell(
     onOpenLibraryManager: () -> Unit = {},
     onOpenArtworkOrphans: () -> Unit = {},
     onGoToLibrary: () -> Unit = {},
+    onOpenGameDetailFromSettings: (Long) -> Unit = {},
     onGameDetailActionConsumed: () -> Unit = {},
     onCloseVideoDetail: () -> Unit = {},
     onVideoDetailActionConsumed: () -> Unit = {},
@@ -548,6 +599,8 @@ fun XMBShell(
     onNotificationOptions: () -> Unit = {},
     onNotificationPanelDismiss: () -> Unit = {},
     notificationCallbacks: NotificationModalCallbacks = NotificationModalCallbacks(),
+    playlistImportCallbacks: PlaylistImportCallbacks = PlaylistImportCallbacks(),
+    confirmCallbacks: XmbConfirmCallbacks = XmbConfirmCallbacks(),
     // PFP's on-screen keyboard: provided to every field below, drawn over everything.
     virtualKeyboard: com.playfieldportal.core.ui.keyboard.VirtualKeyboardController? = null,
 ) {
@@ -891,6 +944,8 @@ fun XMBShell(
                             // drill; taps on the other (dimmed) cards are ignored.
                             onSiblingTap = { i -> if (i == uiState.drillSiblingIndex) onTouchBack() },
                             iconStyle = uiState.iconStyle,
+                            scrollToTopToken = uiState.scrollToTopToken,
+                            columnKey = uiState.viewCursorKey(),
                             barTopY = barTop,
                             belowTopY = anchorTop,
                             iconAnimatingAllowed = iconAnimatingAllowed,
@@ -926,6 +981,7 @@ fun XMBShell(
                                 onItemLongPress = onItemLongPress,
                                 iconStyle = uiState.iconStyle,
                                 scrollToTopToken = uiState.scrollToTopToken,
+                                columnKey = uiState.viewCursorKey(),
                                 barTopY = barTop,
                                 belowTopY = anchorTop,
                                 previousRiseRows = layoutSpec.previousItemRiseRows,
@@ -947,7 +1003,8 @@ fun XMBShell(
                             onCategorySelected = onCategorySelected,
                             onCategoryLongPress = { index ->
                                 val id = uiState.categories.getOrNull(index)?.id
-                                if (id == BuiltInCategory.SETTINGS) onSettingsLongPress()
+                                if (id == BuiltInCategory.SETTINGS && onSettingsLongPress != null) onSettingsLongPress()
+                                else onCategoryLongPress(index)
                             },
                             drilledIn = uiState.drillTitle != null,
                             solidUnfocusedIcons = uiState.solidUnfocusedIcons,
@@ -1096,7 +1153,10 @@ fun XMBShell(
                         onOpenLibraryManager = onOpenLibraryManager,
                         onOpenArtworkOrphans = onOpenArtworkOrphans,
                         onGoToLibrary = onGoToLibrary,
+                        onOpenGameDetail = onOpenGameDetailFromSettings,
                         onMoveCategoryOnBar = onStartCategoryMove,
+                        categoryTarget = uiState.settingsCategoryTarget,
+                        onCategoryTargetConsumed = onCategoryTargetConsumed,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -1146,6 +1206,9 @@ fun XMBShell(
                     // Drawer touches are reported to the shared input-source tracker so a finger
                     // tap/browse suppresses that hint exactly like touch on the XMB does.
                     onTouchInteraction = onTouchInput,
+                    onEditAppDetails = onDrawerEditAppDetails,
+                    onAddAppToCard = onDrawerAddAppToCard,
+                    onToggleAppFavorite = onDrawerToggleAppFavorite,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -1517,6 +1580,8 @@ fun XMBShell(
                     onWindowsSetupConfirm = onWindowsSetupConfirm,
                     onWindowsSetupDismiss = onWindowsSetupDismiss,
                     notificationCallbacks = notificationCallbacks,
+                    playlistImportCallbacks = playlistImportCallbacks,
+                    confirmCallbacks = confirmCallbacks,
                 ),
                 // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
                 showHints = !uiState.resolvedShowTouchButton,
@@ -1556,7 +1621,12 @@ internal fun shellModalSpec(
     onWindowsSetupConfirm: () -> Unit,
     onWindowsSetupDismiss: () -> Unit,
     notificationCallbacks: NotificationModalCallbacks = NotificationModalCallbacks(),
+    playlistImportCallbacks: PlaylistImportCallbacks = PlaylistImportCallbacks(),
+    confirmCallbacks: XmbConfirmCallbacks = XmbConfirmCallbacks(),
 ): PfpModalSpec? {
+    // A menu's confirm first of all: it is raised from a menu opened over everything else, including
+    // the notification panel (Clear All), and the view model forwards its presses before the panel's.
+    uiState.pendingConfirm?.let { return xmbConfirmSpec(it, confirmCallbacks) }
     // The notification panel's layers come first: they sit over the panel, which sits over all of
     // the states below, and the view model forwards the panel's presses before it reaches them.
     notificationModalSpec(uiState, notificationCallbacks)?.let { return it }
@@ -1612,6 +1682,8 @@ internal fun shellModalSpec(
             buttonLabel = "Close",
             onDismiss = onDismissInfoDialog,
         )
+        uiState.playlistImportQueue != null ->
+            playlistImportSpec(uiState.playlistImportQueue, playlistImportCallbacks)
         // A legacy INSTALL_SHORTCUT request: the Add / Ignore that used to be asked in the shade.
         // Opens on Ignore, so a stray double press never adds a shortcut another app asked for.
         uiState.shortcutReview != null -> {
@@ -1658,6 +1730,62 @@ data class NotificationModalCallbacks(
     val onShortcutAdd: (String) -> Unit = {},
     val onShortcutIgnore: (String) -> Unit = {},
 )
+
+/** What a menu confirm's two buttons call back into the view model. */
+data class XmbConfirmCallbacks(
+    val onConfirm: (XmbConfirm) -> Unit = {},
+    val onCancel: () -> Unit = {},
+)
+
+/** A menu confirm as the shared Confirm modal: opens on Cancel, red unless the copy says not. */
+private fun xmbConfirmSpec(confirm: XmbConfirm, callbacks: XmbConfirmCallbacks): PfpModalSpec {
+    val copy = xmbConfirmCopy(confirm)
+    return PfpModalSpec.Confirm(
+        key = confirm,
+        title = copy.title,
+        message = copy.message,
+        confirmLabel = copy.confirmLabel,
+        destructive = copy.destructive,
+        // Every kind opens on Cancel, Remove from Category included (AD-12).
+        openOnCancel = true,
+        onConfirm = { callbacks.onConfirm(confirm) },
+        onCancel = callbacks.onCancel,
+    )
+}
+
+/** What an import sheet's Open Playlist, Copy List and Close call back into the view model. */
+data class PlaylistImportCallbacks(
+    val onOpen: (PlaylistImportReport) -> Unit = {},
+    val onClose: () -> Unit = {},
+    val onCopy: (String) -> Unit = {},
+)
+
+/**
+ * One import report as the shared Results sheet. Open Playlist only when the import created a
+ * playlist; the position ("1 of 3") is supplied here because the report does not know its batch.
+ */
+private fun playlistImportSpec(queue: PlaylistImportQueue, callbacks: PlaylistImportCallbacks): PfpModalSpec {
+    val report = queue.current
+    val severity = when {
+        report.error != null -> NotificationSeverity.ERROR
+        report.playlistId == null -> NotificationSeverity.WARNING
+        else -> NotificationSeverity.SUCCESS
+    }
+    return PfpModalSpec.Results(
+        key = "playlist_import:${queue.position}:${report.fileName}",
+        title = report.title,
+        meta = if (queue.total > 1) "${queue.position} of ${queue.total}" else null,
+        detail = report.toResults(),
+        accent = severityColor(severity),
+        icon = notificationGlyph(NotificationKind.SYSTEM),
+        actionLabel = if (report.playlistId != null) "Open Playlist" else null,
+        onAction = { callbacks.onOpen(report) },
+        itemActionLabel = { null },
+        onItemAction = {},
+        onCopy = callbacks.onCopy,
+        onClose = callbacks.onClose,
+    )
+}
 
 /** The notification panel's open sheet or Stop confirm, if either is up. */
 private fun notificationModalSpec(uiState: XMBUiState, callbacks: NotificationModalCallbacks): PfpModalSpec? {

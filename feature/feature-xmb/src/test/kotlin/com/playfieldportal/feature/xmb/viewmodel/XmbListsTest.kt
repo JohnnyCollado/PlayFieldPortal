@@ -5,11 +5,13 @@ import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.CategoryType
 import com.playfieldportal.core.domain.model.Game
+import com.playfieldportal.core.domain.model.GameCollection
 import com.playfieldportal.core.domain.model.ListState
 import com.playfieldportal.feature.appbar.CategorizedApp
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -86,6 +88,52 @@ class XmbListsTest {
         assertNull(state(settings).currentListKind())
     }
 
+    // ── Column key ────────────────────────────────────────────────────────────
+
+    private val music = Category(BuiltInCategory.MUSIC, "Music", "ic_music", type = CategoryType.BUILT_IN, position = 2)
+    private val photos = Category(BuiltInCategory.PHOTO, "Photo", "ic_photos", type = CategoryType.BUILT_IN, position = 1)
+    private val social = Category(BuiltInCategory.SOCIAL, "Social", "ic_social", type = CategoryType.BUILT_IN, position = 7)
+    private val achievements = Category(BuiltInCategory.ACHIEVEMENTS, "Achievements", "ic_ach", type = CategoryType.BUILT_IN, position = 8)
+    private val allWithMedia = all + listOf(music, photos, social, achievements)
+
+    private fun keyOf(category: Category, block: XMBUiState.() -> XMBUiState = { this }) =
+        XMBUiState(categories = allWithMedia, selectedCategoryIndex = allWithMedia.indexOf(category)).block().viewCursorKey()
+
+    @Test
+    fun `the column key is the category id and the view on screen`() {
+        assertEquals("games/root", keyOf(games))
+        assertEquals("games/plat_gba", keyOf(games) { copy(selectedPlatformId = "gba") })
+        assertEquals("games/col_7", keyOf(games) { copy(selectedCollectionId = 7) })
+        assertEquals("custom_ff_5/root", keyOf(custom))
+    }
+
+    @Test
+    fun `a collection wins over a platform in the column key`() {
+        assertEquals("games/col_7", keyOf(games) { copy(selectedPlatformId = "gba", selectedCollectionId = 7) })
+    }
+
+    @Test
+    fun `each media and system nav kind has its own column key`() {
+        assertEquals("music/music_root", keyOf(music))
+        assertEquals("music/music_all", keyOf(music) { copy(musicNav = MusicNav.AllMusic) })
+        assertEquals("music/music_playlist_3", keyOf(music) { copy(musicNav = MusicNav.Playlist(3, "Mix")) })
+        assertEquals("videos/video_library_a", keyOf(videos) { copy(videoNav = VideoNav.Library("a", "Lib")) })
+        assertEquals("videos/video_apps", keyOf(videos) { copy(videoNav = VideoNav.VideoApps) })
+        assertEquals("photos/photo_albums", keyOf(photos) { copy(photoNav = PhotoNav.Albums) })
+        assertEquals("photos/photo_library_p", keyOf(photos) { copy(photoNav = PhotoNav.Library("p", "Pics")) })
+        assertEquals("social/social_friends", keyOf(social) { copy(socialNav = SocialNav.Friends) })
+        assertEquals("social/social_voiceinvitefriends", keyOf(social) { copy(socialNav = SocialNav.VoiceInviteFriends) })
+        assertEquals("achievements/ach_root", keyOf(achievements))
+        assertEquals("settings/settings_root", keyOf(settings))
+    }
+
+    @Test
+    fun `a different nav gives a different column key`() {
+        assertNotEquals(keyOf(videos), keyOf(videos) { copy(videoNav = VideoNav.AllVideos) })
+        assertNotEquals(keyOf(games), keyOf(games) { copy(selectedPlatformId = "gba") })
+        assertNotEquals(keyOf(games), keyOf(custom))
+    }
+
     // ── Row keys ──────────────────────────────────────────────────────────────
 
     @Test
@@ -128,6 +176,36 @@ class XmbListsTest {
         val s = state(appStore) { copy(appSortMode = XmbSortMode.RECENT_PLAYED) }
         assertEquals(XmbSortMode.RECENT_PLAYED, s.activeSortFor("root:app_store", XmbListKind.APPS))
         assertEquals("Global: Recently Used", s.sortValueLabel("root:app_store", XmbListKind.APPS))
+    }
+
+    @Test
+    fun `an open app card follows the global app sort, not the games one`() {
+        val s = state(appStore) {
+            copy(
+                collections = listOf(GameCollection(id = 8, name = "Tools", categoryId = "app_store")),
+                selectedCollectionId = 8,
+                gameSortMode = XmbSortMode.TITLE,
+                appSortMode = XmbSortMode.RECENT_PLAYED,
+            )
+        }
+        assertEquals(XmbSortMode.RECENT_PLAYED, s.activeGameSort)
+        assertEquals(
+            "Global: Recently Used",
+            s.sortValueLabel("collection:8", s.openListSortKind),
+        )
+    }
+
+    @Test
+    fun `an open gaming card still follows the global games sort`() {
+        val s = state(custom) {
+            copy(
+                collections = listOf(GameCollection(id = 7, name = "RPG", categoryId = "custom_ff_5")),
+                selectedCollectionId = 7,
+                gameSortMode = XmbSortMode.RECENT_PLAYED,
+                appSortMode = XmbSortMode.TITLE,
+            )
+        }
+        assertEquals(XmbSortMode.RECENT_PLAYED, s.activeGameSort)
     }
 
     @Test

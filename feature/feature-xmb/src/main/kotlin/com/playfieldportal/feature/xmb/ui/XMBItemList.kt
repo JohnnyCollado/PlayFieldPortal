@@ -1,7 +1,8 @@
 package com.playfieldportal.feature.xmb.ui
 
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -10,12 +11,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -25,12 +24,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -65,7 +60,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -76,22 +74,27 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.isUnspecified
 import androidx.compose.ui.unit.sp
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.playfieldportal.core.ui.achievement.BoneGlyph
@@ -107,6 +110,9 @@ import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 import com.playfieldportal.feature.xmb.viewmodel.XMBItemType
 import com.playfieldportal.themekit.XmbLayoutSpec
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.roundToInt
 
 // Game icons use the authentic PSP ICON0 ratio 144:80 (= 1.8), scaled for the list.
 private val GAME_ICON_WIDTH = 126.dp
@@ -173,7 +179,7 @@ private val SelectedTextShadow = Shadow(
 private val ROW_HORIZONTAL_PADDING = 18.dp
 
 // "Text Shadow" (Display ▸ Appearance): the repo's standard directional drop shadow — the same
-// values PspContextMenu / ControllerHintBar / DetailContextMenu use — applied to XMB row
+// values PspContextMenu / ControllerHintBar use — applied to XMB row
 // subtitles. The settings scaffold's SettingsTextShadow is feature-internal, so the same idiom is
 // restated here for the shell (the XMB draws over the raw wallpaper, no scrim at all).
 val XmbTextShadow = Shadow(
@@ -205,7 +211,8 @@ private val DRILL_GAME_COLUMN_LEFT = 138.dp
 //     belowTopY with a ◀ trailing it, the previous card half-clipped above the bar. Icon-only.
 //     This column is fixed while you run through the games.
 //   • RIGHT — the GAME CARDS (rom icons), icon-only, in a centre-pinned column: the active game is
-//     pinned on the belowTopY / ◀ line and the tween glides the next/previous card onto the pin.
+//     pinned on the belowTopY / ◀ line and the shared step spring (XmbStepSpring) glides the
+//     next/previous card onto the pin, the same motion as the category bar and the main list.
 //
 //     [ card 3 ]   ½-clipped above the bar
 //  ═══ caticon bar (right hidden) ═══
@@ -225,6 +232,10 @@ fun XmbDrillFlyout(
     // backs out of the drill); taps on other cards are delivered too so it can ignore them.
     onSiblingTap: (Int) -> Unit = {},
     iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
+    // Snap-rule inputs for the game column (see XMBItemList): a sort or search bump, and which game
+    // list is on screen, so those snap to the restored cursor instead of gliding there.
+    scrollToTopToken: Int = 0,
+    columnKey: Any? = null,
     // The Y of the category bar's top edge and bottom edge — passed the SAME values as the main XMB
     // so the drill is laid out identically: active row under the caticon, previous half-clipped above.
     barTopY: Dp = 40.dp,
@@ -266,6 +277,8 @@ fun XmbDrillFlyout(
             belowTopY = belowTopY,
             onItemSelected = onItemSelected,
             onItemLongPress = onItemLongPress,
+            scrollToTopToken = scrollToTopToken,
+            columnKey = columnKey,
             iconAnimatingAllowed = iconAnimatingAllowed,
             modifier = Modifier.fillMaxSize().padding(start = DRILL_GAME_COLUMN_LEFT),
         )
@@ -285,38 +298,65 @@ private fun XmbGameColumn(
     belowTopY: Dp,
     onItemSelected: (Int) -> Unit,
     onItemLongPress: (Int) -> Unit,
+    scrollToTopToken: Int = 0,
+    columnKey: Any? = null,
     iconAnimatingAllowed: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize().clipToBounds()) {
+        // The same animated position and snap rules as XMBItemList: the selected index in rows, on the
+        // shared step spring, created at its target so first composition and resume never glide.
+        val inputs = StepInputs(
+            rawSelectedIndex = selectedIndex,
+            itemCount = items.size,
+            scrollToTopToken = scrollToTopToken,
+            columnKey = columnKey,
+            moving = LocalXmbRowDecor.current.movingLabel != null,
+        )
+        val position = remember { ItemListPosition(inputs.target) }
+        // Decided here, in the frame the inputs change, so a snap is already drawn by that frame.
+        position.accept(inputs)
+        LaunchedEffect(position.epoch) { position.run() }
+
         if (items.isEmpty()) return@BoxWithConstraints
-        val sel = selectedIndex.coerceIn(0, items.lastIndex)
-        // Window: only the rows that can land on screen above/below the active one (+2 buffer each way
-        // so the next/previous card is always already composed before it scrolls into view).
+        // Window: only the rows that can land on screen above/below the animated position (+2 buffer
+        // each way so the next/previous card is always already composed before it scrolls into view).
+        // It follows p, not the target, so rows still in transit stay composed. Recomposes only when
+        // the set of rows changes, not on every animated frame.
         val rowsAbove = (belowTopY.value / ROW_HEIGHT.value).toInt() + 2
         val rowsBelow = ((maxHeight.value - belowTopY.value) / ROW_HEIGHT.value).toInt() + 2
-        val first = (sel - rowsAbove).coerceAtLeast(0)
-        val last = (sel + rowsBelow).coerceAtMost(items.lastIndex)
-        // Place each row by its OWN absolute offset from the anchor line: the active row (i == sel)
-        // lands exactly on belowTopY, earlier rows one ROW_HEIGHT up each, later rows one down each.
-        // Independent placement (not a shared Column) guarantees rows past the active are laid out.
-        for (i in first..last) {
-            XmbVerticalListRow(
-                item = items[i],
-                isSelected = i == selectedIndex,
-                showText = true,   // every game card keeps its [Title] / {Platform (Emulator)} label
-                iconStyle = iconStyle,
-                onClick = { onItemSelected(i) },
-                onLongPress = { onItemLongPress(i) },
-                showIcon = true,
-                // Only the active card animates (its rows funnel through the same per-row gate).
-                iconAnimatingAllowed = iconAnimatingAllowed,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .fillMaxWidth()
-                    .height(ROW_HEIGHT)
-                    .offset(y = belowTopY + ROW_HEIGHT * (i - sel)),
-            )
+        val lastIndex = items.lastIndex
+        val window by remember(items.size, rowsAbove, rowsBelow) {
+            derivedStateOf {
+                val p = position.read()
+                (floor(p).toInt() - rowsAbove).coerceAtLeast(0)..(ceil(p).toInt() + rowsBelow).coerceAtMost(lastIndex)
+            }
+        }
+        // Place each row by its OWN offset from the anchor line, keyed by item: the row at p lands
+        // exactly on belowTopY, earlier rows one ROW_HEIGHT up each, later rows one down each. At rest
+        // p is the target, so this is the old contiguous layout. Independent placement (not a shared
+        // Column) guarantees rows past the active are laid out.
+        for (i in window) {
+            val item = items[i]
+            key(item.id) {
+                XmbVerticalListRow(
+                    item = item,
+                    isSelected = i == selectedIndex,
+                    showText = true,   // every game card keeps its [Title] / {Platform (Emulator)} label
+                    iconStyle = iconStyle,
+                    onClick = { onItemSelected(i) },
+                    onLongPress = { onItemLongPress(i) },
+                    showIcon = true,
+                    // Only the active card animates (its rows funnel through the same per-row gate).
+                    iconAnimatingAllowed = iconAnimatingAllowed,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .fillMaxWidth()
+                        .height(ROW_HEIGHT)
+                        .offset { IntOffset(0, (belowTopY + ROW_HEIGHT * (i - position.read())).roundToPx()) }
+                        .testTag("xmbRow:${item.id}"),
+                )
+            }
         }
     }
 }
@@ -428,79 +468,6 @@ private fun consoleIconKeyFor(item: XMBItem): String? = when (item.type) {
     else                    -> null   // collections / unknown fall back to sysicon_default
 }
 
-// A vertical list whose [selectedIndex] row is pinned to a fixed line; rows scroll under it. When
-// [anchorTopY] is unspecified the row centres vertically; otherwise the row's TOP is pinned at
-// [anchorTopY] (used by the drill flyout to seat the active row just below the caticon, exactly like
-// the main XMB, with earlier rows scrolling up past it). Each row is exactly [rowHeight] tall.
-@Composable
-private fun CenterLockedColumn(
-    count: Int,
-    selectedIndex: Int,
-    rowHeight: Dp,
-    modifier: Modifier = Modifier,
-    anchorTopY: Dp = Dp.Unspecified,
-    row: @Composable (index: Int) -> Unit,
-) {
-    BoxWithConstraints(modifier = modifier.clipToBounds()) {
-        val density = LocalDensity.current
-        val centered = anchorTopY.isUnspecified
-        // Where the active row's TOP sits, and the padding that lets the first/last rows reach it.
-        val topPad = (if (centered) (maxHeight - rowHeight) / 2 else anchorTopY).coerceAtLeast(0.dp)
-        val bottomPad = (if (centered) (maxHeight - rowHeight) / 2 else maxHeight - anchorTopY - rowHeight)
-            .coerceAtLeast(0.dp)
-        val anchorPx = with(density) { topPad.toPx() }
-        val listState = rememberLazyListState()
-        // Uptime of the previous selection change — lets the glide duration follow the input
-        // cadence: rapid held-repeat steps get a tween that finishes before the next step lands,
-        // while isolated presses keep the full-length PSP glide.
-        val lastStepUptime = remember { longArrayOf(0L) }
-
-        LaunchedEffect(selectedIndex, count, anchorPx) {
-            if (count == 0) return@LaunchedEffect
-            val now = android.os.SystemClock.uptimeMillis()
-            val sinceLastStep = now - lastStepUptime[0]
-            lastStepUptime[0] = now
-            val idx = selectedIndex.coerceIn(0, count - 1)
-            // If the target is off-screen (e.g. a big jump or first composition), get it measured
-            // and roughly in view instantly so the visible glide covers only the final short delta —
-            // this avoids a long, laggy sweep across many rows.
-            if (listState.layoutInfo.visibleItemsInfo.none { it.index == idx }) {
-                listState.scrollToItem(idx, scrollOffset = -anchorPx.toInt())
-            }
-            val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == idx }
-                ?: return@LaunchedEffect
-            // Glide by the exact remaining delta so the row's top settles precisely on the line.
-            // A single ease-in-out tween reads as one smooth motion with no spring overshoot/bounce.
-            // Duration tracks the step cadence (clamped) so held-repeat scrolling stays 1:1 with
-            // input instead of every step interrupting a half-finished 240 ms glide.
-            val delta = item.offset - anchorPx
-            if (delta != 0f) {
-                val duration = sinceLastStep.coerceIn(70L, 240L).toInt()
-                listState.animateScrollBy(
-                    delta,
-                    animationSpec = tween(durationMillis = duration, easing = FastOutSlowInEasing),
-                )
-            }
-        }
-
-        LazyColumn(
-            state = listState,
-            contentPadding = PaddingValues(top = topPad, bottom = bottomPad),
-            userScrollEnabled = false,   // selection-driven; taps still work, drag can't fight the lock
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            items(count) { index ->
-                // Centre the ROW_HEIGHT content within the taller (row + gap) cell so the card's
-                // midline lands exactly on the shared centre line — same line as the sibling & arrow.
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(rowHeight),
-                    contentAlignment = Alignment.Center,
-                ) { row(index) }
-            }
-        }
-    }
-}
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun XMBItemList(
@@ -510,8 +477,12 @@ fun XMBItemList(
     onItemLongPress: (Int) -> Unit,
     iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
     // Increments when the list must snap to the top regardless of cursor position (e.g. a sort
-    // cycle). Necessary because keyed reorders otherwise keep the viewport anchored to the old item.
+    // cycle). Without it the reorder would glide the old position to the new one.
     scrollToTopToken: Int = 0,
+    // Identifies which list this is (XMBUiState.viewCursorKey). A change means a different list took
+    // this column's place — a Settings section, a Music view — so the position snaps to the restored
+    // cursor instead of gliding there. Null for a column that never swaps its list.
+    columnKey: Any? = null,
     // Y of the category bar's TOP edge, measured from the top of this list.
     barTopY: Dp = 40.dp,
     // Y of the category bar's BOTTOM edge — where the selected item is seated, directly under the
@@ -548,8 +519,12 @@ fun XMBItemList(
     //     [ next+1 …       ]
     //
     // Pressing down slides the whole column up one: the old selected becomes the previous (above the
-    // bar) and the next becomes selected (below it). The bar is taller than a row, so the column is
-    // rendered in two pieces — one item above, selected + following below — rather than one list.
+    // bar) and the next becomes selected (below it). Every row is composed ONCE, keyed by its item, and
+    // placed by itemRowTopPx from one animated position — the selected index in rows — so a row that
+    // steps up leaves the below slot, passes behind the bar and settles in the previous slot as one
+    // continuous motion. Like the category bar, the column is positioned, never scrolled: at rest the
+    // position equals the target exactly, so there is nothing to drift, and it starts at its target, so
+    // first composition and resume never glide.
     BoxWithConstraints(modifier = modifier.fillMaxWidth().fillMaxHeight().clip(ClipAllButLeft)) {
         // The focused UMD's row grows once its disc is read, as the PSP's does, pushing the rows
         // under it down rather than covering them. Same read clock as the row's own swap.
@@ -559,77 +534,148 @@ fun XMBItemList(
             animationSpec = tween(200),
             label = "umdRowHeight",
         )
-        // Render only rows that FULLY fit below the anchor — the active row plus however many whole
-        // rows remain in the space beneath it. No trailing partial row is composed, so nothing gets
-        // clipped to a half-height sliver at the bottom edge (on any screen size).
+        // Keep whole rows only below the anchor — the active row plus however many whole rows remain
+        // in the space beneath it — so nothing rests as a half-height sliver at the bottom edge (on any
+        // screen size). A row still in transit past the last whole slot is cut at that slot's line.
         val rowsBelow = ((maxHeight.value - belowTopY.value) / ROW_HEIGHT.value).toInt()
             .coerceAtLeast(1)
-        val sel = selectedIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0))
 
-        // BELOW the bar: the selected item first, then the items after it.
-        if (items.isNotEmpty()) {
-            Column(modifier = Modifier.fillMaxWidth().offset(y = belowTopY)) {
-                val last = minOf(items.size, sel + rowsBelow)
-                for (i in sel until last) {
-                    XmbVerticalListRow(
-                        item = items[i],
-                        isSelected = i == selectedIndex,
-                        // The real PSP XMB labels EVERY first-level item (selected bright, the
-                        // rest dimmed) — labels show unless the caller asks for an icon-only column
-                        // (the drill flyout's memory-card cross).
-                        showText = showLabels,
-                        iconStyle = iconStyle,
-                        onClick = { onItemSelected(i) },
-                        onLongPress = { onItemLongPress(i) },
-                        showIcon = showIcons,
-                        trailingCursor = drillCursorOnSelected && i == selectedIndex,
-                        solidUnfocusedIcons = solidUnfocusedIcons,
-                        textShadow = textShadow,
-                        iconAnimatingAllowed = iconAnimatingAllowed,
-                        modifier = Modifier.fillMaxWidth().height(if (i == selectedIndex) umdRowHeight else ROW_HEIGHT),
-                    )
-                }
-            }
+        // The anchors in whole px, rounded the way the old Column and half-row window rounded them, so
+        // at rest every row lands on the same pixel as before (see itemRowTopPx).
+        val density = LocalDensity.current
+        val rowPx = with(density) { ROW_HEIGHT.roundToPx() }
+        val belowTopPx = with(density) { belowTopY.roundToPx() }
+        val winPx = with(density) { (ROW_HEIGHT / 2).roundToPx() }
+        // Rise distance is theme-tunable: PSP-style wallpapers want the previous item fully clear of
+        // the caticon hexagon before it dissolves.
+        val winTopPx = with(density) { (barTopY - ROW_HEIGHT * previousRiseRows).roundToPx() }
+        // The UMD's growth belongs to the UMD row, so it keeps pushing the rows after it down while it
+        // shrinks back after the cursor leaves it, instead of snapping with the selection.
+        val umdIndex = remember(items) { items.indexOfFirst { it.type == XMBItemType.UMD_SLOT } }
+        val umdExtraPx = with(density) { umdRowHeight.roundToPx() - rowPx }
+
+        val inputs = StepInputs(
+            rawSelectedIndex = selectedIndex,
+            itemCount = items.size,
+            scrollToTopToken = scrollToTopToken,
+            columnKey = columnKey,
+            moving = LocalXmbRowDecor.current.movingLabel != null,
+        )
+        val position = remember { ItemListPosition(inputs.target) }
+        // Decided here, in the frame the inputs change, so a snap is already drawn by that frame.
+        position.accept(inputs)
+        LaunchedEffect(position.epoch) { position.run() }
+
+        // Recomposes only when the set of rows changes, not on every animated frame.
+        val window by remember(selectedIndex, items.size, rowsBelow) {
+            derivedStateOf { itemRowWindow(selectedIndex, items.size, rowsBelow, position.read()) }
         }
+        val target = inputs.target.toFloat()
 
-        // ABOVE the bar: only the immediately-previous item, and only its BOTTOM HALF — the top half
-        // is clipped off above the bar, so it reads as "coming in" from behind the crossbar. The clip
-        // window is half a row tall, seated just above the bar; the full-height row inside is shifted
-        // up by half a row so its lower half lands in the window.
-        if (selectedIndex in 1..items.lastIndex) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(ROW_HEIGHT / 2)
-                    // Rise distance is theme-tunable: PSP-style wallpapers want the previous item
-                    // fully clear of the caticon hexagon before it dissolves.
-                    .offset(y = barTopY - ROW_HEIGHT * previousRiseRows)
-                    .clipToBounds(),
-                // Bottom-align a full-height row inside a half-height window: its top half is clipped.
-                // requiredHeight keeps the row its full ROW_HEIGHT (the window would otherwise coerce
-                // it down to half) so it overflows upward and the clip cuts the top half off.
-                contentAlignment = Alignment.BottomStart,
-            ) {
+        for (i in window) {
+            val item = items[i]
+            key(item.id) {
+                // The row's top in px for a position. Read in the layout and draw phases.
+                fun top(p: Float) = itemRowTopPx(i, p, belowTopPx, winTopPx, winPx, rowPx, umdIndex, umdExtraPx)
                 XmbVerticalListRow(
-                    item = items[selectedIndex - 1],
-                    isSelected = false,
-                    // Show the previous item's label too, so its name rises up through the
-                    // crossbar with the icon (unless the column is icon-only).
+                    item = item,
+                    isSelected = i == selectedIndex,
+                    // The real PSP XMB labels EVERY first-level item (selected bright, the
+                    // rest dimmed) — labels show unless the caller asks for an icon-only column
+                    // (the drill flyout's memory-card cross).
                     showText = showLabels,
                     iconStyle = iconStyle,
-                    onClick = { onItemSelected(selectedIndex - 1) },
-                    onLongPress = { onItemLongPress(selectedIndex - 1) },
+                    onClick = { onItemSelected(i) },
+                    onLongPress = { onItemLongPress(i) },
                     showIcon = showIcons,
+                    trailingCursor = drillCursorOnSelected && i == selectedIndex,
                     solidUnfocusedIcons = solidUnfocusedIcons,
                     textShadow = textShadow,
+                    iconAnimatingAllowed = iconAnimatingAllowed,
+                    // The tag sits before the row's own graphicsLayer, so tests read unscaled bounds.
                     modifier = Modifier
                         .fillMaxWidth()
-                        .requiredHeight(ROW_HEIGHT),
+                        .offset { IntOffset(0, top(position.read()).roundToInt()) }
+                        .height(if (i == umdIndex) umdRowHeight else ROW_HEIGHT)
+                        // A row above its slot shows only its part of the half-row window above the
+                        // bar. requiredHeight overflow is CENTRED, so that window has always shown the
+                        // row's middle half, not its bottom half: it reads as "coming in" from behind
+                        // the crossbar. Rows at or below the selected slot stay unclipped so a lifted
+                        // row's outline and a marked badge, which reach above the row, are not shaved.
+                        .drawWithContent {
+                            val p = position.read()
+                            val rowTop = top(p)
+                            val big = size.width * 8f
+                            val windowRect = Rect(0f, winTopPx - rowTop, size.width, winTopPx + winPx - rowTop)
+                            when (itemRowClip(i - p, rowsBelow, atRest = p == target)) {
+                                ItemRowClip.None -> drawContent()
+                                ItemRowClip.Window -> clipRect(
+                                    windowRect.left, windowRect.top, windowRect.right, windowRect.bottom,
+                                ) { this@drawWithContent.drawContent() }
+                                ItemRowClip.BelowOrWindow -> clipPath(
+                                    Path().apply {
+                                        addRect(Rect(-big, belowTopPx - rowTop, big, big))
+                                        addRect(windowRect)
+                                    },
+                                ) { this@drawWithContent.drawContent() }
+                                ItemRowClip.BottomLimit -> {
+                                    val limit = belowTopPx + rowsBelow * rowPx - rowTop
+                                    clipRect(-big, -big, big, limit) { this@drawWithContent.drawContent() }
+                                }
+                            }
+                        }
+                        .testTag("xmbRow:${item.id}"),
                 )
             }
         }
     }
 }
+
+/**
+ * The item column's animated position: the selected index in rows, on the shared step spring. It is
+ * decided in composition ([accept]) and carried out in an effect ([run]); a snap is [held] meanwhile,
+ * so the frame that first shows the new selection already draws it instead of drawing it a frame late.
+ */
+private class ItemListPosition(initial: Int) {
+    private val animatable = Animatable(initial.toFloat(), Float.VectorConverter, STEP_SETTLE_ROWS)
+
+    // Where a snap has landed but the animatable has not been told yet; NaN when there is none.
+    private var held by mutableFloatStateOf(Float.NaN)
+    private var previous: StepInputs? = null
+    private var motion: StepMotion = StepMotion.Snap(initial)
+
+    /** Bumps on every change of inputs, so the effect restarts even for an identical motion. */
+    var epoch = 0
+        private set
+
+    /** The position to draw this frame, in rows. */
+    fun read(): Float = held.takeUnless { it.isNaN() } ?: animatable.value
+
+    fun accept(inputs: StepInputs) {
+        if (inputs == previous) return
+        motion = xmbStepMotion(previous, inputs).also {
+            when (it) {
+                is StepMotion.Snap -> held = it.target.toFloat()
+                is StepMotion.SnapThenGlide -> held = it.from.toFloat()
+                is StepMotion.Glide -> Unit
+            }
+        }
+        previous = inputs
+        epoch++
+    }
+
+    suspend fun run() {
+        held.takeUnless { it.isNaN() }?.let {
+            animatable.snapTo(it)
+            held = Float.NaN
+        }
+        val m = motion
+        if (m !is StepMotion.Snap) animatable.animateTo(m.target.toFloat(), XmbStepSpring.spec(STEP_SETTLE_ROWS))
+    }
+}
+
+// Settle distance in rows: the category bar's 0.1 dp, so the tail does not visibly snap.
+private val STEP_SETTLE_ROWS = 0.1f / ROW_HEIGHT.value
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

@@ -10,6 +10,11 @@ import com.playfieldportal.core.domain.achievement.ShibaLevel
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.components.PspMenuCue
+import com.playfieldportal.core.ui.components.PspMenuNav
+import com.playfieldportal.core.ui.components.PspMenuOutcome
+import com.playfieldportal.core.ui.sound.MenuSoundPlayer
+import com.playfieldportal.core.ui.sound.MenuSoundSink
 import com.playfieldportal.feature.achievements.AchievementController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -70,6 +75,10 @@ data class PlayerStatusOptionRow(
     val label: String,
     val option: PlayerStatusOption,
     val checked: Boolean = false,
+    /** The row's current setting, drawn at the right edge (Sort: "Newest"). */
+    val value: String? = null,
+    /** Activating this row opens a list, so a › is drawn. */
+    val opensMenu: Boolean = false,
 )
 
 data class PlayerStatusOptionsMenu(
@@ -119,8 +128,8 @@ data class PlayerStatusUiState(
 
 fun playerStatusOptionRows(state: PlayerStatusUiState): List<PlayerStatusOptionRow> = when (state.options?.group) {
     null -> listOf(
-        PlayerStatusOptionRow("Sort (${state.sort.label})", PlayerStatusOption.OpenGroup(PlayerStatusOptionGroup.SORT)),
-        PlayerStatusOptionRow("Provider (${state.providerFilter.label})", PlayerStatusOption.OpenGroup(PlayerStatusOptionGroup.PROVIDER)),
+        PlayerStatusOptionRow("Sort", PlayerStatusOption.OpenGroup(PlayerStatusOptionGroup.SORT), value = state.sort.label, opensMenu = true),
+        PlayerStatusOptionRow("Provider", PlayerStatusOption.OpenGroup(PlayerStatusOptionGroup.PROVIDER), value = state.providerFilter.label, opensMenu = true),
         PlayerStatusOptionRow(if (state.isSyncing) "Updating…" else "Update Installed Achievements", PlayerStatusOption.SyncAll),
     )
     PlayerStatusOptionGroup.SORT -> PlayerStatusSort.entries.map {
@@ -162,6 +171,7 @@ private fun visibleRows(
 @HiltViewModel
 class PlayerStatusViewModel @Inject constructor(
     private val achievements: AchievementController,
+    private val menuSound: MenuSoundPlayer,
 ) : ViewModel() {
     private val _state = MutableStateFlow(PlayerStatusUiState())
     val uiState: StateFlow<PlayerStatusUiState> = _state.asStateFlow()
@@ -276,22 +286,36 @@ class PlayerStatusViewModel @Inject constructor(
         next.copy(options = PlayerStatusOptionsMenu(selectedIndex = selected, group = group))
     }
 
-    private fun moveOptions(delta: Int) = _state.update { state ->
-        val menu = state.options ?: return@update state
-        val last = (state.optionRows.size - 1).coerceAtLeast(0)
-        state.copy(options = menu.copy(selectedIndex = (menu.selectedIndex + delta).coerceIn(0, last)))
+    /**
+     * The shared PSP-panel rules ([PspMenuNav]): the cursor clamps, Back climbs from a list to the root
+     * (cursor on the row that opened it) and closes from the root, Triangle closes from any depth.
+     */
+    private fun handleOptionsAction(action: GamepadAction) {
+        val s = _state.value
+        val menu = s.options ?: return
+        val rows = s.optionRows
+        val cue = if (rows.getOrNull(menu.selectedIndex)?.option is PlayerStatusOption.OpenGroup) PspMenuCue.SELECT else PspMenuCue.CONFIRM
+        val depth = if (menu.group != null) 1 else 0
+        when (val outcome = PspMenuNav.handle(action, menu.selectedIndex, rows.size, depth, cue, MenuSoundSink { menuSound.play(it) })) {
+            is PspMenuOutcome.Moved -> _state.update { it.copy(options = menu.copy(selectedIndex = outcome.index)) }
+            PspMenuOutcome.Activate -> onOptionActivated(menu.selectedIndex)
+            PspMenuOutcome.Up -> climbToRoot(menu.group)
+            PspMenuOutcome.Close -> closeOptions()
+            PspMenuOutcome.Ignored -> Unit
+        }
+    }
+
+    /** Back from a list: the root again, with the cursor on the row that opened [group]. */
+    private fun climbToRoot(group: PlayerStatusOptionGroup?) = _state.update { s ->
+        val root = s.copy(options = PlayerStatusOptionsMenu())
+        val opener = root.optionRows.indexOfFirst { (it.option as? PlayerStatusOption.OpenGroup)?.group == group }.coerceAtLeast(0)
+        s.copy(options = PlayerStatusOptionsMenu(selectedIndex = opener))
     }
 
     fun handleGamepadAction(action: GamepadAction) {
         if (_state.value.message != null) dismissMessage()
         if (_state.value.options != null) {
-            when (action) {
-                GamepadAction.NAVIGATE_UP -> moveOptions(-1)
-                GamepadAction.NAVIGATE_DOWN -> moveOptions(1)
-                GamepadAction.SELECT -> onOptionActivated(_state.value.options!!.selectedIndex)
-                GamepadAction.BACK, GamepadAction.OPEN_CONTEXT_MENU -> closeOptions()
-                else -> Unit
-            }
+            handleOptionsAction(action)
             return
         }
         when (action) {

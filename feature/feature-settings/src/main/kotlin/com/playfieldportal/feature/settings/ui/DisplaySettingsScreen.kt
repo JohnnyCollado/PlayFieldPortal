@@ -503,7 +503,7 @@ fun DisplaySettingsScreen(
             )
 
             SettingsToggleRow(
-                label    = "Context Menu Hint",
+                label    = SettingsLabels.OPTIONS_HINT,
                 sublabel = "Show the idle “Options” pill over XMB items with a context menu",
                 checked  = state.contextMenuHintEnabled,
                 onToggle = { viewModel.setContextMenuHintEnabled(it) },

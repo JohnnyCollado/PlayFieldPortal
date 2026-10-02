@@ -69,4 +69,13 @@ class CustomizableIconsTest {
             assertNotEquals(id, name, "display name for $id should be humanized, not the raw id")
         }
     }
+
+    // The per-category image family lives in core-ui (theme-kit can't see it), so this guards the
+    // other half: it must never become a theme slot, or theme export/import would carry it.
+    @Test
+    fun `usercat keys are not theme slots`() {
+        assertTrue(CustomizableIcons.ALL.none { it.key.startsWith("usercat_") })
+        assertFalse(IconSlots.isValidKey("usercat_custom_x_1"))
+        assertFalse(CustomizableIcons.isValidKey("usercat_custom_x_1"))
+    }
 }

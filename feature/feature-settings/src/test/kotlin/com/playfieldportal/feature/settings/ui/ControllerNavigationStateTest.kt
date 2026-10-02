@@ -100,6 +100,49 @@ class ControllerNavigationStateTest {
     }
 
     @Test
+    fun `long press on the focused row runs its onLongPress once`() {
+        val state = ControllerNavigationState()
+        var opened = 0
+        state.updateItems(listOf(ControllerNavItem("a", onLongPress = { opened++ }), item("b")))
+
+        assertTrue(state.focusedHasLongPress)
+        assertTrue(state.longPressFocused())
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun `long press on a row without one does nothing and reports it`() {
+        val state = ControllerNavigationState()
+        var opened = 0
+        state.updateItems(listOf(item("a"), ControllerNavItem("b", onLongPress = { opened++ })))
+
+        assertFalse(state.focusedHasLongPress)
+        assertFalse(state.longPressFocused())
+        assertEquals(0, opened)
+        state.move(1)
+        assertTrue(state.focusedHasLongPress)
+    }
+
+    @Test
+    fun `long press on a focused inline action runs the action's own`() {
+        val state = ControllerNavigationState()
+        val ran = mutableListOf<String>()
+        state.updateItems(
+            listOf(
+                ControllerNavItem(
+                    "row",
+                    onLongPress = { ran += "row" },
+                    trailingActions = listOf(ControllerNavItem("row:action:0", onLongPress = { ran += "action" })),
+                ),
+            ),
+        )
+        state.moveHorizontal(1)
+
+        assertTrue(state.longPressFocused())
+        assertEquals(listOf("action"), ran)
+    }
+
+    @Test
     fun `movement skips disabled items`() {
         val state = ControllerNavigationState()
         state.updateItems(

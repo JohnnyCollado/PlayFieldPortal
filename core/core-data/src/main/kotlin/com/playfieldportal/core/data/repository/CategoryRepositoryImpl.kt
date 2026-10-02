@@ -8,6 +8,7 @@ import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.CategoryType
 import com.playfieldportal.core.domain.model.ListKeys
+import com.playfieldportal.core.ui.icons.UserCategoryIconKeys
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
@@ -32,6 +33,7 @@ class CategoryRepositoryImpl @Inject constructor(
     private val discordSessionActivator: com.playfieldportal.core.domain.discord.DiscordSessionActivator,
     private val collectionRepository: CollectionRepository,
     private val listStateDao: com.playfieldportal.core.data.database.dao.ListStateDao,
+    private val customIconStore: CustomIconStore,
 ) {
     // Built-ins to seed/reconcile — the Social column is dropped in the "lite" build (no Discord SDK),
     // so it never appears in the XMB, the Category Manager, or backups there.
@@ -67,8 +69,19 @@ class CategoryRepositoryImpl @Inject constructor(
         }
         categoryDao.deleteById(id)   // category_items and umd_slots rows cascade-delete
         listStateDao.deleteLists(ListKeys.listsOfCategory(id))
+        // Its device image goes with it, so recreating the same name (same id) never inherits one.
+        UserCategoryIconKeys.keyFor(id)?.let { customIconStore.clear(it) }
         Timber.i("Category deleted: $id (collections=$collections)")
         return true
+    }
+
+    /**
+     * Removes category images whose category is gone, and any abandoned create-flow draft. Run once
+     * at startup: a restore commits its files before its categories, so sweeping any later would
+     * delete images that are about to match.
+     */
+    suspend fun pruneOrphanCategoryIcons() {
+        customIconStore.pruneUserCategoryIcons(categoryDao.getAll().map { it.id }.toSet())
     }
 
     fun isProtected(id: String): Boolean = id in PROTECTED_BUILTINS

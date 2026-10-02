@@ -276,7 +276,7 @@ class PfpThemeCodecV3Test {
         assertEquals("mp4", decoded.motion?.extension)
         assertTrue(decoded.motion!!.drain().contentEquals(mp4Bytes()), "streams from the file")
         // Streaming is repeatable: apply() may extract the same bundle more than once.
-        assertTrue(decoded.motion!!.drain().contentEquals(mp4Bytes()), "and can be streamed again")
+        assertTrue(decoded.motion.drain().contentEquals(mp4Bytes()), "and can be streamed again")
     }
 
     @Test

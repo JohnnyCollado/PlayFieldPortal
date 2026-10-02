@@ -3,6 +3,7 @@ package com.playfieldportal.feature.settings.viewmodel
 import com.playfieldportal.core.data.repository.CategoryRepositoryImpl
 import com.playfieldportal.core.data.repository.CollectionRepository
 import com.playfieldportal.core.data.repository.CollectionsOnDelete
+import com.playfieldportal.core.data.repository.CustomIconStore
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.CategoryType
 import com.playfieldportal.core.domain.model.GameCollection
@@ -39,6 +40,7 @@ class CategoryManagerDeleteTest {
 
     private val repo = mockk<CategoryRepositoryImpl>(relaxed = true)
     private val collections = mockk<CollectionRepository>()
+    private val store = mockk<CustomIconStore>(relaxed = true)
 
     private fun category(id: String, gaming: Boolean) = Category(
         id = id, name = id, iconKey = "ic_games", type = CategoryType.MANUAL, position = 9, isGamingCategory = gaming,
@@ -55,7 +57,8 @@ class CategoryManagerDeleteTest {
             listOf(card(1, "custom_ff_5"), card(2, "custom_ff_5"), card(3, "games")),
         )
         coEvery { repo.delete(any(), any()) } returns true
-        return CategoryManagerViewModel(repo, collections)
+        every { store.observeStoredKeys() } returns flowOf(emptySet())
+        return CategoryManagerViewModel(repo, collections, store)
     }
 
     @Test

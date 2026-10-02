@@ -12,6 +12,11 @@ import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.components.PspMenuCue
+import com.playfieldportal.core.ui.components.PspMenuNav
+import com.playfieldportal.core.ui.components.PspMenuOutcome
+import com.playfieldportal.core.ui.sound.MenuSoundPlayer
+import com.playfieldportal.core.ui.sound.MenuSoundSink
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.match.RaConsole
 import com.playfieldportal.feature.xmb.viewmodel.ShibaLibraryMode
@@ -29,7 +34,7 @@ import javax.inject.Inject
 //
 // The PS3-trophy-inspired browser from docs/plans/PFP_Achievements_Screen_Design.md: a permanent
 // Search row at navigation position 0, one full-width row per game below it, a Triangle Options
-// menu (Filter and Provider lists, the Icon Display pattern), and L/R switching between the two
+// menu (Sort and Provider lists, the Icon Display pattern), and L/R switching between the two
 // sibling views. Focus is held by a row's stable id, never by its list index, so sorting, filtering
 // and data refreshes keep the cursor on the same game whenever it is still listed.
 
@@ -46,7 +51,7 @@ enum class LibraryProviderFilter(val provider: AchievementProvider?) {
     val label: String get() = provider?.let(::providerLabel) ?: "All"
 }
 
-/** Sort field for the library list, chosen from the Options menu's Filter list. */
+/** Sort field for the library list, chosen from the Options menu's Sort list. */
 enum class LibrarySortField(
     val label: String,
     private val ascendingLabel: String,
@@ -62,7 +67,7 @@ enum class LibrarySortField(
 }
 
 /** A second-level list in the Options menu, opened from its root row (the Icon Display pattern). */
-enum class LibraryOptionGroup(val title: String) { FILTER("Filter"), PROVIDER("Provider") }
+enum class LibraryOptionGroup(val title: String) { SORT("Sort"), PROVIDER("Provider") }
 
 /** What an Options row does. */
 sealed interface LibraryOption {
@@ -70,6 +75,9 @@ sealed interface LibraryOption {
     data class OpenGroup(val group: LibraryOptionGroup) : LibraryOption
     data class Sort(val field: LibrarySortField, val ascending: Boolean) : LibraryOption
     data class Provider(val filter: LibraryProviderFilter) : LibraryOption
+
+    /** Update Installed Achievements: the same selective update Player Status runs. */
+    data object SyncAll : LibraryOption
 }
 
 /** A row of the Options menu: its label, action, and whether it is the active choice. */
@@ -77,6 +85,10 @@ data class LibraryOptionRow(
     val label: String,
     val option: LibraryOption,
     val checked: Boolean = false,
+    /** The row's current setting, drawn at the right edge (Sort: "Title A–Z"). */
+    val value: String? = null,
+    /** Activating this row opens a list, so a › is drawn. */
+    val opensMenu: Boolean = false,
 )
 
 /**
@@ -197,6 +209,8 @@ data class ShibaLibraryUiState(
     val openCoins: ShibaCoinsTarget? = null,
     /** Set when the pinned Search online row is activated; the screen opens that page. */
     val openSearchOnline: Boolean = false,
+    /** An Update Installed Achievements run is in flight; its Options row says so. */
+    val isSyncing: Boolean = false,
 ) {
     /** False when the pinned action row is all that is listed — the list area explains itself. */
     val hasGames: Boolean get() = rows.any { it.action == null }
@@ -235,27 +249,33 @@ data class ShibaLibraryUiState(
 
 /**
  * The Options menu rows for [state], shaped like the XMB's Icon Display menu: the root names each
- * list with its current choice ("Filter (Title A–Z)", "Provider (All)"), and a list checks the
- * active choice. Provider is offered in Tracked Games only.
+ * list, showing its current choice as the row's value ("Sort" = "Title A–Z", "Provider" = "All"),
+ * and a list checks the active choice. Provider is offered in Tracked Games only; the update row ends
+ * the root.
  */
 fun libraryOptionRows(state: ShibaLibraryUiState): List<LibraryOptionRow> = when (state.options?.group) {
     null -> buildList {
         add(
             LibraryOptionRow(
-                label = "Filter (${state.effectiveSortField.choiceLabel(state.sortAscending)})",
-                option = LibraryOption.OpenGroup(LibraryOptionGroup.FILTER),
+                label = "Sort",
+                option = LibraryOption.OpenGroup(LibraryOptionGroup.SORT),
+                value = state.effectiveSortField.choiceLabel(state.sortAscending),
+                opensMenu = true,
             ),
         )
         if (state.showProviderFilter) {
             add(
                 LibraryOptionRow(
-                    label = "Provider (${state.providerFilter.label})",
+                    label = "Provider",
                     option = LibraryOption.OpenGroup(LibraryOptionGroup.PROVIDER),
+                    value = state.providerFilter.label,
+                    opensMenu = true,
                 ),
             )
         }
+        add(LibraryOptionRow(if (state.isSyncing) "Updating…" else "Update Installed Achievements", LibraryOption.SyncAll))
     }
-    LibraryOptionGroup.FILTER -> state.availableSortFields.flatMap { field ->
+    LibraryOptionGroup.SORT -> state.availableSortFields.flatMap { field ->
         // Progress reads best-first, so its descending choice leads.
         val directions = if (field == LibrarySortField.PROGRESS) listOf(false, true) else listOf(true, false)
         directions.map { ascending ->
@@ -302,6 +322,7 @@ fun shibaLibraryHelperItems(state: ShibaLibraryUiState): List<ControllerPromptIt
 class ShibaLibraryViewModel @Inject constructor(
     private val gameRepository: GameRepository,
     private val achievementRepository: AchievementController,
+    private val menuSound: MenuSoundPlayer,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ShibaLibraryUiState())
@@ -431,20 +452,30 @@ class ShibaLibraryViewModel @Inject constructor(
 
     fun closeOptions() = _state.update { it.copy(options = null) }
 
+    /**
+     * The shared PSP-panel rules ([PspMenuNav]): the cursor clamps, Back climbs from a list to the root
+     * (cursor on the row that opened it) and closes from the root, Triangle closes from any depth.
+     */
     private fun handleOptionsAction(action: GamepadAction) {
-        val menu = _state.value.options ?: return
-        when (action) {
-            GamepadAction.NAVIGATE_UP -> moveOptionsCursor(menu, -1)
-            GamepadAction.NAVIGATE_DOWN -> moveOptionsCursor(menu, 1)
-            GamepadAction.SELECT -> onOptionActivated(menu.selectedIndex)
-            GamepadAction.BACK, GamepadAction.OPEN_CONTEXT_MENU -> closeOptions()
-            else -> Unit
+        val s = _state.value
+        val menu = s.options ?: return
+        val rows = s.optionRows
+        val cue = if (rows.getOrNull(menu.selectedIndex)?.option is LibraryOption.OpenGroup) PspMenuCue.SELECT else PspMenuCue.CONFIRM
+        val depth = if (menu.group != null) 1 else 0
+        when (val outcome = PspMenuNav.handle(action, menu.selectedIndex, rows.size, depth, cue, MenuSoundSink { menuSound.play(it) })) {
+            is PspMenuOutcome.Moved -> _state.update { it.copy(options = menu.copy(selectedIndex = outcome.index)) }
+            PspMenuOutcome.Activate -> onOptionActivated(menu.selectedIndex)
+            PspMenuOutcome.Up -> climbToRoot(menu.group)
+            PspMenuOutcome.Close -> closeOptions()
+            PspMenuOutcome.Ignored -> Unit
         }
     }
 
-    private fun moveOptionsCursor(menu: LibraryOptionsMenu, delta: Int) = _state.update { s ->
-        val last = (s.optionRows.size - 1).coerceAtLeast(0)
-        s.copy(options = menu.copy(selectedIndex = (menu.selectedIndex + delta).coerceIn(0, last)))
+    /** Back from a list: the root again, with the cursor on the row that opened [group]. */
+    private fun climbToRoot(group: LibraryOptionGroup?) = _state.update { s ->
+        val root = s.copy(options = LibraryOptionsMenu())
+        val opener = root.optionRows.indexOfFirst { (it.option as? LibraryOption.OpenGroup)?.group == group }.coerceAtLeast(0)
+        s.copy(options = LibraryOptionsMenu(selectedIndex = opener))
     }
 
     /**
@@ -457,8 +488,21 @@ class ShibaLibraryViewModel @Inject constructor(
             is LibraryOption.OpenGroup -> return openOptionGroup(option.group)
             is LibraryOption.Sort -> setSort(option.field, option.ascending)
             is LibraryOption.Provider -> setProviderFilter(option.filter)
+            LibraryOption.SyncAll -> if (!_state.value.isSyncing) syncAll()
         }
         closeOptions()
+    }
+
+    // The same selective update Player Status runs; the result goes to the notification tray.
+    private fun syncAll() {
+        viewModelScope.launch {
+            _state.update { it.copy(isSyncing = true) }
+            try {
+                achievementRepository.updateInstalledAchievements()
+            } finally {
+                _state.update { it.copy(isSyncing = false) }
+            }
+        }
     }
 
     fun setProviderFilter(filter: LibraryProviderFilter) {

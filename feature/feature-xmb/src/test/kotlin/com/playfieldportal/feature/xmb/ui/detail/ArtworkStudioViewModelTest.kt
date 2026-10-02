@@ -1999,12 +1999,160 @@ class ArtworkStudioViewModelTest {
         advanceUntilIdle()
 
         vm.forgetMatch()
+        vm.confirmDestructive()
         advanceUntilIdle()
 
         coVerify { gameRepository.updateProviderMatch(1L, "STEAMGRIDDB", null) }
         assertFalse(vm.uiState.value.matchIsConfirmed)
         // Forgetting who a game is must never cost the user an asset.
         coVerify(exactly = 0) { artworkStore.deleteAll() }
+    }
+
+    // ── Clear Artwork and Forget Match ask first (context-menu plan task 1.4) ──
+
+    private suspend fun kotlinx.coroutines.test.TestScope.loadedWithArtwork(): ArtworkStudioViewModel {
+        coEvery { artworkStore.find(any(), any(), any()) } returns "content://art/1"
+        return loadedOn(StudioSource.IGDB)
+    }
+
+    private suspend fun kotlinx.coroutines.test.TestScope.loadedWithConfirmedMatch(): ArtworkStudioViewModel {
+        coEvery { matchEvidence.searchByTitle(any(), any(), any()) } returns twoCandidates()
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+        vm.openChangeMatch()
+        advanceUntilIdle()
+        vm.confirmMatch(0)
+        advanceUntilIdle()
+        return vm
+    }
+
+    @Test
+    fun `Clear Artwork opens a confirm and touches nothing until it is confirmed`() = runTest(testDispatcher) {
+        val vm = loadedWithArtwork()
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+
+        pickFromMenu(vm, StudioAction.CLEAR)
+
+        assertEquals(StudioDestructive.CLEAR_ARTWORK, vm.uiState.value.destructiveConfirm)
+        assertFalse("the confirm replaces the menu", vm.uiState.value.actionsOpen)
+        assertEquals("content://art/1", vm.uiState.value.currentUri)
+        coVerify(exactly = 0) { routingStore.clearArtwork(any(), any()) }
+    }
+
+    @Test
+    fun `confirming Clear Artwork clears the slot`() = runTest(testDispatcher) {
+        val vm = loadedWithArtwork()
+        vm.runAction(StudioAction.CLEAR)
+
+        vm.confirmDestructive()
+        advanceUntilIdle()
+
+        assertNull(vm.uiState.value.destructiveConfirm)
+        assertNull(vm.uiState.value.currentUri)
+        coVerify(exactly = 1) { routingStore.clearArtwork(1L, com.playfieldportal.feature.artwork.store.ArtworkKind.ICON) }
+    }
+
+    @Test
+    fun `cancelling Clear Artwork leaves the slot`() = runTest(testDispatcher) {
+        val vm = loadedWithArtwork()
+        vm.runAction(StudioAction.CLEAR)
+
+        vm.cancelDestructive()
+        advanceUntilIdle()
+
+        assertNull(vm.uiState.value.destructiveConfirm)
+        assertEquals("content://art/1", vm.uiState.value.currentUri)
+        coVerify(exactly = 0) { routingStore.clearArtwork(any(), any()) }
+    }
+
+    @Test
+    fun `Forget Match opens a confirm and keeps the match until it is confirmed`() = runTest(testDispatcher) {
+        val vm = loadedWithConfirmedMatch()
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+
+        pickFromMenu(vm, StudioAction.FORGET_MATCH)
+
+        assertEquals(StudioDestructive.FORGET_MATCH, vm.uiState.value.destructiveConfirm)
+        assertTrue(vm.uiState.value.matchIsConfirmed)
+        coVerify(exactly = 0) { gameRepository.updateProviderMatch(any(), any(), null) }
+    }
+
+    @Test
+    fun `the FORGET button on the match line asks first too`() = runTest(testDispatcher) {
+        val vm = loadedWithConfirmedMatch()
+
+        vm.forgetMatch()
+        advanceUntilIdle()
+
+        assertEquals(StudioDestructive.FORGET_MATCH, vm.uiState.value.destructiveConfirm)
+        coVerify(exactly = 0) { gameRepository.updateProviderMatch(any(), any(), null) }
+    }
+
+    @Test
+    fun `confirming Forget Match forgets it, cancelling keeps it`() = runTest(testDispatcher) {
+        val vm = loadedWithConfirmedMatch()
+
+        vm.forgetMatch()
+        vm.cancelDestructive()
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.matchIsConfirmed)
+        coVerify(exactly = 0) { gameRepository.updateProviderMatch(any(), any(), null) }
+
+        vm.forgetMatch()
+        vm.confirmDestructive()
+        advanceUntilIdle()
+        assertNull(vm.uiState.value.destructiveConfirm)
+        assertFalse(vm.uiState.value.matchIsConfirmed)
+        coVerify(exactly = 1) { gameRepository.updateProviderMatch(1L, "STEAMGRIDDB", null) }
+    }
+
+    @Test
+    fun `while a destructive confirm is up only Back reaches the view model, and it cancels`() = runTest(testDispatcher) {
+        val vm = loadedWithArtwork()
+        vm.runAction(StudioAction.CLEAR)
+
+        vm.handleGamepadAction(GamepadAction.SELECT)
+        advanceUntilIdle()
+        assertEquals(StudioDestructive.CLEAR_ARTWORK, vm.uiState.value.destructiveConfirm)
+        coVerify(exactly = 0) { routingStore.clearArtwork(any(), any()) }
+
+        vm.handleGamepadAction(GamepadAction.BACK)
+        advanceUntilIdle()
+        assertNull(vm.uiState.value.destructiveConfirm)
+        assertFalse("Back only cancelled the confirm", vm.uiState.value.closed)
+    }
+
+    @Test
+    fun `the Clear confirm is destructive, opens on Cancel and names the backup that goes too`() {
+        val state = ArtworkStudioUiState(game = game, destructiveConfirm = StudioDestructive.CLEAR_ARTWORK)
+        val events = mutableListOf<String>()
+
+        val spec = studioDestructiveModalSpec(state, { events += "confirm" }, { events += "cancel" })
+            as com.playfieldportal.core.ui.components.PfpModalSpec.Confirm
+
+        assertTrue(spec.destructive)
+        assertTrue(spec.openOnCancel)
+        assertEquals("Clear Artwork?", spec.title)
+        assertTrue(spec.message, "backup" in spec.message)
+        assertTrue(spec.message, STUDIO_TABS[0].label in spec.message)
+        spec.onConfirm()
+        spec.onCancel()
+        assertEquals(listOf("confirm", "cancel"), events)
+    }
+
+    @Test
+    fun `the Forget confirm names the provider and no confirm shows otherwise`() {
+        val forget = ArtworkStudioUiState(
+            game = game, matchProvider = com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB,
+            destructiveConfirm = StudioDestructive.FORGET_MATCH,
+        )
+
+        val spec = studioDestructiveModalSpec(forget, {}, {}) as com.playfieldportal.core.ui.components.PfpModalSpec.Confirm
+
+        assertEquals("Forget Match?", spec.title)
+        assertTrue(spec.message, com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB.label in spec.message)
+        assertNull(studioDestructiveModalSpec(ArtworkStudioUiState(game = game), {}, {}))
     }
 
     @Test
@@ -2283,6 +2431,8 @@ class ArtworkStudioViewModelTest {
         vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
         advanceUntilIdle()
         pickFromMenu(vm, StudioAction.FORGET_MATCH)
+        vm.confirmDestructive()
+        advanceUntilIdle()
 
         coVerify { gameRepository.updateProviderMatch(1L, "STEAMGRIDDB", null) }
         assertFalse(vm.uiState.value.matchIsConfirmed)
@@ -3500,5 +3650,72 @@ class ArtworkStudioViewModelTest {
 
         assertFalse(vm.uiState.value.filtersHideEverything)
         assertEquals(4, vm.uiState.value.results.size)
+    }
+
+    // ── Triangle closes the Studio's menus; wording (context-menu plan task 3.9) ──
+
+    @Test
+    fun `Triangle closes the actions menu`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.actionsOpen)
+
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+
+        assertFalse(vm.uiState.value.actionsOpen)
+    }
+
+    @Test
+    fun `Triangle inside a filter list closes the whole menu, not one level`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+        pickFilter(vm, StudioFilterOption.Open(StudioFilterGroup.DIMENSIONS))
+        assertEquals(StudioFilterGroup.DIMENSIONS, vm.uiState.value.filterGroup)
+
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+
+        assertFalse(vm.uiState.value.actionsOpen)
+        assertNull(vm.uiState.value.filterGroup)
+    }
+
+    @Test
+    fun `Triangle closes the crop options menu`() = runTest(testDispatcher) {
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+        vm.openCropOptions()
+        assertTrue(vm.uiState.value.cropOptionsOpen)
+
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+
+        assertFalse(vm.uiState.value.cropOptionsOpen)
+    }
+
+    @Test
+    fun `Triangle with nothing to show says so instead of doing nothing`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.LOCAL)
+
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+
+        assertFalse(vm.uiState.value.actionsOpen)
+        assertEquals(STUDIO_NO_OPTIONS_MESSAGE, vm.uiState.value.message)
+    }
+
+    @Test
+    fun `the crop menu reads Live Preview and Shape as label and value`() {
+        assertEquals("Crop Options", STUDIO_CROP_OPTIONS_TITLE)
+        val on = studioCropRow(CropOption.PREVIEW, previewEnabled = true, current = CropShapeChoice.PLATFORM_DEFAULT)
+        assertEquals("Live Preview", on.label)
+        assertEquals("On", on.value)
+        assertEquals("Off", studioCropRow(CropOption.PREVIEW, false, CropShapeChoice.PLATFORM_DEFAULT).value)
+
+        val shape = studioCropRow(CropOption.SHAPE_ORIGINAL_IMAGE, true, CropShapeChoice.ORIGINAL_IMAGE)
+        assertEquals("Shape", shape.label)
+        assertEquals("Original Image", shape.value)
+        assertTrue(shape.checked)
+        assertFalse(studioCropRow(CropOption.SHAPE_PLATFORM_DEFAULT, true, CropShapeChoice.ORIGINAL_IMAGE).checked)
     }
 }

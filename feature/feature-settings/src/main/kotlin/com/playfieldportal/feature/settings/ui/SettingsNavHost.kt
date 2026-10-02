@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.feature.settings.viewmodel.CategoryManagerTarget
 
 // Every screen route SettingsNavHost resolves. Kept beside the `when` (whose branches are string
 // literals) so the settings-hierarchy tests can verify that every L2 row id and every legacy
@@ -74,8 +75,13 @@ fun SettingsNavHost(
     onOpenLibraryManager: () -> Unit = {},
     onOpenArtworkOrphans: () -> Unit = {},
     onGoToLibrary: () -> Unit = {},
+    // Custom Memory Cards ▸ a game's menu ▸ View Game Details: Game Detail draws above Settings.
+    onOpenGameDetail: (gameId: Long) -> Unit = {},
     // Category Manager ▸ Move: close Settings and lift the category on the crossbar.
     onMoveCategoryOnBar: (categoryId: String) -> Unit = {},
+    // The XMB's category menu: Category Manager opens on this category with its edit already up.
+    categoryTarget: CategoryManagerTarget? = null,
+    onCategoryTargetConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     CompositionLocalProvider(
@@ -113,7 +119,13 @@ fun SettingsNavHost(
             "settings_music"      -> MusicSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_video"      -> VideoSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_photo"      -> PhotoSettingsScreen(onBack = onBack, modifier = modifier)
-            "settings_categories" -> CategoryManagerScreen(onBack = onBack, onMoveOnBar = onMoveCategoryOnBar, modifier = modifier)
+            "settings_categories" -> CategoryManagerScreen(
+                onBack = onBack,
+                onMoveOnBar = onMoveCategoryOnBar,
+                initialTarget = categoryTarget,
+                onTargetConsumed = onCategoryTargetConsumed,
+                modifier = modifier,
+            )
             "settings_artwork"    -> ArtworkSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_artwork_import" -> ArtworkImportScreen(
                 onBack = onBack,
@@ -146,7 +158,7 @@ fun SettingsNavHost(
                 onOpenColorSchemePicker = onOpenColorSchemePicker,
                 modifier = modifier,
             )
-            "settings_collections" -> CollectionsSettingsScreen(onBack = onBack, modifier = modifier)
+            "settings_collections" -> CollectionsSettingsScreen(onBack = onBack, onOpenGameDetail = onOpenGameDetail, modifier = modifier)
             "settings_notifications" -> NotificationSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_display"    -> DisplaySettingsScreen(
                 onBack = onBack,

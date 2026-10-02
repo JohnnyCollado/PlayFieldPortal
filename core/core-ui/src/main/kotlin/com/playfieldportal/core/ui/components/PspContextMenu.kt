@@ -67,7 +67,22 @@ data class PspMenuRow(
      * row index: a caller's controller navigation never has to step over a header.
      */
     val header: String? = null,
-)
+    /**
+     * Activating this row opens a list rather than doing something: a › is drawn at the row's right
+     * edge, after any [value] (a row may show both — "Sort  Tier  ›"), and [PspMenuNav] plays SELECT.
+     */
+    val opensMenu: Boolean = false,
+    /** Activating this row plays no cue (Favorite: the toggle is its own feedback). */
+    val silent: Boolean = false,
+) {
+    /** The cue [PspMenuNav] plays when this row is activated. */
+    val cue: PspMenuCue
+        get() = when {
+            silent -> PspMenuCue.NONE
+            opensMenu -> PspMenuCue.SELECT
+            else -> PspMenuCue.CONFIRM
+        }
+}
 
 private val PanelWidth = 300.dp
 
@@ -89,6 +104,8 @@ fun PspContextMenuOverlay(
     // Default keeps the XMB's light PSP-style scrim (wave visible behind); busier hosts
     // (e.g. the Artwork Studio) pass a darker one so the menu reads clearly.
     scrim: Color = Color(0x40000000),
+    // The panel's backdrop alpha over the scheme's wave colour; Game Detail passes 0.88.
+    panelAlpha: Float = 0.75f,
 ) {
     val colors = LocalPFPColors.current
     val listState = rememberLazyListState()
@@ -105,7 +122,7 @@ fun PspContextMenuOverlay(
             .background(scrim)
             .clickable(onClick = onDismiss),
     ) {
-        // Right-edge column. A solid backdrop at 75% alpha in the scheme's theme
+        // Right-edge column. A backdrop (75% alpha by default) in the scheme's theme
         // color (the wave color — blue for Classic Blue, etc.) gives contrast
         // while still letting the wave show through.
         Column(
@@ -113,7 +130,7 @@ fun PspContextMenuOverlay(
                 .align(Alignment.CenterEnd)
                 .fillMaxHeight()
                 .width(PanelWidth)
-                .background(colors.waveColor.copy(alpha = 0.75f))
+                .background(colors.waveColor.copy(alpha = panelAlpha))
                 .clickable(onClick = {}) // consume clicks so the scrim isn't triggered inside
                 .padding(start = 28.dp, end = 40.dp),
             verticalArrangement = Arrangement.Center,
@@ -218,6 +235,15 @@ private fun PspContextMenuRow(
                 Spacer(Modifier.width(10.dp))
                 PfpCheckMark(Color.White, size = 15.dp, shadow = TextDropShadow.color)
             }
+            if (row.opensMenu) {
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "›",
+                    fontSize = 17.sp,
+                    color = Color.White.copy(alpha = if (isSelected) 0.85f else 0.55f),
+                    style = TextStyle(shadow = TextDropShadow),
+                )
+            }
         }
     }
 }
@@ -258,7 +284,7 @@ fun PspContextMenuGroupedPreview() {
                 PspMenuRow("Scan for Games", header = "Games"),
                 PspMenuRow("Update Metadata", header = "Update"),
                 PspMenuRow("Fetch Missing Artwork"),
-                PspMenuRow("Icon Display", value = "Global: Box Art", header = "Display"),
+                PspMenuRow("Icon Display", value = "Global: Box Art", opensMenu = true, header = "Display"),
                 PspMenuRow("Pin to Top", value = "Off"),
                 PspMenuRow("Library Manager", header = "Manage"),
                 PspMenuRow("Hide Card"),
@@ -280,7 +306,7 @@ fun PspContextMenuValueRowsPreview() {
             title = "Filter",
             rows = listOf(
                 PspMenuRow("Search", value = "\"zel\""),
-                PspMenuRow("Sort", value = "Recently Played"),
+                PspMenuRow("Sort", value = "Recently Played", opensMenu = true),
                 PspMenuRow("Clear Search"),
             ),
             selectedIndex = 0,
@@ -298,7 +324,7 @@ fun PspContextMenuPreview() {
         PspMenuRow("Information"),
         PspMenuRow("Delete", isDestructive = true),
         PspMenuRow("Add to Favorites", checked = true),
-        PspMenuRow("Assign Album"),
+        PspMenuRow("Assign Album", opensMenu = true),
     )
     PfpPreview {
         PspContextMenuOverlay(

@@ -23,6 +23,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -230,6 +232,38 @@ class PfpThemeStore @Inject constructor(
         listOf("$id.pfptheme", "$id.preview.jpg", "$id.wallpaper.jpg")
             .forEach { File(dir, it).delete() }
         _themes.value = scan()
+    }
+
+    /**
+     * Renames a saved theme: the bundle's manifest name is rewritten (everything else in the
+     * bundle is copied through) and the list refreshes. False when nothing changed. The applied
+     * theme is remembered by name only, so renaming it carries that name along.
+     */
+    suspend fun rename(id: String, name: String): Boolean = withContext(Dispatchers.IO) {
+        val trimmed = name.trim()
+        val bundle = File(dir, "$id.pfptheme")
+        if (trimmed.isEmpty() || !bundle.isFile) return@withContext false
+        val oldName = _themes.value.firstOrNull { it.id == id }?.name
+        val tmp = File(dir, "$id.pfptheme.tmp")
+        val ok = runCatching {
+            val renamed = bundle.inputStream().use { input ->
+                tmp.outputStream().use { out -> PfpThemeCodec.rewriteName(input, out, trimmed) }
+            }
+            renamed && run {
+                Files.move(tmp.toPath(), bundle.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                true
+            }
+        }.onFailure { Timber.w(it, "PfpThemeStore: rename failed") }.getOrDefault(false)
+        tmp.delete()
+        if (ok) {
+            _themes.value = scan()
+            if (oldName != null) {
+                context.pfpDataStore.edit { prefs ->
+                    if (prefs[KEY_APPLIED_THEME_NAME] == oldName) prefs[KEY_APPLIED_THEME_NAME] = trimmed
+                }
+            }
+        }
+        ok
     }
 
     /**

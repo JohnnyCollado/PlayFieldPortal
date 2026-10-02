@@ -23,6 +23,8 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
@@ -170,6 +172,41 @@ class SettingsScaffoldNavigationTest {
         // BACK exits through the scaffold's back handler.
         press(GamepadAction.BACK)
         assertEquals(1, backCount)
+    }
+
+    @Test
+    fun `Triangle runs the focused row's long press once, and does nothing on a row without one`() {
+        var opened = 0
+        showScreen {
+            SettingsRow(label = "Plain", onClick = {})
+            SettingsRow(label = "With menu", onClick = {}, onLongPress = { opened++ })
+        }
+
+        assertFocusedRow("Plain")
+        press(GamepadAction.OPEN_CONTEXT_MENU)
+        assertEquals(0, opened)
+
+        press(GamepadAction.NAVIGATE_DOWN)
+        assertFocusedRow("With menu")
+        press(GamepadAction.OPEN_CONTEXT_MENU)
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun `the footer offers Options only while the focused row has a long press`() {
+        showScreen {
+            SettingsRow(label = "Plain", onClick = {})
+            SettingsRow(label = "With menu", onClick = {}, onLongPress = {})
+        }
+
+        assertFocusedRow("Plain")
+        composeRule.onAllNodesWithText("Options").assertCountEquals(0)
+
+        press(GamepadAction.NAVIGATE_DOWN)
+        composeRule.onAllNodesWithText("Options").assertCountEquals(1)
+
+        press(GamepadAction.NAVIGATE_UP)
+        composeRule.onAllNodesWithText("Options").assertCountEquals(0)
     }
 
     @Test

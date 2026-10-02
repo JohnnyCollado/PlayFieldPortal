@@ -51,7 +51,7 @@ class VideoDetailModalSpecTest {
     fun `rename title starts from the title on screen and may be cleared back to the file name`() {
         val spec = specFor(baseState.copy(isEditingTitle = true)) as PfpModalSpec.TextEntry
 
-        assertEquals("Rename Title", spec.title)
+        assertEquals("Edit Title", spec.title)
         assertEquals("Holiday", spec.initial)
         assertTrue(spec.allowBlank)
         assertEquals("holiday_2019.mp4", spec.placeholder)

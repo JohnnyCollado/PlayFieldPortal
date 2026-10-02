@@ -234,7 +234,7 @@ val SettingsSubtext: Color
 // Directional drop shadow for text over the translucent backdrop: the settings scrim is a
 // translucent theme gradient (the wallpaper reads through BY DESIGN), so flat gray helper text
 // washes out wherever the wallpaper is bright. The repo's standard black drop shadow
-// (PspContextMenu, ControllerHintBar, DetailContextMenu) restores separation without hiding
+// (PspContextMenu, ControllerHintBar) restores separation without hiding
 // the wallpaper behind a heavier scrim.
 val SettingsTextShadow = Shadow(
     color = Color.Black.copy(alpha = 0.75f),
@@ -772,6 +772,9 @@ fun SettingsScaffold(
                 menuSounds.play(MenuSound.BACK)
                 onBack()
             }
+            // Triangle is the controller's long press: it runs the focused row's own onLongPress
+            // (which opens that row's menu and voices itself). A row without one does nothing.
+            GamepadAction.OPEN_CONTEXT_MENU -> navigationState.longPressFocused()
 
             else -> Unit
         }
@@ -1037,7 +1040,17 @@ fun SettingsScaffold(
                             footer()
                         }
                     } else {
-                        SettingsHelperFooter(helperFooterItems)
+                        // "Options" joins the prompts while the cursor is on a row with a menu.
+                        val prompts = helperFooterItems.ifEmpty { SettingsDefaultHelperItems }
+                        val offersOptions = navigationState.focusedHasLongPress &&
+                            prompts.none { GamepadAction.OPEN_CONTEXT_MENU in it.actions }
+                        SettingsHelperFooter(
+                            if (offersOptions) {
+                                prompts + ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options")
+                            } else {
+                                prompts
+                            },
+                        )
                     }
                 }
             }

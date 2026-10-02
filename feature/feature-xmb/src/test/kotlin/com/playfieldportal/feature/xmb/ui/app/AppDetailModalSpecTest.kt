@@ -26,6 +26,8 @@ class AppDetailModalSpecTest {
         onCancelName = { events += "cancel-name" },
         onCreateCollection = { events += "collection:$it" },
         onCancelCreateCollection = { events += "cancel-collection" },
+        onConfirmReset = { events += "reset" },
+        onCancelReset = { events += "cancel-reset" },
     )
 
     @Test
@@ -39,7 +41,7 @@ class AppDetailModalSpecTest {
 
         val spec = specFor(baseState.copy(game = renamed, isEditingName = true)) as PfpModalSpec.TextEntry
 
-        assertEquals("Change Display Name", spec.title)
+        assertEquals("Edit Title", spec.title)
         assertEquals("PPSSPP", spec.initial)
         assertTrue(spec.allowBlank)
         assertEquals("PPSSPP Gold", spec.placeholder)
@@ -72,6 +74,33 @@ class AppDetailModalSpecTest {
             collectionPicker = CollectionPickerUi(visible = true, showCreateDialog = true),
         )
 
-        assertEquals("Change Display Name", (specFor(both) as PfpModalSpec.TextEntry).title)
+        assertEquals("Edit Title", (specFor(both) as PfpModalSpec.TextEntry).title)
+    }
+
+    @Test
+    fun `reset all artwork is a destructive confirm that opens on cancel`() {
+        val spec = specFor(baseState.copy(confirmReset = true)) as PfpModalSpec.Confirm
+
+        assertTrue(spec.destructive)
+        assertTrue(spec.openOnCancel)
+        assertEquals("Reset All Artwork?", spec.title)
+        assertEquals("Reset", spec.confirmLabel)
+    }
+
+    @Test
+    fun `nothing is reset until the confirm is confirmed`() {
+        val spec = specFor(baseState.copy(confirmReset = true)) as PfpModalSpec.Confirm
+        assertEquals(emptyList<String>(), events)
+
+        spec.onCancel()
+        assertEquals(listOf("cancel-reset"), events)
+
+        spec.onConfirm()
+        assertEquals(listOf("cancel-reset", "reset"), events)
+    }
+
+    @Test
+    fun `the reset confirm is not shown while the page is plain`() {
+        assertNull(specFor(baseState.copy(confirmReset = false)))
     }
 }

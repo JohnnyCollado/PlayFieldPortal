@@ -1,5 +1,8 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.core.domain.model.BuiltInCategory
+import com.playfieldportal.core.domain.model.Category
+import com.playfieldportal.core.domain.model.CategoryType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -20,7 +23,8 @@ class ArrangeMenusTest {
         pinned: Boolean = false,
         canMoveToCategory: Boolean = true,
         canMove: Boolean = false,
-    ) = customCardMenuItems(pinned, canMoveToCategory, sortValue = "Global: Title", canMove = canMove)
+        byTouch: Boolean = true,
+    ) = customCardMenuItems(pinned, canMoveToCategory, sortValue = "Global: Title", canMove = canMove, byTouch = byTouch)
 
     @Test
     fun `a custom card's menu uses card wording throughout`() {
@@ -30,6 +34,13 @@ class ArrangeMenusTest {
             labels,
         )
         assertFalse(labels.any { it.contains("Collection") })
+    }
+
+    @Test
+    fun `a controller-opened custom card menu has no Open row but a long-press one keeps it`() {
+        assertFalse(cardMenu(byTouch = false).any { it.id == "open_collection" })
+        assertEquals("open_collection", cardMenu(byTouch = true).first().id)
+        assertEquals(cardMenu(byTouch = true).drop(1), cardMenu(byTouch = false))
     }
 
     @Test
@@ -95,19 +106,54 @@ class ArrangeMenusTest {
 
     @Test
     fun `a category's memory card can be opened, sorted and moved`() {
-        val rows = rootRowMenuItems(sortValue = "Global: Title", canMove = true)
+        val rows = rootRowMenuItems(sortValue = "Global: Title", canMove = true, byTouch = true)
         assertEquals(listOf("open_row", LIST_SORT_ROW_ID, MOVE_ROW_ID), rows.map { it.id })
     }
 
     @Test
+    fun `a controller-opened root row menu has no Open row`() {
+        val rows = rootRowMenuItems(sortValue = "Global: Title", canMove = true, byTouch = false)
+        assertEquals(listOf(LIST_SORT_ROW_ID, MOVE_ROW_ID), rows.map { it.id })
+    }
+
+    @Test
     fun `a root row can never be pinned`() {
-        val rows = rootRowMenuItems(sortValue = "Global: Title", canMove = true)
+        val rows = rootRowMenuItems(sortValue = "Global: Title", canMove = true, byTouch = true)
         assertFalse(rows.any { it.id == "pin_top" || it.id == "unpin_top" })
     }
 
     @Test
     fun `the missing bucket has no sort row`() {
-        assertEquals(listOf("open_row"), rootRowMenuItems(sortValue = null, canMove = false).map { it.id })
+        assertEquals(listOf("open_row"), rootRowMenuItems(sortValue = null, canMove = false, byTouch = true).map { it.id })
+    }
+
+    @Test
+    fun `the missing bucket has no controller menu but long-press still opens it`() {
+        assertTrue(rootRowMenuItems(sortValue = null, canMove = false, byTouch = false).isEmpty())
+        val missing = XMBItem(id = "miss", title = "Missing", type = XMBItemType.MISSING)
+        val state = XMBUiState(
+            categories = listOf(
+                Category(BuiltInCategory.GAMES, "Games", "games", type = CategoryType.BUILT_IN, position = 0, isGamingCategory = true),
+            ),
+            selectedCategoryIndex = 0,
+        )
+        assertNull(contextMenuTarget(missing, state, byTouch = false))
+        assertFalse(missing.hasContextMenu(state))
+        assertEquals(ContextMenuKind.ROOT_ROW, contextMenuTarget(missing, state, byTouch = true)?.kind)
+    }
+
+    // ── A custom card in an app category ──────────────────────────────────────
+
+    @Test
+    fun `an app category's custom card sorts with app sorts, a gaming one with game sorts`() {
+        val apps = Category("custom_tools", "Tools", "apps", type = CategoryType.MANUAL, position = 5, isGamingCategory = false)
+        val games = Category(BuiltInCategory.GAMES, "Games", "games", type = CategoryType.BUILT_IN, position = 0, isGamingCategory = true)
+        assertEquals(XmbListKind.APPS, collectionSortKind(apps))
+        assertEquals(XmbListKind.GAMES, collectionSortKind(games))
+        assertEquals(XmbListKind.GAMES, collectionSortKind(null))
+        val labels = listSortMenuItems(collectionSortKind(apps), global = XmbSortMode.TITLE, override = null).map { it.label }
+        assertTrue("A–Z" in labels)
+        assertTrue("Recently Used" in labels)
     }
 
     // ── Add to Card ───────────────────────────────────────────────────────────

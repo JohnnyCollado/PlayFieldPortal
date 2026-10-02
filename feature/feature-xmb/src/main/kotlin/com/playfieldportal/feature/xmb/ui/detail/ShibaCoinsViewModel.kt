@@ -12,11 +12,19 @@ import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.components.PspMenuCue
+import com.playfieldportal.core.ui.components.PspMenuNav
+import com.playfieldportal.core.ui.components.PspMenuOutcome
+import com.playfieldportal.core.ui.sound.MenuSoundPlayer
+import com.playfieldportal.core.ui.sound.MenuSoundSink
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
 import com.playfieldportal.feature.achievements.provider.localsteam.AppIdSource
 import com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamFolderLinker
+import com.playfieldportal.feature.artwork.match.ScoredStorefrontCandidate
+import com.playfieldportal.feature.artwork.match.Storefront
+import com.playfieldportal.feature.artwork.match.StorefrontCandidate
 import com.playfieldportal.feature.artwork.match.StorefrontMatchResult
 import timber.log.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -42,8 +50,8 @@ import javax.inject.Inject
 // confirm a tracked game, rebuilt to match the Tracked/Untracked browser. The contract is the
 // library's: a pinned Search row at navigation position 0, stable-id focus so sorting, searching,
 // switching view and data refreshes keep the cursor on the same coin, L1/R1 across the All /
-// Earned / Locked views, and a modal Triangle Options menu that owns Sort, Sync Now and Change
-// Match. What is NOT rebuilt: loading, syncing, matching and the Auto-Match flow, which are
+// Earned / Locked views, and a modal Triangle Options menu that owns Sort, Update Achievements and
+// Change Match. What is NOT rebuilt: loading, syncing, matching and the Auto-Match flow, which are
 // carried over unchanged.
 
 enum class CoinSort(val label: String) { TIER("Tier"), EARNED("Earned"), RAREST("Rarest") }
@@ -167,6 +175,12 @@ data class CoinOptionRow(
     val label: String,
     val option: CoinOption,
     val checked: Boolean = false,
+    /** Drawn red; a destructive row is also last, and asks before it acts. */
+    val isDestructive: Boolean = false,
+    /** The row's current setting, drawn at the right edge (Sort: "Tier"). */
+    val value: String? = null,
+    /** Activating this row opens a list, so a › is drawn. */
+    val opensMenu: Boolean = false,
 )
 
 /**
@@ -220,6 +234,8 @@ data class ShibaCoinsUiState(
     val focusedRowId: String? = null,
     /** The Triangle Options menu, while open. It owns controller input. */
     val options: CoinOptionsMenu? = null,
+    /** The Unlink Game confirm is up. It owns controller input (the screen's modal host). */
+    val unlinkConfirm: Boolean = false,
     // Hidden coins the user chose to reveal (confirm/tap toggles). Session-only: cleared on open.
     val revealedIds: Set<String> = emptySet(),
     val isSyncing: Boolean = false,
@@ -238,6 +254,8 @@ data class ShibaCoinsUiState(
     val requestFolderPick: Boolean = false,
     // The ambiguous-match picker, reusing the storefront panel verbatim.
     val storefrontMatch: StorefrontMatchUi? = null,
+    /** The picker is Change Match's Steam title search, not the folder-picked identify step. */
+    val steamPick: Boolean = false,
     val kitPrompt: LocalSteamKitPrompt? = null,
     // The terminal NO_EMU_DATA line, in the folder's own terms.
     val noEmuDataReason: String? = null,
@@ -293,21 +311,21 @@ data class ShibaCoinsUiState(
 }
 
 /**
- * The Options menu rows for [state], shaped like the library's: the root names each list with its
- * current choice, and a list checks the active one. Refresh this game is offered for an installed
+ * The Options menu rows for [state], shaped like the library's: the root shows each list's
+ * current choice as the row's value, and a list checks the active one. Update Achievements is offered for an installed
  * game with a provider identity; Change Match only for a Steam library game, the one match the
  * user supplied.
  */
 fun coinOptionRows(state: ShibaCoinsUiState): List<CoinOptionRow> = when (state.options?.group) {
     null -> buildList {
-        add(CoinOptionRow("Sort (${state.sort.label})", CoinOption.OpenGroup(CoinOptionGroup.SORT)))
+        add(CoinOptionRow("Sort", CoinOption.OpenGroup(CoinOptionGroup.SORT), value = state.sort.label, opensMenu = true))
         // A sync in flight keeps its row so the menu doesn't reflow under the cursor; it just
         // says so and does nothing when picked.
-        if (state.canSync) add(CoinOptionRow(if (state.isSyncing) "Refreshing…" else "Refresh this game", CoinOption.SyncNow))
-        if (state.hasChangeMatch) add(CoinOptionRow("Change Match", CoinOption.ChangeMatch))
+        if (state.canSync) add(CoinOptionRow(if (state.isSyncing) "Updating…" else "Update Achievements", CoinOption.SyncNow))
+        if (state.hasChangeMatch) add(CoinOptionRow("Change Match", CoinOption.ChangeMatch, opensMenu = true))
         // Any linked library game can drop its link — both, for a game holding two sets — and go
         // back to its Auto-Match panel. An account entry has no link of its own to remove.
-        if (state.linked && !state.accountOnly) add(CoinOptionRow("Unlink Game", CoinOption.Unlink))
+        if (state.linked && !state.accountOnly) add(CoinOptionRow("Unlink Game", CoinOption.Unlink, isDestructive = true))
     }
     CoinOptionGroup.SORT -> CoinSort.entries.map { sort ->
         CoinOptionRow(sort.label, CoinOption.Sort(sort), checked = sort == state.sort)
@@ -358,6 +376,7 @@ class ShibaCoinsViewModel @Inject constructor(
     private val autoMatcher: AchievementAutoMatcher,
     private val folderLinker: LocalSteamFolderLinker,
     private val steamGate: com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate,
+    private val menuSound: MenuSoundPlayer,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ShibaCoinsUiState())
@@ -569,6 +588,8 @@ class ShibaCoinsViewModel @Inject constructor(
     /** Controller input forwarded from the shell while this overlay is open. */
     fun handleGamepadAction(action: GamepadAction) {
         val s = _state.value
+        // The Unlink confirm's own host takes the press; if one still arrives, it is not the page's.
+        if (s.unlinkConfirm) return
         // The Auto-Match prompts capture input while open: they are modal within the screen.
         when (s.autoMatchStep) {
             AutoMatchStep.CONFIRM_COPY -> {
@@ -716,20 +737,30 @@ class ShibaCoinsViewModel @Inject constructor(
         listed.copy(options = CoinOptionsMenu(selectedIndex = active, group = group))
     }
 
+    /**
+     * The shared PSP-panel rules ([PspMenuNav]): the cursor clamps, Back climbs from a list to the root
+     * (cursor on the row that opened it) and closes from the root, Triangle closes from any depth.
+     */
     private fun handleOptionsAction(action: GamepadAction) {
-        val menu = _state.value.options ?: return
-        when (action) {
-            GamepadAction.NAVIGATE_UP -> moveOptionsCursor(menu, -1)
-            GamepadAction.NAVIGATE_DOWN -> moveOptionsCursor(menu, 1)
-            GamepadAction.SELECT -> onOptionActivated(menu.selectedIndex)
-            GamepadAction.BACK, GamepadAction.OPEN_CONTEXT_MENU -> closeOptions()
-            else -> Unit
+        val s = _state.value
+        val menu = s.options ?: return
+        val rows = s.optionRows
+        val cue = if (rows.getOrNull(menu.selectedIndex)?.option is CoinOption.OpenGroup) PspMenuCue.SELECT else PspMenuCue.CONFIRM
+        val depth = if (menu.group != null) 1 else 0
+        when (val outcome = PspMenuNav.handle(action, menu.selectedIndex, rows.size, depth, cue, MenuSoundSink { menuSound.play(it) })) {
+            is PspMenuOutcome.Moved -> _state.update { it.copy(options = menu.copy(selectedIndex = outcome.index)) }
+            PspMenuOutcome.Activate -> onOptionActivated(menu.selectedIndex)
+            PspMenuOutcome.Up -> climbToRoot(menu.group)
+            PspMenuOutcome.Close -> closeOptions()
+            PspMenuOutcome.Ignored -> Unit
         }
     }
 
-    private fun moveOptionsCursor(menu: CoinOptionsMenu, delta: Int) = _state.update { s ->
-        val last = (s.optionRows.size - 1).coerceAtLeast(0)
-        s.copy(options = menu.copy(selectedIndex = (menu.selectedIndex + delta).coerceIn(0, last)))
+    /** Back from a list: the root again, with the cursor on the row that opened [group]. */
+    private fun climbToRoot(group: CoinOptionGroup?) = _state.update { s ->
+        val root = s.copy(options = CoinOptionsMenu())
+        val opener = root.optionRows.indexOfFirst { (it.option as? CoinOption.OpenGroup)?.group == group }.coerceAtLeast(0)
+        s.copy(options = CoinOptionsMenu(selectedIndex = opener))
     }
 
     /**
@@ -741,10 +772,10 @@ class ShibaCoinsViewModel @Inject constructor(
         when (val option = row.option) {
             is CoinOption.OpenGroup -> return openOptionGroup(option.group)
             is CoinOption.Sort -> setSort(option.sort)
-            // A sync already in flight: the row says "Syncing…" and picking it holds the menu open.
+            // A sync already in flight: the row says "Updating…" and picking it holds the menu open.
             CoinOption.SyncNow -> if (_state.value.isSyncing) return else sync()
-            CoinOption.ChangeMatch -> changeLink()
-            CoinOption.Unlink -> unlinkGame()
+            CoinOption.ChangeMatch -> changeMatch()
+            CoinOption.Unlink -> requestUnlink()
         }
         closeOptions()
     }
@@ -869,6 +900,7 @@ class ShibaCoinsViewModel @Inject constructor(
             requestFolderPick = false,
             pickedFolderUri = null,
             storefrontMatch = null,
+            steamPick = false,
             kitPrompt = null,
             noEmuDataReason = null,
         )
@@ -1078,6 +1110,7 @@ class ShibaCoinsViewModel @Inject constructor(
         val state = _state.value
         val ui = state.storefrontMatch ?: return
         if (ui.confirming) return
+        if (state.steamPick) return chooseSteamCandidate(ui, index)
         val treeUri = state.pickedFolderUri?.let { android.net.Uri.parse(it) } ?: return cancelAutoMatch()
         // "No correct match" is the picker's last stop. Nothing is written, and the page says so.
         val row = ui.rows.getOrNull(index) ?: return _state.update {
@@ -1194,13 +1227,77 @@ class ShibaCoinsViewModel @Inject constructor(
         }
     }
 
-    /** Removes the current link so the user can re-match it (edit a wrong match). */
-    fun changeLink() {
-        viewModelScope.launch { achievementRepository.unlink(gameId) }
+    /**
+     * Options → Change Match: drops the current link, then opens the match picker on a Steam search
+     * for the game's title so the user chooses the new match. Not confirmed — nothing is lost that
+     * the pick (or Auto-Match) does not bring straight back, since the cached coins stay stored.
+     */
+    private fun changeMatch() {
+        val linkedGameId = gameId
+        val title = _state.value.title
+        selectedSource.value = null
+        _state.update {
+            it.copy(
+                autoMatchStep = AutoMatchStep.IDENTIFY,
+                steamPick = true,
+                storefrontMatch = StorefrontMatchUi(gameTitle = title),
+            )
+        }
+        viewModelScope.launch {
+            achievementRepository.unlink(linkedGameId)
+            val found = runCatching { achievementRepository.searchSteam(title) }
+                .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
+                .onFailure { Timber.w(it, "Steam search for Change Match failed") }
+                .getOrDefault(emptyList())
+            // Backed out (or moved to another game) while the search ran: nothing to show.
+            if (gameId != linkedGameId || !_state.value.steamPick) return@launch
+            val rows = found.map { candidate ->
+                storefrontRowOf(
+                    ScoredStorefrontCandidate(
+                        StorefrontCandidate(Storefront.STEAM, candidate.appId, candidate.name),
+                        signals = emptyList(),
+                    ),
+                )
+            }
+            _state.update {
+                it.copy(
+                    storefrontMatch = StorefrontMatchUi(
+                        loading = false,
+                        gameTitle = title,
+                        query = title,
+                        storeLabel = Storefront.STEAM.label,
+                        rows = rows,
+                    ),
+                )
+            }
+        }
+    }
+
+    /** The user chose in the Change Match picker: link that Steam app id, or nothing for the last stop. */
+    private fun chooseSteamCandidate(ui: StorefrontMatchUi, index: Int) {
+        val row = ui.rows.getOrNull(index) ?: return cancelAutoMatch()
+        _state.update { it.copy(storefrontMatch = ui.copy(confirming = true)) }
+        val linkedGameId = gameId
+        viewModelScope.launch {
+            achievementRepository.linkManually(linkedGameId, AchievementProvider.STEAM, row.storeId)
+            cancelAutoMatch()
+            sync()
+        }
+    }
+
+    /** Options → Unlink Game: asks first; nothing is removed until [confirmUnlink]. */
+    private fun requestUnlink() = _state.update { it.copy(unlinkConfirm = true) }
+
+    fun cancelUnlink() = _state.update { it.copy(unlinkConfirm = false) }
+
+    fun confirmUnlink() {
+        if (!_state.value.unlinkConfirm) return
+        _state.update { it.copy(unlinkConfirm = false) }
+        unlinkGame()
     }
 
     /**
-     * Options → Unlink Game: removes every link this game holds, so the page drops to its Auto-Match
+     * Removes every link this game holds, so the page drops to its Auto-Match
      * panel. The cached coins stay stored (see [AchievementController.unlink]), so matching it again
      * brings them straight back.
      */

@@ -2,6 +2,7 @@ package com.playfieldportal.feature.settings.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -50,6 +51,8 @@ import com.playfieldportal.feature.settings.viewmodel.CollectionsSettingsViewMod
 @Composable
 fun CollectionsSettingsScreen(
     onBack: () -> Unit,
+    // A card game's menu ▸ View Game Details: the host opens Game Detail above Settings.
+    onOpenGameDetail: (gameId: Long) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: CollectionsSettingsViewModel = hiltViewModel(),
 ) {
@@ -76,6 +79,7 @@ fun CollectionsSettingsScreen(
     val nameConfirmEnabled = PfpModalNav.textEntryConfirmEnabled(nameText, error = null, maxLength = null)
     val showHints = LocalSettingsShowControllerHint.current
     val menuSounds = LocalMenuSounds.current
+    val itemMenu = rememberSettingsItemMenu()
 
     val openNameDialog: (CollectionDialog) -> Unit = { d ->
         nameText = d.initial
@@ -107,6 +111,7 @@ fun CollectionsSettingsScreen(
     val modalOpen = nameDialog != null || deleteTarget != null
     val interceptModal: (GamepadAction) -> Boolean = { action ->
         when {
+            itemMenu.intercept(action) -> true
             nameDialog != null -> {
                 PfpModalNav.handle(
                     action = action,
@@ -152,6 +157,7 @@ fun CollectionsSettingsScreen(
     // Each step owns its own SettingsScaffold so opening/closing a collection re-mounts it and
     // re-assigns controller focus (a single shared scaffold never re-runs its focus pass, which is
     // what broke the cursor after clicking into a collection).
+    Box(modifier = modifier) {
     if (openCollection == null) {
         CollectionListStep(
             collections = collections,
@@ -160,7 +166,7 @@ fun CollectionsSettingsScreen(
             onBack      = handleBack,
             modalOpen   = modalOpen,
             onInterceptAction = interceptModal,
-            modifier    = modifier,
+            modifier    = Modifier.fillMaxSize(),
         )
     } else {
         CollectionDetailStep(
@@ -175,12 +181,23 @@ fun CollectionsSettingsScreen(
                 modalFocus = PfpModalNav.initialConfirmFocus(destructive = true)
                 deleteConfirmFor = openCollection.id
             },
-            onRemoveGame = { game -> viewModel.removeGame(openCollection.id, game.id) },
+            onGameMenu  = { game ->
+                itemMenu.show(
+                    game.displayTitle,
+                    collectionGameMenuRows(
+                        gameId = game.id,
+                        onViewDetails = onOpenGameDetail,
+                        onRemove = { viewModel.removeGame(openCollection.id, it) },
+                    ),
+                )
+            },
             onBack      = handleBack,
             modalOpen   = modalOpen,
             onInterceptAction = interceptModal,
-            modifier    = modifier,
+            modifier    = Modifier.fillMaxSize(),
         )
+    }
+    itemMenu.Content()
     }
 
     // Name entry (new or rename)
@@ -239,6 +256,18 @@ fun CollectionsSettingsScreen(
         )
     }
 }
+
+/** A card game's menu. Remove from Card is reversible (add it back from the game's menu), so it is plain and unconfirmed. */
+internal fun collectionGameMenuRows(
+    gameId: Long,
+    onViewDetails: (Long) -> Unit,
+    onRemove: (Long) -> Unit,
+): List<SettingsMenuItem> = listOf(
+    SettingsMenuItem("View Game Details") { onViewDetails(gameId) },
+    SettingsMenuItem("Remove from Card") { onRemove(gameId) },
+)
+
+internal fun collectionGameSublabel(platformId: String): String = platformId.uppercase()
 
 private data class CollectionDialog(
     val title: String,
@@ -303,7 +332,7 @@ private fun CollectionDetailStep(
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
     onDelete: () -> Unit,
-    onRemoveGame: (Game) -> Unit,
+    onGameMenu: (Game) -> Unit,
     onBack: () -> Unit,
     modalOpen: Boolean,
     onInterceptAction: (GamepadAction) -> Boolean,
@@ -343,8 +372,9 @@ private fun CollectionDetailStep(
                 games.forEach { game ->
                     SettingsRow(
                         label    = game.displayTitle,
-                        sublabel = "${game.platformId.uppercase()}  ·  tap to remove from card",
-                        onClick  = { onRemoveGame(game) },
+                        sublabel = collectionGameSublabel(game.platformId),
+                        onClick  = { onGameMenu(game) },
+                        onLongPress = { onGameMenu(game) },
                     )
                 }
             }

@@ -214,6 +214,19 @@ data class StudioFilterRow(
 
 private fun onOff(on: Boolean) = if (on) "On" else "Off"
 
+/** ScreenScraper's media codes as a player reads them; a code not listed here shows as it is. */
+private val SS_MEDIA_LABELS = mapOf(
+    "mixrbv2" to "Mix v2", "mixrbv1" to "Mix v1", "screenmarquee" to "Marquee", "steamgrid" to "Steam Grid",
+    "box-2D" to "Box Art 2D", "box-3D" to "Box Art 3D",
+    "support-2D" to "Disc Art 2D", "support-texture" to "Disc Texture",
+    "fanart" to "Fan Art", "ss" to "Screenshot", "sstitle" to "Title Screen",
+    "wheel" to "Logo", "wheel-hd" to "Logo HD", "manuel" to "Manual",
+    "video" to "Video", "video-normalized" to "Video (Normalized)",
+)
+
+/** "box-2D" → "Box Art 2D". */
+internal fun ssMediaLabel(code: String): String = SS_MEDIA_LABELS[code] ?: code
+
 private fun regionLabel(code: String?) = code?.uppercase() ?: "All"
 
 /**
@@ -266,7 +279,7 @@ fun studioFilterRows(
                 val regionValue = if (region != null && region == defaultRegion) "${regionLabel(region)} · from disc" else regionLabel(region)
                 add(StudioFilterRow("Region", StudioFilterOption.Open(StudioFilterGroup.REGION), regionValue))
                 if (ssTypes.size > 1) {
-                    add(StudioFilterRow("Media", StudioFilterOption.Open(StudioFilterGroup.MEDIA), f.ssMedia[kind] ?: "All"))
+                    add(StudioFilterRow("Media", StudioFilterOption.Open(StudioFilterGroup.MEDIA), f.ssMedia[kind]?.let(::ssMediaLabel) ?: "All"))
                 }
                 add(StudioFilterRow("Clear Filters", StudioFilterOption.Clear))
             }
@@ -286,7 +299,7 @@ fun studioFilterRows(
             StudioFilterRow(label, StudioFilterOption.Region(code), checked = code == f.ssRegion)
         }
         StudioFilterGroup.MEDIA -> (listOf<String?>(null) + ssTypes).map { media ->
-            StudioFilterRow(media ?: "All", StudioFilterOption.Media(media), checked = media == f.ssMedia[kind])
+            StudioFilterRow(media?.let(::ssMediaLabel) ?: "All", StudioFilterOption.Media(media), checked = media == f.ssMedia[kind])
         }
     }
 }

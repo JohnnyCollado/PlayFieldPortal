@@ -9,6 +9,7 @@ import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 import kotlinx.serialization.json.Json
 
@@ -96,6 +97,36 @@ object PfpThemeCodec {
                 }
             }
         }
+    }
+
+    /**
+     * Copies the bundle in [input] to [out] with only the manifest's name changed. Entries stream
+     * through untouched, so a motion wallpaper is never held and every other byte is preserved.
+     * Returns false (having written nothing useful) when [input] has no readable manifest.
+     */
+    fun rewriteName(input: InputStream, out: OutputStream, name: String): Boolean {
+        var renamed = false
+        ZipInputStream(input).use { zin ->
+            ZipOutputStream(out).use { zip ->
+                while (true) {
+                    val entry = zin.nextEntry ?: break
+                    zip.putNextEntry(ZipEntry(entry.name))
+                    if (entry.name == ENTRY_MANIFEST) {
+                        val manifest = runCatching {
+                            json.decodeFromString(PfpThemeManifest.serializer(), zin.readBytes().decodeToString())
+                        }.getOrNull()
+                        if (manifest != null) {
+                            zip.write(json.encodeToString(PfpThemeManifest.serializer(), manifest.copy(name = name)).toByteArray())
+                            renamed = true
+                        }
+                    } else {
+                        zin.copyTo(zip)
+                    }
+                    zip.closeEntry()
+                }
+            }
+        }
+        return renamed
     }
 
     fun write(bundle: PfpThemeBundle): ByteArray =

@@ -26,7 +26,8 @@ class CategoryRepositoryDeleteTest {
     private val collections: CollectionRepository = mockk(relaxed = true)
     private val listStateDao: ListStateDao = mockk(relaxed = true)
     private val discord: DiscordSessionActivator = mockk(relaxed = true)
-    private val repo = CategoryRepositoryImpl(categoryDao, discord, collections, listStateDao)
+    private val customIconStore: CustomIconStore = mockk(relaxed = true)
+    private val repo = CategoryRepositoryImpl(categoryDao, discord, collections, listStateDao, customIconStore)
 
     private fun category(id: String, gaming: Boolean) = CategoryEntity(
         id = id, name = id, iconKey = "ic_games", type = "MANUAL", position = 9, isGamingCategory = gaming,
@@ -85,6 +86,36 @@ class CategoryRepositoryDeleteTest {
         coVerify(exactly = 0) { categoryDao.deleteById(any()) }
         coVerify(exactly = 0) { collections.deleteAllIn(any()) }
         coVerify(exactly = 0) { collections.rehomeAll(any(), any()) }
+    }
+
+    @Test
+    fun `deleting a custom category clears its device image after the row is gone`() = runTest {
+        coEvery { categoryDao.getById("custom_ff_5") } returns category("custom_ff_5", gaming = true)
+
+        repo.delete("custom_ff_5", CollectionsOnDelete.MOVE)
+
+        coVerifyOrder {
+            categoryDao.deleteById("custom_ff_5")
+            customIconStore.clear("usercat_custom_ff_5")
+        }
+    }
+
+    @Test
+    fun `a protected built-in never clears an image`() = runTest {
+        repo.delete(BuiltInCategory.GAMES, CollectionsOnDelete.DELETE)
+
+        coVerify(exactly = 0) { customIconStore.clear(any()) }
+    }
+
+    @Test
+    fun `the startup sweep passes every stored category id to the store`() = runTest {
+        coEvery { categoryDao.getAll() } returns listOf(
+            category("games", gaming = true), category("custom_ff_5", gaming = true),
+        )
+
+        repo.pruneOrphanCategoryIcons()
+
+        coVerify { customIconStore.pruneUserCategoryIcons(setOf("games", "custom_ff_5")) }
     }
 
     @Test

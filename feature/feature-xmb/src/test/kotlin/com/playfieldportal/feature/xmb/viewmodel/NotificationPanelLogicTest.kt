@@ -119,4 +119,49 @@ class NotificationPanelLogicTest {
         assertEquals(PanelSelection.HISTORY, panelSelection(rows, cursor = 3))
         assertEquals(PanelSelection.NONE, panelSelection(rows, cursor = -1))
     }
+
+    // ── List menu: rows that cannot act are not offered ───────────────────────
+
+    private fun ids(history: List<PfpNotification>) = notificationListMenuItems(history).map { it.id }
+
+    @Test
+    fun `an empty history offers no menu at all`() {
+        assertEquals(emptyList(), ids(emptyList()))
+    }
+
+    @Test
+    fun `with nothing read there is no Clear Read`() {
+        assertEquals(
+            listOf(NotificationMenuIds.MARK_ALL_READ, NotificationMenuIds.CLEAR_ALL),
+            ids(listOf(row(1), row(2))),
+        )
+    }
+
+    @Test
+    fun `with nothing unread there is no Mark All Read`() {
+        assertEquals(
+            listOf(NotificationMenuIds.CLEAR_READ, NotificationMenuIds.CLEAR_ALL),
+            ids(listOf(row(1).copy(readAt = 5L))),
+        )
+    }
+
+    @Test
+    fun `a mixed history offers all three with Clear All red and last`() {
+        val items = notificationListMenuItems(listOf(row(1), row(2).copy(readAt = 5L)))
+        assertEquals(
+            listOf(NotificationMenuIds.MARK_ALL_READ, NotificationMenuIds.CLEAR_READ, NotificationMenuIds.CLEAR_ALL),
+            items.map { it.id },
+        )
+        assertEquals(listOf("Mark All Read", "Clear Read", "Clear All"), items.map { it.label })
+        assertEquals(listOf(false, false, true), items.map { it.isDestructive })
+    }
+
+    // ── Social account menu title ─────────────────────────────────────────────
+
+    @Test
+    fun `the account menu is titled with the account name`() {
+        assertEquals("Johnny", socialAccountMenuTitle("Johnny"))
+        assertEquals("Account", socialAccountMenuTitle(""))
+        assertEquals("Account", socialAccountMenuTitle(null))
+    }
 }

@@ -257,6 +257,15 @@ about the *helper row* (which gestures a finger is told about, and which buttons
 finger can act on is not part of the choice — the browser's now-playing strip is drawn in both input
 modes, because what it says is worth reading either way.
 
+Options menus follow one set of rules. Every per-item menu draws through `PspContextMenuOverlay`
+(rows are `PspMenuRow`; `opensMenu` draws the `›`), and `PspMenuNav` in `core-ui` owns movement
+(no wrap), Back-climbs / Triangle-closes and the menu sounds, so no screen decides those itself.
+Rows come from pure builders (`GameContextMenuItems`, `MemoryCardContextMenuItems`,
+`MediaContextMenuItems`, `CategoryMenuItems`, `AppMenuItems`). Destructive actions are red, last,
+and confirm through `PfpConfirmModal` (opening on Cancel). A setting is a row with a value, a toggle
+is one label with On / Off, and Triangle and long-press open the same menu everywhere, including
+Settings rows (`SettingsRow.onLongPress`).
+
 **Switching from finger to pad is a press, not a free action.** A list a finger can scroll keeps its
 cursor hidden while the finger owns it, and the *first* controller press afterwards is a revival
 press: it parks the cursor on the visible row nearest the middle of the window — the content the

@@ -208,6 +208,8 @@ data class GameDetailUiState(
         DetailAction.entries.filter { action ->
             action.menu == menu && when (action) {
                 DetailAction.EMULATOR -> !isPackageBacked
+                // Nothing to open without a manual file.
+                DetailAction.MANUAL   -> hasManual
                 DetailAction.EXPORT   -> game?.platformId == WINDOWS_PLATFORM_ID
                 // A storefront identity is a PC-only fact: a console ROM is matched by its file,
                 // and there is no store to rematch it against (C23 T6).
@@ -407,13 +409,13 @@ enum class DetailAction(
     val opens: DetailMenu? = null,
 ) {
     FAVORITE("Favorite", group = DetailGroup.LIBRARY),
-    COLLECTIONS("Custom Memory Cards", group = DetailGroup.LIBRARY),
+    COLLECTIONS("Add to Card", group = DetailGroup.LIBRARY),
     EMULATOR("Emulator", group = DetailGroup.PLAY),
     MANUAL("Manual", group = DetailGroup.PLAY),
     MENU_ARTWORK("Artwork", group = DetailGroup.CUSTOMIZE, opens = DetailMenu.ARTWORK),
     MENU_INFORMATION("Information", group = DetailGroup.CUSTOMIZE, opens = DetailMenu.INFORMATION),
     MENU_FILE("File", group = DetailGroup.MANAGE, opens = DetailMenu.FILE),
-    REMOVE("Remove", group = DetailGroup.MANAGE),
+    REMOVE("Remove from Library", group = DetailGroup.MANAGE),
 
     ARTWORK("Artwork Studio", DetailMenu.ARTWORK),
     FETCH_ARTWORK("Fetch Artwork", DetailMenu.ARTWORK),
@@ -423,7 +425,7 @@ enum class DetailAction(
     EDIT("Edit Note", DetailMenu.INFORMATION),
     STOREFRONT("Store Match", DetailMenu.INFORMATION),
 
-    LOCATION("Show Location", DetailMenu.FILE),
+    LOCATION("Show File Location", DetailMenu.FILE),
     EXPORT("Export Game", DetailMenu.FILE),
 }
 
@@ -1180,9 +1182,13 @@ class GameDetailViewModel @Inject constructor(
         // Everything left — the page itself and the pickers whose rows ARE a graph — goes through
         // the shared engine, so exactly one thing owns the cursor at a time.
         when (action) {
-            // Y / Triangle opens Options from anywhere on the base page. Inside a modal it is
+            // Y / Triangle opens Options from anywhere on the base page. With Options up it closes
+            // the whole menu from any depth (Back climbs one level); inside any other modal it is
             // inert: a context menu of a context menu is not a thing.
-            GamepadAction.OPEN_CONTEXT_MENU -> if (!nav.isModalActive) openOptions()
+            GamepadAction.OPEN_CONTEXT_MENU -> when {
+                s.showOptions -> closeOptions()
+                !nav.isModalActive -> openOptions()
+            }
             GamepadAction.BACK -> if (nav.isModalActive) closeActiveModal() else close()
             // HOME belongs to the shell (the XMB bar), never to this page.
             GamepadAction.HOME -> Unit

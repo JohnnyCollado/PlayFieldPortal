@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Pause
@@ -65,18 +63,21 @@ import com.playfieldportal.core.domain.model.Video
 import com.playfieldportal.core.ui.components.ControllerPrompt
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.components.PspContextMenuOverlay
+import com.playfieldportal.core.ui.components.PspMenuCue
+import com.playfieldportal.core.ui.components.PspMenuNav
+import com.playfieldportal.core.ui.components.PspMenuOutcome
+import com.playfieldportal.core.ui.components.PspMenuRow
 import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.components.XmbKebabTouchButton
 import com.playfieldportal.core.ui.components.XmbMediaPillScrim
+import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import com.playfieldportal.core.ui.theme.deriveStorefrontColors
-import com.playfieldportal.core.ui.theme.menuCursor
-import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.feature.xmb.ui.media.MediaScrubBar
 import com.playfieldportal.feature.xmb.ui.media.TransportButton
 import kotlinx.coroutines.delay
 import timber.log.Timber
 
-private val SPEEDS = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
 private val SCREEN_MODES = listOf(
     AspectRatioFrameLayout.RESIZE_MODE_FIT to "Fit",
     AspectRatioFrameLayout.RESIZE_MODE_ZOOM to "Zoom",
@@ -130,12 +131,18 @@ fun VideoPlayerScreen(
     var isPlaying by remember { mutableStateOf(true) }
     var positionMs by remember { mutableLongStateOf(0L) }
     var durationMs by remember { mutableLongStateOf(0L) }
-    var speedIndex by remember { mutableIntStateOf(SPEEDS.indexOf(1f)) }
+    var speedIndex by remember { mutableIntStateOf(VIDEO_SPEEDS.indexOf(1f)) }
     var screenModeIndex by remember { mutableIntStateOf(0) }
     var controlsVisible by remember { mutableStateOf(true) }
     var controlsPoke by remember { mutableIntStateOf(0) }
     var optionsOpen by remember { mutableStateOf(false) }
     var optionsRow by remember { mutableIntStateOf(0) }
+    // The open sub-list (speed, subtitles, ...), or null on the root; rootRow is where Back returns the cursor.
+    var optionsGroup by remember { mutableStateOf<VideoOptionGroup?>(null) }
+    var rootRow by remember { mutableIntStateOf(0) }
+    // Bumped when the player's tracks change, so the panel re-reads them.
+    var tracksTick by remember { mutableIntStateOf(0) }
+    val menuSounds = LocalMenuSounds.current
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     // The very first video seeks to the requested resume position; later prev/next start at 0.
@@ -145,6 +152,7 @@ fun VideoPlayerScreen(
         ExoPlayer.Builder(context).build().apply {
             addListener(object : Player.Listener {
                 override fun onIsPlayingChanged(playing: Boolean) { isPlaying = playing }
+                override fun onTracksChanged(tracks: Tracks) { tracksTick++ }
                 override fun onPlaybackStateChanged(state: Int) {
                     if (state == Player.STATE_READY) durationMs = duration.coerceAtLeast(0L)
                 }
@@ -232,14 +240,53 @@ fun VideoPlayerScreen(
         poke()
     }
     fun playPause() { if (player.isPlaying) player.pause() else player.play(); poke() }
-    // What each Options row does when activated. Extracted so the pad's SELECT and a tap on
-    // the row run the same code - the touch path cannot drift from the controller path.
-    fun applyOption(row: Int) {
-        when (row) {
-            0 -> { speedIndex = (speedIndex + 1) % SPEEDS.size; player.playbackParameters = PlaybackParameters(SPEEDS[speedIndex]) }
-            1 -> cycleTrack(player, C.TRACK_TYPE_TEXT, allowOff = true)
-            2 -> cycleTrack(player, C.TRACK_TYPE_AUDIO, allowOff = false)
-            3 -> screenModeIndex = (screenModeIndex + 1) % SCREEN_MODES.size
+    fun closeOptions() { optionsOpen = false; optionsGroup = null; optionsRow = 0 }
+    fun optionRows(): List<PspMenuRow> {
+        tracksTick // read: re-derive when the player's tracks change
+        val state = VideoOptionsState(
+            speed = VIDEO_SPEEDS[speedIndex],
+            screenModeLabel = SCREEN_MODES[screenModeIndex].second,
+            subtitleChoices = trackChoices(player, C.TRACK_TYPE_TEXT, allowOff = true),
+            audioChoices = trackChoices(player, C.TRACK_TYPE_AUDIO, allowOff = false),
+        )
+        return videoPlayerOptionRows(state, optionsGroup)
+    }
+    // Picking a row of an open list. Shared by the pad's SELECT and a tap, so touch cannot drift.
+    fun applyChoice(group: VideoOptionGroup, choice: Int) {
+        when (group) {
+            VideoOptionGroup.SPEED -> {
+                speedIndex = choice
+                player.playbackParameters = PlaybackParameters(VIDEO_SPEEDS[choice])
+            }
+            VideoOptionGroup.SUBTITLES -> selectTrack(player, C.TRACK_TYPE_TEXT, allowOff = true, choice)
+            VideoOptionGroup.AUDIO -> selectTrack(player, C.TRACK_TYPE_AUDIO, allowOff = false, choice)
+            VideoOptionGroup.SCREEN_MODE -> screenModeIndex = choice
+        }
+        tracksTick++
+    }
+    // One press on the options panel with the cursor on [row]; the pad passes optionsRow, a tap its row.
+    fun optionsPress(action: GamepadAction, row: Int) {
+        val rows = optionRows()
+        val outcome = PspMenuNav.handle(
+            action, row, rows.size, depth = if (optionsGroup != null) 1 else 0,
+            cue = rows.getOrNull(row)?.cue ?: PspMenuCue.NONE, sounds = menuSounds,
+        )
+        when (outcome) {
+            is PspMenuOutcome.Moved -> optionsRow = outcome.index
+            PspMenuOutcome.Activate -> {
+                val group = optionsGroup
+                if (group == null) {
+                    rootRow = row
+                    optionsGroup = VideoOptionGroup.entries[row]
+                    optionsRow = optionRows().indexOfFirst { it.checked }.coerceAtLeast(0)
+                } else {
+                    optionsRow = row
+                    applyChoice(group, row)
+                }
+            }
+            PspMenuOutcome.Up -> { optionsGroup = null; optionsRow = rootRow }
+            PspMenuOutcome.Close -> closeOptions()
+            PspMenuOutcome.Ignored -> Unit
         }
     }
     fun switchTo(newIndex: Int) {
@@ -254,13 +301,7 @@ fun VideoPlayerScreen(
     LaunchedEffect(pendingGamepadAction) {
         val action = pendingGamepadAction ?: return@LaunchedEffect
         if (optionsOpen) {
-            when (action) {
-                GamepadAction.NAVIGATE_UP   -> optionsRow = (optionsRow - 1 + OPTION_COUNT) % OPTION_COUNT
-                GamepadAction.NAVIGATE_DOWN -> optionsRow = (optionsRow + 1) % OPTION_COUNT
-                GamepadAction.SELECT, GamepadAction.NAVIGATE_RIGHT -> applyOption(optionsRow)
-                GamepadAction.BACK, GamepadAction.OPEN_CONTEXT_MENU -> optionsOpen = false
-                else -> Unit
-            }
+            optionsPress(action, optionsRow)
             onGamepadActionConsumed(); return@LaunchedEffect
         }
         when (action) {
@@ -273,7 +314,7 @@ fun VideoPlayerScreen(
             GamepadAction.NAVIGATE_UP, GamepadAction.NAVIGATE_DOWN -> poke()
             GamepadAction.PREV_CATEGORY -> switchTo(index - 1)
             GamepadAction.NEXT_CATEGORY -> switchTo(index + 1)
-            GamepadAction.OPEN_CONTEXT_MENU -> { optionsOpen = true; optionsRow = 0 }
+            GamepadAction.OPEN_CONTEXT_MENU -> { optionsOpen = true; optionsGroup = null; optionsRow = 0 }
             else -> Unit
         }
         onGamepadActionConsumed()
@@ -322,13 +363,13 @@ fun VideoPlayerScreen(
                 positionMs = positionMs,
                 durationMs = durationMs,
                 isPlaying = isPlaying,
-                speed = SPEEDS[speedIndex],
+                speed = VIDEO_SPEEDS[speedIndex],
                 screenMode = SCREEN_MODES[screenModeIndex].second,
                 hasPrev = index > 0,
                 hasNext = index < videos.lastIndex,
                 showTouchControls = showTouchControls,
                 onBack = onExit,
-                onOptions = { optionsOpen = true; optionsRow = 0 },
+                onOptions = { optionsOpen = true; optionsGroup = null; optionsRow = 0 },
                 onPlayPause = { playPause() },
                 onSeekBack = { seekBy(-SEEK_STEP_MS) },
                 onSeekForward = { seekBy(SEEK_STEP_MS) },
@@ -339,21 +380,23 @@ fun VideoPlayerScreen(
         }
 
         if (optionsOpen && errorMessage == null) {
-            OptionsOverlay(
-                selectedRow = optionsRow,
-                speed = SPEEDS[speedIndex],
-                subtitleLabel = currentTrackLabel(player, C.TRACK_TYPE_TEXT),
-                audioLabel = currentTrackLabel(player, C.TRACK_TYPE_AUDIO),
-                screenMode = SCREEN_MODES[screenModeIndex].second,
-                showTouchControls = showTouchControls,
-                onRowClick = { row -> optionsRow = row; applyOption(row) },
-                onClose = { optionsOpen = false },
+            PspContextMenuOverlay(
+                title = optionsGroup?.let { OPTION_TITLES.getValue(it) } ?: "Options",
+                rows = optionRows(),
+                selectedIndex = optionsRow,
+                onRowActivated = { row -> optionsPress(GamepadAction.SELECT, row) },
+                onDismiss = { closeOptions() },
             )
         }
     }
 }
 
-private const val OPTION_COUNT = 4
+private val OPTION_TITLES = mapOf(
+    VideoOptionGroup.SPEED to "Playback Speed",
+    VideoOptionGroup.SUBTITLES to "Subtitles",
+    VideoOptionGroup.AUDIO to "Audio Track",
+    VideoOptionGroup.SCREEN_MODE to "Screen Mode",
+)
 
 @Composable
 private fun ControlsOverlay(
@@ -530,122 +573,35 @@ private fun ControlsOverlay(
     }
 }
 
-@Composable
-private fun OptionsOverlay(
-    selectedRow: Int,
-    speed: Float,
-    subtitleLabel: String,
-    audioLabel: String,
-    screenMode: String,
-    showTouchControls: Boolean,
-    onRowClick: (Int) -> Unit,
-    onClose: () -> Unit,
-) {
-    val rows = listOf(
-        "Playback Speed" to "${speed}×",
-        "Subtitles" to subtitleLabel,
-        "Audio Track" to audioLabel,
-        "Screen Mode" to screenMode,
-    )
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
-        Column(
-            modifier = Modifier
-                .padding(40.dp)
-                .width(320.dp)
-                .background(Color(0xF0101018), RoundedCornerShape(14.dp))
-                .padding(vertical = 16.dp),
-        ) {
-            Text(
-                "Options",
-                color = menuCursorEdge(),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-            )
-            rows.forEachIndexed { i, (label, value) ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        // Clickable in both modes: it is the same target either way, and a
-                        // kebab opening a menu nothing could act on would be a dead end.
-                        .clickable { onRowClick(i) }
-                        .menuCursor(i == selectedRow)
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(label, color = Color.White, fontSize = 15.sp)
-                    Text(value, color = menuCursorEdge(), fontSize = 14.sp)
-                }
-            }
-            Spacer(Modifier.height(4.dp))
-            if (showTouchControls) {
-                // The pad closes this with B or Y; touch needs somewhere to press, and
-                // tapping outside is not discoverable.
-                XmbHeaderPill(
-                    label = "Close",
-                    onClick = onClose,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-                )
-            } else {
-                ControllerPromptBar(
-                    items = listOf(
-                        ControllerPromptItem(
-                            listOf(GamepadAction.SELECT, GamepadAction.NAVIGATE_RIGHT),
-                            "Change",
-                        ),
-                        ControllerPromptItem(
-                            listOf(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.BACK),
-                            "Close",
-                        ),
-                    ),
-                    labelColor = Color(0xFF888888),
-                    labelStyle = TextStyle(fontSize = 11.sp),
-                    glyphSize = 15.dp,
-                    arrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.alpha(com.playfieldportal.core.ui.components.idleHintAlpha(com.playfieldportal.feature.xmb.ui.LocalMediaHintVisible.current)).padding(horizontal = 20.dp, vertical = 4.dp),
-                )
-            }
-        }
-    }
-}
-
 // ── Track selection helpers ──────────────────────────────────────────────────
 
-@UnstableApi
-private fun cycleTrack(player: Player, trackType: Int, allowOff: Boolean) {
-    val groups = player.currentTracks.groups.filter { it.type == trackType && it.isSupported }
-    if (groups.isEmpty()) return
-    // Build the ordered choices: [off?] + one entry per (group, trackIndex).
-    val choices = buildList {
-        if (allowOff) add(null)
-        groups.forEach { g -> for (t in 0 until g.length) if (g.isTrackSupported(t)) add(g to t) }
-    }
-    if (choices.isEmpty()) return
-    // Find the currently-selected choice.
-    val currentIdx = choices.indexOfFirst { choice ->
-        choice != null && choice.first.isTrackSelected(choice.second)
-    }.let { if (it < 0 && allowOff) 0 else it }
-    val next = choices[(currentIdx + 1).mod(choices.size)]
+/** Supported (group, track) pairs of [trackType], in the order the player lists them. */
+private fun trackEntries(player: Player, trackType: Int): List<Pair<Tracks.Group, Int>> =
+    player.currentTracks.groups
+        .filter { it.type == trackType && it.isSupported }
+        .flatMap { g -> (0 until g.length).filter { g.isTrackSupported(it) }.map { g to it } }
+
+private fun trackChoices(player: Player, trackType: Int, allowOff: Boolean): List<VideoTrackChoice> =
+    videoTrackChoices(
+        tracks = trackEntries(player, trackType).map { (g, t) ->
+            val format = g.getTrackFormat(t)
+            VideoTrackInfo(format.language, format.label, g.isTrackSelected(t))
+        },
+        allowOff = allowOff,
+        trackTypeDisabled = player.trackSelectionParameters.disabledTrackTypes.contains(trackType),
+    )
+
+/** Applies the [choice]th entry of [trackChoices] (same order: Off first when [allowOff]). */
+private fun selectTrack(player: Player, trackType: Int, allowOff: Boolean, choice: Int) {
+    val entries = trackEntries(player, trackType)
     val params = player.trackSelectionParameters.buildUpon()
-    if (next == null) {
+    val track = if (allowOff) entries.getOrNull(choice - 1) else entries.getOrNull(choice)
+    if (track == null) {
+        if (!allowOff) return
         params.setTrackTypeDisabled(trackType, true)
     } else {
         params.setTrackTypeDisabled(trackType, false)
-        params.setOverrideForType(TrackSelectionOverride(next.first.mediaTrackGroup, next.second))
+        params.setOverrideForType(TrackSelectionOverride(track.first.mediaTrackGroup, track.second))
     }
     player.trackSelectionParameters = params.build()
 }
-
-@UnstableApi
-private fun currentTrackLabel(player: Player, trackType: Int): String {
-    val groups = player.currentTracks.groups.filter { it.type == trackType && it.isSupported }
-    if (groups.isEmpty()) return if (trackType == C.TRACK_TYPE_TEXT) "None" else "Default"
-    val selected = groups.flatMap { g -> (0 until g.length).mapNotNull { t -> if (g.isTrackSelected(t)) g.getTrackFormat(t) else null } }
-        .firstOrNull()
-    return when {
-        selected == null && trackType == C.TRACK_TYPE_TEXT -> "Off"
-        selected == null -> "Default"
-        else -> selected.language?.uppercase() ?: selected.label ?: "Track"
-    }
-}
-

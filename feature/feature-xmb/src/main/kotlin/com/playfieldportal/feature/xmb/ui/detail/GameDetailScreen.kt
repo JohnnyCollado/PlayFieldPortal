@@ -39,7 +39,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Monitor
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -76,6 +76,8 @@ import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.components.PfpModalHost
 import com.playfieldportal.core.ui.components.PfpModalSpec
+import com.playfieldportal.core.ui.components.PspContextMenuOverlay
+import com.playfieldportal.core.ui.components.PspMenuRow
 import com.playfieldportal.core.ui.components.rememberPfpModalHost
 import com.playfieldportal.core.ui.detail.DetailRowSpacing
 import com.playfieldportal.core.ui.detail.PfpDetailBackground
@@ -97,8 +99,6 @@ import com.playfieldportal.core.ui.detail.PfpDetailSectionLabel
 import com.playfieldportal.core.ui.detail.PfpDetailTextRow
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.menuCursorFill
-import com.playfieldportal.feature.xmb.ui.DetailContextMenu
-import com.playfieldportal.feature.xmb.ui.DetailMenuRow
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerPanel
 import com.playfieldportal.feature.xmb.ui.collection.collectionNameModalSpec
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -550,7 +550,8 @@ private fun GameDetailContent(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     PfpDetailQuickAction(
-                        label = if (game.isFavorite) "Unfavorite" else "Favorite",
+                        // One label; the icon carries the state.
+                        label = "Favorite",
                         icon = if (game.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                         focused = focus == GameDetailKeys.FAVORITE,
                         available = true,
@@ -582,7 +583,7 @@ private fun GameDetailContent(
                     // emulator is changed by confirming (or tapping) the Game Information band.
                     PfpDetailQuickAction(
                         label = "Options",
-                        icon = Icons.Filled.MoreHoriz,
+                        icon = Icons.Filled.MoreVert,
                         focused = focus == GameDetailKeys.OPTIONS_ACTION,
                         available = true,
                         onClick = { viewModel.onNodeTapped(GameDetailKeys.OPTIONS_ACTION) },
@@ -736,11 +737,11 @@ private fun GameDetailOverlays(
         }
 
         AnimatedVisibility(state.showOptions, enter = fadeIn(), exit = fadeOut()) {
-            DetailContextMenu(
+            PspContextMenuOverlay(
                 title = state.optionsMenu.title,
                 rows = detailMenuRows(state, emulatorName = state.resolvedLaunch?.profile?.name),
                 selectedIndex = state.optionsIndex,
-                onRowClick = { viewModel.onOptionRowTapped(state.visibleActions[it]) },
+                onRowActivated = { viewModel.onOptionRowTapped(state.visibleActions[it]) },
                 onDismiss = viewModel::closeOptions,
                 panelAlpha = 0.88f,
             )
@@ -1052,8 +1053,7 @@ private fun confirmLabelFor(state: GameDetailUiState): String {
         focus == GameDetailKeys.OVERVIEW ->
             if (state.descriptionExpanded) "Collapse" else "Read more"
         focus.startsWith("game-detail:disc:") -> "Choose disc"
-        focus == GameDetailKeys.FAVORITE ->
-            if (state.game?.isFavorite == true) "Unfavorite" else "Favorite"
+        focus == GameDetailKeys.FAVORITE -> "Favorite"
         focus == GameDetailKeys.ARTWORK -> "Edit artwork"
         focus == GameDetailKeys.MANUAL -> "Open manual"
         focus == GameDetailKeys.OPTIONS_ACTION -> "Options"
@@ -1114,7 +1114,7 @@ private val OptionsPanelMaxHeight: Dp = 440.dp
 private val OptionsRowScrollStep: Dp = 58.dp
 
 internal fun DetailAction.dynamicLabel(refreshing: Boolean): String = when (this) {
-    DetailAction.FETCH_ARTWORK -> if (refreshing) "Fetching Artwork..." else label
+    DetailAction.FETCH_ARTWORK -> if (refreshing) "Fetching Artwork…" else label
     else -> label
 }
 
@@ -1125,10 +1125,10 @@ internal fun DetailAction.dynamicLabel(refreshing: Boolean): String = when (this
  * group — draws none. Favorite keeps one name and states its value beside it: a label that flips
  * to "Unfavorite" makes the row's position the only thing a user can learn.
  */
-internal fun detailMenuRows(state: GameDetailUiState, emulatorName: String?): List<DetailMenuRow> {
+internal fun detailMenuRows(state: GameDetailUiState, emulatorName: String?): List<PspMenuRow> {
     val actions = state.visibleActions
     return actions.mapIndexed { index, action ->
-        DetailMenuRow(
+        PspMenuRow(
             label = action.dynamicLabel(refreshing = state.isFetchingArtwork),
             isDestructive = action == DetailAction.REMOVE,
             value = when (action) {
@@ -1137,7 +1137,9 @@ internal fun detailMenuRows(state: GameDetailUiState, emulatorName: String?): Li
                 DetailAction.STOREFRONT -> state.storeLinks?.let { if (it.isEmpty()) "None" else it.joinToString(" · ") }
                 else -> null
             },
-            opensMenu = action.opens != null,
+            // Add to Card opens the card picker, which is not an Options sub-panel.
+            opensMenu = action.opens != null || action == DetailAction.COLLECTIONS,
+            silent = action == DetailAction.FAVORITE,
             header = action.group?.takeIf { it != actions.getOrNull(index - 1)?.group }?.label,
         )
     }

@@ -8,6 +8,13 @@ import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.Video
 import com.playfieldportal.core.domain.repository.VideoRepository
+import com.playfieldportal.core.ui.components.PspMenuCue
+import com.playfieldportal.core.ui.components.PspMenuNav
+import com.playfieldportal.core.ui.components.PspMenuRow
+import com.playfieldportal.core.ui.components.PspMenuOutcome
+import com.playfieldportal.core.ui.sound.MenuSound
+import com.playfieldportal.core.ui.sound.MenuSoundPlayer
+import com.playfieldportal.core.ui.sound.MenuSoundSink
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -22,18 +29,19 @@ import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
 
-// A row in the video's Options menu. RESUME is only offered when there's a saved position.
-enum class VideoDetailAction(val label: String) {
+// A row in the video's Options menu — or one of the page's own Play buttons (group == null): the
+// menu sits beside those buttons, so it never repeats them, with or without a resume point.
+enum class VideoDetailAction(val label: String, val group: String? = null) {
     PLAY("Play"),
     RESUME("Resume"),
     RESTART("Start from Beginning"),
-    FAVORITE("Favorite"),
-    PLAYLIST("Add to Playlist"),
-    RENAME("Rename Title"),
-    THUMBNAIL("Change Thumbnail"),
-    INFO("Information"),
-    LOCATION("Open File Location"),
-    REMOVE("Remove From Library"),
+    FAVORITE("Favorite", group = "Library"),
+    PLAYLIST("Add to Playlist", group = "Library"),
+    RENAME("Edit Title", group = "Customize"),
+    THUMBNAIL("Change Thumbnail", group = "Customize"),
+    INFO("View Information", group = "Manage"),
+    LOCATION("Show File Location", group = "Manage"),
+    REMOVE("Remove from Library", group = "Manage"),
 }
 
 // One playlist choice in the "Add to Playlist" picker; checked = the video is already a member.
@@ -86,17 +94,39 @@ data class VideoDetailUiState(
     val primaryActions: List<VideoDetailAction>
         get() = if (hasResume) listOf(VideoDetailAction.RESUME, VideoDetailAction.RESTART)
                 else listOf(VideoDetailAction.PLAY)
-    // Options list, kept free of redundancy: Play only when there's no resume point; Resume + Start
-    // from Beginning only when there is.
+    // Options list: the grouped rows only; Play / Resume / Start from Beginning are the page's buttons.
     val optionsActions: List<VideoDetailAction>
-        get() = VideoDetailAction.entries.filter {
-            when (it) {
-                VideoDetailAction.PLAY    -> !hasResume
-                VideoDetailAction.RESUME  -> hasResume
-                VideoDetailAction.RESTART -> hasResume
-                else                      -> true
-            }
-        }
+        get() = VideoDetailAction.entries.filter { it.group != null }
+}
+
+/**
+ * The Options menu's rows (mockup 3). Favorite keeps one label and states its value beside it, and
+ * stays silent; a group header goes on the first row of each group.
+ */
+internal fun videoOptionRows(state: VideoDetailUiState): List<PspMenuRow> {
+    val actions = state.optionsActions
+    return actions.mapIndexed { index, action ->
+        PspMenuRow(
+            label = action.label,
+            isDestructive = action == VideoDetailAction.REMOVE,
+            value = if (action == VideoDetailAction.FAVORITE) {
+                if (state.video?.isFavorite == true) "On" else "Off"
+            } else null,
+            opensMenu = action == VideoDetailAction.PLAYLIST,
+            silent = action == VideoDetailAction.FAVORITE,
+            header = action.group?.takeIf { it != actions.getOrNull(index - 1)?.group },
+        )
+    }
+}
+
+/**
+ * The cue a press on [action] plays: Add to Playlist opens a list (select), Favorite flips in place
+ * and stays silent like the XMB's Favorite rows, everything else commits (confirm).
+ */
+internal fun optionCue(action: VideoDetailAction): PspMenuCue = when (action) {
+    VideoDetailAction.PLAYLIST -> PspMenuCue.SELECT
+    VideoDetailAction.FAVORITE -> PspMenuCue.NONE
+    else -> PspMenuCue.CONFIRM
 }
 
 // Treat playback as "finished" when it ends within this window of the duration — clears resume so
@@ -108,6 +138,7 @@ class VideoDetailViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val videoRepository: VideoRepository,
     private val intentResolver: com.playfieldportal.core.data.video.VideoIntentResolver,
+    private val menuSound: MenuSoundPlayer,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(VideoDetailUiState())
@@ -133,7 +164,7 @@ class VideoDetailViewModel @Inject constructor(
         val s = _uiState.value
         // The launch overlay swallows input.
         if (s.externalLaunch != null) return
-        // The launch error, the removal prompt, New Playlist, Information and Rename Title are the
+        // The launch error, the removal prompt, New Playlist, Information and Edit Title are the
         // shared modals (see videoDetailModalSpec): the screen hands every press to their host
         // while one is up, so those branches only see a press that raced the modal onto the
         // screen. Back is the one safe reading of that — a Confirm must never skip the removal
@@ -145,26 +176,28 @@ class VideoDetailViewModel @Inject constructor(
         when {
             s.confirmRemove -> if (action == GamepadAction.BACK) cancelRemove()
             s.creatingPlaylist -> if (action == GamepadAction.BACK) cancelCreatePlaylist()
+            // The shared PSP-panel rules: clamp, Triangle/Back close, cues. A playlist row toggles
+            // membership; the last row (Create New Playlist) opens the name entry.
             s.showPlaylistPicker -> {
                 val count = s.playlistOptions.size + 1  // +1 for "Create New Playlist"
-                when (action) {
-                    GamepadAction.NAVIGATE_UP   -> _uiState.update { it.copy(playlistPickerIndex = (it.playlistPickerIndex - 1 + count) % count) }
-                    GamepadAction.NAVIGATE_DOWN -> _uiState.update { it.copy(playlistPickerIndex = (it.playlistPickerIndex + 1) % count) }
-                    GamepadAction.SELECT        -> activatePlaylistPickerRow(s.playlistPickerIndex)
-                    GamepadAction.BACK          -> _uiState.update { it.copy(showPlaylistPicker = false) }
-                    else -> Unit
+                val cue = if (s.playlistPickerIndex >= s.playlistOptions.size) PspMenuCue.SELECT else PspMenuCue.CONFIRM
+                when (val outcome = PspMenuNav.handle(action, s.playlistPickerIndex, count, depth = 0, cue, sounds)) {
+                    is PspMenuOutcome.Moved -> _uiState.update { it.copy(playlistPickerIndex = outcome.index) }
+                    PspMenuOutcome.Activate -> activatePlaylistPickerRow(s.playlistPickerIndex)
+                    PspMenuOutcome.Up, PspMenuOutcome.Close -> closePlaylistPicker()
+                    PspMenuOutcome.Ignored -> Unit
                 }
             }
             s.infoVisible -> if (action == GamepadAction.SELECT || action == GamepadAction.BACK) closeInfo()
             s.isEditingTitle -> if (action == GamepadAction.BACK) cancelTitleEdit()
             s.showOptions -> {
-                val count = s.optionsActions.size
-                when (action) {
-                    GamepadAction.NAVIGATE_UP   -> _uiState.update { it.copy(optionsIndex = (it.optionsIndex - 1 + count) % count) }
-                    GamepadAction.NAVIGATE_DOWN -> _uiState.update { it.copy(optionsIndex = (it.optionsIndex + 1) % count) }
-                    GamepadAction.SELECT        -> activate(s.optionsActions[s.optionsIndex.coerceIn(0, count - 1)])
-                    GamepadAction.BACK          -> _uiState.update { it.copy(showOptions = false) }
-                    else -> Unit
+                val actions = s.optionsActions
+                val index = s.optionsIndex.coerceIn(0, actions.lastIndex)
+                when (val outcome = PspMenuNav.handle(action, index, actions.size, depth = 0, optionCue(actions[index]), sounds)) {
+                    is PspMenuOutcome.Moved -> _uiState.update { it.copy(optionsIndex = outcome.index) }
+                    PspMenuOutcome.Activate -> activate(actions[index])
+                    PspMenuOutcome.Up, PspMenuOutcome.Close -> closeOptions()
+                    PspMenuOutcome.Ignored -> Unit
                 }
             }
             else -> {
@@ -183,7 +216,12 @@ class VideoDetailViewModel @Inject constructor(
         }
     }
 
-    fun openOptions() = _uiState.update { it.copy(showOptions = true, optionsIndex = 0) }
+    private val sounds = MenuSoundSink { menuSound.play(it) }
+
+    fun openOptions() {
+        menuSound.play(MenuSound.SELECT)
+        _uiState.update { it.copy(showOptions = true, optionsIndex = 0) }
+    }
     fun closeOptions() = _uiState.update { it.copy(showOptions = false) }
 
     fun activate(action: VideoDetailAction) {

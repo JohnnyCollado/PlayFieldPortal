@@ -68,9 +68,10 @@ class ShibaLibraryHelperFooterTest {
 
         val rows = libraryOptionRows(state)
 
-        assertEquals(listOf("Filter (Progress Highest First)", "Provider (Steam)"), rows.map { it.label })
+        assertEquals(listOf("Sort", "Provider", "Update Installed Achievements"), rows.map { it.label })
+        assertEquals(listOf("Progress Highest First", "Steam", null), rows.map { it.value })
         assertEquals(
-            listOf(LibraryOption.OpenGroup(LibraryOptionGroup.FILTER), LibraryOption.OpenGroup(LibraryOptionGroup.PROVIDER)),
+            listOf(LibraryOption.OpenGroup(LibraryOptionGroup.SORT), LibraryOption.OpenGroup(LibraryOptionGroup.PROVIDER), LibraryOption.SyncAll),
             rows.map { it.option },
         )
     }

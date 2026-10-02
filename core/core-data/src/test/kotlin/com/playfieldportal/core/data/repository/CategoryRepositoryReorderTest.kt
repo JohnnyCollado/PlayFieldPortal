@@ -49,6 +49,7 @@ class CategoryRepositoryReorderTest {
             mockk<DiscordSessionActivator>(relaxed = true),
             mockk<CollectionRepository>(relaxed = true),
             mockk<ListStateDao>(relaxed = true),
+            mockk<CustomIconStore>(relaxed = true),
         )
         fun row(id: String, position: Int) =
             CategoryEntity(id = id, name = id, iconKey = "ic", type = "BUILT_IN", position = position)

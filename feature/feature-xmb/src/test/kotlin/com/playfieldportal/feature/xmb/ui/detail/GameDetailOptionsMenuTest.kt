@@ -20,6 +20,8 @@ class GameDetailOptionsMenuTest {
         game = Game(id = 1L, title = "Crash Bandicoot", platformId = "psx", romPath = "/roms/psx/crash.chd"),
     )
 
+    private val withManual = rom.copy(hasManual = true)
+
     private val windows = GameDetailUiState(
         isLoading = false,
         game = Game(id = 2L, title = "Portal 2", platformId = "windows", packageName = "banner.hub"),
@@ -38,8 +40,14 @@ class GameDetailOptionsMenuTest {
                 DetailAction.MENU_FILE,
                 DetailAction.REMOVE,
             ),
-            rom.actionsIn(DetailMenu.ROOT),
+            withManual.actionsIn(DetailMenu.ROOT),
         )
+    }
+
+    @Test
+    fun `Manual is hidden when the game has no manual`() {
+        assertFalse(DetailAction.MANUAL in rom.actionsIn(DetailMenu.ROOT))
+        assertFalse(detailMenuRows(rom, emulatorName = null).any { it.label == "Manual" })
     }
 
     @Test
@@ -92,7 +100,10 @@ class GameDetailOptionsMenuTest {
     @Test
     fun `the renamed rows read as agreed`() {
         assertEquals("Store Match", DetailAction.STOREFRONT.label)
-        assertEquals("Show Location", DetailAction.LOCATION.label)
+        assertEquals("Show File Location", DetailAction.LOCATION.label)
+        assertEquals("Add to Card", DetailAction.COLLECTIONS.label)
+        assertEquals("Remove from Library", DetailAction.REMOVE.label)
+        assertEquals("Fetching Artwork…", DetailAction.FETCH_ARTWORK.dynamicLabel(refreshing = true))
         assertEquals("Artwork Studio", DetailAction.ARTWORK.label)
     }
 
@@ -100,7 +111,7 @@ class GameDetailOptionsMenuTest {
 
     @Test
     fun `a group header sits on the first row of each group and nowhere else`() {
-        val rows = detailMenuRows(rom, emulatorName = "DuckStation")
+        val rows = detailMenuRows(withManual, emulatorName = "DuckStation")
 
         assertEquals(
             listOf("Library", null, "Play", null, "Customize", null, "Manage", null),
@@ -117,14 +128,19 @@ class GameDetailOptionsMenuTest {
 
     @Test
     fun `Favorite and Emulator say what they are set to, and a sub-panel row says it opens`() {
-        val rows = detailMenuRows(rom, emulatorName = "DuckStation").associateBy { it.label }
+        // Rows are the shared panel's own type, so the panel draws them with no adapter.
+        val shared: List<com.playfieldportal.core.ui.components.PspMenuRow> =
+            detailMenuRows(withManual, emulatorName = "DuckStation")
+        val rows = shared.associateBy { it.label }
 
         assertEquals("Off", rows.getValue("Favorite").value)
         assertEquals("DuckStation", rows.getValue("Emulator").value)
         assertTrue(rows.getValue("Information").opensMenu)
         assertFalse(rows.getValue("Manual").opensMenu)
         assertNull(rows.getValue("Manual").value)
-        assertTrue(rows.getValue("Remove").isDestructive)
+        assertTrue(rows.getValue("Add to Card").opensMenu)
+        assertTrue(rows.getValue("Favorite").silent)
+        assertTrue(rows.getValue("Remove from Library").isDestructive)
 
         val favorited = detailMenuRows(rom.copy(game = rom.game?.copy(isFavorite = true)), emulatorName = null)
         assertEquals("On", favorited.first { it.label == "Favorite" }.value)

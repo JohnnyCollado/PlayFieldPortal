@@ -22,6 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
@@ -47,6 +48,10 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.lightBackgroundAnchors
+import com.playfieldportal.core.ui.components.PfpModalSpec
+import com.playfieldportal.core.ui.components.PspContextMenuOverlay
+import com.playfieldportal.core.ui.components.PspMenuRow
+import com.playfieldportal.core.ui.components.rememberPfpModalHost
 import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
 import com.playfieldportal.core.ui.keyboard.isVirtualKeyboardOverlayOpen
 import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
@@ -60,8 +65,6 @@ import com.playfieldportal.feature.appbar.appdrawer.AppDrawerCategoryTabs
 import com.playfieldportal.feature.appbar.appdrawer.AppDrawerGrid
 import com.playfieldportal.feature.appbar.appdrawer.AppDrawerHeader
 import com.playfieldportal.feature.appbar.appdrawer.AppDrawerHintBar
-import com.playfieldportal.feature.appbar.appdrawer.AppDrawerOptions
-import com.playfieldportal.feature.appbar.appdrawer.UninstallConfirmDialog
 import com.playfieldportal.feature.appbar.appdrawer.adaptiveArtworkSize
 
 // ── PSP-era grid App Drawer ───────────────────────────────────────────────────
@@ -88,9 +91,26 @@ fun AppDrawerScreen(
     /** Any touch interaction inside the drawer — reported to the XMB input-source tracker so a
      *  finger tap/browse suppresses the controller hint the same way it does on the XMB. */
     onTouchInteraction: () -> Unit = {},
+    /** Edit App Details, Add to Card and Favorite belong to the XMB: the menu hands them up here. */
+    onEditAppDetails: (packageName: String) -> Unit = {},
+    onAddAppToCard: (packageName: String, label: String) -> Unit = { _, _ -> },
+    onToggleAppFavorite: (packageName: String, label: String) -> Unit = { _, _ -> },
     viewModel: AppDrawerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    // rememberUpdatedState: the collector below outlives recompositions, the callbacks may not.
+    val editAppDetails by rememberUpdatedState(onEditAppDetails)
+    val addAppToCard by rememberUpdatedState(onAddAppToCard)
+    val toggleAppFavorite by rememberUpdatedState(onToggleAppFavorite)
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is AppDrawerEvent.EditDetails -> editAppDetails(event.packageName)
+                is AppDrawerEvent.AddToCard -> addAppToCard(event.packageName, event.label)
+                is AppDrawerEvent.ToggleFavorite -> toggleAppFavorite(event.packageName, event.label)
+            }
+        }
+    }
     var searchActive by remember { mutableStateOf(false) }
     // Bumped to bring the keyboard back to an open search that still holds text.
     var searchReopens by remember { mutableIntStateOf(0) }
@@ -109,10 +129,21 @@ fun AppDrawerScreen(
     }
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    // Uninstall asks through the shared confirm modal. Its cursor lives in the host, so a press goes
+    // there first while one is up and only otherwise reaches the drawer.
+    val modal = rememberPfpModalHost(
+        uninstallModalSpec(
+            state = state,
+            onConfirm = viewModel::confirmUninstall,
+            onCancel = viewModel::cancelUninstall,
+        ),
+    )
+
     LaunchedEffect(pendingGamepadAction) {
         if (pendingGamepadAction != null) {
             val overlayOpen = state.menuApp != null || state.confirmUninstall != null
             when {
+                modal.intercept(pendingGamepadAction) -> Unit
                 // An inner drawer overlay (options menu / uninstall confirm) is up: BACK goes to
                 // the drawer ViewModel, which pops that overlay. XMBViewModel forwards every
                 // action — including BACK — to the drawer, so BACK here NEVER closes the drawer
@@ -145,52 +176,74 @@ fun AppDrawerScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    AppDrawerContent(
-        state = state,
-        searchActive = searchActive,
-        searchReopens = searchReopens,
-        showControllerHint = showControllerHint,
-        // The back breadcrumb is a touch target; controller BACK closes the drawer at the XMB
-        // layer (never through this lambda), so reporting touch here is always accurate.
-        onBack = {
-            onTouchInteraction()
-            onBack()
-        },
-        onSearchQueryChange = { viewModel.setSearchQuery(it) },
-        // Touch keeps its plain toggle: the reopen rule is for X, whose press PFP's keyboard has
-        // already let go of by the time it reaches the drawer.
-        onSearchToggle = { active ->
-            onTouchInteraction()
-            searchActive = active
-            if (!active) viewModel.setSearchQuery("")
-        },
-        onSearchDone = { keyboard?.hide() },
-        // BACK on PFP's keyboard: the search closes like X closes it — no touch report, the
-        // controller is still in charge.
-        onCloseSearch = {
-            searchActive = false
-            viewModel.setSearchQuery("")
-        },
-        onFilterSelected = { filter ->
-            onTouchInteraction()
-            viewModel.setFilter(filter)
-        },
-        onAppTapped = { index ->
-            onTouchInteraction()
-            viewModel.onAppTapped(index)
-        },
-        onAppLaunched = { viewModel.launchApp(it) },
-        onAppMenu = { viewModel.openAppMenu(it) },
-        onTouchBrowse = { index ->
-            onTouchInteraction()
-            viewModel.onTouchBrowse(index)
-        },
-        onMenuAction = { viewModel.onMenuAction(it) },
-        onCloseMenu = { viewModel.closeAppMenu() },
-        onConfirmUninstall = { viewModel.confirmUninstall() },
-        onCancelUninstall = { viewModel.cancelUninstall() },
-        onGrantUsageAccess = { viewModel.openUsageAccessSettings() },
-        modifier = modifier,
+    Box(modifier = modifier) {
+        AppDrawerContent(
+            state = state,
+            searchActive = searchActive,
+            searchReopens = searchReopens,
+            showControllerHint = showControllerHint,
+            // The back breadcrumb is a touch target; controller BACK closes the drawer at the XMB
+            // layer (never through this lambda), so reporting touch here is always accurate.
+            onBack = {
+                onTouchInteraction()
+                onBack()
+            },
+            onSearchQueryChange = { viewModel.setSearchQuery(it) },
+            // Touch keeps its plain toggle: the reopen rule is for X, whose press PFP's keyboard has
+            // already let go of by the time it reaches the drawer.
+            onSearchToggle = { active ->
+                onTouchInteraction()
+                searchActive = active
+                if (!active) viewModel.setSearchQuery("")
+            },
+            onSearchDone = { keyboard?.hide() },
+            // BACK on PFP's keyboard: the search closes like X closes it — no touch report, the
+            // controller is still in charge.
+            onCloseSearch = {
+                searchActive = false
+                viewModel.setSearchQuery("")
+            },
+            onFilterSelected = { filter ->
+                onTouchInteraction()
+                viewModel.setFilter(filter)
+            },
+            onAppTapped = { index ->
+                onTouchInteraction()
+                viewModel.onAppTapped(index)
+            },
+            onAppLaunched = { viewModel.launchApp(it) },
+            onAppMenu = { viewModel.openAppMenu(it) },
+            onTouchBrowse = { index ->
+                onTouchInteraction()
+                viewModel.onTouchBrowse(index)
+            },
+            onMenuAction = { viewModel.onMenuAction(it) },
+            onCloseMenu = { viewModel.closeAppMenu() },
+            onGrantUsageAccess = { viewModel.openUsageAccessSettings() },
+        )
+        modal.Content()
+    }
+}
+
+/**
+ * The shared confirm for Uninstall, or null when none is asking. Destructive, so it opens on Cancel
+ * and the press that opened it can never confirm. Internal and free of composition so the mapping
+ * from UI state to modal can be tested directly.
+ */
+internal fun uninstallModalSpec(
+    state: AppDrawerUiState,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+): PfpModalSpec? {
+    val app = state.confirmUninstall ?: return null
+    return PfpModalSpec.Confirm(
+        key = "uninstall:${app.packageName}",
+        title = "Uninstall ${app.label}?",
+        message = "This removes ${app.label} from your device. Android will ask you to confirm.",
+        confirmLabel = "Uninstall",
+        destructive = true,
+        onConfirm = onConfirm,
+        onCancel = onCancel,
     )
 }
 
@@ -213,10 +266,8 @@ internal fun AppDrawerContent(
     onAppLaunched: (String) -> Unit,
     onAppMenu: (InstalledApp) -> Unit,
     onTouchBrowse: (Int) -> Unit,
-    onMenuAction: (AppMenuAction) -> Unit,
+    onMenuAction: (AppMenuEntry) -> Unit,
     onCloseMenu: () -> Unit,
-    onConfirmUninstall: () -> Unit,
-    onCancelUninstall: () -> Unit,
     onGrantUsageAccess: () -> Unit,
     modifier: Modifier = Modifier,
     onCloseSearch: () -> Unit = {},
@@ -360,26 +411,28 @@ internal fun AppDrawerContent(
 
         // ── Overlays ──────────────────────────────────────────────────────
         state.menuApp?.let { app ->
-            AppDrawerOptions(
-                app = app,
-                actions = state.menuActions,
+            val actions = state.menuRows
+            PspContextMenuOverlay(
+                title = app.label,
+                rows = actions.map { it.toPspMenuRow() },
                 selectedIndex = state.menuIndex,
-                onAction = onMenuAction,
+                onRowActivated = { onMenuAction(actions[it]) },
                 onDismiss = onCloseMenu,
-                colors = sf,
-            )
-        }
-
-        state.confirmUninstall?.let { app ->
-            UninstallConfirmDialog(
-                app = app,
-                onConfirm = onConfirmUninstall,
-                onCancel = onCancelUninstall,
-                colors = sf,
+                panelAlpha = 0.88f,
             )
         }
     }
 }
+
+/** The panel's row for a menu entry: value, chevron, red and silent all carry over. */
+internal fun AppMenuEntry.toPspMenuRow() = PspMenuRow(
+    label = label,
+    isDestructive = isDestructive,
+    value = value,
+    header = header,
+    opensMenu = opensMenu,
+    silent = silent,
+)
 
 // ── Empty state ─────────────────────────────────────────────────────────────────
 
@@ -545,8 +598,6 @@ private fun AppDrawerPreviewContent() {
         onTouchBrowse = {},
         onMenuAction = {},
         onCloseMenu = {},
-        onConfirmUninstall = {},
-        onCancelUninstall = {},
         onGrantUsageAccess = {},
     )
 }

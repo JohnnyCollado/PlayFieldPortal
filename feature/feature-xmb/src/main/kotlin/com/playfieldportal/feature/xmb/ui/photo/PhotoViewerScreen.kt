@@ -52,8 +52,7 @@ import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.components.XmbKebabTouchButton
 import com.playfieldportal.core.ui.components.XmbMediaPillScrim
 import com.playfieldportal.core.ui.theme.menuCursorEdge
-import com.playfieldportal.feature.xmb.ui.DetailContextMenu
-import com.playfieldportal.feature.xmb.ui.DetailMenuRow
+import com.playfieldportal.core.ui.components.PspContextMenuOverlay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -265,17 +264,13 @@ fun PhotoViewerScreen(
 
         // ── Options menu — the shared themed context menu, like every other context menu ──
         if (state.showOptions) {
-            DetailContextMenu(
+            PspContextMenuOverlay(
                 title = "Options",
-                rows = PhotoViewerAction.entries.map { action ->
-                    DetailMenuRow(
-                        label = action.label,
-                        isDestructive = action == PhotoViewerAction.REMOVE,
-                    )
-                },
+                rows = photoOptionRows(state),
                 selectedIndex = state.optionsIndex,
-                onRowClick = { viewModel.activate(PhotoViewerAction.entries[it]) },
+                onRowActivated = { viewModel.activate(state.optionsActions[it]) },
                 onDismiss = viewModel::closeOptions,
+                panelAlpha = 0.88f,
             )
         }
 

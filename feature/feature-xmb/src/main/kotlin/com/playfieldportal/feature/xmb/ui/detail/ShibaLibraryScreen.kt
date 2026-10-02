@@ -230,12 +230,12 @@ fun ShibaLibraryScreen(
             }
         }
 
-        // The Icon Display pattern: "Options" lists Filter (…) and Provider (…); each opens its own
+        // The Icon Display pattern: "Options" lists Sort and Provider (current choice as the value), then the update row; each list opens its own
         // list, titled by name, with the active choice checked.
         state.options?.let { menu ->
             PspContextMenuOverlay(
                 title = menu.title,
-                rows = state.optionRows.map { row -> PspMenuRow(label = row.label, checked = row.checked) },
+                rows = state.optionRows.map { row -> PspMenuRow(label = row.label, checked = row.checked, value = row.value, opensMenu = row.opensMenu) },
                 selectedIndex = menu.selectedIndex,
                 onRowActivated = viewModel::onOptionActivated,
                 onDismiss = viewModel::closeOptions,

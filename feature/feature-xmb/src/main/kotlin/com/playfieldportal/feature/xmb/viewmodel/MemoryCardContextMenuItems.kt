@@ -49,9 +49,9 @@ internal fun platformCardMenuItems(
     group(GROUP_DISPLAY) {
         // Icon display for THIS console only. Games on other Memory Cards are untouched;
         // "Use Global Setting" in its picker clears the console's override.
-        add(XMBContextMenuItem("icon_display_platform", "Icon Display", value = iconDisplayLabel))
+        add(XMBContextMenuItem("icon_display_platform", "Icon Display", value = iconDisplayLabel, opensMenu = true))
         // Sort for THIS card's games only, the same way: its own, or the global one it follows.
-        if (sortLabel != null) add(XMBContextMenuItem(LIST_SORT_ROW_ID, "Sort", value = sortLabel))
+        if (sortLabel != null) add(XMBContextMenuItem(LIST_SORT_ROW_ID, "Sort", value = sortLabel, opensMenu = true))
         // One name whichever way it is set: a label that flips leaves a user nothing to learn
         // but the row's position.
         add(XMBContextMenuItem(if (pinned) "unpin" else "pin", "Pin to Top", value = if (pinned) "On" else "Off"))
@@ -89,23 +89,14 @@ internal fun allGamesMenuItems(
         add(XMBContextMenuItem("relink_artwork", "Relink Artwork"))
     }
     group(GROUP_DISPLAY) {
-        add(XMBContextMenuItem("icon_display_global", "Icon Display", value = iconDisplayLabel))
-        if (sortLabel != null) add(XMBContextMenuItem(LIST_SORT_ROW_ID, "Sort", value = sortLabel))
-        if (globalSortLabel != null) add(XMBContextMenuItem(GLOBAL_SORT_ROW_ID, "Global Sort", value = globalSortLabel))
+        add(XMBContextMenuItem("icon_display_global", "Icon Display", value = iconDisplayLabel, opensMenu = true))
+        if (sortLabel != null) add(XMBContextMenuItem(LIST_SORT_ROW_ID, "Sort", value = sortLabel, opensMenu = true))
+        if (globalSortLabel != null) add(XMBContextMenuItem(GLOBAL_SORT_ROW_ID, "Global Sort", value = globalSortLabel, opensMenu = true))
         if (canMove) add(XMBContextMenuItem(MOVE_ROW_ID, "Move"))
     }
     group(GROUP_MANAGE) {
         add(XMBContextMenuItem("library_manager", "Library Manager"))
     }
-}
-
-/** Adds [rows] with [header] on the first of them. An empty group adds nothing, header included. */
-private fun MutableList<XMBContextMenuItem>.group(
-    header: String,
-    rows: MutableList<XMBContextMenuItem>.() -> Unit,
-) {
-    val items = mutableListOf<XMBContextMenuItem>().apply(rows)
-    items.forEachIndexed { index, item -> add(if (index == 0) item.copy(header = header) else item) }
 }
 
 /**

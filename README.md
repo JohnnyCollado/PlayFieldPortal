@@ -352,28 +352,69 @@ Memory Card, or per-game emulator.
 
 ### 4.4 Favorites & Collections
 
-- **Favorites** — mark any game from its **△** options (*Add to Favorites*). A **Favorites** folder
+- **Favorites** — mark any game from its **△** options (*Favorite*, shown On / Off). A **Favorites** folder
   appears under All Games and hides automatically when empty.
 - **Custom Memory Cards** — cards you make yourself (e.g. "RPGs", "Currently Playing"), formerly
   called Collections. A game can live on several at once. Create one from *Settings ▸ Custom
-  Memory Cards* or a game's **△ ▸ Add to Card…**; toggle membership with a ✓. The picker lists
+  Memory Cards* or a game's **△ ▸ Add to Card ›**; toggle membership with a ✓. The picker lists
   the cards of the category you are in first. Deleting a custom card never removes its games.
 - **Several games at once** — in any game list choose **△ ▸ Select Multiple**, mark games with
   **A / ✕**, then press **Y / △** to add them all to one card.
 
 ### 4.5 Game & app options (△)
 
-Press **Y / △** (or long-press) on any item for its context menu.
+Press **Y / △** (or long-press) on any item for its **Options** menu. This works the same
+everywhere: XMB rows, the App Drawer, the category icons on the bar, the detail screens, the
+video player, and rows in Settings (Saved Themes, Saved Backups, custom-card games, Library
+Manager folders and extensions). Where a row has an Options menu, the footer prompt reads
+**Options** (the idle hint can be turned off in *Settings ▸ Display ▸ Options Hint*).
 
-- **Games** — Launch Game, Edit Title, Edit Note. Everything else (favorites,
-  collections, artwork, emulator choice, icon display, file location) lives on the
-  **Game Detail** screen and its Options menu.
-- **Memory Cards** — Scan This Console, **Update Metadata** (text-only pass, artwork
-  untouched), **Scrape Missing Artwork** (fills only games missing primary art), pin,
-  hide, rename. The Windows card adds **Import PC Games**.
-- **All Games** — sorting plus **Manage Library**, which opens the Library settings.
-- **Android apps** — Launch, Edit App Details, Add to Favorites/Collection,
-  Move/Pin/Hide/Rename.
+**How every menu behaves**
+
+- **One panel** — every Options menu looks and moves the same. Rows are grouped under small
+  headers (Play, Library, Arrange, Customize, Manage) where a menu is long.
+- **Settings are values, not glued into the label** — a row shows its current value beside its
+  name (*Sort  Title A–Z*, *Change Emulator  Default*, *Icon Display  Global*).
+- **Toggles keep one name and show On / Off** — *Favorite  On*, *Pin to Top  Off*, *Show on Bar  On*.
+- **› means a sub-list** — *Add to Card ›*, *Move to Category ›*, *Sort ›* open a second list;
+  **B / ◯** climbs back up one level.
+- **Destructive rows are red, last, and confirm** — *Remove from Library*, *Remove Card*,
+  *Delete Custom Card*, *Delete Playlist*, *Uninstall* ask first, and the confirmation opens
+  on **Cancel**. Reversible removals (*Remove from Card*, *Remove from Category*, *Hide*) are
+  not red; they undo from Hidden Items or by adding the item back.
+- **Back climbs, Triangle closes** — **B / ◯** goes up one level and closes at the top;
+  **Y / △** closes the whole menu from any depth. Movement stops at the ends (no wrap).
+- **Sounds** — moving, opening, committing and backing out each have their own cue
+  (Favorite is silent).
+- **No repeat rows** — opening a menu with a controller does not list what **A / ✕** already
+  does (*Launch*, *Open*); those rows appear when you open the menu by touch.
+
+**What each menu offers**
+
+- **Games** — *View Game Details*, *View Shiba Coins*, *Change Emulator*, *Choose Disc*, UMD
+  insert / eject, *Favorite*, *Add to Card ›*, *Remove from Card*, *Select Multiple*,
+  *Pin to Top*, *Move*, *Add to / Move to / Remove from Category*, *Icon Display*,
+  *Fetch Artwork*, *Manage Custom Cards*, *Show File Location*, *Hide from …* and
+  *Remove from Library*. Windows games add *Install Goldberg Achievements* and *Export Game*.
+  The **Game Detail** screen's Options menu adds *Artwork Studio*, *Update Metadata*,
+  *Edit Title*, *Edit Note*, *Store Match* and *Export Game*, grouped under Artwork /
+  Information / File.
+- **Memory Cards** — *Scan for Games*, **Update Metadata** (text-only pass, artwork
+  untouched), **Fetch Missing Artwork** (fills only games missing primary art), *Icon
+  Display*, *Sort*, *Pin to Top*, *Move*, *Library Manager*, *Hide Card* and *Remove Card*.
+  The Windows card adds **Import PC Games** and *Match Achievements*, and cannot be removed.
+- **Custom Memory Cards** — *Sort*, *Pin to Top*, *Move*, *Rename Card*, *Move to Category ›*,
+  *Manage Custom Cards*, *Delete Custom Card*.
+- **All Games** — *Scan All Cards*, *Update Metadata*, *Fetch Missing Artwork*, *Relink
+  Artwork*, *Icon Display*, *Sort* and *Global Sort*.
+- **Android apps** (XMB and App Drawer) — *Edit App Details*, *Mark as Game*, *Favorite*,
+  *Add to Card ›*, *Pin to Top*, *Move*, *Move to / Add to / Remove from Category*,
+  *Rename Shortcut*, *Hide from …*, *Hide Everywhere*, *App Info*, and *Uninstall* (not for
+  system apps). The App Drawer shows the subset that makes sense there.
+- **Category icons** — long-press (or **Y / △** on) a category on the bar for *Rename
+  Category*, *Change Icon ›*, *Show on Bar*, *Move* and *Manage Categories*.
+- **Music, Video and Photo rows** — playlists add *Rename Playlist* and *Delete Playlist*;
+  tracks, videos and photos use *Remove from Library*.
 
 The full **Game Detail** and **App Detail** screens also show hero art, metadata,
 screenshots, publisher, and total play time.
@@ -950,7 +991,7 @@ sanitized and require you to **confirm each one** before it appears.
 | Symptom | Fix |
 |---|---|
 | Home button doesn't open PFP | Set it as default: *Android Settings ▸ Apps ▸ Default apps ▸ Home app*. |
-| A console shows no games after adding ROMs | Scanning is manual — open the card's **△ ▸ Scan This Console**. |
+| A console shows no games after adding ROMs | Scanning is manual — open the card's **△ ▸ Scan for Games**. |
 | A game won't launch | Confirm the emulator app is installed; check the per-game/console emulator in **△** / Library Manager. |
 | Disc/multi-file game not found | Open the game's console folder in a file manager and confirm the file is there; if the console uses a legacy raw-path library, re-grant its folder in *Settings ▸ Library*. |
 | Artwork won't download | Add a SteamGridDB (or other) API key in *Settings ▸ Artwork* and check your connection. |

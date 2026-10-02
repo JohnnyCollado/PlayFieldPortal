@@ -38,10 +38,11 @@ import com.playfieldportal.core.domain.model.ControllerIcon
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.icons.CategoryIconGlyph
 import com.playfieldportal.core.ui.icons.CustomIcon
 import com.playfieldportal.core.ui.icons.CustomIconSurface
 import com.playfieldportal.feature.xmb.viewmodel.CustomIconSession
-import com.playfieldportal.themekit.CustomizableIcons
+import com.playfieldportal.feature.xmb.viewmodel.UserCategoryIconSlot
 import com.playfieldportal.themekit.IconSlot
 
 /**
@@ -94,7 +95,9 @@ fun CustomIconsOverlay(
         if (forwardedAction != null) onActionConsumed()
     }
 
-    val slots = remember(session.groupIndex) { CustomizableIcons.group(session.group) }
+    val slots = remember(session.groupIndex, session.userCategorySlots) { session.slots() }
+    // A user slot with no image previews as the bar draws it: the category's catalog glyph.
+    val userSlots = remember(session.userCategorySlots) { session.userCategorySlots.associateBy { it.key } }
     val stripState = rememberLazyListState()
     LaunchedEffect(session.groupIndex, session.slotIndex) {
         if (session.slotIndex in slots.indices) {
@@ -159,6 +162,7 @@ fun CustomIconsOverlay(
                         SlotPreview(
                             slot = focused,
                             icon = customIcons[focused.key] ?: themeIcons[focused.key],
+                            userSlot = userSlots[focused.key],
                             modifier = Modifier.size(56.dp),
                         )
                     }
@@ -208,6 +212,7 @@ fun CustomIconsOverlay(
                             SlotPreview(
                                 slot = slot,
                                 icon = customIcons[slot.key] ?: themeIcons[slot.key],
+                                userSlot = userSlots[slot.key],
                                 modifier = Modifier.size(40.dp),
                             )
                         }
@@ -279,6 +284,7 @@ private val PICK_MIME = arrayOf(
     "image/gif",
     "image/bmp",
     "image/heif",
+    "image/heic",
 )
 
 private fun groupLabel(group: IconSlot.Group): String = when (group) {
@@ -296,9 +302,23 @@ private fun groupLabel(group: IconSlot.Group): String = when (group) {
  * placeholder.
  */
 @Composable
-private fun SlotPreview(slot: IconSlot, icon: CustomIcon?, modifier: Modifier = Modifier) {
+private fun SlotPreview(
+    slot: IconSlot,
+    icon: CustomIcon?,
+    userSlot: UserCategoryIconSlot? = null,
+    modifier: Modifier = Modifier,
+) {
     if (icon != null) {
         CustomIconSurface(icon = icon, contentDescription = slot.displayName, modifier = modifier)
+        return
+    }
+    if (userSlot != null) {
+        CategoryIconGlyph(
+            iconKey = userSlot.iconKey,
+            contentDescription = slot.displayName,
+            modifier = modifier,
+            categoryId = userSlot.categoryId,
+        )
         return
     }
     if (DefaultSlotGlyph(slot = slot, contentDescription = slot.displayName, modifier = modifier)) return

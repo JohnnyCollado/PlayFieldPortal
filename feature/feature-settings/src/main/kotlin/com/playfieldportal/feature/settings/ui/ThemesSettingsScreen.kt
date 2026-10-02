@@ -60,9 +60,7 @@ import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ColorSwatchRow
 import com.playfieldportal.core.ui.components.HsvColorPickerDialog
 import com.playfieldportal.core.ui.components.PfpColorChoices
-import com.playfieldportal.core.ui.components.PspContextMenuOverlay
 import com.playfieldportal.core.ui.components.hsvToArgbLong
-import com.playfieldportal.core.ui.components.PspMenuRow
 import com.playfieldportal.core.data.repository.PfpThemeStore
 import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
@@ -89,6 +87,7 @@ fun ThemesSettingsScreen(
         onImportPfpTheme = { viewModel.importPfpTheme(it) },
         onApplySavedTheme = { viewModel.applySavedTheme(it) },
         onShareSavedTheme = { viewModel.shareSavedTheme(it) },
+        onRenameSavedTheme = { id, name -> viewModel.renameSavedTheme(id, name) },
         onDeleteSavedTheme = { viewModel.deleteSavedTheme(it) },
         onSetIconColor = { viewModel.setIconColor(it) },
         onClearAccentOverride = { viewModel.clearAccentOverride() },
@@ -108,6 +107,7 @@ private fun ThemesSettingsContent(
     onImportPfpTheme: (Uri) -> Unit,
     onApplySavedTheme: (String) -> Unit,
     onShareSavedTheme: (String) -> Unit,
+    onRenameSavedTheme: (String, String) -> Unit,
     onDeleteSavedTheme: (String) -> Unit,
     onSetIconColor: (Long?) -> Unit,
     onClearAccentOverride: () -> Unit,
@@ -138,8 +138,31 @@ private fun ThemesSettingsContent(
         },
     )
 
-    var menu by remember { mutableStateOf<ThemeMenu?>(null) }
-    var menuIndex by remember { mutableStateOf(0) }
+    // Rename Theme, from the saved theme's menu, asks for the name through the shared text entry.
+    var pendingRename by remember { mutableStateOf<PfpThemeStore.SavedTheme?>(null) }
+    val renameModal = rememberSettingsModal(
+        pendingRename?.let { theme ->
+            renameThemeSpec(
+                theme,
+                onConfirm = { name -> pendingRename = null; onRenameSavedTheme(theme.id, name) },
+                onCancel = { pendingRename = null },
+            )
+        },
+    )
+
+    // Delete Theme, from the menu or the card's own button, asks here first.
+    var pendingDelete by remember { mutableStateOf<PfpThemeStore.SavedTheme?>(null) }
+    val deleteModal = rememberSettingsModal(
+        pendingDelete?.let { theme ->
+            deleteThemeConfirmSpec(
+                theme,
+                onConfirm = { pendingDelete = null; onDeleteSavedTheme(theme.id) },
+                onCancel = { pendingDelete = null },
+            )
+        },
+    )
+
+    val itemMenu = rememberSettingsItemMenu()
     var myThemesFocused by remember { mutableStateOf(false) }
     var cardIndex by remember { mutableStateOf(0) }
     var iconStripFocused by remember { mutableStateOf(false) }
@@ -166,12 +189,7 @@ private fun ThemesSettingsContent(
     }
 
     fun openMenuForSavedTheme(theme: PfpThemeStore.SavedTheme) {
-        menuIndex = 0
-        menu = ThemeMenu(theme.name, listOf(
-            ThemeMenuOption("Apply")  { onApplySavedTheme(theme.id) },
-            ThemeMenuOption("Share")  { onShareSavedTheme(theme.id) },
-            ThemeMenuOption("Remove", destructive = true) { onDeleteSavedTheme(theme.id) },
-        ))
+        itemMenu.show(theme.name, savedThemeMenuRows(theme, onShareSavedTheme, { pendingRename = it }) { pendingDelete = it })
     }
 
     Box(modifier = modifier) {
@@ -180,12 +198,13 @@ private fun ThemesSettingsContent(
             subtitle = "Themes",
             onBack   = onBack,
             modifier = Modifier.fillMaxSize(),
-            modalOpen = saveNameModal.open,
+            modalOpen = saveNameModal.open || renameModal.open || deleteModal.open,
             onInterceptAction = { action ->
-                val m = menu
                 when {
                     // A modal is a hard input boundary: nothing behind it sees a press.
                     saveNameModal.intercept(action) -> true
+                    renameModal.intercept(action) -> true
+                    deleteModal.intercept(action) -> true
                     customPicker -> {
                         when (action) {
                             GamepadAction.NAVIGATE_UP   -> {
@@ -223,32 +242,7 @@ private fun ThemesSettingsContent(
                         }
                         true
                     }
-                    m != null -> {
-                        when (action) {
-                            // Clamped at either end, so the cue follows the index and not the press
-                            // — the same rule the scaffold's own row movement follows.
-                            GamepadAction.NAVIGATE_UP   -> {
-                                val next = (menuIndex - 1).coerceAtLeast(0)
-                                if (next != menuIndex) menuSounds.play(MenuSound.SCROLL)
-                                menuIndex = next
-                            }
-                            GamepadAction.NAVIGATE_DOWN -> {
-                                val next = (menuIndex + 1).coerceAtMost(m.options.size - 1)
-                                if (next != menuIndex) menuSounds.play(MenuSound.SCROLL)
-                                menuIndex = next
-                            }
-                            GamepadAction.SELECT        -> {
-                                menuSounds.play(MenuSound.SELECT)
-                                m.options.getOrNull(menuIndex)?.action?.invoke(); menu = null
-                            }
-                            GamepadAction.BACK,
-                            GamepadAction.OPEN_CONTEXT_MENU      -> {
-                                menuSounds.play(MenuSound.BACK); menu = null
-                            }
-                            else -> Unit
-                        }
-                        true
-                    }
+                    itemMenu.intercept(action) -> true
                     myThemesFocused && action == GamepadAction.NAVIGATE_LEFT -> {
                         val next = (cardIndex - 1).coerceAtLeast(0)
                         if (next != cardIndex) menuSounds.play(MenuSound.SCROLL)
@@ -271,15 +265,6 @@ private fun ThemesSettingsContent(
                         if (next != iconIndex) menuSounds.play(MenuSound.SCROLL)
                         iconIndex = next
                         runCatching { iconStripRequester.requestFocus() }
-                        true
-                    }
-                    action == GamepadAction.OPEN_CONTEXT_MENU -> {
-                        if (myThemesFocused) {
-                            state.savedThemes.getOrNull(cardIndex)?.let {
-                                menuSounds.play(MenuSound.SELECT)
-                                openMenuForSavedTheme(it)
-                            }
-                        }
                         true
                     }
                     else -> false
@@ -349,12 +334,16 @@ private fun ThemesSettingsContent(
                         onSelect = {
                             state.savedThemes.getOrNull(cardIndex)?.let { onApplySavedTheme(it.id) }
                         },
+                        // Triangle: the saved theme's menu (the scaffold shows "Options" in the footer).
+                        onLongPress = {
+                            state.savedThemes.getOrNull(cardIndex)?.let { openMenuForSavedTheme(it) }
+                        },
                     ) { stripFocused ->
                         SavedThemeCardRow(
                             themes       = state.savedThemes,
                             focusedIndex = if (stripFocused) cardIndex else null,
                             onApply      = onApplySavedTheme,
-                            onDelete     = onDeleteSavedTheme,
+                            onDelete     = { id -> pendingDelete = state.savedThemes.firstOrNull { it.id == id } },
                             onShare      = onShareSavedTheme,
                         )
                     }
@@ -394,15 +383,7 @@ private fun ThemesSettingsContent(
             }
         }
 
-        menu?.let { m ->
-            PspContextMenuOverlay(
-                title          = m.title,
-                rows           = m.options.map { PspMenuRow(it.label, it.destructive) },
-                selectedIndex  = menuIndex.coerceIn(0, (m.options.size - 1).coerceAtLeast(0)),
-                onRowActivated = { index -> m.options.getOrNull(index)?.action?.invoke(); menu = null },
-                onDismiss      = { menu = null },
-            )
-        }
+        itemMenu.Content()
 
         if (customPicker) {
             HsvColorPickerDialog(
@@ -430,17 +411,59 @@ private fun ThemesSettingsContent(
         }
 
         saveNameModal.Content()
+        renameModal.Content()
+        deleteModal.Content()
     }
 }
 
-private data class ThemeMenuOption(val label: String, val destructive: Boolean = false, val action: () -> Unit)
-private data class ThemeMenu(val title: String, val options: List<ThemeMenuOption>)
+/**
+ * A saved theme's menu. No Apply: X on the card already applies it, and this menu is only reachable
+ * by Triangle. Rename Theme asks for a name; Delete Theme is red and last, and only asks: the delete waits for a confirm.
+ */
+internal fun savedThemeMenuRows(
+    theme: PfpThemeStore.SavedTheme,
+    onShare: (String) -> Unit,
+    onRequestRename: (PfpThemeStore.SavedTheme) -> Unit,
+    onRequestDelete: (PfpThemeStore.SavedTheme) -> Unit,
+): List<SettingsMenuItem> = listOf(
+    SettingsMenuItem("Share") { onShare(theme.id) },
+    SettingsMenuItem("Rename Theme") { onRequestRename(theme) },
+    SettingsMenuItem("Delete Theme", destructive = true) { onRequestDelete(theme) },
+)
+
+internal fun renameThemeSpec(
+    theme: PfpThemeStore.SavedTheme,
+    onConfirm: (String) -> Unit,
+    onCancel: () -> Unit,
+): PfpModalSpec.TextEntry = PfpModalSpec.TextEntry(
+    key = "rename_theme_${theme.id}",
+    title = "Rename Theme",
+    initial = theme.name,
+    placeholder = "Theme name",
+    onConfirm = onConfirm,
+    onCancel = onCancel,
+)
+
+internal fun deleteThemeConfirmSpec(
+    theme: PfpThemeStore.SavedTheme,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+): PfpModalSpec.Confirm = PfpModalSpec.Confirm(
+    key = "delete_theme_${theme.id}",
+    title = "Delete Theme?",
+    message = "\"${theme.name}\" will be deleted. This can't be undone.",
+    confirmLabel = "Delete",
+    destructive = true,
+    onConfirm = onConfirm,
+    onCancel = onCancel,
+)
 
 @Composable
 private fun FocusableStrip(
     focusRequester: FocusRequester? = null,
     onFocusChange: (Boolean) -> Unit,
     onSelect: () -> Unit,
+    onLongPress: (() -> Unit)? = null,
     content: @Composable (focused: Boolean) -> Unit,
 ) {
     val focusTracker  = LocalSettingsFocusTracker.current
@@ -463,6 +486,7 @@ private fun FocusableStrip(
         selectable = true,
         enabled    = true,
         onSelect   = activate,
+        onLongPress = onLongPress,
     )
 
     DisposableEffect(Unit) {
@@ -506,7 +530,7 @@ private fun FocusableStrip(
 @Composable
 private fun SavedThemeCardRow(themes: List<PfpThemeStore.SavedTheme>, focusedIndex: Int? = null, onApply: (String) -> Unit, onDelete: (String) -> Unit, onShare: (String) -> Unit) {
     // Hand-rolled tap targets rather than settings rows, so they carry their own cues. Applying a
-    // theme repaints the whole launcher and Remove deletes a saved one: both are commits, not
+    // theme repaints the whole launcher and Delete Theme asks to delete a saved one: both are commits, not
     // descents, so they take the confirm cue. Share hands off to another app, which is an ordinary
     // activation.
     val menuSounds = LocalMenuSounds.current
@@ -521,7 +545,7 @@ private fun SavedThemeCardRow(themes: List<PfpThemeStore.SavedTheme>, focusedInd
                 Text(text = theme.name, color = if (cardFocused) SettingsAccent else SettingsSubtext, fontSize = 12.sp, maxLines = 1, modifier = Modifier.padding(top = 4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(text = "Share", color = SettingsAccent, fontSize = 12.sp, modifier = Modifier.clickable { menuSounds.play(MenuSound.SELECT); onShare(theme.id) }.padding(horizontal = 10.dp, vertical = 8.dp))
-                    Text(text = "Remove", color = SettingsAccent, fontSize = 12.sp, modifier = Modifier.clickable { menuSounds.play(MenuSound.CONFIRM); onDelete(theme.id) }.padding(horizontal = 10.dp, vertical = 8.dp))
+                    Text(text = "Delete Theme", color = SettingsAccent, fontSize = 12.sp, modifier = Modifier.clickable { menuSounds.play(MenuSound.CONFIRM); onDelete(theme.id) }.padding(horizontal = 10.dp, vertical = 8.dp))
                 }
             }
         }
@@ -553,6 +577,7 @@ fun ThemesSettingsScreenPreview() {
             onImportPfpTheme = {},
             onApplySavedTheme = {},
             onShareSavedTheme = {},
+            onRenameSavedTheme = { _, _ -> },
             onDeleteSavedTheme = {},
             onSetIconColor = {},
     onClearAccentOverride = {},

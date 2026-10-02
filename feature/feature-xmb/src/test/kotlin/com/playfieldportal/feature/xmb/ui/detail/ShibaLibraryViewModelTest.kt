@@ -10,10 +10,15 @@ import com.playfieldportal.core.domain.achievement.UntrackedGame
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.core.ui.sound.MenuSound
+import com.playfieldportal.core.ui.sound.MenuSoundPlayer
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.xmb.viewmodel.ShibaLibraryMode
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,18 +58,22 @@ class ShibaLibraryViewModelTest {
 
     private val games = MutableStateFlow<List<Game>>(emptyList())
 
+    private lateinit var achievements: AchievementController
+    private lateinit var menuSound: MenuSoundPlayer
     private lateinit var viewModel: ShibaLibraryViewModel
 
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        val achievements = mockk<AchievementController> {
+        achievements = mockk<AchievementController> {
             every { observeLibraryStanding(any()) } returns standing
+            coEvery { updateInstalledAchievements(any()) } returns mockk(relaxed = true)
         }
         val gameRepository = mockk<GameRepository> {
             every { observeGamesOnly() } returns games
         }
-        viewModel = ShibaLibraryViewModel(gameRepository, achievements)
+        menuSound = mockk(relaxed = true)
+        viewModel = ShibaLibraryViewModel(gameRepository, achievements, menuSound)
     }
 
     @After
@@ -248,7 +257,9 @@ class ShibaLibraryViewModelTest {
         val menu = requireNotNull(state.options)
         assertNull(menu.group)
         assertEquals(0, menu.selectedIndex)
-        assertEquals(listOf("Filter (Title A–Z)", "Provider (All)"), state.optionRows.map { it.label })
+        assertEquals(listOf("Sort", "Provider", "Update Installed Achievements"), state.optionRows.map { it.label })
+        assertEquals(listOf("Title A–Z", "All", null), state.optionRows.map { it.value })
+        assertEquals(listOf(true, true, false), state.optionRows.map { it.opensMenu })
 
         press(GamepadAction.NAVIGATE_DOWN)
         assertEquals("the menu owns input, not the list", focusedBefore, state.focusedRowId)
@@ -261,10 +272,10 @@ class ShibaLibraryViewModelTest {
         viewModel.setSort(LibrarySortField.PLATFORM, ascending = false)
         press(GamepadAction.OPEN_CONTEXT_MENU)
 
-        press(GamepadAction.SELECT) // Filter
+        press(GamepadAction.SELECT) // Sort
 
         val menu = requireNotNull(state.options)
-        assertEquals(LibraryOptionGroup.FILTER, menu.group)
+        assertEquals(LibraryOptionGroup.SORT, menu.group)
         assertEquals(LibraryOption.Sort(LibrarySortField.PLATFORM, ascending = false), state.optionRows[menu.selectedIndex].option)
         assertTrue(state.optionRows[menu.selectedIndex].checked)
     }
@@ -284,7 +295,55 @@ class ShibaLibraryViewModelTest {
     }
 
     @Test
-    fun `the Filter list pairs each sort with its direction`() {
+    fun `Back from a list climbs to the root on the row that opened it, and a second Back closes`() {
+        viewModel.load(ShibaLibraryMode.TRACKED)
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.NAVIGATE_DOWN, GamepadAction.SELECT)
+        assertEquals(LibraryOptionGroup.PROVIDER, state.options?.group)
+
+        press(GamepadAction.BACK)
+        assertEquals(LibraryOptionsMenu(selectedIndex = 1), state.options)
+        assertFalse(state.closed)
+
+        press(GamepadAction.BACK)
+        assertNull(state.options)
+        assertFalse(state.closed)
+    }
+
+    @Test
+    fun `Triangle closes the menu from inside a list`() {
+        viewModel.load(ShibaLibraryMode.TRACKED)
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.SELECT, GamepadAction.OPEN_CONTEXT_MENU)
+
+        assertNull(state.options)
+    }
+
+    @Test
+    fun `the Options cursor clamps at both ends and sounds only when it moves`() {
+        viewModel.load(ShibaLibraryMode.TRACKED)
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.NAVIGATE_UP)
+        assertEquals(0, state.options?.selectedIndex)
+        verify(exactly = 0) { menuSound.play(MenuSound.SCROLL, any()) }
+
+        repeat(5) { press(GamepadAction.NAVIGATE_DOWN) }
+        assertEquals(state.optionRows.lastIndex, state.options?.selectedIndex)
+        verify(exactly = state.optionRows.lastIndex) { menuSound.play(MenuSound.SCROLL, any()) }
+    }
+
+    @Test
+    fun `opening a list sounds SELECT, a choice CONFIRM, and leaving BACK`() {
+        viewModel.load(ShibaLibraryMode.TRACKED)
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.SELECT)
+        verify(exactly = 1) { menuSound.play(MenuSound.SELECT, any()) }
+
+        press(GamepadAction.SELECT)
+        verify(exactly = 1) { menuSound.play(MenuSound.CONFIRM, any()) }
+
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.BACK)
+        verify(exactly = 1) { menuSound.play(MenuSound.BACK, any()) }
+    }
+
+    @Test
+    fun `the Sort list pairs each sort with its direction`() {
         viewModel.load(ShibaLibraryMode.TRACKED)
         press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.SELECT)
 
@@ -311,12 +370,25 @@ class ShibaLibraryViewModelTest {
     }
 
     @Test
+    fun `Update Installed Achievements runs the same update Player Status uses and closes the menu`() {
+        viewModel.load(ShibaLibraryMode.TRACKED)
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.NAVIGATE_DOWN, GamepadAction.NAVIGATE_DOWN)
+        assertEquals("Update Installed Achievements", state.optionRows[state.options!!.selectedIndex].label)
+
+        press(GamepadAction.SELECT)
+
+        coVerify(exactly = 1) { achievements.updateInstalledAchievements(any()) }
+        assertNull(state.options)
+        assertFalse(state.isSyncing)
+    }
+
+    @Test
     fun `Provider is offered only in Tracked Games`() {
         viewModel.load(ShibaLibraryMode.TRACKED)
         assertTrue(state.optionRows.any { it.option == LibraryOption.OpenGroup(LibraryOptionGroup.PROVIDER) })
 
         viewModel.setMode(ShibaLibraryMode.UNTRACKED)
-        assertEquals(listOf("Filter (Title A–Z)"), state.optionRows.map { it.label })
+        assertEquals(listOf("Sort", "Update Installed Achievements"), state.optionRows.map { it.label })
 
         press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.SELECT)
         assertFalse(

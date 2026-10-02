@@ -1,12 +1,17 @@
 package com.playfieldportal.feature.settings.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -14,8 +19,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.data.repository.CollectionsOnDelete
@@ -26,11 +34,20 @@ import com.playfieldportal.core.ui.components.PfpModalFocus
 import com.playfieldportal.core.ui.components.PfpModalNav
 import com.playfieldportal.core.ui.components.PfpTextEntryModal
 import com.playfieldportal.core.ui.icons.CategoryIconGlyph
+import com.playfieldportal.core.ui.icons.CustomIcon
+import com.playfieldportal.core.ui.icons.CustomIconSurface
+import com.playfieldportal.core.ui.icons.FALLBACK_CATEGORY_ICON
+import com.playfieldportal.core.ui.icons.LocalCustomIcons
+import com.playfieldportal.core.ui.icons.UserCategoryIconKeys
+import com.playfieldportal.core.ui.icons.categoryIconFor
+import com.playfieldportal.core.ui.motion.LocalIconFocused
 import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import com.playfieldportal.feature.settings.viewmodel.CREATE_CATEGORY_FOCUS_KEY
 import com.playfieldportal.feature.settings.viewmodel.CategoryManagerUiState
 import com.playfieldportal.feature.settings.viewmodel.CategoryRow
 import com.playfieldportal.feature.settings.viewmodel.CategoryManagerViewModel
+import com.playfieldportal.feature.settings.viewmodel.CategoryManagerTarget
+import com.playfieldportal.feature.settings.viewmodel.CategoryManagerTargetAction
 import com.playfieldportal.feature.settings.viewmodel.CategoryStep
 
 @Composable
@@ -39,6 +56,9 @@ fun CategoryManagerScreen(
     modifier: Modifier = Modifier,
     // Closes Settings and lifts the category on the XMB's crossbar, where it is moved live.
     onMoveOnBar: (categoryId: String) -> Unit = {},
+    // The XMB's category menu: open on one category with its rename or icon picker already up.
+    initialTarget: CategoryManagerTarget? = null,
+    onTargetConsumed: () -> Unit = {},
     viewModel: CategoryManagerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -77,6 +97,15 @@ fun CategoryManagerScreen(
         modalFocus = PfpModalNav.initialConfirmFocus(destructive = true)
         deleteCardsChoice = 0
         deleteConfirmId = cat.id
+    }
+    // The categories arrive a beat after the screen does; the target is applied once its row is there.
+    val targetRow = initialTarget?.let { target -> state.categories.firstOrNull { it.id == target.categoryId } }
+    LaunchedEffect(initialTarget, targetRow != null) {
+        val target = initialTarget ?: return@LaunchedEffect
+        val row = targetRow ?: return@LaunchedEffect
+        if (target.action == CategoryManagerTargetAction.RENAME) beginRename(row)
+        viewModel.openTarget(target)
+        onTargetConsumed()
     }
     val confirmName: () -> Unit = {
         if (renaming) viewModel.confirmRename(nameText) else viewModel.confirmCreateName(nameText)
@@ -224,11 +253,21 @@ private fun CategoryListContent(
                 onClick  = onStartCreate,
             )
 
+            // Set after a create whose image could not be kept (the category itself exists).
+            state.message?.let { message ->
+                Text(
+                    text = message,
+                    color = SettingsText,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 48.dp, vertical = 8.dp),
+                )
+            }
+
             SettingsGroup("XMB Categories")
             state.categories.forEach { cat ->
                 SettingsRow(
                     label    = cat.name + if (!cat.visible) "  (Hidden)" else "",
-                    sublabel = "Icon: ${cat.iconKey}" + if (cat.protected) "  ·  Built-in" else "  ·  Custom",
+                    sublabel = "Icon: ${cat.iconLabel}" + if (cat.protected) "  ·  Built-in" else "  ·  Custom",
                     focusKey = cat.id,
                     onClick  = { vm.openDetail(cat.id) },
                 )
@@ -240,6 +279,17 @@ private fun CategoryListContent(
 
 // ── PICK ICON ─────────────────────────────────────────────────────────────────────
 
+// The Customize XMB Icons overlay's accepted set: the import gate's stills plus GIF.
+private val DEVICE_IMAGE_MIME = arrayOf(
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "image/gif",
+    "image/bmp",
+    "image/heif",
+    "image/heic",
+)
+
 @Composable
 private fun PickIconContent(
     state: CategoryManagerUiState,
@@ -248,6 +298,23 @@ private fun PickIconContent(
     modifier: Modifier,
 ) {
     val subtitle = if (state.pickingIconForCreate) "Choose Icon" else "Change Icon"
+    // The create flow stores to the draft key until the category has an id; Change Icon uses the
+    // category's own key, which is null for built-ins and ids outside the key pattern — those are
+    // never offered a device image.
+    val detail = state.detail
+    val imageKey = if (state.pickingIconForCreate) UserCategoryIconKeys.DRAFT_KEY else detail?.deviceImageKey
+    val hasImage = if (state.pickingIconForCreate) state.pendingHasImage else detail?.hasImage == true
+    val fallbackLabel = categoryIconFor(
+        (if (state.pickingIconForCreate) state.pendingIconKey else detail?.iconKey) ?: FALLBACK_CATEGORY_ICON.key,
+    ).label
+
+    // The store's gate decides by the resolver's MIME, not by file extension.
+    val contentResolver = LocalContext.current.contentResolver
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { vm.onDeviceImagePicked(it, contentResolver.getType(it)) }
+    }
+    var previewFocused by remember { mutableStateOf(false) }
+
     SettingsScaffold(title = "Category", subtitle = subtitle, onBack = onBack, modifier = modifier) {
         // Registered like the list screens: the scaffold needs a scroll owner here for its
         // chrome drag-to-scroll and for controller keep-in-view. Registering is the whole fix;
@@ -255,7 +322,51 @@ private fun PickIconContent(
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
-            SettingsGroup(state.pendingName ?: state.detail?.name ?: "Icon")
+            if (imageKey != null) {
+                SettingsGroup("From Your Device")
+                if (!hasImage) {
+                    SettingsRow(
+                        label    = "Choose Image…",
+                        sublabel = "PNG, JPG, WEBP, BMP, HEIC or GIF · animated GIFs play",
+                        onClick  = { picker.launch(DEVICE_IMAGE_MIME) },
+                    )
+                } else {
+                    val icon = LocalCustomIcons.current[imageKey]
+                    // Read-only preview row: it plays under Animated Images while the cursor is on it.
+                    SettingsRow(
+                        label    = "Your Image",
+                        sublabel = if (icon is CustomIcon.Animated) "Animated · in use" else "In use",
+                        onFocusChangedExternal = { previewFocused = it },
+                        trailing = {
+                            if (icon != null) {
+                                CompositionLocalProvider(LocalIconFocused provides previewFocused) {
+                                    CustomIconSurface(icon, contentDescription = "Your Image", modifier = Modifier.size(40.dp))
+                                }
+                            }
+                        },
+                    )
+                    SettingsRow(
+                        label    = "Replace Image…",
+                        sublabel = "Pick a different file",
+                        onClick  = { picker.launch(DEVICE_IMAGE_MIME) },
+                    )
+                    SettingsRow(
+                        label    = "Remove Image",
+                        sublabel = "Go back to the built-in icon ($fallbackLabel)",
+                        onClick  = { vm.removeDeviceImage() },
+                    )
+                }
+                // A rejected file: the store's own message; the previous icon stays.
+                state.message?.let { message ->
+                    Text(
+                        text = message,
+                        color = SettingsText,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(horizontal = 48.dp, vertical = 8.dp),
+                    )
+                }
+            }
+            SettingsGroup("Built-in · " + (state.pendingName ?: detail?.name ?: "Icon"))
             state.iconOptions.forEach { option ->
                 SettingsRow(
                     label    = option.label,
@@ -331,10 +442,30 @@ private fun CategoryDetailContent(
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
             SettingsGroup("Edit")
             SettingsRow(label = "Rename Category", onClick = { onBeginRename(cat) })
-            SettingsValueRow(label = "Change Icon", value = cat.iconKey, onClick = { vm.startChangeIcon() })
+            // SettingsValueRow has no slot for a thumbnail, so the value text and the icon share
+            // SettingsRow's trailing. The image plays only while the cursor is on this row.
+            var iconRowFocused by remember { mutableStateOf(false) }
+            SettingsRow(
+                label    = "Change Icon",
+                onFocusChangedExternal = { iconRowFocused = it },
+                onClick  = { vm.startChangeIcon() },
+                trailing = {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(cat.iconLabel, color = SettingsText, fontSize = 13.sp)
+                        val image = cat.deviceImageKey?.takeIf { cat.hasImage }?.let { LocalCustomIcons.current[it] }
+                        if (image != null) {
+                            CompositionLocalProvider(LocalIconFocused provides iconRowFocused) {
+                                CustomIconSurface(image, contentDescription = cat.iconLabel, modifier = Modifier.size(32.dp))
+                            }
+                        } else {
+                            CategoryIconGlyph(cat.iconKey, contentDescription = cat.iconLabel, modifier = Modifier.size(32.dp))
+                        }
+                    }
+                },
+            )
             if (cat.canHide) {
                 SettingsToggleRow(
-                    label    = "Show On Bar",
+                    label    = SettingsLabels.SHOW_ON_BAR,
                     sublabel = "Hide or show this category in the XMB",
                     checked  = cat.visible,
                     onToggle = { vm.toggleVisible(cat.id, it) },
@@ -364,7 +495,7 @@ private fun CategoryDetailContent(
             } else {
                 SettingsRow(
                     label    = "Move",
-                    sublabel = "Turn on Show On Bar to move this category",
+                    sublabel = "Turn on Show on Bar to move this category",
                 )
             }
 

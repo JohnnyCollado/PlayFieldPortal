@@ -65,8 +65,7 @@ import coil3.compose.AsyncImage
 import com.playfieldportal.core.ui.image.rememberArtworkModel
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.theme.menuCursorEdge
-import com.playfieldportal.feature.xmb.ui.DetailContextMenu
-import com.playfieldportal.feature.xmb.ui.DetailMenuRow
+import com.playfieldportal.core.ui.components.PspContextMenuOverlay
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerPanel
 import com.playfieldportal.feature.xmb.ui.collection.collectionNameModalSpec
 import com.playfieldportal.core.ui.components.PfpModalSpec
@@ -137,6 +136,8 @@ fun AppDetailScreen(
             onCancelName = viewModel::cancelNameEdit,
             onCreateCollection = viewModel::confirmCreateCollection,
             onCancelCreateCollection = viewModel::cancelCreateCollection,
+            onConfirmReset = viewModel::confirmReset,
+            onCancelReset = viewModel::cancelReset,
         ),
         // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
         showHints = !showTouchControls,
@@ -182,29 +183,21 @@ fun AppDetailScreen(
         },
         footer = {
             PfpDetailHelperFooter(
-                items = appDetailHelperItems(),
+                items = appDetailHelperItems(state.mainFocus),
                 // A shared modal draws its own hints under its card.
                 visible = !showTouchControls && !modal.open,
             )
         },
         overlay = {
         AnimatedVisibility(state.showOptions, enter = fadeIn(), exit = fadeOut()) {
-            DetailContextMenu(
-                title = "Options",
-                rows = AppDetailOption.OPTIONS_MENU.map { DetailMenuRow(it.label, it.isDestructive) },
+            val options = viewModel.menuRows(state.menuGroup)
+            PspContextMenuOverlay(
+                title = if (state.menuGroup == AppDetailMenuGroup.ARTWORK) "Artwork" else "Options",
+                rows = appDetailMenuRows(options, state.game?.isFavorite == true),
                 selectedIndex = state.optionsIndex,
-                onRowClick = { viewModel.activateOption(AppDetailOption.OPTIONS_MENU[it]) },
+                onRowActivated = { viewModel.activateOption(options[it]) },
                 onDismiss = viewModel::closeMenus,
-            )
-        }
-
-        AnimatedVisibility(state.showArtworkMenu, enter = fadeIn(), exit = fadeOut()) {
-            DetailContextMenu(
-                title = "Artwork",
-                rows = AppDetailOption.ARTWORK_MENU.map { DetailMenuRow(it.label, it.isDestructive) },
-                selectedIndex = state.optionsIndex,
-                onRowClick = { viewModel.activateOption(AppDetailOption.ARTWORK_MENU[it]) },
-                onDismiss = viewModel::closeMenus,
+                panelAlpha = 0.88f,
             )
         }
 
@@ -310,11 +303,11 @@ fun AppDetailScreen(
 
 /**
  * The App Detail page's helper prompts. Apps have no emulator, coins or media, so the footer is the
- * same three actions in every context — but it still reserves its row, so nothing shifts when it
- * fades for touch input.
+ * same three actions in every context, with Select naming the focused button — but it still
+ * reserves its row, so nothing shifts when it fades for touch input.
  */
-private fun appDetailHelperItems(): List<ControllerPromptItem> = listOf(
-    ControllerPromptItem(GamepadAction.SELECT, "Launch"),
+internal fun appDetailHelperItems(mainFocus: Int): List<ControllerPromptItem> = listOf(
+    ControllerPromptItem(GamepadAction.SELECT, when (mainFocus) { 0 -> "Launch"; 1 -> "Options"; else -> "Artwork" }),
     ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
     ControllerPromptItem(GamepadAction.BACK, "Back"),
 )
@@ -511,12 +504,14 @@ internal fun appDetailModalSpec(
     onCancelName: () -> Unit,
     onCreateCollection: (String) -> Unit,
     onCancelCreateCollection: () -> Unit,
+    onConfirmReset: () -> Unit,
+    onCancelReset: () -> Unit,
 ): PfpModalSpec? {
     val app = state.game ?: return null
     return when {
         state.isEditingName -> PfpModalSpec.TextEntry(
             key = "display_name:${app.id}",
-            title = "Change Display Name",
+            title = "Edit Title",
             initial = app.displayTitle,
             placeholder = app.scrapedTitle ?: app.title,
             allowBlank = true,
@@ -525,6 +520,17 @@ internal fun appDetailModalSpec(
         )
         state.collectionPicker.showCreateDialog ->
             collectionNameModalSpec(onCreate = onCreateCollection, onCancel = onCancelCreateCollection)
+        // Opens on Cancel, so a stray Confirm press on the controller dismisses.
+        state.confirmReset -> PfpModalSpec.Confirm(
+            key = "reset_artwork:${app.id}",
+            title = "Reset All Artwork?",
+            message = "The custom icon and background for ${app.displayTitle} are removed and the " +
+                "app's own icon comes back.",
+            confirmLabel = "Reset",
+            destructive = true,
+            onConfirm = onConfirmReset,
+            onCancel = onCancelReset,
+        )
         else -> null
     }
 }

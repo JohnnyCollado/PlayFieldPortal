@@ -64,14 +64,13 @@ import com.playfieldportal.core.domain.model.Video
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.components.PfpModalSpec
+import com.playfieldportal.core.ui.components.PspContextMenuOverlay
+import com.playfieldportal.core.ui.components.PspMenuRow
 import com.playfieldportal.core.ui.components.rememberPfpModalHost
 import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.components.XmbKebabTouchButton
 import com.playfieldportal.core.ui.theme.LocalPFPColors
-import com.playfieldportal.core.ui.theme.menuCursor
 import com.playfieldportal.core.ui.theme.menuCursorEdge
-import com.playfieldportal.feature.xmb.ui.DetailContextMenu
-import com.playfieldportal.feature.xmb.ui.DetailMenuRow
 import com.playfieldportal.feature.xmb.video.VideoPlayerScreen
 
 // Neutral dark surfaces stay fixed; accent colors come from the active theme so this screen
@@ -311,29 +310,29 @@ fun VideoDetailScreen(
         }
 
         if (state.showOptions) {
-            DetailContextMenu(
+            PspContextMenuOverlay(
                 title = "Options",
-                rows = state.optionsActions.map { action ->
-                    val label = if (action == VideoDetailAction.FAVORITE) {
-                        if (video.isFavorite) "Remove from Favorites" else "Add to Favorites"
-                    } else action.label
-                    DetailMenuRow(label)
-                },
+                rows = videoOptionRows(state),
                 selectedIndex = state.optionsIndex,
-                onRowClick = { viewModel.activate(state.optionsActions[it]) },
+                onRowActivated = { viewModel.activate(state.optionsActions[it]) },
                 onDismiss = viewModel::closeOptions,
+                panelAlpha = 0.88f,
             )
         }
 
         if (state.showPlaylistPicker) {
-            PlaylistPicker(
-                options = state.playlistOptions,
+            PspContextMenuOverlay(
+                title = "Add to Playlist",
+                rows = state.playlistOptions.map { PspMenuRow(label = it.name, checked = it.checked) } +
+                    PspMenuRow(label = "Create New Playlist"),
                 selectedIndex = state.playlistPickerIndex,
-                onRowClick = viewModel::onPlaylistRowClick,
+                onRowActivated = viewModel::onPlaylistRowClick,
+                onDismiss = viewModel::closePlaylistPicker,
+                panelAlpha = 0.88f,
             )
         }
 
-        // New Playlist, Information, Rename Title, the removal prompt and an external-player
+        // New Playlist, Information, Edit Title, the removal prompt and an external-player
         // launch error — one at a time, over the page and its menus.
         modal.Content()
 
@@ -425,44 +424,6 @@ private fun DetailButton(
     }
 }
 
-@Composable
-private fun PlaylistPicker(
-    options: List<VideoPlaylistOption>,
-    selectedIndex: Int,
-    onRowClick: (Int) -> Unit,
-) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
-        Column(
-            modifier = Modifier.padding(36.dp).width(320.dp)
-                .background(Color(0xF0101018), RoundedCornerShape(14.dp)).padding(vertical = 12.dp),
-        ) {
-            Text("Add to Playlist", color = menuCursorEdge(), fontSize = 12.sp, fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
-            options.forEachIndexed { i, opt ->
-                Text(
-                    (if (opt.checked) "● " else "○ ") + opt.name,
-                    color = if (i == selectedIndex) Color.White else TextMuted,
-                    fontSize = 15.sp,
-                    modifier = Modifier.fillMaxWidth()
-                        .clickable { onRowClick(i) }
-                        .menuCursor(i == selectedIndex)
-                        .padding(horizontal = 20.dp, vertical = 11.dp),
-                )
-            }
-            val createIndex = options.size
-            Text(
-                "+ Create New Playlist",
-                color = if (createIndex == selectedIndex) Color.White else menuCursorEdge(),
-                fontSize = 15.sp,
-                modifier = Modifier.fillMaxWidth()
-                    .clickable { onRowClick(createIndex) }
-                    .menuCursor(createIndex == selectedIndex)
-                    .padding(horizontal = 20.dp, vertical = 11.dp),
-            )
-        }
-    }
-}
-
 /**
  * Which shared modal the page is showing, if any — checked in the same order the view model checks
  * these states, so the modal on screen is the one being driven.
@@ -515,7 +476,7 @@ internal fun videoDetailModalSpec(
         )
         state.isEditingTitle -> PfpModalSpec.TextEntry(
             key = "rename_title:${video.id}",
-            title = "Rename Title",
+            title = "Edit Title",
             initial = video.displayTitle,
             // Blank goes back to the file name, which is what the empty field shows.
             placeholder = video.displayName,

@@ -14,8 +14,12 @@ import com.playfieldportal.feature.xmb.viewmodel.CollectionNameDialogState
 import com.playfieldportal.feature.xmb.viewmodel.InfoDialogState
 import com.playfieldportal.feature.xmb.viewmodel.NotificationPanelState
 import com.playfieldportal.feature.xmb.viewmodel.StopConfirmState
+import com.playfieldportal.core.domain.playlist.PlaylistKind
+import com.playfieldportal.feature.xmb.viewmodel.PlaylistImportQueue
+import com.playfieldportal.feature.xmb.viewmodel.PlaylistImportReport
 import com.playfieldportal.feature.xmb.viewmodel.PlaylistNameDialogState
 import com.playfieldportal.feature.xmb.viewmodel.XMBUiState
+import com.playfieldportal.feature.xmb.viewmodel.XmbConfirm
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -241,6 +245,143 @@ class ShellModalSpecTest {
     fun `a sheet for a row that is gone shows nothing`() {
         val state = XMBUiState(notificationPanel = NotificationPanelState(cursor = 1, sheetNotificationId = 99))
         assertNull(specWithSheets(state))
+    }
+
+    // ── Playlist import sheet ─────────────────────────────────────────────────
+
+    private val importCalls = mutableListOf<String>()
+    private val importCallbacks = PlaylistImportCallbacks(
+        onOpen = { importCalls += "open:${it.playlistId}" },
+        onClose = { importCalls += "close" },
+        onCopy = { importCalls += "copy" },
+    )
+
+    private fun importReport(playlistId: Long? = 7, error: String? = null) = PlaylistImportReport(
+        kind = PlaylistKind.MUSIC, fileName = "road.m3u", playlistName = "Road Trip",
+        playlistId = playlistId, outcomes = emptyList(), error = error,
+    )
+
+    private fun specWithImport(state: XMBUiState): PfpModalSpec? = shellModalSpec(
+        uiState = state,
+        onConfirmAppRename = {}, onCancelAppRename = {},
+        onConfirmCollectionName = {}, onCancelCollectionName = {},
+        onConfirmPlaylistName = {}, onCancelPlaylistName = {},
+        onConfirmSaveAsTheme = {}, onDismissSaveAsTheme = {},
+        onDismissInfoDialog = {},
+        onWindowsSetupConfirm = {}, onWindowsSetupDismiss = {},
+        notificationCallbacks = notificationCallbacks,
+        playlistImportCallbacks = importCallbacks,
+    )
+
+    @Test
+    fun `an import sheet is the results sheet with Open Playlist`() {
+        val spec = specWithImport(
+            XMBUiState(playlistImportQueue = PlaylistImportQueue(listOf(importReport()))),
+        ) as PfpModalSpec.Results
+
+        assertEquals("Imported \"Road Trip\"", spec.title)
+        assertEquals("Open Playlist", spec.actionLabel)
+        assertNull("a single file has no position", spec.meta)
+        spec.onAction()
+        spec.onCopy("text")
+        spec.onClose()
+        assertEquals(listOf("open:7", "copy", "close"), importCalls)
+    }
+
+    @Test
+    fun `an import that created nothing offers no Open Playlist`() {
+        val spec = specWithImport(
+            XMBUiState(playlistImportQueue = PlaylistImportQueue(listOf(importReport(playlistId = null)))),
+        ) as PfpModalSpec.Results
+
+        assertNull(spec.actionLabel)
+    }
+
+    @Test
+    fun `a queued import names its place in the batch`() {
+        val queue = PlaylistImportQueue(listOf(importReport(), importReport(), importReport())).advance()!!
+        val spec = specWithImport(XMBUiState(playlistImportQueue = queue)) as PfpModalSpec.Results
+
+        assertEquals("2 of 3", spec.meta)
+    }
+
+    @Test
+    fun `a notification layer still wins over the import sheet`() {
+        val row = notification(5, NotificationDetail.Results(items = emptyList()))
+        val spec = specWithImport(
+            XMBUiState(
+                notifications = listOf(row),
+                notificationPanel = NotificationPanelState(cursor = 1, sheetNotificationId = 5),
+                playlistImportQueue = PlaylistImportQueue(listOf(importReport())),
+            ),
+        ) as PfpModalSpec.Results
+
+        assertEquals("Couldn't launch Ape Escape", spec.title)
+    }
+
+    // ── Menu confirms ─────────────────────────────────────────────────────────
+
+    private val confirmCalls = mutableListOf<String>()
+    private val menuConfirmCallbacks = XmbConfirmCallbacks(
+        onConfirm = { confirmCalls += "confirm:${it::class.simpleName}" },
+        onCancel = { confirmCalls += "cancel" },
+    )
+
+    private fun specWithConfirm(state: XMBUiState): PfpModalSpec? = shellModalSpec(
+        uiState = state,
+        onConfirmAppRename = {}, onCancelAppRename = {},
+        onConfirmCollectionName = {}, onCancelCollectionName = {},
+        onConfirmPlaylistName = {}, onCancelPlaylistName = {},
+        onConfirmSaveAsTheme = {}, onDismissSaveAsTheme = {},
+        onDismissInfoDialog = {},
+        onWindowsSetupConfirm = {}, onWindowsSetupDismiss = {},
+        notificationCallbacks = notificationCallbacks,
+        playlistImportCallbacks = importCallbacks,
+        confirmCallbacks = menuConfirmCallbacks,
+    )
+
+    @Test
+    fun `a pending confirm is a destructive confirm that opens on cancel`() {
+        val spec = specWithConfirm(
+            XMBUiState(pendingConfirm = XmbConfirm.RemoveGame(gameId = 7, title = "Ape Escape")),
+        ) as PfpModalSpec.Confirm
+
+        assertTrue(spec.destructive)
+        assertTrue("a stray press must never remove", spec.openOnCancel)
+        assertEquals("Remove", spec.confirmLabel)
+        spec.onConfirm()
+        spec.onCancel()
+        assertEquals(listOf("confirm:RemoveGame", "cancel"), confirmCalls)
+    }
+
+    @Test
+    fun `leaving a category opens on cancel without being drawn destructive`() {
+        val spec = specWithConfirm(
+            XMBUiState(
+                pendingConfirm = XmbConfirm.RemoveFromCategory(
+                    gameId = 7, categoryId = "gaming", categoryName = "Gaming",
+                    title = "Ape Escape", cardNames = listOf("Co-op"),
+                ),
+            ),
+        ) as PfpModalSpec.Confirm
+
+        assertFalse(spec.destructive)
+        assertTrue(spec.openOnCancel)
+    }
+
+    @Test
+    fun `a pending confirm wins over a notification layer and every other modal`() {
+        val row = notification(5, NotificationDetail.Results(items = emptyList()))
+        val spec = specWithConfirm(
+            XMBUiState(
+                notifications = listOf(row),
+                notificationPanel = NotificationPanelState(cursor = 1, sheetNotificationId = 5),
+                infoDialog = InfoDialogState("t", "m"),
+                pendingConfirm = XmbConfirm.DeleteCard(collectionId = 3, title = "RPGs"),
+            ),
+        ) as PfpModalSpec.Confirm
+
+        assertEquals("Delete Custom Card", spec.confirmLabel)
     }
 
     @Test

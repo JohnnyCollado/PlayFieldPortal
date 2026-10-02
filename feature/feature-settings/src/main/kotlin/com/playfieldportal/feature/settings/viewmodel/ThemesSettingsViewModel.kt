@@ -179,6 +179,10 @@ class ThemesSettingsViewModel @Inject constructor(
         viewModelScope.launch { themeStore.delete(id) }
     }
 
+    fun renameSavedTheme(id: String, name: String) {
+        viewModelScope.launch { themeStore.rename(id, name) }
+    }
+
     /** Exports the bundle to shareable cache and opens the system share sheet. */
     fun shareSavedTheme(id: String) {
         viewModelScope.launch {

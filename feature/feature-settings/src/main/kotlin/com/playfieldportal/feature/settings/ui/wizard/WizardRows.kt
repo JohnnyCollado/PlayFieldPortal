@@ -71,6 +71,7 @@ import com.playfieldportal.feature.settings.ui.LocalSettingsReportFocused
 import com.playfieldportal.feature.settings.ui.LocalSettingsTouchInput
 import com.playfieldportal.feature.settings.ui.SettingsAccent
 import com.playfieldportal.feature.settings.ui.SettingsDivider
+import com.playfieldportal.feature.settings.ui.SettingsLabels
 import com.playfieldportal.feature.settings.ui.SettingsRowAction
 import com.playfieldportal.feature.settings.ui.SettingsRowActionButton
 import com.playfieldportal.feature.settings.ui.SettingsSubtext
@@ -249,12 +250,12 @@ fun WizardRootRow(
         hideRowHighlightOnActionFocus = true,
         actions = listOf(
             SettingsRowAction(
-                "Edit folder", onEdit,
+                SettingsLabels.EDIT_FOLDER, onEdit,
                 actionFocusBackgroundColor = lerp(SettingsAccent, Color.Black, 0.50f),
             ) {
                 Icon(
                     Icons.Default.Create,
-                    contentDescription = "Edit folder",
+                    contentDescription = SettingsLabels.EDIT_FOLDER,
                     tint = SettingsAccent,
                     modifier = Modifier
                         .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
@@ -262,12 +263,12 @@ fun WizardRootRow(
                 )
             },
             SettingsRowAction(
-                "Remove folder", onRemove,
+                SettingsLabels.REMOVE_FOLDER, onRemove,
                 actionFocusBackgroundColor = lerp(Color(0xFFE55353), Color.Black, 0.50f),
             ) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = "Remove folder",
+                    contentDescription = SettingsLabels.REMOVE_FOLDER,
                     tint = Color(0xFFE55353),
                     modifier = Modifier
                         .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))

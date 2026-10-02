@@ -60,7 +60,7 @@ interface AchievementController {
     /** The [limit] most recently earned coins across the account, newest first — the status view's feed. */
     fun observeRecentCoins(limit: Int = 8): Flow<List<RecentCoin>>
 
-    /** Explicit "Refresh this game" for [gameId], or returns why it couldn't. */
+    /** Explicit "Update Achievements" for [gameId], or returns why it couldn't. */
     suspend fun syncGame(gameId: Long, provider: AchievementProvider, providerGameId: String): ProviderSyncResult
 
     /** Explicit refresh from the game's stored link; [ProviderSyncResult.NotLinked] if it has none. */

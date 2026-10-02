@@ -62,7 +62,7 @@ class ShibaSelectiveSyncViewModelTest {
         every { gameRepository.observeGamesOnly() } returns MutableStateFlow(
             listOf(Game(id = 5, title = "Chrono Trigger", platformId = "snes")),
         )
-        return ShibaLibraryViewModel(gameRepository, achievements).also { it.load(ShibaLibraryMode.TRACKED) }
+        return ShibaLibraryViewModel(gameRepository, achievements, mockk(relaxed = true)).also { it.load(ShibaLibraryMode.TRACKED) }
     }
 
     @Test
@@ -107,7 +107,7 @@ class ShibaSelectiveSyncViewModelTest {
         every { achievements.observeLink(game.id) } returns flowOf(
             ProviderGameLinkEntity(game.id, "RETRO_ACHIEVEMENTS", "319", "MANUAL", 0L),
         )
-        return ShibaCoinsViewModel(gameRepository, achievements, mockk<AchievementAutoMatcher>(relaxed = true), mockk(relaxed = true), mockk(relaxed = true))
+        return ShibaCoinsViewModel(gameRepository, achievements, mockk<AchievementAutoMatcher>(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true))
     }
 
     @Test
@@ -119,7 +119,7 @@ class ShibaSelectiveSyncViewModelTest {
         coVerify(exactly = 1) { achievements.refreshGameIfStale(5L) }
         coVerify(exactly = 0) { achievements.syncGameById(any()) }
         assertTrue(vm.uiState.value.canSync)
-        assertTrue(vm.uiState.value.optionRows.any { it.label == "Refresh this game" })
+        assertTrue(vm.uiState.value.optionRows.any { it.label == "Update Achievements" })
     }
 
     @Test
@@ -130,7 +130,7 @@ class ShibaSelectiveSyncViewModelTest {
         every { achievements.observeIdentityStatus(AchievementProvider.STEAM, "220") } returns flowOf(
             TrackedIdentityStatus(isPresent = false, lastCheckedAt = 7L, lastDetailAt = 7L),
         )
-        val vm = ShibaCoinsViewModel(gameRepository, achievements, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true))
+        val vm = ShibaCoinsViewModel(gameRepository, achievements, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true))
 
         vm.load(ShibaCoinsTarget.AccountEntry(AchievementProvider.STEAM, "220"))
 

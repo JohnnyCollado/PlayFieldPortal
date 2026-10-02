@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -98,6 +99,26 @@ class MusicRepositoryImplTest {
         assertEquals(listOf(playlistId), repo.getPlaylistIdsForTrack("t2"))
 
         repo.deletePlaylist(playlistId)
+        assertTrue(repo.observePlaylists().first().isEmpty())
+    }
+
+    @Test
+    fun `importPlaylist creates one filled playlist in the given order`() = runTest {
+        val folder = repo.addFolder("A", "content://tree/a")
+        repo.replaceTracksForFolder(folder.id, listOf(track("t1", folder.id), track("t2", folder.id)), 1L)
+
+        val id = repo.importPlaylist("Road Trip", listOf("t2", "t1"))
+
+        val playlist = repo.observePlaylists().first().single()
+        assertEquals(id, playlist.id)
+        assertEquals("Road Trip", playlist.name)
+        assertEquals(listOf("t2", "t1"), repo.observePlaylistTracks(id).first().map { it.id })
+    }
+
+    @Test
+    fun `importPlaylist with no ids throws and creates nothing`() = runTest {
+        assertFailsWith<IllegalArgumentException> { repo.importPlaylist("Empty", emptyList()) }
+
         assertTrue(repo.observePlaylists().first().isEmpty())
     }
 }
@@ -194,6 +215,7 @@ private class FakePlaylistDao(private val trackDao: FakeMusicTrackDao) : Playlis
     override suspend fun addTrack(join: PlaylistTrackEntity) {
         if (members.none { it.playlistId == join.playlistId && it.trackId == join.trackId }) members.add(join)
     }
+    override suspend fun addTracks(joins: List<PlaylistTrackEntity>) = joins.forEach { addTrack(it) }
     override suspend fun removeTrack(playlistId: Long, trackId: String) {
         members.removeAll { it.playlistId == playlistId && it.trackId == trackId }
     }

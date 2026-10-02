@@ -227,6 +227,61 @@ class PfpThemeStoreTest {
         assertNull(context.pfpDataStore.data.first()[KEY_WAVE_STYLE])
     }
 
+    // P1-16
+    @Test
+    fun `rename changes the listed name and the manifest name, other bundle bytes unchanged`() = runTest {
+        val store = PfpThemeStore(context)
+        val wallpaper = pngBytes()
+        val preview = pngBytes(32, 32)
+        val saved = requireNotNull(
+            store.importBundle(register(bundleBytes("Blue", "#0000FF", wallpaper = wallpaper, preview = preview))),
+        )
+
+        assertTrue(store.rename(saved.id, "Ocean"))
+
+        assertEquals(listOf("Ocean"), store.themes.value.map { it.name })
+        val bundle = requireNotNull(PfpThemeCodec.read(pfpThemeFile(saved.id)))
+        assertEquals("Ocean", bundle.manifest.name)
+        assertEquals("#0000FF", bundle.manifest.accentColor)
+        assertTrue(wallpaper.contentEquals(bundle.wallpaper), "wallpaper bytes survive the rewrite")
+        assertTrue(preview.contentEquals(bundle.preview), "preview bytes survive the rewrite")
+    }
+
+    @Test
+    fun `renaming the applied theme renames Current Theme with it`() = runTest {
+        val store = PfpThemeStore(context)
+        val saved = requireNotNull(store.importBundle(register(bundleBytes("Blue", "#0000FF"))))
+        assertTrue(store.apply(saved.id))
+        assertEquals("Blue", context.pfpDataStore.data.first()[PfpThemeStore.KEY_APPLIED_THEME_NAME])
+
+        assertTrue(store.rename(saved.id, "  Ocean "))
+
+        assertEquals("Ocean", context.pfpDataStore.data.first()[PfpThemeStore.KEY_APPLIED_THEME_NAME])
+    }
+
+    @Test
+    fun `renaming a theme that is not applied leaves the applied name alone`() = runTest {
+        val store = PfpThemeStore(context)
+        val applied = requireNotNull(store.importBundle(register(bundleBytes("Blue", "#0000FF"))))
+        val other = requireNotNull(store.importBundle(register(bundleBytes("Red", "#FF0000"))))
+        assertTrue(store.apply(applied.id))
+
+        assertTrue(store.rename(other.id, "Crimson"))
+
+        assertEquals("Blue", context.pfpDataStore.data.first()[PfpThemeStore.KEY_APPLIED_THEME_NAME])
+    }
+
+    @Test
+    fun `rename of a missing theme or to a blank name changes nothing`() = runTest {
+        val store = PfpThemeStore(context)
+        val saved = requireNotNull(store.importBundle(register(bundleBytes("Red", "#FF0000"))))
+
+        assertTrue(!store.rename("nope", "X"))
+        assertTrue(!store.rename(saved.id, "   "))
+
+        assertEquals(listOf("Red"), store.themes.value.map { it.name })
+    }
+
     // ── helpers ────────────────────────────────────────────────────────────────
 
     /** Serializes a `.pfptheme` bundle exactly as Theme Studio / share export would. */

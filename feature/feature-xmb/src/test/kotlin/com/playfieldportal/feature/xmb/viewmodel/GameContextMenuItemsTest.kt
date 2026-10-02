@@ -60,7 +60,7 @@ class GameContextMenuItemsTest {
     fun `extracting the builder keeps the existing entries`() {
         val ids = items().map { it.id }
         assertEquals("game_details", ids.first())
-        assertTrue(ids.containsAll(listOf("favorite", "add_to_collection", "change_emulator", "file_location", "remove_game")))
+        assertTrue(ids.containsAll(listOf("favorite_toggle", "add_to_collection", "change_emulator", "file_location", "remove_game")))
     }
 
     // ── Custom memory cards (the user-facing name for collections) ────────────
@@ -79,8 +79,11 @@ class GameContextMenuItemsTest {
         canMove: Boolean = false,
         umd: UmdMenuState = UmdMenuState.NONE,
         canSelectMultiple: Boolean = false,
+        item: XMBItem = game,
+        emulatorLabel: String = "Default",
+        iconDisplayLabel: String? = null,
     ) = gameContextMenuItems(
-        item = game,
+        item = item,
         discCount = 0,
         inCollection = inCollection,
         currentCategory = currentCategory,
@@ -91,12 +94,14 @@ class GameContextMenuItemsTest {
         canMove = canMove,
         umd = umd,
         canSelectMultiple = canSelectMultiple,
+        emulatorLabel = emulatorLabel,
+        iconDisplayLabel = iconDisplayLabel,
     )
 
     @Test
     fun `a game's card rows say Card, never Collection`() {
         val labels = menu(inCollection = true).map { it.label }
-        assertTrue(labels.containsAll(listOf("Add to Card…", "Remove from Card", "Manage Custom Cards")))
+        assertTrue(labels.containsAll(listOf("Add to Card", "Remove from Card", "Manage Custom Cards")))
         assertFalse(labels.any { it.contains("Collection") })
     }
 
@@ -164,5 +169,101 @@ class GameContextMenuItemsTest {
     fun `select multiple is offered in a games list and not elsewhere`() {
         assertTrue(menu(canSelectMultiple = true).any { it.id == "select_multiple" })
         assertFalse(menu(canSelectMultiple = false).any { it.id == "select_multiple" })
+    }
+
+    // ── Mockup 1: groups, glossary wording, values ───────────────────────────
+
+    /** The group each row sits under, by walking the headers the way the panel draws them. */
+    private fun List<XMBContextMenuItem>.groups(): Map<String, String> {
+        var current = ""
+        return associate { row ->
+            row.header?.let { current = it }
+            row.id to current
+        }
+    }
+
+    private val pcGame = XMBItem(id = "w1", title = "Hades", gameId = 3L, platformId = "windows", isRealGame = true)
+
+    @Test
+    fun `the groups run Play, Library, Arrange, Customize, Manage in order`() {
+        val headers = menu(pinned = false, canMove = true, currentCategory = custom).mapNotNull { it.header }
+        assertEquals(listOf("Play", "Library", "Arrange", "Customize", "Manage"), headers)
+    }
+
+    @Test
+    fun `a PC game gets a PC group between Customize and Manage`() {
+        val headers = menu(item = pcGame, pinned = false).mapNotNull { it.header }
+        assertEquals(listOf("Play", "Library", "Arrange", "Customize", "PC", "Manage"), headers)
+    }
+
+    @Test
+    fun `every row sits in its mockup group`() {
+        val g = menu(
+            item = pcGame, currentCategory = custom, pinned = false, canMove = true,
+            categories = listOf(games, custom, custom.copy(id = "custom_rpg_6", position = 10)),
+            umd = UmdMenuState.CAN_INSERT, canSelectMultiple = true, inCollection = true,
+        ).groups()
+        listOf("game_details", "view_shiba_coins", "change_emulator", "insert_umd").forEach { assertEquals(it, "Play", g[it]) }
+        listOf("favorite_toggle", "add_to_collection", "remove_from_collection", "select_multiple")
+            .forEach { assertEquals(it, "Library", g[it]) }
+        listOf("pin_top", "move_row", "move_category", "remove_category").forEach { assertEquals(it, "Arrange", g[it]) }
+        listOf("icon_display", "fetch_artwork").forEach { assertEquals(it, "Customize", g[it]) }
+        listOf("install_goldberg", "export_game").forEach { assertEquals(it, "PC", g[it]) }
+        // Manage Custom Cards stays on the game row, under Manage (Resolved Decision Q2).
+        listOf("manage_collections", "file_location").forEach { assertEquals(it, "Manage", g[it]) }
+    }
+
+    @Test
+    fun `Remove from Library is the last row`() {
+        assertEquals("remove_game", menu().last().id)
+        assertEquals("Remove from Library", menu().last().label)
+    }
+
+    @Test
+    fun `a disc set's Choose Disc sits under Play`() {
+        val rows = gameContextMenuItems(
+            item = game, discCount = 2, inCollection = false, currentCategory = games,
+            categories = listOf(games), inMissingBucket = false, hideLabel = null,
+        )
+        assertEquals("Play", rows.groups()["choose_disc"])
+    }
+
+    @Test
+    fun `Favorite is one fixed label with an On or Off value, silent`() {
+        val off = menu(item = game.copy(isFavorite = false)).single { it.id == "favorite_toggle" }
+        val on = menu(item = game.copy(isFavorite = true)).single { it.id == "favorite_toggle" }
+        assertEquals("Favorite", off.label)
+        assertEquals("Favorite", on.label)
+        assertEquals("Off", off.value)
+        assertEquals("On", on.value)
+        assertTrue(off.silent)
+        assertFalse(menu().any { it.id == "favorite" || it.id == "unfavorite" })
+    }
+
+    @Test
+    fun `Add to Card opens a menu`() {
+        val row = menu().single { it.id == "add_to_collection" }
+        assertEquals("Add to Card", row.label)
+        assertTrue(row.opensMenu)
+    }
+
+    @Test
+    fun `the file row says Show File Location`() {
+        assertEquals("Show File Location", menu().single { it.id == "file_location" }.label)
+    }
+
+    @Test
+    fun `Change Emulator shows the override, or Default, and opens a menu`() {
+        val default = menu().single { it.id == "change_emulator" }
+        assertEquals("Default", default.value)
+        assertTrue(default.opensMenu)
+        assertEquals("Dolphin", menu(emulatorLabel = "Dolphin").single { it.id == "change_emulator" }.value)
+    }
+
+    @Test
+    fun `Icon Display shows the mode in force and opens a menu`() {
+        val row = menu(iconDisplayLabel = "Box Art").single { it.id == "icon_display" }
+        assertEquals("Box Art", row.value)
+        assertTrue(row.opensMenu)
     }
 }

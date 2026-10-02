@@ -1228,7 +1228,7 @@ class GameDetailViewModelTest {
     fun `the Fetch Artwork option is labelled for what it does`() {
         assertEquals("Fetch Artwork", DetailAction.FETCH_ARTWORK.label)
         assertEquals("Fetch Artwork", DetailAction.FETCH_ARTWORK.dynamicLabel(refreshing = false))
-        assertEquals("Fetching Artwork...", DetailAction.FETCH_ARTWORK.dynamicLabel(refreshing = true))
+        assertEquals("Fetching Artwork…", DetailAction.FETCH_ARTWORK.dynamicLabel(refreshing = true))
     }
 
     @Test
@@ -1620,6 +1620,30 @@ class GameDetailViewModelTest {
         viewModel.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
         assertEquals(DetailMenu.ROOT, viewModel.uiState.value.optionsMenu)
         assertEquals(GameDetailKeys.option(DetailAction.FAVORITE.name), viewModel.uiState.value.navFocusKey)
+    }
+
+    @Test
+    fun `Triangle with a sub-panel open closes the whole menu, not just the sub-panel`() = runTest {
+        loadedAndLaidOut()
+        openOptionsOn(DetailAction.MENU_FILE)
+        viewModel.handleGamepadAction(GamepadAction.SELECT)
+        assertEquals(DetailMenu.FILE, viewModel.uiState.value.optionsMenu)
+
+        viewModel.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+
+        assertFalse(viewModel.uiState.value.showOptions)
+        assertFalse(viewModel.uiState.value.closed)
+    }
+
+    @Test
+    fun `Triangle on the top level closes the menu`() = runTest {
+        loadedAndLaidOut()
+        viewModel.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        assertTrue(viewModel.uiState.value.showOptions)
+
+        viewModel.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+
+        assertFalse(viewModel.uiState.value.showOptions)
     }
 
     // ── Results that arrive late ──────────────────────────────────────────

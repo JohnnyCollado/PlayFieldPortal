@@ -222,7 +222,7 @@ class AchievementSyncCoordinator @Inject constructor(
 
     // ── Single-game refreshes ───────────────────────────────────────────────────
 
-    /** Explicit "Refresh this game" for a present, confirmed identity. Removed games are refused. */
+    /** Explicit "Update Achievements" for a present, confirmed identity. Removed games are refused. */
     suspend fun refreshIdentity(identity: AchievementIdentity, title: String): ProviderSyncResult {
         if (clearing) return CLEARING
         val row = store.identity(identity) ?: return ProviderSyncResult.NotLinked

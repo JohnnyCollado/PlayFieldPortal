@@ -74,8 +74,6 @@ class AppDrawerThreeRowsTest {
                     onTouchBrowse = {},
                     onMenuAction = {},
                     onCloseMenu = {},
-                    onConfirmUninstall = {},
-                    onCancelUninstall = {},
                     onGrantUsageAccess = {},
                 )
             }

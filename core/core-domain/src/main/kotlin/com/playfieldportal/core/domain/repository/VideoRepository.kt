@@ -56,6 +56,8 @@ interface VideoRepository {
     /** Playlist ids the video belongs to — drives the checkmarks in "Add to Playlist". */
     suspend fun getPlaylistIdsForVideo(videoId: String): List<Long>
     suspend fun createPlaylist(name: String): Long
+    /** Creates a playlist already holding [videoIds] in order, in one transaction. [videoIds] must not be empty. */
+    suspend fun importPlaylist(name: String, videoIds: List<String>): Long
     suspend fun renamePlaylist(id: Long, name: String)
     suspend fun deletePlaylist(id: Long)
     suspend fun addVideoToPlaylist(playlistId: Long, videoId: String)

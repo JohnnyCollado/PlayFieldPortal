@@ -84,6 +84,8 @@ import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPrompt
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.components.PfpModalSpec
+import com.playfieldportal.core.ui.components.rememberPfpModalHost
 import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
 import com.playfieldportal.core.ui.keyboard.VirtualKeyboardBottomReserve
 import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
@@ -138,9 +140,20 @@ fun ArtworkStudioScreen(
             viewModel.consumeClosed()   // clear immediately so reopening doesn't self-close
         }
     }
+    // Clear Artwork and Forget Match ask through the shared confirm modal. Its cursor lives in the
+    // host, so a press goes there first while one is up and only otherwise reaches the Studio.
+    val modal = rememberPfpModalHost(
+        spec = studioDestructiveModalSpec(
+            state = state,
+            onConfirm = viewModel::confirmDestructive,
+            onCancel = viewModel::cancelDestructive,
+        ),
+        // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
+        showHints = !showTouchControls,
+    )
     LaunchedEffect(pendingGamepadAction) {
         if (pendingGamepadAction != null) {
-            viewModel.handleGamepadAction(pendingGamepadAction)
+            if (!modal.intercept(pendingGamepadAction)) viewModel.handleGamepadAction(pendingGamepadAction)
             onGamepadActionConsumed()
         }
     }
@@ -167,13 +180,56 @@ fun ArtworkStudioScreen(
         viewModel.consumeLocalPick()
     }
 
-    ArtworkStudioContent(
-        state = state,
-        actions = viewModel,
-        showTouchControls = showTouchControls,
-        onTouchInput = onTouchInput,
-        modifier = modifier,
-    )
+    // A Box of its own, so the modal's full-size scrim stacks over the Studio whatever the caller is.
+    Box(modifier) {
+        ArtworkStudioContent(
+            state = state,
+            actions = viewModel,
+            showTouchControls = showTouchControls,
+            onTouchInput = onTouchInput,
+        )
+        modal.Content()
+    }
+}
+
+/**
+ * The shared confirm for [ArtworkStudioUiState.destructiveConfirm], or null when none is asking.
+ * Both open on Cancel (destructive confirms do), so a stray Confirm press dismisses.
+ *
+ * Internal and free of composition so the mapping from UI state to modal can be tested directly.
+ */
+internal fun studioDestructiveModalSpec(
+    state: ArtworkStudioUiState,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+): PfpModalSpec? {
+    val game = state.game ?: return null
+    return when (state.destructiveConfirm) {
+        StudioDestructive.CLEAR_ARTWORK -> {
+            val label = STUDIO_TABS.getOrNull(state.tabIndex)?.label ?: "artwork"
+            PfpModalSpec.Confirm(
+                key = "clear_artwork:${game.id}:$label",
+                title = "Clear Artwork?",
+                message = "The $label artwork for ${game.displayTitle} is deleted, along with its " +
+                    "backup and the original copy. This can't be undone.",
+                confirmLabel = "Clear",
+                destructive = true,
+                onConfirm = onConfirm,
+                onCancel = onCancel,
+            )
+        }
+        StudioDestructive.FORGET_MATCH -> PfpModalSpec.Confirm(
+            key = "forget_match:${game.id}",
+            title = "Forget Match?",
+            message = "${state.matchProvider?.label ?: "The provider"} will be asked about " +
+                "${game.displayTitle} afresh. Your artwork and metadata are left alone.",
+            confirmLabel = "Forget",
+            destructive = true,
+            onConfirm = onConfirm,
+            onCancel = onCancel,
+        )
+        null -> null
+    }
 }
 
 /**
@@ -895,18 +951,18 @@ internal fun ArtworkStudioContent(
                 items = buildList {
                     when (state.zone) {
                         StudioZone.SOURCES -> {
-                            add(ControllerPromptItem(GamepadAction.SELECT, "browse / pick file"))
-                            add(ControllerPromptItem(GamepadAction.BACK, "close"))
+                            add(ControllerPromptItem(GamepadAction.SELECT, "Browse / Pick File"))
+                            add(ControllerPromptItem(GamepadAction.BACK, "Close"))
                         }
                         StudioZone.GRID -> {
-                            add(ControllerPromptItem(GamepadAction.SELECT, if (state.selectsMultiple) "check" else "preview / apply"))
-                            add(ControllerPromptItem(GamepadAction.BACK, "back"))
+                            add(ControllerPromptItem(GamepadAction.SELECT, if (state.selectsMultiple) "Check" else "Preview / Apply"))
+                            add(ControllerPromptItem(GamepadAction.BACK, "Back"))
                         }
                     }
                     // START applies from any level, so its hint shows whenever this tab has changes waiting.
-                    if (state.queueSummary.hasChanges) add(ControllerPromptItem(GamepadAction.HOME, "apply"))
-                    add(ControllerPromptItem(GamepadAction.CHANGE_SORT, "search"))
-                    add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "options"))
+                    if (state.queueSummary.hasChanges) add(ControllerPromptItem(GamepadAction.HOME, "Apply"))
+                    add(ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"))
+                    add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
                 },
                 // PFP's keyboard brings its own prompts while it is up.
                 modifier = Modifier.padding(top = 6.dp).alpha(if (isVirtualKeyboardOverlayOpen()) 0f else 1f),
@@ -1484,19 +1540,10 @@ internal fun ArtworkStudioContent(
             if (state.cropOptionsOpen) {
                 val currentShape = CropShapeChoice.of(state.cropProfileOverride)
                 com.playfieldportal.core.ui.components.PspContextMenuOverlay(
-                    title = "CROP OPTIONS",
-                    rows = state.cropOptionRows.map { row ->
-                        val shape = row.shape
-                        if (shape == null) {
-                            com.playfieldportal.core.ui.components.PspMenuRow(
-                                if (state.cropPreviewEnabled) "Live Preview: On" else "Live Preview: Off",
-                            )
-                        } else {
-                            com.playfieldportal.core.ui.components.PspMenuRow(
-                                "Shape: ${shape.label}",
-                                checked = shape == currentShape,
-                            )
-                        }
+                    title = STUDIO_CROP_OPTIONS_TITLE,
+                    rows = state.cropOptionRows.map { option ->
+                        val row = studioCropRow(option, state.cropPreviewEnabled, currentShape)
+                        com.playfieldportal.core.ui.components.PspMenuRow(row.label, checked = row.checked, value = row.value)
                     },
                     selectedIndex = state.cropOptionsIndex,
                     onRowActivated = actions::activateCropOption,

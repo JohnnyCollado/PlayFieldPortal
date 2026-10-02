@@ -144,6 +144,21 @@ enum class CropOption {
         }
 }
 
+/** The crop menu's title. */
+const val STUDIO_CROP_OPTIONS_TITLE = "Crop Options"
+
+/** One crop-menu row as the panel shows it: a label, its setting at the right, a check for the shape in force. */
+data class StudioCropRow(val label: String, val value: String, val checked: Boolean = false)
+
+/** The panel row for [option]: Live Preview with its On/Off, or Shape with the shape that row selects. */
+fun studioCropRow(option: CropOption, previewEnabled: Boolean, current: CropShapeChoice): StudioCropRow {
+    val shape = option.shape ?: return StudioCropRow("Live Preview", if (previewEnabled) "On" else "Off")
+    return StudioCropRow("Shape", shape.label, checked = shape == current)
+}
+
+/** Shown when Triangle is pressed on a source that has no options to offer. */
+const val STUDIO_NO_OPTIONS_MESSAGE = "No options available here"
+
 /**
  * The crop shapes a game can be pinned to (task 6.3).
  *
@@ -181,6 +196,12 @@ enum class StudioReplaceChoice(val label: String) {
     CANCEL("Cancel"),
     REPLACE("Replace Anyway"),
 }
+
+/**
+ * The two Options-menu actions that ask first through the shared PFP confirm modal (context-menu
+ * plan task 1.4), instead of the Studio's own row prompts above. Neither runs on one press.
+ */
+enum class StudioDestructive { CLEAR_ARTWORK, FORGET_MATCH }
 
 /** Which confirmation [StudioConfirmPrompt] describes — what activating a row resolves. */
 enum class StudioConfirmKind { APPLY, REPLACE }
@@ -332,6 +353,9 @@ data class ArtworkStudioUiState(
     // Apply was pressed on a single-art tile the slot already holds: View / Replace / Cancel (5.3).
     val replacePromptOpen: Boolean = false,
     val replacePromptIndex: Int = 0,
+    // Clear Artwork or Forget Match was chosen and is waiting on the shared confirm modal. The
+    // screen hosts that modal, so there is no cursor here: only which action is asking.
+    val destructiveConfirm: StudioDestructive? = null,
     // Stored-assets manager (task 5.4): reorders the active multi-asset slot. Its list is [library],
     // which is already the slot's stored assets in order, so the panel holds no copy of its own.
     val managerOpen: Boolean = false,
@@ -660,7 +684,7 @@ private const val MAX_QUERY_LENGTH = 120
 // SS media types browsable per destination (order = preference; all variants are listed).
 // ICON0 has no exact SS equivalent — the landscape "mix" composites and screen-marquee come
 // closest for the 144:80 tile; box art is offered as a croppable fallback.
-private val SS_TYPES_FOR_KIND: Map<ArtworkKind, List<String>> = mapOf(
+internal val SS_TYPES_FOR_KIND: Map<ArtworkKind, List<String>> = mapOf(
     ArtworkKind.ICON           to listOf("mixrbv2", "mixrbv1", "screenmarquee", "steamgrid", "box-2D"),
     ArtworkKind.BOX_ART        to listOf("box-2D"),
     ArtworkKind.BOX_3D         to listOf("box-3D"),
@@ -828,7 +852,7 @@ class ArtworkStudioViewModel @Inject constructor(
                 gridRows = capacity?.rows ?: s.gridRows,
                 closed = false, selection = emptyMap(), removals = emptyMap(),
                 leavePromptOpen = false, applyConfirmOpen = false, replacePromptOpen = false,
-                managerOpen = false, actionsOpen = false, filterGroup = null,
+                destructiveConfirm = null, managerOpen = false, actionsOpen = false, filterGroup = null,
                 queue = s.queue.filter { it.state == StudioQueueState.QUEUED || it.state == StudioQueueState.DOWNLOADING },
             )
         }
@@ -1971,6 +1995,11 @@ class ArtworkStudioViewModel @Inject constructor(
      * where it is. The only thing forgotten is who the provider was told this game is.
      */
     override fun forgetMatch() {
+        if (_uiState.value.matchProvider == null) return
+        _uiState.update { it.copy(destructiveConfirm = StudioDestructive.FORGET_MATCH, actionsOpen = false) }
+    }
+
+    private fun performForgetMatch() {
         val provider = _uiState.value.matchProvider ?: return
         cancelLoad()
         forgetMatches(provider)
@@ -2551,7 +2580,10 @@ class ArtworkStudioViewModel @Inject constructor(
         val s = _uiState.value
         if (s.currentUri == null && !sgdb && s.matchProvider == null && !s.canPreviewFocused &&
             !s.queueSummary.hasChanges && s.queueSummary.failed == 0 && s.filterRootRows.isEmpty()
-        ) return
+        ) {
+            _uiState.update { it.copy(message = STUDIO_NO_OPTIONS_MESSAGE) }
+            return
+        }
         viewModelScope.launch {
             val info = routingStore.studioInfo(gameId, tab().kind)
             _uiState.update {
@@ -2717,7 +2749,7 @@ class ArtworkStudioViewModel @Inject constructor(
             StudioAction.CROP_BEFORE_APPLY -> beginCropForCandidate()
             StudioAction.RESTORE_PREVIOUS -> restorePrevious()
             StudioAction.RESET_DEFAULT    -> resetToScrapedDefault()
-            StudioAction.CLEAR            -> { closeActions(); clearCurrent() }
+            StudioAction.CLEAR            -> { closeActions(); requestClear() }
             StudioAction.FILE_INFO        -> _uiState.update { it.copy(showFileInfo = true) }
             // Through the button's own entry point, so an inert provider explains itself the same way.
             StudioAction.CHANGE_MATCH     -> onChangeMatchPressed()
@@ -3144,7 +3176,22 @@ class ArtworkStudioViewModel @Inject constructor(
         }
     }
 
-    fun clearCurrent() {
+    private fun requestClear() = _uiState.update { it.copy(destructiveConfirm = StudioDestructive.CLEAR_ARTWORK) }
+
+    /** The shared confirm's Confirm: runs whichever action asked, once. */
+    fun confirmDestructive() {
+        val asked = _uiState.value.destructiveConfirm ?: return
+        _uiState.update { it.copy(destructiveConfirm = null) }
+        when (asked) {
+            StudioDestructive.CLEAR_ARTWORK -> clearCurrent()
+            StudioDestructive.FORGET_MATCH  -> performForgetMatch()
+        }
+    }
+
+    /** The shared confirm's Cancel (and Back): the slot or match is exactly as it was. */
+    fun cancelDestructive() = _uiState.update { it.copy(destructiveConfirm = null) }
+
+    private fun clearCurrent() {
         val kind = tab().kind
         val gid = gameId
         viewModelScope.launch {
@@ -3200,6 +3247,12 @@ class ArtworkStudioViewModel @Inject constructor(
 
     override fun handleGamepadAction(action: GamepadAction) {
         val s = _uiState.value
+        // The shared confirm is hosted by the screen, which takes presses first. One that still gets
+        // here means no host took it, so only Back is honoured and nothing can confirm by accident.
+        if (s.destructiveConfirm != null) {
+            if (action == GamepadAction.BACK) cancelDestructive()
+            return
+        }
         // Search card. On the field the keyboard owns typing, so the pad only confirms, cancels or
         // steps down to the buttons; on the buttons it moves between Search · Use game title ·
         // Cancel, and UP goes back to the field (which reopens PFP's keyboard).
@@ -3258,7 +3311,7 @@ class ArtworkStudioViewModel @Inject constructor(
                 GamepadAction.NAVIGATE_UP   -> moveCropOptionsCursor(-1)
                 GamepadAction.NAVIGATE_DOWN -> moveCropOptionsCursor(+1)
                 GamepadAction.SELECT        -> activateCropOption(_uiState.value.cropOptionsIndex)
-                GamepadAction.BACK          -> closeCropOptions()
+                GamepadAction.BACK, GamepadAction.OPEN_CONTEXT_MENU -> closeCropOptions()
                 else -> Unit
             }
             return
@@ -3327,6 +3380,7 @@ class ArtworkStudioViewModel @Inject constructor(
                 GamepadAction.NAVIGATE_DOWN -> moveFilterCursor(+1)
                 GamepadAction.SELECT        -> activateFilterRow(s.filterGroupIndex)
                 GamepadAction.BACK          -> closeFilterGroup()
+                GamepadAction.OPEN_CONTEXT_MENU -> closeActions()   // Triangle closes from any depth
                 else -> Unit
             }
             return
@@ -3338,6 +3392,7 @@ class ArtworkStudioViewModel @Inject constructor(
                 GamepadAction.SELECT        -> activateMenuItem(s.resolvedActionsIndex)
                 GamepadAction.BACK          ->
                     if (s.showFileInfo) _uiState.update { it.copy(showFileInfo = false) } else closeActions()
+                GamepadAction.OPEN_CONTEXT_MENU -> closeActions()
                 else -> Unit
             }
             return

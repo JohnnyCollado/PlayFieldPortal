@@ -140,6 +140,75 @@ internal fun XMBUiState.currentListKind(): XmbListKind? {
 
 internal const val MISSING_LIST_KEY = "missing"
 
+/**
+ * Stable key for whatever list the screen currently shows: the category id plus the drill level.
+ * Cursor memory is stored under it, and the item column uses it to tell "a different list" from
+ * "the same list stepping".
+ */
+internal fun XMBUiState.viewCursorKey(): String {
+    val catId = categories.getOrNull(selectedCategoryIndex)?.id ?: "none"
+    val sub = when {
+        catId == BuiltInCategory.MUSIC -> "music_${musicNavKey(musicNav)}"
+        catId == BuiltInCategory.VIDEO -> "video_${videoNavKey(videoNav)}"
+        catId == BuiltInCategory.PHOTO -> "photo_${photoNavKey(photoNav)}"
+        catId == BuiltInCategory.SOCIAL -> "social_${socialNavKey(socialNav)}"
+        catId == BuiltInCategory.ACHIEVEMENTS -> "ach_${achievementsNavKey(achievementsNav)}"
+        catId == BuiltInCategory.SETTINGS -> "settings_${settingsSectionNav?.id ?: "root"}"
+        selectedCollectionId != null -> "col_$selectedCollectionId"
+        selectedPlatformId != null   -> "plat_$selectedPlatformId"
+        else                         -> "root"
+    }
+    return "$catId/$sub"
+}
+
+private fun musicNavKey(nav: MusicNav): String = when (nav) {
+    MusicNav.Root        -> "root"
+    MusicNav.AllMusic    -> "all"
+    MusicNav.Playlists   -> "playlists"
+    is MusicNav.Playlist -> "playlist_${nav.id}"
+    MusicNav.MusicApps   -> "apps"
+}
+
+private fun videoNavKey(nav: VideoNav): String = when (nav) {
+    VideoNav.Root            -> "root"
+    VideoNav.AllVideos       -> "all"
+    VideoNav.Collections     -> "collections"
+    VideoNav.RecentlyWatched -> "recent"
+    VideoNav.Favorites       -> "favorites"
+    VideoNav.Playlists       -> "playlists"
+    is VideoNav.Playlist     -> "playlist_${nav.id}"
+    VideoNav.Libraries       -> "libraries"
+    is VideoNav.Library      -> "library_${nav.id}"
+    VideoNav.VideoApps       -> "apps"
+}
+
+private fun photoNavKey(nav: PhotoNav): String = when (nav) {
+    PhotoNav.Root       -> "root"
+    PhotoNav.AllPhotos  -> "all"
+    PhotoNav.Albums     -> "albums"
+    PhotoNav.PhotoApps  -> "apps"
+    is PhotoNav.Library -> "library_${nav.id}"
+}
+
+// Each Social drill level needs its own cursor key — without this every level collides on the
+// category's fallback "root" key, so drilling into a shorter list restores an out-of-range index
+// and the selection highlight lands on nothing.
+private fun socialNavKey(nav: SocialNav): String = when (nav) {
+    SocialNav.Root             -> "root"
+    SocialNav.Account          -> "account"
+    SocialNav.Friends          -> "friends"
+    SocialNav.Voice            -> "voice"
+    SocialNav.VoiceSettings    -> "voicesettings"
+    SocialNav.VoiceInvites     -> "voiceinvites"
+    SocialNav.VoiceInviteFriends -> "voiceinvitefriends"
+    SocialNav.ActivitySettings -> "activity"
+    SocialNav.DiscordSettings  -> "discord"
+}
+
+private fun achievementsNavKey(nav: AchievementsNav): String = when (nav) {
+    AchievementsNav.Root -> "root"
+}
+
 /** This row's key in its list's stored order, or null for a row that can never move. */
 internal fun XMBItem.rowKey(): String? = when {
     type == XMBItemType.UMD_SLOT || type == XMBItemType.ADD_ACTION || type == XMBItemType.EMPTY -> null
@@ -166,9 +235,19 @@ internal fun XMBUiState.activeSortFor(listKey: String?, kind: XmbListKind?): Xmb
     return listSortOverrides[listKey] ?: global
 }
 
+/**
+ * What the games-style list on screen holds, for choosing its sorts: an open custom card holds
+ * what its category holds (apps in an app category), every other such list holds games.
+ */
+internal val XMBUiState.openListSortKind: XmbListKind
+    get() {
+        val categoryId = collections.firstOrNull { it.id == selectedCollectionId }?.categoryId
+        return collectionSortKind(categories.firstOrNull { it.id == categoryId })
+    }
+
 /** The sort in force for the games list on screen. */
 internal val XMBUiState.activeGameSort: XmbSortMode
-    get() = activeSortFor(currentListKey(), XmbListKind.GAMES)
+    get() = activeSortFor(currentListKey(), openListSortKind)
 
 /** Whether [listKey] is in the user's own order. A gaming root is either that or its default. */
 internal fun XMBUiState.isCustomSorted(listKey: String?, kind: XmbListKind?): Boolean =
@@ -314,6 +393,15 @@ internal fun arrangeMenuItems(pinned: Boolean?, canMove: Boolean): List<XMBConte
     if (canMove) add(XMBContextMenuItem(MOVE_ROW_ID, "Move"))
 }
 
+/** Adds [rows] with [header] on the first of them. An empty group adds nothing, header included. */
+internal fun MutableList<XMBContextMenuItem>.group(
+    header: String,
+    rows: MutableList<XMBContextMenuItem>.() -> Unit,
+) {
+    val items = mutableListOf<XMBContextMenuItem>().apply(rows)
+    items.forEachIndexed { index, item -> add(if (index == 0) item.copy(header = header) else item) }
+}
+
 internal const val MOVE_ROW_ID = "move_row"
 internal const val LIST_SORT_ROW_ID = "list_sort"
 internal const val GLOBAL_SORT_ROW_ID = "sort_global"
@@ -344,11 +432,12 @@ internal fun umdMenuItems(state: UmdMenuState): List<XMBContextMenuItem> = when 
 /**
  * The menu of a container row that is not a record of its own — a custom category's Memory Card,
  * Favorites, Missing: open it, set the sort of the list behind it, and move it while its root is
- * Custom sorted.
+ * Custom sorted. "Open" only for [byTouch]: on a pad it repeats the press, so Missing — which has
+ * nothing else — has no controller menu at all.
  */
-internal fun rootRowMenuItems(sortValue: String?, canMove: Boolean): List<XMBContextMenuItem> = buildList {
-    add(XMBContextMenuItem("open_row", "Open"))
-    if (sortValue != null) add(XMBContextMenuItem(LIST_SORT_ROW_ID, "Sort", value = sortValue))
+internal fun rootRowMenuItems(sortValue: String?, canMove: Boolean, byTouch: Boolean): List<XMBContextMenuItem> = buildList {
+    if (byTouch) add(XMBContextMenuItem("open_row", "Open"))
+    if (sortValue != null) add(XMBContextMenuItem(LIST_SORT_ROW_ID, "Sort", value = sortValue, opensMenu = true))
     addAll(arrangeMenuItems(pinned = null, canMove = canMove))
 }
 
@@ -361,16 +450,21 @@ internal fun customCardMenuItems(
     canMoveToCategory: Boolean,
     sortValue: String,
     canMove: Boolean,
+    byTouch: Boolean,
 ): List<XMBContextMenuItem> = buildList {
-    add(XMBContextMenuItem("open_collection", "Open"))
-    add(XMBContextMenuItem(LIST_SORT_ROW_ID, "Sort", value = sortValue))
+    if (byTouch) add(XMBContextMenuItem("open_collection", "Open"))
+    add(XMBContextMenuItem(LIST_SORT_ROW_ID, "Sort", value = sortValue, opensMenu = true))
     add(XMBContextMenuItem(if (pinned) "unpin_collection" else "pin_collection", "Pin to Top", value = if (pinned) "On" else "Off"))
     if (canMove) add(XMBContextMenuItem(MOVE_ROW_ID, "Move"))
     add(XMBContextMenuItem("rename_collection", "Rename Card"))
-    if (canMoveToCategory) add(XMBContextMenuItem("move_collection_category", "Move to Category"))
+    if (canMoveToCategory) add(XMBContextMenuItem("move_collection_category", "Move to Category", opensMenu = true))
     add(XMBContextMenuItem("manage_collections", "Manage Custom Cards"))
     add(XMBContextMenuItem("delete_collection", "Delete Custom Card", isDestructive = true))
 }
+
+/** What a custom card in [category] holds, so its Sort offers that list's sorts: apps in an app category. */
+internal fun collectionSortKind(category: Category?): XmbListKind =
+    if (category != null && !category.isGamingCategory) XmbListKind.APPS else XmbListKind.GAMES
 
 /**
  * The rows of "Add to Card": the custom memory cards of the category being browsed first, then

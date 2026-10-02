@@ -9,13 +9,17 @@ import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.core.ui.sound.MenuSound
+import com.playfieldportal.core.ui.sound.MenuSoundPlayer
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
+import com.playfieldportal.feature.achievements.provider.steam.SteamCandidate
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -97,6 +101,7 @@ class ShibaCoinsViewModelTest {
     private lateinit var autoMatcher: AchievementAutoMatcher
     private lateinit var folderLinker: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamFolderLinker
     private lateinit var steamGate: com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate
+    private lateinit var menuSound: MenuSoundPlayer
     private lateinit var viewModel: ShibaCoinsViewModel
 
     @Before
@@ -123,7 +128,8 @@ class ShibaCoinsViewModelTest {
         steamGate = mockk {
             coEvery { isLocalCopy(any()) } returns false
         }
-        viewModel = ShibaCoinsViewModel(games, achievements, autoMatcher, folderLinker, steamGate)
+        menuSound = mockk(relaxed = true)
+        viewModel = ShibaCoinsViewModel(games, achievements, autoMatcher, folderLinker, steamGate, menuSound)
     }
 
     // ── A local copy of a Steam game ────────────────────────────────────────────
@@ -450,6 +456,54 @@ class ShibaCoinsViewModelTest {
     }
 
     @Test
+    fun `Back from the Sort list climbs to the root on its row, and a second Back closes`() {
+        open()
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.SELECT)
+        assertEquals(CoinOptionGroup.SORT, state.options?.group)
+
+        press(GamepadAction.BACK)
+        assertEquals(CoinOptionsMenu(selectedIndex = 0), state.options)
+        assertFalse(state.closed)
+
+        press(GamepadAction.BACK)
+        assertNull(state.options)
+        assertFalse(state.closed)
+    }
+
+    @Test
+    fun `Triangle closes the menu from inside the Sort list`() {
+        open()
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.SELECT, GamepadAction.OPEN_CONTEXT_MENU)
+
+        assertNull(state.options)
+    }
+
+    @Test
+    fun `the Options cursor clamps at both ends and sounds only when it moves`() {
+        open()
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.NAVIGATE_UP)
+        assertEquals(0, state.options?.selectedIndex)
+        verify(exactly = 0) { menuSound.play(MenuSound.SCROLL, any()) }
+
+        repeat(10) { press(GamepadAction.NAVIGATE_DOWN) }
+        assertEquals(state.optionRows.lastIndex, state.options?.selectedIndex)
+        verify(exactly = state.optionRows.lastIndex) { menuSound.play(MenuSound.SCROLL, any()) }
+    }
+
+    @Test
+    fun `opening a list sounds SELECT, a choice CONFIRM, and leaving BACK`() {
+        open()
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.SELECT)
+        verify(exactly = 1) { menuSound.play(MenuSound.SELECT, any()) }
+
+        press(GamepadAction.SELECT)
+        verify(exactly = 1) { menuSound.play(MenuSound.CONFIRM, any()) }
+
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.BACK)
+        verify(exactly = 1) { menuSound.play(MenuSound.BACK, any()) }
+    }
+
+    @Test
     fun `the Sort list applies its choice and closes the menu`() {
         open()
         press(GamepadAction.OPEN_CONTEXT_MENU)
@@ -474,19 +528,80 @@ class ShibaCoinsViewModelTest {
         assertNull(state.options)
     }
 
-    @Test
-    fun `Change Match unlinks a Steam game`() {
+    // ── Change Match (Task 4.9): unlink, then pick the new Steam match in Coins' own panel ──────
+
+    private val halo = SteamCandidate("976730", "Halo: The Master Chief Collection")
+    private val haloOther = SteamCandidate("1064221", "Halo Infinite")
+
+    private fun openChangeMatch(found: List<SteamCandidate> = listOf(halo, haloOther)) {
+        coEvery { achievements.searchSteam(any()) } returns found
         link.value = link.value!!.copy(provider = AchievementProvider.STEAM.name)
         open()
-        press(GamepadAction.OPEN_CONTEXT_MENU)
+        chooseOption(CoinOption.ChangeMatch)
+    }
 
-        assertEquals(
-            listOf("Sort (Tier)", "Refresh this game", "Change Match", "Unlink Game"),
-            state.optionRows.map { it.label },
-        )
-        viewModel.onOptionActivated(2)
+    @Test
+    fun `Change Match unlinks the game and opens the Steam picker seeded with a title search`() {
+        openChangeMatch()
 
-        coVerify { achievements.unlink(gameId) }
+        coVerify(exactly = 1) { achievements.unlink(gameId) }
+        coVerify { achievements.searchSteam("Final Fantasy IX") }
+        assertNull(state.options)
+        assertEquals(AutoMatchStep.IDENTIFY, state.autoMatchStep)
+        val picker = state.storefrontMatch!!
+        assertFalse(picker.loading)
+        assertEquals(listOf("976730", "1064221"), picker.rows.map { it.storeId })
+    }
+
+    @Test
+    fun `Change Match does not ask to confirm - the user re-picks the match`() {
+        openChangeMatch()
+
+        assertFalse(state.unlinkConfirm)
+    }
+
+    @Test
+    fun `choosing a Steam candidate links that app id and syncs`() {
+        openChangeMatch()
+
+        viewModel.onStorefrontRowTapped(1)   // focus the second row
+        viewModel.onStorefrontRowTapped(1)   // then activate it
+
+        coVerify { achievements.linkManually(gameId, AchievementProvider.STEAM, "1064221") }
+        coVerify { achievements.syncGameById(gameId) }
+        assertNull(state.storefrontMatch)
+        assertNull(state.autoMatchStep)
+    }
+
+    @Test
+    fun `No correct match closes the picker and links nothing`() {
+        openChangeMatch()
+
+        viewModel.chooseStorefrontCandidate(state.storefrontMatch!!.noMatchIndex)
+
+        coVerify(exactly = 0) { achievements.linkManually(any(), any(), any()) }
+        assertNull(state.storefrontMatch)
+        assertNull(state.autoMatchStep)
+    }
+
+    @Test
+    fun `Back leaves the Steam picker without linking`() {
+        openChangeMatch()
+
+        press(GamepadAction.BACK)
+
+        coVerify(exactly = 0) { achievements.linkManually(any(), any(), any()) }
+        assertNull(state.storefrontMatch)
+        assertFalse(state.closed)
+    }
+
+    @Test
+    fun `a title Steam does not list still opens the picker, with only No correct match`() {
+        openChangeMatch(found = emptyList())
+
+        val picker = state.storefrontMatch!!
+        assertTrue(picker.rows.isEmpty())
+        assertEquals(1, picker.stopCount)
     }
 
     @Test
@@ -689,6 +804,7 @@ class ShibaCoinsViewModelTest {
         open()
 
         chooseOption(CoinOption.Unlink)
+        viewModel.confirmUnlink()
         coVerify { achievements.unlink(gameId) }
         link.value = null   // the stored link is gone
 
@@ -698,12 +814,57 @@ class ShibaCoinsViewModelTest {
     }
 
     @Test
+    fun `choosing Unlink Game asks first and does not unlink`() {
+        open()
+
+        chooseOption(CoinOption.Unlink)
+
+        assertTrue(state.unlinkConfirm)
+        assertNull(state.options)
+        coVerify(exactly = 0) { achievements.unlink(any()) }
+    }
+
+    @Test
+    fun `cancelling the Unlink confirm leaves the link alone`() {
+        open()
+        chooseOption(CoinOption.Unlink)
+
+        viewModel.cancelUnlink()
+
+        assertFalse(state.unlinkConfirm)
+        assertTrue(state.linked)
+        coVerify(exactly = 0) { achievements.unlink(any()) }
+    }
+
+    @Test
+    fun `Confirm on the Unlink confirm unlinks once and closes it`() {
+        open()
+        chooseOption(CoinOption.Unlink)
+
+        viewModel.confirmUnlink()
+
+        assertFalse(state.unlinkConfirm)
+        coVerify(exactly = 1) { achievements.unlink(gameId) }
+    }
+
+    @Test
+    fun `the page ignores presses while the Unlink confirm is open`() {
+        open()
+        chooseOption(CoinOption.Unlink)
+
+        press(GamepadAction.BACK)
+
+        assertFalse(state.closed)
+    }
+
+    @Test
     fun `unlinking a game with two sets drops both and returns to its platform's match flow`() {
         stubBothSets()
         open()
         press(GamepadAction.NEXT_CATEGORY)   // viewing the Steam set
 
         chooseOption(CoinOption.Unlink)
+        viewModel.confirmUnlink()
         bothLinks.value = emptyList()
         firstOfBoth.value = null
 

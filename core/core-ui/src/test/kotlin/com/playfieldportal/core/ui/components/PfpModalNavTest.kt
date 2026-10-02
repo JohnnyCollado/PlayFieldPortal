@@ -157,6 +157,14 @@ class PfpModalNavTest {
     }
 
     @Test
+    fun `select on a destructive confirm's opening focus cancels and never confirms`() {
+        val outcome = press(GamepadAction.SELECT, PfpModalNav.initialConfirmFocus(destructive = true))
+
+        assertEquals(0 to 1, outcome.confirms to outcome.cancels)
+        assertEquals(listOf(MenuSound.BACK), outcome.sounds)
+    }
+
+    @Test
     fun `select on a disabled confirm does nothing`() {
         val outcome = press(GamepadAction.SELECT, PfpModalFocus.CONFIRM, confirmEnabled = false)
 

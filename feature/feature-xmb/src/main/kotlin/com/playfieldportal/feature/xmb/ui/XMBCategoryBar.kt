@@ -148,7 +148,7 @@ fun XMBCategoryBar(
     // failure the old effect existed to prevent is now unavailable rather than prevented.
     val slide by animateDpAsState(
         targetValue = -CategorySlotWidth * selectedIndex.coerceIn(0, rowCategories.lastIndex.coerceAtLeast(0)),
-        animationSpec = if (moving) snap() else spring(stiffness = Spring.StiffnessMediumLow),
+        animationSpec = if (moving) snap() else XmbStepSpring.spec(),
         label = "xmbCategorySlide",
     )
 
@@ -265,6 +265,7 @@ private fun XMBCategoryItem(
                 iconKey = category.iconKey,
                 contentDescription = category.name,
                 modifier = Modifier.size(iconSize),
+                categoryId = category.id,
             )
             }
         }

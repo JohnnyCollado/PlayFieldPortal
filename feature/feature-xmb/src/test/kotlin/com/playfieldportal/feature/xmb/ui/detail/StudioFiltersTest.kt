@@ -150,4 +150,33 @@ class StudioFiltersTest {
         assertEquals(StudioFilters(ssRegion = "us"), sgdbCleared)
         assertEquals(StudioFilters(sgdbStyles = filters.sgdbStyles, sgdbHumor = true), filters.cleared(StudioSource.SCREENSCRAPER))
     }
+
+    // ── Media names (context-menu plan task 3.9) ────────────────────────────
+
+    @Test
+    fun `ScreenScraper media codes read as names, and an unknown code stays as it is`() {
+        assertEquals("Box Art 2D", ssMediaLabel("box-2D"))
+        assertEquals("Mix v2", ssMediaLabel("mixrbv2"))
+        assertEquals("Screenshot", ssMediaLabel("ss"))
+        assertEquals("newtype", ssMediaLabel("newtype"))
+        // Every code the Studio can browse has a name of its own.
+        SS_TYPES_FOR_KIND.values.flatten().distinct().forEach { code ->
+            assertNotEquals("$code has no readable name", code, ssMediaLabel(code))
+        }
+    }
+
+    @Test
+    fun `the Media filter shows names in its value and its list`() {
+        val types = listOf("mixrbv2", "box-2D")
+        val state = ArtworkStudioUiState(
+            sourceIndex = StudioSource.entries.indexOf(StudioSource.SCREENSCRAPER),
+            tabIndex = STUDIO_TABS.indexOfFirst { it.kind == ArtworkKind.ICON },
+            filters = StudioFilters(ssMedia = mapOf(ArtworkKind.ICON to "box-2D")),
+        )
+        val root = studioFilterRows(state, StudioFilterGroup.FILTERS, types, emptyList())
+        assertEquals("Box Art 2D", root.first { it.label == "Media" }.value)
+        val list = studioFilterRows(state, StudioFilterGroup.MEDIA, types, emptyList())
+        assertEquals(listOf("All", "Mix v2", "Box Art 2D"), list.map { it.label })
+        assertEquals(listOf(false, false, true), list.map { it.checked })
+    }
 }

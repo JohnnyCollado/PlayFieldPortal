@@ -113,6 +113,13 @@ class GameDetailHelperFooterTest {
             gameDetailHelperItems(baseState.copy(navFocusKey = GameDetailKeys.FAVORITE)).first().label,
         )
         assertEquals(
+            "Favorite keeps one name; the state is shown by the row's value and icon",
+            "Favorite",
+            gameDetailHelperItems(
+                baseState.copy(game = baseState.game!!.copy(isFavorite = true), navFocusKey = GameDetailKeys.FAVORITE),
+            ).first().label,
+        )
+        assertEquals(
             "Options",
             gameDetailHelperItems(baseState.copy(navFocusKey = GameDetailKeys.OPTIONS_ACTION)).first().label,
         )
