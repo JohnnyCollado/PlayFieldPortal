@@ -70,7 +70,8 @@ class VirtualKeyboardControllerTest {
 
     @Test fun `done calls onDone and clears, close calls onClose and clears`() {
         controller.open(request())
-        repeat(4) { controller.onGamepadAction(GamepadAction.NAVIGATE_DOWN) } // down to the bottom row: Shift
+        // From q (row 1), three steps reach the bottom row (Shift); a fourth would cycle to the top.
+        repeat(3) { controller.onGamepadAction(GamepadAction.NAVIGATE_DOWN) }
         repeat(4) { controller.onGamepadAction(GamepadAction.NAVIGATE_RIGHT) } // → Done
         controller.onGamepadAction(GamepadAction.SELECT)
         assertEquals(1, dones)

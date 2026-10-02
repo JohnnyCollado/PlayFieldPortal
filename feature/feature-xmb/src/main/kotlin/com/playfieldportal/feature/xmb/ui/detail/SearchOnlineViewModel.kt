@@ -366,7 +366,7 @@ class SearchOnlineViewModel @Inject constructor(
             GamepadAction.OPEN_CONTEXT_MENU -> openOptions()
             // Back leaves the preview first: the page itself only closes from the result list.
             GamepadAction.BACK -> if (_state.value.inPreview) closePreview() else close()
-            GamepadAction.HOME -> Unit
+            GamepadAction.HOME, GamepadAction.SHIFT, GamepadAction.CAPS_LOCK -> Unit
         }
     }
 

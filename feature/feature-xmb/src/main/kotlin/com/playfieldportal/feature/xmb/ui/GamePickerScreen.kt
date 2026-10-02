@@ -1,16 +1,20 @@
 package com.playfieldportal.feature.xmb.ui
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -23,10 +27,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -39,21 +48,29 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
@@ -66,10 +83,17 @@ import com.playfieldportal.core.domain.model.GameCollection
 import com.playfieldportal.core.domain.model.GameContentType
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.IconDisplayMode
+import com.playfieldportal.core.navigation.packFlowRows
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.components.PfpCheckBadge
+import com.playfieldportal.core.ui.components.PspContextMenuOverlay
 import com.playfieldportal.core.ui.icons.GameIconStyle
+import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
+import com.playfieldportal.core.ui.keyboard.isVirtualKeyboardOverlayOpen
+import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
+import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
 import com.playfieldportal.core.ui.theme.StorefrontColors
 import com.playfieldportal.core.ui.theme.deriveStorefrontColors
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
@@ -97,11 +121,13 @@ fun GamePickerScreen(
     categoryTitle: String = "",
     preselectedGameIds: Set<Long> = emptySet(),
     movableCollectionIds: Set<Long> = emptySet(),
+    // Display ▸ Text Shadow: the Launcher's drop shadow behind every label, as the XMB draws it.
+    textShadow: Boolean = true,
     viewModel: GamePickerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     val sf = deriveStorefrontColors()
-    // The view starts on the user's global icon display mode, then X steps it for this visit.
+    // The view starts on the user's global icon display mode, then Y ▸ View changes it for this visit.
     val globalView = LocalIconDisplayMode.current
 
     LaunchedEffect(categoryId) {
@@ -137,6 +163,9 @@ fun GamePickerScreen(
             // No whole-background dismiss tap: B and the header's ‹ are the exits.
             .background(Brush.verticalGradient(listOf(sf.backgroundDeep, sf.backgroundMid))),
     ) {
+        // Every label reads like the Launcher's: the XMB's directional drop shadow, when the user
+        // keeps Text Shadow on and the storefront text is light (a dark-on-light theme gets none).
+        ProvideTextStyle(LocalTextStyle.current.merge(TextStyle(shadow = pickerTextShadow(sf, textShadow)))) {
         Column(Modifier.fillMaxSize()) {
             PickerHeader(state, categoryTitle, onBack = cancelAndClear, colors = sf)
             Box(Modifier.fillMaxWidth().height(1.dp).background(sf.chromeDivider))
@@ -157,6 +186,8 @@ fun GamePickerScreen(
                                 ShelfPane(
                                     state = state,
                                     shelf = shelf,
+                                    onSearchChange = viewModel::onSearchChange,
+                                    onSearchToggle = viewModel::onSearchToggle,
                                     onTileTapped = viewModel::tapTile,
                                     onTouchBrowse = viewModel::touchBrowse,
                                     onMeasured = viewModel::onShelfMeasured,
@@ -170,10 +201,31 @@ fun GamePickerScreen(
             }
 
             Box(Modifier.fillMaxWidth().height(1.dp).background(sf.chromeDivider))
-            PickerFooter(state.focusZone, sf, Modifier.fillMaxWidth().padding(vertical = 12.dp))
+            PickerFooter(
+                state,
+                sf,
+                // PFP's keyboard brings its own prompts; the picker's step aside while it is up.
+                Modifier.fillMaxWidth().padding(vertical = 12.dp).alpha(if (isVirtualKeyboardOverlayOpen()) 0f else 1f),
+            )
+        }
+
+        // Y's menu: the shared PSP panel, driven by PspMenuNav in the ViewModel.
+        state.menu?.let { menu ->
+            PspContextMenuOverlay(
+                title = if (menu.level == PickerMenuLevel.ROOT) "Options" else "View",
+                rows = state.menuRows(),
+                selectedIndex = menu.selectedIndex,
+                onRowActivated = viewModel::tapMenuRow,
+                onDismiss = viewModel::dismissMenu,
+            )
+        }
         }
     }
 }
+
+// The XMB's drop shadow, only over light text with Text Shadow on.
+private fun pickerTextShadow(colors: StorefrontColors, enabled: Boolean): Shadow? =
+    if (enabled && colors.textPrimary.luminance() > 0.5f) XmbTextShadow else null
 
 // ── Header: ‹ title on the left, what Done will do on the right ───────────────
 
@@ -210,7 +262,7 @@ private fun PickerHeader(
             )
         }
         Text(
-            text = "+${state.pendingAddCount()} adding · −${state.pendingRemovals().size} removing",
+            text = pendingChangeLabel(state.pendingAddCount(), state.pendingRemovals().size),
             color = colors.textSecondary,
             fontSize = 13.sp,
         )
@@ -230,6 +282,21 @@ private fun BoxScope.FocusChrome(focus: Float, colors: StorefrontColors) {
     Box(Modifier.matchParentSize().padding(2.dp).border(1.dp, colors.tileSelectedInner.copy(alpha = focus)))
 }
 
+/**
+ * Scrolls just far enough for item [index] to be wholly on screen (see [scrollIntoViewDelta]); an
+ * item not composed at all is scrolled to directly.
+ */
+private suspend fun LazyListState.keepOnScreen(index: Int) {
+    val info = layoutInfo
+    val item = info.visibleItemsInfo.firstOrNull { it.index == index }
+    if (item == null) {
+        animateScrollToItem(index)
+        return
+    }
+    val delta = scrollIntoViewDelta(item.offset, item.offset + item.size, info.viewportStartOffset, info.viewportEndOffset)
+    if (delta != 0) animateScrollBy(delta.toFloat())
+}
+
 // ── Shelf list: a vertical tab list the D-pad steps through ───────────────────
 
 private val LIST_WIDTH = 220.dp
@@ -241,10 +308,7 @@ private fun ShelfList(
     colors: StorefrontColors,
 ) {
     val listState = rememberLazyListState()
-    LaunchedEffect(state.shelfIndex) {
-        val visible = listState.layoutInfo.visibleItemsInfo
-        if (visible.none { it.index == state.shelfIndex }) listState.animateScrollToItem(state.shelfIndex)
-    }
+    LaunchedEffect(state.shelfIndex) { listState.keepOnScreen(state.shelfIndex) }
     LazyColumn(
         state = listState,
         contentPadding = PaddingValues(vertical = 10.dp, horizontal = 8.dp),
@@ -330,6 +394,8 @@ private val COLUMN_SPACING = PICKER_TILE_SPACING_DP.dp
 private fun ShelfPane(
     state: GamePickerState,
     shelf: PickerShelf,
+    onSearchChange: (String) -> Unit,
+    onSearchToggle: (Boolean) -> Unit,
     onTileTapped: (Int) -> Unit,
     onTouchBrowse: (Int) -> Unit,
     onMeasured: (Float) -> Unit,
@@ -338,6 +404,7 @@ private fun ShelfPane(
 ) {
     Column(modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            ShelfSearchField(state, onSearchChange, onSearchToggle, colors)
             Text(shelf.title, color = colors.textPrimary, fontSize = 17.sp, fontWeight = FontWeight.Medium)
             Spacer(Modifier.width(12.dp))
             Text(
@@ -378,7 +445,7 @@ private fun ShelfGrid(
     val paneWidth = maxWidth.value
     LaunchedEffect(paneWidth) { onMeasured(paneWidth) }
     val widths = remember(shelf, state.viewMode) { shelf.tileWidthsDp(state.viewMode) }
-    val rows = remember(widths, paneWidth) { packRows(widths, paneWidth, PICKER_TILE_SPACING_DP) }
+    val rows = remember(widths, paneWidth) { packFlowRows(widths, paneWidth, PICKER_TILE_SPACING_DP) }
 
     val listState = rememberLazyListState()
     val focused = state.focusedIndex()
@@ -386,7 +453,7 @@ private fun ShelfGrid(
 
     LaunchedEffect(focused, showCursor, rows) {
         val row = rows.rowOf(focused)
-        if (showCursor && row >= 0) listState.animateScrollToItem(row)
+        if (showCursor && row >= 0) listState.keepOnScreen(row)
     }
 
     // Touch reconciliation, same shape as AppPickerGrid: drag-start parks the hidden cursor;
@@ -637,32 +704,106 @@ internal fun Game.toPickerItem(accentArgb: Long): XMBItem = XMBItem(
     packageName = packageName,
 )
 
+// ── X: search the shelf on screen ─────────────────────────────────────────────
+
+/**
+ * The shelf's search field, on the shared text-field structure: PFP's virtual keyboard when the
+ * controller opened it (the system keyboard for touch), Done keeps the query, BACK closes the search.
+ * The same two-frame focus idiom as the App Picker's search.
+ */
+@Composable
+private fun ShelfSearchField(
+    state: GamePickerState,
+    onSearchChange: (String) -> Unit,
+    onSearchToggle: (Boolean) -> Unit,
+    colors: StorefrontColors,
+) {
+    val searchFocus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    val searchEdit = rememberVirtualKeyboardEdit(
+        text = state.query,
+        onTextChange = onSearchChange,
+        placement = KeyboardPlacement.BOTTOM_CENTER,
+        onClose = { onSearchToggle(false) },
+    )
+    // Keyed on searchReopens too: X on an open search with text brings a keyboard back.
+    LaunchedEffect(state.searchActive, state.searchReopens) {
+        if (state.searchActive) {
+            withFrameNanos {}
+            withFrameNanos {}
+            val virtual = searchEdit.isOpen || searchEdit.start()
+            if (virtual) withFrameNanos {}
+            runCatching { searchFocus.requestFocus() }
+            if (!virtual) keyboard?.show()
+        } else {
+            searchEdit.stop()
+            keyboard?.hide()
+        }
+    }
+    AnimatedVisibility(visible = state.searchActive, enter = fadeIn(), exit = fadeOut()) {
+        VirtualKeyboardTextInput(searchEdit) {
+            BasicTextField(
+                value = searchEdit.fieldValue,
+                onValueChange = searchEdit::onFieldValueChange,
+                singleLine = true,
+                textStyle = TextStyle(color = colors.textPrimary, fontSize = 14.sp),
+                cursorBrush = SolidColor(colors.searchBorder),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                decorationBox = { inner ->
+                    Box {
+                        if (state.query.isEmpty()) Text(
+                            "Search this shelf\u2026",
+                            color = colors.textSecondary.copy(alpha = 0.6f),
+                            fontSize = 14.sp,
+                        )
+                        inner()
+                    }
+                },
+                modifier = Modifier
+                    .padding(end = 12.dp)
+                    .width(220.dp)
+                    .virtualKeyboardField(searchEdit)
+                    .focusRequester(searchFocus)
+                    .background(colors.searchField, RoundedCornerShape(2.dp))
+                    .border(1.dp, colors.searchBorder, RoundedCornerShape(2.dp))
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+            )
+        }
+    }
+}
+
 // ── Footer: the prompts for the level the cursor is on ───────────────────────
 
 @Composable
-private fun PickerFooter(zone: PickerZone, colors: StorefrontColors, modifier: Modifier = Modifier) {
-    val items = when (zone) {
+private fun PickerFooter(state: GamePickerState, colors: StorefrontColors, modifier: Modifier = Modifier) {
+    // B names what it will do: close a search first, then climb, then cancel.
+    val back = when {
+        state.searchActive -> "Close Search"
+        state.focusZone == PickerZone.GRID -> "Shelves"
+        else -> "Cancel"
+    }
+    val items = when (state.focusZone) {
         PickerZone.RAIL -> listOf(
             ControllerPromptItem.fixed(listOf(ControllerIcon.DPAD_UP, ControllerIcon.DPAD_DOWN), "Shelf"),
             ControllerPromptItem(GamepadAction.SELECT, "Open"),
-            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Whole Shelf"),
-            ControllerPromptItem(GamepadAction.CHANGE_SORT, "View"),
+            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
+            ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"),
             ControllerPromptItem(GamepadAction.HOME, "Done"),
-            ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+            ControllerPromptItem(GamepadAction.BACK, back),
         )
         PickerZone.GRID -> listOf(
             ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Navigate"),
             ControllerPromptItem(GamepadAction.SELECT, "Toggle"),
-            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Whole Shelf"),
-            ControllerPromptItem(GamepadAction.CHANGE_SORT, "View"),
+            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
+            ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"),
             ControllerPromptItem(GamepadAction.HOME, "Done"),
-            ControllerPromptItem(GamepadAction.BACK, "Shelves"),
+            ControllerPromptItem(GamepadAction.BACK, back),
         )
     }
     ControllerPromptBar(
         items = items,
         labelColor = colors.textSecondary,
-        labelStyle = TextStyle(fontSize = 12.sp),
+        labelStyle = LocalTextStyle.current.merge(TextStyle(fontSize = 12.sp)),
         glyphSize = 16.dp,
         arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
         modifier = modifier,

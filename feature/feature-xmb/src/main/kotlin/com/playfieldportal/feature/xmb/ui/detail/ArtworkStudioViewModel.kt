@@ -3485,6 +3485,8 @@ class ArtworkStudioViewModel @Inject constructor(
             // START applies the active tab's changes, as it confirms in the other pickers (task 5.2).
             // SteamGridDB's mature filter, which it used to toggle, is in the Triangle menu.
             GamepadAction.HOME -> applyChanges()
+            // The virtual keyboard's own buttons mean nothing here.
+            GamepadAction.SHIFT, GamepadAction.CAPS_LOCK -> Unit
             // Y / Triangle opens the per-slot options menu (crop, restore, reset, clear, info) —
             // XMB-style context menu, available at every level.
             GamepadAction.OPEN_CONTEXT_MENU -> openActions()

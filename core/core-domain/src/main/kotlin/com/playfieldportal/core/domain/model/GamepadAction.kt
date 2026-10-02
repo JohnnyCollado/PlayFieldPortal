@@ -33,6 +33,10 @@ enum class GamepadAction {
     PREV_CATEGORY,
     NEXT_CATEGORY,
     HOME,
+    /** Shift for the next letter on PFP's virtual keyboard (L2 by default). */
+    SHIFT,
+    /** Caps Lock on PFP's virtual keyboard (R3 by default). */
+    CAPS_LOCK,
 }
 
 /** True for the four directional navigation actions (D-pad / stick movement). */

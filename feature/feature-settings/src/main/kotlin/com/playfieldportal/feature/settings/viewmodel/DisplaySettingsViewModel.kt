@@ -29,6 +29,7 @@ import com.playfieldportal.core.domain.model.TouchNavButtonMode
 import com.playfieldportal.core.domain.model.TouchSensitivity
 import com.playfieldportal.core.domain.model.XYLayout
 import com.playfieldportal.core.domain.model.XmbListMotion
+import com.playfieldportal.core.domain.model.UmdSlotMode
 import com.playfieldportal.core.ui.theme.TextContrastRole
 import com.playfieldportal.core.ui.theme.clampLightnessForContrast
 import com.playfieldportal.core.ui.theme.composite
@@ -74,6 +75,8 @@ private val KEY_SOLID_UNFOCUSED_ICONS = booleanPreferencesKey("display_solid_unf
 private val KEY_TEXT_SHADOW = booleanPreferencesKey("display_text_shadow")
 // Must match XMBViewModel.KEY_ITEM_LIST_MOTION — both read/write this same pref.
 private val KEY_ITEM_LIST_MOTION = stringPreferencesKey("display_item_list_motion")
+// Must match XMBViewModel.KEY_UMD_SLOT_MODE — both read/write this same pref.
+private val KEY_UMD_SLOT_MODE = stringPreferencesKey("display_umd_slot_mode")
 // ── Font colour (Display ▸ Font Colour) ──────────────────────────────────────
 // Must match XMBViewModel.KEY_TEXT_COLOR — both read/write this same pref.
 // Absent = inherit the theme's own text colour (white on every preset).
@@ -151,6 +154,8 @@ data class DisplaySettingsUiState(
     val textShadow: Boolean = true,
     // How the XMB item list steps between rows (Rewind / Glide).
     val itemListMotion: XmbListMotion = XmbListMotion.DEFAULT,
+    // What gaming columns' UMD slot shows (Off / Inserted / Inserted & Recent).
+    val umdSlotMode: UmdSlotMode = UmdSlotMode.DEFAULT,
     // ── Font colour ──────────────────────────────────────────────────────────
     /** User-picked text colour, or null to inherit the theme's. */
     val textColorArgb: Long? = null,
@@ -260,6 +265,7 @@ class DisplaySettingsViewModel @Inject constructor(
             solidUnfocusedIcons  = prefs[KEY_SOLID_UNFOCUSED_ICONS] ?: false,
             textShadow           = prefs[KEY_TEXT_SHADOW] ?: true,
             itemListMotion       = XmbListMotion.fromName(prefs[KEY_ITEM_LIST_MOTION]),
+            umdSlotMode          = UmdSlotMode.fromName(prefs[KEY_UMD_SLOT_MODE]),
             textColorArgb        = prefs[KEY_TEXT_COLOR],
             textColorExact       = prefs[KEY_TEXT_COLOR_EXACT] ?: false,
             textLegibility       = TextLegibilityStyle.fromName(prefs[KEY_TEXT_LEGIBILITY]),
@@ -358,6 +364,13 @@ class DisplaySettingsViewModel @Inject constructor(
     fun setSolidUnfocusedIcons(v: Boolean) = save { it[KEY_SOLID_UNFOCUSED_ICONS] = v }
 
     fun setTextShadow(v: Boolean) = save { it[KEY_TEXT_SHADOW] = v }
+
+    /** Cycles Off → Inserted → Inserted & Recent → Off, persisting the enum name. */
+    fun cycleUmdSlotMode() {
+        val modes = UmdSlotMode.entries
+        val next = modes[(modes.indexOf(uiState.value.umdSlotMode) + 1) % modes.size]
+        save { it[KEY_UMD_SLOT_MODE] = next.name }
+    }
 
     /** Cycles Rewind → Glide → Rewind, persisting the enum name. */
     fun cycleItemListMotion() {

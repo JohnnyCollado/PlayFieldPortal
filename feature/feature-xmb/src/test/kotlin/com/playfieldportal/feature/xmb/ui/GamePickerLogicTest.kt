@@ -6,7 +6,6 @@ import com.playfieldportal.core.domain.model.GameContentType
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.IconDisplayMode
 import com.playfieldportal.core.domain.model.MemoryCard
-import com.playfieldportal.core.navigation.NavigationDirection
 import com.playfieldportal.core.ui.sound.MenuSound
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -58,8 +57,15 @@ class GamePickerLogicTest {
         shelfWidthDp = sixIcon0Wide,
     )
 
-    private fun GamePickerState.press(vararg actions: GamepadAction) =
-        actions.fold(this) { s, a -> s.move(a) }
+    // The cursor runs on the unified navigation engine through GamePickerNav; these route the
+    // tests' inputs through it the way GamePickerViewModel does.
+    private val nav = GamePickerNav()
+
+    private fun GamePickerState.move(action: GamepadAction) = nav.move(this, action)
+    private fun GamePickerState.press(vararg actions: GamepadAction) = actions.fold(this) { s, a -> nav.move(s, a) }
+    private fun GamePickerState.activate() = nav.activate(this)
+    private fun GamePickerState.back() = nav.back(this)
+    private fun GamePickerState.tapTile(index: Int) = nav.tapTile(this, index)
 
     // ── Shelves ──────────────────────────────────────────────────────────────
 
@@ -141,13 +147,21 @@ class GamePickerLogicTest {
 
     @Test
     fun `stepping shelves keeps each shelf's own cursor`() {
-        val s = onPs2().copy(focusByShelf = mapOf(platformShelfKey("ps2") to 4))
-        val snes = s.stepShelf(+1)
+        val s = onPs2().copy(focusZone = PickerZone.RAIL, focusByShelf = mapOf(platformShelfKey("ps2") to 4))
+        val snes = s.press(GamepadAction.NAVIGATE_DOWN)
         assertEquals(2, snes.shelfIndex)
         assertEquals(0, snes.focusedIndex())
-        assertEquals(4, snes.stepShelf(-1).focusedIndex())
-        assertEquals(0, state().stepShelf(-1).shelfIndex)
-        assertEquals(s.shelves.lastIndex, s.stepShelf(+99).shelfIndex)
+        assertEquals(4, snes.press(GamepadAction.NAVIGATE_UP).focusedIndex())
+        assertEquals(0, state().press(GamepadAction.NAVIGATE_UP).shelfIndex)
+        assertEquals(s.shelves.lastIndex, s.press(*Array(9) { GamepadAction.NAVIGATE_DOWN }).shelfIndex)
+    }
+
+    @Test
+    fun `B from the grid returns to the same shelf, and A goes back to the tile it left`() {
+        val grid = onPs2().copy(focusByShelf = mapOf(platformShelfKey("ps2") to 3))
+        val list = grid.back()!!
+        assertEquals(1, list.shelfIndex)
+        assertEquals(3, list.activate().focusedIndex())
     }
 
     @Test
@@ -200,19 +214,8 @@ class GamePickerLogicTest {
         assertEquals(PICKER_MIN_TILE_WIDTH_DP, pickerTileWidthDp("psp", IconDisplayMode.BOX_ART), 0.01f)
     }
 
-    @Test
-    fun `rows fill greedily and spill to the next`() {
-        assertEquals(listOf(0..2, 3..4), packRows(listOf(50f, 50f, 50f, 50f, 50f), available = 170f, spacing = 10f))
-        // Exactly fitting is still a fit.
-        assertEquals(listOf(0..1), packRows(listOf(80f, 80f), available = 170f, spacing = 10f))
-    }
-
-    @Test
-    fun `a tile wider than the pane gets a row of its own, and so does every tile before measuring`() {
-        assertEquals(listOf(0..0, 1..1), packRows(listOf(300f, 50f), available = 100f, spacing = 8f).take(2))
-        assertEquals(listOf(0..0, 1..1, 2..2), packRows(listOf(50f, 50f, 50f), available = 0f, spacing = 8f))
-        assertEquals(emptyList<IntRange>(), packRows(emptyList(), available = 500f, spacing = 8f))
-    }
+    // Packing and nearest-tile movement themselves are the core's FlowGrid (FlowGridTest); these pin
+    // the picker's widths and pane feeding it.
 
     @Test
     fun `ICON0 rows hold as many tiles as the pane fits`() {
@@ -229,26 +232,14 @@ class GamePickerLogicTest {
     }
 
     @Test
-    fun `up and down land on the tile nearest the cursor's centre`() {
-        val widths = listOf(123f, 64f, 64f, 123f, 64f)
-        val rows = listOf(0..2, 3..4)
-        // Centres: row 0 at 61.5, 163, 235; row 1 at 61.5, 163.
-        assertEquals(3, flowMove(0, NavigationDirection.DOWN, rows, widths, 8f))
-        assertEquals(4, flowMove(1, NavigationDirection.DOWN, rows, widths, 8f))
-        assertEquals(4, flowMove(2, NavigationDirection.DOWN, rows, widths, 8f))   // past the row's end
-        assertEquals(1, flowMove(4, NavigationDirection.UP, rows, widths, 8f))
-        assertNull(flowMove(1, NavigationDirection.UP, rows, widths, 8f))
-        assertNull(flowMove(4, NavigationDirection.DOWN, rows, widths, 8f))
-    }
-
-    @Test
-    fun `left and right stay inside the row`() {
-        val widths = listOf(50f, 50f, 50f, 50f)
-        val rows = listOf(0..1, 2..3)
-        assertEquals(1, flowMove(0, NavigationDirection.RIGHT, rows, widths, 8f))
-        assertNull(flowMove(1, NavigationDirection.RIGHT, rows, widths, 8f))
-        assertNull(flowMove(2, NavigationDirection.LEFT, rows, widths, 8f))
-        assertNull(flowMove(9, NavigationDirection.LEFT, rows, widths, 8f))
+    fun `on a mixed shelf up and down land on the tile nearest the cursor's centre`() {
+        val mixed = GameShelf("mixed", "Mixed", listOf(game(1, "snes"), game(2, "psp"), game(3, "psp"), game(4, "snes"), game(5, "psp")))
+        val s = GamePickerState(shelves = listOf(mixed), focusZone = PickerZone.GRID, viewMode = IconDisplayMode.BOX_ART, shelfWidthDp = 300f)
+        // Rows: SNES PSP PSP / SNES PSP. From the second PSP (past the shorter row's end) down is the last PSP.
+        val at2 = s.copy(focusByShelf = mapOf("mixed" to 2))
+        assertEquals(4, at2.press(GamepadAction.NAVIGATE_DOWN).focusedIndex())
+        assertEquals(3, s.press(GamepadAction.NAVIGATE_DOWN).focusedIndex())
+        assertEquals(1, s.copy(focusByShelf = mapOf("mixed" to 4)).press(GamepadAction.NAVIGATE_UP).focusedIndex())
     }
 
     @Test
@@ -338,7 +329,6 @@ class GamePickerLogicTest {
         assertEquals(empty, empty.press(GamepadAction.NAVIGATE_DOWN, GamepadAction.NAVIGATE_LEFT))
         assertEquals(empty, empty.activate())
         assertEquals(empty, empty.toggleWholeShelf())
-        assertEquals(empty, empty.stepShelf(1))
         assertEquals(0, empty.focusedIndex())
     }
 
@@ -355,17 +345,6 @@ class GamePickerLogicTest {
     }
 
     @Test
-    fun `one view covers every tile and X steps through every mode then wraps`() {
-        var s = state().copy(viewMode = IconDisplayMode.PHYSICAL_MEDIA)
-        val seen = mutableListOf<IconDisplayMode>()
-        repeat(IconDisplayMode.entries.size) { s = s.cycleView(); seen += s.viewMode }
-        assertEquals(IconDisplayMode.entries.size, seen.toSet().size)
-        assertEquals(IconDisplayMode.PHYSICAL_MEDIA, seen.last())
-    }
-
-    // ── Navigation sounds ────────────────────────────────────────────────────
-
-    @Test
     fun `each input that changes something sounds once`() {
         val grid = onPs2()
         val list = state()
@@ -375,7 +354,7 @@ class GamePickerLogicTest {
         assertEquals(MenuSound.BACK, gamePickerSound(grid, grid.back()!!))
         assertEquals(MenuSound.SELECT, gamePickerSound(grid, grid.activate()))
         assertEquals(MenuSound.SELECT, gamePickerSound(grid, grid.toggleWholeShelf()))
-        assertEquals(MenuSound.SELECT, gamePickerSound(grid, grid.cycleView()))
+        assertEquals(MenuSound.SELECT, gamePickerSound(grid, grid.copy(viewMode = IconDisplayMode.BOX_ART)))
     }
 
     @Test
@@ -385,5 +364,126 @@ class GamePickerLogicTest {
         assertNull(gamePickerSound(state(), state().press(GamepadAction.NAVIGATE_UP)))
         val touched = grid.copy(usingTouch = true)
         assertNull(gamePickerSound(touched, touched.press(GamepadAction.NAVIGATE_RIGHT)))
+    }
+
+    // ── Keeping the cursor on screen ─────────────────────────────────────────
+
+    @Test
+    fun `a fully visible item needs no scroll`() {
+        assertEquals(0, scrollIntoViewDelta(itemStart = 100, itemEnd = 160, viewStart = 0, viewEnd = 800))
+    }
+
+    @Test
+    fun `an item cut off at the top scrolls up just enough - a sliver on screen is not on screen`() {
+        // Game Boy Color, its bottom edge peeking out under the header.
+        assertEquals(-50, scrollIntoViewDelta(itemStart = -50, itemEnd = 10, viewStart = 0, viewEnd = 800))
+    }
+
+    @Test
+    fun `an item cut off at the bottom scrolls down just enough, not to the top`() {
+        assertEquals(40, scrollIntoViewDelta(itemStart = 780, itemEnd = 840, viewStart = 0, viewEnd = 800))
+    }
+
+    @Test
+    fun `an item taller than the view lines its top up`() {
+        assertEquals(20, scrollIntoViewDelta(itemStart = 20, itemEnd = 1200, viewStart = 0, viewEnd = 800))
+    }
+
+    // ── The header's pending-change label ────────────────────────────────────
+
+    @Test
+    fun `the change label names only the parts that are not zero`() {
+        assertEquals("No changes", pendingChangeLabel(adds = 0, removals = 0))
+        assertEquals("2 to add", pendingChangeLabel(adds = 2, removals = 0))
+        assertEquals("1 to remove", pendingChangeLabel(adds = 0, removals = 1))
+        assertEquals("2 to add · 1 to remove", pendingChangeLabel(adds = 2, removals = 1))
+    }
+
+    // ── Y: the options menu (View ›, Select All) ────────────────────────────
+
+    @Test
+    fun `the menu's root offers View with the current mode and Select All`() {
+        val s = onPs2().openMenu()
+        val rows = s.menuRows()
+        assertEquals(listOf("View", "Select All"), rows.map { it.label })
+        assertEquals(IconDisplayMode.ICON0.label, rows[0].value)
+        assertTrue(rows[0].opensMenu)
+        assertEquals("Off", rows[1].value)
+    }
+
+    @Test
+    fun `View lists every mode with the current one checked, and picking one applies it and closes`() {
+        val view = onPs2().openMenu().activateMenuRow()
+        assertEquals(PickerMenuLevel.VIEW, view.menu?.level)
+        assertEquals(IconDisplayMode.entries.map { it.label }, view.menuRows().map { it.label })
+        assertEquals(listOf(true) + List(IconDisplayMode.entries.size - 1) { false }, view.menuRows().map { it.checked })
+        val picked = view.copy(menu = view.menu!!.copy(selectedIndex = IconDisplayMode.BOX_ART.ordinal)).activateMenuRow()
+        assertEquals(IconDisplayMode.BOX_ART, picked.viewMode)
+        assertNull(picked.menu)
+    }
+
+    @Test
+    fun `Select All checks the shelf, reads On once it is all checked, and unchecks it again`() {
+        val atSelectAll = onPs2().openMenu().let { it.copy(menu = it.menu!!.copy(selectedIndex = 1)) }
+        val all = atSelectAll.activateMenuRow()
+        assertTrue(all.selectedGameIds.containsAll((1L..8L).toList()))
+        assertNull(all.menu)
+        assertEquals("On", all.openMenu().menuRows()[1].value)
+        val none = all.openMenu().let { it.copy(menu = it.menu!!.copy(selectedIndex = 1)) }.activateMenuRow()
+        assertFalse(none.selectedGameIds.any { it in 1L..8L })
+    }
+
+    @Test
+    fun `back from View climbs to the root on View, and from the root closes`() {
+        val view = onPs2().openMenu().activateMenuRow()
+        val root = view.menuUp()
+        assertEquals(PickerMenuLevel.ROOT, root.menu?.level)
+        assertEquals(0, root.menu?.selectedIndex)
+        assertNull(root.closeMenu().menu)
+    }
+
+    // ── X: search the current shelf ──────────────────────────────────────────
+
+    @Test
+    fun `a query narrows the current shelf to matching titles, any case`() {
+        val s = onPs2().copy(searchActive = true, query = "GAME 1")
+        // "Game 1" only: "Game 10" etc. do not exist on the 8-game PS2 shelf.
+        assertEquals(listOf(1L), (s.currentShelf() as GameShelf).games.map { it.id })
+        // The shelf list still counts the whole shelf.
+        assertEquals(8, s.shelves[1].size)
+    }
+
+    @Test
+    fun `a blank or closed search shows the whole shelf`() {
+        assertEquals(8, onPs2().copy(searchActive = true, query = "  ").currentShelf()?.size)
+        assertEquals(8, onPs2().copy(searchActive = false, query = "zzz").currentShelf()?.size)
+    }
+
+    @Test
+    fun `X opens a closed search, brings the keyboard back over text, and closes an empty one`() {
+        val opened = onPs2().pressSearch()
+        assertTrue(opened.searchActive)
+        val reopened = opened.copy(query = "ga").pressSearch()
+        assertTrue(reopened.searchActive)
+        assertEquals("ga", reopened.query)
+        assertEquals(opened.searchReopens + 1, reopened.searchReopens)
+        val closed = opened.pressSearch()
+        assertFalse(closed.searchActive)
+    }
+
+    @Test
+    fun `stepping to another shelf ends the search - it belongs to the shelf it was made on`() {
+        val searching = onPs2().copy(focusZone = PickerZone.RAIL, searchActive = true, query = "game")
+        val next = searching.press(GamepadAction.NAVIGATE_DOWN)
+        assertFalse(next.searchActive)
+        assertEquals("", next.query)
+    }
+
+    @Test
+    fun `moving in the grid steps over the filtered tiles`() {
+        val s = onPs2().copy(searchActive = true, query = "game 2")
+        assertEquals(listOf(2L), (s.currentShelf() as GameShelf).games.map { it.id })
+        assertEquals(0, s.press(GamepadAction.NAVIGATE_RIGHT).focusedIndex())
+        assertTrue(2L in s.activate().selectedGameIds)
     }
 }

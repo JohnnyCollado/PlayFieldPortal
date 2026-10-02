@@ -77,13 +77,15 @@ class VirtualKeyboardPanelTest {
         composeRule.onNodeWithContentDescription("Shift").assertIsNotEnabled()
     }
 
-    @Test fun `the prompt bar lists the six prompts, START as Done before Close`() {
+    @Test fun `the prompt bar lists the eight prompts, L2 Shift and R3 Caps after Cursor, START as Done before Close`() {
         assertEquals(
             listOf(
                 ControllerPromptItem(GamepadAction.SELECT, "Type"),
                 ControllerPromptItem(GamepadAction.CHANGE_SORT, "Delete"),
                 ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Space"),
                 ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Cursor"),
+                ControllerPromptItem(GamepadAction.SHIFT, "Shift"),
+                ControllerPromptItem(GamepadAction.CAPS_LOCK, "Caps"),
                 ControllerPromptItem(GamepadAction.HOME, "Done"),
                 ControllerPromptItem(GamepadAction.BACK, "Close"),
             ),

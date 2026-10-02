@@ -138,13 +138,14 @@ class VirtualKeyboardReducerTest {
         assertEquals(SpanGridCursor(2, 3), result.state.focus)
     }
 
-    @Test fun `directions move focus on the span grid and a boundary press changes nothing`() {
+    @Test fun `directions move focus on the span grid and cycle around every edge`() {
         val down = open().press(GamepadAction.NAVIGATE_DOWN)
         assertEquals(SpanGridCursor(2, 0, anchorColumn = 0), down.state.focus)
-        val top = open().focusOn(0, 0)
-        val blocked = top.press(GamepadAction.NAVIGATE_UP)
-        assertEquals(top, blocked.state)
-        assertTrue(blocked.effects.isEmpty())
+        // Up from the top row comes round to the bottom row (Shift covers column 0).
+        assertEquals(SpanGridCursor(4, 0, anchorColumn = 0), open().focusOn(0, 0).press(GamepadAction.NAVIGATE_UP).state.focus)
+        // Right from the end of a row comes round to its start.
+        assertEquals(0, open().focusOn(1, 9).press(GamepadAction.NAVIGATE_RIGHT).state.focus.cell)
+        assertEquals(9, open().focusOn(1, 0).press(GamepadAction.NAVIGATE_LEFT).state.focus.cell)
     }
 
     @Test fun `every effect carries the agreed sound`() {
@@ -155,12 +156,36 @@ class VirtualKeyboardReducerTest {
         assertEquals(listOf(MenuSound.SYSTEM_BROWSE), open().on(layer).press(GamepadAction.SELECT).sounds())
         assertEquals(listOf(MenuSound.CONFIRM), open().on(done).press(GamepadAction.SELECT).sounds())
         assertEquals(listOf(MenuSound.BACK), open().press(GamepadAction.BACK).sounds())
-        assertEquals(emptyList<MenuSound>(), open().focusOn(0, 0).press(GamepadAction.NAVIGATE_UP).sounds())
+        assertEquals(listOf(MenuSound.SCROLL), open().focusOn(0, 0).press(GamepadAction.NAVIGATE_UP).sounds())
         assertEquals(emptyList<MenuSound>(), open().press(GamepadAction.CHANGE_SORT).sounds())
     }
 
     @Test fun `a host-side text replacement updates the text and clamps the caret`() {
         val state = VirtualKeyboardReducer.replaceText(open("abcdef"), "ab")
         assertEquals(TextEditBuffer("ab", 2), state.buffer)
+    }
+
+    // ── L2 Shift, R3 Caps Lock ───────────────────────────────────────────────
+
+    @Test fun `L2 shifts the next letter and a second press cancels it`() {
+        val shifted = open().press(GamepadAction.SHIFT)
+        assertEquals(ShiftMode.ONCE, shifted.state.shift)
+        assertEquals(listOf(MenuSound.SELECT), shifted.sounds())
+        assertEquals(ShiftMode.OFF, shifted.state.press(GamepadAction.SHIFT).state.shift)
+        assertEquals(listOf(KeyboardEffect.Edit("Q", 1)), shifted.state.press(GamepadAction.SELECT).edits())
+    }
+
+    @Test fun `R3 locks caps and a second press releases it`() {
+        val locked = open().press(GamepadAction.CAPS_LOCK)
+        assertEquals(ShiftMode.LOCKED, locked.state.shift)
+        assertEquals(ShiftMode.OFF, locked.state.press(GamepadAction.CAPS_LOCK).state.shift)
+        // L2 out of a lock goes back to lower case too.
+        assertEquals(ShiftMode.OFF, locked.state.press(GamepadAction.SHIFT).state.shift)
+    }
+
+    @Test fun `shift and caps do nothing on the symbols layer`() {
+        val symbols = open().on(layer).press(GamepadAction.SELECT).state
+        assertEquals(symbols, symbols.press(GamepadAction.SHIFT).state)
+        assertTrue(symbols.press(GamepadAction.CAPS_LOCK).effects.isEmpty())
     }
 }

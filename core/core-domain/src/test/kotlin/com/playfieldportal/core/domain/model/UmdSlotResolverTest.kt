@@ -80,4 +80,37 @@ class UmdSlotResolverTest {
         assertNull(UmdSlotResolver.resolve(inserted = null, columnGames = listOf(game(1), game(2))))
         assertNull(UmdSlotResolver.resolve(inserted = null, columnGames = emptyList()))
     }
+
+    // ── Display ▸ UMD Slot ───────────────────────────────────────────────────
+
+    @Test
+    fun `Off never fills the slot, inserted or not`() {
+        val column = listOf(game(1, lastPlayedAt = 900), game(2))
+        assertNull(UmdSlotResolver.resolve(inserted = game(2), columnGames = column, mode = UmdSlotMode.OFF))
+        assertNull(UmdSlotResolver.resolve(inserted = null, columnGames = column, mode = UmdSlotMode.OFF))
+    }
+
+    @Test
+    fun `Inserted shows only an inserted game - no last-played fallback`() {
+        val column = listOf(game(1, lastPlayedAt = 900), game(2))
+        assertEquals(2L, UmdSlotResolver.resolve(inserted = game(2), columnGames = column, mode = UmdSlotMode.INSERTED)?.id)
+        assertNull(UmdSlotResolver.resolve(inserted = null, columnGames = column, mode = UmdSlotMode.INSERTED))
+        // An inserted game that left the column empties the slot rather than falling back.
+        assertNull(UmdSlotResolver.resolve(inserted = game(7), columnGames = column, mode = UmdSlotMode.INSERTED))
+    }
+
+    @Test
+    fun `Inserted & Recent is today's slot and the default`() {
+        val column = listOf(game(1, lastPlayedAt = 900), game(2))
+        assertEquals(UmdSlotMode.INSERTED_AND_RECENT, UmdSlotMode.DEFAULT)
+        assertEquals(1L, UmdSlotResolver.resolve(inserted = null, columnGames = column)?.id)
+    }
+
+    @Test
+    fun `the setting's labels and stored names`() {
+        assertEquals(listOf("Off", "Inserted", "Inserted & Recent"), UmdSlotMode.entries.map { it.label })
+        for (mode in UmdSlotMode.entries) assertEquals(mode, UmdSlotMode.fromName(mode.name))
+        assertEquals(UmdSlotMode.DEFAULT, UmdSlotMode.fromName("SOMETHING_ELSE"))
+        assertEquals(UmdSlotMode.DEFAULT, UmdSlotMode.fromName(null))
+    }
 }

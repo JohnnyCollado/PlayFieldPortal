@@ -11,19 +11,34 @@ data class SpanGridCursor(val row: Int, val cell: Int, val anchorColumn: Int? = 
 /**
  * One step of [direction] on a grid described by [rows]: each row lists its cells' column spans,
  * and every row spans the same number of columns. LEFT/RIGHT step a cell within the row; UP/DOWN
- * land on the cell in the next row covering the anchor column. Returns null at an edge (no wrap),
- * for an empty grid, or for a cursor outside it. [gridMove] covers the uniform, unspanned case.
+ * land on the cell in the next row covering the anchor column. Returns null at an edge, for an
+ * empty grid, or for a cursor outside it. With [wrap], an edge cycles round instead — LEFT/RIGHT to
+ * the other end of the row, UP/DOWN to the last/first row — as the virtual keyboard's cursor does.
+ * [gridMove] covers the uniform, unspanned case.
  */
-fun spanGridMove(rows: List<List<Int>>, from: SpanGridCursor, direction: NavigationDirection): SpanGridCursor? {
+fun spanGridMove(
+    rows: List<List<Int>>,
+    from: SpanGridCursor,
+    direction: NavigationDirection,
+    wrap: Boolean = false,
+): SpanGridCursor? {
     val row = rows.getOrNull(from.row) ?: return null
     if (from.cell !in row.indices) return null
     return when (direction) {
-        NavigationDirection.LEFT ->
-            if (from.cell > 0) SpanGridCursor(from.row, from.cell - 1) else null
-        NavigationDirection.RIGHT ->
-            if (from.cell < row.lastIndex) SpanGridCursor(from.row, from.cell + 1) else null
-        NavigationDirection.UP -> vertical(rows, from, row, from.row - 1)
-        NavigationDirection.DOWN -> vertical(rows, from, row, from.row + 1)
+        NavigationDirection.LEFT -> when {
+            from.cell > 0 -> SpanGridCursor(from.row, from.cell - 1)
+            wrap && row.size > 1 -> SpanGridCursor(from.row, row.lastIndex)
+            else -> null
+        }
+        NavigationDirection.RIGHT -> when {
+            from.cell < row.lastIndex -> SpanGridCursor(from.row, from.cell + 1)
+            wrap && row.size > 1 -> SpanGridCursor(from.row, 0)
+            else -> null
+        }
+        NavigationDirection.UP ->
+            vertical(rows, from, row, if (wrap && from.row == 0) rows.lastIndex else from.row - 1)
+        NavigationDirection.DOWN ->
+            vertical(rows, from, row, if (wrap && from.row == rows.lastIndex) 0 else from.row + 1)
     }
 }
 

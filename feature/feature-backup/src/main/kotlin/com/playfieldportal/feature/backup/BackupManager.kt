@@ -644,6 +644,8 @@ open class BackupManager @Inject constructor(
         stringPreferencesKey("display_xmb_layout_adjust"),
         // Item List Motion (Rewind / Glide), stored by enum name.
         stringPreferencesKey("display_item_list_motion"),
+        // UMD Slot (Off / Inserted / Inserted & Recent), stored by enum name.
+        stringPreferencesKey("display_umd_slot_mode"),
         stringPreferencesKey("pref_icon_display_mode"),
         // Animated Images (Animated / Reduced / Static), stored by enum name.
         stringPreferencesKey("pref_image_motion"),

@@ -22,6 +22,13 @@ class NavigationContext(
     var focusedKey: String? = null
         private set
 
+    /**
+     * Set when this context lays its nodes out as a [FlowGrid] (a picker's tiles): directions move
+     * by the grid. Null — the default — is the list layout: rows, each with inline children.
+     */
+    var flowGrid: FlowGrid? = null
+        private set
+
     /** Set while a component-owned edit mode is active on the focused node (spec §5). */
     var editHandler: EditModeHandler? = null
         private set
@@ -121,6 +128,15 @@ class NavigationContext(
         }
     }
 
+    /**
+     * Lays this context out as [grid], with [newNodes] (the grid's cells, in [FlowGrid.keys] order)
+     * as its nodes. Focus is kept or recovered exactly as [updateNodes] does.
+     */
+    fun updateFlowGrid(grid: FlowGrid, newNodes: List<NavigationNode>): String? {
+        flowGrid = grid
+        return updateNodes(newNodes)
+    }
+
     // ── Queries ──────────────────────────────────────────────────────────────────
 
     /**
@@ -146,6 +162,22 @@ class NavigationContext(
     fun isKnownKey(key: String): Boolean = findNode(key) != null
 
     // ── Movement ─────────────────────────────────────────────────────────────────
+
+    /**
+     * One step [direction] in this context's layout: the [flowGrid] when it has one, otherwise the
+     * list's rows and inline children. An edge keeps the focus where it is. Returns the focused key.
+     */
+    fun move(direction: NavigationDirection): String? {
+        val grid = flowGrid ?: return when (direction) {
+            NavigationDirection.UP -> moveVertical(-1)
+            NavigationDirection.DOWN -> moveVertical(1)
+            NavigationDirection.LEFT -> moveHorizontal(-1)
+            NavigationDirection.RIGHT -> moveHorizontal(1)
+        }
+        val from = focusedKey ?: return focusFirst()
+        grid.move(from, direction)?.let { target -> if (findNode(target)?.let { it.focusable && it.enabled } == true) focusedKey = target }
+        return focusedKey
+    }
 
     /**
      * Vertical movement (UP/DOWN). Focusing a child first exits to its owning row (spec §4:

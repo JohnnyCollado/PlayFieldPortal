@@ -83,4 +83,31 @@ class SpanGridMoveTest {
         assertNull(move(at(4, 5), NavigationDirection.LEFT))
         assertNull(move(at(-1, 0), NavigationDirection.DOWN))
     }
+
+    // ── Wrapping (the virtual keyboard cycles through its keys) ─────────────
+
+    private fun wrap(from: SpanGridCursor, direction: NavigationDirection) = spanGridMove(keyboard, from, direction, wrap = true)
+
+    @Test
+    fun `wrapping left and right cycle within the row`() {
+        assertEquals(9, wrap(at(1, 0), NavigationDirection.LEFT)?.cell)
+        assertEquals(0, wrap(at(1, 9), NavigationDirection.RIGHT)?.cell)
+        // The bottom row's last cell (Done) wraps to its first (Shift).
+        assertEquals(0, wrap(at(4, 4), NavigationDirection.RIGHT)?.cell)
+    }
+
+    @Test
+    fun `wrapping up and down cycle through the rows, keeping the column`() {
+        val upFromTop = wrap(at(0, 6), NavigationDirection.UP)
+        // Column 6 on the bottom row is Space (columns 3-6).
+        assertEquals(4, upFromTop?.row)
+        assertEquals(2, upFromTop?.cell)
+        assertEquals(SpanGridCursor(0, 6, 6), wrap(at(4, 2, anchor = 6), NavigationDirection.DOWN))
+    }
+
+    @Test
+    fun `without wrap the edges still stop`() {
+        assertNull(move(at(1, 0), NavigationDirection.LEFT))
+        assertNull(move(at(0, 0), NavigationDirection.UP))
+    }
 }

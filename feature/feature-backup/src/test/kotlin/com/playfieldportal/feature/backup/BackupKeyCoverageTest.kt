@@ -45,6 +45,7 @@ class BackupKeyCoverageTest {
             "pref_icon_display_mode_by_platform",
             "pref_icon1_linger_delay_seconds",
             "display_item_list_motion",
+            "display_umd_slot_mode",
         )
     }
 

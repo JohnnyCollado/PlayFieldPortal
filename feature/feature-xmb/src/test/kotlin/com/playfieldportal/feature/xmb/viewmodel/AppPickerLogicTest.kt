@@ -16,6 +16,12 @@ class AppPickerLogicTest {
 
     private fun app(pkg: String, label: String = pkg) = AppPickerEntry(packageName = pkg, label = label)
 
+    // The cursor runs on the unified navigation engine through AppPickerNav, as XMBViewModel drives it.
+    private val nav = AppPickerNav()
+
+    private fun AppPickerState.move(action: GamepadAction) = nav.move(this, action)
+    private fun AppPickerState.moveConfirm(action: GamepadAction) = nav.move(this, action)
+
     private fun state(
         packages: List<String> = listOf("a", "b", "c", "d", "e", "f", "g", "h"),
         selected: Set<String> = emptySet(),
@@ -214,6 +220,20 @@ class AppPickerLogicTest {
     fun `move down into the short last row stops at the last item`() {
         // From index 2 (row 0, col 2), down lands on index 9 — the last item of the 3-item row.
         assertEquals(9, gridState(2).move(GamepadAction.NAVIGATE_DOWN).focusedIndex)
+    }
+
+    @Test
+    fun `down from past the end of the short last row lands on its nearest app`() {
+        // Column 5 has nothing below it; the last app of the short row is the nearest.
+        assertEquals(9, gridState(5).move(GamepadAction.NAVIGATE_DOWN).focusedIndex)
+    }
+
+    @Test
+    fun `the first press after touch only brings the cursor back`() {
+        val touched = gridState(3).copy(usingTouch = true)
+        val revived = touched.move(GamepadAction.NAVIGATE_RIGHT)
+        assertEquals(false, revived.usingTouch)
+        assertEquals(3, revived.focusedIndex)
     }
 
     @Test

@@ -7,10 +7,16 @@ import com.playfieldportal.core.domain.model.GameCollection
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.IconDisplayMode
 import com.playfieldportal.core.domain.model.MemoryCard
+import com.playfieldportal.core.navigation.NavigationLogger
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.data.repository.CollectionRepository
 import com.playfieldportal.core.data.repository.MemoryCardRepository
+import com.playfieldportal.core.ui.components.PspMenuCue
+import com.playfieldportal.core.ui.components.PspMenuNav
+import com.playfieldportal.core.ui.components.PspMenuOutcome
+import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.sound.MenuSoundPlayer
+import com.playfieldportal.core.ui.sound.MenuSoundSink
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,6 +40,8 @@ class GamePickerViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(GamePickerState(isLoading = true))
+    // The cursor runs on the unified navigation engine; see GamePickerNav.
+    private val nav = GamePickerNav(NavigationLogger { android.util.Log.w("GamePickerNav", it) })
     val state: StateFlow<GamePickerState> = _state.asStateFlow()
 
     // Library inputs and the category being filled; the shelves are rebuilt from these.
@@ -106,36 +114,97 @@ class GamePickerViewModel @Inject constructor(
         rebuild()
     }
 
-    /** Every controller action except Done (Start) and B, which the screen routes. */
+    /**
+     * Every controller action except Done (Start) and B, which the screen routes. While Y's menu is
+     * open it takes every press, by the shared PSP-panel rules.
+     */
     fun onAction(action: GamepadAction) {
-        transition { state ->
-            when (action) {
-                GamepadAction.NAVIGATE_UP,
-                GamepadAction.NAVIGATE_DOWN,
-                GamepadAction.NAVIGATE_LEFT,
-                GamepadAction.NAVIGATE_RIGHT -> state.move(action)
-                GamepadAction.SELECT -> state.activate()
-                GamepadAction.OPEN_CONTEXT_MENU -> state.toggleWholeShelf()
-                GamepadAction.CHANGE_SORT -> state.cycleView()
-                else -> state
+        if (_state.value.menu != null) {
+            menuAction(action)
+            return
+        }
+        when (action) {
+            GamepadAction.OPEN_CONTEXT_MENU -> {
+                menuSound.play(MenuSound.SELECT)
+                _state.update { it.openMenu() }
+            }
+            GamepadAction.CHANGE_SORT -> _state.update { it.pressSearch() }
+            else -> transition { state ->
+                when (action) {
+                    GamepadAction.NAVIGATE_UP,
+                    GamepadAction.NAVIGATE_DOWN,
+                    GamepadAction.NAVIGATE_LEFT,
+                    GamepadAction.NAVIGATE_RIGHT -> nav.move(state, action)
+                    GamepadAction.SELECT -> nav.activate(state)
+                    else -> state
+                }
             }
         }
     }
 
-    /** B. Returns false when there is no level left to climb, and the picker should close. */
+    /**
+     * B. Closes the menu (or climbs out of View), then an open search, then climbs from a shelf to
+     * the list. Returns false when there is no level left, and the picker should close.
+     */
     fun back(): Boolean {
-        if (_state.value.back() == null) return false
-        transition { it.back() ?: it }
+        val state = _state.value
+        if (state.menu != null) {
+            menuAction(GamepadAction.BACK)
+            return true
+        }
+        if (state.searchActive) {
+            menuSound.play(MenuSound.BACK)
+            _state.update { it.closeSearch() }
+            return true
+        }
+        if (nav.back(state) == null) return false
+        transition { nav.back(it) ?: it }
         return true
     }
 
-    fun tapTile(index: Int) = transition { it.tapTile(index) }
+    // Y's menu on the shared PSP-panel rules: clamp, B climbs then closes, Y closes, standard cues.
+    private fun menuAction(action: GamepadAction) {
+        val state = _state.value
+        val menu = state.menu ?: return
+        val rows = state.menuRows()
+        val depth = if (menu.level == PickerMenuLevel.ROOT) 0 else 1
+        val cue = rows.getOrNull(menu.selectedIndex)?.cue ?: PspMenuCue.NONE
+        when (val outcome = PspMenuNav.handle(action, menu.selectedIndex, rows.size, depth, cue, MenuSoundSink { menuSound.play(it) })) {
+            is PspMenuOutcome.Moved -> _state.update { it.copy(menu = menu.copy(selectedIndex = outcome.index)) }
+            PspMenuOutcome.Activate -> _state.update { it.activateMenuRow() }
+            PspMenuOutcome.Up -> _state.update { it.menuUp() }
+            PspMenuOutcome.Close -> _state.update { it.closeMenu() }
+            PspMenuOutcome.Ignored -> Unit
+        }
+    }
 
-    fun tapShelf(index: Int) = transition { it.tapShelf(index) }
+    /** Touch: a menu row tapped — it takes the cursor and activates. */
+    fun tapMenuRow(index: Int) {
+        val menu = _state.value.menu ?: return
+        _state.update { it.copy(menu = menu.copy(selectedIndex = index)) }
+        menuAction(GamepadAction.SELECT)
+    }
+
+    /** Touch: the scrim behind the menu. */
+    fun dismissMenu() {
+        if (_state.value.menu == null) return
+        menuSound.play(MenuSound.BACK)
+        _state.update { it.closeMenu() }
+    }
+
+    /** The search field's text changed (keyboard or touch). The cursor is re-clamped to what is left. */
+    fun onSearchChange(query: String) = _state.update { it.copy(query = query) }
+
+    /** Touch: the search affordance in the shelf heading. */
+    fun onSearchToggle(active: Boolean) = _state.update { if (active) it.copy(searchActive = true) else it.closeSearch() }
+
+    fun tapTile(index: Int) = transition { nav.tapTile(it, index) }
+
+    fun tapShelf(index: Int) = transition { nav.tapShelf(it, index) }
 
     // Settling a finger scroll only parks the hidden cursor, so it stays silent.
 
-    fun touchBrowse(index: Int) = _state.update { it.touchBrowse(index) }
+    fun touchBrowse(index: Int) = _state.update { nav.touchBrowse(it, index) }
 
     /** The shelf pane laid out at [widthDp]: rows re-pack to it. */
     fun onShelfMeasured(widthDp: Float) = _state.update { it.copy(shelfWidthDp = widthDp) }
@@ -163,6 +232,9 @@ class GamePickerViewModel @Inject constructor(
                 focusZone = PickerZone.RAIL,
                 focusByShelf = emptyMap(),
                 usingTouch = false,
+                menu = null,
+                searchActive = false,
+                query = "",
             )
         }
     }

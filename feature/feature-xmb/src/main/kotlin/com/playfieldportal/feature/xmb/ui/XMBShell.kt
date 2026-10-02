@@ -781,6 +781,11 @@ fun XMBShell(
                 uiState.activeVideoId == null &&
                 uiState.activeAppId == null &&
                 uiState.activePhotoViewer == null &&
+                // The full-screen pickers (Add Games, Add Apps): their storefront backdrop is
+                // translucent, so the XMB's rows would read through the shelves and grid.
+                uiState.appPicker == null &&
+                uiState.gamePickerCategoryId == null &&
+                uiState.gamePickerCollectionId == null &&
                 // The icon editor is translucent — the live XMB (with the custom look
                 // applying behind it) IS the point, so the foreground stays composed.
                 uiState.customIconSession == null
@@ -1408,6 +1413,7 @@ fun XMBShell(
                     categoryId = "col_$pickerCollectionId",
                     categoryTitle = uiState.collections.firstOrNull { it.id == pickerCollectionId }?.name.orEmpty(),
                     preselectedGameIds = uiState.gamePickerPreselected,
+                    textShadow = uiState.textShadow,
                     movableCollectionIds = emptySet(),
                     onConfirm = onGamePickerConfirm,
                     onCancel = onGamePickerDismiss,
@@ -1425,6 +1431,7 @@ fun XMBShell(
                     categoryId = pickerCategoryId,
                     categoryTitle = uiState.categories.firstOrNull { it.id == pickerCategoryId }?.name.orEmpty(),
                     preselectedGameIds = uiState.gamePickerPreselected,
+                    textShadow = uiState.textShadow,
                     movableCollectionIds = uiState.collections
                         .filter { it.categoryId in gamingCategoryIds && it.categoryId != pickerCategoryId }
                         .map { it.id }

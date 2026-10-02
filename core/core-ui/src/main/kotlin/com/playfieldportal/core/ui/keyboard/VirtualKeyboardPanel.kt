@@ -73,6 +73,8 @@ val VirtualKeyboardPrompts: List<ControllerPromptItem> = listOf(
     ControllerPromptItem(GamepadAction.CHANGE_SORT, "Delete"),
     ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Space"),
     ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Cursor"),
+    ControllerPromptItem(GamepadAction.SHIFT, "Shift"),
+    ControllerPromptItem(GamepadAction.CAPS_LOCK, "Caps"),
     ControllerPromptItem(GamepadAction.HOME, "Done"),
     ControllerPromptItem(GamepadAction.BACK, "Close"),
 )

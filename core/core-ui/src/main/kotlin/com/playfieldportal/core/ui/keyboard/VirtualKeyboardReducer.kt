@@ -51,8 +51,8 @@ data class KeyboardReduction(val state: VirtualKeyboardState, val effects: List<
 
 /**
  * The keyboard as a pure state machine over [GamepadAction]s (Virtual Keyboard plan section 1).
- * SELECT presses the focused key; X/Y are Delete/Space; the shoulders move the caret; START is
- * Done; BACK closes.
+ * SELECT presses the focused key; X/Y are Delete/Space; the shoulders move the caret; L2 shifts
+ * the next letter and R3 locks caps; START is Done; BACK closes. The cursor cycles round every edge.
  * A press that changes nothing returns the state unchanged with no effects — and no sound.
  */
 object VirtualKeyboardReducer {
@@ -76,10 +76,19 @@ object VirtualKeyboardReducer {
         GamepadAction.BACK           -> KeyboardReduction(state, listOf(KeyboardEffect.Close, KeyboardEffect.Sound(MenuSound.BACK)))
         // START: Done from anywhere, without walking the cursor down to the Done key.
         GamepadAction.HOME           -> done(state)
+        // L2: shift the next letter, or drop any shift. R3: caps lock on and off.
+        GamepadAction.SHIFT          -> setShift(state, if (state.shift == ShiftMode.OFF) ShiftMode.ONCE else ShiftMode.OFF)
+        GamepadAction.CAPS_LOCK      -> setShift(state, if (state.shift == ShiftMode.LOCKED) ShiftMode.OFF else ShiftMode.LOCKED)
+    }
+
+    // Shift and caps exist only where the Shift key does: never on the symbols layer.
+    private fun setShift(state: VirtualKeyboardState, shift: ShiftMode): KeyboardReduction {
+        if (state.layer != KeyboardLayer.LETTERS || shift == state.shift) return KeyboardReduction(state)
+        return KeyboardReduction(state.copy(shift = shift), listOf(KeyboardEffect.Sound(MenuSound.SELECT)))
     }
 
     private fun move(state: VirtualKeyboardState, direction: NavigationDirection): KeyboardReduction {
-        val next = spanGridMove(VirtualKeyboardLayout.spans(state.layer), state.focus, direction)
+        val next = spanGridMove(VirtualKeyboardLayout.spans(state.layer), state.focus, direction, wrap = true)
             ?: return KeyboardReduction(state)
         return KeyboardReduction(state.copy(focus = next), listOf(KeyboardEffect.Sound(MenuSound.SCROLL)))
     }

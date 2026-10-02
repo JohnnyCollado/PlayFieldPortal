@@ -573,7 +573,7 @@ enum class SettingsSection(
     val title: String,
     val subtitle: String,
 ) {
-    LIBRARY     ("settings_section_library",      "Library",      "Library Manager, custom memory cards, artwork & hidden games"),
+    LIBRARY     ("settings_section_library",      "Library",      "Sources, cards, artwork & hidden games"),
     EMULATORS   ("settings_section_emulators",    "Emulators",    "Launch profiles & RetroArch cores"),
     INTERFACE   ("settings_section_interface",    "Interface",    "Categories, themes, display & controller"),
     ACHIEVEMENTS("settings_section_achievements", "Achievements", "RetroAchievements & Steam"),
@@ -1091,6 +1091,9 @@ data class XMBUiState(
     // "Item List Motion" (Display): how the item column steps — Rewind's hand-off or one Glide.
     val itemListMotion: com.playfieldportal.core.domain.model.XmbListMotion =
         com.playfieldportal.core.domain.model.XmbListMotion.DEFAULT,
+    // "UMD Slot" (Display): Off, only an inserted game, or inserted else last played.
+    val umdSlotMode: com.playfieldportal.core.domain.model.UmdSlotMode =
+        com.playfieldportal.core.domain.model.UmdSlotMode.DEFAULT,
     // The focused game's ICON1 video snap — set only after the linger + battery gates pass.
     val focusedGameVideo: com.playfieldportal.feature.xmb.ui.FocusedGameVideo? = null,
     val librarySetupComplete: Boolean = false,
@@ -2686,7 +2689,7 @@ class XMBViewModel @Inject constructor(
      */
     private fun umdSlotItem(columnId: String, columnGames: List<Game>): XMBItem? {
         val game = com.playfieldportal.core.domain.model.UmdSlotResolver
-            .resolve(umdInsertedGames[columnId], columnGames, umdEjectedAt[columnId]) ?: return null
+            .resolve(umdInsertedGames[columnId], columnGames, umdEjectedAt[columnId], _uiState.value.umdSlotMode) ?: return null
         return listOf(game).toXmbItems().single().copy(id = UMD_SLOT_ITEM_ID, type = XMBItemType.UMD_SLOT)
     }
 
@@ -6641,7 +6644,7 @@ class XMBViewModel @Inject constructor(
             )
             // START is handled above, before the overlay ladder, so it can mean the same thing
             // whether or not the panel is already open. Unreachable here.
-            GamepadAction.HOME          -> Unit
+            GamepadAction.HOME, GamepadAction.SHIFT, GamepadAction.CAPS_LOCK -> Unit
             // Cycle the sort order of the current list (PSP-style). Whichever face button
             // the user's X/Y layout assigns to sort dispatches this.
             GamepadAction.CHANGE_SORT -> cycleSort()
@@ -7195,6 +7198,8 @@ class XMBViewModel @Inject constructor(
             state.selectedPlatformId != MISSING_PLATFORM_ID
         val column = currentCat?.takeIf { it.isGamingCategory }?.id
         val umd = when {
+            // UMD Slot Off: there is no slot to insert into or eject from.
+            state.umdSlotMode == com.playfieldportal.core.domain.model.UmdSlotMode.OFF -> UmdMenuState.NONE
             column == null || item.gameId == null || !item.isRealGame -> UmdMenuState.NONE
             isUmdRow -> if (column in state.umdInserted) UmdMenuState.INSERTED else UmdMenuState.RECENT
             state.umdInserted[column] == item.gameId -> UmdMenuState.INSERTED
@@ -8056,6 +8061,9 @@ class XMBViewModel @Inject constructor(
 
     // ── Installed-app picker ────────────────────────────────────────────────────
 
+    // The installed-app picker's cursor (grid and removal confirmation) on the unified engine.
+    private val appPickerNav = AppPickerNav(NavigationLogger { Timber.w(it) })
+
     // Opens the picker with current membership pre-checked (both `selected` and
     // `initialSelected`), so Apply diffs against the state the picker opened with.
     private fun openAppPicker(target: AppPickerTarget, title: String) {
@@ -8171,7 +8179,7 @@ class XMBViewModel @Inject constructor(
             val picker = state.appPicker ?: return@update state
             // While the removal-confirmation modal is up, the dpad belongs to the modal's
             // Cancel/Remove cursor — the grid behind the scrim must not move.
-            state.copy(appPicker = if (picker.confirmingRemovals) picker.moveConfirm(action) else picker.move(action))
+            state.copy(appPicker = appPickerNav.move(picker, action))
         }
         appPickerSound(before, _uiState.value.appPicker)?.let(menuSound::play)
     }
@@ -11531,6 +11539,9 @@ class XMBViewModel @Inject constructor(
                 val textShadow = prefs[KEY_TEXT_SHADOW] ?: true
                 val listMotion = com.playfieldportal.core.domain.model.XmbListMotion
                     .fromName(prefs[KEY_ITEM_LIST_MOTION])
+                val umdMode = com.playfieldportal.core.domain.model.UmdSlotMode
+                    .fromName(prefs[KEY_UMD_SLOT_MODE])
+                val umdModeChanged = umdMode != _uiState.value.umdSlotMode
                 _uiState.update {
                     it.copy(
                         touchNavButtonMode = mode,
@@ -11541,7 +11552,14 @@ class XMBViewModel @Inject constructor(
                         solidUnfocusedIcons = solidUnfocused,
                         textShadow = textShadow,
                         itemListMotion = listMotion,
+                        umdSlotMode = umdMode,
                     )
+                }
+                // The slot appears or goes at once, on whichever gaming root is on screen.
+                if (umdModeChanged && currentCategory()?.isGamingCategory == true &&
+                    _uiState.value.currentListKind() == XmbListKind.ROOT
+                ) {
+                    refreshArrangedList()
                 }
             }
         }
@@ -11663,6 +11681,8 @@ class XMBViewModel @Inject constructor(
         private val KEY_TEXT_SHADOW = booleanPreferencesKey("display_text_shadow")
         // Must match DisplaySettingsViewModel.KEY_ITEM_LIST_MOTION — both read/write this pref.
         private val KEY_ITEM_LIST_MOTION = stringPreferencesKey("display_item_list_motion")
+        // Must match DisplaySettingsViewModel.KEY_UMD_SLOT_MODE — both read/write this pref.
+        private val KEY_UMD_SLOT_MODE = stringPreferencesKey("display_umd_slot_mode")
         // ICON1 linger default (1.5 s) — the user can adjust the delay under Artwork ▸ Art
         // Preferences ▸ Video Snap Delay. Rest-then-animate matches the PSP's choreography and
         // guarantees scrolling through the row never spins up a video decoder.
@@ -11817,7 +11837,8 @@ internal fun forwardsToSettings(action: GamepadAction): Boolean = when (action) 
     GamepadAction.PREV_CATEGORY,
     GamepadAction.NEXT_CATEGORY,
     GamepadAction.SELECT -> true
-    GamepadAction.HOME -> false
+    // HOME is the shell's; Shift and Caps belong to the virtual keyboard, which takes them first.
+    GamepadAction.HOME, GamepadAction.SHIFT, GamepadAction.CAPS_LOCK -> false
 }
 
 /** True when the open virtual keyboard took [action] — every press, while one is open. */

@@ -97,13 +97,22 @@ object UmdSlotResolver {
      * sets already projected to one row). [inserted] wins while it — or its disc set — is still
      * there; otherwise the most recently played game; otherwise none. After an eject ([ejectedAt],
      * epoch ms) the slot stays empty until a game is played again, as if that disc went in.
+     * [mode] is the Display setting: [UmdSlotMode.OFF] shows nothing, [UmdSlotMode.INSERTED] only
+     * the inserted game, with no last-played fallback.
      */
-    fun resolve(inserted: Game?, columnGames: List<Game>, ejectedAt: Long? = null): Game? {
+    fun resolve(
+        inserted: Game?,
+        columnGames: List<Game>,
+        ejectedAt: Long? = null,
+        mode: UmdSlotMode = UmdSlotMode.DEFAULT,
+    ): Game? {
+        if (mode == UmdSlotMode.OFF) return null
         inserted?.let { pick ->
             columnGames.firstOrNull {
                 it.id == pick.id || (pick.discSetKey != null && it.discSetKey == pick.discSetKey)
             }?.let { return it }
         }
+        if (mode == UmdSlotMode.INSERTED) return null
         val playedSince = ejectedAt ?: Long.MIN_VALUE
         return columnGames
             .filter { (it.lastPlayedAt ?: return@filter false) > playedSince }

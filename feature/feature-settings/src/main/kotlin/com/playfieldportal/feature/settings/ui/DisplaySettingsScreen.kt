@@ -336,6 +336,13 @@ fun DisplaySettingsScreen(
                 onClick  = { viewModel.cycleItemListMotion() },
             )
 
+            SettingsValueRow(
+                label    = "UMD Slot",
+                sublabel = "Off   |   Inserted (only a game you inserted)   |   Inserted & Recent (else the last game played)",
+                value    = state.umdSlotMode.label,
+                onClick  = { viewModel.cycleUmdSlotMode() },
+            )
+
             // ── Font Colour ──────────────────────────────────────────────────
             // Deliberately next to Text Shadow: the two answer the same question (how does text
             // survive the wallpaper), and AUTO reads the shadow toggle as "may I use a shadow?".
