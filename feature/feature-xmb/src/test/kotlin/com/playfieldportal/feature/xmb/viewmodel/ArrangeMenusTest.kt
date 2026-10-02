@@ -24,13 +24,14 @@ class ArrangeMenusTest {
         canMoveToCategory: Boolean = true,
         canMove: Boolean = false,
         byTouch: Boolean = true,
-    ) = customCardMenuItems(pinned, canMoveToCategory, sortValue = "Global: Title", canMove = canMove, byTouch = byTouch)
+        holds: CardContents = CardContents.GAMES,
+    ) = customCardMenuItems(pinned, canMoveToCategory, sortValue = "Global: Title", canMove = canMove, byTouch = byTouch, holds = holds)
 
     @Test
     fun `a custom card's menu uses card wording throughout`() {
         val labels = cardMenu().map { it.label }
         assertEquals(
-            listOf("Open", "Sort", "Pin to Top", "Rename Card", "Move to Category", "Manage Custom Cards", "Delete Custom Card"),
+            listOf("Open", "Add Games", "Sort", "Pin to Top", "Rename Card", "Move to Category", "Manage Custom Cards", "Delete Custom Card"),
             labels,
         )
         assertFalse(labels.any { it.contains("Collection") })
@@ -41,6 +42,34 @@ class ArrangeMenusTest {
         assertFalse(cardMenu(byTouch = false).any { it.id == "open_collection" })
         assertEquals("open_collection", cardMenu(byTouch = true).first().id)
         assertEquals(cardMenu(byTouch = true).drop(1), cardMenu(byTouch = false))
+    }
+
+    @Test
+    fun `a game card offers Add Games first on a controller`() {
+        assertEquals("add_games_collection", cardMenu(byTouch = false).first().id)
+        assertEquals("open_collection", cardMenu(byTouch = true).first().id)
+        assertFalse(cardMenu().any { it.id == ADD_APPS_TO_CARD_ID })
+    }
+
+    @Test
+    fun `an app card offers Add Apps in the same place and never Add Games`() {
+        val apps = cardMenu(byTouch = false, holds = CardContents.APPS)
+        assertEquals(ADD_APPS_TO_CARD_ID to "Add Apps", apps.first().id to apps.first().label)
+        assertFalse(apps.any { it.id == ADD_GAMES_TO_CARD_ID })
+    }
+
+    // ── What confirming the game picker changes ───────────────────────────────
+
+    @Test
+    fun `confirm adds only what is new and removes only what the picker opened checked`() {
+        val changes = gamePickerChanges(already = setOf(1L, 2L, 9L), preselected = setOf(1L, 2L), selected = setOf(2L, 3L))
+        assertEquals(setOf(3L) to setOf(1L), changes)
+    }
+
+    @Test
+    fun `a game already on the list but never pre-checked is not removed`() {
+        // The pre-check failed to load: absence alone must not empty the list.
+        assertEquals(setOf(3L) to emptySet<Long>(), gamePickerChanges(already = setOf(1L, 2L), preselected = emptySet(), selected = setOf(3L)))
     }
 
     @Test

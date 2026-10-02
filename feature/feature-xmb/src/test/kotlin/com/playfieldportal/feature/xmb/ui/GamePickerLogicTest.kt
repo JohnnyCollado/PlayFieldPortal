@@ -6,6 +6,7 @@ import com.playfieldportal.core.domain.model.GameContentType
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.IconDisplayMode
 import com.playfieldportal.core.domain.model.MemoryCard
+import com.playfieldportal.core.navigation.NavigationDirection
 import com.playfieldportal.core.ui.sound.MenuSound
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -16,7 +17,7 @@ import org.junit.Test
 /**
  * Pins the library-shelf game picker's rules (GamePickerLogic): which shelves exist, the two
  * levels (shelf list → grid; A descends, B ascends, B on the list closes), D-pad step-through on
- * the list, grid moves without wrapping, selection keyed by id rather than by tile, whole-shelf
+ * the list, XMB-sized tiles in free-flowing rows with nearest-tile up/down, selection keyed by id rather than by tile, whole-shelf
  * toggling, the single picker-wide view, add/remove counts that match
  * XMBViewModel.confirmGamePicker, and the menu sound for each input.
  */
@@ -30,7 +31,7 @@ class GamePickerLogicTest {
 
     private fun collection(id: Long) = GameCollection(id = id, name = "Card $id")
 
-    // 8 PS2 games (two rows: 6 + 2), 3 SNES games, one Android app on PS2's card that must never
+    // 8 PS2 games (two ICON0 rows on a six-wide pane: 6 + 2), 3 SNES games, one Android app on PS2's card that must never
     // show, and two custom memory cards.
     private val cards = listOf(card("ps2"), card("snes"), card("gba"))
     private val games = (1L..8L).map { game(it, "ps2") } +
@@ -46,8 +47,16 @@ class GamePickerLogicTest {
         return GamePickerState(shelves = shelves, selectedGameIds = preselected, preselectedGameIds = preselected)
     }
 
-    /** The PS2 shelf, cursor in its grid. */
-    private fun onPs2() = state().copy(shelfIndex = 1, focusZone = PickerZone.GRID)
+    // Exactly six ICON0 tiles (126 + 2 × 4 pad = 134 each, 8 apart): 6 × 134 + 5 × 8.
+    private val sixIcon0Wide = 844f
+
+    /** The PS2 shelf in ICON0, six tiles to a row, cursor in its grid. */
+    private fun onPs2() = state().copy(
+        shelfIndex = 1,
+        focusZone = PickerZone.GRID,
+        viewMode = IconDisplayMode.ICON0,
+        shelfWidthDp = sixIcon0Wide,
+    )
 
     private fun GamePickerState.press(vararg actions: GamepadAction) =
         actions.fold(this) { s, a -> s.move(a) }
@@ -151,7 +160,7 @@ class GamePickerLogicTest {
     // ── Grid navigation ──────────────────────────────────────────────────────
 
     @Test
-    fun `grid moves follow gridMove and never wrap or leave the grid`() {
+    fun `grid moves step within a row and never wrap or leave the grid`() {
         val s = onPs2()
         assertEquals(1, s.press(GamepadAction.NAVIGATE_RIGHT).focusedIndex())
         assertEquals(6, s.press(GamepadAction.NAVIGATE_DOWN).focusedIndex())
@@ -161,8 +170,91 @@ class GamePickerLogicTest {
         assertEquals(0, left.focusedIndex())
         val rowEnd = s.copy(focusByShelf = mapOf(platformShelfKey("ps2") to 5))
         assertEquals(5, rowEnd.press(GamepadAction.NAVIGATE_RIGHT).focusedIndex())
-        assertEquals(5, rowEnd.press(GamepadAction.NAVIGATE_DOWN).focusedIndex())
+        // Down from past the end of the shorter row below lands on its nearest tile, the last.
+        assertEquals(7, rowEnd.press(GamepadAction.NAVIGATE_DOWN).focusedIndex())
+        val lastRow = s.copy(focusByShelf = mapOf(platformShelfKey("ps2") to 7))
+        assertEquals(7, lastRow.press(GamepadAction.NAVIGATE_DOWN).focusedIndex())
         assertEquals(0, s.press(GamepadAction.NAVIGATE_UP).focusedIndex())
+    }
+
+    // ── Shelf layout: XMB-sized tiles in free-flowing rows ───────────────────
+
+    private val boxHeight = PICKER_ART_HEIGHT_DP
+    private val pad = PICKER_FRAME_PAD_DP * 2
+
+    @Test
+    fun `ICON0 tiles take the XMB game row size on every console`() {
+        val icon0 = PICKER_ICON0_WIDTH_DP + pad
+        assertEquals(icon0, pickerTileWidthDp("snes", IconDisplayMode.ICON0), 0.01f)
+        assertEquals(icon0, pickerTileWidthDp("psp", IconDisplayMode.ICON0), 0.01f)
+        assertEquals(126f, PICKER_ICON0_WIDTH_DP)
+        assertEquals(70f, PICKER_ICON0_HEIGHT_DP)
+    }
+
+    @Test
+    fun `box tiles are as wide as the console's box at the XMB art height`() {
+        assertEquals(boxHeight * 600f / 438f + pad, pickerTileWidthDp("snes", IconDisplayMode.BOX_ART), 0.01f)
+        assertEquals(boxHeight * 430f / 600f + pad, pickerTileWidthDp("ps2", IconDisplayMode.BOX_3D), 0.01f)
+        assertEquals(boxHeight + pad, pickerTileWidthDp("snes", IconDisplayMode.PHYSICAL_MEDIA), 0.01f)
+        // A UMD case is narrower than its two-line label needs: the tile keeps a floor.
+        assertEquals(PICKER_MIN_TILE_WIDTH_DP, pickerTileWidthDp("psp", IconDisplayMode.BOX_ART), 0.01f)
+    }
+
+    @Test
+    fun `rows fill greedily and spill to the next`() {
+        assertEquals(listOf(0..2, 3..4), packRows(listOf(50f, 50f, 50f, 50f, 50f), available = 170f, spacing = 10f))
+        // Exactly fitting is still a fit.
+        assertEquals(listOf(0..1), packRows(listOf(80f, 80f), available = 170f, spacing = 10f))
+    }
+
+    @Test
+    fun `a tile wider than the pane gets a row of its own, and so does every tile before measuring`() {
+        assertEquals(listOf(0..0, 1..1), packRows(listOf(300f, 50f), available = 100f, spacing = 8f).take(2))
+        assertEquals(listOf(0..0, 1..1, 2..2), packRows(listOf(50f, 50f, 50f), available = 0f, spacing = 8f))
+        assertEquals(emptyList<IntRange>(), packRows(emptyList(), available = 500f, spacing = 8f))
+    }
+
+    @Test
+    fun `ICON0 rows hold as many tiles as the pane fits`() {
+        assertEquals(listOf(0..5, 6..7), onPs2().shelfRows())
+        assertEquals(listOf(0..4, 5..7), onPs2().copy(shelfWidthDp = sixIcon0Wide - 1f).shelfRows())
+    }
+
+    @Test
+    fun `a mixed shelf flows each box at its own width`() {
+        val mixed = GameShelf("mixed", "Mixed", listOf(game(1, "snes"), game(2, "psp"), game(3, "psp"), game(4, "snes"), game(5, "psp")))
+        val s = GamePickerState(shelves = listOf(mixed), focusZone = PickerZone.GRID, viewMode = IconDisplayMode.BOX_ART, shelfWidthDp = 300f)
+        // SNES ≈ 123 + PSP 64 + PSP 64 (+ gaps) fits 300; the next SNES spills.
+        assertEquals(listOf(0..2, 3..4), s.shelfRows())
+    }
+
+    @Test
+    fun `up and down land on the tile nearest the cursor's centre`() {
+        val widths = listOf(123f, 64f, 64f, 123f, 64f)
+        val rows = listOf(0..2, 3..4)
+        // Centres: row 0 at 61.5, 163, 235; row 1 at 61.5, 163.
+        assertEquals(3, flowMove(0, NavigationDirection.DOWN, rows, widths, 8f))
+        assertEquals(4, flowMove(1, NavigationDirection.DOWN, rows, widths, 8f))
+        assertEquals(4, flowMove(2, NavigationDirection.DOWN, rows, widths, 8f))   // past the row's end
+        assertEquals(1, flowMove(4, NavigationDirection.UP, rows, widths, 8f))
+        assertNull(flowMove(1, NavigationDirection.UP, rows, widths, 8f))
+        assertNull(flowMove(4, NavigationDirection.DOWN, rows, widths, 8f))
+    }
+
+    @Test
+    fun `left and right stay inside the row`() {
+        val widths = listOf(50f, 50f, 50f, 50f)
+        val rows = listOf(0..1, 2..3)
+        assertEquals(1, flowMove(0, NavigationDirection.RIGHT, rows, widths, 8f))
+        assertNull(flowMove(1, NavigationDirection.RIGHT, rows, widths, 8f))
+        assertNull(flowMove(2, NavigationDirection.LEFT, rows, widths, 8f))
+        assertNull(flowMove(9, NavigationDirection.LEFT, rows, widths, 8f))
+    }
+
+    @Test
+    fun `custom card tiles take the ICON0 width`() {
+        val cardsShelf = state().let { it.copy(shelfIndex = it.shelves.lastIndex, shelfWidthDp = sixIcon0Wide, viewMode = IconDisplayMode.BOX_ART) }
+        assertEquals(List(2) { PICKER_ICON0_WIDTH_DP + pad }, cardsShelf.currentShelf()!!.tileWidthsDp(cardsShelf.viewMode))
     }
 
     // ── Selection ────────────────────────────────────────────────────────────

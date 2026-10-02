@@ -115,3 +115,9 @@ internal fun appPickerSound(before: AppPickerState?, after: AppPickerState?): Me
     before.confirmingRemovals && before.confirmFocusedOption != after.confirmFocusedOption -> MenuSound.SCROLL
     else -> null
 }
+
+/** The removal confirmation's question: apps leave a custom card, or the library they were picked into. */
+internal fun removalQuestion(target: AppPickerTarget, count: Int): String {
+    val place = if (target is AppPickerTarget.CardApps) "card" else "library"
+    return "Remove $count app(s) from this $place?"
+}

@@ -12,17 +12,24 @@ package com.playfieldportal.core.domain.model
  * exactly the failure this setting exists to fix.
  *
  *  - [NONE]           today's rendering, unchanged — the shipped default.
- *  - [OFFSET_SHADOW]  one matte copy, offset down and to the right (a hard drop shadow).
+ *  - [OFFSET_SHADOW]  one dark matte copy, offset down and to the right (a hard drop shadow).
+ *  - [OFFSET_SHADOW_LIGHT] the same copy in the light matte, for dark glyphs (a black icon) that
+ *                     a dark shadow disappears into.
  *  - [CONTOUR_DARK]   dark matte copies dilated all around the glyph.
  *  - [CONTOUR_LIGHT]  the same, with a light matte.
  *  - [CONTOUR_AUTO]   the same, matte color derived from the glyph's luminance.
  */
 enum class IconLegibilityStyle(val label: String) {
     NONE("None"),
-    OFFSET_SHADOW("Offset Shadow"),
+    // Stored by name: OFFSET_SHADOW keeps its name from before the light one existed.
+    OFFSET_SHADOW("Offset Shadow (Dark)"),
+    OFFSET_SHADOW_LIGHT("Offset Shadow (Light)"),
     CONTOUR_DARK("Contour (Dark)"),
     CONTOUR_LIGHT("Contour (Light)"),
     CONTOUR_AUTO("Contour (Auto)");
+
+    /** The single down-right copy, dark or light — as opposed to a contour all around the glyph. */
+    val isOffsetShadow: Boolean get() = this == OFFSET_SHADOW || this == OFFSET_SHADOW_LIGHT
 
     companion object {
         val DEFAULT = NONE

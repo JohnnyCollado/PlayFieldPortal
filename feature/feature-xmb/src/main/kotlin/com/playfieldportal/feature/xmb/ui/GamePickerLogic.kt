@@ -7,14 +7,14 @@ import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.IconDisplayMode
 import com.playfieldportal.core.domain.model.MemoryCard
 import com.playfieldportal.core.navigation.NavigationDirection
-import com.playfieldportal.core.navigation.gridMove
 import com.playfieldportal.core.ui.sound.MenuSound
+import com.playfieldportal.feature.artwork.store.ArtworkDimensions
 
 // ── Game picker ("Add Games to Category"): pure logic ─────────────────────────
 //
 // The library-shelf picker's rules, kept free of the ViewModel and coroutines so they are
 // unit-testable (same shape as AppPickerLogic). The picker is a vertical shelf list beside a
-// fixed-column art grid of the current shelf:
+// free-flowing art grid of the current shelf, each tile at its XMB size:
 //   - "In {category}" first (what the category held when the picker opened), then one shelf per
 //     enabled console that has real games, then the custom memory cards that can move in;
 //   - two levels, as in the Artwork Studio: the shelf list is a vertical tab list the D-pad steps
@@ -26,8 +26,107 @@ import com.playfieldportal.core.ui.sound.MenuSound
 //     "In" shelf and its console shelf toggles once;
 //   - the header's add/remove counts use the exact diff XMBViewModel.confirmGamePicker applies.
 
-/** Columns in the shelf grid. Layout and navigation both read this, so they cannot drift. */
-const val GAME_PICKER_GRID_COLUMNS = 6
+// ── Shelf layout: XMB-sized tiles in free-flowing rows ────────────────────────
+//
+// Every tile is drawn at the size it has in the XMB, and rows pack as many as the pane fits, so
+// an ICON0 shelf reads at full size and a shelf of narrow UMD cases fits many to a row. Layout
+// and navigation both read [shelfRows], so they cannot drift. Units are dp.
+
+/** ICON0 at the XMB game row's size (XMBItemList's GAME_ICON_WIDTH × GAME_ICON_HEIGHT). */
+internal const val PICKER_ICON0_WIDTH_DP = 126f
+internal const val PICKER_ICON0_HEIGHT_DP = 70f
+/** Box Art / 3D Box / Physical Media height — the XMB's NATURAL_ART_HEIGHT. */
+internal const val PICKER_ART_HEIGHT_DP = 84f
+/** Chrome room around the art: the focus frame sits this far outside it on every side. */
+internal const val PICKER_FRAME_PAD_DP = 4f
+internal const val PICKER_TILE_SPACING_DP = 8f
+/** The narrowest tile: below this the two-line label stops reading. A UMD case lands here. */
+internal const val PICKER_MIN_TILE_WIDTH_DP = 64f
+// Cartridge and disc shots have no per-platform preset; a square frame suits both.
+internal const val PICKER_PHYSICAL_MEDIA_ASPECT = 1f
+
+/** The art's width for a game on [platformId] in [view], at its XMB size. */
+internal fun pickerArtWidthDp(platformId: String?, view: IconDisplayMode): Float = when (view) {
+    IconDisplayMode.ICON0 -> PICKER_ICON0_WIDTH_DP
+    IconDisplayMode.BOX_ART, IconDisplayMode.BOX_3D -> PICKER_ART_HEIGHT_DP * ArtworkDimensions.boxArt(platformId).aspectRatio
+    IconDisplayMode.PHYSICAL_MEDIA -> PICKER_ART_HEIGHT_DP * PICKER_PHYSICAL_MEDIA_ASPECT
+}
+
+/** A whole tile's width: the art plus its frame room, never under [PICKER_MIN_TILE_WIDTH_DP]. */
+internal fun pickerTileWidthDp(platformId: String?, view: IconDisplayMode): Float =
+    (pickerArtWidthDp(platformId, view) + PICKER_FRAME_PAD_DP * 2).coerceAtLeast(PICKER_MIN_TILE_WIDTH_DP)
+
+/** Each tile's width on this shelf. Custom memory cards are landscape, ICON0-wide. */
+internal fun PickerShelf.tileWidthsDp(view: IconDisplayMode): List<Float> = when (this) {
+    is GameShelf -> games.map { pickerTileWidthDp(it.platformId, view) }
+    is CardShelf -> List(cards.size) { PICKER_ICON0_WIDTH_DP + PICKER_FRAME_PAD_DP * 2 }
+}
+
+/**
+ * Packs tiles of [widths] left to right into rows no wider than [available], [spacing] apart.
+ * Every row holds at least one tile, so a tile wider than the pane — or any tile before the pane
+ * is measured ([available] 0) — stands in a row of its own.
+ */
+internal fun packRows(widths: List<Float>, available: Float, spacing: Float): List<IntRange> {
+    val rows = mutableListOf<IntRange>()
+    var start = 0
+    var used = 0f
+    widths.forEachIndexed { i, w ->
+        if (i > start && used + spacing + w > available) {
+            rows += start until i
+            start = i
+            used = w
+        } else {
+            used = if (i == start) w else used + spacing + w
+        }
+    }
+    if (widths.isNotEmpty()) rows += start..widths.lastIndex
+    return rows
+}
+
+/** The current shelf's rows in the current view, at the measured pane width. */
+internal fun GamePickerState.shelfRows(): List<IntRange> {
+    val shelf = currentShelf() ?: return emptyList()
+    return packRows(shelf.tileWidthsDp(viewMode), shelfWidthDp, PICKER_TILE_SPACING_DP)
+}
+
+/** The row holding tile [index], or -1. */
+internal fun List<IntRange>.rowOf(index: Int): Int = indexOfFirst { index in it }
+
+// Tile [index]'s horizontal centre within its row (rows are left-aligned).
+private fun centreX(index: Int, row: IntRange, widths: List<Float>, spacing: Float): Float {
+    var x = 0f
+    for (i in row.first until index) x += widths[i] + spacing
+    return x + widths[index] / 2f
+}
+
+/** The tile in [row] whose centre is nearest [x]; ties go to the left one. */
+internal fun nearestInRow(row: IntRange, x: Float, widths: List<Float>, spacing: Float): Int =
+    row.minBy { kotlin.math.abs(centreX(it, row, widths, spacing) - x) }
+
+/**
+ * One D-pad step in free-flowing rows, or null at an edge. LEFT/RIGHT stay inside the row (no
+ * wrapping, as before); UP/DOWN land on the tile in the next row nearest the cursor's centre.
+ */
+internal fun flowMove(
+    current: Int,
+    direction: NavigationDirection,
+    rows: List<IntRange>,
+    widths: List<Float>,
+    spacing: Float,
+): Int? {
+    val r = rows.rowOf(current)
+    if (r < 0) return null
+    val row = rows[r]
+    return when (direction) {
+        NavigationDirection.LEFT -> (current - 1).takeIf { it in row }
+        NavigationDirection.RIGHT -> (current + 1).takeIf { it in row }
+        NavigationDirection.UP, NavigationDirection.DOWN -> {
+            val target = rows.getOrNull(if (direction == NavigationDirection.UP) r - 1 else r + 1) ?: return null
+            nearestInRow(target, centreX(current, row, widths, spacing), widths, spacing)
+        }
+    }
+}
 
 /** Which level of the picker holds the controller cursor. */
 enum class PickerZone { RAIL, GRID }
@@ -68,6 +167,8 @@ data class GamePickerState(
     val focusByShelf: Map<String, Int> = emptyMap(),
     // The one icon display mode every tile is drawn in. Picker-local: never written to settings.
     val viewMode: IconDisplayMode = IconDisplayMode.DEFAULT,
+    // The shelf pane's measured width in dp: rows pack to it. 0 until the pane first lays out.
+    val shelfWidthDp: Float = 0f,
     val selectedGameIds: Set<Long> = emptySet(),
     val selectedCollectionIds: Set<Long> = emptySet(),
     // The category's games when the picker opened — they open checked, and only these can be
@@ -163,7 +264,7 @@ private fun GamePickerState.withFocus(index: Int): GamePickerState {
 
 /**
  * D-pad. On the shelf list, UP/DOWN step through the shelves (the shown shelf follows live) and
- * LEFT/RIGHT do nothing. In the grid, [gridMove] without wrapping. The first controller input
+ * LEFT/RIGHT do nothing. In the grid, [flowMove] over [shelfRows]. The first controller input
  * after touch only brings the cursor back, where the touch left it.
  */
 internal fun GamePickerState.move(action: GamepadAction): GamePickerState {
@@ -184,7 +285,8 @@ internal fun GamePickerState.move(action: GamepadAction): GamePickerState {
             NavigationDirection.LEFT, NavigationDirection.RIGHT -> this
         }
         PickerZone.GRID ->
-            gridMove(focusedIndex(), direction, GAME_PICKER_GRID_COLUMNS, shelf.size)?.let(::withFocus) ?: this
+            flowMove(focusedIndex(), direction, shelfRows(), shelf.tileWidthsDp(viewMode), PICKER_TILE_SPACING_DP)
+                ?.let(::withFocus) ?: this
     }
 }
 

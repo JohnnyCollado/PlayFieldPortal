@@ -67,6 +67,30 @@ class IconMatteTest {
     }
 
     @Test
+    fun `the light offset shadow is the same single down-right copy as the dark one`() {
+        assertEquals(matteOffsets(IconLegibilityStyle.OFFSET_SHADOW), matteOffsets(IconLegibilityStyle.OFFSET_SHADOW_LIGHT))
+        assertTrue(IconLegibilityStyle.OFFSET_SHADOW.isOffsetShadow)
+        assertTrue(IconLegibilityStyle.OFFSET_SHADOW_LIGHT.isOffsetShadow)
+        assertTrue(IconLegibilityStyle.entries.filter { it.isOffsetShadow }.size == 2)
+    }
+
+    @Test
+    fun `the light offset shadow is light whatever the glyph - for dark icons a dark shadow vanishes into`() {
+        assertEquals(MatteLight.copy(alpha = SHADOW_MATTE_ALPHA), matteColorFor(IconLegibilityStyle.OFFSET_SHADOW_LIGHT, darkGlyph))
+        assertEquals(MatteLight.copy(alpha = SHADOW_MATTE_ALPHA), matteColorFor(IconLegibilityStyle.OFFSET_SHADOW_LIGHT, lightGlyph))
+    }
+
+    @Test
+    fun `the offset shadows are labelled dark and light, and the dark one keeps its stored name`() {
+        assertEquals("Offset Shadow (Dark)", IconLegibilityStyle.OFFSET_SHADOW.label)
+        assertEquals("Offset Shadow (Light)", IconLegibilityStyle.OFFSET_SHADOW_LIGHT.label)
+        assertEquals(IconLegibilityStyle.OFFSET_SHADOW, IconLegibilityStyle.fromName("OFFSET_SHADOW"))
+        // Cycling meets the light one right after the dark one.
+        val order = IconLegibilityStyle.entries
+        assertEquals(order.indexOf(IconLegibilityStyle.OFFSET_SHADOW) + 1, order.indexOf(IconLegibilityStyle.OFFSET_SHADOW_LIGHT))
+    }
+
+    @Test
     fun `AUTO gives a dark glyph the light matte - the motivating frame`() {
         assertEquals(
             MatteLight.copy(alpha = CONTOUR_MATTE_ALPHA),

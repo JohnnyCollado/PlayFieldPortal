@@ -137,6 +137,9 @@ class GamePickerViewModel @Inject constructor(
 
     fun touchBrowse(index: Int) = _state.update { it.touchBrowse(index) }
 
+    /** The shelf pane laid out at [widthDp]: rows re-pack to it. */
+    fun onShelfMeasured(widthDp: Float) = _state.update { it.copy(shelfWidthDp = widthDp) }
+
     // Applies one user input and plays its sound through the user's assigned Navigation slot.
     private fun transition(transform: (GamePickerState) -> GamePickerState) {
         val before = _state.value

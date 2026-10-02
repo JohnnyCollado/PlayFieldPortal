@@ -308,7 +308,7 @@ fun DisplaySettingsScreen(
             SettingsValueRow(
                 label    = "Icon Legibility",
                 sublabel = "How XMB icons separate from the background.  " +
-                    "None  |  Offset Shadow  |  Contour (Dark)  |  Contour (Light)  |  Contour (Auto — follows the icon color)",
+                    "None  |  Offset Shadow (Dark)  |  Offset Shadow (Light — for dark icons)  |  Contour (Dark)  |  Contour (Light)  |  Contour (Auto — follows the icon color)",
                 value    = state.iconLegibility.label,
                 onClick  = { viewModel.cycleIconLegibility() },
             )
@@ -327,6 +327,13 @@ fun DisplaySettingsScreen(
                 sublabel = "Drop shadow behind row helper text — keeps it readable over bright wallpaper regions",
                 checked  = state.textShadow,
                 onToggle = { viewModel.setTextShadow(it) },
+            )
+
+            SettingsValueRow(
+                label    = "Item List Motion",
+                sublabel = "Rewind (the focused item slips behind the category icon, the list follows; up plays it in reverse)   |   Glide (the whole list moves together)",
+                value    = state.itemListMotion.label,
+                onClick  = { viewModel.cycleItemListMotion() },
             )
 
             // ── Font Colour ──────────────────────────────────────────────────

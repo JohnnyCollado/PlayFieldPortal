@@ -382,10 +382,23 @@ class XmbListsTest {
     }
 
     @Test
-    fun `a custom root applies the stored order between the umd slot and the add row`() {
+    fun `a custom root applies the stored order and the umd slot follows the memory card`() {
         val stored = ListState(positions = mapOf("collection:5" to 0, "row:catcard" to 1))
         val root = assembleRoot(umd, listOf(catCard, mainline), listOf(addGames), stored, custom = true)
-        assertEquals(listOf("umd_slot", "col_5", "category_card", "add_games"), root.map { it.id })
+        assertEquals(listOf("col_5", "umd_slot", "category_card", "add_games"), root.map { it.id })
+    }
+
+    @Test
+    fun `the umd slot sits right above All Games, under pinned rows too`() {
+        val stored = ListState(positions = mapOf("card:gba" to 0, "row:all_games" to 1, "collection:4" to 2))
+        val root = assembleRoot(umd, listOf(allGames, gba, tactics), emptyList(), stored, custom = true)
+        assertEquals(listOf("col_4", "card_gba", "umd_slot", "all"), root.map { it.id })
+    }
+
+    @Test
+    fun `with no default card the umd slot tops the root`() {
+        val root = assembleRoot(umd, listOf(tactics, mainline), listOf(addGames), ListState.EMPTY, custom = false)
+        assertEquals(listOf("umd_slot", "col_4", "col_5", "add_games"), root.map { it.id })
     }
 
     @Test
@@ -414,10 +427,26 @@ class XmbListsTest {
     }
 
     @Test
-    fun `a move never crosses the umd slot or an add row`() {
+    fun `a move never crosses an add row, and the umd slot never moves on its own`() {
         val rows = listOf(umd, allGames, addGames)
         assertNull(moveRow(rows, index = 1, delta = -1))
         assertNull(moveRow(rows, index = 1, delta = +1))
+        assertNull(moveRow(listOf(gba, umd, allGames), index = 1, delta = -1))
+        assertNull(moveRow(listOf(gba, umd, allGames), index = 1, delta = +1))
+    }
+
+    @Test
+    fun `moving the default card carries the umd slot with it`() {
+        val moved = moveRow(listOf(gba, umd, allGames, addGames), index = 2, delta = -1)
+        assertEquals(listOf("umd_slot", "all", "card_gba", "add_games") to 1, moved?.first?.map { it.id } to moved?.second)
+    }
+
+    @Test
+    fun `a row moving past the default card passes the umd slot too`() {
+        val moved = moveRow(listOf(gba, umd, allGames, mainline), index = 0, delta = +1)
+        assertEquals(listOf("umd_slot", "all", "card_gba", "col_5") to 2, moved?.first?.map { it.id } to moved?.second)
+        val back = moveRow(moved!!.first, index = 2, delta = -1)
+        assertEquals(listOf("card_gba", "umd_slot", "all", "col_5") to 0, back?.first?.map { it.id } to back?.second)
     }
 
     @Test
@@ -457,5 +486,127 @@ class XmbListsTest {
     fun `a row that cannot be pinned still offers move`() {
         assertEquals(listOf("move_row"), arrangeMenuItems(pinned = null, canMove = true).map { it.id })
         assertTrue(arrangeMenuItems(pinned = null, canMove = false).isEmpty())
+    }
+
+    // ── Placing a lifted category ────────────────────────────────────────────
+
+    @Test
+    fun `placing a move begun in Category Manager returns to it on the column it was opened from`() {
+        val bar = listOf(games, appStore, settings)
+        val session = CategoryMoveSession(bar, originalIndex = 0, returnToCategoryId = BuiltInCategory.SETTINGS)
+        // The bar has been reordered by the move; the return follows Settings to its new slot.
+        val reordered = listOf(appStore, settings, games)
+        assertEquals(1 to CATEGORY_MANAGER_SCREEN_ID, session.returnAfterMove(reordered))
+    }
+
+    @Test
+    fun `cancelling a move begun in Category Manager returns to it on the restored bar`() {
+        val bar = listOf(games, appStore, settings)
+        val session = CategoryMoveSession(bar, originalIndex = 0, returnToCategoryId = BuiltInCategory.SETTINGS)
+        // Cancel puts the original bar back, so the return resolves against it.
+        assertEquals(2 to CATEGORY_MANAGER_SCREEN_ID, session.returnAfterMove(session.originalCategories))
+    }
+
+    @Test
+    fun `placing a move begun on the crossbar stays on the crossbar`() {
+        val bar = listOf(games, appStore, settings)
+        assertNull(CategoryMoveSession(bar, originalIndex = 0).returnAfterMove(bar))
+    }
+
+    @Test
+    fun `a return column that left the bar still reopens Category Manager on the moved category`() {
+        val bar = listOf(games, appStore)
+        val session = CategoryMoveSession(bar, originalIndex = 0, returnToCategoryId = "gone")
+        assertEquals(null to CATEGORY_MANAGER_SCREEN_ID, session.returnAfterMove(bar))
+    }
+
+    // ── App rows inside a non-gaming custom memory card ──────────────────────
+
+    @Test
+    fun `an app in a card shows only its name, like the category's own app rows`() {
+        val row = XMBItem(id = "g_1", title = "Netflix", subtitle = "Android · Last played yesterday", isAndroidApp = true)
+        assertNull(row.asAppRow().subtitle)
+        assertEquals("Netflix", row.asAppRow().title)
+    }
+
+    @Test
+    fun `a pinned app in a card keeps the pinned line`() {
+        val row = XMBItem(id = "g_1", title = "Netflix", subtitle = "Android", isAndroidApp = true, pinned = true)
+        assertEquals("Pinned", row.asAppRow().subtitle)
+    }
+
+    // ── Landing on a section: its default row ────────────────────────────────
+
+    private val customApps = Category("custom_tools_7", "Tools", "ic_apps", type = CategoryType.MANUAL, position = 10)
+
+    private fun rows(vararg ids: String) = ids.map { XMBItem(id = it, title = it) }
+
+    @Test
+    fun `media sections land on their memory card`() {
+        assertEquals(3, defaultRootIndex(photos, rows("camera", "photo_albums", "photo_apps", XMBViewModel.ALL_PHOTOS_ITEM_ID)))
+        assertEquals(3, defaultRootIndex(videos, rows("video_collections", "video_libraries", "video_apps", XMBViewModel.ALL_VIDEOS_ITEM_ID, "add_videos")))
+        assertEquals(2, defaultRootIndex(music, rows("playlists", "music_apps", XMBViewModel.ALL_MUSIC_ITEM_ID)))
+    }
+
+    @Test
+    fun `music lands on Now Playing while something plays`() {
+        assertEquals(0, defaultRootIndex(music, rows(XMBViewModel.NOW_PLAYING_ITEM_ID, "playlists", "music_apps", XMBViewModel.ALL_MUSIC_ITEM_ID)))
+    }
+
+    @Test
+    fun `Game lands on All Games, under the UMD slot`() {
+        assertEquals(1, defaultRootIndex(games, rows(XMBViewModel.UMD_SLOT_ITEM_ID, XMBViewModel.ALL_GAMES_ITEM_ID, "platform_psp")))
+    }
+
+    @Test
+    fun `a custom gaming category lands on its own Memory Card`() {
+        assertEquals(1, defaultRootIndex(custom, rows(XMBViewModel.UMD_SLOT_ITEM_ID, XMBViewModel.CATEGORY_CARD_ITEM_ID, "col_4", "add_games")))
+        assertEquals(0, defaultRootIndex(custom, rows(XMBViewModel.CATEGORY_CARD_ITEM_ID, "add_games")))
+    }
+
+    @Test
+    fun `every other section lands on its top row`() {
+        assertEquals(0, defaultRootIndex(settings, rows("settings_android_system", "settings_section_library")))
+        assertEquals(0, defaultRootIndex(appStore, rows("app_a", "app_b", "add_apps")))
+        assertEquals(0, defaultRootIndex(customApps, rows("col_9", "app_a", "add_apps")))
+        // A default row that is missing falls back to the top.
+        assertEquals(0, defaultRootIndex(music, rows("playlists", "music_apps")))
+    }
+
+    private fun landingOn(category: Category) =
+        state(category) { copy(currentItems = rows("old_a", "old_b"), selectedItemIndex = 0, landingPending = true) }
+
+    @Test
+    fun `the first rows a landed section publishes take its default row, and the list snaps there`() {
+        val before = landingOn(games)
+        val after = before.copy(currentItems = rows(XMBViewModel.UMD_SLOT_ITEM_ID, XMBViewModel.ALL_GAMES_ITEM_ID)).landedFrom(before)
+        assertEquals(1, after.selectedItemIndex)
+        assertFalse(after.landingPending)
+        assertEquals(before.landingToken + 1, after.landingToken)
+    }
+
+    @Test
+    fun `a landing waits for fresh rows`() {
+        val before = landingOn(games)
+        // The bar has moved but the old section's rows are still on screen.
+        assertEquals(before.copy(selectedItemIndex = 1), before.copy(selectedItemIndex = 1).landedFrom(before))
+        // An empty list (a view blanking before it fills) is not a landing either.
+        val blank = before.copy(currentItems = emptyList())
+        assertTrue(blank.landedFrom(before).landingPending)
+    }
+
+    @Test
+    fun `drilling in before a landing resolves cancels it, so backing out keeps its own cursor`() {
+        val before = landingOn(games)
+        val drilled = before.copy(selectedPlatformId = "psp", currentItems = rows("game_1", "game_2"))
+        assertFalse(drilled.landedFrom(before).landingPending)
+        assertEquals(0, drilled.landedFrom(before).selectedItemIndex)
+    }
+
+    @Test
+    fun `once landed, later rows keep the cursor where the user put it`() {
+        val landed = landingOn(games).copy(landingPending = false)
+        val refreshed = landed.copy(currentItems = rows(XMBViewModel.ALL_GAMES_ITEM_ID, "platform_psp"), selectedItemIndex = 1)
+        assertEquals(refreshed, refreshed.landedFrom(landed))
     }
 }

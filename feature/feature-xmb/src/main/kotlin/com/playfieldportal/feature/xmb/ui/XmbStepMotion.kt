@@ -102,6 +102,9 @@ data class StepInputs(
     val scrollToTopToken: Int,
     val columnKey: Any?,
     val moving: Boolean,
+    // Bumps when the cursor lands on a section's default row (XMBUiState.landingToken): a new
+    // section is never scrolled to, only shown.
+    val landingToken: Int = 0,
 ) {
     val target: Int get() = rawSelectedIndex.coerceIn(0, maxOf(itemCount - 1, 0))
 }
@@ -120,7 +123,7 @@ sealed interface StepMotion {
 /**
  * Decides how the list moves between two sets of inputs. Snaps for: no previous inputs, either raw
  * index negative (the `AnimatedContent` outgoing copy and re-entry), either list empty, a changed
- * scroll-to-top token or column key, and a Move on either side. Otherwise a jump of more than
+ * scroll-to-top token, column key or landing token, and a Move on either side. Otherwise a jump of more than
  * [LONG_JUMP_ROWS] snaps to one row short and glides the last row; anything else glides.
  *
  * The jump is measured between targets, never from the animated value, so a held repeat (always one
@@ -133,6 +136,7 @@ fun xmbStepMotion(prev: StepInputs?, next: StepInputs): StepMotion {
         prev.itemCount == 0 || next.itemCount == 0 ||
         prev.scrollToTopToken != next.scrollToTopToken ||
         prev.columnKey != next.columnKey ||
+        prev.landingToken != next.landingToken ||
         prev.moving || next.moving
     ) return StepMotion.Snap(target)
     val delta = target - prev.target
@@ -141,4 +145,102 @@ fun xmbStepMotion(prev: StepInputs?, next: StepInputs): StepMotion {
         delta < -LONG_JUMP_ROWS -> StepMotion.SnapThenGlide(from = target + 1, target = target)
         else -> StepMotion.Glide(target)
     }
+}
+
+
+// ── Rewind: the hand-off across the catbar (Display ▸ Item List Motion) ─────────
+
+/**
+ * Timings of Rewind's hand-off, in ms. ▼ sends the focused row up behind the category icon over
+ * [CROSS_MS] while the column waits [COLUMN_LAG_MS]; ▲ plays it backwards — the column moves at
+ * once and the row above the bar waits [DROP_DELAY_MS] before dropping in over [CROSS_MS]. A step
+ * within [HOLD_GAP_MS] of the last one is a held repeat and glides as one column.
+ */
+object XmbHandOff {
+    const val CROSS_MS = 80L
+    const val COLUMN_LAG_MS = 30L
+    const val DROP_DELAY_MS = 40L
+    const val HOLD_GAP_MS = 200L
+}
+
+/**
+ * The XMB item list's glide (Glide, and Rewind's column): one constant speed, [MS_PER_ROW] per row,
+ * instead of the category bar's spring, whose slow settle read as uneven. A held run that has
+ * fallen behind takes at most [MAX_MS] to catch up, so the list never trails the thumb.
+ */
+object XmbGlide {
+    const val MS_PER_ROW = 100L
+    const val MAX_MS = 200L
+}
+
+/** How long the column takes from [from] to [to] (positions in rows) at the glide's constant speed. */
+fun glideDurationMs(from: Float, to: Float): Int =
+    (kotlin.math.abs(to - from) * XmbGlide.MS_PER_ROW).toLong().coerceAtMost(XmbGlide.MAX_MS).toInt()
+
+/**
+ * The one row crossing the category bar in a hand-off: [row] travels from [fromD] to [toD] (its
+ * `index - position`, as in [itemRowTopPx]) starting at [startMs]. [down] is a ▼ step: the
+ * focused row rising to the previous slot; otherwise the row above dropping into focus.
+ */
+data class Crossing(val row: Int, val down: Boolean, val fromD: Float, val toD: Float, val startMs: Long)
+
+/**
+ * The hand-off for a step from [fromIndex] to [toIndex] at [nowMs], or null when the step glides
+ * instead: anything but a single row, or a held repeat (the last step was under
+ * [XmbHandOff.HOLD_GAP_MS] ago). [fromD] is where the crossing row is drawn right now.
+ */
+fun handOffFor(fromIndex: Int, toIndex: Int, nowMs: Long, lastStepMs: Long?, fromD: Float): Crossing? {
+    if (toIndex - fromIndex != 1 && fromIndex - toIndex != 1) return null
+    if (lastStepMs != null && nowMs - lastStepMs < XmbHandOff.HOLD_GAP_MS) return null
+    return if (toIndex > fromIndex) {
+        Crossing(row = fromIndex, down = true, fromD = fromD, toD = -1f, startMs = nowMs)
+    } else {
+        Crossing(row = toIndex, down = false, fromD = fromD, toD = 0f, startMs = nowMs + XmbHandOff.DROP_DELAY_MS)
+    }
+}
+
+/** When the column starts toward the new selection: after the lag on a ▼ hand-off, else now. */
+fun columnStartMs(step: Crossing?, nowMs: Long): Long =
+    if (step?.down == true) nowMs + XmbHandOff.COLUMN_LAG_MS else nowMs
+
+/**
+ * When the new selection may draw as focused. Until then no row is: the leaving row dims at once,
+ * and the new one grows as the column (▼) or the dropping row (▲) sets off.
+ */
+fun focusStartMs(step: Crossing?, nowMs: Long): Long = when {
+    step == null -> nowMs
+    step.down -> nowMs + XmbHandOff.COLUMN_LAG_MS
+    else -> step.startMs
+}
+
+private fun crossingProgress(c: Crossing, nowMs: Long): Float =
+    ((nowMs - c.startMs).toFloat() / XmbHandOff.CROSS_MS).coerceIn(0f, 1f)
+
+/**
+ * The crossing row's `d` at [nowMs], given where the column would put it ([columnD]). A rising
+ * row never lags the column (a later step carries it on up); a dropping row holds above the bar
+ * until its drop, then never trails the column either.
+ */
+fun crossingD(c: Crossing, nowMs: Long, columnD: Float): Float {
+    val k = crossingProgress(c, nowMs)
+    // Linear, like the glide: one constant speed through the whole crossing.
+    val fast = c.fromD + (c.toD - c.fromD) * k
+    if (!c.down && k < 1f) return fast
+    return if (c.down) minOf(fast, columnD) else maxOf(fast, columnD)
+}
+
+/** True once the crossing has landed and the column has caught up with it: it is a plain row again. */
+fun crossingDone(c: Crossing, nowMs: Long, columnD: Float): Boolean =
+    crossingProgress(c, nowMs) >= 1f && if (c.down) columnD <= c.toD + 1e-3f else columnD >= c.toD - 1e-3f
+
+/**
+ * How much of a row at [d] draws in the catbar band — the strip between the half-row window and
+ * the focus slot, which the clip used to hide. Any row in transit between the two slots (a
+ * hand-off, a glide, a held run) draws there in full, behind the category icon, which draws on
+ * top; it fades in as it leaves the focus slot and out over the last fifth into the previous slot,
+ * so at rest the half split is exactly as before.
+ */
+fun transitBandAlpha(d: Float): Float {
+    if (d >= 0f || d <= -1f) return 0f
+    return minOf(1f, -d / 0.08f, (d + 1f) / 0.2f)
 }

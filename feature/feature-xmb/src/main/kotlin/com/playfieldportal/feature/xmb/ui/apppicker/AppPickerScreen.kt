@@ -77,6 +77,7 @@ import com.playfieldportal.feature.xmb.viewmodel.AppPickerEntry
 import com.playfieldportal.feature.xmb.viewmodel.AppPickerState
 import com.playfieldportal.feature.xmb.viewmodel.PICKER_GRID_COLUMNS
 import com.playfieldportal.feature.xmb.viewmodel.pendingRemovals
+import com.playfieldportal.feature.xmb.viewmodel.removalQuestion
 import com.playfieldportal.feature.xmb.viewmodel.visibleApps
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -168,6 +169,7 @@ fun AppPickerScreen(
         // (confirmingRemovals) so controller SELECT and the touch buttons hit one path.
         if (state.confirmingRemovals) {
             RemovalConfirmPanel(
+                question = removalQuestion(state.target, state.pendingRemovals().size),
                 labels = state.apps
                     .filter { it.packageName in state.pendingRemovals() }
                     .map { it.label },
@@ -588,6 +590,7 @@ private fun ConfirmOption(
 
 @Composable
 private fun RemovalConfirmPanel(
+    question: String,
     labels: List<String>,
     focusedOption: Int,
     onConfirm: () -> Unit,
@@ -608,7 +611,7 @@ private fun RemovalConfirmPanel(
                 .border(1.dp, colors.chromeDivider.copy(alpha = 0.4f), RoundedCornerShape(2.dp)),
         ) {
             Text(
-                text = "Remove ${labels.size} app(s) from this library?",
+                text = question,
                 color = colors.textPrimary,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,

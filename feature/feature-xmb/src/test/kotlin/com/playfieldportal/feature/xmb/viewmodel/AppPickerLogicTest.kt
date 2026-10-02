@@ -304,4 +304,11 @@ class AppPickerLogicTest {
         assertEquals(null, appPickerSound(null, state()))
         assertEquals(null, appPickerSound(state(), null))
     }
+
+    @Test
+    fun `the removal question names what the apps leave - a card, or the library`() {
+        assertEquals("Remove 2 app(s) from this card?", removalQuestion(AppPickerTarget.CardApps(7), 2))
+        assertEquals("Remove 1 app(s) from this library?", removalQuestion(AppPickerTarget.CategoryShortcuts("network"), 1))
+        assertEquals("Remove 3 app(s) from this library?", removalQuestion(AppPickerTarget.AndroidGames("android"), 3))
+    }
 }

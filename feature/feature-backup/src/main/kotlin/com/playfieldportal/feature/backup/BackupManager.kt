@@ -642,6 +642,8 @@ open class BackupManager @Inject constructor(
         // restore cleanly onto any device.
         stringPreferencesKey("display_icon_legibility"),
         stringPreferencesKey("display_xmb_layout_adjust"),
+        // Item List Motion (Rewind / Glide), stored by enum name.
+        stringPreferencesKey("display_item_list_motion"),
         stringPreferencesKey("pref_icon_display_mode"),
         // Animated Images (Animated / Reduced / Static), stored by enum name.
         stringPreferencesKey("pref_image_motion"),

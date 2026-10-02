@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.xmb.ui
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateFloatAsState
@@ -21,9 +22,9 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -64,9 +65,12 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -76,13 +80,14 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -97,6 +102,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
+import com.playfieldportal.core.domain.model.XmbListMotion
 import com.playfieldportal.core.ui.achievement.BoneGlyph
 import com.playfieldportal.core.ui.components.ControllerPromptGlyphs
 import com.playfieldportal.core.ui.icons.GameIconStyle
@@ -113,6 +119,7 @@ import com.playfieldportal.themekit.XmbLayoutSpec
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
 
 // Game icons use the authentic PSP ICON0 ratio 144:80 (= 1.8), scaled for the list.
 private val GAME_ICON_WIDTH = 126.dp
@@ -483,6 +490,8 @@ fun XMBItemList(
     // this column's place — a Settings section, a Music view — so the position snaps to the restored
     // cursor instead of gliding there. Null for a column that never swaps its list.
     columnKey: Any? = null,
+    // Bumps when the cursor lands on a section's default row: the column snaps there, never glides.
+    landingToken: Int = 0,
     // Y of the category bar's TOP edge, measured from the top of this list.
     barTopY: Dp = 40.dp,
     // Y of the category bar's BOTTOM edge — where the selected item is seated, directly under the
@@ -508,6 +517,9 @@ fun XMBItemList(
     // Whether this list's animated art may play at all (battery saver / blocking overlays gate
     // it). Provided per row with the row's selection; see LocalMotionAllowed.
     iconAnimatingAllowed: Boolean = false,
+    // "Item List Motion" (Display): Rewind's hand-off across the bar, or one Glide. Glide unless
+    // the caller opts in, so every other column keeps the plain spring.
+    listMotion: XmbListMotion = XmbListMotion.GLIDE,
     modifier: Modifier = Modifier,
 ) {
     // The XMB cross, exactly as the hardware does it:
@@ -560,11 +572,15 @@ fun XMBItemList(
             scrollToTopToken = scrollToTopToken,
             columnKey = columnKey,
             moving = LocalXmbRowDecor.current.movingLabel != null,
+            landingToken = landingToken,
         )
-        val position = remember { ItemListPosition(inputs.target) }
+        val position = remember { ItemListPosition(inputs.target, constantSpeed = true) }
         // Decided here, in the frame the inputs change, so a snap is already drawn by that frame.
-        position.accept(inputs)
+        position.accept(inputs, listMotion)
         LaunchedEffect(position.epoch) { position.run() }
+        LaunchedEffect(position.epoch) { position.runClock() }
+        // Flips only when a hand-off releases the new focus, not on every frame of the clock.
+        val focusShown by remember { derivedStateOf { position.focusShown() } }
 
         // Recomposes only when the set of rows changes, not on every animated frame.
         val window by remember(selectedIndex, items.size, rowsBelow) {
@@ -579,7 +595,7 @@ fun XMBItemList(
                 fun top(p: Float) = itemRowTopPx(i, p, belowTopPx, winTopPx, winPx, rowPx, umdIndex, umdExtraPx)
                 XmbVerticalListRow(
                     item = item,
-                    isSelected = i == selectedIndex,
+                    isSelected = i == selectedIndex && focusShown,
                     // The real PSP XMB labels EVERY first-level item (selected bright, the
                     // rest dimmed) — labels show unless the caller asks for an icon-only column
                     // (the drill flyout's memory-card cross).
@@ -595,7 +611,7 @@ fun XMBItemList(
                     // The tag sits before the row's own graphicsLayer, so tests read unscaled bounds.
                     modifier = Modifier
                         .fillMaxWidth()
-                        .offset { IntOffset(0, top(position.read()).roundToInt()) }
+                        .offset { IntOffset(0, top(position.positionFor(i)).roundToInt()) }
                         .height(if (i == umdIndex) umdRowHeight else ROW_HEIGHT)
                         // A row above its slot shows only its part of the half-row window above the
                         // bar. requiredHeight overflow is CENTRED, so that window has always shown the
@@ -603,11 +619,22 @@ fun XMBItemList(
                         // the crossbar. Rows at or below the selected slot stay unclipped so a lifted
                         // row's outline and a marked badge, which reach above the row, are not shaved.
                         .drawWithContent {
-                            val p = position.read()
+                            val p = position.positionFor(i)
                             val rowTop = top(p)
                             val big = size.width * 8f
                             val windowRect = Rect(0f, winTopPx - rowTop, size.width, winTopPx + winPx - rowTop)
-                            when (itemRowClip(i - p, rowsBelow, atRest = p == target)) {
+                            // Rewind: a row crossing the bar also draws in the band between the window
+                            // and the focus slot, behind the category icon, fading as it settles.
+                            val band = position.bandAlphaFor(i)
+                            if (band > 0f) {
+                                val bandRect = Rect(-big, winTopPx + winPx - rowTop, big, belowTopPx - rowTop)
+                                clipRect(bandRect.left, bandRect.top, bandRect.right, bandRect.bottom) {
+                                    drawContext.canvas.saveLayer(bandRect, Paint().apply { alpha = band })
+                                    this@drawWithContent.drawContent()
+                                    drawContext.canvas.restore()
+                                }
+                            }
+                            when (itemRowClip(i - p, rowsBelow, atRest = position.read() == target)) {
                                 ItemRowClip.None -> drawContent()
                                 ItemRowClip.Window -> clipRect(
                                     windowRect.left, windowRect.top, windowRect.right, windowRect.bottom,
@@ -635,14 +662,27 @@ fun XMBItemList(
  * The item column's animated position: the selected index in rows, on the shared step spring. It is
  * decided in composition ([accept]) and carried out in an effect ([run]); a snap is [held] meanwhile,
  * so the frame that first shows the new selection already draws it instead of drawing it a frame late.
+ *
+ * Under [XmbListMotion.REWIND] a single, unheld step also hands one row across the category bar on
+ * its own fast clock ([Crossing], see XmbStepMotion): [positionFor] is where each row draws, and the
+ * column itself waits out [XmbHandOff.COLUMN_LAG_MS] on a step down.
+ *
+ * [constantSpeed] (the main XMB column) glides at [XmbGlide]'s one speed instead of the spring;
+ * the drill flyout's game column keeps the spring.
  */
-private class ItemListPosition(initial: Int) {
+private class ItemListPosition(initial: Int, private val constantSpeed: Boolean = false) {
     private val animatable = Animatable(initial.toFloat(), Float.VectorConverter, STEP_SETTLE_ROWS)
 
     // Where a snap has landed but the animatable has not been told yet; NaN when there is none.
     private var held by mutableFloatStateOf(Float.NaN)
     private var previous: StepInputs? = null
     private var motion: StepMotion = StepMotion.Snap(initial)
+    // Rewind: the rows crossing the bar now, the clock they move on, and the step-timing memory.
+    private val crossings = mutableStateListOf<Crossing>()
+    private var nowMs by mutableLongStateOf(0L)
+    private var lastStepMs: Long? = null
+    private var columnDelayMs = 0L
+    private var focusFromMs by mutableLongStateOf(0L)
 
     /** Bumps on every change of inputs, so the effect restarts even for an identical motion. */
     var epoch = 0
@@ -651,14 +691,50 @@ private class ItemListPosition(initial: Int) {
     /** The position to draw this frame, in rows. */
     fun read(): Float = held.takeUnless { it.isNaN() } ?: animatable.value
 
-    fun accept(inputs: StepInputs) {
+    /** The position row [index] draws at: the column's, or its own while it crosses the bar. */
+    fun positionFor(index: Int): Float {
+        val p = read()
+        val c = crossings.lastOrNull { it.row == index } ?: return p
+        return index - crossingD(c, nowMs, index - p)
+    }
+
+    /** How much of row [index] draws in the catbar band: any row in transit across it, none at rest. */
+    fun bandAlphaFor(index: Int): Float = transitBandAlpha(index - positionFor(index))
+
+    /** False while a hand-off holds the new focus back: no row draws as focused until it sets off. */
+    fun focusShown(): Boolean = nowMs >= focusFromMs
+
+    fun accept(inputs: StepInputs, style: XmbListMotion = XmbListMotion.GLIDE) {
         if (inputs == previous) return
-        motion = xmbStepMotion(previous, inputs).also {
+        val prev = previous
+        motion = xmbStepMotion(prev, inputs).also {
             when (it) {
                 is StepMotion.Snap -> held = it.target.toFloat()
                 is StepMotion.SnapThenGlide -> held = it.from.toFloat()
                 is StepMotion.Glide -> Unit
             }
+        }
+        columnDelayMs = 0L
+        val now = System.nanoTime() / 1_000_000
+        nowMs = now
+        focusFromMs = now
+        val m = motion
+        if (m !is StepMotion.Glide || prev == null || style != XmbListMotion.REWIND) {
+            // A snap or a long jump starts over; Glide never hands off.
+            if (m !is StepMotion.Glide) crossings.clear()
+            lastStepMs = null
+        } else if (prev.target != m.target) {
+            val row = if (m.target > prev.target) prev.target else m.target
+            val step = handOffFor(prev.target, m.target, now, lastStepMs, fromD = row - positionFor(row))
+            if (step != null) {
+                // A reversal hands the same row back: the old crossing goes, and the new one starts
+                // from where that row is drawn now.
+                crossings.removeAll { it.row == row || it.down != step.down }
+                crossings += step
+            }
+            columnDelayMs = columnStartMs(step, now) - now
+            focusFromMs = focusStartMs(step, now)
+            lastStepMs = now
         }
         previous = inputs
         epoch++
@@ -670,7 +746,25 @@ private class ItemListPosition(initial: Int) {
             held = Float.NaN
         }
         val m = motion
-        if (m !is StepMotion.Snap) animatable.animateTo(m.target.toFloat(), XmbStepSpring.spec(STEP_SETTLE_ROWS))
+        if (m !is StepMotion.Snap) {
+            if (columnDelayMs > 0) delay(columnDelayMs)
+            val target = m.target.toFloat()
+            if (constantSpeed) {
+                // Retargeted mid-glide (a held run), it carries on from where it is at the same speed.
+                animatable.animateTo(target, tween(glideDurationMs(animatable.value, target), easing = LinearEasing))
+            } else {
+                animatable.animateTo(target, XmbStepSpring.spec(STEP_SETTLE_ROWS))
+            }
+        }
+    }
+
+    /** Drives the hand-off clock every frame while a row crosses or the new focus is held back. */
+    suspend fun runClock() {
+        while (crossings.isNotEmpty() || nowMs < focusFromMs) {
+            withFrameNanos { nowMs = it / 1_000_000 }
+            val p = read()
+            crossings.removeAll { crossingDone(it, nowMs, it.row - p) }
+        }
     }
 }
 

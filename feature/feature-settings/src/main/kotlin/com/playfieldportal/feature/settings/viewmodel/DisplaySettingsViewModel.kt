@@ -28,6 +28,7 @@ import com.playfieldportal.core.domain.model.resolve
 import com.playfieldportal.core.domain.model.TouchNavButtonMode
 import com.playfieldportal.core.domain.model.TouchSensitivity
 import com.playfieldportal.core.domain.model.XYLayout
+import com.playfieldportal.core.domain.model.XmbListMotion
 import com.playfieldportal.core.ui.theme.TextContrastRole
 import com.playfieldportal.core.ui.theme.clampLightnessForContrast
 import com.playfieldportal.core.ui.theme.composite
@@ -71,6 +72,8 @@ private val KEY_ICON_LEGIBILITY    = stringPreferencesKey("display_icon_legibili
 private val KEY_SOLID_UNFOCUSED_ICONS = booleanPreferencesKey("display_solid_unfocused_icons")
 // Must match XMBViewModel.KEY_TEXT_SHADOW — both read/write this same pref.
 private val KEY_TEXT_SHADOW = booleanPreferencesKey("display_text_shadow")
+// Must match XMBViewModel.KEY_ITEM_LIST_MOTION — both read/write this same pref.
+private val KEY_ITEM_LIST_MOTION = stringPreferencesKey("display_item_list_motion")
 // ── Font colour (Display ▸ Font Colour) ──────────────────────────────────────
 // Must match XMBViewModel.KEY_TEXT_COLOR — both read/write this same pref.
 // Absent = inherit the theme's own text colour (white on every preset).
@@ -146,6 +149,8 @@ data class DisplaySettingsUiState(
     // bright wallpaper regions. Default on — the shadow is subtle; without it the flat gray
     // subtitle is the one label that washes out.
     val textShadow: Boolean = true,
+    // How the XMB item list steps between rows (Rewind / Glide).
+    val itemListMotion: XmbListMotion = XmbListMotion.DEFAULT,
     // ── Font colour ──────────────────────────────────────────────────────────
     /** User-picked text colour, or null to inherit the theme's. */
     val textColorArgb: Long? = null,
@@ -254,6 +259,7 @@ class DisplaySettingsViewModel @Inject constructor(
             iconLegibility       = IconLegibilityStyle.fromName(prefs[KEY_ICON_LEGIBILITY]),
             solidUnfocusedIcons  = prefs[KEY_SOLID_UNFOCUSED_ICONS] ?: false,
             textShadow           = prefs[KEY_TEXT_SHADOW] ?: true,
+            itemListMotion       = XmbListMotion.fromName(prefs[KEY_ITEM_LIST_MOTION]),
             textColorArgb        = prefs[KEY_TEXT_COLOR],
             textColorExact       = prefs[KEY_TEXT_COLOR_EXACT] ?: false,
             textLegibility       = TextLegibilityStyle.fromName(prefs[KEY_TEXT_LEGIBILITY]),
@@ -341,7 +347,7 @@ class DisplaySettingsViewModel @Inject constructor(
         save { it[KEY_WAVE_STYLE] = next.name }
     }
 
-    /** Cycles None → Offset Shadow → Contour (Dark/Light/Auto) → None, persisting the enum name. */
+    /** Cycles None → Offset Shadow (Dark/Light) → Contour (Dark/Light/Auto) → None, persisting the enum name. */
     fun cycleIconLegibility() {
         // entries, not the deprecated values() cycleWaveStyle still uses.
         val styles = IconLegibilityStyle.entries
@@ -352,6 +358,13 @@ class DisplaySettingsViewModel @Inject constructor(
     fun setSolidUnfocusedIcons(v: Boolean) = save { it[KEY_SOLID_UNFOCUSED_ICONS] = v }
 
     fun setTextShadow(v: Boolean) = save { it[KEY_TEXT_SHADOW] = v }
+
+    /** Cycles Rewind → Glide → Rewind, persisting the enum name. */
+    fun cycleItemListMotion() {
+        val motions = XmbListMotion.entries
+        val next = motions[(motions.indexOf(uiState.value.itemListMotion) + 1) % motions.size]
+        save { it[KEY_ITEM_LIST_MOTION] = next.name }
+    }
 
     /** Display ▸ XMB Layout ▸ Biblically Accurate PSP XMB: saves the PSP preset for this screen size. */
     fun applyPspLayout() = save { PspXmbLayout.write(it, PspXmbLayout.forWindow(context)) }

@@ -45,7 +45,24 @@ data class MoveSession(
 data class CategoryMoveSession(
     val originalCategories: List<Category>,
     val originalIndex: Int,
+    // Set when the move began in Category Manager: the bar column it was opened from, which
+    // ending the move returns to, along with the manager itself.
+    val returnToCategoryId: String? = null,
 )
+
+/** Settings ▸ Categories — the Category Manager screen. */
+internal const val CATEGORY_MANAGER_SCREEN_ID = "settings_categories"
+
+/**
+ * Where ending this move (placed or cancelled) returns: the bar index of the column Category
+ * Manager was opened from (null if it has left the bar — the moved category stays selected) and
+ * the manager screen. Null
+ * when the move began on the crossbar itself, which stays where it is.
+ */
+internal fun CategoryMoveSession.returnAfterMove(categories: List<Category>): Pair<Int?, String>? {
+    val returnTo = returnToCategoryId ?: return null
+    return categories.indexOfFirst { it.id == returnTo }.takeIf { it >= 0 } to CATEGORY_MANAGER_SCREEN_ID
+}
 
 /**
  * [categories] with the one at [index] slid one slot by [delta], and the index it lands on. Null
@@ -349,8 +366,9 @@ internal fun arrangeRows(rows: List<XMBItem>, listState: ListState, custom: Bool
 }
 
 /**
- * A column's top level: the UMD slot (when a game fills it), the arrangeable rows, then the rows
- * that always close the list (Add Games, an empty-state row). Only the middle ever moves.
+ * A column's top level: the arrangeable rows with the UMD slot (when a game fills it) directly
+ * above the column's default card, then the rows that always close the list (Add Games, an
+ * empty-state row). Only the middle ever moves.
  */
 internal fun assembleRoot(
     umd: XMBItem?,
@@ -358,16 +376,43 @@ internal fun assembleRoot(
     trailing: List<XMBItem>,
     listState: ListState,
     custom: Boolean,
-): List<XMBItem> = listOfNotNull(umd) + arrangeRows(movable, listState, custom) + trailing
+): List<XMBItem> = arrangeRows(movable, listState, custom).withUmdAboveDefault(umd) + trailing
+
+/** The card a gaming column lands on: All Games in Game, a custom category's own Memory Card. */
+private fun XMBItem.isDefaultCard(): Boolean =
+    type == XMBItemType.ALL_GAMES || type == XMBItemType.CATEGORY_CARD
+
+/**
+ * These rows with [umd] directly above the default card, wherever arrangement put it, so the
+ * last-played or inserted game is always one step from where the column lands. With no default
+ * card it tops the rows.
+ */
+private fun List<XMBItem>.withUmdAboveDefault(umd: XMBItem?): List<XMBItem> {
+    if (umd == null) return this
+    val at = indexOfFirst { it.isDefaultCard() }.coerceAtLeast(0)
+    return take(at) + umd + drop(at)
+}
 
 // ── Move ──────────────────────────────────────────────────────────────────────
 
 /**
  * [items] with the row at [index] moved one place by [delta], and the index it lands on. Null when
- * the move is not allowed: off the end, onto a fixed row (the UMD slot, an Add row), or across the
- * line between pinned and unpinned rows.
+ * the move is not allowed: off the end, onto a fixed row (an Add row), across the line between
+ * pinned and unpinned rows, or the UMD slot itself. The UMD slot is not a place in the order: it
+ * rides above the default card, so moving that card carries it, and a row passing the card
+ * passes it too.
  */
 internal fun moveRow(items: List<XMBItem>, index: Int, delta: Int): Pair<List<XMBItem>, Int>? {
+    val umdAt = items.indexOfFirst { it.type == XMBItemType.UMD_SLOT }
+    if (umdAt < 0) return swapRows(items, index, delta)
+    if (index == umdAt) return null
+    val rest = items.filterIndexed { i, _ -> i != umdAt }
+    val (moved, _) = swapRows(rest, if (index > umdAt) index - 1 else index, delta) ?: return null
+    val placed = moved.withUmdAboveDefault(items[umdAt])
+    return placed to placed.indexOf(items[index])
+}
+
+private fun swapRows(items: List<XMBItem>, index: Int, delta: Int): Pair<List<XMBItem>, Int>? {
     val target = index + delta
     val row = items.getOrNull(index) ?: return null
     val other = items.getOrNull(target) ?: return null
@@ -444,6 +489,8 @@ internal fun rootRowMenuItems(sortValue: String?, canMove: Boolean, byTouch: Boo
 /**
  * A custom memory card row's menu. The verbs are today's, renamed; Delete says "Custom Card" so
  * it can never be mistaken for a console card's Remove, which takes that console's games with it.
+ * It leads with the card's own picker: Add Games for a card in a gaming category, Add Apps for
+ * one in an app category ([holds]).
  */
 internal fun customCardMenuItems(
     pinned: Boolean,
@@ -451,8 +498,13 @@ internal fun customCardMenuItems(
     sortValue: String,
     canMove: Boolean,
     byTouch: Boolean,
+    holds: CardContents = CardContents.GAMES,
 ): List<XMBContextMenuItem> = buildList {
     if (byTouch) add(XMBContextMenuItem("open_collection", "Open"))
+    when (holds) {
+        CardContents.GAMES -> add(XMBContextMenuItem(ADD_GAMES_TO_CARD_ID, "Add Games"))
+        CardContents.APPS -> add(XMBContextMenuItem(ADD_APPS_TO_CARD_ID, "Add Apps"))
+    }
     add(XMBContextMenuItem(LIST_SORT_ROW_ID, "Sort", value = sortValue, opensMenu = true))
     add(XMBContextMenuItem(if (pinned) "unpin_collection" else "pin_collection", "Pin to Top", value = if (pinned) "On" else "Off"))
     if (canMove) add(XMBContextMenuItem(MOVE_ROW_ID, "Move"))
@@ -461,6 +513,21 @@ internal fun customCardMenuItems(
     add(XMBContextMenuItem("manage_collections", "Manage Custom Cards"))
     add(XMBContextMenuItem("delete_collection", "Delete Custom Card", isDestructive = true))
 }
+
+internal const val ADD_GAMES_TO_CARD_ID = "add_games_collection"
+internal const val ADD_APPS_TO_CARD_ID = "add_apps_collection"
+
+/** What a custom memory card holds, from its category: games in a gaming one, app shortcuts otherwise. */
+internal enum class CardContents { GAMES, APPS }
+
+/**
+ * What confirming the game picker changes on a list (a category's loose games or a custom card):
+ * the games to add — checked and not [already] there, so a re-add never resets when it was added —
+ * and the games to remove: only those the picker opened checked ([preselected]) and the user then
+ * unchecked. Judging by absence alone would empty the list if the pre-check never loaded.
+ */
+internal fun gamePickerChanges(already: Set<Long>, preselected: Set<Long>, selected: Set<Long>): Pair<Set<Long>, Set<Long>> =
+    (selected - already) to (preselected - selected)
 
 /** What a custom card in [category] holds, so its Sort offers that list's sorts: apps in an app category. */
 internal fun collectionSortKind(category: Category?): XmbListKind =
@@ -500,4 +567,51 @@ internal fun addToCardMenuItems(
         )
     }
     add(XMBContextMenuItem("col_new", "New Custom Card Here…"))
+}
+
+/**
+ * An app row as non-gaming lists show it: the name alone, plus "Pinned" when pinned. Apps inside
+ * a custom memory card come through the games-table row builder, whose platform/emulator line
+ * belongs to games, so the card strips it back to this.
+ */
+internal fun XMBItem.asAppRow(): XMBItem = copy(subtitle = if (pinned) "Pinned" else null)
+
+// ── Landing on a section ──────────────────────────────────────────────────────
+
+/**
+ * The row moving onto [category] lands on, PSP-style: the section's memory card where it has one
+ * (Photos, Videos, Music — or Now Playing while a track is loaded — All Games, a custom gaming
+ * category's own Memory Card), otherwise the top row. A default row that is absent falls back to
+ * the top.
+ */
+internal fun defaultRootIndex(category: Category, items: List<XMBItem>): Int {
+    val preferred = when (category.id) {
+        BuiltInCategory.PHOTO -> listOf(XMBViewModel.ALL_PHOTOS_ITEM_ID)
+        BuiltInCategory.MUSIC -> listOf(XMBViewModel.NOW_PLAYING_ITEM_ID, XMBViewModel.ALL_MUSIC_ITEM_ID)
+        BuiltInCategory.VIDEO -> listOf(XMBViewModel.ALL_VIDEOS_ITEM_ID)
+        BuiltInCategory.GAMES -> listOf(XMBViewModel.ALL_GAMES_ITEM_ID)
+        else -> if (category.isGamingCategory) listOf(XMBViewModel.CATEGORY_CARD_ITEM_ID) else emptyList()
+    }
+    return preferred.firstNotNullOfOrNull { id -> items.indexOfFirst { it.id == id }.takeIf { it >= 0 } } ?: 0
+}
+
+/**
+ * This state after a write from [before], with a pending landing resolved: the first fresh,
+ * non-empty root rows of the section put the cursor on its [defaultRootIndex] and bump the
+ * landing token so the list snaps there. Rows left over from the previous section (unchanged by
+ * the write) and a blanked list are not a landing; drilling in cancels it, and nothing changes
+ * once the landing is done.
+ */
+internal fun XMBUiState.landedFrom(before: XMBUiState): XMBUiState {
+    if (!landingPending) return this
+    // Drilled in before the rows came (or the section re-published the very same rows): there is
+    // nothing left to land on, and backing out restores its own cursor.
+    if (isInSubItem) return copy(landingPending = false)
+    if (currentItems === before.currentItems || currentItems.isEmpty()) return this
+    val category = categories.getOrNull(selectedCategoryIndex) ?: return this
+    return copy(
+        selectedItemIndex = defaultRootIndex(category, currentItems),
+        landingPending = false,
+        landingToken = landingToken + 1,
+    )
 }

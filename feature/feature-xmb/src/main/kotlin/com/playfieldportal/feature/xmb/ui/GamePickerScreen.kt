@@ -9,12 +9,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,10 +23,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -80,7 +77,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 
 // ── Game picker ("Add Games to Category"): a library of shelves ──────────────
 //
-// A vertical shelf list beside a fixed-column art grid, in the App Picker's language: the same
+// A vertical shelf list beside free-flowing rows of art at XMB size, in the App Picker's language: the same
 // storefront theming (deriveStorefrontColors — never LocalPFPColors.accentColor, which presets
 // resolve to white), the same alpha-only focus chrome and check badge, and a prompt footer.
 // Every tile is drawn in ONE icon display mode (the picker's view, X to change), whatever each
@@ -162,6 +159,7 @@ fun GamePickerScreen(
                                     shelf = shelf,
                                     onTileTapped = viewModel::tapTile,
                                     onTouchBrowse = viewModel::touchBrowse,
+                                    onMeasured = viewModel::onShelfMeasured,
                                     colors = sf,
                                     modifier = Modifier.weight(1f).fillMaxHeight(),
                                 )
@@ -321,15 +319,12 @@ private fun ShelfListEntry(
 
 // ── Shelf pane: heading + art grid ────────────────────────────────────────────
 
-// Tallest art in any mode; every tile reserves it so mixed shapes share one ledge per row.
-private val ART_HEIGHT = 88.dp
-// Chrome room around the art: the focus frame sits this far outside the art on every side.
-private val FRAME_PAD = 4.dp
+// Tallest art in any mode (the XMB's natural-art height); every tile reserves it so mixed shapes
+// share one ledge per row. Sizes come from GamePickerLogic, which packs the rows with them.
+private val ART_HEIGHT = PICKER_ART_HEIGHT_DP.dp
+private val FRAME_PAD = PICKER_FRAME_PAD_DP.dp
 private val ROW_SPACING = 14.dp
-private val COLUMN_SPACING = 8.dp
-private const val ICON0_ASPECT = 144f / 80f
-// Cartridge and disc shots have no per-platform preset; a square frame suits both.
-private const val PHYSICAL_MEDIA_ASPECT = 1f
+private val COLUMN_SPACING = PICKER_TILE_SPACING_DP.dp
 
 @Composable
 private fun ShelfPane(
@@ -337,6 +332,7 @@ private fun ShelfPane(
     shelf: PickerShelf,
     onTileTapped: (Int) -> Unit,
     onTouchBrowse: (Int) -> Unit,
+    onMeasured: (Float) -> Unit,
     colors: StorefrontColors,
     modifier: Modifier = Modifier,
 ) {
@@ -364,7 +360,7 @@ private fun ShelfPane(
                 )
             }
         }
-        ShelfGrid(state, shelf, onTileTapped, onTouchBrowse, colors, Modifier.weight(1f))
+        ShelfGrid(state, shelf, onTileTapped, onTouchBrowse, onMeasured, colors, Modifier.weight(1f))
     }
 }
 
@@ -374,39 +370,53 @@ private fun ShelfGrid(
     shelf: PickerShelf,
     onTileTapped: (Int) -> Unit,
     onTouchBrowse: (Int) -> Unit,
+    onMeasured: (Float) -> Unit,
     colors: StorefrontColors,
     modifier: Modifier = Modifier,
-) {
-    val gridState = rememberLazyGridState()
+) = BoxWithConstraints(modifier.fillMaxSize()) {
+    // The logic packs the same rows from the width reported here, so D-pad moves match the screen.
+    val paneWidth = maxWidth.value
+    LaunchedEffect(paneWidth) { onMeasured(paneWidth) }
+    val widths = remember(shelf, state.viewMode) { shelf.tileWidthsDp(state.viewMode) }
+    val rows = remember(widths, paneWidth) { packRows(widths, paneWidth, PICKER_TILE_SPACING_DP) }
+
+    val listState = rememberLazyListState()
     val focused = state.focusedIndex()
     val showCursor = !state.usingTouch && state.focusZone == PickerZone.GRID
 
-    LaunchedEffect(focused, showCursor, shelf.size) {
-        if (showCursor && shelf.size > 0) gridState.animateScrollToItem(focused.coerceIn(0, shelf.size - 1))
+    LaunchedEffect(focused, showCursor, rows) {
+        val row = rows.rowOf(focused)
+        if (showCursor && row >= 0) listState.animateScrollToItem(row)
     }
 
     // Touch reconciliation, same shape as AppPickerGrid: drag-start parks the hidden cursor;
-    // scroll-settle parks it on the tile nearest the viewport centre.
+    // scroll-settle parks it in the row nearest the viewport centre (on the cursor if it's there).
+    val currentRows by rememberUpdatedState(rows)
+    val currentFocused by rememberUpdatedState(focused)
+    fun parkIn(row: Int) {
+        val range = currentRows.getOrNull(row) ?: return
+        onTouchBrowse(if (currentFocused in range) currentFocused else range.first)
+    }
     var fingerScrolled by remember { mutableStateOf(false) }
-    LaunchedEffect(gridState) {
-        gridState.interactionSource.interactions.collect { interaction ->
+    LaunchedEffect(listState) {
+        listState.interactionSource.interactions.collect { interaction ->
             if (interaction is DragInteraction.Start) {
                 fingerScrolled = true
-                onTouchBrowse(gridState.firstVisibleItemIndex)
+                parkIn(listState.firstVisibleItemIndex)
             }
         }
     }
-    LaunchedEffect(gridState) {
-        snapshotFlow { gridState.isScrollInProgress }
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.isScrollInProgress }
             .distinctUntilChanged()
             .collect { scrolling ->
                 if (!scrolling && fingerScrolled) {
                     fingerScrolled = false
-                    val info = gridState.layoutInfo
+                    val info = listState.layoutInfo
                     val center = (info.viewportStartOffset + info.viewportEndOffset) / 2
                     info.visibleItemsInfo
-                        .minByOrNull { kotlin.math.abs(it.offset.y + it.size.height / 2 - center) }
-                        ?.let { onTouchBrowse(it.index) }
+                        .minByOrNull { kotlin.math.abs(it.offset + it.size / 2 - center) }
+                        ?.let { parkIn(it.index) }
                 }
             }
     }
@@ -418,35 +428,49 @@ private fun ShelfGrid(
         LocalIconDisplayModeByPlatform provides emptyMap(),
         LocalFocusedGameVideo provides null,
     ) {
-        LazyVerticalGrid(
-            state = gridState,
-            columns = GridCells.Fixed(GAME_PICKER_GRID_COLUMNS),
+        LazyColumn(
+            state = listState,
             contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(COLUMN_SPACING),
             verticalArrangement = Arrangement.spacedBy(ROW_SPACING),
-            modifier = modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
         ) {
-            when (shelf) {
-                is GameShelf -> itemsIndexed(shelf.games, key = { _, game -> game.id }) { index, game ->
-                    val checked = game.id in state.selectedGameIds
-                    PickerTile(
-                        label = game.displayTitle,
-                        isFocused = showCursor && index == focused,
-                        isChecked = checked,
-                        isRemoving = !checked && game.id in state.preselectedGameIds,
-                        onClick = { onTileTapped(index) },
-                        colors = colors,
-                    ) { GameArt(game, state.viewMode, colors) }
-                }
-                is CardShelf -> itemsIndexed(shelf.cards, key = { _, card -> card.id }) { index, card ->
-                    PickerTile(
-                        label = card.name,
-                        isFocused = showCursor && index == focused,
-                        isChecked = card.id in state.selectedCollectionIds,
-                        isRemoving = false,
-                        onClick = { onTileTapped(index) },
-                        colors = colors,
-                    ) { CardArt(card, colors) }
+            items(rows.size) { r ->
+                // Rows are left-aligned and each tile exactly its own width, so shapes flow freely.
+                Row(horizontalArrangement = Arrangement.spacedBy(COLUMN_SPACING)) {
+                    for (index in rows[r]) {
+                        val tileModifier = Modifier.width(widths[index].dp)
+                        when (shelf) {
+                            is GameShelf -> {
+                                val game = shelf.games[index]
+                                val checked = game.id in state.selectedGameIds
+                                key(game.id) {
+                                    PickerTile(
+                                        label = game.displayTitle,
+                                        isFocused = showCursor && index == focused,
+                                        isChecked = checked,
+                                        isRemoving = !checked && game.id in state.preselectedGameIds,
+                                        onClick = { onTileTapped(index) },
+                                        colors = colors,
+                                        modifier = tileModifier,
+                                    ) { GameArt(game, state.viewMode, colors) }
+                                }
+                            }
+                            is CardShelf -> {
+                                val card = shelf.cards[index]
+                                key(card.id) {
+                                    PickerTile(
+                                        label = card.name,
+                                        isFocused = showCursor && index == focused,
+                                        isChecked = card.id in state.selectedCollectionIds,
+                                        isRemoving = false,
+                                        onClick = { onTileTapped(index) },
+                                        colors = colors,
+                                        modifier = tileModifier,
+                                    ) { CardArt(card, colors) }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -463,6 +487,7 @@ private fun PickerTile(
     isRemoving: Boolean,
     onClick: () -> Unit,
     colors: StorefrontColors,
+    modifier: Modifier = Modifier,
     art: @Composable () -> Unit,
 ) {
     val focus by animateFloatAsState(if (isFocused) 1f else 0f, tween(FOCUS_TWEEN), label = "gamePickerFocus")
@@ -471,7 +496,7 @@ private fun PickerTile(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable(onClick = onClick),   // the whole tile is the touch target
+        modifier = modifier.clickable(onClick = onClick),   // the whole tile is the touch target
     ) {
         // The slot reserves the tallest art so every row's ledge lines up; the art is bottom-
         // aligned onto it and the chrome wraps only the art, never the empty space above it.
@@ -544,26 +569,17 @@ private fun RemovalMark(color: Color, modifier: Modifier = Modifier) {
 // ── Art ───────────────────────────────────────────────────────────────────────
 
 /**
- * The game in the picker's [view] mode. The art box takes that mode's shape — 144:80 for ICON0,
- * the platform's box for Box Art / 3D Box, square for Physical Media — so the focus frame hugs
- * the art. Placeholders take the theme's inner accent, so unscraped games stay in the theme.
+ * The game in the picker's [view] mode, at its XMB size — ICON0 at the game row's 126 × 70, the
+ * platform's box / square physical media at the natural-art height — so the focus frame hugs the
+ * art. Placeholders take the theme's inner accent, so unscraped games stay in the theme.
  */
 @Composable
 private fun GameArt(game: Game, view: IconDisplayMode, colors: StorefrontColors) {
     val item = remember(game, colors.tileSelectedInner) {
         game.toPickerItem(accentArgb = colors.tileSelectedInner.toArgb().toLong() and 0xFFFFFFFFL)
     }
-    val aspect = when (view) {
-        IconDisplayMode.ICON0 -> ICON0_ASPECT
-        IconDisplayMode.BOX_ART, IconDisplayMode.BOX_3D -> boxArtAspectFor(game.platformId)
-        IconDisplayMode.PHYSICAL_MEDIA -> PHYSICAL_MEDIA_ASPECT
-    }
-    // Height-led so tall boxes reach the ledge height; wide shapes are capped by the column.
-    val artModifier = if (view == IconDisplayMode.ICON0) {
-        Modifier.fillMaxWidth().aspectRatio(aspect)
-    } else {
-        Modifier.height(ART_HEIGHT).aspectRatio(aspect, matchHeightConstraintsFirst = true)
-    }
+    val artHeight = if (view == IconDisplayMode.ICON0) PICKER_ICON0_HEIGHT_DP.dp else ART_HEIGHT
+    val artModifier = Modifier.size(width = pickerArtWidthDp(game.platformId, view).dp, height = artHeight)
     GameIcon(
         item = item,
         iconStyle = GameIconStyle.PSP_RECTANGLE,

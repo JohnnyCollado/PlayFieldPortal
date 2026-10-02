@@ -330,7 +330,7 @@ fun XMBShellContainer(
         onPlaceMovingRow = viewModel::placeMovingRow,
         onCancelMovingRow = viewModel::cancelMovingRow,
         onMoveCategoryBy = viewModel::onMoveCategoryBy,
-        onStartCategoryMove = viewModel::startCategoryMove,
+        onStartCategoryMove = viewModel::startCategoryMoveFromManager,
         onPlaceMovingCategory = viewModel::placeMovingCategory,
         onCancelMovingCategory = viewModel::cancelMovingCategory,
         onAddMarkedToCard = viewModel::onAddMarkedToCard,
@@ -982,6 +982,8 @@ fun XMBShell(
                                 iconStyle = uiState.iconStyle,
                                 scrollToTopToken = uiState.scrollToTopToken,
                                 columnKey = uiState.viewCursorKey(),
+                                landingToken = uiState.landingToken,
+                                listMotion = uiState.itemListMotion,
                                 barTopY = barTop,
                                 belowTopY = anchorTop,
                                 previousRiseRows = layoutSpec.previousItemRiseRows,
@@ -1395,6 +1397,22 @@ fun XMBShell(
                     onApply = onAppPickerApply,
                     onConfirmRemoval = onAppPickerConfirmRemoval,
                     onCancelRemoval = onAppPickerCancelRemoval,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            // A custom memory card's Add Games: the card's games open checked under "In {card}",
+            // and no other cards are offered — a card never holds a card.
+            uiState.gamePickerCollectionId?.let { pickerCollectionId ->
+                GamePickerScreen(
+                    categoryId = "col_$pickerCollectionId",
+                    categoryTitle = uiState.collections.firstOrNull { it.id == pickerCollectionId }?.name.orEmpty(),
+                    preselectedGameIds = uiState.gamePickerPreselected,
+                    movableCollectionIds = emptySet(),
+                    onConfirm = onGamePickerConfirm,
+                    onCancel = onGamePickerDismiss,
+                    pendingGamepadAction = uiState.pendingGamePickerAction,
+                    onGamepadActionConsumed = onGamePickerActionConsumed,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

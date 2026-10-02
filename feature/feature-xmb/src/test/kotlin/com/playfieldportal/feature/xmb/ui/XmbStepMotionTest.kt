@@ -4,6 +4,9 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -225,5 +228,129 @@ class XmbStepMotionTest {
             assertEquals(StepMotion.Glide(raw), xmbStepMotion(prev, next))
             prev = next
         }
+    }
+
+    // --- Section landing ---
+
+    private fun inputs(index: Int, count: Int = 8, landing: Int = 0) = StepInputs(
+        rawSelectedIndex = index,
+        itemCount = count,
+        scrollToTopToken = 0,
+        columnKey = "games/root",
+        moving = false,
+        landingToken = landing,
+    )
+
+    @Test
+    fun `landing on a section's default row snaps instead of gliding`() {
+        assertEquals(StepMotion.Snap(3), xmbStepMotion(inputs(0), inputs(3, landing = 1)))
+        // A one-row landing would glide without the token; it still snaps.
+        assertEquals(StepMotion.Snap(1), xmbStepMotion(inputs(0), inputs(1, landing = 1)))
+    }
+
+    @Test
+    fun `steps after a landing glide as before`() {
+        assertEquals(StepMotion.Glide(4), xmbStepMotion(inputs(3, landing = 1), inputs(4, landing = 1)))
+    }
+
+    // --- Rewind: the hand-off across the catbar ---
+
+    private val now = 10_000L
+
+    @Test
+    fun `down hands the focused row up across the bar at once, and the column follows after its lag`() {
+        val c = handOffFor(fromIndex = 3, toIndex = 4, nowMs = now, lastStepMs = null, fromD = 0f)!!
+        assertEquals(Crossing(row = 3, down = true, fromD = 0f, toD = -1f, startMs = now), c)
+        assertEquals(now + XmbHandOff.COLUMN_LAG_MS, columnStartMs(c, now))
+        // No row is focused until the column moves: the leaving row dims at once.
+        assertEquals(now + XmbHandOff.COLUMN_LAG_MS, focusStartMs(c, now))
+    }
+
+    @Test
+    fun `up rewinds - the column moves at once and the row above drops in after its delay`() {
+        val c = handOffFor(fromIndex = 4, toIndex = 3, nowMs = now, lastStepMs = null, fromD = -1f)!!
+        assertEquals(Crossing(row = 3, down = false, fromD = -1f, toD = 0f, startMs = now + XmbHandOff.DROP_DELAY_MS), c)
+        assertEquals(now, columnStartMs(c, now))
+        assertEquals(now + XmbHandOff.DROP_DELAY_MS, focusStartMs(c, now))
+    }
+
+    @Test
+    fun `held repeats, jumps and plain glides hand nothing off`() {
+        assertNull(handOffFor(3, 4, now, lastStepMs = now - XmbHandOff.HOLD_GAP_MS + 1, fromD = 0f))
+        assertNull(handOffFor(3, 6, now, lastStepMs = null, fromD = 0f))
+        assertNull(handOffFor(3, 3, now, lastStepMs = null, fromD = 0f))
+        assertEquals(now, columnStartMs(null, now))
+        assertEquals(now, focusStartMs(null, now))
+        // A pause longer than the repeat gap is a fresh press again.
+        assertNotNull(handOffFor(3, 4, now, lastStepMs = now - XmbHandOff.HOLD_GAP_MS, fromD = 0f))
+    }
+
+    @Test
+    fun `the crossing row is above the bar within the crossing time, whatever the column does`() {
+        val c = handOffFor(3, 4, now, null, fromD = 0f)!!
+        assertEquals(0f, crossingD(c, now, columnD = 0f), 1e-4f)
+        // Constant speed: exactly halfway at half time.
+        assertEquals(-0.5f, crossingD(c, now + XmbHandOff.CROSS_MS / 2, columnD = 0f), 1e-4f)
+        assertEquals(-1f, crossingD(c, now + XmbHandOff.CROSS_MS, columnD = 0f), 1e-4f)
+    }
+
+    @Test
+    fun `a risen row rides on up with the column when the next step carries it further`() {
+        val c = handOffFor(3, 4, now, null, fromD = 0f)!!
+        assertEquals(-1.6f, crossingD(c, now + XmbHandOff.CROSS_MS, columnD = -1.6f), 1e-4f)
+        assertTrue(crossingDone(c, now + XmbHandOff.CROSS_MS, columnD = -1f))
+        assertFalse(crossingDone(c, now + XmbHandOff.CROSS_MS, columnD = -0.4f))
+        assertFalse(crossingDone(c, now + XmbHandOff.CROSS_MS / 2, columnD = -1f))
+    }
+
+    @Test
+    fun `on up the row above holds its place until it drops, then never trails the column`() {
+        val c = handOffFor(4, 3, now, null, fromD = -1f)!!
+        // The column is already moving it down, but it waits above the bar.
+        assertEquals(-1f, crossingD(c, now + 30, columnD = -0.8f), 1e-4f)
+        assertEquals(0f, crossingD(c, c.startMs + XmbHandOff.CROSS_MS, columnD = -0.3f), 1e-4f)
+        assertTrue(crossingDone(c, c.startMs + XmbHandOff.CROSS_MS, columnD = 0f))
+        assertFalse(crossingDone(c, c.startMs + XmbHandOff.CROSS_MS, columnD = -0.3f))
+    }
+
+    @Test
+    fun `a crossing row shows in the catbar band only while it crosses, settling back to the half split`() {
+        assertEquals(0f, transitBandAlpha(0f), 0f)
+        assertEquals(0f, transitBandAlpha(-1f), 0f)
+        assertEquals(1f, transitBandAlpha(-0.5f), 0f)
+        assertTrue("fades in the last stretch", transitBandAlpha(-0.95f) in 0.01f..0.99f)
+        assertTrue("fades in as it leaves the slot", transitBandAlpha(-0.02f) in 0.01f..0.99f)
+        assertEquals(0f, transitBandAlpha(0.5f), 0f)
+        assertEquals(0f, transitBandAlpha(-1.5f), 0f)
+    }
+
+    // --- The item list's glide: constant speed, faster than the bar's spring ---
+
+    @Test
+    fun `a glide takes the same time per row - one row, half a row`() {
+        assertEquals(XmbGlide.MS_PER_ROW.toInt(), glideDurationMs(from = 3f, to = 4f))
+        assertEquals((XmbGlide.MS_PER_ROW / 2).toInt(), glideDurationMs(from = 3.5f, to = 4f))
+        assertEquals(XmbGlide.MS_PER_ROW.toInt(), glideDurationMs(from = 5f, to = 4f))
+        assertEquals(0, glideDurationMs(from = 4f, to = 4f))
+    }
+
+    @Test
+    fun `a held run that falls behind catches up within the cap instead of trailing the thumb`() {
+        assertEquals(XmbGlide.MAX_MS.toInt(), glideDurationMs(from = 0f, to = 6f))
+    }
+
+    @Test
+    fun `the glide is faster than the spring it replaces and the hand-off is faster still`() {
+        assertTrue(XmbGlide.MS_PER_ROW <= 120)
+        assertTrue(XmbHandOff.CROSS_MS < XmbGlide.MS_PER_ROW)
+        assertTrue(XmbHandOff.COLUMN_LAG_MS < XmbHandOff.CROSS_MS)
+    }
+
+    @Test
+    fun `every row crossing the catbar draws in the band, not only a hand-off`() {
+        // Glide and held repeats move rows through the band too; at rest no row is in it.
+        assertEquals(1f, transitBandAlpha(-0.5f), 0f)
+        assertEquals(0f, transitBandAlpha(0f), 0f)
+        assertEquals(0f, transitBandAlpha(-1f), 0f)
     }
 }
