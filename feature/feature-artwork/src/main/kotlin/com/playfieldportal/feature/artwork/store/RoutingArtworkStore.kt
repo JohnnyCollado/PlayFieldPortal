@@ -306,6 +306,31 @@ class RoutingArtworkStore @Inject constructor(
         )
     }
 
+    /**
+     * [studioAppendFromUrl] for a file already on disk: the write behind picking several local
+     * files onto a multi-asset slot. Single-art kinds land at position 0, a plain apply.
+     *
+     * The caller copies the picked document to [tempFile] first, so nothing slow runs between
+     * [nextSortOrder] deciding the position and [persistPortable] taking it. Without a portable
+     * library there are no records to number from, so the internal store's own count decides.
+     */
+    suspend fun studioAppendFromFile(
+        gameId: Long, kind: ArtworkKind, tempFile: java.io.File, provider: String?,
+    ): String? {
+        val target = portableTarget(gameId) ?: return internal.saveFromFile(
+            gameId, kind, tempFile,
+            sortOrder = if (ArtworkFileNaming.supportsMultiple(kind)) {
+                internal.findAll(gameId, kind).size.coerceAtMost(ArtworkFileNaming.MAX_SORT_ORDER)
+            } else 0,
+        )
+        val (tree, game) = target
+        return persistPortable(
+            tree, game, kind, tempFile, source = SOURCE_USER, userAssigned = true,
+            originUrl = null, provider = provider, backupPrevious = true,
+            sortOrder = nextSortOrder(gameId, kind),
+        )
+    }
+
     /** Brings the one backed-up previous version back, swapping it with the current (toggle-able). */
     suspend fun restorePrevious(gameId: Long, kind: ArtworkKind, sortOrder: Int = 0): String? {
         val (tree, game) = portableTarget(gameId) ?: return null
@@ -454,6 +479,36 @@ class RoutingArtworkStore @Inject constructor(
         )
     }
 
+    /**
+     * Saves [originalTempFile] — an ANIMATED image — uncropped, with [cropRect] applied while
+     * drawing (`crop_at_draw`). Baking would flatten it to one frame; this keeps it playing in a
+     * cropped slot. The file is already the original, so nothing is stashed under pfp/originals/
+     * and a re-crop frames from it directly. Provenance is handled exactly as [saveCropBaked].
+     */
+    suspend fun saveCropAtDraw(
+        gameId: Long,
+        kind: ArtworkKind,
+        originalTempFile: java.io.File,
+        cropRect: String,
+        sortOrder: Int = 0,
+        candidateOriginUrl: String? = null,
+        candidateProvider: String? = null,
+        candidateAssetId: String? = null,
+    ): String? {
+        val target = portableTarget(gameId) ?: run { originalTempFile.delete(); return null }
+        val (tree, game) = target
+        val rec = artworkRecordDao.getAt(gameId, kind.name, sortOrder)
+        return persistPortable(
+            tree, game, kind, originalTempFile, source = rec?.source ?: SOURCE_USER,
+            userAssigned = rec?.userAssigned ?: true,
+            originUrl = rec?.originUrl ?: candidateOriginUrl,
+            provider = rec?.provider ?: candidateProvider,
+            backupPrevious = true,
+            cropRect = cropRect, cropAtDraw = true, sortOrder = sortOrder,
+            providerAssetId = rec?.providerAssetId ?: candidateAssetId,
+        )
+    }
+
     // ── Internals ─────────────────────────────────────────────────────────────
 
     private suspend fun portableTarget(gameId: Long): Pair<Uri, GameEntity>? {
@@ -475,6 +530,9 @@ class RoutingArtworkStore @Inject constructor(
         backupPrevious: Boolean = false,
         cropRect: String? = null,
         hasOriginal: Boolean = false,
+        // True only for [saveCropAtDraw]. Every other write lands a framed (or uncropped) file, so
+        // it clears the flag and the new file is never cropped again on screen.
+        cropAtDraw: Boolean = false,
         sortOrder: Int = 0,
         providerAssetId: String? = null,
     ): String? {
@@ -567,6 +625,7 @@ class RoutingArtworkStore @Inject constructor(
                 prevSizeBytes = prevSizeBytes,
                 cropRect = cropRect,
                 hasOriginal = hasOriginal,
+                cropAtDraw = cropAtDraw,
                 cropProfileKey = existing?.cropProfileKey,
                 createdAt = existing?.createdAt ?: System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis(),
@@ -591,6 +650,7 @@ class RoutingArtworkStore @Inject constructor(
     private fun mimeForExt(ext: String): String = when (ext.lowercase()) {
         "png"  -> "image/png"
         "webp" -> "image/webp"
+        "gif"  -> "image/gif"
         "pdf"  -> "application/pdf"
         "mp4"  -> "video/mp4"
         "webm" -> "video/webm"

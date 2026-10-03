@@ -13,10 +13,9 @@ package com.playfieldportal.feature.artwork.match
  * A store PFP can resolve metadata from. [key] is exactly what `games.storefront` holds, so the
  * captured import identity and a resolved one are the same vocabulary.
  *
- * Only [STEAM] has a provider today. GOG and Epic are named because the identity model and the
- * table are shared and must not need a migration to gain them — the plan's Phase 22 is explicit
- * that the three are not built at once, so that the shared architecture is validated against one
- * store before a second one's quirks reach it.
+ * [STEAM] and [GOG] have providers. [EPIC] is named because the identity model and the table are
+ * shared and must not need a migration to gain it, but it has no provider: Epic offers no public
+ * catalog to search or to fetch by id, so there is nothing to build one on.
  */
 enum class Storefront(val key: String, val label: String) {
     STEAM("STEAM", "Steam"),
@@ -219,6 +218,17 @@ interface StorefrontMetadataProvider {
 
     /** True when this provider can be used at all — credentials, settings, availability. */
     suspend fun isAvailable(): Boolean = true
+
+    /**
+     * Whether the id a launcher export captured for this store (`games.storefront_game_id`) is
+     * this store's own id for the game.
+     *
+     * True for Steam: the appid in the row is the appid Steam uses. A provider says false when
+     * that is not established — and the resolver then finds the game by title instead of fetching
+     * by the captured number. The cost of trusting wrongly is a confident link to whatever product
+     * happens to own that number, stored without anyone being asked.
+     */
+    val trustsCapturedId: Boolean get() = true
 
     /**
      * Candidates for [titles], which arrive already normalized and ordered strongest-first by

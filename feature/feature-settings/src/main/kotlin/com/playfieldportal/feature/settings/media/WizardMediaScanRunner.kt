@@ -12,6 +12,8 @@ import com.playfieldportal.core.domain.repository.MusicRepository
 import com.playfieldportal.core.domain.repository.PhotoRepository
 import com.playfieldportal.core.domain.repository.VideoRepository
 import com.playfieldportal.core.domain.model.NotificationAction
+import com.playfieldportal.core.domain.model.NotificationDetail
+import com.playfieldportal.core.domain.model.PfpErrorCode
 import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.feature.library.scanner.MusicScanResult
 import com.playfieldportal.feature.library.scanner.MusicScanner
@@ -23,6 +25,10 @@ import com.playfieldportal.feature.library.scanner.VideoScanner
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -256,9 +262,9 @@ class WizardMediaScanRunner @Inject constructor(
     ): Outcome {
         val taskId = "music_scan_" + target.id
         val report = progressFor(force)
-        report?.start(taskId, "Scanning " + target.displayName, TaskKind.SCAN)
-        val existing = musicRepository.getTracksForFolder(target.id)
         var outcome = Outcome(target.trackCount, null)
+        return stoppable(taskId, target.displayName, report, fallback = { outcome }) {
+        val existing = musicRepository.getTracksForFolder(target.id)
         musicScanner.scan(
             folder = target,
             deep = false,
@@ -283,17 +289,23 @@ class WizardMediaScanRunner @Inject constructor(
                         taskId,
                         result.tracks.size.toString() + " tracks",
                         NotificationAction.OpenCategory("music"),
+                        title = target.displayName + " scan finished",
                     )
                 }
                 is MusicScanResult.Error -> {
                     outcome = Outcome(0, result.message)
                     // Always surfaced, automatic or not: "Permission lost, re-select
                     // folder." is the one message a silent library needs to show.
-                    tasks.fail(taskId, result.message)
+                    tasks.fail(
+                        taskId, result.message,
+                        detail = mediaFailureNotes(result.message),
+                        title = target.displayName + " scan failed",
+                    )
                 }
             }
         }
-        return outcome
+        outcome
+        }
     }
 
     private suspend fun scanPhotoLibrary(
@@ -303,8 +315,8 @@ class WizardMediaScanRunner @Inject constructor(
     ): Outcome {
         val taskId = "photo_scan_" + target.id
         val report = progressFor(force)
-        report?.start(taskId, "Scanning " + target.displayName, TaskKind.SCAN)
         var outcome = Outcome(target.photoCount, null)
+        return stoppable(taskId, target.displayName, report, fallback = { outcome }) {
         photoScanner.scan(
             library = target,
             deep = false,
@@ -329,17 +341,23 @@ class WizardMediaScanRunner @Inject constructor(
                         taskId,
                         result.photos.size.toString() + " photos",
                         NotificationAction.OpenCategory("photos"),
+                        title = target.displayName + " scan finished",
                     )
                 }
                 is PhotoScanResult.Error -> {
                     outcome = Outcome(0, result.message)
                     // Always surfaced, automatic or not: "Permission lost, re-select
                     // folder." is the one message a silent library needs to show.
-                    tasks.fail(taskId, result.message)
+                    tasks.fail(
+                        taskId, result.message,
+                        detail = mediaFailureNotes(result.message),
+                        title = target.displayName + " scan failed",
+                    )
                 }
             }
         }
-        return outcome
+        outcome
+        }
     }
 
     private suspend fun scanVideoLibrary(
@@ -349,8 +367,8 @@ class WizardMediaScanRunner @Inject constructor(
     ): Outcome {
         val taskId = "video_scan_" + target.id
         val report = progressFor(force)
-        report?.start(taskId, "Scanning " + target.displayName, TaskKind.SCAN)
         var outcome = Outcome(target.videoCount, null)
+        return stoppable(taskId, target.displayName, report, fallback = { outcome }) {
         videoScanner.scan(
             library = target,
             deep = false,
@@ -375,17 +393,61 @@ class WizardMediaScanRunner @Inject constructor(
                         taskId,
                         result.videos.size.toString() + " videos",
                         NotificationAction.OpenCategory("videos"),
+                        title = target.displayName + " scan finished",
                     )
                 }
                 is VideoScanResult.Error -> {
                     outcome = Outcome(0, result.message)
                     // Always surfaced, automatic or not: "Permission lost, re-select
                     // folder." is the one message a silent library needs to show.
-                    tasks.fail(taskId, result.message)
+                    tasks.fail(
+                        taskId, result.message,
+                        detail = mediaFailureNotes(result.message),
+                        title = target.displayName + " scan failed",
+                    )
                 }
             }
         }
-        return outcome
+        outcome
+        }
+    }
+
+    /**
+     * Runs one folder's scan as a child that the panel can stop. A stop cancels only this
+     * folder's child; it settles quietly with [fallback] as the outcome, and a pass over several
+     * folders carries on. Automatic (unforced) scans show no row, so they are never stoppable.
+     */
+    private suspend fun stoppable(
+        taskId: String,
+        name: String,
+        report: BackgroundTaskCenter?,
+        fallback: () -> Outcome,
+        body: suspend () -> Outcome,
+    ): Outcome = coroutineScope {
+        val child = async {
+            report?.startStoppable(taskId, "Scanning $name", TaskKind.SCAN,
+                stopNote = "The folder is scanned again next time.")
+            body()
+        }
+        try {
+            child.await()
+        } catch (e: CancellationException) {
+            // The whole pass being shut down is not a stop: let it go.
+            if (!isActive) throw e
+            tasks.settleCancelled(taskId, "Stopped before it finished", title = "$name scan stopped")
+            fallback()
+        }
+    }
+
+    /** A media folder that could not be read, as a note with its code. */
+    private fun mediaFailureNotes(message: String?): NotificationDetail {
+        val m = message?.lowercase().orEmpty()
+        val code = if ("permission" in m || "access" in m || "lost" in m || "not found" in m || "select" in m) {
+            PfpErrorCode.MD_2001
+        } else {
+            PfpErrorCode.MD_9001
+        }
+        return NotificationDetail.notes(code, summary = message)
     }
 
     private fun MediaRootKind.noun(count: Int): String = when (this) {

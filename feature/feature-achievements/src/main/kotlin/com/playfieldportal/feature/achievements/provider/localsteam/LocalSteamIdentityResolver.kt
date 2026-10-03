@@ -95,7 +95,10 @@ class LocalSteamIdentityResolver @Inject constructor(
 
         // 3 — identity unknown. Only now does a title become involved.
         val subject = game ?: syntheticGame(anchor.folderName)
-        val resolution = runCatching { storefrontResolver.resolve(subject, allowAutoLink = false) }
+        // Steam only: this path reads the Steam entry and nothing else, so no other store is asked.
+        val resolution = runCatching {
+            storefrontResolver.resolve(subject, allowAutoLink = false, stores = setOf(Storefront.STEAM))
+        }
             .onFailure { Timber.w(it, "Local Steam identity resolve threw for %s", anchor.folderName) }
             .getOrNull()
             ?: return Outcome.Unavailable("the store could not be asked")

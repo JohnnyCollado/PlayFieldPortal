@@ -200,6 +200,33 @@ class WindowsLibrarySetupTest {
     }
 
     @Test
+    fun `usePickedFolder creates the card when missing and points it at the picked tree`() = runTest {
+        val picked = "content://com.android.externalstorage.documents/tree/primary%3APCGames"
+        coEvery { memoryCards.getById("windows") } returns null
+        coEvery { memoryCards.addCard(any(), any(), any(), any(), any(), any()) } returns card()
+
+        setup().usePickedFolder(picked)
+
+        coVerify { memoryCards.addCard("windows", "Windows Memory Card", null, null, emptyList(), false) }
+        coVerify { memoryCards.setSafFolder("windows", picked, "/storage/emulated/0/PCGames") }
+    }
+
+    @Test
+    fun `a picked folder makes the library Ready, so the pin flow raises no setup prompt`() = runTest {
+        // No ROM root at all: before the pick this reported NoRomRoot, the prompt's trigger.
+        val picked = "content://com.android.externalstorage.documents/tree/primary%3APCGames"
+        coEvery { memoryCards.getById("windows") } returns card()
+        coEvery { romRoots.getAll() } returns emptyList()
+        assertEquals(WindowsSetupState.NoRomRoot, setup().ensure(FakeOps()))
+
+        setup().usePickedFolder(picked)
+        coEvery { memoryCards.getById("windows") } returns
+            card(treeUri = picked, romDirectory = "/storage/emulated/0/PCGames")
+
+        assertTrue(setup().ensure(FakeOps()) is WindowsSetupState.Ready)
+    }
+
+    @Test
     fun `windowsFolders lists every root's windows child, or the picked folder alone`() = runTest {
         coEvery { memoryCards.getById("windows") } returns card()
         coEvery { romRoots.getAll() } returns listOf(internalRoot, sdRoot)

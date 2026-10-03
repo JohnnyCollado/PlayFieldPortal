@@ -37,10 +37,13 @@ class NotificationRepositoryImpl(
         sourceKey: String?,
         action: NotificationAction,
         payload: String?,
+        read: Boolean,
     ): Long {
         // Dedupe: reuse the existing row's id so REPLACE overwrites it in place. created_at and
-        // read_at are NOT carried over — a repeat of the same event is a fresh, unread event.
+        // read_at are NOT carried over — a repeat of the same event is a fresh, unread event, unless
+        // the caller says the user already knows about it ([read]).
         val existingId = sourceKey?.let { dao.findBySourceKey(it)?.id } ?: 0L
+        val stamp = now()
         val id = dao.insert(
             NotificationEntity(
                 id = existingId,
@@ -52,8 +55,8 @@ class NotificationRepositoryImpl(
                 actionType = action.typeKey,
                 actionArg = action.arg,
                 payload = payload,
-                createdAt = now(),
-                readAt = null,
+                createdAt = stamp,
+                readAt = stamp.takeIf { read },
             )
         )
         prune()

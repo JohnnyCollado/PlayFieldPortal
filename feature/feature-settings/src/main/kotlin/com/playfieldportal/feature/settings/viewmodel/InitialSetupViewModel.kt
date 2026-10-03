@@ -14,6 +14,7 @@ import com.playfieldportal.core.data.repository.FolderLinkStatus
 import com.playfieldportal.core.data.repository.MediaRootKind
 import com.playfieldportal.core.data.repository.MediaRootRepository
 import com.playfieldportal.core.data.repository.CoreInventory
+import com.playfieldportal.core.data.repository.Ps3DataLibrary
 import com.playfieldportal.core.data.repository.RetroArchLink
 import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.core.data.repository.Vita3KLibrary
@@ -30,7 +31,7 @@ import com.playfieldportal.feature.artwork.api.ScreenScraperApi
 import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
 import com.playfieldportal.feature.artwork.importer.DetectedImportSource
 import com.playfieldportal.feature.artwork.portable.PortableArtworkLibrary
-import com.playfieldportal.feature.launcher.EmulatorAutoConfigService
+import com.playfieldportal.feature.launcher.kb.EmulatorKnowledgeRefresher
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,9 +43,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** The pages of the first-run wizard, in order. RetroArch and Vita3K exist only when installed. */
-enum class SetupStep { WELCOME, ROM_ROOTS, MUSIC, VIDEO, PHOTO, ARTWORK, SERVICES, ACHIEVEMENTS, VITA, RETROARCH, FINISH }
-
 /** A detected artwork source offered for the embedded quick-import (label + system count). */
 @Immutable
 data class ArtworkSourceUi(val label: String, val systems: Int)
@@ -52,10 +50,9 @@ data class ArtworkSourceUi(val label: String, val systems: Int)
 @Immutable
 data class InitialSetupUiState(
     val step: SetupStep = SetupStep.WELCOME,
-    // True when RetroArch is installed — gates whether the RETROARCH page appears.
-    val retroArchInstalled: Boolean = false,
-    // True when Vita3K is installed — gates whether the VITA data-folder page appears.
-    val vita3KInstalled: Boolean = false,
+    // What was installed and set when the wizard opened — decides the optional pages (and the
+    // Trophies page's sections). Snapshotted once, so a page never vanishes under the cursor.
+    val availability: SetupAvailability = SetupAvailability(),
     // Multi-root lists per section (Library-Manager rows — a section can span several folders).
     val romRoots: List<RootFolderRow> = emptyList(),
     val musicRoots: List<RootFolderRow> = emptyList(),
@@ -79,6 +76,8 @@ data class InitialSetupUiState(
     val retroArchDetecting: Boolean = false,
     // Vita3K data-folder (ux0) link — display name of the granted folder, null = not set.
     val vitaFolderName: String? = null,
+    // ARMSX3 PS3 data folder (dev_hdd0 or a folder above/below it), null = not set.
+    val ps3FolderName: String? = null,
     val message: String? = null,
     // Per-service validation results (\"Testing…\" / \"Valid …\" / \"Invalid …\"), shown inline.
     val igdbStatus: String? = null,
@@ -90,17 +89,22 @@ data class InitialSetupUiState(
     val autoFitXmbLayout: Boolean = false,
 ) {
     val hasIgdb: Boolean get() = igdbClientId.isNotBlank()
+    val retroArchInstalled: Boolean get() = availability.retroArch
+    val vita3KInstalled: Boolean get() = availability.vita3K
+    val armsx3Installed: Boolean get() = availability.armsx3
 
-    /** 1-based page number within the reachable (RetroArch/Vita3K-gated) flow — hidden pages skip. */
+    /** The pages this run shows, in order. */
+    val steps: List<SetupStep> get() = setupSteps(availability)
+
+    /** 1-based page number within this run's flow — hidden pages skip. */
     val stepNumber: Int
         get() {
-            val order = SetupStep.entries.filter {
-                (it != SetupStep.RETROARCH || retroArchInstalled) &&
-                    (it != SetupStep.VITA || vita3KInstalled)
-            }
-            val idx = order.indexOf(step)
+            val idx = steps.indexOf(step)
             return if (idx >= 0) idx + 1 else 1
         }
+
+    /** The page after [step], for the Continue row's "Next: …" sublabel; null on Finish. */
+    val nextStep: SetupStep? get() = steps.getOrNull(steps.indexOf(step) + 1)
     val hasScreenScraper: Boolean get() = ssUsername.isNotBlank()
     val hasRetroAchievements: Boolean get() = raUsername.isNotBlank()
     val hasSteam: Boolean get() = steamId64.isNotBlank()
@@ -119,6 +123,7 @@ private data class RootLists(
     val photo: List<RootFolderRow>,
     val artwork: String?,   // artwork folder display name
     val vita: String?,      // Vita3K ux0 folder display name
+    val ps3: String?,       // ARMSX3 PS3 data folder display name
 )
 
 // The two plain API-key services. Grouped so `serviceIdentities` stays within combine's typed
@@ -143,16 +148,12 @@ private data class ServiceIdentities(
 // Must match XMBViewModel.KEY_INITIAL_SETUP_SEEN — both read/write the same pref.
 private val KEY_INITIAL_SETUP_SEEN = booleanPreferencesKey("initial_setup_seen")
 
-private const val RETROARCH_PACKAGE = "com.retroarch"
-
-// Vita3K ships under one package name plus commonly-shared variants; any installed means its
-// data-folder (ux0) page should be offered. Same set as KnownEmulatorCatalog.
-private val VITA3K_PACKAGES = listOf("org.vita3k.emulator", "org.vita3k.emulator.ikhoeyZX")
-
 /**
- * First-run setup wizard, broken into one task per page per the approved plan: Welcome → ROM
- * Roots → Music → Video → Photo → Artwork → Online Services → Vita* → RetroArch* → Finish
- * (* only when the matching app is installed). Each folder section is multi-root exactly like Settings ▸ Library
+ * First-run setup wizard, broken into one task per page per the approved plans: Welcome →
+ * Controller → ROM Roots → Music → Video → Photo → Artwork → Online Services → Achievements →
+ * Trophies* → RetroArch* → Emulators* → Windows Games* → Hints & Touch → Home App* → Finish
+ * (* only when it applies — see [setupSteps]). This view model owns the page flow and the folder
+ * and service pages; the device pages live in [SetupPagesViewModel]. Each folder section is multi-root exactly like Settings ▸ Library
  * ROM Root Access and the Music/Video/Photo screens, artwork is one folder with an embedded
  * quick-import offer, and services mirror Settings ▸ Artwork/Shiba. Pure glue — every value is
  * stored through the same repository/provider the corresponding settings screen uses, so
@@ -166,7 +167,7 @@ class InitialSetupViewModel @Inject constructor(
     private val artworkImportManager: ArtworkImportManager,
     private val retroArchLink: RetroArchLink,
     private val vita3KLibrary: Vita3KLibrary,
-    private val autoConfig: EmulatorAutoConfigService,
+    private val refresher: EmulatorKnowledgeRefresher,
     private val sgdbKeys: SgdbApiKeyProvider,
     private val metadataKeys: MetadataApiKeyProvider,
     private val achievementCredentials: AchievementCredentialsProvider,
@@ -179,6 +180,8 @@ class InitialSetupViewModel @Inject constructor(
     private val folderHintResolver: com.playfieldportal.core.data.platform.PlatformFolderHintResolver,
     private val memoryCardRepository: com.playfieldportal.core.data.repository.MemoryCardRepository,
     private val tasks: BackgroundTaskCenter,
+    private val ps3DataLibrary: Ps3DataLibrary,
+    private val environment: SetupEnvironment,
 ) : ViewModel() {
 
     // Wizard OUTCOMES (folder linked, service connected, import started) go to the tray, keyed so a
@@ -199,7 +202,7 @@ class InitialSetupViewModel @Inject constructor(
     // are mirrored from the stores so they never go stale.
     // ssEnabled used to be a build constant readable here; it is now stored state, so it starts
     // false and is filled in by the init block below alongside the other detected values.
-    private val scratch = MutableStateFlow(InitialSetupUiState())
+    private val scratch = MutableStateFlow(InitialSetupUiState(availability = environment.availability()))
 
     // Detected artwork sources kept beside (not inside) UiState so state carries only display
     // data; aligned by index with artworkSources.
@@ -208,13 +211,7 @@ class InitialSetupViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             val ssEnabled = screenScraperApi.isEnabled()
-            scratch.update {
-                it.copy(
-                    ssEnabled = ssEnabled,
-                    retroArchInstalled = isRetroArchInstalled(),
-                    vita3KInstalled = isVita3KInstalled(),
-                )
-            }
+            scratch.update { it.copy(ssEnabled = ssEnabled) }
             readRetroArchState()
         }
     }
@@ -222,7 +219,7 @@ class InitialSetupViewModel @Inject constructor(
     // Display-name rows derive per-flow; grant status is snapshotted at emission time so a lost
     // grant (reinstall) reports ACCESS_LOST immediately, like the settings screens.
     // combine() is typed to 5 flows — the folder roots pack into one RootLists, then the Vita3K
-    // ux0 folder is layered on top (keeping the typed lambda, never an Array<Any?> cast).
+    // ux0 and PS3 data folders are layered on top (keeping the typed lambda, never an Array<Any?> cast).
     private val rootLists = combine(
         combine(
             romRootRepository.roots,
@@ -239,10 +236,14 @@ class InitialSetupViewModel @Inject constructor(
                 photo   = photo.toRows(persisted),
                 artwork = artwork?.let(::rootDisplayName),
                 vita    = null,
+                ps3     = null,
             )
         },
         vita3KLibrary.ux0TreeUriFlow,
-    ) { lists, vita -> lists.copy(vita = vita?.let(::rootDisplayName)) }
+        ps3DataLibrary.dataTreeUriFlow,
+    ) { lists, vita, ps3 ->
+        lists.copy(vita = vita?.let(::rootDisplayName), ps3 = ps3?.let(::rootDisplayName))
+    }
 
     private val artworkKeys = combine(
         sgdbKeys.apiKeyFlow,
@@ -281,6 +282,7 @@ class InitialSetupViewModel @Inject constructor(
             photoRoots     = roots.photo,
             artworkFolderName = roots.artwork,
             vitaFolderName    = roots.vita,
+            ps3FolderName     = roots.ps3,
             hasSgdb           = services.hasSgdb,
             hasTgdb           = services.hasTgdb,
             igdbClientId      = services.igdbClientId,
@@ -299,14 +301,6 @@ class InitialSetupViewModel @Inject constructor(
             )
         }
 
-    private fun isRetroArchInstalled(): Boolean =
-        runCatching { context.packageManager.getPackageInfo(RETROARCH_PACKAGE, 0) }.isSuccess
-
-    private fun isVita3KInstalled(): Boolean =
-        VITA3K_PACKAGES.any {
-            runCatching { context.packageManager.getPackageInfo(it, 0) }.isSuccess
-        }
-
     // ── Step navigation ───────────────────────────────────────────────────────
 
     /** Back to Welcome with transient state cleared. See old resetWizard contract. */
@@ -317,12 +311,8 @@ class InitialSetupViewModel @Inject constructor(
         )
     }
 
-    /** The steps in play — defeats the RetroArch and Vita3K pages when their app isn't installed. */
-    private fun reachableSteps(): List<SetupStep> =
-        SetupStep.entries.filter {
-            (it != SetupStep.RETROARCH || scratch.value.retroArchInstalled) &&
-                (it != SetupStep.VITA || scratch.value.vita3KInstalled)
-        }
+    /** The steps in play — the optional pages only when their app is installed. */
+    private fun reachableSteps(): List<SetupStep> = scratch.value.steps
 
     fun nextStep() {
         val order = reachableSteps()
@@ -330,6 +320,14 @@ class InitialSetupViewModel @Inject constructor(
         scratch.update {
             it.copy(step = next ?: it.step, message = null, igdbStatus = null, ssStatus = null)
         }
+    }
+
+    /**
+     * RB: on to the next page without changing anything on this one. Finish has nowhere to skip
+     * to — it shows no Skip prompt either.
+     */
+    fun skipStep() {
+        if (scratch.value.step != SetupStep.FINISH) nextStep()
     }
 
     /** Steps one page back. Returns false when already on the first page (caller exits). */
@@ -505,7 +503,7 @@ class InitialSetupViewModel @Inject constructor(
         viewModelScope.launch {
             scratch.update { it.copy(retroArchDetecting = true) }
             retroArchLink.save(uri)
-            autoConfig.runOnStartup()
+            refresher.run()
             readRetroArchState("RetroArch linked — installed cores are now offered in Emulators.")
         }
     }
@@ -514,7 +512,7 @@ class InitialSetupViewModel @Inject constructor(
         if (!scratch.value.retroArchLinked) return
         viewModelScope.launch {
             scratch.update { it.copy(retroArchDetecting = true) }
-            autoConfig.runOnStartup()
+            refresher.run()
             readRetroArchState("RetroArch cores re-checked.")
         }
     }
@@ -522,7 +520,7 @@ class InitialSetupViewModel @Inject constructor(
     fun unlinkRetroArch() {
         viewModelScope.launch {
             retroArchLink.clear()
-            autoConfig.runOnStartup()
+            refresher.run()
             scratch.update {
                 it.copy(
                     retroArchLinked = false,
@@ -568,6 +566,27 @@ class InitialSetupViewModel @Inject constructor(
         viewModelScope.launch {
             vita3KLibrary.clear()
             announce("setup_vita", "Vita3K data folder released — files on disk were not touched.")
+        }
+    }
+
+    // ── PS3 data folder (ARMSX3) ───────────────────────────────────────────────
+
+    /** Grants the ARMSX3 data folder through the same [Ps3DataLibrary] call Library Manager makes. */
+    fun linkPs3Folder(uri: Uri) {
+        viewModelScope.launch {
+            ps3DataLibrary.setDataFolder(uri)
+            announce(
+                "setup_ps3",
+                "PS3 data folder set. Run Auto-Match in Settings ▸ Shiba Coins to link PS3 trophies.",
+            )
+        }
+    }
+
+    /** Releases the PS3 data-folder link (files are never touched). */
+    fun forgetPs3Folder() {
+        viewModelScope.launch {
+            ps3DataLibrary.clear()
+            announce("setup_ps3", "PS3 data folder released — files on disk were not touched.")
         }
     }
 

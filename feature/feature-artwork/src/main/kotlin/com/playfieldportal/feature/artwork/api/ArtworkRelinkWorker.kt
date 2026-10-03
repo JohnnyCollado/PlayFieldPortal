@@ -9,6 +9,8 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.playfieldportal.core.domain.model.NotificationAction
+import com.playfieldportal.core.domain.model.NotificationDetail
+import com.playfieldportal.core.domain.model.PfpErrorCode
 import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 import dagger.assisted.Assisted
@@ -22,7 +24,7 @@ import java.util.UUID
  *
  * The Settings button used to launch the walk on `viewModelScope`, so navigating away killed it
  * mid-scan and the only feedback was a one-line notice at the end. A relink over a large library
- * is minutes of SAF traversal — it belongs here, with progress in the panel and the shade, exactly
+ * is minutes of SAF traversal — it belongs here, with progress in the panel, exactly
  * like `MetadataScrapeWorker`.
  *
  * Two entry points share this worker:
@@ -50,7 +52,11 @@ class ArtworkRelinkWorker @AssistedInject constructor(
         val label =
             if (platformIds.isEmpty()) "Relinking artwork"
             else "Relinking artwork for ${platformIds.size} console(s)"
-        tasks.start(TASK_ID, label, TaskKind.ARTWORK)
+        tasks.start(
+            TASK_ID, label, TaskKind.ARTWORK,
+            onStop = { WorkManager.getInstance(applicationContext).cancelUniqueWork(UNIQUE_NAME) },
+            stopNote = "Artwork already linked stays linked.",
+        )
         var lastNotified = 0L
 
         return try {
@@ -70,6 +76,7 @@ class ArtworkRelinkWorker @AssistedInject constructor(
                     TASK_ID,
                     "No artwork folder linked",
                     NotificationAction.OpenSettingsScreen(SETTINGS_ROUTE),
+                    title = "Artwork relink finished",
                 )
                 return Result.success()
             }
@@ -82,6 +89,7 @@ class ArtworkRelinkWorker @AssistedInject constructor(
                 NotificationAction.OpenSettingsScreen(
                     if (result.orphanEntries > 0) SETTINGS_ROUTE_ORPHANS else SETTINGS_ROUTE,
                 ),
+                title = "Artwork relink finished",
             )
             Result.success(
                 workDataOf(
@@ -93,11 +101,16 @@ class ArtworkRelinkWorker @AssistedInject constructor(
         } catch (e: CancellationException) {
             // The walk only ever adds and repoints records; whatever it linked before being
             // cancelled is already committed and correct.
-            tasks.complete(TASK_ID, "Cancelled — artwork linked so far is kept")
+            tasks.stopped(TASK_ID, "Artwork linked so far is kept", title = "Artwork relink stopped")
             throw e
         } catch (e: Exception) {
             Timber.e(e, "Artwork relink failed")
-            tasks.fail(TASK_ID, e.message ?: "Unexpected error")
+            tasks.fail(
+                TASK_ID, e.message ?: "Unexpected error",
+                detail = NotificationDetail.notes(PfpErrorCode.AR_9001, summary = e.message,
+                    diagnostic = e.stackTraceToString().take(4_000)),
+                title = "Artwork relink failed",
+            )
             Result.failure(workDataOf(KEY_ERROR to (e.message ?: "Unexpected error")))
         }
     }

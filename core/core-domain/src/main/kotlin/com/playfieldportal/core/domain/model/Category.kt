@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 data class Category(
     val id: String,
     val name: String,
-    val iconKey: String,                // built-in icon key or "custom"
+    val iconKey: String,                // catalog icon key (a user image lives in the icon store, not here)
     val customIconUri: String? = null,
     val accentColor: Long? = null,      // per-category wave color override
     val type: CategoryType,

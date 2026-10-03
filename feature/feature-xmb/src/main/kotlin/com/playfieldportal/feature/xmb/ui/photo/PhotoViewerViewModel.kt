@@ -16,6 +16,12 @@ import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe.setWallpa
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.Photo
 import com.playfieldportal.core.domain.repository.PhotoRepository
+import com.playfieldportal.core.ui.components.PspMenuCue
+import com.playfieldportal.core.ui.components.PspMenuNav
+import com.playfieldportal.core.ui.components.PspMenuRow
+import com.playfieldportal.core.ui.components.PspMenuOutcome
+import com.playfieldportal.core.ui.sound.MenuSoundPlayer
+import com.playfieldportal.core.ui.sound.MenuSoundSink
 import com.playfieldportal.themekit.MotionLimits
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -52,17 +58,17 @@ private const val PAN_STEP_PX = 160f
 // Longest edge of the saved wallpaper file — plenty for any launcher background.
 private const val WALLPAPER_MAX_DIM = 2560
 
-// A row in the viewer's Options menu.
-enum class PhotoViewerAction(val label: String) {
-    SET_WALLPAPER("Set as Launcher Wallpaper"),
-    ROTATE_LEFT("Rotate Left"),
-    ROTATE_RIGHT("Rotate Right"),
-    ZOOM_IN("Zoom In"),
-    ZOOM_OUT("Zoom Out"),
-    RESET_ZOOM("Reset Zoom"),
-    INFO("View Information"),
-    LOCATION("Open File Location"),
-    REMOVE("Remove From Library"),
+// A row in the viewer's Options menu, in menu order. Zoom Out / Reset Zoom only show while zoomed.
+enum class PhotoViewerAction(val label: String, val group: String) {
+    ROTATE_LEFT("Rotate Left", "View"),
+    ROTATE_RIGHT("Rotate Right", "View"),
+    ZOOM_IN("Zoom In", "View"),
+    ZOOM_OUT("Zoom Out", "View"),
+    RESET_ZOOM("Reset Zoom", "View"),
+    SET_WALLPAPER("Set as Launcher Wallpaper", "Manage"),
+    INFO("View Information", "Manage"),
+    LOCATION("Show File Location", "Manage"),
+    REMOVE("Remove from Library", "Manage"),
 }
 
 data class PhotoViewerUiState(
@@ -88,12 +94,29 @@ data class PhotoViewerUiState(
 ) {
     val photo: Photo? get() = photos.getOrNull(index)
     val zoomed: Boolean get() = zoom > ZOOM_MIN
+    val optionsActions: List<PhotoViewerAction>
+        get() = PhotoViewerAction.entries.filter {
+            zoomed || (it != PhotoViewerAction.ZOOM_OUT && it != PhotoViewerAction.RESET_ZOOM)
+        }
+}
+
+/** The Options menu's rows; a group header goes on the first row of each group. */
+internal fun photoOptionRows(state: PhotoViewerUiState): List<PspMenuRow> {
+    val actions = state.optionsActions
+    return actions.mapIndexed { index, action ->
+        PspMenuRow(
+            label = action.label,
+            isDestructive = action == PhotoViewerAction.REMOVE,
+            header = action.group.takeIf { it != actions.getOrNull(index - 1)?.group },
+        )
+    }
 }
 
 @HiltViewModel
 class PhotoViewerViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val photoRepository: PhotoRepository,
+    private val menuSound: MenuSoundPlayer,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PhotoViewerUiState())
@@ -136,23 +159,23 @@ class PhotoViewerViewModel @Inject constructor(
                 GamepadAction.BACK   -> _uiState.update { it.copy(wallpaperPreviewVisible = false) }
                 else -> Unit
             }
-            s.confirmRemove -> when (action) {
-                GamepadAction.SELECT -> confirmRemove()
-                GamepadAction.BACK   -> _uiState.update { it.copy(confirmRemove = false) }
-                else -> Unit
-            }
-            s.infoVisible -> if (action == GamepadAction.SELECT || action == GamepadAction.BACK) {
-                _uiState.update { it.copy(infoVisible = false) }
-            }
+            // The removal prompt and Information are the shared modals (see photoViewerModalSpec):
+            // the screen hands every press to their host while one is up, so these two only see a
+            // press that raced the modal onto the screen. A Confirm must never skip the removal
+            // prompt's opening on Cancel, so only Back is read there.
+            s.confirmRemove -> if (action == GamepadAction.BACK) cancelRemove()
+            s.infoVisible -> if (action == GamepadAction.SELECT || action == GamepadAction.BACK) closeInfo()
+            // The shared PSP-panel rules: clamp, Triangle/Back close, cues. Every row commits.
             s.showOptions -> {
-                val count = PhotoViewerAction.entries.size
-                when (action) {
-                    GamepadAction.NAVIGATE_UP   -> _uiState.update { it.copy(optionsIndex = (it.optionsIndex - 1 + count) % count) }
-                    GamepadAction.NAVIGATE_DOWN -> _uiState.update { it.copy(optionsIndex = (it.optionsIndex + 1) % count) }
-                    GamepadAction.SELECT        -> activate(PhotoViewerAction.entries[s.optionsIndex.coerceIn(0, count - 1)])
-                    GamepadAction.BACK,
-                    GamepadAction.OPEN_CONTEXT_MENU      -> _uiState.update { it.copy(showOptions = false) }
-                    else -> Unit
+                val actions = s.optionsActions
+                val count = actions.size
+                when (val outcome = PspMenuNav.handle(
+                    action, s.optionsIndex, count, depth = 0, PspMenuCue.CONFIRM, MenuSoundSink { menuSound.play(it) },
+                )) {
+                    is PspMenuOutcome.Moved -> _uiState.update { it.copy(optionsIndex = outcome.index) }
+                    PspMenuOutcome.Activate -> activate(actions[s.optionsIndex.coerceIn(0, count - 1)])
+                    PspMenuOutcome.Up, PspMenuOutcome.Close -> _uiState.update { it.copy(showOptions = false) }
+                    PspMenuOutcome.Ignored -> Unit
                 }
             }
             else -> when (action) {
@@ -409,6 +432,8 @@ class PhotoViewerViewModel @Inject constructor(
     fun cancelWallpaperPreview() = _uiState.update { it.copy(wallpaperPreviewVisible = false) }
 
     // ── Remove ────────────────────────────────────────────────────────────────
+
+    fun closeInfo() = _uiState.update { it.copy(infoVisible = false) }
 
     fun requestRemove() = _uiState.update { it.copy(confirmRemove = true) }
     fun cancelRemove() = _uiState.update { it.copy(confirmRemove = false) }

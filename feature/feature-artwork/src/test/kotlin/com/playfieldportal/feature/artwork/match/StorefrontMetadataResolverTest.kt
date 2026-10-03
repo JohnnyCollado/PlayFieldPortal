@@ -5,6 +5,7 @@ import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.core.data.database.entity.GameStorefrontIdentityEntity
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -46,6 +47,7 @@ class StorefrontMetadataResolverTest {
         val searchResult: (List<String>) -> StorefrontOutcome<List<StorefrontCandidate>> =
             { StorefrontOutcome.NoMatch },
         val metadata: (String) -> StorefrontOutcome<MetadataPreset> = { StorefrontOutcome.NoMatch },
+        override val trustsCapturedId: Boolean = true,
     ) : StorefrontMetadataProvider {
         var searches = 0
         var metadataCalls = mutableListOf<String>()
@@ -306,6 +308,135 @@ class StorefrontMetadataResolverTest {
         resolver(dao, provider).resolve(game(), allowAutoLink = false)
 
         assertTrue(dao.rows.isEmpty())
+    }
+
+    // -- More than one store -----------------------------------------------------
+
+    @Test
+    fun `a resolve scoped to one store never asks another`() = runTest {
+        // Local Steam only wants Steam's answer, and a Store Match row only its own store's: a
+        // second provider asked anyway is a request spent on an answer nobody reads.
+        val steam = FakeProvider(
+            store = Storefront.STEAM,
+            searchResult = { StorefrontOutcome.Ok(listOf(candidate("620", "Portal 2"))) },
+            metadata = { StorefrontOutcome.Ok(preset("Portal 2")) },
+        )
+        val gog = FakeProvider(
+            store = Storefront.GOG,
+            searchResult = { StorefrontOutcome.Ok(listOf(StorefrontCandidate(Storefront.GOG, "1", "Portal 2"))) },
+            metadata = { StorefrontOutcome.Ok(preset("Portal 2")) },
+        )
+
+        val resolution = resolver(FakeIdentityDao(), steam, gog)
+            .resolve(game(), allowAutoLink = false, stores = setOf(Storefront.STEAM))
+
+        assertEquals(setOf(Storefront.STEAM), resolution.byStore.keys)
+        assertEquals(0, gog.searches)
+        assertTrue(gog.metadataCalls.isEmpty())
+    }
+
+    @Test
+    fun `an unscoped resolve asks every provider, in the order they are listed`() = runTest {
+        val steam = FakeProvider(store = Storefront.STEAM)
+        val gog = FakeProvider(store = Storefront.GOG)
+
+        val resolution = resolver(FakeIdentityDao(), steam, gog).resolve(game(), allowAutoLink = false)
+
+        assertEquals(listOf(Storefront.STEAM, Storefront.GOG), resolution.byStore.keys.toList())
+        assertEquals(1, steam.searches)
+        assertEquals(1, gog.searches)
+    }
+
+    @Test
+    fun `a store that does not trust the imported id finds the game by title instead`() = runTest {
+        // The number a launcher export carries for a GOG game is not known to be the gog.com
+        // product id. Fetching by it — and, on an automatic pass, storing it as EXACT — would be a
+        // confident link to whatever product happens to own that number.
+        val dao = FakeIdentityDao()
+        val gog = FakeProvider(
+            store = Storefront.GOG,
+            trustsCapturedId = false,
+            searchResult = { StorefrontOutcome.Ok(listOf(StorefrontCandidate(Storefront.GOG, "1207658924", "Portal 2"))) },
+            metadata = { StorefrontOutcome.Ok(preset("Portal 2")) },
+        )
+
+        val resolution = resolver(dao, gog).resolve(game(storefront = "GOG", storefrontGameId = "42"))
+
+        assertEquals(1, gog.searches)
+        assertFalse("42" in gog.metadataCalls)
+        val linked = resolution.byStore[Storefront.GOG] as StorefrontMetadataResolver.Resolution.Linked
+        assertEquals("1207658924", linked.identity.storeId)
+        assertEquals("1207658924", dao.rows.values.single().storeId)
+    }
+
+    // -- A name the user typed ---------------------------------------------------
+
+    @Test
+    fun `a typed name is what gets searched and scored, not the game's title`() = runTest {
+        val asked = mutableListOf<String>()
+        val provider = FakeProvider(
+            searchResult = { titles ->
+                asked += titles
+                StorefrontOutcome.Ok(listOf(candidate("1358800", "Bravely Default")))
+            },
+            metadata = { StorefrontOutcome.Ok(preset("Bravely Default")) },
+        )
+
+        val resolution = resolver(FakeIdentityDao(), provider).resolve(
+            game(title = "Brave Default FF (repack)"),
+            allowAutoLink = false,
+            titleOverride = "Bravely Default",
+        )
+
+        assertTrue(asked.any { it.contains("bravely default", ignoreCase = true) })
+        assertTrue(asked.none { it.contains("brave default", ignoreCase = true) })
+        // Scored against what was typed: the store's title is exactly that, whatever the row says.
+        val linked = resolution.byStore[Storefront.STEAM] as StorefrontMetadataResolver.Resolution.Linked
+        assertEquals(listOf(MatchSignal.EXACT_TITLE), linked.match?.best?.signals)
+    }
+
+    @Test
+    fun `a typed name looks past every id PFP already holds`() = runTest {
+        // Typing a name is the user saying the link is wrong or missing, so neither the stored
+        // row nor the import-captured pair may answer in its place.
+        val dao = FakeIdentityDao()
+        dao.upsert(
+            GameStorefrontIdentityEntity(
+                gameId = 1L, store = "STEAM", storeId = "620",
+                confidence = MatchConfidence.EXACT.name, linkedAt = 0L,
+            )
+        )
+        val provider = FakeProvider(
+            searchResult = { StorefrontOutcome.Ok(listOf(candidate("400", "Portal"))) },
+            metadata = { StorefrontOutcome.Ok(preset("Portal")) },
+        )
+
+        resolver(dao, provider).resolve(
+            game(storefront = "STEAM", storefrontGameId = "620"),
+            allowAutoLink = false,
+            titleOverride = "Portal",
+        )
+
+        assertEquals(1, provider.searches)
+        // Still only a look: the stored link survives until the user picks a replacement.
+        assertEquals("620", dao.rows.values.single().storeId)
+    }
+
+    @Test
+    fun `a match found by title carries the field it was chosen from`() = runTest {
+        // A preview that links nothing still has to be able to SHOW what it found, or the screen
+        // can only say "matched" about a game it did not match.
+        val provider = FakeProvider(
+            searchResult = { StorefrontOutcome.Ok(listOf(candidate("620", "Portal 2"))) },
+            metadata = { StorefrontOutcome.Ok(preset("Portal 2")) },
+        )
+
+        val resolution = resolver(FakeIdentityDao(), provider).resolve(game(), allowAutoLink = false)
+
+        val linked = resolution.byStore[Storefront.STEAM] as StorefrontMetadataResolver.Resolution.Linked
+        assertEquals(MatchConfidence.EXACT, linked.match?.confidence)
+        assertEquals("620", linked.match?.best?.candidate?.storeId)
+        assertEquals(listOf(MatchSignal.EXACT_TITLE), linked.match?.best?.signals)
     }
 
     @Test

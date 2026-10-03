@@ -136,6 +136,10 @@ class DisplaySettingsViewModelFontColorTest {
 
     @Test
     fun `an unknown persisted legibility style surfaces as the default`() = runTest(dispatcher) {
+        // cycleTextLegibility() reads uiState.value, so this test needs the standing subscriber
+        // (see observeUntilSettled): without one, the cycle can read a state the stale write has
+        // not reached yet when this runs first in its class.
+        observeUntilSettled(vm.uiState)
         context.pfpDataStore.edit { it[KEY_LEGIBILITY] = "PLATE_HEAVY" }
 
         eventually("stale value tolerated") {

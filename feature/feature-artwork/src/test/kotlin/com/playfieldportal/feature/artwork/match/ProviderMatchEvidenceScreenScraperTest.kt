@@ -21,6 +21,7 @@ class ProviderMatchEvidenceScreenScraperTest {
         igdbApi = mockk(relaxed = true),
         theGamesDb = mockk(relaxed = true),
         steam = mockk(relaxed = true),
+        gog = mockk(relaxed = true),
     )
 
     private fun hit(ssId: Long, systemId: Int, systemName: String) =

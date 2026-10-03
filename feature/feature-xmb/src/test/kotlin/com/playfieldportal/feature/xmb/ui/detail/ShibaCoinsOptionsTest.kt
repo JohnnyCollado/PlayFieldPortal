@@ -1,13 +1,16 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
 import com.playfieldportal.core.domain.achievement.AchievementProvider
+import com.playfieldportal.core.ui.components.PfpModalSpec
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * The Triangle Options menu for a game's coins page: Sort always, Sync Now wherever there is a
- * provider identity to sync against, and Change Match only for the one match the user supplied.
+ * The Triangle Options menu for a game's coins page (mockup 4): Sort always, carrying its current
+ * choice as a value; Update Achievements wherever there is a provider identity to update against;
+ * Change Match only for the one match the user supplied; Unlink Game red and last.
  */
 class ShibaCoinsOptionsTest {
 
@@ -30,35 +33,70 @@ class ShibaCoinsOptionsTest {
     private fun labels(state: ShibaCoinsUiState) = coinOptionRows(state).map { it.label }
 
     @Test
-    fun `a linked RetroAchievements game offers Sort and Sync Now`() {
-        assertEquals(listOf("Sort (Tier)", "Refresh this game"), labels(state()))
+    fun `a linked RetroAchievements game offers Sort, Update Achievements and Unlink`() {
+        assertEquals(listOf("Sort", "Update Achievements", "Unlink Game"), labels(state()))
     }
 
     @Test
     fun `a linked Steam game adds Change Match`() {
         val rows = labels(state(provider = AchievementProvider.STEAM))
-        assertEquals(listOf("Sort (Tier)", "Refresh this game", "Change Match"), rows)
+        assertEquals(listOf("Sort", "Update Achievements", "Change Match", "Unlink Game"), rows)
     }
 
     @Test
-    fun `an account entry can sync but has no match to change`() {
+    fun `an account entry can sync but has no match to change or link to remove`() {
         val rows = labels(state(provider = AchievementProvider.STEAM, linked = false, accountOnly = true))
-        assertEquals(listOf("Sort (Tier)", "Refresh this game"), rows)
+        assertEquals(listOf("Sort", "Update Achievements"), rows)
     }
 
     @Test
     fun `an unlinked game offers Sort only`() {
-        assertEquals(listOf("Sort (Tier)"), labels(state(linked = false)))
+        assertEquals(listOf("Sort"), labels(state(linked = false)))
     }
 
     @Test
-    fun `the root row names the active sort`() {
-        assertEquals("Sort (Rarest)", labels(state(sort = CoinSort.RAREST)).first())
+    fun `Unlink Game is the last row and the only destructive one`() {
+        val rows = coinOptionRows(state(provider = AchievementProvider.STEAM))
+        assertEquals("Unlink Game", rows.last().label)
+        assertEquals(listOf(false, false, false, true), rows.map { it.isDestructive })
+    }
+
+    @Test
+    fun `the Unlink confirm is a destructive modal that names the game`() {
+        val spec = coinUnlinkModalSpec(
+            state = state().copy(title = "Halo", unlinkConfirm = true),
+            onConfirm = {},
+            onCancel = {},
+        ) as PfpModalSpec.Confirm
+        assertTrue(spec.destructive)
+        assertEquals("Unlink", spec.confirmLabel)
+        assertTrue("Halo" in spec.message)
+    }
+
+    @Test
+    fun `no modal is built unless an unlink is being asked`() {
+        assertNull(coinUnlinkModalSpec(state(), onConfirm = {}, onCancel = {}))
+    }
+
+    @Test
+    fun `the Sort row carries the active sort as its value and opens a list`() {
+        val sort = coinOptionRows(state(sort = CoinSort.RAREST)).first()
+        assertEquals("Sort", sort.label)
+        assertEquals("Rarest", sort.value)
+        assertTrue(sort.opensMenu)
+    }
+
+    @Test
+    fun `Change Match opens a menu and Update Achievements does not`() {
+        val rows = coinOptionRows(state(provider = AchievementProvider.STEAM)).associateBy { it.label }
+        assertTrue(rows.getValue("Change Match").opensMenu)
+        assertEquals(false, rows.getValue("Update Achievements").opensMenu)
+        assertEquals(false, rows.getValue("Unlink Game").opensMenu)
     }
 
     @Test
     fun `a sync in flight says so`() {
-        assertTrue("Refreshing…" in labels(state(isSyncing = true)))
+        assertTrue("Updating…" in labels(state(isSyncing = true)))
     }
 
     @Test

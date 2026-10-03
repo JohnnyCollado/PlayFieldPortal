@@ -16,8 +16,8 @@ import javax.inject.Singleton
  * Retrofit stack for the Steam islands. The shared OkHttpClient is deliberately bare — timeouts
  * only, **no logging interceptor** — because the user's Steam API key travels in the `key` query
  * parameter and must never reach logcat or a log file (the same rule the RA client follows with
- * api-kotlin's `debugging = false`). Two Retrofit instances because the Web API and the storefront
- * live on different hosts.
+ * api-kotlin's `debugging = false`). One Retrofit instance per host: the Web API, the storefront,
+ * the community site, and Steam Hunters.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -49,6 +49,11 @@ object SteamClientModule {
     @Singleton
     fun provideSteamCommunityApi(client: OkHttpClient): SteamCommunityApi =
         retrofit(client, "https://steamcommunity.com/").create(SteamCommunityApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideSteamHuntersApi(client: OkHttpClient): SteamHuntersApi =
+        retrofit(client, "https://steamhunters.com/").create(SteamHuntersApi::class.java)
 
     private fun retrofit(client: OkHttpClient, baseUrl: String): Retrofit = Retrofit.Builder()
         .baseUrl(baseUrl)

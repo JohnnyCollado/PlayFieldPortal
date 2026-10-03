@@ -75,12 +75,12 @@ fun DirectoryRow(
         onClick = null,
         actions = listOf(
             SettingsRowAction(
-                "Edit directory", onEdit,
+                SettingsLabels.EDIT_FOLDER, onEdit,
                 actionFocusBackgroundColor = lerp(SettingsAccent, Color.Black, 0.50f),
             ) {
                 Icon(
                     Icons.Default.Create,
-                    contentDescription = "Edit directory",
+                    contentDescription = SettingsLabels.EDIT_FOLDER,
                     tint = SettingsAccent,
                     modifier = Modifier
                         .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
@@ -88,12 +88,12 @@ fun DirectoryRow(
                 )
             },
             SettingsRowAction(
-                "Remove directory", onRemove,
+                SettingsLabels.REMOVE_FOLDER, onRemove,
                 actionFocusBackgroundColor = lerp(Color(0xFFE55353), Color.Black, 0.50f),
             ) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = "Remove directory",
+                    contentDescription = SettingsLabels.REMOVE_FOLDER,
                     tint = Color(0xFFE55353),
                     modifier = Modifier
                         .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))

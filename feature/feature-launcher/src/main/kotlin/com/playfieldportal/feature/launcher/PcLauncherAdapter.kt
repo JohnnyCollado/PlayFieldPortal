@@ -111,6 +111,7 @@ object PcLauncherAdapters {
      * time; without it (UI metadata like id prompts and `canAddById` checks) V6 is assumed.
      */
     fun forType(type: PcLauncherType, pm: PackageManager? = null): PcLauncherAdapter? = when (type) {
+        PcLauncherType.GAMEHUB,
         PcLauncherType.BANNERHUB_V6,
         PcLauncherType.GAMEHUB_LITE -> GameHubFamilyAdapter(type) { pkg ->
             pm?.let { PcLauncherCatalog.gameHubGeneration(pkg, it) } ?: GameHubGeneration.V6

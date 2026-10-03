@@ -7,9 +7,10 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class ScreenScraperApiTest {
+// One instance for the file: building a Json per decode is the slow path kotlinx warns about.
+private val lenientJson = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
 
-    private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+class ScreenScraperApiTest {
 
     private val api = ScreenScraperApi(
         appContext = mockk(relaxed = true),
@@ -130,7 +131,7 @@ class ScreenScraperApiTest {
 
     @Test
     fun `the per-minute limit is read from the account block`() {
-        val user = json
+        val user = lenientJson
             .decodeFromString(SsUser.serializer(), """{"id":"someone","maxthreads":"1","maxrequestspermin":"3072"}""")
 
         assertEquals("3072", user.maxRequestsPerMinute)

@@ -49,6 +49,10 @@ interface MemoryCardDao {
     @Query("UPDATE memory_cards SET emulator_id = :emulatorId WHERE platform_id = :platformId")
     suspend fun setEmulator(platformId: String, emulatorId: String?)
 
+    /** Moves every card assignment from the retired profile id [old] to [new]; returns the rows changed. */
+    @Query("UPDATE memory_cards SET emulator_id = :new WHERE emulator_id = :old")
+    suspend fun renameEmulatorId(old: String, new: String): Int
+
     @Query("UPDATE memory_cards SET supported_extensions = :exts WHERE platform_id = :platformId")
     suspend fun setSupportedExtensions(platformId: String, exts: String)
 

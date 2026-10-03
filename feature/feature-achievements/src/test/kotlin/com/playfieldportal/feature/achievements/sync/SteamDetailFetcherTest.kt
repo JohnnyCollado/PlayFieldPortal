@@ -146,6 +146,16 @@ class SteamDetailFetcherTest {
         coVerify(exactly = 0) { steam.enrichHiddenDescriptions(any(), any()) }
     }
 
+    @Test
+    fun `an unearned hidden coin with no description is enriched`() = runTest {
+        cached(ageMs = DAY)
+        // Only WIN is earned (see init); SECRET is hidden, unearned and blank.
+
+        fetcher.fetch(APP, FetchReason.ROUTINE)
+
+        coVerify(exactly = 1) { steam.enrichHiddenDescriptions(APP, any()) }
+    }
+
     private companion object {
         const val APP = "440"
         const val DAY = 24L * 60 * 60 * 1_000

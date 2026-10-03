@@ -7,11 +7,16 @@ import com.playfieldportal.core.data.database.seeder.StartupDataPrep
 import com.playfieldportal.feature.appbar.InstalledAppReconciler
 import com.playfieldportal.feature.appbar.InstalledPackageMonitor
 import com.playfieldportal.feature.artwork.api.ArtworkImageCache
-import com.playfieldportal.feature.launcher.EmulatorAutoConfigService
+import com.playfieldportal.feature.artwork.api.ArtworkImportManager
+import com.playfieldportal.feature.launcher.kb.EmulatorKbUpdater
+import com.playfieldportal.feature.launcher.kb.appVersionCode
+import com.playfieldportal.feature.launcher.kb.EmulatorKnowledgeRefresher
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -24,10 +29,12 @@ class PFPApplication : Application(), Configuration.Provider {
     @Inject lateinit var databaseInitializer: DatabaseInitializer
     @Inject lateinit var startupDataPrep: StartupDataPrep
     @Inject lateinit var emulatorProfileRepository: EmulatorProfileRepository
-    @Inject lateinit var emulatorAutoConfigService: EmulatorAutoConfigService
+    @Inject lateinit var emulatorKnowledgeRefresher: EmulatorKnowledgeRefresher
+    @Inject lateinit var emulatorKbUpdater: EmulatorKbUpdater
     @Inject lateinit var artworkImageCache: ArtworkImageCache
     @Inject lateinit var installedPackageMonitor: InstalledPackageMonitor
     @Inject lateinit var installedAppReconciler: InstalledAppReconciler
+    @Inject lateinit var artworkImportManager: ArtworkImportManager
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -37,8 +44,8 @@ class PFPApplication : Application(), Configuration.Provider {
         // Must run before anything can request an image: Coil builds its singleton loader on
         // first use and will not swap one out afterwards.
         artworkImageCache.installAsSingleton()
-        initDatabase()
-        initEmulators()
+        val databaseReady = initDatabase()
+        initEmulators(databaseReady)
         // Registered here, not lazily on first injection: as the home app this process outlives
         // every screen, so the app catalog has to be invalidated by package events rather than by
         // the process dying. Cheap — one callback registration.
@@ -47,9 +54,19 @@ class PFPApplication : Application(), Configuration.Provider {
         // actually installed. Started here for the same reason: a lazily-built singleton nobody
         // injects never runs.
         installedAppReconciler.start()
+        initArtworkLibrary()
     }
 
-    private fun initDatabase() {
+    // The library "opens" with the process: mark its artwork folders .nomedia, including ones no
+    // write has passed through since the marker was introduced.
+    private fun initArtworkLibrary() {
+        appScope.launch {
+            runCatching { artworkImportManager.markLibraryFolders() }
+                .onFailure { Timber.w(it, "Marking artwork folders .nomedia failed") }
+        }
+    }
+
+    private fun initDatabase(): Job =
         appScope.launch {
             runCatching {
                 databaseInitializer.initialize()
@@ -57,19 +74,27 @@ class PFPApplication : Application(), Configuration.Provider {
                 startupDataPrep.run(appVersionCode())
             }.onFailure { Timber.e(it, "Database initialization failed") }
         }
-    }
 
-    private fun appVersionCode(): Int = runCatching {
-        // longVersionCode is available from API 28; minSdk is 29.
-        packageManager.getPackageInfo(packageName, 0).longVersionCode.toInt()
-    }.getOrDefault(0)
-
-    private fun initEmulators() {
+    // Waits for the database seed: the refresher rewrites stored game, card and platform references.
+    private fun initEmulators(databaseReady: Job) {
         appScope.launch {
-            runCatching {
+            databaseReady.join()
+            try {
                 emulatorProfileRepository.initialize()
-                emulatorAutoConfigService.runOnStartup()
-            }.onFailure { Timber.e(it, "Emulator initialization failed") }
+                emulatorKnowledgeRefresher.run()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Emulator initialization failed")
+            }
+            try {
+                // Toggle and 24 h throttle are the updater's own; a no-op when not due.
+                emulatorKbUpdater.check(manual = false)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Emulator knowledge update check failed")
+            }
         }
     }
 

@@ -59,7 +59,7 @@ fun PortalIcon(
     // The contour styles measure in contour radii, the offset shadow in shadow offsets —
     // distinct dp constants, converted once here (never hardcode px).
     val radiusPx = with(LocalDensity.current) {
-        (if (style == IconLegibilityStyle.OFFSET_SHADOW) SHADOW_OFFSET_DP else CONTOUR_RADIUS_DP).dp.toPx()
+        (if (style.isOffsetShadow) SHADOW_OFFSET_DP else CONTOUR_RADIUS_DP).dp.toPx()
     }
     IconMatteSurface(
         painter = painter,

@@ -2,8 +2,11 @@ package com.playfieldportal.feature.settings.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import com.playfieldportal.core.domain.model.FeatureFlags
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.feature.settings.viewmodel.CategoryManagerTarget
 
 // Every screen route SettingsNavHost resolves. Kept beside the `when` (whose branches are string
 // literals) so the settings-hierarchy tests can verify that every L2 row id and every legacy
@@ -35,6 +38,7 @@ val SETTINGS_SCREEN_ROUTES: Set<String> = setOf(
     "settings_emulators_custom",
     "settings_emulators_retroarch",
     "settings_emulators_assign",
+    "settings_emulators_knowledge",
     "settings_themes",
     "settings_collections",
     "settings_display",
@@ -58,8 +62,6 @@ fun SettingsNavHost(
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
     showControllerHint: Boolean = false,
-    // Settings ▸ Controller ▸ Left Backs Out, mirrored in the XMB's state (see XMBUiState).
-    leftBacksOut: Boolean = true,
     // Whether the last input was touch — seeds each screen's cursor visibility.
     lastInputWasTouch: Boolean = false,
     onTouchInteraction: () -> Unit = {},
@@ -74,13 +76,19 @@ fun SettingsNavHost(
     onOpenLibraryManager: () -> Unit = {},
     onOpenArtworkOrphans: () -> Unit = {},
     onGoToLibrary: () -> Unit = {},
+    // Custom Memory Cards ▸ a game's menu ▸ View Game Details: Game Detail draws above Settings.
+    onOpenGameDetail: (gameId: Long) -> Unit = {},
+    // Category Manager ▸ Move: close Settings and lift the category on the crossbar.
+    onMoveCategoryOnBar: (categoryId: String) -> Unit = {},
+    // The XMB's category menu: Category Manager opens on this category with its edit already up.
+    categoryTarget: CategoryManagerTarget? = null,
+    onCategoryTargetConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     CompositionLocalProvider(
         LocalSettingsPendingAction provides pendingGamepadAction,
         LocalSettingsActionConsumed provides onGamepadActionConsumed,
         LocalSettingsShowControllerHint provides showControllerHint,
-        LocalSettingsLeftBacksOut provides leftBacksOut,
         LocalSettingsLastInputWasTouch provides lastInputWasTouch,
         LocalSettingsHostTouchInput provides onTouchInteraction,
     ) {
@@ -111,7 +119,13 @@ fun SettingsNavHost(
             "settings_music"      -> MusicSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_video"      -> VideoSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_photo"      -> PhotoSettingsScreen(onBack = onBack, modifier = modifier)
-            "settings_categories" -> CategoryManagerScreen(onBack = onBack, modifier = modifier)
+            "settings_categories" -> CategoryManagerScreen(
+                onBack = onBack,
+                onMoveOnBar = onMoveCategoryOnBar,
+                initialTarget = categoryTarget,
+                onTargetConsumed = onCategoryTargetConsumed,
+                modifier = modifier,
+            )
             "settings_artwork"    -> ArtworkSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_artwork_import" -> ArtworkImportScreen(
                 onBack = onBack,
@@ -139,12 +153,13 @@ fun SettingsNavHost(
             "settings_emulators_custom" -> EmulatorsSettingsScreen(onBack = onBack, section = EmulatorSettingsSection.CUSTOM, modifier = modifier)
             "settings_emulators_retroarch" -> EmulatorsSettingsScreen(onBack = onBack, section = EmulatorSettingsSection.RETROARCH, modifier = modifier)
             "settings_emulators_assign" -> EmulatorAssignmentScreen(onBack = onBack, modifier = modifier)
+            "settings_emulators_knowledge" -> EmulatorKnowledgeScreen(onBack = onBack, modifier = modifier)
             "settings_themes"     -> ThemesSettingsScreen(
                 onBack = onBack,
                 onOpenColorSchemePicker = onOpenColorSchemePicker,
                 modifier = modifier,
             )
-            "settings_collections" -> CollectionsSettingsScreen(onBack = onBack, modifier = modifier)
+            "settings_collections" -> CollectionsSettingsScreen(onBack = onBack, onOpenGameDetail = onOpenGameDetail, modifier = modifier)
             "settings_notifications" -> NotificationSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_display"    -> DisplaySettingsScreen(
                 onBack = onBack,
@@ -159,7 +174,12 @@ fun SettingsNavHost(
                 modifier = modifier,
             )
             "settings_controller" -> ControllerSettingsScreen(onBack = onBack, modifier = modifier)
-            "settings_backup"     -> BackupSettingsScreen(onBack = onBack, modifier = modifier)
+            // Parked until the backup rework (FeatureFlags): a stray route in closes straight away.
+            "settings_backup"     -> if (FeatureFlags.BACKUP_RESTORE) {
+                BackupSettingsScreen(onBack = onBack, modifier = modifier)
+            } else {
+                LaunchedEffect(Unit) { onBack() }
+            }
             "settings_logs"       -> LogsSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_about"      -> AboutSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_credits"    -> CreditsSettingsScreen(onBack = onBack, modifier = modifier)

@@ -1,7 +1,5 @@
 package com.playfieldportal.core.ui.detail
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,7 +26,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -269,10 +266,10 @@ fun PfpDetailHelperFooter(
     modifier: Modifier = Modifier,
     visible: Boolean = true,
 ) {
-    val alpha by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
-        animationSpec = tween(200),
-        label = "pfpDetailHelperFooter",
+    // The XMB pill's timing: fades in, and is gone the instant it stops applying. PFP's keyboard,
+    // when open over the page, brings its own prompts in this footer's place.
+    val alpha = com.playfieldportal.core.ui.components.idleHintAlpha(
+        visible && !com.playfieldportal.core.ui.keyboard.isVirtualKeyboardOverlayOpen(),
     )
     // See-through like the App Drawer's footer. Content cannot slide underneath it: the body above
     // clips to its own viewport, so the footer row only ever shows the page background.

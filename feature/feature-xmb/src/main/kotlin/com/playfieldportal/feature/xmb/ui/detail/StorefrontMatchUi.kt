@@ -33,19 +33,35 @@ data class StorefrontCandidateRow(
     val exactTitle: Boolean,
 )
 
+/** One store's candidates, as a tab of the picker. */
+data class StorefrontStoreTab(
+    val store: Storefront,
+    val label: String,
+    val confidence: MatchConfidence,
+    val rows: List<StorefrontCandidateRow>,
+)
+
 /**
  * The Match Game overlay.
  *
  * One store at a time on purpose: two stores' candidates in one list would invite comparing a
  * Steam appid against a GOG product id, which is exactly the cross-store confusion the identity
- * model exists to prevent. With only Steam built today this is moot, and it stays right when it
- * is not.
+ * model exists to prevent. Every store with something to choose is held in [stores]; the one on
+ * screen is [storeIndex], and [storeLabel], [confidence] and [rows] are always that store's — so
+ * everything that draws or navigates the list reads the same three fields whether there is one
+ * store or three.
  */
 data class StorefrontMatchUi(
     val loading: Boolean = true,
     val gameTitle: String = "",
     /** What the 5-rule normalizer actually sent, shown so a bad match has a visible cause. */
     val query: String = "",
+    /**
+     * The name the user typed into the Store Match search bar, when that is what was searched —
+     * null when the stores were asked for the game's own title. Kept as typed, where [query] is
+     * the normalized form: it is what an empty result has to name.
+     */
+    val typedQuery: String? = null,
     val storeLabel: String? = null,
     val confidence: MatchConfidence? = null,
     val rows: List<StorefrontCandidateRow> = emptyList(),
@@ -62,7 +78,48 @@ data class StorefrontMatchUi(
     val moreInfoOpen: Boolean = false,
     /** True once a choice is being written, so a second Select cannot double-write. */
     val confirming: Boolean = false,
+    /** Every store with candidates, in the order the stores are asked. See [withStores]. */
+    val stores: List<StorefrontStoreTab> = emptyList(),
+    val storeIndex: Int = 0,
+    /**
+     * Stores already linked, which therefore asked nothing. Named beside the list so a store
+     * missing from the tabs is not read as a store that was skipped.
+     */
+    val settledStores: List<String> = emptyList(),
 ) {
+    /** More than one store has something to choose, so there is somewhere to switch to. */
+    val hasOtherStores: Boolean get() = stores.size > 1
+
+    /** Takes [tabs] as the stores to choose on, and opens on the first. */
+    fun withStores(tabs: List<StorefrontStoreTab>): StorefrontMatchUi =
+        if (tabs.isEmpty()) copy(stores = emptyList(), storeIndex = 0, storeLabel = null, confidence = null, rows = emptyList(), focus = 0)
+        else copy(stores = tabs).showingStore(0)
+
+    /**
+     * The picker on store [index], cursor on its first row. An index past either end stays on the
+     * nearest store: the row of stores has ends, it does not wrap.
+     */
+    fun showingStore(index: Int): StorefrontMatchUi {
+        if (stores.isEmpty()) return this
+        val shown = index.coerceIn(0, stores.lastIndex)
+        val tab = stores[shown]
+        return copy(
+            storeIndex = shown,
+            storeLabel = tab.label,
+            confidence = tab.confidence,
+            rows = tab.rows,
+            focus = 0,
+            moreInfoOpen = false,
+        )
+    }
+
+    /** The picker once [store] has been answered: the stores still waiting, or none. */
+    fun withoutStore(store: Storefront): StorefrontMatchUi {
+        val remaining = stores.filter { it.store != store }
+        return if (remaining.isEmpty()) withStores(emptyList())
+        else copy(stores = remaining).showingStore(storeIndex.coerceAtMost(remaining.lastIndex))
+    }
+
     val noMatchIndex: Int get() = rows.size
 
     val focusedCandidate: StorefrontCandidateRow? get() = rows.getOrNull(focus)
@@ -102,12 +159,29 @@ data class StorefrontRematchUi(
     val rows: List<StorefrontRematchRow> = emptyList(),
     /** `0..rows.lastIndex` is a store; [searchAllIndex] is the Search-every-store button. */
     val focus: Int = 0,
+    /**
+     * The name in the search bar. Starts as the game's title so a near-miss is a small edit, and
+     * is only ever a search term: nothing here renames the game.
+     */
+    val query: String = "",
+    /**
+     * The search bar holds the cursor. Its own flag rather than a [focus] value: the bar sits
+     * above the rows, and an index below zero already means "no such row" to everything that
+     * maps a focus key onto [focus].
+     */
+    val queryFocused: Boolean = true,
+    /** The bar is taking text: the keyboard is up, and Back ends typing rather than closing. */
+    val editingQuery: Boolean = false,
 ) {
     val searchAllIndex: Int get() = rows.size
 
-    val stopCount: Int get() = rows.size + 1
+    /** The search bar, every store, and the Search-every-store button. */
+    val stopCount: Int get() = rows.size + 2
 
-    val focusedRow: StorefrontRematchRow? get() = rows.getOrNull(focus)
+    val focusedRow: StorefrontRematchRow? get() = if (queryFocused) null else rows.getOrNull(focus)
+
+    /** Blank is not a name: there is nothing to ask a store for. */
+    val canSearchByName: Boolean get() = query.isNotBlank()
 }
 
 // ── Mapping ───────────────────────────────────────────────────────────────────
@@ -215,7 +289,9 @@ fun storefrontRematchRowOf(row: StorefrontMatchRepository.RematchRow): Storefron
             listOfNotNull(record.resolvedTitle, row.store.idLabel(record.storeId)).joinToString("  ·  ")
         } ?: "Not linked",
         note = when {
-            !row.searchable -> "No provider yet — coming after Steam is proven"
+            // Stated as what is true today rather than as a promise: a store PFP has no way to
+            // search may never gain one.
+            !row.searchable -> "Can't be searched — this store has no public catalog to ask"
             identity == null -> "Nothing stored for this store"
             identity.userConfirmed -> null
             else -> "Matched automatically"

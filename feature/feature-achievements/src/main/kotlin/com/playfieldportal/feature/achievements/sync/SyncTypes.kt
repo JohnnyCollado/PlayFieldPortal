@@ -100,7 +100,12 @@ data class AchievementUpdateSummary(
     val pauses: Set<UpdatePause> = emptySet(),
     val cancelled: Boolean = false,
     val blocked: Boolean = false,
+    /** Each game that failed this run, for the notification's Results list. */
+    val failedGames: List<FailedAchievementGame> = emptyList(),
 )
+
+/** A game whose achievements could not be updated, and the provider's reason. */
+data class FailedAchievementGame(val title: String, val reason: String?)
 
 /** What the return-from-game check did for one launched LOCAL_STEAM game. */
 enum class LocalReturnOutcome { NOT_LOCAL_STEAM, UNKNOWN, UNCHANGED, UPDATED, FAILED }

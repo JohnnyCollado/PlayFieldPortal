@@ -22,15 +22,24 @@ import javax.inject.Singleton
  *
  * Supports `ACTION_VIEW` (ROM passed as a FileProvider content URI, with type/component fallbacks
  * for emulators whose intent filters omit a MIME type), `COMPONENT` (explicit activity + extras,
- * e.g. RetroArch's `ROM`/`LIBRETRO`), and `CUSTOM_COMMAND`. Validation (emulator installed, ROM
+ * e.g. RetroArch's `ROM`/`LIBRETRO`). `CUSTOM_COMMAND` is refused: a launch is data, never a command.
+ * Validation (emulator installed, ROM
  * exists, core configured) happens up front; [resolve] never throws — it returns a [Result] with a
  * user-readable failure message instead.
  */
 @Singleton
-class EmulatorIntentResolver @Inject constructor(
-    @ApplicationContext private val context: Context,
+class EmulatorIntentResolver(
+    private val context: Context,
     private val romUriMinter: RomUriMinter,
+    private val signerCheck: SignerCheck,
 ) {
+
+    // Hilt entry point; the signer seam is only swapped in tests.
+    @Inject
+    constructor(
+        @ApplicationContext context: Context,
+        romUriMinter: RomUriMinter,
+    ) : this(context, romUriMinter, PackageManagerSignerCheck(context))
 
     /**
      * Resolves a launch [Intent] for the given [game] and selected [profile].
@@ -44,7 +53,7 @@ class EmulatorIntentResolver @Inject constructor(
             val intent = when (profile.intentType) {
                 IntentType.ACTION_VIEW    -> buildViewIntent(game, profile)
                 IntentType.COMPONENT      -> buildComponentIntent(game, profile)
-                IntentType.CUSTOM_COMMAND -> buildCustomCommandIntent(game, profile)
+                IntentType.CUSTOM_COMMAND -> error(CUSTOM_COMMAND_REFUSAL)
                 IntentType.SHORTCUT       -> error("Shortcut launch not supported from this screen")
             }
             Timber.d(
@@ -85,12 +94,23 @@ class EmulatorIntentResolver @Inject constructor(
      * failures refuse with a repair message before startActivity instead of at it.
      */
     fun validateBeforeLaunch(game: Game, profile: EmulatorProfile) {
-        if (profile.intentType != IntentType.CUSTOM_COMMAND) {
-            try {
-                context.packageManager.getPackageInfo(profile.packageName, 0)
-            } catch (_: PackageManager.NameNotFoundException) {
-                error("Emulator not installed: ${profile.name} (${profile.packageName})")
-            }
+        if (profile.intentType == IntentType.CUSTOM_COMMAND) error(CUSTOM_COMMAND_REFUSAL)
+
+        try {
+            context.packageManager.getPackageInfo(profile.packageName, 0)
+        } catch (_: PackageManager.NameNotFoundException) {
+            error("Emulator not installed: ${profile.name} (${profile.packageName})")
+        }
+
+        // Optional signer pin: the recipe was written for a specific build, so an installed app
+        // that carries none of the pinned certificates is a different (or tampered) app.
+        if (profile.signerSha256.isNotEmpty() &&
+            profile.signerSha256.none { signerCheck.matches(profile.packageName, it) }
+        ) {
+            error(
+                "${profile.name} (${profile.packageName}) is not the expected build: its signing " +
+                    "certificate does not match. Reinstall the emulator from its official source."
+            )
         }
 
         // A COMPONENT launch targets a pinned activity by class name. If the emulator update
@@ -210,7 +230,8 @@ class EmulatorIntentResolver @Inject constructor(
             ?: error("Activity class required for COMPONENT intent - profile: ${profile.name}")
 
         val needsRomUri = profile.attachRomData ||
-            profile.intentExtras.values.any { it.contains(LaunchTemplate.ROM_URI) }
+            profile.intentExtras.values.any { it.contains(LaunchTemplate.ROM_URI) } ||
+            profile.intentArrayExtras.values.any { values -> values.any { it.contains(LaunchTemplate.ROM_URI) } }
         val romUri: Uri? = if (needsRomUri) {
             // SAF game → the granted content URI; legacy game → a FileProvider URI from its raw path.
             game.romUri?.takeIf { it.isNotBlank() }?.let { runCatching { Uri.parse(it) }.getOrNull() }
@@ -244,14 +265,6 @@ class EmulatorIntentResolver @Inject constructor(
                 context.grantUriPermission(profile.packageName, romUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
         }
-    }
-
-    private fun buildCustomCommandIntent(game: Game, profile: EmulatorProfile): Intent {
-        val command = profile.customCommand
-            ?: error("Custom command required for CUSTOM_COMMAND intent")
-        val resolved = resolveTemplate(command, game, profile)
-        Timber.d("Custom launch command resolved: $resolved")
-        return parseAmCommand(resolved, profile.packageName)
     }
 
     // The URI handed to an ACTION_VIEW emulator. A SAF game uses its granted content:// document URI
@@ -318,38 +331,37 @@ class EmulatorIntentResolver @Inject constructor(
     private fun retroarchConfigPath(packageName: String): String =
         "/storage/emulated/0/Android/data/$packageName/files/retroarch.cfg"
 
-    private fun parseAmCommand(command: String, packageName: String): Intent {
-        // Minimal am-start parser: extracts -e/--es key value pairs as intent extras.
-        // Full am-start syntax is not supported — use COMPONENT or ACTION_VIEW profiles instead.
-        val intent = Intent(Intent.ACTION_MAIN).apply {
-            setPackage(packageName)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        val tokens = command.trim().split("\\s+".toRegex())
-        var i = 0
-        while (i < tokens.size) {
-            when (tokens[i]) {
-                "-e", "--es" -> {
-                    if (i + 2 < tokens.size) {
-                        intent.putExtra(tokens[i + 1], tokens[i + 2])
-                        i += 3
-                    } else i++
-                }
-                "-n" -> {
-                    if (i + 1 < tokens.size) {
-                        val cn = tokens[i + 1].split("/")
-                        if (cn.size == 2) intent.component = ComponentName(cn[0], cn[1])
-                        i += 2
-                    } else i++
-                }
-                else -> i++
-            }
-        }
-        Timber.d("Parsed am command: package=$packageName, extras=${intent.extras?.keySet()?.joinToString()}, component=${intent.component}")
-        return intent
-    }
-
     // corePathFor / platformAliases / normalizeRetroArchCorePath live in
     // EmulatorPlatformMapping.kt (shared with EmulatorProfileRepository and the launch ladder) so
     // the path shown to users and the path handed to RetroArch can never drift.
+}
+
+private const val CUSTOM_COMMAND_REFUSAL =
+    "Custom command profiles are no longer supported. Switch this emulator to ACTION_VIEW or COMPONENT."
+
+/** Tells whether the installed [packageName] carries the signing certificate with this SHA-256. */
+fun interface SignerCheck {
+    fun matches(packageName: String, sha256Hex: String): Boolean
+}
+
+/** Default [SignerCheck]: Android's own check, which also follows the app's key-rotation lineage. */
+internal class PackageManagerSignerCheck(private val context: Context) : SignerCheck {
+    override fun matches(packageName: String, sha256Hex: String): Boolean {
+        val digest = hexToBytes(sha256Hex) ?: return false
+        return try {
+            context.packageManager.hasSigningCertificate(packageName, digest, PackageManager.CERT_INPUT_SHA256)
+        } catch (_: PackageManager.NameNotFoundException) {
+            false
+        }
+    }
+
+    private fun hexToBytes(hex: String): ByteArray? {
+        if (hex.length != 64) return null
+        return ByteArray(32) { i ->
+            val hi = Character.digit(hex[i * 2], 16)
+            val lo = Character.digit(hex[i * 2 + 1], 16)
+            if (hi < 0 || lo < 0) return null
+            ((hi shl 4) or lo).toByte()
+        }
+    }
 }

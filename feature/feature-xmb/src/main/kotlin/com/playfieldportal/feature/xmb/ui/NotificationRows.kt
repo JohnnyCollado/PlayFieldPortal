@@ -17,12 +17,17 @@ import java.util.concurrent.TimeUnit
  */
 sealed interface NotificationRow {
 
-    /** Whether the ▲/▼ cursor may land here. Running rows are a readout, not a list you act on. */
+    /**
+     * Whether the ▲/▼ cursor may land here. A running row is a readout unless it can be stopped —
+     * then ✕ on it asks to stop — and stops being a target once a stop is under way.
+     */
     val isSelectable: Boolean get() = false
 
     data class Header(val title: String) : NotificationRow
 
-    data class Running(val task: BackgroundTaskInfo) : NotificationRow
+    data class Running(val task: BackgroundTaskInfo) : NotificationRow {
+        override val isSelectable: Boolean get() = task.stoppable && !task.stopping
+    }
 
     data class History(val notification: PfpNotification) : NotificationRow {
         override val isSelectable: Boolean get() = true
@@ -91,6 +96,10 @@ fun List<NotificationRow>.clampCursor(cursor: Int): Int {
 /** The notification under the cursor, or null when the cursor is parked on nothing actionable. */
 fun List<NotificationRow>.notificationAt(cursor: Int): PfpNotification? =
     (getOrNull(cursor) as? NotificationRow.History)?.notification
+
+/** The stoppable task under the cursor, or null when the cursor is not on one. */
+fun List<NotificationRow>.runningAt(cursor: Int): BackgroundTaskInfo? =
+    (getOrNull(cursor) as? NotificationRow.Running)?.takeIf { it.isSelectable }?.task
 
 /**
  * Relative while recent, absolute once older — the Vita's own rule.

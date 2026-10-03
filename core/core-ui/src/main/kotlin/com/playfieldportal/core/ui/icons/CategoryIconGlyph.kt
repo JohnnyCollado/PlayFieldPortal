@@ -16,33 +16,38 @@ import com.playfieldportal.core.domain.model.IconLegibilityStyle
  *  the theme's unified icon color applies (white default = visually unchanged). Unknown keys
  *  fall back to the games glyph. Size via [modifier].
  *
- *  Crossbar glyphs are themeable icon slots: two-tier lookup — the user's pick wins, then the
- *  applied theme's custom icon for the slot, drawn as-authored through [CustomIconSurface]
- *  (which carries the legibility matte on the still frame). Console-art categories (no slot)
- *  route through [ConsoleIcon], which runs the same two-tier check on their sysicon key. */
+ *  Crossbar glyphs are themeable icon slots, resolved by [resolveCategoryCustomIcon]: the user
+ *  category's own image (when [categoryId] names one) wins, then the user's pick for the shared
+ *  slot, then the applied theme's custom icon for the slot — all drawn as-authored through
+ *  [CustomIconSurface] (which carries the legibility matte on the still frame). With none of
+ *  those, console-art categories (no slot) route through [ConsoleIcon], which runs the same
+ *  two-tier check on their sysicon key. */
 @Composable
 fun CategoryIconGlyph(
     iconKey: String,
     contentDescription: String? = null,
     modifier: Modifier = Modifier,
+    categoryId: String? = null,
 ) {
-    val slotKey = catbarSlotKeyFor(iconKey)
-    if (slotKey == null) {
-        // Console art (not a themeable slot): same two-tier check on its sysicon key.
-        // Unknown keys keep today's fallback — the games glyph, via the fall-through below.
-        val platformId = consolePlatformIdFor(iconKey)
-        if (platformId != null) {
-            ConsoleIcon(
-                platformId = platformId,
-                contentDescription = contentDescription,
-                modifier = modifier,
-            )
-            return
-        }
-    }
-    val icon = LocalCustomIcons.current[slotKey] ?: LocalXmbIconOverrides.current[slotKey]
+    val icon = resolveCategoryCustomIcon(
+        iconKey = iconKey,
+        categoryId = categoryId,
+        userIcons = LocalCustomIcons.current,
+        themeIcons = LocalXmbIconOverrides.current,
+    )
     if (icon != null) {
         CustomIconSurface(icon, contentDescription, modifier)
+        return
+    }
+    // Console art (not a themeable slot): same two-tier check on its sysicon key.
+    // Unknown keys keep today's fallback — the games glyph, via the fall-through below.
+    val platformId = if (catbarSlotKeyFor(iconKey) == null) consolePlatformIdFor(iconKey) else null
+    if (platformId != null) {
+        ConsoleIcon(
+            platformId = platformId,
+            contentDescription = contentDescription,
+            modifier = modifier,
+        )
         return
     }
     PortalIcon(
@@ -50,6 +55,24 @@ fun CategoryIconGlyph(
         contentDescription = contentDescription,
         modifier = modifier,
     )
+}
+
+/**
+ * The custom-icon tiers for a crossbar glyph, highest first: the user category's own image
+ * (`usercat_<categoryId>`, user tier only — theme bundles never carry these keys), the user's
+ * pick for the shared `catbar_*` slot, the theme's icon for that slot, else null (built-in
+ * drawable, or console art for slot-less keys). A null or non-user [categoryId] skips the first
+ * tier, which is exactly the pre-feature lookup.
+ */
+fun resolveCategoryCustomIcon(
+    iconKey: String,
+    categoryId: String?,
+    userIcons: Map<String, CustomIcon>,
+    themeIcons: Map<String, CustomIcon>,
+): CustomIcon? {
+    categoryId?.let(UserCategoryIconKeys::keyFor)?.let { key -> userIcons[key]?.let { return it } }
+    val slotKey = catbarSlotKeyFor(iconKey) ?: return null
+    return userIcons[slotKey] ?: themeIcons[slotKey]
 }
 
 /**
@@ -79,7 +102,7 @@ fun OverrideGlyphSurface(
         return
     }
     val radiusPx = with(LocalDensity.current) {
-        (if (style == IconLegibilityStyle.OFFSET_SHADOW) SHADOW_OFFSET_DP else CONTOUR_RADIUS_DP).dp.toPx()
+        (if (style.isOffsetShadow) SHADOW_OFFSET_DP else CONTOUR_RADIUS_DP).dp.toPx()
     }
     IconMatteSurface(
         painter = BitmapPainter(bitmap),

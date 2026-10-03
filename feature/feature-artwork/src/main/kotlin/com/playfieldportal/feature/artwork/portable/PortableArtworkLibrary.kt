@@ -4,8 +4,11 @@ import android.content.Context
 import android.net.Uri
 import android.os.FileUtils
 import android.provider.DocumentsContract
+import com.playfieldportal.core.data.saf.NO_MEDIA_MARKER
 import com.playfieldportal.core.data.saf.SafChild
+import com.playfieldportal.core.data.saf.hasNoMediaMarker
 import com.playfieldportal.core.data.saf.querySafChildren
+import com.playfieldportal.core.data.saf.withoutNoMediaMarker
 import com.playfieldportal.feature.artwork.store.ArtworkFileNaming
 import com.playfieldportal.feature.artwork.store.ArtworkKind
 import com.playfieldportal.feature.artwork.store.PayloadCheck
@@ -143,8 +146,10 @@ class PortableArtworkLibrary @Inject constructor(
         resolver.querySafChildren(treeUri, importDir.documentId).filter { it.isDirectory }
     }
 
+    // Without the `.nomedia` marker [ensureDir] leaves in every folder: nothing that reads a folder
+    // as artwork (relink, export, empty-folder cleanup) should ever see it.
     fun listChildren(treeUri: Uri, dirDocId: String): List<SafChild> =
-        resolver.querySafChildren(treeUri, dirDocId)
+        resolver.querySafChildren(treeUri, dirDocId).withoutNoMediaMarker()
 
     // ── Layout v3 writes: Artwork/{platform}/{mediaDir}/{PortableName}.{ext} ──
 
@@ -597,6 +602,8 @@ class PortableArtworkLibrary @Inject constructor(
     private fun mimeForExt(ext: String): String = when (ext.lowercase(Locale.ROOT)) {
         "png"  -> "image/png"
         "webp" -> "image/webp"
+        // Without it a GIF was created as image/jpeg, and some providers then append ".jpg".
+        "gif"  -> "image/gif"
         "pdf"  -> "application/pdf"
         "mp4"  -> "video/mp4"
         "webm" -> "video/webm"
@@ -625,9 +632,38 @@ class PortableArtworkLibrary @Inject constructor(
                 )?.let { DocumentsContract.getDocumentId(it) }
             }.onFailure { Timber.w(it, "Could not create directory '$name'") }.getOrNull()
         } ?: return null
+        ensureNoMediaMarker(treeUri, docId, knownEmpty = existing == null)
         dirCache[cacheKey] = docId
         return docId
     }
+
+    /**
+     * Leaves a `.nomedia` marker in an artwork folder, so the gallery and PFP's own photo and video
+     * libraries never index box art and screenshots as the user's pictures. Folders from before this
+     * are marked the first time a write passes through them. Best effort: a folder the provider will
+     * not mark still holds its artwork.
+     */
+    private fun ensureNoMediaMarker(treeUri: Uri, dirDocId: String, knownEmpty: Boolean) {
+        if (!knownEmpty && resolver.querySafChildren(treeUri, dirDocId).hasNoMediaMarker()) return
+        createNoMediaMarker(treeUri, dirDocId)
+    }
+
+    /**
+     * Marks every existing artwork folder of the library at [treeUri] that is not marked yet (see
+     * [ArtworkFolderMarking]), and returns how many it marked. Run when the library opens.
+     */
+    suspend fun markArtworkFolders(treeUri: Uri): Int = withContext(Dispatchers.IO) {
+        ArtworkFolderMarking.markAll(
+            rootDocId = DocumentsContract.getTreeDocumentId(treeUri),
+            children = { resolver.querySafChildren(treeUri, it) },
+            mark = { createNoMediaMarker(treeUri, it) },
+        )
+    }
+
+    private fun createNoMediaMarker(treeUri: Uri, dirDocId: String): Boolean = runCatching {
+        val dirUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, dirDocId)
+        DocumentsContract.createDocument(resolver, dirUri, "application/octet-stream", NO_MEDIA_MARKER) != null
+    }.onFailure { Timber.w(it, "Could not mark an artwork folder $NO_MEDIA_MARKER") }.getOrDefault(false)
 
     private fun readHeader(uri: Uri): ByteArray? = runCatching {
         resolver.openInputStream(uri)?.use { stream ->

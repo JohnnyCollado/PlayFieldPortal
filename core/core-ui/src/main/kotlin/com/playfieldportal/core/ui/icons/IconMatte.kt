@@ -32,7 +32,7 @@ val MatteDark = Color(0xFF000A12)
 
 /**
  * Matte offsets in units of the radius — the contour radius for the contour styles, the shadow
- * offset for [IconLegibilityStyle.OFFSET_SHADOW] (the two constants are distinct, so the unit
+ * offset for the offset shadows, dark and light (the two constants are distinct, so the unit
  * space is per-style). Empty when the style draws no matte: callers must treat that as "draw
  * exactly what ships today", NOT "draw a matte at alpha 0" — an empty draw still costs.
  *
@@ -41,7 +41,8 @@ val MatteDark = Color(0xFF000A12)
  */
 fun matteOffsets(style: IconLegibilityStyle): List<Offset> = when (style) {
     IconLegibilityStyle.NONE -> emptyList()
-    IconLegibilityStyle.OFFSET_SHADOW -> listOf(Offset(1f, 1f))
+    IconLegibilityStyle.OFFSET_SHADOW,
+    IconLegibilityStyle.OFFSET_SHADOW_LIGHT -> listOf(Offset(1f, 1f))
     IconLegibilityStyle.CONTOUR_DARK,
     IconLegibilityStyle.CONTOUR_LIGHT,
     IconLegibilityStyle.CONTOUR_AUTO -> CONTOUR_OFFSETS
@@ -70,6 +71,7 @@ private val CONTOUR_OFFSETS: List<Offset> = run {
 fun matteColorFor(style: IconLegibilityStyle, glyphColor: Color): Color? = when (style) {
     IconLegibilityStyle.NONE -> null
     IconLegibilityStyle.OFFSET_SHADOW -> MatteDark.copy(alpha = SHADOW_MATTE_ALPHA)
+    IconLegibilityStyle.OFFSET_SHADOW_LIGHT -> MatteLight.copy(alpha = SHADOW_MATTE_ALPHA)
     IconLegibilityStyle.CONTOUR_DARK -> MatteDark.copy(alpha = CONTOUR_MATTE_ALPHA)
     IconLegibilityStyle.CONTOUR_LIGHT -> MatteLight.copy(alpha = CONTOUR_MATTE_ALPHA)
     IconLegibilityStyle.CONTOUR_AUTO ->

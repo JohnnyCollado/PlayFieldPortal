@@ -48,7 +48,7 @@ import kotlin.test.assertTrue
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
-@Config(manifest = Config.NONE, sdk = [34])
+@Config(manifest = Config.NONE, sdk = [34])  // Robolectric tops out below the module's target SDK
 class ShibaCoinsFolderMatchTest {
 
     private val gameId = 1L
@@ -81,6 +81,9 @@ class ShibaCoinsFolderMatchTest {
             achievements,
             mockk<AchievementAutoMatcher>(relaxed = true),
             linker,
+            // Ownership unknown: the flow starts at the copy question, as these tests expect.
+            mockk(relaxed = true),
+            mockk(relaxed = true),
         )
         viewModel.load(ShibaCoinsTarget.LibraryGame(gameId))
     }

@@ -40,6 +40,8 @@ interface NotificationRepository {
         sourceKey: String? = null,
         action: NotificationAction = NotificationAction.None,
         payload: String? = null,
+        /** Lands already read: an outcome the user caused themselves (a stop) or just resolved. */
+        read: Boolean = false,
     ): Long
 
     suspend fun markRead(id: Long)
@@ -58,18 +60,16 @@ interface NotificationRepository {
 }
 
 /**
- * The two switches the producer side needs, as flows.
+ * The switch the producer side needs, as a flow.
  *
  * A one-interface seam in core-domain rather than a direct DataStore read, so the shared
  * `BackgroundTaskCenter` can live in core-ui and still honour Settings ▸ Notifications without
- * core-ui gaining a dependency on core-data.
+ * core-ui gaining a dependency on core-data. (The Android-shade mirror switch is gone: PFP's
+ * notifications are launcher-only now.)
  */
 interface NotificationSettings {
     /** Whether settled work is recorded at all. Off stops new rows; running work still shows. */
     val enabled: Flow<Boolean>
-
-    /** Whether background work is still mirrored to the Android shade. On by default. */
-    val mirrorToShade: Flow<Boolean>
 }
 
 /**

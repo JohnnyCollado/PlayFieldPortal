@@ -1,5 +1,8 @@
 package com.playfieldportal.feature.settings.ui
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.playfieldportal.core.navigation.NavigationEngine
 import com.playfieldportal.core.navigation.NavigationNode
 import com.playfieldportal.core.navigation.NavigationTouchAction
@@ -52,9 +55,17 @@ internal fun ControllerNavItem.toNavigationNode(): NavigationNode = NavigationNo
 class ControllerNavigationState(
     private val engine: NavigationEngine = NavigationEngine("settings"),
 ) {
+    // Snapshot state, so the footer can recompose when the cursor moves onto or off a row that has
+    // an options menu (focusedHasLongPress). Everything else reads it as a plain property.
+    private var focusedKeyState by mutableStateOf<String?>(null)
+
+    /** The row list as last fed to [updateItems], kept to resolve a long press for the focused key. */
+    private var items by mutableStateOf<List<ControllerNavItem>>(emptyList())
+
     /** The key of the node currently focused, mirrored from the engine. */
-    var focusedKey: String? = null
-        private set
+    var focusedKey: String?
+        get() = focusedKeyState
+        private set(value) { focusedKeyState = value }
 
     val acceptsInput: Boolean get() = engine.acceptsInput
     val cursorVisible: Boolean get() = engine.cursorVisible
@@ -88,8 +99,31 @@ class ControllerNavigationState(
         newItems: List<ControllerNavItem>,
         geometry: Map<String, Float> = emptyMap(),
     ) {
+        items = newItems
         engine.replaceNodes(newItems.map { it.toNavigationNode() }, geometry)
         focusedKey = engine.focusedKey
+    }
+
+    /** The focused row's (or focused inline action's) long-press, if it has one. */
+    private fun focusedLongPress(): (() -> Unit)? {
+        val key = focusedKey ?: return null
+        return items.firstNotNullOfOrNull { item ->
+            if (item.key == key) item.onLongPress
+            else item.trailingActions.firstOrNull { it.key == key }?.onLongPress
+        }
+    }
+
+    /** Whether Triangle would do something here: the footer offers "Options" while this is true. */
+    val focusedHasLongPress: Boolean get() = focusedLongPress() != null
+
+    /**
+     * Triangle: runs the focused row's existing long-press (the touch gesture's twin). Returns whether
+     * there was one; on a row without, nothing happens.
+     */
+    fun longPressFocused(): Boolean {
+        val run = focusedLongPress() ?: return false
+        run()
+        return true
     }
 
     /** Vertical traversal (UP/DOWN) by [delta] steps, clamped with no wrapping. */

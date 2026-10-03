@@ -8,6 +8,12 @@ import com.playfieldportal.feature.artwork.api.ScrapeOptions
 import com.playfieldportal.feature.artwork.api.ScreenScraperApi
 import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
 import com.playfieldportal.feature.artwork.api.SteamGridDbApi
+import com.playfieldportal.feature.artwork.match.MatchProvider
+import com.playfieldportal.feature.artwork.match.MetadataApply
+import com.playfieldportal.feature.artwork.match.MetadataPreset
+import com.playfieldportal.feature.artwork.match.Storefront
+import com.playfieldportal.feature.artwork.match.StorefrontIdentityRecord
+import com.playfieldportal.feature.artwork.match.StorefrontMetadataResolver
 import com.playfieldportal.feature.artwork.store.ArtworkStore
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -36,6 +42,7 @@ class MetadataRepositoryCandidatesTest {
     private val igdbApi = mockk<IgdbApi>(relaxed = true)
     private val sgdbKeyProvider = mockk<SgdbApiKeyProvider>(relaxed = true)
     private val artworkStore = mockk<ArtworkStore>(relaxed = true)
+    private val storefrontResolver = mockk<StorefrontMetadataResolver>(relaxed = true)
 
     private val repo = MetadataRepository(
         context = mockk(relaxed = true),
@@ -54,8 +61,74 @@ class MetadataRepositoryCandidatesTest {
         scrapePreferences = mockk(relaxed = true),
         // C23 T6: relaxed, so these cases keep pinning the four providers they were written for.
         // The storefront resolver's own order of operations is pinned by its own suite.
-        storefrontResolver = mockk(relaxed = true),
+        storefrontResolver = storefrontResolver,
     )
+
+    // ── Storefront presets: one per linked store ─────────────────────────────
+
+    private fun linked(store: Storefront, provider: MatchProvider, id: String, title: String) =
+        store to StorefrontMetadataResolver.Resolution.Linked(
+            identity = StorefrontIdentityRecord(store, id, resolvedTitle = title),
+            preset = MetadataPreset(provider = provider, title = title),
+            newlyLinked = false,
+        )
+
+    private fun givenWindowsGameLinkedOn(vararg links: Pair<Storefront, StorefrontMetadataResolver.Resolution>) {
+        givenGame()
+        coEvery { gameDao.getById(1L) } returns GameEntity(
+            id = 1L, title = "DOOM", platformId = "windows", romPath = null,
+            packageName = null, emulatorPackage = null, artworkUri = null, heroUri = null, logoUri = null,
+            description = null, developer = null, publisher = null, releaseYear = null,
+            genre = null, steamGridDbId = null,
+        )
+        // Only the stores answer here, so what the preview is offered is theirs alone.
+        coEvery { theGamesDb.fetchGameInfo(any(), any()) } returns null
+        coEvery { igdbApi.hasCredentials() } returns false
+        coEvery { storefrontResolver.resolve(any(), any(), any(), any(), any()) } returns
+            StorefrontMetadataResolver.GameResolution(1L, linkedMapOf(*links))
+    }
+
+    @Test
+    fun `a game linked on two stores offers both stores' presets, in the order the stores are asked`() = runTest {
+        givenWindowsGameLinkedOn(
+            linked(Storefront.STEAM, MatchProvider.STEAM, "379720", "DOOM"),
+            linked(Storefront.GOG, MatchProvider.GOG, "1390579243", "DOOM (2016)"),
+        )
+
+        val candidates = repo.fetchCandidates(
+            1L, "DOOM", "windows", romPath = null, options = ScrapeOptions(metadataOnly = true),
+        )
+
+        assertEquals(listOf(MatchProvider.STEAM, MatchProvider.GOG), candidates.storefrontPresets.map { it.provider })
+        // And both reach the preview, after the scrapers' own.
+        assertEquals(
+            listOf(MatchProvider.STEAM, MatchProvider.GOG),
+            MetadataApply.presetsFrom(candidates).map { it.provider },
+        )
+        assertFalse(candidates.isEmpty)
+    }
+
+    @Test
+    fun `a game linked on Steam alone offers exactly what it did before`() = runTest {
+        givenWindowsGameLinkedOn(linked(Storefront.STEAM, MatchProvider.STEAM, "379720", "DOOM"))
+
+        val candidates = repo.fetchCandidates(
+            1L, "DOOM", "windows", romPath = null, options = ScrapeOptions(metadataOnly = true),
+        )
+
+        assertEquals(listOf("DOOM"), candidates.storefrontPresets.map { it.title })
+        assertEquals(listOf(MatchProvider.STEAM), MetadataApply.presetsFrom(candidates).map { it.provider })
+    }
+
+    @Test
+    fun `a console ROM has no storefront preset and the stores are never asked`() = runTest {
+        givenGame()
+
+        val candidates = repo.fetchCandidates(1L, "raw_rom_name", "snes", romPath = null)
+
+        assertTrue(candidates.storefrontPresets.isEmpty())
+        coVerify(exactly = 0) { storefrontResolver.resolve(any(), any(), any(), any(), any()) }
+    }
 
     private val tgdb = TgdbGameInfo(
         tgdbId = 7L,

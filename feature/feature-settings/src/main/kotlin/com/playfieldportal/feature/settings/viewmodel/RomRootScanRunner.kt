@@ -3,6 +3,7 @@ package com.playfieldportal.feature.settings.viewmodel
 import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.feature.library.scanner.LibraryScanner
+import com.playfieldportal.feature.library.scanner.PlatformScanOutcome
 import com.playfieldportal.feature.library.scanner.RomRootDiscoveryScanner
 import com.playfieldportal.feature.library.scanner.ScanStatus
 import com.playfieldportal.feature.settings.pc.PcGameScanner
@@ -24,6 +25,8 @@ data class RomRootScanReport(
     val skipped: Int,
     val rootsCount: Int,
     val message: String,
+    /** Every card this pass surveyed, for the Results sheet: which systems failed, and why. */
+    val outcomes: List<PlatformScanOutcome> = emptyList(),
 )
 
 /**
@@ -88,6 +91,7 @@ class RomRootScanRunner @Inject constructor(
         var newCards = 0
         var totalAdded = 0
         var skipped = 0
+        val outcomes = mutableListOf<PlatformScanOutcome>()
 
         // The discovery pass — auto-creating cards for folders that now contain ROMs — is shared
         // with the automatic rescan triggers via [RomRootDiscoveryScanner]. Same loop, same
@@ -105,6 +109,7 @@ class RomRootScanRunner @Inject constructor(
         // Scan This Console. Known rows are skipped as additions, but are still surveyed.
         haveCard.filter { it != "windows" }.forEach { platformId ->
             val outcome = libraryScanner.scanPlatform(platformId, removeMissing = true)
+            outcomes += outcome
             if (outcome.status == ScanStatus.COMPLETED &&
                 (outcome.added > 0 || outcome.markedMissing > 0)
             ) {
@@ -152,6 +157,7 @@ class RomRootScanRunner @Inject constructor(
             skipped = skipped,
             rootsCount = roots.size,
             message = message,
+            outcomes = outcomes,
         )
     }
 }

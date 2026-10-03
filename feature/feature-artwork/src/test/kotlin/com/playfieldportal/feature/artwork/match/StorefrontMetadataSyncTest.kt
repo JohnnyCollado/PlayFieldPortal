@@ -51,6 +51,51 @@ class StorefrontMetadataSyncTest {
         assertTrue(summary.partial)
     }
 
+    // -- Two stores registered ---------------------------------------------------
+
+    @Test
+    fun `a game only GOG has counts as matched`() {
+        val onGog = StorefrontMetadataResolver.Resolution.Linked(
+            identity = StorefrontIdentityRecord(Storefront.GOG, "1390579243"),
+            preset = MetadataPreset(provider = MatchProvider.GOG, title = "DOOM (2016)"),
+            newlyLinked = true,
+        )
+
+        val summary = StorefrontMetadataSync.Summary() +
+            resolution(Storefront.STEAM to StorefrontMetadataResolver.Resolution.NoMatch, Storefront.GOG to onGog)
+
+        assertEquals(1, summary.matched)
+        assertEquals(0, summary.noMatch)
+    }
+
+    @Test
+    fun `one store down and the other without the game is not a game no store has`() {
+        // GOG could not be asked, so "no store has it" has not been established — and saying so
+        // would send the user to match by hand a game that GOG may well have.
+        val gogDown = StorefrontMetadataResolver.Resolution.Unavailable(
+            Storefront.GOG,
+            StorefrontOutcome.Failure(StorefrontFailure.NETWORK_ERROR),
+        )
+
+        val summary = StorefrontMetadataSync.Summary() +
+            resolution(Storefront.STEAM to StorefrontMetadataResolver.Resolution.NoMatch, Storefront.GOG to gogDown)
+
+        assertEquals(0, summary.noMatch)
+        assertEquals(setOf(Storefront.GOG), summary.unavailableStores)
+        assertEquals("0 matched · GOG unavailable", summary.message)
+    }
+
+    @Test
+    fun `a game neither store has is one miss, not two`() {
+        val summary = StorefrontMetadataSync.Summary() + resolution(
+            Storefront.STEAM to StorefrontMetadataResolver.Resolution.NoMatch,
+            Storefront.GOG to StorefrontMetadataResolver.Resolution.NoMatch,
+        )
+
+        assertEquals(1, summary.processed)
+        assertEquals(1, summary.noMatch)
+    }
+
     @Test
     fun `a genuine miss is counted as one`() {
         val summary = StorefrontMetadataSync.Summary() +

@@ -7,10 +7,20 @@ import com.playfieldportal.core.data.database.entity.toEntity
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.CategoryType
+import com.playfieldportal.core.domain.model.ListKeys
+import com.playfieldportal.core.ui.icons.UserCategoryIconKeys
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
 import javax.inject.Inject
+
+/** What happens to a category's custom memory cards when the category is deleted. */
+enum class CollectionsOnDelete {
+    /** Keep them: move them to the built-in column of the same kind. */
+    MOVE,
+    /** Delete them. The games and apps in them stay in the library. */
+    DELETE,
+}
 
 /**
  * CRUD and ordering for XMB categories (the horizontal bar). Seeds the built-in categories on first
@@ -21,6 +31,9 @@ import javax.inject.Inject
 class CategoryRepositoryImpl @Inject constructor(
     private val categoryDao: CategoryDao,
     private val discordSessionActivator: com.playfieldportal.core.domain.discord.DiscordSessionActivator,
+    private val collectionRepository: CollectionRepository,
+    private val listStateDao: com.playfieldportal.core.data.database.dao.ListStateDao,
+    private val customIconStore: CustomIconStore,
 ) {
     // Built-ins to seed/reconcile — the Social column is dropped in the "lite" build (no Discord SDK),
     // so it never appears in the XMB, the Category Manager, or backups there.
@@ -38,12 +51,37 @@ class CategoryRepositoryImpl @Inject constructor(
     suspend fun upsert(category: Category) =
         categoryDao.upsert(category.toEntity())
 
-    suspend fun delete(id: String) {
+    /**
+     * Deletes a custom category. Its custom memory cards are not tied to it by a foreign key, so
+     * [collections] says what becomes of them: moved to the home column of the category's kind,
+     * or deleted. Either way the games and apps themselves are untouched. Returns false for a
+     * protected built-in, which is never deleted.
+     */
+    suspend fun delete(id: String, collections: CollectionsOnDelete = CollectionsOnDelete.MOVE): Boolean {
         if (id in PROTECTED_BUILTINS) {
             Timber.w("Attempted to delete built-in category '$id' — blocked")
-            return
+            return false
         }
-        categoryDao.deleteById(id)   // category_items rows cascade-delete
+        val isGaming = categoryDao.getById(id)?.isGamingCategory == true
+        when (collections) {
+            CollectionsOnDelete.MOVE   -> collectionRepository.rehomeAll(id, collectionHomeFor(isGaming))
+            CollectionsOnDelete.DELETE -> collectionRepository.deleteAllIn(id)
+        }
+        categoryDao.deleteById(id)   // category_items and umd_slots rows cascade-delete
+        listStateDao.deleteLists(ListKeys.listsOfCategory(id))
+        // Its device image goes with it, so recreating the same name (same id) never inherits one.
+        UserCategoryIconKeys.keyFor(id)?.let { customIconStore.clear(it) }
+        Timber.i("Category deleted: $id (collections=$collections)")
+        return true
+    }
+
+    /**
+     * Removes category images whose category is gone, and any abandoned create-flow draft. Run once
+     * at startup: a restore commits its files before its categories, so sweeping any later would
+     * delete images that are about to match.
+     */
+    suspend fun pruneOrphanCategoryIcons() {
+        customIconStore.pruneUserCategoryIcons(categoryDao.getAll().map { it.id }.toSet())
     }
 
     fun isProtected(id: String): Boolean = id in PROTECTED_BUILTINS
@@ -53,11 +91,6 @@ class CategoryRepositoryImpl @Inject constructor(
 
     suspend fun setVisible(id: String, visible: Boolean) =
         categoryDao.setVisible(id, visible)
-
-    suspend fun setGamingCategory(id: String, isGaming: Boolean) {
-        val existing = categoryDao.getById(id) ?: return
-        categoryDao.update(existing.copy(isGamingCategory = isGaming))
-    }
 
     suspend fun rename(id: String, name: String) {
         val existing = categoryDao.getById(id) ?: return
@@ -90,18 +123,14 @@ class CategoryRepositoryImpl @Inject constructor(
         return id
     }
 
-    // Swaps position with the adjacent category in the given direction. Returns true on move.
-    suspend fun move(id: String, up: Boolean): Boolean {
-        val ordered = categoryDao.getAll().sortedBy { it.position }
-        val index = ordered.indexOfFirst { it.id == id }
-        if (index < 0) return false
-        val targetIndex = if (up) index - 1 else index + 1
-        if (targetIndex !in ordered.indices) return false
-        val current = ordered[index]
-        val target  = ordered[targetIndex]
-        categoryDao.updatePosition(current.id, target.position)
-        categoryDao.updatePosition(target.id, current.position)
-        return true
+    /**
+     * Saves the order a live Move left on the crossbar. [barOrder] is the bar's categories, left to
+     * right; categories not on the bar (hidden ones) keep their slots among them — see
+     * [mergeBarOrder]. Every category is rewritten to a compact 0..n position.
+     */
+    suspend fun reorder(barOrder: List<String>) {
+        val ordered = mergeBarOrder(categoryDao.getAll().sortedBy { it.position }.map { it.id }, barOrder)
+        ordered.forEachIndexed { index, id -> categoryDao.updatePosition(id, index) }
     }
 
     suspend fun addItemToCategory(categoryId: String, itemId: String, itemType: String, order: Int = 0) =
@@ -135,6 +164,11 @@ class CategoryRepositoryImpl @Inject constructor(
     }
 
     companion object {
+        /** Where a deleted category's custom memory cards go: Main Game for a gaming category,
+         *  the App Store column for an app one — the built-in column of the same kind. */
+        fun collectionHomeFor(isGamingCategory: Boolean): String =
+            if (isGamingCategory) BuiltInCategory.GAMES else "app_store"
+
         // Canonical built-in category definitions — single source of truth for both
         // first-launch seeding and per-launch flag reconciliation.
         private val BUILT_IN_CATEGORIES = listOf(
@@ -150,6 +184,19 @@ class CategoryRepositoryImpl @Inject constructor(
             // on databases seeded by older builds; the user can reorder it next to Games.
             Category(BuiltInCategory.ACHIEVEMENTS, "Shiba Coins", "ic_achievements", type = CategoryType.BUILT_IN, position = 8),
         )
+
+        /**
+         * [all] (every stored category id, in stored order) with the categories on the bar put in
+         * [barOrder]'s order. The bar's categories fill exactly the slots they held between them, so
+         * a hidden category stays where it was relative to its neighbours. Ids the store does not
+         * hold are skipped.
+         */
+        internal fun mergeBarOrder(all: List<String>, barOrder: List<String>): List<String> {
+            val onBar = barOrder.filter { it in all }
+            val onBarSet = onBar.toSet()
+            val next = onBar.iterator()
+            return all.map { id -> if (id in onBarSet) next.next() else id }
+        }
 
         // Built-in categories the user may hide/reorder but never delete.
         val PROTECTED_BUILTINS = setOf(

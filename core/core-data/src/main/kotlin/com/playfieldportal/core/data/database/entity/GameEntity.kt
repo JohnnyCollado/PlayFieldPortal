@@ -54,6 +54,11 @@ data class GameEntity(
     @ColumnInfo(name = "is_disc_primary")
     val isDiscPrimary: Boolean = false,
 
+    // The user's Choose Disc pick (v53). Written only by GameDao.setPreferredDisc; DiscSetBuilder
+    // keeps a preferred disc as the set's primary instead of re-deriving it from disc numbers.
+    @ColumnInfo(name = "is_disc_preferred", defaultValue = "0")
+    val isDiscPreferred: Boolean = false,
+
     // TV format / region detected from the disc image content at scan time (GameRegion enum name,
     // null when undetected). Drives multi-disc set membership: same-region discs unify, genuinely
     // conflicting regions split.
@@ -223,6 +228,7 @@ fun GameEntity.toDomain() = Game(
     discSetKey = discSetKey,
     discNumber = discNumber,
     isDiscPrimary = isDiscPrimary,
+    isDiscPreferred = isDiscPreferred,
     region = GameRegion.fromName(region),
     packageName = packageName,
     emulatorPackage = emulatorPackage,
@@ -278,6 +284,7 @@ fun Game.toEntity() = GameEntity(
     discSetKey = discSetKey,
     discNumber = discNumber,
     isDiscPrimary = isDiscPrimary,
+    isDiscPreferred = isDiscPreferred,
     region = region?.name,
     packageName = packageName,
     emulatorPackage = emulatorPackage,

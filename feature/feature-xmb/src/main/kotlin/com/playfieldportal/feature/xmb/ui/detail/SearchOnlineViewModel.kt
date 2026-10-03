@@ -8,6 +8,11 @@ import com.playfieldportal.core.data.network.NetworkMonitor
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.components.PspMenuCue
+import com.playfieldportal.core.ui.components.PspMenuNav
+import com.playfieldportal.core.ui.components.PspMenuOutcome
+import com.playfieldportal.core.ui.sound.MenuSoundPlayer
+import com.playfieldportal.core.ui.sound.MenuSoundSink
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import com.playfieldportal.feature.achievements.api.SyncedCoin
 import com.playfieldportal.feature.achievements.match.RaConsole
@@ -130,6 +135,10 @@ data class SearchOptionRow(
     val label: String,
     val option: SearchOption,
     val checked: Boolean = false,
+    /** The row's current setting, drawn at the right edge (Provider: "Steam"). */
+    val value: String? = null,
+    /** Activating this row opens a list, so a › is drawn. */
+    val opensMenu: Boolean = false,
 )
 
 /** The open Options menu; its cursor is separate from the list's, which it leaves untouched. */
@@ -247,20 +256,24 @@ private fun resultCount(count: Int): String = if (count == 1) "1 result" else "$
 fun searchOptionRows(state: SearchOnlineUiState): List<SearchOptionRow> = when (state.options?.group) {
     null -> buildList {
         if (state.inPreview) {
-            add(SearchOptionRow("Refresh preview", SearchOption.RefreshPreview))
+            add(SearchOptionRow("Refresh Preview", SearchOption.RefreshPreview))
             return@buildList
         }
         add(
             SearchOptionRow(
-                label = "Provider (${state.provider.label})",
+                label = "Provider",
                 option = SearchOption.OpenGroup(SearchOptionGroup.PROVIDER),
+                value = state.provider.label,
+                opensMenu = true,
             ),
         )
         if (state.provider == SearchProvider.RETRO_ACHIEVEMENTS) {
             add(
                 SearchOptionRow(
-                    label = "System (${state.console.label})",
+                    label = "System",
                     option = SearchOption.OpenGroup(SearchOptionGroup.CONSOLE),
+                    value = state.console.label,
+                    opensMenu = true,
                 ),
             )
         }
@@ -297,7 +310,7 @@ fun searchOnlineHelperItems(state: SearchOnlineUiState): List<ControllerPromptIt
     else -> listOf(
         ControllerPromptItem(GamepadAction.SELECT, if (state.searchFocused) "Type" else "Preview"),
         ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"),
-        ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Change Provider"),
+        ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
         ControllerPromptItem(GamepadAction.BACK, "Back"),
     )
 }
@@ -307,6 +320,7 @@ class SearchOnlineViewModel @Inject constructor(
     private val previews: AchievementPreviewRepository,
     private val credentials: AchievementCredentialsProvider,
     private val network: NetworkMonitor,
+    private val menuSound: MenuSoundPlayer,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SearchOnlineUiState())
@@ -352,7 +366,7 @@ class SearchOnlineViewModel @Inject constructor(
             GamepadAction.OPEN_CONTEXT_MENU -> openOptions()
             // Back leaves the preview first: the page itself only closes from the result list.
             GamepadAction.BACK -> if (_state.value.inPreview) closePreview() else close()
-            GamepadAction.HOME -> Unit
+            GamepadAction.HOME, GamepadAction.SHIFT, GamepadAction.CAPS_LOCK -> Unit
         }
     }
 
@@ -486,7 +500,7 @@ class SearchOnlineViewModel @Inject constructor(
         previewJob = viewModelScope.launch { fetchPreview(candidate) }
     }
 
-    /** Options → Refresh preview: the same read-only fetch, after discarding the held result. */
+    /** Options → Refresh Preview: the same read-only fetch, after discarding the held result. */
     fun refreshPreview() {
         val candidate = _state.value.preview?.candidate ?: return
         previewJob?.cancel()
@@ -550,20 +564,30 @@ class SearchOnlineViewModel @Inject constructor(
         listed.copy(options = SearchOptionsMenu(selectedIndex = active, group = group))
     }
 
+    /**
+     * The shared PSP-panel rules ([PspMenuNav]): the cursor clamps, Back climbs from a list to the root
+     * (cursor on the row that opened it) and closes from the root, Triangle closes from any depth.
+     */
     private fun handleOptionsAction(action: GamepadAction) {
-        val menu = _state.value.options ?: return
-        when (action) {
-            GamepadAction.NAVIGATE_UP -> moveOptionsCursor(menu, -1)
-            GamepadAction.NAVIGATE_DOWN -> moveOptionsCursor(menu, 1)
-            GamepadAction.SELECT -> onOptionActivated(menu.selectedIndex)
-            GamepadAction.BACK, GamepadAction.OPEN_CONTEXT_MENU -> closeOptions()
-            else -> Unit
+        val s = _state.value
+        val menu = s.options ?: return
+        val rows = s.optionRows
+        val cue = if (rows.getOrNull(menu.selectedIndex)?.option is SearchOption.OpenGroup) PspMenuCue.SELECT else PspMenuCue.CONFIRM
+        val depth = if (menu.group != null) 1 else 0
+        when (val outcome = PspMenuNav.handle(action, menu.selectedIndex, rows.size, depth, cue, MenuSoundSink { menuSound.play(it) })) {
+            is PspMenuOutcome.Moved -> _state.update { it.copy(options = menu.copy(selectedIndex = outcome.index)) }
+            PspMenuOutcome.Activate -> onOptionActivated(menu.selectedIndex)
+            PspMenuOutcome.Up -> climbToRoot(menu.group)
+            PspMenuOutcome.Close -> closeOptions()
+            PspMenuOutcome.Ignored -> Unit
         }
     }
 
-    private fun moveOptionsCursor(menu: SearchOptionsMenu, delta: Int) = _state.update { s ->
-        val last = (s.optionRows.size - 1).coerceAtLeast(0)
-        s.copy(options = menu.copy(selectedIndex = (menu.selectedIndex + delta).coerceIn(0, last)))
+    /** Back from a list: the root again, with the cursor on the row that opened [group]. */
+    private fun climbToRoot(group: SearchOptionGroup?) = _state.update { s ->
+        val root = s.copy(options = SearchOptionsMenu())
+        val opener = root.optionRows.indexOfFirst { (it.option as? SearchOption.OpenGroup)?.group == group }.coerceAtLeast(0)
+        s.copy(options = SearchOptionsMenu(selectedIndex = opener))
     }
 
     /** Activates an Options row (controller Confirm or tap): a root row opens its list. */

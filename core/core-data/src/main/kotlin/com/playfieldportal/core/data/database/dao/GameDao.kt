@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.playfieldportal.core.data.database.entity.GameEntity
 import kotlinx.coroutines.flow.Flow
@@ -113,6 +114,9 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE id = :id")
     suspend fun getById(id: Long): GameEntity?
 
+    @Query("SELECT * FROM games WHERE id = :id")
+    fun observeById(id: Long): Flow<GameEntity?>
+
     @Query("SELECT * FROM games WHERE disc_set_key = :discSetKey " +
             "ORDER BY is_disc_primary DESC, disc_number IS NULL ASC, disc_number ASC, id ASC"
     )
@@ -123,7 +127,16 @@ interface GameDao {
     @Query("UPDATE games SET is_disc_primary = 0 WHERE disc_set_key = :discSetKey AND id != :gameId")
     suspend fun clearOtherDiscPrimaries(discSetKey: String, gameId: Long)
 
-    @Query("UPDATE games SET is_disc_primary = CASE WHEN id = :discId THEN 1 ELSE 0 END WHERE disc_set_key = (SELECT disc_set_key FROM games WHERE id = :id)")
+    // The Choose Disc pick: the chosen disc becomes the set's primary and is marked preferred, which
+    // is what lets DiscSetBuilder keep it across scans rather than re-derive the primary.
+    @Query(
+        """
+        UPDATE games
+        SET is_disc_primary = CASE WHEN id = :discId THEN 1 ELSE 0 END,
+            is_disc_preferred = CASE WHEN id = :discId THEN 1 ELSE 0 END
+        WHERE disc_set_key = (SELECT disc_set_key FROM games WHERE id = :id)
+        """
+    )
     suspend fun setPreferredDisc(id: Long, discId: Long)
 
     @Query("SELECT * FROM games WHERE rom_path = :romPath LIMIT 1")
@@ -132,9 +145,19 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE package_name = :packageName LIMIT 1")
     suspend fun getByPackageName(packageName: String): GameEntity?
 
-    // The plain app-launch row (no launcher shortcut). Distinguishes the "open the app" entry
-    // from per-game launcher-shortcut rows that share the same package_name.
-    @Query("SELECT * FROM games WHERE package_name = :packageName AND launch_shortcut_id IS NULL LIMIT 1")
+    // The plain app-launch row. Distinguishes the "open the app" entry from the per-game rows that
+    // share its package_name: a harvested shortcut carries a shortcut id, and a launcher export
+    // (GameNative) or legacy INSTALL_SHORTCUT row carries a launch intent instead — without the
+    // second test, GameNative resolved to the first game it exported.
+    @Query(
+        """
+        SELECT * FROM games
+        WHERE package_name = :packageName
+          AND launch_shortcut_id IS NULL
+          AND launch_intent_uri IS NULL
+        LIMIT 1
+        """
+    )
     suspend fun getAppEntry(packageName: String): GameEntity?
 
     // A specific harvested launcher-shortcut row (package + shortcut id) — used to dedupe imports.
@@ -161,8 +184,34 @@ interface GameDao {
     )
     fun observeRecentByPlatform(platformId: String, limit: Int): Flow<List<GameEntity>>
 
+    /**
+     * Insert [game], or update the game it already is — in place, keeping its id.
+     *
+     * Never a REPLACE on an existing row: SQLite resolves a REPLACE by deleting the row first,
+     * and with foreign keys on that delete cascades to everything hanging off `games.id` — play
+     * sessions, collections, achievement links, storefront identities. Every rescan and every
+     * mark-as-game used to wipe them.
+     *
+     * "Already is" means the same id or, for a freshly built row (id 0), the same rom_path — the
+     * unique key a scanner re-finding a file collides on. A different row holding [game]'s
+     * rom_path under another id is removed, which is what REPLACE did with that conflict.
+     */
+    @Transaction
+    suspend fun upsert(game: GameEntity): Long {
+        val pathOwner = game.romPath?.let { getByRomPath(it) }
+        val target = when {
+            game.id != 0L && getById(game.id) != null -> game.id
+            game.id == 0L && pathOwner != null -> pathOwner.id
+            else -> return insertReplacing(game)
+        }
+        if (pathOwner != null && pathOwner.id != target) deleteById(pathOwner.id)
+        update(game.copy(id = target))
+        return target
+    }
+
+    /** A row that is not in the table yet. Only [upsert] calls this. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(game: GameEntity): Long
+    suspend fun insertReplacing(game: GameEntity): Long
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(games: List<GameEntity>)
@@ -231,12 +280,29 @@ interface GameDao {
     )
     suspend fun addPlayTime(id: Long, durationMillis: Long, playedAt: Long)
 
+    // Stamps a launch. No play time is known at dispatch, so only the recency moves. Every disc
+    // of the launched game's set is stamped: lists show a set as its primary disc, which is not
+    // always the disc that was booted.
+    @Query(
+        """
+        UPDATE games SET last_played_at = :playedAt
+        WHERE id = :id
+           OR (disc_set_key IS NOT NULL
+               AND disc_set_key = (SELECT disc_set_key FROM games WHERE id = :id))
+    """
+    )
+    suspend fun markLaunched(id: Long, playedAt: Long)
+
     @Query(
         """
         UPDATE games SET emulator_package = :emulatorPackage WHERE id = :id
     """
     )
     suspend fun setPreferredEmulator(id: Long, emulatorPackage: String?)
+
+    /** Moves every game override from the retired profile id [old] to [new]; returns the rows changed. */
+    @Query("UPDATE games SET emulator_package = :new WHERE emulator_package = :old")
+    suspend fun renameEmulatorRef(old: String, new: String): Int
 
     // B4 per-platform assignment screen: bulk-clears every per-game emulator override on a
     // platform so those games fall back to the platform default. Scoped to real game rows

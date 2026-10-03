@@ -113,10 +113,19 @@ fun ControllerSettingsScreen(
             SettingsGroup("Navigation")
             SettingsToggleRow(
                 label    = "Left Backs Out",
-                sublabel = "Press LEFT to leave a folder, flyout or settings screen — " +
-                    "only where LEFT does nothing else",
+                sublabel = "Press LEFT to leave a folder or flyout — only where LEFT does " +
+                    "nothing else",
                 checked  = state.layoutPrefs.leftBacksOut,
                 onToggle = { viewModel.setLeftBacksOut(it) },
+            )
+
+            SettingsGroup("Keyboard")
+            SettingsToggleRow(
+                label    = "Virtual Keyboard",
+                sublabel = "Type with the controller on PFP's own keyboard. Off, or when you use " +
+                    "touch, the system keyboard opens instead",
+                checked  = state.layoutPrefs.virtualKeyboard,
+                onToggle = { viewModel.setVirtualKeyboard(it) },
             )
 
             SettingsGroup("Reset")

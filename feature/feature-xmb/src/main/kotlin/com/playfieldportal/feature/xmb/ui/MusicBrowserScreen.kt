@@ -4,9 +4,9 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,21 +38,22 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -69,6 +70,11 @@ import com.playfieldportal.core.ui.components.TouchPromptItem
 import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.components.XmbKebabTouchButton
 import com.playfieldportal.core.ui.icons.ThemedGlyph
+import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
+import com.playfieldportal.core.ui.keyboard.isVirtualKeyboardOverlayOpen
+import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
+import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.LocalPfpTextColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
@@ -165,15 +171,29 @@ fun MusicBrowserScreen(
     val searchFocus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
+    // PFP's keyboard for a search the controller opened. The flag follows the field's focus (see
+    // onSearchFocusChanged below), so Done and BACK just let go of focus: search closes and the
+    // live-filtered query stays, as it does when X closes it.
+    val searchEdit = rememberVirtualKeyboardEdit(
+        text = state.query,
+        onTextChange = onQueryChange,
+        placement = KeyboardPlacement.BOTTOM_CENTER,
+        onDone = { focusManager.clearFocus() },
+        onClose = { focusManager.clearFocus() },
+    )
     // Two-frame focus idiom (AppPickerScreen / AppDrawerScreen): the field must be composed before
-    // the FocusRequester can take it.
+    // the FocusRequester can take it. PFP's keyboard opens first, so the field's own keyboard
+    // request is already held when focus arrives.
     LaunchedEffect(state.searchActive) {
         if (state.searchActive) {
             withFrameNanos {}
             withFrameNanos {}
+            val virtual = searchEdit.isOpen || searchEdit.start()
+            if (virtual) withFrameNanos {}
             runCatching { searchFocus.requestFocus() }
-            keyboard?.show()
+            if (!virtual) keyboard?.show()
         } else {
+            searchEdit.stop()
             keyboard?.hide()
             focusManager.clearFocus()
         }
@@ -245,9 +265,10 @@ fun MusicBrowserScreen(
 
             // Always visible, because the query is the list's filter and hiding it would hide
             // why the list looks the way it does. X focuses it; on touch, so does a tap.
+            VirtualKeyboardTextInput(searchEdit) {
             OutlinedTextField(
-                value = state.query,
-                onValueChange = onQueryChange,
+                value = searchEdit.fieldValue,
+                onValueChange = searchEdit::onFieldValueChange,
                 singleLine = true,
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = SecondaryText) },
                 placeholder = { Text("Search", color = SecondaryText.copy(alpha = 0.7f)) },
@@ -263,12 +284,14 @@ fun MusicBrowserScreen(
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier
                     .fillMaxWidth()
+                    .virtualKeyboardField(searchEdit)
                     .focusRequester(searchFocus)
                     // A tap on the field takes focus without going through the ViewModel, so the
                     // flag follows the field rather than the other way round — otherwise B would
                     // think the keyboard was down while the user was still typing.
                     .onFocusChanged { onSearchFocusChanged(it.isFocused) },
             )
+            }
 
             Spacer(Modifier.height(12.dp))
 
@@ -330,6 +353,14 @@ fun MusicBrowserScreen(
                     labelStyle = TextStyle(fontSize = 11.sp),
                     glyphSize = 16.dp,
                     arrangement = Arrangement.spacedBy(18.dp),
+                    // Idles in and blinks out like the crossbar pill (see shouldShowMediaHint), and
+                    // gives way to PFP's keyboard, which brings its own prompts while it is up.
+                    modifier = Modifier.alpha(
+                        com.playfieldportal.core.ui.components.idleHintAlpha(
+                            com.playfieldportal.feature.xmb.ui.LocalMediaHintVisible.current &&
+                                !isVirtualKeyboardOverlayOpen(),
+                        ),
+                    ),
                 )
             }
         }

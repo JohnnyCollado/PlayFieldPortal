@@ -83,3 +83,27 @@ internal fun severityColor(severity: NotificationSeverity): Color = when (severi
     NotificationSeverity.WARNING -> Color(0xFF9D6B1C)
     NotificationSeverity.ERROR -> Color(0xFFC0453A)
 }
+
+/** The kind as the Notes sheet's meta line names it ("Launch · 12 Minutes Ago"). */
+internal fun notificationKindLabel(kind: NotificationKind): String = when (kind) {
+    NotificationKind.SCAN -> "Scan"
+    NotificationKind.ARTWORK -> "Artwork"
+    NotificationKind.METADATA -> "Metadata"
+    NotificationKind.ACHIEVEMENT -> "Achievements"
+    NotificationKind.LAUNCH -> "Launch"
+    NotificationKind.SYSTEM -> "System"
+    NotificationKind.DOWNLOAD -> "Download"
+    NotificationKind.FEED -> "Feed"
+}
+
+/** What the ✕ hint calls an action inside a sheet, or null when there is nowhere to go. */
+internal fun notificationActionLabel(action: com.playfieldportal.core.domain.model.NotificationAction): String? =
+    when (action) {
+        is com.playfieldportal.core.domain.model.NotificationAction.OpenGame -> "Go to Game"
+        is com.playfieldportal.core.domain.model.NotificationAction.OpenMemoryCard -> "Open Memory Card"
+        is com.playfieldportal.core.domain.model.NotificationAction.OpenSettingsScreen -> "Open Settings"
+        is com.playfieldportal.core.domain.model.NotificationAction.OpenCategory -> "Open Category"
+        is com.playfieldportal.core.domain.model.NotificationAction.ReviewShortcut -> "Review"
+        is com.playfieldportal.core.domain.model.NotificationAction.OpenUrl,
+        com.playfieldportal.core.domain.model.NotificationAction.None -> null
+    }

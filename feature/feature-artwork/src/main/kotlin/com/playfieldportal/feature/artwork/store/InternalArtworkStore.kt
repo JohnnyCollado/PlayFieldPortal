@@ -226,12 +226,14 @@ class InternalArtworkStore @Inject constructor(
             "image/png"               -> "png"
             "image/jpeg", "image/jpg" -> "jpg"
             "image/webp"              -> "webp"
+            "image/gif"               -> "gif"
             else -> {
                 val path = uri.lastPathSegment.orEmpty().lowercase(Locale.US)
                 when {
                     path.endsWith(".png")                           -> "png"
                     path.endsWith(".jpg") || path.endsWith(".jpeg") -> "jpg"
                     path.endsWith(".webp")                          -> "webp"
+                    path.endsWith(".gif")                           -> "gif"
                     else                                            -> null
                 }
             }

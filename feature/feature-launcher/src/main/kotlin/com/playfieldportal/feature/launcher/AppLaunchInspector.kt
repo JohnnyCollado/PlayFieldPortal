@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.core.domain.model.IntentType
+import com.playfieldportal.feature.launcher.kb.EmulatorKnowledgeStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import javax.inject.Inject
@@ -18,7 +19,7 @@ data class DetectableApp(
 )
 
 enum class DetectionConfidence {
-    KNOWN,       // matched the curated catalog — fields are reliable
+    KNOWN,       // matched the built-in knowledge base — fields are reliable
     BEST_GUESS,  // inferred from the app's declared ACTION_VIEW handler
     MINIMAL,     // nothing detectable — user must fill it in
 }
@@ -32,7 +33,7 @@ data class EmulatorSuggestion(
 
 /**
  * Assisted custom-emulator setup. Lists installed apps, and for a chosen package produces a
- * best-effort [EmulatorProfile] draft by (1) matching the curated [KnownEmulatorCatalog], else
+ * best-effort [EmulatorProfile] draft by (1) matching the effective emulator knowledge base, else
  * (2) inspecting the app's declared ACTION_VIEW handlers via [PackageManager], else (3) a minimal
  * stub for manual completion. Android can't reveal custom extra keys for unknown apps, so this is
  * intentionally assisted — the user reviews, optionally test-launches, and edits before saving.
@@ -40,6 +41,7 @@ data class EmulatorSuggestion(
 @Singleton
 class AppLaunchInspector @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val knowledgeStore: EmulatorKnowledgeStore,
 ) {
     fun listLaunchableApps(): List<DetectableApp> {
         val pm = context.packageManager
@@ -59,34 +61,41 @@ class AppLaunchInspector @Inject constructor(
         }
     }
 
-    fun suggestForPackage(packageName: String): EmulatorSuggestion {
+    suspend fun suggestForPackage(packageName: String): EmulatorSuggestion {
         val pm = context.packageManager
         val label = runCatching {
             pm.getApplicationLabel(pm.getApplicationInfo(packageName, 0)).toString()
         }.getOrDefault(packageName)
 
-        // 1) Curated catalog — exact, reliable fields (RetroArch cores come from auto-config, not here).
-        KnownEmulatorCatalog.entries.firstOrNull { packageName in it.packageNames }?.let { known ->
+        // 1) Knowledge base — exact, reliable fields (RetroArch cores come from auto-config, not here).
+        knowledgeStore.current().emulators.map { it.emulator }
+            .firstOrNull { packageName in it.packageNames }?.let { known ->
+            // A per-build override replaces the whole launch for that package only (AD-15).
+            val launch = known.launchByPackage[packageName] ?: known.launch
             return EmulatorSuggestion(
                 profile = EmulatorProfile(
                     id                   = DRAFT_ID,
-                    name                 = known.suggestedName,
+                    name                 = known.name,
                     packageName          = packageName,
-                    activityClass        = known.activityClass,
-                    intentType           = known.intentType,
+                    activityClass        = launch.activityClass,
+                    intentType           = launch.intentType,
                     supportedPlatformIds = known.platformIds,
-                    intentExtras         = known.intentExtras,
-                    intentBoolExtras     = known.intentBoolExtras,
-                    intentAction         = known.intentAction,
-                    intentFlags          = known.intentFlags,
-                    intentCategory       = known.intentCategory,
-                    mimeType             = known.mimeType,
-                    useSafUri            = known.useSafUri,
-                    useFileUri           = !known.useSafUri,
+                    intentExtras         = launch.extras,
+                    intentArrayExtras    = launch.arrayExtras,
+                    attachRomData        = launch.attachRomData,
+                    knowledgeId          = known.id,
+                    signerSha256         = known.signerSha256,
+                    intentBoolExtras     = launch.boolExtras,
+                    intentAction         = launch.action,
+                    intentFlags          = launch.flags,
+                    intentCategory       = launch.category,
+                    mimeType             = launch.mimeType,
+                    useSafUri            = launch.useSafUri,
+                    useFileUri           = !launch.useSafUri,
                     isCustom             = true,
                 ),
                 confidence = DetectionConfidence.KNOWN,
-                note = "Auto-filled from the built-in profile for ${known.suggestedName}. " +
+                note = "Auto-filled from the built-in profile for ${known.name}. " +
                     "Confirm the platform(s) and save.",
             )
         }

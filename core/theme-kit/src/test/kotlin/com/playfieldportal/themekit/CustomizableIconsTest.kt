@@ -162,4 +162,13 @@ class CustomizableIconsTest {
     fun `the codec's icons gate accepts every new slot`() {
         for (slot in IconSlots.ALL.drop(52)) assertTrue(IconSlots.isValidKey(slot.key), slot.key)
     }
+
+    // The per-category image family lives in core-ui (theme-kit can't see it), so this guards the
+    // other half: it must never become a theme slot, or theme export/import would carry it.
+    @Test
+    fun `usercat keys are not theme slots`() {
+        assertTrue(CustomizableIcons.ALL.none { it.key.startsWith("usercat_") })
+        assertFalse(IconSlots.isValidKey("usercat_custom_x_1"))
+        assertFalse(CustomizableIcons.isValidKey("usercat_custom_x_1"))
+    }
 }

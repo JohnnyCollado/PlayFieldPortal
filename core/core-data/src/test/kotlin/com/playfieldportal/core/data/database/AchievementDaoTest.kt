@@ -118,6 +118,50 @@ class AchievementDaoTest {
         assertEquals(1, coins.observeForGame(gameId).first().count { it.isEarned })
     }
 
+    /**
+     * The owned double-link: a Local Steam game the user also owns on Steam links both providers to
+     * the same appid, so both sets carry the same apinames. Every game-keyed read must follow the
+     * one link `links.observeForGame` reports — unioning both sets listed each coin
+     * twice, and the Shiba Coins page crashed on the duplicate LazyColumn key.
+     */
+    @Test
+    fun `a double-linked game reads one set, the same one its link read reports`() = runTest {
+        val gameId = seedGame()
+        seedLink(gameId, "STEAM", "620")
+        seedLink(gameId, "LOCAL_STEAM", "620")
+        sets.upsert(set("STEAM", "620", bronzeEarned = 2, bronzeTotal = 2))
+        sets.upsert(set("LOCAL_STEAM", "620", bronzeEarned = 1, bronzeTotal = 2))
+        coins.upsertAll(
+            listOf(
+                coin("STEAM", "620", "ACH_CLEAR_A", earned = true),
+                coin("STEAM", "620", "ACH_CLEAR_B", earned = true),
+                coin("LOCAL_STEAM", "620", "ACH_CLEAR_A", earned = true),
+                coin("LOCAL_STEAM", "620", "ACH_CLEAR_B", earned = false),
+            ),
+        )
+
+        val linked = links.observeForGame(gameId).first()?.provider
+        val gameCoins = coins.observeForGame(gameId).first()
+
+        assertEquals(listOf("ACH_CLEAR_A", "ACH_CLEAR_B"), gameCoins.map { it.providerAchievementId }.sorted())
+        assertEquals(setOf(linked), gameCoins.map { it.provider }.toSet())
+        assertEquals(linked, sets.observeForGame(gameId).first()?.provider)
+    }
+
+    @Test
+    fun `a double-linked game whose reported link has not synced shows no set, not the other one`() =
+        runTest {
+            val gameId = seedGame()
+            seedLink(gameId, "STEAM", "620")
+            seedLink(gameId, "LOCAL_STEAM", "620")   // reported first, never synced
+            sets.upsert(set("STEAM", "620", bronzeEarned = 2, bronzeTotal = 2))
+            coins.upsertAll(listOf(coin("STEAM", "620", "ACH_CLEAR_A", earned = true)))
+
+            assertEquals("LOCAL_STEAM", links.observeForGame(gameId).first()?.provider)
+            assertNull(sets.observeForGame(gameId).first())
+            assertEquals(0, coins.observeForGame(gameId).first().size)
+        }
+
     @Test
     fun `deleting a game severs the link but account rows survive`() = runTest {
         val gameId = seedGame()
@@ -174,6 +218,18 @@ class AchievementDaoTest {
     }
 
     @Test
+    fun `every link a game holds is listed, first one first`() = runTest {
+        val gameId = seedGame()
+        seedLink(gameId, "STEAM", "524220")
+        seedLink(gameId, "LOCAL_STEAM", "524220")
+
+        val all = links.observeAllForGame(gameId).first()
+
+        assertEquals(listOf("LOCAL_STEAM", "STEAM"), all.map { it.provider })
+        assertEquals(links.observeForGame(gameId).first()?.provider, all.first().provider)
+    }
+
+    @Test
     fun `hub projection lists every account set with its optional library game`() = runTest {
         val gameId = seedGame()
         seedLink(gameId, "RETRO_ACHIEVEMENTS", "319")
@@ -189,5 +245,29 @@ class AchievementDaoTest {
         assertEquals("Chrono Trigger", rows.getValue("319").title)
         assertNull(rows.getValue("999").libraryGameId)
         assertEquals(15 + 5 * 15, sets.observeWalletCoins().first())
+    }
+
+    @Test
+    fun `hasBlankHiddenDescription finds only a hidden coin with no text, within its own set`() = runTest {
+        fun hidden(gameId: String, id: String, description: String, isHidden: Boolean = true) =
+            AccountAchievementEntity(
+                provider = "LOCAL_STEAM", providerGameId = gameId, providerAchievementId = id,
+                title = id, description = description, tier = "BRONZE", globalRarity = 30.0,
+                isHidden = isHidden,
+            )
+        coins.upsertAll(
+            listOf(
+                hidden("367520", "ENDING_B", description = " "),
+                hidden("524220", "SECRET", description = "Already known."),
+                hidden("524220", "OPEN", description = "", isHidden = false),
+                // Tabs and line breaks are as blank as spaces, matching Kotlin's isBlank().
+                hidden("620", "WHITESPACE", description = "\t\r\n "),
+            ),
+        )
+
+        assertEquals(true, coins.hasBlankHiddenDescription("LOCAL_STEAM", "367520"))
+        assertEquals(false, coins.hasBlankHiddenDescription("LOCAL_STEAM", "524220"))
+        assertEquals(false, coins.hasBlankHiddenDescription("STEAM", "367520"))
+        assertEquals(true, coins.hasBlankHiddenDescription("LOCAL_STEAM", "620"))
     }
 }

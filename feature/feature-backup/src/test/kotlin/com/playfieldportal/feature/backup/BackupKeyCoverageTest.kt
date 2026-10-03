@@ -40,15 +40,25 @@ class BackupKeyCoverageTest {
             "display_solid_unfocused_icons",
             "display_text_shadow",
             "pref_animated_icons",
+            "pref_image_motion",
             "pref_icon_display_mode",
             "pref_icon_display_mode_by_platform",
             "pref_icon1_linger_delay_seconds",
+            "display_item_list_motion",
+            "display_umd_slot_mode",
         )
     }
 
     @Test
     fun `the motion wallpaper crop travels with the motion wallpaper`() {
         assertCovered("display_motion_wallpaper", "display_motion_crop")
+    }
+
+    @Test
+    fun `the global sorts are backed up`() {
+        // A list's own sort and its Custom order travel as database rows (list_settings,
+        // list_items); only the two global sorts are preferences.
+        assertCovered("pref_sort_mode_games", "pref_sort_mode_apps")
     }
 
     @Test

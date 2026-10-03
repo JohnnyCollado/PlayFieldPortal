@@ -42,7 +42,6 @@ fun EmulatorProfileEditorScreen(
     onMimeTypeChange: (String) -> Unit,
     onUseFileUriChange: (Boolean) -> Unit,
     onUseSafUriChange: (Boolean) -> Unit,
-    onCustomCommandChange: (String) -> Unit,
     onNotesChange: (String) -> Unit,
     onIntentActionChange: (String) -> Unit,
     onIntentExtrasChange: (String) -> Unit,
@@ -108,19 +107,18 @@ fun EmulatorProfileEditorScreen(
                 placeholder = "e.g. My Emulator",
             )
 
-            if (editorState.intentType != IntentType.CUSTOM_COMMAND) {
-                EditorTextField(
-                    label         = "Package Name",
-                    value         = editorState.packageName,
-                    onValueChange = onPackageNameChange,
-                    placeholder   = "e.g. com.example.emulator",
-                )
-            }
+            EditorTextField(
+                label         = "Package Name",
+                value         = editorState.packageName,
+                onValueChange = onPackageNameChange,
+                placeholder   = "e.g. com.example.emulator",
+            )
 
             // Intent type picker
             SettingsGroup("Launch Method")
 
-            IntentType.entries.forEach { type ->
+            // CUSTOM_COMMAND is refused at launch (AD-1), so it is no longer offered.
+            IntentType.entries.filter { it != IntentType.CUSTOM_COMMAND }.forEach { type ->
                 SettingsRow(
                     label    = type.name,
                     sublabel = intentTypeDescription(type),
@@ -156,15 +154,6 @@ fun EmulatorProfileEditorScreen(
                 onValueChange = onMimeTypeChange,
                 placeholder   = "e.g. application/octet-stream",
             )
-
-            if (editorState.intentType == IntentType.CUSTOM_COMMAND) {
-                EditorTextField(
-                    label         = "Custom Command",
-                    value         = editorState.customCommand,
-                    onValueChange = onCustomCommandChange,
-                    placeholder   = "Shell command with {file} and {package} tokens",
-                )
-            }
 
             EditorTextField(
                 label         = "Notes",
@@ -315,7 +304,6 @@ private fun CustomIntentHelp() {
         HelpSection("Launch Method")
         HelpLine("ACTION_VIEW — ROM handed to the app as the intent's data URI (most emulators).")
         HelpLine("COMPONENT — explicit activity + extras (RetroArch ROM/LIBRETRO, DuckStation bootPath).")
-        HelpLine("CUSTOM COMMAND — advanced am-style command string.")
 
         HelpSection("Intent Action")
         HelpLine("The action the emulator's activity expects. Blank = default (VIEW / MAIN).")
@@ -365,5 +353,5 @@ private fun intentTypeDescription(type: IntentType) = when (type) {
     IntentType.ACTION_VIEW     -> "Intent.ACTION_VIEW — most emulators (PPSSPP, Dolphin, DuckStation…)"
     IntentType.COMPONENT       -> "Explicit component — RetroArch and apps needing direct class target"
     IntentType.SHORTCUT        -> "Home screen shortcut — Winlator, GameHub and custom launchers"
-    IntentType.CUSTOM_COMMAND  -> "Shell command override — advanced; specify full command below"
+    IntentType.CUSTOM_COMMAND  -> "Not supported — custom commands are refused at launch"
 }

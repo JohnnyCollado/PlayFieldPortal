@@ -1,5 +1,11 @@
 package com.playfieldportal.studio.preview
 
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.platform.LocalDensity
+import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.decodeToImageVector
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
@@ -52,17 +58,9 @@ import androidx.compose.material.icons.outlined.RssFeed
 import androidx.compose.material.icons.outlined.Sell
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.toComposeImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.loadXmlImageVector
-import org.jetbrains.skia.Image as SkiaImage
-import org.xml.sax.InputSource
 
 /**
  * The Studio's copy of the launcher's default icon set, keyed by
@@ -205,27 +203,25 @@ object StudioIconSet {
         return rememberVectorPainter(ITEM_VECTORS[key] ?: Icons.Filled.PlayArrow)
     }
 
-    /** A bundled classpath resource as a painter: Skia-decoded raster for png/webp, Android vector XML otherwise. */
+    // Classpath art for the bundled slots: PNG/WebP art decodes through Skia (as ImageCodecs does) and the
+    // Android vector drawables through the Compose resources decoder.
+    @OptIn(ExperimentalResourceApi::class)
     @Composable
     private fun resourcePainter(path: String): Painter {
         val density = LocalDensity.current
-        val loaded: Any = remember(path, density) {
-            val stream = checkNotNull(StudioIconSet::class.java.classLoader.getResourceAsStream(path)) {
-                "missing resource $path"
+        if (path.endsWith(".xml")) {
+            val vector = remember(path, density) {
+                readResource(path).decodeToImageVector(density)
             }
-            stream.use {
-                if (path.endsWith(".xml")) loadVector(it, density) else SkiaImage.makeFromEncoded(it.readBytes()).toComposeImageBitmap()
-            }
+            return rememberVectorPainter(vector)
         }
-        return when (loaded) {
-            is ImageVector -> rememberVectorPainter(loaded)
-            else -> remember(loaded) { BitmapPainter(loaded as ImageBitmap) }
+        val bitmap = remember(path) {
+            org.jetbrains.skia.Image.makeFromEncoded(readResource(path)).toComposeImageBitmap()
         }
+        return remember(bitmap) { BitmapPainter(bitmap) }
     }
 
-    // The only XML-vector loader on the classpath is the deprecated one; its replacement is the
-    // Compose resources library, a new dependency this change may not add. Seven bundled vectors use it.
-    @Suppress("DEPRECATION")
-    private fun loadVector(stream: java.io.InputStream, density: androidx.compose.ui.unit.Density): ImageVector =
-        loadXmlImageVector(InputSource(stream), density)
+    private fun readResource(path: String): ByteArray =
+        checkNotNull(StudioIconSet::class.java.classLoader.getResourceAsStream(path)) { "Missing resource $path" }
+            .use { it.readBytes() }
 }

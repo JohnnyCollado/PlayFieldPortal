@@ -70,6 +70,9 @@ class GameRepositoryImpl @Inject constructor(
     override suspend fun getById(id: Long): Game? =
         gameDao.getById(id)?.toDomain()
 
+    override fun observeById(id: Long): Flow<Game?> =
+        gameDao.observeById(id).map { it?.toDomain() }
+
     override suspend fun getDiscSetMembers(discSetKey: String): List<Game> =
         gameDao.getDiscSetMembers(discSetKey).map { it.toDomain() }
 
@@ -139,6 +142,9 @@ class GameRepositoryImpl @Inject constructor(
         )
         Timber.d("Play session recorded: gameId=${session.gameId}, platform=${session.platformId}")
     }
+
+    override suspend fun markLaunched(id: Long, playedAt: Long) =
+        gameDao.markLaunched(id, playedAt)
 
     override suspend fun updateScrapedTitle(id: Long, scrapedTitle: String?) =
         gameDao.updateScrapedTitle(id, scrapedTitle)

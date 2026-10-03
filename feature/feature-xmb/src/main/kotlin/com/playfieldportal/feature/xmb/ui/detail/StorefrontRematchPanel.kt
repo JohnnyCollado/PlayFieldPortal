@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,21 +15,44 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
+import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
+import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
+import com.playfieldportal.feature.xmb.ui.SearchGlyph
 
 // ── Rematch Storefront Metadata (C23 T6, Phase 18) ───────────────────────────
 // One row per store: what it is linked to, and what can be done about it. Every row is a single
@@ -49,7 +73,13 @@ fun StorefrontRematchPanel(
     onRowClick: (Int) -> Unit,
     onActionClick: (Int, RematchAction) -> Unit,
     onSearchAll: () -> Unit,
+    onQueryChange: (String) -> Unit,
+    onStartQueryEdit: () -> Unit,
+    onSearchByName: () -> Unit,
     onClose: () -> Unit,
+    // BACK on PFP's keyboard: stop typing, keep the text (the system keyboard's own Back does this
+    // through the ViewModel's next press).
+    onStopQueryEdit: () -> Unit = {},
 ) {
     Box(
         Modifier.fillMaxSize().background(Color(0xCC000000)).clickable(onClick = onClose),
@@ -79,7 +109,13 @@ fun StorefrontRematchPanel(
 
             if (!showTouchControls) {
                 Text(
-                    "Up/Down  Rows  •  Left/Right  Action  •  Select  Confirm  •  B  Close",
+                    // The hints follow the stop: the bar has no Left/Right, and while it is taking
+                    // text the keyboard's own Search key is the confirm.
+                    when {
+                        ui.editingQuery -> "Keyboard Search  Find matches  •  B  Done typing"
+                        ui.queryFocused -> "Up/Down  Rows  •  Select  Type a name  •  B  Close"
+                        else -> "Up/Down  Rows  •  Left/Right  Action  •  Select  Confirm  •  B  Close"
+                    },
                     color = TextMuted.copy(alpha = 0.55f),
                     fontSize = 10.sp,
                 )
@@ -91,6 +127,18 @@ fun StorefrontRematchPanel(
                 }
                 return@Column
             }
+
+            // Pinned above the scroll region: it is the way out of a bad match, so it must not
+            // scroll away with the rows it sits over.
+            NameSearchBar(
+                ui = ui,
+                focusFill = focusFill,
+                focusEdge = focusEdge,
+                onQueryChange = onQueryChange,
+                onStartEdit = onStartQueryEdit,
+                onStopEdit = onStopQueryEdit,
+                onSearch = onSearchByName,
+            )
 
             // The rows AND the note share one scroll region, and the region takes all the space the
             // pinned button leaves (fill = true, not `fill = false`).
@@ -108,7 +156,7 @@ fun StorefrontRematchPanel(
                 ui.rows.forEachIndexed { index, row ->
                     StoreRow(
                         row = row,
-                        focused = ui.focus == index,
+                        focused = !ui.queryFocused && ui.focus == index,
                         focusFill = focusFill,
                         focusEdge = focusEdge,
                         showTouchControls = showTouchControls,
@@ -138,7 +186,7 @@ fun StorefrontRematchPanel(
                 }
             }
 
-            val searchFocused = ui.focus == ui.searchAllIndex
+            val searchFocused = !ui.queryFocused && ui.focus == ui.searchAllIndex
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -160,6 +208,115 @@ fun StorefrontRematchPanel(
     }
 }
 
+/**
+ * A name to search the stores by.
+ *
+ * The ViewModel owns whether the bar is taking text ([StorefrontRematchUi.editingQuery]); this
+ * follows it, raising the keyboard when it starts and dropping it when it ends. Read-only until
+ * then, so a controller resting on the bar never opens a keyboard the user did not ask for.
+ */
+@Composable
+private fun NameSearchBar(
+    ui: StorefrontRematchUi,
+    focusFill: Color,
+    focusEdge: Color,
+    onQueryChange: (String) -> Unit,
+    onStartEdit: () -> Unit,
+    onStopEdit: () -> Unit,
+    onSearch: () -> Unit,
+) {
+    val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    val editing by rememberUpdatedState(ui.editingQuery)
+    // PFP's keyboard for an edit the controller started: Done searches by name, as the system
+    // keyboard's Search key does; BACK stops typing and keeps the text.
+    val queryEdit = rememberVirtualKeyboardEdit(
+        text = ui.query,
+        onTextChange = onQueryChange,
+        placement = KeyboardPlacement.BOTTOM_CENTER,
+        onDone = onSearch,
+        onClose = onStopEdit,
+    )
+
+    LaunchedEffect(ui.editingQuery) {
+        if (ui.editingQuery) {
+            // PFP's keyboard opens first, so the field's own keyboard request is already held when
+            // focus arrives.
+            val virtual = queryEdit.start()
+            if (virtual) withFrameNanos { }
+            runCatching { focusRequester.requestFocus() }
+            if (!virtual) keyboard?.show()
+        } else {
+            queryEdit.stop()
+            focusManager.clearFocus()
+        }
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(if (ui.queryFocused) focusFill else RowFill)
+                .then(
+                    if (ui.queryFocused) Modifier.border(1.5.dp, focusEdge, RoundedCornerShape(8.dp))
+                    else Modifier
+                )
+                .padding(start = 12.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SearchGlyph()
+            VirtualKeyboardTextInput(queryEdit) {
+            BasicTextField(
+                value = queryEdit.fieldValue,
+                onValueChange = queryEdit::onFieldValueChange,
+                readOnly = !ui.editingQuery,
+                singleLine = true,
+                textStyle = TextStyle(color = TextPrimary, fontSize = 14.sp),
+                cursorBrush = SolidColor(focusEdge),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { onSearch() }, onDone = { onSearch() }),
+                decorationBox = { inner ->
+                    Box {
+                        if (ui.query.isEmpty()) {
+                            Text("Search by name", color = TextMuted.copy(alpha = 0.6f), fontSize = 14.sp)
+                        }
+                        inner()
+                    }
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .virtualKeyboardField(queryEdit)
+                    .focusRequester(focusRequester)
+                    // A tap focuses the field; that is touch asking to type, so enter edit mode.
+                    .onFocusChanged { if (it.isFocused && !editing) onStartEdit() },
+            )
+            }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0x14FFFFFF))
+                    .clickable(enabled = ui.canSearchByName && !ui.searching, onClick = onSearch)
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+            ) {
+                Text(
+                    if (ui.searching) "Searching…" else "Search",
+                    color = if (ui.canSearchByName) TextPrimary else TextMuted.copy(alpha = 0.45f),
+                    fontSize = 12.sp,
+                )
+            }
+        }
+        Text(
+            "Searches the stores for this name. Your game's title is not changed.",
+            color = TextMuted.copy(alpha = 0.6f),
+            fontSize = 10.sp,
+        )
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun StoreRow(
     row: StorefrontRematchRow,
@@ -170,9 +327,12 @@ private fun StoreRow(
     onClick: () -> Unit,
     onAction: (RematchAction) -> Unit,
 ) {
+    val requester = remember { BringIntoViewRequester() }
+    LaunchedEffect(focused) { if (focused) requester.bringIntoView() }
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .bringIntoViewRequester(requester)
             .clip(RoundedCornerShape(8.dp))
             .background(if (focused) focusFill else RowFill)
             .then(if (focused) Modifier.border(1.5.dp, focusEdge, RoundedCornerShape(8.dp)) else Modifier)

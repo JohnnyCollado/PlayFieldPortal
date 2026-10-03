@@ -78,8 +78,10 @@ open class BackupManager @Inject constructor(
     private val backupFolderRepository: BackupFolderRepository,
     private val uiMediaStore: UiMediaStore,
     // A finished backup/restore is a background task completing: post it to the shared tray, which
-    // records the row, mirrors to the shade, and rings the notification cue from its one settle seam.
+    // records the row and rings the notification cue from its one settle seam.
     private val tasks: com.playfieldportal.core.ui.notification.BackgroundTaskCenter,
+    // Brings an archive made before per-list state (v54) onto the current model after restore.
+    private val listStateBackfiller: com.playfieldportal.core.data.database.ListStateBackfiller,
 ) {
     private val json = Json { prettyPrint = false; ignoreUnknownKeys = true }
 
@@ -157,6 +159,12 @@ open class BackupManager @Inject constructor(
             // so it is restored under its own presence check (see restore below).
             zip.writeJson(BackupEntry.LOCAL_STEAM_FOLDERS,    json.encodeToString(listSerializer<com.playfieldportal.core.data.database.entity.LocalSteamFolderEntity>(), backupDao.getLocalSteamFolders()))
 
+            // Per-list state: how each list is arranged, what is in each UMD slot, and app recency.
+            zip.writeJson(BackupEntry.LIST_ITEMS,    json.encodeToString(listSerializer<com.playfieldportal.core.data.database.entity.ListItemEntity>(), backupDao.getListItems()))
+            zip.writeJson(BackupEntry.LIST_SETTINGS, json.encodeToString(listSerializer<com.playfieldportal.core.data.database.entity.ListSettingEntity>(), backupDao.getListSettings()))
+            zip.writeJson(BackupEntry.UMD_SLOTS,     json.encodeToString(listSerializer<com.playfieldportal.core.data.database.entity.UmdSlotEntity>(), backupDao.getUmdSlots()))
+            zip.writeJson(BackupEntry.APP_USAGE,     json.encodeToString(listSerializer<com.playfieldportal.core.data.database.entity.AppUsageEntity>(), backupDao.getAppUsage()))
+
             // Bundled internal-storage assets. Absolute paths in the DB point into filesDir; storing
             // them relative to filesDir lets restore relocate them into whatever package/data-dir the
             // backup lands in.
@@ -187,6 +195,10 @@ open class BackupManager @Inject constructor(
                 message = it.message,
                 severity = com.playfieldportal.core.domain.model.NotificationSeverity.ERROR,
                 action = com.playfieldportal.core.domain.model.NotificationAction.OpenSettingsScreen("settings_backup"),
+                detail = com.playfieldportal.core.domain.model.NotificationDetail.notes(
+                    com.playfieldportal.core.domain.model.PfpErrorCode.BK_2001, summary = it.message,
+                    diagnostic = it.stackTraceToString().take(4_000),
+                ),
             )
             BackupResult.Failure(it.message ?: "Unknown error", it)
         },
@@ -266,6 +278,15 @@ open class BackupManager @Inject constructor(
         val hasLocalSteamFolders = entries.containsKey(BackupEntry.LOCAL_STEAM_FOLDERS)
         val localSteamFolders = entries.decodeList<com.playfieldportal.core.data.database.entity.LocalSteamFolderEntity>(BackupEntry.LOCAL_STEAM_FOLDERS)
 
+        // Present only in archives made since per-list state existed. An older one carries pins
+        // and collection order in their old shapes, which are brought forward after the tables
+        // are restored rather than being read as "nothing was arranged".
+        val hasListState = entries.containsKey(BackupEntry.LIST_ITEMS)
+        val listItems    = entries.decodeList<com.playfieldportal.core.data.database.entity.ListItemEntity>(BackupEntry.LIST_ITEMS)
+        val listSettings = entries.decodeList<com.playfieldportal.core.data.database.entity.ListSettingEntity>(BackupEntry.LIST_SETTINGS)
+        val umdSlots     = entries.decodeList<com.playfieldportal.core.data.database.entity.UmdSlotEntity>(BackupEntry.UMD_SLOTS)
+        val appUsage     = entries.decodeList<com.playfieldportal.core.data.database.entity.AppUsageEntity>(BackupEntry.APP_USAGE)
+
         val settings = entries[BackupEntry.SETTINGS]?.let {
             json.decodeFromString(SettingsSnapshot.serializer(), it)
         }
@@ -344,6 +365,27 @@ open class BackupManager @Inject constructor(
         // Folder registry: keyed by app id, so it needs no game to exist and is never filtered.
         if (hasLocalSteamFolders) backupDao.replaceLocalSteamFolders(localSteamFolders)
 
+        // Per-list state, after the games and categories it points at. The slots go in last on
+        // purpose: re-inserting a category replaces its row, which would cascade its slot away.
+        if (hasListState) {
+            backupDao.replaceListState(
+                items = listItems,
+                settings = listSettings,
+                umdSlots = restorableUmdSlots(
+                    slots = umdSlots,
+                    gameIds = remappedGames.map { it.id }.toSet(),
+                    categoryIds = categories.map { it.id }.toSet(),
+                ),
+                appUsage = appUsage,
+            )
+        } else {
+            // An archive from before v54: nothing was arranged in the new sense, so what is on the
+            // device now would be stale against the restored library. Clear it, then carry the
+            // archive's old shapes forward exactly as the 53→54 migration does.
+            backupDao.replaceListState(emptyList(), emptyList(), emptyList(), emptyList())
+            listStateBackfiller.run()
+        }
+
         // Platforms: merge only the user-editable columns onto the existing seeded catalog so an
         // older backup can never wipe platform definitions this build added.
         platforms.forEach { p ->
@@ -371,6 +413,20 @@ open class BackupManager @Inject constructor(
                 message = if (refusals.isEmpty()) null else "${refusals.size} item(s) skipped",
                 severity = if (refusals.isEmpty()) com.playfieldportal.core.domain.model.NotificationSeverity.SUCCESS
                 else com.playfieldportal.core.domain.model.NotificationSeverity.WARNING,
+                // Each refused item, so "3 item(s) skipped" says which and why.
+                detail = refusals.takeIf { it.isNotEmpty() }?.let { skipped ->
+                    com.playfieldportal.core.domain.model.NotificationDetail.results(
+                        skipped.map { reason ->
+                            com.playfieldportal.core.domain.model.ResultItem(
+                                primary = reason.substringBefore(':').take(80),
+                                outcome = com.playfieldportal.core.domain.model.ResultOutcome.SKIPPED,
+                                reason = reason,
+                                code = com.playfieldportal.core.domain.model.PfpErrorCode.BK_1001.id,
+                            )
+                        },
+                        labels = com.playfieldportal.core.domain.model.ResultsLabels(done = "Restored"),
+                    )
+                },
             )
             RestoreResult.Success(refusals)
         },
@@ -380,6 +436,10 @@ open class BackupManager @Inject constructor(
                 label = "Restore failed",
                 message = it.message,
                 severity = com.playfieldportal.core.domain.model.NotificationSeverity.ERROR,
+                detail = com.playfieldportal.core.domain.model.NotificationDetail.notes(
+                    com.playfieldportal.core.domain.model.PfpErrorCode.BK_2002, summary = it.message,
+                    diagnostic = it.stackTraceToString().take(4_000),
+                ),
             )
             RestoreResult.Failure(it.message ?: "Unknown error", it)
         },
@@ -584,9 +644,18 @@ open class BackupManager @Inject constructor(
         // restore cleanly onto any device.
         stringPreferencesKey("display_icon_legibility"),
         stringPreferencesKey("display_xmb_layout_adjust"),
+        // Item List Motion (Rewind / Glide), stored by enum name.
+        stringPreferencesKey("display_item_list_motion"),
+        // UMD Slot (Off / Inserted / Inserted & Recent), stored by enum name.
+        stringPreferencesKey("display_umd_slot_mode"),
         stringPreferencesKey("pref_icon_display_mode"),
+        // Animated Images (Animated / Reduced / Static), stored by enum name.
+        stringPreferencesKey("pref_image_motion"),
         // Per-console icon display overrides, one encoded string for every Memory Card.
         stringPreferencesKey("pref_icon_display_mode_by_platform"),
+        // The global sorts for game lists and app lists. Per-list sorts are in list_settings.
+        stringPreferencesKey("pref_sort_mode_games"),
+        stringPreferencesKey("pref_sort_mode_apps"),
         // Theme cascade values. The applied theme's NAME and layout are plain data; the theme's
         // extracted icon files are not bundled, so theme_icons_stamp is deliberately absent —
         // restoring it would point observers at a directory that isn't there.
@@ -727,6 +796,18 @@ open class BackupManager @Inject constructor(
          * right up until a user restores onto a new device and finds a setting missing. Exposing
          * the names lets a test assert coverage instead of trusting memory.
          */
+        /**
+         * The UMD slots a restore may write: only those whose category and game both came back
+         * with the archive. A slot is keyed to its category by a foreign key, so one without it
+         * would fail the whole insert; one without its game would name a game that is not there.
+         */
+        internal fun restorableUmdSlots(
+            slots: List<com.playfieldportal.core.data.database.entity.UmdSlotEntity>,
+            gameIds: Set<Long>,
+            categoryIds: Set<String>,
+        ): List<com.playfieldportal.core.data.database.entity.UmdSlotEntity> =
+            slots.filter { it.gameId in gameIds && it.columnId in categoryIds }
+
         internal val BACKED_UP_KEY_NAMES: Set<String>
             get() = (
                 BACKED_UP_STRING_KEYS.map { it.name } +

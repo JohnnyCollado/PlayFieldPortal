@@ -9,9 +9,11 @@ import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 
 /**
@@ -127,6 +129,42 @@ object PfpThemeCodec {
         val typed = json.encodeToJsonElement(PfpThemeManifest.serializer(), bundle.manifest.forWrite()).jsonObject
         val merged = JsonObject(typed + bundle.manifestExtras.filterKeys { it !in typed })
         return json.encodeToString(JsonObject.serializer(), merged)
+    }
+
+    /**
+     * Copies the bundle in [input] to [out] with only the manifest's name changed. Entries stream
+     * through untouched, so a motion wallpaper is never held and every other byte is preserved.
+     * The manifest is edited as raw JSON, so unknown (newer-format) keys and the schemaVersion
+     * survive the rename exactly as they were.
+     * Returns false (having written nothing useful) when [input] has no readable manifest.
+     */
+    fun rewriteName(input: InputStream, out: OutputStream, name: String): Boolean {
+        var renamed = false
+        ZipInputStream(input).use { zin ->
+            ZipOutputStream(out).use { zip ->
+                while (true) {
+                    val entry = zin.nextEntry ?: break
+                    zip.putNextEntry(ZipEntry(entry.name))
+                    if (entry.name == ENTRY_MANIFEST) {
+                        val raw = runCatching {
+                            val obj = json.parseToJsonElement(zin.readBytes().decodeToString()).jsonObject
+                            // Must still be a readable manifest; the decode is the check.
+                            json.decodeFromJsonElement(PfpThemeManifest.serializer(), obj)
+                            obj
+                        }.getOrNull()
+                        if (raw != null) {
+                            val updated = JsonObject(raw + ("name" to JsonPrimitive(name)))
+                            zip.write(json.encodeToString(JsonObject.serializer(), updated).toByteArray())
+                            renamed = true
+                        }
+                    } else {
+                        zin.copyTo(zip)
+                    }
+                    zip.closeEntry()
+                }
+            }
+        }
+        return renamed
     }
 
     fun write(bundle: PfpThemeBundle): ByteArray =

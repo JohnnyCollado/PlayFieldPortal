@@ -48,6 +48,7 @@ class AchievementAutoMatcherPs3Test {
             coEvery { officialNameOf(any()) } returns null
         },
         ps3TropDirReader, ps3TrophyDiscovery,
+        mockk<com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate>(),
     )
 
     private fun ps3Game(title: String = "Witch and the Hundred Knight, The") =

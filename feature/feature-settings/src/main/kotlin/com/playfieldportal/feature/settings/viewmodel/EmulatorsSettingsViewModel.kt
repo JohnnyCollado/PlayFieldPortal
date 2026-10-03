@@ -2,20 +2,24 @@ package com.playfieldportal.feature.settings.viewmodel
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.IntentType
+import com.playfieldportal.core.domain.model.emulatorkb.EffectiveKb
+import com.playfieldportal.core.domain.model.emulatorkb.EffectiveKbEmulator
 import com.playfieldportal.core.domain.repository.GameRepository
 import kotlinx.coroutines.flow.first
 import android.net.Uri
 import com.playfieldportal.feature.launcher.AppLaunchInspector
 import com.playfieldportal.feature.launcher.DetectableApp
-import com.playfieldportal.feature.launcher.EmulatorAutoConfigService
 import com.playfieldportal.feature.launcher.EmulatorIntentResolver
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.launcher.RetroArchCoreScanner
+import com.playfieldportal.feature.launcher.kb.EmulatorKnowledgeRefresher
+import com.playfieldportal.feature.launcher.kb.EmulatorKnowledgeStore
 import com.playfieldportal.core.data.repository.CoreInventory
 import com.playfieldportal.core.data.repository.RetroArchLink
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,6 +28,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -42,6 +48,26 @@ data class ProfileListItem(
     val autoSource: String? = null,
 )
 
+/**
+ * "Available (Not Installed)" rows from the effective knowledge base: every entry with none of its
+ * packages installed, listed under its first package. [isInstalled] answers for one package name.
+ */
+internal fun kbAvailableItems(
+    entries: List<EffectiveKbEmulator>,
+    isInstalled: (String) -> Boolean,
+): List<ProfileListItem> = entries
+    .map { it.emulator }
+    .filter { e -> e.packageNames.none(isInstalled) }
+    .map { e ->
+        ProfileListItem(
+            id          = e.id,
+            name        = e.name,
+            packageName = e.packageNames.first(),
+            intentType  = e.launch.intentType.name,
+            isCustom    = false,
+        )
+    }
+
 data class ProfileEditorState(
     val isNew: Boolean,
     val originalId: String?,
@@ -54,7 +80,6 @@ data class ProfileEditorState(
     val mimeType: String = "",
     val useFileUri: Boolean = true,
     val useSafUri: Boolean = false,
-    val customCommand: String = "",
     val notes: String = "",
     val isSaving: Boolean = false,
     val errorMessage: String? = null,
@@ -133,10 +158,11 @@ data class EmulatorsSettingsUiState(
 class EmulatorsSettingsViewModel @Inject constructor(
     private val profileRepository: EmulatorProfileRepository,
     private val appLaunchInspector: AppLaunchInspector,
+    private val knowledgeStore: EmulatorKnowledgeStore,
     private val gameRepository: GameRepository,
     private val intentResolver: EmulatorIntentResolver,
     private val retroArchLink: RetroArchLink,
-    private val autoConfig: EmulatorAutoConfigService,
+    private val refresher: EmulatorKnowledgeRefresher,
     @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
@@ -182,7 +208,7 @@ class EmulatorsSettingsViewModel @Inject constructor(
         _uiState.update { it.copy(isDetectingCores = true) }
         viewModelScope.launch {
             retroArchLink.save(treeUri)
-            autoConfig.runOnStartup()
+            refresher.run()
             readRetroArchState()
         }
     }
@@ -192,7 +218,7 @@ class EmulatorsSettingsViewModel @Inject constructor(
         if (!_uiState.value.retroArchLinked) return
         _uiState.update { it.copy(isDetectingCores = true) }
         viewModelScope.launch {
-            autoConfig.runOnStartup()
+            refresher.run()
             readRetroArchState()
         }
     }
@@ -200,34 +226,61 @@ class EmulatorsSettingsViewModel @Inject constructor(
     fun unlinkRetroArch() {
         viewModelScope.launch {
             retroArchLink.clear()
-            autoConfig.runOnStartup()
+            refresher.run()
             _uiState.update { it.copy(retroArchLinked = false, retroArchCoreCount = null, retroArchCores = emptyList()) }
         }
     }
 
     private fun observeProfiles() {
         viewModelScope.launch {
-            profileRepository.profiles.collect { all ->
-                allProfiles = all
-                val installed = profileRepository.getInstalledProfiles()
-                    .filterNot { it.autoSource == "retroarch-core" || it.packageName.contains("retroarch", ignoreCase = true) || it.name.contains("retroarch", ignoreCase = true) }
-                val custom    = all.filter { it.isCustom && !it.isAutoGenerated }
-                val available = all.filter { p ->
-                    !p.isCustom && !p.isAutoGenerated &&
-                        p.autoSource != "retroarch-core" &&
-                        !p.packageName.contains("retroarch", ignoreCase = true) &&
-                        !p.name.contains("retroarch", ignoreCase = true) &&
-                        installed.none { it.packageName == p.packageName }
+            // Loads the knowledge base layers on first use; the flow then carries later changes.
+            knowledgeStore.current()
+            combine(profileRepository.profiles, knowledgeStore.effective) { all, kb -> profileLists(all, kb) }
+                // Package lookups for every knowledge-base entry are blocking binder calls.
+                .flowOn(Dispatchers.IO)
+                .collect { lists ->
+                    allProfiles = lists.all
+                    _uiState.update {
+                        it.copy(
+                            installedProfiles = lists.installed,
+                            availableProfiles = lists.available,
+                            customProfiles    = lists.custom,
+                        )
+                    }
                 }
-                _uiState.update {
-                    it.copy(
-                        installedProfiles = installed.map { p -> p.toListItem() },
-                        availableProfiles = available.map { p -> p.toListItem() },
-                        customProfiles    = custom.map { p -> p.toListItem() },
-                    )
-                }
-            }
         }
+    }
+
+    private class ProfileLists(
+        val all: List<EmulatorProfile>,
+        val installed: List<ProfileListItem>,
+        val available: List<ProfileListItem>,
+        val custom: List<ProfileListItem>,
+    )
+
+    private fun profileLists(all: List<EmulatorProfile>, kb: EffectiveKb): ProfileLists {
+        val installed = profileRepository.getInstalledProfiles()
+            .filterNot { it.autoSource == "retroarch-core" || it.packageName.contains("retroarch", ignoreCase = true) || it.name.contains("retroarch", ignoreCase = true) }
+        val custom    = all.filter { it.isCustom && !it.isAutoGenerated }
+        // The bundled shortcut profiles (PC launchers) plus every knowledge-base entry that
+        // is not installed.
+        val bundledAvailable = all.filter { p ->
+            !p.isCustom && !p.isAutoGenerated &&
+                p.autoSource != "retroarch-core" &&
+                !p.packageName.contains("retroarch", ignoreCase = true) &&
+                !p.name.contains("retroarch", ignoreCase = true) &&
+                installed.none { it.packageName == p.packageName }
+        }.map { p -> p.toListItem() }
+        val pm = appContext.packageManager
+        val kbAvailable = kbAvailableItems(kb.emulators) { pkg ->
+            try { pm.getPackageInfo(pkg, 0); true } catch (_: PackageManager.NameNotFoundException) { false }
+        }
+        return ProfileLists(
+            all       = all,
+            installed = installed.map { p -> p.toListItem() },
+            available = bundledAvailable + kbAvailable,
+            custom    = custom.map { p -> p.toListItem() },
+        )
     }
 
     fun openEditor(profileId: String?) {
@@ -284,7 +337,6 @@ class EmulatorsSettingsViewModel @Inject constructor(
             mimeType             = profile.mimeType ?: "",
             useFileUri           = profile.useFileUri,
             useSafUri            = profile.useSafUri,
-            customCommand        = profile.customCommand ?: "",
             notes                = profile.notes ?: "",
             detectionNote        = detectionNote,
             intentActionText     = profile.intentAction ?: "",
@@ -402,6 +454,8 @@ class EmulatorsSettingsViewModel @Inject constructor(
         val platforms = parseCsv(supportedPlatformIds)
         val (extras, boolExtras) = parseExtras(intentExtrasText)
         val core = coreText.trim()
+        // What the editor cannot show survives an edit: the signer pin and KB link guard the launch.
+        val existing = originalId?.let { id -> allProfiles.firstOrNull { it.id == id } }
         return EmulatorProfile(
             id                   = originalId ?: "draft_test",
             name                 = name.trim().ifEmpty { packageName },
@@ -412,8 +466,12 @@ class EmulatorsSettingsViewModel @Inject constructor(
             mimeType             = mimeType.trimToNull(),
             useFileUri           = useFileUri,
             useSafUri            = useSafUri,
-            customCommand        = customCommand.trimToNull(),
+            customCommand        = null,
             intentExtras         = extras,
+            intentArrayExtras    = existing?.intentArrayExtras.orEmpty(),
+            attachRomData        = existing?.attachRomData ?: false,
+            knowledgeId          = existing?.knowledgeId,
+            signerSha256         = existing?.signerSha256.orEmpty(),
             intentBoolExtras     = boolExtras,
             intentAction         = intentActionText.trimToNull(),
             intentFlags          = parseCsv(intentFlagsText),
@@ -427,7 +485,6 @@ class EmulatorsSettingsViewModel @Inject constructor(
 
     private fun buildPreview(profile: EmulatorProfile, game: Game): IntentPreview {
         val uriMode = when {
-            profile.intentType == IntentType.CUSTOM_COMMAND -> "custom command"
             profile.useSafUri  -> "content:// (FileProvider, read granted)"
             profile.useFileUri -> "file:// (content:// on API 24+)"
             else               -> "content://"
@@ -435,7 +492,7 @@ class EmulatorsSettingsViewModel @Inject constructor(
         val action = when (profile.intentType) {
             IntentType.ACTION_VIEW    -> "android.intent.action.VIEW"
             IntentType.COMPONENT      -> profile.intentAction ?: "android.intent.action.MAIN"
-            IntentType.CUSTOM_COMMAND -> "(custom command)"
+            IntentType.CUSTOM_COMMAND -> "(not supported)"
             IntentType.SHORTCUT       -> "(shortcut)"
         }
         val extras = buildList {
@@ -485,7 +542,6 @@ class EmulatorsSettingsViewModel @Inject constructor(
     fun updateEditorMimeType(value: String)       = updateEditor { copy(mimeType = value) }
     fun updateEditorUseFileUri(value: Boolean)    = updateEditor { copy(useFileUri = value) }
     fun updateEditorUseSafUri(value: Boolean)     = updateEditor { copy(useSafUri = value) }
-    fun updateEditorCustomCommand(value: String)  = updateEditor { copy(customCommand = value) }
     fun updateEditorNotes(value: String)          = updateEditor { copy(notes = value) }
     fun updateEditorIntentAction(value: String)   = updateEditor { copy(intentActionText = value) }
     fun updateEditorIntentExtras(value: String)   = updateEditor { copy(intentExtrasText = value) }
@@ -530,7 +586,7 @@ class EmulatorsSettingsViewModel @Inject constructor(
             updateEditor { copy(errorMessage = "Name is required") }
             return
         }
-        if (editor.packageName.isBlank() && editor.intentType != IntentType.CUSTOM_COMMAND) {
+        if (editor.packageName.isBlank()) {
             updateEditor { copy(errorMessage = "Package name is required") }
             return
         }

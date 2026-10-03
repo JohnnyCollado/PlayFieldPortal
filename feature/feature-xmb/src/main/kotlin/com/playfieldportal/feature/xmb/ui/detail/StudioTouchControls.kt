@@ -62,6 +62,8 @@ internal fun StudioPageLine(
     onApply: () -> Unit = {},
     onRetryFailed: () -> Unit = {},
     onRemoveFailed: () -> Unit = {},
+    // Results before the active source's filters; more than [totalResults] when they hid some.
+    unfilteredTotal: Int = totalResults,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -71,7 +73,8 @@ internal fun StudioPageLine(
         // which drew the text ~3 dp below the centred LB/RB glyphs.
         if (totalResults > 0) {
             Text(
-                "$rangeStart–$rangeEnd of $totalResults",
+                if (unfilteredTotal > totalResults) "$rangeStart–$rangeEnd · $totalResults of $unfilteredTotal shown"
+                else "$rangeStart–$rangeEnd of $totalResults",
                 color = Color.White.copy(alpha = 0.6f), fontSize = 9.5.sp, lineHeight = 12.sp,
                 maxLines = 1,
             )

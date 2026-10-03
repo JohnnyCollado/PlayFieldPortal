@@ -5,6 +5,7 @@ import androidx.room.Embedded
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.playfieldportal.core.data.database.entity.MusicTrackEntity
 import com.playfieldportal.core.data.database.entity.PlaylistEntity
 import com.playfieldportal.core.data.database.entity.PlaylistTrackEntity
@@ -69,6 +70,25 @@ interface PlaylistDao {
     // Re-adding an existing membership is a no-op (composite PK + IGNORE).
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun addTrack(join: PlaylistTrackEntity)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun addTracks(joins: List<PlaylistTrackEntity>)
+
+    // Creates a playlist and its rows together, so a failure never leaves an empty imported
+    // playlist behind. Repeated ids collapse to their first appearance (the PK would ignore the
+    // later ones anyway; distinct() keeps the positions contiguous).
+    @Transaction
+    suspend fun insertWithTracks(name: String, trackIds: List<String>, now: Long): Long {
+        val id = insert(
+            PlaylistEntity(name = name, createdAt = now, updatedAt = now, sortOrder = maxSortOrder() + 1)
+        )
+        addTracks(
+            trackIds.distinct().mapIndexed { index, trackId ->
+                PlaylistTrackEntity(playlistId = id, trackId = trackId, position = index, addedAt = now)
+            }
+        )
+        return id
+    }
 
     @Query("DELETE FROM playlist_tracks WHERE playlist_id = :playlistId AND track_id = :trackId")
     suspend fun removeTrack(playlistId: Long, trackId: String)

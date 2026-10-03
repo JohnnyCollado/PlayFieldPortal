@@ -9,12 +9,17 @@ import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.ui.icons.CustomIcon
 import com.playfieldportal.core.ui.icons.CustomIconLimits
 import com.playfieldportal.core.ui.icons.GifFrameProbe
+import com.playfieldportal.core.ui.icons.UserCategoryIconKeys
 import com.playfieldportal.themekit.CustomizableIcons
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.graphics.asImageBitmap
 
@@ -33,9 +38,10 @@ import androidx.compose.ui.graphics.asImageBitmap
  * path from the image cache via [CustomIconCacheEvictor]. Skip that and the old animation
  * keeps playing — the single easiest bug to ship in this feature.
  *
- * Keys come from [CustomizableIcons] (theme slots plus console slots) and are used verbatim
- * as file names, which makes `isValidKey` load-bearing: it is what stops a crafted key
- * escaping the directory.
+ * Keys come from two families, used verbatim as file names, which makes the gate
+ * ([isStorableKey]) load-bearing: it is what stops a crafted key escaping the directory.
+ * [CustomizableIcons] (theme slots plus console slots) are themeable; [UserCategoryIconKeys]
+ * (`usercat_<categoryId>`) are device-local category images that are never themed or exported.
  */
 @Singleton
 class CustomIconStore @Inject constructor(
@@ -65,7 +71,7 @@ class CustomIconStore @Inject constructor(
      * a different extension removes the old one first, prefs/stamp last.
      */
     suspend fun import(slotKey: String, uri: Uri, mime: String?): ImportResult = withContext(Dispatchers.IO) {
-        if (!CustomizableIcons.isValidKey(slotKey)) {
+        if (!isStorableKey(slotKey)) {
             return@withContext ImportResult(false, "Not a customizable icon slot")
         }
         val ext = mimeToExtension(mime)
@@ -134,12 +140,87 @@ class CustomIconStore @Inject constructor(
      * underneath. Silence there reads as a broken button.
      */
     suspend fun clear(slotKey: String): Boolean = withContext(Dispatchers.IO) {
-        if (!CustomizableIcons.isValidKey(slotKey)) return@withContext false
+        if (!isStorableKey(slotKey)) return@withContext false
         val removed = mimeForExtension.keys.any { ext -> File(dir, "$slotKey.$ext").delete() }
         if (removed) {
             context.pfpDataStore.edit { prefs -> prefs[KEY_CUSTOM_ICONS_STAMP] = System.currentTimeMillis() }
         }
         removed
+    }
+
+    /**
+     * Moves [fromKey]'s file onto [toKey] — the create flow imports to
+     * [UserCategoryIconKeys.DRAFT_KEY] before the category has an id, then lands it here.
+     *
+     * Same commit order as [import]: any [toKey] file under ANOTHER extension goes first (a key
+     * holds one file), then the rename (copy fallback), then evict the dest path, then the
+     * stamp. Returns false with nothing written when either key is invalid or [fromKey] holds
+     * no file, so the caller can tell the user the image didn't land.
+     */
+    suspend fun move(fromKey: String, toKey: String): Boolean = withContext(Dispatchers.IO) {
+        if (!isStorableKey(fromKey) || !isStorableKey(toKey)) return@withContext false
+        val source = mimeForExtension.keys.map { File(dir, "$fromKey.$it") }.firstOrNull { it.isFile }
+            ?: return@withContext false
+        val dest = File(dir, "$toKey.${source.extension}")
+        if (source == dest) return@withContext false
+        for (ext in mimeForExtension.keys) {
+            if (ext != source.extension) File(dir, "$toKey.$ext").delete()
+        }
+        val moved = source.renameTo(dest) || runCatching {
+            // Some filesystems refuse cross-handle renames; fall back to a copy.
+            source.copyTo(dest, overwrite = true)
+            source.delete()
+        }.isSuccess
+        if (!moved) return@withContext false
+        cacheEvictor.evict(dest.absolutePath)
+        context.pfpDataStore.edit { prefs -> prefs[KEY_CUSTOM_ICONS_STAMP] = System.currentTimeMillis() }
+        true
+    }
+
+    /**
+     * The set of slot keys that currently hold a file, re-listed whenever the stamp changes —
+     * the same signal that makes observers reload [load], without paying for any decode.
+     * Lets a screen ask "does this slot have an image?" cheaply.
+     */
+    fun observeStoredKeys(): Flow<Set<String>> =
+        context.pfpDataStore.data
+            .map { prefs -> prefs[KEY_CUSTOM_ICONS_STAMP] }
+            .distinctUntilChanged()
+            .map { listStoredKeys() }
+            .flowOn(Dispatchers.IO)
+
+    private fun listStoredKeys(): Set<String> =
+        dir.listFiles { f -> f.isFile }.orEmpty()
+            .filter { it.extension.lowercase() in mimeForExtension && isStorableKey(it.nameWithoutExtension) }
+            .map { it.nameWithoutExtension }
+            .toSet()
+
+    /**
+     * Sweeps every `usercat_*` file whose category no longer exists: images of deleted
+     * categories, a draft abandoned by a killed create flow, and files from a restored archive
+     * whose categories differ. They are inert — nothing renders a key with no category — but
+     * they leak disk, and a recreated category reusing the id would inherit a stale image.
+     * Only the [UserCategoryIconKeys] family is touched; theme and console picks are never
+     * swept here.
+     *
+     * Same contract as [clear]: returns whether anything was removed, and bumps the stamp only
+     * on a real removal, so observers reload exactly once. Call it once at startup — restore
+     * commits these files BEFORE the categories are upserted, so any other moment can delete
+     * images that are about to be claimed.
+     */
+    suspend fun pruneUserCategoryIcons(liveCategoryIds: Set<String>): Boolean = withContext(Dispatchers.IO) {
+        var removedAny = false
+        for (file in dir.listFiles { f -> f.isFile }.orEmpty()) {
+            val name = file.nameWithoutExtension
+            if (!name.startsWith(UserCategoryIconKeys.PREFIX)) continue
+            // A null id is the draft or a malformed name; either way no category owns it.
+            val owner = UserCategoryIconKeys.categoryIdFor(name)
+            if ((owner == null || owner !in liveCategoryIds) && file.delete()) removedAny = true
+        }
+        if (removedAny) {
+            context.pfpDataStore.edit { prefs -> prefs[KEY_CUSTOM_ICONS_STAMP] = System.currentTimeMillis() }
+        }
+        removedAny
     }
 
     /**
@@ -165,7 +246,7 @@ class CustomIconStore @Inject constructor(
     suspend fun load(): Map<String, CustomIcon> = withContext(Dispatchers.IO) {
         dir.listFiles { f -> f.isFile }.orEmpty().mapNotNull { file ->
             val key = file.nameWithoutExtension
-            if (!CustomizableIcons.isValidKey(key)) return@mapNotNull null
+            if (!isStorableKey(key)) return@mapNotNull null
             val ext = file.extension.lowercase()
             if (ext !in mimeForExtension) return@mapNotNull null
             // Bounds-checked decode: the dir is ours, but the picked file isn't — a 20k×20k
@@ -208,12 +289,15 @@ class CustomIconStore @Inject constructor(
         return CustomIconLimits.validate(probe)
     }
 
+    private fun isStorableKey(key: String): Boolean =
+        CustomizableIcons.isValidKey(key) || UserCategoryIconKeys.isValidKey(key)
+
     private fun mimeToExtension(mime: String?): String? = when (mime?.lowercase()) {
         "image/png" -> "png"
         "image/jpeg" -> "jpg"
         "image/webp" -> "webp"
         "image/bmp" -> "bmp"
-        "image/heif" -> "heif"
+        "image/heif", "image/heic" -> "heif"
         "image/gif" -> "gif"
         else -> null
     }

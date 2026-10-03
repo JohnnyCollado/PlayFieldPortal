@@ -70,7 +70,7 @@ object ShibaLevel {
             val span = band.toLevel?.let { it - band.fromLevel + 1 }
             if (span != null && affordable >= span) {
                 remaining -= span * band.costPerLevel
-                level = band.toLevel + 1
+                level = band.fromLevel + span   // = toLevel + 1: the first level of the next band
             } else {
                 return level + affordable
             }

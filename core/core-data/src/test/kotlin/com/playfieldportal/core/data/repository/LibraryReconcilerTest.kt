@@ -217,4 +217,35 @@ class LibraryReconcilerTest {
             gameRepository.markMissing(listOf("/roms/psx/crash.bin", "/roms/psx/spyro.bin"))
         }
     }
+
+    // ── Surveyed flags, before they are stored ──────────────────────────────
+    // The disc-set derivation needs to know which discs this scan found gone before reconcile
+    // writes it. It must see exactly the flags reconcile is about to write — and none at all
+    // from a survey reconcile would refuse.
+
+    @Test
+    fun `surveyed flags mark a gone file missing and a returned file present`() {
+        val returned = spyro.copy(isMissing = true)
+
+        val flagged = LibraryReconciler.withSurveyedFlags(
+            dbGames = listOf(crash, returned),
+            present = setOf("/roms/psx/spyro.bin"),
+            scanErrored = false,
+        )
+
+        assertTrue(flagged.single { it.id == crash.id }.isMissing)
+        assertFalse(flagged.single { it.id == spyro.id }.isMissing)
+    }
+
+    @Test
+    fun `surveyed flags are the stored flags when the survey is untrustworthy`() {
+        val rows = listOf(crash, spyro)
+
+        assertEquals(rows, LibraryReconciler.withSurveyedFlags(rows, present = null, scanErrored = false))
+        assertEquals(rows, LibraryReconciler.withSurveyedFlags(rows, present = emptySet(), scanErrored = false))
+        assertEquals(
+            rows,
+            LibraryReconciler.withSurveyedFlags(rows, present = setOf("/roms/psx/crash.bin"), scanErrored = true),
+        )
+    }
 }

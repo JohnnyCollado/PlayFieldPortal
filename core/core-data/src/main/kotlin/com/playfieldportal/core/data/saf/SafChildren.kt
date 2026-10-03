@@ -20,10 +20,21 @@ data class SafChild(
     val sizeBytes: Long?,
 )
 
+/** The standard Android "don't scan this folder" marker file. */
+const val NO_MEDIA_MARKER = ".nomedia"
+
+fun SafChild.isNoMediaMarker(): Boolean = !isDirectory && name.equals(NO_MEDIA_MARKER, ignoreCase = true)
+
 // A directory carrying a `.nomedia` marker must not be indexed — its own files and its whole
 // subtree are skipped (the standard Android convention for "don't scan this folder").
-fun List<SafChild>.hasNoMediaMarker(): Boolean =
-    any { !it.isDirectory && it.name.equals(".nomedia", ignoreCase = true) }
+fun List<SafChild>.hasNoMediaMarker(): Boolean = any { it.isNoMediaMarker() }
+
+/**
+ * The listing without its `.nomedia` marker: what a folder holds, as far as anyone reading it for
+ * its content is concerned. PFP writes the marker into every artwork folder, and a folder left
+ * holding only that marker is empty.
+ */
+fun List<SafChild>.withoutNoMediaMarker(): List<SafChild> = filterNot { it.isNoMediaMarker() }
 
 // Directories pruned immediately without entering: dotfiles/hidden dirs (`.thumbnails`, `.trash`,
 // the PFP thumbnail cache, Android cache dirs, etc.). Cheaper than recursing then discarding.

@@ -1,16 +1,19 @@
 package com.playfieldportal.launcher.receiver
 
-import android.Manifest
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import com.playfieldportal.core.common.security.ShortcutIntentSanitizer
+import com.playfieldportal.core.data.repository.PendingShortcutRequest
+import com.playfieldportal.feature.launcher.ShortcutRequestResolver
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /**
@@ -18,12 +21,21 @@ import timber.log.Timber
  *
  * Apps like BannerHub and older Winlator builds still create game shortcuts by sending this
  * broadcast. The broadcast is unauthenticated — any app can send it — so PFP does NOT add the
- * shortcut silently. Instead it hardens the supplied intent ([ShortcutIntentSanitizer]) and posts a
- * confirmation notification; only when the user taps "Add" does [ShortcutConfirmReceiver] (which is
- * NOT exported) actually create the library entry. This prevents both confused-deputy abuse and
- * silent library poisoning.
+ * shortcut silently. It hardens the supplied intent ([ShortcutIntentSanitizer]) and queues the
+ * request; the launcher then asks Add / Ignore in its own modal (with an unread tray row as the way
+ * back to it). Only the user's choice there creates the library entry, which prevents both
+ * confused-deputy abuse and silent library poisoning. This used to be Add / Ignore buttons on an
+ * Android shade notification; PFP's notifications are launcher-only now.
  */
 class InstallShortcutReceiver : BroadcastReceiver() {
+
+    @EntryPoint
+    @InstallIn(SingletonComponent::class)
+    interface Deps {
+        fun shortcutRequestResolver(): ShortcutRequestResolver
+    }
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != ACTION_INSTALL_SHORTCUT) return
@@ -54,61 +66,29 @@ class InstallShortcutReceiver : BroadcastReceiver() {
         } ?: "Another app"
 
         Timber.i("INSTALL_SHORTCUT requested: name=$name host=$hostPackage — awaiting user confirmation")
-        postConfirmation(context, name, intentUri, hostPackage, hostLabel)
-    }
-
-    // Posts an Add / Ignore notification. The add only happens via ShortcutConfirmReceiver, which is
-    // not exported, so the confirmation can't be forged by the sending app.
-    private fun postConfirmation(
-        context: Context,
-        name: String,
-        intentUri: String,
-        hostPackage: String?,
-        hostLabel: String,
-    ) {
-        if (!canPostNotifications(context)) {
-            Timber.w("Cannot prompt for shortcut \"$name\" — notifications not permitted; dropping")
-            return
+        val request = PendingShortcutRequest(
+            id = Integer.toHexString(intentUri.hashCode()),
+            name = name,
+            intentUri = intentUri,
+            hostPackage = hostPackage,
+            hostLabel = hostLabel,
+            requestedAt = System.currentTimeMillis(),
+        )
+        val resolver = EntryPointAccessors.fromApplication(context.applicationContext, Deps::class.java)
+            .shortcutRequestResolver()
+        val pending = goAsync()
+        scope.launch {
+            try {
+                resolver.enqueue(request)
+            } catch (e: Exception) {
+                Timber.e(e, "Could not queue shortcut request \"$name\"")
+            } finally {
+                pending.finish()
+            }
         }
-        val manager = context.getSystemService(NotificationManager::class.java) ?: return
-        manager.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, "Shortcut Requests", NotificationManager.IMPORTANCE_DEFAULT)
-                .apply { description = "Confirm shortcuts other apps want to add to your library" }
-        )
-
-        val notifId = intentUri.hashCode()
-        fun pi(action: String, requestOffset: Int) = PendingIntent.getBroadcast(
-            context,
-            notifId + requestOffset,
-            Intent(context, ShortcutConfirmReceiver::class.java).apply {
-                this.action = action
-                putExtra(ShortcutConfirmReceiver.EXTRA_NOTIF_ID, notifId)
-                putExtra(ShortcutConfirmReceiver.EXTRA_NAME, name)
-                putExtra(ShortcutConfirmReceiver.EXTRA_INTENT_URI, intentUri)
-                putExtra(ShortcutConfirmReceiver.EXTRA_HOST_PACKAGE, hostPackage)
-                putExtra(ShortcutConfirmReceiver.EXTRA_HOST_LABEL, hostLabel)
-            },
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-
-        val notification = Notification.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_input_add)
-            .setContentTitle("Add \"$name\" to your library?")
-            .setContentText("$hostLabel wants to add a game shortcut")
-            .setAutoCancel(true)
-            .addAction(Notification.Action.Builder(null, "Add", pi(ShortcutConfirmReceiver.ACTION_CONFIRM, 0)).build())
-            .addAction(Notification.Action.Builder(null, "Ignore", pi(ShortcutConfirmReceiver.ACTION_DISMISS, 1)).build())
-            .build()
-        manager.notify(notifId, notification)
     }
-
-    private fun canPostNotifications(context: Context): Boolean =
-        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
 
     companion object {
         const val ACTION_INSTALL_SHORTCUT = "com.android.launcher.action.INSTALL_SHORTCUT"
-        private const val CHANNEL_ID = "pfp_shortcut_requests"
     }
 }

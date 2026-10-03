@@ -147,6 +147,13 @@ class MusicRepositoryImpl @Inject constructor(
         return id
     }
 
+    override suspend fun importPlaylist(name: String, trackIds: List<String>): Long {
+        require(trackIds.isNotEmpty()) { "An imported playlist needs at least one track" }
+        val id = playlistDao.insertWithTracks(name, trackIds, System.currentTimeMillis())
+        Timber.i("Playlist imported: \"$name\" (id=$id, ${trackIds.size} tracks)")
+        return id
+    }
+
     override suspend fun renamePlaylist(id: Long, name: String) =
         playlistDao.rename(id, name, System.currentTimeMillis())
 

@@ -27,5 +27,22 @@ enum class ImageFormat(val ext: String) {
                 else                                            -> null
             }
         }
+
+        /**
+         * Whether [header] is an animated image: any GIF, or a WebP whose VP8X header sets the
+         * animation flag. Decides whether a crop is baked into a still PNG or applied at draw time
+         * so the animation survives. [header] should be the first ≥ 21 bytes.
+         */
+        fun isAnimated(header: ByteArray): Boolean {
+            fun at(i: Int) = header.getOrNull(i)?.toInt()?.and(0xFF)
+            fun ascii(from: Int, text: String) =
+                text.withIndex().all { (i, c) -> at(from + i) == c.code }
+            return when (sniff(header)) {
+                GIF  -> true
+                // RIFF(0) size(4) WEBP(8) VP8X(12) chunk size(16) flags(20); bit 1 = animation.
+                WEBP -> ascii(12, "VP8X") && (at(20)?.and(0x02) ?: 0) != 0
+                else -> false
+            }
+        }
     }
 }

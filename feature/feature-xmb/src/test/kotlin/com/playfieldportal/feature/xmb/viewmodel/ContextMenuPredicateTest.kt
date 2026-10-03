@@ -3,13 +3,17 @@ package com.playfieldportal.feature.xmb.viewmodel
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.CategoryType
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Pins [hasContextMenu] so the idle hint and the real Y/Triangle trigger stay in sync. Each
- * case mirrors a branch of `XMBViewModel.onItemLongPress` / `dispatchGamepadAction(OPEN_CONTEXT_MENU)`.
+ * Pins [contextMenuTarget], the one resolver Triangle and long-press both dispatch on, and
+ * [hasContextMenu], which is exactly "the resolver found a target". Pins that a row resolves to the
+ * same kind of menu whichever way it is opened (only `byTouch` differs), that the Shiba Coins hub rows
+ * and mark mode are reachable by long-press, and which rows have a menu at all.
  */
 class ContextMenuPredicateTest {
 
@@ -129,5 +133,95 @@ class ContextMenuPredicateTest {
     fun `achievements summary row has a context menu`() {
         val item = XMBItem(id = XMBViewModel.ACH_SUMMARY_ITEM_ID, title = "Player Card")
         assertTrue(item.hasContextMenu(state(BuiltInCategory.ACHIEVEMENTS, item)))
+    }
+
+    private fun assertSameKind(kind: ContextMenuKind?, item: XMBItem, state: XMBUiState) {
+        val byPad = contextMenuTarget(item, state, byTouch = false)
+        val byTouch = contextMenuTarget(item, state, byTouch = true)
+        assertEquals(kind, byPad?.kind)
+        assertEquals(kind, byTouch?.kind)
+        assertEquals(false, byPad?.byTouch ?: false)
+        assertEquals(kind != null, byTouch?.byTouch ?: false)
+        assertEquals(kind != null, item.hasContextMenu(state))
+    }
+
+    @Test
+    fun `every covered row resolves to the same menu by pad and by touch`() {
+        val cases = listOf(
+            Triple(BuiltInCategory.GAMES, XMBItem(id = "g1", title = "G", gameId = 1L), ContextMenuKind.GAME),
+            Triple(BuiltInCategory.GAMES, XMBItem(id = "psp", title = "PSP", platformId = "psp"), ContextMenuKind.PLATFORM),
+            Triple(
+                BuiltInCategory.GAMES,
+                XMBItem(id = "c1", title = "C", collectionId = 1L, type = XMBItemType.COLLECTION),
+                ContextMenuKind.COLLECTION,
+            ),
+            Triple(BuiltInCategory.GAMES, XMBItem(id = "all", title = "All", type = XMBItemType.ALL_GAMES), ContextMenuKind.ALL_GAMES),
+            Triple(BuiltInCategory.GAMES, XMBItem(id = "cc", title = "Card", type = XMBItemType.CATEGORY_CARD), ContextMenuKind.ROOT_ROW),
+            Triple(BuiltInCategory.GAMES, XMBItem(id = "fav", title = "Fav", type = XMBItemType.FAVORITES), ContextMenuKind.ROOT_ROW),
+            Triple(BuiltInCategory.GAMES, XMBItem(id = "soc", title = "Soc", type = XMBItemType.SOCIAL_ACCOUNT), ContextMenuKind.SOCIAL_ACCOUNT),
+            Triple(BuiltInCategory.GAMES, XMBItem(id = "app", title = "App", packageName = "a.b"), ContextMenuKind.APP),
+            Triple(BuiltInCategory.GAMES, XMBItem(id = "x", title = "Nothing", type = XMBItemType.STANDARD), null),
+            Triple(BuiltInCategory.MUSIC, XMBItem(id = "tr1", title = "T", type = XMBItemType.MUSIC_TRACK), ContextMenuKind.MUSIC),
+            Triple(BuiltInCategory.VIDEO, XMBItem(id = "vid_1", title = "V", type = XMBItemType.VIDEO_FILE), ContextMenuKind.VIDEO),
+            Triple(BuiltInCategory.PHOTO, XMBItem(id = "pho_1", title = "P", type = XMBItemType.PHOTO_FILE), ContextMenuKind.PHOTO),
+        )
+        for ((category, item, kind) in cases) assertSameKind(kind, item, state(category, item))
+    }
+
+    @Test
+    fun `the Shiba Coins hub rows resolve for long-press as well as Triangle`() {
+        for (id in listOf(XMBViewModel.ACH_ALL_ITEM_ID, XMBViewModel.ACH_SUMMARY_ITEM_ID, XMBViewModel.ACH_UNTRACKED_ITEM_ID)) {
+            val item = XMBItem(id = id, title = id)
+            assertSameKind(ContextMenuKind.ACHIEVEMENTS, item, state(BuiltInCategory.ACHIEVEMENTS, item))
+        }
+    }
+
+    @Test
+    fun `an achievements row that is not a hub row has no menu`() {
+        val item = XMBItem(id = "ach_other", title = "Other")
+        assertSameKind(null, item, state(BuiltInCategory.ACHIEVEMENTS, item))
+    }
+
+    @Test
+    fun `mark mode resolves to the marked-games picker for any row, and for no row`() {
+        val game = XMBItem(id = "g1", title = "G", gameId = 1L)
+        val plain = XMBItem(id = "x", title = "Nothing", type = XMBItemType.STANDARD)
+        for (item in listOf(game, plain)) {
+            val marking = state(BuiltInCategory.GAMES, item).copy(markMode = true)
+            assertSameKind(ContextMenuKind.MARK_MODE, item, marking)
+        }
+        val marking = state(BuiltInCategory.GAMES, game).copy(markMode = true)
+        assertEquals(ContextMenuKind.MARK_MODE, contextMenuTarget(null, marking, byTouch = true)?.kind)
+    }
+
+    @Test
+    fun `no focused row and no mark mode resolves to nothing`() {
+        val item = XMBItem(id = "g1", title = "G", gameId = 1L)
+        assertNull(contextMenuTarget(null, state(BuiltInCategory.GAMES, item), byTouch = true))
+    }
+
+    @Test
+    fun `a long-press on a category icon opens that category's menu`() {
+        val item = XMBItem(id = "g1", title = "G", gameId = 1L)
+        val state = state(BuiltInCategory.GAMES, item).copy(showBootSequence = false)
+        val menu = categoryLongPressMenu(state, index = 0)
+        assertEquals(BuiltInCategory.GAMES, menu?.categoryMenuId)
+        assertNull(categoryLongPressMenu(state, index = 5))
+    }
+
+    @Test
+    fun `Triangle on the bar still acts on the row, never on the category`() {
+        val item = XMBItem(id = "g1", title = "G", gameId = 1L)
+        val state = state(BuiltInCategory.GAMES, item).copy(showBootSequence = false)
+        assertEquals(ContextMenuKind.GAME, contextMenuTarget(item, state, byTouch = false)?.kind)
+        assertNull(contextMenuTarget(null, state, byTouch = false))
+    }
+
+    @Test
+    fun `no category menu opens while something is already over the bar or a category is being moved`() {
+        val item = XMBItem(id = "g1", title = "G", gameId = 1L)
+        val state = state(BuiltInCategory.GAMES, item).copy(showBootSequence = false)
+        assertNull(categoryLongPressMenu(state.copy(activeSettingsScreen = "settings_display"), index = 0))
+        assertNull(categoryLongPressMenu(state.copy(categoryMoveSession = CategoryMoveSession(state.categories, 0)), index = 0))
     }
 }

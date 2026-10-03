@@ -38,6 +38,12 @@ class AchievementAutoMatcherTest {
             coEvery { officialNameOf(any()) } returns null
         }
 
+    // Owned unless a test says otherwise: most cases here are about HOW an id is found.
+    private val steamGate = mockk<com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate> {
+        coEvery { verdict(any()) } returns
+            com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate.Verdict.OWNED
+    }
+
     private val ps3TropDirReader =
         mockk<com.playfieldportal.feature.achievements.provider.ps3.Ps3TropDirReader>()
     private val ps3TrophyDiscovery =
@@ -48,7 +54,7 @@ class AchievementAutoMatcherTest {
     private val matcher = AchievementAutoMatcher(
         gameRepository, linkDao, matchNoteDao, raHashResolver, repository, romReader, discOpener,
         steamGridDb, localSteamDiscovery, localSteamOwnership, steamNames, ps3TropDirReader,
-        ps3TrophyDiscovery,
+        ps3TrophyDiscovery, steamGate,
     )
 
     private fun game(id: Long, platform: String, title: String = "Game $id") =
@@ -175,11 +181,13 @@ class AchievementAutoMatcherTest {
     fun `matches steam pc games by title`() = runTest {
         val g = game(1, "windows", title = "Half-Life 2")
         stubGames(g)
+        coEvery { steamNames.resolveAppId("Half-Life 2") } returns "220"
         coEvery { repository.resolveSteamLink(1, "Half-Life 2") } returns "220"
 
         val report = matcher.matchUnlinked()
 
         assertEquals(1, report.matched)
+        coVerify { repository.resolveSteamLink(1, "Half-Life 2") }
     }
 
     @Test
@@ -202,8 +210,9 @@ class AchievementAutoMatcherTest {
         val full = "RESONANCE OF FATE™/END OF ETERNITY™ 4K/HD EDITION"
         val g = Game(id = 1, title = full, platformId = "windows", userTitleOverride = "RESONANCE OF FATE")
         stubGames(g)
-        coEvery { repository.resolveSteamLink(1, "RESONANCE OF FATE") } returns null // the truncated override misses
-        coEvery { repository.resolveSteamLink(1, full) } returns "645730"            // the full title hits
+        coEvery { steamNames.resolveAppId("RESONANCE OF FATE") } returns null // the truncated override misses
+        coEvery { steamNames.resolveAppId(full) } returns "645730"            // the full title hits
+        coEvery { repository.resolveSteamLink(1, full) } returns "645730"
 
         val report = matcher.matchUnlinked()
 
@@ -222,6 +231,67 @@ class AchievementAutoMatcherTest {
         assertEquals(1, report.matched)
         coVerify { repository.linkManually(1, AchievementProvider.STEAM, "220") }
         coVerify(exactly = 0) { repository.resolveSteamLink(any(), any()) } // never reached the title guess
+    }
+
+    // ── Ownership ─────────────────────────────────────────────────────────────
+    //
+    // Steam only serves achievements for a game on the account. A game found on Steam that the
+    // user does not own is a local copy: it is left unlinked, and its achievements page asks for
+    // its folder. An empty owned list proves nothing, so that game is left for the user to answer.
+
+    private val digimon = Game(
+        id = 1, title = "Digimon Story Time Stranger", platformId = "windows",
+        launchIntentUri = "intent:#Intent;action=app.gamenative.LAUNCH_GAME;i.app_id=1984270;S.game_source=STEAM;end",
+    )
+
+    @Test
+    fun `a game not in the Steam library is not linked to Steam, and says why`() = runTest {
+        stubGames(digimon)
+        coEvery { steamGate.verdict("1984270") } returns
+            com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate.Verdict.LOCAL
+
+        val report = matcher.matchUnlinked()
+
+        assertEquals(0, report.matched)
+        coVerify(exactly = 0) { repository.linkManually(any(), AchievementProvider.STEAM, any()) }
+        assertTrue(report.unmatched.single().reason.contains("pick the game's folder"))
+    }
+
+    @Test
+    fun `a title match the user does not own is not linked either`() = runTest {
+        val g = game(1, "windows", title = "Half-Life 2")
+        stubGames(g)
+        coEvery { steamNames.resolveAppId("Half-Life 2") } returns "220"
+        coEvery { steamGate.verdict("220") } returns
+            com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate.Verdict.LOCAL
+
+        val report = matcher.matchUnlinked()
+
+        assertEquals(0, report.matched)
+        coVerify(exactly = 0) { repository.resolveSteamLink(any(), any()) }
+    }
+
+    @Test
+    fun `a game whose ownership can't be told is left for the user to answer`() = runTest {
+        stubGames(digimon)
+        coEvery { steamGate.verdict("1984270") } returns
+            com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate.Verdict.UNKNOWN
+
+        val report = matcher.matchUnlinked()
+
+        assertEquals(0, report.matched)
+        coVerify(exactly = 0) { repository.linkManually(any(), any(), any()) }
+        assertTrue(report.unmatched.single().reason.contains("legit Steam copy"))
+    }
+
+    @Test
+    fun `answering that the copy is a legit Steam one is trusted`() = runTest {
+        coEvery { gameRepository.getById(1) } returns digimon
+        coEvery { steamGate.verdict(any()) } returns
+            com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate.Verdict.LOCAL
+
+        assertTrue(matcher.matchSingleAsSteam(1))
+        coVerify { repository.linkManually(1, AchievementProvider.STEAM, "1984270") }
     }
 
     // ── Explicit per-game RetroAchievements hash match ────────────────────────

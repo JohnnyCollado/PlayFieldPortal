@@ -233,7 +233,7 @@ fun SearchOnlineScreen(
         state.options?.let { menu ->
             PspContextMenuOverlay(
                 title = menu.title,
-                rows = state.optionRows.map { row -> PspMenuRow(label = row.label, checked = row.checked) },
+                rows = state.optionRows.map { row -> PspMenuRow(label = row.label, checked = row.checked, value = row.value, opensMenu = row.opensMenu) },
                 selectedIndex = menu.selectedIndex,
                 onRowActivated = viewModel::onOptionActivated,
                 onDismiss = viewModel::closeOptions,

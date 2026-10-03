@@ -106,6 +106,12 @@ data class ArtworkRecordEntity(
     @ColumnInfo(name = "has_original")
     val hasOriginal: Boolean = false,
 
+    // The file is the UNCROPPED original and [cropRect] is applied while drawing (v52). Set for
+    // animated art in a cropped slot: baking would flatten it to one frame. False = the file is
+    // already framed (baked) or never cropped, so nothing is cropped again on screen.
+    @ColumnInfo(name = "crop_at_draw", defaultValue = "0")
+    val cropAtDraw: Boolean = false,
+
     // The crop profile this asset was framed with (registry key; null = platform default).
     // Written by the Phase 6 crop registry; carried here so a per-game override survives a rescan.
     @ColumnInfo(name = "crop_profile_key")

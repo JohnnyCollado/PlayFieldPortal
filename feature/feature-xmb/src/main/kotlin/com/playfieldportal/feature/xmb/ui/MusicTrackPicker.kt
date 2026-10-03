@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -187,6 +188,8 @@ fun MusicTrackPicker(
                         labelStyle = TextStyle(fontSize = 12.sp),
                         glyphSize = 16.dp,
                         arrangement = Arrangement.spacedBy(18.dp),
+                        // Idles in and blinks out like the crossbar pill (see shouldShowMediaHint).
+                        modifier = Modifier.alpha(com.playfieldportal.core.ui.components.idleHintAlpha(com.playfieldportal.feature.xmb.ui.LocalMediaHintVisible.current)),
                     )
                 }
             }

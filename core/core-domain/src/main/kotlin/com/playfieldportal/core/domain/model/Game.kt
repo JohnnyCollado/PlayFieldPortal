@@ -22,6 +22,9 @@ data class Game(
     val discSetKey: String? = null,
     val discNumber: Int? = null,
     val isDiscPrimary: Boolean = false,
+    // The disc the user picked with Choose Disc. Kept apart from [isDiscPrimary] so a scan, which
+    // re-derives the primary from disc numbers, can tell a pick from its own choice and keep it.
+    val isDiscPreferred: Boolean = false,
     // TV format / region detected from the disc image content at scan time (see [GameRegion]) —
     // never parsed from the filename. Participates in multi-disc set membership: sibling disc
     // folders whose images disagree on region are two dumps, not one set.

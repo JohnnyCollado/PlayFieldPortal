@@ -129,7 +129,16 @@ class GamesFilterTest {
         assertEquals("Search", rows[0].label)
         assertEquals("None", rows[0].value)
         assertEquals("Sort", rows[1].label)
-        assertEquals("Recently Played", rows[1].value)
+        // The list has no sort of its own, so the row says whose sort it is showing.
+        assertEquals("Global: Recently Played", rows[1].value)
+    }
+
+    @Test
+    fun `root names the list's own sort once it has one`() {
+        val state = gamesState(sort = XmbSortMode.RECENT_PLAYED)
+            .copy(listSortOverrides = mapOf("card:ps2" to XmbSortMode.CUSTOM))
+        val rows = gamesFilterRows(state, group = null)
+        assertEquals("Custom", rows[1].value)
     }
 
     @Test
@@ -155,36 +164,56 @@ class GamesFilterTest {
         assertFalse(rows.any { it.id == GAMES_FILTER_CLEAR_ID })
     }
 
+    // The Sort group is the list's own Sort picker: follow the global setting, take one of the
+    // three sorts for this list only, or arrange it by hand.
     @Test
-    fun `sort group lists every game mode and checks the active one`() {
+    fun `sort group offers the global setting, every game mode and custom`() {
         val rows = gamesFilterRows(gamesState(sort = XmbSortMode.DATE_ADDED), GamesFilterGroup.SORT)
-        assertEquals(listOf("Title", "Recently Played", "Date Added"), rows.map { it.label })
-        assertEquals(listOf(false, false, true), rows.map { it.checked })
+        assertEquals(
+            listOf("Use Global Setting (Date Added)", "Title", "Recently Played", "Date Added", "Custom"),
+            rows.map { it.label },
+        )
+        // No sort of its own yet: it is following the global one, so that row is the checked one.
+        assertEquals(listOf(true, false, false, false, false), rows.map { it.checked })
     }
 
     @Test
     fun `sort group ids round-trip back to their mode`() {
         val rows = gamesFilterRows(gamesState(), GamesFilterGroup.SORT)
-        val modes = rows.map { row ->
-            XmbSortMode.entries.first { it.name == row.id.removePrefix(GAMES_FILTER_SORT_PREFIX) }
+        assertEquals(LIST_SORT_DEFAULT_ID, rows.first().id)
+        val modes = rows.drop(1).map { row ->
+            XmbSortMode.entries.first { it.name == row.id.removePrefix(LIST_SORT_PREFIX) }
         }
-        assertEquals(listOf(XmbSortMode.TITLE, XmbSortMode.RECENT_PLAYED, XmbSortMode.DATE_ADDED), modes)
+        assertEquals(
+            listOf(XmbSortMode.TITLE, XmbSortMode.RECENT_PLAYED, XmbSortMode.DATE_ADDED, XmbSortMode.CUSTOM),
+            modes,
+        )
     }
 
     @Test
-    fun `the checkmark marks the active mode, and never more than one row`() {
-        val gameModes = listOf(XmbSortMode.TITLE, XmbSortMode.RECENT_PLAYED, XmbSortMode.DATE_ADDED)
+    fun `the checkmark marks the list's own sort, and never more than one row`() {
+        val listModes = listOf(XmbSortMode.TITLE, XmbSortMode.RECENT_PLAYED, XmbSortMode.DATE_ADDED, XmbSortMode.CUSTOM)
         XmbSortMode.entries.forEach { mode ->
-            val rows = gamesFilterRows(gamesState(sort = mode), GamesFilterGroup.SORT)
-            val checked = rows.filter { it.checked }
-            if (mode in gameModes) {
+            val state = gamesState().copy(listSortOverrides = mapOf("card:ps2" to mode))
+            val checked = gamesFilterRows(state, GamesFilterGroup.SORT).filter { it.checked }
+            if (mode in listModes) {
                 assertEquals("mode=$mode", listOf(mode.label), checked.map { it.label })
             } else {
-                // A music-only mode (Artist / Album) is not in the games cycle. The menu must not
+                // A music-only mode (Artist / Album) is not a games sort. The menu must not
                 // invent a checkmark for a mode this list can never be in.
                 assertTrue("mode=$mode", checked.isEmpty())
             }
         }
+    }
+
+    @Test
+    fun `one list's own sort leaves every other list on the global sort`() {
+        val state = gamesState().copy(
+            selectedPlatformId = "gba",
+            listSortOverrides = mapOf("card:ps2" to XmbSortMode.CUSTOM),
+        )
+        val checked = gamesFilterRows(state, GamesFilterGroup.SORT).single { it.checked }
+        assertEquals(LIST_SORT_DEFAULT_ID, checked.id)
     }
 
     // ── The hint-pill label ─────────────────────────────────────────────────────
@@ -195,12 +224,27 @@ class GamesFilterTest {
     }
 
     @Test
-    fun `a custom gaming category calls it Filter too`() {
+    fun `a custom gaming category's memory card calls it Filter too`() {
         val s = XMBUiState(
             categories = listOf(gamesCategory(gaming = true, id = "retro")),
             selectedCategoryIndex = 0,
+            selectedPlatformId = CATEGORY_CARD_PLATFORM_ID,
         )
         assertEquals("Filter", s.sortActionLabel)
+    }
+
+    // A column's root holds cards, not games: there is nothing to search, only an order to choose.
+    @Test
+    fun `a gaming column's root calls it Sort`() {
+        val custom = XMBUiState(
+            categories = listOf(gamesCategory(gaming = true, id = "retro")),
+            selectedCategoryIndex = 0,
+        )
+        val mainGame = XMBUiState(categories = listOf(gamesCategory(gaming = true)), selectedCategoryIndex = 0)
+        assertEquals("Sort", custom.sortActionLabel)
+        assertEquals("Sort", mainGame.sortActionLabel)
+        assertTrue(custom.canSortCurrentList)
+        assertTrue(mainGame.canSortCurrentList)
     }
 
     @Test

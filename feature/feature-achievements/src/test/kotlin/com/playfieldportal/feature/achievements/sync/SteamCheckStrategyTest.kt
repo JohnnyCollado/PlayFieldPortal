@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.achievements.sync
 
+import com.playfieldportal.core.data.database.dao.AccountAchievementDao
 import com.playfieldportal.core.data.database.dao.SteamOwnedGamesDao
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamOwnership
@@ -27,7 +28,11 @@ class SteamCheckStrategyTest {
     private val steam = mockk<SteamRemoteDataSource>()
     private val ownedDao = mockk<SteamOwnedGamesDao>(relaxed = true)
     private val ownership = mockk<LocalSteamOwnership>(relaxed = true)
-    private val strategy = SteamCheckStrategy(steam, ownedDao, ownership)
+    // No stored set has a blank hidden description unless a test says so.
+    private val coinDao = mockk<AccountAchievementDao> {
+        coEvery { hasBlankHiddenDescription(any(), any()) } returns false
+    }
+    private val strategy = SteamCheckStrategy(steam, ownedDao, ownership, coinDao)
 
     init {
         coEvery { ownedDao.syncedPlaytime(any()) } returns null
@@ -158,6 +163,39 @@ class SteamCheckStrategyTest {
 
         assertEquals(ProviderCheckPlan(), plan)
         coVerify(exactly = 0) { steam.ownedGames() }
+    }
+
+    @Test
+    fun `a manual update fetches an unchanged game with a blank hidden description`() = runTest {
+        owned("440" to 60, "620" to 60)
+        coEvery { coinDao.hasBlankHiddenDescription("STEAM", "440") } returns true
+
+        val plan = strategy.plan(listOf(entry("440", 60), entry("620", 60)), SyncTrigger.MANUAL, NOW)
+
+        assertEquals(setOf(AchievementIdentity(STEAM, "440")), plan.toFetch)
+        assertEquals(setOf(AchievementIdentity(STEAM, "620")), plan.unchanged)
+    }
+
+    @Test
+    fun `an automatic update leaves an unchanged game alone even with a blank hidden description`() = runTest {
+        owned("440" to 60)
+        coEvery { coinDao.hasBlankHiddenDescription("STEAM", "440") } returns true
+
+        val plan = strategy.plan(listOf(entry("440", 60)), SyncTrigger.AUTOMATIC, NOW)
+
+        assertEquals(setOf(AchievementIdentity(STEAM, "440")), plan.unchanged)
+        assertTrue(plan.toFetch.isEmpty())
+    }
+
+    @Test
+    fun `the import-bookmark baseline also backfills a blank hidden description`() = runTest {
+        owned("440" to 60)
+        coEvery { ownedDao.syncedPlaytime("440") } returns 60
+        coEvery { coinDao.hasBlankHiddenDescription("STEAM", "440") } returns true
+
+        val plan = strategy.plan(listOf(entry("440", playtime = null)), SyncTrigger.MANUAL, NOW)
+
+        assertEquals(setOf(AchievementIdentity(STEAM, "440")), plan.toFetch)
     }
 
     private companion object {

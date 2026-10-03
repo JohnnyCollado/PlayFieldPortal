@@ -7,6 +7,7 @@ import android.provider.DocumentsContract
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.feature.achievements.AchievementController
+import com.playfieldportal.feature.achievements.provider.steam.SteamAppListResolver
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -19,8 +20,11 @@ import javax.inject.Singleton
  * Matches a whole folder of Steam-emu game folders in one pass — the batch half of folder-picked
  * matching.
  *
- * The user picks the PARENT folder their Wine/Winlator library lives in; every child folder is
- * inspected, registered and sorted into three piles:
+ * The user picks the PARENT folder their Wine/Winlator library lives in. **Only a folder that maps
+ * onto an INSTALLED library game is touched** (user decision, 2026-09-29): anything else is counted
+ * as not in the library and left alone — never identified, so no marker is written into it, never
+ * registered and never tracked. Adding the game to the Windows card first is how it gets in. The
+ * folders that do map are sorted into three piles:
  *
  *  - **Ready** — an app id and an achievement list the emulator can read. Linked and synced here.
  *  - **Convertible** — an app id but no list yet. Handed to the convert picker, which is the only
@@ -30,10 +34,10 @@ import javax.inject.Singleton
  *    count and deferred to the per-game flow, because a batch must never write a guessed id into
  *    somebody's game folder.
  *
- * Mapping a folder onto a library game reuses the shortcut-to-folder join exactly: normalized title
- * first, then the Steam-name bridge (the app id's official store name, matched the same way), which
- * survives a renamed folder. No fuzzy matching, ever. A folder that maps onto nothing is not an
- * error — it stays a tracked local entry and appears in Shiba Coins after a sync, as it always has.
+ * Mapping a folder onto a library game is [matchInLibrary], the same ladder the importer links
+ * with: normalized title first, then the Steam-name bridge (the app id's official store name,
+ * matched the same way), which survives a renamed folder. The bridge needs the folder's own marker —
+ * an unmarked folder with a name that matches nothing has no id to ask about. No fuzzy matching, ever.
  */
 @Singleton
 class LocalSteamBatchMatcher @Inject constructor(
@@ -43,6 +47,7 @@ class LocalSteamBatchMatcher @Inject constructor(
     private val importer: LocalSteamGameImporter,
     private val achievements: AchievementController,
     private val games: GameDao,
+    private val steamNames: SteamAppListResolver,
 ) {
 
     /** What one batch run did, in the terms the summary and the tray message are written in. */
@@ -51,6 +56,8 @@ class LocalSteamBatchMatcher @Inject constructor(
         val linkedToLibrary: Int = 0,
         val trackedWithoutLibrary: Int = 0,
         val needsIdentifying: Int = 0,
+        /** Steam builds that map onto no installed library game — skipped, nothing written. */
+        val notInLibrary: Int = 0,
         val notSteamBuilds: Int = 0,
         val failed: Int = 0,
         /** Registered folders with no achievement list yet — the convert picker's input. */
@@ -68,7 +75,7 @@ class LocalSteamBatchMatcher @Inject constructor(
                 discovered == 0 ->
                     "No game folders in there. Pick the folder that CONTAINS your game folders, " +
                         "not one game's own folder."
-                registered == 0 && needsIdentifying == 0 ->
+                registered == 0 && needsIdentifying == 0 && notInLibrary == 0 ->
                     "Found $discovered folder(s), but none of them is a Steam build — no steam_api " +
                         "library, so there is nothing for the emulator to track."
                 else -> buildString {
@@ -81,6 +88,12 @@ class LocalSteamBatchMatcher @Inject constructor(
                         append(
                             " $needsIdentifying could not be identified from their names — open each " +
                                 "game's Shiba Coins page and Auto-Match to pick its folder."
+                        )
+                    }
+                    if (notInLibrary > 0) {
+                        append(
+                            " $notInLibrary are not in your library — add them to the Windows card " +
+                                "first, then match again."
                         )
                     }
                     if (notSteamBuilds > 0) append(" $notSteamBuilds are not Steam builds.")
@@ -115,10 +128,14 @@ class LocalSteamBatchMatcher @Inject constructor(
             if (children.isEmpty()) return BatchReport()
 
             // The library once, not once per folder: the mapping ladder reads it for every child.
-            val windowsGames = runCatching { games.getByPlatformOnce(WINDOWS_PLATFORM_ID) }.getOrDefault(emptyList())
-            val byTitle = windowsGames.associateBy { normalize(displayTitleOf(it)) }
+            // Installed games only — a game marked missing is not on this device to be matched.
+            val installed = runCatching { games.getByPlatformOnce(WINDOWS_PLATFORM_ID) }
+                .getOrDefault(emptyList())
+                .filterNot { it.isMissing }
+            val byTitle = installed.associateBy { normalizeLocalSteamTitle(displayTitleOf(it)) }
 
             var needsIdentifying = 0
+            var notInLibrary = 0
             var notSteamBuilds = 0
             var failed = 0
             val ready = mutableListOf<LocalSteamGame>()
@@ -132,10 +149,15 @@ class LocalSteamBatchMatcher @Inject constructor(
                     onProgress(index + 1, children.size)
                     continue
                 }
-                // A folder with no marker still needs a title to resolve, and the folder name is the
-                // best one anyone has for it — so map it to a library game FIRST when possible, and
-                // resolve against that game's real title rather than its folder's.
-                val game = byTitle[normalize(anchor.folderName)]
+                // Map to a library game FIRST, before anything can be written: identifying a folder may
+                // create its steam_appid.txt, and a folder outside the library gets nothing. A mapped
+                // folder resolves against its game's real title rather than its folder's.
+                val game = matchInLibrary(anchor.folderName, anchor.markerAppId, byTitle, steamNames)
+                if (game == null) {
+                    notInLibrary++
+                    onProgress(index + 1, children.size)
+                    continue
+                }
                 when (val outcome = identity.identify(anchor, game)) {
                     is LocalSteamIdentityResolver.Outcome.Resolved -> {
                         val folder = discovery.inspect(tree, anchor.folderDocId)
@@ -175,6 +197,7 @@ class LocalSteamBatchMatcher @Inject constructor(
                 linkedToLibrary = linkResult.linkedToLibrary,
                 trackedWithoutLibrary = linkResult.trackedWithoutLibrary,
                 needsIdentifying = needsIdentifying,
+                notInLibrary = notInLibrary,
                 notSteamBuilds = notSteamBuilds,
                 failed = failed,
                 convertible = convertible,
@@ -183,7 +206,8 @@ class LocalSteamBatchMatcher @Inject constructor(
             Timber.i(
                 "LOCAL_STEAM batch — ${children.size} folder(s): ${linkResult.linkedToLibrary} linked, " +
                     "${linkResult.trackedWithoutLibrary} tracked, ${convertible.size} convertible, " +
-                    "$needsIdentifying unidentified, $notSteamBuilds non-Steam, $failed failed"
+                    "$needsIdentifying unidentified, $notInLibrary not in library, $notSteamBuilds non-Steam, " +
+                    "$failed failed"
             )
             return report
         } finally {
@@ -233,9 +257,6 @@ class LocalSteamBatchMatcher @Inject constructor(
         game.userTitleOverride?.takeIf { it.isNotBlank() }
             ?: game.scrapedTitle?.takeIf { it.isNotBlank() }
             ?: game.title
-
-    // Mirrors the Windows-card dedupe rule: folder names count as titles.
-    private fun normalize(title: String): String = title.lowercase().filter { it.isLetterOrDigit() }
 
     private companion object {
         const val WINDOWS_PLATFORM_ID = "windows"

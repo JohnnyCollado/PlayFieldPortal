@@ -38,11 +38,11 @@ import com.playfieldportal.core.domain.model.ControllerIcon
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.icons.CategoryIconGlyph
 import com.playfieldportal.core.ui.icons.CustomIcon
 import com.playfieldportal.core.ui.icons.CustomIconSurface
-import com.playfieldportal.core.ui.icons.LocalIconAnimating
 import com.playfieldportal.feature.xmb.viewmodel.CustomIconSession
-import com.playfieldportal.themekit.CustomizableIcons
+import com.playfieldportal.feature.xmb.viewmodel.UserCategoryIconSlot
 import com.playfieldportal.themekit.IconSlot
 
 /**
@@ -56,7 +56,7 @@ import com.playfieldportal.themekit.IconSlot
  * model: the whole point of a live editor is that the XMB behind updates as each pick lands.
  *
  * The centre strip previews each slot THROUGH the real render pipeline — CustomIconSurface
- * with LocalIconAnimating provided for the focused slot — so what the user sees here (matte,
+ * with LocalIconFocused provided for the focused slot — so what the user sees here (matte,
  * animation) is exactly what the XMB will draw.
  */
 @Composable
@@ -95,7 +95,9 @@ fun CustomIconsOverlay(
         if (forwardedAction != null) onActionConsumed()
     }
 
-    val slots = remember(session.groupIndex) { CustomizableIcons.group(session.group) }
+    val slots = remember(session.groupIndex, session.userCategorySlots) { session.slots() }
+    // A user slot with no image previews as the bar draws it: the category's catalog glyph.
+    val userSlots = remember(session.userCategorySlots) { session.userCategorySlots.associateBy { it.key } }
     val stripState = rememberLazyListState()
     LaunchedEffect(session.groupIndex, session.slotIndex) {
         if (session.slotIndex in slots.indices) {
@@ -156,10 +158,11 @@ fun CustomIconsOverlay(
             val focused = slots.getOrNull(session.slotIndex)
             if (focused != null) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    CompositionLocalProvider(LocalIconAnimating provides true) {
+                    CompositionLocalProvider(com.playfieldportal.core.ui.motion.LocalIconFocused provides true) {
                         SlotPreview(
                             slot = focused,
                             icon = customIcons[focused.key] ?: themeIcons[focused.key],
+                            userSlot = userSlots[focused.key],
                             modifier = Modifier.size(56.dp),
                         )
                     }
@@ -179,7 +182,7 @@ fun CustomIconsOverlay(
             }
 
             // The group's slots, rendered through the real pipeline. The focused one animates
-            // (LocalIconAnimating=true) exactly as the XMB will draw it.
+            // (LocalIconFocused=true) exactly as the XMB will draw it, under Animated Images.
             LazyRow(
                 state = stripState,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -205,10 +208,11 @@ fun CustomIconsOverlay(
                             .clickable { onSlotFocused(index) }
                             .padding(8.dp),
                     ) {
-                        CompositionLocalProvider(LocalIconAnimating provides selected) {
+                        CompositionLocalProvider(com.playfieldportal.core.ui.motion.LocalIconFocused provides selected) {
                             SlotPreview(
                                 slot = slot,
                                 icon = customIcons[slot.key] ?: themeIcons[slot.key],
+                                userSlot = userSlots[slot.key],
                                 modifier = Modifier.size(40.dp),
                             )
                         }
@@ -280,6 +284,7 @@ private val PICK_MIME = arrayOf(
     "image/gif",
     "image/bmp",
     "image/heif",
+    "image/heic",
 )
 
 private fun groupLabel(group: IconSlot.Group): String = when (group) {
@@ -304,9 +309,23 @@ private fun groupLabel(group: IconSlot.Group): String = when (group) {
  * placeholder.
  */
 @Composable
-private fun SlotPreview(slot: IconSlot, icon: CustomIcon?, modifier: Modifier = Modifier) {
+private fun SlotPreview(
+    slot: IconSlot,
+    icon: CustomIcon?,
+    userSlot: UserCategoryIconSlot? = null,
+    modifier: Modifier = Modifier,
+) {
     if (icon != null) {
         CustomIconSurface(icon = icon, contentDescription = slot.displayName, modifier = modifier)
+        return
+    }
+    if (userSlot != null) {
+        CategoryIconGlyph(
+            iconKey = userSlot.iconKey,
+            contentDescription = slot.displayName,
+            modifier = modifier,
+            categoryId = userSlot.categoryId,
+        )
         return
     }
     if (DefaultSlotGlyph(slot = slot, contentDescription = slot.displayName, modifier = modifier)) return

@@ -7,7 +7,6 @@ import android.media.MediaMetadataRetriever
 import android.net.Uri
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
@@ -29,6 +28,8 @@ import com.playfieldportal.core.domain.model.resolve
 import com.playfieldportal.core.domain.model.TouchNavButtonMode
 import com.playfieldportal.core.domain.model.TouchSensitivity
 import com.playfieldportal.core.domain.model.XYLayout
+import com.playfieldportal.core.domain.model.XmbListMotion
+import com.playfieldportal.core.domain.model.UmdSlotMode
 import com.playfieldportal.core.ui.theme.TextContrastRole
 import com.playfieldportal.core.ui.theme.clampLightnessForContrast
 import com.playfieldportal.core.ui.theme.composite
@@ -58,11 +59,10 @@ private val KEY_SHOW_BOOT          = booleanPreferencesKey("display_show_boot")
 private val KEY_BOOT_ON_RESUME     = booleanPreferencesKey("display_boot_on_resume")
 private val KEY_THERMAL_AWARE      = booleanPreferencesKey("display_thermal_aware")
 private val KEY_RESPECT_BATTERY    = booleanPreferencesKey("display_battery_saver")
-// Must match XMBViewModel.KEY_TOUCH_NAV_BUTTON — both read/write this same pref.
-private val KEY_TOUCH_NAV_BUTTON   = stringPreferencesKey("interface_touch_nav_button")
-// Must match XMBViewModel.KEY_CONTEXT_MENU_HINT — both read/write this same pref.
-private val KEY_CONTEXT_MENU_HINT  = booleanPreferencesKey("interface_context_menu_hint")
-private val KEY_CONTEXT_MENU_HINT_DELAY_SECONDS = floatPreferencesKey("interface_context_menu_hint_delay_seconds")
+// Shared with Initial Setup's Hints & Touch page (and read by the XMB) — see InterfaceHintPrefs.
+private val KEY_TOUCH_NAV_BUTTON   = InterfaceHintPrefs.KEY_TOUCH_NAV_BUTTON
+private val KEY_CONTEXT_MENU_HINT  = InterfaceHintPrefs.KEY_CONTEXT_MENU_HINT
+private val KEY_CONTEXT_MENU_HINT_DELAY_SECONDS = InterfaceHintPrefs.KEY_CONTEXT_MENU_HINT_DELAY_SECONDS
 // Must match XMBViewModel.KEY_TOUCH_SENSITIVITY — both read/write this same pref.
 private val KEY_TOUCH_SENSITIVITY  = stringPreferencesKey("interface_touch_sensitivity")
 // Must match GameLaunchPreferences.KEY_DIRECT_LAUNCH — both read/write this same pref.
@@ -73,6 +73,10 @@ private val KEY_ICON_LEGIBILITY    = stringPreferencesKey("display_icon_legibili
 private val KEY_SOLID_UNFOCUSED_ICONS = booleanPreferencesKey("display_solid_unfocused_icons")
 // Must match XMBViewModel.KEY_TEXT_SHADOW — both read/write this same pref.
 private val KEY_TEXT_SHADOW = booleanPreferencesKey("display_text_shadow")
+// Must match XMBViewModel.KEY_ITEM_LIST_MOTION — both read/write this same pref.
+private val KEY_ITEM_LIST_MOTION = stringPreferencesKey("display_item_list_motion")
+// Must match XMBViewModel.KEY_UMD_SLOT_MODE — both read/write this same pref.
+private val KEY_UMD_SLOT_MODE = stringPreferencesKey("display_umd_slot_mode")
 // ── Font colour (Display ▸ Font Colour) ──────────────────────────────────────
 // Must match XMBViewModel.KEY_TEXT_COLOR — both read/write this same pref.
 // Absent = inherit the theme's own text colour (white on every preset).
@@ -151,6 +155,10 @@ data class DisplaySettingsUiState(
     // bright wallpaper regions. Default on — the shadow is subtle; without it the flat gray
     // subtitle is the one label that washes out.
     val textShadow: Boolean = true,
+    // How the XMB item list steps between rows (Rewind / Glide).
+    val itemListMotion: XmbListMotion = XmbListMotion.DEFAULT,
+    // What gaming columns' UMD slot shows (Off / Inserted / Inserted & Recent).
+    val umdSlotMode: UmdSlotMode = UmdSlotMode.DEFAULT,
     // ── Font colour ──────────────────────────────────────────────────────────
     /** User-picked text colour, or null to inherit the theme's. */
     val textColorArgb: Long? = null,
@@ -259,6 +267,8 @@ class DisplaySettingsViewModel @Inject constructor(
             iconLegibility       = IconLegibilityStyle.fromName(prefs[KEY_ICON_LEGIBILITY]),
             solidUnfocusedIcons  = prefs[KEY_SOLID_UNFOCUSED_ICONS] ?: false,
             textShadow           = prefs[KEY_TEXT_SHADOW] ?: true,
+            itemListMotion       = XmbListMotion.fromName(prefs[KEY_ITEM_LIST_MOTION]),
+            umdSlotMode          = UmdSlotMode.fromName(prefs[KEY_UMD_SLOT_MODE]),
             textColorArgb        = prefs[KEY_TEXT_COLOR],
             textColorExact       = prefs[KEY_TEXT_COLOR_EXACT] ?: false,
             textLegibility       = TextLegibilityStyle.fromName(prefs[KEY_TEXT_LEGIBILITY]),
@@ -346,7 +356,7 @@ class DisplaySettingsViewModel @Inject constructor(
         save { it[KEY_WAVE_STYLE] = next.name }
     }
 
-    /** Cycles None → Offset Shadow → Contour (Dark/Light/Auto) → None, persisting the enum name. */
+    /** Cycles None → Offset Shadow (Dark/Light) → Contour (Dark/Light/Auto) → None, persisting the enum name. */
     fun cycleIconLegibility() {
         // entries, not the deprecated values() cycleWaveStyle still uses.
         val styles = IconLegibilityStyle.entries
@@ -357,6 +367,20 @@ class DisplaySettingsViewModel @Inject constructor(
     fun setSolidUnfocusedIcons(v: Boolean) = save { it[KEY_SOLID_UNFOCUSED_ICONS] = v }
 
     fun setTextShadow(v: Boolean) = save { it[KEY_TEXT_SHADOW] = v }
+
+    /** Cycles Off → Inserted → Inserted & Recent → Off, persisting the enum name. */
+    fun cycleUmdSlotMode() {
+        val modes = UmdSlotMode.entries
+        val next = modes[(modes.indexOf(uiState.value.umdSlotMode) + 1) % modes.size]
+        save { it[KEY_UMD_SLOT_MODE] = next.name }
+    }
+
+    /** Cycles Rewind → Glide → Rewind, persisting the enum name. */
+    fun cycleItemListMotion() {
+        val motions = XmbListMotion.entries
+        val next = motions[(motions.indexOf(uiState.value.itemListMotion) + 1) % motions.size]
+        save { it[KEY_ITEM_LIST_MOTION] = next.name }
+    }
 
     /** Display ▸ XMB Layout ▸ Biblically Accurate PSP XMB: saves the PSP preset for this screen size. */
     fun applyPspLayout() = save { PspXmbLayout.write(it, PspXmbLayout.forWindow(context)) }

@@ -12,12 +12,14 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -50,23 +52,28 @@ class LaunchDispatcherTest {
         source = LaunchSource.PLATFORM_DEFAULT,
     )
 
-    private class Harness(val scope: TestScope) {
-        val context: Context = mockk(relaxed = true)
+    private class Harness(val scope: TestScope, gameBootOn: Boolean = false) {
+        val context: Context = mockk(relaxed = true) {
+            every { packageName } returns "com.test"
+        }
         val recorder: LaunchOutcomeRecorder = mockk(relaxed = true)
         val intent: Intent = mockk(relaxed = true)
         var now = 0L
 
-        // GameBoot switched off in every existing case: awaitPresentation returns immediately,
-        // so these tests keep pinning the dispatcher's own behaviour rather than the gate's.
+        // GameBoot switched off unless a case asks for it: awaitPresentation returns immediately,
+        // so most tests keep pinning the dispatcher's own behaviour rather than the gate's.
         val gameBootPreferences: com.playfieldportal.core.data.repository.GameBootPreferences =
             mockk(relaxed = true) {
-                every { gameBootEnabledFlow } returns kotlinx.coroutines.flow.flowOf(false)
+                every { gameBootEnabledFlow } returns kotlinx.coroutines.flow.flowOf(gameBootOn)
             }
-        val uiMediaStore: com.playfieldportal.core.data.repository.UiMediaStore = mockk(relaxed = true)
+        val uiMediaStore: com.playfieldportal.core.data.repository.UiMediaStore = mockk(relaxed = true) {
+            every { pathFor(any()) } returns null
+        }
         val gameBootAudioPlayer: com.playfieldportal.core.ui.media.UiMediaAudioPlayer = mockk(relaxed = true)
         val gameBootGate = GameBootGate(context, gameBootPreferences, uiMediaStore, gameBootAudioPlayer)
         val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer = mockk(relaxed = true)
         val autoCoreMemory: AutoCoreMemory = mockk(relaxed = true)
+        val gameRepository: com.playfieldportal.core.domain.repository.GameRepository = mockk(relaxed = true)
 
         val dispatcher = LaunchDispatcher(
             context = context,
@@ -77,10 +84,24 @@ class LaunchDispatcherTest {
             menuSound = menuSound,
             autoCoreMemory = autoCoreMemory,
             handoffTracker = GameHandoffTracker({ now }, emptySet()),
+            gameRepository = gameRepository,
         )
     }
 
-    private fun TestScope.harness() = Harness(this)
+    private fun TestScope.harness(gameBootOn: Boolean = false) = Harness(this, gameBootOn)
+
+    /**
+     * The gate reads its media paths on Dispatchers.IO, which the test scheduler cannot drive, so
+     * waiting on it polls with a real sleep (same pattern as GameBootGateTest.eventually).
+     */
+    private fun TestScope.eventually(what: String, timeoutMs: Long = 5_000, condition: () -> Boolean) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (!condition()) {
+            if (System.currentTimeMillis() > deadline) throw AssertionError("Timed out waiting for: $what")
+            Thread.sleep(20)
+            testScheduler.runCurrent()
+        }
+    }
 
     // runTest auto-advances the virtual clock; keep every dispatcher job on that same scheduler so
     // scope.launch work (verdict recording, watchdog) is driven by advanceUntilIdle/advanceTimeBy.
@@ -116,6 +137,53 @@ class LaunchDispatcherTest {
         coVerify(exactly = 1) {
             h.autoCoreMemory.remember("psx", "auto_retroarch_gambatte_libretro_android")
         }
+    }
+
+    // ── Last played ───────────────────────────────────────────────────────────
+    // The launch is the only moment PFP knows a game was played, so this stamp is what
+    // "Recently Played" and the UMD slot's fallback rest on.
+
+    @Test
+    fun `an accepted launch stamps the game as played`() = runTest {
+        val h = harness()
+        coEvery { h.recorder.record(any()) } returns Unit
+
+        h.dispatcher.launch(game, resolved, h.intent)
+
+        coVerify(exactly = 1) { h.gameRepository.markLaunched(7L, any()) }
+    }
+
+    @Test
+    fun `a launch that never started does not stamp the game`() = runTest {
+        val h = harness()
+        coEvery { h.recorder.record(any()) } returns Unit
+        every { h.context.startActivity(any()) } throws android.content.ActivityNotFoundException()
+
+        h.dispatcher.launch(game, resolved, h.intent)
+
+        coVerify(exactly = 0) { h.gameRepository.markLaunched(any(), any()) }
+    }
+
+    @Test
+    fun `a failed stamp never fails the launch`() = runTest {
+        val h = harness()
+        coEvery { h.recorder.record(any()) } returns Unit
+        coEvery { h.gameRepository.markLaunched(any(), any()) } throws IllegalStateException("db closed")
+
+        val result = h.dispatcher.launch(game, resolved, h.intent)
+
+        assertIs<LaunchDispatchResult.Accepted>(result)
+    }
+
+    @Test
+    fun `a shortcut launch stamps the game only when it started`() = runTest {
+        val h = harness()
+
+        h.dispatcher.launchShortcut(game) { Result.failure(IllegalStateException("no shortcut")) }
+        coVerify(exactly = 0) { h.gameRepository.markLaunched(any(), any()) }
+
+        h.dispatcher.launchShortcut(game) { Result.success(Unit) }
+        coVerify(exactly = 1) { h.gameRepository.markLaunched(7L, any()) }
     }
 
     @Test
@@ -320,6 +388,86 @@ class LaunchDispatcherTest {
 
         h.dispatcher.dismissRecovery()
         assertNull(h.dispatcher.recoveryRequests.value)
+    }
+
+    // ── Shortcut launches (BannerHub / GameHub / any pinned launcher shortcut) ─────────────
+
+    @Test
+    fun `shortcut launch waits for GameBoot before starting the shortcut`() = runTest {
+        val h = harness(gameBootOn = true)
+        var started = false
+
+        val launching = async { h.dispatcher.launchShortcut(game) { started = true; Result.success(Unit) } }
+        eventually("the GameBoot presentation is raised") { h.gameBootGate.active.value != null }
+
+        assertFalse(started, "The shortcut must not start while GameBoot is on screen")
+        h.gameBootGate.onPresentationFinished()
+        eventually("the shortcut launch completes") { launching.isCompleted }
+
+        assertTrue(started, "The shortcut must start once GameBoot finishes")
+        assertTrue(launching.await().isSuccess)
+    }
+
+    @Test
+    fun `shortcut launch with GameBoot off starts immediately`() = runTest {
+        val h = harness()
+        var started = false
+
+        val result = h.dispatcher.launchShortcut(game) { started = true; Result.success(Unit) }
+
+        assertTrue(started)
+        assertTrue(result.isSuccess)
+        assertNull(h.gameBootGate.active.value)
+    }
+
+    @Test
+    fun `a failed shortcut start is handed back to the caller`() = runTest {
+        val h = harness()
+
+        val result = h.dispatcher.launchShortcut(game) { Result.failure(IllegalStateException("gone")) }
+
+        assertTrue(result.isFailure)
+        assertEquals("gone", result.exceptionOrNull()?.message)
+    }
+
+    // ── Error codes (notification details plan §10) ─────────────────────────────────────────
+
+    @Test
+    fun `each immediate failure carries its error code`() = runTest {
+        val cases = listOf(
+            android.content.ActivityNotFoundException("nope") to "LN-4001",
+            SecurityException("denied") to "LN-4002",
+            IllegalStateException("weird") to "LN-9001",
+        )
+        for ((thrown, code) in cases) {
+            val h = harness()
+            every { h.context.startActivity(any()) } throws thrown
+            h.dispatcher.launch(game, resolved, h.intent)
+            coVerify { h.recorder.record(match { it.errorCode == code }) }
+        }
+    }
+
+    @Test
+    fun `a launch that never came to the front carries LN-4003`() = runTest {
+        val h = harness()
+        h.launchAccepted()
+        h.now = LaunchDispatcher.STOP_WINDOW_MS + 1
+        advanceTimeBy(LaunchDispatcher.STOP_WINDOW_MS + 1)
+        advanceUntilIdle()
+
+        coVerify { h.recorder.record(match { it.errorCode == "LN-4003" }) }
+    }
+
+    @Test
+    fun `a successful launch carries no error code`() = runTest {
+        val h = harness()
+        h.launchAccepted()
+        h.dispatcher.onHostStopped()
+        h.now = 60_000
+        h.dispatcher.onHostResumed()
+        advanceUntilIdle()
+
+        coVerify { h.recorder.record(match { it.status == LaunchOutcomeStatus.SUCCEEDED && it.errorCode == null }) }
     }
 
     private fun outcome(status: LaunchOutcomeStatus) = LaunchOutcome(

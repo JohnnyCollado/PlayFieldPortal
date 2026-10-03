@@ -2,6 +2,7 @@ package com.playfieldportal.feature.artwork.api
 
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.entity.GameEntity
+import com.playfieldportal.core.domain.model.GameContentType
 import com.playfieldportal.core.domain.model.MetadataOverrides
 import com.playfieldportal.feature.artwork.MetadataRepository
 import com.playfieldportal.feature.artwork.match.MatchProvider
@@ -12,7 +13,9 @@ import com.playfieldportal.feature.artwork.match.MetadataPreset
 import com.playfieldportal.feature.artwork.match.MetadataPreview
 import com.playfieldportal.feature.artwork.store.ArtworkStore
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.Collections
@@ -45,6 +48,16 @@ data class ScrapeProgress(
     val title: String,
     val scrapeSource: String = "",   // e.g. "TheGamesDB", "SteamGridDB"
     val scrapeAsset: String = "",    // e.g. "Box Art", "Hero", "Logo"
+    /** Set on the tick emitted right after a game settles: what happened to it, for a Results list. */
+    val finished: GameScrapeOutcome? = null,
+)
+
+/** One game's result in a scrape pass. [message] is the provider's or the exception's words. */
+data class GameScrapeOutcome(
+    val gameId: Long,
+    val title: String,
+    val success: Boolean,
+    val message: String? = null,
 )
 
 @Singleton
@@ -108,6 +121,8 @@ class ArtworkRepository @Inject constructor(
                 title           = before.title,
                 platformId      = before.platformId,
                 romPath         = before.romPath,
+                // An artwork action: it never changes the name the library shows.
+                options         = ScrapeOptions(fillTitle = false),
                 onAssetProgress = onAssetProgress,
             )
             val after = gameDao.getById(gameId)
@@ -383,6 +398,15 @@ class ArtworkRepository @Inject constructor(
             fetchForGames(games.map { it.id to Triple(it.title, it.platformId, it.romPath) }, onProgress, metadataOnly = true)
         }
 
+    // The same text-only pass over the whole library — the All Games card's menu action. Real games
+    // only, which is what All Games shows: an app row backs a shortcut's artwork and has no game
+    // metadata to look up.
+    suspend fun updateMetadataForAllGames(onProgress: (ScrapeProgress) -> Unit): ScrapeProgress =
+        withContext(Dispatchers.IO) {
+            val games = gameDao.getAll().filter { it.contentType == GameContentType.GAME.name }
+            fetchForGames(games.map { it.id to Triple(it.title, it.platformId, it.romPath) }, onProgress, metadataOnly = true)
+        }
+
     // Shared scrape loop with rich progress and per-game error isolation.
     private suspend fun fetchForGames(
         games: List<Pair<Long, Triple<String, String, String?>>>,
@@ -395,8 +419,11 @@ class ArtworkRepository @Inject constructor(
         var ok = 0
         var fail = 0
         games.forEachIndexed { index, (id, info) ->
+            // A stop from the notification panel lands here, between games, not mid-write.
+            currentCoroutineContext().ensureActive()
             val (title, platformId, romPath) = info
             onProgress(ScrapeProgress(index + 1, games.size, ok, fail, title))
+            var error: Throwable? = null
             val result = runCatching {
                 metadataRepository.fetchForGame(
                     gameId   = id,
@@ -409,8 +436,18 @@ class ArtworkRepository @Inject constructor(
                             scrapeSource = source, scrapeAsset = asset))
                     },
                 )
+            }.onFailure {
+                if (it is kotlinx.coroutines.CancellationException) throw it
+                error = it
             }.getOrNull()
-            if (result?.success == true) ok++ else fail++
+            val success = result?.success == true
+            if (success) ok++ else fail++
+            onProgress(
+                ScrapeProgress(
+                    index + 1, games.size, ok, fail, title,
+                    finished = GameScrapeOutcome(id, title, success, result?.message ?: error?.message),
+                )
+            )
             if (index < games.size - 1) delay(500)
         }
         return ScrapeProgress(games.size, games.size, ok, fail, "")

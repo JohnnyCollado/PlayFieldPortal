@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.database.entity.AccountAchievementEntity
+import com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.GameCoins
 import com.playfieldportal.core.domain.achievement.LocalCopyOwnership
@@ -11,19 +12,34 @@ import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.components.PspMenuCue
+import com.playfieldportal.core.ui.components.PspMenuNav
+import com.playfieldportal.core.ui.components.PspMenuOutcome
+import com.playfieldportal.core.ui.sound.MenuSoundPlayer
+import com.playfieldportal.core.ui.sound.MenuSoundSink
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
 import com.playfieldportal.feature.achievements.provider.localsteam.AppIdSource
 import com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamFolderLinker
+import com.playfieldportal.feature.artwork.match.ScoredStorefrontCandidate
+import com.playfieldportal.feature.artwork.match.Storefront
+import com.playfieldportal.feature.artwork.match.StorefrontCandidate
 import com.playfieldportal.feature.artwork.match.StorefrontMatchResult
 import timber.log.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -34,8 +50,8 @@ import javax.inject.Inject
 // confirm a tracked game, rebuilt to match the Tracked/Untracked browser. The contract is the
 // library's: a pinned Search row at navigation position 0, stable-id focus so sorting, searching,
 // switching view and data refreshes keep the cursor on the same coin, L1/R1 across the All /
-// Earned / Locked views, and a modal Triangle Options menu that owns Sort, Sync Now and Change
-// Match. What is NOT rebuilt: loading, syncing, matching and the Auto-Match flow, which are
+// Earned / Locked views, and a modal Triangle Options menu that owns Sort, Update Achievements and
+// Change Match. What is NOT rebuilt: loading, syncing, matching and the Auto-Match flow, which are
 // carried over unchanged.
 
 enum class CoinSort(val label: String) { TIER("Tier"), EARNED("Earned"), RAREST("Rarest") }
@@ -104,6 +120,13 @@ data class CoinRow(
     val isHideable: Boolean get() = isHidden && !isEarned
 }
 
+/**
+ * One of a game's achievement sets, for the page's source chips: a library game holding more than
+ * one (an owned Steam game also played locally) lists each with its own progress.
+ */
+@Immutable
+data class CoinSource(val provider: AchievementProvider, val earned: Int, val total: Int)
+
 /** A row of the coin list. Focus, the footer and Confirm all key off which kind this is. */
 @Immutable
 sealed interface CoinListItem {
@@ -144,6 +167,7 @@ sealed interface CoinOption {
     data class Sort(val sort: CoinSort) : CoinOption
     data object SyncNow : CoinOption
     data object ChangeMatch : CoinOption
+    data object Unlink : CoinOption
 }
 
 /** A row of the Options menu: its label, action, and whether it is the active choice. */
@@ -151,6 +175,12 @@ data class CoinOptionRow(
     val label: String,
     val option: CoinOption,
     val checked: Boolean = false,
+    /** Drawn red; a destructive row is also last, and asks before it acts. */
+    val isDestructive: Boolean = false,
+    /** The row's current setting, drawn at the right edge (Sort: "Tier"). */
+    val value: String? = null,
+    /** Activating this row opens a list, so a › is drawn. */
+    val opensMenu: Boolean = false,
 )
 
 /**
@@ -170,6 +200,9 @@ data class ShibaCoinsUiState(
     val platformLabel: String = "",
     val provider: AchievementProvider = AchievementProvider.RETRO_ACHIEVEMENTS,
     val linked: Boolean = false,
+    // Every set this library game holds, in link order; empty unless there are at least two. The
+    // shown one is [provider]. L1/R1 move between them, so the view moves to the D-pad alone.
+    val sources: List<CoinSource> = emptyList(),
     // LOCAL_STEAM only: owned-vs-local classification from the link row; null = unknown (the
     // owned-games cache was never populated) and the UI stays silent about ownership.
     val ownership: LocalCopyOwnership? = null,
@@ -201,6 +234,8 @@ data class ShibaCoinsUiState(
     val focusedRowId: String? = null,
     /** The Triangle Options menu, while open. It owns controller input. */
     val options: CoinOptionsMenu? = null,
+    /** The Unlink Game confirm is up. It owns controller input (the screen's modal host). */
+    val unlinkConfirm: Boolean = false,
     // Hidden coins the user chose to reveal (confirm/tap toggles). Session-only: cleared on open.
     val revealedIds: Set<String> = emptySet(),
     val isSyncing: Boolean = false,
@@ -219,6 +254,8 @@ data class ShibaCoinsUiState(
     val requestFolderPick: Boolean = false,
     // The ambiguous-match picker, reusing the storefront panel verbatim.
     val storefrontMatch: StorefrontMatchUi? = null,
+    /** The picker is Change Match's Steam title search, not the folder-picked identify step. */
+    val steamPick: Boolean = false,
     val kitPrompt: LocalSteamKitPrompt? = null,
     // The terminal NO_EMU_DATA line, in the folder's own terms.
     val noEmuDataReason: String? = null,
@@ -227,6 +264,9 @@ data class ShibaCoinsUiState(
     val message: String? = null,
     val closed: Boolean = false,
 ) {
+    /** More than one set for this game: L1/R1 switch between them instead of changing the view. */
+    val hasSourceSwitch: Boolean get() = sources.size > 1
+
     /** Navigation position: 0 is the pinned Search row, 1 is the first list row. */
     val focusPosition: Int
         get() = focusedRowId?.let { id -> rows.indexOfFirst { it.id == id } + 1 } ?: 0
@@ -271,18 +311,21 @@ data class ShibaCoinsUiState(
 }
 
 /**
- * The Options menu rows for [state], shaped like the library's: the root names each list with its
- * current choice, and a list checks the active one. Refresh this game is offered for an installed
+ * The Options menu rows for [state], shaped like the library's: the root shows each list's
+ * current choice as the row's value, and a list checks the active one. Update Achievements is offered for an installed
  * game with a provider identity; Change Match only for a Steam library game, the one match the
  * user supplied.
  */
 fun coinOptionRows(state: ShibaCoinsUiState): List<CoinOptionRow> = when (state.options?.group) {
     null -> buildList {
-        add(CoinOptionRow("Sort (${state.sort.label})", CoinOption.OpenGroup(CoinOptionGroup.SORT)))
+        add(CoinOptionRow("Sort", CoinOption.OpenGroup(CoinOptionGroup.SORT), value = state.sort.label, opensMenu = true))
         // A sync in flight keeps its row so the menu doesn't reflow under the cursor; it just
         // says so and does nothing when picked.
-        if (state.canSync) add(CoinOptionRow(if (state.isSyncing) "Refreshing…" else "Refresh this game", CoinOption.SyncNow))
-        if (state.hasChangeMatch) add(CoinOptionRow("Change Match", CoinOption.ChangeMatch))
+        if (state.canSync) add(CoinOptionRow(if (state.isSyncing) "Updating…" else "Update Achievements", CoinOption.SyncNow))
+        if (state.hasChangeMatch) add(CoinOptionRow("Change Match", CoinOption.ChangeMatch, opensMenu = true))
+        // Any linked library game can drop its link — both, for a game holding two sets — and go
+        // back to its Auto-Match panel. An account entry has no link of its own to remove.
+        if (state.linked && !state.accountOnly) add(CoinOptionRow("Unlink Game", CoinOption.Unlink, isDestructive = true))
     }
     CoinOptionGroup.SORT -> CoinSort.entries.map { sort ->
         CoinOptionRow(sort.label, CoinOption.Sort(sort), checked = sort == state.sort)
@@ -315,17 +358,25 @@ fun shibaCoinsHelperItems(state: ShibaCoinsUiState): List<ControllerPromptItem> 
         confirm?.let { add(ControllerPromptItem(GamepadAction.SELECT, it)) }
         add(ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"))
         add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
-        add(ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Change View"))
+        if (state.hasSourceSwitch) {
+            add(ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Switch Source"))
+            add(ControllerPromptItem(listOf(GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT), "Change View"))
+        } else {
+            add(ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Change View"))
+        }
         add(ControllerPromptItem(GamepadAction.BACK, "Back"))
     }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class ShibaCoinsViewModel @Inject constructor(
     private val gameRepository: GameRepository,
     private val achievementRepository: AchievementController,
     private val autoMatcher: AchievementAutoMatcher,
     private val folderLinker: LocalSteamFolderLinker,
+    private val steamGate: com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate,
+    private val menuSound: MenuSoundPlayer,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ShibaCoinsUiState())
@@ -334,6 +385,12 @@ class ShibaCoinsViewModel @Inject constructor(
     private var gameId: Long = -1
     private var target: ShibaCoinsTarget = ShibaCoinsTarget.LibraryGame(-1)
     private val loadJobs = mutableListOf<Job>()
+
+    // The set the user chose on a game with more than one; null shows the one its link read reports.
+    private val selectedSource = MutableStateFlow<AchievementProvider?>(null)
+
+    // The provider this game's platform matches with — what an unlinked page shows and Auto-Matches.
+    private var platformProvider: AchievementProvider? = null
 
     fun load(target: ShibaCoinsTarget) {
         this.target = target
@@ -356,10 +413,12 @@ class ShibaCoinsViewModel @Inject constructor(
                 storefrontMatch = null,
                 kitPrompt = null,
                 noEmuDataReason = null,
+                sources = emptyList(),
             ).withRows()
         }
         loadJobs.forEach { it.cancel() }
         loadJobs.clear()
+        selectedSource.value = (target as? ShibaCoinsTarget.LibraryGame)?.provider
         when (target) {
             is ShibaCoinsTarget.LibraryGame -> loadLibraryGame(target.gameId)
             is ShibaCoinsTarget.AccountEntry -> loadAccountEntry(target)
@@ -368,43 +427,104 @@ class ShibaCoinsViewModel @Inject constructor(
 
     private fun loadLibraryGame(id: Long) {
         gameId = id
+        platformProvider = null   // the last game's platform must not stand in for this one's
         _state.update { it.copy(accountOnly = false, installed = true) }
         loadJobs += viewModelScope.launch {
             val game = gameRepository.getById(id)
             val installed = game?.isMissing != true
+            platformProvider = providerForPlatform(game?.platformId)
             _state.update {
                 it.copy(
                     title = game?.displayTitle ?: "",
                     platformLabel = game?.platformId?.let(::platformDisplay) ?: "",
-                    provider = providerForPlatform(game?.platformId),
+                    // The link, when it has already arrived, names the provider; the platform's
+                    // is only the unlinked default.
+                    provider = if (it.linked) it.provider else providerForPlatform(game?.platformId),
                     installed = installed,
                 )
             }
+            // Before the refresh below, which is a network call the prompt must not wait on.
+            if (game != null && installed) askForFolderIfLocalCopy(game)
             // Cached rows are already showing; at most one check if the detail is over a day
             // old. Never blocks the page and never runs for a game that isn't on this device.
             if (installed) runCatching { achievementRepository.refreshGameIfStale(id) }
                 .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
         }
         loadJobs += viewModelScope.launch {
-            combine(
-                achievementRepository.observeGameCoins(id),
-                achievementRepository.observeCoins(id),
-                achievementRepository.observeLink(id),
-            ) { summary, coins, link ->
-                Triple(summary, coins, link)
-            }.collect { (summary, coins, link) ->
-                _state.update {
-                    it.copy(
-                        summary = summary,
-                        lastSyncedAt = summary?.lastSyncedAt,
-                        coins = coins.map { e -> e.toRow() },
-                        linked = link != null,
-                        provider = link?.let { l -> AchievementProvider.fromName(l.provider) } ?: it.provider,
-                        ownership = link?.ownership?.let(LocalCopyOwnership::fromName),
-                    ).withRows()
-                }
+            // Links drive which set is read. onStart: a page must render before (and without) them.
+            combine(achievementRepository.observeLinks(id).onStart { emit(emptyList()) }, selectedSource) { links, selected ->
+                links to selected
             }
+                .flatMapLatest { (links, selected) ->
+                    combine(gameSetFlow(id, links, selected), sourcesFlow(links)) { set, sources -> set to sources }
+                }
+                .collect { (set, sources) ->
+                    val (summary, coins, link) = set
+                    _state.update {
+                        it.copy(
+                            summary = summary,
+                            lastSyncedAt = summary?.lastSyncedAt,
+                            coins = coins.map { e -> e.toRow() },
+                            linked = link != null,
+                            // Unlinked, the page falls back to its platform's provider, so it offers
+                            // that platform's match flow rather than the link it just lost.
+                            provider = link?.let { l -> AchievementProvider.fromName(l.provider) }
+                                ?: platformProvider ?: it.provider,
+                            ownership = link?.ownership?.let(LocalCopyOwnership::fromName),
+                            sources = sources,
+                        ).withRows()
+                    }
+                }
         }
+    }
+
+    /**
+     * The set to show: the one the user chose among [links], read by its provider identity, or —
+     * with no choice, or a choice the game no longer links — the game-keyed reads, which report the
+     * game's first link.
+     */
+    private fun gameSetFlow(
+        gameId: Long,
+        links: List<ProviderGameLinkEntity>,
+        selected: AchievementProvider?,
+    ): Flow<Triple<GameCoins?, List<AccountAchievementEntity>, ProviderGameLinkEntity?>> {
+        val chosen = selected?.let { p -> links.firstOrNull { it.provider == p.name }?.let { p to it } }
+            ?: return combine(
+                achievementRepository.observeGameCoins(gameId),
+                achievementRepository.observeCoins(gameId),
+                achievementRepository.observeLink(gameId),
+            ) { summary, coins, link -> Triple(summary, coins, link) }
+        val (provider, link) = chosen
+        return combine(
+            achievementRepository.observeAccountGameCoins(provider, link.providerGameId),
+            achievementRepository.observeAccountCoins(provider, link.providerGameId),
+        ) { summary, coins -> Triple(summary, coins, link) }
+    }
+
+    /** Each set's progress for the source chips — only for a game with more than one set. */
+    private fun sourcesFlow(links: List<ProviderGameLinkEntity>): Flow<List<CoinSource>> {
+        val sets = links.mapNotNull { l -> AchievementProvider.fromName(l.provider)?.let { it to l.providerGameId } }
+        if (sets.size < 2) return flowOf(emptyList())
+        return combine(
+            sets.map { (provider, providerGameId) ->
+                achievementRepository.observeAccountGameCoins(provider, providerGameId).map { coins ->
+                    CoinSource(provider, earned = coins?.earned?.total ?: 0, total = coins?.total?.total ?: 0)
+                }
+            },
+        ) { it.toList() }
+    }
+
+    /** Touch: a source chip picks that set. */
+    fun selectSource(provider: AchievementProvider) {
+        if (_state.value.sources.any { it.provider == provider }) selectedSource.value = provider
+    }
+
+    /** L1/R1 on a game with more than one set: show the next one. */
+    private fun cycleSource(dir: Int) {
+        val s = _state.value
+        val providers = s.sources.map { it.provider }
+        val current = providers.indexOf(s.provider).coerceAtLeast(0)
+        selectedSource.value = providers[(current + dir).mod(providers.size)]
     }
 
     private fun loadAccountEntry(entry: ShibaCoinsTarget.AccountEntry) {
@@ -468,6 +588,8 @@ class ShibaCoinsViewModel @Inject constructor(
     /** Controller input forwarded from the shell while this overlay is open. */
     fun handleGamepadAction(action: GamepadAction) {
         val s = _state.value
+        // The Unlink confirm's own host takes the press; if one still arrives, it is not the page's.
+        if (s.unlinkConfirm) return
         // The Auto-Match prompts capture input while open: they are modal within the screen.
         when (s.autoMatchStep) {
             AutoMatchStep.CONFIRM_COPY -> {
@@ -522,15 +644,18 @@ class ShibaCoinsViewModel @Inject constructor(
         when (action) {
             GamepadAction.NAVIGATE_UP -> moveFocus(-1)
             GamepadAction.NAVIGATE_DOWN -> moveFocus(1)
-            // L / R change the view. LEFT / RIGHT stay as quiet aliases, as in the library.
-            GamepadAction.PREV_CATEGORY, GamepadAction.NAVIGATE_LEFT -> cycleView(-1)
-            GamepadAction.NEXT_CATEGORY, GamepadAction.NAVIGATE_RIGHT -> cycleView(1)
+            // L / R change the view, with LEFT / RIGHT as quiet aliases, as in the library. A game
+            // with two sets gives L / R to the source instead, and the view keeps the D-pad.
+            GamepadAction.PREV_CATEGORY -> if (s.hasSourceSwitch) cycleSource(-1) else cycleView(-1)
+            GamepadAction.NEXT_CATEGORY -> if (s.hasSourceSwitch) cycleSource(1) else cycleView(1)
+            GamepadAction.NAVIGATE_LEFT -> cycleView(-1)
+            GamepadAction.NAVIGATE_RIGHT -> cycleView(1)
             GamepadAction.SELECT -> activateFocused()
             // Square always means "go to Search"; pressed on Search itself it starts typing.
             GamepadAction.CHANGE_SORT -> if (s.searchFocused) startSearchEdit() else focusSearch()
             GamepadAction.OPEN_CONTEXT_MENU -> openOptions()
             GamepadAction.BACK -> close()
-            GamepadAction.HOME -> Unit
+            GamepadAction.HOME, GamepadAction.SHIFT, GamepadAction.CAPS_LOCK -> Unit
         }
     }
 
@@ -612,20 +737,30 @@ class ShibaCoinsViewModel @Inject constructor(
         listed.copy(options = CoinOptionsMenu(selectedIndex = active, group = group))
     }
 
+    /**
+     * The shared PSP-panel rules ([PspMenuNav]): the cursor clamps, Back climbs from a list to the root
+     * (cursor on the row that opened it) and closes from the root, Triangle closes from any depth.
+     */
     private fun handleOptionsAction(action: GamepadAction) {
-        val menu = _state.value.options ?: return
-        when (action) {
-            GamepadAction.NAVIGATE_UP -> moveOptionsCursor(menu, -1)
-            GamepadAction.NAVIGATE_DOWN -> moveOptionsCursor(menu, 1)
-            GamepadAction.SELECT -> onOptionActivated(menu.selectedIndex)
-            GamepadAction.BACK, GamepadAction.OPEN_CONTEXT_MENU -> closeOptions()
-            else -> Unit
+        val s = _state.value
+        val menu = s.options ?: return
+        val rows = s.optionRows
+        val cue = if (rows.getOrNull(menu.selectedIndex)?.option is CoinOption.OpenGroup) PspMenuCue.SELECT else PspMenuCue.CONFIRM
+        val depth = if (menu.group != null) 1 else 0
+        when (val outcome = PspMenuNav.handle(action, menu.selectedIndex, rows.size, depth, cue, MenuSoundSink { menuSound.play(it) })) {
+            is PspMenuOutcome.Moved -> _state.update { it.copy(options = menu.copy(selectedIndex = outcome.index)) }
+            PspMenuOutcome.Activate -> onOptionActivated(menu.selectedIndex)
+            PspMenuOutcome.Up -> climbToRoot(menu.group)
+            PspMenuOutcome.Close -> closeOptions()
+            PspMenuOutcome.Ignored -> Unit
         }
     }
 
-    private fun moveOptionsCursor(menu: CoinOptionsMenu, delta: Int) = _state.update { s ->
-        val last = (s.optionRows.size - 1).coerceAtLeast(0)
-        s.copy(options = menu.copy(selectedIndex = (menu.selectedIndex + delta).coerceIn(0, last)))
+    /** Back from a list: the root again, with the cursor on the row that opened [group]. */
+    private fun climbToRoot(group: CoinOptionGroup?) = _state.update { s ->
+        val root = s.copy(options = CoinOptionsMenu())
+        val opener = root.optionRows.indexOfFirst { (it.option as? CoinOption.OpenGroup)?.group == group }.coerceAtLeast(0)
+        s.copy(options = CoinOptionsMenu(selectedIndex = opener))
     }
 
     /**
@@ -637,9 +772,10 @@ class ShibaCoinsViewModel @Inject constructor(
         when (val option = row.option) {
             is CoinOption.OpenGroup -> return openOptionGroup(option.group)
             is CoinOption.Sort -> setSort(option.sort)
-            // A sync already in flight: the row says "Syncing…" and picking it holds the menu open.
+            // A sync already in flight: the row says "Updating…" and picking it holds the menu open.
             CoinOption.SyncNow -> if (_state.value.isSyncing) return else sync()
-            CoinOption.ChangeMatch -> changeLink()
+            CoinOption.ChangeMatch -> changeMatch()
+            CoinOption.Unlink -> requestUnlink()
         }
         closeOptions()
     }
@@ -696,6 +832,24 @@ class ShibaCoinsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * A Windows game whose Steam id is not in the user's Steam library is never linked to Steam —
+     * Steam would serve it nothing — so its progress can only come from its own folder. An unlinked
+     * one goes straight to that folder rather than being asked whether it is a Steam copy: the
+     * owned list has already answered. Same path as answering No, registry short-circuit included.
+     */
+    private suspend fun askForFolderIfLocalCopy(game: com.playfieldportal.core.domain.model.Game) {
+        if (game.platformId != "windows") return
+        val unlinked = runCatching { achievementRepository.observeLinks(game.id).first().isEmpty() }
+            .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
+            .getOrDefault(false)
+        if (!unlinked) return
+        val local = runCatching { steamGate.isLocalCopy(game) }
+            .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
+            .getOrDefault(false)
+        if (local && gameId == game.id) chooseAutoMatch(legit = false)
+    }
+
     /** Opens the Auto-Match flow: first ask whether this is a legitimate Steam copy. */
     fun startAutoMatch() = _state.update { it.copy(autoMatchStep = AutoMatchStep.CONFIRM_COPY, autoMatchYes = true) }
 
@@ -746,6 +900,7 @@ class ShibaCoinsViewModel @Inject constructor(
             requestFolderPick = false,
             pickedFolderUri = null,
             storefrontMatch = null,
+            steamPick = false,
             kitPrompt = null,
             noEmuDataReason = null,
         )
@@ -845,8 +1000,7 @@ class ShibaCoinsViewModel @Inject constructor(
                         message = "Linked to ${outcome.folderName} (appid ${outcome.appId}).",
                     )
                 }
-                // A clean sync must not wipe the link confirmation it follows.
-                sync(successMessage = "Linked to ${outcome.folderName} (appid ${outcome.appId}).")
+                sync()
             }
             is LocalSteamFolderLinker.LinkOutcome.NeedsKit -> _state.update {
                 it.copy(
@@ -956,6 +1110,7 @@ class ShibaCoinsViewModel @Inject constructor(
         val state = _state.value
         val ui = state.storefrontMatch ?: return
         if (ui.confirming) return
+        if (state.steamPick) return chooseSteamCandidate(ui, index)
         val treeUri = state.pickedFolderUri?.let { android.net.Uri.parse(it) } ?: return cancelAutoMatch()
         // "No correct match" is the picker's last stop. Nothing is written, and the page says so.
         val row = ui.rows.getOrNull(index) ?: return _state.update {
@@ -1043,32 +1198,115 @@ class ShibaCoinsViewModel @Inject constructor(
             _state.update { it.copy(message = "A Steam app id is a number — check steamdb.info for more information on the game") }
             return
         }
+        // The game this id was typed for. `gameId` is a field that load() repoints, and the sync
+        // below is a network call — long enough to back out and open another game. Reading the
+        // field again afterwards would unlink THAT game, and leave this one on the wrong id.
+        val linkedGameId = gameId
         viewModelScope.launch {
             _state.update { it.copy(isMatching = true) }
             // Manual appid entry is only reachable from the legit-copy branch: the Local Steam
             // branch resolves from the emu folders (or explains what to set up) and never asks.
-            achievementRepository.linkManually(gameId, AchievementProvider.STEAM, id)
-            when (val result = achievementRepository.syncGameById(gameId)) {
+            achievementRepository.linkManually(linkedGameId, AchievementProvider.STEAM, id)
+            val result = achievementRepository.syncGameById(linkedGameId)
+            if (result == ProviderSyncResult.NotFound || result is ProviderSyncResult.Failed) {
+                achievementRepository.unlink(linkedGameId)
+            }
+            // The write above always belongs to the game it was for. The page state below belongs
+            // to whichever game is open, so it is only touched when that is still this one.
+            if (gameId != linkedGameId) return@launch
+            when (result) {
                 is ProviderSyncResult.Success ->
                     _state.update { it.copy(isMatching = false, autoMatchStep = null, message = null) }
-                ProviderSyncResult.NotFound, is ProviderSyncResult.Failed -> {
-                    achievementRepository.unlink(gameId)
+                ProviderSyncResult.NotFound, is ProviderSyncResult.Failed ->
                     _state.update {
                         it.copy(isMatching = false, message = "App id $id doesn't match — check steamdb.info for more information on the game")
                     }
-                }
                 // Credentials/profile problems aren't the appid's fault — keep the link, surface why.
                 else -> _state.update { it.copy(isMatching = false, autoMatchStep = null, message = messageFor(result)) }
             }
         }
     }
 
-    /** Removes the current link so the user can re-match it (edit a wrong match). */
-    fun changeLink() {
+    /**
+     * Options → Change Match: drops the current link, then opens the match picker on a Steam search
+     * for the game's title so the user chooses the new match. Not confirmed — nothing is lost that
+     * the pick (or Auto-Match) does not bring straight back, since the cached coins stay stored.
+     */
+    private fun changeMatch() {
+        val linkedGameId = gameId
+        val title = _state.value.title
+        selectedSource.value = null
+        _state.update {
+            it.copy(
+                autoMatchStep = AutoMatchStep.IDENTIFY,
+                steamPick = true,
+                storefrontMatch = StorefrontMatchUi(gameTitle = title),
+            )
+        }
+        viewModelScope.launch {
+            achievementRepository.unlink(linkedGameId)
+            val found = runCatching { achievementRepository.searchSteam(title) }
+                .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
+                .onFailure { Timber.w(it, "Steam search for Change Match failed") }
+                .getOrDefault(emptyList())
+            // Backed out (or moved to another game) while the search ran: nothing to show.
+            if (gameId != linkedGameId || !_state.value.steamPick) return@launch
+            val rows = found.map { candidate ->
+                storefrontRowOf(
+                    ScoredStorefrontCandidate(
+                        StorefrontCandidate(Storefront.STEAM, candidate.appId, candidate.name),
+                        signals = emptyList(),
+                    ),
+                )
+            }
+            _state.update {
+                it.copy(
+                    storefrontMatch = StorefrontMatchUi(
+                        loading = false,
+                        gameTitle = title,
+                        query = title,
+                        storeLabel = Storefront.STEAM.label,
+                        rows = rows,
+                    ),
+                )
+            }
+        }
+    }
+
+    /** The user chose in the Change Match picker: link that Steam app id, or nothing for the last stop. */
+    private fun chooseSteamCandidate(ui: StorefrontMatchUi, index: Int) {
+        val row = ui.rows.getOrNull(index) ?: return cancelAutoMatch()
+        _state.update { it.copy(storefrontMatch = ui.copy(confirming = true)) }
+        val linkedGameId = gameId
+        viewModelScope.launch {
+            achievementRepository.linkManually(linkedGameId, AchievementProvider.STEAM, row.storeId)
+            cancelAutoMatch()
+            sync()
+        }
+    }
+
+    /** Options → Unlink Game: asks first; nothing is removed until [confirmUnlink]. */
+    private fun requestUnlink() = _state.update { it.copy(unlinkConfirm = true) }
+
+    fun cancelUnlink() = _state.update { it.copy(unlinkConfirm = false) }
+
+    fun confirmUnlink() {
+        if (!_state.value.unlinkConfirm) return
+        _state.update { it.copy(unlinkConfirm = false) }
+        unlinkGame()
+    }
+
+    /**
+     * Removes every link this game holds, so the page drops to its Auto-Match
+     * panel. The cached coins stay stored (see [AchievementController.unlink]), so matching it again
+     * brings them straight back.
+     */
+    fun unlinkGame() {
+        selectedSource.value = null
         viewModelScope.launch { achievementRepository.unlink(gameId) }
     }
 
-    fun sync(successMessage: String? = null) {
+    fun sync() {
         viewModelScope.launch {
             _state.update { it.copy(isSyncing = true) }
             val result = when (val t = target) {
@@ -1076,7 +1314,9 @@ class ShibaCoinsViewModel @Inject constructor(
                 is ShibaCoinsTarget.AccountEntry ->
                     achievementRepository.syncAccountEntry(t.provider, t.providerGameId, _state.value.title)
             }
-            _state.update { it.copy(isSyncing = false, message = messageFor(result) ?: successMessage) }
+            // A success has nothing to say, so it keeps what is already showing — the "Linked to …"
+            // line a folder link sets just before this sync would otherwise be wiped at once.
+            _state.update { it.copy(isSyncing = false, message = messageFor(result) ?: it.message) }
         }
     }
 

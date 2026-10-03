@@ -29,12 +29,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -71,9 +65,11 @@ import coil3.compose.AsyncImage
 import com.playfieldportal.core.ui.image.rememberArtworkModel
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.theme.menuCursorEdge
-import com.playfieldportal.feature.xmb.ui.DetailContextMenu
-import com.playfieldportal.feature.xmb.ui.DetailMenuRow
+import com.playfieldportal.core.ui.components.PspContextMenuOverlay
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerPanel
+import com.playfieldportal.feature.xmb.ui.collection.collectionNameModalSpec
+import com.playfieldportal.core.ui.components.PfpModalSpec
+import com.playfieldportal.core.ui.components.rememberPfpModalHost
 import com.playfieldportal.feature.xmb.ui.detail.ArtworkType
 import com.playfieldportal.feature.xmb.ui.detail.displayLabel
 import com.playfieldportal.core.ui.detail.DetailRowSpacing
@@ -130,9 +126,25 @@ fun AppDetailScreen(
             onBack()
         }
     }
+    // Change Display Name and New Collection are the shared text entry modal. Its cursor and the
+    // text being typed live in the host, so a press goes there first while one is up and only
+    // otherwise reaches the page.
+    val modal = rememberPfpModalHost(
+        spec = appDetailModalSpec(
+            state = state,
+            onSaveName = viewModel::confirmNameEdit,
+            onCancelName = viewModel::cancelNameEdit,
+            onCreateCollection = viewModel::confirmCreateCollection,
+            onCancelCreateCollection = viewModel::cancelCreateCollection,
+            onConfirmReset = viewModel::confirmReset,
+            onCancelReset = viewModel::cancelReset,
+        ),
+        // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
+        showHints = !showTouchControls,
+    )
     LaunchedEffect(pendingGamepadAction) {
         if (pendingGamepadAction != null) {
-            viewModel.handleGamepadAction(pendingGamepadAction)
+            if (!modal.intercept(pendingGamepadAction)) viewModel.handleGamepadAction(pendingGamepadAction)
             onGamepadActionConsumed()
         }
     }
@@ -171,49 +183,22 @@ fun AppDetailScreen(
         },
         footer = {
             PfpDetailHelperFooter(
-                items = appDetailHelperItems(),
-                visible = !showTouchControls,
+                items = appDetailHelperItems(state.mainFocus),
+                // A shared modal draws its own hints under its card.
+                visible = !showTouchControls && !modal.open,
             )
         },
         overlay = {
         AnimatedVisibility(state.showOptions, enter = fadeIn(), exit = fadeOut()) {
-            DetailContextMenu(
-                title = "Options",
-                rows = AppDetailOption.OPTIONS_MENU.map { DetailMenuRow(it.label, it.isDestructive) },
+            val options = viewModel.menuRows(state.menuGroup)
+            PspContextMenuOverlay(
+                title = if (state.menuGroup == AppDetailMenuGroup.ARTWORK) "Artwork" else "Options",
+                rows = appDetailMenuRows(options, state.game?.isFavorite == true),
                 selectedIndex = state.optionsIndex,
-                onRowClick = { viewModel.activateOption(AppDetailOption.OPTIONS_MENU[it]) },
+                onRowActivated = { viewModel.activateOption(options[it]) },
                 onDismiss = viewModel::closeMenus,
+                panelAlpha = 0.88f,
             )
-        }
-
-        AnimatedVisibility(state.showArtworkMenu, enter = fadeIn(), exit = fadeOut()) {
-            DetailContextMenu(
-                title = "Artwork",
-                rows = AppDetailOption.ARTWORK_MENU.map { DetailMenuRow(it.label, it.isDestructive) },
-                selectedIndex = state.optionsIndex,
-                onRowClick = { viewModel.activateOption(AppDetailOption.ARTWORK_MENU[it]) },
-                onDismiss = viewModel::closeMenus,
-            )
-        }
-
-        // Name editor overlay
-        AnimatedVisibility(
-            visible = state.isEditingName,
-            enter   = fadeIn(),
-            exit    = fadeOut(),
-        ) {
-            Box(
-                Modifier.fillMaxSize().background(Color(0xCC000000)),
-                contentAlignment = Alignment.Center,
-            ) {
-                AppNameEditor(
-                    text      = state.nameText,
-                    onChange  = viewModel::onNameTextChanged,
-                    onSave    = viewModel::confirmNameEdit,
-                    onReset   = viewModel::resetNameToDefault,
-                    onCancel  = viewModel::cancelNameEdit,
-                )
-            }
         }
 
         // Artwork picker overlay
@@ -241,11 +226,11 @@ fun AppDetailScreen(
                 ui                  = state.collectionPicker,
                 onRowClick          = viewModel::onCollectionRowClick,
                 onClose             = viewModel::closeCollectionPicker,
-                onCreateTextChanged = viewModel::onCreateCollectionTextChanged,
-                onConfirmCreate     = viewModel::confirmCreateCollection,
-                onCancelCreate      = viewModel::cancelCreateCollection,
             )
         }
+
+        // Change Display Name and New Collection. Last, so it draws over every other overlay.
+        modal.Content()
         },
     ) {
         Spacer(Modifier.height(16.dp))
@@ -318,11 +303,11 @@ fun AppDetailScreen(
 
 /**
  * The App Detail page's helper prompts. Apps have no emulator, coins or media, so the footer is the
- * same three actions in every context — but it still reserves its row, so nothing shifts when it
- * fades for touch input.
+ * same three actions in every context, with Select naming the focused button — but it still
+ * reserves its row, so nothing shifts when it fades for touch input.
  */
-private fun appDetailHelperItems(): List<ControllerPromptItem> = listOf(
-    ControllerPromptItem(GamepadAction.SELECT, "Launch"),
+internal fun appDetailHelperItems(mainFocus: Int): List<ControllerPromptItem> = listOf(
+    ControllerPromptItem(GamepadAction.SELECT, when (mainFocus) { 0 -> "Launch"; 1 -> "Options"; else -> "Artwork" }),
     ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
     ControllerPromptItem(GamepadAction.BACK, "Back"),
 )
@@ -506,63 +491,47 @@ private fun AppArtworkPicker(
     }
 }
 
-@Composable
-private fun AppNameEditor(
-    text: String,
-    onChange: (String) -> Unit,
-    onSave: () -> Unit,
-    onReset: () -> Unit,
-    onCancel: () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .widthIn(max = 480.dp)
-            .fillMaxWidth(0.9f)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xF20A0A14))
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text("Change Display Name", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-        Text(
-            "Sets the display name used in the launcher and for artwork scraping.",
-            color    = TextMuted,
-            fontSize = 11.sp,
+/**
+ * Which shared modal the page is showing, if any — checked in the same order the view model checks
+ * these states, so the modal on screen is the one being driven. Clearing the display name drops
+ * the override; the placeholder shows the name that comes back.
+ *
+ * Internal and free of composition so the mapping from UI state to modal can be tested directly.
+ */
+internal fun appDetailModalSpec(
+    state: AppDetailUiState,
+    onSaveName: (String) -> Unit,
+    onCancelName: () -> Unit,
+    onCreateCollection: (String) -> Unit,
+    onCancelCreateCollection: () -> Unit,
+    onConfirmReset: () -> Unit,
+    onCancelReset: () -> Unit,
+): PfpModalSpec? {
+    val app = state.game ?: return null
+    return when {
+        state.isEditingName -> PfpModalSpec.TextEntry(
+            key = "display_name:${app.id}",
+            title = "Edit Title",
+            initial = app.displayTitle,
+            placeholder = app.scrapedTitle ?: app.title,
+            allowBlank = true,
+            onConfirm = onSaveName,
+            onCancel = onCancelName,
         )
-        OutlinedTextField(
-            value          = text,
-            onValueChange  = onChange,
-            label          = { Text("Display Name", color = TextMuted) },
-            modifier       = Modifier.fillMaxWidth(),
-            colors         = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor   = menuCursorEdge(),
-                unfocusedBorderColor = Color(0x44FFFFFF),
-                focusedTextColor     = TextPrimary,
-                unfocusedTextColor   = TextPrimary,
-                cursorColor          = menuCursorEdge(),
-            ),
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.Words,
-                imeAction      = ImeAction.Done,
-            ),
-            keyboardActions = KeyboardActions(onDone = { onSave() }),
-            singleLine      = true,
+        state.collectionPicker.showCreateDialog ->
+            collectionNameModalSpec(onCreate = onCreateCollection, onCancel = onCancelCreateCollection)
+        // Opens on Cancel, so a stray Confirm press on the controller dismisses.
+        state.confirmReset -> PfpModalSpec.Confirm(
+            key = "reset_artwork:${app.id}",
+            title = "Reset All Artwork?",
+            message = "The custom icon and background for ${app.displayTitle} are removed and the " +
+                "app's own icon comes back.",
+            confirmLabel = "Reset",
+            destructive = true,
+            onConfirm = onConfirmReset,
+            onCancel = onCancelReset,
         )
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment     = Alignment.CenterVertically,
-        ) {
-            TextButton(onClick = onReset) {
-                Text("Reset to Default", color = TextMuted, fontSize = 12.sp)
-            }
-            Row {
-                TextButton(onClick = onCancel) { Text("Cancel", color = TextMuted) }
-                TextButton(onClick = onSave) {
-                    Text("Save", color = menuCursorEdge(), fontWeight = FontWeight.SemiBold)
-                }
-            }
-        }
+        else -> null
     }
 }
 

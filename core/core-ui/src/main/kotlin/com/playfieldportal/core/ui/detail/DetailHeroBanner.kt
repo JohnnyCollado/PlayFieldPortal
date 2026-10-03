@@ -28,8 +28,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
-import com.playfieldportal.core.ui.image.rememberArtworkModel
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 
 // ── Hero banner ───────────────────────────────────────────────────────────────
@@ -79,8 +77,8 @@ fun PfpDetailHeroBanner(
         contentAlignment = Alignment.BottomStart,
     ) {
         if (artworkUri != null) {
-            AsyncImage(
-                model = rememberArtworkModel(artworkUri),
+            com.playfieldportal.core.ui.motion.ArtworkImage(
+                model = artworkUri,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),

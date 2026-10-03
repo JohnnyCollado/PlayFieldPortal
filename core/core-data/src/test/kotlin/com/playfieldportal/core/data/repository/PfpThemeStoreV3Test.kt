@@ -134,6 +134,21 @@ class PfpThemeStoreV3Test {
     }
 
     @Test
+    fun `saveCurrentLook never exports a user category image`() = runTest {
+        val store = PfpThemeStore(context)
+        val customDir = File(context.filesDir, CustomIconStore.CUSTOM_ICONS_DIR).apply { mkdirs() }
+        File(customDir, "usercat_custom_x_1.png").writeBytes(pngBytes())
+        File(customDir, "catbar_games.png").writeBytes(pngBytes())
+
+        val saved = assertNotNull(store.saveCurrentLook("Cat Look"))
+        val bundle = assertNotNull(PfpThemeCodec.read(File(context.filesDir, "pfpthemes/${saved.id}.pfptheme").readBytes()))
+
+        assertEquals(setOf("catbar_games"), bundle.icons.keys, "device-local category images stay out of the theme")
+        assertTrue(bundle.icons.keys.none { it.startsWith("usercat_") })
+        assertTrue(bundle.sysicons.keys.none { it.startsWith("usercat_") })
+    }
+
+    @Test
     fun `saveCurrentLook captures wallpaper accent icon color wave style and layout`() = runTest {
         val store = PfpThemeStore(context, PERMISSIVE_PROBE)
         val wallpaper = File(context.filesDir, "wallpaper").apply { mkdirs() }.resolve("w.jpg")

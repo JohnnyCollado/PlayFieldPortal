@@ -1,11 +1,13 @@
 package com.playfieldportal.core.data.repository
 
 import com.playfieldportal.core.data.database.dao.CollectionDao
+import com.playfieldportal.core.data.database.dao.ListStateDao
 import com.playfieldportal.core.data.database.entity.CollectionEntity
 import com.playfieldportal.core.data.database.entity.CollectionGameEntity
 import com.playfieldportal.core.data.database.entity.toDomain
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameCollection
+import com.playfieldportal.core.domain.model.ListKeys
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
@@ -13,13 +15,16 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Single source of truth for user-created collections. Collections behave like Favorites but
- * are user-defined and many-to-many; membership lives in [CollectionGameEntity] so game records
- * are never duplicated. Everything here is driven by explicit user action.
+ * Single source of truth for user-created collections — shown to the user as Custom Memory Cards.
+ * They behave like Favorites but are user-defined and many-to-many; membership lives in
+ * [CollectionGameEntity] so game records are never duplicated. A card belongs to exactly one
+ * category and is ordered among that category's cards. Everything here is driven by explicit
+ * user action.
  */
 @Singleton
 class CollectionRepository @Inject constructor(
     private val collectionDao: CollectionDao,
+    private val listStateDao: ListStateDao,
 ) {
     fun observeCollections(): Flow<List<GameCollection>> =
         collectionDao.observeAllWithCounts().map { rows ->
@@ -38,16 +43,20 @@ class CollectionRepository @Inject constructor(
     suspend fun getCollectionIdsForGame(gameId: Long): List<Long> =
         collectionDao.getCollectionIdsForGame(gameId)
 
-    /** Creates a collection appended to the end of the list. Returns the new id. */
+    /** When each game was added to the card, by game id — "Date Added" inside it. */
+    suspend fun addedAtByGame(collectionId: Long): Map<Long, Long> =
+        collectionDao.getMemberships(collectionId).associate { it.gameId to it.addedAt }
+
+    /** Creates a card at the end of [categoryId]'s cards. Returns the new id. */
     suspend fun create(name: String, categoryId: String = "games"): Long {
         val now = System.currentTimeMillis()
         val id = collectionDao.insert(
             CollectionEntity(
-                name      = name.trim().ifBlank { "Untitled Collection" },
+                name      = name.trim().ifBlank { UNTITLED },
                 categoryId = categoryId,
                 createdAt = now,
                 updatedAt = now,
-                sortOrder = collectionDao.maxSortOrder() + 1,
+                sortOrder = collectionDao.maxSortOrderIn(categoryId) + 1,
             )
         )
         Timber.i("Collection created: id=$id name=$name categoryId=$categoryId")
@@ -55,12 +64,16 @@ class CollectionRepository @Inject constructor(
     }
 
     suspend fun rename(id: Long, name: String) =
-        collectionDao.rename(id, name.trim().ifBlank { "Untitled Collection" }, System.currentTimeMillis())
+        collectionDao.rename(id, name.trim().ifBlank { UNTITLED }, System.currentTimeMillis())
 
-    /** Reassigns a collection to a different gaming category. categoryId is the single source
-     *  of truth for where a collection appears (collections belong to exactly one category). */
+    /** Reassigns a card to a different category, at the end of that category's cards. categoryId
+     *  is the single source of truth for where a card appears (it belongs to exactly one). */
     suspend fun setCategory(id: Long, categoryId: String) {
+        val order = collectionDao.maxSortOrderIn(categoryId) + 1
         collectionDao.setCategory(id, categoryId, System.currentTimeMillis())
+        collectionDao.setSortOrder(id, order)
+        // Its slot in the old column's Custom order means nothing in the new one.
+        listStateDao.deleteItemEverywhere(ListKeys.collectionItem(id))
         Timber.i("Collection $id moved to category $categoryId")
     }
 
@@ -79,7 +92,21 @@ class CollectionRepository @Inject constructor(
 
     suspend fun delete(id: Long) {
         collectionDao.delete(id) // cascades membership rows; game records are untouched
+        listStateDao.deleteLists(listOf(ListKeys.collection(id)))
+        listStateDao.deleteItemEverywhere(ListKeys.collectionItem(id))
         Timber.i("Collection deleted: id=$id")
+    }
+
+    /** Moves every card of [fromCategoryId] to the end of [toCategoryId], keeping their order. */
+    suspend fun rehomeAll(fromCategoryId: String, toCategoryId: String) {
+        val cards = collectionDao.getByCategory(fromCategoryId)
+        cards.forEach { setCategory(it.id, toCategoryId) }
+        Timber.i("Rehomed ${cards.size} collection(s) from $fromCategoryId to $toCategoryId")
+    }
+
+    /** Deletes every card of [categoryId]. The games in them stay in the library. */
+    suspend fun deleteAllIn(categoryId: String) {
+        collectionDao.getByCategory(categoryId).forEach { delete(it.id) }
     }
 
     suspend fun addGame(collectionId: Long, gameId: Long) {
@@ -103,9 +130,11 @@ class CollectionRepository @Inject constructor(
         }
     }
 
-    /** Swaps sort_order with the adjacent collection. Returns true when a move happened. */
+    /** Swaps sort_order with the adjacent card of the same category. Returns true when a move
+     *  happened. */
     suspend fun move(id: Long, up: Boolean): Boolean {
-        val ordered = collectionDao.getAll()
+        val categoryId = collectionDao.getById(id)?.categoryId ?: return false
+        val ordered = collectionDao.getByCategory(categoryId)
         val index = ordered.indexOfFirst { it.id == id }
         if (index < 0) return false
         val targetIndex = if (up) index - 1 else index + 1
@@ -116,5 +145,9 @@ class CollectionRepository @Inject constructor(
         collectionDao.setSortOrder(current.id, target.sortOrder)
         collectionDao.setSortOrder(target.id, current.sortOrder)
         return true
+    }
+
+    private companion object {
+        const val UNTITLED = "Untitled Custom Card"
     }
 }

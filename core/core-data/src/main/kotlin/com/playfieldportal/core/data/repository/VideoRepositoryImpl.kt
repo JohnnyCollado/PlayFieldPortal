@@ -166,6 +166,13 @@ class VideoRepositoryImpl @Inject constructor(
         return id
     }
 
+    override suspend fun importPlaylist(name: String, videoIds: List<String>): Long {
+        require(videoIds.isNotEmpty()) { "An imported playlist needs at least one video" }
+        val id = playlistDao.insertWithVideos(name, videoIds, System.currentTimeMillis())
+        Timber.i("Video playlist imported: \"$name\" (id=$id, ${videoIds.size} videos)")
+        return id
+    }
+
     override suspend fun renamePlaylist(id: Long, name: String) =
         playlistDao.rename(id, name, System.currentTimeMillis())
 

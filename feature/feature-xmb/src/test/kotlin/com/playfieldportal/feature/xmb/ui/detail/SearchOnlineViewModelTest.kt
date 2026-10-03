@@ -5,6 +5,8 @@ import com.playfieldportal.core.data.network.NetworkMonitor
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.sound.MenuSound
+import com.playfieldportal.core.ui.sound.MenuSoundPlayer
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import com.playfieldportal.feature.achievements.api.SyncedCoin
 import com.playfieldportal.feature.achievements.preview.AchievementPreviewRepository
@@ -15,6 +17,7 @@ import io.mockk.coVerify
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineScheduler
@@ -41,6 +44,7 @@ class SearchOnlineViewModelTest {
     private val previews = mockk<AchievementPreviewRepository>(relaxed = true)
     private val credentials = mockk<AchievementCredentialsProvider>()
     private val network = mockk<NetworkMonitor>()
+    private val menuSound = mockk<MenuSoundPlayer>(relaxed = true)
     private lateinit var viewModel: SearchOnlineViewModel
 
     private val resonance = PreviewCandidate(AchievementProvider.STEAM, "645730", "Resonance of Fate", "Steam")
@@ -53,7 +57,7 @@ class SearchOnlineViewModelTest {
         coEvery { credentials.raUsername() } returns "Chrono"
         coEvery { credentials.raApiKey() } returns "ra-key"
         coEvery { previews.searchSteam(any()) } returns listOf(resonance, other)
-        viewModel = SearchOnlineViewModel(previews, credentials, network)
+        viewModel = SearchOnlineViewModel(previews, credentials, network, menuSound)
     }
 
     @After
@@ -266,13 +270,67 @@ class SearchOnlineViewModelTest {
     @Test
     fun `the Options root lists the provider, and RetroAchievements adds its system list`() {
         press(GamepadAction.OPEN_CONTEXT_MENU)
-        assertEquals(listOf("Provider (Steam)"), state.optionRows.map { it.label })
+        assertEquals(listOf("Provider"), state.optionRows.map { it.label })
+        assertEquals(listOf("Steam"), state.optionRows.map { it.value })
+        assertEquals(listOf(true), state.optionRows.map { it.opensMenu })
 
         viewModel.setProvider(SearchProvider.RETRO_ACHIEVEMENTS)
-        assertEquals(
-            listOf("Provider (RetroAchievements)", "System (${state.console.label})"),
-            state.optionRows.map { it.label },
-        )
+        assertEquals(listOf("Provider", "System"), state.optionRows.map { it.label })
+        assertEquals(listOf("RetroAchievements", state.console.label), state.optionRows.map { it.value })
+        assertEquals(listOf(true, true), state.optionRows.map { it.opensMenu })
+    }
+
+    @Test
+    fun `Back from a list climbs to the root on the row that opened it, and a second Back closes`() {
+        viewModel.setProvider(SearchProvider.RETRO_ACHIEVEMENTS)
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.NAVIGATE_DOWN, GamepadAction.SELECT)
+        assertEquals(SearchOptionGroup.CONSOLE, state.options?.group)
+
+        press(GamepadAction.BACK)
+        assertEquals(SearchOptionsMenu(selectedIndex = 1), state.options)
+        assertFalse(state.closed)
+
+        press(GamepadAction.BACK)
+        assertNull(state.options)
+        assertFalse(state.closed)
+    }
+
+    @Test
+    fun `Triangle closes the menu from inside a list`() {
+        viewModel.setProvider(SearchProvider.RETRO_ACHIEVEMENTS)
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.SELECT, GamepadAction.OPEN_CONTEXT_MENU)
+
+        assertNull(state.options)
+    }
+
+    @Test
+    fun `the Options cursor clamps at both ends and sounds only when it moves`() {
+        viewModel.setProvider(SearchProvider.RETRO_ACHIEVEMENTS)
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.NAVIGATE_UP)
+        assertEquals(0, state.options?.selectedIndex)
+        verify(exactly = 0) { menuSound.play(MenuSound.SCROLL, any()) }
+
+        repeat(5) { press(GamepadAction.NAVIGATE_DOWN) }
+        assertEquals(state.optionRows.lastIndex, state.options?.selectedIndex)
+        verify(exactly = state.optionRows.lastIndex) { menuSound.play(MenuSound.SCROLL, any()) }
+    }
+
+    @Test
+    fun `opening a list sounds SELECT, a choice CONFIRM, and leaving BACK`() {
+        viewModel.setProvider(SearchProvider.RETRO_ACHIEVEMENTS)
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.SELECT)
+        verify(exactly = 1) { menuSound.play(MenuSound.SELECT, any()) }
+
+        press(GamepadAction.SELECT)
+        verify(exactly = 1) { menuSound.play(MenuSound.CONFIRM, any()) }
+
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.BACK)
+        verify(exactly = 1) { menuSound.play(MenuSound.BACK, any()) }
+    }
+
+    @Test
+    fun `the search list footer names the menu Options`() {
+        assertEquals("Options", searchOnlineHelperItems(SearchOnlineUiState()).single { GamepadAction.OPEN_CONTEXT_MENU in it.actions }.label)
     }
 
     @Test
@@ -283,7 +341,7 @@ class SearchOnlineViewModelTest {
         scheduler.advanceUntilIdle()
 
         press(GamepadAction.OPEN_CONTEXT_MENU)
-        assertEquals(listOf("Refresh preview"), state.optionRows.map { it.label })
+        assertEquals(listOf("Refresh Preview"), state.optionRows.map { it.label })
         press(GamepadAction.SELECT)
         scheduler.advanceUntilIdle()
 

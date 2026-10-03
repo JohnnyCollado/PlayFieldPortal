@@ -140,7 +140,7 @@ fun PlayerStatusScreen(
         state.options?.let { menu ->
             PspContextMenuOverlay(
                 title = menu.title,
-                rows = state.optionRows.map { PspMenuRow(label = it.label, checked = it.checked) },
+                rows = state.optionRows.map { PspMenuRow(label = it.label, checked = it.checked, value = it.value, opensMenu = it.opensMenu) },
                 selectedIndex = menu.selectedIndex,
                 onRowActivated = viewModel::onOptionActivated,
                 onDismiss = viewModel::closeOptions,

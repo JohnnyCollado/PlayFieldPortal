@@ -58,6 +58,7 @@ class GameDetailViewModelTest {
     private lateinit var menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer
     private lateinit var pcGameExporter: com.playfieldportal.feature.settings.pc.PcGameExporter
     private lateinit var storefrontMatches: com.playfieldportal.feature.artwork.match.StorefrontMatchRepository
+    private lateinit var achievementRepository: com.playfieldportal.feature.achievements.AchievementController
     private lateinit var viewModel: GameDetailViewModel
 
     private val fakeGame = Game(
@@ -122,11 +123,12 @@ class GameDetailViewModelTest {
         every { profileRepository.getInstalledProfiles() }         returns emptyList()
         coEvery { profileRepository.getProfilesForPlatform(any()) }  returns emptyList()
 
+        achievementRepository = mockk(relaxed = true)
         storefrontMatches = mockk(relaxed = true)
         // Explicit, for the same reason launchDispatcher is: Lookup is a sealed interface and a
         // relaxed mock cannot invent one. These tests never open the picker, so the honest default
         // is the branch that says there is nothing to look up.
-        coEvery { storefrontMatches.lookup(any(), any()) } returns
+        coEvery { storefrontMatches.lookup(any(), any(), any(), any()) } returns
             com.playfieldportal.feature.artwork.match.StorefrontMatchRepository.Lookup.NotApplicable
 
         viewModel = GameDetailViewModel(
@@ -144,7 +146,7 @@ class GameDetailViewModelTest {
             menuSound         = menuSound,
             discordPresence   = mockk(relaxed = true),
             launcherShortcutRepository = mockk(relaxed = true),
-            achievementRepository = mockk(relaxed = true),
+            achievementRepository = achievementRepository,
             launchDispatcher  = launchDispatcher,
             pcGameExporter    = pcGameExporter,
             storefrontMatches = storefrontMatches,
@@ -171,15 +173,15 @@ class GameDetailViewModelTest {
 
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
-        assertFalse(DetailAction.EXPORT in viewModel.uiState.value.visibleActions)
+        assertFalse(DetailAction.EXPORT in viewModel.uiState.value.actionsIn(DetailMenu.FILE))
 
         viewModel.loadGame(3L)
         testDispatcher.scheduler.advanceUntilIdle()
-        assertFalse(DetailAction.EXPORT in viewModel.uiState.value.visibleActions)
+        assertFalse(DetailAction.EXPORT in viewModel.uiState.value.actionsIn(DetailMenu.FILE))
 
         viewModel.loadGame(2L)
         testDispatcher.scheduler.advanceUntilIdle()
-        assertTrue(DetailAction.EXPORT in viewModel.uiState.value.visibleActions)
+        assertTrue(DetailAction.EXPORT in viewModel.uiState.value.actionsIn(DetailMenu.FILE))
     }
 
     @Test
@@ -552,8 +554,7 @@ class GameDetailViewModelTest {
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
         viewModel.startEditNote()
-        viewModel.onNoteChanged("Great game!")
-        viewModel.saveNote()
+        viewModel.saveNote("Great game!")
         testDispatcher.scheduler.advanceUntilIdle()
 
         coVerify { gameRepository.updateNote(1L, "Great game!") }
@@ -570,8 +571,7 @@ class GameDetailViewModelTest {
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
         viewModel.startEditNote()
-        viewModel.onNoteChanged("   ")
-        viewModel.saveNote()
+        viewModel.saveNote("   ")
         testDispatcher.scheduler.advanceUntilIdle()
 
         coVerify { gameRepository.updateNote(1L, null) }
@@ -582,7 +582,6 @@ class GameDetailViewModelTest {
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
         viewModel.startEditNote()
-        viewModel.onNoteChanged("unsaved change")
         viewModel.cancelNote()
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -592,6 +591,62 @@ class GameDetailViewModelTest {
             assertFalse(awaitItem().isEditingNote)
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    // ── title editing ─────────────────────────────────────────────────────
+
+    @Test
+    fun `saveTitle writes the typed title as the override and closes the modal`() = runTest {
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.startEditTitle()
+        viewModel.saveTitle("Crash 1")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { gameRepository.updateUserTitleOverride(1L, "Crash 1") }
+        assertFalse(viewModel.uiState.value.isEditingTitle)
+    }
+
+    @Test
+    fun `saveTitle with a blank title clears the override`() = runTest {
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.startEditTitle()
+        viewModel.saveTitle("   ")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { gameRepository.updateUserTitleOverride(1L, null) }
+        assertFalse(viewModel.uiState.value.isEditingTitle)
+    }
+
+    @Test
+    fun `cancelTitleEdit closes the modal without saving`() = runTest {
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.startEditTitle()
+        viewModel.cancelTitleEdit()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { gameRepository.updateUserTitleOverride(any(), any()) }
+        assertFalse(viewModel.uiState.value.isEditingTitle)
+    }
+
+    @Test
+    fun `the shared modals voice save and cancel, so the view model does not play them again`() = runTest {
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.startEditTitle()
+        viewModel.cancelTitleEdit()
+        viewModel.startEditTitle()
+        viewModel.saveTitle("Crash 1")
+        viewModel.startEditNote()
+        viewModel.cancelNote()
+        viewModel.startEditNote()
+        viewModel.saveNote("Great game!")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify(exactly = 0) { menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.BACK, any()) }
+        verify(exactly = 0) { menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.CONFIRM, any()) }
     }
 
     // ── launch ────────────────────────────────────────────────────────────
@@ -1096,6 +1151,39 @@ class GameDetailViewModelTest {
     }
 
     @Test
+    fun `a write from elsewhere reaches the open page`() = runTest {
+        val row = kotlinx.coroutines.flow.MutableStateFlow<Game?>(fakeGame)
+        every { gameRepository.observeById(1L) } returns row
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        row.value = fakeGame.copy(scrapedTitle = "Crash Bandicoot", artworkUri = "file:///art/crash_box.png")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val game = viewModel.uiState.value.game
+        assertEquals("Crash Bandicoot", game?.displayTitle)
+        assertEquals("file:///art/crash_box.png", game?.artworkUri)
+        assertEquals("Crash Bandicoot", viewModel.uiState.value.discMembers.single().displayTitle)
+    }
+
+    @Test
+    fun `the previous game's row never lands on the next game's page`() = runTest {
+        val first = kotlinx.coroutines.flow.MutableStateFlow<Game?>(fakeGame)
+        every { gameRepository.observeById(1L) } returns first
+        every { gameRepository.observeById(2L) } returns kotlinx.coroutines.flow.MutableStateFlow(windowsGame)
+        coEvery { gameRepository.getById(2L) } returns windowsGame
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.loadGame(2L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        first.value = fakeGame.copy(scrapedTitle = "Crash Bandicoot")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(windowsGame, viewModel.uiState.value.game)
+    }
+
+    @Test
     fun `fetchArtwork shows the scraper's message when nothing is found`() = runTest {
         coEvery { artworkRepository.refetchArtworkForGame(1L, any()) } returns
             ArtworkFetchResult(1L, "Crash Bandicoot", success = false, errorMessage = "Not found on any source")
@@ -1139,8 +1227,8 @@ class GameDetailViewModelTest {
     @Test
     fun `the Fetch Artwork option is labelled for what it does`() {
         assertEquals("Fetch Artwork", DetailAction.FETCH_ARTWORK.label)
-        assertEquals("Fetch Artwork", DetailAction.FETCH_ARTWORK.dynamicLabel(favorite = false, refreshing = false))
-        assertEquals("Fetching Artwork...", DetailAction.FETCH_ARTWORK.dynamicLabel(favorite = false, refreshing = true))
+        assertEquals("Fetch Artwork", DetailAction.FETCH_ARTWORK.dynamicLabel(refreshing = false))
+        assertEquals("Fetching Artwork…", DetailAction.FETCH_ARTWORK.dynamicLabel(refreshing = true))
     }
 
     @Test
@@ -1465,6 +1553,522 @@ class GameDetailViewModelTest {
         assertTrue(viewModel.uiState.value.closed)
     }
 
+    /** Opens Options and walks the cursor down to [action] on the top level. */
+    private fun openOptionsOn(action: DetailAction) {
+        viewModel.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        repeat(viewModel.uiState.value.visibleActions.indexOf(action)) {
+            viewModel.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)
+        }
+        assertEquals(GameDetailKeys.option(action.name), viewModel.uiState.value.navFocusKey)
+    }
+
+    @Test
+    fun `a sub-panel opens on its first row and Back returns to the row that opened it`() = runTest {
+        loadedAndLaidOut()
+        openOptionsOn(DetailAction.MENU_INFORMATION)
+
+        viewModel.handleGamepadAction(GamepadAction.SELECT)
+
+        // Still the Options overlay, one level down.
+        assertTrue(viewModel.uiState.value.showOptions)
+        assertEquals(DetailMenu.INFORMATION, viewModel.uiState.value.optionsMenu)
+        assertEquals(GameDetailKeys.option(DetailAction.METADATA.name), viewModel.uiState.value.navFocusKey)
+        assertEquals(0, viewModel.uiState.value.optionsIndex)
+
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)
+        assertEquals(GameDetailKeys.option(DetailAction.RENAME.name), viewModel.uiState.value.navFocusKey)
+
+        // Back steps out one level, not out of the menu…
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+        assertTrue(viewModel.uiState.value.showOptions)
+        assertEquals(DetailMenu.ROOT, viewModel.uiState.value.optionsMenu)
+        assertEquals(
+            GameDetailKeys.option(DetailAction.MENU_INFORMATION.name),
+            viewModel.uiState.value.navFocusKey,
+        )
+
+        // …and a second Back closes it, leaving the page open.
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+        assertFalse(viewModel.uiState.value.showOptions)
+        assertFalse(viewModel.uiState.value.closed)
+    }
+
+    @Test
+    fun `an action inside a sub-panel runs and closes the whole menu`() = runTest {
+        loadedAndLaidOut()
+        openOptionsOn(DetailAction.MENU_INFORMATION)
+        viewModel.handleGamepadAction(GamepadAction.SELECT)
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)   // Edit Title
+
+        viewModel.handleGamepadAction(GamepadAction.SELECT)
+
+        assertTrue(viewModel.uiState.value.isEditingTitle)
+        assertFalse(viewModel.uiState.value.showOptions)
+    }
+
+    @Test
+    fun `Options always reopens on the top level`() = runTest {
+        loadedAndLaidOut()
+        openOptionsOn(DetailAction.MENU_FILE)
+        viewModel.handleGamepadAction(GamepadAction.SELECT)
+        assertEquals(DetailMenu.FILE, viewModel.uiState.value.optionsMenu)
+
+        // A tap outside closes the whole menu from wherever it was.
+        viewModel.closeOptions()
+        assertFalse(viewModel.uiState.value.showOptions)
+
+        viewModel.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        assertEquals(DetailMenu.ROOT, viewModel.uiState.value.optionsMenu)
+        assertEquals(GameDetailKeys.option(DetailAction.FAVORITE.name), viewModel.uiState.value.navFocusKey)
+    }
+
+    @Test
+    fun `Triangle with a sub-panel open closes the whole menu, not just the sub-panel`() = runTest {
+        loadedAndLaidOut()
+        openOptionsOn(DetailAction.MENU_FILE)
+        viewModel.handleGamepadAction(GamepadAction.SELECT)
+        assertEquals(DetailMenu.FILE, viewModel.uiState.value.optionsMenu)
+
+        viewModel.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+
+        assertFalse(viewModel.uiState.value.showOptions)
+        assertFalse(viewModel.uiState.value.closed)
+    }
+
+    @Test
+    fun `Triangle on the top level closes the menu`() = runTest {
+        loadedAndLaidOut()
+        viewModel.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        assertTrue(viewModel.uiState.value.showOptions)
+
+        viewModel.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+
+        assertFalse(viewModel.uiState.value.showOptions)
+    }
+
+    // ── Results that arrive late ──────────────────────────────────────────
+    //
+    // This ViewModel outlives a page: the same instance shows game after game. Anything that
+    // suspends therefore comes back to a page that may have moved on, and must not write what it
+    // captured before it left.
+
+    private fun loadSecondGame() {
+        coEvery { gameRepository.getById(2L) } returns windowsGame
+        coEvery { platformDao.getById("windows") } returns null
+        viewModel.loadGame(2L)
+        testDispatcher.scheduler.advanceUntilIdle()
+    }
+
+    @Test
+    fun `a fetch that finishes after the page moved to another game leaves that page alone`() = runTest {
+        val fetch = kotlinx.coroutines.CompletableDeferred<ArtworkFetchResult>()
+        coEvery { artworkRepository.refetchArtworkForGame(1L, any()) } coAnswers { fetch.await() }
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.fetchArtwork()
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.isFetchingArtwork)
+
+        loadSecondGame()
+        // The other game's fetch is not this page's, and must not lock its own Fetch Artwork.
+        assertFalse(viewModel.uiState.value.isFetchingArtwork)
+
+        fetch.complete(ArtworkFetchResult(1L, "Crash Bandicoot", success = true))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(2L, viewModel.uiState.value.game?.id)
+        assertNull(viewModel.uiState.value.artworkMessage)
+    }
+
+    @Test
+    fun `a fetch that finishes on its own page still reports and unlocks`() = runTest {
+        coEvery { artworkRepository.refetchArtworkForGame(1L, any()) } returns
+            ArtworkFetchResult(1L, "Crash Bandicoot", success = true)
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.fetchArtwork()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isFetchingArtwork)
+        assertEquals("Artwork updated", viewModel.uiState.value.artworkMessage)
+    }
+
+    @Test
+    fun `a favorite that saves slowly does not undo what changed while it was saving`() = runTest {
+        val saving = kotlinx.coroutines.CompletableDeferred<Unit>()
+        coEvery { gameRepository.setFavorite(1L, true) } coAnswers { saving.await() }
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.toggleFavorite()
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.saveNote("Hidden gem")
+        testDispatcher.scheduler.advanceUntilIdle()
+        saving.complete(Unit)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val game = viewModel.uiState.value.game!!
+        assertTrue(game.isFavorite)
+        assertEquals("Hidden gem", game.userNote)
+    }
+
+    @Test
+    fun `a note that saves after the page moved on is not written onto the other game`() = runTest {
+        val saving = kotlinx.coroutines.CompletableDeferred<Unit>()
+        coEvery { gameRepository.updateNote(1L, any()) } coAnswers { saving.await() }
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.saveNote("Hidden gem")
+        testDispatcher.scheduler.advanceUntilIdle()
+        loadSecondGame()
+        saving.complete(Unit)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(2L, viewModel.uiState.value.game?.id)
+        assertEquals("Portal 2", viewModel.uiState.value.game?.title)
+        assertNull(viewModel.uiState.value.game?.userNote)
+    }
+
+    @Test
+    fun `the page shows the game asked for last, however the loads finish`() = runTest {
+        val slow = kotlinx.coroutines.CompletableDeferred<Game?>()
+        coEvery { gameRepository.getById(1L) } coAnswers { slow.await() }
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        loadSecondGame()
+        slow.complete(fakeGame)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(2L, viewModel.uiState.value.game?.id)
+        assertFalse(viewModel.uiState.value.isLoading)
+    }
+
+    @Test
+    fun `coins from a game the page has left never replace the current game's`() = runTest {
+        val firstGameCoins = kotlinx.coroutines.flow.MutableSharedFlow<com.playfieldportal.core.domain.achievement.GameCoins?>()
+        val secondCoins = mockk<com.playfieldportal.core.domain.achievement.GameCoins>()
+        every { achievementRepository.observeGameCoins(1L) } returns firstGameCoins
+        every { achievementRepository.observeGameCoins(2L) } returns kotlinx.coroutines.flow.flowOf(secondCoins)
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        loadSecondGame()
+        assertEquals(secondCoins, viewModel.uiState.value.coins)
+
+        // A sync touches the tables, and the first game's stream — still open — emits again.
+        firstGameCoins.emit(mockk())
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(secondCoins, viewModel.uiState.value.coins)
+    }
+
+    // ── Store Match row value ─────────────────────────────────────────────
+
+    private fun linkedOn(vararg stores: com.playfieldportal.feature.artwork.match.Storefront) =
+        stores.map {
+            com.playfieldportal.feature.artwork.match.StorefrontMatchRepository.LinkedIdentity(
+                com.playfieldportal.feature.artwork.match.StorefrontIdentityRecord(it, "1"),
+                it.label,
+            )
+        }
+
+    @Test
+    fun `opening Options reads which stores a Windows game is matched on`() = runTest {
+        coEvery { storefrontMatches.identities(2L) } returns linkedOn(
+            com.playfieldportal.feature.artwork.match.Storefront.STEAM,
+            com.playfieldportal.feature.artwork.match.Storefront.GOG,
+        )
+        loadSecondGame()
+
+        viewModel.openOptions()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf("Steam", "GOG"), viewModel.uiState.value.storeLinks)
+    }
+
+    @Test
+    fun `removing a link takes that store off the Store Match row`() = runTest {
+        coEvery { storefrontMatches.identities(2L) } returns linkedOn(
+            com.playfieldportal.feature.artwork.match.Storefront.STEAM,
+            com.playfieldportal.feature.artwork.match.Storefront.GOG,
+        )
+        coEvery { storefrontMatches.rematchRows(2L) } returns listOf(
+            com.playfieldportal.feature.artwork.match.StorefrontMatchRepository.RematchRow(
+                store = com.playfieldportal.feature.artwork.match.Storefront.STEAM,
+                identity = linkedOn(com.playfieldportal.feature.artwork.match.Storefront.STEAM).single(),
+                searchable = true,
+            ),
+        )
+        loadSecondGame()
+        viewModel.openOptions()
+        viewModel.openStorefrontRematch()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coEvery { storefrontMatches.identities(2L) } returns
+            linkedOn(com.playfieldportal.feature.artwork.match.Storefront.GOG)
+        viewModel.onRematchActionTapped(0, RematchAction.REMOVE)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf("GOG"), viewModel.uiState.value.storeLinks)
+    }
+
+    // ── Store Match search bar ────────────────────────────────────────────
+
+    private fun openStoreMatch() {
+        coEvery { storefrontMatches.rematchRows(any()) } returns listOf(
+            com.playfieldportal.feature.artwork.match.StorefrontMatchRepository.RematchRow(
+                store = com.playfieldportal.feature.artwork.match.Storefront.STEAM,
+                identity = null,
+                searchable = true,
+            ),
+        )
+        loadedAndLaidOut()
+        viewModel.openStorefrontRematch()
+        testDispatcher.scheduler.advanceUntilIdle()
+    }
+
+    private val storeMatch get() = viewModel.uiState.value.storefrontRematch!!
+
+    @Test
+    fun `Store Match opens on the search bar, holding the game's current title`() = runTest {
+        openStoreMatch()
+
+        assertTrue(storeMatch.queryFocused)
+        assertEquals("Crash Bandicoot", storeMatch.query)
+        assertFalse(storeMatch.editingQuery)
+
+        // The store rows are one step below it, and the bar is one step back up.
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)
+        assertFalse(storeMatch.queryFocused)
+        assertEquals(0, storeMatch.focus)
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_UP)
+        assertTrue(storeMatch.queryFocused)
+    }
+
+    @Test
+    fun `Select on the search bar starts typing, and Back stops typing without closing the panel`() = runTest {
+        openStoreMatch()
+
+        viewModel.handleGamepadAction(GamepadAction.SELECT)
+        assertTrue(storeMatch.editingQuery)
+
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+        assertFalse(storeMatch.editingQuery)
+        assertTrue(storeMatch.queryFocused)
+
+        // Only now does Back close Store Match.
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+        assertNull(viewModel.uiState.value.storefrontRematch)
+    }
+
+    @Test
+    fun `searching a typed name asks the stores for that name and opens the picker`() = runTest {
+        openStoreMatch()
+        viewModel.handleGamepadAction(GamepadAction.SELECT)
+        viewModel.onRematchQueryChanged("Crash Bandicoot N. Sane Trilogy")
+
+        viewModel.searchStorefrontsByName()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Every store: a typed name is a search of them all, never of one row's store.
+        coVerify { storefrontMatches.lookup(1L, true, "Crash Bandicoot N. Sane Trilogy", null) }
+        assertEquals("Crash Bandicoot N. Sane Trilogy", viewModel.uiState.value.storefrontMatch?.typedQuery)
+        // Typing is over, and the name is still in the bar for when the picker closes.
+        assertFalse(storeMatch.editingQuery)
+        assertEquals("Crash Bandicoot N. Sane Trilogy", storeMatch.query)
+    }
+
+    @Test
+    fun `an empty search bar searches nothing`() = runTest {
+        openStoreMatch()
+        viewModel.onRematchQueryChanged("   ")
+
+        viewModel.searchStorefrontsByName()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.storefrontMatch)
+        coVerify(exactly = 0) { storefrontMatches.lookup(any(), any(), any(), any()) }
+    }
+
+    // ── More than one store ───────────────────────────────────────────────
+
+    private val steamStore = com.playfieldportal.feature.artwork.match.Storefront.STEAM
+    private val gogStore = com.playfieldportal.feature.artwork.match.Storefront.GOG
+
+    private fun pendingOn(
+        store: com.playfieldportal.feature.artwork.match.Storefront,
+        confidence: com.playfieldportal.feature.artwork.match.MatchConfidence,
+        vararg candidates: Pair<String, String>,
+    ) = com.playfieldportal.feature.artwork.match.StorefrontMatchRepository.PendingMatch(
+        store = store,
+        confidence = confidence,
+        candidates = candidates.map { (id, title) ->
+            com.playfieldportal.feature.artwork.match.ScoredStorefrontCandidate(
+                com.playfieldportal.feature.artwork.match.StorefrontCandidate(store, id, title),
+                listOf(com.playfieldportal.feature.artwork.match.MatchSignal.EXACT_TITLE),
+            )
+        },
+    )
+
+    /** Opens the picker over a lookup in which Steam and GOG both have something to choose. */
+    private fun openPickerOnTwoStores() {
+        coEvery { storefrontMatches.lookup(any(), any(), any(), any()) } returns
+            com.playfieldportal.feature.artwork.match.StorefrontMatchRepository.Lookup.NeedsChoice(
+                query = "doom",
+                pending = listOf(
+                    pendingOn(
+                        steamStore, com.playfieldportal.feature.artwork.match.MatchConfidence.AMBIGUOUS,
+                        "379720" to "DOOM", "2280" to "DOOM (1993)",
+                    ),
+                    pendingOn(
+                        gogStore, com.playfieldportal.feature.artwork.match.MatchConfidence.EXACT,
+                        "1390579243" to "DOOM (2016)",
+                    ),
+                ),
+            )
+        loadedAndLaidOut()
+        viewModel.openStorefrontMatch()
+        testDispatcher.scheduler.advanceUntilIdle()
+    }
+
+    private val picker get() = viewModel.uiState.value.storefrontMatch!!
+
+    @Test
+    fun `the picker shows one store at a time, the first one asked first`() = runTest {
+        openPickerOnTwoStores()
+
+        assertEquals(listOf("Steam", "GOG"), picker.stores.map { it.label })
+        assertEquals("Steam", picker.storeLabel)
+        assertEquals(listOf("379720", "2280"), picker.rows.map { it.storeId })
+    }
+
+    @Test
+    fun `R1 and L1 move between stores and put the cursor on the new store's first row`() = runTest {
+        openPickerOnTwoStores()
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)
+        assertEquals(1, picker.focus)
+
+        viewModel.handleGamepadAction(GamepadAction.NEXT_CATEGORY)
+
+        assertEquals("GOG", picker.storeLabel)
+        assertEquals(listOf("1390579243"), picker.rows.map { it.storeId })
+        assertEquals(com.playfieldportal.feature.artwork.match.MatchConfidence.EXACT, picker.confidence)
+        assertEquals(0, picker.focus)
+        assertEquals(GameDetailKeys.storefrontCandidate(0), viewModel.uiState.value.navFocusKey)
+
+        // The last store is the end of the row, not a wrap back to the first.
+        viewModel.handleGamepadAction(GamepadAction.NEXT_CATEGORY)
+        assertEquals("GOG", picker.storeLabel)
+
+        viewModel.handleGamepadAction(GamepadAction.PREV_CATEGORY)
+        assertEquals("Steam", picker.storeLabel)
+        assertEquals(listOf("379720", "2280"), picker.rows.map { it.storeId })
+    }
+
+    @Test
+    fun `choosing on one store links that store's game and moves on to the store still waiting`() = runTest {
+        openPickerOnTwoStores()
+
+        viewModel.handleGamepadAction(GamepadAction.SELECT)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            storefrontMatches.confirm(
+                1L,
+                match { it.store == steamStore && it.storeId == "379720" },
+                com.playfieldportal.feature.artwork.match.MatchConfidence.AMBIGUOUS,
+            )
+        }
+        // GOG still has a question open, so the picker stays and shows it.
+        assertEquals(listOf("GOG"), picker.stores.map { it.label })
+        assertEquals("GOG", picker.storeLabel)
+        assertFalse(picker.confirming)
+
+        viewModel.handleGamepadAction(GamepadAction.SELECT)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            storefrontMatches.confirm(
+                1L,
+                match { it.store == gogStore && it.storeId == "1390579243" },
+                com.playfieldportal.feature.artwork.match.MatchConfidence.EXACT,
+            )
+        }
+        // Nothing left to ask.
+        assertNull(viewModel.uiState.value.storefrontMatch)
+    }
+
+    @Test
+    fun `with one store to choose from the picker is exactly what it was`() = runTest {
+        coEvery { storefrontMatches.lookup(any(), any(), any(), any()) } returns
+            com.playfieldportal.feature.artwork.match.StorefrontMatchRepository.Lookup.NeedsChoice(
+                query = "doom",
+                pending = listOf(
+                    pendingOn(
+                        steamStore, com.playfieldportal.feature.artwork.match.MatchConfidence.AMBIGUOUS,
+                        "379720" to "DOOM", "2280" to "DOOM (1993)",
+                    ),
+                ),
+            )
+        loadedAndLaidOut()
+        viewModel.openStorefrontMatch()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.handleGamepadAction(GamepadAction.NEXT_CATEGORY)
+        assertEquals("Steam", picker.storeLabel)
+        assertEquals(0, picker.focus)
+
+        viewModel.handleGamepadAction(GamepadAction.SELECT)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertNull(viewModel.uiState.value.storefrontMatch)
+    }
+
+    @Test
+    fun `a store that did not answer is named on the picker, never left looking empty`() = runTest {
+        coEvery { storefrontMatches.lookup(any(), any(), any(), any()) } returns
+            com.playfieldportal.feature.artwork.match.StorefrontMatchRepository.Lookup.NeedsChoice(
+                query = "doom",
+                pending = listOf(
+                    pendingOn(
+                        steamStore, com.playfieldportal.feature.artwork.match.MatchConfidence.AMBIGUOUS,
+                        "379720" to "DOOM",
+                    ),
+                ),
+                unavailable = listOf(gogStore),
+            )
+        loadedAndLaidOut()
+        viewModel.openStorefrontMatch()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf("GOG"), picker.unavailableStores)
+        assertEquals("GOG didn't answer, so this list is Steam's alone. Try again later for GOG.", storefrontOtherStoresNote(picker))
+    }
+
+    @Test
+    fun `a store row's own Search asks that store only`() = runTest {
+        openStoreMatch()
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)   // the Steam row
+
+        viewModel.handleGamepadAction(GamepadAction.SELECT)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Looking past Steam's link must leave every other store's link alone.
+        coVerify { storefrontMatches.lookup(1L, true, null, steamStore) }
+    }
+
+    @Test
+    fun `Search every store again asks them all`() = runTest {
+        openStoreMatch()
+
+        viewModel.searchAllStorefronts()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { storefrontMatches.lookup(1L, true, null, null) }
+    }
+
     @Test
     fun `a page action cannot fire through the Options overlay`() = runTest {
         loadedAndLaidOut()
@@ -1656,24 +2260,41 @@ class GameDetailViewModelTest {
     }
 
     @Test
-    fun `removing a game descends, commits, and backs out with three different cues`() = runTest {
+    fun `the removal prompt opens with the activation cue and leaves the rest to the modal`() = runTest {
         loadedAndLaidOut()
 
         viewModel.requestRemove()
         assertTrue(viewModel.uiState.value.confirmRemove)
         verify(exactly = 1) { menuSound.play(select, any()) }
 
-        // Back out of the prompt: a level up, not a commit.
-        viewModel.handleGamepadAction(GamepadAction.BACK)
+        // Cancel and Remove are pressed in the shared modal, which voices them itself.
+        viewModel.cancelRemove()
         assertFalse(viewModel.uiState.value.confirmRemove)
-        verify(exactly = 1) { menuSound.play(back, any()) }
-        verify(exactly = 0) { menuSound.play(confirmCue, any()) }
 
-        // And through with it: deleting the entry is the point of no return on this screen.
         viewModel.requestRemove()
+        viewModel.confirmRemoveGame()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { gameRepository.delete(1L) }
+        assertTrue(viewModel.uiState.value.closed)
+        verify(exactly = 0) { menuSound.play(back, any()) }
+        verify(exactly = 0) { menuSound.play(confirmCue, any()) }
+    }
+
+    @Test
+    fun `a Confirm that reaches the page while the removal prompt is up never removes the game`() = runTest {
+        loadedAndLaidOut()
+        viewModel.requestRemove()
+
+        // The modal opens on Cancel; a press that raced it onto the screen must not skip that.
         viewModel.handleGamepadAction(GamepadAction.SELECT)
         testDispatcher.scheduler.advanceUntilIdle()
-        verify(exactly = 1) { menuSound.play(confirmCue, any()) }
+
+        coVerify(exactly = 0) { gameRepository.delete(any()) }
+        assertTrue(viewModel.uiState.value.confirmRemove)
+
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+        assertFalse(viewModel.uiState.value.confirmRemove)
     }
 
     @Test

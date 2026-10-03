@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.ImageBitmap
  *
  * `firstFrame` exists on BOTH arms so the unfocused case is free: an unfocused [Animated]
  * icon draws the exact same single-bitmap path a [Still] does (same matte, same cost), and
- * the decoder only starts when [LocalIconAnimating] turns on for the focused item. A
+ * the decoder only starts when Animated Images lets the icon play (see CustomIconSurface). A
  * single-frame GIF is stored as a [Still] — no decoder is ever started for it.
  */
 sealed interface CustomIcon {
@@ -35,10 +35,3 @@ sealed interface CustomIcon {
  */
 val LocalCustomIcons = staticCompositionLocalOf<Map<String, CustomIcon>> { emptyMap() }
 
-/**
- * True only for the row/column currently focused — the single gate on GIF playback (decision:
- * only the focused icon animates; everything else shows frame 1, one decoder at a time).
- * Provided per container where selection is already known (XMBCategoryBar, XMBItemList), ANDed
- * with "animation allowed at all" (battery saver, blocking overlays) by the provider.
- */
-val LocalIconAnimating = staticCompositionLocalOf { false }

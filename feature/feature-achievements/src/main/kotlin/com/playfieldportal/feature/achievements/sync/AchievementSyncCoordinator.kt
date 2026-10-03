@@ -161,8 +161,12 @@ class AchievementSyncCoordinator @Inject constructor(
         counts.skipped += entries.size - eligible.size
         counts.advance(entries.size - eligible.size)
 
+        // A scheduled run reports a pause once: the reason is stored with the provider, and the
+        // same reason on the next scheduled run is a repeat. A manual run always reports it.
+        fun isRepeat(pause: UpdatePause) = trigger == SyncTrigger.AUTOMATIC && state?.pausedReason == pause.code
+
         val plan = strategy.plan(eligible, trigger, now)
-        plan.pause?.let { counts.pause(it, repeat = trigger == SyncTrigger.AUTOMATIC && state?.pausedReason == it.code) }
+        plan.pause?.let { counts.pause(it, repeat = isRepeat(it)) }
         if (plan.failed) {
             val retryAt = now + AchievementBackoff.delayMs((state?.failureCount ?: 0) + 1, plan.retryAfterMs)
             store.recordProviderFailure(provider, now, retryAt, plan.pause)
@@ -179,6 +183,9 @@ class AchievementSyncCoordinator @Inject constructor(
         }
         // New matches first, then changed summaries.
         val toFetch = plan.toFetch.mapNotNull { byIdentity[it] }.sortedByDescending { it.isNew }
+        // A provider can pass its own check and still refuse a single game (Steam lists the
+        // library but withholds a game's achievements). That is the same pause, found later.
+        var fetchPause: UpdatePause? = null
         for (entry in toFetch) {
             val reason = if (entry.isNew) FetchReason.NEW_MATCH else FetchReason.ROUTINE
             val outcome = fetchShared(entry.identity, entry.title, reason, plan.snapshots[entry.identity])
@@ -186,20 +193,27 @@ class AchievementSyncCoordinator @Inject constructor(
                 is ProviderSyncResult.Success -> if (outcome.changed) counts.updated++ else counts.unchanged++
                 ProviderSyncResult.NotFound -> counts.unchanged++
                 ProviderSyncResult.MissingCredentials -> {
-                    counts.pause(UpdatePause.Credentials(provider), repeat = false)
+                    fetchPause = UpdatePause.Credentials(provider)
                     counts.skipped++
                 }
                 ProviderSyncResult.ProfileNotPublic -> {
-                    counts.pause(UpdatePause.SteamPrivate, repeat = false)
+                    fetchPause = UpdatePause.SteamPrivate
                     counts.skipped++
                 }
                 ProviderSyncResult.NotLinked -> counts.skipped++
                 is ProviderSyncResult.Failed -> {
                     Timber.i("Achievement update %s: %s", entry.identity, result.reason)
                     counts.failed++
+                    counts.failedGames += FailedAchievementGame(entry.title, result.reason)
                 }
             }
             counts.advance(1)
+        }
+        fetchPause?.let { pause ->
+            counts.pause(pause, repeat = isRepeat(pause))
+            // The check recorded above carried the plan's pause (none, here) and so cleared the
+            // stored reason; put it back, or the next scheduled run would report this again.
+            store.recordProviderPause(provider, pause)
         }
         val decided = plan.unchanged.count { it in byIdentity } + toFetch.size
         counts.skipped += eligible.size - decided
@@ -208,7 +222,7 @@ class AchievementSyncCoordinator @Inject constructor(
 
     // ── Single-game refreshes ───────────────────────────────────────────────────
 
-    /** Explicit "Refresh this game" for a present, confirmed identity. Removed games are refused. */
+    /** Explicit "Update Achievements" for a present, confirmed identity. Removed games are refused. */
     suspend fun refreshIdentity(identity: AchievementIdentity, title: String): ProviderSyncResult {
         if (clearing) return CLEARING
         val row = store.identity(identity) ?: return ProviderSyncResult.NotLinked
@@ -398,6 +412,7 @@ class AchievementSyncCoordinator @Inject constructor(
         var skipped = 0
         var failed = 0
         val pauses = mutableSetOf<UpdatePause>()
+        val failedGames = mutableListOf<FailedAchievementGame>()
         val newPauses = mutableSetOf<UpdatePause>()
 
         fun pause(pause: UpdatePause, repeat: Boolean) {
@@ -419,6 +434,7 @@ class AchievementSyncCoordinator @Inject constructor(
             skipped = skipped,
             failed = failed,
             pauses = pauses.toSet(),
+            failedGames = failedGames.toList(),
         )
     }
 

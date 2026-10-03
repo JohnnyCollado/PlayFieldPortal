@@ -38,6 +38,8 @@ dependencies {
     implementation(libs.material.icons.extended)
     // Built-in video player (Media3 ExoPlayer + PlayerView)
     implementation(libs.media3.exoplayer)
+    // Steam's full trailers are HLS streams; the Studio previews them before they are saved.
+    implementation(libs.media3.exoplayer.hls)
     implementation(libs.media3.ui)
 
     implementation(project(":core:theme-kit"))

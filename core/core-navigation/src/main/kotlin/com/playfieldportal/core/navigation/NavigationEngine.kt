@@ -33,9 +33,9 @@ class NavigationEngine(
     val activeContextId: String
         get() = active.id
 
-    /** True while a modal context is on top of the stack (spec §15). */
+    /** True while a modal context is on top of the stack (spec §15). A nested level is not one. */
     val isModalActive: Boolean
-        get() = contexts.size > 1
+        get() = active.modal
 
     /** True while edit mode is active in the active context (spec §5). */
     val isEditing: Boolean
@@ -108,6 +108,11 @@ class NavigationEngine(
         active.updateNodes(nodes, geometry, previousGeometry)
     }
 
+    /** Lays the active context out as [grid] with its cells' [nodes]; see [NavigationContext.updateFlowGrid]. */
+    fun replaceFlowGrid(grid: FlowGrid, nodes: List<NavigationNode>) {
+        active.updateFlowGrid(grid, nodes)
+    }
+
     fun focusFirst() {
         active.focusFirst()
     }
@@ -149,7 +154,15 @@ class NavigationEngine(
     }
 
     /**
-     * Pop the top context (modal close). The previous context resumes with the exact logical
+     * Push a nested, non-modal level — a picker's grid below its shelf list. Like a modal, only the
+     * top context receives commands and the level below keeps its focus for [popContext].
+     */
+    fun pushContext(contextId: String) {
+        contexts.addLast(NavigationContext(contextId))
+    }
+
+    /**
+     * Pop the top context (modal close, or leaving a nested level). The previous context resumes with the exact logical
      * node it had before the modal opened (spec §15). Returns the key to restore focus to.
      */
     fun popContext(): String? {
@@ -217,14 +230,8 @@ class NavigationEngine(
         }
     }
 
-    private fun dispatchDirection(context: NavigationContext, direction: NavigationDirection): String? {
-        return when (direction) {
-            NavigationDirection.UP -> context.moveVertical(-1)
-            NavigationDirection.DOWN -> context.moveVertical(1)
-            NavigationDirection.LEFT -> context.moveHorizontal(-1)
-            NavigationDirection.RIGHT -> context.moveHorizontal(1)
-        }
-    }
+    private fun dispatchDirection(context: NavigationContext, direction: NavigationDirection): String? =
+        context.move(direction)
 
     /** Screen-level back handler (leaf screens close; nested screens collapse a level). */
     var backHandler: (() -> Unit)? = null

@@ -122,6 +122,10 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_48_49,
             PFPDatabase.MIGRATION_49_50,
             PFPDatabase.MIGRATION_50_51,
+            PFPDatabase.MIGRATION_51_52,
+            PFPDatabase.MIGRATION_52_53,
+            PFPDatabase.MIGRATION_53_54,
+            PFPDatabase.MIGRATION_54_55,
         )
         .build()
 
@@ -161,6 +165,9 @@ object DatabaseModule {
     @Provides fun provideNotificationDao(db: PFPDatabase): NotificationDao = db.notificationDao()
     @Provides fun provideGameStorefrontIdentityDao(db: PFPDatabase): GameStorefrontIdentityDao =
         db.gameStorefrontIdentityDao()
+    @Provides fun provideListStateDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.ListStateDao = db.listStateDao()
+    @Provides fun provideUmdSlotDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.UmdSlotDao = db.umdSlotDao()
+    @Provides fun provideAppUsageDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.AppUsageDao = db.appUsageDao()
 }
 
 @Module

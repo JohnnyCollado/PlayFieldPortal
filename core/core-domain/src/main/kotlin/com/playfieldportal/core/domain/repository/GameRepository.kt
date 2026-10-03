@@ -32,6 +32,8 @@ interface GameRepository {
     suspend fun getByPlatform(platformId: String): List<Game>
     fun observeRecentPlatforms(limit: Int): Flow<List<RecentPlatform>>
     suspend fun getById(id: Long): Game?
+    /** One game row, re-emitted on every write to it; null once the row is gone. */
+    fun observeById(id: Long): Flow<Game?>
     /** All rows in one multi-disc set, ordered with its projected primary first. */
     suspend fun getDiscSetMembers(discSetKey: String): List<Game>
     suspend fun getByPackageName(packageName: String): Game?
@@ -56,6 +58,8 @@ interface GameRepository {
     /** Selects the disc used when the logical multi-disc game is launched. */
     suspend fun setPreferredDisc(id: Long, discId: Long)
     suspend fun recordPlaySession(session: PlaySession)
+    /** Stamps the game (and every disc of its set) as played at [playedAt]. No play time is added. */
+    suspend fun markLaunched(id: Long, playedAt: Long)
     suspend fun getMissingRoms(): List<Game>
     suspend fun updateScrapedTitle(id: Long, scrapedTitle: String?)
 

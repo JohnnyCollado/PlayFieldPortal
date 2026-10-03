@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -52,6 +54,11 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.keyboard.InputSource
+import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
+import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
+import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
 import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.theme.menuCursor
@@ -64,6 +71,7 @@ import com.playfieldportal.feature.settings.ui.LocalSettingsReportFocused
 import com.playfieldportal.feature.settings.ui.LocalSettingsTouchInput
 import com.playfieldportal.feature.settings.ui.SettingsAccent
 import com.playfieldportal.feature.settings.ui.SettingsDivider
+import com.playfieldportal.feature.settings.ui.SettingsLabels
 import com.playfieldportal.feature.settings.ui.SettingsRowAction
 import com.playfieldportal.feature.settings.ui.SettingsRowActionButton
 import com.playfieldportal.feature.settings.ui.SettingsSubtext
@@ -242,12 +250,12 @@ fun WizardRootRow(
         hideRowHighlightOnActionFocus = true,
         actions = listOf(
             SettingsRowAction(
-                "Edit folder", onEdit,
+                SettingsLabels.EDIT_FOLDER, onEdit,
                 actionFocusBackgroundColor = lerp(SettingsAccent, Color.Black, 0.50f),
             ) {
                 Icon(
                     Icons.Default.Create,
-                    contentDescription = "Edit folder",
+                    contentDescription = SettingsLabels.EDIT_FOLDER,
                     tint = SettingsAccent,
                     modifier = Modifier
                         .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
@@ -255,12 +263,12 @@ fun WizardRootRow(
                 )
             },
             SettingsRowAction(
-                "Remove folder", onRemove,
+                SettingsLabels.REMOVE_FOLDER, onRemove,
                 actionFocusBackgroundColor = lerp(Color(0xFFE55353), Color.Black, 0.50f),
             ) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = "Remove folder",
+                    contentDescription = SettingsLabels.REMOVE_FOLDER,
                     tint = Color(0xFFE55353),
                     modifier = Modifier
                         .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
@@ -278,11 +286,13 @@ fun WizardCheckboxRow(
     checked: Boolean,
     onToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    sublabel: String? = null,
     focusKey: String? = null,
 ) {
     WizardRow(
         label = label,
         modifier = modifier,
+        sublabel = sublabel,
         focusKey = focusKey,
         onClick = { onToggle(!checked) },
         trailing = {
@@ -297,8 +307,9 @@ fun WizardCheckboxRow(
 
 /**
  * The PSP rounded input field: near-white pill with dark text, confirm-to-edit like the
- * settings field (SELECT/tap enters edit and opens the keyboard; IME Done or focus leaving
- * exits). Optional [onAdvance] renders the reference's circular ▶ button at the field's right
+ * settings field (SELECT/tap enters edit and opens the keyboard; Done, BACK on PFP's keyboard,
+ * IME Done or focus leaving exits). SELECT types on PFP's keyboard in the footer band when
+ * Settings ▸ Controller ▸ Virtual Keyboard is on; a tap keeps the system keyboard. Optional [onAdvance] renders the reference's circular ▶ button at the field's right
  * edge — a real controller node too (DOWN from the field, SELECT advances) as well as a
  * touch target.
  */
@@ -319,12 +330,25 @@ fun WizardTextField(
     val reportFocused = LocalSettingsReportFocused.current
     val keyboard = LocalSoftwareKeyboardController.current
     val menuSounds = LocalMenuSounds.current
+    val bringIntoView = remember { BringIntoViewRequester() }
     var editing by remember { mutableStateOf(false) }
+    val edit = rememberVirtualKeyboardEdit(
+        text = value,
+        onTextChange = onValueChange,
+        placement = KeyboardPlacement.SETTINGS_FOOTER,
+        isPassword = isPassword,
+        onDone = { editing = false },
+        onClose = { editing = false },
+    )
 
     // Entering edit mode is this field's activation, the same as SettingsTextFieldRow's. Leaving
-    // it stays silent: the IME owns that moment, and focus can leave without any press at all.
+    // it stays silent: the keyboard owns that moment, and focus can leave without any press.
     val beginEditing: () -> Unit = {
         menuSounds.play(MenuSound.SELECT); editing = true
+    }
+    val beginControllerEditing: () -> Unit = {
+        beginEditing()
+        edit.start(InputSource.CONTROLLER)
     }
 
     val row = rememberControllerRowRegistration(
@@ -332,27 +356,36 @@ fun WizardTextField(
         focusKey = focusKey,
         claimInitialFocus = true,
         selectable = true,
-        onSelect = beginEditing,
+        onSelect = beginControllerEditing,
     )
     val fr = row.focusRequester
 
     // The keyboard follows edit mode only — navigating onto the field never opens it (the
     // readOnly→editable flip restarts the input session, so settle a frame, re-assert focus,
     // settle again, then show — same sequence as SettingsTextFieldRow).
-    LaunchedEffect(editing) {
+    // PFP's keyboard instead holds the system one back (VirtualKeyboardTextInput) and grows the
+    // footer, so the field is framed above it.
+    LaunchedEffect(editing, edit.isOpen) {
         if (editing) {
             withFrameNanos { }
             runCatching { fr.requestFocus() }
             withFrameNanos { }
-            keyboard?.show()
+            if (edit.isOpen) {
+                withFrameNanos { }
+                bringIntoView.bringIntoView()
+            } else {
+                keyboard?.show()
+            }
         } else {
             keyboard?.hide()
+            edit.stop()
         }
     }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .bringIntoViewRequester(bringIntoView)
             .padding(horizontal = 48.dp, vertical = 8.dp),
     ) {
         Text(
@@ -362,10 +395,11 @@ fun WizardTextField(
             modifier = Modifier.padding(bottom = 4.dp),
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.weight(1f)) {
+            Box(modifier = Modifier.weight(1f).virtualKeyboardField(edit)) {
+                VirtualKeyboardTextInput(edit) {
                 OutlinedTextField(
-                    value = value,
-                    onValueChange = onValueChange,
+                    value = edit.fieldValue,
+                    onValueChange = edit::onFieldValueChange,
                     readOnly = !editing,
                     singleLine = true,
                     placeholder = { Text(placeholder, color = SettingsSubtext) },
@@ -395,13 +429,14 @@ fun WizardTextField(
                         .onFocusChanged { state ->
                             if (state.isFocused) {
                                 // SELECT over the field starts editing (opens the keyboard).
-                                focusTracker(beginEditing)
+                                focusTracker(beginControllerEditing)
                                 reportFocused(fr)
                             } else {
                                 editing = false
                             }
                         },
                 )
+                }
                 // While not editing, a non-focusable tap layer lets touch users enter edit
                 // mode; pointerInput adds no focus target, so D-pad traversal is untouched.
                 if (!editing) {

@@ -34,7 +34,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
 import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.feature.artwork.store.StudioArtworkSlot
 
@@ -190,8 +189,9 @@ private fun StudioAssetRow(
                 .background(Color(0xFF080E1E)),
             contentAlignment = Alignment.Center,
         ) {
-            AsyncImage(
+            com.playfieldportal.core.ui.motion.ArtworkImage(
                 model = asset.documentUri,
+                focused = focused,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),

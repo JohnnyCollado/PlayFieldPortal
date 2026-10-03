@@ -66,7 +66,7 @@ class ThemesSettingsViewModel @Inject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ThemesSettingsUiState())
 
-    // Theme import/create/reset outcomes land in the tray (row + shade + notification cue), keyed so
+    // Theme import/create/reset outcomes land in the tray (row + notification cue), keyed so
     // a repeat replaces its row. INFO for plain results, ERROR when the store reported a failure.
     private fun reportTheme(message: String, severity: NotificationSeverity = NotificationSeverity.SUCCESS) {
         tasks.report(
@@ -186,6 +186,10 @@ class ThemesSettingsViewModel @Inject constructor(
 
     fun deleteSavedTheme(id: String) {
         viewModelScope.launch { themeStore.delete(id) }
+    }
+
+    fun renameSavedTheme(id: String, name: String) {
+        viewModelScope.launch { themeStore.rename(id, name) }
     }
 
     /** Exports the bundle to shareable cache and opens the system share sheet. */

@@ -9,7 +9,7 @@ package com.playfieldportal.core.domain.model
  * so the profiles inside one are the most valuable thing it carries.
  *
  * This is a whitelist rather than a blacklist on purpose. The set of shapes a legitimate profile
- * takes is small and known (the bundled profiles are the reference), while the set of harmful ones
+ * takes is small and known (the emulator knowledge base is the reference), while the set of harmful ones
  * is open-ended.
  */
 object EmulatorProfileAdmission {
@@ -27,14 +27,14 @@ object EmulatorProfileAdmission {
      * adds `FLAG_GRANT_READ_URI_PERMISSION` itself when a ROM URI is actually needed, and a profile
      * asking for a write grant has no legitimate reason to.
      */
-    private val ALLOWED_INTENT_FLAGS = setOf("NEW_TASK", "CLEAR_TOP", "CLEAR_TASK")
+    internal val ALLOWED_INTENT_FLAGS = setOf("NEW_TASK", "CLEAR_TOP", "CLEAR_TASK")
 
     /**
      * Android package naming, tightened: at least two dot-separated segments, each starting with a
      * letter. This rejects the empty string, whitespace, and the double-dot and leading/trailing-dot
      * forms that some parsers accept.
      */
-    private val PACKAGE_NAME = Regex("""[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+""")
+    internal val PACKAGE_NAME =Regex("""[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+""")
 
     fun admit(
         profiles: List<EmulatorProfile>,
@@ -51,7 +51,7 @@ object EmulatorProfileAdmission {
     }
 
     private fun reasonToRefuse(profile: EmulatorProfile, selfPackage: String?): String? {
-        // CUSTOM_COMMAND executes a resolved string. No bundled profile uses it, and nothing
+        // CUSTOM_COMMAND executes a resolved string. No knowledge-base entry uses it, and nothing
         // arriving from a file should be able to introduce one.
         if (profile.intentType == IntentType.CUSTOM_COMMAND || profile.customCommand != null) {
             return "carries a custom command"

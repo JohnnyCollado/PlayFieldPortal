@@ -55,6 +55,7 @@ enum class StudioSource(val label: String) {
     STEAMGRIDDB("SteamGridDB"),
     THEGAMESDB("TheGamesDB"),
     IGDB("IGDB"),
+    STEAM("Steam"),
     LOCAL("Local File"),
 }
 
@@ -69,11 +70,20 @@ data class StudioArt(
     val label: String? = null,
     val isVideo: Boolean = false,
     val providerAssetId: String? = null,
+    /** What the Options menu's filters read (style, size, region, media type); null filters nothing. */
+    val facets: StudioArtFacets? = null,
 )
 
-// Navigation levels, strictly hierarchical: confirm descends, back ascends, left/right acts on
-// the current level only. TABS (categories) → SOURCES → GRID.
-enum class StudioZone { TABS, SOURCES, GRID }
+/** One row of the Triangle menu: a filter row of the active source, or a slot/source action. */
+sealed interface StudioMenuItem {
+    data class Filter(val option: StudioFilterOption) : StudioMenuItem
+    data class Action(val action: StudioAction) : StudioMenuItem
+}
+
+// Navigation levels: SOURCES → GRID. Confirm descends, back ascends, left/right acts on the
+// current level only. There is no tab level: LB/RB change the artwork type from the source row, so
+// a level whose only job was to be confirmed out of just cost a press (user decision, 2026-09-29).
+enum class StudioZone { SOURCES, GRID }
 
 /** Where one pick is on its way into the library (task 5.2). */
 enum class StudioQueueState { QUEUED, DOWNLOADING, ADDED, FAILED }
@@ -134,6 +144,21 @@ enum class CropOption {
         }
 }
 
+/** The crop menu's title. */
+const val STUDIO_CROP_OPTIONS_TITLE = "Crop Options"
+
+/** One crop-menu row as the panel shows it: a label, its setting at the right, a check for the shape in force. */
+data class StudioCropRow(val label: String, val value: String, val checked: Boolean = false)
+
+/** The panel row for [option]: Live Preview with its On/Off, or Shape with the shape that row selects. */
+fun studioCropRow(option: CropOption, previewEnabled: Boolean, current: CropShapeChoice): StudioCropRow {
+    val shape = option.shape ?: return StudioCropRow("Live Preview", if (previewEnabled) "On" else "Off")
+    return StudioCropRow("Shape", shape.label, checked = shape == current)
+}
+
+/** Shown when Triangle is pressed on a source that has no options to offer. */
+const val STUDIO_NO_OPTIONS_MESSAGE = "No options available here"
+
 /**
  * The crop shapes a game can be pinned to (task 6.3).
  *
@@ -172,6 +197,12 @@ enum class StudioReplaceChoice(val label: String) {
     REPLACE("Replace Anyway"),
 }
 
+/**
+ * The two Options-menu actions that ask first through the shared PFP confirm modal (context-menu
+ * plan task 1.4), instead of the Studio's own row prompts above. Neither runs on one press.
+ */
+enum class StudioDestructive { CLEAR_ARTWORK, FORGET_MATCH }
+
 /** Which confirmation [StudioConfirmPrompt] describes — what activating a row resolves. */
 enum class StudioConfirmKind { APPLY, REPLACE }
 
@@ -201,6 +232,25 @@ fun studioAssetCount(kind: ArtworkKind, count: Int): String {
     return if (count == 1) "1 $noun" else "$count ${noun}s"
 }
 
+/** The provider a record picked from the device is stored under. */
+const val LOCAL_FILE_PROVIDER = "Local file"
+
+/**
+ * What a batch of local picks did: "Added 3 screenshots", with the cap or failures after it when
+ * either held some back.
+ */
+fun studioLocalAddMessage(kind: ArtworkKind, added: Int, failed: Int, droppedOverCap: Boolean): String {
+    val capacity = com.playfieldportal.feature.artwork.store.ArtworkFileNaming.MAX_SORT_ORDER + 1
+    return when {
+        droppedOverCap && added == 0 -> "A game holds ${studioAssetCount(kind, capacity)} at most"
+        droppedOverCap               -> "Added ${studioAssetCount(kind, added)} — a game holds $capacity at most"
+        failed > 0 && added == 0     -> if (failed == 1) "The file could not be added" else "$failed files could not be added"
+        failed > 0                   ->
+            "Added ${studioAssetCount(kind, added)} · $failed ${if (failed == 1) "file" else "files"} could not be added"
+        else                         -> "Added ${studioAssetCount(kind, added)}"
+    }
+}
+
 /** The apply confirmation's title: "Add 2 screenshots?", "Remove 1 video?" or "Add 2 screenshots and remove 1?". */
 fun studioApplyTitle(kind: ArtworkKind, toAdd: Int, toRemove: Int): String = when {
     toAdd > 0 && toRemove > 0 -> "Add ${studioAssetCount(kind, toAdd)} and remove $toRemove?"
@@ -213,7 +263,7 @@ data class ArtworkStudioUiState(
     val isLoading: Boolean = true,
     val tabIndex: Int = 0,
     val sourceIndex: Int = 0,
-    val zone: StudioZone = StudioZone.TABS,
+    val zone: StudioZone = StudioZone.SOURCES,
     val gridIndex: Int = 0,
     // One page is one measured gridful (AD-17). 4 × 5 until the screen reports the slot's size.
     val gridColumns: Int = StudioGridCapacity.UNMEASURED.columns,
@@ -233,6 +283,8 @@ data class ArtworkStudioUiState(
     // What is in the text field while the search overlay is open, before it is submitted.
     val queryDraft: String = "",
     val searchOpen: Boolean = false,
+    // The search card's controller cursor: null while it is on the query field, else the button.
+    val searchButton: StudioSearchButton? = null,
     // True while the active query differs from the game's own title — drives the "Reset" affordance.
     val queryIsCustom: Boolean = false,
     // ── Game match (C16 task 2.3) ────────────────────────────────────────────
@@ -264,7 +316,18 @@ data class ArtworkStudioUiState(
     // Bumped on every apply/clear so the preview reloads even when the portable library reuses
     // a stable content URI (same string → Coil would otherwise serve the old bytes).
     val previewVersion: Int = 0,
+    // SteamGridDB's Mature filter. Carries over between opens, unlike the rest of [filters].
     val includeNsfw: Boolean = false,
+    // ── Per-source filters (2026-09-29) ──────────────────────────────────────
+    // Reset on every open except SteamGridDB's styles, which are remembered per art type.
+    val filters: StudioFilters = StudioFilters(),
+    // The filter list open over the Triangle menu (Style, Region, …), or null for the menu's root.
+    val filterGroup: StudioFilterGroup? = null,
+    val filterGroupIndex: Int = 0,
+    // How many results the active browse returned before the filters: "12 of 40 shown".
+    val unfilteredTotal: Int = 0,
+    // ScreenScraper's Region list for the active browse: the disc's region, the usual ones, the rest.
+    val filterRegions: List<String> = emptyList(),
     val hasSgdbKey: Boolean = false,
     // Keyed providers with no key/credentials: still listed, drawn disabled, skipped by source
     // cycling, and never asked. Re-read on every open so a key added in Settings takes effect.
@@ -290,6 +353,9 @@ data class ArtworkStudioUiState(
     // Apply was pressed on a single-art tile the slot already holds: View / Replace / Cancel (5.3).
     val replacePromptOpen: Boolean = false,
     val replacePromptIndex: Int = 0,
+    // Clear Artwork or Forget Match was chosen and is waiting on the shared confirm modal. The
+    // screen hosts that modal, so there is no cursor here: only which action is asking.
+    val destructiveConfirm: StudioDestructive? = null,
     // Stored-assets manager (task 5.4): reorders the active multi-asset slot. Its list is [library],
     // which is already the slot's stored assets in order, so the panel holds no copy of its own.
     val managerOpen: Boolean = false,
@@ -307,15 +373,16 @@ data class ArtworkStudioUiState(
     val message: String? = null,
     // Set when the user picked "Local File" — the screen launches the SAF picker for it.
     val localPickKind: ArtworkKind? = null,
+    // The grid cursor is on Local File's upload bar rather than a tile. Read through
+    // [localBarFocused], which also requires the grid and Local File to still be where the user is.
+    val localBarCursor: Boolean = false,
     // Actions menu (OPEN_CONTEXT_MENU / on-screen ACTIONS) — operates on the active tab's current slot.
     val actionsOpen: Boolean = false,
     val actionsIndex: Int = 0,
-    // The action actually under the cursor (task 3.3). availableActions is recomputed from other
-    // state, so when it changes while the menu is open (e.g. a queue item fails), the cursor is
-    // re-anchored to this action rather than to actionsIndex's raw position.
-    val actionsSelectedAction: StudioAction? = null,
-    // Whether the menu was opened over a SteamGridDB browse — gates the mature-content entry.
-    val sgdbSourceActive: Boolean = false,
+    // The row actually under the cursor (task 3.3). menuItems is recomputed from other state, so
+    // when it changes while the menu is open (e.g. a queue item fails), the cursor is re-anchored to
+    // this row rather than to actionsIndex's raw position.
+    val actionsSelected: StudioMenuItem? = null,
     val info: StudioArtworkInfo? = null,
     val showFileInfo: Boolean = false,
     // Crop editor (task: crop/position) — non-null path = editing the untouched original.
@@ -389,9 +456,24 @@ data class ArtworkStudioUiState(
     val selectedOnTab: Int
         get() = STUDIO_TABS.getOrNull(tabIndex)?.kind?.let { kind -> selection.keys.count { it.kind == kind } } ?: 0
 
-    /** A took Preview's place on this tab, so the menu offers it for the focused tile. */
+    /** Local File is the active source, so the grid carries the upload bar above the slot's own files. */
+    val localSourceActive: Boolean
+        get() = StudioSource.entries.getOrNull(sourceIndex) == StudioSource.LOCAL
+
+    /** The grid cursor is on the upload bar: A opens the device picker instead of acting on a tile. */
+    val localBarFocused: Boolean
+        get() = zone == StudioZone.GRID && localSourceActive && localBarCursor
+
+    /** The tile under the grid cursor, or null when the cursor is on the upload bar or there is none. */
+    private val focusedTile: StudioArt?
+        get() = if (zone != StudioZone.GRID || localBarFocused) null else results.getOrNull(gridIndex)
+
+    /**
+     * A took Preview's place on this tab, so the menu offers it for the focused tile. Not for a
+     * [LOCAL_ART] tile: its preview's Apply would store a file the slot already holds.
+     */
     val canPreviewFocused: Boolean
-        get() = zone == StudioZone.GRID && selectsMultiple && results.getOrNull(gridIndex) != null
+        get() = selectsMultiple && focusedTile?.let { it.provider != LOCAL_ART } == true
 
     /** How the active tab's [art] is getting on in the open game's queue, or null if it was never added. */
     fun queueStateOf(art: StudioArt): StudioQueueState? {
@@ -508,36 +590,62 @@ data class ArtworkStudioUiState(
             if (hasCurrent && kind != null && kind in CROPPABLE_KINDS) add(StudioAction.CROP)
             // Crop a pick BEFORE it is applied. Offered whenever a grid tile is focused on a
             // croppable tab — independent of whether the slot already holds art, since this frames
-            // the candidate rather than what is already there. Plain Apply is untouched.
-            if (zone == StudioZone.GRID && kind != null && kind in CROPPABLE_KINDS &&
-                results.getOrNull(gridIndex)?.isVideo == false
-            ) {
+            // the candidate rather than what is already there. Plain Apply is untouched. A stored
+            // file is not a candidate; Adjust Crop is how that gets re-framed.
+            val tile = focusedTile
+            if (kind != null && kind in CROPPABLE_KINDS && tile != null && !tile.isVideo && tile.provider != LOCAL_ART) {
                 add(StudioAction.CROP_BEFORE_APPLY)
             }
             if (info?.hasPrevious == true) add(StudioAction.RESTORE_PREVIOUS)
             if (info?.originUrl != null) add(StudioAction.RESET_DEFAULT)
             if (hasCurrent) add(StudioAction.CLEAR)
             if (hasCurrent) add(StudioAction.FILE_INFO)
-            // Mature content is a SteamGridDB browse filter, so it belongs to that source's
-            // context menu — not to a global button that used to fire on every screen (task 1.3).
-            if (sgdbSourceActive) add(StudioAction.TOGGLE_MATURE)
+            // SteamGridDB's Mature filter is one of its filter rows now, above these actions.
             // The match row's two buttons are touch targets with no controller path, so they are
             // offered here too (task 2.4), under exactly the row's own visibility rules.
             if (matchProvider != null) add(StudioAction.CHANGE_MATCH)
             if (matchIsConfirmed) add(StudioAction.FORGET_MATCH)
         }
 
+    /** The source whose grid is on screen. */
+    val activeSource: StudioSource? get() = StudioSource.entries.getOrNull(sourceIndex)
+
+    private val ssTypesOnTab: List<String>
+        get() = STUDIO_TABS.getOrNull(tabIndex)?.kind?.let { SS_TYPES_FOR_KIND[it] }.orEmpty()
+
+    /** The active source's filter rows, at the top of the Triangle menu. Empty when it has none. */
+    val filterRootRows: List<StudioFilterRow>
+        get() = studioFilterRows(this, group = null, ssTypes = ssTypesOnTab, regions = filterRegions)
+
+    /** The open filter list's rows, or empty at the menu's root. */
+    val filterGroupRows: List<StudioFilterRow>
+        get() = filterGroup?.let { studioFilterRows(this, it, ssTypesOnTab, filterRegions) }.orEmpty()
+
+    /** The Triangle menu's root, in order: the active source's filters, then [availableActions]. */
+    val menuItems: List<StudioMenuItem>
+        get() = filterRootRows.map { StudioMenuItem.Filter(it.option) } + availableActions.map { StudioMenuItem.Action(it) }
+
+    /** The action under the cursor, or null when the cursor is on a filter row. */
+    val actionsSelectedAction: StudioAction? get() = (actionsSelected as? StudioMenuItem.Action)?.action
+
+    /** Whether [source] is filtered narrower than its defaults — the ● on its chip. */
+    fun sourceFiltered(source: StudioSource): Boolean =
+        STUDIO_TABS.getOrNull(tabIndex)?.kind?.let { filters.isActive(source, it, includeNsfw) } == true
+
+    /** The browse found art and the filters hid all of it: the grid offers Clear Filters instead. */
+    val filtersHideEverything: Boolean get() = !resultsLoading && totalResults == 0 && unfilteredTotal > 0
+
     /**
-     * Where the cursor sits in the current [availableActions] (task 3.3). Prefers the position of
-     * [actionsSelectedAction] so the cursor follows that action across a list change; falls back to
-     * the raw [actionsIndex], clamped, when that action is no longer offered.
+     * Where the cursor sits in the current [menuItems] (task 3.3). Prefers the position of
+     * [actionsSelected] so the cursor follows that row across a list change; falls back to the raw
+     * [actionsIndex], clamped, when that row is no longer offered.
      */
     val resolvedActionsIndex: Int
         get() {
-            val actions = availableActions
-            if (actions.isEmpty()) return 0
-            val byAction = actionsSelectedAction?.let(actions::indexOf) ?: -1
-            return if (byAction >= 0) byAction else actionsIndex.coerceIn(0, actions.lastIndex)
+            val items = menuItems
+            if (items.isEmpty()) return 0
+            val byItem = actionsSelected?.let(items::indexOf) ?: -1
+            return if (byItem >= 0) byItem else actionsIndex.coerceIn(0, items.lastIndex)
         }
 }
 
@@ -553,7 +661,6 @@ enum class StudioAction(val label: String) {
     RESET_DEFAULT("Reset to Scraped Default"),
     CLEAR("Clear Artwork"),
     FILE_INFO("View File Information"),
-    TOGGLE_MATURE("Mature Content (SteamGridDB)"),
     CHANGE_MATCH("Change Match"),
     FORGET_MATCH("Forget Match"),
 }
@@ -577,7 +684,7 @@ private const val MAX_QUERY_LENGTH = 120
 // SS media types browsable per destination (order = preference; all variants are listed).
 // ICON0 has no exact SS equivalent — the landscape "mix" composites and screen-marquee come
 // closest for the 144:80 tile; box art is offered as a croppable fallback.
-private val SS_TYPES_FOR_KIND: Map<ArtworkKind, List<String>> = mapOf(
+internal val SS_TYPES_FOR_KIND: Map<ArtworkKind, List<String>> = mapOf(
     ArtworkKind.ICON           to listOf("mixrbv2", "mixrbv1", "screenmarquee", "steamgrid", "box-2D"),
     ArtworkKind.BOX_ART        to listOf("box-2D"),
     ArtworkKind.BOX_3D         to listOf("box-3D"),
@@ -602,6 +709,15 @@ private val BACKGROUND_SOURCES = listOf(
     StudioSource.IGDB to MatchProvider.IGDB,
 )
 
+// The saved id each provider resolves from first (tier 1). One changing under the Studio makes the
+// matches remembered for that provider stale.
+private val PROVIDER_IDS: List<Pair<MatchProvider, (Game) -> Long?>> = listOf(
+    MatchProvider.SCREENSCRAPER to { it.ssId },
+    MatchProvider.STEAMGRIDDB to { it.steamGridDbId },
+    MatchProvider.THEGAMESDB to { it.tgdbId },
+    MatchProvider.IGDB to { it.igdbId },
+)
+
 // Tabs with no provider art type of their own. Rather than hide a provider there, it offers every
 // image it has for the game and the crop editor shapes the pick (user decision, 2026-09-10).
 private val SHOW_ALL_ART_KINDS = setOf(ArtworkKind.BOX_3D, ArtworkKind.PHYSICAL_MEDIA, ArtworkKind.SCREENSHOT)
@@ -623,8 +739,8 @@ val STUDIO_TABS = listOf(
 /**
  * Fullscreen Artwork Studio (controller-first) — the single place a game's artwork is browsed
  * and changed. LB/RB switch destination tabs — and only that, except in the grid, where they page
- * instead; D-pad Left/Right act on the current level (the source row, then the tile cursor) and are
- * inert on the tab row; A previews→applies, B backs out, X opens search, Y opens the per-slot
+ * instead; D-pad Left/Right act on the current level (the source row, then the tile cursor);
+ * A previews→applies, B backs out (the source row closes), X opens search, Y opens the per-slot
  * options.
  * Replaces the old in-detail artwork manager.
  *
@@ -649,9 +765,11 @@ class ArtworkStudioViewModel @Inject constructor(
     private val sgdbKeyProvider: SgdbApiKeyProvider,
     private val theGamesDb: com.playfieldportal.feature.artwork.TheGamesDbApi,
     private val igdbApi: com.playfieldportal.feature.artwork.api.IgdbApi,
+    private val steamStorefront: com.playfieldportal.feature.artwork.api.SteamStorefrontApi,
     private val videoSnapTranscoder: com.playfieldportal.feature.artwork.video.VideoSnapTranscoder,
     private val matchEvidence: ProviderMatchEvidence,
     private val cropPreviewPreferences: com.playfieldportal.core.data.repository.CropPreviewPreferences,
+    private val sgdbStylePreferences: com.playfieldportal.core.data.repository.SgdbStylePreferences,
     titleSearchStore: com.playfieldportal.feature.artwork.match.TitleSearchStore,
 ) : ViewModel(), ArtworkStudioActions {
 
@@ -713,19 +831,28 @@ class ArtworkStudioViewModel @Inject constructor(
 
     private var gameId: Long = -1
 
+    /** Follows the open game's row so a write from elsewhere (a scrape, a rename) lands here live. */
+    private var gameWatchJob: kotlinx.coroutines.Job? = null
+
     /** The grid slot's last reported size in dp; null until the screen has measured it. */
     private var gridSlotDp: Pair<Float, Float>? = null
 
     fun load(gameId: Long) {
         // Always clear the closed flag: the VM survives across open/close (host-scoped), so a
         // stale closed=true from a prior B-press would otherwise slam the screen shut on reopen.
-        // Every open starts at Level 1 (categories) with no picks: a pick left over from a closed
-        // screen would be invisible. The queue keeps what is still downloading and forgets the rest.
+        // Every open starts on the first tab's source row with no picks: a pick left over from a
+        // closed screen would be invisible, and so would a tab or source left over from the last
+        // open. sourceIndex = 0 makes landOnAvailableSource() below pick the first usable source.
+        // The queue keeps what is still downloading and forgets the rest.
+        val capacity = capacityFor(0)
         _uiState.update { s ->
             s.copy(
-                closed = false, zone = StudioZone.TABS, selection = emptyMap(), removals = emptyMap(),
+                tabIndex = 0, sourceIndex = 0, zone = StudioZone.SOURCES,
+                gridColumns = capacity?.columns ?: s.gridColumns,
+                gridRows = capacity?.rows ?: s.gridRows,
+                closed = false, selection = emptyMap(), removals = emptyMap(),
                 leavePromptOpen = false, applyConfirmOpen = false, replacePromptOpen = false,
-                managerOpen = false,
+                destructiveConfirm = null, managerOpen = false, actionsOpen = false, filterGroup = null,
                 queue = s.queue.filter { it.state == StudioQueueState.QUEUED || it.state == StudioQueueState.DOWNLOADING },
             )
         }
@@ -738,12 +865,16 @@ class ArtworkStudioViewModel @Inject constructor(
             // since the last open has to be re-read here — reading it once per game is what kept a
             // freshly entered TheGamesDB key from ever taking effect.
             viewModelScope.launch {
-                val before = _uiState.value.unavailableSources
+                // The row too: a metadata update since the last open may have renamed the game,
+                // and the held copy would keep "Use game title" on the old name.
+                gameRepository.getById(gameId)?.let(::adoptGame)
+                watchGame(gameId)
                 refreshProviderAvailability()
-                if (_uiState.value.unavailableSources != before) {
-                    landOnAvailableSource()
-                    loadResults()
-                }
+                resetFilters(_uiState.value.game)
+                // Always, not only when a key changed: the reset above moved the tab and source, so
+                // the grid still holds the last open's results. The result cache makes this cheap.
+                landOnAvailableSource()
+                loadResults()
                 // What the slot holds may have changed while the screen was closed: a queue that
                 // finished after Add and Close, or a scrape.
                 refreshCurrent()
@@ -759,6 +890,7 @@ class ArtworkStudioViewModel @Inject constructor(
         viewModelScope.launch {
             val game = gameRepository.getById(gameId)
             refreshProviderAvailability()
+            resetFilters(game)
             resultCache.clear()
             // The query starts as the game's title and is the user's from then on.
             val seed = game?.displayTitle.orEmpty()
@@ -772,11 +904,69 @@ class ArtworkStudioViewModel @Inject constructor(
             refreshCurrent()
             loadResults()
             resolveInBackground()
+            watchGame(gameId)
         }
+    }
+
+    /**
+     * Keeps the held row current while the Studio is open. Started only after load() has seeded
+     * the game, so the first emission (the row as it is now) is a no-op rather than a second seed.
+     */
+    private fun watchGame(id: Long) {
+        gameWatchJob?.cancel()
+        gameWatchJob = viewModelScope.launch {
+            gameRepository.observeById(id).collect { fresh ->
+                val held = _uiState.value.game
+                if (fresh == null || held == null || fresh == held || this@ArtworkStudioViewModel.gameId != id) {
+                    return@collect
+                }
+                // A provider id written from outside makes every match remembered for it stale.
+                val movedIds = PROVIDER_IDS.filter { (_, idOf) -> idOf(fresh) != idOf(held) }.map { it.first }
+                movedIds.forEach(::forgetMatches)
+                val queryBefore = _uiState.value.query
+                adoptGame(fresh)
+                if (movedIds.isNotEmpty() || !StudioQuery.sameQuery(queryBefore, _uiState.value.query)) {
+                    loadResults()
+                }
+            }
+        }
+    }
+
+    /**
+     * Every open starts with fresh filters (user decision, 2026-09-29): ScreenScraper on the disc's
+     * region when it is known, SteamGridDB with the styles remembered for each art type, the rest at
+     * their defaults. Mature is left as it was.
+     */
+    private suspend fun resetFilters(game: Game?) {
+        val remembered = try {
+            sgdbStylePreferences.styles()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Remembered SteamGridDB styles unreadable")
+            emptyMap()
+        }
+        val styles = remembered.mapNotNull { (endpoint, set) ->
+            SgdbArtType.entries.firstOrNull { it.endpoint == endpoint }?.let { it to set }
+        }.toMap()
+        _uiState.update { it.copy(filters = StudioFilters.forOpen(game?.region, styles)) }
     }
 
     /** The game's own title — what Reset returns the query to, and what "custom" is measured against. */
     private fun gameTitle(): String = _uiState.value.game?.displayTitle.orEmpty()
+
+    /**
+     * Takes a fresh read of the game row. A query that still follows the title follows it to the
+     * new one; a custom query is the user's and stays, re-measured against the new title.
+     */
+    private fun adoptGame(fresh: Game) = _uiState.update { s ->
+        val title = fresh.displayTitle
+        if (s.queryIsCustom) {
+            s.copy(game = fresh, queryIsCustom = !StudioQuery.sameQuery(s.query, title))
+        } else {
+            s.copy(game = fresh, query = title, queryDraft = if (s.searchOpen) s.queryDraft else title)
+        }
+    }
 
     private fun tab() = STUDIO_TABS[_uiState.value.tabIndex]
 
@@ -796,6 +986,8 @@ class ArtworkStudioViewModel @Inject constructor(
         StudioSource.STEAMGRIDDB,
         StudioSource.THEGAMESDB,
         StudioSource.IGDB          -> kind !in NO_IMAGE_PROVIDER_KINDS
+        // Steam's trailers fill ICON1 and Video; only a manual is missing.
+        StudioSource.STEAM         -> kind != ArtworkKind.MANUAL
         StudioSource.LOCAL         -> true
     }
 
@@ -837,6 +1029,23 @@ class ArtworkStudioViewModel @Inject constructor(
     private suspend fun refreshLibrary() {
         val kind = tab().kind
         _uiState.update { it.copy(library = StudioLibraryAssets.of(kind, routingStore.studioAssetsOnDisk(gameId, kind))) }
+        // Local File's grid IS the library, so it follows every re-read: an add, a removal, a tab.
+        val key = activeKey
+        if (key != null && key.source == StudioSource.LOCAL) {
+            val s = _uiState.value
+            showLocalTiles(key, generation, pageIndex = s.page, gridIndex = s.gridIndex)
+        }
+    }
+
+    /**
+     * Local File's grid: the slot's stored files on a multi-asset tab, nothing on a single-art one
+     * (where the upload bar is the whole grid).
+     */
+    private fun showLocalTiles(key: StudioRequestKey, token: Long, pageIndex: Int, gridIndex: Int = 0) {
+        val s = _uiState.value
+        val tiles = if (s.selectsMultiple) localArtTiles(tab().kind, s.library) else emptyList()
+        resultCache[key] = tiles
+        showPage(tiles, pageIndex, key, token, gridIndex)
     }
 
     /**
@@ -868,14 +1077,14 @@ class ArtworkStudioViewModel @Inject constructor(
         if (known != null) {
             val key = requestKey(state, source, kind, known.match)
             activeKey = key
-            resultCache[key]?.let { cached ->
-                showPage(cached, pageIndex = 0, key = key, token = token)
+            if (source == StudioSource.LOCAL) {
+                // Local never browses. Its grid is the slot itself, read fresh rather than from the
+                // cache, which would still list a file removed since.
+                showLocalTiles(key, token, pageIndex = 0)
                 return
             }
-            if (source == StudioSource.LOCAL) {
-                // Local never browses — the grid shows the device-picker action instead.
-                resultCache[key] = emptyList()
-                showPage(emptyList(), pageIndex = 0, key = key, token = token)
+            resultCache[key]?.let { cached ->
+                showPage(cached, pageIndex = 0, key = key, token = token)
                 return
             }
         } else {
@@ -916,7 +1125,7 @@ class ArtworkStudioViewModel @Inject constructor(
     // The match is part of the key, so re-pointing the game at another provider entry invalidates
     // exactly its own cached pages and nothing else.
     private fun requestKey(state: ArtworkStudioUiState, source: StudioSource, kind: ArtworkKind, match: GameMatch?) =
-        StudioRequestKey.of(state.query, source, kind, state.includeNsfw, match?.matchKey)
+        StudioRequestKey.of(state.query, source, kind, state.filters.sgdbRequest(state.includeNsfw), match?.matchKey)
 
     /**
      * What ScreenScraper's catalog answered when asked to identify the game's ROM, ahead of
@@ -975,9 +1184,10 @@ class ArtworkStudioViewModel @Inject constructor(
         }
         val fetched = when (source) {
             StudioSource.SCREENSCRAPER -> ssResults(kind, match, romLookup)
-            StudioSource.STEAMGRIDDB   -> sgdbResults(kind, query, match)
+            StudioSource.STEAMGRIDDB   -> sgdbResults(kind, query, match, key.sgdb ?: SgdbRequestFilter())
             StudioSource.THEGAMESDB    -> tgdbResults(kind, query, match)
             StudioSource.IGDB          -> igdbResults(kind, query, match)
+            StudioSource.STEAM         -> steamResults(kind, query, match)
             StudioSource.LOCAL         -> emptyList()
         }
         // A cancelled request is not an answer. Provider calls wrap themselves in runCatching,
@@ -1004,8 +1214,17 @@ class ArtworkStudioViewModel @Inject constructor(
     ) {
         if (token != generation || key != activeKey) return
         _uiState.update {
-            val page = StudioPage.of(all, pageIndex, it.pageSize)
+            // The cache holds the whole answer; the filters are applied here, as it is shown.
+            val shown = it.filters.visible(key.source, key.kind, all)
+            val page = StudioPage.of(shown, pageIndex, it.pageSize)
             it.copy(
+                unfilteredTotal = all.size,
+                filterRegions =
+                    if (key.source == StudioSource.SCREENSCRAPER) {
+                        StudioFilters.regionChoices(all, StudioFilters.ssRegionFor(it.game?.region))
+                    } else {
+                        emptyList()
+                    },
                 resultsLoading = false,
                 results = page.items,
                 totalResults = page.totalResults,
@@ -1044,7 +1263,7 @@ class ArtworkStudioViewModel @Inject constructor(
         if (before.resultsLoading) return
         val key = activeKey ?: return
         val all = activeResults()
-        if (all.isEmpty()) return
+        if (visibleResults().isEmpty()) return
         showPage(all, focused / capacity.pageSize, key, generation, gridIndex = focused % capacity.pageSize)
     }
 
@@ -1069,7 +1288,8 @@ class ArtworkStudioViewModel @Inject constructor(
         return screenScraperTiles(kind, types, medias)
     }
 
-    private suspend fun sgdbResults(kind: ArtworkKind, query: String, match: GameMatch?): List<StudioArt> {
+    /** [ask] is what the request key says SteamGridDB is asked to leave out, never a fresher read of state. */
+    private suspend fun sgdbResults(kind: ArtworkKind, query: String, match: GameMatch?, ask: SgdbRequestFilter): List<StudioArt> {
         val types = sgdbTypesFor(kind).ifEmpty { return emptyList() }
         val game = _uiState.value.game ?: return emptyList()
         // Which SteamGridDB game to browse, strongest evidence first. [match] is the one the request
@@ -1099,7 +1319,10 @@ class ArtworkStudioViewModel @Inject constructor(
                 gameId = sgdbId,
                 type = type,
                 dimensions = emptyList(),
-                includeNsfw = _uiState.value.includeNsfw,
+                includeNsfw = ask.mature,
+                types = ask.animation.param,
+                humor = if (ask.humor) "any" else "false",
+                epilepsy = if (ask.epilepsy) "any" else "false",
             ).getOrElse {
                 Timber.w(it, "SGDB browse failed")
                 emptyList()
@@ -1115,6 +1338,7 @@ class ArtworkStudioViewModel @Inject constructor(
                     ).joinToString(" · "),
                     // SteamGridDB numbers each art type separately, so a grid and a hero can share an id.
                     providerAssetId = "${type.endpoint}:${art.id}",
+                    facets = StudioArtFacets(sgdbType = type, style = art.style, width = art.width, height = art.height),
                 )
             }
         }
@@ -1209,6 +1433,46 @@ class ArtworkStudioViewModel @Inject constructor(
         return listOf(StudioArt(url = url, thumb = null, provider = "IGDB", label = "best title match"))
     }
 
+    /**
+     * Steam's store media for the matched appid — a Steam game's own, from its storefront pair — or,
+     * unmatched, for the first store search hit, exactly like SteamGridDB's fallback. Keyless.
+     */
+    private suspend fun steamResults(kind: ArtworkKind, query: String, match: GameMatch?): List<StudioArt> {
+        val game = _uiState.value.game ?: return emptyList()
+        val appId = match?.candidate?.takeIf { it.provider == MatchProvider.STEAM }?.providerGameId
+            ?: firstSteamHit(query, game.platformId)
+            ?: return emptyList()
+        val media = steamMedia(appId) ?: return emptyList()
+        return steamTiles(kind, media)
+    }
+
+    /**
+     * One request answers every tab, so an app's media is kept for the ViewModel's life, "not on
+     * the store" included. A failure is not an answer and is asked again on the next browse.
+     */
+    private suspend fun steamMedia(appId: String): com.playfieldportal.feature.artwork.api.SteamStoreMedia? {
+        if (steamMediaByApp.containsKey(appId)) return steamMediaByApp[appId]
+        return when (val result = steamStorefront.storeMedia(appId)) {
+            is com.playfieldportal.feature.artwork.api.SteamResult.Ok -> result.value.also { steamMediaByApp[appId] = it }
+            is com.playfieldportal.feature.artwork.api.SteamResult.Failure -> {
+                Timber.w("Steam store media failed for %s: %s", appId, result.kind)
+                null
+            }
+        }
+    }
+
+    private val steamMediaByApp = mutableMapOf<String, com.playfieldportal.feature.artwork.api.SteamStoreMedia?>()
+
+    /** Steam's first store search hit for [query], asked through [titleSearches] like [firstSgdbHit]. */
+    private suspend fun firstSteamHit(query: String, platformId: String): String? = try {
+        titleSearches.searchByTitle(MatchProvider.STEAM, query, platformId).firstOrNull()?.providerGameId
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Timber.w(e, "Steam search failed")
+        null
+    }
+
     // ── User actions ──────────────────────────────────────────────────────────
 
     // Selecting a category or source (controller cycle OR touch tap) also lands navigation on
@@ -1220,7 +1484,7 @@ class ArtworkStudioViewModel @Inject constructor(
         val capacity = capacityFor(tabIndex)
         _uiState.update {
             it.copy(
-                tabIndex = tabIndex, sourceIndex = 0, zone = StudioZone.TABS,
+                tabIndex = tabIndex, sourceIndex = 0, zone = StudioZone.SOURCES,
                 gridColumns = capacity?.columns ?: it.gridColumns,
                 gridRows = capacity?.rows ?: it.gridRows,
             )
@@ -1339,7 +1603,7 @@ class ArtworkStudioViewModel @Inject constructor(
      */
     override fun toggleNsfw() {
         if (!sgdbActive()) return
-        _uiState.update { it.copy(includeNsfw = !it.includeNsfw, actionsOpen = false) }
+        _uiState.update { it.copy(includeNsfw = !it.includeNsfw) }
         loadResults()
     }
 
@@ -1357,6 +1621,7 @@ class ArtworkStudioViewModel @Inject constructor(
         StudioSource.STEAMGRIDDB   -> MatchProvider.STEAMGRIDDB
         StudioSource.THEGAMESDB    -> MatchProvider.THEGAMESDB
         StudioSource.IGDB          -> MatchProvider.IGDB
+        StudioSource.STEAM         -> MatchProvider.STEAM
         StudioSource.LOCAL, null   -> null
     }
 
@@ -1718,7 +1983,7 @@ class ArtworkStudioViewModel @Inject constructor(
         }
         viewModelScope.launch {
             gameRepository.updateProviderMatch(gameId, provider.name, candidate.providerGameId.toLongOrNull())
-            _uiState.update { it.copy(game = gameRepository.getById(gameId) ?: it.game) }
+            gameRepository.getById(gameId)?.let(::adoptGame)
             loadResults()
         }
     }
@@ -1730,13 +1995,18 @@ class ArtworkStudioViewModel @Inject constructor(
      * where it is. The only thing forgotten is who the provider was told this game is.
      */
     override fun forgetMatch() {
+        if (_uiState.value.matchProvider == null) return
+        _uiState.update { it.copy(destructiveConfirm = StudioDestructive.FORGET_MATCH, actionsOpen = false) }
+    }
+
+    private fun performForgetMatch() {
         val provider = _uiState.value.matchProvider ?: return
         cancelLoad()
         forgetMatches(provider)
         _uiState.update { it.copy(match = null, changeMatchOpen = false, actionsOpen = false) }
         viewModelScope.launch {
             gameRepository.updateProviderMatch(gameId, provider.name, null)
-            _uiState.update { it.copy(game = gameRepository.getById(gameId) ?: it.game) }
+            gameRepository.getById(gameId)?.let(::adoptGame)
             // Nothing is confirmed or remembered for this provider now, so this re-derives.
             loadResults()
         }
@@ -1746,7 +2016,20 @@ class ArtworkStudioViewModel @Inject constructor(
 
     /** Opens the search field, pre-filled with the active query and fully selectable. */
     override fun openSearch() = _uiState.update {
-        it.copy(searchOpen = true, queryDraft = it.query, actionsOpen = false, showFileInfo = false)
+        it.copy(
+            searchOpen = true, searchButton = null, queryDraft = it.query, actionsOpen = false, showFileInfo = false,
+        )
+    }
+
+    /** BACK on PFP's keyboard: off the field and onto the card's buttons, starting at Search. */
+    override fun leaveSearchField() = _uiState.update {
+        if (it.searchOpen) it.copy(searchButton = StudioSearchButton.SEARCH) else it
+    }
+
+    private fun moveSearchButton(step: Int) = _uiState.update { s ->
+        val current = s.searchButton ?: return@update s
+        val next = StudioSearchButton.entries.getOrNull(current.ordinal + step) ?: return@update s
+        s.copy(searchButton = next)
     }
 
     override fun onQueryDraftChanged(text: String) = _uiState.update { it.copy(queryDraft = text.take(MAX_QUERY_LENGTH)) }
@@ -1801,9 +2084,14 @@ class ArtworkStudioViewModel @Inject constructor(
 
     private fun goToPage(index: Int) {
         val key = activeKey ?: return
-        val all = activeResults()
-        if (index < 0 || index * _uiState.value.pageSize >= all.size) return
-        showPage(all, index, key, generation)
+        if (index < 0 || index * _uiState.value.pageSize >= visibleResults().size) return
+        showPage(activeResults(), index, key, generation)
+    }
+
+    /** [activeResults] as the filters leave them — what the pages are cut from. */
+    private fun visibleResults(): List<StudioArt> {
+        val key = activeKey ?: return emptyList()
+        return _uiState.value.filters.visible(key.source, key.kind, activeResults())
     }
 
     override fun openCandidate(index: Int) {
@@ -1836,10 +2124,11 @@ class ArtworkStudioViewModel @Inject constructor(
             StudioTileMark.QUEUED, StudioTileMark.DOWNLOADING, StudioTileMark.FAILED -> s
             // Not reachable — CURRENT is a single-art mark and this returned above on those tabs.
             StudioTileMark.CURRENT   -> s
-            StudioTileMark.ADDED     -> s.copy(gridIndex = index, removals = s.removals + (key to art))
-            StudioTileMark.TO_REMOVE -> s.copy(gridIndex = index, removals = s.removals - key)
-            StudioTileMark.PICKED    -> s.copy(gridIndex = index, selection = s.selection - key)
-            StudioTileMark.NONE      -> s.copy(gridIndex = index, selection = s.selection + (key to art))
+            // Each change also takes the cursor off the upload bar, onto the tile it changed.
+            StudioTileMark.ADDED     -> s.copy(gridIndex = index, localBarCursor = false, removals = s.removals + (key to art))
+            StudioTileMark.TO_REMOVE -> s.copy(gridIndex = index, localBarCursor = false, removals = s.removals - key)
+            StudioTileMark.PICKED    -> s.copy(gridIndex = index, localBarCursor = false, selection = s.selection - key)
+            StudioTileMark.NONE      -> s.copy(gridIndex = index, localBarCursor = false, selection = s.selection + (key to art))
         }
     }
 
@@ -2163,28 +2452,76 @@ class ArtworkStudioViewModel @Inject constructor(
     override fun requestLocalPick() = _uiState.update { it.copy(localPickKind = tab().kind) }
     fun consumeLocalPick() = _uiState.update { it.copy(localPickKind = null) }
 
-    fun applyLocal(uri: Uri) {
+    /**
+     * The device picker's answer. A multi-asset tab appends every file ([appendLocal]); a single-art
+     * tab has one slot, so its first file replaces what is there.
+     */
+    fun applyLocal(uris: List<Uri>) {
+        val uri = uris.firstOrNull() ?: return
         val kind = tab().kind
+        if (com.playfieldportal.feature.artwork.store.ArtworkFileNaming.supportsMultiple(kind)) {
+            appendLocal(kind, uris)
+            return
+        }
+        val gid = gameId
         viewModelScope.launch {
             _uiState.update { it.copy(applying = true) }
-            // Copy the picked document to a temp so the store can record provenance + back up.
-            val tmp = withContext(ioDispatcher) {
-                runCatching {
-                    val suffix = "." + (appContext.contentResolver.getType(uri)?.substringAfterLast('/') ?: "bin")
-                    java.io.File.createTempFile("studio_local_", suffix, appCacheDir).also { f ->
-                        appContext.contentResolver.openInputStream(uri)?.use { input ->
-                            f.outputStream().use { input.copyTo(it) }
-                        } ?: run { f.delete(); return@runCatching null }
-                    }
-                }.getOrNull()
-            }
+            val tmp = copyLocalToCache(uri)
             val path = if (tmp != null) {
-                routingStore.studioApplyFromFile(gameId, kind, tmp, provider = "Local file", originUrl = null)
+                routingStore.studioApplyFromFile(gid, kind, tmp, provider = LOCAL_FILE_PROVIDER, originUrl = null)
             } else {
-                artworkStore.saveVersionedFromUri(gameId, kind, uri)
+                artworkStore.saveVersionedFromUri(gid, kind, uri)
             }
-            finishApply(kind, path, "Local file")
+            finishApply(gid, kind, path, LOCAL_FILE_PROVIDER)
         }
+    }
+
+    /**
+     * Adds each picked file at the end of [kind]'s slot, one at a time so every append numbers its
+     * position after the last one landed. Files past the slot's cap are dropped rather than handed
+     * to a store whose position would clamp onto the last asset and overwrite it.
+     */
+    private fun appendLocal(kind: ArtworkKind, uris: List<Uri>) {
+        val gid = gameId
+        viewModelScope.launch {
+            _uiState.update { it.copy(applying = true) }
+            val capacity = com.playfieldportal.feature.artwork.store.ArtworkFileNaming.MAX_SORT_ORDER + 1
+            val room = (capacity - routingStore.studioAssets(gid, kind).size).coerceAtLeast(0)
+            var added = 0
+            for (uri in uris.take(room)) {
+                val path = try {
+                    copyLocalToCache(uri)?.let { routingStore.studioAppendFromFile(gid, kind, it, LOCAL_FILE_PROVIDER) }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    // One unreadable file is a failed file, never a stopped batch.
+                    Timber.w(e, "Studio local append failed")
+                    null
+                }
+                if (path != null) added++
+            }
+            if (gid == gameId && kind == tab().kind) refreshCurrent()
+            val failed = uris.size.coerceAtMost(room) - added
+            _uiState.update {
+                it.copy(
+                    applying = false,
+                    previewVersion = it.previewVersion + 1,
+                    message = studioLocalAddMessage(kind, added, failed, droppedOverCap = uris.size > room),
+                )
+            }
+        }
+    }
+
+    /** Copies a picked document to a cache temp, so the store can validate it, record it and back up. */
+    private suspend fun copyLocalToCache(uri: Uri): java.io.File? = withContext(ioDispatcher) {
+        runCatching {
+            val suffix = "." + (appContext.contentResolver.getType(uri)?.substringAfterLast('/') ?: "bin")
+            java.io.File.createTempFile("studio_local_", suffix, appCacheDir).also { f ->
+                appContext.contentResolver.openInputStream(uri)?.use { input ->
+                    f.outputStream().use { input.copyTo(it) }
+                } ?: run { f.delete(); return@runCatching null }
+            }
+        }.onFailure { Timber.w(it, "Could not copy the picked file") }.getOrNull()
     }
 
     /**
@@ -2208,20 +2545,21 @@ class ArtworkStudioViewModel @Inject constructor(
         val art = _uiState.value.candidate ?: return
         val kind = tab().kind
         val manualFile = _uiState.value.candidateManualPath?.let { java.io.File(it) }
+        val gid = gameId
         viewModelScope.launch {
             _uiState.update { it.copy(applying = true) }
             // A previewed manual is already on disk — store that file instead of re-downloading.
             val path = if (kind == ArtworkKind.MANUAL && manualFile?.exists() == true) {
-                routingStore.studioApplyFromFile(gameId, kind, manualFile, provider = art.provider, originUrl = art.url)
+                routingStore.studioApplyFromFile(gid, kind, manualFile, provider = art.provider, originUrl = art.url)
             } else {
                 // Without the asset id a single-art record carries only origin_url, and the holds
                 // comparison this task adds would be URL-only forever on the tabs it serves.
                 routingStore.studioApplyFromUrl(
-                    gameId, kind, art.url, provider = art.provider, providerAssetId = art.providerAssetId,
+                    gid, kind, art.url, provider = art.provider, providerAssetId = art.providerAssetId,
                 )
             }
             _uiState.update { it.copy(candidateManualPath = null) }
-            finishApply(kind, path, art.provider)
+            finishApply(gid, kind, path, art.provider)
         }
     }
 
@@ -2241,31 +2579,163 @@ class ArtworkStudioViewModel @Inject constructor(
         val sgdb = sgdbActive()
         val s = _uiState.value
         if (s.currentUri == null && !sgdb && s.matchProvider == null && !s.canPreviewFocused &&
-            !s.queueSummary.hasChanges && s.queueSummary.failed == 0
-        ) return
+            !s.queueSummary.hasChanges && s.queueSummary.failed == 0 && s.filterRootRows.isEmpty()
+        ) {
+            _uiState.update { it.copy(message = STUDIO_NO_OPTIONS_MESSAGE) }
+            return
+        }
         viewModelScope.launch {
             val info = routingStore.studioInfo(gameId, tab().kind)
             _uiState.update {
                 val opened = it.copy(
-                    info = info, actionsOpen = true, actionsIndex = 0, showFileInfo = false,
-                    sgdbSourceActive = sgdb,
+                    info = info, actionsOpen = true, actionsIndex = 0, showFileInfo = false, filterGroup = null,
                 )
-                opened.copy(actionsSelectedAction = opened.availableActions.getOrNull(0))
+                // The cursor starts on the first action, so Preview and Apply Changes stay one press
+                // away; the Filters row sits above it, reached with Up.
+                val items = opened.menuItems
+                val first = items.indexOfFirst { item -> item is StudioMenuItem.Action }.coerceAtLeast(0)
+                opened.copy(actionsIndex = first, actionsSelected = items.getOrNull(first))
             }
         }
     }
 
-    override fun closeActions() = _uiState.update { it.copy(actionsOpen = false, showFileInfo = false) }
+    override fun closeActions() = _uiState.update { it.copy(actionsOpen = false, showFileInfo = false, filterGroup = null) }
 
     private fun moveActionsCursor(delta: Int) = _uiState.update {
-        val actions = it.availableActions
-        val n = actions.size
+        val items = it.menuItems
+        val n = items.size
         if (n == 0) {
             it
         } else {
             val newIndex = (it.resolvedActionsIndex + delta).mod(n)
-            it.copy(actionsIndex = newIndex, actionsSelectedAction = actions.getOrNull(newIndex))
+            it.copy(actionsIndex = newIndex, actionsSelected = items.getOrNull(newIndex))
         }
+    }
+
+    /** A of the Triangle menu's root, or a tap on its row [index]: a filter row or an action. */
+    override fun activateMenuItem(index: Int) {
+        when (val item = _uiState.value.menuItems.getOrNull(index) ?: return) {
+            is StudioMenuItem.Action -> runAction(item.action)
+            is StudioMenuItem.Filter -> {
+                _uiState.update { it.copy(actionsIndex = index, actionsSelected = item) }
+                runFilter(item.option)
+            }
+        }
+    }
+
+    // ── Filters (2026-09-29) ─────────────────────────────────────────────────
+
+    /** A of an open filter list, or a tap on its row [index]. */
+    override fun activateFilterRow(index: Int) {
+        val row = _uiState.value.filterGroupRows.getOrNull(index) ?: return
+        _uiState.update { it.copy(filterGroupIndex = index) }
+        runFilter(row.option)
+    }
+
+    /**
+     * B in a filter list: one level back, on the row that opened it. Style, Region and the other
+     * lists return to Filters; Filters returns to the menu's root, where the cursor is still on
+     * its row ([ArtworkStudioUiState.actionsSelected]).
+     */
+    override fun closeFilterGroup() = _uiState.update {
+        when (val open = it.filterGroup) {
+            null, StudioFilterGroup.FILTERS -> it.copy(filterGroup = null)
+            else -> {
+                val back = it.copy(filterGroup = StudioFilterGroup.FILTERS)
+                val opener = back.filterGroupRows.indexOfFirst { row -> row.option == StudioFilterOption.Open(open) }
+                back.copy(filterGroupIndex = opener.coerceAtLeast(0))
+            }
+        }
+    }
+
+    private fun moveFilterCursor(delta: Int) = _uiState.update {
+        val last = it.filterGroupRows.lastIndex.coerceAtLeast(0)
+        it.copy(filterGroupIndex = (it.filterGroupIndex + delta).coerceIn(0, last))
+    }
+
+    /**
+     * Does what a filter row says. Toggles and the multi-select Style list keep the menu open; a
+     * single-choice list closes it, as the Tracker's Options lists do, so the grid is seen at once.
+     *
+     * What SteamGridDB is asked (Mature, Humor, Epilepsy Warning, Animation) re-requests through
+     * [loadResults], which a cached key answers at once; the rest re-filters what is already here.
+     */
+    private fun runFilter(option: StudioFilterOption) {
+        val kind = tab().kind
+        val sgdbType = sgdbFilterType(kind)
+        fun closeMenu(s: ArtworkStudioUiState) = s.copy(actionsOpen = false, filterGroup = null)
+        when (option) {
+            is StudioFilterOption.Open -> _uiState.update {
+                val listed = it.copy(filterGroup = option.group)
+                listed.copy(filterGroupIndex = listed.filterGroupRows.indexOfFirst { row -> row.checked }.coerceAtLeast(0))
+            }
+            is StudioFilterOption.Style -> {
+                val type = sgdbType ?: return
+                val chosen = _uiState.value.filters.sgdbStyles[type].orEmpty()
+                val next = if (option.style in chosen) chosen - option.style else chosen + option.style
+                _uiState.update { it.copy(filters = it.filters.copy(sgdbStyles = it.filters.sgdbStyles + (type to next))) }
+                viewModelScope.launch { sgdbStylePreferences.setStyles(type.endpoint, next) }
+                refilter()
+            }
+            is StudioFilterOption.Dimension -> {
+                val type = sgdbType ?: return
+                _uiState.update {
+                    val sizes = if (option.size == null) it.filters.sgdbDimensions - type else it.filters.sgdbDimensions + (type to option.size)
+                    closeMenu(it).copy(filters = it.filters.copy(sgdbDimensions = sizes))
+                }
+                refilter()
+            }
+            is StudioFilterOption.Animation -> {
+                _uiState.update { closeMenu(it).copy(filters = it.filters.copy(sgdbAnimation = option.animation)) }
+                loadResults()
+            }
+            is StudioFilterOption.Region -> {
+                _uiState.update { closeMenu(it).copy(filters = it.filters.copy(ssRegion = option.code)) }
+                refilter()
+            }
+            is StudioFilterOption.Media -> {
+                _uiState.update {
+                    val media = if (option.type == null) it.filters.ssMedia - kind else it.filters.ssMedia + (kind to option.type)
+                    closeMenu(it).copy(filters = it.filters.copy(ssMedia = media))
+                }
+                refilter()
+            }
+            StudioFilterOption.Mature -> toggleNsfw()
+            StudioFilterOption.Humor -> {
+                _uiState.update { it.copy(filters = it.filters.copy(sgdbHumor = !it.filters.sgdbHumor)) }
+                loadResults()
+            }
+            StudioFilterOption.Epilepsy -> {
+                _uiState.update { it.copy(filters = it.filters.copy(sgdbEpilepsy = !it.filters.sgdbEpilepsy)) }
+                loadResults()
+            }
+            StudioFilterOption.Clear -> clearFilters()
+        }
+    }
+
+    /**
+     * Clear Filters on the active source. On SteamGridDB it also turns Mature off and forgets every
+     * remembered style (user decision, 2026-09-29). Also what A does on a grid the filters emptied.
+     */
+    override fun clearFilters() {
+        val source = _uiState.value.activeSource ?: return
+        _uiState.update {
+            it.copy(
+                filters = it.filters.cleared(source),
+                includeNsfw = if (source == StudioSource.STEAMGRIDDB) false else it.includeNsfw,
+                actionsOpen = false, filterGroup = null,
+            )
+        }
+        if (source == StudioSource.STEAMGRIDDB) viewModelScope.launch { sgdbStylePreferences.clear() }
+        loadResults()
+    }
+
+    /** Re-shows the active browse under the current filters, from its first page. */
+    private fun refilter() {
+        val key = activeKey ?: return
+        // A browse still in flight is filtered when it lands.
+        if (_uiState.value.resultsLoading) return
+        showPage(activeResults(), pageIndex = 0, key = key, token = generation)
     }
 
     override fun runAction(action: StudioAction) {
@@ -2279,9 +2749,8 @@ class ArtworkStudioViewModel @Inject constructor(
             StudioAction.CROP_BEFORE_APPLY -> beginCropForCandidate()
             StudioAction.RESTORE_PREVIOUS -> restorePrevious()
             StudioAction.RESET_DEFAULT    -> resetToScrapedDefault()
-            StudioAction.CLEAR            -> { closeActions(); clearCurrent() }
+            StudioAction.CLEAR            -> { closeActions(); requestClear() }
             StudioAction.FILE_INFO        -> _uiState.update { it.copy(showFileInfo = true) }
-            StudioAction.TOGGLE_MATURE    -> toggleNsfw()
             // Through the button's own entry point, so an inert provider explains itself the same way.
             StudioAction.CHANGE_MATCH     -> onChangeMatchPressed()
             StudioAction.FORGET_MATCH     -> forgetMatch()
@@ -2290,13 +2759,14 @@ class ArtworkStudioViewModel @Inject constructor(
 
     private fun restorePrevious() {
         val kind = tab().kind
+        val gid = gameId
         viewModelScope.launch {
             _uiState.update { it.copy(applying = true, actionsOpen = false) }
-            val path = routingStore.restorePrevious(gameId, kind)
+            val path = routingStore.restorePrevious(gid, kind)
             if (path == null) {
                 _uiState.update { it.copy(applying = false, message = "No previous version to restore") }
             } else {
-                repointColumn(kind, path)
+                repointColumn(gid, kind, path)
                 _uiState.update {
                     it.copy(applying = false, currentUri = path, previewVersion = it.previewVersion + 1,
                         message = "${tab().label} restored to previous")
@@ -2307,13 +2777,14 @@ class ArtworkStudioViewModel @Inject constructor(
 
     private fun resetToScrapedDefault() {
         val kind = tab().kind
+        val gid = gameId
         viewModelScope.launch {
             _uiState.update { it.copy(applying = true, actionsOpen = false) }
-            val path = routingStore.resetToScrapedDefault(gameId, kind)
+            val path = routingStore.resetToScrapedDefault(gid, kind)
             if (path == null) {
                 _uiState.update { it.copy(applying = false, message = "Could not re-download the scraped default") }
             } else {
-                repointColumn(kind, path)
+                repointColumn(gid, kind, path)
                 _uiState.update {
                     it.copy(applying = false, currentUri = path, previewVersion = it.previewVersion + 1,
                         message = "${tab().label} reset to scraped default")
@@ -2555,6 +3026,9 @@ class ArtworkStudioViewModel @Inject constructor(
      *  for ICON1 videos — keeping the untouched original for future re-crops. */
     override fun applyCrop() {
         val kind = tab().kind
+        // Captured with the kind: an ICON1 re-encode takes long enough to close the Studio and open
+        // another game's, and `gameId` would then name that game when the clip is finally saved.
+        val gid = gameId
         val s = _uiState.value
         val displayPath = s.cropEditorPath ?: return
         val videoPath = s.cropVideoSourcePath
@@ -2568,31 +3042,47 @@ class ArtworkStudioViewModel @Inject constructor(
                     cropCandidate = null, cropProfileOverride = null, cropOptionsOpen = false,
                 )
             }
-            val baked = if (videoPath != null) {
-                // ICON1: re-encode the video cropped to the frame (Media3 Transformer + Crop).
-                val out = java.io.File.createTempFile("studio_crop_", ".mp4", appCacheDir)
-                val ok = videoSnapTranscoder.transcodeCropped(java.io.File(videoPath), out, l, t, r, b)
-                java.io.File(videoPath).delete()
-                if (ok) out else { out.delete(); null }
-            } else {
-                withContext(ioDispatcher) { bakeCrop(java.io.File(displayPath), l, t, r, b) }
-            }
-            java.io.File(displayPath).delete()
-            if (baked == null) {
-                _uiState.update { it.copy(applying = false, message = "Crop failed") }
-                return@launch
-            }
             val rect = "%.4f,%.4f,%.4f,%.4f".format(java.util.Locale.US, l, t, r, b)
-            val path = routingStore.saveCropBaked(
-                gameId, kind, baked, rect,
-                candidateOriginUrl = candidate?.url,
-                candidateProvider = candidate?.provider,
-                candidateAssetId = candidate?.providerAssetId,
-            )
+            // 32 bytes reaches a WebP's VP8X animation flag (byte 20).
+            val header = withContext(ioDispatcher) {
+                com.playfieldportal.feature.artwork.store.ArtworkTempIO.headerOf(java.io.File(displayPath), size = 32)
+            }
+            val path = when (CropSave.of(isVideo = videoPath != null, header = header)) {
+                // An animated image keeps its animation: the editor's copy of the original is saved
+                // whole, and the crop is applied while drawing (Animated Images).
+                CropSave.AT_DRAW -> routingStore.saveCropAtDraw(
+                    gid, kind, java.io.File(displayPath), rect,
+                    candidateOriginUrl = candidate?.url,
+                    candidateProvider = candidate?.provider,
+                    candidateAssetId = candidate?.providerAssetId,
+                ).also { java.io.File(displayPath).delete() }
+                CropSave.REENCODE_VIDEO, CropSave.BAKE -> {
+                    val baked = if (videoPath != null) {
+                        // ICON1: re-encode the video cropped to the frame (Media3 Transformer + Crop).
+                        val out = java.io.File.createTempFile("studio_crop_", ".mp4", appCacheDir)
+                        val ok = videoSnapTranscoder.transcodeCropped(java.io.File(videoPath), out, l, t, r, b)
+                        java.io.File(videoPath).delete()
+                        if (ok) out else { out.delete(); null }
+                    } else {
+                        withContext(ioDispatcher) { bakeCrop(java.io.File(displayPath), l, t, r, b) }
+                    }
+                    java.io.File(displayPath).delete()
+                    if (baked == null) {
+                        _uiState.update { it.copy(applying = false, message = "Crop failed") }
+                        return@launch
+                    }
+                    routingStore.saveCropBaked(
+                        gid, kind, baked, rect,
+                        candidateOriginUrl = candidate?.url,
+                        candidateProvider = candidate?.provider,
+                        candidateAssetId = candidate?.providerAssetId,
+                    )
+                }
+            }
             if (path == null) {
                 _uiState.update { it.copy(applying = false, message = "Could not save the cropped artwork") }
             } else {
-                repointColumn(kind, path)
+                repointColumn(gid, kind, path)
                 _uiState.update {
                     it.copy(applying = false, currentUri = path, previewVersion = it.previewVersion + 1,
                         message = "${tab().label} cropped")
@@ -2639,27 +3129,39 @@ class ArtworkStudioViewModel @Inject constructor(
             out.takeIf { it.length() > 0 } ?: run { out.delete(); null }
         }.onFailure { Timber.w(it, "bakeCrop failed") }.getOrNull()
 
-    /** Repoints the column-backed game row for [kind] to [path]; record-only kinds no-op. */
-    private suspend fun repointColumn(kind: ArtworkKind, path: String?) {
+    /**
+     * Repoints the column-backed row of game [gid] for [kind] to [path]; record-only kinds no-op.
+     *
+     * The game is a parameter, never the `gameId` field: every caller reaches this after a
+     * download, a copy or a re-encode, and the Studio is reused from game to game. Reading the
+     * field here pointed whichever game was open by then at the first game's file.
+     */
+    private suspend fun repointColumn(gid: Long, kind: ArtworkKind, path: String?) {
         when (kind) {
-            ArtworkKind.ICON           -> gameRepository.updateIconArt(gameId, path)
-            ArtworkKind.BOX_ART        -> gameRepository.updateBoxArtTile(gameId, path)
-            ArtworkKind.BOX_3D         -> gameRepository.updateBox3dArt(gameId, path)
-            ArtworkKind.PHYSICAL_MEDIA -> gameRepository.updatePhysicalMediaArt(gameId, path)
-            ArtworkKind.HERO           -> gameRepository.updateHeroArt(gameId, path)
-            ArtworkKind.BACKGROUND     -> gameRepository.updateBoxArt(gameId, path)
-            ArtworkKind.LOGO           -> gameRepository.updateLogoArt(gameId, path)
+            ArtworkKind.ICON           -> gameRepository.updateIconArt(gid, path)
+            ArtworkKind.BOX_ART        -> gameRepository.updateBoxArtTile(gid, path)
+            ArtworkKind.BOX_3D         -> gameRepository.updateBox3dArt(gid, path)
+            ArtworkKind.PHYSICAL_MEDIA -> gameRepository.updatePhysicalMediaArt(gid, path)
+            ArtworkKind.HERO           -> gameRepository.updateHeroArt(gid, path)
+            ArtworkKind.BACKGROUND     -> gameRepository.updateBoxArt(gid, path)
+            ArtworkKind.LOGO           -> gameRepository.updateLogoArt(gid, path)
             else                       -> Unit
         }
     }
 
-    private suspend fun finishApply(kind: ArtworkKind, path: String?, provider: String) {
+    private suspend fun finishApply(gid: Long, kind: ArtworkKind, path: String?, provider: String) {
         if (path == null) {
             _uiState.update { it.copy(applying = false, message = "Could not apply — download or file was rejected") }
             return
         }
         // Column-backed kinds repoint the game row; record-only kinds resolve by fixed name.
-        repointColumn(kind, path)
+        repointColumn(gid, kind, path)
+        // The write belonged to the game it was for. What follows redraws the Studio, which may
+        // be showing another game by now — and is then not this apply's to redraw.
+        if (gid != gameId) {
+            _uiState.update { it.copy(applying = false) }
+            return
+        }
         refreshLibrary()
         val game = gameRepository.getById(gameId)
         _uiState.update {
@@ -2674,12 +3176,28 @@ class ArtworkStudioViewModel @Inject constructor(
         }
     }
 
-    fun clearCurrent() {
+    private fun requestClear() = _uiState.update { it.copy(destructiveConfirm = StudioDestructive.CLEAR_ARTWORK) }
+
+    /** The shared confirm's Confirm: runs whichever action asked, once. */
+    fun confirmDestructive() {
+        val asked = _uiState.value.destructiveConfirm ?: return
+        _uiState.update { it.copy(destructiveConfirm = null) }
+        when (asked) {
+            StudioDestructive.CLEAR_ARTWORK -> clearCurrent()
+            StudioDestructive.FORGET_MATCH  -> performForgetMatch()
+        }
+    }
+
+    /** The shared confirm's Cancel (and Back): the slot or match is exactly as it was. */
+    fun cancelDestructive() = _uiState.update { it.copy(destructiveConfirm = null) }
+
+    private fun clearCurrent() {
         val kind = tab().kind
+        val gid = gameId
         viewModelScope.launch {
             // Delete the stored file, its backup + original, and the record; then unwire the column.
-            routingStore.clearArtwork(gameId, kind)
-            repointColumn(kind, null)
+            routingStore.clearArtwork(gid, kind)
+            repointColumn(gid, kind, null)
             refreshLibrary()
             _uiState.update {
                 it.copy(currentUri = null, info = null, previewVersion = it.previewVersion + 1,
@@ -2704,6 +3222,8 @@ class ArtworkStudioViewModel @Inject constructor(
         // The ViewModel outlives the screen, so work started for this open must stop here. The
         // download queue is deliberately left running (see load()'s comment on queueJob).
         cancelBackgroundResolutions()
+        // Reopening re-reads the row, so nothing written while closed is missed.
+        gameWatchJob?.cancel()
         // cancelLoad() only clears matchResolving — resultsLoading is cleared by showPage(), which a
         // cancelled loadJob never reaches, so a reopen of the same game (load()'s early-return path)
         // would otherwise show a spinner over a browse that is never coming back.
@@ -2727,12 +3247,37 @@ class ArtworkStudioViewModel @Inject constructor(
 
     override fun handleGamepadAction(action: GamepadAction) {
         val s = _uiState.value
-        // Search field: the IME owns typing; the pad only confirms or cancels.
+        // The shared confirm is hosted by the screen, which takes presses first. One that still gets
+        // here means no host took it, so only Back is honoured and nothing can confirm by accident.
+        if (s.destructiveConfirm != null) {
+            if (action == GamepadAction.BACK) cancelDestructive()
+            return
+        }
+        // Search card. On the field the keyboard owns typing, so the pad only confirms, cancels or
+        // steps down to the buttons; on the buttons it moves between Search · Use game title ·
+        // Cancel, and UP goes back to the field (which reopens PFP's keyboard).
         if (s.searchOpen) {
-            when (action) {
-                GamepadAction.SELECT -> submitSearch()
-                GamepadAction.BACK   -> cancelSearch()
-                else -> Unit
+            val button = s.searchButton
+            if (button == null) {
+                when (action) {
+                    GamepadAction.SELECT        -> submitSearch()
+                    GamepadAction.BACK          -> cancelSearch()
+                    GamepadAction.NAVIGATE_DOWN -> leaveSearchField()
+                    else -> Unit
+                }
+            } else {
+                when (action) {
+                    GamepadAction.NAVIGATE_LEFT  -> moveSearchButton(-1)
+                    GamepadAction.NAVIGATE_RIGHT -> moveSearchButton(1)
+                    GamepadAction.NAVIGATE_UP    -> _uiState.update { it.copy(searchButton = null) }
+                    GamepadAction.BACK           -> cancelSearch()
+                    GamepadAction.SELECT -> when (button) {
+                        StudioSearchButton.SEARCH         -> submitSearch()
+                        StudioSearchButton.USE_GAME_TITLE -> resetSearchToTitle()
+                        StudioSearchButton.CANCEL         -> cancelSearch()
+                    }
+                    else -> Unit
+                }
             }
             return
         }
@@ -2766,7 +3311,7 @@ class ArtworkStudioViewModel @Inject constructor(
                 GamepadAction.NAVIGATE_UP   -> moveCropOptionsCursor(-1)
                 GamepadAction.NAVIGATE_DOWN -> moveCropOptionsCursor(+1)
                 GamepadAction.SELECT        -> activateCropOption(_uiState.value.cropOptionsIndex)
-                GamepadAction.BACK          -> closeCropOptions()
+                GamepadAction.BACK, GamepadAction.OPEN_CONTEXT_MENU -> closeCropOptions()
                 else -> Unit
             }
             return
@@ -2803,7 +3348,7 @@ class ArtworkStudioViewModel @Inject constructor(
             }
             return
         }
-        // Leave prompt: B from the categories while changes wait to be applied. B again means Stay.
+        // Leave prompt: B from the source row while changes wait to be applied. B again means Stay.
         if (s.leavePromptOpen) {
             when (action) {
                 GamepadAction.NAVIGATE_UP   -> moveLeavePromptCursor(-1)
@@ -2828,14 +3373,26 @@ class ArtworkStudioViewModel @Inject constructor(
             }
             return
         }
+        // A filter list opened from the Triangle menu (Filters, or a list inside it): B steps back one level.
+        if (s.actionsOpen && s.filterGroup != null) {
+            when (action) {
+                GamepadAction.NAVIGATE_UP   -> moveFilterCursor(-1)
+                GamepadAction.NAVIGATE_DOWN -> moveFilterCursor(+1)
+                GamepadAction.SELECT        -> activateFilterRow(s.filterGroupIndex)
+                GamepadAction.BACK          -> closeFilterGroup()
+                GamepadAction.OPEN_CONTEXT_MENU -> closeActions()   // Triangle closes from any depth
+                else -> Unit
+            }
+            return
+        }
         if (s.actionsOpen) {
-            val actions = s.availableActions
             when (action) {
                 GamepadAction.NAVIGATE_UP   -> moveActionsCursor(-1)
                 GamepadAction.NAVIGATE_DOWN -> moveActionsCursor(+1)
-                GamepadAction.SELECT        -> actions.getOrNull(s.resolvedActionsIndex)?.let { runAction(it) }
+                GamepadAction.SELECT        -> activateMenuItem(s.resolvedActionsIndex)
                 GamepadAction.BACK          ->
                     if (s.showFileInfo) _uiState.update { it.copy(showFileInfo = false) } else closeActions()
+                GamepadAction.OPEN_CONTEXT_MENU -> closeActions()
                 else -> Unit
             }
             return
@@ -2851,8 +3408,7 @@ class ArtworkStudioViewModel @Inject constructor(
             }
             return
         }
-        // Three hierarchical levels: TABS (categories) → SOURCES → GRID. Confirm descends, BACK
-        // ascends (and closes from Level 1).
+        // Two levels: SOURCES → GRID. Confirm descends, BACK ascends, and closes from the source row.
         //
         // The two horizontal pairs mean ONE thing each rather than mirroring each other:
         //
@@ -2866,64 +3422,77 @@ class ArtworkStudioViewModel @Inject constructor(
         // exclusively LB/RB or the on-screen pills.
         when (action) {
             GamepadAction.BACK -> when (s.zone) {
-                StudioZone.TABS    ->
+                StudioZone.SOURCES ->
                     if (s.selection.isNotEmpty() || s.removals.isNotEmpty()) {
                         _uiState.update { it.copy(leavePromptOpen = true, leavePromptIndex = 0) }
                     }
                     else close()
-                StudioZone.SOURCES -> _uiState.update { it.copy(zone = StudioZone.TABS) }
                 StudioZone.GRID    -> _uiState.update { it.copy(zone = StudioZone.SOURCES) }
             }
             GamepadAction.NAVIGATE_LEFT -> when (s.zone) {
-                // The tab row is deliberately inert to the D-pad: the artwork type moves on the
-                // shoulders alone, so arrowing about can never change it.
-                StudioZone.TABS    -> Unit
+                // The artwork type moves on the shoulders alone, so arrowing about never changes it.
                 StudioZone.SOURCES -> cycleSource(-1)
+                // The upload bar is one wide stop, so there is nothing beside it to move to.
                 StudioZone.GRID    ->
-                    if (s.gridIndex > 0) _uiState.update { it.copy(gridIndex = s.gridIndex - 1) }
+                    if (!s.localBarFocused && s.gridIndex > 0) _uiState.update { it.copy(gridIndex = s.gridIndex - 1) }
             }
             GamepadAction.NAVIGATE_RIGHT -> when (s.zone) {
-                StudioZone.TABS    -> Unit
                 StudioZone.SOURCES -> cycleSource(+1)
                 StudioZone.GRID    ->
-                    if (s.gridIndex < s.results.lastIndex) _uiState.update { it.copy(gridIndex = s.gridIndex + 1) }
+                    if (!s.localBarFocused && s.gridIndex < s.results.lastIndex) {
+                        _uiState.update { it.copy(gridIndex = s.gridIndex + 1) }
+                    }
             }
-            GamepadAction.NAVIGATE_UP -> if (s.zone == StudioZone.GRID && s.gridIndex >= s.gridColumns) {
-                _uiState.update { it.copy(gridIndex = s.gridIndex - s.gridColumns) }
+            // Local File's upload bar sits above the top row: up from any top-row tile reaches it,
+            // and down from it lands on the first tile, if the slot has one.
+            GamepadAction.NAVIGATE_UP -> when {
+                s.zone != StudioZone.GRID || s.localBarFocused -> Unit
+                s.gridIndex >= s.gridColumns -> _uiState.update { it.copy(gridIndex = s.gridIndex - s.gridColumns) }
+                s.localSourceActive          -> _uiState.update { it.copy(localBarCursor = true) }
             }
-            GamepadAction.NAVIGATE_DOWN -> if (s.zone == StudioZone.GRID &&
-                s.gridIndex + s.gridColumns <= s.results.lastIndex
-            ) {
-                _uiState.update { it.copy(gridIndex = s.gridIndex + s.gridColumns) }
+            GamepadAction.NAVIGATE_DOWN -> when {
+                s.zone != StudioZone.GRID -> Unit
+                s.localBarFocused ->
+                    if (s.results.isNotEmpty()) _uiState.update { it.copy(localBarCursor = false, gridIndex = 0) }
+                s.gridIndex + s.gridColumns <= s.results.lastIndex ->
+                    _uiState.update { it.copy(gridIndex = s.gridIndex + s.gridColumns) }
             }
             // LB/RB are the artwork type, until the grid claims them for paging. Cycling the type
-            // from the source row runs selectTab, which returns to the tab row and to that type's
-            // first source — sources belong to a type, so carrying an index across is meaningless.
+            // from the source row runs selectTab, which lands on that type's first available
+            // source — sources belong to a type, so carrying an index across is meaningless.
             GamepadAction.PREV_CATEGORY -> when (s.zone) {   // LB
-                StudioZone.TABS, StudioZone.SOURCES -> cycleTab(-1)
-                StudioZone.GRID                     -> previousPage()
+                StudioZone.SOURCES -> cycleTab(-1)
+                StudioZone.GRID    -> previousPage()
             }
             GamepadAction.NEXT_CATEGORY -> when (s.zone) {   // RB
-                StudioZone.TABS, StudioZone.SOURCES -> cycleTab(+1)
-                StudioZone.GRID                     -> nextPage()
+                StudioZone.SOURCES -> cycleTab(+1)
+                StudioZone.GRID    -> nextPage()
             }
             GamepadAction.SELECT -> when (s.zone) {
-                StudioZone.TABS    -> _uiState.update { it.copy(zone = StudioZone.SOURCES) }
-                // Local never enters the grid — confirm opens the device file picker directly.
-                StudioZone.SOURCES ->
-                    if (sourcesForTab().getOrNull(s.sourceIndex) == StudioSource.LOCAL) requestLocalPick()
-                    else _uiState.update { it.copy(zone = StudioZone.GRID) }
+                // Local File enters its grid on the upload bar, the one thing every tab's Local has.
+                StudioZone.SOURCES -> _uiState.update { it.copy(zone = StudioZone.GRID, localBarCursor = s.localSourceActive) }
                 // A multi-asset tab picks tiles; Preview is in the Triangle menu there (task 5.1).
-                StudioZone.GRID    -> if (s.selectsMultiple) toggleSelection(s.gridIndex) else openCandidate(s.gridIndex)
+                StudioZone.GRID    -> when {
+                    // Nothing to act on: the filters hid every result, so A clears them.
+                    s.filtersHideEverything -> clearFilters()
+                    s.localBarFocused -> requestLocalPick()
+                    s.selectsMultiple -> toggleSelection(s.gridIndex)
+                    else              -> openCandidate(s.gridIndex)
+                }
             }
             // X / Square focuses the search field, from any level.
             GamepadAction.CHANGE_SORT -> openSearch()
             // START applies the active tab's changes, as it confirms in the other pickers (task 5.2).
             // SteamGridDB's mature filter, which it used to toggle, is in the Triangle menu.
             GamepadAction.HOME -> applyChanges()
+            // The virtual keyboard's own buttons mean nothing here.
+            GamepadAction.SHIFT, GamepadAction.CAPS_LOCK -> Unit
             // Y / Triangle opens the per-slot options menu (crop, restore, reset, clear, info) —
             // XMB-style context menu, available at every level.
             GamepadAction.OPEN_CONTEXT_MENU -> openActions()
         }
     }
 }
+
+/** The search card's buttons, left to right. */
+enum class StudioSearchButton { SEARCH, USE_GAME_TITLE, CANCEL }

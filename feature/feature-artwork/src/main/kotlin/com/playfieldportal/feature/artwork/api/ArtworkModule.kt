@@ -111,7 +111,10 @@ object ArtworkModule {
 
     @Provides
     @Singleton
-    fun provideCoilImageLoader(@ApplicationContext context: Context): ImageLoader =
+    fun provideCoilImageLoader(
+        @ApplicationContext context: Context,
+        drawCrops: com.playfieldportal.feature.artwork.store.DrawCropIndex,
+    ): ImageLoader =
         ImageLoader.Builder(context)
             .memoryCache {
                 // Coil 3 dropped the context argument from the builder; the percentage
@@ -133,6 +136,9 @@ object ArtworkModule {
             // for older APIs is unnecessary here. Registered so the ImageLoader "automatically
             // detects any GIFs using their file headers"; stills are unaffected.
             .components {
+                // Animated Images: draw-time crops and gated animation for every load. See
+                // ArtworkDisplayInterceptor — stills and uncropped files pass through untouched.
+                add(ArtworkDisplayInterceptor(drawCrops))
                 add(coil3.gif.AnimatedImageDecoder.Factory())
             }
             .build()

@@ -27,6 +27,12 @@ interface AchievementController {
     /** This game's provider link (which provider + id it syncs from), or null if unlinked. */
     fun observeLink(gameId: Long): Flow<ProviderGameLinkEntity?>
 
+    /**
+     * Every provider link this game holds, first one first ([observeLink]'s pick). More than one
+     * means one library game with two sets — an owned Steam game also played locally.
+     */
+    fun observeLinks(gameId: Long): Flow<List<ProviderGameLinkEntity>>
+
     /** This game's coin summary (progress, tally, mastery), or null if never synced. */
     fun observeGameCoins(gameId: Long): Flow<GameCoins?>
 
@@ -54,7 +60,7 @@ interface AchievementController {
     /** The [limit] most recently earned coins across the account, newest first — the status view's feed. */
     fun observeRecentCoins(limit: Int = 8): Flow<List<RecentCoin>>
 
-    /** Explicit "Refresh this game" for [gameId], or returns why it couldn't. */
+    /** Explicit "Update Achievements" for [gameId], or returns why it couldn't. */
     suspend fun syncGame(gameId: Long, provider: AchievementProvider, providerGameId: String): ProviderSyncResult
 
     /** Explicit refresh from the game's stored link; [ProviderSyncResult.NotLinked] if it has none. */

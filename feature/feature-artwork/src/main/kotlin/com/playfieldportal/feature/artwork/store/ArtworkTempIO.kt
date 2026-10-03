@@ -5,6 +5,8 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.jvm.javaio.toInputStream
+import com.playfieldportal.feature.artwork.video.HlsTrailerAssembler
+import com.playfieldportal.feature.artwork.video.HlsUrls
 import timber.log.Timber
 import java.io.File
 import java.io.InputStream
@@ -16,8 +18,10 @@ import java.io.InputStream
  */
 object ArtworkTempIO {
 
-    suspend fun downloadToTemp(httpClient: HttpClient, cacheDir: File, kind: ArtworkKind, url: String): File? =
-        runCatching {
+    suspend fun downloadToTemp(httpClient: HttpClient, cacheDir: File, kind: ArtworkKind, url: String): File? {
+        // A streamed trailer is a playlist, not a file: it is fetched chunk by chunk and assembled.
+        if (HlsUrls.isHls(url)) return HlsTrailerAssembler.assemble(httpClient, cacheDir, kind, url, maxBytesFor(kind))
+        return runCatching {
             val response = httpClient.get(url)
             if (!response.status.isSuccess()) {
                 Timber.w("Artwork download failed (${response.status.value}) for $url")
@@ -25,6 +29,7 @@ object ArtworkTempIO {
             }
             response.bodyAsChannel().toInputStream().use { copyToTemp(it, cacheDir, kind) }
         }.onFailure { Timber.w(it, "Artwork download error for $url") }.getOrNull()
+    }
 
     // Per-kind download ceilings. No legitimate scraper asset comes close (covers are a few MB,
     // manuals tens of MB); the cap is what stops a hostile or broken server from streaming
@@ -69,8 +74,8 @@ object ArtworkTempIO {
         return tmp
     }
 
-    fun headerOf(file: File): ByteArray = runCatching {
-        val header = ByteArray(12)
+    fun headerOf(file: File, size: Int = 12): ByteArray = runCatching {
+        val header = ByteArray(size)
         val read = file.inputStream().use { it.read(header) }
         if (read <= 0) ByteArray(0) else header.copyOf(read)
     }.getOrDefault(ByteArray(0))

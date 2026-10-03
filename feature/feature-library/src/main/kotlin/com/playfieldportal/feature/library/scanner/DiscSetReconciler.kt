@@ -26,6 +26,7 @@ class DiscSetReconciler @Inject constructor(
     private val discSetBuilder: DiscSetBuilder,
     private val m3uPlaylistReader: M3uPlaylistReader,
     private val discRegionReader: DiscRegionReader,
+    private val discSheetReader: DiscSheetReader,
     private val gameRepository: GameRepository,
 ) {
 
@@ -35,17 +36,58 @@ class DiscSetReconciler @Inject constructor(
      */
     suspend fun reconcilePlatform(platformId: String, existingRows: List<Game>, newRows: List<Game>): Int {
         var corrected = 0
-        discSetBuilder.reconcile(existingRows + newRows, discRegionReader::read, m3uPlaylistReader::read)
-            .forEach { changed ->
-                try {
-                    gameRepository.upsert(changed)
-                    corrected++
-                } catch (ce: CancellationException) {
-                    throw ce
-                } catch (e: Exception) {
-                    Timber.e(e, "Library scan — disc-set reconcile upsert failed for $platformId")
-                }
+        discSetBuilder.reconcile(
+            games = withStoredDiscFields(platformId, existingRows) + newRows,
+            regionReader = discRegionReader::read,
+            sheetReader = discSheetReader::read,
+            m3uReader = m3uPlaylistReader::read,
+        ).forEach { changed ->
+            try {
+                gameRepository.upsert(changed)
+                corrected++
+            } catch (ce: CancellationException) {
+                throw ce
+            } catch (e: Exception) {
+                Timber.e(e, "Library scan — disc-set reconcile upsert failed for $platformId")
             }
+        }
         return corrected
+    }
+
+    /**
+     * [existingRows] with their disc fields as the table holds them NOW.
+     *
+     * The caller read those rows before its scan, and the scan has written since: saving a new
+     * disc that its own batch made the primary clears the primary flag on every other member of
+     * the set (`GameRepository.upsert`). The builder decides what to rewrite by diffing against
+     * the stored values, so handing it the pre-scan copy made a just-demoted primary look correct
+     * — it was skipped, the newcomer was demoted too, and the set was left with no primary at all.
+     *
+     * Only the disc fields are refreshed. Everything else stays the caller's, because the caller
+     * may have deliberately adjusted it (the missing flags this scan's survey implies). Matched by
+     * ROM path, which is the scanner's own identity for a row; a row the table no longer has keeps
+     * what it came with. A failed read is non-fatal, like a failed upsert here.
+     */
+    private suspend fun withStoredDiscFields(platformId: String, existingRows: List<Game>): List<Game> {
+        if (existingRows.isEmpty()) return existingRows
+        val stored = try {
+            gameRepository.getByPlatform(platformId)
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (e: Exception) {
+            Timber.e(e, "Library scan — could not re-read $platformId before the disc-set reconcile")
+            return existingRows
+        }
+        val storedByPath = stored.mapNotNull { row -> row.romPath?.let { it to row } }.toMap()
+
+        return existingRows.map { row ->
+            val now = row.romPath?.let(storedByPath::get) ?: return@map row
+            row.copy(
+                discSetKey = now.discSetKey,
+                discNumber = now.discNumber,
+                isDiscPrimary = now.isDiscPrimary,
+                isDiscPreferred = now.isDiscPreferred,
+            )
+        }
     }
 }

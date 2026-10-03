@@ -63,7 +63,7 @@ class GameArtworkFetchRunnerTest {
                 it.id == taskId && it.kind == TaskKind.ARTWORK && it.label == "Fetching artwork: Crash Bandicoot"
             })
         }
-        verify { tasks.complete(taskId, "Artwork updated", NotificationAction.OpenGame(1L)) }
+        verify { tasks.complete(taskId, null, NotificationAction.OpenGame(1L), null, "Artwork updated for Crash Bandicoot") }
     }
 
     @Test
@@ -87,7 +87,11 @@ class GameArtworkFetchRunnerTest {
         val changed = runner.run(1L)
 
         assertFalse(changed)
-        verify { tasks.fail(taskId, "Not found on any source", NotificationAction.OpenGame(1L)) }
+        verify {
+            tasks.fail(taskId, "Not found on any source", NotificationAction.OpenGame(1L),
+                match { (it as com.playfieldportal.core.domain.model.NotificationDetail.Notes).code == "AR-3003" },
+                "Couldn't fetch artwork for Crash Bandicoot")
+        }
     }
 
     @Test
@@ -97,7 +101,11 @@ class GameArtworkFetchRunnerTest {
         val changed = runner.run(1L)
 
         assertFalse(changed)
-        verify { tasks.fail(taskId, "Artwork fetch failed", NotificationAction.OpenGame(1L)) }
+        verify {
+            tasks.fail(taskId, "Artwork fetch failed", NotificationAction.OpenGame(1L),
+                match { (it as com.playfieldportal.core.domain.model.NotificationDetail.Notes).code == "AR-9001" },
+                "Couldn't fetch artwork for Crash Bandicoot")
+        }
     }
 
     @Test
@@ -106,8 +114,8 @@ class GameArtworkFetchRunnerTest {
 
         assertFailsWith<CancellationException> { runner.run(1L) }
 
-        verify(exactly = 0) { tasks.fail(any(), any(), any()) }
-        verify(exactly = 0) { tasks.complete(any(), any(), any()) }
+        verify(exactly = 0) { tasks.fail(any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { tasks.complete(any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -130,8 +138,8 @@ class GameArtworkFetchRunnerTest {
 
         assertFalse(changed)
         verify { tasks.cancel(taskId) }
-        verify(exactly = 0) { tasks.fail(any(), any(), any()) }
-        verify(exactly = 0) { tasks.complete(any(), any(), any()) }
+        verify(exactly = 0) { tasks.fail(any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { tasks.complete(any(), any(), any(), any(), any()) }
     }
 
     @Test

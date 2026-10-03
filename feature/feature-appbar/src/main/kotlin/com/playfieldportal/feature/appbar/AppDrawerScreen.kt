@@ -20,7 +20,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
@@ -32,7 +34,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -43,9 +44,17 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.lightBackgroundAnchors
+import com.playfieldportal.core.ui.components.PfpModalSpec
+import com.playfieldportal.core.ui.components.PspContextMenuOverlay
+import com.playfieldportal.core.ui.components.PspMenuRow
+import com.playfieldportal.core.ui.components.rememberPfpModalHost
+import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
+import com.playfieldportal.core.ui.keyboard.isVirtualKeyboardOverlayOpen
+import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
 import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.core.ui.theme.PFPColors
@@ -56,8 +65,6 @@ import com.playfieldportal.feature.appbar.appdrawer.AppDrawerCategoryTabs
 import com.playfieldportal.feature.appbar.appdrawer.AppDrawerGrid
 import com.playfieldportal.feature.appbar.appdrawer.AppDrawerHeader
 import com.playfieldportal.feature.appbar.appdrawer.AppDrawerHintBar
-import com.playfieldportal.feature.appbar.appdrawer.AppDrawerOptions
-import com.playfieldportal.feature.appbar.appdrawer.UninstallConfirmDialog
 import com.playfieldportal.feature.appbar.appdrawer.adaptiveArtworkSize
 
 // ── PSP-era grid App Drawer ───────────────────────────────────────────────────
@@ -84,17 +91,59 @@ fun AppDrawerScreen(
     /** Any touch interaction inside the drawer — reported to the XMB input-source tracker so a
      *  finger tap/browse suppresses the controller hint the same way it does on the XMB. */
     onTouchInteraction: () -> Unit = {},
+    /** Edit App Details, Add to Card and Favorite belong to the XMB: the menu hands them up here. */
+    onEditAppDetails: (packageName: String) -> Unit = {},
+    onAddAppToCard: (packageName: String, label: String) -> Unit = { _, _ -> },
+    onToggleAppFavorite: (packageName: String, label: String) -> Unit = { _, _ -> },
     viewModel: AppDrawerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    // rememberUpdatedState: the collector below outlives recompositions, the callbacks may not.
+    val editAppDetails by rememberUpdatedState(onEditAppDetails)
+    val addAppToCard by rememberUpdatedState(onAddAppToCard)
+    val toggleAppFavorite by rememberUpdatedState(onToggleAppFavorite)
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is AppDrawerEvent.EditDetails -> editAppDetails(event.packageName)
+                is AppDrawerEvent.AddToCard -> addAppToCard(event.packageName, event.label)
+                is AppDrawerEvent.ToggleFavorite -> toggleAppFavorite(event.packageName, event.label)
+            }
+        }
+    }
     var searchActive by remember { mutableStateOf(false) }
+    // Bumped to bring the keyboard back to an open search that still holds text.
+    var searchReopens by remember { mutableIntStateOf(0) }
     val keyboard = LocalSoftwareKeyboardController.current
+
+    // X's rule (see drawerSearchButton). The magnifier keeps its plain toggle.
+    fun pressSearchButton() {
+        when (drawerSearchButton(searchActive, state.searchQuery)) {
+            DrawerSearchButton.OPEN -> searchActive = true
+            DrawerSearchButton.REOPEN -> searchReopens++
+            DrawerSearchButton.CLOSE -> {
+                searchActive = false
+                viewModel.setSearchQuery("")
+            }
+        }
+    }
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Uninstall asks through the shared confirm modal. Its cursor lives in the host, so a press goes
+    // there first while one is up and only otherwise reaches the drawer.
+    val modal = rememberPfpModalHost(
+        uninstallModalSpec(
+            state = state,
+            onConfirm = viewModel::confirmUninstall,
+            onCancel = viewModel::cancelUninstall,
+        ),
+    )
 
     LaunchedEffect(pendingGamepadAction) {
         if (pendingGamepadAction != null) {
             val overlayOpen = state.menuApp != null || state.confirmUninstall != null
             when {
+                modal.intercept(pendingGamepadAction) -> Unit
                 // An inner drawer overlay (options menu / uninstall confirm) is up: BACK goes to
                 // the drawer ViewModel, which pops that overlay. XMBViewModel forwards every
                 // action — including BACK — to the drawer, so BACK here NEVER closes the drawer
@@ -102,13 +151,10 @@ fun AppDrawerScreen(
                 overlayOpen -> viewModel.handleGamepadAction(pendingGamepadAction)
                 // BACK on the plain grid closes the drawer (its only controller escape).
                 pendingGamepadAction == GamepadAction.BACK -> onBack()
-                pendingGamepadAction == GamepadAction.CHANGE_SORT -> {
-                    // X / Square — toggle search (App Drawer remap). Deliberately NOT routed
-                    // through onSearchToggle: that path reports touch input, and this is
-                    // controller input.
-                    searchActive = !searchActive
-                    if (!searchActive) viewModel.setSearchQuery("")
-                }
+                // X / Square — the search button (App Drawer remap). Deliberately NOT routed
+                // through onSearchToggle: that path reports touch input, and this is controller
+                // input.
+                pendingGamepadAction == GamepadAction.CHANGE_SORT -> pressSearchButton()
                 else -> viewModel.handleGamepadAction(pendingGamepadAction)
             }
             onGamepadActionConsumed()
@@ -130,43 +176,74 @@ fun AppDrawerScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    AppDrawerContent(
-        state = state,
-        searchActive = searchActive,
-        showControllerHint = showControllerHint,
-        // The back breadcrumb is a touch target; controller BACK closes the drawer at the XMB
-        // layer (never through this lambda), so reporting touch here is always accurate.
-        onBack = {
-            onTouchInteraction()
-            onBack()
-        },
-        onSearchQueryChange = { viewModel.setSearchQuery(it) },
-        onSearchToggle = { active ->
-            onTouchInteraction()
-            searchActive = active
-            if (!active) viewModel.setSearchQuery("")
-        },
-        onSearchDone = { keyboard?.hide() },
-        onFilterSelected = { filter ->
-            onTouchInteraction()
-            viewModel.setFilter(filter)
-        },
-        onAppTapped = { index ->
-            onTouchInteraction()
-            viewModel.onAppTapped(index)
-        },
-        onAppLaunched = { viewModel.launchApp(it) },
-        onAppMenu = { viewModel.openAppMenu(it) },
-        onTouchBrowse = { index ->
-            onTouchInteraction()
-            viewModel.onTouchBrowse(index)
-        },
-        onMenuAction = { viewModel.onMenuAction(it) },
-        onCloseMenu = { viewModel.closeAppMenu() },
-        onConfirmUninstall = { viewModel.confirmUninstall() },
-        onCancelUninstall = { viewModel.cancelUninstall() },
-        onGrantUsageAccess = { viewModel.openUsageAccessSettings() },
-        modifier = modifier,
+    Box(modifier = modifier) {
+        AppDrawerContent(
+            state = state,
+            searchActive = searchActive,
+            searchReopens = searchReopens,
+            showControllerHint = showControllerHint,
+            // The back breadcrumb is a touch target; controller BACK closes the drawer at the XMB
+            // layer (never through this lambda), so reporting touch here is always accurate.
+            onBack = {
+                onTouchInteraction()
+                onBack()
+            },
+            onSearchQueryChange = { viewModel.setSearchQuery(it) },
+            // Touch keeps its plain toggle: the reopen rule is for X, whose press PFP's keyboard has
+            // already let go of by the time it reaches the drawer.
+            onSearchToggle = { active ->
+                onTouchInteraction()
+                searchActive = active
+                if (!active) viewModel.setSearchQuery("")
+            },
+            onSearchDone = { keyboard?.hide() },
+            // BACK on PFP's keyboard: the search closes like X closes it — no touch report, the
+            // controller is still in charge.
+            onCloseSearch = {
+                searchActive = false
+                viewModel.setSearchQuery("")
+            },
+            onFilterSelected = { filter ->
+                onTouchInteraction()
+                viewModel.setFilter(filter)
+            },
+            onAppTapped = { index ->
+                onTouchInteraction()
+                viewModel.onAppTapped(index)
+            },
+            onAppLaunched = { viewModel.launchApp(it) },
+            onAppMenu = { viewModel.openAppMenu(it) },
+            onTouchBrowse = { index ->
+                onTouchInteraction()
+                viewModel.onTouchBrowse(index)
+            },
+            onMenuAction = { viewModel.onMenuAction(it) },
+            onCloseMenu = { viewModel.closeAppMenu() },
+            onGrantUsageAccess = { viewModel.openUsageAccessSettings() },
+        )
+        modal.Content()
+    }
+}
+
+/**
+ * The shared confirm for Uninstall, or null when none is asking. Destructive, so it opens on Cancel
+ * and the press that opened it can never confirm. Internal and free of composition so the mapping
+ * from UI state to modal can be tested directly.
+ */
+internal fun uninstallModalSpec(
+    state: AppDrawerUiState,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+): PfpModalSpec? {
+    val app = state.confirmUninstall ?: return null
+    return PfpModalSpec.Confirm(
+        key = "uninstall:${app.packageName}",
+        title = "Uninstall ${app.label}?",
+        message = "This removes ${app.label} from your device. Android will ask you to confirm.",
+        confirmLabel = "Uninstall",
+        destructive = true,
+        onConfirm = onConfirm,
+        onCancel = onCancel,
     )
 }
 
@@ -189,24 +266,40 @@ internal fun AppDrawerContent(
     onAppLaunched: (String) -> Unit,
     onAppMenu: (InstalledApp) -> Unit,
     onTouchBrowse: (Int) -> Unit,
-    onMenuAction: (AppMenuAction) -> Unit,
+    onMenuAction: (AppMenuEntry) -> Unit,
     onCloseMenu: () -> Unit,
-    onConfirmUninstall: () -> Unit,
-    onCancelUninstall: () -> Unit,
     onGrantUsageAccess: () -> Unit,
     modifier: Modifier = Modifier,
+    onCloseSearch: () -> Unit = {},
+    searchReopens: Int = 0,
 ) {
     val searchFocus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     val sf = deriveStorefrontColors()
+    // PFP's keyboard for a search the controller opened: Done is the IME's Search key (the query
+    // is already live), BACK closes the search.
+    val searchEdit = rememberVirtualKeyboardEdit(
+        text = state.searchQuery,
+        onTextChange = onSearchQueryChange,
+        placement = KeyboardPlacement.BOTTOM_CENTER,
+        onDone = onSearchDone,
+        onClose = onCloseSearch,
+    )
 
-    LaunchedEffect(searchActive) {
+    // PFP's keyboard opens first, so the field's own keyboard request is already held when focus
+    // arrives.
+    // Keyed on searchReopens too: the search button on an open search with text brings a keyboard
+    // back instead of closing it.
+    LaunchedEffect(searchActive, searchReopens) {
         if (searchActive) {
             withFrameNanos {}
             withFrameNanos {}
+            val virtual = searchEdit.isOpen || searchEdit.start()
+            if (virtual) withFrameNanos {}
             runCatching { searchFocus.requestFocus() }
-            keyboard?.show()
+            if (!virtual) keyboard?.show()
         } else {
+            searchEdit.stop()
             keyboard?.hide()
         }
     }
@@ -234,6 +327,7 @@ internal fun AppDrawerContent(
                 onSearchDone = onSearchDone,
                 onBack = onBack,
                 colors = sf,
+                searchEdit = searchEdit,
             )
             // Thin accent divider under the header
             Box(
@@ -309,32 +403,36 @@ internal fun AppDrawerContent(
                     .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                AppDrawerHintBar(modifier = Modifier.alpha(hintAlpha))
+                // PFP's keyboard brings its own prompts; the drawer's would stack under them.
+                val keyboardOpen = isVirtualKeyboardOverlayOpen()
+                AppDrawerHintBar(modifier = Modifier.alpha(if (keyboardOpen) 0f else hintAlpha))
             }
         }
 
         // ── Overlays ──────────────────────────────────────────────────────
         state.menuApp?.let { app ->
-            AppDrawerOptions(
-                app = app,
-                actions = state.menuActions,
+            val actions = state.menuRows
+            PspContextMenuOverlay(
+                title = app.label,
+                rows = actions.map { it.toPspMenuRow() },
                 selectedIndex = state.menuIndex,
-                onAction = onMenuAction,
+                onRowActivated = { onMenuAction(actions[it]) },
                 onDismiss = onCloseMenu,
-                colors = sf,
-            )
-        }
-
-        state.confirmUninstall?.let { app ->
-            UninstallConfirmDialog(
-                app = app,
-                onConfirm = onConfirmUninstall,
-                onCancel = onCancelUninstall,
-                colors = sf,
+                panelAlpha = 0.88f,
             )
         }
     }
 }
+
+/** The panel's row for a menu entry: value, chevron, red and silent all carry over. */
+internal fun AppMenuEntry.toPspMenuRow() = PspMenuRow(
+    label = label,
+    isDestructive = isDestructive,
+    value = value,
+    header = header,
+    opensMenu = opensMenu,
+    silent = silent,
+)
 
 // ── Empty state ─────────────────────────────────────────────────────────────────
 
@@ -359,21 +457,27 @@ private fun EmptyDrawerMessage(
             },
             color = colors.textSecondary,
             fontSize = 16.sp,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = when {
-                hasQuery -> "Try a different search term"
-                filter == AppFilter.GAMES -> "Apps marked as games in the Play Store appear here"
-                filter == AppFilter.EMULATORS -> "Install RetroArch, PPSSPP, or another emulator"
-                filter == AppFilter.RECENT && !hasUsageAccess -> "Grant access so PFP can sort apps by last used time"
-                else -> ""
-            },
-            color = colors.textSecondary.copy(alpha = 0.6f),
-            fontSize = 13.sp,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 48.dp),
         )
+        val hint = when {
+            hasQuery -> "Try a different search term"
+            filter == AppFilter.GAMES -> "Apps marked as games in the Play Store appear here"
+            filter == AppFilter.EMULATORS -> "Install RetroArch, PPSSPP, or another emulator"
+            filter == AppFilter.RECENT && !hasUsageAccess -> "Grant access so PFP can sort apps by last used time"
+            else -> null
+        }
+        // No hint (e.g. Recently Used with nothing used yet) → skip the spacer and the empty line,
+        // otherwise they'd push the headline above the drawer's center.
+        if (hint != null) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = hint,
+                color = colors.textSecondary.copy(alpha = 0.6f),
+                fontSize = 13.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 48.dp),
+            )
+        }
         if (filter == AppFilter.RECENT && !hasUsageAccess) {
             Spacer(Modifier.height(16.dp))
             Text(
@@ -494,8 +598,6 @@ private fun AppDrawerPreviewContent() {
         onTouchBrowse = {},
         onMenuAction = {},
         onCloseMenu = {},
-        onConfirmUninstall = {},
-        onCancelUninstall = {},
         onGrantUsageAccess = {},
     )
 }
@@ -514,4 +616,18 @@ private fun accentPreviewColors(waveArgb: Long): PFPColors {
         backgroundTop = Color(top),
         backgroundBottom = Color(bottom),
     )
+}
+
+/** What the drawer's search button does next. */
+internal enum class DrawerSearchButton { OPEN, REOPEN, CLOSE }
+
+/**
+ * X, the controller's search button. A closed search opens; an open one that still holds text
+ * brings PFP's keyboard back for more typing rather than wiping it (its Done leaves the search open
+ * with the keyboard down); an open, empty one closes.
+ */
+internal fun drawerSearchButton(searchActive: Boolean, query: String): DrawerSearchButton = when {
+    !searchActive -> DrawerSearchButton.OPEN
+    query.isNotBlank() -> DrawerSearchButton.REOPEN
+    else -> DrawerSearchButton.CLOSE
 }

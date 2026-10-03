@@ -57,9 +57,11 @@ import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPrompt
 import com.playfieldportal.core.ui.components.PfpCheckMark
+import com.playfieldportal.core.ui.components.PfpModalSpec
 import com.playfieldportal.core.ui.components.PspContextMenuOverlay
 import com.playfieldportal.core.ui.components.PspMenuRow
 import com.playfieldportal.core.ui.components.XmbHeaderPill
+import com.playfieldportal.core.ui.components.rememberPfpModalHost
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.menuCursorFill
 import com.playfieldportal.core.ui.detail.DetailContentPadding
@@ -79,7 +81,7 @@ import kotlin.math.roundToInt
 // shape applied to one game's coins — the App Drawer-derived background and palette, a two-line
 // header carrying completion and the per-tier tally, a pinned Search row whose right half holds the
 // All / Earned / Locked view tabs, full-width 64dp coin rows led by the Platinum Crown, and the
-// permanent helper footer. Sort, Sync Now and Change Match live in Triangle's shared PSP context
+// permanent helper footer. Sort, Update Achievements and Change Match live in Triangle's shared PSP context
 // menu, not on the page. Every color comes from DetailPalette: this screen owns no palette of its own.
 
 /** Coin art in a row. Square, lightly rounded — the badge reads as artwork, not as a button. */
@@ -123,9 +125,19 @@ fun ShibaCoinsScreen(
             viewModel.onClosedHandled()
         }
     }
+    // Unlink Game asks through the shared confirm modal. Its cursor lives in the host, so a press
+    // goes there first while one is up and only otherwise reaches the page.
+    val modal = rememberPfpModalHost(
+        spec = coinUnlinkModalSpec(
+            state = state,
+            onConfirm = viewModel::confirmUnlink,
+            onCancel = viewModel::cancelUnlink,
+        ),
+        showHints = !showTouchControls,
+    )
     LaunchedEffect(pendingGamepadAction) {
         if (pendingGamepadAction != null) {
-            viewModel.handleGamepadAction(pendingGamepadAction)
+            if (!modal.intercept(pendingGamepadAction)) viewModel.handleGamepadAction(pendingGamepadAction)
             onGamepadActionConsumed()
         }
     }
@@ -171,7 +183,7 @@ fun ShibaCoinsScreen(
             },
     ) {
         Column(Modifier.fillMaxSize()) {
-            ShibaCoinsHeader(state, palette, onBack = viewModel::close)
+            ShibaCoinsHeader(state, palette, onBack = viewModel::close, onSelectSource = viewModel::selectSource)
 
             SearchRow(
                 query = state.query,
@@ -259,20 +271,47 @@ fun ShibaCoinsScreen(
                 onCloseMoreInfo   = viewModel::closeStorefrontMoreInfo,
                 onChooseFocused   = { viewModel.chooseStorefrontCandidate(match.focus) },
                 onClose           = viewModel::cancelAutoMatch,
+                // Coins only ever matches Steam, so the picker has one store and no chips to tap.
+                onStoreClick      = {},
             )
         }
 
-        // Sort, Sync Now and Change Match: the same right-side menu the library opens on Triangle.
+        // Sort, Update Achievements and Change Match: the same right-side menu the library opens on Triangle.
         state.options?.let { menu ->
             PspContextMenuOverlay(
                 title = menu.title,
-                rows = state.optionRows.map { row -> PspMenuRow(label = row.label, checked = row.checked) },
+                rows = state.optionRows.map { row -> PspMenuRow(label = row.label, isDestructive = row.isDestructive, checked = row.checked, value = row.value, opensMenu = row.opensMenu) },
                 selectedIndex = menu.selectedIndex,
                 onRowActivated = viewModel::onOptionActivated,
                 onDismiss = viewModel::closeOptions,
             )
         }
+
+        modal.Content()
     }
+}
+
+/**
+ * The shared confirm for Unlink Game, or null when none is asking. Destructive, so it opens on
+ * Cancel and a stray Confirm press dismisses. Internal and free of composition so the mapping from
+ * UI state to modal can be tested directly.
+ */
+internal fun coinUnlinkModalSpec(
+    state: ShibaCoinsUiState,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+): PfpModalSpec? {
+    if (!state.unlinkConfirm) return null
+    return PfpModalSpec.Confirm(
+        key = "unlink_coins:${state.title}",
+        title = "Unlink Game?",
+        message = "${state.title} is no longer matched, so its coins stop showing. The coins already " +
+            "cached stay stored and come back when you match it again.",
+        confirmLabel = "Unlink",
+        destructive = true,
+        onConfirm = onConfirm,
+        onCancel = onCancel,
+    )
 }
 
 // ── Header ────────────────────────────────────────────────────────────────────
@@ -283,7 +322,12 @@ fun ShibaCoinsScreen(
  * shared breadcrumb would restyle the library and Game Detail along with it.
  */
 @Composable
-private fun ShibaCoinsHeader(state: ShibaCoinsUiState, palette: DetailPalette, onBack: () -> Unit) {
+private fun ShibaCoinsHeader(
+    state: ShibaCoinsUiState,
+    palette: DetailPalette,
+    onBack: () -> Unit,
+    onSelectSource: (AchievementProvider) -> Unit,
+) {
     Column(Modifier.fillMaxWidth().background(headerShade(palette))) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -321,6 +365,28 @@ private fun ShibaCoinsHeader(state: ShibaCoinsUiState, palette: DetailPalette, o
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+        }
+        // A game with two sets (Steam and Local Steam): one chip each, the shown one filled. L1/R1
+        // move between them; a tap picks one.
+        if (state.hasSourceSwitch) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.padding(start = DetailContentPadding + HeaderTitleIndent, bottom = 6.dp),
+            ) {
+                state.sources.forEach { source ->
+                    SourceTag(
+                        label = "${providerLabel(source.provider)} ${source.earned}/${source.total}",
+                        palette = palette,
+                        selected = source.provider == state.provider,
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            role = Role.Tab,
+                            onClick = { onSelectSource(source.provider) },
+                        ),
+                    )
+                }
+            }
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -368,7 +434,12 @@ private fun headerSubtitle(state: ShibaCoinsUiState): String {
         state.showLinkPanel -> "Not linked"
         else -> "Never synced"
     }
-    val source = listOfNotNull(state.platformLabel.takeIf { it.isNotBlank() }, ownershipTag(state))
+    val source = listOfNotNull(
+        state.platformLabel.takeIf { it.isNotBlank() },
+        // Two sets share the platform, so the line names which one is on screen.
+        providerLabel(state.provider).takeIf { state.hasSourceSwitch },
+        ownershipTag(state),
+    )
     return (source + freshness).joinToString(" · ")
 }
 
@@ -522,8 +593,8 @@ internal fun CoinListRow(
         titleItalic = redacted,
         description = when {
             redacted -> "Keep playing — or press Confirm to reveal"
-            // Steam's Web API never returns a hidden achievement's description (even once earned),
-            // so the reveal shows the real title but there is no how-to to show.
+            // Steam's Web API never returns a hidden achievement's description; the sync fills it from
+            // Steam Hunters or a community page. This shows only when neither source had it.
             coin.isHidden && coin.description.isBlank() -> "Steam keeps this one's description secret"
             else -> coin.description
         },
@@ -814,10 +885,14 @@ private fun LinkPanelRow(
             // The picker panel renders over the page; this is what shows behind it while the app id
             // is still being worked out.
             AutoMatchStep.IDENTIFY -> {
-                PanelTitle("Working out the Steam app id…", palette)
+                PanelTitle(if (state.steamPick) "Finding the Steam match…" else "Working out the Steam app id…", palette)
                 PanelBody(
-                    "Reading steam_appid.txt from the folder, and matching the game's title against " +
-                        "Steam if it has none yet.",
+                    if (state.steamPick) {
+                        "Searching Steam for this game's title. Pick the right one to link it again."
+                    } else {
+                        "Reading steam_appid.txt from the folder, and matching the game's title against " +
+                            "Steam if it has none yet."
+                    },
                     palette,
                 )
                 PanelActions {
@@ -844,7 +919,7 @@ private fun LinkPanelRow(
                 )
                 if (prompt != null && !prompt.installerEnabled) {
                     PanelBody(
-                        "Install & Link needs Install Goldberg Emulator in Settings ▸ Shiba Coins.",
+                        "Install & Link needs Install Goldberg & Convert Games in Achievement settings.",
                         palette,
                     )
                 }

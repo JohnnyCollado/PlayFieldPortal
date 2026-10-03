@@ -30,6 +30,8 @@ class ProviderMatchEvidence @Inject constructor(
     // it is what keeps ONE throttled, deduplicated, cached path to store.steampowered.com — a
     // direct SteamStorefrontApi call here would be a second, unmetered one (C23 T6, Phase 16).
     private val steam: SteamMetadataProvider,
+    // Through the provider for the same reason: one queued, cached path to gog.com.
+    private val gog: GogMetadataProvider,
 ) : MatchEvidenceSource {
 
     /**
@@ -175,6 +177,22 @@ class ProviderMatchEvidence @Inject constructor(
                 // An empty list, like every provider here but ScreenScraper. The storefront
                 // resolver is where a Steam failure is told apart from a Steam miss; the Studio's
                 // evidence source has no vocabulary for the difference.
+                else -> emptyList()
+            }
+        }
+        // GOG's catalog, through its storefront provider and normalized the same way.
+        MatchProvider.GOG -> {
+            val normalized = StorefrontTitleNormalizer.normalize(query)
+            when (val found = gog.search(normalized.searchCandidates)) {
+                is StorefrontOutcome.Ok -> found.value.map {
+                    GameCandidate(
+                        provider = MatchProvider.GOG,
+                        providerGameId = it.storeId,
+                        title = it.title,
+                        releaseYear = it.releaseYear,
+                        thumbUrl = it.thumbUrl,
+                    )
+                }
                 else -> emptyList()
             }
         }

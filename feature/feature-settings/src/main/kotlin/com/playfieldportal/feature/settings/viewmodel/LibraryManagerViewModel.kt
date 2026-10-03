@@ -17,13 +17,25 @@ import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
+import com.playfieldportal.core.ui.notification.TaskScope
+import com.playfieldportal.core.domain.model.NotificationDetail
+import com.playfieldportal.core.domain.model.PfpErrorCode
+import com.playfieldportal.feature.library.scanner.failureNotes
+import com.playfieldportal.feature.library.scanner.scanResults
+import kotlinx.coroutines.CoroutineScope
 import com.playfieldportal.feature.appbar.LauncherShortcutRepository
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.launcher.PcLauncherAdapters
+import com.playfieldportal.feature.launcher.InstalledPcLauncher
+import com.playfieldportal.feature.launcher.LauncherChoice
+import com.playfieldportal.feature.launcher.LauncherChoiceRepository
+import com.playfieldportal.feature.launcher.LauncherChoices
+import com.playfieldportal.feature.launcher.UnknownLauncher
 import com.playfieldportal.feature.launcher.PcLauncherCatalog
 import com.playfieldportal.feature.launcher.PcLauncherType
 import com.playfieldportal.feature.library.scanner.LibraryScanner
 import com.playfieldportal.feature.library.scanner.RomScanner
+import com.playfieldportal.feature.library.scanner.ScanStatus
 import com.playfieldportal.feature.library.scanner.isScannable
 import com.playfieldportal.feature.library.scanner.scanOutcomeMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -66,6 +78,65 @@ data class PcLauncherRow(
     val installed: Boolean,
     val packageName: String?,
     val canAddById: Boolean,
+)
+
+/**
+ * The PC Launchers group: every verified install under its Android label (side-by-side variants
+ * each get a row), then each catalog brand with nothing installed as "Not installed".
+ */
+internal fun pcLauncherRows(installed: List<InstalledPcLauncher>): List<PcLauncherRow> =
+    // An install no rule identifies waits in Unknown Windows Emulators for the user's word.
+    installed.filterNot { it.ambiguous }.map { launcher ->
+        PcLauncherRow(
+            type = launcher.type,
+            name = launcher.label,
+            installed = true,
+            packageName = launcher.packageName,
+            canAddById = PcLauncherAdapters.forType(launcher.type) != null,
+        )
+    } + PcLauncherCatalog.entries
+        .filter { def -> installed.none { it.type == def.type } }
+        .map { def ->
+            PcLauncherRow(
+                type = def.type,
+                name = def.displayName,
+                installed = false,
+                packageName = null,
+                canAddById = PcLauncherAdapters.forType(def.type) != null,
+            )
+        }
+
+/** One row of Import PC Games ▸ Unknown Windows Emulators. */
+data class UnknownLauncherRow(
+    val packageName: String,
+    val label: String,
+    val signerSha256: String?,
+    /** "com.xiaoji.egggame · could be GameHub or BannerHub". */
+    val sublabel: String,
+    val choice: LauncherChoice?,
+) {
+    /** The cycling value: the choice, or "Choose…" while undecided. */
+    val value: String get() = choice?.label ?: "Choose…"
+}
+
+internal fun unknownLauncherRow(app: UnknownLauncher): UnknownLauncherRow = UnknownLauncherRow(
+    packageName = app.packageName,
+    label = app.label,
+    signerSha256 = app.signerSha256,
+    sublabel = "${app.packageName} · ${app.reason}",
+    choice = app.choice,
+)
+
+/** The group as a visit opens it: undecided apps show; Not a launcher ones wait behind Show Hidden Apps. */
+internal data class UnknownLauncherGroup(
+    val visible: List<UnknownLauncherRow>,
+    val hidden: List<UnknownLauncherRow>,
+)
+
+// An app the user named a launcher has moved up to PC Launchers, so it belongs to neither list.
+internal fun unknownLauncherGroup(apps: List<UnknownLauncher>): UnknownLauncherGroup = UnknownLauncherGroup(
+    visible = apps.filter { it.choice == null }.map(::unknownLauncherRow),
+    hidden = apps.filter { it.choice == LauncherChoice.NOT_A_LAUNCHER }.map(::unknownLauncherRow),
 )
 
 // One PC game already captured from a launcher (via pin/INSTALL_SHORTCUT), importable into the
@@ -112,6 +183,10 @@ data class LibraryManagerUiState(
 
     // Import PC Games section
     val pcLaunchers: List<PcLauncherRow> = emptyList(),
+    // Unknown Windows Emulators: the rows on screen (decided ones stay put for the visit) and the
+    // Not-a-launcher ones Show Hidden Apps brings back.
+    val unknownLaunchers: List<UnknownLauncherRow> = emptyList(),
+    val hiddenUnknownLaunchers: List<UnknownLauncherRow> = emptyList(),
     val pcGames: List<PcGameRow> = emptyList(),
     // Display name of the granted Vita3K ux0 folder (null = not set).
     val vita3KFolderLabel: String? = null,
@@ -190,9 +265,13 @@ class LibraryManagerViewModel @Inject constructor(
     private val libraryScanner: LibraryScanner,
     private val romRootScanRunner: RomRootScanRunner,
     private val pcGameExporter: com.playfieldportal.feature.settings.pc.PcGameExporter,
-    // Scan and import outcomes go to the tray (row + shade + notification cue) rather than a
-    // dismissible row that dies with the screen. Progress and validation stay in-screen.
+    // Scan and import outcomes go to the tray (row + notification cue) rather than a dismissible
+    // row that dies with the screen. Progress and validation stay in-screen.
     private val tasks: BackgroundTaskCenter,
+    private val launcherChoices: LauncherChoiceRepository,
+    // Scans run here, not in viewModelScope: the tray owns them now, so leaving Settings must not
+    // kill one mid-way — it is stopped from the panel instead.
+    @TaskScope private val taskScope: CoroutineScope,
 ) : ViewModel() {
 
     private val _scratch = MutableStateFlow(LibraryManagerUiState())
@@ -297,10 +376,11 @@ class LibraryManagerViewModel @Inject constructor(
             // launchable reference (shortcut id or stored intent) back into the source app.
             // Entries already living in the Windows Games card are done; only strays show here.
             pcGames = games.mapNotNull { g ->
-                val launcher = PcLauncherCatalog.forPackage(g.packageName) ?: return@mapNotNull null
+                val pkg = g.packageName ?: return@mapNotNull null
+                PcLauncherCatalog.forPackage(pkg) ?: return@mapNotNull null
                 if (g.shortcutId == null && g.launchIntentUri == null) return@mapNotNull null
                 if (g.platformId == WINDOWS_PLATFORM_ID) return@mapNotNull null
-                PcGameRow(g.id, g.displayTitle, launcher.displayName)
+                PcGameRow(g.id, g.displayTitle, PcLauncherCatalog.displayName(pkg, context.packageManager))
             }.sortedBy { it.title.lowercase() },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LibraryManagerUiState())
@@ -388,6 +468,8 @@ class LibraryManagerViewModel @Inject constructor(
                 detailPlatformId = null,
                 androidApps = emptyList(),
                 pcLaunchers = emptyList(),
+                unknownLaunchers = emptyList(),
+                hiddenUnknownLaunchers = emptyList(),
                 pcGames = emptyList(),
                 renameTargetPlatformId = null,
                 awaitingRomRootSetup   = false,
@@ -636,22 +718,38 @@ class LibraryManagerViewModel @Inject constructor(
     /** Scans Vita3K's granted ux0/app for installed titles onto the PS Vita card. */
     fun scanVitaGames() {
         if (PSVITA_PLATFORM_ID in _scratch.value.scanningPlatformIds) return
-        viewModelScope.launch {
+        taskScope.launch {
             _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds + PSVITA_PLATFORM_ID) }
             val taskId = "lm_scan_$PSVITA_PLATFORM_ID"
-            tasks.start(taskId, "Scanning PS Vita", TaskKind.SCAN)
-            val result = runCatching { vitaGameScanner.scan() }
-                .onFailure { Timber.e(it, "Vita scan failed") }
-                .getOrNull()
-            if (result != null && (result.added > 0 || result.updated > 0)) {
-                runCatching { memoryCardRepository.recountGames(PSVITA_PLATFORM_ID) }
+            val open = NotificationAction.OpenMemoryCard(PSVITA_PLATFORM_ID)
+            tasks.startStoppable(taskId, "Scanning PS Vita", TaskKind.SCAN, stopNote = "Games found so far are kept.")
+            var error: Throwable? = null
+            try {
+                val result = runCatching { vitaGameScanner.scan() }
+                    .onFailure {
+                        if (it is kotlinx.coroutines.CancellationException) throw it
+                        Timber.e(it, "Vita scan failed"); error = it
+                    }
+                    .getOrNull()
+                if (result != null && (result.added > 0 || result.updated > 0)) {
+                    runCatching { memoryCardRepository.recountGames(PSVITA_PLATFORM_ID) }
+                }
+                if (result != null) {
+                    tasks.complete(taskId, result.message, open, title = "PS Vita scan finished")
+                } else {
+                    tasks.fail(
+                        taskId, "Vita scan failed", open,
+                        detail = NotificationDetail.notes(PfpErrorCode.SC_9001, summary = error?.message,
+                            diagnostic = error?.stackTraceToString()?.take(4_000)),
+                        title = "PS Vita scan failed",
+                    )
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                tasks.settleCancelled(taskId, "Stopped before it finished", open, title = "PS Vita scan stopped")
+                throw e
+            } finally {
+                _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds - PSVITA_PLATFORM_ID) }
             }
-            if (result != null) {
-                tasks.complete(taskId, result.message, NotificationAction.OpenMemoryCard(PSVITA_PLATFORM_ID))
-            } else {
-                tasks.fail(taskId, "Vita scan failed — see the log.")
-            }
-            _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds - PSVITA_PLATFORM_ID) }
         }
     }
 
@@ -696,16 +794,30 @@ class LibraryManagerViewModel @Inject constructor(
         if (platformId == PSVITA_PLATFORM_ID) {
             scanVitaGames(); return
         }
-        viewModelScope.launch {
+        taskScope.launch {
             _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds + platformId) }
             val taskId = "lm_scan_$platformId"
-            tasks.start(taskId, "Scanning ${scanLabel(platformId)}", TaskKind.SCAN)
-            val outcome = libraryScanner.scanPlatform(platformId, removeMissing)
-            tasks.complete(
-                taskId,
-                scanOutcomeMessage(outcome, removeMissing),
-                NotificationAction.OpenMemoryCard(platformId),
-            )
+            val name = scanLabel(platformId)
+            val open = NotificationAction.OpenMemoryCard(platformId)
+            tasks.startStoppable(taskId, "Scanning $name", TaskKind.SCAN, stopNote = "Games found so far are kept.")
+            val outcome = try {
+                libraryScanner.scanPlatform(platformId, removeMissing)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                tasks.settleCancelled(taskId, "Stopped before it finished", open, title = "$name scan stopped")
+                _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds - platformId) }
+                throw e
+            }
+            val body = scanOutcomeMessage(outcome, removeMissing).removePrefix("${outcome.displayName}: ")
+            val cardName = outcome.displayName.removeSuffix(" Memory Card")
+            // A failed or skipped card used to be reported as a success; it is a failure, with its code.
+            if (outcome.status == ScanStatus.COMPLETED) {
+                tasks.complete(taskId, body, open, null, "$cardName scan finished")
+            } else {
+                tasks.fail(
+                    taskId, body, open, outcome.failureNotes(),
+                    if (outcome.status == ScanStatus.FAILED) "$cardName scan failed" else "$cardName scan skipped",
+                )
+            }
             _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds - platformId) }
             Timber.i(
                 "Library Manager scan complete for $platformId: " +
@@ -791,29 +903,57 @@ class LibraryManagerViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { windowsLibrarySetup.ensure() }
         }
-        val pm = context.packageManager
-        val launchers = PcLauncherCatalog.entries.map { def ->
-            // Fingerprint-verified: GameHub-family variants ship under genuine AnTuTu/PUBG/Genshin
-            // package names, so a package match alone would flag the real apps as launchers.
-            val installedPkg = PcLauncherCatalog.verifiedInstalledPackage(def, pm)
-            PcLauncherRow(
-                type = def.type,
-                name = def.displayName,
-                installed = installedPkg != null,
-                packageName = installedPkg,
-                canAddById = PcLauncherAdapters.forType(def.type) != null,
-            )
-        }
         // The Local Windows group's registry listing and installer toggle.
         refreshLocalWindows()
         _scratch.update {
             it.copy(
                 step = LibraryStep.IMPORT_PC,
-                pcLaunchers = launchers,
                 isHomeLauncher = launcherShortcutRepository.isDefaultLauncher(),
                 returnFocusKey = IMPORT_PC_FOCUS_KEY,
             )
         }
+        // Both launcher groups are read once per visit, off the main thread: the unknown group
+        // walks every installed app. Reading once is also what keeps a row decided this visit in
+        // place — it moves to PC Launchers, or behind Show Hidden Apps, on the next visit.
+        taskScope.launch { loadLaunchers() }
+    }
+
+    private suspend fun loadLaunchers() {
+        val pm = context.packageManager
+        val choices = runCatching { launcherChoices.snapshot() }.getOrDefault(LauncherChoices.EMPTY)
+        // Fingerprint-verified: GameHub-family variants ship under genuine AnTuTu/PUBG/Genshin
+        // package names, so a package match alone would flag the real apps as launchers.
+        val launchers = pcLauncherRows(PcLauncherCatalog.installedLaunchers(pm, choices))
+        val unknown = unknownLauncherGroup(PcLauncherCatalog.unknownLaunchers(pm, choices, context.packageName))
+        _scratch.update {
+            it.copy(
+                pcLaunchers = launchers,
+                unknownLaunchers = unknown.visible,
+                hiddenUnknownLaunchers = unknown.hidden,
+            )
+        }
+    }
+
+    /** Confirm on an unknown app: store the next choice for this install; the row stays this visit. */
+    fun cycleUnknownLauncher(packageName: String) {
+        val row = _scratch.value.unknownLaunchers.firstOrNull { it.packageName == packageName } ?: return
+        val next = LauncherChoice.next(row.choice)
+        _scratch.update { state ->
+            state.copy(
+                unknownLaunchers = state.unknownLaunchers.map {
+                    if (it.packageName == packageName) it.copy(choice = next) else it
+                },
+            )
+        }
+        viewModelScope.launch { launcherChoices.set(packageName, row.signerSha256, next) }
+    }
+
+    /** Show Hidden Apps: the Not-a-launcher apps rejoin the group so they can be chosen again. */
+    fun showHiddenUnknownLaunchers() = _scratch.update {
+        it.copy(
+            unknownLaunchers = it.unknownLaunchers + it.hiddenUnknownLaunchers,
+            hiddenUnknownLaunchers = emptyList(),
+        )
     }
 
     /** Re-reads the Home-app status (after returning from the role/settings request). */
@@ -903,19 +1043,34 @@ class LibraryManagerViewModel @Inject constructor(
      * `<ROM Root>/windows/import` drop-folders.
      */
     fun scanPcGamesFolder(folder: Uri? = null) {
-        viewModelScope.launch {
+        taskScope.launch {
             if (folder != null) romRootRepository.persist(folder)
             val taskId = "lm_pc_scan"
-            tasks.start(taskId, "Scanning Windows Games", TaskKind.SCAN)
-            val report = runCatching { pcGameScanner.scan(folder) }
-                .onFailure { Timber.e(it, "PC scan failed") }
-                .getOrNull()
+            val open = NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID)
+            tasks.startStoppable(taskId, "Scanning Windows Games", TaskKind.SCAN, stopNote = "Games found so far are kept.")
+            var error: Throwable? = null
+            val report = try {
+                runCatching { pcGameScanner.scan(folder) }
+                    .onFailure {
+                        if (it is kotlinx.coroutines.CancellationException) throw it
+                        Timber.e(it, "PC scan failed"); error = it
+                    }
+                    .getOrNull()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                tasks.settleCancelled(taskId, "Stopped before it finished", open, title = "Windows Games scan stopped")
+                throw e
+            }
             if (report == null) {
-                tasks.fail(taskId, "PC scan failed — see the log.")
+                tasks.fail(
+                    taskId, "PC scan failed", open,
+                    detail = NotificationDetail.notes(PfpErrorCode.SC_9001, summary = error?.message,
+                        diagnostic = error?.stackTraceToString()?.take(4_000)),
+                    title = "Windows Games scan failed",
+                )
                 return@launch
             }
             if (report.newGames > 0) ensureWindowsCard()
-            tasks.complete(taskId, report.message, NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID))
+            tasks.complete(taskId, report.message, open, title = "Windows Games scan finished")
             // No emulator work here, by design: Local Steam folders are pointed at once through
             // Batch Match Local Games, not searched for on every scan.
         }
@@ -960,26 +1115,45 @@ class LibraryManagerViewModel @Inject constructor(
     }
 
     /**
-     * Batch Match Local Games: inspect every game folder inside the picked parent, register what it
-     * finds, link what it can, and offer the rest to the convert picker.
+     * Batch Match Local Games: inspect every game folder inside the picked parent and, for those that
+     * map onto an installed library game, register and link them and offer the ones with no
+     * achievement list to the convert picker. Folders outside the library are left untouched.
      *
      * Progress and the final report both go to the tray, because a pass over a real emulator library
      * outlives this screen.
      */
     fun batchMatchLocalGames(parentFolder: Uri) {
-        viewModelScope.launch {
+        taskScope.launch {
             val taskId = "lm_local_steam_batch"
-            tasks.start(taskId, "Matching local Windows games", TaskKind.SCAN)
+            val open = NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID)
+            tasks.startStoppable(taskId, "Matching local Windows games", TaskKind.SCAN,
+                stopNote = "Games already matched stay linked.")
             _scratch.update { it.copy(batchMatching = true) }
-            val report = runCatching { localSteamBatchMatcher.run(parentFolder) }
-                .onFailure { Timber.e(it, "Local Steam batch match failed") }
-                .getOrNull()
-            _scratch.update { it.copy(batchMatching = false) }
+            var error: Throwable? = null
+            val report = try {
+                runCatching { localSteamBatchMatcher.run(parentFolder) }
+                    .onFailure {
+                        if (it is kotlinx.coroutines.CancellationException) throw it
+                        Timber.e(it, "Local Steam batch match failed"); error = it
+                    }
+                    .getOrNull()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                tasks.settleCancelled(taskId, "Stopped before it finished", open,
+                    title = "Windows achievements match stopped")
+                throw e
+            } finally {
+                _scratch.update { it.copy(batchMatching = false) }
+            }
             if (report == null) {
-                tasks.fail(taskId, "Batch match failed — see the log.")
+                tasks.fail(
+                    taskId, "Batch match failed", open,
+                    detail = NotificationDetail.notes(PfpErrorCode.AC_2001, summary = error?.message,
+                        diagnostic = error?.stackTraceToString()?.take(4_000)),
+                    title = "Windows achievements match failed",
+                )
                 return@launch
             }
-            tasks.complete(taskId, report.message, NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID))
+            tasks.complete(taskId, report.message, open, title = "Windows achievements match finished")
             refreshLocalWindows()
 
             // The convertible pile is the ONLY place a DLL swap is authorised, and only per game.
@@ -1162,11 +1336,21 @@ class LibraryManagerViewModel @Inject constructor(
     // don't map to a supported platform are skipped. The scan loop lives in [RomRootScanRunner]
     // so the first-run wizard's ROM-root pick triggers the exact same pass without duplicating it.
     fun scanRomRoot() {
-        viewModelScope.launch {
+        taskScope.launch {
             val taskId = "lm_rom_root_scan"
-            tasks.start(taskId, "Scanning ROM Root", TaskKind.SCAN)
-            val report = romRootScanRunner.scan()
-            tasks.complete(taskId, report.message)
+            tasks.startStoppable(taskId, "Scanning ROM Root", TaskKind.SCAN,
+                stopNote = "Systems already scanned keep their new games.")
+            val report = try {
+                romRootScanRunner.scan()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                tasks.settleCancelled(taskId, "Stopped before it finished", title = "ROM Root scan stopped")
+                throw e
+            }
+            tasks.complete(
+                taskId, report.message,
+                detail = report.outcomes.takeIf { it.isNotEmpty() }?.let { scanResults(it) },
+                title = "ROM Root scan finished",
+            )
         }
     }
 

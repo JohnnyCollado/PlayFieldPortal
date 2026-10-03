@@ -14,9 +14,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.playfieldportal.core.data.repository.MediaRootKind
+import com.playfieldportal.core.domain.model.ControllerLayoutPrefs
+import com.playfieldportal.core.domain.model.XYLayout
+import com.playfieldportal.core.domain.model.displayLabel
 import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpScreenPreview
 import com.playfieldportal.feature.settings.ui.wizard.WizardCheckboxRow
@@ -28,21 +31,35 @@ import com.playfieldportal.feature.settings.ui.wizard.WizardSectionHeader
 import com.playfieldportal.feature.settings.ui.wizard.WizardTextField
 import com.playfieldportal.feature.settings.ui.wizard.WizardValueRow
 import com.playfieldportal.feature.settings.viewmodel.ArtworkSourceUi
+import com.playfieldportal.feature.settings.viewmodel.ControllerSettingsViewModel
 import com.playfieldportal.feature.settings.viewmodel.InitialSetupUiState
 import com.playfieldportal.feature.settings.viewmodel.InitialSetupViewModel
+import com.playfieldportal.feature.settings.viewmodel.InterfaceHints
 import com.playfieldportal.feature.settings.viewmodel.RootFolderRow
+import com.playfieldportal.feature.settings.viewmodel.SetupAvailability
+import com.playfieldportal.feature.settings.viewmodel.SetupEmulatorRow
+import com.playfieldportal.feature.settings.viewmodel.SetupPagesUiState
+import com.playfieldportal.feature.settings.viewmodel.SetupPagesViewModel
 import com.playfieldportal.feature.settings.viewmodel.SetupStep
+import com.playfieldportal.feature.settings.viewmodel.confirmSwapSublabel
+import com.playfieldportal.feature.settings.viewmodel.controllerSummary
+import com.playfieldportal.feature.settings.viewmodel.folderSummary
+import com.playfieldportal.feature.settings.viewmodel.hintDelayLabel
+import com.playfieldportal.feature.settings.viewmodel.hintsSummary
+import com.playfieldportal.feature.settings.viewmodel.homeAppSummary
+import com.playfieldportal.feature.settings.viewmodel.touchButtonLabel
 
 // Which root-kind the single "add" SAF picker is currently serving.
 private enum class AddSlot { ROM, MUSIC, VIDEO, PHOTO }
 
 /**
- * First-run setup wizard, now one task per page (per the approved plan): Welcome → ROM Roots →
- * Music → Video → Photo → Artwork (with import offer) → Online Services → RetroArch* → Finish
- * (* only when RetroArch is installed). Channels the mockup's PSP skin via [WizardScaffold] —
- * strongly controller driven (Back steps out, Confirm activates the focused row / ▶ or Continue to advance),
- * touch everywhere (rows, fields tap to edit). Everything is optional and written through the
- * same stores as Settings, so this is a guided front door, not a second configuration system.
+ * First-run setup wizard, one task per page (per the approved plans): Welcome → Controller → ROM
+ * Roots → Music → Video → Photo → Artwork (with import offer) → Online Services → Achievements →
+ * Trophies* → RetroArch* → Emulators* → Windows Games* → Hints & Touch → Home App* → Finish
+ * (* only when it applies). Channels the mockup's PSP skin via [WizardScaffold] — strongly
+ * controller driven (Back steps out, Confirm activates the focused row, RB skips the page), touch
+ * everywhere (rows, fields tap to edit). Everything is optional and written through the same
+ * stores as Settings, so this is a guided front door, not a second configuration system.
  */
 @Composable
 fun InitialSetupScreen(
@@ -54,8 +71,13 @@ fun InitialSetupScreen(
     // B3: FINISH "Go to your library" — lands on the All Games folder, first playable game.
     onGoToLibrary: () -> Unit = {},
     viewModel: InitialSetupViewModel = hiltViewModel(),
+    pagesViewModel: SetupPagesViewModel = hiltViewModel(),
+    // The Controller page drives Settings ▸ Controller's own view model: identical writes.
+    controllerViewModel: ControllerSettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    val pages by pagesViewModel.uiState.collectAsState()
+    val controller by controllerViewModel.uiState.collectAsState()
 
     // The ViewModel outlives this overlay — snap back to page one when the wizard closes, so a
     // later re-run from Settings starts at the beginning instead of resuming mid-flow.
@@ -108,10 +130,29 @@ fun InitialSetupScreen(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri -> if (uri != null) viewModel.linkVitaFolder(uri) }
 
+    val ps3Picker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri -> if (uri != null) viewModel.linkPs3Folder(uri) }
+
+    val windowsPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri -> if (uri != null) pagesViewModel.linkWindowsFolder(uri) }
+
+    // Android's Home chooser: re-read the role when it returns, and on any resume besides.
+    val homePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { pagesViewModel.refreshHomeApp() }
+    LifecycleResumeEffect(Unit) {
+        pagesViewModel.refreshHomeApp()
+        onPauseOrDispose { }
+    }
+
     // ── Page chrome driven by the current step ─────────────────────────────────
     val step = state.step
     val stepNumber = state.stepNumber
     val canGoBack = step != SetupStep.WELCOME
+    // Every Continue row names the page after this one in THIS run's flow.
+    val nextLabel = state.nextStep?.let(::stepTitle) ?: "Finish"
 
     WizardScaffold(
         stepNumber = stepNumber,
@@ -122,6 +163,8 @@ fun InitialSetupScreen(
         onDismissMessage = viewModel::dismissMessage,
         heading = headingFor(step),
         hint = hintFor(step),
+        onSkip = if (step == SetupStep.FINISH) null else viewModel::skipStep,
+        confirmLabel = if (step == SetupStep.EMULATORS) "Change" else "Enter",
         contentKey = step,
         modifier = modifier,
     ) {
@@ -129,6 +172,14 @@ fun InitialSetupScreen(
             SetupStep.WELCOME -> WelcomePage(
                 onStart = { viewModel.nextStep() },
                 onSkip = onBack,
+            )
+            SetupStep.CONTROLLER -> ControllerPage(
+                prefs = controller.layoutPrefs,
+                onCycleType = controllerViewModel::cycleDisplayType,
+                onCycleConfirm = controllerViewModel::cycleConfirmBackLayout,
+                onCycleXY = controllerViewModel::cycleXYLayout,
+                onContinue = { viewModel.nextStep() },
+                nextLabel = nextLabel,
             )
             SetupStep.ROM_ROOTS -> RootsPage(
                 roots = state.romRoots,
@@ -145,7 +196,7 @@ fun InitialSetupScreen(
                 onRemove = { viewModel.removeRomRoot(it.treeUri) },
                 onRescan = viewModel::rescanRomRoots,
                 onContinue = { viewModel.nextStep() },
-                nextLabel = "Music",
+                nextLabel = nextLabel,
             )
             SetupStep.MUSIC -> MediaRootsPage(
                 roots = state.musicRoots,
@@ -162,7 +213,7 @@ fun InitialSetupScreen(
                 onRemove = { viewModel.removeMediaRoot(MediaRootKind.MUSIC, it.treeUri) },
                 onRescan = { viewModel.rescanMediaRoot(MediaRootKind.MUSIC) },
                 onContinue = { viewModel.nextStep() },
-                nextLabel = "Video",
+                nextLabel = nextLabel,
             )
             SetupStep.VIDEO -> MediaRootsPage(
                 roots = state.videoRoots,
@@ -179,7 +230,7 @@ fun InitialSetupScreen(
                 onRemove = { viewModel.removeMediaRoot(MediaRootKind.VIDEO, it.treeUri) },
                 onRescan = { viewModel.rescanMediaRoot(MediaRootKind.VIDEO) },
                 onContinue = { viewModel.nextStep() },
-                nextLabel = "Photo",
+                nextLabel = nextLabel,
             )
             SetupStep.PHOTO -> MediaRootsPage(
                 roots = state.photoRoots,
@@ -196,7 +247,7 @@ fun InitialSetupScreen(
                 onRemove = { viewModel.removeMediaRoot(MediaRootKind.PHOTO, it.treeUri) },
                 onRescan = { viewModel.rescanMediaRoot(MediaRootKind.PHOTO) },
                 onContinue = { viewModel.nextStep() },
-                nextLabel = "Artwork",
+                nextLabel = nextLabel,
             )
             SetupStep.ARTWORK -> ArtworkPage(
                 state = state,
@@ -205,7 +256,7 @@ fun InitialSetupScreen(
                 onRemove = viewModel::forgetArtworkFolder,
                 onImportNow = viewModel::importArtworkNow,
                 onContinue = { viewModel.nextStep() },
-                nextLabel = "Online Services",
+                nextLabel = nextLabel,
             )
             SetupStep.SERVICES -> ServicesPage(
                 state = state,
@@ -216,22 +267,23 @@ fun InitialSetupScreen(
                 onTestSs = viewModel::testSsCredentials,
                 onConnectSs = viewModel::connectScreenScraper,
                 onContinue = { viewModel.nextStep() },
-                nextLabel = "Achievement Services",
+                nextLabel = nextLabel,
             )
             SetupStep.ACHIEVEMENTS -> AchievementsPage(
                 state = state,
                 onConnectRa = viewModel::connectRetroAchievements,
                 onConnectSteam = viewModel::connectSteam,
                 onContinue = { viewModel.nextStep() },
-                nextLabel = if (state.vita3KInstalled) "Vita Data Folder"
-                            else if (state.retroArchInstalled) "RetroArch" else "Finish",
+                nextLabel = nextLabel,
             )
-            SetupStep.VITA -> VitaPage(
+            SetupStep.TROPHIES -> TrophiesPage(
                 state = state,
-                onLink = { vitaPicker.launch(null) },
-                onForget = viewModel::forgetVitaFolder,
+                onLinkVita = { vitaPicker.launch(null) },
+                onForgetVita = viewModel::forgetVitaFolder,
+                onLinkPs3 = { ps3Picker.launch(null) },
+                onForgetPs3 = viewModel::forgetPs3Folder,
                 onContinue = { viewModel.nextStep() },
-                nextLabel = if (state.retroArchInstalled) "RetroArch" else "Finish",
+                nextLabel = nextLabel,
             )
             SetupStep.RETROARCH -> RetroArchPage(
                 state = state,
@@ -239,9 +291,38 @@ fun InitialSetupScreen(
                 onRedetect = viewModel::redetectRetroArchCores,
                 onUnlink = viewModel::unlinkRetroArch,
                 onContinue = { viewModel.nextStep() },
+                nextLabel = nextLabel,
+            )
+            SetupStep.EMULATORS -> EmulatorsPage(
+                rows = pages.emulatorRows,
+                onCycle = pagesViewModel::cycleEmulator,
+                onContinue = { viewModel.nextStep() },
+                nextLabel = nextLabel,
+            )
+            SetupStep.WINDOWS -> WindowsGamesPage(
+                pages = pages,
+                onPickFolder = { windowsPicker.launch(null) },
+                onContinue = { viewModel.nextStep() },
+                nextLabel = nextLabel,
+            )
+            SetupStep.HINTS -> HintsPage(
+                hints = pages.hints,
+                onToggleHints = pagesViewModel::toggleHints,
+                onCycleDelay = pagesViewModel::cycleHintDelay,
+                onCycleTouch = pagesViewModel::cycleTouchButton,
+                onContinue = { viewModel.nextStep() },
+                nextLabel = nextLabel,
+            )
+            SetupStep.HOME_APP -> HomeAppPage(
+                isHomeApp = pages.isHomeApp,
+                onSetHome = { runCatching { homePicker.launch(pagesViewModel.homeRoleIntent()) } },
+                onContinue = { viewModel.nextStep() },
+                nextLabel = nextLabel,
             )
             SetupStep.FINISH -> FinishPage(
                 state = state,
+                pages = pages,
+                controller = controller.layoutPrefs,
                 onToggleAutoFit = viewModel::toggleAutoFitXmbLayout,
                 onOpenLibraryManager = onOpenLibraryManager,
                 onGoToLibrary = onGoToLibrary,
@@ -254,8 +335,29 @@ fun InitialSetupScreen(
     }
 }
 
+/** A page's short name, for the previous page's "Next: …" sublabel. */
+private fun stepTitle(step: SetupStep): String = when (step) {
+    SetupStep.WELCOME      -> "Welcome"
+    SetupStep.CONTROLLER   -> "Controller"
+    SetupStep.ROM_ROOTS    -> "ROM folders"
+    SetupStep.MUSIC        -> "Music"
+    SetupStep.VIDEO        -> "Video"
+    SetupStep.PHOTO        -> "Photo"
+    SetupStep.ARTWORK      -> "Artwork"
+    SetupStep.SERVICES     -> "Online Services"
+    SetupStep.ACHIEVEMENTS -> "Achievement Services"
+    SetupStep.TROPHIES     -> "Trophies"
+    SetupStep.RETROARCH    -> "RetroArch"
+    SetupStep.EMULATORS    -> "Emulators"
+    SetupStep.WINDOWS      -> "Windows Games"
+    SetupStep.HINTS        -> "Hints & Touch"
+    SetupStep.HOME_APP     -> "Home App"
+    SetupStep.FINISH       -> "Finish"
+}
+
 private fun headingFor(step: SetupStep): String = when (step) {
     SetupStep.WELCOME     -> "Welcome to Play Field Portal."
+    SetupStep.CONTROLLER  -> "Choose your controller."
     SetupStep.ROM_ROOTS   -> "Choose your ROM folders."
     SetupStep.MUSIC       -> "Choose your music folders."
     SetupStep.VIDEO       -> "Choose your video folders."
@@ -263,13 +365,18 @@ private fun headingFor(step: SetupStep): String = when (step) {
     SetupStep.ARTWORK     -> "Choose your artwork folder."
     SetupStep.SERVICES    -> "Connect your artwork sources."
     SetupStep.ACHIEVEMENTS -> "Connect your achievement services."
-    SetupStep.VITA        -> "Set your Vita data folder."
+    SetupStep.TROPHIES    -> "Link your trophy folders."
     SetupStep.RETROARCH   -> "Link RetroArch's cores folder."
+    SetupStep.EMULATORS   -> "Check your emulators."
+    SetupStep.WINDOWS     -> "Set up Windows games."
+    SetupStep.HINTS       -> "Choose how the launcher helps you."
+    SetupStep.HOME_APP    -> "Make Play Field Portal your Home screen."
     SetupStep.FINISH      -> "You're all set!"
 }
 
 private fun hintFor(step: SetupStep): String? = when (step) {
     SetupStep.WELCOME   -> "A few short steps to point the launcher at your stuff — every step is optional and can be changed later in Settings."
+    SetupStep.CONTROLLER -> "Sets the button icons and which button confirms, so every prompt from here on matches your pad."
     SetupStep.ROM_ROOTS -> "Add one or more root folders — each console's games live in a subfolder under them."
     SetupStep.MUSIC     -> "Add several roots to span internal storage and an SD card."
     SetupStep.VIDEO     -> "Add several roots to span internal storage and an SD card."
@@ -277,8 +384,12 @@ private fun hintFor(step: SetupStep): String? = when (step) {
     SetupStep.ARTWORK   -> "One folder hosts the artwork library — you can import into it right after."
     SetupStep.SERVICES  -> "All optional and free. SteamGridDB, TheGamesDB, IGDB, and ScreenScraper fetch game artwork and metadata."
     SetupStep.ACHIEVEMENTS -> "RetroAchievements and Steam track achievements as Shiba Coins."
-    SetupStep.VITA      -> "Vita3K is installed — one grant links every installed Vita title for discovery and trophies."
+    SetupStep.TROPHIES  -> "One grant per emulator links every installed title for discovery and trophies."
     SetupStep.RETROARCH -> "Lets the launcher know exactly which cores you have, so only those are offered."
+    SetupStep.EMULATORS -> "Each console's default, picked from what's installed. Change any that look wrong."
+    SetupStep.WINDOWS   -> "A Windows emulator is installed — choose where your PC games live."
+    SetupStep.HINTS     -> "Button hints fade in when you pause, and vanish the moment you press anything."
+    SetupStep.HOME_APP  -> "The Home button then brings you back here instead of the stock launcher."
     SetupStep.FINISH    -> "Everything below can be adjusted anytime in Settings."
 }
 
@@ -296,7 +407,7 @@ private fun WelcomePage(onStart: () -> Unit, onSkip: () -> Unit) {
     )
     WizardRow(
         label = "Get Started",
-        sublabel = "Choose your ROM roots first",
+        sublabel = "Choose your controller first",
         focusKey = "welcome_start",
         onClick = onStart,
     )
@@ -606,40 +717,82 @@ private fun AchievementsPage(
 }
 
 @Composable
-private fun VitaPage(
-    state: InitialSetupUiState,
-    onLink: () -> Unit,
-    onForget: () -> Unit,
+private fun ControllerPage(
+    prefs: ControllerLayoutPrefs,
+    onCycleType: () -> Unit,
+    onCycleConfirm: () -> Unit,
+    onCycleXY: () -> Unit,
     onContinue: () -> Unit,
     nextLabel: String,
 ) {
-    val folder = state.vitaFolderName
-    if (folder == null) {
-        WizardInfoText(
-            "Vita3K is installed. Grant its data (ux0) folder — often shared-storage " +
-                "e.g. Roms/vita/ux0 — so PFP can discover installed Vita titles and read " +
-                "trophies without granting per game."
-        )
-    } else {
-        WizardRootRow(
-            name = folder,
-            sublabel = "Vita3K data folder — use ✎ to pick a different one",
-            onEdit = onLink,
-            onRemove = onForget,
-        )
-    }
-    WizardRow(
-        label = if (folder == null) "Set Vita3K Data Folder" else "Change Vita3K Data Folder",
-        sublabel = if (folder == null) "Grant the ux0 folder (or the folder that contains it)"
-                   else "Pick a different folder — files are never touched",
-        onClick = onLink,
+    WizardValueRow(
+        label = "Controller Type",
+        value = prefs.displayType.displayLabel(),
+        sublabel = "Changes the button icons in every prompt",
+        focusKey = "controller_type",
+        onClick = onCycleType,
     )
-    if (folder != null) {
-        WizardRow(
-            label = "Release Vita Data Folder",
-            sublabel = "Unlink it without touching any files",
-            onClick = onForget,
-        )
+    WizardValueRow(
+        label = "A / B Swap",
+        value = if (prefs.confirmBackLayout == com.playfieldportal.core.domain.model.ConfirmBackLayout.REVERSED) "On" else "Off",
+        sublabel = confirmSwapSublabel(prefs),
+        onClick = onCycleConfirm,
+    )
+    WizardValueRow(
+        label = "X / Y Swap",
+        value = if (prefs.xyLayout == XYLayout.SWAPPED) "On" else "Off",
+        sublabel = "Launcher menus only — emulator controls are untouched",
+        onClick = onCycleXY,
+    )
+    WizardContinueRow(nextLabel, onContinue)
+}
+
+/** Vita3K and ARMSX3 trophy folders — each section only when its emulator is installed. */
+@Composable
+private fun TrophiesPage(
+    state: InitialSetupUiState,
+    onLinkVita: () -> Unit,
+    onForgetVita: () -> Unit,
+    onLinkPs3: () -> Unit,
+    onForgetPs3: () -> Unit,
+    onContinue: () -> Unit,
+    nextLabel: String,
+) {
+    if (state.vita3KInstalled) {
+        WizardSectionHeader("PS Vita · Vita3K")
+        val folder = state.vitaFolderName
+        if (folder == null) {
+            WizardRow(
+                label = "Set Vita3K Data Folder",
+                sublabel = "Grant the ux0 folder (or the folder that contains it)",
+                onClick = onLinkVita,
+            )
+        } else {
+            WizardRootRow(
+                name = folder,
+                sublabel = "Vita3K data folder — use ✎ to pick a different one",
+                onEdit = onLinkVita,
+                onRemove = onForgetVita,
+            )
+        }
+    }
+    if (state.armsx3Installed) {
+        WizardSectionHeader("PS3 · ARMSX3")
+        val folder = state.ps3FolderName
+        if (folder == null) {
+            WizardRow(
+                label = "Set ARMSX3 Data Folder",
+                sublabel = "Grant PS3/config/dev_hdd0 — or any folder above or below it",
+                onClick = onLinkPs3,
+            )
+        } else {
+            WizardRootRow(
+                name = folder,
+                sublabel = "ARMSX3 data folder — use ✎ to pick a different one",
+                onEdit = onLinkPs3,
+                onRemove = onForgetPs3,
+            )
+        }
     }
     WizardContinueRow(nextLabel, onContinue)
 }
@@ -651,6 +804,7 @@ private fun RetroArchPage(
     onRedetect: () -> Unit,
     onUnlink: () -> Unit,
     onContinue: () -> Unit,
+    nextLabel: String,
 ) {
     if (state.retroArchLinked) {
         WizardValueRow(
@@ -671,12 +825,113 @@ private fun RetroArchPage(
         )
         WizardRow(label = "Link RetroArch Folder", sublabel = "Pick the com.retroarch document tree", onClick = onLink)
     }
-    WizardContinueRow("Finish", onContinue)
+    WizardContinueRow(nextLabel, onContinue)
+}
+
+/** One row per console with a known emulator installed; confirm cycles its installed candidates. */
+@Composable
+private fun EmulatorsPage(
+    rows: List<SetupEmulatorRow>,
+    onCycle: (String) -> Unit,
+    onContinue: () -> Unit,
+    nextLabel: String,
+) {
+    if (rows.isEmpty()) {
+        WizardInfoText(
+            "No consoles with games yet. Once your ROM folders are scanned, each console appears " +
+                "here with the emulator it will launch — change it anytime in Settings ▸ Emulators."
+        )
+    }
+    rows.forEach { row ->
+        WizardValueRow(
+            label = row.consoleName,
+            value = row.emulatorLabel ?: "None",
+            focusKey = "emulator_${row.platformId}",
+            onClick = if (row.candidateIds.size > 1) ({ onCycle(row.platformId) }) else null,
+        )
+    }
+    WizardContinueRow(nextLabel, onContinue)
+}
+
+@Composable
+private fun WindowsGamesPage(
+    pages: SetupPagesUiState,
+    onPickFolder: () -> Unit,
+    onContinue: () -> Unit,
+    nextLabel: String,
+) {
+    WizardInfoText(
+        "Pick the folder that holds one subfolder per game. PFP scans it for your Windows games; " +
+            "nothing in it is changed."
+    )
+    WizardValueRow(label = "Detected", value = pages.detectedLaunchers)
+    val folder = pages.windowsFolderName
+    WizardRow(
+        label = if (folder == null) "Set Windows Games Folder" else "Change Windows Games Folder",
+        sublabel = folder ?: "Grant the folder your games are installed in",
+        focusKey = "windows_folder",
+        onClick = onPickFolder,
+    )
+    WizardContinueRow(nextLabel, onContinue)
+}
+
+@Composable
+private fun HintsPage(
+    hints: InterfaceHints,
+    onToggleHints: () -> Unit,
+    onCycleDelay: () -> Unit,
+    onCycleTouch: () -> Unit,
+    onContinue: () -> Unit,
+    nextLabel: String,
+) {
+    WizardCheckboxRow(
+        label = "Button Hints",
+        checked = hints.enabled,
+        onToggle = { onToggleHints() },
+        sublabel = "The idle hint chip on the XMB, in Settings and on media screens",
+        focusKey = "hints_enabled",
+    )
+    WizardValueRow(
+        label = "Hint Delay",
+        value = hintDelayLabel(hints.delaySeconds),
+        sublabel = "How long to pause before hints appear (1–5 seconds)",
+        onClick = onCycleDelay,
+    )
+    WizardValueRow(
+        label = "Touch Button",
+        value = touchButtonLabel(hints.touchButton),
+        sublabel = "The on-screen App Drawer button — Auto shows it after you touch the screen",
+        onClick = onCycleTouch,
+    )
+    WizardContinueRow(nextLabel, onContinue)
+}
+
+@Composable
+private fun HomeAppPage(
+    isHomeApp: Boolean,
+    onSetHome: () -> Unit,
+    onContinue: () -> Unit,
+    nextLabel: String,
+) {
+    WizardInfoText(
+        "Android asks you to pick a Home app and confirm it. You can switch back anytime in " +
+            "Android's Default apps settings."
+    )
+    WizardValueRow(label = "Current Home App", value = homeAppSummary(isHomeApp))
+    WizardRow(
+        label = "Set as Home App",
+        sublabel = "Opens Android's Home app chooser",
+        focusKey = "home_set",
+        onClick = onSetHome,
+    )
+    WizardContinueRow(nextLabel, onContinue)
 }
 
 @Composable
 private fun FinishPage(
     state: InitialSetupUiState,
+    pages: SetupPagesUiState,
+    controller: ControllerLayoutPrefs,
     onToggleAutoFit: (Boolean) -> Unit,
     onOpenLibraryManager: () -> Unit,
     onGoToLibrary: () -> Unit,
@@ -688,6 +943,7 @@ private fun FinishPage(
         )
     }
     WizardSectionHeader("Summary")
+    WizardValueRow(label = "Controller", value = controllerSummary(controller))
     WizardValueRow(label = "ROM Library", value = rootsShortLabel(state.romRoots))
     WizardValueRow(label = "Music", value = rootsShortLabel(state.musicRoots))
     WizardValueRow(label = "Video", value = rootsShortLabel(state.videoRoots))
@@ -702,7 +958,10 @@ private fun FinishPage(
     WizardValueRow(label = "RetroAchievements", value = state.raUsername.ifBlank { "Not set" })
     WizardValueRow(label = "Steam", value = if (state.hasSteam) "Connected" else "Not set")
     if (state.vita3KInstalled) {
-        WizardValueRow(label = "Vita Data Folder", value = state.vitaFolderName ?: "Not set")
+        WizardValueRow(label = "Vita Data Folder", value = folderSummary(state.vitaFolderName))
+    }
+    if (state.armsx3Installed) {
+        WizardValueRow(label = "PS3 Data Folder", value = folderSummary(state.ps3FolderName))
     }
     if (state.retroArchInstalled) {
         WizardValueRow(
@@ -710,6 +969,11 @@ private fun FinishPage(
             value = if (state.retroArchLinked) "${state.retroArchCoreCount ?: 0} cores" else "Not linked",
         )
     }
+    if (state.availability.pcLauncher) {
+        WizardValueRow(label = "Windows Games", value = folderSummary(pages.windowsFolderName))
+    }
+    WizardValueRow(label = "Button Hints", value = hintsSummary(pages.hints))
+    WizardValueRow(label = "Home App", value = homeAppSummary(pages.isHomeApp))
 
     Spacer(Modifier.height(4.dp))
     // OPTIONAL XMB auto-fit — explicitly opt-in, never forced. Sizing the XMB's cross layout to
@@ -961,22 +1225,112 @@ private fun AchievementsPagePreview() {
 
 @CombinedPreviews
 @Composable
-private fun VitaPagePreview() {
+private fun ControllerPagePreview() {
     WizardPagePreview(
-        stepNumber = 9,
-        heading = "Set your Vita data folder.",
-        hint = "Vita3K is installed — one grant links every installed Vita title for discovery and trophies.",
+        stepNumber = 2,
+        heading = "Choose your controller.",
+        hint = "Sets the button icons and which button confirms, so every prompt from here on matches your pad.",
     ) {
-        VitaPage(
+        ControllerPage(
+            prefs = ControllerLayoutPrefs(),
+            onCycleType = {},
+            onCycleConfirm = {},
+            onCycleXY = {},
+            onContinue = {},
+            nextLabel = "ROM folders",
+        )
+    }
+}
+
+@CombinedPreviews
+@Composable
+private fun TrophiesPagePreview() {
+    WizardPagePreview(
+        stepNumber = 10,
+        heading = "Link your trophy folders.",
+        hint = "One grant per emulator links every installed title for discovery and trophies.",
+    ) {
+        TrophiesPage(
             state = InitialSetupUiState(
-                vita3KInstalled = true,
-                vitaFolderName = "Roms/vita/ux0",
+                availability = SetupAvailability(vita3K = true, armsx3 = true),
+                vitaFolderName = "ux0",
             ),
-            onLink = {},
-            onForget = {},
+            onLinkVita = {},
+            onForgetVita = {},
+            onLinkPs3 = {},
+            onForgetPs3 = {},
             onContinue = {},
             nextLabel = "RetroArch",
         )
+    }
+}
+
+@CombinedPreviews
+@Composable
+private fun EmulatorsPagePreview() {
+    WizardPagePreview(
+        stepNumber = 12,
+        heading = "Check your emulators.",
+        hint = "Each console's default, picked from what's installed. Change any that look wrong.",
+    ) {
+        EmulatorsPage(
+            rows = listOf(
+                SetupEmulatorRow("psx", "PlayStation", "DuckStation", listOf("duckstation", "epsxe"), 0),
+                SetupEmulatorRow("psp", "PlayStation Portable", "PPSSPP Gold", listOf("ppsspp"), 0),
+                SetupEmulatorRow("gc", "GameCube / Wii", "Dolphin Emulator", listOf("dolphin"), 0),
+            ),
+            onCycle = {},
+            onContinue = {},
+            nextLabel = "Windows Games",
+        )
+    }
+}
+
+@CombinedPreviews
+@Composable
+private fun WindowsGamesPagePreview() {
+    WizardPagePreview(
+        stepNumber = 13,
+        heading = "Set up Windows games.",
+        hint = "A Windows emulator is installed — choose where your PC games live.",
+    ) {
+        WindowsGamesPage(
+            pages = SetupPagesUiState(detectedLaunchers = "GameNative · Winlator Cmod · Winlator Ludashi"),
+            onPickFolder = {},
+            onContinue = {},
+            nextLabel = "Hints & Touch",
+        )
+    }
+}
+
+@CombinedPreviews
+@Composable
+private fun HintsPagePreview() {
+    WizardPagePreview(
+        stepNumber = 14,
+        heading = "Choose how the launcher helps you.",
+        hint = "Button hints fade in when you pause, and vanish the moment you press anything.",
+    ) {
+        HintsPage(
+            hints = InterfaceHints(enabled = true, delaySeconds = 2f),
+            onToggleHints = {},
+            onCycleDelay = {},
+            onCycleTouch = {},
+            onContinue = {},
+            nextLabel = "Home App",
+        )
+    }
+}
+
+@CombinedPreviews
+@Composable
+private fun HomeAppPagePreview() {
+    WizardPagePreview(
+        stepNumber = 15,
+        heading = "Make Play Field Portal your Home screen.",
+        hint = "The Home button then brings you back here instead of the stock launcher.",
+    ) {
+        HomeAppPage(isHomeApp = false, onSetHome = {}, onContinue = {}, nextLabel = "Finish")
     }
 }
 
@@ -990,7 +1344,7 @@ private fun RetroArchPagePreview() {
     ) {
         RetroArchPage(
             state = InitialSetupUiState(
-                retroArchInstalled = true,
+                availability = SetupAvailability(retroArch = true),
                 retroArchLinked = true,
                 retroArchCoreCount = 42,
             ),
@@ -998,6 +1352,7 @@ private fun RetroArchPagePreview() {
             onRedetect = {},
             onUnlink = {},
             onContinue = {},
+            nextLabel = "Emulators",
         )
     }
 }
@@ -1006,7 +1361,7 @@ private fun RetroArchPagePreview() {
 @Composable
 private fun FinishPagePreview() {
     WizardPagePreview(
-        stepNumber = 11,
+        stepNumber = 16,
         heading = "You're all set!",
         hint = "Everything below can be adjusted anytime in Settings.",
     ) {
@@ -1023,10 +1378,14 @@ private fun FinishPagePreview() {
                 ssUsername = "scraper_user",
                 raUsername = "player_one",
                 steamId64 = "76561198012345678",
-                retroArchInstalled = true,
+                availability = SetupAvailability(retroArch = true, vita3K = true, armsx3 = true, pcLauncher = true),
+                vitaFolderName = "ux0",
+                ps3FolderName = "dev_hdd0",
                 retroArchLinked = true,
                 retroArchCoreCount = 42,
             ),
+            pages = SetupPagesUiState(hints = InterfaceHints(enabled = true, delaySeconds = 2f), isHomeApp = true),
+            controller = ControllerLayoutPrefs(),
             onToggleAutoFit = {},
             onOpenLibraryManager = {},
             onGoToLibrary = {},

@@ -19,6 +19,12 @@ data class BackgroundTaskInfo(
     val total: Int? = null,
     /** The item being worked on right now, e.g. the artwork title being fetched. */
     val detail: String? = null,
+    /** Set by BackgroundTaskCenter when the producer registered a stop handler: the row is focusable. */
+    val stoppable: Boolean = false,
+    /** The user asked to stop and the producer hasn't settled yet: the bar freezes, "Stopping…". */
+    val stopping: Boolean = false,
+    /** What the Stop confirm promises is kept, e.g. "Games found so far are kept." */
+    val stopNote: String? = null,
 ) {
     /**
      * 0..1 for a determinate bar, or null for an indeterminate one.

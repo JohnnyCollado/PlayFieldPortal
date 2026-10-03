@@ -57,6 +57,10 @@ class DatabaseInitializer @Inject constructor(
         // Runs every launch (not gated by DB_SEEDED): corrects system-defined flags on
         // built-in categories so definition changes reach databases seeded by older builds.
         categoryRepository.reconcileBuiltInCategories()
+        // Startup is the only safe moment to sweep category images: a restore commits its files
+        // before its categories, so a later sweep could delete images that are about to match.
+        runCatching { categoryRepository.pruneOrphanCategoryIcons() }
+            .onFailure { Timber.w(it, "Category icon sweep failed") }
         seedThemes()
         // One-shot v22 follow-up (flag-guarded): the Windows-card consolidation steps that
         // need app logic — spoof-package label checks, duplicate merge, card creation.

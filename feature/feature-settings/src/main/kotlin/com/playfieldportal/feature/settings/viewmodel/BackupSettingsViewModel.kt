@@ -10,6 +10,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.playfieldportal.core.data.repository.BackupFolderRepository
+import com.playfieldportal.feature.backup.BackupInfo
 import com.playfieldportal.feature.backup.BackupManager
 import com.playfieldportal.feature.backup.BackupWorker
 import com.playfieldportal.feature.backup.RestoreWorker
@@ -29,7 +30,7 @@ import javax.inject.Inject
 data class BackupSettingsUiState(
     val lastBackupDate: String? = null,
     val backupFolder: String? = null,   // display name of the chosen SAF folder; null = not set
-    val backupFiles: List<String> = emptyList(),
+    val backups: List<BackupInfo> = emptyList(),
     val isWorking: Boolean = false,
     val workingMessage: String = "",
     val errorMessage: String? = null,
@@ -136,6 +137,20 @@ class BackupSettingsViewModel @Inject constructor(
         Timber.d("restoreFromFile — SAF picker launched by composable")
     }
 
+    /** Deletes a saved backup's document from the backup folder, then refreshes the list. */
+    fun deleteBackup(info: BackupInfo) {
+        viewModelScope.launch {
+            val deleted = runCatching {
+                android.provider.DocumentsContract.deleteDocument(context.contentResolver, info.uri)
+            }.getOrDefault(false)
+            if (!deleted) {
+                Timber.w("Could not delete backup %s", info.name)
+                _uiState.update { it.copy(errorMessage = "Could not delete ${info.name}.") }
+            }
+            refreshBackupList()
+        }
+    }
+
     fun dismissError() = _uiState.update { it.copy(errorMessage = null) }
 
     private fun refreshBackupList() {
@@ -145,7 +160,7 @@ class BackupSettingsViewModel @Inject constructor(
             val fmt       = SimpleDateFormat("MMM d, yyyy  HH:mm", Locale.getDefault())
             _uiState.update {
                 it.copy(
-                    backupFiles    = backups.map { b -> b.name },
+                    backups        = backups,
                     lastBackupDate = backups.firstOrNull()?.let { b -> fmt.format(Date(b.lastModified)) },
                     backupFolder   = folderUri?.let(::backupFolderDisplayName),
                 )

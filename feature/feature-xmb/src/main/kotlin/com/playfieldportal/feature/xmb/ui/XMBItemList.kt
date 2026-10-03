@@ -1,7 +1,9 @@
 package com.playfieldportal.feature.xmb.ui
 
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -10,12 +12,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -24,16 +24,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmarks
@@ -41,7 +40,6 @@ import androidx.compose.material.icons.filled.CallEnd
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Headset
-import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Link
@@ -54,7 +52,6 @@ import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.QrCode2
-import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Star
@@ -64,35 +61,48 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.isUnspecified
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
+import com.playfieldportal.core.domain.model.XmbListMotion
 import com.playfieldportal.core.ui.achievement.BoneGlyph
 import com.playfieldportal.core.ui.components.ControllerPromptGlyphs
 import com.playfieldportal.core.ui.icons.GameIconStyle
@@ -107,6 +117,10 @@ import com.playfieldportal.feature.xmb.ui.detail.shibaSlotKeyFor
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 import com.playfieldportal.feature.xmb.viewmodel.XMBItemType
 import com.playfieldportal.themekit.XmbLayoutSpec
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
 
 // Game icons use the authentic PSP ICON0 ratio 144:80 (= 1.8), scaled for the list.
 private val GAME_ICON_WIDTH = 126.dp
@@ -117,6 +131,24 @@ private val GAME_ICON_HEIGHT = 70.dp
 // Internal because XMBShell needs it too: the drill flyout's PIC0 logo centres on the active
 // row, and it can only do that if it measures the row the same way the column lays it out.
 internal val ROW_HEIGHT = 88.dp
+
+// The inserted UMD, focused and read: ICON0's native 144 × 80, read as dp — a step up from a game
+// row's 126 × 70 icon. The PSP's own scale (three caticons wide, 216 dp here) read far too big on a
+// handheld (device feedback, 2026-10-01). Its row grows to hold it, with the same breathing room
+// above and below a normal row's icon has.
+private val UMD_ICON_WIDTH = 144.dp
+private val UMD_ICON_HEIGHT = 80.dp
+private val UMD_ROW_HEIGHT = UMD_ICON_HEIGHT + 16.dp
+
+// The selected row's grow, pivoted on the icon line (see XmbVerticalListRow).
+private const val SELECTED_ROW_SCALE = 1.06f
+
+// The first-level column clips only top, bottom and right. Its left edge is where the column
+// starts, not the screen's, and the focused UMD's ICON0 runs past it to be cut by the screen edge,
+// as on the PSP. Nothing else in the column reaches left of its own start.
+private val ClipAllButLeft = androidx.compose.foundation.shape.GenericShape { size, _ ->
+    addRect(androidx.compose.ui.geometry.Rect(-size.width * 8, 0f, size.width, size.height))
+}
 
 // Gap between a wide artwork tile and its title. Small-icon rows get this spacing for free from
 // their 58dp icon box; the 126dp artwork tiles have none, so the text butts against the art.
@@ -155,7 +187,7 @@ private val SelectedTextShadow = Shadow(
 private val ROW_HORIZONTAL_PADDING = 18.dp
 
 // "Text Shadow" (Display ▸ Appearance): the repo's standard directional drop shadow — the same
-// values PspContextMenu / ControllerHintBar / DetailContextMenu use — applied to XMB row
+// values PspContextMenu / ControllerHintBar use — applied to XMB row
 // subtitles. The settings scaffold's SettingsTextShadow is feature-internal, so the same idiom is
 // restated here for the shell (the XMB draws over the raw wallpaper, no scrim at all).
 val XmbTextShadow = Shadow(
@@ -167,6 +199,9 @@ val XmbTextShadow = Shadow(
 // Physical-media memory-card art for rows that should read as a memory card but have no console icon
 // of their own (collections). Mirrors the ViewModel's MEMORY_CARD_ASSET_URI.
 internal const val MEMORY_CARD_DEFAULT_ART = "file:///android_asset/systems/physical-media/_default.png"
+
+// The UMD slot's unfocused icon: the PSP's physical media, for a game of any platform.
+internal const val UMD_SLOT_ART = "file:///android_asset/systems/physical-media/psp.png"
 
 // ── Drill flyout layout ──────────────────────────────────────────────────────
 // Left inset of the game-card column, measured from the flyout's left edge (which the caller has
@@ -184,7 +219,8 @@ private val DRILL_GAME_COLUMN_LEFT = 138.dp
 //     belowTopY with a ◀ trailing it, the previous card half-clipped above the bar. Icon-only.
 //     This column is fixed while you run through the games.
 //   • RIGHT — the GAME CARDS (rom icons), icon-only, in a centre-pinned column: the active game is
-//     pinned on the belowTopY / ◀ line and the tween glides the next/previous card onto the pin.
+//     pinned on the belowTopY / ◀ line and the shared step spring (XmbStepSpring) glides the
+//     next/previous card onto the pin, the same motion as the category bar and the main list.
 //
 //     [ card 3 ]   ½-clipped above the bar
 //  ═══ caticon bar (right hidden) ═══
@@ -204,6 +240,10 @@ fun XmbDrillFlyout(
     // backs out of the drill); taps on other cards are delivered too so it can ignore them.
     onSiblingTap: (Int) -> Unit = {},
     iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
+    // Snap-rule inputs for the game column (see XMBItemList): a sort or search bump, and which game
+    // list is on screen, so those snap to the restored cursor instead of gliding there.
+    scrollToTopToken: Int = 0,
+    columnKey: Any? = null,
     // The Y of the category bar's top edge and bottom edge — passed the SAME values as the main XMB
     // so the drill is laid out identically: active row under the caticon, previous half-clipped above.
     barTopY: Dp = 40.dp,
@@ -217,6 +257,8 @@ fun XmbDrillFlyout(
         // active (drilled-into) card. Static while navigating games. Labels are hidden here so the
         // drilled console reads as a bare icon and the ◀ sits tight against it — the games are the
         // focus while drilled in, and the name already showed at the parent level.
+        // A Move or a mark belongs to the game column; the parent card must not wear either.
+        androidx.compose.runtime.CompositionLocalProvider(LocalXmbRowDecor provides XmbRowDecor()) {
         XMBItemList(
             items = siblings,
             selectedIndex = siblingIndex,
@@ -230,6 +272,7 @@ fun XmbDrillFlyout(
             iconAnimatingAllowed = iconAnimatingAllowed,
             modifier = Modifier.fillMaxHeight().width(DRILL_GAME_COLUMN_LEFT - 10.dp),
         )
+        }
 
         // RIGHT: the game cards — a single continuous column laid out (not scrolled) so the active
         // game sits exactly on the belowTopY / ◀ line, with the previous card contiguous directly
@@ -242,6 +285,8 @@ fun XmbDrillFlyout(
             belowTopY = belowTopY,
             onItemSelected = onItemSelected,
             onItemLongPress = onItemLongPress,
+            scrollToTopToken = scrollToTopToken,
+            columnKey = columnKey,
             iconAnimatingAllowed = iconAnimatingAllowed,
             modifier = Modifier.fillMaxSize().padding(start = DRILL_GAME_COLUMN_LEFT),
         )
@@ -261,38 +306,65 @@ private fun XmbGameColumn(
     belowTopY: Dp,
     onItemSelected: (Int) -> Unit,
     onItemLongPress: (Int) -> Unit,
+    scrollToTopToken: Int = 0,
+    columnKey: Any? = null,
     iconAnimatingAllowed: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize().clipToBounds()) {
+        // The same animated position and snap rules as XMBItemList: the selected index in rows, on the
+        // shared step spring, created at its target so first composition and resume never glide.
+        val inputs = StepInputs(
+            rawSelectedIndex = selectedIndex,
+            itemCount = items.size,
+            scrollToTopToken = scrollToTopToken,
+            columnKey = columnKey,
+            moving = LocalXmbRowDecor.current.movingLabel != null,
+        )
+        val position = remember { ItemListPosition(inputs.target) }
+        // Decided here, in the frame the inputs change, so a snap is already drawn by that frame.
+        position.accept(inputs)
+        LaunchedEffect(position.epoch) { position.run() }
+
         if (items.isEmpty()) return@BoxWithConstraints
-        val sel = selectedIndex.coerceIn(0, items.lastIndex)
-        // Window: only the rows that can land on screen above/below the active one (+2 buffer each way
-        // so the next/previous card is always already composed before it scrolls into view).
+        // Window: only the rows that can land on screen above/below the animated position (+2 buffer
+        // each way so the next/previous card is always already composed before it scrolls into view).
+        // It follows p, not the target, so rows still in transit stay composed. Recomposes only when
+        // the set of rows changes, not on every animated frame.
         val rowsAbove = (belowTopY.value / ROW_HEIGHT.value).toInt() + 2
         val rowsBelow = ((maxHeight.value - belowTopY.value) / ROW_HEIGHT.value).toInt() + 2
-        val first = (sel - rowsAbove).coerceAtLeast(0)
-        val last = (sel + rowsBelow).coerceAtMost(items.lastIndex)
-        // Place each row by its OWN absolute offset from the anchor line: the active row (i == sel)
-        // lands exactly on belowTopY, earlier rows one ROW_HEIGHT up each, later rows one down each.
-        // Independent placement (not a shared Column) guarantees rows past the active are laid out.
-        for (i in first..last) {
-            XmbVerticalListRow(
-                item = items[i],
-                isSelected = i == selectedIndex,
-                showText = true,   // every game card keeps its [Title] / {Platform (Emulator)} label
-                iconStyle = iconStyle,
-                onClick = { onItemSelected(i) },
-                onLongPress = { onItemLongPress(i) },
-                showIcon = true,
-                // Only the active card animates (its rows funnel through the same per-row gate).
-                iconAnimatingAllowed = iconAnimatingAllowed,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .fillMaxWidth()
-                    .height(ROW_HEIGHT)
-                    .offset(y = belowTopY + ROW_HEIGHT * (i - sel)),
-            )
+        val lastIndex = items.lastIndex
+        val window by remember(items.size, rowsAbove, rowsBelow) {
+            derivedStateOf {
+                val p = position.read()
+                (floor(p).toInt() - rowsAbove).coerceAtLeast(0)..(ceil(p).toInt() + rowsBelow).coerceAtMost(lastIndex)
+            }
+        }
+        // Place each row by its OWN offset from the anchor line, keyed by item: the row at p lands
+        // exactly on belowTopY, earlier rows one ROW_HEIGHT up each, later rows one down each. At rest
+        // p is the target, so this is the old contiguous layout. Independent placement (not a shared
+        // Column) guarantees rows past the active are laid out.
+        for (i in window) {
+            val item = items[i]
+            key(item.id) {
+                XmbVerticalListRow(
+                    item = item,
+                    isSelected = i == selectedIndex,
+                    showText = true,   // every game card keeps its [Title] / {Platform (Emulator)} label
+                    iconStyle = iconStyle,
+                    onClick = { onItemSelected(i) },
+                    onLongPress = { onItemLongPress(i) },
+                    showIcon = true,
+                    // Only the active card animates (its rows funnel through the same per-row gate).
+                    iconAnimatingAllowed = iconAnimatingAllowed,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .fillMaxWidth()
+                        .height(ROW_HEIGHT)
+                        .offset { IntOffset(0, (belowTopY + ROW_HEIGHT * (i - position.read())).roundToPx()) }
+                        .testTag("xmbRow:${item.id}"),
+                )
+            }
         }
     }
 }
@@ -398,82 +470,10 @@ internal fun itemSlotKeyFor(type: XMBItemType): String? = when (type) {
 // Maps a memory-card-style item to its sysicon key (mirrors XmbItemLeadingIcon's mapping).
 private fun consoleIconKeyFor(item: XMBItem): String? = when (item.type) {
     XMBItemType.ALL_GAMES   -> "allgames"
+    XMBItemType.CATEGORY_CARD -> "allgames"
     XMBItemType.FAVORITES   -> "favorites"
     XMBItemType.MEMORY_CARD -> item.platformId
     else                    -> null   // collections / unknown fall back to sysicon_default
-}
-
-// A vertical list whose [selectedIndex] row is pinned to a fixed line; rows scroll under it. When
-// [anchorTopY] is unspecified the row centres vertically; otherwise the row's TOP is pinned at
-// [anchorTopY] (used by the drill flyout to seat the active row just below the caticon, exactly like
-// the main XMB, with earlier rows scrolling up past it). Each row is exactly [rowHeight] tall.
-@Composable
-private fun CenterLockedColumn(
-    count: Int,
-    selectedIndex: Int,
-    rowHeight: Dp,
-    modifier: Modifier = Modifier,
-    anchorTopY: Dp = Dp.Unspecified,
-    row: @Composable (index: Int) -> Unit,
-) {
-    BoxWithConstraints(modifier = modifier.clipToBounds()) {
-        val density = LocalDensity.current
-        val centered = anchorTopY.isUnspecified
-        // Where the active row's TOP sits, and the padding that lets the first/last rows reach it.
-        val topPad = (if (centered) (maxHeight - rowHeight) / 2 else anchorTopY).coerceAtLeast(0.dp)
-        val bottomPad = (if (centered) (maxHeight - rowHeight) / 2 else maxHeight - anchorTopY - rowHeight)
-            .coerceAtLeast(0.dp)
-        val anchorPx = with(density) { topPad.toPx() }
-        val listState = rememberLazyListState()
-        // Uptime of the previous selection change — lets the glide duration follow the input
-        // cadence: rapid held-repeat steps get a tween that finishes before the next step lands,
-        // while isolated presses keep the full-length PSP glide.
-        val lastStepUptime = remember { longArrayOf(0L) }
-
-        LaunchedEffect(selectedIndex, count, anchorPx) {
-            if (count == 0) return@LaunchedEffect
-            val now = android.os.SystemClock.uptimeMillis()
-            val sinceLastStep = now - lastStepUptime[0]
-            lastStepUptime[0] = now
-            val idx = selectedIndex.coerceIn(0, count - 1)
-            // If the target is off-screen (e.g. a big jump or first composition), get it measured
-            // and roughly in view instantly so the visible glide covers only the final short delta —
-            // this avoids a long, laggy sweep across many rows.
-            if (listState.layoutInfo.visibleItemsInfo.none { it.index == idx }) {
-                listState.scrollToItem(idx, scrollOffset = -anchorPx.toInt())
-            }
-            val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == idx }
-                ?: return@LaunchedEffect
-            // Glide by the exact remaining delta so the row's top settles precisely on the line.
-            // A single ease-in-out tween reads as one smooth motion with no spring overshoot/bounce.
-            // Duration tracks the step cadence (clamped) so held-repeat scrolling stays 1:1 with
-            // input instead of every step interrupting a half-finished 240 ms glide.
-            val delta = item.offset - anchorPx
-            if (delta != 0f) {
-                val duration = sinceLastStep.coerceIn(70L, 240L).toInt()
-                listState.animateScrollBy(
-                    delta,
-                    animationSpec = tween(durationMillis = duration, easing = FastOutSlowInEasing),
-                )
-            }
-        }
-
-        LazyColumn(
-            state = listState,
-            contentPadding = PaddingValues(top = topPad, bottom = bottomPad),
-            userScrollEnabled = false,   // selection-driven; taps still work, drag can't fight the lock
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            items(count) { index ->
-                // Centre the ROW_HEIGHT content within the taller (row + gap) cell so the card's
-                // midline lands exactly on the shared centre line — same line as the sibling & arrow.
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(rowHeight),
-                    contentAlignment = Alignment.Center,
-                ) { row(index) }
-            }
-        }
-    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -485,8 +485,14 @@ fun XMBItemList(
     onItemLongPress: (Int) -> Unit,
     iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
     // Increments when the list must snap to the top regardless of cursor position (e.g. a sort
-    // cycle). Necessary because keyed reorders otherwise keep the viewport anchored to the old item.
+    // cycle). Without it the reorder would glide the old position to the new one.
     scrollToTopToken: Int = 0,
+    // Identifies which list this is (XMBUiState.viewCursorKey). A change means a different list took
+    // this column's place — a Settings section, a Music view — so the position snaps to the restored
+    // cursor instead of gliding there. Null for a column that never swaps its list.
+    columnKey: Any? = null,
+    // Bumps when the cursor lands on a section's default row: the column snaps there, never glides.
+    landingToken: Int = 0,
     // Y of the category bar's TOP edge, measured from the top of this list.
     barTopY: Dp = 40.dp,
     // Y of the category bar's BOTTOM edge — where the selected item is seated, directly under the
@@ -509,9 +515,12 @@ fun XMBItemList(
     // subtitles, so helper text stays readable over bright wallpaper regions. Default true —
     // without it the flat gray subtitle is the one label that washes out.
     textShadow: Boolean = true,
-    // Whether focused-row GIF icons may animate (battery saver / blocking overlays gate it).
-    // ANDed with per-row selection at the LocalIconAnimating provider.
+    // Whether this list's animated art may play at all (battery saver / blocking overlays gate
+    // it). Provided per row with the row's selection; see LocalMotionAllowed.
     iconAnimatingAllowed: Boolean = false,
+    // "Item List Motion" (Display): Rewind's hand-off across the bar, or one Glide. Glide unless
+    // the caller opts in, so every other column keeps the plain spring.
+    listMotion: XmbListMotion = XmbListMotion.GLIDE,
     modifier: Modifier = Modifier,
 ) {
     // The XMB cross, exactly as the hardware does it:
@@ -523,80 +532,245 @@ fun XMBItemList(
     //     [ next+1 …       ]
     //
     // Pressing down slides the whole column up one: the old selected becomes the previous (above the
-    // bar) and the next becomes selected (below it). The bar is taller than a row, so the column is
-    // rendered in two pieces — one item above, selected + following below — rather than one list.
-    BoxWithConstraints(modifier = modifier.fillMaxWidth().fillMaxHeight().clipToBounds()) {
-        // Render only rows that FULLY fit below the anchor — the active row plus however many whole
-        // rows remain in the space beneath it. No trailing partial row is composed, so nothing gets
-        // clipped to a half-height sliver at the bottom edge (on any screen size).
+    // bar) and the next becomes selected (below it). Every row is composed ONCE, keyed by its item, and
+    // placed by itemRowTopPx from one animated position — the selected index in rows — so a row that
+    // steps up leaves the below slot, passes behind the bar and settles in the previous slot as one
+    // continuous motion. Like the category bar, the column is positioned, never scrolled: at rest the
+    // position equals the target exactly, so there is nothing to drift, and it starts at its target, so
+    // first composition and resume never glide.
+    BoxWithConstraints(modifier = modifier.fillMaxWidth().fillMaxHeight().clip(ClipAllButLeft)) {
+        // The focused UMD's row grows once its disc is read, as the PSP's does, pushing the rows
+        // under it down rather than covering them. Same read clock as the row's own swap.
+        val umdRead = rememberUmdRead(umdReadKey(items.getOrNull(selectedIndex), columnIndex = 0))
+        val umdRowHeight by androidx.compose.animation.core.animateDpAsState(
+            targetValue = if (umdRead) UMD_ROW_HEIGHT else ROW_HEIGHT,
+            animationSpec = tween(200),
+            label = "umdRowHeight",
+        )
+        // Keep whole rows only below the anchor — the active row plus however many whole rows remain
+        // in the space beneath it — so nothing rests as a half-height sliver at the bottom edge (on any
+        // screen size). A row still in transit past the last whole slot is cut at that slot's line.
         val rowsBelow = ((maxHeight.value - belowTopY.value) / ROW_HEIGHT.value).toInt()
             .coerceAtLeast(1)
-        val sel = selectedIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0))
 
-        // BELOW the bar: the selected item first, then the items after it.
-        if (items.isNotEmpty()) {
-            Column(modifier = Modifier.fillMaxWidth().offset(y = belowTopY)) {
-                val last = minOf(items.size, sel + rowsBelow)
-                for (i in sel until last) {
-                    XmbVerticalListRow(
-                        item = items[i],
-                        isSelected = i == selectedIndex,
-                        // The real PSP XMB labels EVERY first-level item (selected bright, the
-                        // rest dimmed) — labels show unless the caller asks for an icon-only column
-                        // (the drill flyout's memory-card cross).
-                        showText = showLabels,
-                        iconStyle = iconStyle,
-                        onClick = { onItemSelected(i) },
-                        onLongPress = { onItemLongPress(i) },
-                        showIcon = showIcons,
-                        trailingCursor = drillCursorOnSelected && i == selectedIndex,
-                        solidUnfocusedIcons = solidUnfocusedIcons,
-                        textShadow = textShadow,
-                        iconAnimatingAllowed = iconAnimatingAllowed,
-                        modifier = Modifier.fillMaxWidth().height(ROW_HEIGHT),
-                    )
-                }
-            }
+        // The anchors in whole px, rounded the way the old Column and half-row window rounded them, so
+        // at rest every row lands on the same pixel as before (see itemRowTopPx).
+        val density = LocalDensity.current
+        val rowPx = with(density) { ROW_HEIGHT.roundToPx() }
+        val belowTopPx = with(density) { belowTopY.roundToPx() }
+        val winPx = with(density) { (ROW_HEIGHT / 2).roundToPx() }
+        // Rise distance is theme-tunable: PSP-style wallpapers want the previous item fully clear of
+        // the caticon hexagon before it dissolves.
+        val winTopPx = with(density) { (barTopY - ROW_HEIGHT * previousRiseRows).roundToPx() }
+        // The UMD's growth belongs to the UMD row, so it keeps pushing the rows after it down while it
+        // shrinks back after the cursor leaves it, instead of snapping with the selection.
+        val umdIndex = remember(items) { items.indexOfFirst { it.type == XMBItemType.UMD_SLOT } }
+        val umdExtraPx = with(density) { umdRowHeight.roundToPx() - rowPx }
+
+        val inputs = StepInputs(
+            rawSelectedIndex = selectedIndex,
+            itemCount = items.size,
+            scrollToTopToken = scrollToTopToken,
+            columnKey = columnKey,
+            moving = LocalXmbRowDecor.current.movingLabel != null,
+            landingToken = landingToken,
+        )
+        val position = remember { ItemListPosition(inputs.target, constantSpeed = true) }
+        // Decided here, in the frame the inputs change, so a snap is already drawn by that frame.
+        position.accept(inputs, listMotion)
+        LaunchedEffect(position.epoch) { position.run() }
+        LaunchedEffect(position.epoch) { position.runClock() }
+        // Flips only when a hand-off releases the new focus, not on every frame of the clock.
+        val focusShown by remember { derivedStateOf { position.focusShown() } }
+
+        // Recomposes only when the set of rows changes, not on every animated frame.
+        val window by remember(selectedIndex, items.size, rowsBelow) {
+            derivedStateOf { itemRowWindow(selectedIndex, items.size, rowsBelow, position.read()) }
         }
+        val target = inputs.target.toFloat()
 
-        // ABOVE the bar: only the immediately-previous item, and only its BOTTOM HALF — the top half
-        // is clipped off above the bar, so it reads as "coming in" from behind the crossbar. The clip
-        // window is half a row tall, seated just above the bar; the full-height row inside is shifted
-        // up by half a row so its lower half lands in the window.
-        if (selectedIndex in 1..items.lastIndex) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(ROW_HEIGHT / 2)
-                    // Rise distance is theme-tunable: PSP-style wallpapers want the previous item
-                    // fully clear of the caticon hexagon before it dissolves.
-                    .offset(y = barTopY - ROW_HEIGHT * previousRiseRows)
-                    .clipToBounds(),
-                // Bottom-align a full-height row inside a half-height window: its top half is clipped.
-                // requiredHeight keeps the row its full ROW_HEIGHT (the window would otherwise coerce
-                // it down to half) so it overflows upward and the clip cuts the top half off.
-                contentAlignment = Alignment.BottomStart,
-            ) {
+        for (i in window) {
+            val item = items[i]
+            key(item.id) {
+                // The row's top in px for a position. Read in the layout and draw phases.
+                fun top(p: Float) = itemRowTopPx(i, p, belowTopPx, winTopPx, winPx, rowPx, umdIndex, umdExtraPx)
                 XmbVerticalListRow(
-                    item = items[selectedIndex - 1],
-                    isSelected = false,
-                    // Show the previous item's label too, so its name rises up through the
-                    // crossbar with the icon (unless the column is icon-only).
+                    item = item,
+                    isSelected = i == selectedIndex && focusShown,
+                    // The real PSP XMB labels EVERY first-level item (selected bright, the
+                    // rest dimmed) — labels show unless the caller asks for an icon-only column
+                    // (the drill flyout's memory-card cross).
                     showText = showLabels,
                     iconStyle = iconStyle,
-                    onClick = { onItemSelected(selectedIndex - 1) },
-                    onLongPress = { onItemLongPress(selectedIndex - 1) },
+                    onClick = { onItemSelected(i) },
+                    onLongPress = { onItemLongPress(i) },
                     showIcon = showIcons,
+                    trailingCursor = drillCursorOnSelected && i == selectedIndex,
                     solidUnfocusedIcons = solidUnfocusedIcons,
                     textShadow = textShadow,
+                    iconAnimatingAllowed = iconAnimatingAllowed,
+                    // The tag sits before the row's own graphicsLayer, so tests read unscaled bounds.
                     modifier = Modifier
                         .fillMaxWidth()
-                        .requiredHeight(ROW_HEIGHT),
+                        .offset { IntOffset(0, top(position.positionFor(i)).roundToInt()) }
+                        .height(if (i == umdIndex) umdRowHeight else ROW_HEIGHT)
+                        // A row above its slot shows only its part of the half-row window above the
+                        // bar. requiredHeight overflow is CENTRED, so that window has always shown the
+                        // row's middle half, not its bottom half: it reads as "coming in" from behind
+                        // the crossbar. Rows at or below the selected slot stay unclipped so a lifted
+                        // row's outline and a marked badge, which reach above the row, are not shaved.
+                        .drawWithContent {
+                            val p = position.positionFor(i)
+                            val rowTop = top(p)
+                            val big = size.width * 8f
+                            val windowRect = Rect(0f, winTopPx - rowTop, size.width, winTopPx + winPx - rowTop)
+                            // Rewind: a row crossing the bar also draws in the band between the window
+                            // and the focus slot, behind the category icon, fading as it settles.
+                            val band = position.bandAlphaFor(i)
+                            if (band > 0f) {
+                                val bandRect = Rect(-big, winTopPx + winPx - rowTop, big, belowTopPx - rowTop)
+                                clipRect(bandRect.left, bandRect.top, bandRect.right, bandRect.bottom) {
+                                    drawContext.canvas.saveLayer(bandRect, Paint().apply { alpha = band })
+                                    this@drawWithContent.drawContent()
+                                    drawContext.canvas.restore()
+                                }
+                            }
+                            when (itemRowClip(i - p, rowsBelow, atRest = position.read() == target)) {
+                                ItemRowClip.None -> drawContent()
+                                ItemRowClip.Window -> clipRect(
+                                    windowRect.left, windowRect.top, windowRect.right, windowRect.bottom,
+                                ) { this@drawWithContent.drawContent() }
+                                ItemRowClip.BelowOrWindow -> clipPath(
+                                    Path().apply {
+                                        addRect(Rect(-big, belowTopPx - rowTop, big, big))
+                                        addRect(windowRect)
+                                    },
+                                ) { this@drawWithContent.drawContent() }
+                                ItemRowClip.BottomLimit -> {
+                                    val limit = belowTopPx + rowsBelow * rowPx - rowTop
+                                    clipRect(-big, -big, big, limit) { this@drawWithContent.drawContent() }
+                                }
+                            }
+                        }
+                        .testTag("xmbRow:${item.id}"),
                 )
             }
         }
     }
 }
+
+/**
+ * The item column's animated position: the selected index in rows, on the shared step spring. It is
+ * decided in composition ([accept]) and carried out in an effect ([run]); a snap is [held] meanwhile,
+ * so the frame that first shows the new selection already draws it instead of drawing it a frame late.
+ *
+ * Under [XmbListMotion.REWIND] a single, unheld step also hands one row across the category bar on
+ * its own fast clock ([Crossing], see XmbStepMotion): [positionFor] is where each row draws, and the
+ * column itself waits out [XmbHandOff.COLUMN_LAG_MS] on a step down.
+ *
+ * [constantSpeed] (the main XMB column) glides at [XmbGlide]'s one speed instead of the spring;
+ * the drill flyout's game column keeps the spring.
+ */
+private class ItemListPosition(initial: Int, private val constantSpeed: Boolean = false) {
+    private val animatable = Animatable(initial.toFloat(), Float.VectorConverter, STEP_SETTLE_ROWS)
+
+    // Where a snap has landed but the animatable has not been told yet; NaN when there is none.
+    private var held by mutableFloatStateOf(Float.NaN)
+    private var previous: StepInputs? = null
+    private var motion: StepMotion = StepMotion.Snap(initial)
+    // Rewind: the rows crossing the bar now, the clock they move on, and the step-timing memory.
+    private val crossings = mutableStateListOf<Crossing>()
+    private var nowMs by mutableLongStateOf(0L)
+    private var lastStepMs: Long? = null
+    private var columnDelayMs = 0L
+    private var focusFromMs by mutableLongStateOf(0L)
+
+    /** Bumps on every change of inputs, so the effect restarts even for an identical motion. */
+    var epoch = 0
+        private set
+
+    /** The position to draw this frame, in rows. */
+    fun read(): Float = held.takeUnless { it.isNaN() } ?: animatable.value
+
+    /** The position row [index] draws at: the column's, or its own while it crosses the bar. */
+    fun positionFor(index: Int): Float {
+        val p = read()
+        val c = crossings.lastOrNull { it.row == index } ?: return p
+        return index - crossingD(c, nowMs, index - p)
+    }
+
+    /** How much of row [index] draws in the catbar band: any row in transit across it, none at rest. */
+    fun bandAlphaFor(index: Int): Float = transitBandAlpha(index - positionFor(index))
+
+    /** False while a hand-off holds the new focus back: no row draws as focused until it sets off. */
+    fun focusShown(): Boolean = nowMs >= focusFromMs
+
+    fun accept(inputs: StepInputs, style: XmbListMotion = XmbListMotion.GLIDE) {
+        if (inputs == previous) return
+        val prev = previous
+        motion = xmbStepMotion(prev, inputs).also {
+            when (it) {
+                is StepMotion.Snap -> held = it.target.toFloat()
+                is StepMotion.SnapThenGlide -> held = it.from.toFloat()
+                is StepMotion.Glide -> Unit
+            }
+        }
+        columnDelayMs = 0L
+        val now = System.nanoTime() / 1_000_000
+        nowMs = now
+        focusFromMs = now
+        val m = motion
+        if (m !is StepMotion.Glide || prev == null || style != XmbListMotion.REWIND) {
+            // A snap or a long jump starts over; Glide never hands off.
+            if (m !is StepMotion.Glide) crossings.clear()
+            lastStepMs = null
+        } else if (prev.target != m.target) {
+            val row = if (m.target > prev.target) prev.target else m.target
+            val step = handOffFor(prev.target, m.target, now, lastStepMs, fromD = row - positionFor(row))
+            if (step != null) {
+                // A reversal hands the same row back: the old crossing goes, and the new one starts
+                // from where that row is drawn now.
+                crossings.removeAll { it.row == row || it.down != step.down }
+                crossings += step
+            }
+            columnDelayMs = columnStartMs(step, now) - now
+            focusFromMs = focusStartMs(step, now)
+            lastStepMs = now
+        }
+        previous = inputs
+        epoch++
+    }
+
+    suspend fun run() {
+        held.takeUnless { it.isNaN() }?.let {
+            animatable.snapTo(it)
+            held = Float.NaN
+        }
+        val m = motion
+        if (m !is StepMotion.Snap) {
+            if (columnDelayMs > 0) delay(columnDelayMs)
+            val target = m.target.toFloat()
+            if (constantSpeed) {
+                // Retargeted mid-glide (a held run), it carries on from where it is at the same speed.
+                animatable.animateTo(target, tween(glideDurationMs(animatable.value, target), easing = LinearEasing))
+            } else {
+                animatable.animateTo(target, XmbStepSpring.spec(STEP_SETTLE_ROWS))
+            }
+        }
+    }
+
+    /** Drives the hand-off clock every frame while a row crosses or the new focus is held back. */
+    suspend fun runClock() {
+        while (crossings.isNotEmpty() || nowMs < focusFromMs) {
+            withFrameNanos { nowMs = it / 1_000_000 }
+            val p = read()
+            crossings.removeAll { crossingDone(it, nowMs, it.row - p) }
+        }
+    }
+}
+
+// Settle distance in rows: the category bar's 0.1 dp, so the tail does not visibly snap.
+private val STEP_SETTLE_ROWS = 0.1f / ROW_HEIGHT.value
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -625,7 +799,7 @@ private fun XmbVerticalListRow(
     // Strong size delta between the locked selection and the rows scrolling past it — the PSP
     // "the cursor stays, the list breathes" feel.
     val scale by animateFloatAsState(
-        targetValue = if (isSelected) 1.06f else 0.9f,
+        targetValue = if (isSelected) SELECTED_ROW_SCALE else 0.9f,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "xmbListRowScale",
     )
@@ -682,18 +856,39 @@ private fun XmbVerticalListRow(
                 )
                 .padding(horizontal = ROW_HORIZONTAL_PADDING),
         ) {
+            // Arrangement state for this row: lifted (being moved) or marked (multi-select).
+            val decor = LocalXmbRowDecor.current
+            val moving = isSelected && decor.movingLabel != null
+            val marked = decor.markMode && item.gameId != null && item.gameId in decor.markedGameIds
+            // A focused UMD slot stays the UMD, named, until the disc has been read.
+            val umdShowsGame = isSelected && rememberUmdRead(umdReadKey(item.takeIf { isSelected }, columnIndex = 0))
             if (showIcon && !item.textOnly) {
-                // Per-row animation gate: the provider scope covers just this row's icon, so a
-                // GIF plays ONLY while its row is the selected one (decision 3).
+                // Per-row animation gate (Animated Images): this row's art counts as focused only
+                // while the row is selected — what Reduced plays — and nothing in it may animate
+                // while the list's own gate is shut (battery saver, a blocking overlay).
                 androidx.compose.runtime.CompositionLocalProvider(
-                    com.playfieldportal.core.ui.icons.LocalIconAnimating provides
-                        (isSelected && iconAnimatingAllowed),
+                    com.playfieldportal.core.ui.motion.LocalMotionFocused provides isSelected,
+                    com.playfieldportal.core.ui.motion.LocalIconFocused provides isSelected,
+                    com.playfieldportal.core.ui.motion.LocalMotionAllowed provides
+                        (com.playfieldportal.core.ui.motion.LocalMotionAllowed.current && iconAnimatingAllowed),
+                ) {
+                Box(
+                    modifier = Modifier.arrangeDecoration(
+                        moving = moving,
+                        marked = marked,
+                        // App icons are clipped to a rounded square (APP_ICON_CORNER), so their
+                        // outline follows that shape; everything else is a tile or a glyph.
+                        appIcon = item.isAndroidApp && item.gameId == null && item.iconUri == null,
+                        accent = LocalPFPColors.current.accentColor,
+                    ),
                 ) {
                 XmbItemLeadingIcon(
                     item = item,
                     iconStyle = iconStyle,
                     isSelected = isSelected,
+                    umdShowsGame = umdShowsGame,
                 )
+                }
                 }
             }
 
@@ -702,7 +897,16 @@ private fun XmbVerticalListRow(
             // overlay to wait for, so the old PIC0-timeline fade only made the identity late.
             // Games with a logo never show text — the logo overlay IS the identity. Non-game
             // rows keep their labels as always. A textOnly row (e.g. Untracked) always labels.
-            val showGameText = item.textOnly || !item.isRealGame || (isSelected && item.logoUri == null)
+            val showGameText = when {
+                // The UMD slot is the reverse of a game row: named while it is the UMD glyph,
+                // bare once the read turns it into the game's own icon over the game's art.
+                item.type == XMBItemType.UMD_SLOT -> !umdShowsGame
+                // A row being moved always says so, logo or not.
+                moving -> true
+                else -> item.textOnly || !item.isRealGame || (isSelected && item.logoUri == null)
+            }
+            // "Moving · 2 of 5" replaces the subtitle on the lifted row.
+            val subtitleText = if (moving) decor.movingLabel else item.subtitle
             if (showText && showGameText) {
                 // start padding pushes the label clear of the wallpaper's vertical cross bar, so the
                 // text doesn't butt against the black band (a small gap, PSP-style).
@@ -738,7 +942,7 @@ private fun XmbVerticalListRow(
                             BoneGlyph(tint = titleColor, size = 14.dp)
                         }
                     }
-                    if (!item.subtitle.isNullOrBlank() || item.subtitleHintIcon != null) {
+                    if (!subtitleText.isNullOrBlank() || item.subtitleHintIcon != null) {
                         // Discord friend rows prefix the subtitle with a colored presence dot; every
                         // other row keeps the plain subtitle.
                         Row(
@@ -754,7 +958,7 @@ private fun XmbVerticalListRow(
                                 )
                                 Spacer(Modifier.width(6.dp))
                             }
-                            item.subtitle?.takeIf { it.isNotBlank() }?.let { subtitle ->
+                            subtitleText?.takeIf { it.isNotBlank() }?.let { subtitle ->
                                 Text(
                                     text = subtitle,
                                     color = SecondaryText,
@@ -802,11 +1006,74 @@ private fun XmbVerticalListRow(
 // Icon shadows/blooms dropped per design — selection is conveyed by the row's scale alone.
 private fun Modifier.selectedIconBloom(isSelected: Boolean): Modifier = this
 
+/**
+ * What the list tells its rows about arranging: [movingLabel] is the lifted row's position line
+ * ("Moving · 2 of 5") while a Move is in progress, and [markedGameIds] are the games marked in
+ * multi-select. Provided by the shell so the rows need no extra parameters.
+ */
+data class XmbRowDecor(
+    val movingLabel: String? = null,
+    val markMode: Boolean = false,
+    val markedGameIds: Set<Long> = emptySet(),
+)
+
+val LocalXmbRowDecor = androidx.compose.runtime.compositionLocalOf { XmbRowDecor() }
+
+/**
+ * Draws a row's arrangement state over its icon. A row being moved gets a white outline hugging
+ * the icon with a chevron set into its top and bottom edges; a marked game gets a check badge on the icon's top
+ * left. Drawn, not laid out, so neither changes the row's size or shifts its neighbours.
+ */
+private fun Modifier.arrangeDecoration(
+    moving: Boolean,
+    marked: Boolean,
+    appIcon: Boolean,
+    accent: Color,
+): Modifier = if (!moving && !marked) this else drawWithContent {
+    drawContent()
+    // The icon's own bounds inside this box: a wide box is a game tile followed by its text gap,
+    // anything else is a glyph or app icon centred in the icon slot. The gap is taken off before
+    // comparing: an app row's slot (74×48dp) is wide too, but only because the slot is.
+    val isTile = size.width - ARTWORK_TEXT_GAP.toPx() > size.height * 1.5f
+    val iconWidth = if (isTile) size.width - ARTWORK_TEXT_GAP.toPx() else size.height
+    val left = if (isTile) 0f else (size.width - iconWidth) / 2f
+    if (moving) {
+        drawMoveOutline(
+            icon = androidx.compose.ui.geometry.Rect(left, 0f, left + iconWidth, size.height),
+            // An app's outline is concentric with its icon's clip: the same corner, grown by the
+            // gap between them.
+            corner = if (appIcon) APP_ICON_CORNER + 4.dp else 8.dp,
+        )
+    }
+    if (marked) {
+        val radius = 10.dp.toPx()
+        val center = Offset(left + 2.dp.toPx(), 2.dp.toPx())
+        drawCircle(accent, radius = radius, center = center)
+        drawCircle(Color.White, radius = radius, center = center, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx()))
+        val check = androidx.compose.ui.graphics.Path().apply {
+            moveTo(center.x - radius * 0.45f, center.y)
+            lineTo(center.x - radius * 0.1f, center.y + radius * 0.38f)
+            lineTo(center.x + radius * 0.5f, center.y - radius * 0.35f)
+        }
+        drawPath(
+            check,
+            Color.White,
+            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                width = 2.dp.toPx(),
+                cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                join = androidx.compose.ui.graphics.StrokeJoin.Round,
+            ),
+        )
+    }
+}
+
 @Composable
 private fun XmbItemLeadingIcon(
     item: XMBItem,
     iconStyle: GameIconStyle,
     isSelected: Boolean,
+    // A focused UMD slot whose read has finished — see rememberUmdRead.
+    umdShowsGame: Boolean = false,
 ) {
     // Material glyph rows follow the theme's unified icon color, matching the tinted
     // silhouette art (PortalIcon) — row alpha handles the unselected dimming.
@@ -821,7 +1088,7 @@ private fun XmbItemLeadingIcon(
                 modifier = Modifier.width(LEADING_ICON_SLOT),
             ) {
                 if (item.coverUri != null) {
-                    AsyncImage(
+                    com.playfieldportal.core.ui.motion.ArtworkImage(
                         model = item.coverUri,
                         contentDescription = null,
                         modifier = Modifier.size(56.dp).clip(RoundedCornerShape(6.dp)),
@@ -882,7 +1149,7 @@ private fun XmbItemLeadingIcon(
                 modifier = Modifier.width(LEADING_ICON_SLOT),
             ) {
                 if (item.coverUri != null) {
-                    AsyncImage(
+                    com.playfieldportal.core.ui.motion.ArtworkImage(
                         model = item.coverUri,
                         contentDescription = null,
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
@@ -911,7 +1178,7 @@ private fun XmbItemLeadingIcon(
         item.type == XMBItemType.VIDEO_FOLDER -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
                 if (item.coverUri != null) {
-                    AsyncImage(
+                    com.playfieldportal.core.ui.motion.ArtworkImage(
                         model = item.coverUri,
                         contentDescription = null,
                         modifier = Modifier.size(LEADING_ICON_SIZE).clip(RoundedCornerShape(8.dp)),
@@ -956,7 +1223,7 @@ private fun XmbItemLeadingIcon(
                 modifier = Modifier.width(LEADING_ICON_SLOT),
             ) {
                 if (item.coverUri != null) {
-                    AsyncImage(
+                    com.playfieldportal.core.ui.motion.ArtworkImage(
                         model = item.coverUri,
                         contentDescription = null,
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
@@ -1020,7 +1287,7 @@ private fun XmbItemLeadingIcon(
         item.type == XMBItemType.SOCIAL_ACCOUNT || item.type == XMBItemType.SOCIAL_FRIEND -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
                 if (item.coverUri != null) {
-                    AsyncImage(
+                    com.playfieldportal.core.ui.motion.ArtworkImage(
                         model = item.coverUri,
                         contentDescription = null,
                         modifier = Modifier.size(48.dp).clip(CircleShape),
@@ -1042,7 +1309,7 @@ private fun XmbItemLeadingIcon(
             item.type == XMBItemType.SOCIAL_VOICE_FRIEND_PICK -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
                 if (item.coverUri != null) {
-                    AsyncImage(
+                    com.playfieldportal.core.ui.motion.ArtworkImage(
                         model = item.coverUri,
                         contentDescription = null,
                         modifier = Modifier.size(48.dp).clip(CircleShape),
@@ -1109,9 +1376,44 @@ private fun XmbItemLeadingIcon(
                 }
             }
         }
+        // The UMD slot, unfocused or still being read: the PSP's own physical media — the UMD —
+        // whatever platform the inserted game is from. Once read, it falls through to the game
+        // branch below and becomes the game's icon.
+        item.type == XMBItemType.UMD_SLOT && !umdShowsGame -> {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.width(LEADING_ICON_SLOT),
+            ) {
+                BundledSilhouetteIcon(
+                    assetUri = UMD_SLOT_ART,
+                    modifier = Modifier.size(LEADING_ICON_SIZE),
+                )
+            }
+        }
+        // The UMD slot, focused and read: the game's ICON0 at the PSP's size, anchored the way the
+        // PSP draws it — its right edge on the selected caticon's right edge, the extra width
+        // running off to the left and out past the screen edge. The slot shares the caticon's
+        // centre line, so that is half the width difference.
+        item.type == XMBItemType.UMD_SLOT -> {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.width(LEADING_ICON_SLOT).height(UMD_ICON_HEIGHT),
+            ) {
+                GameIcon(
+                    item = item,
+                    iconStyle = iconStyle,
+                    modifier = Modifier
+                        .requiredSize(width = UMD_ICON_WIDTH, height = UMD_ICON_HEIGHT)
+                        // Divided back out of the row's selected scale, which grows the icon about
+                        // that same line, so the right edge lands on the caticon's once scaled.
+                        .offset(x = (XmbLayoutSpec.DEFAULT.categoryIconSelectedDp.dp / SELECTED_ROW_SCALE - UMD_ICON_WIDTH) / 2),
+                )
+            }
+        }
         item.type == XMBItemType.ALL_GAMES ||
             item.type == XMBItemType.FAVORITES ||
             item.type == XMBItemType.MEMORY_CARD ||
+            item.type == XMBItemType.CATEGORY_CARD ||
             item.type == XMBItemType.COLLECTION -> {
             Box(
                 contentAlignment = Alignment.Center,
@@ -1169,7 +1471,7 @@ private fun XmbItemLeadingIcon(
                             modifier = Modifier.size(LEADING_ICON_SIZE),
                         )
                     } else {
-                        AsyncImage(
+                        com.playfieldportal.core.ui.motion.ArtworkImage(
                             model = memoryCardArt,
                             contentDescription = null,
                             modifier = Modifier.size(LEADING_ICON_SIZE),
@@ -1182,6 +1484,8 @@ private fun XmbItemLeadingIcon(
                     val iconKey = when (item.type) {
                         XMBItemType.MEMORY_CARD -> item.platformId
                         XMBItemType.ALL_GAMES   -> "allgames"
+                        // A category's own Memory Card is its All Games: the same glyph.
+                        XMBItemType.CATEGORY_CARD -> "allgames"
                         XMBItemType.FAVORITES   -> "favorites"
                         else                    -> null
                     }
@@ -1341,7 +1645,7 @@ internal fun BundledSilhouetteIcon(assetUri: String, modifier: Modifier = Modifi
             modifier = modifier,
         )
     } else {
-        AsyncImage(model = assetUri, contentDescription = null, modifier = modifier)
+        com.playfieldportal.core.ui.motion.ArtworkImage(model = assetUri, contentDescription = null, modifier = modifier)
     }
 }
 
@@ -1364,6 +1668,9 @@ private fun AppListIcon(
     Image(
         painter = rememberDrawablePainter(drawable),
         contentDescription = null,
-        modifier = modifier.clip(RoundedCornerShape(6.dp)),
+        modifier = modifier.clip(RoundedCornerShape(APP_ICON_CORNER)),
     )
 }
+
+// The rounded square every installed app's icon is clipped to; the Move outline follows it.
+private val APP_ICON_CORNER = 6.dp

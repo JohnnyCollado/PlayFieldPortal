@@ -5,6 +5,7 @@ import androidx.room.Embedded
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.playfieldportal.core.data.database.entity.VideoEntity
 import com.playfieldportal.core.data.database.entity.VideoPlaylistEntity
 import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
@@ -69,6 +70,25 @@ interface VideoPlaylistDao {
     // Re-adding an existing membership is a no-op (composite PK + IGNORE).
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun addVideo(join: VideoPlaylistItemEntity)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun addVideos(joins: List<VideoPlaylistItemEntity>)
+
+    // Creates a playlist and its rows together, so a failure never leaves an empty imported
+    // playlist behind. Repeated ids collapse to their first appearance (the PK would ignore the
+    // later ones anyway; distinct() keeps the positions contiguous).
+    @Transaction
+    suspend fun insertWithVideos(name: String, videoIds: List<String>, now: Long): Long {
+        val id = insert(
+            VideoPlaylistEntity(name = name, createdAt = now, updatedAt = now, sortOrder = maxSortOrder() + 1)
+        )
+        addVideos(
+            videoIds.distinct().mapIndexed { index, videoId ->
+                VideoPlaylistItemEntity(playlistId = id, videoId = videoId, position = index, addedAt = now)
+            }
+        )
+        return id
+    }
 
     @Query("DELETE FROM video_playlist_items WHERE playlist_id = :playlistId AND video_id = :videoId")
     suspend fun removeVideo(playlistId: Long, videoId: String)

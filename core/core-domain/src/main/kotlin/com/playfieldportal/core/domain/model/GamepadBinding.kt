@@ -58,6 +58,9 @@ val DEFAULT_BINDINGS = listOf(
     GamepadBinding(KeyEvent.KEYCODE_BUTTON_L1,     GamepadAction.PREV_CATEGORY),
     GamepadBinding(KeyEvent.KEYCODE_BUTTON_R1,     GamepadAction.NEXT_CATEGORY),
     GamepadBinding(KeyEvent.KEYCODE_BUTTON_START,  GamepadAction.HOME),
+    // The virtual keyboard's own buttons, after the Steam Deck: L2 Shift, R3 Caps Lock.
+    GamepadBinding(KeyEvent.KEYCODE_BUTTON_L2,     GamepadAction.SHIFT),
+    GamepadBinding(KeyEvent.KEYCODE_BUTTON_THUMBR, GamepadAction.CAPS_LOCK),
     // The task tray was removed; Select keeps its repurposed sort role.
     GamepadBinding(KeyEvent.KEYCODE_BUTTON_SELECT, GamepadAction.CHANGE_SORT),
     GamepadBinding(KeyEvent.KEYCODE_ENTER,         GamepadAction.SELECT),
@@ -122,6 +125,8 @@ fun GamepadAction.displayLabel(): String = when (this) {
     GamepadAction.PREV_CATEGORY     -> "Previous Tab (App Drawer)"
     GamepadAction.NEXT_CATEGORY     -> "Next Tab (App Drawer)"
     GamepadAction.HOME              -> "Start (Notifications / Confirm in pickers)"
+    GamepadAction.SHIFT             -> "Shift (Keyboard)"
+    GamepadAction.CAPS_LOCK         -> "Caps Lock (Keyboard)"
 }
 
 fun Int.keycodeDisplayName(): String = when (this) {

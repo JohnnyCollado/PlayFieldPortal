@@ -25,6 +25,8 @@ interface ArtworkStudioActions {
     fun submitSearch()
     fun cancelSearch()
     fun resetSearchToTitle()
+    /** BACK on PFP's keyboard: the cursor leaves the query field for the card's buttons. */
+    fun leaveSearchField()
 
     // Match
     fun onChangeMatchPressed()
@@ -72,6 +74,10 @@ interface ArtworkStudioActions {
     fun openActions()
     fun closeActions()
     fun runAction(action: StudioAction)
+    fun activateMenuItem(index: Int)
+    fun activateFilterRow(index: Int)
+    fun closeFilterGroup()
+    fun clearFilters()
     fun panCrop(dx: Float, dy: Float)
     fun zoomCrop(factor: Float)
     fun applyCrop()

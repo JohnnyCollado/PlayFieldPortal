@@ -32,6 +32,7 @@ import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.feature.artwork.store.ArtworkKind
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import com.playfieldportal.feature.artwork.store.ArtworkStore
 import com.playfieldportal.feature.launcher.EmulatorIntentResolver
@@ -91,7 +92,6 @@ data class GameDetailUiState(
     val selectedDiscId: Long? = null,
     val isLoading: Boolean = true,
     val isEditingNote: Boolean = false,
-    val noteText: String = "",
     val isFetchingArtwork: Boolean = false,
     val artworkMessage: String? = null,
     val launchError: String? = null,
@@ -119,6 +119,8 @@ data class GameDetailUiState(
     val descriptionExpanded: Boolean = false,
 
     val showOptions: Boolean = false,
+    // Which Options panel is up: the top level, or the sub-panel one of its rows opened.
+    val optionsMenu: DetailMenu = DetailMenu.ROOT,
     // Mirrors the engine's Options focus for rendering. The engine owns the authoritative node;
     // this index only positions the menu's highlight.
     val optionsIndex: Int = 0,
@@ -131,7 +133,6 @@ data class GameDetailUiState(
 
     // ── Title editing ─────────────────────────────────────────────────────
     val isEditingTitle: Boolean = false,
-    val titleText: String = "",
 
     // ── In-app manual viewer ──────────────────────────────────────────────
     val manualViewerUri: String? = null,     // non-null = viewer open
@@ -148,6 +149,12 @@ data class GameDetailUiState(
     // Storefront match picker and Rematch (C23 T6, Phases 10 and 18); null = closed.
     val storefrontMatch: StorefrontMatchUi? = null,
     val storefrontRematch: StorefrontRematchUi? = null,
+
+    /**
+     * The stores this game is matched on, by label, for the Store Match row's value. Null until
+     * read — the row then says nothing rather than a "None" that may not be true.
+     */
+    val storeLinks: List<String>? = null,
 
     // ── Emulator picker ───────────────────────────────────────────────────
     val showEmulatorPicker: Boolean = false,
@@ -194,13 +201,15 @@ data class GameDetailUiState(
             ).any { it != null }
         }
 
-    // The options rows actually shown: the emulator picker is meaningless for package-backed
-    // entries, so its row is hidden there. Index-based navigation must use THIS list.
+    // The rows one Options panel offers: the emulator picker is meaningless for package-backed
+    // entries, so its row is hidden there.
     // Export Game writes a PC game's .pfpgame file (C18 task X.7), so it is offered on Windows games only.
-    val visibleActions: List<DetailAction>
-        get() = DetailAction.entries.filter { action ->
-            when (action) {
+    fun actionsIn(menu: DetailMenu): List<DetailAction> =
+        DetailAction.entries.filter { action ->
+            action.menu == menu && when (action) {
                 DetailAction.EMULATOR -> !isPackageBacked
+                // Nothing to open without a manual file.
+                DetailAction.MANUAL   -> hasManual
                 DetailAction.EXPORT   -> game?.platformId == WINDOWS_PLATFORM_ID
                 // A storefront identity is a PC-only fact: a console ROM is matched by its file,
                 // and there is no store to rematch it against (C23 T6).
@@ -208,6 +217,10 @@ data class GameDetailUiState(
                 else                  -> true
             }
         }
+
+    // The rows of the panel on screen. Index-based navigation must use THIS list.
+    val visibleActions: List<DetailAction>
+        get() = actionsIn(optionsMenu)
 }
 
 // ── Metadata preview ──────────────────────────────────────────────────────────
@@ -366,21 +379,54 @@ internal fun metadataEditText(field: MetadataField, value: Any?): String = when 
 }
 
 // ── Options menu ──────────────────────────────────────────────────────────────
-enum class DetailAction(val label: String) {
-    FAVORITE("Favorite"),
-    COLLECTIONS("Collections"),
+//
+// Two levels. The top level is what a user reaches for while playing, most-used first, in four
+// named groups; the tools for fixing how a game is presented sit one Select further in, so the
+// top level stays short and Remove is never beside a row pressed often.
+
+/** One Options panel: the top level, or a sub-panel one of its rows opens. */
+enum class DetailMenu(val title: String) {
+    ROOT("Options"),
     ARTWORK("Artwork"),
-    SAVES("Saves"),
-    EMULATOR("Emulator"),
-    MANUAL("Manual"),
-    FETCH_ARTWORK("Fetch Artwork"),
-    METADATA("Update Metadata"),
-    EXPORT("Export Game"),
-    STOREFRONT("Rematch Storefront"),
-    RENAME("Edit Title"),
-    EDIT("Edit Note"),
-    LOCATION("Open Location"),
-    REMOVE("Remove"),
+    INFORMATION("Information"),
+    FILE("File"),
+}
+
+/** The named bands of the top level. */
+enum class DetailGroup(val label: String) {
+    LIBRARY("Library"),
+    PLAY("Play"),
+    CUSTOMIZE("Customize"),
+    MANAGE("Manage"),
+}
+
+/** Declaration order is display order within a panel. */
+enum class DetailAction(
+    val label: String,
+    val menu: DetailMenu = DetailMenu.ROOT,
+    val group: DetailGroup? = null,
+    /** Set on a row that opens a sub-panel instead of doing something itself. */
+    val opens: DetailMenu? = null,
+) {
+    FAVORITE("Favorite", group = DetailGroup.LIBRARY),
+    COLLECTIONS("Add to Card", group = DetailGroup.LIBRARY),
+    EMULATOR("Emulator", group = DetailGroup.PLAY),
+    MANUAL("Manual", group = DetailGroup.PLAY),
+    MENU_ARTWORK("Artwork", group = DetailGroup.CUSTOMIZE, opens = DetailMenu.ARTWORK),
+    MENU_INFORMATION("Information", group = DetailGroup.CUSTOMIZE, opens = DetailMenu.INFORMATION),
+    MENU_FILE("File", group = DetailGroup.MANAGE, opens = DetailMenu.FILE),
+    REMOVE("Remove from Library", group = DetailGroup.MANAGE),
+
+    ARTWORK("Artwork Studio", DetailMenu.ARTWORK),
+    FETCH_ARTWORK("Fetch Artwork", DetailMenu.ARTWORK),
+
+    METADATA("Update Metadata", DetailMenu.INFORMATION),
+    RENAME("Edit Title", DetailMenu.INFORMATION),
+    EDIT("Edit Note", DetailMenu.INFORMATION),
+    STOREFRONT("Store Match", DetailMenu.INFORMATION),
+
+    LOCATION("Show File Location", DetailMenu.FILE),
+    EXPORT("Export Game", DetailMenu.FILE),
 }
 
 private const val WINDOWS_PLATFORM_ID = "windows"
@@ -573,7 +619,16 @@ class GameDetailViewModel @Inject constructor(
             }
             next.storefrontRematch?.let { rematch ->
                 val index = storefrontRematchFocusFor(rematch, focus)
-                if (index >= 0) next = next.copy(storefrontRematch = rematch.copy(focus = index))
+                next = when {
+                    focus == GameDetailKeys.STOREFRONT_QUERY ->
+                        next.copy(storefrontRematch = rematch.copy(queryFocused = true))
+                    // Leaving the bar — a tap on a row does it mid-typing — also ends typing, or
+                    // the keyboard would stay up over a row that takes no text.
+                    index >= 0 -> next.copy(
+                        storefrontRematch = rematch.copy(focus = index, queryFocused = false, editingQuery = false),
+                    )
+                    else -> next
+                }
             }
             next
         }
@@ -593,9 +648,15 @@ class GameDetailViewModel @Inject constructor(
         s.metadataPreview != null -> GameDetailKeys.MODAL_METADATA
         s.showEmulatorPicker -> GameDetailKeys.MODAL_EMULATOR_PICKER
         s.collectionPicker.visible -> GameDetailKeys.MODAL_COLLECTION_PICKER
-        s.showOptions -> GameDetailKeys.MODAL_OPTIONS
+        s.showOptions -> optionsModalId(s.optionsMenu)
         else -> null
     }
+
+    private fun optionsModalId(menu: DetailMenu): String =
+        if (menu == DetailMenu.ROOT) GameDetailKeys.MODAL_OPTIONS else GameDetailKeys.optionsModal(menu.name)
+
+    private fun isOptionsModal(contextId: String): Boolean =
+        DetailMenu.entries.any { optionsModalId(it) == contextId }
 
     /**
      * Keep the engine's context stack in step with the overlays the state says are open. Overlays in
@@ -625,10 +686,13 @@ class GameDetailViewModel @Inject constructor(
     /** The rows of a modal context. Empty for overlays whose input is bespoke (viewers, editors). */
     private fun modalNodesFor(contextId: String): List<NavigationNode> {
         val s = _uiState.value
-        return when (contextId) {
-            GameDetailKeys.MODAL_OPTIONS -> s.visibleActions.map { action ->
+        // Every Options panel is the same kind of list; which rows it holds is the state's answer.
+        if (isOptionsModal(contextId)) {
+            return s.visibleActions.map { action ->
                 NavigationNode(GameDetailKeys.option(action.name), onSelect = { activateAction(action) })
             }
+        }
+        return when (contextId) {
             GameDetailKeys.MODAL_EMULATOR_PICKER -> s.emulatorPickerOptions.map { profile ->
                 NavigationNode(GameDetailKeys.emulatorPick(profile.id), onSelect = { confirmEmulatorPick(profile.id) })
             }
@@ -644,7 +708,9 @@ class GameDetailViewModel @Inject constructor(
                 add(NavigationNode(GameDetailKeys.COLLECTION_CREATE_ROW, onSelect = { startCreateCollection() }))
             }
             GameDetailKeys.MODAL_STOREFRONT_MATCH -> buildList {
-                s.storefrontMatch?.let { match ->
+                // Nothing to land on while the lookup runs: a "No correct match" registered now
+                // would hold the cursor after the candidates arrive, and Select would decline.
+                s.storefrontMatch?.takeIf { !it.loading }?.let { match ->
                     match.rows.indices.forEach { index ->
                         add(
                             NavigationNode(
@@ -654,11 +720,13 @@ class GameDetailViewModel @Inject constructor(
                         )
                     }
                     // Last and unconditional: the user is never made to pick one of the offers.
-                    add(NavigationNode(GameDetailKeys.STOREFRONT_NO_MATCH, onSelect = { closeStorefrontMatch() }))
+                    add(NavigationNode(GameDetailKeys.STOREFRONT_NO_MATCH, onSelect = { declineStorefrontStore() }))
                 }
             }
             GameDetailKeys.MODAL_STOREFRONT_REMATCH -> buildList {
                 s.storefrontRematch?.let { rematch ->
+                    // First, above the stores: Select starts typing a name to search by.
+                    add(NavigationNode(GameDetailKeys.STOREFRONT_QUERY, onSelect = { startRematchQueryEdit() }))
                     rematch.rows.forEach { row ->
                         add(
                             NavigationNode(
@@ -687,11 +755,7 @@ class GameDetailViewModel @Inject constructor(
                     }
                 }
             }
-            GameDetailKeys.MODAL_CONFIRM_REMOVE -> listOf(
-                NavigationNode(GameDetailKeys.CONFIRM_REMOVE, onSelect = { confirmRemoveGame() }),
-                NavigationNode(GameDetailKeys.CONFIRM_CANCEL, onSelect = { _uiState.update { it.copy(confirmRemove = false) } }),
-            )
-            // Viewers, text editors and the full-screen Artwork Studio own their own input.
+            // Viewers, the shared modals and the full-screen Artwork Studio own their own input.
             else -> emptyList()
         }
     }
@@ -700,22 +764,28 @@ class GameDetailViewModel @Inject constructor(
      * Where a freshly opened modal's cursor starts. Only consulted while its graph is still
      * focus-less, so an async row arriving later never steals the cursor from the user.
      */
-    private fun preferredModalFocus(contextId: String, s: GameDetailUiState): String? = when (contextId) {
-        GameDetailKeys.MODAL_OPTIONS -> s.visibleActions.firstOrNull()?.let { GameDetailKeys.option(it.name) }
+    private fun preferredModalFocus(contextId: String, s: GameDetailUiState): String? = when {
+        // The first row, except when stepping back out of a sub-panel: then the row that opened it.
+        isOptionsModal(contextId) ->
+            (s.visibleActions.getOrNull(s.optionsIndex) ?: s.visibleActions.firstOrNull())
+                ?.let { GameDetailKeys.option(it.name) }
+        else -> preferredPickerFocus(contextId, s)
+    }
+
+    private fun preferredPickerFocus(contextId: String, s: GameDetailUiState): String? = when (contextId) {
         GameDetailKeys.MODAL_EMULATOR_PICKER ->
             s.emulatorPickerOptions.getOrNull(s.emulatorPickerIndex)?.let { GameDetailKeys.emulatorPick(it.id) }
         GameDetailKeys.MODAL_COLLECTION_PICKER -> collectionKeyAt(s, s.collectionPicker.selectedIndex)
         // The metadata overlay opens on Apply: the default policy is the non-destructive one.
         GameDetailKeys.MODAL_METADATA -> GameDetailKeys.METADATA_APPLY
-        GameDetailKeys.MODAL_CONFIRM_REMOVE -> GameDetailKeys.CONFIRM_REMOVE
         // The picker opens on the strongest candidate, which is the one the user most likely
         // wants — but it is still a CHOICE, so nothing is written until they press Select.
         GameDetailKeys.MODAL_STOREFRONT_MATCH ->
             if (s.storefrontMatch?.rows.isNullOrEmpty()) GameDetailKeys.STOREFRONT_NO_MATCH
             else GameDetailKeys.storefrontCandidate(0)
-        GameDetailKeys.MODAL_STOREFRONT_REMATCH ->
-            s.storefrontRematch?.rows?.firstOrNull()?.let { GameDetailKeys.storefrontStore(it.store.key) }
-                ?: GameDetailKeys.STOREFRONT_SEARCH_ALL
+        // Store Match opens on the search bar: searching by a name of the user's choosing is what
+        // the screen is most often opened for, and nothing happens there until they press Select.
+        GameDetailKeys.MODAL_STOREFRONT_REMATCH -> GameDetailKeys.STOREFRONT_QUERY
         else -> null
     }
 
@@ -773,7 +843,7 @@ class GameDetailViewModel @Inject constructor(
             s.metadataPreview != null -> closeMetadataPreview()
             s.showEmulatorPicker -> closeEmulatorPicker()
             s.collectionPicker.visible -> closeCollectionPicker()
-            s.showOptions -> closeOptions()
+            s.showOptions -> if (s.optionsMenu == DetailMenu.ROOT) closeOptions() else closeOptionsSubmenu()
             else -> close()
         }
     }
@@ -820,6 +890,24 @@ class GameDetailViewModel @Inject constructor(
 
     // ── Shiba Coins strip ─────────────────────────────────────────────────
 
+    // Which loadGame owns the page, and the coin stream that belongs to it.
+    private var loadGeneration = 0L
+    private var coinsJob: Job? = null
+    // Follows the page's game row, so a write from elsewhere (a background scrape, an artwork
+    // import or relink, the XMB's Fetch Artwork) reaches the open page instead of waiting for a reopen.
+    private var gameRowJob: Job? = null
+
+    /**
+     * Writes a result back only while the page still shows the game it was produced for.
+     *
+     * The ViewModel is reused from game to game, so anything that suspends — a save, a scrape, a
+     * lookup — can come back to a page that has moved on. What it captured before it left
+     * describes the OTHER game, and writing it would show that game's title and artwork here and
+     * point Remove, Edit Title and Favorite at it.
+     */
+    private fun updateWhileShowing(gameId: Long, transform: (GameDetailUiState) -> GameDetailUiState) =
+        _uiState.update { s -> if (s.game?.id == gameId) transform(s) else s }
+
     fun prepareForOpen() {
         _uiState.update {
             it.copy(
@@ -852,10 +940,28 @@ class GameDetailViewModel @Inject constructor(
      *   when the id isn't a member (stale row, single-disc game).
      */
     fun loadGame(id: Long, requestedDiscId: Long? = null) {
+        // This ViewModel is reused from game to game, so a load is also the end of the previous
+        // one: its coin stream is closed, and a load still in flight is outranked.
+        val generation = ++loadGeneration
+        coinsJob?.cancel()
         // Offline-first coin summary for the glance strip — streams straight from Room.
-        viewModelScope.launch {
+        coinsJob = viewModelScope.launch {
             achievementRepository.observeGameCoins(id).collect { coins ->
                 _uiState.update { it.copy(coins = coins) }
+            }
+        }
+        gameRowJob?.cancel()
+        gameRowJob = viewModelScope.launch {
+            gameRepository.observeById(id).collect { fresh ->
+                // Null is a removed row; the page's own Remove path closes it. A row that arrives
+                // before this load has seeded the page is skipped by updateWhileShowing.
+                if (fresh == null || generation != loadGeneration) return@collect
+                updateWhileShowing(id) { s ->
+                    if (s.game == fresh) s else s.copy(
+                        game = fresh,
+                        discMembers = s.discMembers.map { if (it.id == fresh.id) fresh else it },
+                    )
+                }
             }
         }
         viewModelScope.launch {
@@ -864,6 +970,10 @@ class GameDetailViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     isLoading = true,
+                    // Another game's fetch is still running somewhere; it is not this page's, and
+                    // must not lock this page's own Fetch Artwork. A reload of the SAME game (the
+                    // Artwork Studio returning) keeps it.
+                    isFetchingArtwork = it.isFetchingArtwork && it.game?.id == id,
                     closed = false,
                     showOptions = false,
                     confirmRemove = false,
@@ -875,6 +985,8 @@ class GameDetailViewModel @Inject constructor(
                     manualViewerUri = null,
                     imageViewerUri = null,
                     showVideoPlayer = false,
+                    // Another game's links; this one's are read when its Options open.
+                    storeLinks = it.storeLinks.takeIf { _ -> it.game?.id == id },
                 )
             }
             syncNavStack()
@@ -907,13 +1019,15 @@ class GameDetailViewModel @Inject constructor(
                 }
                 ?: emptyList()
             val screenshotUris = game?.let { artworkStore.findAll(it.id, ArtworkKind.SCREENSHOT) } ?: emptyList()
+            // A later loadGame has taken the page. Writing this one's rows now would put the wrong
+            // game on screen under the right one's discs and platform.
+            if (generation != loadGeneration) return@launch
             _uiState.update {
                 it.copy(
                     game              = game,
                     platform          = platform,
                     discMembers       = discMembers,
                     selectedDiscId    = selectedDisc?.id,
-                    noteText          = game?.userNote ?: "",
                     resolvedLaunch    = resolvedLaunch,
                     // Media strip plays the full VIDEO; ICON1 (icon snap) is a fallback so a game
                     // that only has a snap still shows a video card.
@@ -1024,18 +1138,16 @@ class GameDetailViewModel @Inject constructor(
             finishInput()
             return
         }
+        // The removal prompt, New Collection, Edit Note and Edit Title are the shared modals (see
+        // gameDetailModalSpec): the screen hands every press to their host while one is up, so
+        // these four only see a press that raced the modal onto the screen. Back is the one safe
+        // reading of that — a Confirm must never skip the prompt's opening on Cancel.
         if (s.confirmRemove) {
-            when (action) {
-                GamepadAction.SELECT -> confirmRemoveGame()
-                GamepadAction.BACK   -> cancelRemove()
-                else -> Unit
-            }
+            if (action == GamepadAction.BACK) cancelRemove()
             finishInput()
             return
         }
         if (s.collectionPicker.showCreateDialog) {
-            // The new-collection prompt is a text field: the keyboard owns every key except Back,
-            // and Confirm belongs to the dialog's own buttons.
             if (action == GamepadAction.BACK) cancelCreateCollection()
             finishInput()
             return
@@ -1070,9 +1182,13 @@ class GameDetailViewModel @Inject constructor(
         // Everything left — the page itself and the pickers whose rows ARE a graph — goes through
         // the shared engine, so exactly one thing owns the cursor at a time.
         when (action) {
-            // Y / Triangle opens Options from anywhere on the base page. Inside a modal it is
+            // Y / Triangle opens Options from anywhere on the base page. With Options up it closes
+            // the whole menu from any depth (Back climbs one level); inside any other modal it is
             // inert: a context menu of a context menu is not a thing.
-            GamepadAction.OPEN_CONTEXT_MENU -> if (!nav.isModalActive) openOptions()
+            GamepadAction.OPEN_CONTEXT_MENU -> when {
+                s.showOptions -> closeOptions()
+                !nav.isModalActive -> openOptions()
+            }
             GamepadAction.BACK -> if (nav.isModalActive) closeActiveModal() else close()
             // HOME belongs to the shell (the XMB bar), never to this page.
             GamepadAction.HOME -> Unit
@@ -1108,12 +1224,46 @@ class GameDetailViewModel @Inject constructor(
 
     fun openOptions() {
         menuSound.play(MenuSound.SELECT)
-        _uiState.update { it.copy(showOptions = true, optionsIndex = 0, actionMessage = null) }
+        _uiState.update {
+            it.copy(showOptions = true, optionsMenu = DetailMenu.ROOT, optionsIndex = 0, actionMessage = null)
+        }
+        refreshStoreLinks()
     }
 
+    /**
+     * Re-read which stores the game is matched on. Called whenever the answer may have changed —
+     * Options opening, and after any match, replace or removal — because links are also written
+     * by bulk scrapes and auto-matches this screen never sees.
+     */
+    private fun refreshStoreLinks() {
+        val game = _uiState.value.game ?: return
+        if (game.platformId != WINDOWS_PLATFORM_ID) return
+        viewModelScope.launch {
+            val labels = runCatching { storefrontMatches.identities(game.id).map { it.storeLabel } }
+                .onFailure { Timber.w(it, "Could not read storefront links for game %d", game.id) }
+                .getOrNull() ?: return@launch
+            _uiState.update { if (it.game?.id == game.id) it.copy(storeLinks = labels) else it }
+        }
+    }
+
+    /** Closes the whole menu from whichever panel is up — Back on the top level, or a tap outside. */
     fun closeOptions() {
         menuSound.play(MenuSound.BACK)
         _uiState.update { it.copy(showOptions = false) }
+    }
+
+    private fun openOptionsSubmenu(menu: DetailMenu) {
+        menuSound.play(MenuSound.SELECT)
+        _uiState.update { it.copy(optionsMenu = menu, optionsIndex = 0) }
+    }
+
+    /** Back inside a sub-panel: up one level, onto the row that opened it. */
+    private fun closeOptionsSubmenu() {
+        menuSound.play(MenuSound.BACK)
+        _uiState.update { s ->
+            val opener = s.actionsIn(DetailMenu.ROOT).indexOfFirst { it.opens == s.optionsMenu }
+            s.copy(optionsMenu = DetailMenu.ROOT, optionsIndex = opener.coerceAtLeast(0))
+        }
     }
 
     fun onOptionClicked(action: DetailAction) {
@@ -1131,16 +1281,15 @@ class GameDetailViewModel @Inject constructor(
     fun onOptionsClicked() = openOptions()
 
     fun activateAction(action: DetailAction) {
+        // A row that opens a sub-panel keeps the menu up; every other row is an answer and closes it.
+        action.opens?.let { return openOptionsSubmenu(it) }
         _uiState.update { it.copy(showOptions = false) }
         when (action) {
+            // Sub-panel rows never get this far: `opens` took them above.
+            DetailAction.MENU_ARTWORK, DetailAction.MENU_INFORMATION, DetailAction.MENU_FILE -> Unit
             DetailAction.FAVORITE  -> toggleFavorite()
             DetailAction.COLLECTIONS -> openCollectionPicker()
             DetailAction.ARTWORK   -> openArtworkManager()
-            // Not implemented yet, so this is a refusal rather than an activation.
-            DetailAction.SAVES     -> {
-                menuSound.play(MenuSound.ERROR)
-                showActionMessage("Save management isn't available yet")
-            }
             DetailAction.EMULATOR  -> openEmulatorPicker()
             DetailAction.MANUAL    -> openManual()
             DetailAction.FETCH_ARTWORK -> fetchArtwork()
@@ -1337,15 +1486,12 @@ class GameDetailViewModel @Inject constructor(
         _uiState.update { it.copy(confirmRemove = true) }
     }
 
-    fun cancelRemove() {
-        menuSound.play(MenuSound.BACK)
-        _uiState.update { it.copy(confirmRemove = false) }
-    }
+    // The prompt is the shared confirm modal, which voices its own Cancel and Remove.
+
+    fun cancelRemove() = _uiState.update { it.copy(confirmRemove = false) }
 
     fun confirmRemoveGame() {
         val game = _uiState.value.game ?: return
-        // Deleting the entry is the point of no return on this screen.
-        menuSound.play(MenuSound.CONFIRM)
         viewModelScope.launch {
             gameRepository.delete(game.id)
             _uiState.update { it.copy(confirmRemove = false, closed = true) }
@@ -1392,7 +1538,7 @@ class GameDetailViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 launchError = null,
-                actionMessage = "Launching ${selectedGame.title}...",
+                actionMessage = "Launching ${selectedGame.displayTitle}...",
             )
         }
         viewModelScope.launch {
@@ -1403,14 +1549,15 @@ class GameDetailViewModel @Inject constructor(
             )
 
             // Harvested launcher shortcut (Windows Games card) — startShortcut is an API call,
-            // not an intent, so it can't ride the normal launch channel.
+            // not an intent, so the dispatcher runs it through its own shortcut path (GameBoot
+            // first, then the hand-off record).
             if (game.shortcutId != null && game.packageName != null) {
-                launcherShortcutRepository.launch(game.packageName!!, game.shortcutId!!)
+                launchDispatcher.launchShortcut(game) {
+                    launcherShortcutRepository.launch(game.packageName!!, game.shortcutId!!)
+                }
                     .onSuccess {
                         _uiState.update { it.copy(actionMessage = null) }
-                        // Shortcut launches bypass the dispatcher; record the hand-off for the return check.
-                        launchDispatcher.noteShortcutHandoff(game)
-                        discordPresence.setCurrentGame(game.title)
+                        discordPresence.setCurrentGame(game.displayTitle)
                     }
                     .onFailure { e ->
                         Timber.e(e, "Shortcut launch failed: ${game.packageName}/${game.shortcutId}")
@@ -1533,7 +1680,7 @@ class GameDetailViewModel @Inject constructor(
                 // the opt-in Discord presence (no-op unless the user connected Discord and
                 // enabled sharing).
                 _uiState.update { it.copy(actionMessage = null) }
-                discordPresence.setCurrentGame(game.title)
+                discordPresence.setCurrentGame(game.displayTitle)
             }
         }
     }
@@ -1639,7 +1786,7 @@ class GameDetailViewModel @Inject constructor(
             val resolved = updated?.let {
                 resolveLaunchProfile(it, _uiState.value.platform).getOrNull()
             }
-            _uiState.update {
+            updateWhileShowing(game.id) {
                 it.copy(
                     game               = updated ?: it.game,
                     resolvedLaunch     = resolved,
@@ -1715,27 +1862,21 @@ class GameDetailViewModel @Inject constructor(
     private fun startCreateCollection() {
         menuSound.play(MenuSound.SELECT)
         _uiState.update {
-            it.copy(collectionPicker = it.collectionPicker.copy(showCreateDialog = true, createText = ""))
+            it.copy(collectionPicker = it.collectionPicker.copy(showCreateDialog = true))
         }
     }
 
-    fun onCreateCollectionTextChanged(text: String) {
-        _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(createText = text)) }
-    }
-
-    fun confirmCreateCollection() {
+    // The name entry is the shared text entry modal: it owns the text being typed, never offers
+    // Create for a blank name, and voices its own Create and Cancel.
+    fun confirmCreateCollection(name: String) {
         val gameId = _uiState.value.game?.id ?: return
-        val name = _uiState.value.collectionPicker.createText
-        // An empty name is a cancel, and cancelCreateCollection voices it as one.
         if (name.isBlank()) { cancelCreateCollection(); return }
-        menuSound.play(MenuSound.CONFIRM)
         viewModelScope.launch {
             val id = collectionRepository.create(name)
             collectionRepository.addGame(id, gameId)
             _uiState.update {
                 it.copy(collectionPicker = it.collectionPicker.copy(
                     showCreateDialog = false,
-                    createText = "",
                     options = buildCollectionOptions(gameId),
                 ))
             }
@@ -1743,8 +1884,7 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun cancelCreateCollection() {
-        menuSound.play(MenuSound.BACK)
-        _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(showCreateDialog = false, createText = "")) }
+        _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(showCreateDialog = false)) }
     }
 
     fun closeCollectionPicker() {
@@ -1760,81 +1900,59 @@ class GameDetailViewModel @Inject constructor(
         viewModelScope.launch {
             val next = !game.isFavorite
             gameRepository.setFavorite(game.id, next)
-            _uiState.update { it.copy(game = game.copy(isFavorite = next)) }
+            // From the row on screen NOW, not the one captured before the save: anything else that
+            // changed meanwhile (a note, a title, new artwork) must survive this.
+            updateWhileShowing(game.id) { it.copy(game = it.game?.copy(isFavorite = next)) }
         }
     }
 
-    // ── Note editing ──────────────────────────────────────────────────────
+    // ── Note and title editing ────────────────────────────────────────────
+    //
+    // Both editors are the shared text entry modal (see gameDetailModalSpec): it owns the text being
+    // typed and voices its own Save and Cancel, so neither is played again here.
 
     fun startEditNote() {
         menuSound.play(MenuSound.SELECT)
-        _uiState.update { it.copy(isEditingNote = true, noteText = it.game?.userNote ?: "") }
+        _uiState.update { it.copy(isEditingNote = true) }
     }
 
-    fun onNoteChanged(text: String) = _uiState.update { it.copy(noteText = text) }
-
-    fun saveNote() {
+    /** A blank [text] removes the note. */
+    fun saveNote(text: String) {
         val game = _uiState.value.game ?: return
-        val note = _uiState.value.noteText.trim().ifEmpty { null }
-        menuSound.play(MenuSound.CONFIRM)
+        val note = text.trim().ifEmpty { null }
         viewModelScope.launch {
             gameRepository.updateNote(game.id, note)
-            _uiState.update { it.copy(game = game.copy(userNote = note), isEditingNote = false) }
+            updateWhileShowing(game.id) { it.copy(game = it.game?.copy(userNote = note), isEditingNote = false) }
         }
     }
 
-    fun cancelNote() {
-        menuSound.play(MenuSound.BACK)
-        _uiState.update { it.copy(isEditingNote = false, noteText = _uiState.value.game?.userNote ?: "") }
-    }
-
-    // ── Title editing ─────────────────────────────────────────────────────
+    fun cancelNote() = _uiState.update { it.copy(isEditingNote = false) }
 
     fun startEditTitle() {
-        val game = _uiState.value.game ?: return
+        if (_uiState.value.game == null) return
         menuSound.play(MenuSound.SELECT)
-        _uiState.update { it.copy(isEditingTitle = true, titleText = game.displayTitle) }
+        _uiState.update { it.copy(isEditingTitle = true) }
     }
 
-    fun onTitleChanged(text: String) = _uiState.update { it.copy(titleText = text) }
-
-    fun saveTitle() {
+    /** A blank [text] drops the override, which puts the scraped or scanned title back. */
+    fun saveTitle(text: String) {
         val game = _uiState.value.game ?: return
-        val newTitle = _uiState.value.titleText.trim().ifEmpty { null }
-        menuSound.play(MenuSound.CONFIRM)
+        val newTitle = text.trim().ifEmpty { null }
         viewModelScope.launch {
             gameRepository.updateUserTitleOverride(game.id, newTitle)
             val updated = gameRepository.getById(game.id)
-            _uiState.update {
+            updateWhileShowing(game.id) {
                 it.copy(
                     game           = updated ?: it.game,
                     isEditingTitle = false,
-                    actionMessage  = if (newTitle != null) "Title updated to \"$newTitle\"" else "Title reset to default",
+                    actionMessage  = if (newTitle != null) "Title updated to \"$newTitle\""
+                                     else "Title reset to \"${updated?.displayTitle ?: game.title}\"",
                 )
             }
         }
     }
 
-    fun resetTitleToDefault() {
-        val game = _uiState.value.game ?: return
-        menuSound.play(MenuSound.CONFIRM)
-        viewModelScope.launch {
-            gameRepository.updateUserTitleOverride(game.id, null)
-            val updated = gameRepository.getById(game.id)
-            _uiState.update {
-                it.copy(
-                    game           = updated ?: it.game,
-                    isEditingTitle = false,
-                    actionMessage  = "Title reset to \"${updated?.displayTitle ?: game.title}\"",
-                )
-            }
-        }
-    }
-
-    fun cancelTitleEdit() {
-        menuSound.play(MenuSound.BACK)
-        _uiState.update { it.copy(isEditingTitle = false, titleText = _uiState.value.game?.displayTitle ?: "") }
-    }
+    fun cancelTitleEdit() = _uiState.update { it.copy(isEditingTitle = false) }
 
     // ── Artwork — Fetch Artwork ───────────────────────────────────────────
 
@@ -1847,7 +1965,9 @@ class GameDetailViewModel @Inject constructor(
             // Shared with the XMB game menu; it evicts this game's refs from the image cache.
             val result = artworkRepository.refetchArtworkForGame(game.id)
             val updated = gameRepository.getById(game.id)
-            _uiState.update {
+            // A scrape takes seconds — long enough to open another game. That page already
+            // dropped this fetch's lock when it loaded, and owes it nothing else.
+            updateWhileShowing(game.id) {
                 it.copy(
                     game              = updated ?: it.game,
                     isFetchingArtwork = false,
@@ -2041,8 +2161,8 @@ class GameDetailViewModel @Inject constructor(
                 .onFailure { Timber.w(it, "Metadata revert failed for game ${game.id}") }
                 .getOrDefault(false)
             val updated = gameRepository.getById(game.id)
-            _uiState.update { s ->
-                val preview = s.metadataPreview ?: return@update s
+            updateWhileShowing(game.id) { s ->
+                val preview = s.metadataPreview ?: return@updateWhileShowing s
                 // The scraped value is what the columns already held — no re-retrieval needed.
                 val scraped = preview.current[field]
                 s.copy(
@@ -2121,7 +2241,7 @@ class GameDetailViewModel @Inject constructor(
                 .onFailure { Timber.w(it, "Metadata apply failed for game ${game.id}") }
             val updated = gameRepository.getById(game.id)
             metadataPreviewGeneration++
-            _uiState.update {
+            updateWhileShowing(game.id) {
                 it.copy(
                     game = updated ?: it.game,
                     metadataPreview = null,
@@ -2164,7 +2284,7 @@ class GameDetailViewModel @Inject constructor(
 
     private var storefrontGeneration = 0L
 
-    /** Options - Rematch Storefront. Lists what this game is linked to today. */
+    /** Options - Information - Store Match. Lists what this game is linked to today. */
     fun openStorefrontRematch() {
         val gameId = _uiState.value.game?.id ?: return
         menuSound.play(MenuSound.SELECT)
@@ -2173,7 +2293,11 @@ class GameDetailViewModel @Inject constructor(
             it.copy(
                 showOptions = false,
                 actionMessage = null,
-                storefrontRematch = StorefrontRematchUi(gameTitle = it.game?.displayTitle.orEmpty()),
+                storefrontRematch = StorefrontRematchUi(
+                    gameTitle = it.game?.displayTitle.orEmpty(),
+                    // The bar starts from the title, so correcting a near-miss is a small edit.
+                    query = it.game?.displayTitle.orEmpty(),
+                ),
             )
         }
         viewModelScope.launch {
@@ -2249,11 +2373,14 @@ class GameDetailViewModel @Inject constructor(
     private fun takeRematchAction(store: Storefront) {
         val row = _uiState.value.storefrontRematch?.rows?.firstOrNull { it.store == store } ?: return
         if (!row.enabled) {
-            showActionMessage(row.storeLabel + " isn't supported yet")
+            showActionMessage(row.storeLabel + " can't be searched")
             return
         }
         when (row.selectedAction) {
-            RematchAction.SEARCH, RematchAction.REPLACE -> openStorefrontMatch(ignoreStoredIdentity = true)
+            // This row's store and no other: looking past Steam's link to replace it must leave a
+            // GOG link the user is happy with exactly where it is.
+            RematchAction.SEARCH, RematchAction.REPLACE ->
+                openStorefrontMatch(ignoreStoredIdentity = true, store = store)
             RematchAction.REMOVE -> unlinkStorefront(store)
         }
     }
@@ -2271,6 +2398,7 @@ class GameDetailViewModel @Inject constructor(
                 state.copy(storefrontRematch = current.copy(rows = rows.map(::storefrontRematchRowOf)))
             }
             showActionMessage(store.label + " link removed. Your metadata is unchanged.")
+            refreshStoreLinks()
             syncNavStack()
         }
     }
@@ -2281,24 +2409,69 @@ class GameDetailViewModel @Inject constructor(
         openStorefrontMatch(ignoreStoredIdentity = true)
     }
 
+    // -- Store Match search bar --------------------------------------------------
+    //
+    // A name to search the stores by, so a game whose title the stores do not recognise can be
+    // matched without renaming it. The text is a search term and nothing else: the game's title
+    // is never written from here.
+
+    /** Select on the bar, or a tap in it: the bar takes text and the keyboard comes up. */
+    fun startRematchQueryEdit() {
+        val ui = _uiState.value.storefrontRematch?.takeIf { !it.loading } ?: return
+        if (!ui.editingQuery) menuSound.play(MenuSound.SELECT)
+        // A tap lands in the field before the engine hears of it; bring the cursor along.
+        nav.setFocused(GameDetailKeys.STOREFRONT_QUERY)
+        updateRematch { it.copy(editingQuery = true, queryFocused = true) }
+    }
+
+    /** Back while typing: the keyboard goes, the text and the panel stay. */
+    fun stopRematchQueryEdit() {
+        if (_uiState.value.storefrontRematch?.editingQuery == true) menuSound.play(MenuSound.BACK)
+        updateRematch { it.copy(editingQuery = false) }
+    }
+
+    fun onRematchQueryChanged(text: String) = updateRematch { it.copy(query = text) }
+
+    /** The keyboard's Search key, or the bar's Search button: ask the stores for the typed name. */
+    fun searchStorefrontsByName() {
+        val ui = _uiState.value.storefrontRematch?.takeIf { !it.loading } ?: return
+        // Nothing typed is nothing to ask for; the bar simply stops taking text.
+        if (!ui.canSearchByName) return stopRematchQueryEdit()
+        menuSound.play(MenuSound.SELECT)
+        updateRematch { it.copy(editingQuery = false, searching = true) }
+        openStorefrontMatch(ignoreStoredIdentity = true, query = ui.query.trim())
+    }
+
     /**
      * Opens the picker.
      *
      * [ignoreStoredIdentity] is what Rematch passes: the only way past a stored id, and still
      * write-free - the existing link survives until the user picks a replacement.
+     *
+     * [query] is a name typed into the Store Match search bar, searched in place of the title.
+     *
+     * [store] is the one store a Store Match row acts on; null asks every store, which is what
+     * "Search every store again" and the search bar mean.
      */
-    fun openStorefrontMatch(ignoreStoredIdentity: Boolean = false) {
+    fun openStorefrontMatch(
+        ignoreStoredIdentity: Boolean = false,
+        query: String? = null,
+        store: Storefront? = null,
+    ) {
         val gameId = _uiState.value.game?.id ?: return
         val generation = ++storefrontGeneration
         _uiState.update {
             it.copy(
                 showOptions = false,
                 actionMessage = null,
-                storefrontMatch = StorefrontMatchUi(gameTitle = it.game?.displayTitle.orEmpty()),
+                storefrontMatch = StorefrontMatchUi(
+                    gameTitle = it.game?.displayTitle.orEmpty(),
+                    typedQuery = query,
+                ),
             )
         }
         viewModelScope.launch {
-            val lookup = runCatching { storefrontMatches.lookup(gameId, ignoreStoredIdentity) }
+            val lookup = runCatching { storefrontMatches.lookup(gameId, ignoreStoredIdentity, query, store) }
                 .onFailure { Timber.w(it, "Storefront lookup failed for game %d", gameId) }
                 .getOrNull()
             if (generation != storefrontGeneration) return@launch
@@ -2309,7 +2482,10 @@ class GameDetailViewModel @Inject constructor(
                     storefrontRematch = state.storefrontRematch?.copy(searching = false),
                 )
             }
-            syncNavStack()
+            if (_uiState.value.storefrontMatch != null) seatCursorOnFirstCandidate() else syncNavStack()
+            publishNav()
+            // A confident match is linked by the lookup itself, with nothing chosen.
+            refreshStoreLinks()
         }
     }
 
@@ -2345,9 +2521,58 @@ class GameDetailViewModel @Inject constructor(
             if (index >= ui.rows.size) GameDetailKeys.STOREFRONT_NO_MATCH
             else GameDetailKeys.storefrontCandidate(index)
         if (!nav.touch(key)) {
-            if (index >= ui.rows.size) closeStorefrontMatch() else chooseStorefrontCandidate(index)
+            if (index >= ui.rows.size) declineStorefrontStore() else chooseStorefrontCandidate(index)
         }
         finishInput()
+    }
+
+    /** L1/R1: the next store along. The row of stores has ends; it does not wrap. */
+    private fun switchStorefrontStore(delta: Int) {
+        val ui = _uiState.value.storefrontMatch?.takeIf { !it.loading && !it.confirming } ?: return
+        showStorefrontStore(ui.storeIndex + delta)
+    }
+
+    /** Tap on a store chip in the picker's header. */
+    fun onStorefrontStoreTapped(index: Int) {
+        showStorefrontStore(index)
+        finishInput()
+    }
+
+    private fun showStorefrontStore(index: Int) {
+        val ui = _uiState.value.storefrontMatch?.takeIf { !it.loading && !it.confirming } ?: return
+        if (!ui.hasOtherStores) return
+        val target = index.coerceIn(0, ui.stores.lastIndex)
+        // Already there: the end of the row is audible as silence, like every other boundary.
+        if (target == ui.storeIndex) return
+        menuSound.play(MenuSound.SCROLL)
+        updateMatch { it.showingStore(target) }
+        seatCursorOnFirstCandidate()
+    }
+
+    /**
+     * A different store's rows are on screen. The engine would otherwise keep the cursor on the
+     * same row NUMBER, which on another store's list is an arbitrary row.
+     */
+    private fun seatCursorOnFirstCandidate() {
+        syncNavStack()
+        val ui = _uiState.value.storefrontMatch ?: return
+        nav.setFocused(
+            if (ui.rows.isEmpty()) GameDetailKeys.STOREFRONT_NO_MATCH else GameDetailKeys.storefrontCandidate(0)
+        )
+    }
+
+    /**
+     * "No correct match": none of this store's candidates is the game. With another store still
+     * waiting the picker moves on to it; with none left it closes, which closeStorefrontMatch
+     * already voices as a back.
+     */
+    private fun declineStorefrontStore() {
+        val ui = _uiState.value.storefrontMatch ?: return
+        val current = ui.stores.getOrNull(ui.storeIndex)
+        if (!ui.hasOtherStores || current == null) return closeStorefrontMatch()
+        menuSound.play(MenuSound.BACK)
+        updateMatch { it.withoutStore(current.store) }
+        seatCursorOnFirstCandidate()
     }
 
     /** Select on a candidate. The one place a storefront identity is written. */
@@ -2355,9 +2580,8 @@ class GameDetailViewModel @Inject constructor(
         val gameId = _uiState.value.game?.id ?: return
         val ui = _uiState.value.storefrontMatch ?: return
         if (ui.confirming) return
-        // "No correct match" is the picker's last stop and closes it, which closeStorefrontMatch
-        // already voices as a back.
-        val row = ui.rows.getOrNull(index) ?: return closeStorefrontMatch()
+        // "No correct match" is the list's last stop.
+        val row = ui.rows.getOrNull(index) ?: return declineStorefrontStore()
         // The one place a storefront identity is written.
         menuSound.play(MenuSound.CONFIRM)
         _uiState.update { it.copy(storefrontMatch = ui.copy(confirming = true)) }
@@ -2373,7 +2597,14 @@ class GameDetailViewModel @Inject constructor(
             }
             _uiState.update { state ->
                 state.copy(
-                    storefrontMatch = null,
+                    // That store is answered. Another store's question is still open when the
+                    // lookup found candidates there too, so the picker stays for it and closes
+                    // only after the last — each store is its own decision, and leaving one
+                    // unasked would look the same as it having no match.
+                    storefrontMatch = state.storefrontMatch
+                        ?.withoutStore(row.store)
+                        ?.takeIf { it.stores.isNotEmpty() }
+                        ?.copy(confirming = false),
                     storefrontRematch = state.storefrontRematch?.copy(
                         searching = false,
                         rows = rematchRows.map(::storefrontRematchRowOf),
@@ -2381,7 +2612,9 @@ class GameDetailViewModel @Inject constructor(
                     actionMessage = "Linked to " + row.storeLabel + ": " + row.title,
                 )
             }
-            syncNavStack()
+            if (_uiState.value.storefrontMatch != null) seatCursorOnFirstCandidate() else syncNavStack()
+            publishNav()
+            refreshStoreLinks()
         }
     }
 
@@ -2398,17 +2631,23 @@ class GameDetailViewModel @Inject constructor(
     ): StorefrontMatchUi {
         val base = current.copy(loading = false)
         return when (lookup) {
-            is StorefrontMatchRepository.Lookup.NeedsChoice -> {
-                // One store at a time: the strongest store first, which with Steam alone is Steam.
-                val pending = lookup.pending.first()
-                base.copy(
-                    query = lookup.query,
-                    storeLabel = pending.store.label,
-                    confidence = pending.confidence,
-                    rows = pending.candidates.map(::storefrontRowOf),
-                    focus = 0,
-                )
-            }
+            // One store on screen at a time, every store with candidates held: the first one asked
+            // is shown, the rest are a press of R1 away — and the stores that had nothing to ask
+            // are named, so their absence from the tabs is not mistaken for something else.
+            is StorefrontMatchRepository.Lookup.NeedsChoice -> base.copy(
+                query = lookup.query,
+                unavailableStores = lookup.unavailable.map { it.label },
+                settledStores = lookup.settled.map { it.storeLabel },
+            ).withStores(
+                lookup.pending.map { pending ->
+                    StorefrontStoreTab(
+                        store = pending.store,
+                        label = pending.store.label,
+                        confidence = pending.confidence,
+                        rows = pending.candidates.map(::storefrontRowOf),
+                    )
+                }
+            )
             is StorefrontMatchRepository.Lookup.Settled -> base.copy(
                 storeLabel = lookup.identities.firstOrNull()?.storeLabel,
                 settledLabel = lookup.identities.joinToString(", ") { it.record.resolvedTitle ?: it.storeLabel },
@@ -2448,6 +2687,9 @@ class GameDetailViewModel @Inject constructor(
         when (action) {
             GamepadAction.BACK -> closeStorefrontMatch()
             GamepadAction.OPEN_CONTEXT_MENU -> openStorefrontMoreInfo()
+            // The same keys the metadata preview uses to move between its sources.
+            GamepadAction.PREV_CATEGORY -> switchStorefrontStore(-1)
+            GamepadAction.NEXT_CATEGORY -> switchStorefrontStore(+1)
             GamepadAction.NAVIGATE_UP,
             GamepadAction.NAVIGATE_DOWN,
             GamepadAction.SELECT -> navigate(action)
@@ -2457,6 +2699,12 @@ class GameDetailViewModel @Inject constructor(
 
     /** Rematch input. Left/Right pick a row's action; everything else is the shared engine. */
     private fun handleStorefrontRematchInput(action: GamepadAction) {
+        // While the bar is taking text the keyboard owns the press. Back is the one thing it
+        // leaves to us, and it ends typing rather than closing the panel under the user's hands.
+        if (_uiState.value.storefrontRematch?.editingQuery == true) {
+            if (action == GamepadAction.BACK) stopRematchQueryEdit()
+            return
+        }
         when (action) {
             GamepadAction.BACK -> closeStorefrontRematch()
             GamepadAction.NAVIGATE_LEFT -> cycleRematchAction(-1)

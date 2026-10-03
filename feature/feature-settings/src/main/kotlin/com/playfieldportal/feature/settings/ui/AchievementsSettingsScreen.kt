@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.ui.components.PfpModalSpec
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -7,11 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,8 +16,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.playfieldportal.core.ui.achievement.ShibaPlayerCard
@@ -49,7 +44,69 @@ fun AchievementsSettingsScreen(
     val credentialsEnabled = state.enabled
     val credentialsAlpha = if (credentialsEnabled) 1f else 0.45f
 
+    val modal = rememberSettingsModal(
+        when {
+            state.confirmClearVisible -> PfpModalSpec.Confirm(
+                key = "clear_all",
+                title = "Clear all tracked achievements?",
+                message = "This will remove all achievements recorded in Play Field Portal, including " +
+                    "earned progress and records for games that are no longer installed. " +
+                    "Your games and provider connections will stay. Games will have to be " +
+                    "resynced to show their achievements again.",
+                confirmLabel = "Clear achievements",
+                // Opens on Cancel, so a stray Confirm press on the controller dismisses.
+                destructive = true,
+                onConfirm = viewModel::confirmClearAll,
+                onCancel = viewModel::dismissClearAll,
+            )
+            showLocalSteamWarning -> PfpModalSpec.Confirm(
+                key = "local_steam_warning",
+                title = "Back up your save files first",
+                message = "Before you sync, open your Windows emulator and back up the save files " +
+                    "for any Steam-emulated games you already set up.\n\n" +
+                    "Tracking these games lets a sync rewrite each game's emulator config " +
+                    "and replace its Steam files so unlocks can be recorded. A game you " +
+                    "set up and played before this feature could otherwise lose access to " +
+                    "its existing saves.\n\n" +
+                    "This also uses your own Steam Web API key to read achievement data — " +
+                    "use it at your own risk. Steam tracking is entirely optional; leave " +
+                    "this off if you'd rather not accept these risks.\n\n" +
+                    "Back up first, then turn this on and Update installed achievements.",
+                confirmLabel = "I've backed up — enable",
+                openOnCancel = true,
+                onConfirm = {
+                    viewModel.setLocalSteamTracking(true)
+                    showLocalSteamWarning = false
+                },
+                onCancel = { showLocalSteamWarning = false },
+            )
+            showGoldbergWarning -> PfpModalSpec.Confirm(
+                key = "goldberg_warning",
+                title = "Back up your save files first",
+                message = "Before you convert any game, open your Windows emulator and back up the " +
+                    "save files for any Steam-emulated games you already set up.\n\n" +
+                    "Converting rewrites each game's emulator config and replaces its Steam " +
+                    "files so unlocks can be recorded. A game you set up and played before " +
+                    "this feature could otherwise lose access to its existing saves.\n\n" +
+                    "This also uses your own Steam Web API key to read achievement data — " +
+                    "use it at your own risk. Leave this off if you'd rather not accept " +
+                    "these risks.\n\n" +
+                    "Back up first, then turn this on and scan your games.",
+                confirmLabel = "I've backed up — enable",
+                openOnCancel = true,
+                onConfirm = {
+                    viewModel.setGoldbergInstaller(true)
+                    showGoldbergWarning = false
+                },
+                onCancel = { showGoldbergWarning = false },
+            )
+            else -> null
+        },
+    )
+
     SettingsScaffold(
+        modalOpen = modal.open,
+        onInterceptAction = modal.intercept,
         title    = "Settings",
         subtitle = when (section) {
             AchievementsSettingsSection.PROVIDER_CREDENTIALS -> "Achievements · Provider Credentials"
@@ -262,91 +319,7 @@ fun AchievementsSettingsScreen(
                 }
             }
         }
-
-        if (state.confirmClearVisible) {
-            // Cancel holds the default focus, so a stray Confirm press on the controller dismisses.
-            val cancelFocus = remember { FocusRequester() }
-            LaunchedEffect(Unit) { runCatching { cancelFocus.requestFocus() } }
-            AlertDialog(
-                onDismissRequest = viewModel::dismissClearAll,
-                title = { Text("Clear all tracked achievements?") },
-                text = {
-                    Text(
-                        "This will remove all achievements recorded in Play Field Portal, including " +
-                            "earned progress and records for games that are no longer installed. " +
-                            "Your games and provider connections will stay. Games will have to be " +
-                            "resynced to show their achievements again.",
-                    )
-                },
-                confirmButton = {
-                    TextButton(onClick = viewModel::confirmClearAll) { Text("Clear achievements") }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = viewModel::dismissClearAll,
-                        modifier = Modifier.focusRequester(cancelFocus),
-                    ) { Text("Cancel") }
-                },
-            )
-        }
-
-        if (showLocalSteamWarning) {
-            AlertDialog(
-                onDismissRequest = { showLocalSteamWarning = false },
-                title = { Text("Back up your save files first") },
-                text = {
-                    Text(
-                        "Before you sync, open your Windows emulator and back up the save files " +
-                            "for any Steam-emulated games you already set up.\n\n" +
-                            "Tracking these games lets a sync rewrite each game's emulator config " +
-                            "and replace its Steam files so unlocks can be recorded. A game you " +
-                            "set up and played before this feature could otherwise lose access to " +
-                            "its existing saves.\n\n" +
-                            "This also uses your own Steam Web API key to read achievement data — " +
-                            "use it at your own risk. Steam tracking is entirely optional; leave " +
-                            "this off if you'd rather not accept these risks.\n\n" +
-                            "Back up first, then turn this on and Update installed achievements.",
-                    )
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        viewModel.setLocalSteamTracking(true)
-                        showLocalSteamWarning = false
-                    }) { Text("I've backed up — enable") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showLocalSteamWarning = false }) { Text("Cancel") }
-                },
-            )
-        }
-
-        if (showGoldbergWarning) {
-            AlertDialog(
-                onDismissRequest = { showGoldbergWarning = false },
-                title = { Text("Back up your save files first") },
-                text = {
-                    Text(
-                        "Before you convert any game, open your Windows emulator and back up the " +
-                            "save files for any Steam-emulated games you already set up.\n\n" +
-                            "Converting rewrites each game's emulator config and replaces its Steam " +
-                            "files so unlocks can be recorded. A game you set up and played before " +
-                            "this feature could otherwise lose access to its existing saves.\n\n" +
-                            "This also uses your own Steam Web API key to read achievement data — " +
-                            "use it at your own risk. Leave this off if you'd rather not accept " +
-                            "these risks.\n\n" +
-                            "Back up first, then turn this on and scan your games.",
-                    )
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        viewModel.setGoldbergInstaller(true)
-                        showGoldbergWarning = false
-                    }) { Text("I've backed up — enable") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showGoldbergWarning = false }) { Text("Cancel") }
-                },
-            )
-        }
     }
+
+    modal.Content()
 }

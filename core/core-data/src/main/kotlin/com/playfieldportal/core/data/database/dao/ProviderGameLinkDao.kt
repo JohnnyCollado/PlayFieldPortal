@@ -18,6 +18,10 @@ interface ProviderGameLinkDao {
     @Query("SELECT * FROM provider_game_links WHERE game_id = :gameId ORDER BY provider LIMIT 1")
     suspend fun getForGame(gameId: Long): ProviderGameLinkEntity?
 
+    /** Every link a game holds, in the same order the single-link reads pick from. */
+    @Query("SELECT * FROM provider_game_links WHERE game_id = :gameId ORDER BY provider")
+    fun observeAllForGame(gameId: Long): Flow<List<ProviderGameLinkEntity>>
+
     /** Every game-provider link, for the batch "sync all" pass. */
     @Query("SELECT * FROM provider_game_links")
     suspend fun getAll(): List<ProviderGameLinkEntity>

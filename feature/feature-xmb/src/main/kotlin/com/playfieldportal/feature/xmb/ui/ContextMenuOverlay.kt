@@ -14,6 +14,19 @@ import com.playfieldportal.feature.xmb.viewmodel.XMBContextMenu
 // Controller nav is handled by XMBViewModel.dispatchGamepadAction when
 // activeContextMenu != null. The shared panel handles touch/click interaction.
 
+/** The shared panel's rows for this menu — a straight field-for-field mapping. */
+internal fun XMBContextMenu.toPspRows(): List<PspMenuRow> = items.map {
+    PspMenuRow(
+        label = it.label,
+        isDestructive = it.isDestructive,
+        checked = it.checked,
+        value = it.value,
+        header = it.header,
+        opensMenu = it.opensMenu,
+        silent = it.silent,
+    )
+}
+
 @Composable
 fun ContextMenuOverlay(
     menu: XMBContextMenu,
@@ -23,7 +36,7 @@ fun ContextMenuOverlay(
 ) {
     PspContextMenuOverlay(
         title         = menu.title,
-        rows          = menu.items.map { PspMenuRow(it.label, it.isDestructive, it.checked, it.value) },
+        rows          = menu.toPspRows(),
         selectedIndex = menu.selectedIndex,
         onRowActivated = onItemActivated,
         onDismiss     = onDismiss,

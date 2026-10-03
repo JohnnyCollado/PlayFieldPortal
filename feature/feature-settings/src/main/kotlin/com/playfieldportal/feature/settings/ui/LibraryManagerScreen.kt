@@ -1,13 +1,20 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.ui.components.PfpModalSpec
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -37,6 +44,7 @@ import com.playfieldportal.feature.launcher.PcLauncherAdapters
 import com.playfieldportal.feature.settings.viewmodel.ADD_CONSOLE_FOCUS_KEY
 import com.playfieldportal.feature.settings.viewmodel.EmulatorOption
 import com.playfieldportal.feature.settings.viewmodel.IMPORT_PC_FOCUS_KEY
+import com.playfieldportal.feature.settings.viewmodel.LibraryAppRow
 import com.playfieldportal.feature.settings.viewmodel.LibraryCardRow
 import com.playfieldportal.feature.settings.viewmodel.LibraryManagerUiState
 import com.playfieldportal.feature.settings.viewmodel.LibraryManagerViewModel
@@ -130,6 +138,8 @@ fun LibraryManagerScreen(
         onBatchMatchLocalGames = { viewModel.batchMatchLocalGames(it) },
         onForgetLocalSteamFolder = { viewModel.forgetLocalSteamFolder(it) },
         onSetGoldbergInstaller = { viewModel.setGoldbergInstallerEnabled(it) },
+        onCycleUnknownLauncher = { viewModel.cycleUnknownLauncher(it) },
+        onShowHiddenUnknownLaunchers = { viewModel.showHiddenUnknownLaunchers() },
         homeRoleIntentProvider = { viewModel.homeRoleIntent() },
         modifier = modifier
     )
@@ -187,6 +197,8 @@ private fun LibraryManagerContent(
     onBatchMatchLocalGames: (Uri) -> Unit,
     onForgetLocalSteamFolder: (appId: String) -> Unit,
     onSetGoldbergInstaller: (Boolean) -> Unit,
+    onCycleUnknownLauncher: (packageName: String) -> Unit,
+    onShowHiddenUnknownLaunchers: () -> Unit,
     homeRoleIntentProvider: () -> android.content.Intent?,
     modifier: Modifier = Modifier,
 ) {
@@ -197,8 +209,8 @@ private fun LibraryManagerContent(
         LibraryStep.PICK_PLATFORM -> PickPlatformContent(state, onBack = handleBack, onPlatformChosen = onPlatformChosen, modifier = modifier)
         LibraryStep.PICK_EMULATOR -> PickEmulatorContent(state, onBack = handleBack, onEmulatorChosen = onEmulatorChosen, modifier = modifier)
         LibraryStep.SCAN_PROMPT   -> ScanPromptContent(state, onBack = handleBack, onConfirmAddConsole = onConfirmAddConsole, modifier = modifier)
-        LibraryStep.CARD_DETAIL   -> CardDetailContent(state, onBack = handleBack, onAddAndroidApps = onAddAndroidApps, onLoadEmulatorOptions = onLoadEmulatorOptions, onRemoveExtension = onRemoveExtension, onAddExtension = onAddExtension, onScanConsole = onScanConsole, onBeginRename = onBeginRename, onToggleEnabled = onToggleEnabled, onTogglePinned = onTogglePinned, onMoveCard = onMoveCard, onRemoveCard = onRemoveCard, onSetEmulatorForDetail = onSetEmulatorForDetail, onOpenImportPcGames = onOpenImportPcGames, onSetVita3KFolder = onSetVita3KFolder, onSetPs3DataFolder = onSetPs3DataFolder, onScanVitaGames = onScanVitaGames, onRemoveApp = onRemoveApp, modifier = modifier)
-        LibraryStep.IMPORT_PC     -> ImportPcGamesContent(state, onBack = handleBack, onRefreshHomeStatus = onRefreshHomeStatus, onScanPcGamesFolder = onScanPcGamesFolder, onExportManualPcGames = onExportManualPcGames, onImportPcGame = onImportPcGame, onImportAllPcGames = onImportAllPcGames, onTestLaunchPcGame = onTestLaunchPcGame, onAddPcGameById = onAddPcGameById, onDismissMessage = onDismissMessage, convertPickerOpen = convertPicker != null, onConvertGamepadAction = onConvertGamepadAction, onBatchMatchLocalGames = onBatchMatchLocalGames, onForgetLocalSteamFolder = onForgetLocalSteamFolder, onSetGoldbergInstaller = onSetGoldbergInstaller, homeRoleIntentProvider = homeRoleIntentProvider, modifier = modifier)
+        LibraryStep.CARD_DETAIL   -> CardDetailContent(state, onBack = handleBack, onAddAndroidApps = onAddAndroidApps, onLoadEmulatorOptions = onLoadEmulatorOptions, onRemoveExtension = onRemoveExtension, onAddExtension = onAddExtension, onScanConsole = onScanConsole, onBeginRename = onBeginRename, onCancelRename = onCancelRename, onConfirmRename = onConfirmRename, onToggleEnabled = onToggleEnabled, onTogglePinned = onTogglePinned, onMoveCard = onMoveCard, onRemoveCard = onRemoveCard, onSetEmulatorForDetail = onSetEmulatorForDetail, onOpenImportPcGames = onOpenImportPcGames, onSetVita3KFolder = onSetVita3KFolder, onSetPs3DataFolder = onSetPs3DataFolder, onScanVitaGames = onScanVitaGames, onRemoveApp = onRemoveApp, modifier = modifier)
+        LibraryStep.IMPORT_PC     -> ImportPcGamesContent(state, onBack = handleBack, onRefreshHomeStatus = onRefreshHomeStatus, onScanPcGamesFolder = onScanPcGamesFolder, onExportManualPcGames = onExportManualPcGames, onImportPcGame = onImportPcGame, onImportAllPcGames = onImportAllPcGames, onTestLaunchPcGame = onTestLaunchPcGame, onAddPcGameById = onAddPcGameById, onDismissMessage = onDismissMessage, convertPickerOpen = convertPicker != null, onConvertGamepadAction = onConvertGamepadAction, onBatchMatchLocalGames = onBatchMatchLocalGames, onForgetLocalSteamFolder = onForgetLocalSteamFolder, onSetGoldbergInstaller = onSetGoldbergInstaller, onCycleUnknownLauncher = onCycleUnknownLauncher, onShowHiddenUnknownLaunchers = onShowHiddenUnknownLaunchers, homeRoleIntentProvider = homeRoleIntentProvider, modifier = modifier)
     }
 
     // ── Convert-detected-games picker (the convertible pile of a batch match) ──
@@ -224,21 +236,6 @@ private fun LibraryManagerContent(
             onConfirm = onConvertConfirm,
             onSkip = onConvertSkip,
             onCancel = onConvertCancel,
-        )
-    }
-
-    // ── Rename dialog ─────────────────────────────────────────────────────────
-    state.renameTargetPlatformId?.let { targetId ->
-        val current = state.cards.firstOrNull { it.platformId == targetId }?.displayName ?: ""
-        var text by remember(targetId) { mutableStateOf(current) }
-        AlertDialog(
-            onDismissRequest = onCancelRename,
-            title   = { Text("Rename Memory Card") },
-            text    = {
-                OutlinedTextField(value = text, onValueChange = { text = it }, singleLine = true)
-            },
-            confirmButton = { TextButton(onClick = { onConfirmRename(text) }) { Text("Save") } },
-            dismissButton = { TextButton(onClick = onCancelRename) { Text("Cancel") } },
         )
     }
 }
@@ -466,6 +463,8 @@ private fun CardDetailContent(
     onAddExtension: (String, String) -> Unit,
     onScanConsole: (String) -> Unit,
     onBeginRename: (String) -> Unit,
+    onCancelRename: () -> Unit,
+    onConfirmRename: (String) -> Unit,
     onToggleEnabled: (String, Boolean) -> Unit,
     onTogglePinned: (String, Boolean) -> Unit,
     onMoveCard: (String, Boolean) -> Unit,
@@ -482,6 +481,8 @@ private fun CardDetailContent(
 
     var showEmulatorDialog by remember { mutableStateOf(false) }
     var showRemoveConfirm  by remember { mutableStateOf(false) }
+    var appToRemove        by remember { mutableStateOf<LibraryAppRow?>(null) }
+    val itemMenu = rememberSettingsItemMenu()
     var newExt             by remember(card.platformId) { mutableStateOf("") }
     val isScanning = card.platformId in state.scanningPlatformIds
     val isAndroid = card.platformId == "android"
@@ -495,7 +496,52 @@ private fun CardDetailContent(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri -> uri?.let { onSetPs3DataFolder(it) } }
 
-    SettingsScaffold(title = "Library Manager", subtitle = card.displayName, onBack = onBack, modifier = modifier) {
+    // Renaming and removing both start from this step, so its scaffold hosts both modals.
+    val renameTargetId = state.renameTargetPlatformId
+    val modal = rememberSettingsModal(
+        when {
+            renameTargetId != null -> PfpModalSpec.TextEntry(
+                key = "rename:$renameTargetId",
+                title = "Rename Memory Card",
+                initial = state.cards.firstOrNull { it.platformId == renameTargetId }?.displayName.orEmpty(),
+                placeholder = "Memory Card name",
+                onConfirm = onConfirmRename,
+                onCancel = onCancelRename,
+            )
+            showRemoveConfirm -> PfpModalSpec.Confirm(
+                key = "remove:${card.platformId}",
+                title = "Remove ${card.displayName}?",
+                message = "This removes the console and its scanned games from the library. " +
+                    "ROM files on disk are not deleted.",
+                confirmLabel = "Remove",
+                destructive = true,
+                onConfirm = { showRemoveConfirm = false; onRemoveCard(card.platformId) },
+                onCancel = { showRemoveConfirm = false },
+            )
+            appToRemove != null -> appToRemove?.let { app ->
+                PfpModalSpec.Confirm(
+                    key = "removeApp:${app.gameId}",
+                    title = "Remove ${app.label}?",
+                    message = "This removes the app from this library. The app itself stays installed.",
+                    confirmLabel = "Remove",
+                    destructive = true,
+                    onConfirm = { appToRemove = null; onRemoveApp(app.gameId) },
+                    onCancel = { appToRemove = null },
+                )
+            }
+            else -> null
+        },
+    )
+
+    Box(modifier = modifier) {
+    SettingsScaffold(
+        title = "Library Manager",
+        subtitle = card.displayName,
+        onBack = onBack,
+        modifier = Modifier.fillMaxSize(),
+        modalOpen = modal.open,
+        onInterceptAction = { modal.intercept(it) || itemMenu.intercept(it) },
+    ) {
         // Registered like the list screens: the scaffold needs a scroll owner here for its
         // chrome drag-to-scroll and for controller keep-in-view. Registering is the whole fix;
         // the body itself is unchanged.
@@ -549,10 +595,13 @@ private fun CardDetailContent(
                     Hint("No apps yet — use Add Apps to pick installed apps for this library.")
                 } else {
                     state.androidApps.forEach { app ->
+                        val openMenu = {
+                            itemMenu.show(app.label, libraryAppMenuRows(app.gameId) { appToRemove = app })
+                        }
                         SettingsRow(
-                            label    = app.label,
-                            trailing = { Text("Remove", color = SettingsAccent) },
-                            onClick  = { onRemoveApp(app.gameId) },
+                            label       = app.label,
+                            onClick     = openMenu,
+                            onLongPress = openMenu,
                         )
                     }
                 }
@@ -576,10 +625,13 @@ private fun CardDetailContent(
                     Hint("No extensions set — add at least one so scanning can match this console's ROMs.")
                 } else {
                     card.extensions.forEach { ext ->
+                        val openMenu = {
+                            itemMenu.show(".$ext", libraryExtensionMenuRows(card.platformId, ext, onRemoveExtension))
+                        }
                         SettingsRow(
-                            label    = ".$ext",
-                            trailing = { Text("Remove", color = SettingsAccent) },
-                            onClick  = { onRemoveExtension(card.platformId, ext) },
+                            label       = ".$ext",
+                            onClick     = openMenu,
+                            onLongPress = openMenu,
                         )
                     }
                 }
@@ -636,13 +688,13 @@ private fun CardDetailContent(
             if (isAndroid) SettingsGroup("Actions")
             SettingsRow(label = "Rename Memory Card", onClick = { onBeginRename(card.platformId) })
             SettingsToggleRow(
-                label    = "Show In Games",
+                label    = SettingsLabels.SHOW_IN_GAMES,
                 sublabel = "Enable or hide this Memory Card",
                 checked  = card.enabled,
                 onToggle = { onToggleEnabled(card.platformId, it) },
             )
             SettingsToggleRow(
-                label    = "Pin To Top",
+                label    = SettingsLabels.PIN_TO_TOP,
                 checked  = card.pinned,
                 onToggle = { onTogglePinned(card.platformId, it) },
             )
@@ -661,6 +713,8 @@ private fun CardDetailContent(
             }
         }
     }
+    itemMenu.Content()
+    }
 
     if (showEmulatorDialog) {
         EmulatorPickerDialog(
@@ -670,16 +724,22 @@ private fun CardDetailContent(
         )
     }
 
-    if (showRemoveConfirm) {
-        AlertDialog(
-            onDismissRequest = { showRemoveConfirm = false },
-            title   = { Text("Remove ${card.displayName}?") },
-            text    = { Text("This removes the console and its scanned games from the library. ROM files on disk are not deleted.") },
-            confirmButton = { TextButton(onClick = { showRemoveConfirm = false; onRemoveCard(card.platformId) }) { Text("Remove") } },
-            dismissButton = { TextButton(onClick = { showRemoveConfirm = false }) { Text("Cancel") } },
-        )
-    }
+    modal.Content()
 }
+
+/** An Android app row's menu. Removing drops the game from the library, so the row is red and the screen confirms it. */
+internal fun libraryAppMenuRows(gameId: Long, onRequestRemove: (Long) -> Unit): List<SettingsMenuItem> = listOf(
+    SettingsMenuItem("Remove from Library", destructive = true) { onRequestRemove(gameId) },
+)
+
+/** An extension row's menu. Removing is reversible (add it back), so the row is plain and unconfirmed. */
+internal fun libraryExtensionMenuRows(
+    platformId: String,
+    ext: String,
+    onRemove: (platformId: String, ext: String) -> Unit,
+): List<SettingsMenuItem> = listOf(
+    SettingsMenuItem("Remove Extension") { onRemove(platformId, ext) },
+)
 
 @Composable
 private fun EmulatorPickerDialog(
@@ -720,6 +780,8 @@ private fun ImportPcGamesContent(
     onBatchMatchLocalGames: (Uri) -> Unit,
     onForgetLocalSteamFolder: (appId: String) -> Unit,
     onSetGoldbergInstaller: (Boolean) -> Unit,
+    onCycleUnknownLauncher: (packageName: String) -> Unit,
+    onShowHiddenUnknownLaunchers: () -> Unit,
     homeRoleIntentProvider: () -> android.content.Intent?,
     modifier: Modifier,
 ) {
@@ -790,9 +852,9 @@ private fun ImportPcGamesContent(
             SettingsGroup("Local Windows")
             SettingsRow(
                 label    = "Batch Match Local Games",
-                sublabel = "Pick the folder that CONTAINS your game folders. PFP reads each one's " +
-                    "Steam app id, remembers where it is, and links it — no scan ever has to search " +
-                    "for them again",
+                sublabel = "Pick the folder that CONTAINS your game folders. Each one that is already " +
+                    "in your Windows library is identified, remembered and linked; the rest are left " +
+                    "untouched",
                 onClick  = { batchMatchPicker.launch(null) },
             )
             SettingsValueRow(
@@ -838,6 +900,39 @@ private fun ImportPcGamesContent(
                 }
             }
 
+            // Apps PFP cannot identify with confidence: the user says what each one is. A choice
+            // is stored per install and outranks every automatic rule.
+            if (state.unknownLaunchers.isNotEmpty() || state.hiddenUnknownLaunchers.isNotEmpty()) {
+                SettingsGroup("Unknown Windows Emulators")
+                state.unknownLaunchers.forEach { app ->
+                    SettingsRow(
+                        label    = app.label,
+                        sublabel = app.sublabel,
+                        focusKey = "unknown_${app.packageName}",
+                        leading  = { AppIcon(app.packageName) },
+                        trailing = {
+                            Text(
+                                text = "◀  ${app.value}  ▶",
+                                color = SettingsText,
+                                fontSize = 13.sp,
+                                style = TextStyle(shadow = SettingsTextShadow),
+                            )
+                        },
+                        onClick  = { onCycleUnknownLauncher(app.packageName) },
+                    )
+                }
+                val hidden = state.hiddenUnknownLaunchers.size
+                if (hidden > 0) {
+                    SettingsValueRow(
+                        label    = "Show Hidden Apps",
+                        value    = hidden.toString(),
+                        sublabel = (if (hidden == 1) "1 app" else "$hidden apps") +
+                            " marked Not a launcher — bring them back to choose again",
+                        onClick  = onShowHiddenUnknownLaunchers,
+                    )
+                }
+            }
+
             SettingsGroup("Found Games (${state.pcGames.size})")
             if (state.pcGames.isEmpty()) {
                 Hint("No PC games captured yet.")
@@ -852,7 +947,7 @@ private fun ImportPcGamesContent(
                 }
                 SettingsRow(
                     label    = "Import All",
-                    sublabel = "Add every found game to a collection named after its launcher",
+                    sublabel = "Add every found game to a custom memory card named after its launcher",
                     onClick  = onImportAllPcGames,
                 )
             }
@@ -1016,7 +1111,32 @@ fun LibraryManagerScreenPreview() {
             onBatchMatchLocalGames = {},
             onForgetLocalSteamFolder = {},
             onSetGoldbergInstaller = {},
+            onCycleUnknownLauncher = {},
+            onShowHiddenUnknownLaunchers = {},
             homeRoleIntentProvider = { null }
         )
+    }
+}
+
+// Rendered once per row at a size that stays sharp at 32dp on high-density screens.
+private const val APP_ICON_PX = 128
+
+/** An installed app's own launcher icon, at the size of a settings row's leading slot. */
+@Composable
+private fun AppIcon(packageName: String) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val icon = remember(packageName) {
+        runCatching {
+            val drawable = context.packageManager.getApplicationIcon(packageName)
+            val bitmap = android.graphics.Bitmap.createBitmap(APP_ICON_PX, APP_ICON_PX, android.graphics.Bitmap.Config.ARGB_8888)
+            drawable.setBounds(0, 0, APP_ICON_PX, APP_ICON_PX)
+            drawable.draw(android.graphics.Canvas(bitmap))
+            bitmap.asImageBitmap()
+        }.getOrNull()
+    }
+    if (icon != null) {
+        Image(bitmap = icon, contentDescription = null, modifier = Modifier.size(32.dp))
+    } else {
+        Spacer(Modifier.size(32.dp))
     }
 }

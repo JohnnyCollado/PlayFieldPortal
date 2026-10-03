@@ -8,12 +8,18 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.ui.icons.CustomIcon
+import com.playfieldportal.core.ui.icons.CustomIconLimits
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
+import com.playfieldportal.core.ui.icons.UserCategoryIconKeys
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -100,7 +106,10 @@ class CustomIconStoreTest {
 
     @Test
     fun `invalid slot keys write nothing`() = runTest {
-        for (key in listOf("not_a_slot", "../evil", "catbar_games/../../x", "", "sysicon_not_a_console")) {
+        for (key in listOf(
+            "not_a_slot", "../evil", "catbar_games/../../x", "", "sysicon_not_a_console",
+            "usercat_games", "usercat_custom_../x", "usercat_", "usercat_custom_A",
+        )) {
             val result = store.import(key, register(pngBytes()), "image/png")
             assertFalse(result.ok, "key '$key' must be rejected")
         }
@@ -123,6 +132,43 @@ class CustomIconStoreTest {
 
         assertFalse(result.ok, "a file over the size cap must be rejected")
         assertTrue(iconDir().listFiles().isNullOrEmpty())
+    }
+
+    // ── user category key family ──────────────────────────────────────────────
+
+    @Test
+    fun `a usercat key imports, bumps the stamp, evicts and loads as Still`() = runTest {
+        val result = store.import("usercat_custom_x_1", register(pngBytes()), "image/png")
+
+        assertTrue(result.ok, result.message ?: "import rejected")
+        val dest = iconFile("usercat_custom_x_1", "png")
+        assertTrue(dest.isFile)
+        assertNotNull(stampPref())
+        assertEquals(listOf(dest.absolutePath), evictor.evicted)
+        assertIs<CustomIcon.Still>(assertNotNull(store.load()["usercat_custom_x_1"]))
+    }
+
+    @Test
+    fun `a rejected re-import to a usercat key leaves the old file untouched`() = runTest {
+        store.import("usercat_custom_x_1", register(pngBytes()), "image/png")
+        val old = iconFile("usercat_custom_x_1", "png")
+        val before = old.readBytes()
+
+        val result = store.import("usercat_custom_x_1", register(pngBytes()), "video/mp4")
+
+        assertFalse(result.ok)
+        assertEquals(CustomIconLimits.MSG_UNSUPPORTED_FORMAT, result.message)
+        assertTrue(old.isFile && old.readBytes().contentEquals(before), "the previous image survives a rejection")
+    }
+
+    @Test
+    fun `heic is accepted alongside heif`() = runTest {
+        // PNG bytes decode fine; the point is that the MIME maps to a stored extension rather
+        // than being refused as unsupported.
+        val result = store.import("catbar_games", register(pngBytes()), "image/heic")
+
+        assertTrue(result.ok, result.message ?: "heic import rejected")
+        assertTrue(iconFile("catbar_games", "heif").isFile, "heic is stored under the heif suffix")
     }
 
     // ── load ──────────────────────────────────────────────────────────────────
@@ -176,6 +222,118 @@ class CustomIconStoreTest {
     @Test
     fun `clearAll reports false when nothing was stored`() = runTest {
         assertFalse(store.clearAll(), "no picks stored — nothing was cleared")
+    }
+
+    // ── move ──────────────────────────────────────────────────────────────────
+
+    @Test
+    fun `move renames the draft onto the category key, evicts and bumps the stamp`() = runTest {
+        store.import(UserCategoryIconKeys.DRAFT_KEY, register(pngBytes()), "image/png")
+        runBlocking { context.pfpDataStore.edit { it.clear() } }
+        evictor.evicted.clear()
+
+        assertTrue(store.move(UserCategoryIconKeys.DRAFT_KEY, "usercat_custom_x_1"))
+
+        val dest = iconFile("usercat_custom_x_1", "png")
+        assertTrue(dest.isFile, "the image now lives under the category's key")
+        assertFalse(iconFile(UserCategoryIconKeys.DRAFT_KEY, "png").exists(), "the draft is gone")
+        assertEquals(listOf(dest.absolutePath), evictor.evicted, "dest path evicted so a stale GIF can't keep playing")
+        assertNotNull(stampPref(), "move bumps the stamp so observers reload")
+    }
+
+    @Test
+    fun `move replaces a destination held under another extension`() = runTest {
+        store.import("usercat_custom_x_1", register(pngBytes()), "image/png")
+        store.import(UserCategoryIconKeys.DRAFT_KEY, register(pngBytes()), "image/gif")
+
+        assertTrue(store.move(UserCategoryIconKeys.DRAFT_KEY, "usercat_custom_x_1"))
+
+        assertTrue(iconFile("usercat_custom_x_1", "gif").isFile)
+        assertFalse(iconFile("usercat_custom_x_1", "png").exists(), "a key holds ONE file")
+    }
+
+    @Test
+    fun `move without a source writes nothing`() = runTest {
+        assertFalse(store.move(UserCategoryIconKeys.DRAFT_KEY, "usercat_custom_x_1"))
+
+        assertTrue(iconDir().listFiles().isNullOrEmpty())
+        assertNull(stampPref(), "no bump without a real move")
+    }
+
+    @Test
+    fun `move to an invalid key keeps the draft`() = runTest {
+        store.import(UserCategoryIconKeys.DRAFT_KEY, register(pngBytes()), "image/png")
+        runBlocking { context.pfpDataStore.edit { it.clear() } }
+
+        assertFalse(store.move(UserCategoryIconKeys.DRAFT_KEY, "usercat_custom_../x"))
+        assertFalse(store.move("../evil", "usercat_custom_x_1"))
+
+        assertTrue(iconFile(UserCategoryIconKeys.DRAFT_KEY, "png").isFile, "the draft survives a refused move")
+        assertNull(stampPref())
+    }
+
+    // ── pruneUserCategoryIcons ────────────────────────────────────────────────
+
+    @Test
+    fun `prune removes orphaned category images and the draft, keeps live and non-category picks`() = runTest {
+        store.import("usercat_custom_keep_1", register(pngBytes()), "image/png")
+        store.import("usercat_custom_gone_2", register(pngBytes()), "image/gif")
+        store.import(UserCategoryIconKeys.DRAFT_KEY, register(pngBytes()), "image/png")
+        store.import("catbar_games", register(pngBytes()), "image/png")
+        store.import("sysicon_snes", register(pngBytes()), "image/png")
+        // A malformed usercat file that could only arrive outside the store's own writes.
+        iconFile("usercat_custom_A", "png").writeBytes(pngBytes())
+
+        assertTrue(store.pruneUserCategoryIcons(setOf("custom_keep_1")))
+
+        assertTrue(iconFile("usercat_custom_keep_1", "png").isFile)
+        assertFalse(iconFile("usercat_custom_gone_2", "gif").exists())
+        assertFalse(iconFile(UserCategoryIconKeys.DRAFT_KEY, "png").exists())
+        assertFalse(iconFile("usercat_custom_A", "png").exists())
+        assertTrue(iconFile("catbar_games", "png").isFile, "theme-slot picks are never swept")
+        assertTrue(iconFile("sysicon_snes", "png").isFile, "console-slot picks are never swept")
+    }
+
+    @Test
+    fun `prune bumps the stamp only when something was removed`() = runTest {
+        store.import("usercat_custom_gone_2", register(pngBytes()), "image/png")
+        runBlocking { context.pfpDataStore.edit { it.clear() } }
+
+        assertTrue(store.pruneUserCategoryIcons(emptySet()))
+        assertNotNull(stampPref(), "a real removal bumps the stamp")
+
+        runBlocking { context.pfpDataStore.edit { it.clear() } }
+        assertFalse(store.pruneUserCategoryIcons(emptySet()), "nothing left to remove")
+        assertNull(stampPref(), "no bump without a removal")
+    }
+
+    // ── observeStoredKeys ─────────────────────────────────────────────────────
+
+    @Test
+    fun `observeStoredKeys lists storable keys only`() = runTest {
+        store.import("catbar_games", register(pngBytes()), "image/png")
+        store.import("usercat_custom_x_1", register(pngBytes()), "image/png")
+        iconFile("not_a_slot", "png").writeBytes(pngBytes())
+        iconFile("catbar_music", "mp4").writeBytes(pngBytes())
+
+        assertEquals(setOf("catbar_games", "usercat_custom_x_1"), store.observeStoredKeys().first())
+    }
+
+    @Test
+    fun `observeStoredKeys emits again after an import and after a clear`() = runBlocking {
+        val seen = java.util.Collections.synchronizedList(mutableListOf<Set<String>>())
+        val job = launch(Dispatchers.Default) { store.observeStoredKeys().collect { seen += it } }
+        suspend fun awaitLast(expected: Set<String>) = withTimeout(10_000) {
+            while (seen.lastOrNull() != expected) delay(20)
+        }
+        awaitLast(emptySet())
+
+        store.import("usercat_custom_x_1", register(pngBytes()), "image/png")
+        awaitLast(setOf("usercat_custom_x_1"))
+
+        store.clear("usercat_custom_x_1")
+        awaitLast(emptySet())
+        job.cancel()
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

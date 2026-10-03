@@ -3,6 +3,7 @@ package com.playfieldportal.feature.launcher
 import android.content.Context
 import android.content.Intent
 import com.playfieldportal.core.domain.model.Game
+import com.playfieldportal.core.domain.model.PfpErrorCode
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -69,6 +70,8 @@ class LaunchDispatcher @Inject constructor(
     private val autoCoreMemory: AutoCoreMemory,
     // Remembers the handed-off game so a confirmed return can trigger its local achievement check.
     private val handoffTracker: GameHandoffTracker,
+    // Stamps "last played" at hand-off — the only moment PFP knows a game was actually started.
+    private val gameRepository: com.playfieldportal.core.domain.repository.GameRepository,
 ) {
     private val _recoveryRequests = MutableStateFlow<LaunchRecoveryRequest?>(null)
     /** Non-null while a recovery sheet should be shown; cleared by [dismissRecovery]. */
@@ -88,7 +91,8 @@ class LaunchDispatcher @Inject constructor(
     suspend fun launch(game: Game, resolved: ResolvedLaunch?, intent: Intent): LaunchDispatchResult {
         // The ONE GameBoot seam. Here, and not at the confirm moment, because everything above
         // this line is preflight: a game that cannot launch must never show a presentation. Both
-        // game-launch call sites (Game Detail and the XMB's direct launch) get it for free.
+        // game-launch call sites (Game Detail and the XMB's direct launch) get it for free;
+        // shortcut launches pass the same gate through [launchShortcut].
         // No-op when GameBoot is disabled, and bounded by its own watchdog — see GameBootGate.
         gameBootGate.awaitPresentation(game.title)
         return try {
@@ -104,6 +108,7 @@ class LaunchDispatcher @Inject constructor(
                 autoCoreMemory.remember(game.platformId, profile.id)
             }
             handoffTracker.onDispatched(game)
+            markLaunched(game)
             acceptPending(
                 PendingLaunch(
                     game         = game,
@@ -115,13 +120,13 @@ class LaunchDispatcher @Inject constructor(
             LaunchDispatchResult.Accepted
         } catch (e: android.content.ActivityNotFoundException) {
             Timber.w(e, "Launch startActivity failed: emulator activity not found (gameId=${game.id})")
-            settleImmediateFailure(game, resolved, "Emulator not found. Is it installed?")
+            settleImmediateFailure(game, resolved, "Emulator not found. Is it installed?", PfpErrorCode.LN_4001)
         } catch (e: SecurityException) {
             Timber.w(e, "Launch startActivity failed: permission denied (gameId=${game.id})")
-            settleImmediateFailure(game, resolved, "Permission denied launching emulator")
+            settleImmediateFailure(game, resolved, "Permission denied launching emulator", PfpErrorCode.LN_4002)
         } catch (e: Exception) {
             Timber.w(e, "Launch startActivity failed (gameId=${game.id})")
-            settleImmediateFailure(game, resolved, "Could not open emulator: ${e.message}")
+            settleImmediateFailure(game, resolved, "Could not open emulator: ${e.message}", PfpErrorCode.LN_9001)
         }
     }
 
@@ -136,10 +141,11 @@ class LaunchDispatcher @Inject constructor(
         resolved: ResolvedLaunch?,
         reason: String,
         offerRecovery: Boolean = true,
+        code: PfpErrorCode = PfpErrorCode.LN_9001,
     ) {
         Timber.w("Launch blocked by preflight: gameId=${game.id}, reason=$reason")
         outcomeRecorder.record(
-            outcomeFor(game, resolved, LaunchOutcomeStatus.INTENT_FAILED, reason)
+            outcomeFor(game, resolved, LaunchOutcomeStatus.INTENT_FAILED, reason, code)
         )
         menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.ERROR)
         if (offerRecovery) emitRecovery(game, resolved, reason)
@@ -151,12 +157,35 @@ class LaunchDispatcher @Inject constructor(
     }
 
     /**
-     * A harvested launcher shortcut (Windows games) was started directly through LauncherApps,
-     * bypassing [launch]. Records the hand-off so the game's return is still recognized — without
-     * outcome recording or the recovery sheet, which only the intent path can classify.
+     * Starts a harvested launcher shortcut (BannerHub / GameHub and other Windows-game hosts).
+     * [start] is the LauncherApps.startShortcut call — an API call, not an intent, so it can't ride
+     * [launch] — but it still passes the same GameBoot seam first. On success the hand-off is
+     * recorded so the game's return is still recognized, without outcome recording or the recovery
+     * sheet, which only the intent path can classify. A failure is handed back for the caller's
+     * own preflight-failure handling.
      */
-    fun noteShortcutHandoff(game: Game) {
-        handoffTracker.onDispatched(game)
+    suspend fun launchShortcut(game: Game, start: () -> Result<Unit>): Result<Unit> {
+        gameBootGate.awaitPresentation(game.title)
+        val result = start()
+        if (result.isSuccess) {
+            handoffTracker.onDispatched(game)
+            markLaunched(game)
+        }
+        return result
+    }
+
+    /**
+     * Stamps [game] as played now. Written only once the launch actually reached the system, and
+     * never allowed to fail it: recency is a convenience, the launch is the point.
+     */
+    private suspend fun markLaunched(game: Game) {
+        try {
+            gameRepository.markLaunched(game.id, System.currentTimeMillis())
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Could not stamp last played (gameId=${game.id})")
+        }
     }
 
     fun dismissRecovery() {
@@ -204,6 +233,7 @@ class LaunchDispatcher @Inject constructor(
                     outcomeFor(
                         p.game, p.resolved, LaunchOutcomeStatus.NEVER_FOREGROUNDED,
                         "The emulator never came to the foreground after launch.",
+                        PfpErrorCode.LN_4003,
                     )
                 )
                 emitRecovery(
@@ -232,6 +262,7 @@ class LaunchDispatcher @Inject constructor(
                     outcomeFor(
                         p.game, p.resolved, LaunchOutcomeStatus.NEVER_FOREGROUNDED,
                         "The emulator never came to the foreground after launch.",
+                        PfpErrorCode.LN_4003,
                     )
                 )
                 emitRecovery(
@@ -252,9 +283,10 @@ class LaunchDispatcher @Inject constructor(
         game: Game,
         resolved: ResolvedLaunch?,
         message: String,
+        code: PfpErrorCode,
     ): LaunchDispatchResult {
         outcomeRecorder.record(
-            outcomeFor(game, resolved, LaunchOutcomeStatus.INTENT_FAILED, message)
+            outcomeFor(game, resolved, LaunchOutcomeStatus.INTENT_FAILED, message, code)
         )
         menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.ERROR)
         emitRecovery(game, resolved, message)
@@ -286,6 +318,7 @@ class LaunchDispatcher @Inject constructor(
         resolved: ResolvedLaunch?,
         status: LaunchOutcomeStatus,
         reason: String?,
+        code: PfpErrorCode? = null,
     ) = LaunchOutcome(
         gameId        = game.id,
         gameTitle     = game.title,
@@ -297,6 +330,7 @@ class LaunchDispatcher @Inject constructor(
         source        = resolved?.source,
         status        = status,
         failureReason = reason,
+        errorCode     = code?.id,
         launchedAtMs  = System.currentTimeMillis(),
     )
 

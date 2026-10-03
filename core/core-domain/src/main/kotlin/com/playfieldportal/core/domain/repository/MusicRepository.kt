@@ -65,6 +65,11 @@ interface MusicRepository {
     /** Playlist ids the track belongs to — drives the checkmarks in "Add to Playlist". */
     suspend fun getPlaylistIdsForTrack(trackId: String): List<Long>
     suspend fun createPlaylist(name: String): Long
+    /**
+     * Creates a playlist holding [trackIds] in order, in one transaction; returns its id.
+     * Throws [IllegalArgumentException] for an empty list: "nothing matched" is the caller's call.
+     */
+    suspend fun importPlaylist(name: String, trackIds: List<String>): Long
     suspend fun renamePlaylist(id: Long, name: String)
     suspend fun deletePlaylist(id: Long)
     suspend fun addTrackToPlaylist(playlistId: Long, trackId: String)

@@ -64,15 +64,27 @@ class WindowsLibrarySetup @Inject constructor(
      */
     suspend fun ensure(): WindowsSetupState = withContext(Dispatchers.IO) { ensure(SafFolderOps()) }
 
+    /**
+     * Points the library at a folder the user picked (Initial Setup's Windows Games page), creating
+     * the card if needed. The caller persists the SAF grant. A picked folder is authoritative:
+     * [ensure] then reports Ready without looking under the ROM roots.
+     */
+    suspend fun usePickedFolder(treeUri: String) {
+        cardOrNew()
+        memoryCards.setSafFolder(PLATFORM_ID, treeUri, RomRootRepository.rawPathOfTree(treeUri))
+    }
+
+    private suspend fun cardOrNew() = memoryCards.getById(PLATFORM_ID) ?: memoryCards.addCard(
+        platformId      = PLATFORM_ID,
+        displayName     = DISPLAY_NAME,
+        romDirectory    = null,
+        emulatorId      = null,
+        extensions      = emptyList(),
+        scanRecursively = false,
+    )
+
     internal suspend fun ensure(ops: FolderOps): WindowsSetupState {
-        val card = memoryCards.getById(PLATFORM_ID) ?: memoryCards.addCard(
-            platformId      = PLATFORM_ID,
-            displayName     = DISPLAY_NAME,
-            romDirectory    = null,
-            emulatorId      = null,
-            extensions      = emptyList(),
-            scanRecursively = false,
-        )
+        val card = cardOrNew()
         if (card.supportedExtensions.isNotEmpty()) memoryCards.setExtensions(PLATFORM_ID, emptyList())
         // Migrate the pre-rename default card name; a name the user chose is left alone.
         if (card.displayName == LEGACY_DISPLAY_NAME) memoryCards.rename(PLATFORM_ID, DISPLAY_NAME)
@@ -153,6 +165,11 @@ class WindowsLibrarySetup @Inject constructor(
     /** Raises the one-shot setup prompt (pin workflow, plan section 3). */
     suspend fun flagSetupPrompt() {
         context.pfpDataStore.edit { it[KEY_SETUP_PROMPT_PENDING] = true }
+    }
+
+    /** Drops a pending prompt unshown — the library was set up before the XMB could ask. */
+    suspend fun clearSetupPrompt() {
+        context.pfpDataStore.edit { it.remove(KEY_SETUP_PROMPT_PENDING) }
     }
 
     /** True exactly once per raise: reads and clears the pending prompt flag. */

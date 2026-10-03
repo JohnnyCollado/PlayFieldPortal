@@ -7,15 +7,15 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import coil3.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 
 /**
  * The one draw node for a [CustomIcon] — every override tier funnels here.
  *
- * - Unfocused (or still): draws [CustomIcon.firstFrame] through [OverrideGlyphSurface] — the
- *   icon-legibility matte applies, exactly as theme icons draw today.
- * - Focused + animated: streams the GIF through the global Coil loader (AnimatedImageDecoder).
+ * - Still, or not allowed to play (Animated Images): draws [CustomIcon.firstFrame] through
+ *   [OverrideGlyphSurface] — the icon-legibility matte applies, exactly as theme icons draw.
+ * - Animated and allowed to play: streams the GIF through ArtworkImage, which also holds it
+ *   still while it is off screen.
  *
  * The matte asymmetry is DELIBERATE, not an oversight: the legibility matte applies to the
  * still frame but not to a playing animation. Deriving a matte per GIF frame would re-run the
@@ -38,12 +38,22 @@ fun CustomIconSurface(
     colorFilter: ColorFilter? = null,
 ) {
     val drawn = if (colorFilter == null) modifier else modifier.colorFilterLayer(colorFilter)
-    if (icon is CustomIcon.Animated && LocalIconAnimating.current) {
-        AsyncImage(
+    // Animated Images decides whether this icon could play for its focus; ArtworkImage then holds
+    // it still while it is off screen. An icon that could never play right now skips the decoder
+    // and draws its stored first frame.
+    val focused = com.playfieldportal.core.ui.motion.LocalIconFocused.current
+    val mayPlay = com.playfieldportal.core.ui.motion.LocalImageMotion.current.shouldAnimate(
+        onScreen = true,
+        focused = focused,
+        allowed = com.playfieldportal.core.ui.motion.LocalMotionAllowed.current,
+    )
+    if (icon is CustomIcon.Animated && mayPlay) {
+        com.playfieldportal.core.ui.motion.ArtworkImage(
             model = icon.path,
             contentDescription = contentDescription,
             contentScale = ContentScale.Fit,
             modifier = drawn,
+            focused = focused,
         )
     } else {
         OverrideGlyphSurface(

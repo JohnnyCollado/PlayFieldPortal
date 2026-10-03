@@ -1,17 +1,100 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.core.domain.model.BackgroundTaskInfo
+import com.playfieldportal.core.domain.model.NotificationDepth
+import com.playfieldportal.core.domain.model.PfpNotification
+import com.playfieldportal.feature.xmb.ui.NotificationRow
+import com.playfieldportal.feature.xmb.ui.buildNotificationRows
+import com.playfieldportal.feature.xmb.ui.clampCursor
+import com.playfieldportal.feature.xmb.ui.notificationAt
+import com.playfieldportal.feature.xmb.ui.runningAt
 
 /**
  * The notification panel, open. Null on [XMBUiState] means closed.
  *
- * Only the cursor lives here: the two lists it draws are already on [XMBUiState]
- * ([XMBUiState.runningTasks] in memory, [XMBUiState.notifications] from Room), so opening the
- * panel never snapshots them and a task that settles while it is open updates the panel in place.
+ * The two lists it draws are already on [XMBUiState] ([XMBUiState.runningTasks] in memory,
+ * [XMBUiState.notifications] from Room), so opening the panel never snapshots them and a task that
+ * settles while it is open updates the panel in place. What lives here is what is layered over it:
+ * the cursor, the open Notes/Results sheet and the Stop confirm. The sheets' own filter, cursor and
+ * scroll live in the shell's modal host.
  */
 data class NotificationPanelState(
     /** Index into the built row list, or -1 when nothing in the panel is actionable. */
     val cursor: Int = -1,
+    /** The row whose Notes or Results sheet is open over the panel. BACK returns to the panel. */
+    val sheetNotificationId: Long? = null,
+    /** The Stop confirm for a running task, open over the panel. */
+    val stopConfirm: StopConfirmState? = null,
+) {
+    /** True while a sheet or the Stop confirm is up: presses go to the shell's modal host. */
+    val hasLayer: Boolean get() = sheetNotificationId != null || stopConfirm != null
+
+    /**
+     * This panel after the lists changed under it: the cursor stays on a selectable row, a sheet
+     * whose row was cleared closes, and a Stop confirm closes once its task settled or began stopping.
+     */
+    fun reconcile(running: List<BackgroundTaskInfo>, history: List<PfpNotification>): NotificationPanelState {
+        val rows = buildNotificationRows(running, history)
+        val stopTask = stopConfirm?.let { s -> running.firstOrNull { it.id == s.taskId } }
+        return copy(
+            cursor = rows.clampCursor(cursor),
+            sheetNotificationId = sheetNotificationId?.takeIf { id -> history.any { it.id == id } },
+            stopConfirm = stopConfirm?.takeIf { stopTask != null && stopTask.stoppable && !stopTask.stopping },
+        )
+    }
+}
+
+/** The Stop confirm's words, fixed when it opens. */
+data class StopConfirmState(
+    val taskId: String,
+    val title: String,
+    val message: String,
 )
+
+/** Builds the Stop confirm for [task]: what is done so far and what the producer promises to keep. */
+fun stopConfirmFor(task: BackgroundTaskInfo): StopConfirmState {
+    val keep = task.stopNote ?: "Work done so far is kept."
+    val current = task.current
+    val total = task.total
+    val done = if (current != null && total != null && total > 0) "$current of $total are done. " else ""
+    return StopConfirmState(
+        taskId = task.id,
+        title = "Stop \"${task.label.trimEnd('…', '.', ' ')}\"?",
+        message = done + keep,
+    )
+}
+
+/** What Confirm on the panel does with the row under the cursor. */
+sealed interface PanelConfirm {
+    /** A Notes or Results row: open its sheet (and mark it read). */
+    data class OpenSheet(val notificationId: Long) : PanelConfirm
+
+    /** A Simple row: mark it read and go where it points. */
+    data class RunAction(val notification: PfpNotification) : PanelConfirm
+
+    /** A stoppable running row: ask before stopping it. */
+    data class AskStop(val state: StopConfirmState) : PanelConfirm
+
+    data object Nothing : PanelConfirm
+}
+
+fun panelConfirm(rows: List<NotificationRow>, cursor: Int): PanelConfirm {
+    rows.runningAt(cursor)?.let { return PanelConfirm.AskStop(stopConfirmFor(it)) }
+    val notification = rows.notificationAt(cursor) ?: return PanelConfirm.Nothing
+    return when (notification.depth) {
+        NotificationDepth.SIMPLE -> PanelConfirm.RunAction(notification)
+        NotificationDepth.NOTES, NotificationDepth.RESULTS -> PanelConfirm.OpenSheet(notification.id)
+    }
+}
+
+/** What the cursor is on, for the hint pill: Open on history, Stop on a running row. */
+enum class PanelSelection { NONE, HISTORY, RUNNING }
+
+fun panelSelection(rows: List<NotificationRow>, cursor: Int): PanelSelection = when {
+    rows.runningAt(cursor) != null -> PanelSelection.RUNNING
+    rows.notificationAt(cursor) != null -> PanelSelection.HISTORY
+    else -> PanelSelection.NONE
+}
 
 /** What a START press means once the pickers and the context menu have had their turn. */
 enum class StartOutcome {

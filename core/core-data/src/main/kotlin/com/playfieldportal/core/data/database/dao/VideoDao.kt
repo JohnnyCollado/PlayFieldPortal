@@ -87,9 +87,26 @@ interface VideoDao {
     suspend fun setFavorite(id: String, favorite: Boolean)
 
     // Replaces a single library's videos atomically; other libraries are never touched.
+    //
+    // What the user owns — resume point, favourite, title, custom thumbnail — is taken from the row
+    // as it stands NOW, not from the scan: the scanner copied those when it started, and anything
+    // watched, favourited or renamed during a minutes-long scan would otherwise be written over.
     @Transaction
     suspend fun replaceForLibrary(libraryId: String, videos: List<VideoEntity>) {
+        val live = getForLibrary(libraryId).associateBy { it.id }
         deleteForLibrary(libraryId)
-        if (videos.isNotEmpty()) insertAll(videos)
+        if (videos.isEmpty()) return
+        insertAll(
+            videos.map { scanned ->
+                val current = live[scanned.id] ?: return@map scanned
+                scanned.copy(
+                    title = current.title,
+                    customThumbnailUri = current.customThumbnailUri,
+                    resumePositionMs = current.resumePositionMs,
+                    lastWatchedAt = current.lastWatchedAt,
+                    isFavorite = current.isFavorite,
+                )
+            }
+        )
     }
 }

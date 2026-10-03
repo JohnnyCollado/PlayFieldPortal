@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -33,6 +35,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -41,6 +44,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -64,15 +68,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -82,6 +89,15 @@ import com.playfieldportal.core.ui.components.ControllerHintBar
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.gesture.dragToScroll
+import com.playfieldportal.core.ui.keyboard.InputSource
+import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
+import com.playfieldportal.core.ui.keyboard.LocalVirtualKeyboard
+import com.playfieldportal.core.ui.keyboard.SuppressPlatformKeyboard
+import com.playfieldportal.core.ui.keyboard.TextInputMode
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardHintBar
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardPanel
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardRequest
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardSession
 import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.theme.LocalPFPColors
@@ -100,12 +116,6 @@ val LocalSettingsTouchInput = compositionLocalOf<() -> Unit> { {} }
 /** Host-level touch callback used by the fullscreen settings hint gate. */
 val LocalSettingsHostTouchInput = compositionLocalOf<() -> Unit> { {} }
 val LocalSettingsShowControllerHint = compositionLocalOf { false }
-/**
- * Settings ▸ Controller ▸ Left Backs Out. When on, D-pad LEFT on a row that has no inline actions
- * leaves the screen instead of doing nothing. Defaults to true, matching the stored preference, so
- * previews and tests behave like the app.
- */
-val LocalSettingsLeftBacksOut = compositionLocalOf { true }
 
 /**
  * Whether the user's most recent input anywhere in the app was touch (mirrored from
@@ -218,7 +228,7 @@ val SettingsSubtext: Color
 // Directional drop shadow for text over the translucent backdrop: the settings scrim is a
 // translucent theme gradient (the wallpaper reads through BY DESIGN), so flat gray helper text
 // washes out wherever the wallpaper is bright. The repo's standard black drop shadow
-// (PspContextMenu, ControllerHintBar, DetailContextMenu) restores separation without hiding
+// (PspContextMenu, ControllerHintBar) restores separation without hiding
 // the wallpaper behind a heavier scrim.
 val SettingsTextShadow = Shadow(
     color = Color.Black.copy(alpha = 0.75f),
@@ -250,14 +260,39 @@ val SettingsDefaultHelperItems = listOf(
  * row geometry never change when the helper appears or disappears. The wizard may still provide
  * its own themed footer through the scaffold's chrome override.
  */
+/** The open footer-placed keyboard session, if a field on this screen is typing on PFP's keyboard. */
+@Composable
+private fun footerKeyboardSession(): VirtualKeyboardSession? =
+    LocalVirtualKeyboard.current?.session?.collectAsState()?.value
+        ?.takeIf { it.placement == KeyboardPlacement.SETTINGS_FOOTER }
+
+/**
+ * A field typing on PFP's keyboard: the footer band grows to hold the panel, and the keyboard's
+ * own prompts replace the screen's (Virtual Keyboard plan section 4). Replaces the wizard's
+ * themed footer the same way it replaces the standard helper.
+ */
+@Composable
+private fun KeyboardFooterBand(session: VirtualKeyboardSession) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .focusProperties { canFocus = false },
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        HorizontalDivider(color = SettingsDivider)
+        Spacer(Modifier.height(12.dp))
+        VirtualKeyboardPanel(session.keyboard)
+        Spacer(Modifier.height(8.dp))
+        VirtualKeyboardHintBar()
+        Spacer(Modifier.height(12.dp))
+    }
+}
+
 @Composable
 private fun SettingsHelperFooter(items: List<ControllerPromptItem>) {
     val showHint = LocalSettingsShowControllerHint.current
-    val alpha by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (showHint) 1f else 0f,
-        animationSpec = androidx.compose.animation.core.tween(200),
-        label = "settingsHelperFooter",
-    )
+    // The XMB pill's timing: fades in after the idle delay, gone the instant a button is pressed.
+    val alpha = com.playfieldportal.core.ui.components.idleHintAlpha(showHint)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -294,6 +329,11 @@ fun SettingsScaffold(
     // Return true to consume the action (suppresses back/select/focus movement).
     // Used by ControllerSettingsScreen to capture button presses during remap mode.
     onInterceptAction: ((GamepadAction) -> Boolean)? = null,
+    // True while the screen shows a modal over this scaffold (PfpTextEntryModal / PfpConfirmModal),
+    // driven through [onInterceptAction]. The modal may hold Compose focus — its text field has the
+    // keyboard — so while this is set a controller press does not pull focus back to the cursor's
+    // row, and when it clears the row takes focus again so the cursor is where it was left.
+    modalOpen: Boolean = false,
     onTouchInput: () -> Unit = {},
     // ── Chrome overrides — the first-run wizard's PSP skin (see WizardScaffold) ──
     // Replaces the ◀ breadcrumb header (the wizard draws a step badge + title instead).
@@ -315,8 +355,6 @@ fun SettingsScaffold(
     contentKey: Any? = null,
     content: @Composable () -> Unit,
 ) {
-    // Settings ▸ Controller ▸ Left Backs Out, supplied by SettingsNavHost from the XMB's state.
-    val leftBacksOut = LocalSettingsLeftBacksOut.current
     // Voices this screen's cursor. The settings layer navigates in composition rather than in a
     // ViewModel, so the cue for a move or a back lives here, beside the move itself. The cue for
     // ACTIVATING something deliberately does not: it lives on the row that owns the action (see
@@ -554,6 +592,19 @@ fun SettingsScaffold(
         }
     }
 
+    // A modal that held focus has closed: hand it back to the cursor's row. A frame later, so the
+    // modal's field has left composition and released focus first.
+    var modalWasOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(modalOpen) {
+        if (modalOpen) {
+            modalWasOpen = true
+        } else if (modalWasOpen) {
+            modalWasOpen = false
+            withFrameNanos { }
+            requestFocusFor(navigationState.focusedKey)
+        }
+    }
+
     LaunchedEffect(pendingAction) {
         if (pendingAction == null) return@LaunchedEffect
         // Every controller action is a source transition, including actions intercepted by a
@@ -579,7 +630,7 @@ fun SettingsScaffold(
             touchScrolled.value = false
         }
         val focusedKey = navigationState.focusedKey
-        if (focusedKey != null) {
+        if (focusedKey != null && !modalOpen) {
             requestFocusFor(focusedKey)
         }
         Timber.d("Settings focus: action=$pendingAction focusedClick=${focusedRowClick.value != null}")
@@ -668,22 +719,12 @@ fun SettingsScaffold(
                 requestFocusFor(target)
             }
             // Inline trailing actions (e.g. a root row's Replace/Remove buttons) are reached
-            // horizontally. On a row without them moveHorizontal returns null — LEFT was a silent
-            // no-op there — so that null is the signal the fallthrough wants: LEFT leaves the
-            // screen (or, in the wizard, steps back a page), the direction the drill-in implies.
-            //
-            // Everything that already uses LEFT runs EARLIER and never reaches here: slider adjust
-            // mode above, and a screen's own onInterceptAction (remap capture, Themes, Sound).
+            // horizontally. On a row without them LEFT is a silent no-op: it never leaves a
+            // settings screen (Left Backs Out is an XMB-only preference) — only BACK does.
             GamepadAction.NAVIGATE_LEFT -> {
-                val target = navigationState.moveHorizontal(-1)
-                if (target != null) {
+                navigationState.moveHorizontal(-1)?.let {
                     menuSounds.play(MenuSound.SCROLL)
-                    requestFocusFor(target)
-                } else if (leftBacksOut) {
-                    // LEFT that backs out IS a back, so it sounds like one rather than like a move
-                    // — the same split the XMB makes when LEFT leaves a drill-in.
-                    menuSounds.play(MenuSound.BACK)
-                    onBack()
+                    requestFocusFor(it)
                 }
             }
 
@@ -713,6 +754,9 @@ fun SettingsScaffold(
                 menuSounds.play(MenuSound.BACK)
                 onBack()
             }
+            // Triangle is the controller's long press: it runs the focused row's own onLongPress
+            // (which opens that row's menu and voices itself). A row without one does nothing.
+            GamepadAction.OPEN_CONTEXT_MENU -> navigationState.longPressFocused()
 
             else -> Unit
         }
@@ -964,7 +1008,10 @@ fun SettingsScaffold(
                         .fillMaxWidth()
                         .dragToScroll(contentScrollState.value),
                 ) {
-                    if (footer != null) {
+                    val keyboardSession = footerKeyboardSession()
+                    if (keyboardSession != null) {
+                        KeyboardFooterBand(keyboardSession)
+                    } else if (footer != null) {
                         // Footer chrome (Enter / Back prompts) is display-only — never a focus
                         // target, so UP on the first content row cannot land inside it.
                         Column(
@@ -975,7 +1022,17 @@ fun SettingsScaffold(
                             footer()
                         }
                     } else {
-                        SettingsHelperFooter(helperFooterItems)
+                        // "Options" joins the prompts while the cursor is on a row with a menu.
+                        val prompts = helperFooterItems.ifEmpty { SettingsDefaultHelperItems }
+                        val offersOptions = navigationState.focusedHasLongPress &&
+                            prompts.none { GamepadAction.OPEN_CONTEXT_MENU in it.actions }
+                        SettingsHelperFooter(
+                            if (offersOptions) {
+                                prompts + ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options")
+                            } else {
+                                prompts
+                            },
+                        )
                     }
                 }
             }
@@ -1321,8 +1378,10 @@ fun SettingsValueRow(
 
 // Confirm-to-edit text field for controller navigation. Navigating onto the field only
 // highlights it (read-only, no keyboard); pressing SELECT (A) — or tapping, for touch —
-// enters edit mode and opens the keyboard. IME "Done", or focus leaving the field, exits
-// edit mode. This keeps the keyboard from popping up just by scrolling past the field.
+// enters edit mode. A controller-started edit types on PFP's virtual keyboard in the footer
+// (Settings ▸ Controller ▸ Virtual Keyboard, on by default); a tap, or the setting off, opens the
+// system keyboard as before. Done, BACK on the keyboard, IME "Done", or focus leaving the field
+// exits edit mode. This keeps a keyboard from popping up just by scrolling past the field.
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun SettingsTextFieldRow(
@@ -1341,14 +1400,55 @@ fun SettingsTextFieldRow(
 ) {
     val focusTracker = LocalSettingsFocusTracker.current
     val keyboard = LocalSoftwareKeyboardController.current
+    val virtualKeyboard = LocalVirtualKeyboard.current
     val reportFocused = LocalSettingsReportFocused.current
     val menuSounds = LocalMenuSounds.current
+    val bringIntoView = remember { BringIntoViewRequester() }
     var editing by remember { mutableStateOf(false) }
+    // The open virtual-keyboard session's token, or null while the system keyboard (or none) has
+    // the edit. Non-null exactly while PFP's keyboard is typing into this field.
+    var sessionToken by remember { mutableStateOf<Long?>(null) }
+    // The field's own value with its caret, so the virtual keyboard can place the caret.
+    var fieldValue by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
+    if (fieldValue.text != value) {
+        // The host changed the text (or a keystroke landed): keep the caret, clamped.
+        fieldValue = fieldValue.copy(text = value, selection = TextRange(fieldValue.selection.end.coerceAtMost(value.length)))
+    }
+    val currentValue by rememberUpdatedState(value)
+    val currentOnValueChange by rememberUpdatedState(onValueChange)
+
+    fun endEditing() {
+        editing = false
+        sessionToken?.let { virtualKeyboard?.release(it) }
+        sessionToken = null
+    }
 
     // Entering edit mode is this row's activation — it is what SELECT and a tap both do here — so
-    // it gets the ordinary activation cue. Leaving it stays silent: the IME owns that moment, and
-    // focus can leave the field without any press at all.
-    val beginEditing: () -> Unit = { menuSounds.play(MenuSound.SELECT); editing = true }
+    // it gets the ordinary activation cue. Leaving it stays silent: the keyboard owns that moment,
+    // and focus can leave the field without any press at all.
+    val beginTouchEditing: () -> Unit = { menuSounds.play(MenuSound.SELECT); editing = true }
+    val beginControllerEditing: () -> Unit = {
+        menuSounds.play(MenuSound.SELECT)
+        editing = true
+        if (virtualKeyboard?.modeFor(InputSource.CONTROLLER) == TextInputMode.VIRTUAL) {
+            fieldValue = fieldValue.copy(selection = TextRange(currentValue.length))
+            sessionToken = virtualKeyboard.open(
+                VirtualKeyboardRequest(
+                    text = currentValue,
+                    placement = KeyboardPlacement.SETTINGS_FOOTER,
+                    isPassword = isPassword,
+                    onTextChange = { text, caret ->
+                        fieldValue = TextFieldValue(text, TextRange(caret))
+                        currentOnValueChange(text)
+                    },
+                    onCaretChange = { caret -> fieldValue = fieldValue.copy(selection = TextRange(caret)) },
+                    onDone = { sessionToken = null; editing = false },
+                    onClose = { sessionToken = null; editing = false },
+                ),
+            )
+        }
+    }
+    val usingVirtualKeyboard = sessionToken != null
 
     // Always focusable so this field can be the screen's initial-focus target (a screen that
     // starts with a text field still opens with it highlighted, read-only). Registration is
@@ -1360,7 +1460,7 @@ fun SettingsTextFieldRow(
         claimInitialFocus = true,
         selectable = enabled,
         enabled = enabled,
-        onSelect = beginEditing,
+        onSelect = beginControllerEditing,
     )
     val fr = row.focusRequester
 
@@ -1368,21 +1468,36 @@ fun SettingsTextFieldRow(
     // opens it, because the field stays read-only until SELECT/tap flips `editing`.
     // The readOnly -> editable flip restarts the field's text-input session asynchronously, so
     // show() in the same frame silently no-ops (the field looks dead on a controller). Settle a
-    // frame, re-assert focus on the now-editable field, settle again, then show the keyboard.
-    LaunchedEffect(editing) {
+    // frame, re-assert focus on the now-editable field, settle again, then show the keyboard —
+    // the system one, unless PFP's is typing (its session request is then held, see below).
+    // Keyed on both: a tap mid-edit drops the virtual session, and the system keyboard must then
+    // be asked for explicitly — releasing the held request alone does not raise it (T4 finding).
+    LaunchedEffect(editing, usingVirtualKeyboard) {
         if (editing) {
             withFrameNanos { }
             runCatching { fr.requestFocus() }
             withFrameNanos { }
-            keyboard?.show()
+            if (usingVirtualKeyboard) {
+                // The footer has grown under the field: frame the field above it.
+                withFrameNanos { }
+                bringIntoView.bringIntoView()
+            } else {
+                keyboard?.show()
+            }
         } else {
             keyboard?.hide()
         }
     }
 
+    // A field leaving composition mid-edit takes its keyboard session with it.
+    DisposableEffect(virtualKeyboard) {
+        onDispose { sessionToken?.let { virtualKeyboard?.release(it) } }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .bringIntoViewRequester(bringIntoView)
             .padding(horizontal = 48.dp, vertical = 8.dp)
             .then(row.positionReporting),
     ) {
@@ -1393,42 +1508,62 @@ fun SettingsTextFieldRow(
             style = TextStyle(shadow = SettingsTextShadow),
             modifier = Modifier.padding(bottom = 4.dp)
         )
-        Box {
-            OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                enabled = enabled,
-                readOnly = !editing,
-                singleLine = singleLine,
-                placeholder = { Text(placeholder, color = SettingsSubtext) },
-                visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = if (isPassword) KeyboardType.Password else KeyboardType.Text,
-                    imeAction = if (singleLine) ImeAction.Done else ImeAction.Default,
-                ),
-                keyboardActions = KeyboardActions(onDone = { editing = false }),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = SettingsText,
-                    unfocusedTextColor = SettingsText,
-                    focusedBorderColor = SettingsAccent,
-                    unfocusedBorderColor = SettingsDivider,
-                    cursorColor = SettingsAccent,
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(fr)
-                    .onFocusChanged { state ->
-                        if (state.isFocused) {
-                            // Controller SELECT over the field starts editing (opens the keyboard).
-                            focusTracker(beginEditing)
-                            reportFocused(fr)
-                        } else {
-                            editing = false
-                        }
+        Box(
+            // A tap while PFP's keyboard types hands the edit to the system keyboard. Observed on
+            // the Initial pass and never consumed, so the field still places its caret where the
+            // finger lands.
+            modifier = Modifier.pointerInput(virtualKeyboard) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    sessionToken?.let { token ->
+                        virtualKeyboard?.handOverToSystemKeyboard(token)
+                        sessionToken = null
+                    }
+                }
+            },
+        ) {
+            // While PFP's keyboard types, the field's own input-session request is held, so the
+            // system keyboard stays down while the field keeps its focus and caret (T4).
+            SuppressPlatformKeyboard(active = usingVirtualKeyboard) {
+                OutlinedTextField(
+                    value = fieldValue,
+                    onValueChange = { next ->
+                        fieldValue = next
+                        if (next.text != currentValue) currentOnValueChange(next.text)
                     },
-            )
+                    enabled = enabled,
+                    readOnly = !editing,
+                    singleLine = singleLine,
+                    placeholder = { Text(placeholder, color = SettingsSubtext) },
+                    visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = if (isPassword) KeyboardType.Password else KeyboardType.Text,
+                        imeAction = if (singleLine) ImeAction.Done else ImeAction.Default,
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { endEditing() }),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = SettingsText,
+                        unfocusedTextColor = SettingsText,
+                        focusedBorderColor = SettingsAccent,
+                        unfocusedBorderColor = SettingsDivider,
+                        cursorColor = SettingsAccent,
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(fr)
+                        .onFocusChanged { state ->
+                            if (state.isFocused) {
+                                // Controller SELECT over the field starts editing.
+                                focusTracker(beginControllerEditing)
+                                reportFocused(fr)
+                            } else {
+                                endEditing()
+                            }
+                        },
+                )
+            }
             // While not editing, a non-focusable tap layer lets touch users enter edit mode
             // (a read-only field ignores taps). pointerInput adds no focus target, so it never
             // interferes with controller D-pad traversal.
@@ -1436,7 +1571,7 @@ fun SettingsTextFieldRow(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .pointerInput(Unit) { detectTapGestures { beginEditing() } },
+                        .pointerInput(Unit) { detectTapGestures { beginTouchEditing() } },
                 )
             }
         }

@@ -15,10 +15,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.components.PfpModalSpec
 
 // ── Shared, controller-navigable "Add to Collection" picker ──────────────────
 // Used by both the console Game Detail and the Android App Detail screens. The owning
@@ -43,8 +41,9 @@ data class CollectionPickerUi(
     val options: List<CollectionPickerOption> = emptyList(),
     // 0..options.size — the last index (== options.size) is the "Create New Collection" row.
     val selectedIndex: Int = 0,
+    // The New Collection name entry is up. The host screen shows it as the shared text entry modal
+    // (see collectionNameModalSpec), which owns the text being typed.
     val showCreateDialog: Boolean = false,
-    val createText: String = "",
 ) {
     val rowCount: Int get() = options.size + 1
     val isCreateRow: Boolean get() = selectedIndex >= options.size
@@ -60,9 +59,6 @@ fun CollectionPickerPanel(
     ui: CollectionPickerUi,
     onRowClick: (Int) -> Unit,
     onClose: () -> Unit,
-    onCreateTextChanged: (String) -> Unit,
-    onConfirmCreate: () -> Unit,
-    onCancelCreate: () -> Unit,
 ) {
     Box(
         Modifier.fillMaxSize().background(Color(0xCC000000)).clickable(onClick = onClose),
@@ -79,7 +75,7 @@ fun CollectionPickerPanel(
                 .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text("Add to Collection", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text("Add to Card", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Text(
                 "Up/Down  Navigate  •  Select  Toggle  •  B  Close",
                 color = TextMuted.copy(alpha = 0.5f),
@@ -100,7 +96,7 @@ fun CollectionPickerPanel(
                 }
                 // Final row — create a brand-new collection.
                 PickerRow(
-                    label = "＋  Create New Collection",
+                    label = "＋  New Custom Memory Card",
                     trailingCheck = false,
                     isFocused = ui.isCreateRow,
                     onClick = { onRowClick(ui.options.size) },
@@ -108,7 +104,7 @@ fun CollectionPickerPanel(
 
                 if (ui.options.isEmpty()) {
                     Text(
-                        "No collections yet — create one to get started.",
+                        "No custom memory cards yet — create one to get started.",
                         color = TextMuted,
                         fontSize = 12.sp,
                         modifier = Modifier.padding(top = 4.dp, start = 4.dp),
@@ -117,24 +113,23 @@ fun CollectionPickerPanel(
             }
         }
     }
-
-    if (ui.showCreateDialog) {
-        AlertDialog(
-            onDismissRequest = onCancelCreate,
-            title = { Text("New Collection") },
-            text = {
-                OutlinedTextField(
-                    value = ui.createText,
-                    onValueChange = onCreateTextChanged,
-                    singleLine = true,
-                    placeholder = { Text("e.g. RPGs, Currently Playing") },
-                )
-            },
-            confirmButton = { TextButton(onClick = onConfirmCreate) { Text("Create") } },
-            dismissButton = { TextButton(onClick = onCancelCreate) { Text("Cancel") } },
-        )
-    }
 }
+
+/**
+ * The picker's New Collection name entry, as the shared text entry modal — the one spec both
+ * screens that host the picker show, so the prompt reads the same from Game Detail and App Detail.
+ */
+fun collectionNameModalSpec(
+    onCreate: (String) -> Unit,
+    onCancel: () -> Unit,
+): PfpModalSpec.TextEntry = PfpModalSpec.TextEntry(
+    key = "new_collection",
+    title = "New Custom Memory Card",
+    placeholder = "e.g. RPGs, Currently Playing",
+    confirmLabel = "Create",
+    onConfirm = onCreate,
+    onCancel = onCancel,
+)
 
 @Composable
 private fun PickerRow(

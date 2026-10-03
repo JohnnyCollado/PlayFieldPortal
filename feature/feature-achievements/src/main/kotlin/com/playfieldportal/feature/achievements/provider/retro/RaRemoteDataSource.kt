@@ -192,8 +192,8 @@ class RaRemoteDataSource @Inject constructor(
      * callers can tell "couldn't load" apart from "this console genuinely has no games" — a
      * failure returned as empty used to get cached and mask every later lookup.
      */
-    // Opt-in to the library's "cache this endpoint" advisory: RaHashResolver caches every successful
-    // result per console for the process, so this is called at most once per console.
+    // The library asks callers of this endpoint to cache it; RaHashResolver keeps every
+    // successful catalog for the process, so each console is fetched once.
     @OptIn(org.retroachivements.api.core.RequiresCache::class)
     suspend fun gameCatalog(consoleId: Int): List<RaCatalogGame>? {
         val session = clientFactory.session() ?: run {

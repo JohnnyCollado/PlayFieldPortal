@@ -32,6 +32,7 @@ import kotlin.test.assertTrue
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
+// SingletonImageLoader.reset() is Coil's delicate API: fine here, where each test owns the singleton.
 @OptIn(coil3.annotation.DelicateCoilApi::class)
 class ArtworkImageCacheTest {
 
@@ -43,7 +44,11 @@ class ArtworkImageCacheTest {
     fun setUp() {
         SingletonImageLoader.reset()
         // The real provider from the Hilt module — the test asserts against the shipped config.
-        configuredLoader = ArtworkModule.provideCoilImageLoader(context)
+        // No draw-time crops: the index reads an empty table, so every load passes straight through.
+        val noCrops = com.playfieldportal.feature.artwork.store.DrawCropIndex(
+            io.mockk.mockk { io.mockk.every { observeDrawCrops() } returns kotlinx.coroutines.flow.flowOf(emptyList()) },
+        )
+        configuredLoader = ArtworkModule.provideCoilImageLoader(context, noCrops)
         cache = ArtworkImageCache(Provider { configuredLoader })
         cache.installAsSingleton()
     }

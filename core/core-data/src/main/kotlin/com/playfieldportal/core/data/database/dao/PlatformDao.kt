@@ -35,6 +35,13 @@ interface PlatformDao {
     @Query("UPDATE platforms SET preferred_emulator_package = :packageName WHERE id = :id")
     suspend fun setPreferredEmulator(id: String, packageName: String?)
 
+    /** Moves every platform preference from the retired id [old] to [new]; returns the rows changed. */
+    @Query("UPDATE platforms SET preferred_emulator_package = :new WHERE preferred_emulator_package = :old")
+    suspend fun renamePreferredEmulator(old: String, new: String): Int
+
+    @Query("UPDATE platforms SET rom_extensions = :csv WHERE id = :id")
+    suspend fun setRomExtensions(id: String, csv: String)
+
     // Returns distinct platform IDs that have at least one game
     @Query("SELECT DISTINCT platform_id FROM games")
     fun observeActivePlatformIds(): Flow<List<String>>

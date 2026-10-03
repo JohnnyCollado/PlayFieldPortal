@@ -242,7 +242,10 @@ class ArtworkImportPlanner @Inject constructor(
         val ref = when (kindName) {
             ArtworkKind.ICON.name -> game.iconUri
             ArtworkKind.HERO.name -> game.heroUri
-            ArtworkKind.BACKGROUND.name -> game.artworkUri
+            // A background that is only the hero standing in is not one of the game's own, so an
+            // imported fanart file is still wanted — the same rule the relink walk applies.
+            ArtworkKind.BACKGROUND.name ->
+                game.artworkUri.takeUnless { RelinkBackgroundRule.isHeroStandIn(it, game.heroUri) }
             ArtworkKind.LOGO.name -> game.logoUri
             else -> return Need.MISSING
         }

@@ -62,6 +62,9 @@ data class ArtworkSettingsUiState(
         com.playfieldportal.core.domain.model.IconDisplayMode.DEFAULT,
     // ICON1 video snaps in the focused icon slot (Custom Icon mode only).
     val animatedIcons: Boolean = true,
+    // Animated Images: how GIF / animated WebP artwork, custom icons and wallpapers play.
+    val imageMotion: com.playfieldportal.core.domain.model.ImageMotion =
+        com.playfieldportal.core.domain.model.ImageMotion.DEFAULT,
     // How long the cursor must rest on a game before its video snap plays (Video Snap Delay,
     // under the Animated Icons toggle). Seconds, clamped 1..5; default 1.5 matches the PSP.
     val icon1LingerDelaySeconds: Float = 1.5f,
@@ -107,6 +110,11 @@ class ArtworkSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             iconDisplayPreferences.animatedIconsFlow.collect { enabled ->
                 _extra.update { it.copy(animatedIcons = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            iconDisplayPreferences.imageMotionFlow.collect { motion ->
+                _extra.update { it.copy(imageMotion = motion) }
             }
         }
         viewModelScope.launch {
@@ -445,6 +453,14 @@ class ArtworkSettingsViewModel @Inject constructor(
         val entries = com.playfieldportal.core.domain.model.IconDisplayMode.entries
         val next = entries[(entries.indexOf(_extra.value.iconDisplayMode) + 1) % entries.size]
         viewModelScope.launch { iconDisplayPreferences.setMode(next) }
+    }
+
+    /** Animated → Reduced → Static → Animated. */
+    fun cycleImageMotion() {
+        val entries = com.playfieldportal.core.domain.model.ImageMotion.entries
+        val next = entries[(entries.indexOf(_extra.value.imageMotion) + 1) % entries.size]
+        _extra.update { it.copy(imageMotion = next) }
+        viewModelScope.launch { iconDisplayPreferences.setImageMotion(next) }
     }
 
     fun setAnimatedIcons(enabled: Boolean) {

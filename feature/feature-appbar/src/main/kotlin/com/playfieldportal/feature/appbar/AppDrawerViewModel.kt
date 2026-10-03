@@ -3,13 +3,21 @@ package com.playfieldportal.feature.appbar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.components.PspMenuCue
+import com.playfieldportal.core.ui.components.PspMenuNav
+import com.playfieldportal.core.ui.components.PspMenuOutcome
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.sound.MenuSoundPlayer
+import com.playfieldportal.core.ui.sound.MenuSoundSink
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -28,12 +36,14 @@ enum class AppFilter(val label: String) {
     RECENT("Recently Used"),
 }
 
-// One row in an app's long-press mini menu.
-enum class AppMenuAction(val label: String) {
-    APP_INFO("App Info"),
-    MARK_GAME("Mark as Game"),
-    UNMARK_GAME("Unmark as Game"),
-    UNINSTALL("Uninstall"),
+/**
+ * A menu row the drawer cannot run itself: the XMB owns App Detail, the Card picker and the Favorite
+ * toggle (with its notification), so the screen forwards these up to it.
+ */
+sealed interface AppDrawerEvent {
+    data class EditDetails(val packageName: String) : AppDrawerEvent
+    data class AddToCard(val packageName: String, val label: String) : AppDrawerEvent
+    data class ToggleFavorite(val packageName: String, val label: String) : AppDrawerEvent
 }
 
 data class AppDrawerUiState(
@@ -48,25 +58,16 @@ data class AppDrawerUiState(
     // Flips false on the first d-pad action, revealing the cursor at the last touch position.
     val usingTouch: Boolean = false,
     val hasUsageAccess: Boolean = false,
-    // Long-press mini menu: the app it targets (null = closed) and the focused row.
+    // Long-press menu: the app it targets (null = closed) and its rows. Set together, and only once
+    // Favorite / Mark as Game are known, so the menu never changes under the cursor.
     val menuApp: InstalledApp? = null,
+    val menuRows: List<AppMenuEntry> = emptyList(),
     val menuIndex: Int = 0,
     // Uninstall guard rail: the app awaiting the in-app confirmation (null = no dialog).
     val confirmUninstall: InstalledApp? = null,
-    // True when the menu app is marked as a game (an android-platform GAME row exists for it).
-    val menuAppIsGame: Boolean = false,
     /** Per-filter app counts (unfiltered by search query) for the category rail. */
     val filterCounts: Map<AppFilter, Int> = emptyMap(),
-) {
-    // App Info for every app; Mark/Unmark as Game toggles library membership; Uninstall only
-    // for non-system apps (guard rail).
-    val menuActions: List<AppMenuAction>
-        get() = buildList {
-            add(AppMenuAction.APP_INFO)
-            add(if (menuAppIsGame) AppMenuAction.UNMARK_GAME else AppMenuAction.MARK_GAME)
-            if (menuApp?.isSystemApp == false) add(AppMenuAction.UNINSTALL)
-        }
-}
+)
 
 @HiltViewModel
 class AppDrawerViewModel @Inject constructor(
@@ -80,6 +81,12 @@ class AppDrawerViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(AppDrawerUiState())
     val uiState: StateFlow<AppDrawerUiState> = _uiState.asStateFlow()
+
+    private val _events = Channel<AppDrawerEvent>(Channel.BUFFERED)
+    val events: Flow<AppDrawerEvent> = _events.receiveAsFlow()
+
+    // Resolving the open menu's values; cancelled when the menu closes so a late result cannot reopen it.
+    private var menuJob: Job? = null
 
     init {
         loadApps()
@@ -163,17 +170,21 @@ class AppDrawerViewModel @Inject constructor(
     // ── Long-press mini menu ────────────────────────────────────────────────────
 
     fun openAppMenu(app: InstalledApp) {
-        menuSound.play(MenuSound.SELECT)
-        _uiState.update { it.copy(menuApp = app, menuIndex = 0, menuAppIsGame = false) }
-        // Resolve the Mark/Unmark row async; the menu is already visible.
-        viewModelScope.launch {
+        menuJob?.cancel()
+        // Favorite and Mark as Game come from the app's shortcut row. The menu is published only once
+        // they are read, so it opens with the right values instead of flipping a label under the cursor.
+        menuJob = viewModelScope.launch {
             val entry = gameRepository.getAppEntry(app.packageName)
             val isGame = entry != null &&
                 entry.platformId == ANDROID_PLATFORM_ID &&
                 entry.contentType == com.playfieldportal.core.domain.model.GameContentType.GAME
-            _uiState.update {
-                if (it.menuApp?.packageName == app.packageName) it.copy(menuAppIsGame = isGame) else it
-            }
+            val rows = appDrawerMenuItems(
+                isFavorite = entry?.isFavorite == true,
+                isGame = isGame,
+                isSystemApp = app.isSystemApp,
+            )
+            menuSound.play(MenuSound.SELECT)
+            _uiState.update { it.copy(menuApp = app, menuRows = rows, menuIndex = 0) }
         }
     }
 
@@ -183,20 +194,27 @@ class AppDrawerViewModel @Inject constructor(
         openAppMenu(app)
     }
 
-    fun closeAppMenu() = _uiState.update { it.copy(menuApp = null) }
+    fun closeAppMenu() {
+        menuJob?.cancel()
+        _uiState.update { it.copy(menuApp = null) }
+    }
 
-    fun onMenuAction(action: AppMenuAction) {
+    fun onMenuAction(row: AppMenuEntry) {
         val app = _uiState.value.menuApp ?: return
-        when (action) {
-            AppMenuAction.APP_INFO -> {
-                appRepository.openAppInfo(app.packageName)
-                _uiState.update { it.copy(menuApp = null) }
-            }
-            AppMenuAction.MARK_GAME   -> { setMarkedAsGame(app, marked = true);  _uiState.update { it.copy(menuApp = null) } }
-            AppMenuAction.UNMARK_GAME -> { setMarkedAsGame(app, marked = false); _uiState.update { it.copy(menuApp = null) } }
+        when (row.id) {
+            AppMenuIds.EDIT_DETAILS -> _events.trySend(AppDrawerEvent.EditDetails(app.packageName))
+            AppMenuIds.FAVORITE -> _events.trySend(AppDrawerEvent.ToggleFavorite(app.packageName, app.label))
+            AppMenuIds.ADD_TO_CARD -> _events.trySend(AppDrawerEvent.AddToCard(app.packageName, app.label))
+            AppMenuIds.APP_INFO -> appRepository.openAppInfo(app.packageName)
+            AppMenuIds.MARK_GAME -> setMarkedAsGame(app, marked = true)
+            AppMenuIds.UNMARK_GAME -> setMarkedAsGame(app, marked = false)
             // Guard rail: show an in-app confirmation before the system uninstall flow.
-            AppMenuAction.UNINSTALL -> _uiState.update { it.copy(menuApp = null, confirmUninstall = app) }
+            AppMenuIds.UNINSTALL -> {
+                _uiState.update { it.copy(menuApp = null, confirmUninstall = app) }
+                return
+            }
         }
+        _uiState.update { it.copy(menuApp = null) }
     }
 
     // Marking puts the app in the Android Memory Card as a real game (counts in All Games, joins
@@ -248,32 +266,33 @@ class AppDrawerViewModel @Inject constructor(
     fun handleGamepadAction(action: GamepadAction) {
         val state = _uiState.value
 
-        // Uninstall confirmation captures input first (SELECT confirms, anything else cancels).
+        // The uninstall confirm is the shared modal: the screen sends every press to its host, which
+        // opens on Cancel and owns the cursor. A press that still lands here only backs out — SELECT
+        // must never confirm, since it is the press that opened the prompt.
         state.confirmUninstall?.let {
-            when (action) {
-                GamepadAction.SELECT -> confirmUninstall()
-                else -> cancelUninstall()
-            }
+            if (action == GamepadAction.BACK) cancelUninstall()
             return
         }
 
-        // Mini menu captures input while open.
+        // The menu captures input while open. The shared PSP-panel rules: clamp, Triangle/Back
+        // close, and each row's own cue. BACK only pops the menu — XMBViewModel forwards BACK
+        // here, so it never closes the drawer while the menu is open.
         state.menuApp?.let {
-            val actions = state.menuActions
-            // Empty menuActions would make the modulo below divide by zero — park the cursor.
-            if (actions.isEmpty()) return
-            when (action) {
-                GamepadAction.NAVIGATE_UP   -> _uiState.update { s -> s.copy(menuIndex = (s.menuIndex - 1 + actions.size) % actions.size) }
-                GamepadAction.NAVIGATE_DOWN -> _uiState.update { s -> s.copy(menuIndex = (s.menuIndex + 1) % actions.size) }
-                GamepadAction.SELECT        -> onMenuAction(actions[state.menuIndex.coerceIn(0, actions.size - 1)])
-                // The options module holds controller focus while it's up; BACK is its close
-                // gesture and only pops the menu — XMBViewModel forwards BACK here, so it never
-                // closes the drawer while the menu is open (the drawer only closes on a BACK on
-                // the plain grid). Hold/Y and X dismiss the menu too, as before.
-                GamepadAction.BACK               -> closeAppMenu()
-                GamepadAction.OPEN_CONTEXT_MENU  -> closeAppMenu()
-                GamepadAction.CHANGE_SORT        -> closeAppMenu()
-                else -> Unit
+            val actions = state.menuRows
+            // X (Square) dismisses the menu too, as before; the panel's rules do not use it.
+            if (action == GamepadAction.CHANGE_SORT) {
+                menuSound.play(MenuSound.BACK)
+                closeAppMenu()
+                return
+            }
+            val index = state.menuIndex
+            when (val outcome = PspMenuNav.handle(
+                action, index, actions.size, depth = 0, actions.getOrNull(index)?.toPspMenuRow()?.cue ?: PspMenuCue.CONFIRM, MenuSoundSink { menuSound.play(it) },
+            )) {
+                is PspMenuOutcome.Moved -> _uiState.update { s -> s.copy(menuIndex = outcome.index) }
+                PspMenuOutcome.Activate -> actions.getOrNull(index)?.let(::onMenuAction)
+                PspMenuOutcome.Up, PspMenuOutcome.Close -> closeAppMenu()
+                PspMenuOutcome.Ignored -> Unit
             }
             return
         }

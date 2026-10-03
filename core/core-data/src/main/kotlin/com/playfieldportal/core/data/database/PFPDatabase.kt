@@ -121,8 +121,12 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         ArtworkOrphanFileEntity::class,
         GameStorefrontIdentityEntity::class,
         LocalSteamFolderEntity::class,
+        com.playfieldportal.core.data.database.entity.ListItemEntity::class,
+        com.playfieldportal.core.data.database.entity.ListSettingEntity::class,
+        com.playfieldportal.core.data.database.entity.UmdSlotEntity::class,
+        com.playfieldportal.core.data.database.entity.AppUsageEntity::class,
     ],
-    version = 51,
+    version = 55,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -163,6 +167,9 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun providerGameLinkDao(): ProviderGameLinkDao
     abstract fun achievementMatchNoteDao(): com.playfieldportal.core.data.database.dao.AchievementMatchNoteDao
     abstract fun achievementTrackingDao(): com.playfieldportal.core.data.database.dao.AchievementTrackingDao
+    abstract fun listStateDao(): com.playfieldportal.core.data.database.dao.ListStateDao
+    abstract fun umdSlotDao(): com.playfieldportal.core.data.database.dao.UmdSlotDao
+    abstract fun appUsageDao(): com.playfieldportal.core.data.database.dao.AppUsageDao
 
     companion object {
         const val DATABASE_NAME = "pfp_database"
@@ -1579,6 +1586,99 @@ abstract class PFPDatabase : RoomDatabase() {
                         PRIMARY KEY(app_id)
                     )
                     """.trimIndent()
+                )
+            }
+        }
+
+        /**
+         * v52 — `artwork_records.crop_at_draw`: animated art in a cropped slot keeps its original
+         * file and is framed while drawing. Defaults to 0, so every existing (baked) crop is left
+         * exactly as it is and nothing is cropped twice.
+         */
+        val MIGRATION_51_52 = object : Migration(51, 52) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE artwork_records ADD COLUMN crop_at_draw INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /**
+         * v53 — `games.is_disc_preferred`: the disc picked with Choose Disc, so a scan keeps it as
+         * the set's primary instead of re-deriving the primary from disc numbers. Defaults to 0: an
+         * existing primary cannot be told apart from a derived one, so none is treated as a pick.
+         */
+        val MIGRATION_52_53 = object : Migration(52, 53) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN is_disc_preferred INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /**
+         * v54 — per-list state. `list_items` holds a list's Custom order and its pinned games,
+         * `list_settings` its sort override, `umd_slots` the game inserted as a gaming column's
+         * UMD, and `app_usage` when an app was last launched from PFP. `category_items.added_at`
+         * backs Date Added inside a category. [ListStateBackfill] then re-homes collections whose
+         * category is gone and makes collection order per-category.
+         */
+        val MIGRATION_53_54 = object : Migration(53, 54) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS list_items (
+                        list_key TEXT NOT NULL,
+                        item_key TEXT NOT NULL,
+                        position INTEGER,
+                        pinned INTEGER NOT NULL,
+                        PRIMARY KEY(list_key, item_key)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_list_items_item_key ON list_items (item_key)")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS list_settings (
+                        list_key TEXT NOT NULL,
+                        sort_mode TEXT NOT NULL,
+                        PRIMARY KEY(list_key)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS umd_slots (
+                        column_id TEXT NOT NULL,
+                        game_id INTEGER NOT NULL,
+                        inserted_at INTEGER NOT NULL,
+                        PRIMARY KEY(column_id),
+                        FOREIGN KEY(column_id) REFERENCES categories(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS app_usage (
+                        package_name TEXT NOT NULL,
+                        last_launched_at INTEGER NOT NULL,
+                        launch_count INTEGER NOT NULL,
+                        PRIMARY KEY(package_name)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("ALTER TABLE category_items ADD COLUMN added_at INTEGER NOT NULL DEFAULT 0")
+                ListStateBackfill.run(db)
+            }
+        }
+
+        /**
+         * v55 — the Xbox 360 platform default moves to X360 Mobile's published application id,
+         * `emu.x360mobile.com` (Obtainium Emulation Pack v7.18.0). The seeded `emu.x360.mobile`
+         * matched no build, and an uninstalled platform default fails the launch rather than
+         * falling back, so the stale seed is rewritten. A default the user changed is kept.
+         */
+        val MIGRATION_54_55 = object : Migration(54, 55) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "UPDATE platforms SET preferred_emulator_package = 'emu.x360mobile.com' " +
+                        "WHERE id = 'x360' AND preferred_emulator_package = 'emu.x360.mobile'"
                 )
             }
         }

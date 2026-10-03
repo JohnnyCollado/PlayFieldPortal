@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.ui.components.PfpModalSpec
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -10,9 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -73,7 +72,6 @@ fun EmulatorsSettingsScreen(
             onMimeTypeChange      = viewModel::updateEditorMimeType,
             onUseFileUriChange    = viewModel::updateEditorUseFileUri,
             onUseSafUriChange     = viewModel::updateEditorUseSafUri,
-            onCustomCommandChange = viewModel::updateEditorCustomCommand,
             onNotesChange         = viewModel::updateEditorNotes,
             onIntentActionChange  = viewModel::updateEditorIntentAction,
             onIntentExtrasChange  = viewModel::updateEditorIntentExtras,
@@ -112,6 +110,24 @@ fun EmulatorsSettingsScreen(
         return
     }
 
+    val modal = rememberSettingsModal(
+        if (state.showResetConfirm) {
+            PfpModalSpec.Confirm(
+                key = "reset_emulator_config",
+                title = "Reset Emulator Configuration?",
+                message = "This will clear all auto-detected and custom emulator launch settings, " +
+                    "then restore bundled defaults.\n\n" +
+                    "Your game library, ROM paths, artwork, metadata, and save data are not affected.",
+                confirmLabel = "Reset",
+                destructive = true,
+                onConfirm = viewModel::confirmResetEmulatorConfig,
+                onCancel = viewModel::cancelResetEmulatorConfig,
+            )
+        } else {
+            null
+        },
+    )
+
     SettingsScaffold(
         title    = "Settings",
         subtitle = when (section) {
@@ -123,6 +139,8 @@ fun EmulatorsSettingsScreen(
         onBack          = onBack,
         modifier        = modifier,
         restoreFocusKey = state.returnFocusKey,
+        modalOpen       = modal.open,
+        onInterceptAction = modal.intercept,
     ) {
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
@@ -152,7 +170,7 @@ fun EmulatorsSettingsScreen(
                 SettingsGroup("Available (Not Installed)")
 
                 if (availableNonRetroArch.isEmpty()) {
-                    EmulatorHint("All bundled profiles are installed")
+                    EmulatorHint("Every known emulator is installed")
                 } else {
                     availableNonRetroArch.forEach { profile ->
                         EmulatorProfileRow(profile = profile, onEdit = null)
@@ -240,29 +258,7 @@ fun EmulatorsSettingsScreen(
         }
     }
 
-    if (state.showResetConfirm) {
-        AlertDialog(
-            onDismissRequest = viewModel::cancelResetEmulatorConfig,
-            title = { Text("Reset Emulator Configuration?") },
-            text  = {
-                Text(
-                    "This will clear all auto-detected and custom emulator launch settings, " +
-                    "then restore bundled defaults.\n\n" +
-                    "Your game library, ROM paths, artwork, metadata, and save data are not affected."
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = viewModel::confirmResetEmulatorConfig) {
-                    Text("Reset", color = UnavailableColor)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::cancelResetEmulatorConfig) {
-                    Text("Cancel")
-                }
-            },
-        )
-    }
+    modal.Content()
 }
 
 @Composable

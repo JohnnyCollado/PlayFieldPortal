@@ -219,4 +219,33 @@ class NotificationRepositoryTest {
         assertEquals(NotificationAction.OpenMemoryCard("psx"), row.action)
         assertNotNull(row.sourceKey)
     }
+
+    // ── Posting as read ───────────────────────────────────────────────────────
+
+    @Test
+    fun `a row posted as read lands read and adds nothing to the unread count`() = runTest {
+        repository.post(NotificationKind.SCAN, NotificationSeverity.WARNING, "Scan stopped", read = true)
+
+        val row = repository.observeAll().first().single()
+        assertEquals(clock, row.readAt)
+        assertEquals(0, repository.observeUnreadCount().first())
+    }
+
+    @Test
+    fun `a read post replacing an unread row on the same key leaves it read`() = runTest {
+        post("Scanning", sourceKey = "task:scan")
+        repository.post(NotificationKind.SCAN, NotificationSeverity.WARNING, "Scan stopped",
+            sourceKey = "task:scan", read = true)
+
+        val row = repository.observeAll().first().single()
+        assertEquals("Scan stopped", row.title)
+        assertTrue(row.isRead)
+    }
+
+    @Test
+    fun `a payload survives the round-trip through the row`() = runTest {
+        repository.post(NotificationKind.SCAN, NotificationSeverity.ERROR, "Failed", payload = """{"t":"notes"}""")
+
+        assertEquals("""{"t":"notes"}""", repository.observeAll().first().single().payload)
+    }
 }

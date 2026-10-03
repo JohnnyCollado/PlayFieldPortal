@@ -33,9 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
 import com.playfieldportal.core.ui.icons.ThemedGlyph
-import com.playfieldportal.core.ui.image.rememberArtworkModel
 
 // ── Primary action region ─────────────────────────────────────────────────────
 //
@@ -179,8 +177,8 @@ fun PfpDetailIconTile(
     ) {
         when {
             content != null -> content()
-            uri != null -> AsyncImage(
-                model = rememberArtworkModel(uri),
+            uri != null -> com.playfieldportal.core.ui.motion.ArtworkImage(
+                model = uri,
                 contentDescription = title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),

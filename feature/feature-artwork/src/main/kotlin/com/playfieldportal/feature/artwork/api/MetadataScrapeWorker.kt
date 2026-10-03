@@ -9,6 +9,8 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.playfieldportal.core.domain.model.NotificationAction
+import com.playfieldportal.core.domain.model.NotificationDetail
+import com.playfieldportal.core.domain.model.PfpErrorCode
 import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 import dagger.assisted.Assisted
@@ -29,7 +31,7 @@ class MetadataScrapeWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted params: WorkerParameters,
     private val artworkRepository: ArtworkRepository,
-    // The shared sink: the in-app notification panel and the Android shade at once. Building a
+    // The shared sink: the in-app notification panel (PFP's notifications are launcher-only). Building a
     // BackgroundTaskNotifier here reached the shade only, so a scrape started from Settings ran
     // and finished without the panel ever hearing about it.
     private val tasks: BackgroundTaskCenter,
@@ -38,10 +40,17 @@ class MetadataScrapeWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         val mode = inputData.getString(KEY_MODE) ?: MODE_MISSING
         val label = if (mode == MODE_ALL) "Re-scraping all games" else "Scraping missing artwork"
-        tasks.start(TASK_ID, label, TaskKind.ARTWORK)
+        tasks.start(
+            TASK_ID, label, TaskKind.ARTWORK,
+            onStop = { WorkManager.getInstance(applicationContext).cancelUniqueWork(UNIQUE_NAME) },
+            stopNote = "Artwork already fetched is kept.",
+        )
         var lastNotified = 0L
+        // Every game's result, for the Results sheet.
+        val outcomes = mutableListOf<GameScrapeOutcome>()
 
         val onProgress: (ScrapeProgress) -> Unit = { p ->
+            p.finished?.let(outcomes::add)
             // Notifications are rate-limited by the system — refresh at most ~2×/second; the
             // in-app progress rides setProgress on every event.
             val now = System.currentTimeMillis()
@@ -71,6 +80,8 @@ class MetadataScrapeWorker @AssistedInject constructor(
                 TASK_ID,
                 "${result.succeeded} succeeded, ${result.failed} failed of ${result.total}",
                 NotificationAction.OpenSettingsScreen("settings_artwork"),
+                detail = outcomes.takeIf { it.isNotEmpty() }?.let(::scrapeResults),
+                title = if (mode == MODE_ALL) "Artwork re-scrape finished" else "Artwork scrape finished",
             )
             Result.success(
                 workDataOf(
@@ -81,11 +92,18 @@ class MetadataScrapeWorker @AssistedInject constructor(
                 )
             )
         } catch (e: CancellationException) {
-            tasks.complete(TASK_ID, "Cancelled — artwork fetched so far is kept")
+            // Only ever a user's stop (the panel or Settings), so it is recorded, quietly.
+            tasks.stopped(TASK_ID, "Stopped after ${outcomes.size} game(s) — artwork fetched so far is kept",
+                detail = scrapeResults(outcomes), title = "Artwork scrape stopped")
             throw e
         } catch (e: Exception) {
             Timber.e(e, "Scrape batch failed")
-            tasks.fail(TASK_ID, e.message ?: "Unexpected error")
+            tasks.fail(
+                TASK_ID, e.message ?: "Unexpected error",
+                detail = NotificationDetail.notes(PfpErrorCode.AR_9001, summary = e.message,
+                    diagnostic = e.stackTraceToString().take(4_000)),
+                title = "Artwork scrape failed",
+            )
             Result.failure(workDataOf(KEY_ERROR to (e.message ?: "Unexpected error")))
         }
     }

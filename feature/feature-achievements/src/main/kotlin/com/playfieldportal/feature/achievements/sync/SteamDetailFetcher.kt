@@ -61,7 +61,7 @@ class SteamDetailFetcher @Inject constructor(
 
         val mapped = SteamCoinMapper.map(appId, metadata.schema, metadata.rarity, earnedByName)
         // A hidden coin's description, once learned, is kept (the writer carries it forward);
-        // the community page is read only for a newly earned hidden coin nobody has described.
+        // enrichment runs only while some hidden coin, earned or not, still has none.
         val known = coinDao.getForSet(AchievementProvider.STEAM.name, appId)
             .filter { it.description.isNotBlank() }
             .associate { it.providerAchievementId to it.description }
@@ -69,7 +69,7 @@ class SteamDetailFetcher @Inject constructor(
             if (coin.description.isBlank()) known[coin.providerAchievementId]?.let { coin.copy(description = it) } ?: coin
             else coin
         }
-        val coins = if (carried.any { it.isHidden && it.isEarned && it.description.isBlank() }) {
+        val coins = if (carried.any { it.isHidden && it.description.isBlank() }) {
             steam.enrichHiddenDescriptions(appId, carried)
         } else {
             carried

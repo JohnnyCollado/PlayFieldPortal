@@ -73,6 +73,13 @@ interface ArtworkRecordDao {
     @Query("SELECT * FROM artwork_records")
     suspend fun getAll(): List<ArtworkRecordEntity>
 
+    /**
+     * Every file framed at draw time (animated art kept uncropped in a cropped slot), as the
+     * image loader's crop lookup needs it. A Flow so the lookup follows every apply and re-crop.
+     */
+    @Query("SELECT document_uri, crop_rect FROM artwork_records WHERE crop_at_draw = 1 AND crop_rect IS NOT NULL")
+    fun observeDrawCrops(): kotlinx.coroutines.flow.Flow<List<DrawCropRow>>
+
     @Query("DELETE FROM artwork_records WHERE id = :id")
     suspend fun deleteById(id: Long)
 
@@ -146,3 +153,9 @@ interface ArtworkRecordDao {
     @Query("DELETE FROM artwork_records")
     suspend fun clear()
 }
+
+/** One draw-time crop: the file reference every screen loads, and its stored rect. */
+data class DrawCropRow(
+    @androidx.room.ColumnInfo(name = "document_uri") val documentUri: String,
+    @androidx.room.ColumnInfo(name = "crop_rect") val cropRect: String,
+)

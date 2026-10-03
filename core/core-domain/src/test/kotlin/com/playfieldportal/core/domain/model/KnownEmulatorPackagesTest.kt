@@ -23,6 +23,26 @@ class KnownEmulatorPackagesTest {
     }
 
     @Test
+    fun `Obtainium pack gaps are tagged under their published ids`() {
+        // Obtainium Emulation Pack v7.18.0 (setup-wizard plan section 2.4).
+        assertTrue(KnownEmulatorPackages.isEmulator("io.github.gopher64.gopher64"))
+        assertTrue(KnownEmulatorPackages.isEmulator("emu.x360mobile.com"))
+        assertTrue(KnownEmulatorPackages.isEmulator("com.winlator.ludashi"))
+        assertTrue(KnownEmulatorPackages.isEmulator("com.winlator.vanilla"))
+    }
+
+    @Test
+    fun `the unconfirmed X360 Mobile id is replaced, not kept beside the published one`() {
+        assertFalse(KnownEmulatorPackages.isEmulator("emu.x360.mobile"))
+    }
+
+    @Test
+    fun `held Obtainium entries stay untagged until their system is confirmed`() {
+        assertFalse(KnownEmulatorPackages.isEmulator("io.navivani.swiff"))
+        assertFalse(KnownEmulatorPackages.isEmulator("xendroid.compose"))
+    }
+
+    @Test
     fun `families match their variants on a dot boundary only`() {
         assertTrue(KnownEmulatorPackages.isEmulator("com.retroarch"))
         assertTrue(KnownEmulatorPackages.isEmulator("com.retroarch.aarch64"))

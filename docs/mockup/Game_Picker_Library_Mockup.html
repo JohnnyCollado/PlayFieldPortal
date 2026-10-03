@@ -1,0 +1,409 @@
+<title>Game Picker Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Roboto:wght@400;500;600&display=swap">
+<style>
+/* Layout: a working device screen up top (the mockup), the build plan below it as a short spec. */
+:root{
+  --bg:#f3f5f8; --fg:#17202b; --muted:#5b6676; --line:#d8dde5; --panel:#ffffff;
+  --accent:#0055aa;          /* set live from the chosen XMB preset */
+  --f-body:"IBM Plex Sans",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --f-device:Roboto,"Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141b;--fg:#e4e9f0;--muted:#97a3b3;--line:#263140;--panel:#161d27;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f141b;--fg:#e4e9f0;--muted:#97a3b3;--line:#263140;--panel:#161d27;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.6 var(--f-body);padding-inline:20px;padding-block:28px 64px}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1{font-size:26px;line-height:1.2;margin:0;font-weight:600;text-wrap:balance}
+h2{font-size:18px;margin:0 0 10px;font-weight:600;text-wrap:balance}
+h3{font-size:15px;margin:18px 0 6px;font-weight:600}
+p{margin:0 0 10px;max-width:72ch}
+.lede{color:var(--muted)}
+.eyebrow{font:500 11px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+code{font:13px var(--f-mono);background:color-mix(in srgb,var(--fg) 7%,transparent);padding:1px 5px;border-radius:3px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.controls .lbl{font:500 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-right:4px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:13px var(--f-body);padding:4px 10px;border-radius:3px;cursor:pointer}
+.chip i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.chip[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.chip:focus-visible,.dev:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stage{overflow-x:auto;padding-bottom:6px}
+.hint{font:12px var(--f-mono);color:var(--muted);margin-top:8px}
+.kbd{border:1px solid var(--line);border-bottom-width:2px;padding:0 5px;border-radius:3px;font:11px var(--f-mono);background:var(--panel)}
+section{border-top:1px solid var(--line);padding-top:22px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px 32px}
+.cols>div{min-width:0}
+ul,ol{margin:0 0 10px;padding-left:20px}
+li{margin-bottom:4px}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:500 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+td code{white-space:nowrap}
+
+/* ───────── Device screen (single look, driven entirely by derived StorefrontColors) ───────── */
+.dev{width:960px;height:540px;position:relative;overflow:hidden;font-family:var(--f-device);border-radius:6px;
+  background:linear-gradient(180deg,var(--d-deep),var(--d-mid));color:var(--d-t1);box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.dev::before{content:"";position:absolute;inset:auto -10% 18% -10%;height:160px;pointer-events:none;
+  background:radial-gradient(60% 50% at 50% 50%,var(--d-wave),transparent 70%);opacity:.18}
+.d-col{position:relative;display:flex;flex-direction:column;height:100%}
+.d-head{height:48px;display:flex;align-items:center;gap:16px;padding:0 22px;flex:none}
+.d-title{flex:1;display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;white-space:nowrap}
+.d-title .back{color:var(--d-t2);font-size:18px;font-weight:400}
+.d-title .cat{color:var(--d-t2);font-weight:400}
+.d-delta{font-size:12px;color:var(--d-t2);font-variant-numeric:tabular-nums}
+.d-delta b{color:var(--d-t1);font-weight:500}
+.d-search{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--d-t2)}
+.d-search svg{width:15px;height:15px}
+.d-rule{height:1px;background:var(--d-edge);opacity:.9;flex:none}
+.d-body{flex:1;display:flex;min-height:0}
+.rail{width:196px;flex:none;padding:10px 0;background:var(--d-rail);display:flex;flex-direction:column;gap:2px;overflow:hidden}
+.shelf{position:relative;padding:7px 16px 8px 18px;cursor:pointer;display:grid;grid-template-columns:1fr auto;row-gap:5px;align-items:baseline}
+.shelf .nm{font-size:13px;color:var(--d-t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shelf .ct{font-size:11px;color:var(--d-t2);font-variant-numeric:tabular-nums}
+.shelf .bar{grid-column:1/-1;height:2px;background:color-mix(in srgb,var(--d-t2) 18%,transparent)}
+.shelf .bar span{display:block;height:100%;background:var(--d-inner)}
+.shelf.cur{background:var(--d-catsel)}
+.shelf.cur::after{content:"";position:absolute;right:0;top:0;bottom:0;width:2px;background:var(--d-edge)}
+.shelf.cur .nm{color:var(--d-t1);font-weight:500}
+.shelf.cursor{box-shadow:inset 0 0 0 1px var(--d-edge)}
+.shelf.sep{margin-top:8px}
+.shelf.sep::before{content:"";position:absolute;left:18px;right:16px;top:-5px;height:1px;background:var(--d-edge);opacity:.25}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;padding:12px 24px 0}
+.m-head{display:flex;align-items:baseline;gap:12px;flex:none}
+.m-head h4{margin:0;font-size:17px;font-weight:500}
+.m-head .sub{font-size:12px;color:var(--d-t2);flex:1;font-variant-numeric:tabular-nums}
+.viewchip{font-size:11px;color:var(--d-t2);border:1px solid color-mix(in srgb,var(--d-edge) 55%,transparent);padding:2px 8px;border-radius:2px}
+.viewchip b{color:var(--d-t1);font-weight:500}
+.grid{flex:1;overflow:hidden;position:relative;margin-top:6px}
+.rows{position:absolute;left:0;right:0;top:0;transition:transform .16s ease-out}
+.row{display:grid;grid-template-columns:repeat(6,1fr);column-gap:8px;position:relative;padding-top:10px}
+/* the ledge: every row of games stands on a thin accent shelf */
+.row::after{content:"";position:absolute;left:-6px;right:-6px;top:116px;height:1px;background:var(--d-edge);opacity:.35}
+.row::before{content:"";position:absolute;left:-6px;right:-6px;top:117px;height:8px;background:linear-gradient(180deg,rgba(0,0,0,.22),transparent)}
+.tile{position:relative;display:flex;flex-direction:column;align-items:center;cursor:pointer}
+.slot{position:relative;width:100%;height:106px;display:flex;align-items:flex-end;justify-content:center;padding:4px 4px 0}
+.frame{position:absolute;inset:0 0 -4px;opacity:0;transition:opacity .12s;background:var(--d-glow);border:1px solid var(--d-edge)}
+.frame::after{content:"";position:absolute;inset:2px;border:1px solid var(--d-inner)}
+.tile.focus .frame{opacity:1}
+.tile .lab{margin-top:14px;font-size:11px;line-height:13px;height:26px;text-align:center;color:var(--d-t2);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;padding:0 2px}
+.tile.focus .lab{color:var(--d-t1)}
+.badge{position:absolute;top:3px;right:3px;width:16px;height:16px;border-radius:50%;background:var(--d-edge);display:grid;place-items:center;opacity:0;transition:opacity .1s;z-index:2}
+.badge svg{width:10px;height:10px}
+.tile.on .badge{opacity:1}
+.tile.on .tint{opacity:1}
+.tint{position:absolute;inset:0 0 -4px;background:var(--d-inner);opacity:0;mix-blend-mode:normal;filter:opacity(.12)}
+.tile.drop .art{opacity:.45}
+.tile.drop .badge{opacity:1;background:transparent;border:1px dashed var(--d-danger)}
+.tile.drop .lab::before{content:"Removing · ";color:var(--d-danger)}
+/* art shapes — placeholders tinted from the theme hue, real art drops in at the same bounds */
+.art{position:relative;z-index:1;overflow:hidden;color:var(--a-ink);font-size:9px;font-weight:600;line-height:1.15;text-align:center}
+.art.icon0{width:100%;aspect-ratio:144/80;border-radius:3px;background:linear-gradient(135deg,var(--a1),var(--a2));display:grid;place-items:center;padding:6px;font-size:11px;margin-bottom:12px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+.art.box{width:68px;height:96px;border-radius:2px;background:linear-gradient(170deg,var(--a1) 0 60%,var(--a2));box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),0 2px 4px rgba(0,0,0,.25)}
+.art.box .band{height:16px;background:var(--a-band);font-size:7px;letter-spacing:.06em;display:grid;place-items:center;color:var(--a-bandink)}
+.art.box .t{padding:14px 5px 0}
+.art.b3d{width:66px;height:96px;transform:perspective(220px) rotateY(-24deg);transform-origin:left center;border-radius:1px 2px 2px 1px;background:linear-gradient(170deg,var(--a1) 0 60%,var(--a2));box-shadow:-9px 0 0 0 var(--a-spine),inset 0 0 0 1px rgba(255,255,255,.2),2px 3px 6px rgba(0,0,0,.35);margin-left:12px}
+.art.b3d .band{height:14px;background:var(--a-band);font-size:7px;letter-spacing:.06em;display:grid;place-items:center;color:var(--a-bandink)}
+.art.b3d .t{padding:14px 5px 0}
+.art.disc{width:84px;height:84px;border-radius:50%;margin-bottom:6px;background:radial-gradient(circle,transparent 0 9px,rgba(255,255,255,.55) 9px 11px,transparent 11px 20px,rgba(0,0,0,.15) 20px 21px,transparent 21px),conic-gradient(from 200deg,var(--a1),var(--a2),var(--a1));display:grid;place-items:center;-webkit-mask:radial-gradient(circle,transparent 0 6px,#000 6.5px)}
+.art.disc .t{transform:translateY(24px);font-size:8px;max-width:60px}
+.art.cart{width:78px;height:84px;margin-bottom:4px;border-radius:4px 4px 2px 2px;background:var(--a-shell);box-shadow:inset 0 0 0 1px rgba(255,255,255,.15),0 2px 4px rgba(0,0,0,.3);padding:8px 8px 0}
+.art.cart .lbl{height:54px;border-radius:2px;background:linear-gradient(160deg,var(--a1),var(--a2));display:grid;place-items:center;padding:4px}
+.art.cart::after{content:"";position:absolute;left:14px;right:14px;bottom:6px;height:6px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.25) 0 2px,transparent 2px 5px)}
+.art.card{width:100%;height:92px;border-radius:3px;background:linear-gradient(160deg,var(--a1),var(--a2));box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);padding:8px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;font-size:11px;margin-bottom:4px}
+.art.card small{font-weight:400;opacity:.8;font-size:9px}
+.d-foot{flex:none;border-top:1px solid color-mix(in srgb,var(--d-edge) 60%,transparent);padding:9px 0 10px;display:flex;justify-content:center;gap:18px;font-size:11.5px;color:var(--d-t2)}
+.d-foot span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.g{display:inline-grid;place-items:center;min-width:16px;height:16px;padding:0 3px;border-radius:8px;border:1px solid var(--d-t2);font-size:9px;font-weight:600;color:var(--d-t1)}
+.g.sq{border-radius:3px}
+.toast{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);background:var(--d-menu);color:var(--d-t1);border:1px solid color-mix(in srgb,var(--d-edge) 50%,transparent);padding:8px 14px;font-size:12px;border-radius:2px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:5}
+.toast.show{opacity:1}
+.empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--d-t2);font-size:13px}
+@media (prefers-reduced-motion:reduce){.rows,.frame,.badge,.toast{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">PlayFieldPortal · feature-xmb · mockup</div>
+    <h1>Game Picker Library</h1>
+    <p class="lede">A rebuild of "Add Games to Category" in the App Picker's grid style. Each console gets its own shelf, and every game is drawn with its own icon display mode, so mixed covers, discs, cartridges and ICON0 tiles stand side by side on one ledge. All colors come from <code>deriveStorefrontColors()</code> on the chosen theme, so switch presets below to check each one.</p>
+  </header>
+
+  <div>
+    <div class="controls" id="presets"><span class="lbl">Theme</span></div>
+    <div class="controls" style="margin-top:8px" id="views"><span class="lbl">View</span></div>
+  </div>
+
+  <div class="stage">
+    <div class="dev" id="dev" tabindex="0" aria-label="Game picker mockup. Click to focus, then use the keyboard.">
+      <div class="d-col">
+        <div class="d-head">
+          <div class="d-title"><span class="back">‹</span>Add Games <span class="cat">· RPGs</span></div>
+          <div class="d-delta" id="delta"></div>
+          <div class="d-search"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="7.5" cy="7.5" r="5.2"/><path d="M11.4 11.4 16 16"/></svg>Search</div>
+        </div>
+        <div class="d-rule"></div>
+        <div class="d-body">
+          <nav class="rail" id="rail"></nav>
+          <div class="main">
+            <div class="m-head"><h4 id="shelfName"></h4><span class="sub" id="shelfSub"></span><span class="viewchip" id="viewChip"></span></div>
+            <div class="grid" id="grid"><div class="rows" id="rows"></div></div>
+          </div>
+        </div>
+        <div class="d-foot">
+          <span><span class="g sq">✛</span>Navigate</span>
+          <span><span class="g">A</span>Toggle</span>
+          <span><span class="g sq">L1</span><span class="g sq">R1</span>Shelf</span>
+          <span><span class="g">Y</span>Whole shelf</span>
+          <span><span class="g">X</span>View</span>
+          <span><span class="g sq">≡</span>Done</span>
+          <span><span class="g">B</span>Cancel</span>
+        </div>
+        <div class="toast" id="toast"></div>
+      </div>
+    </div>
+    <div class="hint">Click the screen, then use <span class="kbd">←↑↓→</span> to move, <span class="kbd">Enter</span> for A, <span class="kbd">Q</span>/<span class="kbd">E</span> for L1/R1, <span class="kbd">Y</span> for a whole shelf, <span class="kbd">X</span> to change the view, <span class="kbd">S</span> for Done and <span class="kbd">Esc</span> for Cancel. Tiles can also be clicked.</div>
+  </div>
+
+  <section>
+    <h2>What changes</h2>
+    <div class="cols">
+      <div>
+        <h3>Today</h3>
+        <ul>
+          <li>A checkbox list of collapsed platform headers with nested title rows.</li>
+          <li>Hardcoded purple and grey (<code>0xFF574DDB</code>, <code>0xFFC9C7E8</code>) that ignore the theme.</li>
+          <li>Up and down only. Long libraries take dozens of presses to cross.</li>
+          <li>No artwork, so similar titles are hard to tell apart.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Proposed</h3>
+        <ul>
+          <li>Shelf rail on the left: <b>In RPGs</b> first, then one shelf per console, then <b>Memory Cards</b>.</li>
+          <li>A 6-column art grid for the current shelf. Tiles sit on a ledge line so mixed shapes share a baseline.</li>
+          <li>Each tile uses the game's resolved <code>IconDisplayMode</code>: per-game, then per-console, then global.</li>
+          <li>The header counts what will be <b>added</b> and <b>removed</b>, matching what <code>confirmGamePicker</code> actually does.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Color roles</h2>
+    <p>Nothing on the screen uses a literal color except the removal mark, which takes the existing <code>destructive</code> role. Preset themes resolve their accent to white, so the hue comes from the wave, the same way the App Drawer and App Picker get it.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Element</th><th>StorefrontColors role</th></tr></thead>
+      <tbody>
+        <tr><td>Screen gradient</td><td><code>backgroundDeep</code> → <code>backgroundMid</code></td></tr>
+        <tr><td>Header rule, ledge line, focus outer border, check badge</td><td><code>chromeDivider</code> / <code>tileSelectedEdge</code></td></tr>
+        <tr><td>Focus inner hairline, shelf progress bar, checked tint (10%)</td><td><code>tileSelectedInner</code></td></tr>
+        <tr><td>Focus wash behind art</td><td><code>selectionGlow</code></td></tr>
+        <tr><td>Shelf rail and current shelf</td><td><code>railBackground</code>, <code>categorySelected</code>, <code>categorySelectedEdge</code></td></tr>
+        <tr><td>Titles, counts, labels</td><td><code>textPrimary</code>, <code>textSecondary</code></td></tr>
+        <tr><td>Art placeholder when nothing is scraped</td><td>Existing <code>BoxArtPlaceholderIcon</code> / <code>PhysicalMediaIcon</code> fallbacks</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Controls</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Input</th><th>GamepadAction</th><th>In the grid</th><th>In the rail</th></tr></thead>
+      <tbody>
+        <tr><td>D-pad</td><td><code>NAVIGATE_*</code></td><td>Moves by <code>gridMove</code> without wrapping. Left from column 1 enters the rail.</td><td>Up and down change the shelf live. Right returns to the grid.</td></tr>
+        <tr><td>A</td><td><code>SELECT</code></td><td>Toggles the game or card</td><td>Moves into the grid</td></tr>
+        <tr><td>L1 / R1</td><td><code>PREV_/NEXT_CATEGORY</code></td><td colspan="2">Previous or next shelf. The cursor returns to that shelf's last spot.</td></tr>
+        <tr><td>Y</td><td><code>OPEN_CONTEXT_MENU</code></td><td colspan="2">Checks the whole shelf, or unchecks it if every game is already checked. This replaces the old Expand / Collapse prompt.</td></tr>
+        <tr><td>X</td><td><code>CHANGE_SORT</code></td><td colspan="2">Cycles the view: Library modes → Custom Icon → Box Art → Physical Media → 3D Box. This is local to the picker and never saved.</td></tr>
+        <tr><td>Start / B</td><td><code>HOME</code> / <code>BACK</code></td><td colspan="2">Done or Cancel, as today</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin-top:10px">Search is left out of the first pass on purpose, because <code>CHANGE_SORT</code> is already taken by the view toggle. If search is wanted, it can be given the App Picker's header entry for touch, plus a long-press on Y.</p>
+  </section>
+
+  <section>
+    <h2>Build plan</h2>
+    <ol>
+      <li><b>State.</b> Replace the flat <code>selectedItemId</code> list in <code>GamePickerState</code> with <code>shelves</code>, <code>shelfIndex</code>, <code>focusZone</code> (Rail or Grid), a <code>focusedIndex</code> per shelf, and <code>viewOverride: IconDisplayMode?</code>. Remove the expanded-state map. Keep the selection sets and <code>prepare()</code> / <code>clearSelection()</code> semantics as they are.</li>
+      <li><b>Pure logic.</b> Add a <code>GamePickerLogic.kt</code> next to <code>AppPickerLogic.kt</code>: build shelves, move in the rail and grid with the shared <code>gridMove</code>, toggle a whole shelf, and compute adds and removals. Add a <code>GAME_PICKER_GRID_COLUMNS = 6</code> constant and unit-test it the same way as <code>AppPickerLogicTest</code>.</li>
+      <li><b>Icon at picker size.</b> <code>GameIcon</code> needs an <code>XMBItem</code> and has a private <code>NATURAL_ART_HEIGHT = 84.dp</code>. Add an <code>artHeight</code> parameter (defaulting to the current value) and a small <code>Game → XMBItem</code> adapter, so the picker reuses <code>resolveIconDisplay</code> and every fallback without duplicating them. When the view is overridden, pass a single-mode map instead of the user's settings.</li>
+      <li><b>Screen.</b> Rewrite <code>GamePickerScreen</code> on <code>deriveStorefrontColors()</code>, reusing the App Picker's header, focus layers, <code>PfpCheckBadge</code>, footer <code>ControllerPromptBar</code> and the touch reconciliation from <code>AppPickerGrid</code>. Add <code>ShelfRail</code>, <code>ShelfLedge</code> (the row line plus an 8dp shadow), and <code>MemoryCardTile</code>.</li>
+      <li><b>Wiring.</b> Route LEFT, RIGHT, PREV/NEXT_CATEGORY and CHANGE_SORT through <code>pendingGamePickerAction</code> in <code>XMBViewModel</code>, which forwards only UP, DOWN, SELECT, OPEN_CONTEXT_MENU, BACK and HOME today. Add menu sounds for shelf changes and toggles.</li>
+      <li><b>Performance.</b> One <code>LazyVerticalGrid</code> per shelf, keyed by game id. Libraries with 2,000+ ROMs only lay out the visible rows. Artwork loads through the existing Coil cache. Shelf counts are derived and never stored.</li>
+      <li><b>Checks.</b> Logic tests for nav edges, empty shelves, a shelf shrinking under the cursor, and adds and removals. Add a screenshot pass on Classic Blue, Silver and Golden Amber, since those two pale presets flip the palette to dark text.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Open questions</h2>
+    <ul>
+      <li>Should the <b>In RPGs</b> shelf list only games that are already in the category, or also the games checked during this visit?</li>
+      <li>Should consoles that have no games still show as shelves, greyed out, or stay hidden as they are now?</li>
+      <li>Should the X view choice be remembered between picker visits for the rest of the session?</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function(){
+/* ---------- color derivation: a faithful port of ColorCascade + storefrontColorsFor ---------- */
+const PRESETS=[["Classic Blue","#0055AA"],["Sunset Orange","#FF8A3D"],["Fresh Green","#36C26B"],["Royal Purple","#7A4DD6"],["Crimson Red","#E03B4F"],["Silver","#B8C4D0"],["Sakura Pink","#E87FB0"],["Golden Amber","#E0A32E"],["Aqua Teal","#2EC4B6"],["Midnight Navy","#23477E"],["Charcoal","#4A505A"]];
+const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255);
+const css=(c,a=1)=>`rgba(${c.map(v=>Math.round(Math.max(0,Math.min(1,v))*255)).join(",")},${a})`;
+const lerp=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t);
+const W=[1,1,1],K=[0,0,0];
+const lin=v=>v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4);
+const lum=c=>.2126*lin(c[0])+.7152*lin(c[1])+.0722*lin(c[2]);
+const cr=(a,b)=>{const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
+const readable=(fg,bg,m)=>cr(fg,bg)>=m?fg:(cr(K,bg)>=cr(W,bg)?K:W);
+const vivid=c=>Math.max(...c)-Math.min(...c)>=.10&&Math.max(...c)>=.30;
+function derive(waveHex){
+  const wave=hex(waveHex),bgTop=wave.map(v=>v*.62),bgBot=lerp(wave,W,.28);
+  const hue=vivid(wave)?wave:bgBot;
+  const mid=lerp(bgTop,bgBot,.55);
+  const t1=readable(W,mid,3),light=t1===K;
+  const t2=readable(light?lerp(K,W,.25):lerp(hue,W,.72),mid,3);
+  const edge=light?lerp(hue,K,.45):lerp(hue,W,.55);
+  const inner=light?lerp(hue,K,.20):lerp(hue,W,.32);
+  return {
+    "--d-deep":css(bgTop,.97),"--d-mid":css(mid,.97),"--d-wave":css(wave),
+    "--d-t1":css(t1),"--d-t2":css(t2),"--d-edge":css(edge),"--d-inner":css(inner),
+    "--d-glow":css(light?lerp(hue,K,.55):lerp(hue,W,.45),.16),
+    "--d-rail":css(bgTop,.35),"--d-catsel":css(lerp(bgBot,hue,.35),.92),
+    "--d-menu":light?css(W,.92):css(lerp(K,bgTop,.30),.96),"--d-danger":"#FF6B6B",
+    _top:bgTop,_hue:hue,_edge:edge,light
+  };
+}
+/* placeholder art: tones of the same hue, so the screen never leaves the theme palette */
+function artVars(seed,P){
+  const t=[.15,.3,.45,.6,.75][seed%5],u=[.55,.7,.4,.85,.5][(seed*3)%5];
+  const a1=lerp(P._top,P._hue,t),a2=lerp(lerp(P._top,K,.35),P._hue,u*.6);
+  const ink=readable(W,lerp(a1,a2,.5),3.2);
+  const band=seed%2?lerp(P._edge,W,.2):lerp(P._top,K,.4);
+  return `--a1:${css(a1)};--a2:${css(a2)};--a-ink:${css(ink)};--a-band:${css(band)};--a-bandink:${css(readable(W,band,3))};--a-spine:${css(lerp(a2,K,.35))};--a-shell:${css(lerp(P._top,K,.25))}`;
+}
+
+/* ---------- sample library (example data) ---------- */
+const MODES={ICON0:"Custom Icon",BOX_ART:"Box Art",PHYSICAL_MEDIA:"Physical Media",BOX_3D:"3D Box Art"};
+const PLAT=[
+ {id:"ps2",name:"PlayStation 2",media:"disc",mode:"BOX_3D",games:["Final Fantasy X","Dragon Quest VIII","Persona 4","Kingdom Hearts II","Dark Cloud 2","Rogue Galaxy","Okami","Xenosaga Episode I","Radiata Stories","Shadow Hearts: Covenant","Suikoden V","Tales of the Abyss","Grandia III","Wild ARMs 3"]},
+ {id:"psp",name:"PSP",media:"disc",mode:"ICON0",games:["Crisis Core","Persona 3 Portable","Jeanne d'Arc","Ys Seven","Valkyria Chronicles II","Trails in the Sky","Monster Hunter Freedom Unite","Tactics Ogre","Lunar: Silver Star Harmony"]},
+ {id:"gba",name:"Game Boy Advance",media:"cart",mode:"PHYSICAL_MEDIA",games:["Golden Sun","Golden Sun: The Lost Age","Mother 3","Fire Emblem","Pokémon Emerald","Final Fantasy Tactics Advance","Mario & Luigi: Superstar Saga","Riviera"]},
+ {id:"snes",name:"Super Nintendo",media:"cart",mode:"BOX_ART",games:["Chrono Trigger","Final Fantasy VI","EarthBound","Secret of Mana","Terranigma","Lufia II","Super Mario RPG","Breath of Fire II","Illusion of Gaia","Tales of Phantasia","Star Ocean"]},
+ {id:"gc",name:"GameCube",media:"disc",mode:"BOX_ART",games:["Tales of Symphonia","Skies of Arcadia Legends","Baten Kaitos","Paper Mario: TTYD","Fire Emblem: Path of Radiance"]},
+ {id:"win",name:"Windows",media:"disc",mode:"ICON0",games:["Clair Obscur: Expedition 33","Disco Elysium","Sea of Stars","Octopath Traveler II","Persona 5 Royal"]},
+];
+let gid=1;const GAMES=[];
+PLAT.forEach(p=>p.games=p.games.map((t,i)=>{const g={id:gid++,title:t,plat:p,over:null};
+  if(p.id==="ps2"&&i===2)g.over="ICON0"; if(p.id==="snes"&&i===0)g.over="BOX_3D"; if(p.id==="psp"&&i===1)g.over="BOX_ART";
+  GAMES.push(g);return g}));
+const PRE=new Set([1,2,3,15,16,24,32,33,34,52]);
+const CARDS=[{id:"c1",title:"JRPG Backlog",n:23,from:"Backlog"},{id:"c2",title:"Tactics Night",n:9,from:"Strategy"},{id:"c3",title:"Couch Co-op RPGs",n:6,from:"Party"}];
+
+/* ---------- state ---------- */
+const S={preset:0,view:null,shelf:0,zone:"grid",idx:{},checked:new Set(PRE),cards:new Set()};
+const shelves=()=>[
+ {key:"in",name:"In RPGs",items:GAMES.filter(g=>PRE.has(g.id)),kind:"game"},
+ ...PLAT.map(p=>({key:p.id,name:p.name,items:p.games,kind:"game",mode:p.mode})),
+ {key:"cards",name:"Memory Cards",items:CARDS,kind:"card",sep:true},
+];
+const COLS=6;
+const $=id=>document.getElementById(id);
+let P=derive(PRESETS[0][1]);
+
+function modeOf(g){return S.view||g.over||g.plat.mode}
+const ck='<svg viewBox="0 0 10 10"><path d="M2 5.2 4.2 7.3 8 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function artHTML(g,seed){
+  const v=artVars(seed,P),m=modeOf(g),t=g.title;
+  if(m==="ICON0")return `<div class="art icon0" style="${v}">${t}</div>`;
+  if(m==="BOX_ART")return `<div class="art box" style="${v}"><div class="band">${g.plat.name.toUpperCase()}</div><div class="t">${t}</div></div>`;
+  if(m==="BOX_3D")return `<div class="art b3d" style="${v}"><div class="band">${g.plat.name.toUpperCase()}</div><div class="t">${t}</div></div>`;
+  return g.plat.media==="cart"
+    ?`<div class="art cart" style="${v}"><div class="lbl">${t}</div></div>`
+    :`<div class="art disc" style="${v}"><div class="t">${t}</div></div>`;
+}
+function render(){
+  const root=document.documentElement;
+  Object.entries(P).forEach(([k,v])=>{if(k.startsWith("--"))$("dev").style.setProperty(k,v)});
+  root.style.setProperty("--accent",P.light?css(lerp(P._hue,K,.35)):css(lerp(P._hue,W,.05)));
+  const sh=shelves(),cur=sh[S.shelf];
+  // rail
+  $("rail").innerHTML=sh.map((s,i)=>{
+    const tot=s.items.length,on=s.kind==="card"?s.items.filter(c=>S.cards.has(c.id)).length:s.items.filter(g=>S.checked.has(g.id)).length;
+    const cls=["shelf",i===S.shelf?"cur":"",S.zone==="rail"&&i===S.shelf?"cursor":"",s.sep?"sep":""].join(" ");
+    return `<div class="${cls}" data-shelf="${i}"><span class="nm">${s.name}</span><span class="ct">${on} / ${tot}</span><span class="bar"><span style="width:${tot?on/tot*100:0}%"></span></span></div>`}).join("");
+  // head
+  const on=cur.kind==="card"?cur.items.filter(c=>S.cards.has(c.id)).length:cur.items.filter(g=>S.checked.has(g.id)).length;
+  $("shelfName").textContent=cur.name;
+  $("shelfSub").textContent=cur.kind==="card"?`${cur.items.length} cards from other categories · picking one moves it here`:`${cur.items.length} games · ${on} checked`;
+  $("viewChip").innerHTML=cur.kind==="card"?"":`View <b>${S.view?MODES[S.view]:"Library modes"}</b>`;
+  $("viewChip").hidden=cur.kind==="card";
+  // grid
+  const fi=S.idx[S.shelf]||0;
+  let html="";
+  for(let r=0;r<Math.ceil(cur.items.length/COLS);r++){
+    html+='<div class="row">';
+    cur.items.slice(r*COLS,r*COLS+COLS).forEach((it,c)=>{
+      const i=r*COLS+c,focus=S.zone==="grid"&&i===fi;
+      if(cur.kind==="card"){
+        const v=artVars(i+2,P),onC=S.cards.has(it.id);
+        html+=`<div class="tile${focus?" focus":""}${onC?" on":""}" data-i="${i}"><div class="slot"><div class="frame"></div><div class="tint"></div><div class="art card" style="${v}"><span>${it.title}</span><small>${it.n} games · in ${it.from}</small></div><span class="badge" style="color:${css(P._top)}">${ck}</span></div><div class="lab">${it.title}</div></div>`;
+      }else{
+        const onG=S.checked.has(it.id),drop=PRE.has(it.id)&&!onG;
+        html+=`<div class="tile${focus?" focus":""}${onG?" on":""}${drop?" drop":""}" data-i="${i}"><div class="slot"><div class="frame"></div><div class="tint"></div>${artHTML(it,it.id)}<span class="badge" style="color:${css(P._top)}">${drop?"":ck}</span></div><div class="lab">${it.title}</div></div>`;
+      }
+    });
+    html+="</div>";
+  }
+  $("rows").innerHTML=html||'<div class="empty">Nothing on this shelf</div>';
+  const row=Math.floor(fi/COLS),rowH=164,vis=$("grid").clientHeight;
+  const off=Math.max(0,Math.min(row*rowH-rowH*.5,Math.ceil(cur.items.length/COLS)*rowH-vis+8));
+  $("rows").style.transform=`translateY(${-Math.max(0,off)}px)`;
+  // delta
+  const add=[...S.checked].filter(id=>!PRE.has(id)).length+S.cards.size,rem=[...PRE].filter(id=>!S.checked.has(id)).length;
+  $("delta").innerHTML=`<b>+${add}</b> adding · <b>−${rem}</b> removing`;
+  document.querySelectorAll("#presets .chip").forEach((b,i)=>b.setAttribute("aria-pressed",i===S.preset));
+  document.querySelectorAll("#views .chip").forEach(b=>b.setAttribute("aria-pressed",(b.dataset.v||null)===S.view));
+}
+function toggle(i){
+  const cur=shelves()[S.shelf],it=cur.items[i];if(!it)return;
+  const set=cur.kind==="card"?S.cards:S.checked;
+  set.has(it.id)?set.delete(it.id):set.add(it.id);
+}
+function shelfAll(){
+  const cur=shelves()[S.shelf],set=cur.kind==="card"?S.cards:S.checked;
+  const all=cur.items.every(it=>set.has(it.id));
+  cur.items.forEach(it=>all?set.delete(it.id):set.add(it.id));
+}
+function toast(m){$("toast").textContent=m;$("toast").classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>$("toast").classList.remove("show"),1800)}
+function setShelf(n){const L=shelves().length;S.shelf=Math.max(0,Math.min(L-1,n))}
+const VIEWS=[null,"ICON0","BOX_ART","PHYSICAL_MEDIA","BOX_3D"];
+function key(e){
+  const cur=shelves()[S.shelf],n=cur.items.length,i=S.idx[S.shelf]||0;let h=true;
+  switch(e.key){
+    case"ArrowLeft":if(S.zone==="grid"){if(i%COLS===0)S.zone="rail";else S.idx[S.shelf]=i-1}break;
+    case"ArrowRight":if(S.zone==="rail")S.zone="grid";else if(i%COLS<COLS-1&&i+1<n)S.idx[S.shelf]=i+1;break;
+    case"ArrowUp":if(S.zone==="rail")setShelf(S.shelf-1);else if(i-COLS>=0)S.idx[S.shelf]=i-COLS;break;
+    case"ArrowDown":if(S.zone==="rail")setShelf(S.shelf+1);else if(i+COLS<n)S.idx[S.shelf]=i+COLS;else if(Math.floor(i/COLS)<Math.floor((n-1)/COLS))S.idx[S.shelf]=n-1;break;
+    case"Enter":case" ":if(S.zone==="rail")S.zone="grid";else toggle(i);break;
+    case"q":case"Q":setShelf(S.shelf-1);break;
+    case"e":case"E":setShelf(S.shelf+1);break;
+    case"y":case"Y":shelfAll();break;
+    case"x":case"X":S.view=VIEWS[(VIEWS.indexOf(S.view)+1)%VIEWS.length];toast(`View: ${S.view?MODES[S.view]:"Library modes"}`);break;
+    case"s":case"S":{const a=[...S.checked].filter(id=>!PRE.has(id)).length+S.cards.size,r=[...PRE].filter(id=>!S.checked.has(id)).length;toast(`RPGs updated: ${a} added, ${r} removed`);break}
+    case"Escape":S.checked=new Set(PRE);S.cards.clear();toast("Cancelled. Nothing changed.");break;
+    default:h=false;
+  }
+  if(h){e.preventDefault();render()}
+}
+$("dev").addEventListener("keydown",key);
+$("rail").addEventListener("click",e=>{const s=e.target.closest(".shelf");if(s){S.shelf=+s.dataset.shelf;S.zone="grid";render()}});
+$("rows").addEventListener("click",e=>{const t=e.target.closest(".tile");if(t){S.zone="grid";S.idx[S.shelf]=+t.dataset.i;toggle(+t.dataset.i);render()}});
+PRESETS.forEach(([n,h],i)=>{const b=document.createElement("button");b.className="chip";b.id="preset-"+i;b.innerHTML=`<i style="background:${h}"></i>${n}`;b.onclick=()=>{S.preset=i;P=derive(h);render()};$("presets").appendChild(b)});
+VIEWS.forEach(v=>{const b=document.createElement("button");b.className="chip";b.id="view-"+(v||"lib");if(v)b.dataset.v=v;b.textContent=v?MODES[v]:"Library modes";b.onclick=()=>{S.view=v;render()};$("views").appendChild(b)});
+S.shelf=0;S.idx={0:1};
+render();
+})();
+</script>

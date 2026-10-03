@@ -2,6 +2,9 @@ package com.playfieldportal.feature.xmb.viewmodel
 
 import com.playfieldportal.core.domain.model.BackgroundTaskInfo
 import com.playfieldportal.core.domain.model.NotificationAction
+import com.playfieldportal.core.domain.model.NotificationDetail
+import com.playfieldportal.core.domain.model.PfpErrorCode
+import com.playfieldportal.feature.artwork.api.classifyScrapeFailure
 import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
@@ -46,15 +49,26 @@ class GameArtworkFetchRunner @Inject constructor(
             throw e
         } catch (e: Exception) {
             Timber.e(e, "Fetch Artwork failed for gameId=$gameId")
-            backgroundTasks.fail(taskId, "Artwork fetch failed", action)
+            backgroundTasks.fail(
+                taskId, "Artwork fetch failed", action,
+                NotificationDetail.notes(PfpErrorCode.AR_9001, summary = e.message,
+                    diagnostic = e.stackTraceToString().take(4_000)),
+                "Couldn't fetch artwork for ${game.displayTitle}",
+            )
             return false
         }
 
         when {
             // Game Detail is fetching this game already and reports its own result.
             result.alreadyRunning -> backgroundTasks.cancel(taskId)
-            result.success        -> backgroundTasks.complete(taskId, "Artwork updated", action)
-            else                  -> backgroundTasks.fail(taskId, result.errorMessage ?: "Artwork fetch failed", action)
+            result.success        -> backgroundTasks.complete(
+                taskId, null, action, null, "Artwork updated for ${game.displayTitle}",
+            )
+            else                  -> backgroundTasks.fail(
+                taskId, result.errorMessage ?: "Artwork fetch failed", action,
+                NotificationDetail.notes(classifyScrapeFailure(result.errorMessage), summary = result.errorMessage),
+                "Couldn't fetch artwork for ${game.displayTitle}",
+            )
         }
         return result.success
     }

@@ -14,8 +14,14 @@ import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.entity.ArtworkImportReportEntity
 import com.playfieldportal.core.data.repository.ArtworkFolderRepository
 import com.playfieldportal.core.domain.model.NotificationAction
+import com.playfieldportal.core.domain.model.NotificationDetail
+import com.playfieldportal.core.domain.model.PfpErrorCode
+import com.playfieldportal.core.domain.model.ResultItem
+import com.playfieldportal.core.domain.model.ResultOutcome
+import com.playfieldportal.core.domain.model.toDetailAction
 import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.feature.artwork.importer.ImportSummary
+import com.playfieldportal.feature.artwork.importer.RelinkBackgroundRule
 import com.playfieldportal.feature.artwork.store.ArtworkKind
 import com.playfieldportal.feature.artwork.store.ArtworkTempIO
 import com.playfieldportal.feature.artwork.store.InternalArtworkStore
@@ -53,7 +59,7 @@ class InternalArtworkMigrationWorker @AssistedInject constructor(
     private val gameDao: GameDao,
     private val artworkRecordDao: ArtworkRecordDao,
     private val reportDao: ArtworkImportReportDao,
-    // The shared sink: the in-app notification panel and the Android shade at once.
+    // The shared sink: the in-app notification panel (PFP's notifications are launcher-only).
     // Building a BackgroundTaskNotifier here reached the shade only, so this work ran and
     // finished without the panel ever hearing about it.
     private val tasks: BackgroundTaskCenter,
@@ -74,6 +80,10 @@ class InternalArtworkMigrationWorker @AssistedInject constructor(
         var failed = 0
         var bytes = 0L
         var cancelled = false
+        // Each file that did not move, for the Results sheet.
+        val failures = mutableListOf<ResultItem>()
+        // Not stoppable from the panel: a move stopped halfway leaves columns pointing at files
+        // in two places (the notification details plan, D7). Settings keeps its own cancel.
         tasks.start(TASK_ID, LABEL, TaskKind.ARTWORK)
 
         try {
@@ -109,6 +119,13 @@ class InternalArtworkMigrationWorker @AssistedInject constructor(
                         }
                         if (uri == null) {
                             failed++
+                            failures += ResultItem(
+                                primary = "${game.title} · ${asset.kind.name.lowercase().replaceFirstChar { it.uppercase() }}",
+                                outcome = ResultOutcome.FAILED,
+                                code = PfpErrorCode.AR_2002.id,
+                                path = asset.file.absolutePath,
+                                action = NotificationAction.OpenGame(asset.gameId).toDetailAction(),
+                            )
                         } else {
                             repointColumn(asset.gameId, asset.kind, asset.file.absolutePath, uri)
                             internal.deleteKind(asset.gameId, asset.kind)
@@ -129,20 +146,31 @@ class InternalArtworkMigrationWorker @AssistedInject constructor(
             cancelled = true
         } catch (e: Exception) {
             Timber.e(e, "Internal artwork migration failed")
-            tasks.fail(TASK_ID, e.message ?: "Unexpected error", NotificationAction.OpenSettingsScreen("settings_artwork"))
+            tasks.fail(
+                TASK_ID, e.message ?: "Unexpected error", NotificationAction.OpenSettingsScreen("settings_artwork"),
+                detail = NotificationDetail.notes(PfpErrorCode.AR_2002, summary = e.message,
+                    diagnostic = e.stackTraceToString().take(4_000)),
+                title = "Artwork move failed",
+            )
             persistReport(startedAt, migrated, skipped, failed, bytes, cancelled = false)
             return Result.failure(workDataOf(KEY_ERROR to (e.message ?: "Unexpected error")))
         }
 
         persistReport(startedAt, migrated, skipped, failed, bytes, cancelled)
         if (cancelled) {
-            tasks.complete(TASK_ID, "Cancelled — $migrated file(s) moved first")
+            tasks.stopped(
+                TASK_ID, "$migrated file(s) moved first",
+                detail = failures.takeIf { it.isNotEmpty() }?.let { NotificationDetail.results(it) },
+                title = "Artwork move stopped",
+            )
             throw CancellationException("Migration cancelled")
         }
         tasks.complete(
             TASK_ID,
             "$migrated moved, $skipped already covered, $failed failed",
             NotificationAction.OpenSettingsScreen("settings_artwork"),
+            detail = failures.takeIf { it.isNotEmpty() }?.let { NotificationDetail.results(it) },
+            title = "Artwork move finished",
         )
         return Result.success(workDataOf(KEY_MIGRATED to migrated, KEY_FAILED to failed))
     }
@@ -153,8 +181,14 @@ class InternalArtworkMigrationWorker @AssistedInject constructor(
         when (kind) {
             ArtworkKind.ICON ->
                 if (game.iconUri == oldPath || !routing.isValidRef(game.iconUri)) gameDao.updateIconUri(gameId, uri)
-            ArtworkKind.HERO ->
+            ArtworkKind.HERO -> {
                 if (game.heroUri == oldPath || !routing.isValidRef(game.heroUri)) gameDao.updateHero(gameId, uri)
+                // A scrape stores the hero file as the background too. The caller deletes the old
+                // file next, so a background still naming it has to move with it.
+                if (RelinkBackgroundRule.isHeroStandIn(game.artworkUri, oldPath)) {
+                    gameDao.updateArtwork(gameId, uri)
+                }
+            }
             ArtworkKind.BACKGROUND ->
                 if (game.artworkUri == oldPath || !routing.isValidRef(game.artworkUri)) gameDao.updateArtwork(gameId, uri)
             ArtworkKind.LOGO ->

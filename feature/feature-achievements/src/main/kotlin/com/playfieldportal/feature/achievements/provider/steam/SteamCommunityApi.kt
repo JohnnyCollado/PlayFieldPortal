@@ -6,6 +6,7 @@ import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.Streaming
 
 /**
  * The user's own Steam Community achievements page (steamcommunity.com). This is the only place
@@ -21,6 +22,8 @@ import retrofit2.http.Query
 interface SteamCommunityApi {
 
     @Headers("User-Agent: Mozilla/5.0")
+    // Streamed so callers can refuse an oversized page before reading it; they must close the body.
+    @Streaming
     @GET("profiles/{steamId64}/stats/{appId}/achievements")
     suspend fun achievementsPage(
         @Path("steamId64") steamId64: String,

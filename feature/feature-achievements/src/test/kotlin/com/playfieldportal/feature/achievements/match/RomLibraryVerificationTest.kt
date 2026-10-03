@@ -128,15 +128,15 @@ class RomLibraryVerificationTest {
         val key = System.getenv("RA_KEY")?.takeIf { it.isNotBlank() } ?: return null
         val url = "https://retroachievements.org/API/API_GetGameList.php?z=$user&y=$key&i=$consoleId&h=1&f=1"
         val body = URL(url).readText()
-        return json
+        return lenientJson
             .decodeFromString<List<RaEntry>>(body)
             .flatMap { it.Hashes }
             .map { it.lowercase() }
             .toSet()
     }
 
-    @Serializable
-    private val json = Json { ignoreUnknownKeys = true }
+    private val lenientJson = Json { ignoreUnknownKeys = true }
 
+    @Serializable
     private data class RaEntry(val Hashes: List<String> = emptyList())
 }

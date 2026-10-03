@@ -7,18 +7,25 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -26,13 +33,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.itemsIndexed as lazyItemsIndexed
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.itemsIndexed as lazyItemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -40,55 +46,58 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.isImeVisible
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.withFrameNanos
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.ui.input.pointer.pointerInput
-import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import coil3.compose.AsyncImage
 import com.playfieldportal.core.common.logging.LogRedaction
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPrompt
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.components.PfpModalSpec
+import com.playfieldportal.core.ui.components.rememberPfpModalHost
+import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardBottomReserve
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
+import com.playfieldportal.core.ui.keyboard.isVirtualKeyboardOverlayOpen
+import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
+import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
 import com.playfieldportal.core.ui.theme.LocalPFPColors
+import com.playfieldportal.core.ui.theme.menuCursor
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.feature.artwork.store.ArtworkKind
+import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 // The gap between grid tiles. Must equal StudioGridCapacity's GAP_DP, or the tiles drawn here stop
 // matching the capacity the ViewModel paged for.
@@ -131,16 +140,31 @@ fun ArtworkStudioScreen(
             viewModel.consumeClosed()   // clear immediately so reopening doesn't self-close
         }
     }
+    // Clear Artwork and Forget Match ask through the shared confirm modal. Its cursor lives in the
+    // host, so a press goes there first while one is up and only otherwise reaches the Studio.
+    val modal = rememberPfpModalHost(
+        spec = studioDestructiveModalSpec(
+            state = state,
+            onConfirm = viewModel::confirmDestructive,
+            onCancel = viewModel::cancelDestructive,
+        ),
+        // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
+        showHints = !showTouchControls,
+    )
     LaunchedEffect(pendingGamepadAction) {
         if (pendingGamepadAction != null) {
-            viewModel.handleGamepadAction(pendingGamepadAction)
+            if (!modal.intercept(pendingGamepadAction)) viewModel.handleGamepadAction(pendingGamepadAction)
             onGamepadActionConsumed()
         }
     }
 
-    // Local file picker — mime set follows the destination kind.
+    // Local file pickers — mime set follows the destination kind. A multi-asset kind takes several
+    // files in one trip through the picker; a single-art kind has one slot, so it takes one.
     val localPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) viewModel.applyLocal(uri)
+        if (uri != null) viewModel.applyLocal(listOf(uri))
+    }
+    val localMultiPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        viewModel.applyLocal(uris)
     }
     LaunchedEffect(state.localPickKind) {
         val kind = state.localPickKind ?: return@LaunchedEffect
@@ -148,19 +172,64 @@ fun ArtworkStudioScreen(
             com.playfieldportal.feature.artwork.store.ArtworkKind.MANUAL -> arrayOf("application/pdf")
             com.playfieldportal.feature.artwork.store.ArtworkKind.VIDEO,
             com.playfieldportal.feature.artwork.store.ArtworkKind.ICON1  -> arrayOf("video/mp4", "video/webm", "video/*")
-            else -> arrayOf("image/png", "image/jpeg", "image/webp")
+            // GIF too: animated art (GIF / animated WebP) plays under Animated Images.
+            else -> arrayOf("image/png", "image/jpeg", "image/webp", "image/gif")
         }
-        localPicker.launch(mimes)
+        if (com.playfieldportal.feature.artwork.store.ArtworkFileNaming.supportsMultiple(kind)) localMultiPicker.launch(mimes)
+        else localPicker.launch(mimes)
         viewModel.consumeLocalPick()
     }
 
-    ArtworkStudioContent(
-        state = state,
-        actions = viewModel,
-        showTouchControls = showTouchControls,
-        onTouchInput = onTouchInput,
-        modifier = modifier,
-    )
+    // A Box of its own, so the modal's full-size scrim stacks over the Studio whatever the caller is.
+    Box(modifier) {
+        ArtworkStudioContent(
+            state = state,
+            actions = viewModel,
+            showTouchControls = showTouchControls,
+            onTouchInput = onTouchInput,
+        )
+        modal.Content()
+    }
+}
+
+/**
+ * The shared confirm for [ArtworkStudioUiState.destructiveConfirm], or null when none is asking.
+ * Both open on Cancel (destructive confirms do), so a stray Confirm press dismisses.
+ *
+ * Internal and free of composition so the mapping from UI state to modal can be tested directly.
+ */
+internal fun studioDestructiveModalSpec(
+    state: ArtworkStudioUiState,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+): PfpModalSpec? {
+    val game = state.game ?: return null
+    return when (state.destructiveConfirm) {
+        StudioDestructive.CLEAR_ARTWORK -> {
+            val label = STUDIO_TABS.getOrNull(state.tabIndex)?.label ?: "artwork"
+            PfpModalSpec.Confirm(
+                key = "clear_artwork:${game.id}:$label",
+                title = "Clear Artwork?",
+                message = "The $label artwork for ${game.displayTitle} is deleted, along with its " +
+                    "backup and the original copy. This can't be undone.",
+                confirmLabel = "Clear",
+                destructive = true,
+                onConfirm = onConfirm,
+                onCancel = onCancel,
+            )
+        }
+        StudioDestructive.FORGET_MATCH -> PfpModalSpec.Confirm(
+            key = "forget_match:${game.id}",
+            title = "Forget Match?",
+            message = "${state.matchProvider?.label ?: "The provider"} will be asked about " +
+                "${game.displayTitle} afresh. Your artwork and metadata are left alone.",
+            confirmLabel = "Forget",
+            destructive = true,
+            onConfirm = onConfirm,
+            onCancel = onCancel,
+        )
+        null -> null
+    }
 }
 
 /**
@@ -199,7 +268,7 @@ internal fun ArtworkStudioContent(
             // Studio-local rather than the shared DetailBreadcrumb: this row carries a trailing
             // query field (L.3), and the breadcrumb's "Artwork Studio › category › source" trail
             // is what the approved mock replaces with flat tabs. The back arrow still walks the
-            // level ladder exactly like B (grid → sources → categories → close).
+            // level ladder exactly like B (grid → sources → close).
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth().height(36.dp),
@@ -327,17 +396,11 @@ internal fun ArtworkStudioContent(
                 ) {
                     lazyItemsIndexed(STUDIO_TABS) { index, tab ->
                         val selected = state.tabIndex == index
-                        val focusedZone = state.zone == StudioZone.TABS && selected
                         Box(
                             modifier = Modifier
                                 .height(24.dp)
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(if (selected) accent.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.07f))
-                                .border(
-                                    1.dp,
-                                    if (focusedZone) accent else Color.Transparent,
-                                    RoundedCornerShape(6.dp),
-                                )
                                 .clickable { actions.selectTab(index) }
                                 .padding(horizontal = 8.dp),
                             contentAlignment = Alignment.Center,
@@ -419,7 +482,7 @@ internal fun ArtworkStudioContent(
                                 // key(previewVersion) forces a fresh AsyncImage after an apply so the
                                 // preview reloads even when the portable library reused the same URI.
                                 state.currentUri != null -> androidx.compose.runtime.key(state.previewVersion) {
-                                    AsyncImage(
+                                    com.playfieldportal.core.ui.motion.ArtworkImage(
                                         model = state.currentUri,
                                         contentDescription = null,
                                         contentScale = ContentScale.Fit,
@@ -469,15 +532,16 @@ internal fun ArtworkStudioContent(
                                     .clip(RoundedCornerShape(6.dp))
                                     .background(if (selected) accent.copy(alpha = 0.24f) else Color.White.copy(alpha = 0.07f))
                                     .border(1.dp, if (focusedZone) accent else Color.Transparent, RoundedCornerShape(6.dp))
-                                    .clickable {
-                                        actions.selectSource(index)
-                                        if (source == StudioSource.LOCAL) actions.requestLocalPick()
-                                    }
+                                    // Local File's upload bar is the picker's one entry, so choosing
+                                    // the source only shows it (and the slot's files beneath).
+                                    .clickable { actions.selectSource(index) }
                                     .padding(horizontal = 8.dp),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
-                                    if (badge == null) source.label else "${source.label} · $badge",
+                                    // ● marks a source whose filters are narrower than its defaults.
+                                    (if (badge == null) source.label else "${source.label} · $badge") +
+                                        if (state.sourceFiltered(source)) " ●" else "",
                                     color = when {
                                         !available -> Color.White.copy(alpha = 0.28f)
                                         selected   -> Color.White
@@ -629,6 +693,37 @@ internal fun ArtworkStudioContent(
                     }
                     Spacer(Modifier.height(6.dp))
 
+                    // ── Local File's upload bar ───────────────────────────────
+                    // A thin bar the grid's width, above it and outside the measured slot, so the
+                    // slot's own files still page as whole gridfuls beneath it. A grid-zone stop:
+                    // up from the top row reaches it, A there opens the device picker.
+                    if (actions.sourcesForTab().getOrNull(state.sourceIndex) == StudioSource.LOCAL) {
+                        val barFocused = state.localBarFocused
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(28.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (barFocused) accent.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.06f))
+                                .border(
+                                    if (barFocused) 2.dp else 1.dp,
+                                    if (barFocused) accent else Color.White.copy(alpha = 0.22f),
+                                    RoundedCornerShape(6.dp),
+                                )
+                                .clickable(onClick = actions::requestLocalPick),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                if (state.selectsMultiple) "+  Add files from this device" else "+  Choose a file from this device",
+                                color = if (barFocused) Color.White else Color.White.copy(alpha = 0.75f),
+                                fontSize = 11.sp,
+                                maxLines = 1,
+                            )
+                        }
+                        Spacer(Modifier.height(6.dp))
+                    }
+
                     // ── Grid slot ─────────────────────────────────────────────
                     // Whatever height is left belongs to the grid. Its measured size decides how many
                     // tiles one page holds (AD-17); the ViewModel hears about it only when it changes.
@@ -673,18 +768,42 @@ internal fun ArtworkStudioContent(
                                     )
                                 }
                             }
-                            activeSource == StudioSource.LOCAL -> Box(
-                                Modifier
-                                    .fillMaxSize()
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(Color.White.copy(alpha = 0.05f))
-                                    .clickable(onClick = actions::requestLocalPick),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    "Press Confirm to choose a file from this device",
-                                    color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp,
-                                )
+                            // The upload bar above says how to add; this says what the slot holds.
+                            activeSource == StudioSource.LOCAL && state.results.isEmpty() ->
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Text(
+                                        if (state.selectsMultiple) {
+                                            "No ${STUDIO_TABS[state.tabIndex].label.lowercase()}s stored yet"
+                                        } else {
+                                            "The file you choose replaces this ${STUDIO_TABS[state.tabIndex].label}"
+                                        },
+                                        color = Color.White.copy(alpha = 0.45f), fontSize = 12.sp,
+                                    )
+                                }
+                            // The browse found art and the filters hid it: say so, and how to undo it.
+                            state.filtersHideEverything -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        "Nothing matches these filters · ${state.unfilteredTotal} hidden",
+                                        color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp,
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color.White.copy(alpha = 0.1f))
+                                            .clickable(onClick = actions::clearFilters)
+                                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                                    ) {
+                                        ControllerPrompt(
+                                            action = GamepadAction.SELECT,
+                                            label = "Clear Filters",
+                                            glyphSize = 14.dp,
+                                            labelColor = Color.White,
+                                        )
+                                    }
+                                }
                             }
                             state.results.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text(
@@ -714,7 +833,7 @@ internal fun ArtworkStudioContent(
                                     userScrollEnabled = false,
                                 ) {
                                     itemsIndexed(state.results) { index, art ->
-                                        val focused = state.zone == StudioZone.GRID && state.gridIndex == index
+                                        val focused = state.zone == StudioZone.GRID && state.gridIndex == index && !state.localBarFocused
                                         val previewing = art.isVideo && (focused || touchPreviewIndex == index)
                                         Box(
                                             modifier = Modifier
@@ -756,8 +875,9 @@ internal fun ArtworkStudioContent(
                                                     color = Color.White.copy(alpha = 0.75f),
                                                     fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
                                                 )
-                                                else -> AsyncImage(
+                                                else -> com.playfieldportal.core.ui.motion.ArtworkImage(
                                                     model = art.thumb ?: art.url,
+                                                    focused = focused,
                                                     contentDescription = null,
                                                     contentScale = ContentScale.Crop,
                                                     modifier = Modifier.fillMaxSize(),
@@ -804,6 +924,7 @@ internal fun ArtworkStudioContent(
                         rangeStart = state.rangeStart,
                         rangeEnd = state.rangeEnd,
                         totalResults = state.totalResults,
+                        unfilteredTotal = state.unfilteredTotal,
                         picks = state.queueSummary,
                         page = state.page,
                         pageCount = state.pageCount,
@@ -829,25 +950,22 @@ internal fun ArtworkStudioContent(
             if (!showTouchControls) ControllerPromptBar(
                 items = buildList {
                     when (state.zone) {
-                        StudioZone.TABS -> {
-                            add(ControllerPromptItem(GamepadAction.SELECT, "sources"))
-                            add(ControllerPromptItem(GamepadAction.BACK, "close"))
-                        }
                         StudioZone.SOURCES -> {
-                            add(ControllerPromptItem(GamepadAction.SELECT, "browse / pick file"))
-                            add(ControllerPromptItem(GamepadAction.BACK, "back"))
+                            add(ControllerPromptItem(GamepadAction.SELECT, "Browse / Pick File"))
+                            add(ControllerPromptItem(GamepadAction.BACK, "Close"))
                         }
                         StudioZone.GRID -> {
-                            add(ControllerPromptItem(GamepadAction.SELECT, if (state.selectsMultiple) "check" else "preview / apply"))
-                            add(ControllerPromptItem(GamepadAction.BACK, "back"))
+                            add(ControllerPromptItem(GamepadAction.SELECT, if (state.selectsMultiple) "Check" else "Preview / Apply"))
+                            add(ControllerPromptItem(GamepadAction.BACK, "Back"))
                         }
                     }
                     // START applies from any level, so its hint shows whenever this tab has changes waiting.
-                    if (state.queueSummary.hasChanges) add(ControllerPromptItem(GamepadAction.HOME, "apply"))
-                    add(ControllerPromptItem(GamepadAction.CHANGE_SORT, "search"))
-                    add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "options"))
+                    if (state.queueSummary.hasChanges) add(ControllerPromptItem(GamepadAction.HOME, "Apply"))
+                    add(ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"))
+                    add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
                 },
-                modifier = Modifier.padding(top = 6.dp),
+                // PFP's keyboard brings its own prompts while it is up.
+                modifier = Modifier.padding(top = 6.dp).alpha(if (isVirtualKeyboardOverlayOpen()) 0f else 1f),
                 labelColor = Color.White.copy(alpha = 0.35f),
                 labelStyle = TextStyle(fontSize = 10.sp),
                 glyphSize = 14.dp,
@@ -887,7 +1005,7 @@ internal fun ArtworkStudioContent(
                     } else if (art.isVideo) {
                         Text("Video snap from ${art.provider}", color = Color.White, fontSize = 14.sp)
                     } else {
-                        AsyncImage(
+                        com.playfieldportal.core.ui.motion.ArtworkImage(
                             model = art.url,
                             contentDescription = null,
                             contentScale = ContentScale.Fit,
@@ -937,15 +1055,28 @@ internal fun ArtworkStudioContent(
             val keyboard = LocalSoftwareKeyboardController.current
             val focusManager = LocalFocusManager.current
             val editing by rememberUpdatedState(state.changeMatchEditing)
+            // PFP's keyboard for an edit the controller started: Done looks the title up, as the
+            // system keyboard's Search key does; BACK just ends editing, leaving the draft.
+            val matchEdit = rememberVirtualKeyboardEdit(
+                text = state.changeMatchDraft,
+                onTextChange = actions::onChangeMatchDraftChanged,
+                placement = KeyboardPlacement.BOTTOM_CENTER,
+                onDone = { actions.submitChangeMatch() },
+                onClose = { actions.stopChangeMatchEdit() },
+            )
             LaunchedEffect(state.changeMatchEditing) {
                 if (state.changeMatchEditing) {
-                    // Settle a frame around the readOnly→editable flip before showing the keyboard —
-                    // the same sequence as WizardTextField / SettingsTextFieldRow.
+                    // Settle a frame around the readOnly→editable flip before raising a keyboard —
+                    // the same sequence as WizardTextField / SettingsTextFieldRow. PFP's opens
+                    // first, so the field's own keyboard request is already held when focus lands.
                     withFrameNanos { }
+                    val virtual = matchEdit.start()
+                    if (virtual) withFrameNanos { }
                     runCatching { matchFocus.requestFocus() }
                     withFrameNanos { }
-                    keyboard?.show()
+                    if (!virtual) keyboard?.show()
                 } else {
+                    matchEdit.stop()
                     keyboard?.hide()
                     focusManager.clearFocus()
                 }
@@ -997,10 +1128,11 @@ internal fun ArtworkStudioContent(
                         color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp,
                     )
                     Spacer(Modifier.height(12.dp))
+                    VirtualKeyboardTextInput(matchEdit) {
                     BasicTextField(
-                        value = state.changeMatchDraft,
+                        value = matchEdit.fieldValue,
                         readOnly = !state.changeMatchEditing,
-                        onValueChange = actions::onChangeMatchDraftChanged,
+                        onValueChange = matchEdit::onFieldValueChange,
                         singleLine = true,
                         textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
                         cursorBrush = SolidColor(accent),
@@ -1033,10 +1165,12 @@ internal fun ArtworkStudioContent(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
+                            .virtualKeyboardField(matchEdit)
                             .focusRequester(matchFocus)
                             // A tap focuses the field; that is touch asking to type, so enter edit mode.
                             .onFocusChanged { if (it.isFocused && !editing) actions.startChangeMatchEdit() },
                     )
+                    }
                     Spacer(Modifier.height(12.dp))
                     // A cross-platform list is offered, never assumed: another release's artwork may
                     // not be what this game uses, so say where the list came from.
@@ -1140,12 +1274,32 @@ internal fun ArtworkStudioContent(
         // ── Search overlay (X / tap) ──────────────────────────────────────────
         if (state.searchOpen) {
             val focusRequester = remember { FocusRequester() }
-            LaunchedEffect(Unit) { runCatching { focusRequester.requestFocus() } }
+            // PFP's keyboard while the controller's cursor is on the field: Done searches; BACK
+            // leaves the field for the buttons (Search · Use game title · Cancel), and UP from them
+            // brings the cursor — and the keyboard — back.
+            val queryEdit = rememberVirtualKeyboardEdit(
+                text = state.queryDraft,
+                onTextChange = actions::onQueryDraftChanged,
+                placement = KeyboardPlacement.BOTTOM_CENTER,
+                onDone = { actions.submitSearch() },
+                onClose = { actions.leaveSearchField() },
+            )
+            val onField = state.searchButton == null
+            LaunchedEffect(onField) {
+                if (onField) {
+                    if (!queryEdit.isOpen && queryEdit.start()) withFrameNanos { }
+                    runCatching { focusRequester.requestFocus() }
+                } else {
+                    queryEdit.stop()
+                }
+            }
             Box(
                 Modifier
                     .fillMaxSize()
                     .background(Color(0xC0000000))
-                    .clickable(onClick = actions::cancelSearch),
+                    .clickable(onClick = actions::cancelSearch)
+                    // Keeps the card above PFP's keyboard, which imePadding() cannot see.
+                    .padding(bottom = if (queryEdit.isOpen) VirtualKeyboardBottomReserve else 0.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(
@@ -1167,9 +1321,10 @@ internal fun ArtworkStudioContent(
                         color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp,
                     )
                     Spacer(Modifier.height(12.dp))
+                    VirtualKeyboardTextInput(queryEdit) {
                     BasicTextField(
-                        value = state.queryDraft,
-                        onValueChange = actions::onQueryDraftChanged,
+                        value = queryEdit.fieldValue,
+                        onValueChange = queryEdit::onFieldValueChange,
                         singleLine = true,
                         textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
                         cursorBrush = SolidColor(accent),
@@ -1193,8 +1348,12 @@ internal fun ArtworkStudioContent(
                                 inner()
                             }
                         },
-                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .virtualKeyboardField(queryEdit)
+                            .focusRequester(focusRequester),
                     )
+                    }
                     Spacer(Modifier.height(14.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
@@ -1203,6 +1362,7 @@ internal fun ArtworkStudioContent(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(accent.copy(alpha = 0.30f))
+                                .menuCursor(state.searchButton == StudioSearchButton.SEARCH)
                                 .clickable(onClick = actions::submitSearch)
                                 .padding(horizontal = 16.dp, vertical = 7.dp),
                         )
@@ -1213,6 +1373,7 @@ internal fun ArtworkStudioContent(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color.White.copy(alpha = 0.07f))
+                                .menuCursor(state.searchButton == StudioSearchButton.USE_GAME_TITLE)
                                 .clickable(onClick = actions::resetSearchToTitle)
                                 .padding(horizontal = 14.dp, vertical = 7.dp),
                         )
@@ -1222,6 +1383,7 @@ internal fun ArtworkStudioContent(
                             color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
+                                .menuCursor(state.searchButton == StudioSearchButton.CANCEL)
                                 .clickable(onClick = actions::cancelSearch)
                                 .padding(horizontal = 12.dp, vertical = 7.dp),
                         )
@@ -1231,15 +1393,31 @@ internal fun ArtworkStudioContent(
         }
 
         // ── Options menu overlay (Y / triangle) — the shared XMB-style context menu ──
-        if (state.actionsOpen && !state.showFileInfo) {
-            val menuActions = state.availableActions
+        // One Filters row comes first when the active source has filters, then the slot and source
+        // actions. Filters steps into the source's filter list, Tracker style ("Style" · "3 of 5"),
+        // and each list inside it (Style, Region, …) replaces it while open.
+        if (state.actionsOpen && !state.showFileInfo && state.filterGroup != null) {
+            com.playfieldportal.core.ui.components.PspContextMenuOverlay(
+                title = state.filterGroup.title,
+                rows = state.filterGroupRows.map {
+                    com.playfieldportal.core.ui.components.PspMenuRow(it.label, value = it.value, checked = it.checked)
+                },
+                selectedIndex = state.filterGroupIndex,
+                onRowActivated = actions::activateFilterRow,
+                onDismiss = actions::closeFilterGroup,
+                scrim = Color(0xA6000000),
+            )
+        } else if (state.actionsOpen && !state.showFileInfo) {
+            val filterRows = state.filterRootRows.map {
+                com.playfieldportal.core.ui.components.PspMenuRow(it.label, value = it.value)
+            }
             com.playfieldportal.core.ui.components.PspContextMenuOverlay(
                 title = STUDIO_TABS[state.tabIndex].label,
-                rows = menuActions.map {
+                rows = filterRows + state.availableActions.map {
                     com.playfieldportal.core.ui.components.PspMenuRow(it.label, isDestructive = it == StudioAction.CLEAR)
                 },
                 selectedIndex = state.resolvedActionsIndex,
-                onRowActivated = { index -> menuActions.getOrNull(index)?.let(actions::runAction) },
+                onRowActivated = actions::activateMenuItem,
                 onDismiss = actions::closeActions,
                 // Darker than the XMB default — the grid behind is busy, so let it recede.
                 scrim = Color(0xA6000000),
@@ -1261,7 +1439,7 @@ internal fun ArtworkStudioContent(
             )
         }
 
-        // ── Leave prompt (task 5.2): B from the categories while changes wait to be applied ──
+        // ── Leave prompt (task 5.2): B from the source row while changes wait to be applied ──
         if (state.leavePromptOpen) {
             val waiting = state.selection.size + state.removals.size
             com.playfieldportal.core.ui.components.PspContextMenuOverlay(
@@ -1362,19 +1540,10 @@ internal fun ArtworkStudioContent(
             if (state.cropOptionsOpen) {
                 val currentShape = CropShapeChoice.of(state.cropProfileOverride)
                 com.playfieldportal.core.ui.components.PspContextMenuOverlay(
-                    title = "CROP OPTIONS",
-                    rows = state.cropOptionRows.map { row ->
-                        val shape = row.shape
-                        if (shape == null) {
-                            com.playfieldportal.core.ui.components.PspMenuRow(
-                                if (state.cropPreviewEnabled) "Live Preview: On" else "Live Preview: Off",
-                            )
-                        } else {
-                            com.playfieldportal.core.ui.components.PspMenuRow(
-                                "Shape: ${shape.label}",
-                                checked = shape == currentShape,
-                            )
-                        }
+                    title = STUDIO_CROP_OPTIONS_TITLE,
+                    rows = state.cropOptionRows.map { option ->
+                        val row = studioCropRow(option, state.cropPreviewEnabled, currentShape)
+                        com.playfieldportal.core.ui.components.PspMenuRow(row.label, checked = row.checked, value = row.value)
                     },
                     selectedIndex = state.cropOptionsIndex,
                     onRowActivated = actions::activateCropOption,

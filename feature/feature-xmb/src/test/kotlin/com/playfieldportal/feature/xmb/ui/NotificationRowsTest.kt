@@ -138,4 +138,22 @@ class NotificationRowsTest {
         val now = 1_700_000_000_000L
         assertEquals("Just Now", notificationTimestamp(now + 5_000, now, Locale.US))
     }
+
+    // ── Stoppable running rows ────────────────────────────────────────────────
+
+    @Test
+    fun `a stoppable running row is selectable, a stopping or unstoppable one is not`() {
+        val rows = buildNotificationRows(
+            listOf(
+                task("a").copy(stoppable = true),
+                task("b").copy(stoppable = true, stopping = true),
+                task("c"),
+            ),
+            emptyList(),
+        )
+        assertEquals(listOf(1), rows.selectableIndices())
+        assertEquals(1, rows.firstSelectableIndex())
+        assertEquals("a", rows.runningAt(1)?.id)
+        assertNull(rows.runningAt(2), "a stopping row is not a stop target")
+    }
 }

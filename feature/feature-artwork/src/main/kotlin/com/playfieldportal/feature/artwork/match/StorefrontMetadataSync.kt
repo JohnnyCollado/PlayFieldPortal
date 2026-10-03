@@ -78,12 +78,13 @@ class StorefrontMetadataSync @Inject constructor(
     suspend fun run(games: List<GameEntity>): Summary {
         if (games.isEmpty()) return Summary()
 
-        tasks.start(
+        tasks.startStoppable(
             id = TASK_ID,
             label = "Matching storefront metadata…",
             kind = TaskKind.METADATA,
             current = 0,
             total = games.size,
+            stopNote = "Games already matched keep their details.",
         )
 
         var summary = Summary()
@@ -92,9 +93,19 @@ class StorefrontMetadataSync @Inject constructor(
                 summary += resolver.resolve(game)
                 tasks.progress(TASK_ID, index + 1, games.size, detail = game.title)
             }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            tasks.settleCancelled(TASK_ID, "Stopped after ${summary.processed} of ${games.size}",
+                title = "Storefront sync stopped")
+            throw e
         } catch (e: Throwable) {
-            // A cancelled or crashed run must not strand a row in RUNNING forever.
-            tasks.fail(TASK_ID, "Stopped after ${summary.processed} of ${games.size}")
+            // A crashed run must not strand a row in RUNNING forever.
+            tasks.fail(
+                TASK_ID, "Stopped after ${summary.processed} of ${games.size}",
+                detail = com.playfieldportal.core.domain.model.NotificationDetail.notes(
+                    com.playfieldportal.feature.artwork.api.classifyScrapeFailure(e.message), summary = e.message,
+                    diagnostic = e.stackTraceToString().take(4_000)),
+                title = "Storefront sync failed",
+            )
             Timber.w(e, "Storefront metadata sync stopped early")
             throw e
         }
@@ -102,6 +113,7 @@ class StorefrontMetadataSync @Inject constructor(
         tasks.complete(
             id = TASK_ID,
             message = summary.message,
+            title = "Storefront sync finished",
         )
         return summary
     }

@@ -9,16 +9,21 @@ import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.core.ui.sound.MenuSound
+import com.playfieldportal.core.ui.sound.MenuSoundPlayer
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
+import com.playfieldportal.feature.achievements.provider.steam.SteamCandidate
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -92,8 +97,11 @@ class ShibaCoinsViewModelTest {
     )
 
     private lateinit var achievements: AchievementController
+    private lateinit var games: GameRepository
     private lateinit var autoMatcher: AchievementAutoMatcher
     private lateinit var folderLinker: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamFolderLinker
+    private lateinit var steamGate: com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate
+    private lateinit var menuSound: MenuSoundPlayer
     private lateinit var viewModel: ShibaCoinsViewModel
 
     @Before
@@ -114,10 +122,89 @@ class ShibaCoinsViewModelTest {
             // No folder has been pointed at, so the pre-check never short-circuits the flow.
             coEvery { registeredFolderFor(any()) } returns null
         }
-        val games = mockk<GameRepository> {
+        games = mockk {
             coEvery { getById(gameId) } returns Game(id = gameId, title = "Final Fantasy IX", platformId = "nds")
         }
-        viewModel = ShibaCoinsViewModel(games, achievements, autoMatcher, folderLinker)
+        steamGate = mockk {
+            coEvery { isLocalCopy(any()) } returns false
+        }
+        menuSound = mockk(relaxed = true)
+        viewModel = ShibaCoinsViewModel(games, achievements, autoMatcher, folderLinker, steamGate, menuSound)
+    }
+
+    // ── A local copy of a Steam game ────────────────────────────────────────────
+    //
+    // A Windows game whose Steam id is not in the user's Steam library is never linked to Steam —
+    // Steam would serve it nothing. Its progress is in its own folder, so its page asks for that
+    // folder as soon as it opens, rather than asking whether the copy is a Steam one first.
+
+    private val windowsGame = Game(id = gameId, title = "Digimon Story Time Stranger", platformId = "windows")
+
+    private fun openWindows(local: Boolean, links: List<ProviderGameLinkEntity> = emptyList()) {
+        coEvery { games.getById(gameId) } returns windowsGame
+        coEvery { steamGate.isLocalCopy(windowsGame) } returns local
+        every { achievements.observeLinks(gameId) } returns flowOf(links)
+        open()
+    }
+
+    @Test
+    fun `an unlinked local copy opens on the folder picker`() {
+        openWindows(local = true)
+
+        assertEquals(AutoMatchStep.PICK_FOLDER, state.autoMatchStep)
+        assertTrue(state.requestFolderPick)
+    }
+
+    @Test
+    fun `a game whose ownership is unknown waits for the user to say what it is`() {
+        openWindows(local = false)
+
+        assertNull(state.autoMatchStep)
+        assertFalse(state.requestFolderPick)
+    }
+
+    @Test
+    fun `a local copy that is already linked is not asked again`() {
+        openWindows(
+            local = true,
+            links = listOf(
+                ProviderGameLinkEntity(
+                    gameId = gameId,
+                    provider = AchievementProvider.LOCAL_STEAM.name,
+                    providerGameId = "1984270",
+                    source = "MANUAL",
+                    resolvedAt = 0L,
+                ),
+            ),
+        )
+
+        assertNull(state.autoMatchStep)
+    }
+
+    // ── A result that arrives after the page moved on ───────────────────────────
+
+    @Test
+    fun `a manual app id that fails after the page moved on unlinks the game it was entered for`() {
+        // The ViewModel is reused from game to game and keeps the open game in a field. A sync is
+        // a network call — long enough to back out and open another game — and a failed one
+        // unlinks. It has to unlink the game the id was typed for, not whichever is open now.
+        val otherGameId = 2L
+        coEvery { games.getById(otherGameId) } returns Game(id = otherGameId, title = "Chrono Trigger", platformId = "nds")
+        every { achievements.observeGameCoins(otherGameId) } returns MutableStateFlow(null)
+        every { achievements.observeCoins(otherGameId) } returns MutableStateFlow(emptyList())
+        every { achievements.observeLink(otherGameId) } returns MutableStateFlow(null)
+        val sync = kotlinx.coroutines.CompletableDeferred<ProviderSyncResult>()
+        coEvery { achievements.syncGameById(gameId) } coAnswers { sync.await() }
+        open()
+
+        viewModel.submitManualAppId("480490")
+        viewModel.load(ShibaCoinsTarget.LibraryGame(otherGameId))
+        sync.complete(ProviderSyncResult.NotFound)
+
+        coVerify(exactly = 1) { achievements.unlink(gameId) }
+        coVerify(exactly = 0) { achievements.unlink(otherGameId) }
+        // And the other game's page is not told that an app id it never saw "doesn't match".
+        assertFalse(state.message.orEmpty().contains("doesn't match"))
     }
 
     @After
@@ -369,6 +456,54 @@ class ShibaCoinsViewModelTest {
     }
 
     @Test
+    fun `Back from the Sort list climbs to the root on its row, and a second Back closes`() {
+        open()
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.SELECT)
+        assertEquals(CoinOptionGroup.SORT, state.options?.group)
+
+        press(GamepadAction.BACK)
+        assertEquals(CoinOptionsMenu(selectedIndex = 0), state.options)
+        assertFalse(state.closed)
+
+        press(GamepadAction.BACK)
+        assertNull(state.options)
+        assertFalse(state.closed)
+    }
+
+    @Test
+    fun `Triangle closes the menu from inside the Sort list`() {
+        open()
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.SELECT, GamepadAction.OPEN_CONTEXT_MENU)
+
+        assertNull(state.options)
+    }
+
+    @Test
+    fun `the Options cursor clamps at both ends and sounds only when it moves`() {
+        open()
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.NAVIGATE_UP)
+        assertEquals(0, state.options?.selectedIndex)
+        verify(exactly = 0) { menuSound.play(MenuSound.SCROLL, any()) }
+
+        repeat(10) { press(GamepadAction.NAVIGATE_DOWN) }
+        assertEquals(state.optionRows.lastIndex, state.options?.selectedIndex)
+        verify(exactly = state.optionRows.lastIndex) { menuSound.play(MenuSound.SCROLL, any()) }
+    }
+
+    @Test
+    fun `opening a list sounds SELECT, a choice CONFIRM, and leaving BACK`() {
+        open()
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.SELECT)
+        verify(exactly = 1) { menuSound.play(MenuSound.SELECT, any()) }
+
+        press(GamepadAction.SELECT)
+        verify(exactly = 1) { menuSound.play(MenuSound.CONFIRM, any()) }
+
+        press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.BACK)
+        verify(exactly = 1) { menuSound.play(MenuSound.BACK, any()) }
+    }
+
+    @Test
     fun `the Sort list applies its choice and closes the menu`() {
         open()
         press(GamepadAction.OPEN_CONTEXT_MENU)
@@ -393,16 +528,80 @@ class ShibaCoinsViewModelTest {
         assertNull(state.options)
     }
 
-    @Test
-    fun `Change Match unlinks a Steam game`() {
+    // ── Change Match (Task 4.9): unlink, then pick the new Steam match in Coins' own panel ──────
+
+    private val halo = SteamCandidate("976730", "Halo: The Master Chief Collection")
+    private val haloOther = SteamCandidate("1064221", "Halo Infinite")
+
+    private fun openChangeMatch(found: List<SteamCandidate> = listOf(halo, haloOther)) {
+        coEvery { achievements.searchSteam(any()) } returns found
         link.value = link.value!!.copy(provider = AchievementProvider.STEAM.name)
         open()
-        press(GamepadAction.OPEN_CONTEXT_MENU)
+        chooseOption(CoinOption.ChangeMatch)
+    }
 
-        assertEquals(listOf("Sort (Tier)", "Refresh this game", "Change Match"), state.optionRows.map { it.label })
-        viewModel.onOptionActivated(2)
+    @Test
+    fun `Change Match unlinks the game and opens the Steam picker seeded with a title search`() {
+        openChangeMatch()
 
-        coVerify { achievements.unlink(gameId) }
+        coVerify(exactly = 1) { achievements.unlink(gameId) }
+        coVerify { achievements.searchSteam("Final Fantasy IX") }
+        assertNull(state.options)
+        assertEquals(AutoMatchStep.IDENTIFY, state.autoMatchStep)
+        val picker = state.storefrontMatch!!
+        assertFalse(picker.loading)
+        assertEquals(listOf("976730", "1064221"), picker.rows.map { it.storeId })
+    }
+
+    @Test
+    fun `Change Match does not ask to confirm - the user re-picks the match`() {
+        openChangeMatch()
+
+        assertFalse(state.unlinkConfirm)
+    }
+
+    @Test
+    fun `choosing a Steam candidate links that app id and syncs`() {
+        openChangeMatch()
+
+        viewModel.onStorefrontRowTapped(1)   // focus the second row
+        viewModel.onStorefrontRowTapped(1)   // then activate it
+
+        coVerify { achievements.linkManually(gameId, AchievementProvider.STEAM, "1064221") }
+        coVerify { achievements.syncGameById(gameId) }
+        assertNull(state.storefrontMatch)
+        assertNull(state.autoMatchStep)
+    }
+
+    @Test
+    fun `No correct match closes the picker and links nothing`() {
+        openChangeMatch()
+
+        viewModel.chooseStorefrontCandidate(state.storefrontMatch!!.noMatchIndex)
+
+        coVerify(exactly = 0) { achievements.linkManually(any(), any(), any()) }
+        assertNull(state.storefrontMatch)
+        assertNull(state.autoMatchStep)
+    }
+
+    @Test
+    fun `Back leaves the Steam picker without linking`() {
+        openChangeMatch()
+
+        press(GamepadAction.BACK)
+
+        coVerify(exactly = 0) { achievements.linkManually(any(), any(), any()) }
+        assertNull(state.storefrontMatch)
+        assertFalse(state.closed)
+    }
+
+    @Test
+    fun `a title Steam does not list still opens the picker, with only No correct match`() {
+        openChangeMatch(found = emptyList())
+
+        val picker = state.storefrontMatch!!
+        assertTrue(picker.rows.isEmpty())
+        assertEquals(1, picker.stopCount)
     }
 
     @Test
@@ -493,5 +692,186 @@ class ShibaCoinsViewModelTest {
         open()
 
         assertEquals(1_000L, state.lastSyncedAt)
+    }
+
+    // ── Two sets for one game: Steam and Local Steam (owned, played locally) ───
+
+    private fun steamFamilyCoin(provider: AchievementProvider, id: String, earned: Boolean) =
+        entity(id, ShibaTier.BRONZE, 30.0, earned).copy(provider = provider.name, providerGameId = "524220")
+
+    private fun steamFamilyLink(provider: AchievementProvider) = ProviderGameLinkEntity(
+        gameId = gameId, provider = provider.name, providerGameId = "524220", source = "MANUAL", resolvedAt = 0L,
+    )
+
+    private fun steamFamilySummary(provider: AchievementProvider, earned: Int) = GameCoins(
+        provider = provider,
+        earned = CoinCounts(bronze = earned),
+        total = CoinCounts(bronze = 2),
+        isMastered = false,
+        lastSyncedAt = 1_000L,
+    )
+
+    private val bothLinks = MutableStateFlow(
+        listOf(steamFamilyLink(AchievementProvider.LOCAL_STEAM), steamFamilyLink(AchievementProvider.STEAM)),
+    )
+    private val firstOfBoth = MutableStateFlow<ProviderGameLinkEntity?>(steamFamilyLink(AchievementProvider.LOCAL_STEAM))
+
+    /** NieR, linked to both providers. The game-keyed reads report LOCAL_STEAM, as the DAO does. */
+    private fun stubBothSets() {
+        val local = AchievementProvider.LOCAL_STEAM
+        val steam = AchievementProvider.STEAM
+        val localCoins = listOf(steamFamilyCoin(local, "ACH_A", true), steamFamilyCoin(local, "ACH_B", false))
+        val steamCoins = listOf(steamFamilyCoin(steam, "ACH_A", true), steamFamilyCoin(steam, "ACH_B", true))
+        every { achievements.observeLinks(gameId) } returns bothLinks
+        every { achievements.observeLink(gameId) } returns firstOfBoth
+        every { achievements.observeGameCoins(gameId) } returns MutableStateFlow(steamFamilySummary(local, 1))
+        every { achievements.observeCoins(gameId) } returns MutableStateFlow(localCoins)
+        every { achievements.observeAccountGameCoins(local, "524220") } returns
+            MutableStateFlow(steamFamilySummary(local, 1))
+        every { achievements.observeAccountCoins(local, "524220") } returns MutableStateFlow(localCoins)
+        every { achievements.observeAccountGameCoins(steam, "524220") } returns
+            MutableStateFlow(steamFamilySummary(steam, 2))
+        every { achievements.observeAccountCoins(steam, "524220") } returns MutableStateFlow(steamCoins)
+    }
+
+    private val earnedCount get() = state.coins.count { it.isEarned }
+
+    @Test
+    fun `a game with both sets lists both sources and opens on the one its link reports`() {
+        stubBothSets()
+        open()
+
+        assertEquals(
+            listOf(
+                CoinSource(AchievementProvider.LOCAL_STEAM, earned = 1, total = 2),
+                CoinSource(AchievementProvider.STEAM, earned = 2, total = 2),
+            ),
+            state.sources,
+        )
+        assertTrue(state.hasSourceSwitch)
+        assertEquals(AchievementProvider.LOCAL_STEAM, state.provider)
+        assertEquals(1, earnedCount)
+    }
+
+    @Test
+    fun `L and R switch between the two sets, and the D-pad changes the view instead`() {
+        stubBothSets()
+        open()
+
+        press(GamepadAction.NEXT_CATEGORY)
+        assertEquals(AchievementProvider.STEAM, state.provider)
+        assertEquals(2, earnedCount)
+        assertEquals(CoinFilter.ALL, state.filter)
+
+        press(GamepadAction.NAVIGATE_RIGHT)
+        assertEquals(AchievementProvider.STEAM, state.provider)
+        assertEquals(CoinFilter.EARNED, state.filter)
+
+        press(GamepadAction.PREV_CATEGORY)
+        assertEquals(AchievementProvider.LOCAL_STEAM, state.provider)
+        assertEquals(1, earnedCount)
+    }
+
+    @Test
+    fun `opening a game on a named set starts there`() {
+        stubBothSets()
+        viewModel.load(ShibaCoinsTarget.LibraryGame(gameId, AchievementProvider.STEAM))
+
+        assertEquals(AchievementProvider.STEAM, state.provider)
+        assertEquals(2, earnedCount)
+    }
+
+    @Test
+    fun `a game with one set keeps L and R for the view`() {
+        open()
+
+        assertFalse(state.hasSourceSwitch)
+        press(GamepadAction.NEXT_CATEGORY)
+        assertEquals(CoinFilter.EARNED, state.filter)
+    }
+
+    // ── Unlink Game ────────────────────────────────────────────────────────────
+
+    private fun chooseOption(option: CoinOption) {
+        viewModel.openOptions()
+        val index = state.optionRows.indexOfFirst { it.option == option }
+        assertTrue("$option is not in the menu: ${state.optionRows.map { it.label }}", index >= 0)
+        viewModel.onOptionActivated(index)
+    }
+
+    @Test
+    fun `Unlink Game removes the link and the page falls back to the link panel`() {
+        open()
+
+        chooseOption(CoinOption.Unlink)
+        viewModel.confirmUnlink()
+        coVerify { achievements.unlink(gameId) }
+        link.value = null   // the stored link is gone
+
+        assertNull(state.options)
+        assertFalse(state.linked)
+        assertTrue(state.showLinkPanel)
+    }
+
+    @Test
+    fun `choosing Unlink Game asks first and does not unlink`() {
+        open()
+
+        chooseOption(CoinOption.Unlink)
+
+        assertTrue(state.unlinkConfirm)
+        assertNull(state.options)
+        coVerify(exactly = 0) { achievements.unlink(any()) }
+    }
+
+    @Test
+    fun `cancelling the Unlink confirm leaves the link alone`() {
+        open()
+        chooseOption(CoinOption.Unlink)
+
+        viewModel.cancelUnlink()
+
+        assertFalse(state.unlinkConfirm)
+        assertTrue(state.linked)
+        coVerify(exactly = 0) { achievements.unlink(any()) }
+    }
+
+    @Test
+    fun `Confirm on the Unlink confirm unlinks once and closes it`() {
+        open()
+        chooseOption(CoinOption.Unlink)
+
+        viewModel.confirmUnlink()
+
+        assertFalse(state.unlinkConfirm)
+        coVerify(exactly = 1) { achievements.unlink(gameId) }
+    }
+
+    @Test
+    fun `the page ignores presses while the Unlink confirm is open`() {
+        open()
+        chooseOption(CoinOption.Unlink)
+
+        press(GamepadAction.BACK)
+
+        assertFalse(state.closed)
+    }
+
+    @Test
+    fun `unlinking a game with two sets drops both and returns to its platform's match flow`() {
+        stubBothSets()
+        open()
+        press(GamepadAction.NEXT_CATEGORY)   // viewing the Steam set
+
+        chooseOption(CoinOption.Unlink)
+        viewModel.confirmUnlink()
+        bothLinks.value = emptyList()
+        firstOfBoth.value = null
+
+        assertFalse(state.hasSourceSwitch)
+        assertTrue(state.showLinkPanel)
+        // The page's own default for the platform ("nds" here), not the Local Steam it last showed:
+        // an unlinked page offers the match flow its platform has.
+        assertEquals(AchievementProvider.RETRO_ACHIEVEMENTS, state.provider)
     }
 }

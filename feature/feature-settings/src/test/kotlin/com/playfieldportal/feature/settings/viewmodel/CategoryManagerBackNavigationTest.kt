@@ -31,7 +31,11 @@ class CategoryManagerBackNavigationTest {
         val repo = mockk<CategoryRepositoryImpl>()
         every { repo.observeAll() } returns flowOf(emptyList())
         every { repo.isProtected(any()) } returns false
-        return CategoryManagerViewModel(repo)
+        val collections = mockk<com.playfieldportal.core.data.repository.CollectionRepository>()
+        every { collections.observeCollections() } returns flowOf(emptyList())
+        val store = mockk<com.playfieldportal.core.data.repository.CustomIconStore>(relaxed = true)
+        every { store.observeStoredKeys() } returns flowOf(emptySet())
+        return CategoryManagerViewModel(repo, collections, store)
     }
 
     @Test

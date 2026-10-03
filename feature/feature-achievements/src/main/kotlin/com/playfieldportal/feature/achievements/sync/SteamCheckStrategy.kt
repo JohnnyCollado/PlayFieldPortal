@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.achievements.sync
 
+import com.playfieldportal.core.data.database.dao.AccountAchievementDao
 import com.playfieldportal.core.data.database.dao.SteamOwnedGamesDao
 import com.playfieldportal.core.data.database.entity.SteamOwnedGameEntity
 import com.playfieldportal.core.domain.achievement.AchievementProvider
@@ -22,6 +23,10 @@ import javax.inject.Singleton
  * to keep fresh. A private or failed answer is never read as an empty library: the cache stays,
  * and the check pauses rather than sweeping installed games one by one.
  *
+ * One exception to "unchanged means skipped": on a MANUAL update, a game whose stored hidden coins
+ * still lack a description is fetched, so hidden descriptions reach games synced before they could
+ * be filled, or that nobody plays. Automatic runs never do this, keeping their request count flat.
+ *
  * GetOwnedGames' `appids_filter` is an array parameter the current Retrofit definition can't
  * express, so the unfiltered single response is used — still one request.
  */
@@ -30,6 +35,7 @@ class SteamCheckStrategy @Inject constructor(
     private val steam: SteamRemoteDataSource,
     private val ownedDao: SteamOwnedGamesDao,
     private val ownership: LocalSteamOwnership,
+    private val coinDao: AccountAchievementDao,
 ) : ProviderCheckStrategy {
 
     override val provider = AchievementProvider.STEAM
@@ -78,13 +84,26 @@ class SteamCheckStrategy @Inject constructor(
                 // Not in the owned list (family share, delisted, hidden): nothing to compare.
                 playtime == null -> Unit
                 entry.snapshot != null ->
-                    if (entry.snapshot == snapshotOf(playtime)) unchanged += entry.identity else toFetch += entry.identity
+                    if (entry.snapshot == snapshotOf(playtime)) unchangedOrBackfill(entry.identity, trigger, unchanged, toFetch)
+                    else toFetch += entry.identity
                 // No snapshot yet (a migrated library): the old import's bookmark is the baseline.
-                ownedDao.syncedPlaytime(entry.identity.providerGameId) == playtime -> unchanged += entry.identity
+                ownedDao.syncedPlaytime(entry.identity.providerGameId) == playtime ->
+                    unchangedOrBackfill(entry.identity, trigger, unchanged, toFetch)
                 else -> toFetch += entry.identity
             }
         }
         return ProviderCheckPlan(toFetch = toFetch, unchanged = unchanged, snapshots = snapshots)
+    }
+
+    private suspend fun unchangedOrBackfill(
+        identity: AchievementIdentity,
+        trigger: SyncTrigger,
+        unchanged: MutableSet<AchievementIdentity>,
+        toFetch: MutableSet<AchievementIdentity>,
+    ) {
+        val backfill = trigger == SyncTrigger.MANUAL &&
+            coinDao.hasBlankHiddenDescription(identity.provider.name, identity.providerGameId)
+        if (backfill) toFetch += identity else unchanged += identity
     }
 
     companion object {

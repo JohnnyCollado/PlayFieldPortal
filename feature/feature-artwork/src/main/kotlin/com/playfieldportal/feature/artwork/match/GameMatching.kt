@@ -30,6 +30,7 @@ enum class MatchProvider(val label: String) {
     IGDB("IGDB"),
     STEAMGRIDDB("SteamGridDB"),
     STEAM("Steam"),
+    GOG("GOG"),
     MANUAL("Manual"),
 }
 
@@ -114,13 +115,26 @@ object ProviderCapabilities {
         ),
         // Steam's keyless storefront (C23 T6). appdetails is addressed by appid; storesearch is a
         // real multi-result title endpoint, which is what the 5-rule normalizer feeds. No saved id
-        // on `games` — its identity lives in `game_storefront_identities` — and no artwork: the
-        // Artwork Manager owns images and Steam header art is not offered through this path.
+        // on `games` — its identity lives in `game_storefront_identities`. Artwork too: the
+        // Artwork Studio browses its store media (library art, screenshots, trailers) keyless.
         ProviderCapability(
             provider = MatchProvider.STEAM,
             addressableBySavedId = false,
             addressableByRomHash = false,
             addressableByStorefrontId = true,
+            supportsTitleSearch = true,
+            suppliesMetadata = true,
+            suppliesArtwork = true,
+        ),
+        // GOG's keyless catalog. Found by title and by nothing else: there is no id column on
+        // `games`, and the import-captured pair is not trusted as a gog.com product id until that
+        // is confirmed, so it is deliberately NOT addressable by a storefront pair. Text only —
+        // the Artwork Studio has no GOG source.
+        ProviderCapability(
+            provider = MatchProvider.GOG,
+            addressableBySavedId = false,
+            addressableByRomHash = false,
+            addressableByStorefrontId = false,
             supportsTitleSearch = true,
             suppliesMetadata = true,
             suppliesArtwork = false,

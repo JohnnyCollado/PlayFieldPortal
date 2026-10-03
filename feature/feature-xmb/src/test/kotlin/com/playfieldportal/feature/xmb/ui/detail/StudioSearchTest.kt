@@ -54,40 +54,40 @@ class StudioSearchTest {
 
     @Test
     fun `two requests for the same thing are the same key`() {
-        val a = StudioRequestKey.of("Final Fantasy X (USA)", StudioSource.IGDB, ArtworkKind.HERO, false)
-        val b = StudioRequestKey.of("final   fantasy x", StudioSource.IGDB, ArtworkKind.HERO, false)
+        val a = StudioRequestKey.of("Final Fantasy X (USA)", StudioSource.IGDB, ArtworkKind.HERO, SgdbRequestFilter())
+        val b = StudioRequestKey.of("final   fantasy x", StudioSource.IGDB, ArtworkKind.HERO, SgdbRequestFilter())
         assertEquals(a, b)
     }
 
     @Test
     fun `source, category and query each make a different request`() {
-        val base = StudioRequestKey.of("Halo", StudioSource.IGDB, ArtworkKind.HERO, false)
-        assertNotEquals(base, StudioRequestKey.of("Halo", StudioSource.THEGAMESDB, ArtworkKind.HERO, false))
-        assertNotEquals(base, StudioRequestKey.of("Halo", StudioSource.IGDB, ArtworkKind.LOGO, false))
-        assertNotEquals(base, StudioRequestKey.of("Halo 2", StudioSource.IGDB, ArtworkKind.HERO, false))
+        val base = StudioRequestKey.of("Halo", StudioSource.IGDB, ArtworkKind.HERO, SgdbRequestFilter())
+        assertNotEquals(base, StudioRequestKey.of("Halo", StudioSource.THEGAMESDB, ArtworkKind.HERO, SgdbRequestFilter()))
+        assertNotEquals(base, StudioRequestKey.of("Halo", StudioSource.IGDB, ArtworkKind.LOGO, SgdbRequestFilter()))
+        assertNotEquals(base, StudioRequestKey.of("Halo 2", StudioSource.IGDB, ArtworkKind.HERO, SgdbRequestFilter()))
     }
 
     // Task 1.3: mature is a SteamGridDB filter, so it must not touch any other source's key.
     @Test
-    fun `mature only participates in SteamGridDB keys`() {
+    fun `SteamGridDB request filters only participate in SteamGridDB keys`() {
         for (source in StudioSource.entries.filter { it != StudioSource.STEAMGRIDDB }) {
             assertEquals(
                 "$source's key must ignore mature",
-                StudioRequestKey.of("Halo", source, ArtworkKind.HERO, includeNsfw = false),
-                StudioRequestKey.of("Halo", source, ArtworkKind.HERO, includeNsfw = true),
+                StudioRequestKey.of("Halo", source, ArtworkKind.HERO, sgdb = SgdbRequestFilter(mature = false)),
+                StudioRequestKey.of("Halo", source, ArtworkKind.HERO, sgdb = SgdbRequestFilter(mature = true)),
             )
         }
         assertNotEquals(
-            StudioRequestKey.of("Halo", StudioSource.STEAMGRIDDB, ArtworkKind.HERO, includeNsfw = false),
-            StudioRequestKey.of("Halo", StudioSource.STEAMGRIDDB, ArtworkKind.HERO, includeNsfw = true),
+            StudioRequestKey.of("Halo", StudioSource.STEAMGRIDDB, ArtworkKind.HERO, sgdb = SgdbRequestFilter(mature = false)),
+            StudioRequestKey.of("Halo", StudioSource.STEAMGRIDDB, ArtworkKind.HERO, sgdb = SgdbRequestFilter(mature = true)),
         )
     }
 
     @Test
     fun `the confirmed match is part of the key, so Phase 2 invalidates the right entries`() {
         assertNotEquals(
-            StudioRequestKey.of("Halo", StudioSource.IGDB, ArtworkKind.HERO, false, matchId = null),
-            StudioRequestKey.of("Halo", StudioSource.IGDB, ArtworkKind.HERO, false, matchId = "igdb:1234"),
+            StudioRequestKey.of("Halo", StudioSource.IGDB, ArtworkKind.HERO, SgdbRequestFilter(), matchId = null),
+            StudioRequestKey.of("Halo", StudioSource.IGDB, ArtworkKind.HERO, SgdbRequestFilter(), matchId = "igdb:1234"),
         )
     }
 
@@ -96,21 +96,21 @@ class StudioSearchTest {
     @Test
     fun `each key keeps its own results`() {
         val cache = StudioResultCache()
-        val sgdb = StudioRequestKey.of("Halo", StudioSource.STEAMGRIDDB, ArtworkKind.HERO, false)
-        val igdb = StudioRequestKey.of("Halo", StudioSource.IGDB, ArtworkKind.HERO, false)
+        val sgdb = StudioRequestKey.of("Halo", StudioSource.STEAMGRIDDB, ArtworkKind.HERO, SgdbRequestFilter())
+        val igdb = StudioRequestKey.of("Halo", StudioSource.IGDB, ArtworkKind.HERO, SgdbRequestFilter())
         cache[sgdb] = listOf(art("a"))
         cache[igdb] = listOf(art("b"), art("c"))
 
         assertEquals(listOf(art("a")), cache[sgdb])
         assertEquals(2, cache[igdb]?.size)
-        assertNull(cache[StudioRequestKey.of("Doom", StudioSource.IGDB, ArtworkKind.HERO, false)])
+        assertNull(cache[StudioRequestKey.of("Doom", StudioSource.IGDB, ArtworkKind.HERO, SgdbRequestFilter())])
     }
 
     @Test
     fun `evicting one source leaves the others alone`() {
         val cache = StudioResultCache()
-        val sgdb = StudioRequestKey.of("Halo", StudioSource.STEAMGRIDDB, ArtworkKind.HERO, false)
-        val igdb = StudioRequestKey.of("Halo", StudioSource.IGDB, ArtworkKind.HERO, false)
+        val sgdb = StudioRequestKey.of("Halo", StudioSource.STEAMGRIDDB, ArtworkKind.HERO, SgdbRequestFilter())
+        val igdb = StudioRequestKey.of("Halo", StudioSource.IGDB, ArtworkKind.HERO, SgdbRequestFilter())
         cache[sgdb] = listOf(art("a"))
         cache[igdb] = listOf(art("b"))
 
@@ -123,9 +123,9 @@ class StudioSearchTest {
     @Test
     fun `the cache is bounded and evicts least-recently-used entries`() {
         val cache = StudioResultCache(maxEntries = 2)
-        val a = StudioRequestKey.of("A", StudioSource.IGDB, ArtworkKind.HERO, false)
-        val b = StudioRequestKey.of("B", StudioSource.IGDB, ArtworkKind.HERO, false)
-        val c = StudioRequestKey.of("C", StudioSource.IGDB, ArtworkKind.HERO, false)
+        val a = StudioRequestKey.of("A", StudioSource.IGDB, ArtworkKind.HERO, SgdbRequestFilter())
+        val b = StudioRequestKey.of("B", StudioSource.IGDB, ArtworkKind.HERO, SgdbRequestFilter())
+        val c = StudioRequestKey.of("C", StudioSource.IGDB, ArtworkKind.HERO, SgdbRequestFilter())
         cache[a] = listOf(art("a"))
         cache[b] = listOf(art("b"))
         cache[a]                       // touch A so B is now the oldest
@@ -247,6 +247,8 @@ class StudioSearchTest {
         assertEquals(1, tiles.size)
         assertEquals("screenmarquee · WOR/UK/US", tiles.single().label)
         assertEquals("3:screenmarquee(wor)", tiles.single().providerAssetId)
+        // The Region filter reads every region the one tile stands for.
+        assertEquals(StudioArtFacets(mediaType = "screenmarquee", regions = listOf("wor", "uk", "us")), tiles.single().facets)
     }
 
     @Test
@@ -314,5 +316,122 @@ class StudioSearchTest {
         assertFalse("the box art slot says nothing about the hero slot", library.holds(ArtworkKind.HERO, tile))
     }
 
+    // ── Local File's grid is the slot itself ──────────────────────────────────
+
+    private fun stored(sortOrder: Int, provider: String?) = StudioArtworkSlot(
+        sortOrder = sortOrder, documentUri = "content://s$sortOrder", provider = provider,
+        originUrl = null, providerAssetId = null, sizeBytes = 1,
+    )
+
+    @Test
+    fun `local art tiles are the slot's stored files, in position order`() {
+        val library = StudioLibraryAssets.of(
+            ArtworkKind.SCREENSHOT, listOf(stored(0, "ScreenScraper"), stored(1, "Local file")),
+        )
+
+        val tiles = localArtTiles(ArtworkKind.SCREENSHOT, library)
+
+        assertEquals(listOf("content://s0", "content://s1"), tiles.map { it.url })
+        assertEquals(listOf("content://s0", "content://s1"), tiles.map { it.thumb })
+        assertTrue(tiles.all { it.provider == LOCAL_ART })
+        assertEquals("where each file came from", listOf("ScreenScraper", "Local file"), tiles.map { it.label })
+    }
+
+    @Test
+    fun `local art tiles wait for the library of their own kind`() {
+        // A tab switch shows the grid before the new slot is re-read.
+        val library = StudioLibraryAssets.of(ArtworkKind.VIDEO, listOf(stored(0, "Local file")))
+
+        assertTrue(localArtTiles(ArtworkKind.SCREENSHOT, library).isEmpty())
+    }
+
+    @Test
+    fun `a local art tile is held by its file URI, and a provider tile never is`() {
+        val library = StudioLibraryAssets.of(ArtworkKind.SCREENSHOT, listOf(stored(0, "Local file"), stored(1, "Local file")))
+        val tile = localArtTiles(ArtworkKind.SCREENSHOT, library)[1]
+
+        assertTrue(library.holds(ArtworkKind.SCREENSHOT, tile))
+        assertEquals(listOf(1), library.sortOrdersHolding(tile))
+        assertFalse(
+            "a provider asset whose URL happens to equal a stored URI is not that file",
+            library.holds(ArtworkKind.SCREENSHOT, StudioArt(url = "content://s1", thumb = null, provider = "IGDB")),
+        )
+    }
+
     private fun art(url: String) = StudioArt(url = url, thumb = null, provider = "test")
+
+    // ── Steam store media → tiles ─────────────────────────────────────────────
+
+    private val steam = com.playfieldportal.feature.artwork.api.SteamStoreMedia(
+        appId = "620",
+        libraryCapsule = "capsule600x900",
+        libraryHero = "hero",
+        logo = "logo",
+        header = "header",
+        mainCapsule = "capsule616",
+        pageBackground = "pagebg",
+        screenshots = listOf(
+            com.playfieldportal.feature.artwork.api.SteamScreenshot("ss1", "ss1-thumb"),
+            com.playfieldportal.feature.artwork.api.SteamScreenshot("ss2", "ss2-thumb"),
+        ),
+        trailers = listOf(
+            com.playfieldportal.feature.artwork.api.SteamTrailer(
+                id = 7, name = "Launch", poster = "poster", shortUrl = "micro.mp4", fullUrl = "full.m3u8",
+            ),
+            com.playfieldportal.feature.artwork.api.SteamTrailer(
+                id = 8, name = "Teaser", poster = null, shortUrl = null, fullUrl = "teaser.m3u8",
+            ),
+        ),
+    )
+
+    @Test
+    fun `each Steam tab gets the asset Steam made for that shape`() {
+        assertEquals(listOf("capsule600x900"), steamTiles(ArtworkKind.BOX_ART, steam).map { it.url })
+        assertEquals(listOf("hero"), steamTiles(ArtworkKind.HERO, steam).map { it.url })
+        assertEquals(listOf("logo"), steamTiles(ArtworkKind.LOGO, steam).map { it.url })
+        // ICON0 is cropped from the landscape art.
+        assertEquals(listOf("header", "capsule616", "hero"), steamTiles(ArtworkKind.ICON, steam).map { it.url })
+        assertEquals(listOf("hero", "pagebg", "ss1", "ss2"), steamTiles(ArtworkKind.BACKGROUND, steam).map { it.url })
+    }
+
+    @Test
+    fun `the screenshot tab leads with Steam's screenshots, thumbnails included`() {
+        val tiles = steamTiles(ArtworkKind.SCREENSHOT, steam)
+
+        assertEquals(listOf("ss1", "ss2"), tiles.take(2).map { it.url })
+        assertEquals("ss1-thumb", tiles.first().thumb)
+        // The other art follows, for the crop editor to shape, like every show-all tab.
+        assertTrue(tiles.drop(2).map { it.url }.containsAll(listOf("capsule600x900", "hero", "header")))
+    }
+
+    @Test
+    fun `both video tabs list each full trailer, then its short cut, with the poster as thumbnail`() {
+        for (kind in listOf(ArtworkKind.VIDEO, ArtworkKind.ICON1)) {
+            val tiles = steamTiles(kind, steam)
+            assertEquals(listOf("full.m3u8", "micro.mp4", "teaser.m3u8"), tiles.map { it.url })
+            assertEquals(listOf("Launch", "Launch · short", "Teaser"), tiles.map { it.label })
+            assertTrue(tiles.all { it.isVideo })
+            assertEquals("poster", tiles.first().thumb)
+            // The full stream and its short cut are different files.
+            assertEquals(listOf("620:trailer:7", "620:trailer:7:short", "620:trailer:8"), tiles.map { it.providerAssetId })
+        }
+    }
+
+    @Test
+    fun `Steam has no manual, and missing assets are simply absent`() {
+        assertTrue(steamTiles(ArtworkKind.MANUAL, steam).isEmpty())
+        val bare = steam.copy(libraryCapsule = null, libraryHero = null, screenshots = emptyList(), trailers = emptyList())
+        assertTrue(steamTiles(ArtworkKind.BOX_ART, bare).isEmpty())
+        assertTrue(steamTiles(ArtworkKind.VIDEO, bare).isEmpty())
+    }
+
+    @Test
+    fun `every Steam tile is tagged Steam with an id stable across tabs`() {
+        val onIcon = steamTiles(ArtworkKind.ICON, steam).first { it.url == "hero" }
+        val onHero = steamTiles(ArtworkKind.HERO, steam).single()
+
+        assertEquals("Steam", onHero.provider)
+        assertEquals("620:library_hero", onHero.providerAssetId)
+        assertEquals(onHero.providerAssetId, onIcon.providerAssetId)
+    }
 }

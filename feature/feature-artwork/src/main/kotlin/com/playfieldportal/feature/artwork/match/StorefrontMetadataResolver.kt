@@ -53,6 +53,12 @@ class StorefrontMetadataResolver @Inject constructor(
             val preset: MetadataPreset,
             /** True when this run created the link rather than reusing a stored one. */
             val newlyLinked: Boolean,
+            /**
+             * The scored field this link was chosen from, when a title search found it. Null for
+             * an id that was stored or handed over, because nothing was scored. A preview run
+             * writes nothing, so this is what lets it show its finding instead of claiming it.
+             */
+            val match: StorefrontMatchResult? = null,
         ) : Resolution
 
         /** Plausible candidates exist but the evidence does not settle it. The user decides. */
@@ -87,16 +93,31 @@ class StorefrontMetadataResolver @Inject constructor(
      * fast path. A user asking to rematch is saying the stored id is wrong, which is a thing only
      * they can know — so the door exists, it is never opened automatically, and the stored row
      * stays until they pick something else.
+     *
+     * [titleOverride] is a name the user typed to search by. It replaces the game's own title for
+     * this one discovery — searched and scored as typed — and nothing else: no column is written
+     * and the game is not renamed. Typing a name is itself a statement that the ids PFP holds are
+     * wrong or missing, so it always goes straight to discovery, as [ignoreStoredIdentity] does.
+     *
+     * [stores] limits the pass to those stores; null asks every provider. A caller that only
+     * reads one store's answer names it, so the others are not asked for answers nobody reads —
+     * and so looking past one store's stored link does not look past the rest.
      */
     suspend fun resolve(
         game: GameEntity,
         allowAutoLink: Boolean = true,
         ignoreStoredIdentity: Boolean = false,
+        titleOverride: String? = null,
+        stores: Set<Storefront>? = null,
     ): GameResolution {
         val byStore = mutableMapOf<Storefront, Resolution>()
         for (provider in providers.all) {
+            if (stores != null && provider.store !in stores) continue
             if (!provider.isAvailable()) continue
-            byStore[provider.store] = runCatching { resolveOne(game, provider, allowAutoLink, ignoreStoredIdentity) }
+            byStore[provider.store] = runCatching {
+                if (titleOverride != null) discover(game, provider, allowAutoLink, titleOverride)
+                else resolveOne(game, provider, allowAutoLink, ignoreStoredIdentity)
+            }
                 .onFailure { Timber.w(it, "Storefront resolve threw for %s", provider.store.key) }
                 .getOrElse {
                     // A provider that throws is still only one provider down (Phase 15).
@@ -138,7 +159,10 @@ class StorefrontMetadataResolver @Inject constructor(
         // 2 — an authoritative id captured at import, for this same store. Also no title search.
         // Skipped on a forced rematch for the same reason as the stored row: the user is telling
         // PFP the id it has is wrong, and the captured pair is an id it has.
-        authoritativeId(game, provider.store)?.takeIf { !ignoreStoredIdentity }?.let { appId ->
+        // Skipped, too, for a store whose captured number is not known to be its own id.
+        authoritativeId(game, provider.store)
+            ?.takeIf { !ignoreStoredIdentity && provider.trustsCapturedId }
+            ?.let { appId ->
             return when (val metadata = provider.getMetadata(appId)) {
                 is StorefrontOutcome.Ok -> {
                     val record = StorefrontIdentityRecord(
@@ -164,8 +188,9 @@ class StorefrontMetadataResolver @Inject constructor(
         game: GameEntity,
         provider: StorefrontMetadataProvider,
         allowAutoLink: Boolean,
+        title: String = displayTitleOf(game),
     ): Resolution {
-        val query = StorefrontTitleNormalizer.normalize(displayTitleOf(game))
+        val query = StorefrontTitleNormalizer.normalize(title)
         if (query.searchCandidates.isEmpty()) return Resolution.NoMatch
 
         val candidates = when (val found = provider.search(query.searchCandidates)) {
@@ -222,7 +247,7 @@ class StorefrontMetadataResolver @Inject constructor(
             resolvedTitle = preset.title ?: best.candidate.title,
         )
         if (allowAutoLink) persist(game.id, record)
-        return Resolution.Linked(record, preset, newlyLinked = true)
+        return Resolution.Linked(record, preset, newlyLinked = true, match = result)
     }
 
     /**

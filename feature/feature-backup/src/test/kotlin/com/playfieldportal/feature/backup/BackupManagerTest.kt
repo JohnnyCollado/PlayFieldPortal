@@ -80,8 +80,8 @@ class BackupManagerTest {
         BackupManager(
             context, gameDao, categoryDao, playSessionDao, backupDao, backupFolderRepository,
             // Added to BackupManager's constructor after this test was written; relaxed mocks
-            // because neither participates in the export paths exercised here.
-            mockk(relaxed = true), mockk(relaxed = true),
+            // because none of them participates in the export paths exercised here.
+            mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
         ) {
         var lastExported: File? = null
         override suspend fun exportToBackupFolder(treeUri: String, source: File, name: String): Uri {

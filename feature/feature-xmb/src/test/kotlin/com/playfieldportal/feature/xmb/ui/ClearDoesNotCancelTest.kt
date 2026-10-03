@@ -42,6 +42,7 @@ class ClearDoesNotCancelTest {
             sourceKey: String?,
             action: NotificationAction,
             payload: String?,
+            read: Boolean,
         ): Long {
             val id = nextId++
             rows.value = listOf(

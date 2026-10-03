@@ -186,7 +186,7 @@ class LocalSteamFolderLinker @Inject constructor(
     ): LinkOutcome {
         if (!credentials.goldbergInstallerEnabled()) {
             return LinkOutcome.Failed(
-                "Turn on Install Goldberg Emulator in Settings ▸ Shiba Coins before PFP writes into a game folder."
+                "Turn on Install Goldberg & Convert Games in Achievement settings before PFP writes into a game folder."
             )
         }
         val anchor = anchorOrNull(treeUri) ?: return notASteamBuild(treeUri)

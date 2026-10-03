@@ -55,6 +55,17 @@ object BackupEntry {
      * let an archive that predates the registry wipe the folders on the device it restores onto.
      */
     const val LOCAL_STEAM_FOLDERS    = "local_steam_folders.json"
+
+    /**
+     * Per-list state: each list's Custom order and pinned games, its own sort, the game inserted
+     * as each gaming column's UMD, and when apps were last launched. Optional, and gated on
+     * [LIST_ITEMS]: an archive that predates them carries the older shapes instead, which the
+     * restore brings forward rather than reading as "nothing was arranged".
+     */
+    const val LIST_ITEMS    = "list_items.json"
+    const val LIST_SETTINGS = "list_settings.json"
+    const val UMD_SLOTS     = "umd_slots.json"
+    const val APP_USAGE     = "app_usage.json"
 }
 
 @Serializable

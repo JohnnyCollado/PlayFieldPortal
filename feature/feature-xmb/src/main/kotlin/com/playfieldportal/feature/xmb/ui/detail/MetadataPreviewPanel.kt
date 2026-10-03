@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -17,14 +16,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -33,9 +26,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,12 +56,7 @@ fun MetadataPreviewPanel(
     onToggleField: (MetadataField) -> Unit,
     onEditField: (MetadataField) -> Unit,
     onRevertField: (MetadataField) -> Unit,
-    onEditTextChanged: (String) -> Unit,
-    onSaveEdit: () -> Unit,
-    onCancelEdit: () -> Unit,
     onApply: () -> Unit,
-    onConfirmTitleReplace: () -> Unit,
-    onCancelTitleReplace: () -> Unit,
     onClose: () -> Unit,
 ) {
     Box(
@@ -255,186 +240,13 @@ fun MetadataPreviewPanel(
                 Text(applyLabel, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
             }
         }
-
-        // Topmost of all: the yes/no on replacing a hand-typed title, which outranks even the
-        // editor — it is the last thing between the user and losing what they typed.
-        ui.titleReplace?.let { confirm ->
-            TitleReplaceDialog(
-                confirm = confirm,
-                focusEdge = focusEdge,
-                onConfirm = onConfirmTitleReplace,
-                onCancel = onCancelTitleReplace,
-            )
-            return@Box
-        }
-
-        // Topmost inside the overlay: one field's text editor.
-        ui.editingField?.let { field ->
-            MetadataFieldEditor(
-                field = field,
-                text = ui.editText,
-                overridden = field in ui.overridden,
-                scraped = ui.current[field],
-                focusEdge = focusEdge,
-                onChange = onEditTextChanged,
-                onSave = onSaveEdit,
-                onRevert = { onRevertField(field) },
-                onCancel = onCancelEdit,
-            )
-        }
-    }
-}
-
-/**
- * The title confirm: the field editor's chrome with the text swapped for two lines — what the user
- * typed and what will replace it — so a destructive apply looks like every other dialog here.
- */
-@Composable
-private fun TitleReplaceDialog(
-    confirm: TitleReplaceConfirm,
-    focusEdge: Color,
-    onConfirm: () -> Unit,
-    onCancel: () -> Unit,
-) {
-    Box(
-        Modifier.fillMaxSize().background(Color(0xCC000000)).clickable(onClick = onCancel),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier
-                .widthIn(max = 420.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xF20A0A14))
-                .clickable(enabled = false) {}
-                .padding(16.dp),
-        ) {
-            Text(
-                "Replace your title?",
-                color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                "You set this title by hand. Applying the new one clears yours.",
-                color = TextMuted,
-                fontSize = 11.sp,
-                modifier = Modifier.padding(top = 4.dp, bottom = 10.dp),
-            )
-            TitleReplaceLine("Yours", confirm.current, TextMuted)
-            Spacer(Modifier.height(4.dp))
-            TitleReplaceLine("New", confirm.incoming, ChangeGreen)
-            Row(
-                Modifier.fillMaxWidth().padding(top = 10.dp),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                TextButton(onClick = onCancel) { Text("Keep Mine", color = TextMuted) }
-                TextButton(onClick = onConfirm) {
-                    Text("Replace", color = focusEdge, fontWeight = FontWeight.SemiBold)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TitleReplaceLine(label: String, value: String, valueColor: Color) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(label, color = TextMuted, fontSize = 11.sp, modifier = Modifier.width(52.dp))
-        Text(
-            value.ifBlank { "—" },
-            color = valueColor,
-            fontSize = 13.sp,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
-    }
-}
-
-/**
- * One field's text entry, over the table. Deliberately the same shape as Edit Title: a text field,
- * Cancel / Save, and a revert that is offered only when there is something to revert to.
- */
-@Composable
-private fun MetadataFieldEditor(
-    field: MetadataField,
-    text: String,
-    overridden: Boolean,
-    scraped: Any?,
-    focusEdge: Color,
-    onChange: (String) -> Unit,
-    onSave: () -> Unit,
-    onRevert: () -> Unit,
-    onCancel: () -> Unit,
-) {
-    Box(
-        Modifier.fillMaxSize().background(Color(0xCC000000)).clickable(onClick = onCancel),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier
-                .widthIn(max = 420.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xF20A0A14))
-                .clickable(enabled = false) {}
-                .padding(16.dp),
-        ) {
-            Text(
-                "Edit ${field.label}",
-                color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                "Your value is kept when this game is scraped again. Clear it to use the scraped one.",
-                color = TextMuted,
-                fontSize = 11.sp,
-                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
-            )
-            OutlinedTextField(
-                value = text,
-                onValueChange = onChange,
-                label = { Text(field.label, color = TextMuted) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = focusEdge,
-                    unfocusedBorderColor = Color(0x44FFFFFF),
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary,
-                    cursorColor = focusEdge,
-                ),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = if (field.isNumeric) KeyboardType.Number else KeyboardType.Text,
-                    capitalization = KeyboardCapitalization.Sentences,
-                    imeAction = ImeAction.Done,
-                ),
-                keyboardActions = KeyboardActions(onDone = { onSave() }),
-                singleLine = field != MetadataField.DESCRIPTION,
-                maxLines = if (field == MetadataField.DESCRIPTION) 6 else 1,
-            )
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                // Only where there is a scraped value to fall back to; otherwise reverting would
-                // just empty the field, which clearing the text already does.
-                if (overridden) {
-                    TextButton(onClick = onRevert) {
-                        Text(
-                            "Revert to ${formatMetadataValue(scraped) ?: "empty"}",
-                            color = TextMuted, fontSize = 12.sp, maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                } else {
-                    Spacer(Modifier.width(1.dp))
-                }
-                Row {
-                    TextButton(onClick = onCancel) { Text("Cancel", color = TextMuted) }
-                    TextButton(onClick = onSave) {
-                        Text("Save", color = focusEdge, fontWeight = FontWeight.SemiBold)
-                    }
-                }
-            }
-        }
+        // Its dialogs — Replace your title?, and one field's text entry — are Game Detail's shared
+        // modals (see metadataModalSpec), drawn above this overlay.
     }
 }
 
 /** Number-only fields, so the on-screen keyboard opens on the right page. */
-private val MetadataField.isNumeric: Boolean
+internal val MetadataField.isNumeric: Boolean
     get() = this == MetadataField.RELEASE_YEAR || this == MetadataField.COMMUNITY_RATING
 
 private val FieldColumn = 104.dp
@@ -602,7 +414,7 @@ private fun ManualRow(
 }
 
 /** Community rating is stored normalized 0..1 (ScreenScraper's /20); everything else prints as-is. */
-private fun formatMetadataValue(value: Any?): String? = when (value) {
+internal fun formatMetadataValue(value: Any?): String? = when (value) {
     null -> null
     is Float -> "${(value * 100).roundToInt()}%"
     else -> value.toString()

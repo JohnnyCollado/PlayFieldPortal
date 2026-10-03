@@ -45,11 +45,13 @@ data class AwaitingSyncRow(
 interface AccountAchievementSetDao {
 
     // Game-keyed reads resolve through provider_game_links: the account row IS the library
-    // game's coin data whenever a link points at it.
+    // game's coin data whenever a link points at it. A double-linked game resolves through the
+    // same one link ProviderGameLinkDao.observeForGame reports, so summary, coins and link agree.
     @Query(
         "SELECT s.* FROM account_achievement_sets s " +
-            "JOIN provider_game_links l ON l.provider = s.provider AND l.provider_game_id = s.provider_game_id " +
-            "WHERE l.game_id = :gameId LIMIT 1"
+            "JOIN (SELECT provider, provider_game_id FROM provider_game_links " +
+            "WHERE game_id = :gameId ORDER BY provider LIMIT 1) l " +
+            "ON l.provider = s.provider AND l.provider_game_id = s.provider_game_id"
     )
     fun observeForGame(gameId: Long): Flow<AccountAchievementSetEntity?>
 

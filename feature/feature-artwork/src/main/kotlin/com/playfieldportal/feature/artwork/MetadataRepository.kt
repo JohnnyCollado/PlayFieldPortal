@@ -59,21 +59,25 @@ data class MetadataCandidates(
     val sgdbHeroUrl: String?,
     val sgdbLogoUrl: String?,
     /**
-     * Steam's storefront answer for a Windows game, already in preset form (C23 T6).
+     * Every linked store's answer for a Windows game, already in preset form and in the order the
+     * stores are asked (C23 T6).
      *
-     * A preset rather than a raw response because the Steam provider hands back the shared
+     * A list, not a slot per store: a game can be linked on several stores at once, each is an
+     * offer in the preview, and a second store must not need a second field here.
+     *
+     * Presets rather than raw responses because a storefront provider hands back the shared
      * currency directly — there is no second consumer that would want the response shape, and
      * `Storefront`-specific types must not leak above the provider (Phase 4).
      *
      * Defaulted so that every existing construction of this class — including the ones in tests
      * that C23 §9 requires to keep passing unmodified — stays valid.
      */
-    val steamPreset: MetadataPreset? = null,
+    val storefrontPresets: List<MetadataPreset> = emptyList(),
 ) {
     /** No provider returned anything — the seam where [MetadataRepository.fetchForGame] stops. */
     val isEmpty: Boolean
         get() = ssInfo == null && tgdbInfo == null && igdbInfo == null && sgdbGridUrl == null &&
-            steamPreset == null
+            storefrontPresets.isEmpty()
 }
 
 // Fetches metadata + artwork from multiple sources in priority order.
@@ -244,7 +248,7 @@ class MetadataRepository @Inject constructor(
         // resolve) and it is the most precise answer available for a Windows game. It is asked
         // even when the earlier providers answered: a Steam preset is an OFFER in the preview, and
         // which offer wins is the user's decision through the apply policy, not this order.
-        val steamPreset = resolveStorefrontPreset(gameEntity, onAssetProgress)
+        val storefrontPresets = resolveStorefrontPresets(gameEntity, onAssetProgress)
 
         return MetadataCandidates(
             gameEntity  = gameEntity,
@@ -259,35 +263,40 @@ class MetadataRepository @Inject constructor(
             sgdbGridUrl = sgdbGridUrl,
             sgdbHeroUrl = sgdbHeroUrl,
             sgdbLogoUrl = sgdbLogoUrl,
-            steamPreset = steamPreset,
+            storefrontPresets = storefrontPresets,
         )
     }
 
     /**
-     * The storefront resolver's metadata for a Windows game, or null.
+     * The storefront resolver's metadata for a Windows game: one preset per store it is linked
+     * on, in the order the stores are asked. Empty when there is none.
      *
-     * Null covers three different things on purpose, because none of them is worth distinguishing
-     * to a caller that only wants a preset: the game is a console ROM with no storefront identity
-     * to resolve, no store had it, or a store could not be reached. The last case is recorded
-     * where it belongs — the resolver reports it per store — and is never allowed to look like
-     * "this game does not exist" (Phase 15).
+     * Empty covers three different things on purpose, because none of them is worth
+     * distinguishing to a caller that only wants presets: the game is a console ROM with no
+     * storefront identity to resolve, no store had it, or a store could not be reached. The last
+     * case is recorded where it belongs — the resolver reports it per store — and is never allowed
+     * to look like "this game does not exist" (Phase 15).
      *
      * Resolution is never allowed to throw into the scrape: one store being down must not end a
      * run that ScreenScraper, TheGamesDB and IGDB already answered.
      */
-    private suspend fun resolveStorefrontPreset(
+    private suspend fun resolveStorefrontPresets(
         game: GameEntity?,
         onAssetProgress: ((source: String, asset: String) -> Unit)?,
-    ): MetadataPreset? {
-        if (game == null || game.platformId != WINDOWS_PLATFORM_ID) return null
-        onAssetProgress?.invoke("Steam", "Searching…")
+    ): List<MetadataPreset> {
+        if (game == null || game.platformId != WINDOWS_PLATFORM_ID) return emptyList()
+        // Named for the stores actually being asked, which was "Steam" only while Steam was alone.
+        onAssetProgress?.invoke(
+            storefrontResolver.availableStores().joinToString(", ") { it.label }.ifBlank { "Storefronts" },
+            "Searching…",
+        )
         val resolution = runCatching { storefrontResolver.resolve(game) }
             .onFailure { Timber.w(it, "Storefront resolve failed for game %d", game.id) }
-            .getOrNull() ?: return null
+            .getOrNull() ?: return emptyList()
         resolution.unavailableStores.forEach {
             Timber.i("Storefront %s unavailable for game %d — left unlinked, not unmatched", it.key, game.id)
         }
-        return resolution.presets.firstOrNull()
+        return resolution.presets.toList()
     }
 
     /**
@@ -481,7 +490,13 @@ class MetadataRepository @Inject constructor(
         // already shows under another name is not. Re-scrapes and Change Match therefore leave it
         // alone, and the only ways a title changes are the ones the user drove — the metadata
         // preview's chosen fields, or Edit Title (user_title_override, which outranks this column).
-        if (newScrapedTitle != null && existingOverride == null) {
+        //
+        // Filling is itself a visible rename — the library shows scraped_title over title — so it
+        // is narrower still (user decision, 2026-09-29): never from Fetch Artwork ([fillTitle]
+        // off), and never for a manual entry. PC imports, Add by ID and apps all arrive with a real
+        // name; only a game the scanner found as a file is named after its filename.
+        val mayName = options.fillTitle && gameEntity != null && !gameEntity.isManualEntry
+        if (mayName && newScrapedTitle != null && existingOverride == null) {
             gameDao.fillScrapedTitleIfMissing(gameId, newScrapedTitle)
         }
 
