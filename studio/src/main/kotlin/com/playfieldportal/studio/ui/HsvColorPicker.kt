@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 
 /**
  * Dependency-free HSV picker: a saturation/value square plus a vertical hue strip, drawn
- * with plain gradients (no experimental widgets — see the CMP 1.6.11 stability note in
+ * with plain gradients (no experimental widgets — see the stability note in
  * StudioApp). Emits packed opaque ARGB.
  *
  * The HSV working state lives here so grey/black picks don't lose their hue; external

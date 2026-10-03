@@ -14,7 +14,8 @@ import kotlinx.coroutines.flow.Flow
 interface UiMediaPaths {
 
     /**
-     * Absolute path of the user's file for [slot], or null when the slot is on the PFP default.
+     * Absolute path of the file to play for [slot]: the user's pick, else the applied theme's
+     * file, else null (= the built-in PFP default).
      * Cheap (one directory listing) but still file IO — call it off the main thread.
      */
     fun pathFor(slot: UiMediaSlot): String?

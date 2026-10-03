@@ -631,6 +631,7 @@ fun XMBShell(
                 customWallpaperPath = uiState.customWallpaperPath,
                 motionWallpaperPath = uiState.motionWallpaperPath,
                 motionDecision      = motionDecision,
+                motionCrop          = uiState.motionCrop,
                 modifier            = Modifier.fillMaxSize(),
             )
 

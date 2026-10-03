@@ -68,9 +68,12 @@ import com.playfieldportal.core.ui.components.TouchPromptBar
 import com.playfieldportal.core.ui.components.TouchPromptItem
 import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.components.XmbKebabTouchButton
+import com.playfieldportal.core.ui.icons.ThemedGlyph
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.LocalPfpTextColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
+import com.playfieldportal.feature.xmb.ui.media.playPauseAction
+import com.playfieldportal.feature.xmb.ui.media.transportSlotKey
 import com.playfieldportal.feature.xmb.viewmodel.MusicBrowserNowPlaying
 import com.playfieldportal.feature.xmb.viewmodel.MusicBrowserState
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
@@ -380,8 +383,9 @@ private fun NowPlayingStrip(
             }
         }
         Spacer(Modifier.width(12.dp))
-        Icon(
-            imageVector = if (now.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+        ThemedGlyph(
+            slotKey = transportSlotKey(playPauseAction(now.isPlaying)),
+            defaultVector = if (now.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
             contentDescription = null,
             tint = menuCursorEdge(),
             modifier = Modifier.size(20.dp),

@@ -41,7 +41,7 @@ import androidx.compose.material.icons.filled.CallEnd
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Headset
-import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Link
@@ -54,7 +54,7 @@ import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.QrCode2
-import androidx.compose.material.icons.filled.QueueMusic
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Star
@@ -103,6 +103,7 @@ import com.playfieldportal.core.ui.icons.ThemedGlyph
 import com.playfieldportal.core.ui.icons.categoryIconFor
 import com.playfieldportal.core.ui.icons.systemIconRes
 import com.playfieldportal.core.ui.theme.LocalPFPColors
+import com.playfieldportal.feature.xmb.ui.detail.shibaSlotKeyFor
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 import com.playfieldportal.feature.xmb.viewmodel.XMBItemType
 import com.playfieldportal.themekit.XmbLayoutSpec
@@ -306,7 +307,7 @@ private fun SiblingIcon(item: XMBItem, selected: Boolean, solidUnfocusedIcons: B
         // Missing takes the vector path rather than console art: there is no sysicon for it, and
         // the console fallback is the blank sysicon_default. Same "?" glyph the Untracked row in
         // the Shiba hub uses — both mean "we know about this entry but can't account for it".
-        XMBItemType.MISSING         -> Icons.Filled.HelpOutline
+        XMBItemType.MISSING         -> Icons.AutoMirrored.Filled.HelpOutline
         XMBItemType.VIDEO_FOLDER    -> Icons.Filled.Folder
         XMBItemType.VIDEO_LIBRARY   -> Icons.Filled.VideoLibrary
         XMBItemType.VIDEO_APPS        -> Icons.Filled.Movie
@@ -317,7 +318,7 @@ private fun SiblingIcon(item: XMBItem, selected: Boolean, solidUnfocusedIcons: B
         XMBItemType.PHOTO_ALBUMS    -> Icons.Filled.PhotoLibrary
         XMBItemType.PHOTO_APPS      -> Icons.Filled.Collections
         // The video "Playlists" section row (PLAYLIST type with no playlistId) uses a playlist glyph.
-        XMBItemType.PLAYLIST        -> Icons.Filled.QueueMusic
+        XMBItemType.PLAYLIST        -> Icons.AutoMirrored.Filled.QueueMusic
         else                        -> null
     }
     Box(
@@ -852,7 +853,7 @@ private fun XmbItemLeadingIcon(
             ) {
                 ThemedGlyph(
                     slotKey = itemSlotKeyFor(item.type) ?: "",
-                    defaultVector = Icons.Filled.QueueMusic,
+                    defaultVector = Icons.AutoMirrored.Filled.QueueMusic,
                     contentDescription = null,
                     tint = iconTint,
                     modifier = Modifier.size(48.dp),
@@ -1100,7 +1101,7 @@ private fun XmbItemLeadingIcon(
                 ) {
                     ThemedGlyph(
                         itemSlotKeyFor(item.type) ?: "",
-                        Icons.Filled.HelpOutline,
+                        Icons.AutoMirrored.Filled.HelpOutline,
                         null,
                         iconTint,
                         Modifier.size(LEADING_ICON_SIZE),
@@ -1285,17 +1286,31 @@ private fun XmbItemLeadingIcon(
         // like every other silhouette glyph.
         item.id == "ach_all" -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                BundledSilhouetteIcon(
-                    assetUri = MEMORY_CARD_DEFAULT_ART,
-                    modifier = Modifier.size(LEADING_ICON_SIZE),
-                )
+                // Two-tier override (user pick, then theme) before the bundled card art.
+                val trackKey = shibaSlotKeyFor(item.id)
+                val trackOverride = trackKey?.let {
+                    com.playfieldportal.core.ui.icons.LocalCustomIcons.current[it]
+                        ?: LocalXmbIconOverrides.current[it]
+                }
+                if (trackOverride != null) {
+                    com.playfieldportal.core.ui.icons.CustomIconSurface(
+                        icon = trackOverride,
+                        contentDescription = null,
+                        modifier = Modifier.size(LEADING_ICON_SIZE),
+                    )
+                } else {
+                    BundledSilhouetteIcon(
+                        assetUri = MEMORY_CARD_DEFAULT_ART,
+                        modifier = Modifier.size(LEADING_ICON_SIZE),
+                    )
+                }
             }
         }
         // Other Shiba Coins hub lens rows get a per-row Material glyph at the item-icon size (no
         // background), keyed by exact id so the untracked/coin rows keep their own treatment.
         achievementsGlyphFor(item.id) != null -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                ThemedGlyph("", achievementsGlyphFor(item.id)!!, null, iconTint, Modifier.size(LEADING_ICON_SIZE))
+                ThemedGlyph(shibaSlotKeyFor(item.id) ?: "", achievementsGlyphFor(item.id)!!, null, iconTint, Modifier.size(LEADING_ICON_SIZE))
             }
         }
         else -> Spacer(modifier = Modifier.width(12.dp))
@@ -1332,7 +1347,7 @@ internal fun BundledSilhouetteIcon(assetUri: String, modifier: Modifier = Modifi
 
 // The leading glyph for a Shiba Coins hub lens row, or null if the id isn't one of them.
 private fun achievementsGlyphFor(id: String): androidx.compose.ui.graphics.vector.ImageVector? = when (id) {
-    "ach_untracked" -> Icons.Filled.HelpOutline
+    "ach_untracked" -> Icons.AutoMirrored.Filled.HelpOutline
     "ach_connect" -> Icons.Filled.Link
     else -> null
 }

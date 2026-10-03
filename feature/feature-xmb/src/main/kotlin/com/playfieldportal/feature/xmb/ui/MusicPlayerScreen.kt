@@ -56,7 +56,11 @@ import com.playfieldportal.core.ui.theme.LocalPfpTextColors
 import com.playfieldportal.core.ui.theme.deriveStorefrontColors
 import com.playfieldportal.feature.xmb.music.MusicPlaybackState
 import com.playfieldportal.feature.xmb.ui.media.MediaScrubBar
+import com.playfieldportal.feature.xmb.ui.media.TransportAction
 import com.playfieldportal.feature.xmb.ui.media.TransportButton
+import com.playfieldportal.feature.xmb.ui.media.playPauseAction
+import com.playfieldportal.feature.xmb.ui.media.transportSlotKey
+import com.playfieldportal.core.ui.icons.ThemedGlyph
 import com.playfieldportal.feature.xmb.ui.media.formatMediaTime
 import com.playfieldportal.feature.xmb.ui.visualizer.VISUALIZER_STRIP_HEIGHT
 import com.playfieldportal.feature.xmb.ui.visualizer.VisualizerField
@@ -420,11 +424,11 @@ private fun TransportCluster(
         // never shifts out from under the thumb mid-song.
         TransportButton(
             Icons.Filled.SkipPrevious, "Previous track", state.queueSize > 1, onPrev,
-            size = 44.dp, iconSize = 24.dp,
+            size = 44.dp, iconSize = 24.dp, action = TransportAction.PREVIOUS,
         )
         TransportButton(
             Icons.Filled.Replay10, "Back 10 seconds", state.isPrepared, onSeekBack,
-            size = 48.dp, iconSize = 28.dp,
+            size = 48.dp, iconSize = 28.dp, action = TransportAction.BACK_10,
         )
         TransportButton(
             icon = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
@@ -433,14 +437,15 @@ private fun TransportCluster(
             onClick = onPlayPause,
             size = 60.dp,
             iconSize = 42.dp,
+            action = playPauseAction(state.isPlaying),
         )
         TransportButton(
             Icons.Filled.Forward10, "Forward 10 seconds", state.isPrepared, onSeekForward,
-            size = 48.dp, iconSize = 28.dp,
+            size = 48.dp, iconSize = 28.dp, action = TransportAction.FORWARD_10,
         )
         TransportButton(
             Icons.Filled.SkipNext, "Next track", state.queueSize > 1, onNext,
-            size = 44.dp, iconSize = 24.dp,
+            size = 44.dp, iconSize = 24.dp, action = TransportAction.NEXT,
         )
     }
 }
@@ -502,8 +507,9 @@ private fun BottomBand(
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
             Box(Modifier.weight(1f - TIME_BAR_WIDTH_FRACTION)) {
                 if (!showTouchControls) {
-                    Icon(
-                        imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    ThemedGlyph(
+                        slotKey = transportSlotKey(playPauseAction(state.isPlaying)),
+                        defaultVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                         contentDescription = if (state.isPlaying) "Playing" else "Paused",
                         tint = PrimaryText,
                         modifier = Modifier.align(Alignment.BottomStart).size(52.dp),

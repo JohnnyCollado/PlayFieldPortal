@@ -41,7 +41,8 @@ import org.robolectric.Shadows.shadowOf
  * that loop are needed. This test asserts only against the store and the filesystem, never
  * through the ViewModel state, so it needs no standing subscriber.
  *
- * Coverage note: the video-probe success path (poster extraction through MediaMetadataRetriever)
+ * Coverage note: the video-probe success path (poster extraction through MediaMetadataRetriever, and with it the
+ * motion import's removal of `display_motion_crop`)
  * is not exercised here — Robolectric can't decode a real MP4 on the JVM. Video import and the
  * decoder-release discipline are on-device checks.
  */
@@ -152,6 +153,33 @@ class DisplaySettingsViewModelWallpaperTest {
         }
     }
 
+    @Test
+    fun `clearing the wallpaper removes the motion crop`() = runTest(dispatcher) {
+        context.pfpDataStore.edit {
+            it[KEY_CUSTOM_WALLPAPER] = "/old/wallpaper.jpg"
+            it[KEY_MOTION_WALLPAPER] = "/old/wallpaper.mp4"
+            it[KEY_MOTION_CROP] = CROP_JSON
+        }
+
+        vm.clearWallpaper()
+
+        eventuallyPrefs("reset clears the crop") { it[KEY_MOTION_CROP] == null }
+    }
+
+    @Test
+    fun `a still import removes a theme's motion crop`() = runTest(dispatcher) {
+        context.pfpDataStore.edit {
+            it[KEY_MOTION_WALLPAPER] = "/old/wallpaper.mp4"
+            it[KEY_MOTION_CROP] = CROP_JSON
+        }
+
+        vm.onWallpaperPicked(registerStream(jpegBytes()))
+
+        eventuallyPrefs("the still import applies and drops the crop") {
+            it[KEY_CUSTOM_WALLPAPER] != null && it[KEY_MOTION_CROP] == null
+        }
+    }
+
     /*
      * Not unit-testable on the JVM (needs a device pass, like PfpThemeStoreTest's decode-failure
      * note): the undecodable-still rejection — Robolectric's BitmapFactory shadow returns a
@@ -167,8 +195,9 @@ class DisplaySettingsViewModelWallpaperTest {
     ): Preferences {
         var snapshot: Preferences? = null
         eventually(reason) {
-            snapshot = context.pfpDataStore.data.first()
-            predicate(snapshot!!)
+            val fresh = context.pfpDataStore.data.first()
+            snapshot = fresh
+            predicate(fresh)
         }
         return snapshot!!
     }
@@ -190,5 +219,7 @@ class DisplaySettingsViewModelWallpaperTest {
         // Mirror the (internal) ViewModel keys by their string contract, like PfpThemeStoreTest does.
         val KEY_CUSTOM_WALLPAPER = stringPreferencesKey("display_custom_wallpaper")
         val KEY_MOTION_WALLPAPER = stringPreferencesKey("display_motion_wallpaper")
+        val KEY_MOTION_CROP = stringPreferencesKey("display_motion_crop")
+        const val CROP_JSON = """{"x":0.1,"y":0.0,"w":0.8,"h":1.0}"""
     }
 }

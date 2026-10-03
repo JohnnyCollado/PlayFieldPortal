@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Album
 import androidx.compose.material.icons.outlined.Download
@@ -9,11 +10,18 @@ import androidx.compose.material.icons.outlined.PlayDisabled
 import androidx.compose.material.icons.outlined.RssFeed
 import androidx.compose.material.icons.outlined.Sell
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.Dp
 import com.playfieldportal.core.domain.model.NotificationKind
 import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.TaskKind
+import com.playfieldportal.core.ui.icons.CustomIconSurface
+import com.playfieldportal.core.ui.icons.LocalCustomIcons
+import com.playfieldportal.core.ui.icons.LocalXmbIconOverrides
 
 /**
  * Kind → glyph, as one table.
@@ -36,6 +44,33 @@ internal fun notificationGlyph(kind: NotificationKind): ImageVector = when (kind
     NotificationKind.SYSTEM -> Icons.Outlined.Settings
     NotificationKind.DOWNLOAD -> Icons.Outlined.Download
     NotificationKind.FEED -> Icons.Outlined.RssFeed
+}
+
+/** Themeable `notif_*` slot (theme-kit IconSlots key) for a kind; the inverse of DefaultSlotGlyph's table. */
+internal fun notificationSlotKey(kind: NotificationKind): String = when (kind) {
+    NotificationKind.SCAN -> "notif_album"
+    NotificationKind.ARTWORK -> "notif_image"
+    NotificationKind.METADATA -> "notif_tag"
+    NotificationKind.ACHIEVEMENT -> "notif_coin"
+    NotificationKind.LAUNCH -> "notif_blocked"
+    NotificationKind.SYSTEM -> "notif_settings"
+    NotificationKind.DOWNLOAD -> "notif_download"
+    NotificationKind.FEED -> "notif_feed"
+}
+
+/**
+ * A kind's glyph with the usual precedence: the user's pick, then the applied theme's art, then the
+ * built-in [notificationGlyph]. Custom art renders as authored (untinted); only the built-in takes [tint].
+ */
+@Composable
+internal fun NotificationKindIcon(kind: NotificationKind, tint: Color, size: Dp, modifier: Modifier = Modifier) {
+    val key = notificationSlotKey(kind)
+    val override = LocalCustomIcons.current[key] ?: LocalXmbIconOverrides.current[key]
+    if (override != null) {
+        CustomIconSurface(icon = override, contentDescription = null, modifier = modifier.size(size))
+    } else {
+        Icon(imageVector = notificationGlyph(kind), contentDescription = null, tint = tint, modifier = modifier.size(size))
+    }
 }
 
 /** A running task borrows the glyph of the history row it will become. */

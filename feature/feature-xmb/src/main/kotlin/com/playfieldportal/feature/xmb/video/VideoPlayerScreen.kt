@@ -71,7 +71,9 @@ import com.playfieldportal.core.ui.theme.deriveStorefrontColors
 import com.playfieldportal.core.ui.theme.menuCursor
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.feature.xmb.ui.media.MediaScrubBar
+import com.playfieldportal.feature.xmb.ui.media.TransportAction
 import com.playfieldportal.feature.xmb.ui.media.TransportButton
+import com.playfieldportal.feature.xmb.ui.media.playPauseAction
 import kotlinx.coroutines.delay
 import timber.log.Timber
 
@@ -434,11 +436,11 @@ private fun ControlsOverlay(
                 // shape and play never shifts out from under the thumb mid-video.
                 TransportButton(
                     Icons.Filled.SkipPrevious, "Previous video", hasPrev, onPrevious,
-                    size = 44.dp, iconSize = 26.dp,
+                    size = 44.dp, iconSize = 26.dp, action = TransportAction.PREVIOUS,
                 )
                 TransportButton(
                     Icons.Filled.Replay10, "Back 10 seconds", true, onSeekBack,
-                    size = 52.dp, iconSize = 30.dp,
+                    size = 52.dp, iconSize = 30.dp, action = TransportAction.BACK_10,
                 )
                 TransportButton(
                     icon = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
@@ -447,14 +449,15 @@ private fun ControlsOverlay(
                     onClick = onPlayPause,
                     size = 64.dp,
                     iconSize = 48.dp,
+                    action = playPauseAction(isPlaying),
                 )
                 TransportButton(
                     Icons.Filled.Forward10, "Forward 10 seconds", true, onSeekForward,
-                    size = 52.dp, iconSize = 30.dp,
+                    size = 52.dp, iconSize = 30.dp, action = TransportAction.FORWARD_10,
                 )
                 TransportButton(
                     Icons.Filled.SkipNext, "Next video", hasNext, onNext,
-                    size = 44.dp, iconSize = 26.dp,
+                    size = 44.dp, iconSize = 26.dp, action = TransportAction.NEXT,
                 )
             }
         }

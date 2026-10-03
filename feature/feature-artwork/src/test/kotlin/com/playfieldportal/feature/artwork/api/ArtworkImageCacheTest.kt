@@ -32,6 +32,7 @@ import kotlin.test.assertTrue
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
+@OptIn(coil3.annotation.DelicateCoilApi::class)
 class ArtworkImageCacheTest {
 
     private val context: Context = ApplicationProvider.getApplicationContext()

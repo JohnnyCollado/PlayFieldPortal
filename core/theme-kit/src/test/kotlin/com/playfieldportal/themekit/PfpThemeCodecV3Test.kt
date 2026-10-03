@@ -98,7 +98,7 @@ class PfpThemeCodecV3Test {
         val hostile = zip(
             "manifest.json" to jsonManifest(),
             "sysicons/../evil.png" to ByteArray(4),
-            "sysicon_default.png" to ByteArray(4), // fallback art, never a slot
+            "sysicon_default.png" to ByteArray(4), // a slot since v4, but dropped here: outside sysicons/
             "sysicons/not_a_platform.png" to ByteArray(4),
             "sysicons/psx.png" to ByteArray(4),
         )
@@ -198,11 +198,10 @@ class PfpThemeCodecV3Test {
     }
 
     @Test
-    fun `textColor round-trips and the schema version does not move`() {
-        // Additive by the same argument the v3 note makes: a reader that predates textColor
-        // ignores it and applies the rest, so bumping the version would only make older builds
-        // refuse bundles they can in fact render.
-        assertEquals(3, PfpThemeManifest.SCHEMA_VERSION, "textColor is additive — v3 stands")
+    fun `textColor round-trips and the writer stamps schema 4`() {
+        // textColor itself is additive; the version moved to 4 with the v4 manifest fields (TS-02).
+        // Readers never gate on it, so older builds still apply the subset they understand.
+        assertEquals(4, PfpThemeManifest.SCHEMA_VERSION, "v4 manifest fields landed")
 
         val written = PfpThemeCodec.write(
             PfpThemeBundle(
@@ -217,7 +216,7 @@ class PfpThemeCodecV3Test {
         )
         val decoded = assertNotNull(PfpThemeCodec.read(written))
         assertEquals("#FF8800", decoded.manifest.textColor)
-        assertEquals(3, decoded.manifest.schemaVersion)
+        assertEquals(4, decoded.manifest.schemaVersion)
     }
 
     @Test
@@ -276,7 +275,7 @@ class PfpThemeCodecV3Test {
         assertEquals("mp4", decoded.motion?.extension)
         assertTrue(decoded.motion!!.drain().contentEquals(mp4Bytes()), "streams from the file")
         // Streaming is repeatable: apply() may extract the same bundle more than once.
-        assertTrue(decoded.motion!!.drain().contentEquals(mp4Bytes()), "and can be streamed again")
+        assertTrue(decoded.motion.drain().contentEquals(mp4Bytes()), "and can be streamed again")
     }
 
     @Test

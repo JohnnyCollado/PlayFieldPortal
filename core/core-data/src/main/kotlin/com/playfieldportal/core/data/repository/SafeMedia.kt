@@ -2,6 +2,7 @@ package com.playfieldportal.core.data.repository
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import com.playfieldportal.themekit.PfpThemeCodec
 import java.io.InputStream
 import java.io.OutputStream
 
@@ -13,8 +14,15 @@ import java.io.OutputStream
  */
 object SafeMedia {
 
-    /** Theme files/bundles are a few MB; 64 MB is generous headroom, not a target. */
-    const val MAX_THEME_FILE_BYTES = 64L * 1024 * 1024
+    /**
+     * Largest `.pfptheme` the launcher will import: the codec's whole-bundle limit. Import streams
+     * to disk, so this is a storage bound, not a heap one (a motion + boot + gameboot theme alone
+     * can pass 100 MB). It used to be 64 MB, which a v4 bundle's own headline case exceeds.
+     */
+    val MAX_THEME_FILE_BYTES: Long = PfpThemeCodec.BUNDLE_LIMITS.maxTotalBytes
+
+    /** Default ceiling for reads that DO land on the heap (photos, PTF files): unchanged at 64 MB. */
+    private const val MAX_HEAP_READ_BYTES = 64L * 1024 * 1024
 
     /** Matches theme-kit Bmp.kt's dimension cap. */
     const val MAX_IMAGE_DIMENSION = 8192
@@ -41,7 +49,7 @@ object SafeMedia {
     }
 
     /** Reads [this] fully, or null once more than [cap] bytes arrive. */
-    fun InputStream.readCapped(cap: Long = MAX_THEME_FILE_BYTES): ByteArray? {
+    fun InputStream.readCapped(cap: Long = MAX_HEAP_READ_BYTES): ByteArray? {
         val out = java.io.ByteArrayOutputStream()
         val buffer = ByteArray(64 * 1024)
         var total = 0L

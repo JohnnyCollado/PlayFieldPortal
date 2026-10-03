@@ -2,6 +2,7 @@ package com.playfieldportal.studio.io
 
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
+import com.playfieldportal.studio.CropFrame
 import com.playfieldportal.themekit.BmpImage
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
@@ -116,6 +117,31 @@ object ImageCodecs {
         }
     }
 
+    /**
+     * Bakes [frame] into pixels: cuts its rect out of [src], then bilinear-scales to the frame's
+     * output size (exact for presets, the cut size for ORIGINAL). Serves the still wallpaper and
+     * a video's poster alike, so both show the region `motionCrop` describes.
+     */
+    fun bakeCrop(src: BufferedImage, frame: CropFrame): BufferedImage {
+        require(src.width == frame.sourceW && src.height == frame.sourceH) { "frame was built for another source" }
+        val rect = frame.pixelRect()
+        // An uncropped Original ships the decoded image as-is (no re-draw, so no pixel/format drift).
+        if (frame.fit == com.playfieldportal.studio.WallpaperPreset.ORIGINAL &&
+            rect == com.playfieldportal.studio.CropRect(0, 0, src.width, src.height)
+        ) return src
+        val cut = src.getSubimage(rect.x, rect.y, rect.width, rect.height)
+        val (outW, outH) = frame.outputSize()
+        return BufferedImage(outW, outH, BufferedImage.TYPE_INT_ARGB).also {
+            val g = it.createGraphics()
+            g.setRenderingHint(
+                java.awt.RenderingHints.KEY_INTERPOLATION,
+                java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR,
+            )
+            g.drawImage(cut, 0, 0, outW, outH, null)
+            g.dispose()
+        }
+    }
+
     /** Aspect-preserving thumbnail with the longest edge at [maxDim]. */
     fun thumbnail(src: BufferedImage, maxDim: Int): BufferedImage {
         val scale = minOf(1f, maxDim.toFloat() / maxOf(src.width, src.height))
@@ -133,8 +159,14 @@ object ImageCodecs {
      * than [sizePx] on its longest edge (preserving aspect and alpha), re-encodes as PNG.
      * Returns null when the file isn't an image.
      */
-    fun normalizeIconPng(file: File, sizePx: Int): ByteArray? {
-        val src = loadImage(file) ?: return null
+    fun normalizeIconPng(file: File, sizePx: Int): ByteArray? =
+        loadImage(file)?.let { normalizeIconPng(it, sizePx) }
+
+    /** [normalizeIconPng] for bytes already in memory (icon-pack entries), same bounds as [decodeImage]. */
+    fun normalizeIconPng(bytes: ByteArray, sizePx: Int): ByteArray? =
+        decodeImage(bytes)?.let { normalizeIconPng(it, sizePx) }
+
+    private fun normalizeIconPng(src: BufferedImage, sizePx: Int): ByteArray? {
         val longest = maxOf(src.width, src.height)
         val image = if (longest <= sizePx) {
             // Re-draw into ARGB so palette/JPEG sources still export with an alpha channel.

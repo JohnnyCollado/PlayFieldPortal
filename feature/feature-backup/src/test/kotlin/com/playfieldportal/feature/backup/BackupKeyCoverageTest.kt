@@ -47,6 +47,11 @@ class BackupKeyCoverageTest {
     }
 
     @Test
+    fun `the motion wallpaper crop travels with the motion wallpaper`() {
+        assertCovered("display_motion_wallpaper", "display_motion_crop")
+    }
+
+    @Test
     fun `XMB geometry is backed up`() {
         assertCovered(
             "display_xmb_scale",

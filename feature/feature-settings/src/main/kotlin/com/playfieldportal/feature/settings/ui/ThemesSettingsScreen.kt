@@ -89,6 +89,7 @@ fun ThemesSettingsScreen(
         onApplySavedTheme = { viewModel.applySavedTheme(it) },
         onShareSavedTheme = { viewModel.shareSavedTheme(it) },
         onDeleteSavedTheme = { viewModel.deleteSavedTheme(it) },
+        onUpdateThemeFile = { viewModel.updateThemeFile(it) },
         onSetIconColor = { viewModel.setIconColor(it) },
         onClearAccentOverride = { viewModel.clearAccentOverride() },
         onResetTheme = { viewModel.resetTheme() },
@@ -112,6 +113,7 @@ private fun ThemesSettingsContent(
     onClearAccentOverride: () -> Unit,
     onResetTheme: () -> Unit,
     onSaveCurrentLook: (String) -> Unit = {},
+    onUpdateThemeFile: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val ptfPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { onImportPtfTheme(it) } }
@@ -179,11 +181,13 @@ private fun ThemesSettingsContent(
 
     fun openMenuForSavedTheme(theme: PfpThemeStore.SavedTheme) {
         menuIndex = 0
-        menu = ThemeMenu(theme.name, listOf(
-            ThemeMenuOption("Apply")  { onApplySavedTheme(theme.id) },
-            ThemeMenuOption("Share")  { onShareSavedTheme(theme.id) },
-            ThemeMenuOption("Remove", destructive = true) { onDeleteSavedTheme(theme.id) },
-        ))
+        menu = ThemeMenu(theme.name, buildList {
+            add(ThemeMenuOption("Apply")  { onApplySavedTheme(theme.id) })
+            add(ThemeMenuOption("Share")  { onShareSavedTheme(theme.id) })
+            // Only a theme saved in an older format can be rewritten; a current one has nothing to update.
+            if (theme.isOlderFormat) add(ThemeMenuOption("Update theme file") { onUpdateThemeFile(theme.id) })
+            add(ThemeMenuOption("Remove", destructive = true) { onDeleteSavedTheme(theme.id) })
+        })
     }
 
     Box(modifier = modifier) {
@@ -365,6 +369,7 @@ private fun ThemesSettingsContent(
                             onApply      = onApplySavedTheme,
                             onDelete     = onDeleteSavedTheme,
                             onShare      = onShareSavedTheme,
+                            onUpdate     = onUpdateThemeFile,
                         )
                     }
                 }
@@ -511,7 +516,7 @@ private fun FocusableStrip(
 
 
 @Composable
-private fun SavedThemeCardRow(themes: List<PfpThemeStore.SavedTheme>, focusedIndex: Int? = null, onApply: (String) -> Unit, onDelete: (String) -> Unit, onShare: (String) -> Unit) {
+private fun SavedThemeCardRow(themes: List<PfpThemeStore.SavedTheme>, focusedIndex: Int? = null, onApply: (String) -> Unit, onDelete: (String) -> Unit, onShare: (String) -> Unit, onUpdate: (String) -> Unit) {
     // Hand-rolled tap targets rather than settings rows, so they carry their own cues. Applying a
     // theme repaints the whole launcher and Remove deletes a saved one: both are commits, not
     // descents, so they take the confirm cue. Share hands off to another app, which is an ordinary
@@ -524,10 +529,16 @@ private fun SavedThemeCardRow(themes: List<PfpThemeStore.SavedTheme>, focusedInd
                 Box(modifier = Modifier.size(width = 168.dp, height = 96.dp).clip(RoundedCornerShape(10.dp)).background(Color(theme.accentArgb?.let { it and 0xFFFFFFFFL } ?: 0xFF20304AL)).border(width = if (cardFocused) 3.dp else 1.dp, color = if (cardFocused) SettingsAccent else Color(0x55FFFFFF), shape = RoundedCornerShape(10.dp)).clickable { menuSounds.play(MenuSound.CONFIRM); onApply(theme.id) }) {
                     theme.previewPath?.let { path -> AsyncImage(model = path, contentDescription = theme.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
                     theme.accentArgb?.let { accent -> Box(modifier = Modifier.padding(6.dp).size(14.dp).clip(CircleShape).background(Color(accent and 0xFFFFFFFFL)).border(1.dp, Color(0x88FFFFFF), CircleShape).align(Alignment.TopEnd)) }
+                    if (theme.isOlderFormat) {
+                        Text(text = "Older format", color = Color.White, fontSize = 10.sp, maxLines = 1, modifier = Modifier.padding(6.dp).align(Alignment.BottomStart).clip(RoundedCornerShape(4.dp)).background(Color(0xCC000000)).padding(horizontal = 6.dp, vertical = 2.dp))
+                    }
                 }
                 Text(text = theme.name, color = if (cardFocused) SettingsAccent else SettingsSubtext, fontSize = 12.sp, maxLines = 1, modifier = Modifier.padding(top = 4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(text = "Share", color = SettingsAccent, fontSize = 12.sp, modifier = Modifier.clickable { menuSounds.play(MenuSound.SELECT); onShare(theme.id) }.padding(horizontal = 10.dp, vertical = 8.dp))
+                    if (theme.isOlderFormat) {
+                        Text(text = "Update", color = SettingsAccent, fontSize = 12.sp, modifier = Modifier.clickable { menuSounds.play(MenuSound.CONFIRM); onUpdate(theme.id) }.padding(horizontal = 10.dp, vertical = 8.dp))
+                    }
                     Text(text = "Remove", color = SettingsAccent, fontSize = 12.sp, modifier = Modifier.clickable { menuSounds.play(MenuSound.CONFIRM); onDelete(theme.id) }.padding(horizontal = 10.dp, vertical = 8.dp))
                 }
             }

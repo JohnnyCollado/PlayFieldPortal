@@ -136,7 +136,7 @@ class LaunchDispatcherTest {
         val result = h.dispatcher.launch(game, resolved, h.intent)
 
         assertIs<LaunchDispatchResult.Rejected>(result)
-        assertEquals("Emulator not found. Is it installed?", (result as LaunchDispatchResult.Rejected).message)
+        assertEquals("Emulator not found. Is it installed?", result.message)
         coVerify { h.recorder.record(match {
             it.status == LaunchOutcomeStatus.INTENT_FAILED &&
                 it.emulatorId == "duckstation" &&

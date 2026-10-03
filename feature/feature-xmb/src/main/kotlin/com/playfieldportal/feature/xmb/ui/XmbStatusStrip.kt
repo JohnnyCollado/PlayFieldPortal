@@ -49,6 +49,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.icons.CustomIcon
+import com.playfieldportal.core.ui.icons.CustomIconSurface
+import com.playfieldportal.core.ui.icons.LocalCustomIcons
+import com.playfieldportal.core.ui.icons.LocalXmbIconOverrides
 import com.playfieldportal.feature.xmb.R
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -258,12 +262,17 @@ fun XmbPspStatusStrip(
                 onTap = onNotificationsTapped,
             )
             if (sys.controllerConnected) {
-                Icon(
-                    imageVector        = Icons.Filled.SportsEsports,
-                    contentDescription = "Controller connected",
-                    tint               = StripMuted,
-                    modifier           = Modifier.size(15.dp),
-                )
+                val override = statusSlotOverride("status_controller")
+                if (override != null) {
+                    CustomIconSurface(override, "Controller connected", Modifier.size(15.dp))
+                } else {
+                    Icon(
+                        imageVector        = Icons.Filled.SportsEsports,
+                        contentDescription = "Controller connected",
+                        tint               = StripMuted,
+                        modifier           = Modifier.size(15.dp),
+                    )
+                }
             }
             if (sys.bluetoothOn) {
                 StatusIcon(
@@ -271,11 +280,23 @@ fun XmbPspStatusStrip(
                     slotKey = "status_bluetooth",
                 )
             }
+            // A themed Wi-Fi / Signal icon replaces the live meter outright (a static glyph carries
+            // no level); with no override the meter draws exactly as before.
             sys.wifiLevel?.let { level ->
-                WifiMeter(level, Modifier.size(width = 16.dp, height = 13.dp))
+                val override = statusSlotOverride("status_wifi")
+                if (override != null) {
+                    CustomIconSurface(override, "Wi-Fi", Modifier.size(width = 16.dp, height = 13.dp))
+                } else {
+                    WifiMeter(level, Modifier.size(width = 16.dp, height = 13.dp))
+                }
             }
             sys.cellularLevel?.let { level ->
-                SignalBars(level, Modifier.size(width = 14.dp, height = 13.dp))
+                val override = statusSlotOverride("status_signal")
+                if (override != null) {
+                    CustomIconSurface(override, "Cellular signal", Modifier.size(width = 14.dp, height = 13.dp))
+                } else {
+                    SignalBars(level, Modifier.size(width = 14.dp, height = 13.dp))
+                }
             }
             StatusIcon(
                 res         = XmbStatusIcons.battery(batteryLevel, isCharging),
@@ -309,8 +330,8 @@ fun XmbPspStatusStrip(
  * [StripMuted] — present and quiet. Hiding it would remove the only thing advertising that the
  * panel exists, and a user on a HOME-screen device has no shade habit to fall back on.
  *
- * The glyph is Material's bell for now; `status_notifications` becomes a themeable slot alongside
- * the other `status_*` icons once its art lands (plan section 5).
+ * The glyph is Material's bell unless a theme or the user supplies `status_notifications` art, which
+ * draws as authored (untinted) - the dot and count ride on it either way.
  */
 @Composable
 private fun NotificationButton(
@@ -342,12 +363,18 @@ private fun NotificationButton(
         },
     ) {
         Box(contentAlignment = Alignment.TopEnd) {
-            Icon(
-                imageVector        = Icons.Filled.Notifications,
-                contentDescription = if (unread > 0) "Notifications, $unread unread" else "Notifications",
-                tint               = tint,
-                modifier           = Modifier.size(13.dp),
-            )
+            val description = if (unread > 0) "Notifications, $unread unread" else "Notifications"
+            val override = statusSlotOverride("status_notifications")
+            if (override != null) {
+                CustomIconSurface(override, description, Modifier.size(13.dp))
+            } else {
+                Icon(
+                    imageVector        = Icons.Filled.Notifications,
+                    contentDescription = description,
+                    tint               = tint,
+                    modifier           = Modifier.size(13.dp),
+                )
+            }
             // The activity mark: a small dot riding the bell while work is in flight, shown only
             // when there is no count to show instead.
             if (running && unread == 0) {
@@ -429,6 +456,11 @@ private fun WifiMeter(level: Int, modifier: Modifier = Modifier) {
     }
 }
 
+/** User pick, then the applied theme's art, for a `status_*` slot; null = draw the built-in. */
+@Composable
+private fun statusSlotOverride(slotKey: String): CustomIcon? =
+    LocalCustomIcons.current[slotKey] ?: LocalXmbIconOverrides.current[slotKey]
+
 @Composable
 private fun StatusIcon(
     @DrawableRes res: Int,
@@ -439,12 +471,9 @@ private fun StatusIcon(
     // every other icon slot. Null = not themeable (meters drawn on Canvas have no slot).
     slotKey: String? = null,
 ) {
-    val override = slotKey?.let { key ->
-        com.playfieldportal.core.ui.icons.LocalCustomIcons.current[key]
-            ?: com.playfieldportal.core.ui.icons.LocalXmbIconOverrides.current[key]
-    }
+    val override = slotKey?.let { statusSlotOverride(it) }
     if (override != null) {
-        com.playfieldportal.core.ui.icons.CustomIconSurface(
+        CustomIconSurface(
             icon = override,
             contentDescription = description,
             modifier = modifier,

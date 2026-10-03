@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.playfieldportal.core.ui.icons.ThemedGlyph
 import com.playfieldportal.core.ui.image.rememberArtworkModel
 
 // ── Primary action region ─────────────────────────────────────────────────────
@@ -55,6 +56,7 @@ fun PfpDetailLaunchButton(
     modifier: Modifier = Modifier,
     fill: Color = DetailLaunchFill,
     textColor: Color = DetailLaunchText,
+    slotKey: String? = null,
 ) {
     val shape = RoundedCornerShape(10.dp)
     Row(
@@ -75,7 +77,11 @@ fun PfpDetailLaunchButton(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
-            Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.size(24.dp))
+            if (slotKey != null) {
+                ThemedGlyph(slotKey, icon, null, textColor, Modifier.size(24.dp))
+            } else {
+                Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.size(24.dp))
+            }
             Spacer(Modifier.width(12.dp))
         }
         Text(
@@ -104,6 +110,8 @@ fun PfpDetailQuickAction(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
+    slotKey: String? = null,
+    overrideAlpha: Float = 1f,
 ) {
     val shape = RoundedCornerShape(9.dp)
     Row(
@@ -129,12 +137,16 @@ fun PfpDetailQuickAction(
         horizontalArrangement = Arrangement.spacedBy(9.dp),
     ) {
         if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = DetailTextPrimary,
-                modifier = Modifier.size(18.dp),
-            )
+            if (slotKey != null) {
+                ThemedGlyph(slotKey, icon, null, DetailTextPrimary, Modifier.size(18.dp), overrideAlpha)
+            } else {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = DetailTextPrimary,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
         }
         Text(
             text = label,

@@ -9,6 +9,8 @@ import org.junit.Test
 
 class ScreenScraperApiTest {
 
+    private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+
     private val api = ScreenScraperApi(
         appContext = mockk(relaxed = true),
         httpClient = mockk(relaxed = true),
@@ -128,7 +130,7 @@ class ScreenScraperApiTest {
 
     @Test
     fun `the per-minute limit is read from the account block`() {
-        val user = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+        val user = json
             .decodeFromString(SsUser.serializer(), """{"id":"someone","maxthreads":"1","maxrequestspermin":"3072"}""")
 
         assertEquals("3072", user.maxRequestsPerMinute)

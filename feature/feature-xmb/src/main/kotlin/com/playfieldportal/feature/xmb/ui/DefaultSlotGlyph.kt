@@ -2,43 +2,61 @@ package com.playfieldportal.feature.xmb.ui
 
 import androidx.annotation.DrawableRes
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmarks
+import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.CallEnd
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Collections
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Headset
-import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QrCode2
-import androidx.compose.material.icons.filled.QueueMusic
+import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SignalCellularAlt
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.painterResource
+import com.playfieldportal.core.domain.achievement.ShibaTier
+import com.playfieldportal.core.domain.model.NotificationKind
 import com.playfieldportal.core.ui.icons.ConsoleIcon
 import com.playfieldportal.core.ui.icons.PortalIcon
 import com.playfieldportal.core.ui.icons.catbarIconKeyFor
 import com.playfieldportal.core.ui.icons.categoryIconFor
 import com.playfieldportal.core.ui.icons.systemIconRes
+import com.playfieldportal.feature.xmb.ui.detail.shibaCoinRes
 import com.playfieldportal.themekit.IconSlot
 
 /**
@@ -87,6 +105,8 @@ internal fun defaultGlyphFor(slot: IconSlot): SlotGlyphDefault {
     }
     // Status strip; the resource IDs themselves stay private to XmbStatusStrip.kt.
     XmbStatusIcons.forSlotKey(slot.key)?.let { return SlotGlyphDefault.Drawable(it) }
+    shibaTierFor(slot.key)?.let { return SlotGlyphDefault.Drawable(shibaCoinRes(it)) }
+    notificationKindFor(slot.key)?.let { return SlotGlyphDefault.Vector(notificationGlyph(it)) }
     return when (slot.key) {
         // The default memory-card art. "All Tracked Games" reads as a card too (its row draws
         // MEMORY_CARD_DEFAULT_ART directly), so it previews as one.
@@ -99,13 +119,34 @@ internal fun defaultGlyphFor(slot: IconSlot): SlotGlyphDefault {
     }
 }
 
+private fun shibaTierFor(slotKey: String): ShibaTier? = when (slotKey) {
+    "shiba_coin_bronze" -> ShibaTier.BRONZE
+    "shiba_coin_silver" -> ShibaTier.SILVER
+    "shiba_coin_gold" -> ShibaTier.GOLD
+    "shiba_coin_platinum" -> ShibaTier.PLATINUM
+    else -> null
+}
+
+/** `notif_*` slot to the kind whose glyph it themes; the default IS [notificationGlyph]. */
+private fun notificationKindFor(slotKey: String): NotificationKind? = when (slotKey) {
+    "notif_album" -> NotificationKind.SCAN
+    "notif_image" -> NotificationKind.ARTWORK
+    "notif_tag" -> NotificationKind.METADATA
+    "notif_coin" -> NotificationKind.ACHIEVEMENT
+    "notif_blocked" -> NotificationKind.LAUNCH
+    "notif_settings" -> NotificationKind.SYSTEM
+    "notif_download" -> NotificationKind.DOWNLOAD
+    "notif_feed" -> NotificationKind.FEED
+    else -> null
+}
+
 /**
  * Material glyphs for the item slots — keep in lockstep with the leading icons in
  * [XmbItemLeadingIcon] (same vector per slot) and with the Studio's `StudioIconSet`.
  */
 private val ITEM_VECTORS: Map<String, ImageVector> = mapOf(
     "item_add" to Icons.Filled.Add,
-    "item_missing" to Icons.Filled.HelpOutline,
+    "item_missing" to Icons.AutoMirrored.Filled.HelpOutline,
     "item_video_folder" to Icons.Filled.Folder,
     "item_video_library" to Icons.Filled.VideoLibrary,
     "item_video_recent" to Icons.Filled.History,
@@ -119,7 +160,7 @@ private val ITEM_VECTORS: Map<String, ImageVector> = mapOf(
     "item_photo_apps" to Icons.Filled.Collections,
     "item_camera" to Icons.Filled.PhotoCamera,
     "item_music_track" to Icons.Filled.MusicNote,
-    "item_playlist" to Icons.Filled.QueueMusic,
+    "item_playlist" to Icons.AutoMirrored.Filled.QueueMusic,
     "item_music_apps" to Icons.Filled.LibraryMusic,
     "item_social_add" to Icons.Filled.QrCode2,
     "item_social_account" to Icons.Filled.AccountCircle,
@@ -134,7 +175,28 @@ private val ITEM_VECTORS: Map<String, ImageVector> = mapOf(
     "item_social_signout" to Icons.AutoMirrored.Filled.Logout,
     // Shiba Coins (achievements) hub rows.
     "item_shiba_connect" to Icons.Filled.Link,
-    "item_shiba_untracked" to Icons.Filled.HelpOutline,
+    "item_shiba_untracked" to Icons.AutoMirrored.Filled.HelpOutline,
+    // Status strip slots the strip draws as vectors / level-aware meters (TS-17 wires them).
+    "status_notifications" to Icons.Filled.Notifications,
+    "status_controller" to Icons.Filled.SportsEsports,
+    "status_wifi" to Icons.Filled.Wifi,
+    "status_signal" to Icons.Filled.SignalCellularAlt,
+    // Media transports (MusicPlayerScreen / VideoPlayerScreen).
+    "media_play" to Icons.Filled.PlayArrow,
+    "media_pause" to Icons.Filled.Pause,
+    "media_prev" to Icons.Filled.SkipPrevious,
+    "media_next" to Icons.Filled.SkipNext,
+    "media_back10" to Icons.Filled.Replay10,
+    "media_fwd10" to Icons.Filled.Forward10,
+    // Game Detail action row.
+    "detail_play" to Icons.Filled.PlayArrow,
+    "detail_favorite" to Icons.Filled.Favorite,
+    "detail_artwork" to Icons.Filled.Brush,
+    "detail_manual" to Icons.AutoMirrored.Filled.MenuBook,
+    "detail_more" to Icons.Filled.MoreHoriz,
+    // Menus: the drawn PfpCheckMark and the text back glyph have no vector, so these stand in.
+    "menu_check" to Icons.Filled.Check,
+    "menu_back" to Icons.AutoMirrored.Filled.ArrowBack,
 )
 
 /**

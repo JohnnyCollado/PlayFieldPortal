@@ -108,6 +108,14 @@ object UiMediaLimits {
     const val AUDIO_STAGE_MAX_BYTES = 128L * 1024 * 1024
     const val VIDEO_MAX_BYTES = 25L * 1024 * 1024
 
+    /**
+     * Caps on audio ENTRIES INSIDE a `.pfptheme` (plan 5.4, A9). A bundle is not a picker staging
+     * copy, so it gets real byte caps: a menu sound is decoded into memory by SoundPool, and a
+     * bundle may carry five of them next to ambience. Video entries use [VIDEO_MAX_BYTES].
+     */
+    const val THEME_SOUND_MAX_BYTES = 8L * 1024 * 1024
+    const val THEME_AMBIENCE_MAX_BYTES = 32L * 1024 * 1024
+
     // ── Per-slot specs ───────────────────────────────────────────────────────
     // Every AUDIO spec: zero floor (no minimum length), maxBytes = the staging ceiling.
     val NAVIGATION   = Spec(Kind.SOUND,       0L,    250L,   SOUND_MAX_MS,   AUDIO_STAGE_MAX_BYTES)

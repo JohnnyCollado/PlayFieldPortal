@@ -33,6 +33,7 @@ import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
 import com.playfieldportal.core.ui.motion.MotionWallpaperBackground
 import com.playfieldportal.core.ui.motion.MotionWallpaperPolicy
+import com.playfieldportal.themekit.MotionCrop
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.wave.WaveStyle
 import kotlin.math.sin
@@ -69,6 +70,7 @@ fun XmbBackground(
     motionWallpaperPath: String? = null,
     motionDecision: MotionWallpaperPolicy.Decision = MotionWallpaperPolicy.Decision.PLAY,
     modifier: Modifier = Modifier,
+    motionCrop: MotionCrop? = null,
 ) {
     when {
         customWallpaperPath != null && motionWallpaperPath != null && motionDecision != MotionWallpaperPolicy.Decision.POSTER ->
@@ -77,6 +79,7 @@ fun XmbBackground(
                 motionPath = motionWallpaperPath,
                 decision = motionDecision,
                 modifier = modifier,
+                motionCrop = motionCrop,
             )
         customWallpaperPath != null -> WallpaperBackground(customWallpaperPath, modifier)
         else -> WaveBackground(waveStyle, modifier)

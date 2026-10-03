@@ -27,7 +27,7 @@ import org.jetbrains.skia.EncodedImageFormat
 @OptIn(ExperimentalComposeUiApi::class)
 object PreviewRenderer {
 
-    private const val DESIGN_WIDTH_DP = 960f
+    private const val DESIGN_WIDTH_DP = PreviewGeometry.BASE_WIDTH
 
     /**
      * Scenes compose/render on the AWT thread even when callers are on IO: an offscreen
@@ -45,8 +45,8 @@ object PreviewRenderer {
             height = heightPx,
             density = Density(widthPx / DESIGN_WIDTH_DP),
         ).use { scene ->
-            // The embedded preview is always the Home frame, whatever the editor is showing.
-            val model = state.copy(previewMode = com.playfieldportal.studio.PreviewMode.HOME).toPreviewModel()
+            // The embedded preview is always the static Home frame (default nav state, no animation), whatever the editor is showing.
+            val model = state.toPreviewModel()
             scene.setContent { XmbFrame(model) }
             scene.render(nanoTime = 0L).encodeToData(EncodedImageFormat.PNG)!!.bytes
         }
@@ -60,7 +60,7 @@ object PreviewRenderer {
                 ?: PtfConversion.DEFAULT_ACCENT,
             wallpaperPng = bundle.wallpaper,
             wallpaperBitmap = bundle.wallpaper?.let(ImageCodecs::toImageBitmap),
-            waveStyle = bundle.manifest.waveStyle,
+            waveStyle = com.playfieldportal.themekit.WaveStyles.resolveExact(bundle.manifest),
             layout = bundle.manifest.layout
                 ?.let(com.playfieldportal.themekit.XmbLayoutSpecCodec::sanitize)
                 ?: com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT,
@@ -68,14 +68,16 @@ object PreviewRenderer {
         return renderPreviewPng(state)
     }
 
-    /** The built-in glyph for [key] as a white silhouette PNG — the editable template. */
+    /** The built-in art for [key] as the editable template PNG: white silhouette for glyphs, as-authored for full-colour slots. */
     fun rasterizeDefaultIcon(key: String, sizePx: Int): ByteArray = onAwtThread {
         ImageComposeScene(width = sizePx, height = sizePx).use { scene ->
             scene.setContent {
                 Image(
                     painter = StudioIconSet.defaultPainter(key),
                     contentDescription = null,
-                    colorFilter = ColorFilter.tint(Color.White, BlendMode.SrcIn),
+                    // Glyphs are tinted on device, so their template is a white silhouette; full-colour
+                    // art (consoles, coins, memory cards) is drawn as authored and exported that way.
+                    colorFilter = if (StudioIconSet.isFullColour(key)) null else ColorFilter.tint(Color.White, BlendMode.SrcIn),
                     modifier = Modifier.fillMaxSize(),
                 )
             }

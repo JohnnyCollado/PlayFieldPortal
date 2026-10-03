@@ -2,19 +2,34 @@ package com.playfieldportal.studio
 
 import androidx.compose.ui.graphics.ImageBitmap
 import com.playfieldportal.studio.io.ConvertOutcome
+import com.playfieldportal.studio.io.IconPackImport
+import com.playfieldportal.studio.io.IconPackReport
 import com.playfieldportal.studio.io.ImageCodecs
+import com.playfieldportal.studio.io.MediaGates
+import com.playfieldportal.studio.io.PackRejected
 import com.playfieldportal.studio.io.PtfConversion
 import com.playfieldportal.studio.io.VideoCodecs
 import com.playfieldportal.themekit.IconGifSupport
-import com.playfieldportal.themekit.IconSlots
+import com.playfieldportal.themekit.IconSlot
+import com.playfieldportal.themekit.CustomizableIcons
+import com.playfieldportal.themekit.MotionCrop
+import com.playfieldportal.themekit.MANIFEST_DESCRIPTION_MAX
 import com.playfieldportal.themekit.MotionLimits
 import com.playfieldportal.themekit.XmbLayoutSpecCodec
+import com.playfieldportal.themekit.PassthroughEntry
 import com.playfieldportal.themekit.PfpThemeBundle
 import com.playfieldportal.themekit.PfpThemeCodec
 import com.playfieldportal.themekit.PfpThemeManifest
 import com.playfieldportal.themekit.PfpThemeSource
+import com.playfieldportal.themekit.ReadDiagnostics
 import com.playfieldportal.themekit.ThemeImage
+import com.playfieldportal.themekit.ThemeLegibility
+import com.playfieldportal.themekit.ThemeMediaSlots
 import com.playfieldportal.themekit.ThemeMotion
+import com.playfieldportal.themekit.UiMediaLimits
+import com.playfieldportal.themekit.ThemeUpgrade
+import com.playfieldportal.themekit.UpgradeReport
+import com.playfieldportal.themekit.WaveStyles
 import java.io.File
 import java.time.LocalDate
 import kotlinx.coroutines.CoroutineScope
@@ -25,6 +40,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonObject
 
 /** Unified icon color: derive from the theme (white for now) or an explicit override. */
 sealed interface IconColorChoice {
@@ -36,13 +52,6 @@ sealed interface IconColorChoice {
 sealed interface TextColorChoice {
     data object Auto : TextColorChoice
     data class Custom(val argb: Int) : TextColorChoice
-}
-
-/** Which XMB surface the preview canvas renders. */
-enum class PreviewMode(val label: String) {
-    HOME("Home"),
-    CONTEXT_MENU("Menu"),
-    FULLSCREEN_MENU("Fullscreen"),
 }
 
 /** Wallpaper crop/scale presets offered at import time. */
@@ -58,6 +67,14 @@ data class PendingWallpaper(
     val source: java.awt.image.BufferedImage,
     val fileName: String,
     val thumbnail: androidx.compose.ui.graphics.ImageBitmap?,
+    /** When [source] is a video frame: where in the clip it was taken (ms); null for an ordinary image. */
+    val posterAtMs: Long? = null,
+    /** Length of the video [source] came from, for the frame picker; null when unknown or not a video. */
+    val videoDurationMs: Long? = null,
+    /** True when the crop re-frames the video ALREADY in the theme (its playback crop is rewritten on confirm). */
+    val reframesVideo: Boolean = false,
+    /** The playback crop to start from when re-framing; null for a fresh import. */
+    val initialCrop: MotionCrop? = null,
 )
 
 /** Modal feedback the shell renders as dialogs. */
@@ -69,6 +86,18 @@ sealed interface StudioDialog {
     /** Non-fatal heads-up (e.g. a PTF imported but its wallpaper couldn't be extracted). */
     data class Notice(val title: String, val message: String) : StudioDialog
     data class BatchDone(val summary: com.playfieldportal.studio.io.BatchSummary) : StudioDialog
+    data class UpgradeDone(val summary: com.playfieldportal.studio.io.UpgradeBatchSummary) : StudioDialog
+}
+
+/** What the upgrade banner says about the opened theme. */
+sealed interface UpgradeBanner {
+    data object None : UpgradeBanner
+
+    /** Older format (or repairable): "Upgrade to the current format" with what that would do. */
+    data class Available(val report: UpgradeReport) : UpgradeBanner
+
+    /** Written by a newer version than this build understands; shown instead of the upgrade offer. */
+    data class NewerVersion(val schemaVersion: Int) : UpgradeBanner
 }
 
 data class StudioState(
@@ -76,6 +105,7 @@ data class StudioState(
     val accentArgb: Int = PtfConversion.DEFAULT_ACCENT,
     val iconColor: IconColorChoice = IconColorChoice.Auto,
     val textColor: TextColorChoice = TextColorChoice.Auto,
+    /** The EXACT wave style (any of [WaveStyles]); export writes the legacy fallback beside it. */
     val waveStyle: String = PfpThemeManifest.WAVE_ANIMATED,
     val wallpaperPng: ByteArray? = null,
     val wallpaperBitmap: ImageBitmap? = null,
@@ -97,14 +127,44 @@ data class StudioState(
      * so opened manifests round-trip hand-authored fields untouched.
      */
     val layout: com.playfieldportal.themekit.XmbLayoutSpec = com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT,
-    /** Which surface the preview shows — accent changes tint menus too. */
-    val previewMode: PreviewMode = PreviewMode.HOME,
     /** Custom icon slots: IconSlots key → encoded bytes (what exports) ... */
     val iconOverrides: Map<String, ByteArray> = emptyMap(),
     /** ... the extension each entry ships as ("png" stills, "gif" animations) — parallel to [iconOverrides]. */
     val iconExtensions: Map<String, String> = emptyMap(),
     /** ... and the decoded bitmaps the preview/editor draw. Kept in lockstep with [iconOverrides]. */
     val iconBitmaps: Map<String, ImageBitmap> = emptyMap(),
+    /**
+     * Console art overrides, same shape as the icon maps but keyed by the full
+     * [CustomizableIcons] key (`sysicon_psx`); export strips the prefix into `sysicons/<id>`.
+     */
+    val sysiconOverrides: Map<String, ByteArray> = emptyMap(),
+    val sysiconExtensions: Map<String, String> = emptyMap(),
+    val sysiconBitmaps: Map<String, ImageBitmap> = emptyMap(),
+    /** Manifest keys this build has no typed field for, merged back on export. */
+    val manifestExtras: JsonObject = JsonObject(emptyMap()),
+    /**
+     * Zip entries this build does not understand: full entry name -> scratch copy. Scratch, not
+     * the source file (the author may save over it), and never bytes.
+     */
+    val passthroughFiles: Map<String, File> = emptyMap(),
+    /** UI media ([com.playfieldportal.themekit.ThemeMediaSlots] key -> scratch copy; the extension is the file's). */
+    val mediaFiles: Map<String, File> = emptyMap(),
+    /** The opened bundle's preview frame; export falls back to it when a fresh render is unavailable. */
+    val previewPng: ByteArray? = null,
+    val author: String? = null,
+    val description: String? = null,
+    /** ISO date, preserved forever once set; null on a never-exported theme. */
+    val created: String? = null,
+    val legibility: ThemeLegibility? = null,
+    /** Null = the theme says nothing about whether the text colour is exact. */
+    val textColorExact: Boolean? = null,
+    val motionCrop: MotionCrop? = null,
+    /** Where in the video the poster still was taken (ms); session-only (the file does not record it), null when unknown. */
+    val posterAtMs: Long? = null,
+    /** `schemaVersion` of the file this state was opened from; null for a from-scratch theme. */
+    val schemaVersion: Int? = null,
+    /** What opening a `.pfptheme` kept / would add / repaired / could not recover; null otherwise. */
+    val upgradeReport: UpgradeReport? = null,
     val source: PfpThemeSource? = null,
     val busy: Boolean = false,
     val statusMessage: String? = null,
@@ -113,6 +173,19 @@ data class StudioState(
     val batchProgress: com.playfieldportal.studio.io.BatchProgress? = null,
 ) {
     // ByteArray fields: identity equality is fine — state copies share the arrays.
+
+    /** Drives the banner above the editor; derived, so it can never disagree with [schemaVersion]. */
+    val upgradeBanner: UpgradeBanner
+        get() {
+            val version = schemaVersion ?: return UpgradeBanner.None
+            if (version > PfpThemeManifest.SCHEMA_VERSION) return UpgradeBanner.NewerVersion(version)
+            val report = upgradeReport ?: return UpgradeBanner.None
+            val pending = version < PfpThemeManifest.SCHEMA_VERSION ||
+                report.added.isNotEmpty() || report.repaired.isNotEmpty()
+            return if (pending) UpgradeBanner.Available(report) else UpgradeBanner.None
+        }
+
+    val upgradeAvailable: Boolean get() = upgradeBanner is UpgradeBanner.Available
 }
 
 /**
@@ -124,16 +197,70 @@ class StudioViewModel(private val scope: CoroutineScope) {
     private val _state = MutableStateFlow(StudioState())
     val state: StateFlow<StudioState> = _state.asStateFlow()
 
+    /** Undo/redo history; it also owns the lifetime of every scratch file (see [EditHistory]). */
+    private val history = EditHistory()
+    private val _canUndo = MutableStateFlow(false)
+    private val _canRedo = MutableStateFlow(false)
+    val canUndo: StateFlow<Boolean> = _canUndo.asStateFlow()
+    val canRedo: StateFlow<Boolean> = _canRedo.asStateFlow()
+
+    private fun publishHistory() {
+        _canUndo.value = history.canUndo
+        _canRedo.value = history.canRedo
+    }
+
+    /**
+     * A recorded theme edit: applies [transform] and snapshots the change for undo. A non-null
+     * [key] coalesces a burst of the same edit (slider drag, typing) into one undo step.
+     */
+    private fun edit(key: String? = null, transform: (StudioState) -> StudioState) {
+        synchronized(history) {
+            var before = _state.value
+            var after = before
+            _state.update { current ->
+                before = current
+                transform(current).also { after = it }
+            }
+            history.record(before, after, key)
+            publishHistory()
+        }
+    }
+
+    fun undo() {
+        synchronized(history) {
+            val target = history.undo(_state.value) ?: return
+            _state.update { target.withSessionOf(it) }
+            publishHistory()
+        }
+    }
+
+    fun redo() {
+        synchronized(history) {
+            val target = history.redo(_state.value) ?: return
+            _state.update { target.withSessionOf(it) }
+            publishHistory()
+        }
+    }
+
+    /** Replaces the whole document (New / Open): history is forgotten, outgoing scratch freed. */
+    private fun replaceDocument(incoming: StudioState) {
+        synchronized(history) {
+            val outgoing = _state.value
+            _state.value = incoming
+            history.reset(outgoing, incoming)
+            publishHistory()
+        }
+    }
+
     /** A video staged behind an open crop dialog, and its original file name. Deliberately
      * not [StudioState] — it becomes state exactly when the crop is confirmed. */
     private var pendingMotion: File? = null
     private var pendingMotionName: String? = null
 
-    // ── Motion scratch-file lifecycle ────────────────────────────────────────
-    // The motion video lives in a temp file for as long as the edit session holds it. Every
-    // path that rebuilds StudioState wholesale (newTheme, hydrate) or drops motion explicitly
-    // must come through one of these, or the temp file outlives the edit — which is how
-    // "imported twice, cleared, then New" would leak a 60 MB file per step.
+    // ── Scratch-file lifecycle ───────────────────────────────────────────────
+    // Scratch files (motion, media, passthrough) are owned by [history]: one is deleted only when
+    // no live state or undo/redo snapshot references it, and New / Open release them all. Nothing
+    // here deletes a state's file directly - that is what made "undo a clear" point at a corpse.
 
     /** Moves [source] to a private scratch copy; the caller's original is never referenced again. */
     private fun scratchMotion(source: File): File {
@@ -143,42 +270,76 @@ class StudioViewModel(private val scope: CoroutineScope) {
         return scratch
     }
 
-    /** Deletes the current scratch video, if any. Safe to call repeatedly. */
-    private fun discardMotion(state: StudioState) {
-        state.motionFile?.delete()
+    /** Streams one bundle entry into a private scratch file ([prefix] names the family). */
+    private fun spill(prefix: String, extension: String, copy: (java.io.OutputStream) -> Long): File {
+        val scratch = File.createTempFile(prefix, ".${extension.lowercase()}")
+        scratch.deleteOnExit()
+        try {
+            scratch.outputStream().use { copy(it) }
+        } catch (e: Exception) {
+            scratch.delete()
+            throw e
+        }
+        return scratch
     }
 
     /**
-     * Clears motion and deletes its scratch file in one step, keeping the still wallpaper —
+     * Clears motion (undoable; the history frees the scratch file once unreachable), keeping the still wallpaper —
      * the inverse of the poster rule: a still without motion is a plain valid theme. Internal
      * so tests can drive the lifecycle without going through the UI.
      */
-    internal fun clearMotion() {
-        discardMotion(_state.value)
-        _state.update { it.copy(motionFile = null, motionFileName = null) }
-    }
+    internal fun clearMotion() =
+        edit { it.copy(motionFile = null, motionFileName = null, motionCrop = null, posterAtMs = null) }
 
     // ── Simple edits ─────────────────────────────────────────────────────────
 
     /** The from-scratch start point: what the Studio opens on and what New resets to. */
     fun newTheme() {
         abandonPendingMotion()
-        discardMotion(_state.value)
-        _state.update { StudioState() }
+        replaceDocument(StudioState())
     }
 
-    fun setName(name: String) = _state.update { it.copy(name = name) }
-    fun setAccent(argb: Int) = _state.update { it.copy(accentArgb = argb) }
-    fun setIconColor(choice: IconColorChoice) = _state.update { it.copy(iconColor = choice) }
-    fun setTextColor(choice: TextColorChoice) = _state.update { it.copy(textColor = choice) }
-    fun setWaveStyle(style: String) = _state.update { it.copy(waveStyle = style) }
-    fun setPreviewMode(mode: PreviewMode) = _state.update { it.copy(previewMode = mode) }
+    fun setName(name: String) = edit("name") { it.copy(name = name) }
+    fun setAccent(argb: Int) = edit("accent") { it.copy(accentArgb = argb) }
+    fun setIconColor(choice: IconColorChoice) = edit("iconColor") { it.copy(iconColor = choice) }
+    fun setTextColor(choice: TextColorChoice) = edit("textColor") { it.copy(textColor = choice) }
+    fun setWaveStyle(style: String) = edit { it.copy(waveStyle = style) }
+
+    // Blank collapses to null so an empty field never writes `""` into the manifest.
+    fun setAuthor(author: String) = edit("author") { it.copy(author = author.ifBlank { null }) }
+    fun setDescription(description: String) = edit("description") {
+        it.copy(description = description.take(MANIFEST_DESCRIPTION_MAX).ifBlank { null })
+    }
+
+    // Toggles and chips are discrete clicks: no coalescing key, so each is its own undo step.
+    /** Off = the theme says nothing about it (null), not an explicit false: keeps the file minimal. */
+    fun setTextColorExact(exact: Boolean) = edit { it.copy(textColorExact = true.takeIf { exact }) }
+
+    /** Text legibility style ([ThemeLegibility.TEXT_VALUES]); null clears it. Unknown values are refused. */
+    fun setTextLegibility(style: String?) {
+        if (style != null && style !in ThemeLegibility.TEXT_VALUES) return
+        edit { it.copy(legibility = legibilityOf((it.legibility ?: ThemeLegibility()).copy(text = style))) }
+    }
+
+    /** Icon legibility style ([ThemeLegibility.ICON_VALUES]); null clears it. Unknown values are refused. */
+    fun setIconLegibility(style: String?) {
+        if (style != null && style !in ThemeLegibility.ICON_VALUES) return
+        edit { it.copy(legibility = legibilityOf((it.legibility ?: ThemeLegibility()).copy(icon = style))) }
+    }
+
+    fun setSolidUnfocusedIcons(solid: Boolean) = edit {
+        it.copy(legibility = legibilityOf((it.legibility ?: ThemeLegibility()).copy(solidUnfocusedIcons = solid)))
+    }
+
+    /** A legibility object with nothing set is the same as none at all. */
+    private fun legibilityOf(l: ThemeLegibility?): ThemeLegibility? =
+        l?.takeUnless { it.text == null && it.icon == null && it.solidUnfocusedIcons == null }
     fun dismissDialog() = _state.update { it.copy(dialog = null) }
     fun clearStatus() = _state.update { it.copy(statusMessage = null) }
 
     // ── Layout (fit the crossbar to the wallpaper) ───────────────────────────
 
-    fun setBarTopFraction(fraction: Float) = _state.update {
+    fun setBarTopFraction(fraction: Float) = edit("barTop") {
         it.copy(
             layout = it.layout.copy(
                 barTopFraction = fraction.coerceIn(
@@ -189,7 +350,12 @@ class StudioViewModel(private val scope: CoroutineScope) {
         )
     }
 
-    fun resetLayout() = _state.update { it.copy(layout = com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT) }
+    /** Sets one of the 11 saved geometry fields; the codec's own sanitizer is the clamp. */
+    fun setLayoutField(field: LayoutField, value: Float) = edit("layout:${field.name}") {
+        it.copy(layout = XmbLayoutSpecCodec.sanitize(field.write(it.layout, value)))
+    }
+
+    fun resetLayout() = edit { it.copy(layout = com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT) }
 
     /** Alignment assist: find the wallpaper's baked-in cross-band and prefill the slider. */
     fun detectBarTop() = runBusy {
@@ -200,7 +366,7 @@ class StudioViewModel(private val scope: CoroutineScope) {
             ImageCodecs.toBmpImage(image),
         )
         if (detected != null) {
-            _state.update {
+            edit {
                 it.copy(
                     layout = it.layout.copy(barTopFraction = detected),
                     statusMessage = "Crossbar detected at ${(detected * 100).toInt()}% of the wallpaper",
@@ -247,15 +413,15 @@ class StudioViewModel(private val scope: CoroutineScope) {
         // legitimate motion theme is bigger than any in-memory cap a theme needs. This overload
         // also leaves the motion entry on disk — it re-streams from the zip instead of being
         // inflated into a ByteArray, the same reason PfpThemeStore reads this way.
-        val bundle = PfpThemeCodec.read(file)
-        if (bundle == null) {
+        val result = PfpThemeCodec.readDetailed(file)
+        if (result == null) {
             _state.update { it.copy(dialog = StudioDialog.Error("${file.name} is not a valid .pfptheme bundle")) }
         } else {
-            hydrate(bundle, "Opened ${file.name}")
+            hydrate(result.bundle, "Opened ${file.name}", result.diagnostics)
         }
     }
 
-    private fun hydrate(bundle: PfpThemeBundle, status: String) {
+    private fun hydrate(bundle: PfpThemeBundle, status: String, diagnostics: ReadDiagnostics? = null) {
         val manifest = bundle.manifest
         val iconBitmaps = bundle.icons.mapNotNull { (key, png) ->
             ImageCodecs.toImageBitmap(png.bytes)?.let { key to it }
@@ -270,7 +436,6 @@ class StudioViewModel(private val scope: CoroutineScope) {
         // comment below warns about. Any scratch file the OUTGOING state holds is dead once
         // the whole state is replaced — and so is a video waiting behind an open crop dialog.
         abandonPendingMotion()
-        discardMotion(_state.value)
         var motionSpillError: String? = null
         val motionFile = bundle.motion?.let { motion ->
             runCatching {
@@ -280,7 +445,21 @@ class StudioViewModel(private val scope: CoroutineScope) {
                 scratch
             }.onFailure { e -> motionSpillError = e.message }.getOrNull()
         }
-        _state.update {
+        // Media and unknown entries are spilled the same way, for the same two reasons: the bundle
+        // streams them from the source file (which the author may save over, or move), and they
+        // must never sit on the heap. A failed spill is listed, not swallowed — a silent skip
+        // would make the re-export lossy.
+        val notKept = mutableListOf<String>()
+        val mediaFiles = bundle.media.mapNotNull { (key, media) ->
+            runCatching { key to spill("studio-media-", media.extension, media::copyTo) }
+                .onFailure { notKept += key }.getOrNull()
+        }.toMap()
+        val passthroughFiles = bundle.passthrough.mapNotNull { entry ->
+            runCatching {
+                entry.name to spill("studio-extra-", entry.name.substringAfterLast('.'), entry::copyTo)
+            }.onFailure { notKept += entry.name }.getOrNull()
+        }.toMap()
+        replaceDocument(
             StudioState(
                 name = manifest.name,
                 accentArgb = PtfConversion.parseHexRgb(manifest.accentColor) ?: PtfConversion.DEFAULT_ACCENT,
@@ -294,7 +473,7 @@ class StudioViewModel(private val scope: CoroutineScope) {
                     ?.let { c -> PtfConversion.parseHexRgb(c) }
                     ?.let { argb -> TextColorChoice.Custom(argb) }
                     ?: TextColorChoice.Auto,
-                waveStyle = manifest.waveStyle,
+                waveStyle = WaveStyles.resolveExact(manifest),
                 wallpaperPng = bundle.wallpaper,
                 wallpaperBitmap = bundle.wallpaper?.let(ImageCodecs::toImageBitmap),
                 wallpaperFileName = manifest.source?.file,
@@ -305,6 +484,25 @@ class StudioViewModel(private val scope: CoroutineScope) {
                 iconOverrides = bundle.icons.mapValues { (_, image) -> image.bytes },
                 iconExtensions = bundle.icons.mapValues { (_, image) -> image.extension.lowercase() },
                 iconBitmaps = iconBitmaps,
+                sysiconOverrides = bundle.sysicons.entries.associate { (id, image) -> "sysicon_$id" to image.bytes },
+                sysiconExtensions = bundle.sysicons.entries.associate { (id, image) ->
+                    "sysicon_$id" to image.extension.lowercase()
+                },
+                sysiconBitmaps = bundle.sysicons.entries.mapNotNull { (id, image) ->
+                    ImageCodecs.toImageBitmap(image.bytes)?.let { "sysicon_$id" to it }
+                }.toMap(),
+                manifestExtras = bundle.manifestExtras,
+                passthroughFiles = passthroughFiles,
+                mediaFiles = mediaFiles,
+                previewPng = bundle.preview,
+                author = manifest.author,
+                description = manifest.description,
+                created = manifest.created,
+                legibility = manifest.legibility,
+                textColorExact = manifest.textColorExact,
+                motionCrop = manifest.motionCrop,
+                schemaVersion = manifest.schemaVersion,
+                upgradeReport = diagnostics?.let { ThemeUpgrade.report(bundle, it) },
                 wallpaperBusy = wallpaperBusy,
                 motionFile = motionFile,
                 // The bundle records only the entry's extension (motion.mp4), not the author's
@@ -314,11 +512,18 @@ class StudioViewModel(private val scope: CoroutineScope) {
                     ?: com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT,
                 source = manifest.source,
                 statusMessage = status,
-            )
-        }
+            ),
+        )
         // Surface a failed motion spill AFTER the state lands — the theme still opens, but the
         // author must know their video won't survive a re-export.
-        motionSpillError?.let { message ->
+        val motionError = motionSpillError
+        if (notKept.isNotEmpty()) {
+            val lines = listOfNotNull(motionError?.let { "Motion wallpaper: $it" }) +
+                "Could not keep: ${notKept.joinToString(", ")}"
+            _state.update {
+                it.copy(dialog = StudioDialog.Notice("Parts of the theme not kept", lines.joinToString("\n")))
+            }
+        } else motionError?.let { message ->
             _state.update {
                 it.copy(dialog = StudioDialog.Notice("Motion wallpaper not kept", message))
             }
@@ -393,27 +598,84 @@ class StudioViewModel(private val scope: CoroutineScope) {
 
             is VideoCodecs.Outcome.Accepted -> {
                 val scratch = scratchMotion(file)
-                // This import REPLACES any video the session already holds — both a confirmed
-                // one and one pending behind an open crop dialog — and state stops referencing
-                // the old video at stage time, so whatever happens next (cancel, confirm, or
-                // importing yet another video) the scratch that dies is the unreferenced one.
-                discardMotion(_state.value)
+                // This import replaces a video pending behind an open crop dialog. A confirmed
+                // video stays in state until the crop is confirmed (one undoable edit), so a
+                // cancel keeps the old motion with its old poster - still a valid pair.
                 pendingMotion?.delete()
                 pendingMotion = scratch
                 pendingMotionName = file.name
-                stage(outcome.poster, file.name)
-                _state.update { it.copy(motionFile = null, motionFileName = null) }
+                stage(outcome.poster, file.name, posterAtMs = 0L, videoDurationMs = outcome.probe.durationMs)
             }
         }
     }
 
-    private fun stage(image: java.awt.image.BufferedImage, name: String) {
+    /**
+     * Re-frames the video already in the theme: stages one of ITS frames (at the poster time, or the
+     * start) at the video's own size and opens the crop at the saved playback crop. Confirming
+     * rewrites both the poster and `motionCrop` from the same frame.
+     */
+    fun restageVideoFrame() = runBusy {
+        val current = _state.value
+        val video = current.motionFile ?: return@runBusy
+        val name = current.motionFileName ?: video.name
+        stageVideoFrame(video, name, current.posterAtMs ?: 0L, reframes = true, initialCrop = current.motionCrop)
+    }
+
+    /**
+     * Swaps the staged still for the video frame at [atMs]. Works on the video staged behind an open
+     * crop, or on the theme's own video (which opens the re-frame crop); otherwise it does nothing.
+     */
+    fun pickPosterFrame(atMs: Long) = runBusy {
+        val current = _state.value
+        val pending = current.pendingWallpaper
+        val staged = pendingMotion
+        val own = current.motionFile
+        when {
+            pending != null && staged != null ->
+                stageVideoFrame(staged, pending.fileName, atMs, reframes = false, initialCrop = null)
+            pending != null && pending.reframesVideo && own != null ->
+                stageVideoFrame(own, pending.fileName, atMs, reframes = true, initialCrop = pending.initialCrop)
+            pending == null && own != null ->
+                stageVideoFrame(own, current.motionFileName ?: own.name, atMs, reframes = true, initialCrop = current.motionCrop)
+        }
+    }
+
+    private fun stageVideoFrame(video: File, name: String, atMs: Long, reframes: Boolean, initialCrop: MotionCrop?) {
+        val frame = VideoCodecs.frameAt(video, atMs)
+        if (frame == null) {
+            _state.update { it.copy(dialog = StudioDialog.Error("Couldn't read that frame of the video")) }
+            return
+        }
+        if (reframes) abandonPendingMotion()
+        stage(
+            frame,
+            name,
+            posterAtMs = atMs,
+            videoDurationMs = VideoCodecs.probe(video)?.durationMs,
+            reframes = reframes,
+            initialCrop = initialCrop,
+        )
+    }
+
+    private fun stage(
+        image: java.awt.image.BufferedImage,
+        name: String,
+        posterAtMs: Long? = null,
+        videoDurationMs: Long? = null,
+        reframes: Boolean = false,
+        initialCrop: MotionCrop? = null,
+    ) {
         _state.update {
             it.copy(
                 pendingWallpaper = PendingWallpaper(
                     source = image,
                     fileName = name,
-                    thumbnail = ImageCodecs.toImageBitmap(ImageCodecs.toPngBytes(ImageCodecs.thumbnail(image, 320))),
+                    // The crop view draws this, so it is larger than the old dialog's thumbnail.
+                    thumbnail = ImageCodecs.toImageBitmap(ImageCodecs.toPngBytes(ImageCodecs.thumbnail(image, 640))),
+                    posterAtMs = posterAtMs,
+                    videoDurationMs = videoDurationMs,
+                    reframesVideo = reframes,
+                    initialCrop = initialCrop,
                 ),
             )
         }
@@ -426,11 +688,25 @@ class StudioViewModel(private val scope: CoroutineScope) {
         _state.update { it.copy(pendingWallpaper = null) }
     }
 
-    /** Step 2: crop/scale to the chosen preset, then derive accent + legibility hint. */
-    fun confirmWallpaper(preset: WallpaperPreset) = runBusy {
+    /** Step 2 with the default framing: the largest centered crop of [preset]. */
+    fun confirmWallpaper(preset: WallpaperPreset) {
+        val pending = _state.value.pendingWallpaper ?: return
+        confirmWallpaperCrop(CropFrame.centered(pending.source.width, pending.source.height, preset))
+    }
+
+    /**
+     * Step 2: bakes [frame] into the still (a staged video's poster included), then derives
+     * accent + legibility hint. A staged video also gets [CropFrame.toMotionCrop] as its
+     * playback crop - the same region the poster was baked from; the video bytes stay untouched.
+     * The frame must have been built for the pending source's size.
+     */
+    fun confirmWallpaperCrop(frame: CropFrame) = runBusy {
         val pending = _state.value.pendingWallpaper ?: return@runBusy
-        val image = if (preset == WallpaperPreset.ORIGINAL) pending.source
-        else ImageCodecs.centerCropScale(pending.source, preset.width, preset.height)
+        if (frame.sourceW != pending.source.width || frame.sourceH != pending.source.height) {
+            _state.update { it.copy(dialog = StudioDialog.Error("The crop does not match this image")) }
+            return@runBusy
+        }
+        val image = ImageCodecs.bakeCrop(pending.source, frame)
         val png = ImageCodecs.toPngBytes(image)
         val bitmap = ImageCodecs.toImageBitmap(png)
         val bmp = ImageCodecs.toBmpImage(image)
@@ -443,7 +719,7 @@ class StudioViewModel(private val scope: CoroutineScope) {
         val stagedName = pendingMotionName
         pendingMotion = null
         pendingMotionName = null
-        _state.update {
+        edit {
             it.copy(
                 pendingWallpaper = null,
                 wallpaperPng = png,
@@ -452,6 +728,21 @@ class StudioViewModel(private val scope: CoroutineScope) {
                 wallpaperBusy = com.playfieldportal.themekit.WallpaperMetrics.isBusy(bmp),
                 motionFile = stagedVideo ?: it.motionFile,
                 motionFileName = stagedName ?: it.motionFileName,
+                // Only a freshly staged video is framed by this crop; an existing video keeps its
+                // own (the re-cropped still is the baked poster, not the video's frame), and a
+                // theme with no video has no playback crop.
+                motionCrop = when {
+                    stagedVideo != null -> frame.toMotionCrop()
+                    // Re-framing the theme's own video: its frame is the source, so the crop is its crop.
+                    pending.reframesVideo && it.motionFile != null -> frame.toMotionCrop()
+                    it.motionFile != null -> it.motionCrop
+                    else -> null
+                },
+                posterAtMs = when {
+                    stagedVideo != null || (pending.reframesVideo && it.motionFile != null) -> pending.posterAtMs
+                    it.motionFile != null -> it.posterAtMs
+                    else -> null
+                },
                 accentArgb = derived ?: it.accentArgb,
                 statusMessage = "Wallpaper: ${pending.fileName} (${image.width}×${image.height})",
             )
@@ -461,8 +752,7 @@ class StudioViewModel(private val scope: CoroutineScope) {
     fun clearWallpaper() {
         // Motion rides with the still: a bundle with motion and no wallpaper is invalid
         // (motion's poster IS the still), so clearing the wallpaper clears the video too.
-        discardMotion(_state.value)
-        _state.update {
+        edit {
             it.copy(
                 wallpaperPng = null,
                 wallpaperBitmap = null,
@@ -470,9 +760,14 @@ class StudioViewModel(private val scope: CoroutineScope) {
                 wallpaperBusy = false,
                 motionFile = null,
                 motionFileName = null,
+                motionCrop = null,
+                posterAtMs = null,
             )
         }
     }
+
+    /** Sets or clears the video's playback crop on its own (undoable); [crop] is normalized 0..1. */
+    fun setMotionCrop(crop: MotionCrop?) = edit("motionCrop") { it.copy(motionCrop = crop) }
 
     // ── Icon slots ───────────────────────────────────────────────────────────
 
@@ -488,72 +783,169 @@ class StudioViewModel(private val scope: CoroutineScope) {
      * frames are rejected here, by name, instead of shipping a theme the device refuses.
      */
     fun setIconOverride(key: String, file: File) = runBusy {
-        val slot = IconSlots.byKey(key) ?: return@runBusy
-        // Read with headroom so an oversized pick reaches the specific byte-cap rejection below
-        // (MAX_ICON_BYTES), not a generic unreadable-file error.
+        // Console art (sysicon_*) is a slot too: same pipeline, filed under the sysicon maps.
+        val slot = CustomizableIcons.byKey(key) ?: return@runBusy
+        val console = key.startsWith(SYSICON_KEY_PREFIX)
+        // Read with headroom so an oversized pick reaches the specific byte-cap rejection in
+        // the gate (MAX_ICON_BYTES), not a generic unreadable-file error.
         val bytes = com.playfieldportal.studio.io.SafeIo.readBytesCapped(file)
-        val decoded = bytes?.let(ImageCodecs::decodeImage)
-        if (bytes == null || decoded == null) {
-            _state.update { it.copy(dialog = StudioDialog.Error("${file.name} is not a readable image")) }
-            return@runBusy
+        when (val gate = gateIcon(slot, bytes, file.name)) {
+            is IconGate.Ok -> edit { it.withIcon(console, key, gate.bytes, gate.extension, gate.bitmap) }
+            is IconGate.Reject -> _state.update { it.copy(dialog = StudioDialog.Error(gate.reason)) }
         }
+    }
+
+    /** Outcome of the icon gate: art ready to store, or the reason it was refused. */
+    private sealed interface IconGate {
+        class Ok(val bytes: ByteArray, val extension: String, val bitmap: ImageBitmap) : IconGate
+        class Reject(val reason: String) : IconGate
+    }
+
+    /**
+     * The single icon gate, shared by single-icon import and pack import. [label] names the file in
+     * "not a readable image"; [bytes] is null when the source could not be read within the cap.
+     */
+    private fun gateIcon(slot: IconSlot, bytes: ByteArray?, label: String): IconGate {
+        val decoded = bytes?.let(ImageCodecs::decodeImage)
+        if (bytes == null || decoded == null) return IconGate.Reject("$label is not a readable image")
 
         // Byte cap FIRST (matches PfpThemeCodec.MAX_ICON_BYTES, which the bundle writer relies
         // on), then the animated classification — the same structural probe the launcher runs
         // at render time. A single-frame GIF is authored as a PNG still: no decoder on device.
-        if (bytes.size > PfpThemeCodec.MAX_ICON_BYTES) {
-            _state.update { it.copy(dialog = StudioDialog.Error(IconGifSupport.MSG_TOO_LARGE_BYTES)) }
-            return@runBusy
-        }
+        if (bytes.size > PfpThemeCodec.MAX_ICON_BYTES) return IconGate.Reject(IconGifSupport.MSG_TOO_LARGE_BYTES)
         val frames = IconGifSupport.countFrames(bytes)
         if (IconGifSupport.isGif(bytes) && frames > 1) {
             val (width, height) = IconGifSupport.logicalScreenSize(bytes) ?: (decoded.width to decoded.height)
             IconGifSupport.validateAnimated(width, height, frames, IconGifSupport.durationMs(bytes))
-                ?.let { rejection ->
-                    _state.update { it.copy(dialog = StudioDialog.Error(rejection)) }
-                    return@runBusy
-                }
-            val gifBitmap = ImageCodecs.toImageBitmap(bytes)
-            if (gifBitmap == null) {
-                _state.update { it.copy(dialog = StudioDialog.Error(IconGifSupport.MSG_UNDECODABLE)) }
-                return@runBusy
-            }
-            _state.update {
-                it.copy(
-                    iconOverrides = it.iconOverrides + (key to bytes),
-                    iconExtensions = it.iconExtensions + (key to "gif"),
-                    iconBitmaps = it.iconBitmaps + (key to gifBitmap),
-                )
-            }
-            return@runBusy
+                ?.let { return IconGate.Reject(it) }
+            val gifBitmap = ImageCodecs.toImageBitmap(bytes) ?: return IconGate.Reject(IconGifSupport.MSG_UNDECODABLE)
+            return IconGate.Ok(bytes, "gif", gifBitmap)
         }
 
-        val png = ImageCodecs.normalizeIconPng(file, slot.templateSizePx)
+        val png = ImageCodecs.normalizeIconPng(bytes, slot.templateSizePx)
         val bitmap = png?.let(ImageCodecs::toImageBitmap)
-        if (png == null || bitmap == null) {
-            _state.update { it.copy(dialog = StudioDialog.Error("${file.name} is not a readable image")) }
-            return@runBusy
-        }
-        _state.update {
-            it.copy(
-                iconOverrides = it.iconOverrides + (key to png),
-                iconExtensions = it.iconExtensions + (key to "png"),
-                iconBitmaps = it.iconBitmaps + (key to bitmap),
-            )
-        }
+        if (png == null || bitmap == null) return IconGate.Reject("$label is not a readable image")
+        return IconGate.Ok(png, "png", bitmap)
     }
 
-    fun clearIconOverride(key: String) = _state.update {
+    /**
+     * Imports an icon pack ([source] = folder or `.zip` of `<slotKey>.<png|gif>`) as ONE undoable
+     * edit. Each matched file goes through [gateIcon]; failures are reported, never fatal to the
+     * rest. [onDone] receives the report on the IO thread (a refused pack sets [IconPackReport.error]
+     * and also raises the Error dialog).
+     */
+    fun importIconPack(source: File, onDone: (IconPackReport) -> Unit = {}) = runBusy {
+        val scan = IconPackImport.scan(source)
+        val ready = LinkedHashMap<String, IconGate.Ok>()
+        val rejected = scan.rejected.toMutableList()
+        for ((key, packFile) in scan.matched) {
+            val slot = CustomizableIcons.byKey(key) ?: continue
+            when (val gate = gateIcon(slot, packFile.bytes, packFile.name)) {
+                is IconGate.Ok -> ready[key] = gate
+                is IconGate.Reject -> rejected += PackRejected(packFile.name, gate.reason)
+            }
+        }
+        var added = emptyList<String>()
+        var replaced = emptyList<String>()
+        if (ready.isNotEmpty()) {
+            edit {
+                val (again, fresh) = ready.keys.partition { k -> k in it.iconOverrides || k in it.sysiconOverrides }
+                added = fresh
+                replaced = again
+                ready.entries.fold(it) { acc, (k, gate) ->
+                    acc.withIcon(k.startsWith(SYSICON_KEY_PREFIX), k, gate.bytes, gate.extension, gate.bitmap)
+                }
+            }
+        }
+        val report = IconPackReport(source.name, added, replaced, scan.unmatched, rejected, scan.error)
+        _state.update {
+            when {
+                scan.error != null -> it.copy(dialog = StudioDialog.Error(scan.error))
+                else -> it.copy(
+                    statusMessage = "Icon pack ${source.name}: ${added.size} added, ${replaced.size} replaced, " +
+                        "${scan.unmatched.size} unmatched, ${rejected.size} rejected",
+                )
+            }
+        }
+        onDone(report)
+    }
+
+    private fun StudioState.withIcon(
+        console: Boolean,
+        key: String,
+        bytes: ByteArray,
+        extension: String,
+        bitmap: ImageBitmap,
+    ): StudioState = if (console) {
+        copy(
+            sysiconOverrides = sysiconOverrides + (key to bytes),
+            sysiconExtensions = sysiconExtensions + (key to extension),
+            sysiconBitmaps = sysiconBitmaps + (key to bitmap),
+        )
+    } else {
+        copy(
+            iconOverrides = iconOverrides + (key to bytes),
+            iconExtensions = iconExtensions + (key to extension),
+            iconBitmaps = iconBitmaps + (key to bitmap),
+        )
+    }
+
+    /** Clears [key] from whichever family (icons or console art) holds it. */
+    fun clearIconOverride(key: String) = edit {
         it.copy(
             iconOverrides = it.iconOverrides - key,
             iconExtensions = it.iconExtensions - key,
             iconBitmaps = it.iconBitmaps - key,
+            sysiconOverrides = it.sysiconOverrides - key,
+            sysiconExtensions = it.sysiconExtensions - key,
+            sysiconBitmaps = it.sysiconBitmaps - key,
         )
     }
 
-    fun clearAllIconOverrides() = _state.update {
-        it.copy(iconOverrides = emptyMap(), iconExtensions = emptyMap(), iconBitmaps = emptyMap())
+    fun clearAllIconOverrides() = edit {
+        it.copy(
+            iconOverrides = emptyMap(),
+            iconExtensions = emptyMap(),
+            iconBitmaps = emptyMap(),
+            sysiconOverrides = emptyMap(),
+            sysiconExtensions = emptyMap(),
+            sysiconBitmaps = emptyMap(),
+        )
     }
+
+    // ── UI media (sounds, ambience, boot, GameBoot) ──────────────────────────
+
+    /** Imports a menu sound into one of the five sound slots ([ThemeMediaSlots] keys). */
+    fun importSound(slotKey: String, file: File) = importMedia(slotKey, file, UiMediaLimits.Kind.SOUND)
+
+    fun importAmbience(file: File) = importMedia(AMBIENCE_KEY, file, UiMediaLimits.Kind.AUDIO_TRACK)
+    fun importBoot(file: File) = importMedia(BOOT_KEY, file, UiMediaLimits.Kind.VIDEO)
+    fun importGameBoot(file: File) = importMedia(GAMEBOOT_KEY, file, UiMediaLimits.Kind.VIDEO)
+
+    /**
+     * Gate ([MediaGates]), then stage a private scratch copy and record it as one undoable edit.
+     * [kind] keeps each entry point on its own family (a boot clip cannot be filed as a sound).
+     * A rejection is surfaced verbatim and changes nothing.
+     */
+    private fun importMedia(slotKey: String, file: File, kind: UiMediaLimits.Kind) = runBusy {
+        val slot = ThemeMediaSlots.slot(slotKey)?.takeIf { it.kind == kind }
+        val outcome = if (slot == null) MediaGates.Outcome.Rejected(MediaGates.MSG_UNKNOWN_SLOT)
+        else MediaGates.check(slotKey, file)
+        when (outcome) {
+            is MediaGates.Outcome.Rejected ->
+                _state.update { it.copy(dialog = StudioDialog.Error(outcome.message)) }
+            is MediaGates.Outcome.Accepted -> {
+                val scratch = spill("studio-media-", outcome.extension) { out -> file.inputStream().use { it.copyTo(out) } }
+                edit { it.copy(mediaFiles = it.mediaFiles + (slotKey to scratch), statusMessage = "Added ${file.name}") }
+            }
+        }
+    }
+
+    /** Removes the media in [slotKey]; undoable (the history frees the scratch file once unreachable). */
+    fun clearMedia(slotKey: String) = edit { it.copy(mediaFiles = it.mediaFiles - slotKey) }
+
+    /** The Export-check checklist and budget for the current state. */
+    fun exportCheck(): ExportCheck = ExportCheck.of(_state.value)
 
     // ── Export ───────────────────────────────────────────────────────────────
 
@@ -570,11 +962,20 @@ class StudioViewModel(private val scope: CoroutineScope) {
                 TextColorChoice.Auto -> PfpThemeManifest.ICON_COLOR_AUTO
                 is TextColorChoice.Custom -> PtfConversion.toHexRgb(c.argb)
             },
-            waveStyle = state.waveStyle,
+            // Legacy field = fallback of the exact value, waveStyleV4 = the exact one (plan 5.1).
+            waveStyle = WaveStyles.encode(state.waveStyle).first,
+            waveStyleV4 = WaveStyles.encode(state.waveStyle).second,
+            author = state.author,
+            description = state.description,
+            textColorExact = state.textColorExact,
+            legibility = state.legibility,
+            motionCrop = state.motionCrop,
             // Only carry a layout when the user actually moved something off the default.
             layout = state.layout.takeUnless { it == com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT },
             source = state.source ?: PfpThemeSource(type = PfpThemeSource.TYPE_USER_CREATED),
-            created = today.toString(),
+            // `created` is preserved forever once set (plan 5.1 write rule 2); `updated` is every export.
+            created = state.created ?: today.toString(),
+            updated = today.toString(),
         )
 
     /**
@@ -597,7 +998,7 @@ class StudioViewModel(private val scope: CoroutineScope) {
         val bundle = PfpThemeBundle(
             manifest = buildManifest(snapshot),
             wallpaper = snapshot.wallpaperPng,
-            preview = runCatching { renderPreview(snapshot) }.getOrNull(),
+            preview = runCatching { renderPreview(snapshot) }.getOrNull() ?: snapshot.previewPng,
             // Each icon ships under the extension it was authored with — PNG stills as png,
             // preserved animated GIFs as gif. (Hardcoding "png" here flattened every GIF
             // imported in the Studio to frame 1 on the handheld.)
@@ -605,6 +1006,14 @@ class StudioViewModel(private val scope: CoroutineScope) {
                 ThemeImage(png, snapshot.iconExtensions[key] ?: "png")
             },
             motion = motion,
+            sysicons = snapshot.sysiconOverrides.entries.associate { (key, png) ->
+                key.removePrefix(SYSICON_KEY_PREFIX) to ThemeImage(png, snapshot.sysiconExtensions[key] ?: "png")
+            },
+            media = snapshot.mediaFiles.filterValues { it.isFile }
+                .mapValues { (_, f) -> ThemeMotion.ofFile(f, f.extension.lowercase()) },
+            manifestExtras = snapshot.manifestExtras,
+            passthrough = snapshot.passthroughFiles.filterValues { it.isFile }
+                .map { (name, f) -> PassthroughEntry.ofFile(name, f) },
         )
         runCatching { file.outputStream().use { PfpThemeCodec.write(bundle, it) } }
             .onSuccess { _state.update { it.copy(statusMessage = "Exported ${file.name}") } }
@@ -666,16 +1075,36 @@ class StudioViewModel(private val scope: CoroutineScope) {
         _state.update { it.copy(batchProgress = null, dialog = StudioDialog.BatchDone(summary)) }
     }
 
-    /** Writes every built-in glyph as `<key>.png` — the editable template pack. */
+    /** Folder of `.pfptheme` → upgraded in place to the current format (originals kept as `.bak`), with progress and a summary dialog. */
+    fun upgradeFolder(dir: File, today: LocalDate = LocalDate.now()) = runBusy {
+        val summary = com.playfieldportal.studio.io.UpgradeBatch.run(
+            dir = dir,
+            today = today.toString(),
+            onProgress = { progress -> _state.update { it.copy(batchProgress = progress) } },
+        )
+        _state.update { it.copy(batchProgress = null, dialog = StudioDialog.UpgradeDone(summary)) }
+    }
+
+    /**
+     * Writes a `<key>.png` template for every customizable slot (icons and consoles) — the editable
+     * pack, named so [importIconPack] reads it straight back.
+     */
     fun exportIconTemplates(dir: File, rasterize: (key: String, sizePx: Int) -> ByteArray) = runBusy {
         runCatching {
             dir.mkdirs()
-            for (slot in IconSlots.ALL) {
+            for (slot in CustomizableIcons.ALL) {
                 File(dir, "${slot.key}.png").writeBytes(rasterize(slot.key, slot.templateSizePx))
             }
         }
-            .onSuccess { _state.update { it.copy(statusMessage = "Templates exported to ${dir.name} (${IconSlots.ALL.size} icons)") } }
+            .onSuccess { _state.update { it.copy(statusMessage = "Templates exported to ${dir.name} (${CustomizableIcons.ALL.size} icons)") } }
             .onFailure { e -> _state.update { it.copy(dialog = StudioDialog.Error("Template export failed: ${e.message}")) } }
+    }
+
+    private companion object {
+        const val SYSICON_KEY_PREFIX = "sysicon_"
+        const val AMBIENCE_KEY = "ambience_audio"
+        const val BOOT_KEY = "boot_video"
+        const val GAMEBOOT_KEY = "gameboot_video"
     }
 
     // ── Plumbing ─────────────────────────────────────────────────────────────

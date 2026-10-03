@@ -11,27 +11,33 @@ import java.io.OutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 
 /**
  * Reader/writer for `.pfptheme` bundles — a plain zip:
  *
  * ```
  * mytheme.pfptheme
- * ├── manifest.json                        (required; schemaVersion 3)
+ * ├── manifest.json                        (required; written first; schemaVersion 4)
  * ├── wallpaper.png                        (optional; absent -> live wave background)
  * ├── preview.png                          (optional on read; the app's preview gate writes one)
- * ├── icons/<key>.<png|gif>                (v2 as png-only; v3 widens to gif)
- * ├── sysicons/<platformId>.<png|gif>      (v3; console art)
- * └── motion.<mp4|webm|gif>                (v3; motion wallpaper)
+ * ├── icons/<key>.<png|gif>                (v2 as png-only; v3 widens to gif; v4: 81 keys)
+ * ├── sysicons/<platformId>.<png|gif>      (v3; console art; v4: 47 ids)
+ * ├── motion.<mp4|webm|gif>                (v3; motion wallpaper)
+ * ├── sounds/<sound_key>.<mp3|wav|ogg|m4a> (v4; five menu sounds, streamed)
+ * ├── ambience.<mp3|wav|ogg|m4a>           (v4; streamed)
+ * ├── boot.<mp4|webm>, gameboot.<mp4|webm> (v4; streamed)
+ * └── <anything else>                      (v4; safe names kept as passthrough, streamed)
  * ```
  *
  * Image entries are opaque bytes here — frontends do the encoding.
  *
- * All changes from v2 are additive: unknown zip entries are ignored, unknown manifest fields
- * ignored, and the readers never gate on schemaVersion, so a v3 bundle still opens on v2-era
- * builds (they see the v2 subset). The `sysicons/` gating rides on [CustomizableIcons]'s
- * console keys — NOT `IconSlots.ALL` — so the desktop Theme Studio's slot list is unaffected
- * until it opts in.
+ * Every change since v2 is additive: unknown manifest fields are preserved ([PfpThemeBundle.manifestExtras]),
+ * unknown zip entries with safe names are preserved ([PassthroughEntry]), and the readers never
+ * gate on schemaVersion, so a v4 bundle still opens on older builds (they see the subset they
+ * know). `sysicons/` gating rides on [CustomizableIcons]'s console keys, `icons/` on
+ * [IconSlots], and media entries on [ThemeMediaSlots]. Format reference: docs/theme-format.md.
  */
 object PfpThemeCodec {
 
@@ -68,7 +74,7 @@ object PfpThemeCodec {
     fun write(bundle: PfpThemeBundle, out: OutputStream) {
         ZipOutputStream(out).use { zip ->
             zip.putNextEntry(ZipEntry(ENTRY_MANIFEST))
-            zip.write(json.encodeToString(PfpThemeManifest.serializer(), bundle.manifest).toByteArray())
+            zip.write(manifestJson(bundle).toByteArray())
             zip.closeEntry()
             bundle.wallpaper?.let { zip.writeEntry(ENTRY_WALLPAPER, it) }
             bundle.preview?.let { zip.writeEntry(ENTRY_PREVIEW, it) }
@@ -95,7 +101,32 @@ object PfpThemeCodec {
                     zip.closeEntry()
                 }
             }
+            // UI media, streamed the same way. Only registered keys in an accepted container for
+            // their kind are written; byte caps are enforced on read and by the callers' gates.
+            for ((key, media) in bundle.media.toSortedMap()) {
+                val name = ThemeMediaSlots.entryName(key, media.extension) ?: continue
+                zip.putNextEntry(ZipEntry(name))
+                media.copyTo(zip)
+                zip.closeEntry()
+            }
+            // Unknown entries last, streamed. A name that is unsafe, collides with a typed entry,
+            // or repeats is skipped, so nothing hostile or ambiguous reaches the written zip.
+            val written = mutableSetOf<String>()
+            for (entry in bundle.passthrough) {
+                if (PassthroughNames.isSafe(entry.name) && !isRegisteredName(entry.name) && written.add(entry.name)) {
+                    zip.putNextEntry(ZipEntry(entry.name))
+                    entry.copyTo(zip)
+                    zip.closeEntry()
+                }
+            }
         }
+    }
+
+    /** Typed manifest merged over the preserved unknown keys; typed fields win on collision. */
+    private fun manifestJson(bundle: PfpThemeBundle): String {
+        val typed = json.encodeToJsonElement(PfpThemeManifest.serializer(), bundle.manifest.forWrite()).jsonObject
+        val merged = JsonObject(typed + bundle.manifestExtras.filterKeys { it !in typed })
+        return json.encodeToString(JsonObject.serializer(), merged)
     }
 
     fun write(bundle: PfpThemeBundle): ByteArray =
@@ -113,13 +144,36 @@ object PfpThemeCodec {
      * against the caps, it is simply not recoverable afterwards.
      */
     @JvmOverloads
-    fun read(input: InputStream, reopen: ((String) -> ThemeMotion)? = null): PfpThemeBundle? {
+    fun read(
+        input: InputStream,
+        reopen: ((String) -> ThemeMotion)? = null,
+        reopenEntry: ((String) -> PassthroughEntry)? = null,
+    ): PfpThemeBundle? = readDetailed(input, reopen, reopenEntry)?.bundle
+
+    /**
+     * [read] plus a [ReadDiagnostics] of what was dropped or repaired on the way in. Same null
+     * contract as [read]; the bundle is identical.
+     */
+    @JvmOverloads
+    fun readDetailed(
+        input: InputStream,
+        reopen: ((String) -> ThemeMotion)? = null,
+        reopenEntry: ((String) -> PassthroughEntry)? = null,
+    ): ReadResult? {
         var manifest: PfpThemeManifest? = null
+        val dropped = mutableListOf<DroppedEntry>()
+        val undecodable = mutableListOf<String>()
+        var manifestExtras = JsonObject(emptyMap())
+        val passthrough = mutableListOf<PassthroughEntry>()
+        val seenPassthrough = mutableSetOf<String>()
+        val unrecoverable = mutableListOf<String>()
         var wallpaper: ByteArray? = null
         var preview: ByteArray? = null
         val icons = mutableMapOf<String, ThemeImage>()
         val sysicons = mutableMapOf<String, ThemeImage>()
         var motionExtension: String? = null
+        val media = mutableMapOf<String, ThemeMotion>()
+        val seenMedia = mutableSetOf<String>()
 
         // BoundedZipReader supplies the caps. This reader used to bound memory per entry but never
         // counted entries, so a small bundle of repeated wallpaper entries was an unbounded hang —
@@ -127,15 +181,16 @@ object PfpThemeCodec {
         try {
             BoundedZipReader.read(input, BUNDLE_LIMITS) { entry ->
                 when {
-                    entry.name == ENTRY_MANIFEST -> manifest = runCatching {
-                        json.decodeFromString(
-                            PfpThemeManifest.serializer(),
-                            entry.readBytes().decodeToString(),
-                        )
-                    }.getOrNull()
+                    entry.name == ENTRY_MANIFEST -> {
+                        // Parsed to a tree first so the keys no typed field claims can be kept.
+                        val text = entry.readBytes().decodeToString()
+                        manifest = decodeManifest(text, undecodable)
+                        manifestExtras = runCatching { extrasOf(json.parseToJsonElement(text).jsonObject) }
+                            .getOrDefault(JsonObject(emptyMap()))
+                    }
                     entry.name == ENTRY_WALLPAPER -> wallpaper = entry.readBytes()
                     entry.name == ENTRY_PREVIEW -> preview = entry.readBytes()
-                    entry.name.startsWith(ICONS_PREFIX) -> {
+                    entry.name.startsWith(ICONS_PREFIX) && isRegisteredName(entry.name) -> {
                         // Only registered slot keys with an accepted extension are accepted — an
                         // icon entry can never smuggle a path (`icons/../x`) or an unexpected
                         // name into the app.
@@ -143,24 +198,24 @@ object PfpThemeCodec {
                         val key = name.substringBeforeLast('.')
                         val ext = name.substringAfterLast('.', "").lowercase()
                         if (ext in ICON_EXTENSIONS && IconSlots.isValidKey(key)) {
-                            entry.readBytes()
-                                .takeIf { it.size <= MAX_ICON_BYTES }
-                                ?.let { icons[key] = ThemeImage(it, ext) }
+                            val bytes = entry.readBytes()
+                            if (bytes.size <= MAX_ICON_BYTES) icons[key] = ThemeImage(bytes, ext)
+                            else dropped += DroppedEntry(entry.name, DropReason.OVER_CAP)
                         }
                     }
-                    entry.name.startsWith(SYSICONS_PREFIX) -> {
+                    entry.name.startsWith(SYSICONS_PREFIX) && isRegisteredName(entry.name) -> {
                         // Console art: the key is the platform id; the registry gates it under
-                        // its sysicon_ key (which excludes the sysicon_default fallback art).
+                        // its sysicon_ key (sysicon_default is a slot too, since v4).
                         val name = entry.name.removePrefix(SYSICONS_PREFIX)
                         val platformId = name.substringBeforeLast('.')
                         val ext = name.substringAfterLast('.', "").lowercase()
                         if (ext in ICON_EXTENSIONS && CustomizableIcons.isValidKey("sysicon_$platformId")) {
-                            entry.readBytes()
-                                .takeIf { it.size <= MAX_ICON_BYTES }
-                                ?.let { sysicons[platformId] = ThemeImage(it, ext) }
+                            val bytes = entry.readBytes()
+                            if (bytes.size <= MAX_ICON_BYTES) sysicons[platformId] = ThemeImage(bytes, ext)
+                            else dropped += DroppedEntry(entry.name, DropReason.OVER_CAP)
                         }
                     }
-                    entry.name.startsWith(MOTION_PREFIX) -> {
+                    entry.name.startsWith(MOTION_PREFIX) && isRegisteredName(entry.name) -> {
                         // Deliberately NOT read here. Only the extension is recorded; the caller's
                         // reopen strategy decides how (and whether) the content is ever streamed.
                         // The entry is still drained by the reader, so it is counted against the
@@ -168,7 +223,50 @@ object PfpThemeCodec {
                         val ext = entry.name.removePrefix(MOTION_PREFIX).lowercase()
                         if (ext in MOTION_EXTENSIONS) motionExtension = ext
                     }
-                    // Unknown entries are ignored for forward compatibility.
+                    // UI media: a name a slot claims is never passthrough. Like motion it is drained
+                    // (counted, so the byte cap is checked against what actually inflates) and
+                    // never held; the caller's reopenEntry decides whether it stays recoverable.
+                    ThemeMediaSlots.claimedBy(entry.name) != null && PassthroughNames.isSafe(entry.name) -> {
+                        val slot = ThemeMediaSlots.claimedBy(entry.name)!!
+                        val ext = entry.name.substringAfterLast('.')
+                        when {
+                            !slot.accepts(ext) -> {
+                                entry.copyTo(OutputStream.nullOutputStream())
+                                dropped += DroppedEntry(entry.name, DropReason.UNSUPPORTED_MEDIA)
+                            }
+                            slot.key in seenMedia -> {
+                                entry.copyTo(OutputStream.nullOutputStream())
+                                dropped += DroppedEntry(entry.name, DropReason.DUPLICATE)
+                            }
+                            else -> {
+                                val size = entry.copyTo(OutputStream.nullOutputStream())
+                                if (size > slot.maxBytes) {
+                                    dropped += DroppedEntry(entry.name, DropReason.OVER_CAP)
+                                } else {
+                                    seenMedia += slot.key
+                                    reopenEntry?.let { reopen ->
+                                        val source = reopen(entry.name)
+                                        media[slot.key] = ThemeMotion(ext) { out -> source.copyTo(out) }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // Unknown entries are kept for a lossless re-write (never extracted, never
+                    // applied) when their name is safe; otherwise dropped and listed. The reader
+                    // still drains them, so they count against the caps.
+                    entry.isDirectory -> Unit
+                    PassthroughNames.isSafe(entry.name) -> {
+                        if (seenPassthrough.add(entry.name)) {
+                            reopenEntry?.let { passthrough += it(entry.name) }
+                        } else {
+                            dropped += DroppedEntry(entry.name, DropReason.DUPLICATE)
+                        }
+                    }
+                    else -> {
+                        unrecoverable += entry.name
+                        dropped += DroppedEntry(entry.name, unsafeNameReason(entry.name))
+                    }
                 }
             }
         } catch (e: ZipLimitExceededException) {
@@ -178,22 +276,121 @@ object PfpThemeCodec {
 
         val m = manifest ?: return null
         if (m.manifest != PfpThemeManifest.MANIFEST_TYPE) return null
-        return PfpThemeBundle(
-            manifest = m,
+        val sanitized = m.sanitized()
+        val bundle = PfpThemeBundle(
+            manifest = sanitized,
             wallpaper = wallpaper,
             preview = preview,
             icons = icons,
             sysicons = sysicons,
             motion = motionExtension?.let { ext -> reopen?.invoke(ext) },
+            manifestExtras = manifestExtras,
+            passthrough = passthrough,
+            unrecoverableEntries = unrecoverable,
+            media = media,
         )
+        return ReadResult(bundle, ReadDiagnostics(dropped, sanitizeRepairs(m, sanitized), undecodable))
+    }
+
+    /**
+     * The strict decode, falling back to field-by-field recovery so one wrongly-typed optional
+     * field costs that field rather than the whole theme. The required trio (type, name, accent)
+     * must decode on its own or the file is not a theme. Fields recovered from are appended to
+     * [undecodable].
+     */
+    private fun decodeManifest(text: String, undecodable: MutableList<String>): PfpThemeManifest? {
+        runCatching { json.decodeFromString(PfpThemeManifest.serializer(), text) }.getOrNull()?.let { return it }
+        val root = runCatching { json.parseToJsonElement(text).jsonObject }.getOrNull() ?: return null
+        val required = setOf("manifest", "name", "accentColor")
+        var kept = JsonObject(root.filterKeys { it in required })
+        var result = runCatching { json.decodeFromJsonElement(PfpThemeManifest.serializer(), kept) }
+            .getOrNull() ?: return null
+        for ((key, value) in root) {
+            if (key in required || key !in TYPED_MANIFEST_KEYS) continue
+            val candidate = JsonObject(kept + (key to value))
+            val decoded = runCatching { json.decodeFromJsonElement(PfpThemeManifest.serializer(), candidate) }.getOrNull()
+            if (decoded != null) {
+                kept = candidate
+                result = decoded
+            } else {
+                undecodable += key
+            }
+        }
+        return result
+    }
+
+    /** Human lines for what [sanitized] changed relative to the [raw] decode. */
+    private fun sanitizeRepairs(raw: PfpThemeManifest, sanitized: PfpThemeManifest): List<String> = buildList {
+        if ((raw.description?.length ?: 0) > MANIFEST_DESCRIPTION_MAX) {
+            add("Description shortened to $MANIFEST_DESCRIPTION_MAX characters")
+        }
+        raw.legibility?.let { l ->
+            if (l.text != null && l.text !in ThemeLegibility.TEXT_VALUES) {
+                add("Text legibility style \"${l.text}\" is not recognized and was ignored")
+            }
+            if (l.icon != null && l.icon !in ThemeLegibility.ICON_VALUES) {
+                add("Icon legibility style \"${l.icon}\" is not recognized and was ignored")
+            }
+        }
+        raw.motionCrop?.let {
+            when {
+                sanitized.motionCrop == null -> add("Motion crop was invalid and was ignored")
+                sanitized.motionCrop != it -> add("Motion crop adjusted to fit inside the frame")
+            }
+        }
+    }
+
+    /** Why a name failed [PassthroughNames.isSafe]: no usable extension, or anything else. */
+    private fun unsafeNameReason(name: String): DropReason {
+        val ext = name.substringAfterLast('.', "")
+        val hasExt = '.' in name && ext.length in 1..5 && ext.all { it in 'a'..'z' || it in '0'..'9' }
+        return if (hasExt) DropReason.HOSTILE_NAME else DropReason.BAD_EXTENSION
+    }
+
+    /** Manifest keys no typed [PfpThemeManifest] field claims. */
+    private fun extrasOf(root: JsonObject): JsonObject =
+        JsonObject(root.filterKeys { it !in TYPED_MANIFEST_KEYS })
+
+    private val TYPED_MANIFEST_KEYS: Set<String> by lazy {
+        val d = PfpThemeManifest.serializer().descriptor
+        (0 until d.elementsCount).map { d.getElementName(it) }.toSet()
+    }
+
+    /**
+     * True for any name this codec reads or writes as a typed part of the bundle. A passthrough
+     * entry must never share one of these names (plan 5.5).
+     */
+    private fun isRegisteredName(name: String): Boolean = when {
+        name == ENTRY_MANIFEST || name == ENTRY_WALLPAPER || name == ENTRY_PREVIEW -> true
+        name.startsWith(ICONS_PREFIX) -> {
+            val file = name.removePrefix(ICONS_PREFIX)
+            file.substringAfterLast('.', "").lowercase() in ICON_EXTENSIONS &&
+                IconSlots.isValidKey(file.substringBeforeLast('.'))
+        }
+        name.startsWith(SYSICONS_PREFIX) -> {
+            val file = name.removePrefix(SYSICONS_PREFIX)
+            file.substringAfterLast('.', "").lowercase() in ICON_EXTENSIONS &&
+                CustomizableIcons.isValidKey("sysicon_${file.substringBeforeLast('.')}")
+        }
+        name.startsWith(MOTION_PREFIX) -> name.removePrefix(MOTION_PREFIX).lowercase() in MOTION_EXTENSIONS
+        // Any name a media slot claims, even with an extension it would refuse: the reader drops
+        // those, so a passthrough entry must not smuggle one back in.
+        ThemeMediaSlots.claimedBy(name) != null -> true
+        else -> false
     }
 
     /**
      * Reads a bundle held in memory. Motion streams back out of [bytes] — already on the heap,
      * so re-scanning them costs nothing extra.
      */
-    fun read(bytes: ByteArray): PfpThemeBundle? =
-        read(ByteArrayInputStream(bytes)) { ext -> motionFrom({ ByteArrayInputStream(bytes) }, ext) }
+    fun read(bytes: ByteArray): PfpThemeBundle? = readDetailed(bytes)?.bundle
+
+    fun readDetailed(bytes: ByteArray): ReadResult? =
+        readDetailed(
+            ByteArrayInputStream(bytes),
+            { ext -> motionFrom({ ByteArrayInputStream(bytes) }, ext) },
+            { name -> passthroughFrom({ ByteArrayInputStream(bytes) }, name) },
+        )
 
     /**
      * Reads a bundle from a file **without inflating its motion entry**.
@@ -202,8 +399,16 @@ object PfpThemeCodec {
      * [PfpThemeBundle.motion] re-opens [file] and streams that one entry when asked, so applying
      * a theme with a 50 MB video copies it file-to-file and never holds it.
      */
-    fun read(file: File): PfpThemeBundle? =
-        file.inputStream().use { read(it) { ext -> motionFrom({ file.inputStream() }, ext) } }
+    fun read(file: File): PfpThemeBundle? = readDetailed(file)?.bundle
+
+    fun readDetailed(file: File): ReadResult? =
+        file.inputStream().use {
+            readDetailed(
+                it,
+                { ext -> motionFrom({ file.inputStream() }, ext) },
+                { name -> passthroughFrom({ file.inputStream() }, name) },
+            )
+        }
 
     /**
      * The manifest alone, at O(first entry) cost.
@@ -242,18 +447,24 @@ object PfpThemeCodec {
      * rather than inflated.
      */
     private fun motionFrom(source: () -> InputStream, ext: String): ThemeMotion =
-        ThemeMotion(ext) { out ->
-            var written = 0L
-            source().use { input ->
-                BoundedZipReader.read(input, BUNDLE_LIMITS) { entry ->
-                    if (entry.name == "$MOTION_PREFIX$ext") {
-                        written = entry.copyTo(out)
-                        entry.stop()
-                    }
+        ThemeMotion(ext, streamEntry(source, "$MOTION_PREFIX$ext"))
+
+    /** Same strategy as [motionFrom], for an unknown entry found by its full zip [name]. */
+    internal fun passthroughFrom(source: () -> InputStream, name: String): PassthroughEntry =
+        PassthroughEntry(name, streamEntry(source, name))
+
+    private fun streamEntry(source: () -> InputStream, name: String): (OutputStream) -> Long = { out ->
+        var written = 0L
+        source().use { input ->
+            BoundedZipReader.read(input, BUNDLE_LIMITS) { entry ->
+                if (entry.name == name) {
+                    written = entry.copyTo(out)
+                    entry.stop()
                 }
             }
-            written
         }
+        written
+    }
 
     private fun ZipOutputStream.writeEntry(name: String, data: ByteArray) {
         putNextEntry(ZipEntry(name))

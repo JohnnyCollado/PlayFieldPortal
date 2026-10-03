@@ -11,6 +11,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -27,6 +28,7 @@ import coil3.compose.AsyncImage
 import coil3.gif.MovieDrawable
 import coil3.gif.repeatCount
 import coil3.request.ImageRequest
+import com.playfieldportal.themekit.MotionCrop
 import timber.log.Timber
 
 /**
@@ -64,6 +66,7 @@ fun MotionWallpaperBackground(
     motionPath: String,
     decision: MotionWallpaperPolicy.Decision,
     modifier: Modifier = Modifier,
+    motionCrop: MotionCrop? = null,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         // Poster always composed underneath: shows until the first video frame lands, and is
@@ -82,7 +85,7 @@ fun MotionWallpaperBackground(
         )
         when (formatOf(motionPath)) {
             MotionFormat.ANIMATED_IMAGE -> AnimatedImageSurface(motionPath)
-            MotionFormat.VIDEO -> MotionVideoSurface(motionPath, decision)
+            MotionFormat.VIDEO -> MotionVideoSurface(motionPath, decision, cropForMotionPath(motionPath, motionCrop))
         }
     }
 }
@@ -94,7 +97,11 @@ fun MotionWallpaperBackground(
  * format switch.
  */
 @Composable
-private fun MotionVideoSurface(motionPath: String, decision: MotionWallpaperPolicy.Decision) {
+private fun MotionVideoSurface(
+    motionPath: String,
+    decision: MotionWallpaperPolicy.Decision,
+    crop: MotionCrop?,
+) {
     val context = LocalContext.current
     var firstFrameRendered by remember(motionPath) { mutableStateOf(false) }
     var videoSize by remember(motionPath) { mutableStateOf<VideoSize?>(null) }
@@ -147,16 +154,18 @@ private fun MotionVideoSurface(motionPath: String, decision: MotionWallpaperPoli
         label = "motionWallpaperFade",
     )
 
+    // The layout listener outlives a recomposition, so it reads the latest crop through state.
+    val currentCrop by rememberUpdatedState(crop)
     AndroidView(
         factory = { ctx ->
             TextureView(ctx).also { view ->
                 player.setVideoTextureView(view)
                 view.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ ->
-                    applyCenterCrop(v as TextureView, videoSize)
+                    applyMotionTransform(v as TextureView, videoSize, currentCrop)
                 }
             }
         },
-        update = { view -> applyCenterCrop(view, videoSize) },
+        update = { view -> applyMotionTransform(view, videoSize, crop) },
         modifier = Modifier
             .fillMaxSize()
             .graphicsLayer { this.alpha = alpha },
@@ -195,19 +204,20 @@ private fun AnimatedImageSurface(motionPath: String) {
 
 private const val TAG = "MotionWallpaper"
 
-// TextureView stretches the frame to its bounds; this rescales to center-crop so the video fills
-// the screen at its own aspect — matching the ContentScale.Crop poster underneath it, so the
-// fade-in never visibly distorts the picture the poster established. (Same approach as
-// Icon1VideoOverlay.)
-private fun applyCenterCrop(view: TextureView, size: VideoSize?) {
+// TextureView stretches the frame to its bounds; this rescales so the video fills the screen at its
+// own aspect — center-cropped like the ContentScale.Crop poster underneath it, or framed on the
+// theme's crop rect (the region the Studio baked into that poster), so the fade-in never visibly
+// distorts or shifts the picture the poster established. Math lives in [motionTransform].
+private fun applyMotionTransform(view: TextureView, size: VideoSize?, crop: MotionCrop?) {
     val vw = size?.width?.toFloat() ?: return
     val vh = size.height.toFloat()
     if (vw <= 0f || vh <= 0f || view.width == 0 || view.height == 0) return
     val viewW = view.width.toFloat()
     val viewH = view.height.toFloat()
-    val scale = maxOf(viewW / vw, viewH / vh)
+    val t = motionTransform(viewW, viewH, vw, vh, crop)
     val matrix = Matrix().apply {
-        setScale((vw * scale) / viewW, (vh * scale) / viewH, viewW / 2f, viewH / 2f)
+        setScale(t.scaleX, t.scaleY, viewW / 2f, viewH / 2f)
+        postTranslate(t.translateX, t.translateY)
     }
     view.setTransform(matrix)
 }

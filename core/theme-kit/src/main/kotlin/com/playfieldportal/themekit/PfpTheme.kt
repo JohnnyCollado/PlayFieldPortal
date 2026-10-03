@@ -3,10 +3,11 @@ package com.playfieldportal.themekit
 import java.io.File
 import java.io.OutputStream
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
 /**
  * `.pfptheme` manifest — the JSON descriptor inside the theme bundle
- * (see docs/xmb-theme-creator-plan.md, "`.pfptheme` file format").
+ * (see docs/theme-format.md).
  *
  * Spiritually a modern descendant of Sony's `PSPTheme_default.txt` project file: a small
  * manifest naming the theme's parts, with the parts carried alongside. Because the entire
@@ -23,16 +24,29 @@ data class PfpThemeManifest(
     val iconColor: String = ICON_COLOR_AUTO,
     /**
      * Text colour, `#RRGGBB`, or [ICON_COLOR_AUTO] to inherit the theme's own (white on every
-     * preset). Additive: SCHEMA_VERSION stays 3 by the same argument the v3 note below makes —
-     * a reader that predates this field ignores it and applies the rest.
+     * preset). Additive: a reader that predates this field ignores it and applies the rest
+     * (the never-gate-on-version rule in the schema note below).
      */
     val textColor: String = ICON_COLOR_AUTO,
+    /** LEGACY wave field, always written so older readers work; see [waveStyleV4] for the exact value. */
     val waveStyle: String = WAVE_ANIMATED,
     /** Per-theme XMB geometry override; null = the app's default layout. */
     val layout: XmbLayoutSpec? = null,
     val source: PfpThemeSource? = null,
     /** ISO-8601 date the bundle was created, e.g. "2026-07-06". */
     val created: String? = null,
+    // ── v4 (all optional; see ThemeManifestV4.kt and WaveStyles.resolveExact) ──
+    val author: String? = null,
+    /** Clamped to [MANIFEST_DESCRIPTION_MAX] chars on read. */
+    val description: String? = null,
+    /** ISO-8601 date of the last export / upgrade. */
+    val updated: String? = null,
+    /** Absent = the theme says nothing about whether [textColor] is exact. */
+    val textColorExact: Boolean? = null,
+    /** Exact wave style (adds [WAVE_REDUCED_STATIC]); null on pre-v4 bundles. */
+    val waveStyleV4: String? = null,
+    val legibility: ThemeLegibility? = null,
+    val motionCrop: MotionCrop? = null,
 ) {
     companion object {
         const val MANIFEST_TYPE = "pfptheme"
@@ -41,11 +55,15 @@ data class PfpThemeManifest(
         // and motion wallpaper travels as motion.<mp4|webm|gif>. Readers never gate on the
         // version — older apps simply ignore the entries they don't know and apply the
         // wallpaper + colors subset, so a v3 bundle still opens everywhere older builds do.
-        const val SCHEMA_VERSION = 3
+        // v4 (additive): author/description/updated, textColorExact, waveStyleV4, legibility and
+        // motionCrop manifest fields; same never-gate-on-version rule.
+        const val SCHEMA_VERSION = 4
         const val ICON_COLOR_AUTO = "auto"
         const val WAVE_ANIMATED = "animated"
         const val WAVE_STATIC = "static"
         const val WAVE_REDUCED = "reduced"
+        /** v4-only exact value; the legacy [waveStyle] field carries [WAVE_STATIC] for it. */
+        const val WAVE_REDUCED_STATIC = "reduced_static"
     }
 }
 
@@ -152,23 +170,51 @@ data class PfpThemeBundle(
      * so there is nothing to stream the entry back out of later.
      */
     val motion: ThemeMotion? = null,
+    /**
+     * Manifest keys this build has no typed field for, preserved verbatim and merged back on
+     * write (typed fields win on collision).
+     */
+    val manifestExtras: JsonObject = JsonObject(emptyMap()),
+    /**
+     * Zip entries this build does not understand (including unregistered `icons/` and
+     * `sysicons/` names), streamed back out on write. Empty when read from a plain stream.
+     */
+    val passthrough: List<PassthroughEntry> = emptyList(),
+    /**
+     * Names of entries dropped on read because they failed the passthrough name rule. Informational:
+     * not part of equality.
+     */
+    val unrecoverableEntries: List<String> = emptyList(),
+    /**
+     * UI media (v4): [ThemeMediaSlots] key → streamed entry (menu sounds, ambience, boot,
+     * GameBoot). Held as [ThemeMotion] for the same reason motion is — these are audio and video,
+     * never materialised. Like [motion], empty when read from a plain stream or without a
+     * `reopenEntry`; compared by key and extension only.
+     */
+    val media: Map<String, ThemeMotion> = emptyMap(),
 ) {
     override fun equals(other: Any?): Boolean =
         other is PfpThemeBundle &&
             manifest == other.manifest &&
+            manifestExtras == other.manifestExtras &&
+            passthrough == other.passthrough &&
             wallpaper.contentEquals(other.wallpaper) &&
             preview.contentEquals(other.preview) &&
             icons.keys == other.icons.keys &&
             icons.all { (key, image) -> image == other.icons[key] } &&
             sysicons.keys == other.sysicons.keys &&
             sysicons.all { (key, image) -> image == other.sysicons[key] } &&
-            motion == other.motion
+            motion == other.motion &&
+            media == other.media
 
     override fun hashCode(): Int {
         var h = 31 * (31 * manifest.hashCode() + wallpaper.contentHashCode()) + preview.contentHashCode()
         for ((key, image) in icons) h = 31 * h + (key.hashCode() xor image.hashCode())
         for ((key, image) in sysicons) h = 31 * h + (key.hashCode() xor image.hashCode())
         motion?.let { h = 31 * h + it.hashCode() }
+        h = 31 * h + manifestExtras.hashCode()
+        h = 31 * h + passthrough.hashCode()
+        h = 31 * h + media.hashCode()
         return h
     }
 }

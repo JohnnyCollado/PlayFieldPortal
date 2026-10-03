@@ -217,12 +217,7 @@ private fun RunningRow(task: BackgroundTaskInfo) {
     ) {
         KindRing(
             glyph = { tint ->
-                Icon(
-                    imageVector = taskGlyph(task.kind),
-                    contentDescription = null,
-                    tint = tint,
-                    modifier = Modifier.size(17.dp),
-                )
+                NotificationKindIcon(task.kind.notificationKind, tint, 17.dp)
             },
             ringColor = Color.White.copy(alpha = 0.35f),
         )
@@ -319,12 +314,7 @@ private fun HistoryRow(
     ) {
         KindRing(
             glyph = { tint ->
-                Icon(
-                    imageVector = notificationGlyph(notification.kind),
-                    contentDescription = null,
-                    tint = tint,
-                    modifier = Modifier.size(17.dp),
-                )
+                NotificationKindIcon(notification.kind, tint, 17.dp)
             },
             ringColor = severity,
         )

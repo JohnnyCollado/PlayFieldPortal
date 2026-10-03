@@ -574,6 +574,8 @@ open class BackupManager @Inject constructor(
         stringPreferencesKey("display_color_scheme"),
         stringPreferencesKey("display_custom_wallpaper"),
         stringPreferencesKey("display_motion_wallpaper"),
+        // The theme's crop of that video (compact JSON of fractions, no paths) — travels with it.
+        stringPreferencesKey("display_motion_crop"),
         // Font colour / text legibility. This list is explicit, so a key that is not named here
         // silently fails to survive a restore — see BackupKeyCoverageTest.
         stringPreferencesKey("display_text_legibility"),

@@ -6,8 +6,8 @@ package com.playfieldportal.themekit
  * This registry is the single source of truth shared by the launcher (which resolves an
  * applied theme's `icons/<key>.png` overrides at render time) and the desktop Theme Studio
  * (which edits the slots and exports the editable template pack). Platform/console icons
- * (`sysicon_*`) and physical-media art are deliberately NOT slots: those identify content,
- * not UI, and stay uniform across themes.
+ * (`sysicon_*`) are not part of this list: they travel under `sysicons/` and are registered by
+ * [CustomizableIcons]. Physical-media art is not themeable.
  *
  * Keys are also the bundle entry names (`icons/<key>.png` inside a `.pfptheme`), so they are
  * forever-stable: never rename one, only add.
@@ -25,8 +25,11 @@ data class IconSlot(
      * (`icons/` entries stay gated by [IconSlots.isValidKey]) — it exists for the app-side
      * superset registry [CustomizableIcons], whose console slots travel under the separate
      * `sysicons/` bundle directory (schema v3).
+     *
+     * SHIBA, MEDIA, GAME_DETAIL, NOTIFICATIONS and MENUS (schema v4) are theme-only groups:
+     * they travel under `icons/` like the rest but the on-device editor does not list them.
      */
-    enum class Group { CATEGORY_BAR, ITEMS, STATUS, CONSOLE }
+    enum class Group { CATEGORY_BAR, ITEMS, STATUS, CONSOLE, SHIBA, MEDIA, GAME_DETAIL, NOTIFICATIONS, MENUS }
 }
 
 object IconSlots {
@@ -43,6 +46,9 @@ object IconSlots {
 
     private fun status(key: String, name: String) =
         IconSlot(key, IconSlot.Group.STATUS, name, STATUS_TEMPLATE_PX)
+
+    private fun slot(key: String, group: IconSlot.Group, name: String) =
+        IconSlot(key, group, name, ITEM_TEMPLATE_PX)
 
     val ALL: List<IconSlot> = listOf(
         // ── Category bar (crossbar column glyphs) ────────────────────────────
@@ -108,6 +114,42 @@ object IconSlots {
         status("status_battery_low", "Battery (low)"),
         status("status_battery_charging", "Battery (charging)"),
         status("status_bluetooth", "Bluetooth"),
+
+        // ── Schema v4 additions: appended only, so everything above keeps its order ──
+        status("status_notifications", "Notifications"),
+        status("status_controller", "Controller"),
+        status("status_wifi", "Wi-Fi"),
+        status("status_signal", "Cellular signal"),
+
+        slot("shiba_coin_bronze", IconSlot.Group.SHIBA, "Bronze coin"),
+        slot("shiba_coin_silver", IconSlot.Group.SHIBA, "Silver coin"),
+        slot("shiba_coin_gold", IconSlot.Group.SHIBA, "Gold coin"),
+        slot("shiba_coin_platinum", IconSlot.Group.SHIBA, "Platinum coin"),
+
+        slot("media_play", IconSlot.Group.MEDIA, "Play"),
+        slot("media_pause", IconSlot.Group.MEDIA, "Pause"),
+        slot("media_prev", IconSlot.Group.MEDIA, "Previous"),
+        slot("media_next", IconSlot.Group.MEDIA, "Next"),
+        slot("media_back10", IconSlot.Group.MEDIA, "Back 10 seconds"),
+        slot("media_fwd10", IconSlot.Group.MEDIA, "Forward 10 seconds"),
+
+        slot("detail_play", IconSlot.Group.GAME_DETAIL, "Play"),
+        slot("detail_favorite", IconSlot.Group.GAME_DETAIL, "Favorite"),
+        slot("detail_artwork", IconSlot.Group.GAME_DETAIL, "Artwork"),
+        slot("detail_manual", IconSlot.Group.GAME_DETAIL, "Manual"),
+        slot("detail_more", IconSlot.Group.GAME_DETAIL, "More"),
+
+        slot("notif_album", IconSlot.Group.NOTIFICATIONS, "Scan"),
+        slot("notif_image", IconSlot.Group.NOTIFICATIONS, "Artwork"),
+        slot("notif_tag", IconSlot.Group.NOTIFICATIONS, "Metadata"),
+        slot("notif_coin", IconSlot.Group.NOTIFICATIONS, "Achievement"),
+        slot("notif_blocked", IconSlot.Group.NOTIFICATIONS, "Launch blocked"),
+        slot("notif_settings", IconSlot.Group.NOTIFICATIONS, "System"),
+        slot("notif_download", IconSlot.Group.NOTIFICATIONS, "Download"),
+        slot("notif_feed", IconSlot.Group.NOTIFICATIONS, "Feed"),
+
+        slot("menu_check", IconSlot.Group.MENUS, "Check mark"),
+        slot("menu_back", IconSlot.Group.MENUS, "Back arrow"),
     )
 
     private val byKey: Map<String, IconSlot> = ALL.associateBy { it.key }

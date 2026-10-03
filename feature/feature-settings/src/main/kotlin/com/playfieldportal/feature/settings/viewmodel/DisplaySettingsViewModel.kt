@@ -95,6 +95,9 @@ internal val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpa
 // Enforced at the two write sites (import, clear) and on read ("motion set, poster missing"
 // degrades to "no motion").
 internal val KEY_MOTION_WALLPAPER  = stringPreferencesKey("display_motion_wallpaper")
+// A theme's crop of its motion video (compact JSON, owned by PfpThemeStore). Anything that replaces
+// or clears the motion wallpaper here removes it, so it can never frame the user's own video.
+internal val KEY_MOTION_CROP       = stringPreferencesKey("display_motion_crop")
 // Scale & Layout now live in the XMB's on-screen "Adjust XMB Layout" editor (see XMBViewModel);
 // this screen only launches it, so the old scale/bar prefs and steppers were removed here.
 
@@ -540,6 +543,7 @@ class DisplaySettingsViewModel @Inject constructor(
             save {
                 it[KEY_CUSTOM_WALLPAPER] = dest.absolutePath
                 it.remove(KEY_MOTION_WALLPAPER)
+                it.remove(KEY_MOTION_CROP)
                 it.setWallpaperLuma(luma)
             }
             pruneWallpaperDir(keep = listOf(dest))
@@ -635,6 +639,7 @@ class DisplaySettingsViewModel @Inject constructor(
         save {
             it[KEY_CUSTOM_WALLPAPER] = posterDest.absolutePath
             it[KEY_MOTION_WALLPAPER] = motionDest.absolutePath
+            it.remove(KEY_MOTION_CROP)
             it.setWallpaperLuma(luma)
         }
         pruneWallpaperDir(keep = listOf(motionDest, posterDest))
@@ -724,6 +729,7 @@ class DisplaySettingsViewModel @Inject constructor(
             save {
                 it.remove(KEY_CUSTOM_WALLPAPER)
                 it.remove(KEY_MOTION_WALLPAPER)
+                it.remove(KEY_MOTION_CROP)
                 it.clearWallpaperLuma()
             }
             // Then the files (prefs gone first, so nothing references them while they delete).

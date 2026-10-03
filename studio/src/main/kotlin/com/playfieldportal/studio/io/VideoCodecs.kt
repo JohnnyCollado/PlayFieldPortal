@@ -5,6 +5,8 @@ import java.awt.image.BufferedImage
 import java.io.File
 import org.jcodec.api.FrameGrab
 import org.jcodec.common.io.NIOUtils
+import org.jcodec.common.io.SeekableByteChannel
+import org.jcodec.common.model.Picture
 import org.jcodec.scale.AWTUtil
 
 /**
@@ -107,6 +109,18 @@ object VideoCodecs {
     }.getOrNull()
 
     /**
+     * The frame at [atMs] (precise seek, so the still matches the video at that moment), or null
+     * when the file yields no decodable frame there. Clamped at 0.
+     */
+    fun frameAt(file: File, atMs: Long): BufferedImage? = runCatching {
+        NIOUtils.readableChannel(file).use { channel ->
+            val grab = FrameGrab.createFrameGrab(channel)
+            if (atMs > 0) grab.seekToSecondPrecise(atMs / 1000.0)
+            grab.nativeFrame?.let(AWTUtil::toBufferedImage)
+        }
+    }.getOrNull()
+
+    /**
      * The whole import gate, cheapest check first: extension, then length, then the header, then
      * [MotionLimits.validate], and only once all of those pass is a single frame decoded.
      *
@@ -129,4 +143,77 @@ object VideoCodecs {
 
         return Outcome.Accepted(poster = poster, probe = probe, bundleExtension = bundleExtension)
     }
+
+    /**
+     * A frame the decoder has produced but not yet turned into pixels. Decoding (which every frame
+     * needs, because H.264 frames depend on their predecessors) and the RGB conversion (which a late
+     * frame can skip) are separate costs, so the live preview pays the second only for frames it shows.
+     */
+    class RawFrame internal constructor(
+        private val picture: Picture,
+        val ptsMs: Long,
+        val durationMs: Long,
+    ) {
+        fun toImage(): BufferedImage = AWTUtil.toBufferedImage(picture)
+    }
+
+    /**
+     * Sequential frame iterator for the live preview: opens [file], then [next] yields frames in
+     * presentation order until it returns null. [rewind] reopens from the start (JCodec seeks are
+     * imprecise on long-GOP files; a reopen costs one header parse). Not thread-safe — one owner.
+     */
+    class FrameReader private constructor(
+        private val file: File,
+        val width: Int,
+        val height: Int,
+        val fps: Float,
+        val durationMs: Long,
+    ) : AutoCloseable {
+        private var channel: SeekableByteChannel? = null
+        private var grab: FrameGrab? = null
+
+        private fun open() {
+            val ch = NIOUtils.readableChannel(file)
+            try {
+                grab = FrameGrab.createFrameGrab(ch)
+                channel = ch
+            } catch (t: Throwable) {
+                ch.close()
+                throw t
+            }
+        }
+
+        /** The next frame, or null at the end of the stream. */
+        fun next(): RawFrame? {
+            val meta = grab?.nativeFrameWithMetadata ?: return null
+            val pts = (meta.timestamp * 1000.0).toLong()
+            val dur = (meta.duration * 1000.0).toLong().takeIf { it > 0 } ?: (1000f / fps).toLong()
+            return RawFrame(meta.picture, pts, dur)
+        }
+
+        fun rewind() {
+            release()
+            open()
+        }
+
+        private fun release() {
+            runCatching { channel?.close() }
+            channel = null
+            grab = null
+        }
+
+        override fun close() = release()
+
+        internal companion object {
+            fun open(file: File): FrameReader? = runCatching {
+                val probe = probe(file) ?: return null
+                val meta = NIOUtils.readableChannel(file).use { ch -> FrameGrab.createFrameGrab(ch).videoTrack.meta }
+                val fps = if (meta.totalFrames > 0 && meta.totalDuration > 0.0) (meta.totalFrames / meta.totalDuration).toFloat() else 30f
+                FrameReader(file, probe.width, probe.height, fps.coerceIn(1f, 240f), probe.durationMs).also { it.open() }
+            }.getOrNull()
+        }
+    }
+
+    /** Opens [file] for sequential playback, or null when JCodec cannot read it as MP4/H.264. */
+    fun openFrames(file: File): FrameReader? = FrameReader.open(file)
 }

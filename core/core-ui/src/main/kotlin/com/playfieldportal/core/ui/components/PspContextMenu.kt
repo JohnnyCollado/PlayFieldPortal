@@ -209,7 +209,9 @@ private fun PspContextMenuRow(
             }
             if (row.checked) {
                 Spacer(Modifier.width(10.dp))
-                PfpCheckMark(Color.White, size = 15.dp, shadow = TextDropShadow.color)
+                if (!MenuGlyphOverride(MENU_CHECK_KEY, 15.dp)) {
+                    PfpCheckMark(Color.White, size = 15.dp, shadow = TextDropShadow.color)
+                }
             }
         }
     }

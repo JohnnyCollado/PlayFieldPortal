@@ -9,7 +9,8 @@ package com.playfieldportal.themekit
  * stays buildable by the desktop Theme Studio. The list deliberately EXCLUDES
  * `sysicon_default` (the built-in fallback art) and the UI-identifying entries
  * `favorites`/`settings`/`desktop`: those name content buckets, not platforms a user would
- * recognise as "replace the SNES icon".
+ * recognise as "replace the SNES icon". Those, plus the CPS/Xbox ids, live in
+ * [SYSICON_EXTRA_IDS] instead.
  */
 val SYSICON_PLATFORM_IDS: List<String> = listOf(
     "allgames",
@@ -55,6 +56,22 @@ val SYSICON_PLATFORM_IDS: List<String> = listOf(
 )
 
 /**
+ * Console slots a theme may carry art for that are not platform-list ids (A4): arcade CPS
+ * boards, Xbox, the UI buckets, and the `default` fallback art. Appended after
+ * [SYSICON_PLATFORM_IDS] in [CustomizableIcons.ALL]. Slots only — no bundled art was added, so
+ * core-ui's `systemIconRes()` and its guard test are deliberately untouched.
+ */
+val SYSICON_EXTRA_IDS: List<String> = listOf(
+    "cps1",
+    "cps2",
+    "cps3",
+    "xbox",
+    "favorites",
+    "desktop",
+    "default",
+)
+
+/**
  * Human label for a console slot in the customizer. Raw platform ids are asset keys
  * (`n3ds`, `segacd`) — editors must never show them verbatim.
  */
@@ -92,6 +109,13 @@ fun consoleDisplayName(platformId: String): String = when (platformId) {
     "wonderswan" -> "WonderSwan"
     "wonderswancolor" -> "WonderSwan Color"
     "x360" -> "Xbox 360"
+    "cps1" -> "Capcom CPS-1"
+    "cps2" -> "Capcom CPS-2"
+    "cps3" -> "Capcom CPS-3"
+    "xbox" -> "Xbox"
+    "favorites" -> "Favorites"
+    "desktop" -> "Desktop"
+    "default" -> "Default Console"
     else -> platformId.uppercase()
 }
 
@@ -111,7 +135,7 @@ object CustomizableIcons {
     /** Template size for console art, matching the catbar/item templates. */
     private const val CONSOLE_TEMPLATE_PX = 256
 
-    val ALL: List<IconSlot> = IconSlots.ALL + SYSICON_PLATFORM_IDS.map { id ->
+    val ALL: List<IconSlot> = IconSlots.ALL + (SYSICON_PLATFORM_IDS + SYSICON_EXTRA_IDS).map { id ->
         IconSlot(
             key = "sysicon_$id",
             group = IconSlot.Group.CONSOLE,

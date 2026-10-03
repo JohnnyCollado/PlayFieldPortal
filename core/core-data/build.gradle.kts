@@ -87,4 +87,6 @@ dependencies {
     testImplementation(libs.room.testing)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.ktor.client.mock)
+    // Golden v1..v4 / future bundles (TS-14 upgrade tests).
+    testImplementation(testFixtures(project(":core:theme-kit")))
 }

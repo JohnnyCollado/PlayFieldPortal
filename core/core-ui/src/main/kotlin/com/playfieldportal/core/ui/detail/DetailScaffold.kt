@@ -48,6 +48,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.ScrollState
 import com.playfieldportal.core.ui.components.ControllerHintBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.components.MENU_BACK_KEY
+import com.playfieldportal.core.ui.components.MenuGlyphOverride
 
 // ── Console-style detail page: background, scaffold, header, footer ───────────
 //
@@ -220,7 +222,9 @@ fun PfpDetailBreadcrumb(
                 // 48dp touch target (Android's minimum) around a 16sp glyph, so the arrow stays easy to
                 // hit without a visible chip.
                 Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-                    Text(text = "◀", color = DetailTextMuted, fontSize = 16.sp)
+                    if (!MenuGlyphOverride(MENU_BACK_KEY, 18.dp, "Back")) {
+                        Text(text = "◀", color = DetailTextMuted, fontSize = 16.sp)
+                    }
                 }
                 Spacer(Modifier.width(4.dp))
                 Column {

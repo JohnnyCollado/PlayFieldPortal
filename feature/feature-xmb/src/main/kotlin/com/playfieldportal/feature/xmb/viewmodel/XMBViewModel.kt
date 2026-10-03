@@ -730,6 +730,8 @@ data class XMBUiState(
     // [customWallpaperPath] — the poster is the freeze/failure fallback, so on read "motion set,
     // poster missing" degrades to "no motion" rather than trying to recover.
     val motionWallpaperPath: String? = null,
+    // Normalized source-frame crop for an MP4/WebM motion wallpaper (null = center-crop).
+    val motionCrop: com.playfieldportal.themekit.MotionCrop? = null,
 
     val showBootSequence: Boolean = true,
     // The user's boot media, when assigned (Settings ▸ Display ▸ Boot Sequence). Null means the
@@ -5675,7 +5677,7 @@ class XMBViewModel @Inject constructor(
                     // The Games Filter menu is the one menu here with a root worth returning to,
                     // so BACK inside a group climbs one level instead of closing outright. Every
                     // other submenu in the XMB is a one-shot picker, where closing IS the way out.
-                    if (state.activeContextMenu?.gamesFilterGroup != null) openGamesFilterGroup(null)
+                    if (state.activeContextMenu.gamesFilterGroup != null) openGamesFilterGroup(null)
                     else closeContextMenu()
                 else -> Unit
             }
@@ -10205,7 +10207,10 @@ class XMBViewModel @Inject constructor(
                 // the invalid state as "no motion" — never trying to recover it.
                 val motionPath = prefs[KEY_MOTION_WALLPAPER]
                     ?.takeIf { validPath != null && java.io.File(it).exists() }
-                _uiState.update { it.copy(customWallpaperPath = validPath, motionWallpaperPath = motionPath) }
+                val motionCrop = motionPath?.let { prefs[KEY_MOTION_CROP] }?.let(PfpThemeStore::decodeMotionCrop)
+                _uiState.update {
+                    it.copy(customWallpaperPath = validPath, motionWallpaperPath = motionPath, motionCrop = motionCrop)
+                }
             }
         }
     }
@@ -10218,13 +10223,13 @@ class XMBViewModel @Inject constructor(
         private val KEY_RESPECT_BATTERY   = booleanPreferencesKey("display_battery_saver")
         private val KEY_THERMAL_AWARE     = booleanPreferencesKey("display_thermal_aware")
         private val KEY_COLOR_SCHEME      = stringPreferencesKey("display_color_scheme")
-        // Custom-theme cascade (docs/xmb-theme-creator-plan.md): when set, this ARGB accent
+        // Custom-theme cascade (docs/theme-format.md): when set, this ARGB accent
         // overrides the preset scheme — wave, gradient, and cursor all derive from it.
         private val KEY_ACCENT_OVERRIDE   = longPreferencesKey("theme_accent_override")
         // Unified icon tint (ARGB); unset = white = the icon art's native color.
         private val KEY_ICON_COLOR        = longPreferencesKey("theme_icon_color")
         // display_-prefixed, matching DisplaySettingsViewModel's keys: the font colour is a
-        // Display setting the user owns, not a property a theme bundle silently overwrites.
+        // Display setting, but a theme applies it wholesale (PfpThemeStore.apply sets or clears it).
         private val KEY_TEXT_COLOR        = longPreferencesKey("display_text_color")
         // Display ▸ Scale & Layout — must match DisplaySettingsViewModel (shared prefs contract).
         private val KEY_XMB_SCALE         = androidx.datastore.preferences.core.floatPreferencesKey("display_xmb_scale")
@@ -10270,6 +10275,7 @@ class XMBViewModel @Inject constructor(
         // Must match DisplaySettingsViewModel — shared wallpaper cascade prefs. Motion is never
         // set without the poster key (invariant enforced at the write sites).
         private val KEY_MOTION_WALLPAPER = stringPreferencesKey("display_motion_wallpaper")
+        private val KEY_MOTION_CROP = stringPreferencesKey("display_motion_crop")
         // Must match DisplaySettingsViewModel — the Boot Sequence toggles. Before this both keys
         // were written by settings and read by nothing: the boot animation always played.
         private val KEY_SHOW_BOOT       = booleanPreferencesKey("display_show_boot")

@@ -8,15 +8,18 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.playfieldportal.studio.ui.StudioApp
+import com.playfieldportal.studio.ui.handleShellKey
 
 fun main() = application {
+    val scope = rememberCoroutineScope()
+    val viewModel = remember { StudioViewModel(scope) }
     Window(
         onCloseRequest = ::exitApplication,
         title = "PlayField Theme Studio",
         state = rememberWindowState(size = DpSize(1280.dp, 760.dp)),
+        // Undo/redo shortcuts: only reached when no focused control (e.g. a text field) took the key.
+        onKeyEvent = { event -> handleShellKey(event, viewModel) },
     ) {
-        val scope = rememberCoroutineScope()
-        val viewModel = remember { StudioViewModel(scope) }
         StudioApp(viewModel = viewModel, window = window)
     }
 }

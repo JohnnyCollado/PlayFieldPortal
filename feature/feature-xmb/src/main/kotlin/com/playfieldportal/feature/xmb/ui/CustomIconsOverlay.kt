@@ -287,6 +287,13 @@ private fun groupLabel(group: IconSlot.Group): String = when (group) {
     IconSlot.Group.ITEMS -> "Items"
     IconSlot.Group.STATUS -> "Status"
     IconSlot.Group.CONSOLE -> "Consoles"
+    // Theme-only groups (A5): the on-device editor's customIconGroups never lists them, so
+    // these labels are unreachable today; they exist to keep the `when` exhaustive.
+    IconSlot.Group.SHIBA -> "Shiba Coins"
+    IconSlot.Group.MEDIA -> "Media Controls"
+    IconSlot.Group.GAME_DETAIL -> "Game Detail"
+    IconSlot.Group.NOTIFICATIONS -> "Notifications"
+    IconSlot.Group.MENUS -> "Menus"
 }
 
 /**

@@ -4,6 +4,7 @@ import com.playfieldportal.themekit.CustomizableIcons
 import com.playfieldportal.themekit.IconSlot
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
@@ -35,5 +36,42 @@ class StudioIconSetTest {
     fun `resource slots and vector slots do not overlap`() {
         val overlap = StudioIconSet.RESOURCE_SLOTS.keys intersect StudioIconSet.ITEM_VECTORS.keys
         assertTrue(overlap.isEmpty(), "a slot must have exactly one default, found in both maps: $overlap")
+    }
+
+    @Test
+    fun `every resource slot points at a classpath resource`() {
+        val missing = StudioIconSet.RESOURCE_SLOTS.filterValues {
+            StudioIconSet::class.java.classLoader.getResource(it) == null
+        }
+        assertTrue(missing.isEmpty(), "resource slots with no classpath file: $missing")
+    }
+
+    @Test
+    fun `the four shiba coin slots have medallion art`() {
+        for (tier in listOf("bronze", "silver", "gold", "platinum")) {
+            assertTrue("shiba_coin_$tier" in StudioIconSet.RESOURCE_SLOTS, tier)
+        }
+    }
+
+    @Test
+    fun `every console slot resolves to a bundled png with the launcher's fallbacks`() {
+        val consoles = CustomizableIcons.ALL.filter { it.group == IconSlot.Group.CONSOLE }.map { it.key }
+        assertEquals(47, consoles.size)
+        for (key in consoles) {
+            val path = assertNotNull(StudioIconSet.consoleResource(key), key)
+            assertTrue(StudioIconSet::class.java.classLoader.getResource(path) != null, "$key -> $path missing on classpath")
+        }
+        assertEquals("xmb/sysicon_x360.png", StudioIconSet.consoleResource("sysicon_xbox"))
+        for (id in listOf("cps1", "cps2", "cps3")) {
+            assertEquals("xmb/sysicon_default.png", StudioIconSet.consoleResource("sysicon_$id"), id)
+        }
+        assertEquals("xmb/sysicon_ps3.png", StudioIconSet.consoleResource("sysicon_ps3"))
+        assertEquals(null, StudioIconSet.consoleResource("catbar_games"))
+    }
+
+    @Test
+    fun `console art is drawn as authored, not tinted`() {
+        assertTrue(StudioIconSet.isFullColour("sysicon_ps3"))
+        assertTrue(!StudioIconSet.isFullColour("item_add"))
     }
 }

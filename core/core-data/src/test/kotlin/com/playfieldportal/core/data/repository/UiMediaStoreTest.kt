@@ -61,6 +61,7 @@ class UiMediaStoreTest {
         // case starts empty.
         runBlocking { context.pfpDataStore.edit { it.clear() } }
         File(context.filesDir, UiMediaStore.UI_MEDIA_DIR).deleteRecursively()
+        File(context.filesDir, PfpThemeStore.THEME_MEDIA_DIR).deleteRecursively()
         MediaDisplayNames.clearCache()
         mockkStatic(MediaMetadataRetriever::class)
         // Robolectric's ShadowContentResolver.getType returns null for URIs with no registered
@@ -452,6 +453,39 @@ class UiMediaStoreTest {
         val uri = Uri.parse("content://test/$name")
         shadowOf(context.contentResolver).registerInputStream(uri, ByteArrayInputStream(bytes))
         return uri
+    }
+
+    private fun themeFile(slot: UiMediaSlot, ext: String = "wav") =
+        File(context.filesDir, PfpThemeStore.THEME_MEDIA_DIR).apply { mkdirs() }
+            .let { File(it, "${slot.key}.$ext").apply { writeBytes(ByteArray(8)) } }
+
+    @Test
+    fun `pathFor falls back to the theme media tier when the user has no file`() {
+        val theme = themeFile(UiMediaSlot.SOUND_SCROLL)
+
+        assertEquals(theme.absolutePath, store.pathFor(UiMediaSlot.SOUND_SCROLL))
+    }
+
+    @Test
+    fun `pathFor prefers the user file over the theme file`() {
+        themeFile(UiMediaSlot.SOUND_BACK)
+        wavFile(UiMediaSlot.SOUND_BACK).apply { parentFile?.mkdirs(); writeBytes(ByteArray(8)) }
+
+        assertEquals(wavFile(UiMediaSlot.SOUND_BACK).absolutePath, store.pathFor(UiMediaSlot.SOUND_BACK))
+    }
+
+    @Test
+    fun `pathFor is null when neither tier has a file`() {
+        assertNull(store.pathFor(UiMediaSlot.SOUND_ERROR))
+    }
+
+    @Test
+    fun `assignments and prune ignore theme media files`() = runTest {
+        val theme = themeFile(UiMediaSlot.SOUND_CONFIRM)
+
+        assertTrue(store.assignments().isEmpty())
+        store.pruneOrphans()
+        assertTrue(theme.isFile)
     }
 
     private fun mediaDir() = File(context.filesDir, UiMediaStore.UI_MEDIA_DIR)

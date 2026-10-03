@@ -55,7 +55,7 @@ class PfpThemeStoreV3Test {
 
     @Test
     fun `applying a v3 bundle writes gif sysicon files and sets the motion wallpaper`() = runTest {
-        val store = PfpThemeStore(context)
+        val store = PfpThemeStore(context, PERMISSIVE_PROBE)
         val saved = requireNotNull(store.importBundle(register(v3BundleBytes())))
 
         assertTrue(store.apply(saved.id))
@@ -73,7 +73,7 @@ class PfpThemeStoreV3Test {
 
     @Test
     fun `applying a v3 bundle still clears a previous motion wallpaper when it carries none`() = runTest {
-        val store = PfpThemeStore(context)
+        val store = PfpThemeStore(context, PERMISSIVE_PROBE)
         context.pfpDataStore.edit { it[KEY_MOTION_WALLPAPER] = "/old/wallpaper.mp4" }
         // v2-shaped: icons only, no motion entry.
         val saved = requireNotNull(
@@ -102,7 +102,7 @@ class PfpThemeStoreV3Test {
 
     @Test
     fun `applying a theme never deletes a user pick`() = runTest {
-        val store = PfpThemeStore(context)
+        val store = PfpThemeStore(context, PERMISSIVE_PROBE)
         // A user pick lives in custom-icons/, applied themes in theme-icons/ — separate dirs.
         val userDir = File(context.filesDir, CustomIconStore.CUSTOM_ICONS_DIR).apply { mkdirs() }
         File(userDir, "catbar_music.png").writeBytes(pngBytes())
@@ -118,7 +118,7 @@ class PfpThemeStoreV3Test {
 
     @Test
     fun `saveCurrentLook flattens user pick over applied theme icon per slot`() = runTest {
-        val store = PfpThemeStore(context)
+        val store = PfpThemeStore(context, PERMISSIVE_PROBE)
         val customDir = File(context.filesDir, CustomIconStore.CUSTOM_ICONS_DIR).apply { mkdirs() }
         File(customDir, "catbar_games.gif").writeBytes(gifBytes())
         val themeDir = File(context.filesDir, PfpThemeStore.THEME_ICONS_DIR).apply { mkdirs() }
@@ -135,7 +135,7 @@ class PfpThemeStoreV3Test {
 
     @Test
     fun `saveCurrentLook captures wallpaper accent icon color wave style and layout`() = runTest {
-        val store = PfpThemeStore(context)
+        val store = PfpThemeStore(context, PERMISSIVE_PROBE)
         val wallpaper = File(context.filesDir, "wallpaper").apply { mkdirs() }.resolve("w.jpg")
         wallpaper.writeBytes(pngBytes())
         val layoutJson = XmbLayoutSpecCodec.encode(XmbLayoutSpec(barTopFraction = 0.2f))
@@ -160,7 +160,7 @@ class PfpThemeStoreV3Test {
 
     @Test
     fun `saveCurrentLook excludes the device-specific XmbLayoutAdjust`() = runTest {
-        val store = PfpThemeStore(context)
+        val store = PfpThemeStore(context, PERMISSIVE_PROBE)
         context.pfpDataStore.edit {
             // Stand-in for the per-screen-bucket adjust map's pref. The portable geometry
             // (KEY_THEME_LAYOUT) is the one that travels; the adjust map never does.
@@ -175,7 +175,7 @@ class PfpThemeStoreV3Test {
 
     @Test
     fun `saveCurrentLook of the stock look yields a wave-only theme`() = runTest {
-        val store = PfpThemeStore(context)
+        val store = PfpThemeStore(context, PERMISSIVE_PROBE)
 
         val saved = assertNotNull(store.saveCurrentLook("Stock"))
         val bundle = assertNotNull(PfpThemeCodec.read(File(context.filesDir, "pfpthemes/${saved.id}.pfptheme").readBytes()))
@@ -187,7 +187,7 @@ class PfpThemeStoreV3Test {
 
     @Test
     fun `saveCurrentLook round-trips through apply`() = runTest {
-        val store = PfpThemeStore(context)
+        val store = PfpThemeStore(context, PERMISSIVE_PROBE)
         val customDir = File(context.filesDir, CustomIconStore.CUSTOM_ICONS_DIR).apply { mkdirs() }
         File(customDir, "status_bluetooth.png").writeBytes(pngBytes())
 
@@ -231,6 +231,8 @@ class PfpThemeStoreV3Test {
     }
 
     private companion object {
+        /** Robolectric cannot probe media; these tests use placeholder video bytes and only assert plumbing. */
+        val PERMISSIVE_PROBE: MediaProbe = { _, mime -> MediaFacts(mime, 1920, 1080, 1_000L) }
         val KEY_CUSTOM_WALLPAPER = stringPreferencesKey("display_custom_wallpaper")
         val KEY_MOTION_WALLPAPER = stringPreferencesKey("display_motion_wallpaper")
         val KEY_WAVE_STYLE = stringPreferencesKey("display_wave_style")

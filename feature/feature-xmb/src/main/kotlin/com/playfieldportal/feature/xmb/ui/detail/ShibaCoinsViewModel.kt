@@ -845,7 +845,8 @@ class ShibaCoinsViewModel @Inject constructor(
                         message = "Linked to ${outcome.folderName} (appid ${outcome.appId}).",
                     )
                 }
-                sync()
+                // A clean sync must not wipe the link confirmation it follows.
+                sync(successMessage = "Linked to ${outcome.folderName} (appid ${outcome.appId}).")
             }
             is LocalSteamFolderLinker.LinkOutcome.NeedsKit -> _state.update {
                 it.copy(
@@ -1067,7 +1068,7 @@ class ShibaCoinsViewModel @Inject constructor(
         viewModelScope.launch { achievementRepository.unlink(gameId) }
     }
 
-    fun sync() {
+    fun sync(successMessage: String? = null) {
         viewModelScope.launch {
             _state.update { it.copy(isSyncing = true) }
             val result = when (val t = target) {
@@ -1075,7 +1076,7 @@ class ShibaCoinsViewModel @Inject constructor(
                 is ShibaCoinsTarget.AccountEntry ->
                     achievementRepository.syncAccountEntry(t.provider, t.providerGameId, _state.value.title)
             }
-            _state.update { it.copy(isSyncing = false, message = messageFor(result)) }
+            _state.update { it.copy(isSyncing = false, message = messageFor(result) ?: successMessage) }
         }
     }
 

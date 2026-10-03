@@ -5,6 +5,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -40,12 +41,15 @@ fun ThemedGlyph(
     contentDescription: String?,
     tint: Color,
     modifier: Modifier = Modifier,
+    overrideAlpha: Float = 1f,
 ) {
     // Two-tier precedence: the user's pick wins and survives theme switches; the applied
     // theme's icon is next; the built-in tinted vector is last.
     val icon = LocalCustomIcons.current[slotKey] ?: LocalXmbIconOverrides.current[slotKey]
     if (icon != null) {
-        CustomIconSurface(icon, contentDescription, modifier)
+        // overrideAlpha dims custom art only (a one-slot, two-state glyph — plan A6); the built-in
+        // vector is never dimmed by it.
+        CustomIconSurface(icon, contentDescription, if (overrideAlpha < 1f) modifier.alpha(overrideAlpha) else modifier)
         return
     }
     VectorGlyphSurface(vector = defaultVector, contentDescription = contentDescription, tint = tint, modifier = modifier)

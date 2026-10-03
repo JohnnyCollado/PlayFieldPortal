@@ -58,16 +58,24 @@ class UiMediaStore @Inject constructor(
     data class ImportResult(val ok: Boolean, val message: String? = null)
 
     private val dir = File(context.filesDir, UI_MEDIA_DIR)
+    private val themeDir = File(context.filesDir, PfpThemeStore.THEME_MEDIA_DIR)
 
     // ── UiMediaPaths (the core-ui seam) ──────────────────────────────────────
 
-    /** Absolute path of the user's file for [slot], or null when the slot is on the default. */
+    /**
+     * Absolute path of the file that should play for [slot]: the user's own pick, else the applied
+     * theme's file under `theme-media/`, else null (the built-in default). [assignments] stays
+     * user-only so the settings screens never show a theme's media as the user's choice.
+     */
     override fun pathFor(slot: UiMediaSlot): String? {
         if (!UiMediaSlot.isValidKey(slot.key)) return null
-        return dir.listFiles { f -> f.isFile }
+        return findIn(dir, slot) ?: findIn(themeDir, slot)
+    }
+
+    private fun findIn(directory: File, slot: UiMediaSlot): String? =
+        directory.listFiles { f -> f.isFile }
             ?.firstOrNull { it.nameWithoutExtension == slot.key }
             ?.absolutePath
-    }
 
     /** Bumps on every import/clear so observers (MenuSoundPlayer, overlays) reload. */
     override val stamp: Flow<Long> = context.pfpDataStore.data.map { prefs ->

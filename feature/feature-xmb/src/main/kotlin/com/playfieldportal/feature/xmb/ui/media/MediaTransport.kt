@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
+import com.playfieldportal.core.ui.icons.ThemedGlyph
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -183,6 +184,7 @@ fun TransportButton(
     onClick: () -> Unit,
     size: Dp = 44.dp,
     iconSize: Dp = 26.dp,
+    action: TransportAction? = null,
 ) {
     Box(
         modifier = Modifier
@@ -192,11 +194,16 @@ fun TransportButton(
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = Color.White,
-            modifier = Modifier.size(iconSize),
-        )
+        if (action != null) {
+            // Theme art when the slot is overridden (as authored, untinted), else the white vector.
+            ThemedGlyph(transportSlotKey(action), icon, contentDescription, Color.White, Modifier.size(iconSize))
+        } else {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = Color.White,
+                modifier = Modifier.size(iconSize),
+            )
+        }
     }
 }

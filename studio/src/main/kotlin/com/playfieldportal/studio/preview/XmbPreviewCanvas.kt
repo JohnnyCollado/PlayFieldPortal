@@ -1,29 +1,65 @@
 package com.playfieldportal.studio.preview
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -32,98 +68,270 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isAltPressed
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.isSecondaryPressed
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
-import com.playfieldportal.themekit.XmbLayoutSpec
 import kotlin.math.min
-import kotlin.math.sin
 
 /*
- * A static, faithful frame of the launcher's XMB, replicated from the launcher sources so
+ * A faithful, interactive frame of the launcher's XMB, replicated from the launcher sources so
  * "what you author is what the phone renders". Every constant here mirrors a named source:
  *   background/wave/bloom — feature-xmb XmbBackground.kt
- *   crossbar geometry     — feature-xmb XMBShell.kt + XMBCategoryBar.kt
- *   item rows             — feature-xmb XMBItemList.kt
- *   sizes/fractions       — theme-kit XmbLayoutSpec.DEFAULT (shared, not re-typed)
+ *   crossbar geometry     — feature-xmb XMBShell.kt + XMBCategoryBar.kt (PreviewGeometry)
+ *   item rows + drill     — feature-xmb XMBItemList.kt
+ *   sizes/fractions       — theme-kit XmbLayoutSpec (the theme's own, never re-typed)
+ * The frame is laid out in the launcher's 832x468 dp base; the canvas fit-scales it.
  */
 
-// Design box the frame is authored at; the canvas fit-scales it into whatever space it gets.
-private val DESIGN_WIDTH = 960.dp
-private val DESIGN_HEIGHT = 540.dp
+// Design box the frame is authored at (the launcher's Thor baseline).
+private val DESIGN_WIDTH = PreviewGeometry.BASE_WIDTH.dp
+private val DESIGN_HEIGHT = PreviewGeometry.BASE_HEIGHT.dp
 
-// XMBCategoryBar.kt (constants that are NOT part of the per-theme spec)
-private val CategorySlotWidth = 124.dp
-private val CatBarHeight = 112.dp
+private val CategorySlotWidth = PreviewGeometry.CATEGORY_SLOT.dp
+private val CatBarHeight = PreviewGeometry.CAT_BAR_HEIGHT.dp
+private val RowHeight = PreviewGeometry.ROW_HEIGHT.dp
+
+// XMBCategoryBar.kt / XMBItemList.kt text colours.
 private val LabelInactive = Color(0xCCD8E6FF)
+private val SecondaryText = Color(0xAAC8DAF2)
 private val SelectedLabelShadow = Shadow(color = Color(0x73001627), offset = Offset.Zero, blurRadius = 12f)
+private val SubtitleShadow = Shadow(color = Color.Black.copy(alpha = 0.75f), offset = Offset(0f, 2f), blurRadius = 4f)
 
-// XMBItemList.kt
-private val RowHeight = 88.dp
+// XMBItemList: the tap target is shorter than the row; a drilled card column is icon-only.
+private val TapTargetHeight = 72.dp
+private val VectorGlyphSize = 48.dp
+private val SiblingColumnWidth = (PreviewGeometry.DRILL_CHILD_COLUMN_LEFT - 10f).dp
 
-// XmbBackground.kt
-private const val STATIC_TIME = 2.0f
-private const val TAU = 6.2831853f
+// XmbBackground.kt (the wave maths itself lives in WaveMotion)
 private val WallpaperScrim = Color(0x59000000)
 
+private val FocusRing = Color(0xFFE6E6EA)
+
+/**
+ * The interactive preview: [XmbFrame] fit-scaled into the space it gets, with keyboard navigation
+ * (arrows, Enter, Esc / Backspace, Tab / Y options, X Games filter) once focused. Right-click opens
+ * the options too. Click to focus; Esc at the root, or a click elsewhere in the Studio, releases
+ * focus. [nav] is hoisted so the icon picker can follow it. While [adjustOverlay] is open the keys
+ * drive it instead (arrows move, Q / E scale, R reset, S sliders, Enter save, Esc cancel).
+ *
+ * [live] makes the frame move like the device (animated wave, focused GIF icons, motion wallpaper,
+ * a playing boot sequence); null renders it still. While a boot sequence plays, any key ends it.
+ */
 @Composable
-fun XmbPreviewCanvas(model: XmbPreviewModel, modifier: Modifier = Modifier) {
+fun XmbPreviewCanvas(
+    model: XmbPreviewModel,
+    nav: PreviewNavState,
+    onNav: (PreviewNavAction) -> Unit,
+    modifier: Modifier = Modifier,
+    adjustOverlay: AdjustOverlayState? = null,
+    onAdjust: (AdjustAction) -> Unit = {},
+    live: PreviewLiveSpec? = null,
+    onBootFinished: () -> Unit = {},
+) {
+    val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    var focused by remember { mutableStateOf(false) }
+    val currentOnNav by rememberUpdatedState(onNav)
+    // The overlay takes the keyboard the moment it opens, and the search field hands it back on close.
+    LaunchedEffect(adjustOverlay != null) { if (adjustOverlay != null) runCatching { focusRequester.requestFocus() } }
+    var wasSearching by remember { mutableStateOf(false) }
+    LaunchedEffect(nav.search != null) {
+        if (wasSearching && nav.search == null) runCatching { focusRequester.requestFocus() }
+        wasSearching = nav.search != null
+    }
     BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
         val scale = min(maxWidth / DESIGN_WIDTH, maxHeight / DESIGN_HEIGHT)
         Box(
-            Modifier
-                .requiredSize(DESIGN_WIDTH, DESIGN_HEIGHT)
-                .graphicsLayer(scaleX = scale, scaleY = scale)
-                .clipToBounds(),
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(DESIGN_WIDTH * scale, DESIGN_HEIGHT * scale)
+                .pointerInput(Unit) {
+                    // Initial pass: take focus on any press without consuming it for the rows.
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            if (event.type == PointerEventType.Press) {
+                                focusRequester.requestFocus()
+                                if (event.buttons.isSecondaryPressed) currentOnNav(PreviewNavAction.OpenOptions)
+                            }
+                        }
+                    }
+                }
+                .focusRequester(focusRequester)
+                .onFocusChanged { focused = it.hasFocus }
+                .onKeyEvent { event ->
+                    if (event.type != KeyEventType.KeyDown || event.isCtrlPressed || event.isMetaPressed || event.isAltPressed) {
+                        return@onKeyEvent false
+                    }
+                    if (live?.boot?.isPlaying == true) {
+                        onBootFinished()
+                        return@onKeyEvent true
+                    }
+                    if (adjustOverlay != null) {
+                        val adjust = AdjustOverlay.actionFor(event.key) ?: return@onKeyEvent false
+                        onAdjust(adjust)
+                        return@onKeyEvent true
+                    }
+                    val action = PreviewNav.actionFor(event.key) ?: return@onKeyEvent false
+                    // The search field owns typing; only its Enter / Esc reach the reducer from here.
+                    if (nav.search != null && action != PreviewNavAction.Enter && action != PreviewNavAction.Back) {
+                        return@onKeyEvent false
+                    }
+                    if (action == PreviewNavAction.Back && !PreviewNav.canGoBack(nav)) {
+                        // Esc with nowhere to go back to hands the keyboard back to the Studio.
+                        if (event.key == Key.Escape) focusManager.clearFocus()
+                    } else {
+                        onNav(action)
+                    }
+                    true
+                }
+                .focusable()
+                .drawWithContent {
+                    drawContent()
+                    if (focused) drawRect(FocusRing, style = Stroke(width = 3.dp.toPx()))
+                },
         ) {
-            XmbFrame(model)
+            Box(
+                Modifier
+                    .requiredSize(DESIGN_WIDTH, DESIGN_HEIGHT)
+                    .graphicsLayer(scaleX = scale, scaleY = scale)
+                    .clipToBounds(),
+            ) {
+                XmbFrame(model, nav, onNav, adjustOverlay, onAdjust, live, onBootFinished)
+            }
         }
     }
 }
 
-/** The full frame at design size — also rendered offscreen for the bundle's preview.png. */
+/**
+ * The full frame at design size — also rendered offscreen for the bundle's preview.png, where the
+ * default [nav] is the static Home frame (animation state starts at its target, so nothing moves).
+ */
 @Composable
-fun XmbFrame(model: XmbPreviewModel) {
+fun XmbFrame(
+    model: XmbPreviewModel,
+    nav: PreviewNavState = PreviewNavState.HOME,
+    onNav: (PreviewNavAction) -> Unit = {},
+    adjustOverlay: AdjustOverlayState? = null,
+    onAdjust: (AdjustAction) -> Unit = {},
+    live: PreviewLiveSpec? = null,
+    onBootFinished: () -> Unit = {},
+) {
+    val runtime = rememberPreviewLive(live, model.waveStyle, hasWallpaper = model.wallpaper != null)
+    CompositionLocalProvider(LocalPreviewLive provides runtime) {
+        XmbFrameBody(model, nav, onNav, adjustOverlay, onAdjust, runtime, onBootFinished)
+    }
+}
+
+@Composable
+private fun XmbFrameBody(
+    model: XmbPreviewModel,
+    nav: PreviewNavState,
+    onNav: (PreviewNavAction) -> Unit,
+    adjustOverlay: AdjustOverlayState?,
+    onAdjust: (AdjustAction) -> Unit,
+    live: PreviewLive?,
+    onBootFinished: () -> Unit,
+) {
     Box(Modifier.fillMaxSize()) {
         if (model.wallpaper != null) {
-            // WallpaperBackground: image fills, plus the legibility scrim. No wave.
+            // WallpaperBackground: image fills, plus the legibility scrim. No wave. The poster is
+            // always underneath; the motion loop draws over it while it plays.
             Image(
                 bitmap = model.wallpaper,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
             )
+            live?.spec?.motionFile?.let { MotionWallpaperLayer(live, it) }
             Box(Modifier.fillMaxSize().background(WallpaperScrim))
         } else {
-            WaveBackground(model)
+            // Not live (preview.png): the static pose, whatever the style.
+            val params = live?.wave ?: WaveMotion.paramsFor(model.waveStyle)
+            WaveBackground(model, params) { WaveMotion.timeSeconds(params, live?.elapsedMs?.longValue) }
         }
-        when (model.mode) {
-            com.playfieldportal.studio.PreviewMode.HOME -> {
-                XmbCross(model)
-                StatusStrip(model)
-            }
-            com.playfieldportal.studio.PreviewMode.CONTEXT_MENU -> {
-                XmbCross(model)
-                StatusStrip(model)
-                ContextMenuFrame(model)
-            }
-            com.playfieldportal.studio.PreviewMode.FULLSCREEN_MENU -> {
-                FullscreenMenuFrame(model)
+        LayoutScaled(model) {
+            XmbCross(model, nav, onNav)
+            Pic0Logo(model, nav)
+            StatusStrip(model, PreviewNav.statusLabel(nav))
+            nav.search?.let {
+                GameSearchBox(
+                    text = nav.filter.term,
+                    onTextChange = { onNav(PreviewNavAction.SetSearch(it)) },
+                    onConfirm = { onNav(PreviewNavAction.Enter) },
+                    onCancel = { onNav(PreviewNavAction.Back) },
+                )
             }
         }
+        NavMessage(nav)
+        // Menus open in place over the frame, instantly, like the launcher's PspContextMenuOverlay.
+        FlyoutPanel(model, nav, onNav)
+        if (adjustOverlay != null) AdjustOverlayPanel(adjustOverlay, onAdjust)
+        if (live?.motionFellBack == true) {
+            PlaysOnDeviceBadge(
+                "Preview shows the poster \u2014 plays on the device",
+                Modifier.align(Alignment.BottomStart).padding(start = 12.dp, bottom = 12.dp),
+            )
+        }
+        live?.spec?.boot?.takeIf { it.isPlaying }?.let { BootOverlay(it, model, onBootFinished) }
     }
 }
 
+/**
+ * The launcher multiplies its density by the layout-adjust scale, so the cross lays out in a
+ * (832 / scale) x (468 / scale) dp box that is then magnified back over the frame. Same here:
+ * lay out in that box, scale it from the top-left corner. The wallpaper stays outside.
+ */
 @Composable
-private fun WaveBackground(model: XmbPreviewModel) {
+private fun LayoutScaled(model: XmbPreviewModel, content: @Composable BoxScope.() -> Unit) {
+    val adjust = model.layoutAdjust
+    val (w, h) = PreviewGeometry.layoutSize(adjust)
+    Box(
+        Modifier
+            .layout { measurable, constraints ->
+                val placeable = measurable.measure(Constraints.fixed(w.dp.roundToPx(), h.dp.roundToPx()))
+                layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(0, 0) }
+            }
+            .graphicsLayer(scaleX = adjust.scale, scaleY = adjust.scale, transformOrigin = TransformOrigin(0f, 0f)),
+        content = content,
+    )
+}
+
+/** XmbBackground: the diagonal gradient, two folds, and the off-centre bloom. [time] is read while drawing. */
+@Composable
+internal fun WaveBackground(model: XmbPreviewModel, params: WaveParams, time: () -> Float) {
     // The launcher's exact gradient call — including its default (diagonal) direction.
     val gradient = Brush.linearGradient(
         colorStops = arrayOf(
@@ -133,14 +341,10 @@ private fun WaveBackground(model: XmbPreviewModel) {
             1.00f to model.backgroundBottom,
         ),
     )
-    val alphaScale = if (model.reducedWave) 0.5f else 1f
-    val ampScale = if (model.reducedWave) 0.65f else 1f
     Box(Modifier.fillMaxSize().background(gradient)) {
         Canvas(Modifier.fillMaxSize()) {
-            // FallbackWave frozen at the launcher's static pose.
-            val amp = 0.05f * ampScale
-            drawFold(STATIC_TIME, base01 = 0.63f, amp01 = amp * 0.9f, freq = 0.80f, phase = 1.7f, drift = -0.38f, sheet = 0.090f * alphaScale, edge = 0.125f * alphaScale)
-            drawFold(STATIC_TIME, base01 = 0.75f, amp01 = amp * 1.2f, freq = 0.42f, phase = 3.1f, drift = 0.30f, sheet = 0.105f * alphaScale, edge = 0.145f * alphaScale)
+            val t = time()
+            for (fold in WaveMotion.FOLDS) drawFold(fold, params, t)
             // Soft off-centre light bloom.
             drawRect(
                 brush = Brush.radialGradient(
@@ -153,11 +357,8 @@ private fun WaveBackground(model: XmbPreviewModel) {
     }
 }
 
-// Verbatim port of XmbBackground.drawFold.
-private fun DrawScope.drawFold(
-    t: Float, base01: Float, amp01: Float, freq: Float, phase: Float, drift: Float,
-    sheet: Float, edge: Float,
-) {
+// Port of XmbBackground.drawFold; the crest maths is WaveMotion's.
+private fun DrawScope.drawFold(fold: WaveMotion.Fold, params: WaveParams, t: Float) {
     val w = size.width
     val h = size.height
     val n = 48
@@ -166,115 +367,368 @@ private fun DrawScope.drawFold(
     fillPath.moveTo(0f, h)
     for (i in 0..n) {
         val xx = i / n.toFloat()
-        val y = (base01 + amp01 * sin(xx * TAU * freq + t * drift + phase)) * h
+        val y = WaveMotion.crestY01(fold, params, xx, t) * h
         val x = xx * w
-        if (i == 0) { crestPath.moveTo(x, y); fillPath.lineTo(x, y) } else { crestPath.lineTo(x, y); fillPath.lineTo(x, y) }
+        if (i == 0) crestPath.moveTo(x, y) else crestPath.lineTo(x, y)
+        fillPath.lineTo(x, y)
     }
     fillPath.lineTo(w, h)
     fillPath.close()
-    drawPath(fillPath, color = Color.White.copy(alpha = sheet))
+    val edge = WaveMotion.edgeAlpha(fold, params)
+    drawPath(fillPath, color = Color.White.copy(alpha = WaveMotion.sheetAlpha(fold, params)))
     drawPath(crestPath, color = Color.White.copy(alpha = edge * 0.5f), style = Stroke(width = h * 0.022f))
     drawPath(crestPath, color = Color.White.copy(alpha = edge), style = Stroke(width = h * 0.006f))
 }
 
+/**
+ * The XMB cross (XMBShell): category bar drawn on top of the item column. Position is instant;
+ * the bar's selection slide, category icon size/alpha and row scale/alpha are springs; the item
+ * list swaps through the launcher's AnimatedContent. Drilled in, the bar truncates, the cross
+ * pins to the left margin, and a parent card column plus the children replace the item list.
+ */
 @Composable
-private fun XmbCross(model: XmbPreviewModel) {
+private fun XmbCross(model: XmbPreviewModel, nav: PreviewNavState, onNav: (PreviewNavAction) -> Unit) {
     val spec = model.layout
-    val xmbLeftAnchor = CategorySlotWidth + spec.leftAnchorExtraDp.dp
-    val leadingIconCenter = 18.dp + spec.itemIconSlotDp.dp / 2
+    val adjust = model.layoutAdjust
+    val (layoutW, layoutH) = PreviewGeometry.layoutSize(adjust)
+    val drilled = nav.isDrilled
+    val barTop = PreviewGeometry.barTop(spec, adjust, layoutH).dp
+    val anchorTop = PreviewGeometry.anchorTop(spec, adjust, layoutH).dp
+    val startPad = PreviewGeometry.startPad(spec, drilled, adjust, layoutW).dp
+    val view = PreviewNav.view(nav)
+
     Box(Modifier.fillMaxSize().padding(top = spec.contentTopPaddingDp.dp)) {
-        BoxWithConstraints(Modifier.fillMaxSize()) {
-            val barTop = maxHeight * spec.barTopFraction
-            val anchorTop = barTop + CatBarHeight
-
-            // ── Category bar: the selected slot seats at the left anchor; earlier
-            //    categories tile leftward (mostly off-screen), later ones rightward. ──
-            val barStart = xmbLeftAnchor - CategorySlotWidth * SampleContent.SELECTED_CATEGORY
-            Row(Modifier.offset(x = barStart, y = barTop).height(CatBarHeight)) {
-                SampleContent.categories.forEachIndexed { index, category ->
-                    CategoryCell(model, category, selected = index == SampleContent.SELECTED_CATEGORY)
-                }
+        if (drilled) {
+            val siblings = view.siblings.orEmpty()
+            Box(Modifier.align(Alignment.TopStart).fillMaxSize().padding(start = startPad, end = 24.dp)) {
+                // LEFT: the parent list, icon-only, with the accent ◀ trailing the drilled-into card.
+                ItemList(
+                    model, siblings, selectedIndex = view.siblingIndex,
+                    barTop = barTop, anchorTop = anchorTop, showLabels = false, cursorOnSelected = true,
+                    onClick = { i -> if (i == view.siblingIndex) onNav(PreviewNavAction.ClickSibling) },
+                    modifier = Modifier.fillMaxHeight().width(SiblingColumnWidth),
+                )
+                // RIGHT: the children, one continuous column seated on the same anchor line.
+                ChildColumn(
+                    model, view.rows, selectedIndex = view.selected, anchorTop = anchorTop,
+                    onClick = { onNav(PreviewNavAction.ClickRow(it)) },
+                    modifier = Modifier.fillMaxSize().padding(start = PreviewGeometry.DRILL_CHILD_COLUMN_LEFT.dp),
+                )
             }
+        } else {
+            AnimatedContent(
+                targetState = nav.category,
+                transitionSpec = {
+                    (fadeIn(tween(220)) + slideInVertically(tween(260)) { it / 8 })
+                        .togetherWith(fadeOut(tween(160)) + slideOutVertically(tween(180)) { -it / 10 })
+                        .using(SizeTransform(clip = false))
+                },
+                label = "previewCategoryItems",
+                modifier = Modifier.align(Alignment.TopStart).fillMaxSize().padding(start = startPad, end = 24.dp),
+            ) { category ->
+                // During a switch both lists compose; only the settled category carries the cursor.
+                val settled = category == nav.category
+                ItemList(
+                    model,
+                    if (settled) view.rows else SampleContent.rootRows(category),
+                    selectedIndex = if (settled) view.selected else -1,
+                    barTop = barTop, anchorTop = anchorTop, showLabels = true, cursorOnSelected = false,
+                    onClick = { onNav(PreviewNavAction.ClickRow(it)) },
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+        }
 
-            // ── Item column under the caticon (XMBShell startPad math). ──
-            val startPad = xmbLeftAnchor + (CategorySlotWidth / 2) - leadingIconCenter
-            Column(Modifier.offset(x = startPad, y = anchorTop)) {
-                SampleContent.rows.forEachIndexed { index, row ->
-                    ItemRow(model, row, selected = index == SampleContent.SELECTED_ROW)
-                }
+        CategoryBar(model, nav, onNav, layoutW, Modifier.align(Alignment.TopStart).offset(y = barTop))
+    }
+}
+
+@Composable
+private fun CategoryBar(
+    model: XmbPreviewModel,
+    nav: PreviewNavState,
+    onNav: (PreviewNavAction) -> Unit,
+    layoutWidth: Float,
+    modifier: Modifier,
+) {
+    val spec = model.layout
+    val drilled = nav.isDrilled
+    val visible = PreviewGeometry.visibleCategoryCount(nav.category, SampleContent.categories.size, drilled)
+    // The anchor snaps with the drill; only the selection slide glides (XMBCategoryBar).
+    val anchor = PreviewGeometry.barLeft(spec, selected = 0, drilled, model.layoutAdjust, layoutWidth).dp
+    val slide by animateDpAsState(
+        targetValue = PreviewGeometry.barSlide(nav.category.coerceIn(0, visible - 1)).dp,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "previewCategorySlide",
+    )
+    Box(modifier.fillMaxWidth().height(CatBarHeight).clipToBounds()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            // Measured unbounded: the filmstrip is wider than the frame and the Box clips it.
+            modifier = Modifier.offset(x = anchor + slide).wrapContentWidth(align = Alignment.Start, unbounded = true),
+        ) {
+            SampleContent.categories.take(visible).forEachIndexed { index, category ->
+                CategoryCell(
+                    model, category, selected = index == nav.category,
+                    onClick = { onNav(PreviewNavAction.ClickCategory(index)) },
+                )
             }
         }
     }
 }
 
 @Composable
-private fun CategoryCell(model: XmbPreviewModel, category: SampleContent.Category, selected: Boolean) {
+private fun CategoryCell(
+    model: XmbPreviewModel,
+    category: SampleContent.Category,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
     val spec = model.layout
-    val iconSize = if (selected) spec.categoryIconSelectedDp.dp else spec.categoryIconDp.dp
+    val iconSize by animateDpAsState(
+        targetValue = (if (selected) spec.categoryIconSelectedDp else spec.categoryIconDp).dp,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "previewCategoryIconSize",
+    )
+    val iconAlpha by animateFloatAsState(
+        targetValue = model.legibility.categoryIconAlpha(selected),
+        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        label = "previewCategoryAlpha",
+    )
+    // Only the active category shows its label; it keeps its slot so icons never shift.
+    val labelAlpha by animateFloatAsState(
+        targetValue = if (selected) 1f else 0f,
+        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        label = "previewCategoryLabelAlpha",
+    )
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(CategorySlotWidth).height(CatBarHeight).padding(top = 4.dp),
+        modifier = Modifier
+            .width(CategorySlotWidth)
+            .height(CatBarHeight)
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
+            .padding(top = 4.dp),
     ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.size(82.dp).alpha(if (selected) 1f else 0.58f),
-        ) {
-            SlotIcon(model, category.slotKey, Modifier.size(iconSize))
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(82.dp).alpha(iconAlpha)) {
+            SlotIcon(model, category.slotKey, Modifier.size(iconSize), focused = selected)
         }
-        Text(
+        LegibleLabel(
             text = category.label,
+            protection = model.legibility.text,
             color = if (selected) Color.White else LabelInactive,
             fontSize = if (selected) 15.sp else 13.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            style = if (selected) TextStyle(shadow = SelectedLabelShadow) else TextStyle.Default,
+            shadow = if (selected) SelectedLabelShadow else null,
             textAlign = TextAlign.Center,
-            maxLines = 1,
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp).alpha(if (selected) 1f else 0.82f),
+            fillWidth = true,
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp).alpha(labelAlpha),
         )
     }
 }
 
+/**
+ * XMBItemList: the selected row seats directly under the bar with the rows after it below, and
+ * only the bottom half of the previous row shows above the bar. Rows are placed, not scrolled, so
+ * position is instant — only each row's scale and alpha animate.
+ */
 @Composable
-private fun ItemRow(model: XmbPreviewModel, row: SampleContent.Row, selected: Boolean) {
-    val spec = model.layout
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .height(RowHeight)
-            .graphicsLayer(
-                scaleX = if (selected) 1.06f else 0.9f,
-                scaleY = if (selected) 1.06f else 0.9f,
-                alpha = if (selected) 1f else 0.68f,
-                // Scale pivots on the leading-icon centre so icons stay on the caticon line.
-                transformOrigin = TransformOrigin(0f, 0.5f),
-            )
-            .padding(horizontal = 18.dp),
-    ) {
-        Box(Modifier.size(spec.itemIconSlotDp.dp), contentAlignment = Alignment.Center) {
-            SlotIcon(model, row.slotKey, Modifier.size(spec.itemIconDp.dp * 0.75f))
+private fun ItemList(
+    model: XmbPreviewModel,
+    rows: List<SampleContent.Row>,
+    selectedIndex: Int,
+    barTop: Dp,
+    anchorTop: Dp,
+    showLabels: Boolean,
+    cursorOnSelected: Boolean,
+    onClick: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    BoxWithConstraints(modifier.fillMaxWidth().fillMaxHeight().clipToBounds()) {
+        val rowsBelow = ((maxHeight.value - anchorTop.value) / RowHeight.value).toInt().coerceAtLeast(1)
+        val sel = selectedIndex.coerceIn(0, (rows.size - 1).coerceAtLeast(0))
+        if (rows.isNotEmpty()) {
+            Column(Modifier.fillMaxWidth().offset(y = anchorTop)) {
+                for (i in sel until minOf(rows.size, sel + rowsBelow)) {
+                    ItemRow(
+                        model, rows[i], selected = i == selectedIndex, showLabel = showLabels,
+                        trailingCursor = cursorOnSelected && i == selectedIndex,
+                        onClick = { onClick(i) },
+                        modifier = Modifier.fillMaxWidth().height(RowHeight),
+                    )
+                }
+            }
         }
-        Spacer(Modifier.width(spec.itemTextStartGapDp.dp))
-        Column {
-            Text(
-                text = row.title,
-                color = Color.White,
-                fontSize = if (selected) spec.itemTextSelectedSp.sp else spec.itemTextSp.sp,
-                fontWeight = FontWeight.Normal,
-                maxLines = 1,
-            )
-            if (row.subtitle != null && selected) {
-                Text(text = row.subtitle, color = Color(0xCCD8E6FF), fontSize = 12.sp, maxLines = 1)
+        if (selectedIndex in 1..rows.lastIndex) {
+            // A half-row window seated above the bar; the full row inside is bottom-aligned so its
+            // top half clips off and it reads as coming in from behind the crossbar.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(RowHeight / 2)
+                    .offset(y = barTop - RowHeight * model.layout.previousItemRiseRows)
+                    .clipToBounds(),
+                contentAlignment = Alignment.BottomStart,
+            ) {
+                ItemRow(
+                    model, rows[selectedIndex - 1], selected = false, showLabel = showLabels, trailingCursor = false,
+                    onClick = { onClick(selectedIndex - 1) },
+                    modifier = Modifier.fillMaxWidth().requiredHeight(RowHeight),
+                )
             }
         }
     }
 }
 
+/** XmbGameColumn: every child in one continuous column, the selected one on the anchor line. */
 @Composable
-private fun androidx.compose.foundation.layout.BoxScope.StatusStrip(model: XmbPreviewModel) {
+private fun ChildColumn(
+    model: XmbPreviewModel,
+    rows: List<SampleContent.Row>,
+    selectedIndex: Int,
+    anchorTop: Dp,
+    onClick: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    BoxWithConstraints(modifier.fillMaxSize().clipToBounds()) {
+        if (rows.isEmpty()) return@BoxWithConstraints
+        val sel = selectedIndex.coerceIn(0, rows.lastIndex)
+        val above = (anchorTop.value / RowHeight.value).toInt() + 2
+        val below = ((maxHeight.value - anchorTop.value) / RowHeight.value).toInt() + 2
+        for (i in (sel - above).coerceAtLeast(0)..(sel + below).coerceAtMost(rows.lastIndex)) {
+            ItemRow(
+                model, rows[i], selected = i == selectedIndex, showLabel = true, trailingCursor = false,
+                onClick = { onClick(i) },
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .fillMaxWidth()
+                    .height(RowHeight)
+                    .offset(y = anchorTop + RowHeight * (i - sel)),
+            )
+        }
+    }
+}
+
+/** XmbVerticalListRow: spring scale 1.06/0.9 about the leading-icon centre, alpha .68 when unselected. */
+@Composable
+private fun ItemRow(
+    model: XmbPreviewModel,
+    row: SampleContent.Row,
+    selected: Boolean,
+    showLabel: Boolean,
+    trailingCursor: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val spec = model.layout
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1.06f else 0.9f,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "previewRowScale",
+    )
+    val rowAlpha by animateFloatAsState(
+        targetValue = if (selected) 1f else 0.68f,
+        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        label = "previewRowAlpha",
+    )
+    val iconCenterPx = with(LocalDensity.current) { PreviewGeometry.leadingIconCenter(spec).dp.toPx() }
+    var rowWidthPx by remember { mutableFloatStateOf(0f) }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .onSizeChanged { rowWidthPx = it.width.toFloat() }
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                // Pivot on the leading-icon centre so icons stay on the caticon line while scaling.
+                if (rowWidthPx > 0f) transformOrigin = TransformOrigin((iconCenterPx / rowWidthPx).coerceIn(0f, 1f), 0.5f)
+            }
+            .alpha(rowAlpha),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .height(TapTargetHeight)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
+                .padding(horizontal = 18.dp),
+        ) {
+            // Raster art (memory cards, console art) fills the spec's glyph size; vector glyphs are 48 dp.
+            val raster = row.slotKey in StudioIconSet.RESOURCE_SLOTS || row.slotKey.startsWith("sysicon_")
+            Box(Modifier.width(spec.itemIconSlotDp.dp), contentAlignment = Alignment.Center) {
+                SlotIcon(model, row.slotKey, Modifier.size(if (raster) spec.itemIconDp.dp else VectorGlyphSize), focused = selected)
+            }
+            if (showLabel) {
+                Column(Modifier.weight(1f, fill = false).padding(start = spec.itemTextStartGapDp.dp)) {
+                    LegibleLabel(
+                        text = row.title,
+                        protection = model.legibility.text,
+                        color = if (selected) Color.White else LabelInactive,
+                        fontSize = if (selected) spec.itemTextSelectedSp.sp else spec.itemTextSp.sp,
+                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        shadow = if (selected) SelectedLabelShadow else null,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (row.subtitle != null) {
+                        LegibleLabel(
+                            text = row.subtitle,
+                            protection = model.legibility.text,
+                            color = SecondaryText,
+                            fontSize = if (selected) 12.sp else 11.sp,
+                            shadow = SubtitleShadow,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 1.dp),
+                        )
+                    }
+                }
+            }
+            if (trailingCursor) {
+                Text(
+                    text = "◀",
+                    color = model.drillCursor,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 12.dp),
+                )
+            }
+        }
+    }
+}
+
+/** What Enter said on a leaf: the preview opens nothing, so it says where the real thing happens. */
+@Composable
+private fun BoxScope.NavMessage(nav: PreviewNavState) {
+    val message = nav.message ?: return
+    Text(
+        text = message,
+        color = Color.White,
+        fontSize = 13.sp,
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .padding(bottom = 14.dp)
+            .background(Color(0x99000000), RoundedCornerShape(14.dp))
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+    )
+}
+
+@Composable
+private fun BoxScope.StatusStrip(model: XmbPreviewModel, filterLabel: String?) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 16.dp),
     ) {
+        // The Games filter's chip: the one place a short column says why it is short.
+        if (filterLabel != null) {
+            Text(
+                text = filterLabel,
+                color = Color.White.copy(alpha = 0.9f),
+                fontSize = 12.sp,
+                maxLines = 1,
+                modifier = Modifier
+                    .background(Color(0x59000000), RoundedCornerShape(10.dp))
+                    .padding(horizontal = 10.dp, vertical = 2.dp),
+            )
+            Spacer(Modifier.width(10.dp))
+        }
         Text("21:30", color = Color.White, fontSize = 13.sp)
         Spacer(Modifier.width(8.dp))
         SlotIcon(model, "status_bluetooth", Modifier.size(14.dp))
@@ -284,138 +738,129 @@ private fun androidx.compose.foundation.layout.BoxScope.StatusStrip(model: XmbPr
 }
 
 /**
- * Context-menu preview — replicates ContextMenuOverlay.kt: right-edge 300dp column over a
- * light scrim; panel backdrop = waveColor@75%; selected row carries the accent cursor glow
- * (transparent → menuCursorEdge@40% left-to-right); destructive rows stay red.
- */
-@Composable
-private fun androidx.compose.foundation.layout.BoxScope.ContextMenuFrame(model: XmbPreviewModel) {
-    Box(Modifier.fillMaxSize().background(Color(0x40000000)))
-    Column(
-        Modifier
-            .align(Alignment.CenterEnd)
-            .width(300.dp)
-            .fillMaxSize()
-            .background(model.menuPanelBackdrop)
-            .padding(horizontal = 20.dp, vertical = 24.dp),
-    ) {
-        Text(
-            "All Videos",
-            color = Color.White,
-            fontSize = 17.sp,
-            fontWeight = FontWeight.SemiBold,
-            style = TextStyle(shadow = SelectedLabelShadow),
-        )
-        Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.3f)).padding(top = 8.dp))
-        Spacer(Modifier.height(12.dp))
-        val items = listOf("Play", "Add to Playlist", "View Details", "Remove from Library")
-        items.forEachIndexed { index, label ->
-            val selected = index == 0
-            val destructive = index == items.lastIndex
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .background(
-                        if (selected) {
-                            Brush.horizontalGradient(
-                                colors = listOf(Color.Transparent, model.menuCursorEdge.copy(alpha = 0.4f)),
-                            )
-                        } else {
-                            Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
-                        },
-                    )
-                    .padding(vertical = 12.dp),
-            ) {
-                Text(
-                    label,
-                    color = when {
-                        destructive && selected -> Color(0xFFFF7070)
-                        destructive -> Color(0xAAFF7070)
-                        selected -> Color.White
-                        else -> Color(0xCCFFFFFF)
-                    },
-                    fontSize = if (selected) 16.sp else 15.sp,
-                )
-            }
-        }
-    }
-}
-
-/**
- * Fullscreen-menu preview — replicates MusicBrowserScreen.kt's frame: full gradient
- * backdrop (backgroundTop@72% → backgroundBottom@90%) over the wave, header with a 24sp
- * Light title, accent-bordered search field, sample rows.
- */
-@Composable
-private fun FullscreenMenuFrame(model: XmbPreviewModel) {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        model.backgroundTop.copy(alpha = 0.72f),
-                        model.backgroundBottom.copy(alpha = 0.90f),
-                    ),
-                ),
-            )
-            .padding(horizontal = 28.dp, vertical = 20.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("‹", color = Color.White, fontSize = 26.sp)
-            Spacer(Modifier.width(14.dp))
-            Text("Music", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Light)
-        }
-        Spacer(Modifier.height(14.dp))
-        // Search field: white@14% fill, menuCursorEdge focused border.
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(38.dp)
-                .background(Color.White.copy(alpha = 0.14f), RoundedCornerShape(19.dp))
-                .border(1.dp, model.menuCursorEdge, RoundedCornerShape(19.dp))
-                .padding(horizontal = 16.dp),
-            contentAlignment = Alignment.CenterStart,
-        ) {
-            Text("Search", color = Color(0xFFC9C7E8), fontSize = 13.sp)
-        }
-        Spacer(Modifier.height(16.dp))
-        listOf(
-            "Journey of Dreams" to "Crossbar Kids",
-            "Midnight Wave" to "Portal Sound Team",
-            "Memory Card Blues" to "Save Point",
-        ).forEach { (title, artist) ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 7.dp),
-            ) {
-                Box(Modifier.size(40.dp).background(Color(0xFF1B1B27), RoundedCornerShape(6.dp)))
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    Text(title, color = Color.White, fontSize = 14.sp, maxLines = 1)
-                    Text(artist, color = Color(0xFFC9C7E8), fontSize = 11.sp, maxLines = 1)
-                }
-            }
-        }
-    }
-}
-
-/**
  * One draw path for every slot: a custom icon renders as-authored (untinted, like PSP theme
- * icons); the built-in glyph follows the unified icon color via SrcIn — the PortalIcon rule.
+ * icons); the built-in glyph follows the unified icon color via SrcIn — the PortalIcon rule. With an
+ * icon-legibility style set, a matte copy sits behind the glyph (IconMatteSurface), one draw node.
+ * A GIF override animates only while [focused] in a live preview; otherwise it is its frame 1.
  */
 @Composable
-private fun SlotIcon(model: XmbPreviewModel, key: String, modifier: Modifier) {
+private fun SlotIcon(model: XmbPreviewModel, key: String, modifier: Modifier, focused: Boolean = false) {
     val override = model.iconOverrides[key]
-    if (override != null) {
-        Image(bitmap = override, contentDescription = null, modifier = modifier)
-    } else {
-        val painter: Painter = StudioIconSet.defaultPainter(key)
+    val live = LocalPreviewLive.current
+    val animation = rememberGifAnimation(if (GifFrames.animates(key, focused, live?.spec)) live?.spec?.iconGifs?.get(key) else null)
+    val painter: Painter = when {
+        animation != null && live != null -> remember(animation, live.elapsedMs) { GifPainter(animation, live.elapsedMs) }
+        override != null -> remember(override) { BitmapPainter(override) }
+        else -> StudioIconSet.defaultPainter(key)
+    }
+    val glyphTint = if (override != null || StudioIconSet.isFullColour(key)) null else model.iconTint
+    val matte = model.legibility.matteColor(glyphTint ?: Color.White)
+    if (matte == null) {
         Image(
             painter = painter,
             contentDescription = null,
-            colorFilter = ColorFilter.tint(model.iconTint, BlendMode.SrcIn),
+            colorFilter = glyphTint?.let { ColorFilter.tint(it, BlendMode.SrcIn) },
             modifier = modifier,
+        )
+        return
+    }
+    val offsets = model.legibility.matteOffsets()
+    val radiusPx = with(LocalDensity.current) { model.legibility.matteRadiusDp.dp.toPx() }
+    val matteFilter = ColorFilter.tint(matte, BlendMode.SrcIn)
+    val glyphFilter = glyphTint?.let { ColorFilter.tint(it, BlendMode.SrcIn) }
+    Box(
+        modifier.drawWithCache {
+            // Fit exactly the way ContentScale would, so every matte copy sits on the glyph's own contour.
+            val intrinsic = painter.intrinsicSize
+            val dst = if (intrinsic.isSpecified) {
+                val factor = ContentScale.Fit.computeScaleFactor(intrinsic, size)
+                Size(intrinsic.width * factor.scaleX, intrinsic.height * factor.scaleY)
+            } else {
+                size
+            }
+            val origin = Offset((size.width - dst.width) / 2f, (size.height - dst.height) / 2f)
+            onDrawBehind {
+                for (o in offsets) {
+                    translate(origin.x + o.x * radiusPx, origin.y + o.y * radiusPx) {
+                        with(painter) { draw(dst, colorFilter = matteFilter) }
+                    }
+                }
+                translate(origin.x, origin.y) { with(painter) { draw(dst, colorFilter = glyphFilter) } }
+            }
+        },
+    )
+}
+
+private val PlatePadX = 6.dp
+private val PlatePadY = 1.dp
+private val PlateRadius = 6.dp
+
+/**
+ * A label under the theme's text-legibility style: a drop shadow (the launcher's default and AUTO
+ * floor), none, a stroked outline copy behind the fill, or a text-shaped plate drawn behind it with
+ * no extra layout. [shadow] is the label's own shadow; styles other than SHADOW drop it.
+ */
+@Composable
+private fun LegibleLabel(
+    text: String,
+    protection: LabelProtection,
+    color: Color,
+    fontSize: TextUnit,
+    modifier: Modifier = Modifier,
+    fontWeight: FontWeight? = null,
+    shadow: Shadow? = null,
+    textAlign: TextAlign? = null,
+    fillWidth: Boolean = false,
+    overflow: TextOverflow = TextOverflow.Clip,
+) {
+    val fit = if (fillWidth) Modifier.fillMaxWidth() else Modifier
+    val style = TextStyle(shadow = if (protection.hasShadow) shadow else null)
+    when (protection) {
+        LabelProtection.OUTLINE -> {
+            val strokePx = with(LocalDensity.current) { 3.dp.toPx() }
+            Box(modifier) {
+                Text(
+                    text = text, fontSize = fontSize, fontWeight = fontWeight, textAlign = textAlign,
+                    maxLines = 1, overflow = overflow, modifier = fit,
+                    style = TextStyle(
+                        color = Color.Black.copy(alpha = 0.85f),
+                        drawStyle = Stroke(width = strokePx, join = StrokeJoin.Round),
+                    ),
+                )
+                Text(
+                    text = text, color = color, fontSize = fontSize, fontWeight = fontWeight, textAlign = textAlign,
+                    maxLines = 1, overflow = overflow, modifier = fit,
+                )
+            }
+        }
+        LabelProtection.PLATE -> {
+            var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
+            val padX = with(LocalDensity.current) { PlatePadX.toPx() }
+            val padY = with(LocalDensity.current) { PlatePadY.toPx() }
+            val radius = with(LocalDensity.current) { PlateRadius.toPx() }
+            Text(
+                text = text, color = color, fontSize = fontSize, fontWeight = fontWeight, textAlign = textAlign,
+                maxLines = 1, overflow = overflow, style = style,
+                onTextLayout = { layout = it },
+                modifier = modifier.then(fit).drawBehind {
+                    val result = layout ?: return@drawBehind
+                    for (line in 0 until result.lineCount) {
+                        val left = result.getLineLeft(line) - padX
+                        val top = result.getLineTop(line) - padY
+                        drawRoundRect(
+                            color = Color.Black.copy(alpha = PreviewLegibility.PLATE_ALPHA),
+                            topLeft = Offset(left, top),
+                            size = Size(result.getLineRight(line) + padX - left, result.getLineBottom(line) + padY - top),
+                            cornerRadius = CornerRadius(radius),
+                        )
+                    }
+                },
+            )
+        }
+        else -> Text(
+            text = text, color = color, fontSize = fontSize, fontWeight = fontWeight, textAlign = textAlign,
+            maxLines = 1, overflow = overflow, style = style, modifier = modifier.then(fit),
         )
     }
 }
+

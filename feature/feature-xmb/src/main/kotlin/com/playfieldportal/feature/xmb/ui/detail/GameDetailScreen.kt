@@ -104,6 +104,9 @@ import com.playfieldportal.core.ui.theme.menuCursorFill
 import com.playfieldportal.feature.xmb.ui.DetailContextMenu
 import com.playfieldportal.feature.xmb.ui.DetailMenuRow
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerPanel
+import com.playfieldportal.feature.xmb.ui.media.GameDetailAction
+import com.playfieldportal.feature.xmb.ui.media.detailSlotKey
+import com.playfieldportal.feature.xmb.ui.media.favoriteOverrideAlpha
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -406,6 +409,7 @@ private fun GameDetailContent(
                     icon = Icons.Filled.PlayArrow,
                     focused = focus == GameDetailKeys.LAUNCH,
                     fill = PlayGreen,
+                    slotKey = detailSlotKey(GameDetailAction.PLAY),
                     onClick = { viewModel.onNodeTapped(GameDetailKeys.LAUNCH) },
                     modifier = Modifier.detailNode(GameDetailKeys.LAUNCH, requesterFor, nodeY),
                 )
@@ -420,6 +424,8 @@ private fun GameDetailContent(
                         available = true,
                         onClick = { viewModel.onNodeTapped(GameDetailKeys.FAVORITE) },
                         contentDescription = if (game.isFavorite) "Remove from favorites" else "Add to favorites",
+                        slotKey = detailSlotKey(GameDetailAction.FAVORITE),
+                        overrideAlpha = favoriteOverrideAlpha(game.isFavorite),
                         modifier = Modifier.weight(1f),
                     )
                     PfpDetailQuickAction(
@@ -429,6 +435,7 @@ private fun GameDetailContent(
                         available = true,
                         onClick = { viewModel.onNodeTapped(GameDetailKeys.ARTWORK) },
                         contentDescription = "Edit artwork",
+                        slotKey = detailSlotKey(GameDetailAction.ARTWORK),
                         modifier = Modifier.weight(1f),
                     )
                     PfpDetailQuickAction(
@@ -440,6 +447,7 @@ private fun GameDetailContent(
                         available = state.hasManual,
                         onClick = { viewModel.onNodeTapped(GameDetailKeys.MANUAL) },
                         contentDescription = "Open manual",
+                        slotKey = detailSlotKey(GameDetailAction.MANUAL),
                         modifier = Modifier.weight(1f),
                     )
                     // The context menu, for touch as much as the controller's Options button. The
@@ -451,6 +459,7 @@ private fun GameDetailContent(
                         available = true,
                         onClick = { viewModel.onNodeTapped(GameDetailKeys.OPTIONS_ACTION) },
                         contentDescription = "Options",
+                        slotKey = detailSlotKey(GameDetailAction.MORE),
                         modifier = Modifier.weight(1f),
                     )
                 }

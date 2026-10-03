@@ -1,5 +1,8 @@
 package com.playfieldportal.feature.xmb.ui
 
+import com.playfieldportal.core.domain.achievement.ShibaTier
+import com.playfieldportal.core.domain.model.NotificationKind
+import com.playfieldportal.feature.xmb.ui.detail.shibaCoinRes
 import com.playfieldportal.themekit.CustomizableIcons
 import com.playfieldportal.themekit.IconSlot
 import org.junit.Assert.assertEquals
@@ -41,14 +44,71 @@ class DefaultSlotGlyphTest {
     }
 
     @Test
-    fun `status slots resolve to the strip's own drawables`() {
+    fun `status slots resolve to the strip's own drawables or a vector`() {
         val slots = CustomizableIcons.ALL.filter { it.group == IconSlot.Group.STATUS }
-        assertEquals(6, slots.size)
+        assertEquals(10, slots.size)
+        val levelAware = setOf("status_notifications", "status_controller", "status_wifi", "status_signal")
         for (slot in slots) {
+            if (slot.key in levelAware) {
+                // The strip draws these as vectors / Canvas meters; the slot previews a vector.
+                assertTrue("${slot.key} should resolve to a vector", defaultGlyphFor(slot) is SlotGlyphDefault.Vector)
+            } else {
+                assertEquals(
+                    "${slot.key} should resolve to its status drawable",
+                    SlotGlyphDefault.Drawable(XmbStatusIcons.forSlotKey(slot.key)!!),
+                    defaultGlyphFor(slot),
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `shiba coin slots resolve to the tier medallions`() {
+        val expected = mapOf(
+            "shiba_coin_bronze" to ShibaTier.BRONZE,
+            "shiba_coin_silver" to ShibaTier.SILVER,
+            "shiba_coin_gold" to ShibaTier.GOLD,
+            "shiba_coin_platinum" to ShibaTier.PLATINUM,
+        )
+        for ((key, tier) in expected) {
             assertEquals(
-                "${slot.key} should resolve to its status drawable",
-                SlotGlyphDefault.Drawable(XmbStatusIcons.forSlotKey(slot.key)!!),
-                defaultGlyphFor(slot),
+                key,
+                SlotGlyphDefault.Drawable(shibaCoinRes(tier)),
+                defaultGlyphFor(CustomizableIcons.byKey(key)!!),
+            )
+        }
+    }
+
+    @Test
+    fun `media, detail, notification and menu slots resolve to vectors`() {
+        val groups = setOf(
+            IconSlot.Group.MEDIA, IconSlot.Group.GAME_DETAIL,
+            IconSlot.Group.NOTIFICATIONS, IconSlot.Group.MENUS,
+        )
+        val slots = CustomizableIcons.ALL.filter { it.group in groups }
+        assertEquals(21, slots.size)
+        for (slot in slots) {
+            assertTrue("${slot.key} should resolve to a vector", defaultGlyphFor(slot) is SlotGlyphDefault.Vector)
+        }
+    }
+
+    @Test
+    fun `notification slots reuse the notification kind glyph table`() {
+        val kinds = mapOf(
+            "notif_album" to NotificationKind.SCAN,
+            "notif_image" to NotificationKind.ARTWORK,
+            "notif_tag" to NotificationKind.METADATA,
+            "notif_coin" to NotificationKind.ACHIEVEMENT,
+            "notif_blocked" to NotificationKind.LAUNCH,
+            "notif_settings" to NotificationKind.SYSTEM,
+            "notif_download" to NotificationKind.DOWNLOAD,
+            "notif_feed" to NotificationKind.FEED,
+        )
+        for ((key, kind) in kinds) {
+            assertEquals(
+                key,
+                SlotGlyphDefault.Vector(notificationGlyph(kind)),
+                defaultGlyphFor(CustomizableIcons.byKey(key)!!),
             )
         }
     }

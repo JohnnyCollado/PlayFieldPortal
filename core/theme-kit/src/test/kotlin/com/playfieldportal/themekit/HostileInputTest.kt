@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
@@ -143,6 +144,26 @@ class HostileInputTest {
             }
         }.toByteArray()
         assertNull(PfpThemeCodec.read(zip))
+    }
+
+    @Test
+    fun `pfptheme traversal-named entries never become passthrough`() {
+        val zip = ByteArrayOutputStream().also { baos ->
+            ZipOutputStream(baos).use { z ->
+                z.putNextEntry(ZipEntry("manifest.json"))
+                z.write("""{"manifest":"pfptheme","schemaVersion":4,"name":"T","accentColor":"#FFFFFF"}""".toByteArray())
+                z.closeEntry()
+                for (name in listOf("../escape.bin", "/abs.bin", "a/b/c.bin", "..\\win.bin")) {
+                    z.putNextEntry(ZipEntry(name))
+                    z.write(1)
+                    z.closeEntry()
+                }
+            }
+        }.toByteArray()
+        val bundle = assertNotNull(PfpThemeCodec.read(zip))
+
+        assertEquals(emptyList(), bundle.passthrough)
+        assertEquals(4, bundle.unrecoverableEntries.size)
     }
 
     private fun ByteArray.putU16(offset: Int, value: Int) {

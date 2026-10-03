@@ -31,7 +31,7 @@ data class ThemesSettingsUiState(
     // Name of the theme applied through PfpThemeStore ("Default" = stock look).
     val activeThemeName: String = "Default",
     val isInstalling: Boolean = false,
-    // Custom-theme cascade state (docs/xmb-theme-creator-plan.md): the imported/custom accent
+    // Custom-theme cascade state (docs/theme-format.md): the imported/custom accent
     // that supersedes the preset scheme, and the unified icon tint (null = default white).
     // Note: import/create/reset OUTCOMES no longer live here — they post to the notification tray.
     // isInstalling stays: the in-screen progress bar is kept, only the result row is gone.
@@ -172,6 +172,15 @@ class ThemesSettingsViewModel @Inject constructor(
             val saved = themeStore.saveCurrentLook(name)
             if (saved != null) reportTheme("Saved \"${saved.name}\"")
             else reportTheme("Could not save the theme", NotificationSeverity.ERROR)
+        }
+    }
+
+    /** Rewrites an older-format saved theme in the current format; the outcome lands in the tray. */
+    fun updateThemeFile(id: String) {
+        viewModelScope.launch {
+            val name = themeStore.themes.value.firstOrNull { it.id == id }?.name ?: "theme"
+            if (themeStore.upgradeInPlace(id)) reportTheme("Updated \"$name\" to the current theme format")
+            else reportTheme("Could not update \"$name\" — the original file was left as it was", NotificationSeverity.ERROR)
         }
     }
 

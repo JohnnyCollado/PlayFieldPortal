@@ -62,7 +62,7 @@ class VideoSnapTranscoder @Inject constructor(
                     .addListener(object : Transformer.Listener {
                         override fun onCompleted(composition: Composition, exportResult: ExportResult) {
                             Timber.d("Video snap transcoded: ${output.length() / 1024} KB")
-                            if (cont.isActive) cont.resume(true) { _ -> }
+                            if (cont.isActive) cont.resume(true) { _, _, _ -> }
                         }
 
                         override fun onError(
@@ -72,7 +72,7 @@ class VideoSnapTranscoder @Inject constructor(
                         ) {
                             Timber.w(exportException, "Video snap transcode failed")
                             output.delete()
-                            if (cont.isActive) cont.resume(false) { _ -> }
+                            if (cont.isActive) cont.resume(false) { _, _, _ -> }
                         }
                     })
                     .build()
@@ -107,7 +107,7 @@ class VideoSnapTranscoder @Inject constructor(
                 .addListener(object : Transformer.Listener {
                     override fun onCompleted(composition: Composition, exportResult: ExportResult) {
                         Timber.d("Cropped icon snap transcoded: ${output.length() / 1024} KB")
-                        if (cont.isActive) cont.resume(true) { _ -> }
+                        if (cont.isActive) cont.resume(true) { _, _, _ -> }
                     }
 
                     override fun onError(
@@ -117,7 +117,7 @@ class VideoSnapTranscoder @Inject constructor(
                     ) {
                         Timber.w(exportException, "Cropped icon snap transcode failed")
                         output.delete()
-                        if (cont.isActive) cont.resume(false) { _ -> }
+                        if (cont.isActive) cont.resume(false) { _, _, _ -> }
                     }
                 })
                 .build()

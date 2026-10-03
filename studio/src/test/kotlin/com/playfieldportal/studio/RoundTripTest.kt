@@ -85,4 +85,24 @@ class RoundTripTest {
             .buildManifest(StudioState(name = "Auto Icons"), today = LocalDate.of(2026, 7, 7))
         assertEquals(PfpThemeManifest.ICON_COLOR_AUTO, manifest.iconColor)
     }
+
+    @Test
+    fun `v4 manifest fields round-trip through the codec`() {
+        val state = StudioState(
+            name = "V4",
+            author = "Jane",
+            description = "Neon",
+            created = "2026-01-02",
+            waveStyle = PfpThemeManifest.WAVE_REDUCED_STATIC,
+            textColorExact = true,
+            legibility = com.playfieldportal.themekit.ThemeLegibility("shadow", "contour_dark", true),
+            motionCrop = com.playfieldportal.themekit.MotionCrop(0.1f, 0.2f, 0.5f, 0.6f),
+        )
+        val manifest = StudioViewModel(TestScope()).buildManifest(state, today = LocalDate.of(2026, 10, 2))
+        val decoded = assertNotNull(PfpThemeCodec.read(PfpThemeCodec.write(PfpThemeBundle(manifest, null, null))))
+        assertEquals(manifest, decoded.manifest)
+        assertEquals("2026-01-02", decoded.manifest.created)
+        assertEquals("2026-10-02", decoded.manifest.updated)
+        assertEquals(PfpThemeManifest.WAVE_STATIC, decoded.manifest.waveStyle)
+    }
 }

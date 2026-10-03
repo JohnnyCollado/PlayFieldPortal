@@ -100,7 +100,7 @@ class CustomIconStoreTest {
 
     @Test
     fun `invalid slot keys write nothing`() = runTest {
-        for (key in listOf("not_a_slot", "../evil", "catbar_games/../../x", "", "sysicon_default")) {
+        for (key in listOf("not_a_slot", "../evil", "catbar_games/../../x", "", "sysicon_not_a_console")) {
             val result = store.import(key, register(pngBytes()), "image/png")
             assertFalse(result.ok, "key '$key' must be rejected")
         }

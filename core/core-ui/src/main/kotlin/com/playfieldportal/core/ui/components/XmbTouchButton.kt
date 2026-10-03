@@ -78,13 +78,15 @@ fun XmbBackTouchButton(
     size: Dp = 52.dp,
 ) {
     XmbTouchButton(onClick = onClick, modifier = modifier, size = size) {
-        Text(
-            text = "◀",
-            color = Color.White,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            style = TextStyle(shadow = XmbGlyphShadow),
-        )
+        if (!MenuGlyphOverride(MENU_BACK_KEY, 24.dp, "Back")) {
+            Text(
+                text = "◀",
+                color = Color.White,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                style = TextStyle(shadow = XmbGlyphShadow),
+            )
+        }
     }
 }
 

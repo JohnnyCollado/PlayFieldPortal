@@ -36,6 +36,8 @@ private val KEY_CUSTOM_WALLPAPER = stringPreferencesKey("display_custom_wallpape
 // Must match DisplaySettingsViewModel — written as a pair with the poster when an animated
 // source is applied, cleared when a still replaces it.
 private val KEY_MOTION_WALLPAPER = stringPreferencesKey("display_motion_wallpaper")
+// A theme's motion crop frames the theme's video only; any wallpaper picked here drops it.
+private val KEY_MOTION_CROP = stringPreferencesKey("display_motion_crop")
 
 // Header bytes enough to walk a WebP's top-level chunks in practice (metadata chunks can push
 // ANMF deep; the walk simply fails closed to "still" if the cap is hit).
@@ -272,6 +274,7 @@ class PhotoViewerViewModel @Inject constructor(
                 it[KEY_CUSTOM_WALLPAPER] = poster.absolutePath
                 if (motion != null) it[KEY_MOTION_WALLPAPER] = motion.absolutePath
                 else it.remove(KEY_MOTION_WALLPAPER)
+                it.remove(KEY_MOTION_CROP)
                 it.setWallpaperLuma(luma)
             }
             val keepNames = listOfNotNull(poster, motion).map { it.name }.toSet()

@@ -87,7 +87,7 @@ class AppCategoryRepository @Inject constructor(
             // value, and a replay-less SharedFlow produces none on subscribe. Without it, adding
             // this third arm would silently stop the two that already worked.
             invalidations.onStart { emit(Unit) },
-        ) { _, _, _ -> Unit }
+        ) { _, _, _ -> }
 
     suspend fun ensureLoaded() {
         if (cache.isEmpty()) cache = installedAppRepository.getInstalledApps()

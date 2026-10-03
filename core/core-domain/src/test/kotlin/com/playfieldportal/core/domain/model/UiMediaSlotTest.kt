@@ -1,5 +1,6 @@
 package com.playfieldportal.core.domain.model
 
+import com.playfieldportal.themekit.ThemeMediaSlots
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -108,6 +109,17 @@ class UiMediaSlotTest {
         // guard's own tests in UiMediaStoreTest.
         for (slot in UiMediaSlot.entries) {
             assertTrue(Regex("[a-z0-9_]+").matches(slot.key), "${slot.key} is not filename-safe")
+        }
+    }
+
+    @Test fun `theme media slots mirror UiMediaSlot - keys, kinds and specs`() {
+        // theme-kit cannot see this enum, so ThemeMediaSlots keeps its own list. A slot added or
+        // renamed here without the bundle registry would silently never travel in a .pfptheme.
+        assertEquals(UiMediaSlot.entries.map { it.key }.toSet(), ThemeMediaSlots.KEYS)
+        for (slot in UiMediaSlot.entries) {
+            val theme = ThemeMediaSlots.slot(slot.key)
+            assertEquals(slot.kind.name, theme?.kind?.name, "${slot.key}: kind drifted")
+            assertEquals(slot.limits, theme?.spec, "${slot.key}: limits spec drifted")
         }
     }
 

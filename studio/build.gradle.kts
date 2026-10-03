@@ -21,6 +21,9 @@ dependencies {
     // rendering and the editable template export.
     implementation(libs.compose.mp.icons.extended)
     implementation(libs.kotlinx.coroutines.swing)
+    // JsonObject is part of PfpThemeBundle's public API (manifestExtras); theme-kit keeps the
+    // library `implementation`, so the Studio, which carries extras through its state, names it too.
+    implementation(libs.kotlinx.serialization.json)
     // Video -> GIF motion wallpapers (VideoCodecs). Pure Java, ~1.5 MB, no native libraries:
     // it keeps this module's pure-JVM rule intact and keeps the jpackage installer small.
     // The trade-off is deliberate and narrow — MP4/H.264 only, no WebM/HEVC/AV1 — and it buys
