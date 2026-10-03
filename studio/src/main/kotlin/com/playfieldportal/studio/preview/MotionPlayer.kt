@@ -13,15 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asComposeImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
-import com.playfieldportal.studio.io.VideoCodecs
 import com.playfieldportal.themekit.MotionCrop
-import java.awt.RenderingHints
-import java.awt.image.BufferedImage
-import java.awt.image.DataBufferByte
-import java.awt.image.DataBufferInt
 import java.io.IOException
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.Executors
 import kotlin.coroutines.CoroutineContext
@@ -44,16 +37,16 @@ import org.jetbrains.skia.ColorType
 import org.jetbrains.skia.ImageInfo
 
 /*
- * Live motion wallpaper: the staged MP4 decoded with JCodec (pure Java, no native code) off the UI
- * thread, framed with the same crop the launcher plays with. Small, separately testable parts:
- *   MotionScheduler  - pure timing + the "can it keep up" verdict
- *   MotionEngine     - the pacing loop, written against an injected source and clock
- *   ReadAheadSource  - JCodec decoding a few frames ahead on its own thread, so decoding one frame
- *                      overlaps converting the previous one (a bounded ring of YUV copies)
- *   FrameConverter   - YUV -> preview-sized bitmap in one pass, into buffers reused every frame
- *   FrameMailbox     - hands frames to the display, which shows each on the first vsync it is due
- * At most four YUV copies and the few preview-sized bitmaps in flight are alive; nothing
- * source-sized is allocated per frame.
+ * Live motion wallpaper, boot and GameBoot clips: decoded by FFmpeg off the UI thread and framed
+ * with the same crop the launcher plays with. Small, separately testable parts:
+ *   MotionScheduler   - pure timing + the "can it keep up" verdict
+ *   MotionEngine      - the pacing loop, written against an injected source and clock
+ *   FfmpegFrameReader - FFmpeg decoding on every core, cropping and scaling to the preview's size
+ *   ReadAheadSource   - the reader running a few frames ahead on its own thread (a bounded ring of
+ *                       preview-sized BGRA frames)
+ *   FrameBitmaps      - BGRA -> Skia bitmap, through a fixed ring reused lap after lap
+ *   FrameMailbox      - hands frames to the display, which shows each on the first vsync it is due
+ * Nothing source-sized is held in Java, and no pixel buffer is allocated per frame.
  */
 
 /** Below this the preview shows the poster instead; see [MotionScheduler.requiredFps]. */
@@ -85,6 +78,12 @@ interface DecodedFrame<T> {
 interface MotionFrameSource<T> : AutoCloseable {
     val fps: Float
 
+    /**
+     * Whether the frame after the one just handed out is already decoded. Dropping a late frame
+     * saves only its conversion, so it is worth doing only when there is a newer frame to skip to.
+     */
+    val nextReady: Boolean get() = false
+
     /** The next frame in presentation order, or null at the end of the stream. */
     fun decode(): DecodedFrame<T>?
     fun rewind()
@@ -103,9 +102,11 @@ object SystemMotionClock : MotionClock {
 /**
  * Pure frame pacing for a clip played at [speed] (Reduced = 0.5). Frame `pts` maps to wall time
  * `pts / speed`; a frame that is late by more than two of its own intervals is dropped (decoded,
- * not shown) so the picture catches up, unless nothing has been shown for [STARVED_MS] — then the
- * late frame is shown anyway, because a slow picture beats a frozen one and the fps verdict, not
- * the drop rule, is what decides to give up.
+ * not shown) so the picture catches up — but only when a newer frame is already decoded. Every
+ * frame has to be decoded anyway (H.264 frames depend on their predecessors), so with the decoder
+ * behind, dropping skips nothing and just shows fewer of the frames it did decode. Nor is a frame
+ * dropped once nothing has been shown for [STARVED_MS]: a slow picture beats a frozen one, and the
+ * fps verdict, not the drop rule, is what decides to give up.
  */
 class MotionScheduler(
     val speed: Float,
@@ -124,9 +125,9 @@ class MotionScheduler(
 
     fun wallMs(ptsMs: Long): Long = (ptsMs / speed).roundToLong()
 
-    fun action(nowMs: Long, dueMs: Long, frameDurationMs: Long, sinceLastPublishMs: Long): Action = when {
+    fun action(nowMs: Long, dueMs: Long, frameDurationMs: Long, sinceLastPublishMs: Long, nextReady: Boolean): Action = when {
         dueMs > nowMs -> Action.WAIT
-        nowMs - dueMs > 2 * wallMs(frameDurationMs) && sinceLastPublishMs < STARVED_MS -> Action.DROP
+        nextReady && nowMs - dueMs > 2 * wallMs(frameDurationMs) && sinceLastPublishMs < STARVED_MS -> Action.DROP
         else -> Action.SHOW
     }
 
@@ -208,10 +209,13 @@ object MotionEngine {
         shouldStop: () -> Boolean,
         publish: (dueMs: Long, frame: T) -> Unit,
     ): MotionOutcome {
-        var loopStart = clock.nowMs()
-        var lastPublishAt = loopStart
+        // The timeline starts when the first frame is in hand, not when the loop does: opening the
+        // file and warming the decoder up are not part of the clip, and counting them made its
+        // opening frames late (and dropped) from the start.
+        var started = false
+        var loopStart = 0L
+        var lastPublishAt = 0L
         var loopEndPts = 0L
-        scheduler.begin(loopStart)
         while (true) {
             coroutineContext.ensureActive()
             if (shouldStop()) return MotionOutcome.ENDED
@@ -230,12 +234,18 @@ object MotionEngine {
                 loopEndPts = frame.ptsMs + frame.durationMs
 
                 var now = clock.nowMs()
+                if (!started) {
+                    started = true
+                    loopStart = now - scheduler.wallMs(frame.ptsMs)
+                    lastPublishAt = now
+                    scheduler.begin(now)
+                }
                 var due = loopStart + scheduler.wallMs(frame.ptsMs)
                 if (now - due > MotionScheduler.RESYNC_MS) {
                     loopStart += now - due
                     due = now
                 }
-                when (scheduler.action(now, due, frame.durationMs, now - lastPublishAt)) {
+                when (scheduler.action(now, due, frame.durationMs, now - lastPublishAt, source.nextReady)) {
                     MotionScheduler.Action.DROP -> Unit
                     MotionScheduler.Action.WAIT, MotionScheduler.Action.SHOW -> {
                         // Convert first, then wait out what is left: the conversion is part of the frame's budget.
@@ -306,96 +316,57 @@ object MotionFraming {
 }
 
 /**
- * One decoded picture -> the preview's opaque [outW] x [outH] bitmap, framed by [crop]. Every buffer
- * is allocated once and reused, so a frame costs no Java heap (converting through JCodec's AWTUtil
- * allocated ~14 MB per 1080p frame, all of it humongous to G1) and one native copy into the bitmap.
- *
- * The pixels match that AWTUtil path exactly: the YUV -> RGB step is JCodec's own
- * `Yuv420pToRgb.YUV420pToRGBN2N` integer maths (BT.601 limited range, 2x2 nearest chroma), written
- * into the same `TYPE_3BYTE_BGR` layout `AWTUtil.toBufferedImage` produces, and Java2D then does the
- * same bilinear crop-and-scale. Only the source rectangle the view shows (plus the one-pixel ring
- * bilinear may sample) is converted. Not thread-safe — the engine thread owns it.
+ * Preview-sized BGRA frames -> Skia bitmaps, through a fixed ring of [RING_SIZE] reused lap after
+ * lap. A fresh Skia bitmap per frame (~0.9 MB native each, ~27 MB/s at 30 fps) is freed only after
+ * a Java GC, so native memory piled up and was released in one hitching burst. Reinstalling pixels
+ * into a ring slot releases the old pixels by reference count instead, at once; Compose snapshots a
+ * bitmap into a Skia image on every draw, so a slot is safe to refill once no frame in flight is
+ * still that slot. Not thread-safe — the engine thread owns it.
  */
-internal class FrameConverter(private val crop: MotionCrop?, private val outW: Int, private val outH: Int) {
-    private var source: BufferedImage? = null
-    private val scaled = BufferedImage(outW, outH, BufferedImage.TYPE_INT_ARGB)
-    private val scaledPixels = (scaled.raster.dataBuffer as DataBufferInt).data
-    private val bytes = ByteArray(outW * outH * 4)
+internal class FrameBitmaps(private val width: Int, private val height: Int) {
+    private val info = ImageInfo(width, height, ColorType.BGRA_8888, ColorAlphaType.OPAQUE)
+    private val ring = Array(RING_SIZE) { Bitmap() }
 
-    // Little-endian ARGB ints are B, G, R, A in memory: exactly Skia's BGRA_8888.
-    private val bytesAsInts = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer()
-    private val info = ImageInfo(outW, outH, ColorType.BGRA_8888, ColorAlphaType.OPAQUE)
+    // Wrapped on first fill: Compose reads the bitmap's opacity once, when it wraps it.
+    private val images = arrayOfNulls<ImageBitmap>(RING_SIZE)
+    private var next = 0
 
-    fun convert(planes: VideoCodecs.YuvPlanes): ImageBitmap {
-        val w = planes.width
-        val h = planes.height
-        val src = source?.takeIf { it.width == w && it.height == h }
-            ?: BufferedImage(w, h, BufferedImage.TYPE_3BYTE_BGR).also { source = it }
-        val r = MotionFraming.sourceRect(w, h, outW, outH, crop)
-        toBgr(
-            planes, (src.raster.dataBuffer as DataBufferByte).data, w,
-            x0 = (r.left - 1).coerceAtLeast(0), y0 = (r.top - 1).coerceAtLeast(0),
-            x1 = (r.right + 1).coerceAtMost(w), y1 = (r.bottom + 1).coerceAtMost(h),
-        )
-        val g = scaled.createGraphics()
-        try {
-            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR)
-            g.drawImage(src, 0, 0, outW, outH, r.left, r.top, r.right, r.bottom, null)
-        } finally {
-            g.dispose()
-        }
-        bytesAsInts.clear()
-        bytesAsInts.put(scaledPixels)
-        // installPixels copies into native memory, so [bytes] is free for the next frame at once;
-        // immutable, the bitmap's pixels are shared with (not copied into) each Skia image drawn from it.
-        val bitmap = Bitmap()
-        check(bitmap.installPixels(info, bytes, outW * 4)) { "Skia refused a ${outW}x$outH frame" }
+    /** The next ring slot, holding [bgra] ([width] x [height], 4 bytes a pixel). */
+    fun fill(bgra: ByteArray): ImageBitmap {
+        val slot = next
+        next = (next + 1) % RING_SIZE
+        val bitmap = ring[slot]
+        // installPixels copies into fresh native memory, so [bgra] is free for the next frame at once
+        // and a Skia image still drawing this slot's previous pixels keeps them; immutable, the
+        // bitmap's pixels are shared with (not copied into) each Skia image drawn from it.
+        check(bitmap.installPixels(info, bgra, width * 4)) { "Skia refused a ${width}x$height frame" }
         bitmap.setImmutable()
-        return bitmap.asComposeImageBitmap()
+        return images[slot] ?: bitmap.asComposeImageBitmap().also { images[slot] = it }
     }
 
-    private fun toBgr(p: VideoCodecs.YuvPlanes, bgr: ByteArray, w: Int, x0: Int, y0: Int, x1: Int, y1: Int) {
-        val yPlane = p.y
-        val uPlane = p.u
-        val vPlane = p.v
-        for (row in y0 until y1) {
-            val sy = row + p.cropY
-            val yOff = sy * p.yStride
-            val cOff = (sy shr 1) * p.cStride
-            var o = (row * w + x0) * 3
-            for (col in x0 until x1) {
-                val sx = col + p.cropX
-                val c = 298 * (yPlane[yOff + sx] + 112)
-                val cb = uPlane[cOff + (sx shr 1)].toInt()
-                val cr = vPlane[cOff + (sx shr 1)].toInt()
-                bgr[o] = ((c + 516 * cb + 128) shr 8).coerceIn(0, 255).toByte()
-                bgr[o + 1] = ((c - 100 * cb - 208 * cr + 128) shr 8).coerceIn(0, 255).toByte()
-                bgr[o + 2] = ((c + 409 * cr + 128) shr 8).coerceIn(0, 255).toByte()
-                o += 3
-            }
-        }
+    companion object {
+        /** Every frame that can be in flight — queued in the mailbox, on screen, being filled — plus one spare. */
+        const val RING_SIZE = FrameMailbox.CAPACITY + 3
     }
 }
 
 /**
- * JCodec behind [MotionFrameSource], decoding ahead on its own thread: while the engine converts and
- * paces frame N, frames N+1.. decode, so a frame costs max(decode, convert) instead of their sum.
- * JCodec decodes into one per-thread buffer, so each frame is copied into one of [SLOTS] reusable
- * [VideoCodecs.YuvPlanes] — the bounded ring; when the engine falls behind, the reader blocks on it.
- * Looping, the reader seeks back to frame 0 the moment it reaches the end, so the next pass is
- * already decoding before the engine asks for it (no hitch at the loop point).
+ * FFmpeg behind [MotionFrameSource], decoding ahead on its own thread: while the engine paces frame
+ * N, frames N+1.. decode, so a slow frame is absorbed by the ones already waiting. Each frame lands
+ * in one of [SLOTS] reusable [BgraFrame]s — the bounded ring; when the engine falls behind, the
+ * reader blocks on it. Looping, the reader restarts the clip the moment it reaches the end, so the
+ * next pass is already decoding before the engine asks for it (no hitch at the loop point).
  */
 internal class ReadAheadSource(
-    private val reader: VideoCodecs.FrameReader,
+    private val reader: FfmpegFrameReader,
     private val loop: Boolean,
-    crop: MotionCrop?,
-    outW: Int,
-    outH: Int,
 ) : MotionFrameSource<ImageBitmap> {
     override val fps: Float = reader.fps
 
-    private val converter = FrameConverter(crop, outW, outH)
-    private val free = ArrayBlockingQueue<VideoCodecs.YuvPlanes>(SLOTS).apply { repeat(SLOTS) { add(VideoCodecs.YuvPlanes()) } }
+    private val bitmaps = FrameBitmaps(reader.outWidth, reader.outHeight)
+    private val free = ArrayBlockingQueue<BgraFrame>(SLOTS).apply {
+        repeat(SLOTS) { add(BgraFrame(reader.outWidth, reader.outHeight)) }
+    }
 
     /** Decoded frames in order, [END] at each end of the stream, or the Throwable the reader died of. */
     private val ready = ArrayBlockingQueue<Any>(SLOTS + 1)
@@ -411,19 +382,17 @@ internal class ReadAheadSource(
         try {
             while (!closed) {
                 val slot = free.take()
-                val raw = reader.next()
-                if (raw == null) {
+                if (!reader.next(slot)) {
                     free.put(slot)
                     ready.put(END)
                     if (!loop) return
                     reader.rewind()
                     continue
                 }
-                raw.copyInto(slot)
                 ready.put(slot)
             }
         } catch (t: Throwable) {
-            // Closing interrupts the reader mid-wait (or mid-read); anything else is a decoder that gave up.
+            // Closing interrupts the reader mid-wait; anything else is a decoder that gave up.
             if (!closed && t !is InterruptedException) runCatching { ready.put(t) }
         } finally {
             reader.close()
@@ -434,17 +403,19 @@ internal class ReadAheadSource(
         END -> null
         is Throwable -> throw IOException("the motion decoder stopped", item)
         else -> {
-            val planes = item as VideoCodecs.YuvPlanes
+            val frame = item as BgraFrame
             object : DecodedFrame<ImageBitmap> {
-                override val ptsMs = planes.ptsMs
-                override val durationMs = planes.durationMs
-                override fun render(): ImageBitmap = converter.convert(planes)
+                override val ptsMs = frame.ptsMs
+                override val durationMs = frame.durationMs
+                override fun render(): ImageBitmap = bitmaps.fill(frame.bytes)
                 override fun recycle() {
-                    free.offer(planes)
+                    free.offer(frame)
                 }
             }
         }
     }
+
+    override val nextReady: Boolean get() = ready.peek() is BgraFrame
 
     /** Nothing to do: the reader already restarted the clip when it reached the end. */
     override fun rewind() = Unit
@@ -470,7 +441,7 @@ internal class ReadAheadSource(
  * vsync at or after its time however late the decode thread's own timer woke (Windows parks in
  * whole timer ticks). Older due frames are superseded, never shown late.
  */
-internal class FrameMailbox<T : Any>(private val capacity: Int = 3) {
+internal class FrameMailbox<T : Any>(private val capacity: Int = CAPACITY) {
     private val frames = ArrayDeque<Pair<Long, T>>()
 
     @Synchronized
@@ -488,6 +459,10 @@ internal class FrameMailbox<T : Any>(private val capacity: Int = 3) {
 
     @Synchronized
     fun isEmpty(): Boolean = frames.isEmpty()
+
+    companion object {
+        const val CAPACITY = 3
+    }
 }
 
 object MotionPlayer {
@@ -527,7 +502,7 @@ object MotionPlayer {
         onFrame: (dueMs: Long, frame: ImageBitmap) -> Unit,
     ): MotionOutcome = MotionEngine.run(
         open = {
-            VideoCodecs.openFrames(file)?.let { ReadAheadSource(it, loop, crop, OUT_WIDTH, OUT_HEIGHT) }
+            FfmpegFrameReader.open(file, crop, OUT_WIDTH, OUT_HEIGHT)?.let { ReadAheadSource(it, loop) }
         },
         scheduler = { fps -> MotionScheduler(speed, fps) },
         clock = SystemMotionClock,

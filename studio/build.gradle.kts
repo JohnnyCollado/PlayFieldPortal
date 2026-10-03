@@ -13,6 +13,17 @@ kotlin {
     jvmToolchain(17)
 }
 
+// JavaCPP's name for this machine's platform: which FFmpeg natives the Studio runs and ships with.
+val javacppPlatform: String = run {
+    val os = System.getProperty("os.name").lowercase()
+    val arm = System.getProperty("os.arch").lowercase().let { it == "aarch64" || it == "arm64" }
+    when {
+        os.contains("win") -> "windows-x86_64"
+        os.contains("mac") -> if (arm) "macosx-arm64" else "macosx-x86_64"
+        else -> if (arm) "linux-arm64" else "linux-x86_64"
+    }
+}
+
 dependencies {
     implementation(project(":core:theme-kit"))
     implementation(compose.desktop.currentOs)
@@ -27,14 +38,22 @@ dependencies {
     // JsonObject is part of PfpThemeBundle's public API (manifestExtras); theme-kit keeps the
     // library `implementation`, so the Studio, which carries extras through its state, names it too.
     implementation(libs.kotlinx.serialization.json)
-    // Video -> GIF motion wallpapers (VideoCodecs). Pure Java, ~1.5 MB, no native libraries:
-    // it keeps this module's pure-JVM rule intact and keeps the jpackage installer small.
-    // The trade-off is deliberate and narrow — MP4/H.264 only, no WebM/HEVC/AV1 — and it buys
-    // a decoder that cannot be exploited the way a native one can (see VideoTranscodeLimits).
+    // The motion-wallpaper import gate (VideoCodecs: header probe, poster frame). Pure Java, so a
+    // hostile pick fails with an exception before any native decoder ever sees it.
     implementation(libs.jcodec)
     // AWTUtil (Picture -> BufferedImage) ships separately from the codec core, because the core
     // itself is AWT-free. Both artifacts share the jcodec version.
     implementation(libs.jcodec.javase)
+    // Live preview playback (FfmpegFrameReader). JCodec decodes in plain Java on one core and
+    // cannot keep a 1080p clip at 30 fps; FFmpeg decodes it on every core. Only JavaCV's
+    // FFmpegFrameGrabber/FFmpegFrameFilter are used, so its own dependency tree (OpenCV,
+    // OpenBLAS, Tesseract, ...) stays out; the FFmpeg and JavaCPP natives are bundled for the
+    // OS the Studio is built and packaged on, like compose.desktop.currentOs.
+    implementation(libs.javacv) { isTransitive = false }
+    implementation(libs.javacpp)
+    implementation(libs.ffmpeg)
+    runtimeOnly(variantOf(libs.javacpp) { classifier(javacppPlatform) })
+    runtimeOnly(variantOf(libs.ffmpeg) { classifier(javacppPlatform) })
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test.junit)
@@ -56,6 +75,9 @@ compose.desktop {
             // Msi stays for managed/silent deployment. Both come out of the same jpackage run
             // and both need the WiX Toolset on PATH.
             targetFormats(TargetFormat.Dmg, TargetFormat.Exe, TargetFormat.Msi, TargetFormat.Deb)
+            // JavaCPP (the FFmpeg bindings) reaches for sun.misc.Unsafe; the jlinked runtime
+            // leaves jdk.unsupported out unless asked.
+            modules("jdk.unsupported")
             packageName = "PlayField Theme Studio"
             packageVersion = "1.2.0"
             description = "Create, convert, and share PlayFieldPortal XMB themes"

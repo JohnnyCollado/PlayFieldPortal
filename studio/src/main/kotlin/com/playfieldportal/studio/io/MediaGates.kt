@@ -3,6 +3,7 @@ package com.playfieldportal.studio.io
 import com.playfieldportal.themekit.MediaDurationProbe
 import com.playfieldportal.themekit.ThemeMediaSlots
 import com.playfieldportal.themekit.UiMediaLimits
+import com.playfieldportal.themekit.WavPcm16
 import java.io.File
 
 /**
@@ -16,7 +17,9 @@ import java.io.File
  * (plan A10), which is also why WebM cannot be authored: JCodec cannot demux it, so there is no
  * duration to validate.
  *
- * Cheapest check first: slot, file, extension, byte cap, and only then a header read.
+ * Cheapest check first: slot, file, extension, byte cap, and only then a header read. One step
+ * goes beyond checking: a WAV that is not plain 8/16-bit PCM (float, 24/32-bit, extensible) is
+ * converted to 16-bit PCM ([WavPcm16]) and the conversion is what gets checked and staged.
  */
 object MediaGates {
 
@@ -27,16 +30,29 @@ object MediaGates {
     const val MSG_UNKNOWN_SLOT = "That isn't a media slot this import can fill"
 
     sealed interface Outcome {
-        /** [extension] is the normalised bundle extension (`m4v` -> `mp4`, `oga` -> `ogg`). */
-        data class Accepted(val extension: String, val probe: UiMediaLimits.Probe) : Outcome
+        /**
+         * [extension] is the normalised bundle extension (`m4v` -> `mp4`, `oga` -> `ogg`). [source] is
+         * the file to stage: the pick itself, or — for a WAV that is not plain 8/16-bit PCM — its
+         * 16-bit PCM conversion ([WavPcm16]), a temporary file the caller deletes once staged.
+         */
+        data class Accepted(val extension: String, val probe: UiMediaLimits.Probe, val source: File) : Outcome
         data class Rejected(val message: String) : Outcome
     }
+
+    /** Float audio is at most 4x the bytes of its 16-bit conversion (64-bit float -> 16-bit). */
+    private const val MAX_CONVERSION_SHRINK = 4
 
     /** The theme-side byte-cap rejection (A9) - audio only; video reuses [UiMediaLimits.tooLarge]. */
     fun tooLargeForTheme(slot: ThemeMediaSlots.Slot): String =
         "That file is too large for a theme — ${slot.maxBytes / (1024 * 1024)} MB or less"
 
-    fun check(slotKey: String, file: File): Outcome {
+    /**
+     * Gates [file] for [slotKey]. A WAV that is not plain 8/16-bit PCM is first converted to 16-bit
+     * PCM in [workDir] (the system temp directory by default) and every check after that runs on the
+     * conversion — its length, its bytes — since that is what the theme will carry. A conversion that
+     * is then rejected is deleted.
+     */
+    fun check(slotKey: String, file: File, workDir: File? = null): Outcome {
         val slot = ThemeMediaSlots.slot(slotKey) ?: return Outcome.Rejected(MSG_UNKNOWN_SLOT)
         val video = slot.kind == UiMediaLimits.Kind.VIDEO
         if (!file.isFile) return Outcome.Rejected(UiMediaLimits.MSG_UNDECODABLE)
@@ -48,6 +64,24 @@ object MediaGates {
             if (video) UiMediaLimits.MSG_UNSUPPORTED_FORMAT_VIDEO else UiMediaLimits.MSG_UNSUPPORTED_FORMAT_AUDIO
         if (mime == null) return Outcome.Rejected(unsupported)
 
+        val converted = if (!video && extension == "wav") convertedWav(file, slot, workDir) else null
+        val outcome = checkContent(slot, converted ?: file, mime, unsupported)
+        if (outcome is Outcome.Rejected) converted?.delete()
+        return outcome
+    }
+
+    /** [file]'s 16-bit PCM conversion when it needs one (and is small enough to be worth reading). */
+    private fun convertedWav(file: File, slot: ThemeMediaSlots.Slot, workDir: File?): File? {
+        if (file.length() > slot.maxBytes * MAX_CONVERSION_SHRINK || !WavPcm16.needsConversion(file)) return null
+        val out = File.createTempFile("studio-wav-", ".wav", workDir)
+        return out.takeIf { WavPcm16.convert(file, it) } ?: run {
+            out.delete()
+            null
+        }
+    }
+
+    private fun checkContent(slot: ThemeMediaSlots.Slot, file: File, mime: String, unsupported: String): Outcome {
+        val video = slot.kind == UiMediaLimits.Kind.VIDEO
         val bytes = file.length()
         if (bytes > slot.maxBytes) {
             return Outcome.Rejected(if (video) UiMediaLimits.tooLarge(slot.spec) else tooLargeForTheme(slot))
@@ -66,6 +100,6 @@ object MediaGates {
         val stored = UiMediaLimits.extensionForMime(mime)
             ?.takeIf(slot::accepts)
             ?: return Outcome.Rejected(unsupported)
-        return Outcome.Accepted(stored, probe)
+        return Outcome.Accepted(stored, probe, file)
     }
 }

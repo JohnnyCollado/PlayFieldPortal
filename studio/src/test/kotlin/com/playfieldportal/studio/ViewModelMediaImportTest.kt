@@ -3,6 +3,7 @@ package com.playfieldportal.studio
 import com.playfieldportal.studio.io.MediaGates
 import com.playfieldportal.themekit.PfpThemeCodec
 import com.playfieldportal.themekit.UiMediaLimits
+import com.playfieldportal.themekit.WavFixtures
 import java.io.File
 import kotlin.io.path.createTempDirectory
 import kotlin.test.AfterTest
@@ -56,6 +57,23 @@ class ViewModelMediaImportTest {
         assertEquals(scratch, vm.state.value.mediaFiles["sound_scroll"])
         vm.newTheme()
         assertTrue(!scratch.exists(), "New releases the scratch file")
+    }
+
+    @Test
+    fun `a float WAV imports as 16-bit PCM`() = runBlocking {
+        val vm = StudioViewModel(CoroutineScope(Dispatchers.Default))
+        val src = File(dir, "deck_ui_navigation.wav").also {
+            WavFixtures.writeSampleWav(it, 3, 32, 2, 44_100, WavFixtures.floats32(*FloatArray(4410 * 2) { 0.25f }), extraChunks = true)
+        }
+        vm.importSound("sound_scroll", src)
+        vm.awaitIdle()
+        assertNull(vm.state.value.dialog, "no error")
+        val scratch = assertNotNull(vm.state.value.mediaFiles["sound_scroll"])
+        val pcm = WavFixtures.readPcm16(scratch)
+        assertEquals(1, pcm.formatTag)
+        assertEquals(16, pcm.bits)
+        assertEquals(4410 * 2, pcm.samples.size)
+        assertTrue(pcm.samples.all { it == 8192.toShort() })
     }
 
     @Test

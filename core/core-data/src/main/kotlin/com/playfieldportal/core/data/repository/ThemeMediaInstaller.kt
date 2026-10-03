@@ -6,6 +6,7 @@ import com.playfieldportal.themekit.MotionLimits
 import com.playfieldportal.themekit.ThemeMediaSlots
 import com.playfieldportal.themekit.ThemeMotion
 import com.playfieldportal.themekit.UiMediaLimits
+import com.playfieldportal.themekit.WavPcm16
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -84,7 +85,8 @@ internal class ThemeMediaInstaller(private val probe: MediaProbe = ::probeWithPl
             // The theme's own byte cap replaces the audio staging ceiling carried by the spec.
             val spec = slot.spec.copy(maxBytes = slot.maxBytes)
             dir.mkdirs()
-            val ok = stageValidateAndPlace(entry, File(dir, "$key.$ext"), slot.maxBytes, key) { staged ->
+            val normalize: (File) -> Unit = if (ext == "wav") ::pcm16InPlace else { _ -> }
+            val ok = stageValidateAndPlace(entry, File(dir, "$key.$ext"), slot.maxBytes, key, normalize) { staged ->
                 val facts = probe(staged, mime) ?: return@stageValidateAndPlace UiMediaLimits.MSG_UNDECODABLE
                 UiMediaLimits.validate(
                     spec,
@@ -101,17 +103,22 @@ internal class ThemeMediaInstaller(private val probe: MediaProbe = ::probeWithPl
         return installed
     }
 
-    /** Stream, gate, then rename; every failure path removes the staging file. */
+    /**
+     * Stream, [normalize] (rewrite the staged file in place, e.g. a float WAV as 16-bit PCM), gate,
+     * then rename; every failure path removes the staging file.
+     */
     private fun stageValidateAndPlace(
         source: ThemeMotion,
         dest: File,
         maxBytes: Long,
         label: String,
+        normalize: (File) -> Unit = {},
         validate: (File) -> String?,
     ): Boolean {
         val staged = File(dest.parentFile, "${dest.name}.part")
         try {
             FileOutputStream(staged).use { out -> source.copyTo(CappedOutputStream(out, maxBytes)) }
+            normalize(staged)
             val rejection = runCatching { validate(staged) }
                 .getOrElse { Timber.w(it, "ThemeMediaInstaller: probe failed for %s", label); MotionLimits.MSG_UNDECODABLE }
             if (rejection != null) return reject(label, rejection)
@@ -123,6 +130,22 @@ internal class ThemeMediaInstaller(private val probe: MediaProbe = ::probeWithPl
             return reject(label, e.message ?: e.javaClass.simpleName)
         } finally {
             staged.delete()
+        }
+    }
+
+    /**
+     * Rewrites a staged WAV that is not plain 8/16-bit PCM (float, 24/32-bit, extensible) as 16-bit
+     * PCM ([WavPcm16]) so the gate times — and SoundPool plays — the conversion. A WAV it cannot
+     * read is left as staged for the gate to judge.
+     */
+    private fun pcm16InPlace(staged: File) {
+        if (!WavPcm16.needsConversion(staged)) return
+        val converted = File(staged.parentFile, "${staged.nameWithoutExtension}.pcm16.part")
+        try {
+            if (!WavPcm16.convert(staged, converted)) return
+            if (!converted.renameTo(staged)) converted.copyTo(staged, overwrite = true)
+        } finally {
+            converted.delete()
         }
     }
 

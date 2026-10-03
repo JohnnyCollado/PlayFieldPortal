@@ -901,7 +901,12 @@ class StudioViewModel(private val scope: CoroutineScope) {
             is MediaGates.Outcome.Rejected ->
                 _state.update { it.copy(dialog = StudioDialog.Error(outcome.message)) }
             is MediaGates.Outcome.Accepted -> {
-                val scratch = spill("studio-media-", outcome.extension) { out -> file.inputStream().use { it.copyTo(out) } }
+                // The gate may hand back a conversion (a float WAV as 16-bit PCM) rather than the pick.
+                val scratch = try {
+                    spill("studio-media-", outcome.extension) { out -> outcome.source.inputStream().use { it.copyTo(out) } }
+                } finally {
+                    if (outcome.source != file) outcome.source.delete()
+                }
                 edit { it.copy(mediaFiles = it.mediaFiles + (slotKey to scratch), statusMessage = "Added ${file.name}") }
             }
         }

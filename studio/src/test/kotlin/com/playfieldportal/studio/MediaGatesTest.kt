@@ -3,6 +3,7 @@ package com.playfieldportal.studio
 import com.playfieldportal.studio.io.MediaGates
 import com.playfieldportal.themekit.ThemeMediaSlots
 import com.playfieldportal.themekit.UiMediaLimits
+import com.playfieldportal.themekit.WavFixtures
 import java.io.File
 import kotlin.io.path.createTempDirectory
 import kotlin.test.AfterTest
@@ -61,6 +62,54 @@ class MediaGatesTest {
         assertEquals("m4a", accepted("sound_scroll", f).extension)
         val long = File(dir, "tap-long.m4a").also { MediaTestFiles.writeM4a(it, 900) }
         assertEquals(UiMediaLimits.tooLong(UiMediaLimits.NAVIGATION), rejected("sound_scroll", long))
+    }
+
+    // ── WAV encodings: anything but plain 8/16-bit PCM is converted to 16-bit PCM ──
+
+    /** 32-bit float stereo at 44.1 kHz with fact/PEAK chunks: [ms] of a quiet tone. */
+    private fun floatWav(name: String, ms: Long): File {
+        val frames = (44_100L * ms / 1000).toInt()
+        val samples = FloatArray(frames * 2) { (it % 100) / 400f }
+        return File(dir, name).also {
+            WavFixtures.writeSampleWav(it, 3, 32, 2, 44_100, WavFixtures.floats32(*samples), extraChunks = true)
+        }
+    }
+
+    @Test
+    fun `a float WAV is converted to 16-bit PCM, then timed and accepted`() {
+        val src = floatWav("float.wav", 100)
+        val ok = accepted("sound_scroll", src)
+        assertEquals("wav", ok.extension)
+        assertEquals(100L, ok.probe.durationMs)
+        assertTrue(ok.source != src && ok.source.isFile, "the converted copy is what gets staged")
+        val pcm = WavFixtures.readPcm16(ok.source)
+        assertEquals(1, pcm.formatTag)
+        assertEquals(16, pcm.bits)
+        assertEquals(ok.source.length(), ok.probe.bytes)
+        assertTrue(src.isFile, "the author's original is untouched")
+    }
+
+    @Test
+    fun `a plain PCM WAV is staged as it is`() {
+        val src = wav("plain.wav", 100)
+        assertEquals(src, accepted("sound_scroll", src).source)
+    }
+
+    @Test
+    fun `a converted WAV that is then rejected leaves nothing behind`() {
+        val work = File(dir, "work").also { it.mkdirs() }
+        val message = (MediaGates.check("sound_scroll", floatWav("long-float.wav", 600), work) as MediaGates.Outcome.Rejected).message
+        assertEquals(UiMediaLimits.tooLong(UiMediaLimits.NAVIGATION), message)
+        assertTrue(work.listFiles()!!.isEmpty())
+    }
+
+    @Test
+    fun `a float WAV over the byte cap that fits once converted is accepted`() {
+        // ~107 s of float stereo is ~38 MB; as 16-bit PCM it is ~19 MB, under ambience's 32 MB.
+        val src = floatWav("ambience.wav", 107_000)
+        assertTrue(src.length() > ThemeMediaSlots.slot("ambience_audio")!!.maxBytes)
+        val ok = accepted("ambience_audio", src)
+        assertTrue(ok.source.length() <= ThemeMediaSlots.slot("ambience_audio")!!.maxBytes)
     }
 
     @Test

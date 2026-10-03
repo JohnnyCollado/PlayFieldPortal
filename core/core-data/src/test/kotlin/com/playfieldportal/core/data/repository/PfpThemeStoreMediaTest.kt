@@ -12,6 +12,7 @@ import com.playfieldportal.themekit.PfpThemeBundle
 import com.playfieldportal.themekit.PfpThemeCodec
 import com.playfieldportal.themekit.PfpThemeManifest
 import com.playfieldportal.themekit.ThemeMotion
+import com.playfieldportal.themekit.WavFixtures
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileInputStream
@@ -26,6 +27,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -205,6 +207,28 @@ class PfpThemeStoreMediaTest {
         assertTrue(installed.isEmpty())
         assertFalse(probed)
         assertTrue(dir.listFiles().orEmpty().isEmpty())
+    }
+
+    @Test
+    fun `a float WAV in a theme installs as 16-bit PCM, probed after conversion`() {
+        var probedFormatTag = -1
+        val installer = ThemeMediaInstaller { file, _ ->
+            probedFormatTag = WavFixtures.readPcm16(file).formatTag
+            audio(100)
+        }
+        val dir = File(context.filesDir, "theme-media")
+        val src = File(context.cacheDir, "float.wav").apply {
+            writeBytes(WavFixtures.sampleWav(3, 32, 2, 44_100, WavFixtures.floats32(0.5f, -0.5f), extraChunks = true))
+        }
+
+        val installed = installer.installMedia(mapOf("sound_scroll" to ThemeMotion.ofFile(src, "wav")), dir)
+
+        assertEquals(setOf("sound_scroll"), installed)
+        assertEquals(1, probedFormatTag, "the gate sees the PCM conversion, not the float original")
+        val pcm = WavFixtures.readPcm16(File(dir, "sound_scroll.wav"))
+        assertEquals(1, pcm.formatTag)
+        assertContentEquals(shortArrayOf(16384, -16384), pcm.samples)
+        assertNoStaging()
     }
 
     @Test

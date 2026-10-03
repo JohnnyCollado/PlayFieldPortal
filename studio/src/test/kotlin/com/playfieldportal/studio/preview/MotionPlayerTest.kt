@@ -13,7 +13,7 @@ import java.awt.image.DataBufferInt
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import kotlin.math.roundToInt
+import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -97,11 +97,18 @@ class MotionPlayerTest {
     @Test
     fun `an early frame waits, a slightly late one shows, a very late one is dropped`() {
         val s = MotionScheduler(1f, 30f)
-        assertEquals(MotionScheduler.Action.WAIT, s.action(nowMs = 100, dueMs = 120, frameDurationMs = 33, sinceLastPublishMs = 33))
-        assertEquals(MotionScheduler.Action.SHOW, s.action(nowMs = 120, dueMs = 100, frameDurationMs = 33, sinceLastPublishMs = 33))
-        assertEquals(MotionScheduler.Action.DROP, s.action(nowMs = 200, dueMs = 100, frameDurationMs = 33, sinceLastPublishMs = 33))
+        assertEquals(MotionScheduler.Action.WAIT, s.action(nowMs = 100, dueMs = 120, frameDurationMs = 33, sinceLastPublishMs = 33, nextReady = true))
+        assertEquals(MotionScheduler.Action.SHOW, s.action(nowMs = 120, dueMs = 100, frameDurationMs = 33, sinceLastPublishMs = 33, nextReady = true))
+        assertEquals(MotionScheduler.Action.DROP, s.action(nowMs = 200, dueMs = 100, frameDurationMs = 33, sinceLastPublishMs = 33, nextReady = true))
         // ... unless nothing has been shown for a while: show something rather than freeze.
-        assertEquals(MotionScheduler.Action.SHOW, s.action(nowMs = 200, dueMs = 100, frameDurationMs = 33, sinceLastPublishMs = 400))
+        assertEquals(MotionScheduler.Action.SHOW, s.action(nowMs = 200, dueMs = 100, frameDurationMs = 33, sinceLastPublishMs = 400, nextReady = true))
+    }
+
+    @Test
+    fun `a very late frame is shown when no newer frame is decoded yet`() {
+        // Dropping saves only the conversion; with the decoder behind, there is nothing to skip to.
+        val s = MotionScheduler(1f, 30f)
+        assertEquals(MotionScheduler.Action.SHOW, s.action(nowMs = 200, dueMs = 100, frameDurationMs = 33, sinceLastPublishMs = 33, nextReady = false))
     }
 
     @Test
@@ -164,8 +171,7 @@ class MotionPlayerTest {
         assertEquals(List(25) { it % 10 }, published.map { it.second }, "frames 0..9 then the loop restarts at 0")
         assertEquals(2, source.rewinds)
         assertTrue(source.closed, "the source is released when the loop ends")
-        // Frame spacing is the clip's 33 ms (the very first frame is only late by its decode cost);
-        // a loop pass is exactly 10 frames long.
+        // Frame spacing is the clip's 33 ms; a loop pass is exactly 10 frames long.
         assertEquals(33L, published[2].first - published[1].first)
         assertEquals(330L, published[11].first - published[1].first)
     }
@@ -208,6 +214,40 @@ class MotionPlayerTest {
         val published = mutableListOf<Pair<Long, Int>>()
         val outcome = play(source, clock, speed = 1f, stopAfter = 200, published = published)
         assertEquals(MotionOutcome.ENDED, outcome)
+    }
+
+    @Test
+    fun `a decoder slower than the clip but above the floor shows every frame it decodes`() {
+        val clock = FakeClock()
+        // 50 ms per frame is 20 fps against a 30 fps clip: behind, but well above the 12 fps floor.
+        val source = FakeSource(clock, frames = 100, fps = 30f, decodeCostMs = 50)
+        val published = mutableListOf<Pair<Long, Int>>()
+        val outcome = play(source, clock, speed = 1f, loop = false, published = published)
+        assertEquals(MotionOutcome.ENDED, outcome, "20 fps keeps up with the floor, so it never falls back")
+        assertEquals(List(100) { it }, published.map { it.second }, "no decoded frame is thrown away")
+    }
+
+    @Test
+    fun `the clock starts at the first frame, so a slow start is not played as lateness`() {
+        val clock = FakeClock()
+        // Opening the file and warming the decoder up costs 600 ms before frame 0 arrives.
+        var first = true
+        val inner = FakeSource(clock, frames = 30, fps = 30f, decodeCostMs = 3)
+        val source = object : MotionFrameSource<Int> by inner {
+            override fun decode(): DecodedFrame<Int>? {
+                if (first) {
+                    first = false
+                    clock.now += 600
+                }
+                return inner.decode()
+            }
+        }
+        val published = mutableListOf<Pair<Long, Int>>()
+        val outcome = play(source, clock, speed = 1f, loop = false, published = published)
+        assertEquals(MotionOutcome.ENDED, outcome)
+        assertEquals(List(30) { it }, published.map { it.second }, "the opening frames are all shown")
+        assertEquals(33L, published[1].first - published[0].first, "frame 1 follows frame 0 at the clip's spacing")
+        assertEquals(33L, published[2].first - published[1].first)
     }
 
     @Test
@@ -268,11 +308,13 @@ class MotionPlayerTest {
     @Test
     fun `every decoded frame is recycled, shown or dropped`() {
         val clock = FakeClock()
-        // 100 ms per frame against a 33 ms clip: most frames are dropped.
+        // 100 ms per frame against a 33 ms clip, with the next frame always waiting: most are dropped.
         val inner = FakeSource(clock, frames = 40, fps = 30f, decodeCostMs = 100)
         var decoded = 0
         var recycled = 0
         val source = object : MotionFrameSource<Int> by inner {
+            override val nextReady = true
+
             override fun decode(): DecodedFrame<Int>? {
                 val frame = inner.decode() ?: return null
                 decoded++
@@ -381,34 +423,36 @@ class MotionPlayerTest {
         Math.round(width * 1000f) / 1000f, Math.round(height * 1000f) / 1000f,
     )
 
-    // ── JCodec behind the iterator ───────────────────────────────────────────
+    // ── FFmpeg behind the iterator ───────────────────────────────────────────
 
     private fun clip(frames: Int = 6): File = File.createTempFile("motion-player", ".mp4").also {
         it.deleteOnExit()
         MotionTestMedia.writeTestMp4(it, width = 320, height = 240, frames = frames)
     }
 
+    private fun FfmpegFrameReader.ptsUntilEnd(into: BgraFrame): List<Long> =
+        generateSequence { if (next(into)) into.ptsMs else null }.toList()
+
     @Test
-    fun `the frame reader yields every frame in order, then null, and rewinds`() {
+    fun `the frame reader yields every frame in order at the preview size, then stops, and rewinds`() {
         val file = clip(frames = 6)
-        val reader = assertNotNull(VideoCodecs.openFrames(file))
-        reader.use {
-            assertEquals(320, it.width)
-            assertEquals(240, it.height)
-            val pts = generateSequence { it.next() }.map { f -> f.ptsMs }.toList()
-            assertEquals(6, pts.size)
-            assertEquals(pts.sorted(), pts, "presentation order")
-            assertNull(it.next())
-            it.rewind()
-            assertNotNull(it.next(), "rewound to the first frame")
+        assertNotNull(FfmpegFrameReader.open(file, crop = null, outW = 64, outH = 36)).use { reader ->
+            assertEquals(10f, reader.fps, 0.01f)
+            val frame = BgraFrame(64, 36)
+            val pts = reader.ptsUntilEnd(frame)
+            assertEquals(listOf(0L, 100L, 200L, 300L, 400L, 500L), pts)
+            assertEquals(100L, frame.durationMs)
+            assertFalse(reader.next(frame), "still at the end")
+            reader.rewind()
+            assertEquals(pts, reader.ptsUntilEnd(frame), "rewound to the first frame, the same frames again")
         }
     }
 
     @Test
     fun `an unreadable file opens as null`() {
         val junk = File.createTempFile("not-a-video", ".mp4").also { it.writeText("nope"); it.deleteOnExit() }
-        assertNull(VideoCodecs.openFrames(junk))
-        assertNull(VideoCodecs.openFrames(File("does-not-exist.mp4")))
+        assertNull(FfmpegFrameReader.open(junk, null, 64, 36))
+        assertNull(FfmpegFrameReader.open(File("does-not-exist.mp4"), null, 64, 36))
     }
 
     @Test
@@ -432,24 +476,13 @@ class MotionPlayerTest {
     }
 
     @Test
-    fun `rewinding seeks back to the first frame and replays the same frames`() {
-        val file = clip(frames = 6)
-        assertNotNull(VideoCodecs.openFrames(file)).use { reader ->
-            val first = generateSequence { reader.next() }.map { it.ptsMs }.toList()
-            reader.rewind()
-            val second = generateSequence { reader.next() }.map { it.ptsMs }.toList()
-            assertEquals(first, second)
-        }
-    }
-
-    @Test
     fun `the read-ahead source loops the real decoder and releases its thread`() {
         val file = clip(frames = 6)
         val clock = FakeClock()
         val published = mutableListOf<Long>()
         val outcome = runBlocking {
             MotionEngine.run(
-                open = { ReadAheadSource(assertNotNull(VideoCodecs.openFrames(file)), loop = true, crop = null, outW = 64, outH = 36) },
+                open = { ReadAheadSource(assertNotNull(FfmpegFrameReader.open(file, null, 64, 36)), loop = true) },
                 scheduler = { fps -> MotionScheduler(1f, fps) },
                 clock = clock,
                 decodeContext = MotionPlayer.decodeDispatcher,
@@ -468,27 +501,96 @@ class MotionPlayerTest {
         assertTrue(readers.isEmpty(), "closing the source stops its reader")
     }
 
-    // ── FrameConverter: the same pixels as JCodec's AWTUtil path ─────────────
+    @Test
+    fun `the read-ahead source says when a newer frame is already decoded`() {
+        val file = clip(frames = 6)
+        val source = ReadAheadSource(assertNotNull(FfmpegFrameReader.open(file, null, 64, 36)), loop = false)
+        source.use {
+            val deadline = System.nanoTime() + 5_000_000_000L
+            while (!it.nextReady && System.nanoTime() < deadline) Thread.sleep(5)
+            assertTrue(it.nextReady, "the reader decodes ahead of the engine")
+            repeat(6) { _ -> assertNotNull(it.decode()).recycle() }
+            assertFalse(it.nextReady, "the end of the stream is not a frame to skip to")
+        }
+    }
+
+    // ── Framing: FFmpeg shows what the JCodec path showed ────────────────────
 
     /**
-     * The crop-and-scale the preview did before FrameConverter, kept as the reference it must match:
-     * the ARGB pixels it handed to Skia (as opaque BGRA, so the alpha byte was ignored).
+     * The crop-and-scale the preview did with JCodec, kept as the reference: frame [atMs] decoded by
+     * JCodec and cropped / scaled bilinearly by Java2D, as RGB ints.
      */
-    private fun legacyPixels(src: BufferedImage, crop: MotionCrop?, outW: Int, outH: Int): IntArray {
-        val r = MotionFraming.visibleRegion(src.width.toFloat(), src.height.toFloat(), outW.toFloat(), outH.toFloat(), crop)
-        val sx1 = (r.left * src.width).roundToInt().coerceIn(0, src.width - 1)
-        val sy1 = (r.top * src.height).roundToInt().coerceIn(0, src.height - 1)
-        val sx2 = ((r.left + r.width) * src.width).roundToInt().coerceIn(sx1 + 1, src.width)
-        val sy2 = ((r.top + r.height) * src.height).roundToInt().coerceIn(sy1 + 1, src.height)
+    private fun referencePixels(file: File, atMs: Long, crop: MotionCrop?, outW: Int, outH: Int): IntArray {
+        val src = assertNotNull(VideoCodecs.frameAt(file, atMs))
+        val r = MotionFraming.sourceRect(src.width, src.height, outW, outH, crop)
         val out = BufferedImage(outW, outH, BufferedImage.TYPE_INT_RGB)
         val g = out.createGraphics()
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR)
-        g.drawImage(src, 0, 0, outW, outH, sx1, sy1, sx2, sy2, null)
+        g.drawImage(src, 0, 0, outW, outH, r.left, r.top, r.right, r.bottom, null)
         g.dispose()
         return (out.raster.dataBuffer as DataBufferInt).data
     }
 
-    private val OPAQUE = 0xFF000000.toInt()
+    /** A BGRA frame as RGB ints. */
+    private fun BgraFrame.rgb(): IntArray = IntArray(width * height) { i ->
+        (bytes[i * 4 + 2].toInt() and 0xFF shl 16) or (bytes[i * 4 + 1].toInt() and 0xFF shl 8) or (bytes[i * 4].toInt() and 0xFF)
+    }
+
+    private fun meanChannelDiff(a: IntArray, b: IntArray): Double {
+        var sum = 0L
+        for (i in a.indices) for (shift in intArrayOf(0, 8, 16)) {
+            sum += abs((a[i] shr shift and 0xFF) - (b[i] shr shift and 0xFF))
+        }
+        return sum.toDouble() / (a.size * 3)
+    }
+
+    /**
+     * A clip with a smooth gradient in every channel (so two different scalers agree on it), its size
+     * not a whole number of macroblocks (so the decoded picture is cropped).
+     */
+    private fun gradientClip(width: Int, height: Int, frames: Int): File = File.createTempFile("motion-pattern", ".mp4").also {
+        it.deleteOnExit()
+        val encoder = SequenceEncoder.createSequenceEncoder(it, 10)
+        for (i in 0 until frames) {
+            val img = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+            for (x in 0 until width) for (y in 0 until height) {
+                val r = x * 180 / width + i * 20
+                val g = y * 200 / height
+                val b = (x + y) * 200 / (width + height)
+                img.setRGB(x, y, (r shl 16) or (g shl 8) or b)
+            }
+            encoder.encodeNativeFrame(AWTUtil.fromBufferedImageRGB(img))
+        }
+        encoder.finish()
+    }
+
+    @Test
+    fun `the reader frames the clip as the launcher does, crop and all`() {
+        val file = gradientClip(width = 330, height = 250, frames = 3)
+        val crops = listOf(null, MotionCrop(0.1f, 0.2f, 0.5f, 0.6f), MotionCrop(0f, 0f, 0.2f, 1f), MotionCrop(0.5f, 0.5f, 0.5f, 0.5f))
+        for (crop in crops) {
+            assertNotNull(FfmpegFrameReader.open(file, crop, 160, 90)).use { reader ->
+                val frame = BgraFrame(160, 90)
+                for (index in 0 until 3) {
+                    assertTrue(reader.next(frame))
+                    val diff = meanChannelDiff(referencePixels(file, frame.ptsMs, crop, 160, 90), frame.rgb())
+                    assertTrue(diff < 4.0, "frame $index, crop $crop: %.2f per channel off the JCodec framing".format(diff))
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `frames come out opaque`() {
+        val file = clip(frames = 1)
+        assertNotNull(FfmpegFrameReader.open(file, null, 64, 36)).use { reader ->
+            val frame = BgraFrame(64, 36)
+            assertTrue(reader.next(frame))
+            assertTrue((0 until 64 * 36).all { frame.bytes[it * 4 + 3] == 0xFF.toByte() })
+        }
+    }
+
+    // ── FrameBitmaps: a ring of Skia bitmaps, never one per frame ────────────
 
     /** The ARGB pixels of a frame bitmap, read back through Skia. */
     private fun ImageBitmap.argb(): IntArray {
@@ -498,62 +600,38 @@ class MotionPlayerTest {
         return out
     }
 
-    /** A clip whose size is not a whole number of macroblocks (so the picture is cropped), with detail in every channel. */
-    private fun patternedClip(width: Int, height: Int, frames: Int): File = File.createTempFile("motion-pattern", ".mp4").also {
-        it.deleteOnExit()
-        val encoder = SequenceEncoder.createSequenceEncoder(it, 10)
-        for (i in 0 until frames) {
-            val img = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
-            for (x in 0 until width) for (y in 0 until height) {
-                val r = (x * 255 / width + i * 20) and 0xFF
-                val g = (y * 255 / height) and 0xFF
-                val b = ((x xor y) * 7 + i * 31) and 0xFF
-                img.setRGB(x, y, (r shl 16) or (g shl 8) or b)
-            }
-            encoder.encodeNativeFrame(AWTUtil.fromBufferedImageRGB(img))
-        }
-        encoder.finish()
+    private fun solid(width: Int, height: Int, argb: Int): ByteArray =
+        ByteBuffer.allocate(width * height * 4).order(ByteOrder.LITTLE_ENDIAN).apply { repeat(width * height) { putInt(argb) } }.array()
+
+    @Test
+    fun `a filled bitmap holds exactly the frame's pixels`() {
+        val bitmaps = FrameBitmaps(4, 3)
+        val bytes = ByteArray(4 * 3 * 4) { (it * 7).toByte() }.also { b -> for (i in 0 until 12) b[i * 4 + 3] = 0xFF.toByte() }
+        val expected = IntArray(12).also { ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().get(it) }
+        assertContentEquals(expected, bitmaps.fill(bytes).argb())
     }
 
     @Test
-    fun `the converter draws exactly what the AWTUtil path drew`() {
-        val file = patternedClip(width = 330, height = 250, frames = 3)
-        val crops = listOf(null, MotionCrop(0.1f, 0.2f, 0.5f, 0.6f), MotionCrop(0f, 0f, 0.2f, 1f))
-        assertNotNull(VideoCodecs.openFrames(file)).use { reader ->
-            val planes = VideoCodecs.YuvPlanes()
-            for (index in 0 until 3) {
-                val raw = assertNotNull(reader.next())
-                raw.copyInto(planes)
-                assertEquals(330, planes.width)
-                assertEquals(250, planes.height)
-                val reference = assertNotNull(VideoCodecs.frameAt(file, raw.ptsMs))
-                for (crop in crops) {
-                    val expected = legacyPixels(reference, crop, 640, 360)
-                    val actual = FrameConverter(crop, 640, 360).convert(planes).argb()
-                    val diffs = expected.indices.filter { (expected[it] or OPAQUE) != actual[it] }
-                    assertTrue(
-                        diffs.isEmpty(),
-                        "frame $index, crop $crop: ${diffs.size} pixels differ, first " +
-                            diffs.take(5).joinToString { "#$it ${Integer.toHexString(expected[it])} vs ${Integer.toHexString(actual[it])}" },
-                    )
-                }
-            }
-        }
+    fun `the bitmaps cycle a fixed ring`() {
+        val bitmaps = FrameBitmaps(16, 9)
+        val bytes = solid(16, 9, 0xFF336699.toInt())
+        val frames = List(FrameBitmaps.RING_SIZE + 1) { bitmaps.fill(bytes) }
+        assertEquals(FrameBitmaps.RING_SIZE, frames.take(FrameBitmaps.RING_SIZE).toSet().size, "a full lap is all distinct bitmaps")
+        assertTrue(frames.last() === frames.first(), "the next lap reuses the first bitmap")
     }
 
     @Test
-    fun `one converter reused across frames matches a fresh one`() {
-        val file = patternedClip(width = 330, height = 250, frames = 3)
-        val reused = FrameConverter(null, 160, 90)
-        assertNotNull(VideoCodecs.openFrames(file)).use { reader ->
-            val planes = VideoCodecs.YuvPlanes()
-            repeat(3) {
-                assertNotNull(reader.next()).copyInto(planes)
-                assertContentEquals(
-                    FrameConverter(null, 160, 90).convert(planes).argb(),
-                    reused.convert(planes).argb(),
-                )
-            }
-        }
+    fun `a frame keeps its pixels until the ring comes back round`() {
+        val bitmaps = FrameBitmaps(16, 9)
+        val held = bitmaps.fill(solid(16, 9, 0xFF112233.toInt()))
+        val pixels = held.argb()
+        repeat(FrameBitmaps.RING_SIZE - 1) { bitmaps.fill(solid(16, 9, 0xFFAABBCC.toInt())) }
+        assertContentEquals(pixels, held.argb(), "frames still in flight are never overwritten")
+    }
+
+    @Test
+    fun `the ring outlasts every frame that can be in flight`() {
+        // Queued in the mailbox, on screen, and the one being filled.
+        assertTrue(FrameBitmaps.RING_SIZE >= FrameMailbox.CAPACITY + 2)
     }
 }

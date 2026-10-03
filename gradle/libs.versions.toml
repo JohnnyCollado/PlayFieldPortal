@@ -48,10 +48,14 @@ compose-multiplatform   = "1.12.0"
 compose-mp-material3    = "1.9.0"
 # Same story as material-icons above: frozen upstream, no releases past 1.7.3.
 compose-mp-icons        = "1.7.3"
-# Pure-Java MP4/H.264 reader for the Theme Studio's video -> GIF motion-wallpaper import.
-# Deliberately NOT ffmpeg/JavaCV: :studio must stay pure JVM (no natives in the jpackage
-# installer), and a pure-Java parser cannot be exploited the way a native decoder can.
+# Pure-Java MP4/H.264 reader for the Theme Studio's motion-wallpaper import gate (header probe,
+# poster frame). Kept for that gate: a hostile file gets an exception, not a native overflow.
 jcodec                  = "0.2.5"
+# FFmpeg for the Theme Studio's live preview playback only (JCodec decodes 1080p H.264 slower than
+# real time). The Studio bundles the natives for the OS it is packaged on; FFmpeg's LGPL build.
+javacv                  = "1.5.14"
+javacpp                 = "1.5.14"
+ffmpeg                  = "8.1.2-1.5.14"
 
 [libraries]
 # AndroidX Core
@@ -167,6 +171,9 @@ compose-mp-icons-extended       = { group = "org.jetbrains.compose.material",  n
 compose-mp-resources            = { group = "org.jetbrains.compose.components", name = "components-resources", version.ref = "compose-multiplatform" }
 jcodec                          = { group = "org.jcodec",                    name = "jcodec",                  version.ref = "jcodec" }
 jcodec-javase                   = { group = "org.jcodec",                    name = "jcodec-javase",           version.ref = "jcodec" }
+javacv                          = { group = "org.bytedeco",                  name = "javacv",                  version.ref = "javacv" }
+javacpp                         = { group = "org.bytedeco",                  name = "javacpp",                 version.ref = "javacpp" }
+ffmpeg                          = { group = "org.bytedeco",                  name = "ffmpeg",                  version.ref = "ffmpeg" }
 
 # Testing
 junit                           = { group = "junit",                      name = "junit",                           version.ref = "junit" }

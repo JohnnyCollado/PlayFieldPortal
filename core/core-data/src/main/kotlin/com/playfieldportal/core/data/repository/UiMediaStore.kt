@@ -11,6 +11,7 @@ import com.playfieldportal.core.domain.model.UiMediaKind
 import com.playfieldportal.core.domain.model.UiMediaSlot
 import com.playfieldportal.core.ui.media.UiMediaPaths
 import com.playfieldportal.themekit.UiMediaLimits
+import com.playfieldportal.themekit.WavPcm16
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -132,20 +133,24 @@ class UiMediaStore @Inject constructor(
         }
 
         dir.mkdirs()
-        val staged = File(dir, "staging_${System.currentTimeMillis()}.$ext")
+        val copiedFile = File(dir, "staging_${System.currentTimeMillis()}.$ext")
         val copied = runCatching {
             context.contentResolver.openInputStream(uri)?.use { input ->
                 // Stream to the staged file: the descriptor can lie, but a crafted pick must
                 // never make us allocate the entire untrusted audio file on the heap.
-                staged.outputStream().use { output ->
+                copiedFile.outputStream().use { output ->
                     with(SafeMedia) { input.copyCappedTo(output, spec.maxBytes) }
                 }
             }
         }.getOrNull()
         if (copied == null) {
-            runCatching { staged.delete() }
+            runCatching { copiedFile.delete() }
             return@withContext ImportResult(false, UiMediaLimits.MSG_UNDECODABLE)
         }
+        // A float / 24-bit / extensible WAV becomes plain 16-bit PCM before it is gated: neither
+        // the extractor nor the header fallback reliably times the original, and SoundPool is not
+        // guaranteed to play it.
+        val staged = if (ext == "wav") pcm16(copiedFile) else copiedFile
 
         val rejection = validateImported(staged, spec)
         if (rejection != null) {
@@ -292,6 +297,19 @@ class UiMediaStore @Inject constructor(
             )
         }
     }.getOrDefault(UiMediaLimits.MSG_UNDECODABLE)
+
+    /**
+     * [staged] as plain 16-bit PCM ([WavPcm16]) when it is a WAV that is not already 8/16-bit PCM;
+     * the original staging file is replaced. Anything [WavPcm16] cannot read is returned as it is,
+     * for the gate to judge.
+     */
+    private fun pcm16(staged: File): File {
+        if (!WavPcm16.needsConversion(staged)) return staged
+        val converted = File(dir, "${staged.nameWithoutExtension}_pcm16.wav")
+        if (!WavPcm16.convert(staged, converted)) return staged
+        staged.delete()
+        return converted
+    }
 
     /**
      * Some containers (WAV notably) report no MIME metadata; the extension we stored them under

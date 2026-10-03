@@ -12,6 +12,7 @@ import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.domain.model.UiMediaKind
 import com.playfieldportal.core.domain.model.UiMediaSlot
 import com.playfieldportal.themekit.UiMediaLimits
+import com.playfieldportal.themekit.WavFixtures
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkConstructor
@@ -161,6 +162,38 @@ class UiMediaStoreTest {
 
         assertTrue(result.ok, result.message ?: "WAV with a readable header must pass")
         assertTrue(wavFile(UiMediaSlot.SOUND_BACK).isFile)
+    }
+
+    /** 32-bit float stereo at 44.1 kHz with fact/PEAK chunks, every sample 0.25: the DAW-export layout. */
+    private fun floatWav(frames: Int) = WavFixtures.sampleWav(
+        3, 32, 2, 44_100, WavFixtures.floats32(*FloatArray(frames * 2) { 0.25f }), extraChunks = true,
+    )
+
+    @Test
+    fun `a float WAV pick is stored as 16-bit PCM and timed from it`() = runTest {
+        // Neither the extractor nor the PCM-only header fallback could time the float original.
+        probeReturns(null, mime = "audio/wav")
+        val result = store.import(UiMediaSlot.SOUND_SCROLL, register(floatWav(4410), name = "deck_ui_navigation.wav"))
+
+        assertTrue(result.ok, result.message ?: "a float WAV must import")
+        val pcm = WavFixtures.readPcm16(wavFile(UiMediaSlot.SOUND_SCROLL))
+        assertEquals(1, pcm.formatTag)
+        assertEquals(16, pcm.bits)
+        assertEquals(2, pcm.channels)
+        assertEquals(4410 * 2, pcm.samples.size)
+        assertTrue(pcm.samples.all { it == 8192.toShort() })
+        assertEquals(listOf(wavFile(UiMediaSlot.SOUND_SCROLL).name), mediaDir().list()!!.toList(), "no staging left")
+    }
+
+    @Test
+    fun `a float WAV over the slot's length is refused and leaves nothing behind`() = runTest {
+        probeReturns(null, mime = "audio/wav")
+        // 0.6 s against Navigation's 0.5 s cap, timed from the converted copy.
+        val result = store.import(UiMediaSlot.SOUND_SCROLL, register(floatWav(26_460), name = "long.wav"))
+
+        assertFalse(result.ok)
+        assertEquals(UiMediaLimits.tooLong(UiMediaLimits.NAVIGATION), result.message)
+        assertTrue(mediaDir().listFiles().isNullOrEmpty())
     }
 
     @Test
