@@ -173,27 +173,57 @@ object StudioIconSet {
         "menu_back" to Icons.AutoMirrored.Filled.ArrowBack,
     )
 
+    /**
+     * XMBItemList.XmbItemLeadingIcon draws each item glyph at its own size; a slot missing here is
+     * 48 dp. Null = the full item icon size ([com.playfieldportal.themekit.XmbLayoutSpec.itemIconDp]),
+     * which the Shiba hub glyphs use.
+     */
+    private val GLYPH_SIZES_DP: Map<String, Float?> = mapOf(
+        "item_add" to 44f,
+        "item_video_collections" to 46f,
+        "item_social_add" to 44f,
+        "item_social_voice" to 46f,
+        "item_social_voice_invite" to 44f,
+        "item_social_voice_mute" to 46f,
+        "item_social_voice_settings" to 44f,
+        "item_social_voice_leave" to 44f,
+        "item_social_activity" to 46f,
+        "item_social_discord_settings" to 44f,
+        "item_social_friends" to 46f,
+        "item_social_signout" to 44f,
+        "item_missing" to null,
+        "item_shiba_connect" to null,
+        "item_shiba_untracked" to null,
+    )
+
+    /** A vector item glyph's size in dp, given the theme's full item icon size. */
+    fun glyphSizeDp(key: String, itemIconDp: Float): Float =
+        if (key in GLYPH_SIZES_DP) GLYPH_SIZES_DP[key] ?: itemIconDp else 48f
+
     private const val CONSOLE_PREFIX = "sysicon_"
 
     /**
      * The launcher's console art (core-ui drawable-nodpi/sysicon_*.png) for a `sysicon_<id>` key, with
-     * SystemIcons.kt's fallbacks: xbox borrows the Xbox 360 icon, and ids with no dedicated art
-     * (cps1/2/3, default) use the generic one. Null for a non-console key.
+     * SystemIcons.kt's mapping: xbox borrows the Xbox 360 icon, the CPS boards share the CP System badge,
+     * and ids with no dedicated art use the generic one. Null for a non-console key.
      */
     internal fun consoleResource(key: String): String? {
         if (!key.startsWith(CONSOLE_PREFIX)) return null
         val id = when (val raw = key.removePrefix(CONSOLE_PREFIX)) {
             "xbox" -> "x360"
-            "cps1", "cps2", "cps3" -> "default"
+            "cps1", "cps2", "cps3" -> "cps"
             else -> raw
         }
         return "xmb/sysicon_$id.png"
     }
 
-    /** Art the launcher draws as authored (untinted): console art, medallions, memory cards. */
-    fun isFullColour(key: String): Boolean =
-        key.startsWith(CONSOLE_PREFIX) || key.startsWith("shiba_coin_") ||
-            key == "item_shiba_track" || key.startsWith("item_memcard_")
+    /**
+     * Built-in art the launcher draws as authored (untinted): only the Shiba Coin medallions. Console
+     * art, the memory cards and All Tracked Games are white silhouettes that the launcher recolours
+     * with the theme's icon colour (ConsoleIcon / BundledSilhouetteIcon → PortalIcon, SrcIn), so
+     * they take the tint here too.
+     */
+    fun isFullColour(key: String): Boolean = key.startsWith("shiba_coin_")
 
     /** Default painter for a slot key; an unknown key gets a play arrow. */
     @Composable
@@ -202,6 +232,10 @@ object StudioIconSet {
         consoleResource(key)?.let { return resourcePainter(it) }
         return rememberVectorPainter(ITEM_VECTORS[key] ?: Icons.Filled.PlayArrow)
     }
+
+    /** Bundled art that is chrome rather than a slot (the Xbox prompt glyphs under `xmb/`). */
+    @Composable
+    fun chromePainter(path: String): Painter = resourcePainter(path)
 
     // Classpath art for the bundled slots: PNG/WebP art decodes through Skia (as ImageCodecs does) and the
     // Android vector drawables through the Compose resources decoder.

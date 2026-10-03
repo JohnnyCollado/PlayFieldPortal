@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.theme.dimmed
 
 // ── Full-width information rows ───────────────────────────────────────────────
 //
@@ -92,7 +93,7 @@ fun PfpDetailInfoRow(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = DetailTextMuted,
+                    tint = DetailIconMuted,
                     modifier = Modifier.size(17.dp),
                 )
                 Spacer(Modifier.width(12.dp))
@@ -100,7 +101,7 @@ fun PfpDetailInfoRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = label.uppercase(),
-                    color = DetailTextMuted.copy(alpha = 0.8f),
+                    color = DetailTextMuted.dimmed(0.8f),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
@@ -127,7 +128,7 @@ fun PfpDetailInfoRow(
                     Spacer(Modifier.size(3.dp))
                     Text(
                         text = footnote,
-                        color = if (focused) DetailFocusEdge else DetailTextMuted.copy(alpha = 0.85f),
+                        color = if (focused) DetailFocusEdge else DetailTextMuted.dimmed(0.85f),
                         fontSize = 11.sp,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
@@ -136,7 +137,7 @@ fun PfpDetailInfoRow(
             }
             if (disclosure) {
                 Spacer(Modifier.width(10.dp))
-                PfpChevronMark(color = DetailTextMuted, size = 14.dp)
+                PfpChevronMark(color = DetailIconMuted, size = 14.dp)
             }
         }
     }
@@ -164,7 +165,7 @@ fun PfpDetailProgressRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = label.uppercase(),
-                    color = DetailTextMuted.copy(alpha = 0.8f),
+                    color = DetailTextMuted.dimmed(0.8f),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
@@ -197,7 +198,7 @@ fun PfpDetailProgressRow(
             }
             if (disclosure) {
                 Spacer(Modifier.width(10.dp))
-                PfpChevronMark(color = DetailTextMuted, size = 14.dp)
+                PfpChevronMark(color = DetailIconMuted, size = 14.dp)
             }
         }
     }
@@ -248,7 +249,7 @@ fun PfpDetailTextRow(
     RowShell(focused = focused, modifier = modifier, onClick = onClick) {
         Text(
             text = label.uppercase(),
-            color = DetailTextMuted.copy(alpha = 0.8f),
+            color = DetailTextMuted.dimmed(0.8f),
             fontSize = 10.sp,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
@@ -266,7 +267,7 @@ fun PfpDetailTextRow(
             Spacer(Modifier.size(6.dp))
             Text(
                 text = if (expanded) "Confirm to collapse" else "Confirm to read more",
-                color = if (focused) DetailFocusEdge else DetailTextMuted.copy(alpha = 0.7f),
+                color = if (focused) DetailFocusEdge else DetailTextMuted.dimmed(0.7f),
                 fontSize = 11.sp,
                 maxLines = 1,
             )
@@ -342,7 +343,7 @@ fun PfpDetailField(
     ) {
         Text(
             text = label.uppercase(),
-            color = DetailTextMuted.copy(alpha = 0.8f),
+            color = DetailTextMuted.dimmed(0.8f),
             fontSize = 10.sp,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
@@ -361,7 +362,7 @@ fun PfpDetailField(
             )
             if (disclosure) {
                 Spacer(Modifier.width(6.dp))
-                PfpChevronMark(color = DetailTextMuted, size = 12.dp)
+                PfpChevronMark(color = DetailIconMuted, size = 12.dp)
             }
         }
         if (secondary != null) {

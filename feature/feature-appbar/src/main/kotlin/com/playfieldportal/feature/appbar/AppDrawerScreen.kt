@@ -60,6 +60,7 @@ import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.core.ui.theme.PFPColors
 import com.playfieldportal.core.ui.theme.StorefrontColors
 import com.playfieldportal.core.ui.theme.deriveStorefrontColors
+import com.playfieldportal.core.ui.theme.dimmed
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.feature.appbar.appdrawer.AppDrawerCategoryTabs
 import com.playfieldportal.feature.appbar.appdrawer.AppDrawerGrid
@@ -472,7 +473,7 @@ private fun EmptyDrawerMessage(
             Spacer(Modifier.height(8.dp))
             Text(
                 text = hint,
-                color = colors.textSecondary.copy(alpha = 0.6f),
+                color = colors.textSecondary.dimmed(0.6f),
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 48.dp),

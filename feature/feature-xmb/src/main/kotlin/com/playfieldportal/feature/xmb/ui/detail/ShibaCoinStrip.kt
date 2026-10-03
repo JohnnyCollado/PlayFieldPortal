@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.achievement.GameCoins
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.ui.theme.menuCursorEdge
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 import kotlin.math.roundToInt
 
 // Chrome (the progress fill, header icon) follows the active theme accent via menuCursorEdge();
@@ -66,10 +68,10 @@ internal fun ShibaCoinStrip(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Filled.EmojiEvents, contentDescription = null, tint = accent, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
-            Text("Shiba Coins", color = TextMuted, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Text("Shiba Coins", color = themedSubText(TextMuted), fontSize = 13.sp, fontWeight = FontWeight.Medium)
             Spacer(Modifier.weight(1f))
             if (coins != null) {
-                Text("${(coins.progress * 100).roundToInt()}%", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("${(coins.progress * 100).roundToInt()}%", color = themedText(TextPrimary), fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.width(8.dp))
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Open Shiba Coins", tint = TextMuted, modifier = Modifier.size(20.dp))
@@ -77,7 +79,7 @@ internal fun ShibaCoinStrip(
 
         if (coins == null) {
             Spacer(Modifier.height(6.dp))
-            Text("Not tracked yet", color = TextMuted, fontSize = 13.sp)
+            Text("Not tracked yet", color = themedSubText(TextMuted), fontSize = 13.sp)
             return
         }
 
@@ -115,7 +117,7 @@ private fun CoinTally(tier: ShibaTier, earned: Int, total: Int) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         ShibaCoinIcon(tier, Modifier.size(16.dp))
         Spacer(Modifier.width(6.dp))
-        Text("$earned", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-        Text("/$total", color = TextMuted, fontSize = 11.sp)
+        Text("$earned", color = themedText(TextPrimary), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+        Text("/$total", color = themedSubText(TextMuted), fontSize = 11.sp)
     }
 }

@@ -38,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.playfieldportal.core.ui.components.XmbHeaderPill
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.artwork.match.MatchConfidence
 import com.playfieldportal.feature.artwork.match.MatchSignal
 
@@ -90,7 +92,7 @@ fun StorefrontMatchPanel(
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     "Match Game",
-                    color = TextPrimary,
+                    color = themedText(TextPrimary),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
@@ -109,7 +111,7 @@ fun StorefrontMatchPanel(
                     }
                 } else {
                     ui.storeLabel?.let {
-                        Text(it, color = TextMuted, fontSize = 12.sp)
+                        Text(it, color = themedSubText(TextMuted), fontSize = 12.sp)
                     }
                 }
             }
@@ -118,7 +120,7 @@ fun StorefrontMatchPanel(
                 Text(
                     if (ui.hasOtherStores) "Up/Down  Rows  •  L1/R1  Store  •  Select  Choose  •  △  More Information  •  B  Cancel"
                     else "Up/Down  Rows  •  Select  Choose  •  △  More Information  •  B  Cancel",
-                    color = TextMuted.copy(alpha = 0.55f),
+                    color = themedSubText(TextMuted.copy(alpha = 0.55f)),
                     fontSize = 10.sp,
                 )
             }
@@ -261,12 +263,12 @@ private fun EmptyState(ui: StorefrontMatchUi) {
     val (headline, detail) = storefrontEmptyMessage(ui)
     Text(
         headline,
-        color = TextPrimary,
+        color = themedText(TextPrimary),
         fontSize = 14.sp,
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier.padding(top = 8.dp),
     )
-    Text(detail, color = TextMuted, fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp, bottom = 4.dp))
+    Text(detail, color = themedSubText(TextMuted), fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp, bottom = 4.dp))
 }
 
 /** One store in the header. The shown one is outlined; the others are taps away, or L1/R1. */
@@ -274,7 +276,7 @@ private fun EmptyState(ui: StorefrontMatchUi) {
 private fun StoreChip(label: String, shown: Boolean, edge: Color, onClick: () -> Unit) {
     Text(
         label,
-        color = if (shown) TextPrimary else TextMuted,
+        color = themedText(if (shown) TextPrimary else TextMuted),
         fontSize = 12.sp,
         fontWeight = if (shown) FontWeight.SemiBold else FontWeight.Normal,
         modifier = Modifier
@@ -297,10 +299,10 @@ private fun LocalGameStrip(ui: StorefrontMatchUi) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text("Your game", color = TextMuted, fontSize = 11.sp)
+            Text("Your game", color = themedSubText(TextMuted), fontSize = 11.sp)
             Text(
                 ui.gameTitle,
-                color = TextPrimary,
+                color = themedText(TextPrimary),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
@@ -308,10 +310,10 @@ private fun LocalGameStrip(ui: StorefrontMatchUi) {
             )
         }
         Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text("Searched as", color = TextMuted, fontSize = 11.sp)
+            Text("Searched as", color = themedSubText(TextMuted), fontSize = 11.sp)
             Text(
                 "“${ui.query}”",
-                color = TextPrimary,
+                color = themedText(TextPrimary),
                 fontSize = 12.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -331,7 +333,7 @@ private fun Notice(text: String, dotColor: Color) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Box(Modifier.padding(top = 5.dp).size(6.dp).clip(CircleShape).background(dotColor))
-        Text(text, color = TextPrimary, fontSize = 12.sp, lineHeight = 17.sp)
+        Text(text, color = themedText(TextPrimary), fontSize = 12.sp, lineHeight = 17.sp)
     }
 }
 
@@ -367,21 +369,21 @@ private fun CandidateRow(
             if (row.thumbUrl != null) {
                 AsyncImage(model = row.thumbUrl, contentDescription = null, modifier = Modifier.fillMaxSize())
             } else {
-                Text(row.storeLabel, color = TextMuted.copy(alpha = 0.6f), fontSize = 9.sp)
+                Text(row.storeLabel, color = themedSubText(TextMuted.copy(alpha = 0.6f)), fontSize = 9.sp)
             }
         }
 
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(
                 row.title,
-                color = TextPrimary,
+                color = themedText(TextPrimary),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             row.subtitle?.let {
-                Text(it, color = TextMuted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(it, color = themedSubText(TextMuted), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             if (row.strongSignals.isNotEmpty()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -391,8 +393,8 @@ private fun CandidateRow(
         }
 
         Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(row.idLabel, color = TextMuted, fontSize = 11.sp)
-            Text("score ${row.score}", color = TextMuted.copy(alpha = 0.6f), fontSize = 10.sp)
+            Text(row.idLabel, color = themedSubText(TextMuted), fontSize = 11.sp)
+            Text("score ${row.score}", color = themedSubText(TextMuted.copy(alpha = 0.6f)), fontSize = 10.sp)
         }
     }
 }
@@ -432,10 +434,10 @@ private fun NoMatchRow(
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Text("No correct match", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+        Text("No correct match", color = themedText(TextPrimary), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         Text(
             "Leave $title unlinked. Nothing is written, and you can try again later.",
-            color = TextMuted,
+            color = themedSubText(TextMuted),
             fontSize = 11.sp,
         )
     }
@@ -508,31 +510,31 @@ private fun StorefrontMoreInfoPanel(
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     "More Information",
-                    color = TextPrimary,
+                    color = themedText(TextPrimary),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
-                Text("${row.storeLabel}  •  ${row.idLabel}", color = TextMuted, fontSize = 11.sp)
+                Text("${row.storeLabel}  •  ${row.idLabel}", color = themedSubText(TextMuted), fontSize = 11.sp)
             }
 
             if (!showTouchControls) {
                 Text(
                     "Select  Choose this game  •  B  Back",
-                    color = TextMuted.copy(alpha = 0.55f),
+                    color = themedSubText(TextMuted.copy(alpha = 0.55f)),
                     fontSize = 10.sp,
                 )
             }
 
-            Text(row.title, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-            row.subtitle?.let { Text(it, color = TextMuted, fontSize = 12.sp) }
+            Text(row.title, color = themedText(TextPrimary), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            row.subtitle?.let { Text(it, color = themedSubText(TextMuted), fontSize = 12.sp) }
             row.description?.let {
-                Text(it, color = TextMuted, fontSize = 12.sp, lineHeight = 17.sp, maxLines = 4, overflow = TextOverflow.Ellipsis)
+                Text(it, color = themedSubText(TextMuted), fontSize = 12.sp, lineHeight = 17.sp, maxLines = 4, overflow = TextOverflow.Ellipsis)
             }
 
             Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0x14FFFFFF)))
 
-            Text("Why it ranked here", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Text("Why it ranked here", color = themedText(TextPrimary), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
 
             row.signalLines.forEach { line ->
                 Row(
@@ -545,13 +547,13 @@ private fun StorefrontMoreInfoPanel(
                 ) {
                     Text(
                         line.label,
-                        color = if (line.counted) TextPrimary else TextMuted,
+                        color = themedText(if (line.counted) TextPrimary else TextMuted),
                         fontSize = 12.sp,
                         modifier = Modifier.weight(1f),
                     )
                     Text(
                         line.points,
-                        color = if (line.counted) SignalGreen else TextMuted.copy(alpha = 0.6f),
+                        color = if (line.counted) SignalGreen else themedSubText(TextMuted.copy(alpha = 0.6f)),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -559,8 +561,8 @@ private fun StorefrontMoreInfoPanel(
             }
 
             Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp)) {
-                Text("Total", color = TextMuted, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                Text("${row.score}", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Text("Total", color = themedSubText(TextMuted), fontSize = 12.sp, modifier = Modifier.weight(1f))
+                Text("${row.score}", color = themedText(TextPrimary), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
             }
 
             if (tiedOnExactTitle && rivalStoreId != null) {
@@ -586,7 +588,7 @@ private fun StorefrontMoreInfoPanel(
                             .padding(vertical = 10.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text("Choose this game", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Choose this game", color = themedText(TextPrimary), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     }
                     Box(
                         modifier = Modifier
@@ -597,7 +599,7 @@ private fun StorefrontMoreInfoPanel(
                             .padding(vertical = 10.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text("Back to matches", color = TextPrimary, fontSize = 13.sp)
+                        Text("Back to matches", color = themedText(TextPrimary), fontSize = 13.sp)
                     }
                 }
             }

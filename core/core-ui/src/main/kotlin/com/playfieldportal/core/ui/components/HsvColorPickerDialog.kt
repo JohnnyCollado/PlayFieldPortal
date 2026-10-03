@@ -38,6 +38,8 @@ import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.theme.contrastRatio
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 
 /**
  * The app's one HSV colour picker.
@@ -62,7 +64,7 @@ fun HsvColorPickerDialog(
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
     accent: Color = Color.White,
-    subtext: Color = Color.White.copy(alpha = 0.7f),
+    subtext: Color = themedSubText(Color.White.copy(alpha = 0.7f)),
     /**
      * Darkest and brightest backdrop the picked colour will actually sit on. When supplied, the
      * dialog shows live contrast readings against both — which is what turns a later automatic
@@ -93,7 +95,7 @@ fun HsvColorPickerDialog(
                 .clickable(onClick = {})
                 .padding(24.dp),
         ) {
-            Text(title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text(title, color = themedText(Color.White), fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(

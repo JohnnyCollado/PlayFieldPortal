@@ -41,6 +41,9 @@ import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.icons.CategoryIconGlyph
 import com.playfieldportal.core.ui.icons.CustomIcon
 import com.playfieldportal.core.ui.icons.CustomIconSurface
+import com.playfieldportal.core.ui.theme.SECONDARY_TEXT_WEIGHT
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.xmb.viewmodel.CustomIconSession
 import com.playfieldportal.feature.xmb.viewmodel.UserCategoryIconSlot
 import com.playfieldportal.themekit.IconSlot
@@ -127,7 +130,7 @@ fun CustomIconsOverlay(
         ) {
             Text(
                 text = "Customize XMB Icons",
-                color = Color.White,
+                color = themedText(Color.White),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
             )
@@ -137,7 +140,9 @@ fun CustomIconsOverlay(
                     val selected = index == session.groupIndex
                     Text(
                         text = groupLabel(group),
-                        color = if (selected) Color.White else Color(0xFFB9C6DC),
+                        // The selected tab sits on its solid blue pill and keeps white; the rest
+                        // are Main text dimmed (#B9C6DC → the font colour at 0.72).
+                        color = if (selected) Color.White else themedText(Color(0xFFB9C6DC), SECONDARY_TEXT_WEIGHT),
                         fontSize = 13.sp,
                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                         modifier = Modifier
@@ -167,14 +172,14 @@ fun CustomIconsOverlay(
                         )
                     }
                     Column {
-                        Text(focused.displayName, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        Text(focused.displayName, color = themedText(Color.White), fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         Text(
                             text = when {
                                 customIcons.containsKey(focused.key) -> "Your pick"
                                 themeIcons.containsKey(focused.key) -> "From theme"
                                 else -> "Default"
                             },
-                            color = Color(0xFFB9C6DC),
+                            color = themedSubText(Color(0xFFB9C6DC), SECONDARY_TEXT_WEIGHT),
                             fontSize = 12.sp,
                         )
                     }
@@ -218,7 +223,7 @@ fun CustomIconsOverlay(
                         }
                         Text(
                             text = slot.displayName,
-                            color = if (selected) Color.White else Color(0xFFB9C6DC),
+                            color = themedText(if (selected) Color.White else Color(0xFFB9C6DC), if (selected) 1f else SECONDARY_TEXT_WEIGHT),
                             fontSize = 10.sp,
                             maxLines = 1,
                         )
@@ -242,7 +247,7 @@ fun CustomIconsOverlay(
                     ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Reset"),
                     ControllerPromptItem(GamepadAction.BACK, "Done"),
                 ),
-                labelColor = Color(0x99B9C6DC),
+                labelColor = themedSubText(Color(0x99B9C6DC)),
                 labelStyle = TextStyle(fontSize = 11.sp),
                 glyphSize = 15.dp,
                 arrangement = Arrangement.spacedBy(14.dp),

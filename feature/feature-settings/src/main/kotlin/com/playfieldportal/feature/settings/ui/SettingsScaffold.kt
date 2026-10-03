@@ -102,7 +102,9 @@ import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.LocalPfpTextColors
+import com.playfieldportal.core.ui.theme.dimmed
 import com.playfieldportal.core.ui.theme.solveScrimColor
+import com.playfieldportal.core.ui.theme.themedText
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -1055,7 +1057,7 @@ fun SettingsGroup(title: String) {
             .background(Color.White.copy(alpha = 0.1f))
             .padding(start = 48.dp, top = 10.dp, bottom = 10.dp),
         text = title.uppercase(),
-        color = Color.White,
+        color = themedText(Color.White),
         fontSize = 15.sp,
         fontWeight = FontWeight.Bold,
         letterSpacing = 1.8.sp,
@@ -1584,7 +1586,7 @@ fun SettingsTextFieldRow(
                 if (!helper.isNullOrBlank()) {
                     Text(
                         text = helper,
-                        color = SettingsSubtext.copy(alpha = 0.6f),
+                        color = SettingsSubtext.dimmed(0.6f),
                         fontSize = 11.sp,
                         style = TextStyle(shadow = SettingsTextShadow),
                     )
@@ -1592,7 +1594,7 @@ fun SettingsTextFieldRow(
                 if (helperPrompt != null) {
                     ControllerPromptBar(
                         items = listOf(helperPrompt),
-                        labelColor = SettingsSubtext.copy(alpha = 0.6f),
+                        labelColor = SettingsSubtext.dimmed(0.6f),
                         labelStyle = TextStyle(fontSize = 11.sp),
                         glyphSize = 14.dp,
                     )

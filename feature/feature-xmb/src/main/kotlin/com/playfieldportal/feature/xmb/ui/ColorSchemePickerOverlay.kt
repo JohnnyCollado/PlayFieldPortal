@@ -36,6 +36,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.components.HsvColorPickerDialog
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.xmb.viewmodel.ColorSchemeOption
 import com.playfieldportal.feature.xmb.viewmodel.ColorSchemePickerState
 import com.playfieldportal.feature.xmb.viewmodel.CustomColorPickerState
@@ -90,7 +92,7 @@ fun ColorSchemePickerOverlay(
                 text = "Color Scheme",
                 fontSize = 19.sp,
                 fontWeight = FontWeight.Light,
-                color = Color.White.copy(alpha = 0.92f),
+                color = themedText(Color.White.copy(alpha = 0.92f)),
                 style = TextStyle(shadow = PickerTextShadow),
                 modifier = Modifier.padding(bottom = 10.dp),
             )
@@ -152,13 +154,13 @@ private fun ColorSchemeRow(
                     text = option.label,
                     fontSize = if (isSelected) 16.sp else 15.sp,
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (isSelected) Color.White else Color.White.copy(alpha = 0.66f),
+                    color = themedText(if (isSelected) Color.White else Color.White.copy(alpha = 0.66f)),
                     style = TextStyle(shadow = PickerTextShadow),
                 )
                 Text(
                     text = option.sublabel,
                     fontSize = 11.sp,
-                    color = Color.White.copy(alpha = if (isSelected) 0.78f else 0.5f),
+                    color = themedSubText(Color.White.copy(alpha = if (isSelected) 0.78f else 0.5f)),
                     style = TextStyle(shadow = PickerTextShadow),
                 )
             }

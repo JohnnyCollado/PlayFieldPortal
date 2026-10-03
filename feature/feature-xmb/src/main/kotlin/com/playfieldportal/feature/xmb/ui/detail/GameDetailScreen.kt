@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.artwork.match.MetadataField
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -255,9 +257,9 @@ fun GameDetailScreen(
             },
         ) {
             Spacer(Modifier.height(24.dp))
-            Text("This game is no longer in your library.", color = TextPrimary, fontSize = 16.sp)
+            Text("This game is no longer in your library.", color = themedText(TextPrimary), fontSize = 16.sp)
             Spacer(Modifier.height(6.dp))
-            Text("Press Back to return to the library.", color = TextMuted, fontSize = 13.sp)
+            Text("Press Back to return to the library.", color = themedSubText(TextMuted), fontSize = 13.sp)
         }
         return
     }
@@ -899,14 +901,14 @@ private fun DiscRow(
                         .clickable(role = Role.Button) { onSelect(member.id) }
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                 ) {
-                    Text(label, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Text(label, color = themedText(TextPrimary), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     Text(
                         text = when {
                             member.isMissing -> "Missing"
                             isSelected -> "Preferred"
                             else -> "Available"
                         },
-                        color = if (member.isMissing) ActionFail else TextMuted,
+                        color = if (member.isMissing) ActionFail else themedSubText(TextMuted),
                         fontSize = 11.sp,
                     )
                 }
@@ -1181,13 +1183,13 @@ private fun EmulatorPickerPanel(
         ) {
             Text(
                 "Choose Emulator",
-                color = TextPrimary,
+                color = themedText(TextPrimary),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
                 "Up/Down  Navigate  •  Select  Confirm  •  B  Cancel",
-                color = TextMuted.copy(alpha = 0.5f),
+                color = themedSubText(TextMuted.copy(alpha = 0.5f)),
                 fontSize = 10.sp,
             )
 
@@ -1223,10 +1225,10 @@ private fun EmulatorPickerPanel(
                             .padding(vertical = 12.dp, horizontal = 12.dp),
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(profile.name, color = TextPrimary, fontSize = 14.sp, maxLines = 1)
+                            Text(profile.name, color = themedText(TextPrimary), fontSize = 14.sp, maxLines = 1)
                             Text(
                                 profile.packageName,
-                                color = TextMuted,
+                                color = themedSubText(TextMuted),
                                 fontSize = 11.sp,
                                 maxLines = 1,
                             )

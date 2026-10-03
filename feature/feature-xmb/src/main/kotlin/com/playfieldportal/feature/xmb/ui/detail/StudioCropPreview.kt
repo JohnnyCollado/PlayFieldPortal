@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.feature.artwork.store.ArtworkKind
 import kotlin.math.roundToInt
 
@@ -144,7 +145,7 @@ private fun CropPreviewFrame(
         }
         Text(
             caption,
-            color = Color.White.copy(alpha = 0.6f),
+            color = themedSubText(Color.White.copy(alpha = 0.6f)),
             fontSize = 9.sp,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(top = 4.dp),

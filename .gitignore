@@ -108,3 +108,6 @@ assets/SFX/active/*.mp3
 # this is the backstop if a key is copied in by hand. Never commit a private key.
 *.private.pem
 pfp-kb-keys/
+
+# MSYS / Git-for-Windows crash dumps.
+*.stackdump

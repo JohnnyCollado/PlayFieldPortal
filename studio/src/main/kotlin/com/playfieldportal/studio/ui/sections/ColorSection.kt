@@ -23,8 +23,7 @@ fun ColorSection(state: StudioState, viewModel: StudioViewModel) {
     SectionColumn {
         SectionHeading("Accent color")
         SwatchGrid(selected = state.accentArgb, onPick = viewModel::setAccent)
-        HexField(label = "Custom accent", argb = state.accentArgb, onValid = viewModel::setAccent)
-        ExpandablePicker(argb = state.accentArgb, onChange = viewModel::setAccent)
+        ColorField(label = "Custom accent", argb = state.accentArgb, onChange = viewModel::setAccent)
 
         HorizontalDivider()
 
@@ -40,8 +39,7 @@ fun ColorSection(state: StudioState, viewModel: StudioViewModel) {
         }
         val iconColor = state.iconColor
         if (iconColor is IconColorChoice.Custom) {
-            HexField("Icon color", iconColor.argb) { viewModel.setIconColor(IconColorChoice.Custom(it)) }
-            ExpandablePicker(iconColor.argb) { viewModel.setIconColor(IconColorChoice.Custom(it)) }
+            ColorField("Icon color", iconColor.argb) { viewModel.setIconColor(IconColorChoice.Custom(it)) }
             if (WallpaperMetrics.luminance(iconColor.argb) < WallpaperMetrics.DARK_ICON_LUMINANCE) {
                 HintText("Dark icon color — icons may be hard to see over the wallpaper scrim.")
             }
@@ -58,8 +56,7 @@ fun ColorSection(state: StudioState, viewModel: StudioViewModel) {
         }
         val textColor = state.textColor
         if (textColor is TextColorChoice.Custom) {
-            HexField("Text color", textColor.argb) { viewModel.setTextColor(TextColorChoice.Custom(it)) }
-            ExpandablePicker(textColor.argb) { viewModel.setTextColor(TextColorChoice.Custom(it)) }
+            ColorField("Text color", textColor.argb) { viewModel.setTextColor(TextColorChoice.Custom(it)) }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Switch(

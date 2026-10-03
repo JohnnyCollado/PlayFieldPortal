@@ -41,7 +41,7 @@ class ShortcutRequestResolverTest {
         coVerify { store.enqueue(request) }
         verify {
             tasks.report(
-                "shortcut:1a2b", "Chrome wants to add a shortcut: Gmail", any(), NotificationSeverity.INFO,
+                "shortcut:1a2b", "Shortcut request: Gmail (opens Chrome)", any(), NotificationSeverity.INFO,
                 NotificationKind.SYSTEM, NotificationAction.ReviewShortcut("1a2b"), any(), false,
             )
         }

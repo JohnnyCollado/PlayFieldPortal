@@ -36,7 +36,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.io.IOException
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -166,12 +165,12 @@ internal class ContentResolverKbFileWriter(private val context: Context) : KbFil
             val stream = resolver.openOutputStream(uri, "wt") ?: return@withContext false
             stream.use { it.write(bytes) }
             true
-        } catch (e: IOException) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Providers throw more than IOException and SecurityException (an unsupported "wt"
+            // mode is an IllegalArgumentException); any of them is a failed export, not a crash.
             Timber.w(e, "Failed to write the exported knowledge file")
-            runCatching { DocumentsContract.deleteDocument(resolver, uri) }
-            false
-        } catch (e: SecurityException) {
-            Timber.w(e, "No access to the exported knowledge file")
             runCatching { DocumentsContract.deleteDocument(resolver, uri) }
             false
         }

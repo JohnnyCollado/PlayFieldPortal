@@ -3,7 +3,7 @@ package com.playfieldportal.studio.io
 import com.playfieldportal.core.archive.BoundedZipReader
 import com.playfieldportal.core.archive.ZipLimitExceededException
 import com.playfieldportal.core.archive.ZipLimits
-import com.playfieldportal.themekit.CustomizableIcons
+import com.playfieldportal.studio.EditableSlots
 import com.playfieldportal.themekit.PfpThemeCodec
 import java.io.File
 import java.nio.file.Files
@@ -42,7 +42,7 @@ data class IconPackReport(
 
 /**
  * Reads an icon pack — a folder or a `.zip` of `<slotKey>.<png|gif>` files, the names the template
- * export writes — and matches files to [CustomizableIcons] keys.
+ * export writes — and matches files to [EditableSlots] keys.
  *
  * Nothing is ever extracted to disk: zip entries are inflated into memory through
  * [BoundedZipReader] (entry count / per-entry / total caps), and the entry NAME is only ever used
@@ -58,7 +58,7 @@ object IconPackImport {
     private val EXTENSIONS = setOf("png", "gif")
 
     /** Lower-cased key → canonical key. File names match case-insensitively, keys are stored lower-case. */
-    private val keysByLower: Map<String, String> = CustomizableIcons.ALL.associate { it.key.lowercase() to it.key }
+    private val keysByLower: Map<String, String> = EditableSlots.ALL.associate { it.key.lowercase() to it.key }
 
     private val ZIP_LIMITS = ZipLimits(
         maxEntries = MAX_FILES,

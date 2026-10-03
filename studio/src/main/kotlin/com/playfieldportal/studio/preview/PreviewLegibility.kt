@@ -29,7 +29,12 @@ enum class LabelProtection(val hasShadow: Boolean) {
 }
 
 /** How an icon glyph separates from what is behind it ([ThemeLegibility.icon]). */
-enum class IconMatteStyle { NONE, OFFSET_SHADOW, CONTOUR_DARK, CONTOUR_LIGHT, CONTOUR_AUTO }
+enum class IconMatteStyle {
+    NONE, OFFSET_SHADOW, OFFSET_SHADOW_LIGHT, CONTOUR_DARK, CONTOUR_LIGHT, CONTOUR_AUTO;
+
+    /** The single down-right copy, dark or light, as opposed to a contour all around the glyph. */
+    val isOffsetShadow: Boolean get() = this == OFFSET_SHADOW || this == OFFSET_SHADOW_LIGHT
+}
 
 data class PreviewLegibility(
     val text: LabelProtection,
@@ -42,17 +47,19 @@ data class PreviewLegibility(
     /** IconMatte.matteOffsets: unit offsets scaled by [matteRadiusDp]; empty draws exactly the plain glyph. */
     fun matteOffsets(): List<Offset> = when (icon) {
         IconMatteStyle.NONE -> emptyList()
-        IconMatteStyle.OFFSET_SHADOW -> listOf(Offset(1f, 1f))
+        IconMatteStyle.OFFSET_SHADOW, IconMatteStyle.OFFSET_SHADOW_LIGHT -> listOf(Offset(1f, 1f))
         IconMatteStyle.CONTOUR_DARK, IconMatteStyle.CONTOUR_LIGHT, IconMatteStyle.CONTOUR_AUTO -> CONTOUR_OFFSETS
     }
 
-    /** The unit [matteOffsets] multiplier: the shadow offset for OFFSET_SHADOW, the contour radius otherwise. */
-    val matteRadiusDp: Float get() = if (icon == IconMatteStyle.OFFSET_SHADOW) SHADOW_OFFSET_DP else CONTOUR_RADIUS_DP
+    /** The unit [matteOffsets] multiplier: the shadow offset for either offset shadow, the contour radius otherwise. */
+    val matteRadiusDp: Float get() = if (icon.isOffsetShadow) SHADOW_OFFSET_DP else CONTOUR_RADIUS_DP
 
     /** IconMatte.matteColorFor: the matte (alpha applied) behind a glyph of [glyph], null for no matte. */
     fun matteColor(glyph: Color): Color? = when (icon) {
         IconMatteStyle.NONE -> null
         IconMatteStyle.OFFSET_SHADOW -> MATTE_DARK.copy(alpha = SHADOW_MATTE_ALPHA)
+        // The light shadow, for dark glyphs a dark shadow disappears into.
+        IconMatteStyle.OFFSET_SHADOW_LIGHT -> MATTE_LIGHT.copy(alpha = SHADOW_MATTE_ALPHA)
         IconMatteStyle.CONTOUR_DARK -> MATTE_DARK.copy(alpha = CONTOUR_MATTE_ALPHA)
         IconMatteStyle.CONTOUR_LIGHT -> MATTE_LIGHT.copy(alpha = CONTOUR_MATTE_ALPHA)
         // The matte is the luminance opposite of the glyph: a light glyph gets the dark one.
@@ -98,6 +105,7 @@ data class PreviewLegibility(
             },
             icon = when (legibility?.icon) {
                 "offset_shadow" -> IconMatteStyle.OFFSET_SHADOW
+                "offset_shadow_light" -> IconMatteStyle.OFFSET_SHADOW_LIGHT
                 "contour_dark" -> IconMatteStyle.CONTOUR_DARK
                 "contour_light" -> IconMatteStyle.CONTOUR_LIGHT
                 "contour_auto" -> IconMatteStyle.CONTOUR_AUTO

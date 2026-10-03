@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.accompanist.drawablepainter.DrawablePainter
 import com.playfieldportal.core.ui.theme.StorefrontColors
+import com.playfieldportal.core.ui.theme.unselectedLabel
 import com.playfieldportal.feature.appbar.InstalledApp
 
 // ── Application tile ──────────────────────────────────────────────────────────
@@ -86,7 +87,7 @@ internal fun AppDrawerGridItem(
         label = "appTileSelection",
     )
     val labelColor by animateColorAsState(
-        targetValue = if (isSelected) colors.textPrimary else colors.textSecondary,
+        targetValue = if (isSelected) colors.textPrimary else colors.unselectedLabel(),
         animationSpec = tween(SELECTION_TWEEN),
         label = "appTileLabel",
     )

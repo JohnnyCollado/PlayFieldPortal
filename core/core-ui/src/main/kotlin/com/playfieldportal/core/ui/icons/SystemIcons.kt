@@ -23,6 +23,9 @@ fun systemIconRes(platformId: String?): Int = when (platformId?.lowercase()) {
     "atari7800" -> R.drawable.sysicon_atari7800
     "atarilynx" -> R.drawable.sysicon_atarilynx
     "c64" -> R.drawable.sysicon_c64
+    // The three CPS boards share the CP System badge (the physical-media art), as no arcade
+    // cabinet art exists.
+    "cps1", "cps2", "cps3" -> R.drawable.sysicon_cps
     "desktop" -> R.drawable.sysicon_desktop
     "dreamcast" -> R.drawable.sysicon_dreamcast
     "favorites" -> R.drawable.sysicon_favorites

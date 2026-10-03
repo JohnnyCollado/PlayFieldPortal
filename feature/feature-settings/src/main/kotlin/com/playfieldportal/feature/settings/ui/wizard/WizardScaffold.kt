@@ -34,6 +34,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPrompt
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.settings.ui.LocalSettingsScrollStateRegistrar
 import com.playfieldportal.feature.settings.ui.SettingsScaffold
 
@@ -153,7 +155,7 @@ private fun WizardHeader(stepNumber: Int?, title: String) {
         }
         Text(
             text = title,
-            color = Color.White,
+            color = themedText(Color.White),
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium,
         )
@@ -190,7 +192,7 @@ private fun WizardHeading(heading: String, hint: String?) {
     ) {
         Text(
             text = heading,
-            color = Color.White,
+            color = themedText(Color.White),
             fontSize = 17.sp,
             textAlign = TextAlign.Center,
         )
@@ -198,7 +200,7 @@ private fun WizardHeading(heading: String, hint: String?) {
             Spacer(Modifier.height(4.dp))
             Text(
                 text = hint,
-                color = Color.White.copy(alpha = 0.78f),
+                color = themedSubText(Color.White.copy(alpha = 0.78f)),
                 fontSize = 12.sp,
                 textAlign = TextAlign.Center,
             )
@@ -240,7 +242,7 @@ private fun WizardFooter(backEnabled: Boolean, showSkip: Boolean, confirmLabel: 
                 ControllerPrompt(
                     action = GamepadAction.NEXT_CATEGORY,
                     label = "Skip",
-                    labelColor = Color.White.copy(alpha = 0.88f),
+                    labelColor = themedSubText(Color.White.copy(alpha = 0.88f)),
                     labelStyle = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold),
                     glyphSize = 16.dp,
                     spacing = 5.dp,

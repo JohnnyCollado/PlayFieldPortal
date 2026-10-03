@@ -3,6 +3,7 @@ package com.playfieldportal.feature.xmb.viewmodel
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import com.playfieldportal.core.data.repository.SafeMedia
 import com.playfieldportal.core.domain.playlist.PlaylistFileParser
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -29,8 +30,9 @@ class PlaylistDocumentReader @Inject constructor(
         return try {
             val stream = context.contentResolver.openInputStream(uri)
                 ?: return PickedPlaylistFile.Unreadable(name, "Couldn't open the file")
-            val bytes = stream.use { it.readNBytes(PlaylistFileParser.MAX_BYTES + 1) }
-            if (bytes.size > PlaylistFileParser.MAX_BYTES) {
+            // Not InputStream.readNBytes(int): it is API 33 and minSdk is 29.
+            val bytes = stream.use { with(SafeMedia) { it.readCapped(PlaylistFileParser.MAX_BYTES.toLong()) } }
+            if (bytes == null) {
                 PickedPlaylistFile.Unreadable(name, "File is larger than ${PlaylistFileParser.MAX_BYTES / (1024 * 1024)} MiB")
             } else {
                 PickedPlaylistFile.Content(name, bytes)

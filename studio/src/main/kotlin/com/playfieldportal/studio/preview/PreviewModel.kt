@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.lerp
 import com.playfieldportal.studio.IconColorChoice
 import com.playfieldportal.studio.StudioState
+import com.playfieldportal.studio.TextColorChoice
 import com.playfieldportal.themekit.ColorCascade
 import com.playfieldportal.themekit.XmbLayoutAdjust
 import com.playfieldportal.themekit.XmbLayoutSpec
@@ -27,7 +28,16 @@ data class XmbPreviewModel(
     val layoutAdjust: XmbLayoutAdjust = PreviewGeometry.effectiveAdjust(layout, enabled = false, XmbLayoutAdjust.DEFAULT),
     /** The theme's text/icon legibility, approximating the launcher's rendering. */
     val legibility: PreviewLegibility = PreviewLegibility.DEFAULT,
+    /**
+     * PFPColors.textPrimary: the theme's text colour, else white. The XMB crossbar's own labels are
+     * fixed colours on the launcher; the screens built on PFPColors (detail, Shiba, pickers,
+     * Settings) read this one.
+     */
+    val textPrimary: Color = Color.White,
 ) {
+    /** PFPColors.textSecondary: the text colour at 0.7 alpha, as XMBViewModel derives it. */
+    val textSecondary: Color get() = textPrimary.copy(alpha = 0.7f)
+
     // Launcher parity: PFPColors.accentColor stays WHITE for presets and imports alike
     // (XMBViewModel.toPFPColors / withWaveTint only retint waveColor + gradient), so the
     // menu cursor formulas below lerp from white — matching MenuCursor.kt on device.
@@ -69,27 +79,76 @@ fun StudioState.toPreviewModel(adjust: XmbLayoutAdjust? = null): XmbPreviewModel
             layout, enabled = adjust != null, stored = adjust ?: XmbLayoutAdjust.DEFAULT,
         ),
         legibility = PreviewLegibility.of(legibility),
+        textPrimary = when (val c = textColor) {
+            TextColorChoice.Auto -> Color.White
+            is TextColorChoice.Custom -> Color(c.argb)
+        },
     )
 }
 
 /**
- * Sample content for the interactive preview, mirroring the launcher's category rows. The default
- * frame is the Video category with its second row selected: Video's rows exercise themeable item
- * slots (folders, library, recents...) rather than the non-themeable platform icons Games leads with.
- * A row with [Row.children] drills; a row without is a leaf.
+ * Sample content for the interactive preview: the launcher's XMB as a fully set-up user sees it —
+ * Full flavour, media libraries scanned, a track playing, a game played (so the UMD slot is up),
+ * favorites and a custom memory card, Discord signed in, Shiba Coins connected. Rows, order,
+ * titles, subtitles, slot keys and menus come from XMBViewModel (settingsSectionItems,
+ * photo/music/videoRootItems, memoryCardItems, the app-category branch, the Social and Shiba hubs);
+ * only the user data (games, files, apps, friends, counts) is sample. A row with [Row.children]
+ * drills; a row without is a leaf.
  */
 object SampleContent {
 
     data class Category(val slotKey: String, val label: String)
+
+    /** How a row's leading icon draws (XMBItemList.XmbItemLeadingIcon). */
+    enum class Leading {
+        /** A themeable slot: [Row.slotKey]'s override or its built-in glyph. */
+        SLOT,
+
+        /** An installed app: the app's own icon, not themeable (the preview draws a stand-in). */
+        APP,
+
+        /** A placeholder row (XMBItemType.EMPTY): no icon, drawn at half alpha. */
+        EMPTY,
+
+        /**
+         * A game with no artwork under the default Custom Icon display: the launcher's PspIcon0Icon
+         * letter tile in its platform's accent, not themeable. Only the selected game shows its text.
+         */
+        GAME,
+
+        /** A photo or video file with no thumbnail: [Row.slotKey]'s glyph framed in a 60x40 tile. */
+        THUMB,
+
+        /** A music track with no cover: [Row.slotKey]'s glyph framed in a 56 dp square. */
+        COVER,
+
+        /** The UMD slot: the PSP's UMD, in the icon colour. Not themeable. */
+        UMD,
+
+        /** The Shiba Coins player card: a ring around [Row.badge] ("Lv 27"), in the icon colour. */
+        LEVEL,
+    }
+
     data class Row(
-        val slotKey: String,
+        /** The IconSlots key, or null when the row's icon is not themeable. */
+        val slotKey: String?,
         val title: String,
         val subtitle: String? = null,
         val children: List<Row> = emptyList(),
-        /** A game in a console's list: what the Games filter searches and sorts, and what carries a PIC0 logo. */
+        /** A game: what the Games filter searches and sorts. */
         val isGame: Boolean = false,
+        val leading: Leading = Leading.SLOT,
+        /** A [Leading.GAME] tile's platform accent (PlatformSeeder), ARGB. */
+        val accentArgb: Long? = null,
+        /** The options menu the launcher gives this row (XMBViewModel.contextMenuKind). */
+        val menu: RowKind = RowKind.NONE,
+        /** The row the category lands on (XmbLists.defaultRootIndex). */
+        val lands: Boolean = false,
+        /** [Leading.LEVEL]'s ring text. */
+        val badge: String? = null,
     )
 
+    /** CategoryRepositoryImpl.BUILT_IN_CATEGORIES, in seeded order (Social is the Full flavour's). */
     val categories: List<Category> = listOf(
         Category("catbar_settings", "Settings"),
         Category("catbar_photos", "Photo"),
@@ -100,146 +159,274 @@ object SampleContent {
         Category("catbar_appstore", "App Store"),
         Category("catbar_social", "Social"),
         Category("catbar_achievements", "Shiba Coins"),
-        Category("catbar_favorites", "Favorites"),
     )
 
-    const val SELECTED_CATEGORY = 3 // Video
-    const val SELECTED_ROW = 1
+    /** XMBViewModel.defaultXmbCategoryIndex: the launcher opens on Game, on All Games. */
+    const val SELECTED_CATEGORY = 4
 
-    private fun leaf(slotKey: String, title: String, subtitle: String? = null) = Row(slotKey, title, subtitle)
+    private fun leaf(slotKey: String, title: String, subtitle: String? = null, menu: RowKind = RowKind.NONE) =
+        Row(slotKey, title, subtitle, menu = menu)
 
-    private fun branch(slotKey: String, title: String, subtitle: String?, vararg children: Row) =
-        Row(slotKey, title, subtitle, children.toList())
+    private fun branch(slotKey: String, title: String, subtitle: String?, vararg children: Row, menu: RowKind = RowKind.NONE) =
+        Row(slotKey, title, subtitle, children.toList(), menu = menu)
 
-    private fun leaves(slotKey: String, vararg titles: String) = titles.map { leaf(slotKey, it) }.toTypedArray()
+    private fun app(title: String) = Row(null, title, leading = Leading.APP, menu = RowKind.APP)
 
-    // Declared in Title order, so the Games filter's default sort leaves the list as written.
-    private fun games(consoleKey: String) = arrayOf("Crossbar Racing", "Memory Card Blues", "Portal Quest", "Shiba Run")
-        .map { Row(consoleKey, it, isGame = true) }.toTypedArray()
+    // The media subtitles' separator ("4032×3024  ·  Jul 14, 2026").
+    private const val SEP = "  ·  "
+
+    // ── Settings (settingsSectionItems) ──────────────────────────────────────
+
+    private fun section(title: String, subtitle: String, vararg rows: Pair<String, String>) =
+        branch("item_settings", title, subtitle, *rows.map { (t, s) -> leaf("item_settings", t, s) }.toTypedArray())
 
     private val settings = listOf(
         leaf("item_settings", "Android Settings", "Opens device settings"),
-        branch(
-            "item_settings", "Library", "Library Manager, collections, artwork & hidden games",
-            *leaves("item_settings", "Library Manager", "Windows Games", "Collections", "Artwork", "Hidden Games"),
+        section(
+            "Library", "Sources, cards, artwork & hidden games",
+            "Library Manager" to "ROM sources & scanning",
+            "Windows Games" to "PC games, launchers & imports",
+            "Custom Memory Cards" to "Create & manage custom memory cards",
+            "Artwork" to "Scraping sources & cache",
+            "Hidden Games" to "Review apps & games you've hidden",
         ),
-        branch(
-            "item_settings", "Emulators", "Launch profiles & RetroArch cores",
-            *leaves("item_settings", "Installed", "Custom Emulators", "RetroArch", "Per-System Defaults"),
+        section(
+            "Emulators", "Launch profiles & RetroArch cores",
+            "Installed" to "Detected emulator profiles",
+            "Custom Emulators" to "Custom profiles & Add Custom Emulator",
+            "RetroArch" to "Core detection & linking",
+            "Per-System Defaults" to "Default emulator & core per console, and per-game overrides",
+            "Emulator knowledge" to "Updates, your own files & reset to built-in",
         ),
-        branch(
-            "item_settings", "Interface", "Categories, themes, display & controller",
-            *leaves("item_settings", "Display", "Sound", "Notifications", "Categories", "Themes", "Controller"),
+        section(
+            "Interface", "Categories, themes, display & controller",
+            "Display" to "Wave, wallpaper, boot & icons",
+            "Sound" to "Menu & boot sounds",
+            "Notifications" to "Panel history & retention",
+            "Categories" to "Manage XMB categories",
+            "Themes" to "XMB appearance & color scheme",
+            "Controller" to "Button mapping",
         ),
-        branch(
-            "item_settings", "Achievements", "RetroAchievements & Steam",
-            *leaves("item_settings", "Player Card", "Provider Credentials", "Local Windows", "Update Achievements"),
+        section(
+            "Achievements", "RetroAchievements & Steam",
+            "Player Card" to "Levels, ranks & sync status",
+            "Provider Credentials" to "RetroAchievements & Steam accounts",
+            "Local Windows" to "Track local Windows (Steam-emu) games",
+            "Update Achievements" to "Sync & auto-match tracked games",
         ),
-        branch(
-            "item_settings", "Media", "Music, video & photo settings",
-            *leaves("item_settings", "Music", "Video", "Photo"),
+        section(
+            "Media", "Music, video & photo settings",
+            "Music" to "Music folders & default player",
+            "Video" to "Video libraries, scanning & playback",
+            "Photo" to "Photo libraries & scanning",
         ),
-        branch(
-            "item_settings", "System", "About, logs, backup, setup & credits",
-            *leaves("item_settings", "About", "Logs", "Backup", "Setup", "Credits"),
+        section(
+            "System", "About, logs, setup & credits",
+            "About" to "Play Field Portal",
+            "Logs" to "Debug & error log viewer",
+            "Setup Wizard" to "Guided folder & account setup",
+            "Credits" to "Artwork & attributions",
         ),
     )
+
+    // ── Photo (photoRootItems, a library scanned, a camera app present) ──────
+
+    private const val PICK_APPS = "Pick installed apps to show here"
+
+    // A photo opens the fullscreen viewer.
+    private fun photo(title: String, size: String, date: String) =
+        Row("item_photo_file", title, "$size$SEP$date", leading = Leading.THUMB, menu = RowKind.PHOTO_FILE)
+
+    private val cameraRoll = listOf(
+        photo("Beach Sunset", "4032×3024", "Jul 14, 2026"),
+        photo("City Lights", "4032×3024", "Jun 2, 2026"),
+        photo("Mountain Trail", "3024×4032", "May 19, 2026"),
+    )
+    private val screenshots = listOf(
+        photo("Crossbar Racing", "1920×1080", "Sep 28, 2026"),
+        photo("Portal Quest", "1920×1080", "Sep 30, 2026"),
+    )
+
+    private fun album(title: String, photos: List<Row>) = Row("item_photo_folder", title, null, photos, menu = RowKind.ALBUM)
 
     private val photos = listOf(
-        leaf("item_camera", "Camera"),
-        branch(
-            "item_memcard_photos", "All Photos", "214 photos",
-            *leaves("item_photo_file", "Sunset", "Skyline", "Trail Map", "Group Shot"),
-        ),
-        branch(
-            "item_photo_albums", "Photo Albums", null,
-            *leaves("item_photo_folder", "Camera Roll", "Screenshots", "Downloads"),
-        ),
-        leaf("item_photo_apps", "Photo Apps"),
+        leaf("item_camera", "Camera", "Open the camera"),
+        branch("item_photo_albums", "Albums", "2 albums", album("Camera Roll", cameraRoll), album("Screenshots", screenshots)),
+        branch("item_photo_apps", "Photo Apps", "Open your installed photo apps", app("Gallery"), leaf("item_add", "Add Photo Apps", PICK_APPS)),
+        Row("item_memcard_photos", "Photos", null, cameraRoll + screenshots, menu = RowKind.MEDIA_CARD),
     )
 
+    // ── Music (musicRootItems, a track loaded) ───────────────────────────────
+
+    // Now Playing, Playlist and Music open the fullscreen player / browser rather than drilling.
     private val music = listOf(
-        leaf("item_music_apps", "Music Apps"),
-        branch(
-            "item_memcard_music", "All Music", "412 tracks",
-            *leaves("item_music_track", "Journey of Dreams", "Midnight Wave", "Memory Card Blues", "Save Point"),
+        Row(
+            "item_music_track", "Midnight Wave", "Now Playing${SEP}Neon Arcade",
+            leading = Leading.COVER, menu = RowKind.NOW_PLAYING, lands = true,
         ),
-        branch(
-            "item_playlist", "Playlists", null,
-            branch("item_playlist", "Road Trip", "3 tracks", *leaves("item_music_track", "Open Highway", "Neon Miles", "Last Exit")),
-            branch("item_playlist", "Focus", "2 tracks", *leaves("item_music_track", "Deep Work", "Quiet Hours")),
-        ),
+        leaf("item_playlist", "Playlist", "Build and play your own track lists"),
+        branch("item_music_apps", "Music Apps", "Open your installed music apps", app("Spotify"), leaf("item_add", "Add Music Apps", PICK_APPS)),
+        leaf("item_memcard_music", "Music", menu = RowKind.MEDIA_CARD),
     )
+
+    // ── Video (videoRootItems, libraries scanned) ────────────────────────────
+
+    // A video opens its detail screen. Subtitle: the duration (formatDuration).
+    private fun video(title: String, duration: String) =
+        Row("item_video_file", title, duration, leading = Leading.THUMB, menu = RowKind.VIDEO_FILE)
+
+    private val movies = listOf(video("Big Night Out", "1:52:40"), video("Ocean Deep", "1:31:05"))
+    private val captures = listOf(video("Boss Fight", "12:05"), video("Speedrun Attempt", "24:31"))
 
     private val video = listOf(
-        leaf("item_video_apps", "Video Apps"),
-        // The launcher's "Videos" library row is a memory-card slot, not the library glyph.
         branch(
-            "item_memcard_video", "Videos", "132 videos",
-            *leaves("item_video_file", "Opening Cinematic", "Gameplay Capture", "Boss Fight", "Credits Roll"),
+            "item_video_collections", "Collections", "Recently Watched, Favorites & Playlists",
+            branch("item_video_recent", "Recently Watched", "Pick up where you left off", captures[0], movies[1]),
+            branch("item_video_favorites", "Favorites", "Your starred videos", movies[0]),
+            branch(
+                "item_playlist", "Playlists", "Build and play your own lists",
+                Row("item_playlist", "Highlights", null, captures, menu = RowKind.VIDEO_PLAYLIST),
+                leaf("item_add", "Create Playlist", "Start a new video playlist"),
+                leaf("item_add", "Import Playlist", "From an .m3u, .m3u8, .pls or .xspf file"),
+            ),
         ),
-        branch("item_video_recent", "Recently Watched", null, *leaves("item_video_file", "Boss Fight", "Gameplay Capture")),
-        branch("item_video_favorites", "Favorites", null, *leaves("item_video_file", "Opening Cinematic")),
         branch(
-            "item_video_collections", "Collections", null,
-            leaf("item_video_folder", "Trailers"), leaf("item_video_folder", "Speedruns"),
+            "item_video_library", "Video Libraries", "2 libraries",
+            Row("item_video_folder", "Movies", null, movies, menu = RowKind.VIDEO_LIBRARY),
+            Row("item_video_folder", "Captures", null, captures, menu = RowKind.VIDEO_LIBRARY),
         ),
+        branch("item_video_apps", "Video Apps", "Open your installed video apps", app("YouTube"), leaf("item_add", "Add Video Apps", PICK_APPS)),
+        Row("item_memcard_video", "Videos", null, (movies + captures).sortedBy { it.title }, menu = RowKind.MEDIA_CARD),
     )
 
-    private val gameRows = listOf(
-        branch("sysicon_allgames", "All Games", "Every platform", *games("sysicon_allgames")),
-        branch("sysicon_favorites", "Favorites", null, *games("sysicon_favorites")),
-        branch("sysicon_ps3", "PlayStation 3", null, *games("sysicon_ps3")),
-        branch("sysicon_psp", "PlayStation Portable", null, *games("sysicon_psp")),
-        branch("sysicon_windows", "Windows", null, *games("sysicon_windows")),
+    // ── Game (memoryCardItems + the UMD slot) ────────────────────────────────
+
+    private class Console(
+        val key: String,
+        val card: String,
+        val platform: String,
+        val accentArgb: Long,
+        val titles: List<String>,
     )
 
-    private val network = listOf(
-        leaf("status_wifi", "Wi-Fi", "Connected"),
-        leaf("status_bluetooth", "Bluetooth"),
-        leaf("item_settings", "Network Settings"),
+    // Titles in Title order, so the Games filter's default sort leaves each list as written.
+    private val consoles = listOf(
+        Console(
+            "sysicon_ps3", "PlayStation 3 Memory Card", "PlayStation 3", 0xFF003087,
+            listOf("Crossbar Racing", "Memory Card Blues", "Portal Quest", "Shiba Run"),
+        ),
+        Console(
+            "sysicon_psp", "PlayStation Portable Memory Card", "PlayStation Portable", 0xFF003791,
+            listOf("Neon Drift", "Pocket Legends"),
+        ),
+        // The Windows card is titled "Windows Games" and only shows while it has games.
+        Console("sysicon_windows", "Windows Games", "Windows", 0xFF0078D4, listOf("Desktop Dungeon")),
     )
 
-    private val appStore = listOf(
-        leaf("item_add", "Featured"),
-        leaf("item_video_library", "Updates"),
-        leaf("item_photo_apps", "Installed"),
-    )
+    // Subtitle: platformEmulatorLabel, which is the platform alone until an emulator is known.
+    private fun game(console: Console, title: String) =
+        Row(null, title, console.platform, isGame = true, leading = Leading.GAME, accentArgb = console.accentArgb, menu = RowKind.GAME)
+
+    private fun count(n: Int) = "$n ${if (n == 1) "Game" else "Games"}"
+
+    private val allGames = consoles.flatMap { c -> c.titles.map { game(c, it) } }.sortedBy { it.title }
+
+    private fun gamesNamed(vararg titles: String) = allGames.filter { it.title in titles }
+
+    private val gameRows: List<Row> = buildList {
+        // The last-played game sits in the UMD slot, above the default card (XmbLists.withUmdAboveDefault).
+        val played = consoles.first()
+        add(Row(null, "Shiba Run", played.platform, leading = Leading.UMD, menu = RowKind.UMD))
+        add(Row("sysicon_allgames", "All Games", "Total Games ${allGames.size}", allGames, menu = RowKind.ALL_GAMES, lands = true))
+        val favorites = gamesNamed("Crossbar Racing", "Neon Drift")
+        add(Row("sysicon_favorites", "Favorites", count(favorites.size), favorites, menu = RowKind.FAVORITES))
+        // customCardSubtitle: "Custom · N Games" ("Custom · Pinned · N Games" once pinned).
+        val coop = gamesNamed("Portal Quest", "Shiba Run")
+        add(Row("item_memcard_games", "Co-op Night", "Custom · ${count(coop.size)}", coop, menu = RowKind.CUSTOM_CARD))
+        consoles.forEach { c -> add(Row(c.key, c.card, count(c.titles.size), c.titles.map { game(c, it) }, menu = RowKind.CONSOLE)) }
+    }
+
+    // ── Network / App Store: auto-classified installed apps, then Add Apps ───
+
+    private val addApps = leaf("item_add", "Add Apps", "Pick installed apps to add to this section")
+
+    private val network = listOf(app("Chrome"), app("Firefox"), addApps)
+
+    private val appStore = listOf(app("Play Store"), addApps)
+
+    // ── Social (signed in): the account, then its hub ────────────────────────
+
+    private fun voiceSetting(title: String, value: String) = leaf("item_social_voice_settings", title, value)
 
     private val social = listOf(
-        leaf("item_social_add", "Add Friend"),
-        branch("item_social_friends", "Friends", "3 online", *leaves("item_social_account", "Alex", "Sam", "Jordan")),
-        leaf("item_social_voice", "Voice Chat"),
-        leaf("item_social_activity", "Activity Settings", "Share what you're playing"),
-        leaf("item_social_discord_settings", "Discord Settings", "Account & sign out"),
-        leaf("item_social_signout", "Sign Out"),
+        branch(
+            "item_social_account", "PlayerOne", "Online",
+            branch(
+                "item_social_friends", "Friends", "2 online",
+                // Online first, then by name.
+                leaf("item_social_account", "Alex", "Playing Crossbar Racing"),
+                leaf("item_social_account", "Sam", "Online"),
+                leaf("item_social_account", "Jordan", "Offline"),
+            ),
+            branch(
+                "item_social_voice", "Voice", "Talk in a shared room",
+                leaf("item_social_voice", "Create Lobby", "Start a private room and invite friends"),
+                leaf("item_social_voice_invite", "Invites", "No pending invites"),
+                branch(
+                    "item_social_voice_settings", "Voice Settings", "Mic sensitivity, noise filter, volume",
+                    voiceSetting("Mic Sensitivity", "Auto · lower filters clicks"),
+                    voiceSetting("Noise Cancellation", "On · Krisp removes background + button clicks"),
+                    voiceSetting("Echo Cancellation", "On · stops speaker feedback"),
+                    voiceSetting("Auto Gain Control", "On · levels your mic volume"),
+                    voiceSetting("Mic Volume", "100%"),
+                    voiceSetting("Audio Balance", "Game ◀────●────▶ Voice"),
+                    voiceSetting("Push-to-Talk", "Off"),
+                ),
+            ),
+            branch(
+                "item_social_activity", "Activity Settings", "Share what you're playing",
+                leaf("item_social_activity", "Share Activity", "On · friends can see you're in Playfield Portal"),
+                leaf("item_social_activity", "Generic Mode", "Off · shows the app name"),
+            ),
+            branch(
+                "item_social_discord_settings", "Discord Settings", "Account & sign out",
+                leaf("item_social_signout", "Sign Out", "Disconnect PlayerOne"),
+            ),
+            menu = RowKind.SOCIAL_ACCOUNT,
+        ),
     )
+
+    // ── Shiba Coins (accounts connected) ─────────────────────────────────────
+
+    // All three open fullscreen views (player status, the tracked / untracked libraries).
+    private const val TRACKED = 5
 
     private val shiba = listOf(
-        leaf("item_shiba_connect", "Connect Accounts"),
-        branch(
-            "item_shiba_track", "All Tracked Games", null,
-            leaf("shiba_coin_platinum", "Crossbar Racing", "100%"),
-            leaf("shiba_coin_gold", "Portal Quest", "72%"),
-            leaf("shiba_coin_silver", "Shiba Run", "40%"),
-            leaf("shiba_coin_bronze", "Memory Card Blues", "8%"),
+        Row(
+            null, "Ruffian", "1,240 / 3,600 coins  •  $TRACKED tracked  •  1 mastered",
+            leading = Leading.LEVEL, badge = "Lv 27", menu = RowKind.SHIBA,
         ),
-        leaf("item_shiba_untracked", "Untracked"),
-    )
-
-    private val favorites = listOf(
-        leaf("item_memcard_games", "Favorite Games"),
-        leaf("item_video_favorites", "Favorite Videos"),
-        leaf("item_music_track", "Favorite Tracks"),
+        leaf("item_shiba_track", "All Tracked Games", "$TRACKED games", menu = RowKind.SHIBA),
+        leaf("item_shiba_untracked", "Untracked", "${allGames.size - TRACKED} games", menu = RowKind.SHIBA),
     )
 
     // Same order as [categories].
     private val byCategory: List<List<Row>> =
-        listOf(settings, photos, music, video, gameRows, network, appStore, social, shiba, favorites)
+        listOf(settings, photos, music, video, gameRows, network, appStore, social, shiba)
 
     /** The first-level rows of category [index]. */
     fun rootRows(index: Int): List<Row> = byCategory[index]
 
-    /** The default (Video) category's rows. */
+    /**
+     * The row a category lands on (XmbLists.defaultRootIndex): Now Playing or All Games where marked,
+     * else the media library card (Photos, Videos), else the top row.
+     */
+    fun landingRow(index: Int): Int {
+        val rows = rootRows(index)
+        rows.indexOfFirst { it.lands }.takeIf { it >= 0 }?.let { return it }
+        return rows.indexOfFirst { it.menu == RowKind.MEDIA_CARD }.coerceAtLeast(0)
+    }
+
+    /** The default (Game) category's rows. */
     val rows: List<Row> get() = rootRows(SELECTED_CATEGORY)
 }

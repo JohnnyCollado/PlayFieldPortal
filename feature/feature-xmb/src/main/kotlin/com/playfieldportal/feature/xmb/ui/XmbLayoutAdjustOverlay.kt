@@ -31,6 +31,9 @@ import com.playfieldportal.core.domain.model.ControllerIcon
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.theme.SECONDARY_TEXT_WEIGHT
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.themekit.XmbLayoutAdjust
 import kotlin.math.roundToInt
 
@@ -75,7 +78,7 @@ fun XmbLayoutAdjustOverlay(
         ) {
             Text(
                 text = "Adjust XMB Layout",
-                color = Color.White,
+                color = themedText(Color.White),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
             )
@@ -84,7 +87,7 @@ fun XmbLayoutAdjustOverlay(
                 text = "Scale ${"%.2f".format(draft.scale)}x    " +
                     "Horizontal ${(draft.barLeftFraction * 100).roundToInt()}%    " +
                     "Vertical ${(draft.barTopFraction * 100).roundToInt()}%",
-                color = Color(0xFFB9C6DC),
+                color = themedSubText(Color(0xFFB9C6DC), SECONDARY_TEXT_WEIGHT),
                 fontSize = 13.sp,
             )
             // Controller hints (the other half of "both" control modes).
@@ -102,7 +105,7 @@ fun XmbLayoutAdjustOverlay(
                     ControllerPromptItem(GamepadAction.SELECT, "Save"),
                     ControllerPromptItem(GamepadAction.BACK, "Cancel"),
                 ),
-                labelColor = Color(0x99B9C6DC),
+                labelColor = themedSubText(Color(0x99B9C6DC)),
                 labelStyle = TextStyle(fontSize = 11.sp),
                 glyphSize = 15.dp,
                 arrangement = Arrangement.spacedBy(14.dp),
@@ -142,7 +145,7 @@ private fun AxisSlider(
     onChange: (Float) -> Unit,
 ) {
     Column {
-        Text(label, color = Color(0xFFB9C6DC), fontSize = 12.sp)
+        Text(label, color = themedSubText(Color(0xFFB9C6DC), SECONDARY_TEXT_WEIGHT), fontSize = 12.sp)
         Slider(
             value = value.coerceIn(min, max),
             onValueChange = onChange,

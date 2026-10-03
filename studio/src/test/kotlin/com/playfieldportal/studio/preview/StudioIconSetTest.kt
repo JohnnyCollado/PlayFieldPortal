@@ -63,15 +63,18 @@ class StudioIconSetTest {
         }
         assertEquals("xmb/sysicon_x360.png", StudioIconSet.consoleResource("sysicon_xbox"))
         for (id in listOf("cps1", "cps2", "cps3")) {
-            assertEquals("xmb/sysicon_default.png", StudioIconSet.consoleResource("sysicon_$id"), id)
+            assertEquals("xmb/sysicon_cps.png", StudioIconSet.consoleResource("sysicon_$id"), id)
         }
         assertEquals("xmb/sysicon_ps3.png", StudioIconSet.consoleResource("sysicon_ps3"))
         assertEquals(null, StudioIconSet.consoleResource("catbar_games"))
     }
 
     @Test
-    fun `console art is drawn as authored, not tinted`() {
-        assertTrue(StudioIconSet.isFullColour("sysicon_ps3"))
-        assertTrue(!StudioIconSet.isFullColour("item_add"))
+    fun `only the coin medallions are drawn as authored - silhouettes take the icon colour`() {
+        // Console art, memory cards and All Tracked Games are white silhouettes the launcher tints (PortalIcon).
+        listOf("sysicon_ps3", "sysicon_allgames", "item_memcard_video", "item_shiba_track", "item_add").forEach {
+            assertTrue(!StudioIconSet.isFullColour(it), it)
+        }
+        assertTrue(StudioIconSet.isFullColour("shiba_coin_gold"))
     }
 }

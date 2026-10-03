@@ -2332,6 +2332,8 @@ class XMBViewModel @Inject constructor(
         val customIconsStamp: Long?,
         // Display ▸ Font Colour. null = the theme's own text colour (white on every preset).
         val textColor: Long?,
+        // Display ▸ Sub Font Colour. null = sub text follows the font colour.
+        val subTextColor: Long?,
     )
 
     private fun observeColorScheme() {
@@ -2349,10 +2351,11 @@ class XMBViewModel @Inject constructor(
                         layoutAdjustJson = prefs[KEY_XMB_LAYOUT_ADJUST],
                         customIconsStamp = prefs[CustomIconStore.KEY_CUSTOM_ICONS_STAMP],
                         textColor = prefs[KEY_TEXT_COLOR],
+                        subTextColor = prefs[KEY_SUB_TEXT_COLOR],
                     )
                 }
                 .distinctUntilChanged()
-                .collect { (name, accentOverride, iconColorArgb, iconsStamp, layoutJson, xmbScale, barTopOverride, layoutAdjustJson, customIconsStamp, textColorArgb) ->
+                .collect { (name, accentOverride, iconColorArgb, iconsStamp, layoutJson, xmbScale, barTopOverride, layoutAdjustJson, customIconsStamp, textColorArgb, subTextColorArgb) ->
                     val base = if (accentOverride != null) {
                         // One accent drives everything: wave color + re-derived gradient.
                         DefaultPFPColors.withWaveTint(
@@ -2369,15 +2372,20 @@ class XMBViewModel @Inject constructor(
                     // this is a no-op until Display ▸ Font Colour is set. Secondary keeps the 0.7
                     // alpha relationship toPFPColors already establishes, so a picked colour
                     // carries its own sublabels rather than stranding them on white.
-                    val textColor = textColorArgb
+                    val pickedTextColor = textColorArgb
                         ?.let { androidx.compose.ui.graphics.Color(it and 0xFFFFFFFFL) }
-                        ?: base.textPrimary
+                    val textColor = pickedTextColor ?: base.textPrimary
                     baseThemeColors = base.copy(
                         iconColor = iconColorArgb
                             ?.let { androidx.compose.ui.graphics.Color(it and 0xFFFFFFFFL) }
                             ?: androidx.compose.ui.graphics.Color.White,
                         textPrimary = textColor,
                         textSecondary = textColor.copy(alpha = 0.7f),
+                        // The same pick, but null when unset: the crossbar, status strip and
+                        // palette-driven screens repaint only when the user actually chose one.
+                        textOverride = pickedTextColor,
+                        subTextOverride = subTextColorArgb
+                            ?.let { androidx.compose.ui.graphics.Color(it and 0xFFFFFFFFL) },
                     )
                     // Custom icon slots of the applied theme (stamp present = extracted dir
                     // has icons; the stamp value only bumps to trigger reloads), plus the
@@ -2710,9 +2718,23 @@ class XMBViewModel @Inject constructor(
      * it (the UMD slot, once a game has been played) does not shift what is focused. Landing on
      * the column (its default row, under the UMD slot) is [landedFrom]'s.
      */
-    private fun publishRootItems(items: List<XMBItem>) = _uiState.update { state ->
-        val index = cursorAfterRefresh(state.currentItems, state.selectedItemIndex, items)
-        state.copy(currentItems = items, selectedItemIndex = index)
+    private fun publishRootItems(items: List<XMBItem>) {
+        if (deferWhileMoving()) return
+        _uiState.update { state ->
+            val index = cursorAfterRefresh(state.currentItems, state.selectedItemIndex, items)
+            state.copy(currentItems = items, selectedItemIndex = index)
+        }
+    }
+
+    /**
+     * True while a row is lifted: a live collector's emission would overwrite the move in
+     * progress (and [placeMovingRow] would then save the reverted order), so the list is
+     * rebuilt once the move ends instead.
+     */
+    private fun deferWhileMoving(): Boolean {
+        if (_uiState.value.moveSession == null) return false
+        reloadAfterMove = true
+        return true
     }
 
     /** The category a collection created from the current context should live in: the current
@@ -5894,12 +5916,15 @@ class XMBViewModel @Inject constructor(
         publishGameItems(build(), keepCursorOnRow)
     }
 
-    private fun publishGameItems(items: List<XMBItem>, keepCursorOnRow: Boolean) = _uiState.update {
-        if (!keepCursorOnRow) it.copy(currentItems = items)
-        else it.copy(
-            currentItems = items,
-            selectedItemIndex = cursorAfterRefresh(it.currentItems, it.selectedItemIndex, items),
-        )
+    private fun publishGameItems(items: List<XMBItem>, keepCursorOnRow: Boolean) {
+        if (deferWhileMoving()) return
+        _uiState.update {
+            if (!keepCursorOnRow) it.copy(currentItems = items)
+            else it.copy(
+                currentItems = items,
+                selectedItemIndex = cursorAfterRefresh(it.currentItems, it.selectedItemIndex, items),
+            )
+        }
     }
 
     private fun List<com.playfieldportal.core.domain.model.Game>.toXmbItems() = map { g ->
@@ -11632,6 +11657,7 @@ class XMBViewModel @Inject constructor(
         // display_-prefixed, matching DisplaySettingsViewModel's keys: the font colour is a
         // Display setting, but a theme applies it wholesale (PfpThemeStore.apply sets or clears it).
         private val KEY_TEXT_COLOR        = longPreferencesKey("display_text_color")
+        private val KEY_SUB_TEXT_COLOR    = longPreferencesKey("display_sub_text_color")
         // Display ▸ Scale & Layout — must match DisplaySettingsViewModel (shared prefs contract).
         private val KEY_XMB_SCALE         = androidx.datastore.preferences.core.floatPreferencesKey("display_xmb_scale")
         private val KEY_BAR_TOP_FRACTION  = androidx.datastore.preferences.core.floatPreferencesKey("display_bar_top_fraction")

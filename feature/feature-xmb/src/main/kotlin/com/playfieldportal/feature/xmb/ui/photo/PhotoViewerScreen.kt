@@ -53,6 +53,8 @@ import com.playfieldportal.core.ui.components.XmbKebabTouchButton
 import com.playfieldportal.core.ui.components.XmbMediaPillScrim
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.components.PspContextMenuOverlay
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -173,7 +175,7 @@ fun PhotoViewerScreen(
         ) {
             Text(
                 text = photo.displayName,
-                color = TextPrimary,
+                color = themedText(TextPrimary),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center,
@@ -201,7 +203,7 @@ fun PhotoViewerScreen(
                         photo.resolutionLabel,
                         photo.displayDateMs?.let { fmtDate(it) },
                     ).joinToString("  ·  "),
-                    color = TextMuted, fontSize = 12.sp,
+                    color = themedSubText(TextMuted), fontSize = 12.sp,
                 )
             }
             Row(
@@ -218,7 +220,7 @@ fun PhotoViewerScreen(
                             TouchPromptItem(listOf(TouchGesture.SWIPE_LEFT, TouchGesture.SWIPE_RIGHT), "Prev / Next"),
                             TouchPromptItem(TouchGesture.TAP, "Hide Controls"),
                         ),
-                        labelColor = TextMuted,
+                        labelColor = themedSubText(TextMuted),
                         labelStyle = TextStyle(fontSize = 12.sp),
                         glyphSize = 16.dp,
                         arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
@@ -234,7 +236,7 @@ fun PhotoViewerScreen(
                             ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
                             ControllerPromptItem(GamepadAction.BACK, "Back"),
                         ),
-                        labelColor = TextMuted,
+                        labelColor = themedSubText(TextMuted),
                         labelStyle = TextStyle(fontSize = 12.sp),
                         glyphSize = 16.dp,
                         arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
@@ -284,8 +286,8 @@ fun PhotoViewerScreen(
                     .padding(horizontal = 24.dp, vertical = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text("Set as launcher wallpaper?", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                Text("It replaces the XMB wave background.", color = TextMuted, fontSize = 12.sp)
+                Text("Set as launcher wallpaper?", color = themedText(TextPrimary), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text("It replaces the XMB wave background.", color = themedSubText(TextMuted), fontSize = 12.sp)
                 Spacer(Modifier.height(4.dp))
                 if (!showTouchControls) {
                     ControllerPromptBar(
@@ -293,7 +295,7 @@ fun PhotoViewerScreen(
                             ControllerPromptItem(GamepadAction.SELECT, "Apply"),
                             ControllerPromptItem(GamepadAction.BACK, "Cancel"),
                         ),
-                        labelColor = TextMuted,
+                        labelColor = themedSubText(TextMuted),
                         labelStyle = TextStyle(fontSize = 12.sp),
                         glyphSize = 16.dp,
                         arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
@@ -304,7 +306,7 @@ fun PhotoViewerScreen(
                         Text(if (state.applyingWallpaper) "Applying…" else "Apply", color = menuCursorEdge())
                     }
                     TextButton(onClick = viewModel::cancelWallpaperPreview, enabled = !state.applyingWallpaper) {
-                        Text("Cancel", color = TextMuted)
+                        Text("Cancel", color = themedText(TextMuted))
                     }
                 }
             }
@@ -313,7 +315,7 @@ fun PhotoViewerScreen(
         state.actionMessage?.let { msg ->
             Text(
                 msg,
-                color = TextPrimary,
+                color = themedText(TextPrimary),
                 fontSize = 13.sp,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -337,7 +339,7 @@ fun PhotoViewerScreen(
                         TouchPromptItem(listOf(TouchGesture.SWIPE_LEFT, TouchGesture.SWIPE_RIGHT), "Prev / Next"),
                         TouchPromptItem(TouchGesture.TAP, "Show Controls"),
                     ),
-                    labelColor = TextMuted,
+                    labelColor = themedSubText(TextMuted),
                     labelStyle = TextStyle(fontSize = 12.sp),
                     glyphSize = 16.dp,
                     arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),

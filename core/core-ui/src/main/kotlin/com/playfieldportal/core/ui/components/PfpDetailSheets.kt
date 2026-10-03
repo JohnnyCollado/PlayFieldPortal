@@ -50,6 +50,8 @@ import com.playfieldportal.core.domain.model.ResultOutcome
 import com.playfieldportal.core.domain.model.ResultsLabels
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.sound.MenuSoundSink
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 
 // ── The notification detail sheets ────────────────────────────────────────────
 //
@@ -250,7 +252,7 @@ internal fun PfpNotesSheet(
         SheetHeader(icon = icon, accent = accent, title = title) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 detail.code?.let { CodeChip(it) }
-                meta?.let { Text(it, color = Color.White.copy(alpha = 0.55f), fontSize = 12.sp) }
+                meta?.let { Text(it, color = themedSubText(Color.White.copy(alpha = 0.55f)), fontSize = 12.sp) }
             }
         }
         Row(Modifier.weight(1f, fill = false)) {
@@ -275,10 +277,10 @@ internal fun PfpNotesSheet(
                     ) {
                         detail.facts.forEach { fact ->
                             Row {
-                                Text(fact.label, color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp,
+                                Text(fact.label, color = themedSubText(Color.White.copy(alpha = 0.5f)), fontSize = 12.sp,
                                     modifier = Modifier.width(120.dp))
                                 Spacer(Modifier.width(12.dp))
-                                Text(fact.value, color = Color.White.copy(alpha = 0.82f), fontSize = 12.sp)
+                                Text(fact.value, color = themedSubText(Color.White.copy(alpha = 0.82f)), fontSize = 12.sp)
                             }
                         }
                     }
@@ -286,14 +288,14 @@ internal fun PfpNotesSheet(
                 detail.diagnostic?.let { diagnostic ->
                     Text(
                         text = (if (diagnosticOpen) "▾  " else "▸  ") + "Diagnostic details",
-                        color = Color.White.copy(alpha = 0.55f),
+                        color = themedSubText(Color.White.copy(alpha = 0.55f)),
                         fontSize = 12.sp,
                         modifier = Modifier.clickable(onClick = onToggleDiagnostic),
                     )
                     if (diagnosticOpen) {
                         Text(
                             text = diagnostic,
-                            color = Color.White.copy(alpha = 0.65f),
+                            color = themedSubText(Color.White.copy(alpha = 0.65f)),
                             fontSize = 11.sp,
                             fontFamily = FontFamily.Monospace,
                             modifier = Modifier
@@ -308,7 +310,7 @@ internal fun PfpNotesSheet(
                     // The touch way to the action the ✕ hint names.
                     Text(
                         text = actionLabel,
-                        color = Color.White.copy(alpha = 0.9f),
+                        color = themedText(Color.White.copy(alpha = 0.9f)),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier
@@ -411,7 +413,7 @@ internal fun PfpResultsSheet(
                 }
                 if (detail.truncated > 0 && filter == ResultFilter.ALL) {
                     item {
-                        Text("+${detail.truncated} more", color = Color.White.copy(alpha = 0.55f), fontSize = 13.sp,
+                        Text("+${detail.truncated} more", color = themedSubText(Color.White.copy(alpha = 0.55f)), fontSize = 13.sp,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp))
                     }
                 }
@@ -434,19 +436,19 @@ internal fun PfpResultsSheet(
 @Composable
 private fun ResultDetailPane(item: ResultItem, labels: ResultsLabels) {
     val code = item.code?.let(PfpErrorCode::fromId)
-    Text(item.primary, color = Color.White.copy(alpha = 0.95f), fontSize = 16.sp, fontWeight = FontWeight.Medium)
+    Text(item.primary, color = themedText(Color.White.copy(alpha = 0.95f)), fontSize = 16.sp, fontWeight = FontWeight.Medium)
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Box(Modifier.size(8.dp).clip(CircleShape).background(resultOutcomeColor(item.outcome)))
-        Text(item.badge ?: labels.of(item.outcome), color = Color.White.copy(alpha = 0.85f), fontSize = 13.sp)
+        Text(item.badge ?: labels.of(item.outcome), color = themedSubText(Color.White.copy(alpha = 0.85f)), fontSize = 13.sp)
         item.code?.let { CodeChip(it) }
     }
     (item.reason ?: code?.why)?.let {
-        Text(it, color = Color.White.copy(alpha = 0.70f), fontSize = 13.sp, lineHeight = 20.sp)
+        Text(it, color = themedSubText(Color.White.copy(alpha = 0.70f)), fontSize = 13.sp, lineHeight = 20.sp)
     }
     item.path?.let {
         Text(
             it,
-            color = Color.White.copy(alpha = 0.65f),
+            color = themedSubText(Color.White.copy(alpha = 0.65f)),
             fontSize = 11.sp,
             fontFamily = FontFamily.Monospace,
             modifier = Modifier
@@ -458,8 +460,8 @@ private fun ResultDetailPane(item: ResultItem, labels: ResultsLabels) {
     }
     if (code != null && item.outcome != ResultOutcome.DONE) {
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text("What you can do", color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp, fontWeight = FontWeight.Medium)
-            Text(code.whatYouCanDo, color = Color.White.copy(alpha = 0.70f), fontSize = 13.sp, lineHeight = 20.sp)
+            Text("What you can do", color = themedText(Color.White.copy(alpha = 0.9f)), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+            Text(code.whatYouCanDo, color = themedSubText(Color.White.copy(alpha = 0.70f)), fontSize = 13.sp, lineHeight = 20.sp)
         }
     }
 }
@@ -538,11 +540,11 @@ private fun SheetHeader(
                     modifier = Modifier.size(17.dp))
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(title, color = Color.White.copy(alpha = 0.92f), fontSize = 19.sp, fontWeight = FontWeight.Light,
+                Text(title, color = themedText(Color.White.copy(alpha = 0.92f)), fontSize = 19.sp, fontWeight = FontWeight.Light,
                     maxLines = 2, overflow = TextOverflow.Ellipsis)
                 meta()
             }
-            trailing?.let { Text(it, color = Color.White.copy(alpha = 0.55f), fontSize = 12.sp) }
+            trailing?.let { Text(it, color = themedSubText(Color.White.copy(alpha = 0.55f)), fontSize = 12.sp) }
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.30f)))
     }
@@ -551,8 +553,8 @@ private fun SheetHeader(
 @Composable
 private fun NoteBlock(heading: String, body: String) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(heading, color = Color.White.copy(alpha = 0.92f), fontSize = 13.sp, fontWeight = FontWeight.Medium)
-        Text(body, color = ModalSubtext, fontSize = 14.sp, lineHeight = 21.sp)
+        Text(heading, color = themedText(Color.White.copy(alpha = 0.92f)), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+        Text(body, color = themedSubText(ModalSubtext), fontSize = 14.sp, lineHeight = 21.sp)
     }
 }
 
@@ -560,7 +562,7 @@ private fun NoteBlock(heading: String, body: String) {
 private fun CodeChip(code: String) {
     Text(
         text = code,
-        color = Color.White.copy(alpha = 0.85f),
+        color = themedSubText(Color.White.copy(alpha = 0.85f)),
         fontSize = 11.sp,
         fontWeight = FontWeight.Medium,
         fontFamily = FontFamily.Monospace,
@@ -588,7 +590,7 @@ private fun SummaryChip(outcome: ResultOutcome, label: String) {
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Box(Modifier.size(7.dp).clip(CircleShape).background(color))
-        Text(label, color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
+        Text(label, color = themedText(Color.White.copy(alpha = 0.9f)), fontSize = 12.sp)
     }
 }
 
@@ -596,7 +598,7 @@ private fun SummaryChip(outcome: ResultOutcome, label: String) {
 private fun ShoulderBadge(label: String) {
     Text(
         text = label,
-        color = Color.White.copy(alpha = 0.75f),
+        color = themedText(Color.White.copy(alpha = 0.75f)),
         fontSize = 10.sp,
         fontWeight = FontWeight.Bold,
         modifier = Modifier
@@ -614,7 +616,7 @@ private fun FilterTab(label: String, selected: Boolean, onClick: () -> Unit) {
     ) {
         Text(
             label,
-            color = Color.White.copy(alpha = if (selected) 0.95f else 0.55f),
+            color = themedText(Color.White.copy(alpha = if (selected) 0.95f else 0.55f)),
             fontSize = 13.sp,
             fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
         )
@@ -646,13 +648,13 @@ private fun ResultRow(item: ResultItem, labels: ResultsLabels, selected: Boolean
         Box(Modifier.size(8.dp).clip(CircleShape).background(resultOutcomeColor(item.outcome)))
         Text(
             item.primary,
-            color = Color.White.copy(alpha = if (selected) 0.95f else 0.88f),
+            color = themedText(Color.White.copy(alpha = if (selected) 0.95f else 0.88f)),
             fontSize = 13.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        Text(item.badge ?: labels.of(item.outcome), color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp, maxLines = 1)
+        Text(item.badge ?: labels.of(item.outcome), color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 12.sp, maxLines = 1)
     }
 }
 

@@ -51,6 +51,11 @@ class SystemIconsTest {
     }
 
     @Test
+    fun `the cps boards share the CP System badge`() {
+        listOf("cps1", "cps2", "cps3").forEach { assertEquals(R.drawable.sysicon_cps, systemIconRes(it), it) }
+    }
+
+    @Test
     fun `unregistered ids fall back to the default art`() {
         assertEquals(R.drawable.sysicon_default, systemIconRes(null))
         assertEquals(R.drawable.sysicon_default, systemIconRes("not_a_platform"))

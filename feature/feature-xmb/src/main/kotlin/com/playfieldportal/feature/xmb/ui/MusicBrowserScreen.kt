@@ -77,6 +77,7 @@ import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
 import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.LocalPfpTextColors
+import com.playfieldportal.core.ui.theme.dimmed
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.feature.xmb.ui.media.playPauseAction
 import com.playfieldportal.feature.xmb.ui.media.transportSlotKey
@@ -271,7 +272,7 @@ fun MusicBrowserScreen(
                 onValueChange = searchEdit::onFieldValueChange,
                 singleLine = true,
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = SecondaryText) },
-                placeholder = { Text("Search", color = SecondaryText.copy(alpha = 0.7f)) },
+                placeholder = { Text("Search", color = SecondaryText.dimmed(0.7f)) },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = PrimaryText,
                     unfocusedTextColor = PrimaryText,
@@ -330,7 +331,7 @@ fun MusicBrowserScreen(
                         TouchPromptItem(TouchGesture.TAP, "Open"),
                         TouchPromptItem(TouchGesture.LONG_PRESS, "Options"),
                     ),
-                    labelColor = SecondaryText.copy(alpha = 0.7f),
+                    labelColor = SecondaryText.dimmed(0.7f),
                     labelStyle = TextStyle(fontSize = 11.sp),
                     glyphSize = 18.dp,
                     arrangement = Arrangement.spacedBy(18.dp),
@@ -349,7 +350,7 @@ fun MusicBrowserScreen(
                         ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
                         ControllerPromptItem(GamepadAction.BACK, "Back"),
                     ),
-                    labelColor = SecondaryText.copy(alpha = 0.7f),
+                    labelColor = SecondaryText.dimmed(0.7f),
                     labelStyle = TextStyle(fontSize = 11.sp),
                     glyphSize = 16.dp,
                     arrangement = Arrangement.spacedBy(18.dp),

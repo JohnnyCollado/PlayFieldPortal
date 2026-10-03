@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.ui.icons.CategoryIconGlyph
+import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.themekit.XmbLayoutSpec
 
 // Classic PSP blue theme: the active category's label is crisp white with a dark glow. Labels on
@@ -272,7 +273,8 @@ private fun XMBCategoryItem(
 
         Text(
             text = category.name,
-            color = if (isSelected) SelectedIcon else LabelInactive,
+            // A user font colour replaces both at their own alphas (white → 1, inactive → 0xCC).
+            color = themedText(if (isSelected) SelectedIcon else LabelInactive),
             fontSize = if (isSelected) 15.sp else 13.sp,
             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
             style = if (isSelected) TextStyle(shadow = SelectedLabelShadow) else TextStyle.Default,

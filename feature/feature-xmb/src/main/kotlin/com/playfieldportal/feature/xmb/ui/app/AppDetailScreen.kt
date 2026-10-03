@@ -66,6 +66,8 @@ import com.playfieldportal.core.ui.image.rememberArtworkModel
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.components.PspContextMenuOverlay
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerPanel
 import com.playfieldportal.feature.xmb.ui.collection.collectionNameModalSpec
 import com.playfieldportal.core.ui.components.PfpModalSpec
@@ -396,12 +398,12 @@ private fun AppArtworkPicker(
             ) {
                 Text(
                     "Change ${state.artworkPickerType.displayLabel}",
-                    color      = TextPrimary,
+                    color      = themedText(TextPrimary),
                     fontSize   = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
                 TextButton(onClick = onClose) {
-                    Text("Close", color = TextMuted, fontSize = 12.sp)
+                    Text("Close", color = themedSubText(TextMuted), fontSize = 12.sp)
                 }
             }
 
@@ -416,7 +418,7 @@ private fun AppArtworkPicker(
                             color       = menuCursorEdge(),
                             strokeWidth = 2.dp,
                         )
-                        Text("Saving…", color = TextMuted, fontSize = 12.sp)
+                        Text("Saving…", color = themedSubText(TextMuted), fontSize = 12.sp)
                     }
                 }
                 state.artworkPickerLoading -> {
@@ -425,11 +427,11 @@ private fun AppArtworkPicker(
                     }
                 }
                 state.artworkPickerError != null -> {
-                    Text("SteamGridDB", color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Text("SteamGridDB", color = themedSubText(TextMuted), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     Text(state.artworkPickerError, color = Color(0xFFFF6B6B), fontSize = 12.sp)
                 }
                 state.artworkPickerItems.isNotEmpty() -> {
-                    Text("SteamGridDB", color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Text("SteamGridDB", color = themedSubText(TextMuted), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     val lazyState = rememberLazyListState()
                     LaunchedEffect(state.artworkPickerFocus) {
                         if (state.artworkPickerItems.isNotEmpty()) {
@@ -484,7 +486,7 @@ private fun AppArtworkPicker(
 
             Text(
                 "◄ ►  Browse   A  Pick   B  Back",
-                color    = TextMuted.copy(alpha = 0.5f),
+                color    = themedSubText(TextMuted.copy(alpha = 0.5f)),
                 fontSize = 10.sp,
             )
         }

@@ -25,7 +25,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** TS-32: options flyout, Games filter, PIC0, legibility rendering and the layout-adjust overlay. */
+/** TS-32: options flyout, Games filter, legibility rendering and the layout-adjust overlay. */
 class PreviewInteractionTest {
 
     private fun PreviewNavState.send(vararg actions: PreviewNavAction): PreviewNavState =
@@ -75,45 +75,64 @@ class PreviewInteractionTest {
 
     @Test
     fun `rows per row type`() {
-        // game
+        // game, in a console's list
+        val game = PreviewFlyout.rows(inGames().send(PreviewNavAction.OpenOptions))
         assertEquals(
             listOf(
-                "View Game Details", "View Shiba Coins", "Add to Favorites", "Add to Collection", "Change Emulator",
-                "Icon Display", "Fetch Artwork", "Hide from Games", "Remove from Library",
+                "View Game Details", "View Shiba Coins", "Change Emulator", "Insert as UMD",
+                "Favorite", "Add to Card", "Select Multiple", "Pin to Top", "Icon Display", "Fetch Artwork",
+                "Manage Custom Cards", "Show File Location", "Hide from PlayStation 3 Memory Card", "Remove from Library",
             ),
-            labels(inGames().send(PreviewNavAction.OpenOptions)),
+            game.map { it.label },
         )
-        val game = PreviewFlyout.rows(inGames().send(PreviewNavAction.OpenOptions))
-        assertTrue(game.single { it.label == "Add to Collection" }.opensSubmenu)
-        assertEquals("Box Art", game.single { it.label == "Icon Display" }.value)
-        assertNotNull(game.single { it.label == "Change Emulator" }.value)
+        assertEquals(listOf("Play", "Library", "Arrange", "Customize", "Manage"), game.mapNotNull { it.header })
+        assertEquals("Custom Icon", game.single { it.label == "Icon Display" }.value)
+        assertEquals("Default", game.single { it.label == "Change Emulator" }.value)
+        assertTrue(game.single { it.label == "Add to Card" }.opensSubmenu)
         assertTrue(game.last().destructive && game.count { it.destructive } == 1)
 
         // console card
+        val card = PreviewFlyout.rows(onConsole().send(PreviewNavAction.OpenOptions))
         assertEquals(
             listOf(
-                "Scan This Console", "Update Metadata", "Scrape Missing Artwork", "Icon Display", "Pin To Top",
-                "Open in Library Manager", "Hide From Games", "Remove Memory Card",
+                "Scan for Games", "Update Metadata", "Fetch Missing Artwork", "Icon Display", "Sort", "Pin to Top",
+                "Library Manager", "Hide Card", "Remove Card",
             ),
-            labels(onConsole().send(PreviewNavAction.OpenOptions)),
+            card.map { it.label },
         )
-        assertTrue(PreviewFlyout.rows(onConsole().send(PreviewNavAction.OpenOptions)).last().destructive)
+        assertEquals("Global: Custom Icon", card.single { it.label == "Icon Display" }.value)
+        assertTrue(card.last().destructive)
 
-        // video file: Video > Videos > first file
-        val video = PreviewNavState().send(PreviewNavAction.Enter, PreviewNavAction.OpenOptions)
-        assertEquals(RowKind.VIDEO, PreviewFlyout.kindOf(PreviewNav.view(video).rows[0]))
+        // All Games, the Home row
+        assertEquals(RowKind.ALL_GAMES, PreviewFlyout.kindOf(PreviewNav.selectedRow(PreviewNavState())!!))
         assertEquals(
-            listOf("Play", "Resume", "Add to Favorites", "Add to Playlist", "Details", "Remove From Library"),
-            labels(video),
+            listOf(
+                "Scan All Cards", "Update Metadata", "Fetch Missing Artwork", "Relink Artwork",
+                "Icon Display", "Sort", "Global Sort", "Library Manager",
+            ),
+            labels(PreviewNavState().send(PreviewNavAction.OpenOptions)),
         )
-        assertTrue(PreviewFlyout.rows(video).single { it.label == "Add to Playlist" }.opensSubmenu)
 
-        // library (memory-card list row) and the default
-        val library = PreviewNavState().send(PreviewNavAction.OpenOptions)
-        assertEquals(RowKind.LIBRARY, PreviewFlyout.kindOf(PreviewNav.selectedRow(PreviewNavState())!!))
-        assertEquals(listOf("Open", "Scan Library", "Manage in Settings"), labels(library))
-        val default = PreviewNavState().send(PreviewNavAction.Up, PreviewNavAction.OpenOptions)
-        assertEquals(listOf("Open", "Information"), labels(default))
+        // a media library card: Video > Videos
+        val videos = PreviewNavState().send(PreviewNavAction.Left, PreviewNavAction.OpenOptions)
+        assertEquals(listOf("Scan Videos", "Manage in Settings"), labels(videos))
+
+        // an installed app names its category in Hide
+        val app = PreviewNavState().send(PreviewNavAction.Right, PreviewNavAction.OpenOptions)
+        assertTrue("Hide from Network" in labels(app))
+        assertTrue(PreviewFlyout.rows(app).last().destructive)
+    }
+
+    @Test
+    fun `rows with no context menu ignore the options button`() {
+        val collections = PreviewNavState().send(PreviewNavAction.Left, PreviewNavAction.Up, PreviewNavAction.Up, PreviewNavAction.Up)
+        assertEquals("Collections", PreviewNav.selectedRow(collections)?.title)
+        assertEquals(collections, collections.send(PreviewNavAction.OpenOptions))
+        val settings = PreviewNavState().send(*Array(4) { PreviewNavAction.Left })
+        assertEquals(settings, settings.send(PreviewNavAction.OpenOptions))
+        val addApps = PreviewNavState().send(PreviewNavAction.Right, PreviewNavAction.Down, PreviewNavAction.Down)
+        assertEquals("Add Apps", PreviewNav.selectedRow(addApps)?.title)
+        assertEquals(addApps, addApps.send(PreviewNavAction.OpenOptions))
     }
 
     @Test
@@ -134,13 +153,17 @@ class PreviewInteractionTest {
     @Test
     fun `a submenu swaps in place with its check, and back returns to the row that led there`() {
         var s = inGames().send(PreviewNavAction.OpenOptions)
-        val at = PreviewFlyout.rows(s).indexOfFirst { it.label == "Add to Collection" }
+        val at = PreviewFlyout.rows(s).indexOfFirst { it.label == "Icon Display" }
         repeat(at) { s = s.send(PreviewNavAction.Down) }
         s = s.send(PreviewNavAction.Enter)
         assertEquals(FlyoutMenu.SUBMENU, s.flyout?.menu)
         assertEquals(0, s.flyout?.cursor)
-        assertEquals("Add to Collection", PreviewFlyout.title(s))
-        assertTrue(PreviewFlyout.rows(s).any { it.checked })
+        assertEquals("Icon Display", PreviewFlyout.title(s))
+        assertEquals(
+            listOf("Use Default (Custom Icon)", "Custom Icon", "Box Art", "Physical Media", "3D Box Art"),
+            labels(s),
+        )
+        assertEquals(listOf(true, false, false, false, false), PreviewFlyout.rows(s).map { it.checked })
         s = s.send(PreviewNavAction.Down).send(PreviewNavAction.Back)
         assertEquals(FlyoutMenu.ROOT, s.flyout?.menu)
         assertEquals(at, s.flyout?.cursor)
@@ -168,9 +191,13 @@ class PreviewInteractionTest {
     @Test
     fun `clicking a row activates it, the scrim dismisses, and tab again closes`() {
         val open = inGames().send(PreviewNavAction.OpenOptions)
-        val at = PreviewFlyout.rows(open).indexOfFirst { it.label == "Add to Collection" }
+        val at = PreviewFlyout.rows(open).indexOfFirst { it.label == "Icon Display" }
         val sub = open.send(PreviewNavAction.ClickFlyoutRow(at))
         assertEquals(FlyoutMenu.SUBMENU, sub.flyout?.menu)
+        // A › row whose list is device state (cards, emulators) says so instead.
+        val card = open.send(PreviewNavAction.ClickFlyoutRow(PreviewFlyout.rows(open).indexOfFirst { it.label == "Add to Card" }))
+        assertNull(card.flyout)
+        assertNotNull(card.message)
         assertNull(open.send(PreviewNavAction.DismissFlyout).flyout)
         assertNull(open.send(PreviewNavAction.OpenOptions).flyout)
         assertEquals(open, open.send(PreviewNavAction.ClickFlyoutRow(99)))
@@ -193,9 +220,16 @@ class PreviewInteractionTest {
     // ── Games filter ─────────────────────────────────────────────────────────
 
     @Test
-    fun `the filter only opens in the Games category`() {
-        assertEquals(PreviewNavState(), PreviewNavState().send(PreviewNavAction.OpenFilter))
-        val s = onConsole().send(PreviewNavAction.OpenFilter)
+    fun `the filter only opens on a game list`() {
+        // The Games root sorts its cards instead (a Sort picker on the device).
+        val root = PreviewNavState().send(PreviewNavAction.OpenFilter)
+        assertNull(root.flyout)
+        assertNotNull(root.message)
+        assertNull(onConsole().send(PreviewNavAction.OpenFilter).flyout)
+        // An unsortable list ignores X.
+        val settings = PreviewNavState().send(*Array(4) { PreviewNavAction.Left })
+        assertEquals(settings, settings.send(PreviewNavAction.OpenFilter))
+        val s = inGames().send(PreviewNavAction.OpenFilter)
         assertEquals(FlyoutKind.GAMES_FILTER, s.flyout?.kind)
         assertEquals("Filter", PreviewFlyout.title(s))
     }
@@ -316,52 +350,18 @@ class PreviewInteractionTest {
         assertEquals("", out.filter.term)
         assertEquals(GameSort.RECENT_PLAYED, out.filter.sort)
         // Changing category clears it too.
-        val mid = onConsole().send(PreviewNavAction.OpenFilter, PreviewNavAction.Enter, PreviewNavAction.SetSearch("x"), PreviewNavAction.Enter)
-        assertEquals("x", mid.filter.term)
+        val mid = onConsole().copy(filter = GamesFilter(term = "x"))
         assertEquals("", mid.send(PreviewNavAction.Left).filter.term)
     }
 
     @Test
     fun `the filter only touches game lists`() {
-        val s = PreviewNavState().send(PreviewNavAction.Right) // Games, console cards
+        val s = PreviewNavState() // Games, console cards
         val before = titles(s)
         val sorted = s.copy(filter = GamesFilter(term = "zzz", sort = GameSort.DATE_ADDED))
         assertEquals(before, titles(sorted))
         val music = SampleContent.rootRows(categories.indexOfFirst { it.slotKey == "catbar_video" })
         assertEquals(music, PreviewFilter.apply(music, GamesFilter(term = "zzz")))
-    }
-
-    // ── PIC0 ─────────────────────────────────────────────────────────────────
-
-    @Test
-    fun `pic0 timing and placement mirror the launcher`() {
-        assertEquals(650L, PreviewPic0.DELAY_MS)
-        assertEquals(500, PreviewPic0.fadeMs(visible = true))
-        assertEquals(0, PreviewPic0.fadeMs(visible = false)) // hides instantly
-        assertEquals(0.30f, PreviewPic0.WIDTH_FRACTION)
-        assertEquals(0.38f, PreviewPic0.HEIGHT_FRACTION)
-        assertEquals(44f, PreviewPic0.END_PADDING)
-    }
-
-    @Test
-    fun `only a focused game has a logo`() {
-        assertNull(PreviewPic0.logoTitle(PreviewNavState()))
-        assertNull(PreviewPic0.logoTitle(onConsole()))
-        assertEquals("Crossbar Racing", PreviewPic0.logoTitle(inGames()))
-        assertEquals("Memory Card Blues", PreviewPic0.logoTitle(inGames().send(PreviewNavAction.Down)))
-        assertNull(PreviewPic0.logoTitle(inGames().send(PreviewNavAction.OpenFilter, PreviewNavAction.Enter, PreviewNavAction.SetSearch("zzz"))))
-    }
-
-    @Test
-    fun `the logo centres on the active row, clamped to the screen`() {
-        val spec = XmbLayoutSpec.DEFAULT
-        val adjust = XmbLayoutAdjust(1f, 0f, spec.barTopFraction)
-        assertEquals(0f, PreviewPic0.centerOffsetDp(spec, adjust, 468f, drilled = false))
-        val cross = 468f - spec.contentTopPaddingDp
-        val expected = spec.contentTopPaddingDp + cross * 0.11f + 112f + 44f - 468f / 2
-        assertTrue(kotlin.math.abs(expected - PreviewPic0.centerOffsetDp(spec, adjust, 468f, drilled = true)) < 0.001f)
-        // A short box pushes the row centre past 81 %: the clamp holds the logo on screen.
-        assertTrue(kotlin.math.abs(0.81f * 200f - 100f - PreviewPic0.centerOffsetDp(spec, adjust, 200f, drilled = true)) < 0.001f)
     }
 
     // ── Legibility ───────────────────────────────────────────────────────────
@@ -557,7 +557,8 @@ class PreviewInteractionTest {
         render(s, inGames().send(PreviewNavAction.OpenOptions))
         render(s, onConsole().send(PreviewNavAction.OpenOptions))
         render(s, PreviewNavState().send(PreviewNavAction.OpenOptions))
-        val sub = inGames().send(PreviewNavAction.OpenOptions, PreviewNavAction.ClickFlyoutRow(3))
+        val iconDisplay = PreviewFlyout.rows(inGames().send(PreviewNavAction.OpenOptions)).indexOfFirst { it.label == "Icon Display" }
+        val sub = inGames().send(PreviewNavAction.OpenOptions, PreviewNavAction.ClickFlyoutRow(iconDisplay))
         assertEquals(FlyoutMenu.SUBMENU, sub.flyout?.menu)
         render(s, sub)
         render(s, inGames().send(PreviewNavAction.OpenFilter))
@@ -572,14 +573,6 @@ class PreviewInteractionTest {
         render(s, inGames().send(PreviewNavAction.OpenFilter, PreviewNavAction.Enter))
         render(s, inGames().send(PreviewNavAction.OpenFilter, PreviewNavAction.Enter, PreviewNavAction.SetSearch("ar")))
         render(s, inGames().send(PreviewNavAction.OpenFilter, PreviewNavAction.Enter, PreviewNavAction.SetSearch("zzz")))
-    }
-
-    @Test
-    fun `pic0 renders before, during and after its fade`() {
-        val s = StudioState()
-        render(s, inGames(), frames = 20, startMs = 0)      // inside the 650 ms linger
-        render(s, inGames(), frames = 90, startMs = 0)      // past the delay, mid fade-in
-        render(s, inGames(), frames = 200, startMs = 0)     // settled
     }
 
     @Test

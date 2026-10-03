@@ -18,15 +18,26 @@ object ListStateBackfill {
         UPDATE collections SET category_id = 'games'
         WHERE category_id NOT IN (SELECT id FROM categories)
         """.trimIndent(),
-        // Collection order becomes 0..n-1 within its category (it was one global sequence).
+        // Collection order becomes 0..n-1 within its category (it was one global sequence). The
+        // ranks are snapshotted first: a correlated UPDATE would count rows it had already
+        // renumbered and leave ties and gaps. No window functions — minSdk 29 ships SQLite 3.22.
+        "DROP TABLE IF EXISTS temp.collection_rank",
+        """
+        CREATE TEMP TABLE collection_rank AS
+        SELECT c.id AS id, (
+            SELECT COUNT(*) FROM collections other
+            WHERE other.category_id = c.category_id
+              AND (other.sort_order < c.sort_order
+                   OR (other.sort_order = c.sort_order AND other.id < c.id))
+        ) AS rank
+        FROM collections c
+        """.trimIndent(),
         """
         UPDATE collections SET sort_order = (
-            SELECT COUNT(*) FROM collections other
-            WHERE other.category_id = collections.category_id
-              AND (other.sort_order < collections.sort_order
-                   OR (other.sort_order = collections.sort_order AND other.id < collections.id))
+            SELECT rank FROM temp.collection_rank WHERE collection_rank.id = collections.id
         )
         """.trimIndent(),
+        "DROP TABLE temp.collection_rank",
         // A custom category's games now live on its Memory Card list; their pins move with them.
         """
         INSERT OR IGNORE INTO list_items (list_key, item_key, position, pinned)

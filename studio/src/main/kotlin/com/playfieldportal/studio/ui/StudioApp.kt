@@ -68,6 +68,7 @@ import com.playfieldportal.studio.preview.GifFrames
 import com.playfieldportal.studio.preview.PreviewLiveSpec
 import com.playfieldportal.studio.preview.PreviewNav
 import com.playfieldportal.studio.preview.PreviewNavState
+import com.playfieldportal.studio.preview.PreviewScreen
 import com.playfieldportal.studio.preview.PreviewRenderer
 import com.playfieldportal.studio.preview.XmbPreviewCanvas
 import com.playfieldportal.studio.preview.toPreviewModel
@@ -207,6 +208,8 @@ fun StudioApp(viewModel: StudioViewModel, window: Frame) {
     val adjust by adjustStore.adjust.collectAsState()
     // The preview cursor lives here so the icon picker's "On screen" filter can follow it.
     var nav by remember { mutableStateOf(PreviewNavState.HOME) }
+    // The launcher screen the preview shows ("Open"); XMB is the interactive crossbar.
+    var screen by remember { mutableStateOf(PreviewScreen.XMB) }
     // "Adjust on preview": the draft lives here until Save writes the store; Cancel just drops it.
     var adjustOverlay by remember { mutableStateOf<AdjustOverlayState?>(null) }
     // The boot / GameBoot sequence playing over the preview. It ends the moment the clip it plays is
@@ -257,6 +260,8 @@ fun StudioApp(viewModel: StudioViewModel, window: Frame) {
                                 modifier = Modifier.fillMaxSize(),
                                 live = live,
                                 onBootFinished = { bootPlayback = BootPlayback.finish() },
+                                screen = screen,
+                                onCloseScreen = { screen = PreviewScreen.XMB },
                                 adjustOverlay = adjustOverlay,
                                 onAdjust = { action ->
                                     val open = adjustOverlay ?: return@XmbPreviewCanvas
@@ -274,6 +279,8 @@ fun StudioApp(viewModel: StudioViewModel, window: Frame) {
                         PlayBootRow(
                             playing = bootNow,
                             onToggle = { kind -> bootPlayback = BootPlayback.toggle(bootNow, kind, state.mediaFiles[kind.slotKey]) },
+                            screen = screen,
+                            onOpenScreen = { screen = it },
                         )
                         HorizontalDivider()
                         FileContentsStrip(check, Modifier.fillMaxWidth())
@@ -353,14 +360,37 @@ private fun Toolbar(state: StudioState, canUndo: Boolean, canRedo: Boolean, onAc
     }
 }
 
-/** "Play boot" / "Play GameBoot" under the preview: the built-in sequence or the theme's own clip; pressing the playing one stops it. */
+/**
+ * Under the preview: "Open" picks the launcher screen it shows (the XMB, or another screen with the
+ * theme applied); "Play boot" / "Play GameBoot" play the built-in sequence or the theme's own clip,
+ * and pressing the playing one stops it.
+ */
 @Composable
-private fun PlayBootRow(playing: BootPlaybackState, onToggle: (BootKind) -> Unit) {
+private fun PlayBootRow(
+    playing: BootPlaybackState,
+    onToggle: (BootKind) -> Unit,
+    screen: PreviewScreen,
+    onOpenScreen: (PreviewScreen) -> Unit,
+) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
     ) {
+        var openMenu by remember { mutableStateOf(false) }
+        Box {
+            OutlinedButton(onClick = { openMenu = true }) {
+                Text(if (screen == PreviewScreen.XMB) "Open ▾" else "Open: ${screen.label} ▾", fontSize = 12.sp)
+            }
+            DropdownMenu(expanded = openMenu, onDismissRequest = { openMenu = false }) {
+                PreviewScreen.entries.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(if (option == PreviewScreen.XMB) "XMB (back to the crossbar)" else option.label) },
+                        onClick = { openMenu = false; onOpenScreen(option) },
+                    )
+                }
+            }
+        }
         BootKind.entries.forEach { kind ->
             OutlinedButton(onClick = { onToggle(kind) }) {
                 Text(if (playing.kind == kind) "Stop ${kind.label}" else "Play ${kind.label}", fontSize = 12.sp)

@@ -334,48 +334,9 @@ class StudioViewModel(private val scope: CoroutineScope) {
     /** A legibility object with nothing set is the same as none at all. */
     private fun legibilityOf(l: ThemeLegibility?): ThemeLegibility? =
         l?.takeUnless { it.text == null && it.icon == null && it.solidUnfocusedIcons == null }
+
     fun dismissDialog() = _state.update { it.copy(dialog = null) }
     fun clearStatus() = _state.update { it.copy(statusMessage = null) }
-
-    // ── Layout (fit the crossbar to the wallpaper) ───────────────────────────
-
-    fun setBarTopFraction(fraction: Float) = edit("barTop") {
-        it.copy(
-            layout = it.layout.copy(
-                barTopFraction = fraction.coerceIn(
-                    XmbLayoutSpecCodec.BAR_TOP_MIN,
-                    XmbLayoutSpecCodec.BAR_TOP_MAX,
-                ),
-            ),
-        )
-    }
-
-    /** Sets one of the 11 saved geometry fields; the codec's own sanitizer is the clamp. */
-    fun setLayoutField(field: LayoutField, value: Float) = edit("layout:${field.name}") {
-        it.copy(layout = XmbLayoutSpecCodec.sanitize(field.write(it.layout, value)))
-    }
-
-    fun resetLayout() = edit { it.copy(layout = com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT) }
-
-    /** Alignment assist: find the wallpaper's baked-in cross-band and prefill the slider. */
-    fun detectBarTop() = runBusy {
-        val png = _state.value.wallpaperPng ?: return@runBusy
-        val image = ImageCodecs.decodeImage(png) ?: return@runBusy
-        // Fractions are scale-invariant, so the bounded accent-sampling copy is plenty.
-        val detected = com.playfieldportal.themekit.CrossBandDetector.detectBarTopFraction(
-            ImageCodecs.toBmpImage(image),
-        )
-        if (detected != null) {
-            edit {
-                it.copy(
-                    layout = it.layout.copy(barTopFraction = detected),
-                    statusMessage = "Crossbar detected at ${(detected * 100).toInt()}% of the wallpaper",
-                )
-            }
-        } else {
-            _state.update { it.copy(statusMessage = "No crossbar band found in this wallpaper") }
-        }
-    }
 
     // ── Open / import ────────────────────────────────────────────────────────
 
@@ -423,7 +384,11 @@ class StudioViewModel(private val scope: CoroutineScope) {
 
     private fun hydrate(bundle: PfpThemeBundle, status: String, diagnostics: ReadDiagnostics? = null) {
         val manifest = bundle.manifest
-        val iconBitmaps = bundle.icons.mapNotNull { (key, png) ->
+        // Icons for parts a Studio theme no longer replaces (status strip, Shiba Coins, menus...)
+        // are left out: they would not be editable, and re-exporting them would keep them alive.
+        val (icons, notThemeable) = bundle.icons.entries.partition { (key, _) -> EditableSlots.isEditable(key) }
+            .let { (kept, dropped) -> kept.associate { it.toPair() } to dropped.map { it.key } }
+        val iconBitmaps = icons.mapNotNull { (key, png) ->
             ImageCodecs.toImageBitmap(png.bytes)?.let { key to it }
         }.toMap()
         val wallpaperBusy = bundle.wallpaper
@@ -481,8 +446,8 @@ class StudioViewModel(private val scope: CoroutineScope) {
                 // must not silently strip the icon from the theme on re-export. Each entry
                 // keeps the extension it shipped with (png stills, gif animations), so an
                 // opened animated icon re-exports animated.
-                iconOverrides = bundle.icons.mapValues { (_, image) -> image.bytes },
-                iconExtensions = bundle.icons.mapValues { (_, image) -> image.extension.lowercase() },
+                iconOverrides = icons.mapValues { (_, image) -> image.bytes },
+                iconExtensions = icons.mapValues { (_, image) -> image.extension.lowercase() },
                 iconBitmaps = iconBitmaps,
                 sysiconOverrides = bundle.sysicons.entries.associate { (id, image) -> "sysicon_$id" to image.bytes },
                 sysiconExtensions = bundle.sysicons.entries.associate { (id, image) ->
@@ -511,7 +476,8 @@ class StudioViewModel(private val scope: CoroutineScope) {
                 layout = manifest.layout?.let(XmbLayoutSpecCodec::sanitize)
                     ?: com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT,
                 source = manifest.source,
-                statusMessage = status,
+                statusMessage = if (notThemeable.isEmpty()) status
+                    else "$status — ${notThemeable.size} icon(s) for parts themes don't customize were left out",
             ),
         )
         // Surface a failed motion spill AFTER the state lands — the theme still opens, but the
@@ -784,7 +750,7 @@ class StudioViewModel(private val scope: CoroutineScope) {
      */
     fun setIconOverride(key: String, file: File) = runBusy {
         // Console art (sysicon_*) is a slot too: same pipeline, filed under the sysicon maps.
-        val slot = CustomizableIcons.byKey(key) ?: return@runBusy
+        val slot = EditableSlots.byKey(key) ?: return@runBusy
         val console = key.startsWith(SYSICON_KEY_PREFIX)
         // Read with headroom so an oversized pick reaches the specific byte-cap rejection in
         // the gate (MAX_ICON_BYTES), not a generic unreadable-file error.
@@ -839,7 +805,7 @@ class StudioViewModel(private val scope: CoroutineScope) {
         val ready = LinkedHashMap<String, IconGate.Ok>()
         val rejected = scan.rejected.toMutableList()
         for ((key, packFile) in scan.matched) {
-            val slot = CustomizableIcons.byKey(key) ?: continue
+            val slot = EditableSlots.byKey(key) ?: continue
             when (val gate = gateIcon(slot, packFile.bytes, packFile.name)) {
                 is IconGate.Ok -> ready[key] = gate
                 is IconGate.Reject -> rejected += PackRejected(packFile.name, gate.reason)
@@ -1092,11 +1058,11 @@ class StudioViewModel(private val scope: CoroutineScope) {
     fun exportIconTemplates(dir: File, rasterize: (key: String, sizePx: Int) -> ByteArray) = runBusy {
         runCatching {
             dir.mkdirs()
-            for (slot in CustomizableIcons.ALL) {
+            for (slot in EditableSlots.ALL) {
                 File(dir, "${slot.key}.png").writeBytes(rasterize(slot.key, slot.templateSizePx))
             }
         }
-            .onSuccess { _state.update { it.copy(statusMessage = "Templates exported to ${dir.name} (${CustomizableIcons.ALL.size} icons)") } }
+            .onSuccess { _state.update { it.copy(statusMessage = "Templates exported to ${dir.name} (${EditableSlots.ALL.size} icons)") } }
             .onFailure { e -> _state.update { it.copy(dialog = StudioDialog.Error("Template export failed: ${e.message}")) } }
     }
 

@@ -95,6 +95,8 @@ import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursor
 import com.playfieldportal.core.ui.theme.menuCursorEdge
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.artwork.store.ArtworkKind
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -279,14 +281,14 @@ internal fun ArtworkStudioContent(
                 ) {
                     Text(
                         "◀",
-                        color = Color.White.copy(alpha = 0.55f),
+                        color = themedSubText(Color.White.copy(alpha = 0.55f)),
                         fontSize = 14.sp,
                         modifier = Modifier.padding(end = 12.dp),
                     )
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
                             state.game?.displayTitle ?: "Artwork Studio",
-                            color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold,
+                            color = themedText(Color.White), fontSize = 18.sp, fontWeight = FontWeight.Bold,
                             maxLines = 1, overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.widthIn(max = 320.dp),
                         )
@@ -297,7 +299,7 @@ internal fun ArtworkStudioContent(
                                 state.game?.platformId?.takeIf { it.isNotBlank() }
                                     ?.let { append(" · ${it.uppercase()}") }
                             },
-                            color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp,
+                            color = themedSubText(Color.White.copy(alpha = 0.55f)), fontSize = 11.sp,
                             maxLines = 1,
                         )
                     }
@@ -331,12 +333,12 @@ internal fun ArtworkStudioContent(
                             action = GamepadAction.CHANGE_SORT,
                             label = "",
                             glyphSize = 13.dp,
-                            labelColor = Color.White.copy(alpha = 0.45f),
+                            labelColor = themedSubText(Color.White.copy(alpha = 0.45f)),
                         )
                     }
                     Text(
                         state.query.ifBlank { "—" },
-                        color = if (state.queryIsCustom) accent else Color.White.copy(alpha = 0.92f),
+                        color = if (state.queryIsCustom) accent else themedText(Color.White.copy(alpha = 0.92f)),
                         fontSize = 12.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -346,7 +348,7 @@ internal fun ArtworkStudioContent(
                     if (state.queryIsCustom) {
                         Text(
                             "Reset",
-                            color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp,
+                            color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 10.sp,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
                                 .clickable(onClick = actions::resetSearchToTitle)
@@ -355,7 +357,7 @@ internal fun ArtworkStudioContent(
                     } else {
                         Text(
                             "game title",
-                            color = Color.White.copy(alpha = 0.45f), fontSize = 9.sp,
+                            color = themedSubText(Color.White.copy(alpha = 0.45f)), fontSize = 9.sp,
                         )
                     }
                 }
@@ -385,7 +387,7 @@ internal fun ArtworkStudioContent(
                         action = GamepadAction.PREV_CATEGORY,
                         label = "",
                         glyphSize = 14.dp,
-                        labelColor = Color.White.copy(alpha = 0.45f),
+                        labelColor = themedSubText(Color.White.copy(alpha = 0.45f)),
                         modifier = Modifier.padding(end = 6.dp),
                     )
                 }
@@ -407,7 +409,7 @@ internal fun ArtworkStudioContent(
                         ) {
                             Text(
                                 tab.label,
-                                color = if (selected) Color.White else Color.White.copy(alpha = 0.62f),
+                                color = themedText(if (selected) Color.White else Color.White.copy(alpha = 0.62f)),
                                 fontSize = 10.5.sp,
                                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
                                 maxLines = 1,
@@ -420,7 +422,7 @@ internal fun ArtworkStudioContent(
                         action = GamepadAction.NEXT_CATEGORY,
                         label = "",
                         glyphSize = 14.dp,
-                        labelColor = Color.White.copy(alpha = 0.45f),
+                        labelColor = themedSubText(Color.White.copy(alpha = 0.45f)),
                         modifier = Modifier.padding(start = 6.dp),
                     )
                 }
@@ -446,13 +448,13 @@ internal fun ArtworkStudioContent(
                         // bands stay one line each (AD-16).
                         Text(
                             STUDIO_TABS[state.tabIndex].label,
-                            color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                            color = themedText(Color.White), fontSize = 13.sp, fontWeight = FontWeight.Bold,
                         )
                         // L.6: an explicit line height, or the theme's 24 sp bodyLarge spaces a wrapped
                         // caption ("XMB tile (Physical Media mode) · natural aspect") like two paragraphs.
                         Text(
                             STUDIO_TABS[state.tabIndex].contract,
-                            color = Color.White.copy(alpha = 0.55f), fontSize = 9.5.sp, lineHeight = 12.sp,
+                            color = themedSubText(Color.White.copy(alpha = 0.55f)), fontSize = 9.5.sp, lineHeight = 12.sp,
                         )
                         Spacer(Modifier.height(6.dp))
                         // The thumbnail is drawn in the ACTIVE TAB's tile shape rather than a fixed
@@ -569,7 +571,7 @@ internal fun ArtworkStudioContent(
                             ) {
                                 Text(
                                     if (state.includeNsfw) "Mature on" else "Mature off",
-                                    color = if (state.includeNsfw) Color(0xFFE57373) else Color.White.copy(alpha = 0.6f),
+                                    color = if (state.includeNsfw) Color(0xFFE57373) else themedText(Color.White.copy(alpha = 0.6f)),
                                     fontSize = 9.sp, lineHeight = 12.sp,
                                     maxLines = 1,
                                 )
@@ -594,7 +596,7 @@ internal fun ArtworkStudioContent(
                             } else {
                                 Text(
                                     if (state.matchResolving) "◌" else "!",
-                                    color = if (state.matchResolving) Color.White.copy(alpha = 0.4f) else Color(0xFFE0A030),
+                                    color = if (state.matchResolving) themedSubText(Color.White.copy(alpha = 0.4f)) else Color(0xFFE0A030),
                                     fontSize = 11.sp, fontWeight = FontWeight.Bold,
                                 )
                             }
@@ -611,12 +613,12 @@ internal fun ArtworkStudioContent(
                                 if (matched != null && !state.matchResolving) {
                                     Text(
                                         "Matched as ",
-                                        color = Color.White.copy(alpha = 0.75f), fontSize = 10.5.sp,
+                                        color = themedSubText(Color.White.copy(alpha = 0.75f)), fontSize = 10.5.sp,
                                         maxLines = 1,
                                     )
                                     Text(
                                         matched,
-                                        color = Color.White, fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold,
+                                        color = themedText(Color.White), fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold,
                                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.weight(1f, fill = false),
                                     )
@@ -629,7 +631,7 @@ internal fun ArtworkStudioContent(
                                             // the exact case Change Match exists to rescue.
                                             else                 -> "No ${state.matchProvider.label} match"
                                         },
-                                        color = Color.White.copy(alpha = 0.6f), fontSize = 10.5.sp,
+                                        color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 10.5.sp,
                                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.weight(1f, fill = false),
                                     )
@@ -663,7 +665,7 @@ internal fun ArtworkStudioContent(
                                 ) {
                                     Text(
                                         "FORGET",
-                                        color = Color.White.copy(alpha = 0.5f), fontSize = 9.5.sp,
+                                        color = themedSubText(Color.White.copy(alpha = 0.5f)), fontSize = 9.5.sp,
                                         maxLines = 1,
                                     )
                                 }
@@ -683,7 +685,7 @@ internal fun ArtworkStudioContent(
                             ) {
                                 Text(
                                     "CHANGE MATCH",
-                                    color = if (canChange) Color.White else Color.White.copy(alpha = 0.35f),
+                                    color = themedText(if (canChange) Color.White else Color.White.copy(alpha = 0.35f)),
                                     fontSize = 9.5.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     maxLines = 1,
@@ -716,7 +718,7 @@ internal fun ArtworkStudioContent(
                         ) {
                             Text(
                                 if (state.selectsMultiple) "+  Add files from this device" else "+  Choose a file from this device",
-                                color = if (barFocused) Color.White else Color.White.copy(alpha = 0.75f),
+                                color = themedText(if (barFocused) Color.White else Color.White.copy(alpha = 0.75f)),
                                 fontSize = 11.sp,
                                 maxLines = 1,
                             )
@@ -777,7 +779,7 @@ internal fun ArtworkStudioContent(
                                         } else {
                                             "The file you choose replaces this ${STUDIO_TABS[state.tabIndex].label}"
                                         },
-                                        color = Color.White.copy(alpha = 0.45f), fontSize = 12.sp,
+                                        color = themedSubText(Color.White.copy(alpha = 0.45f)), fontSize = 12.sp,
                                     )
                                 }
                             // The browse found art and the filters hid it: say so, and how to undo it.
@@ -785,7 +787,7 @@ internal fun ArtworkStudioContent(
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
                                         "Nothing matches these filters · ${state.unfilteredTotal} hidden",
-                                        color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp,
+                                        color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 12.sp,
                                     )
                                     Spacer(Modifier.height(8.dp))
                                     Row(
@@ -800,7 +802,7 @@ internal fun ArtworkStudioContent(
                                             action = GamepadAction.SELECT,
                                             label = "Clear Filters",
                                             glyphSize = 14.dp,
-                                            labelColor = Color.White,
+                                            labelColor = themedText(Color.White),
                                         )
                                     }
                                 }
@@ -816,7 +818,7 @@ internal fun ArtworkStudioContent(
                                         state.match == null  -> "No ScreenScraper match for this game. Use Change Match to pick one."
                                         else                 -> "ScreenScraper has nothing of this type for this game"
                                     },
-                                    color = Color.White.copy(alpha = 0.45f), fontSize = 12.sp,
+                                    color = themedSubText(Color.White.copy(alpha = 0.45f)), fontSize = 12.sp,
                                 )
                             }
                             else -> {
@@ -966,7 +968,7 @@ internal fun ArtworkStudioContent(
                 },
                 // PFP's keyboard brings its own prompts while it is up.
                 modifier = Modifier.padding(top = 6.dp).alpha(if (isVirtualKeyboardOverlayOpen()) 0f else 1f),
-                labelColor = Color.White.copy(alpha = 0.35f),
+                labelColor = themedSubText(Color.White.copy(alpha = 0.35f)),
                 labelStyle = TextStyle(fontSize = 10.sp),
                 glyphSize = 14.dp,
                 arrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
@@ -986,7 +988,7 @@ internal fun ArtworkStudioContent(
                     if (state.manualDownloading) {
                         CircularProgressIndicator(color = accent)
                         Spacer(Modifier.height(10.dp))
-                        Text("Downloading manual…", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
+                        Text("Downloading manual…", color = themedSubText(Color.White.copy(alpha = 0.7f)), fontSize = 12.sp)
                     } else if (state.candidateManualPath != null) {
                         StudioPdfPage(
                             path = state.candidateManualPath,
@@ -1003,7 +1005,7 @@ internal fun ArtworkStudioContent(
                             onNextPage = actions::manualNextPage,
                         )
                     } else if (art.isVideo) {
-                        Text("Video snap from ${art.provider}", color = Color.White, fontSize = 14.sp)
+                        Text("Video snap from ${art.provider}", color = themedText(Color.White), fontSize = 14.sp)
                     } else {
                         com.playfieldportal.core.ui.motion.ArtworkImage(
                             model = art.url,
@@ -1015,7 +1017,7 @@ internal fun ArtworkStudioContent(
                     Spacer(Modifier.height(10.dp))
                     Text(
                         listOfNotNull(art.provider, art.label).joinToString("  ·  "),
-                        color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp,
+                        color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 11.sp,
                     )
                     Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -1030,7 +1032,7 @@ internal fun ArtworkStudioContent(
                         )
                         Text(
                             "Ⓑ  CANCEL",
-                            color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp,
+                            color = themedText(Color.White.copy(alpha = 0.7f)), fontSize = 14.sp,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color.White.copy(alpha = 0.08f))
@@ -1120,12 +1122,12 @@ internal fun ArtworkStudioContent(
                 ) {
                     Text(
                         "Change match on ${state.matchProvider?.label.orEmpty()}",
-                        color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                        color = themedText(Color.White), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
                         "Tells the provider which game this is. Your artwork and metadata are left alone.",
-                        color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp,
+                        color = themedSubText(Color.White.copy(alpha = 0.5f)), fontSize = 11.sp,
                     )
                     Spacer(Modifier.height(12.dp))
                     VirtualKeyboardTextInput(matchEdit) {
@@ -1134,7 +1136,7 @@ internal fun ArtworkStudioContent(
                         readOnly = !state.changeMatchEditing,
                         onValueChange = matchEdit::onFieldValueChange,
                         singleLine = true,
-                        textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
+                        textStyle = TextStyle(color = themedText(Color.White), fontSize = 15.sp),
                         cursorBrush = SolidColor(accent),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(
@@ -1158,7 +1160,7 @@ internal fun ArtworkStudioContent(
                             ) {
                                 if (state.changeMatchDraft.isEmpty()) Text(
                                     state.game?.displayTitle ?: "Game title",
-                                    color = Color.White.copy(alpha = 0.35f), fontSize = 15.sp,
+                                    color = themedSubText(Color.White.copy(alpha = 0.35f)), fontSize = 15.sp,
                                 )
                                 inner()
                             }
@@ -1186,7 +1188,7 @@ internal fun ArtworkStudioContent(
                             if (state.changeMatchSearchingEveryPlatform)
                                 "Searching every platform. ScreenScraper can take about 10 seconds…"
                             else "Searching…",
-                            color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp,
+                            color = themedSubText(Color.White.copy(alpha = 0.5f)), fontSize = 12.sp,
                         )
                         state.changeMatchError != null -> Text(
                             state.changeMatchError.orEmpty(),
@@ -1194,7 +1196,7 @@ internal fun ArtworkStudioContent(
                         )
                         state.changeMatchResults.isEmpty() -> Text(
                             "No games found. Try a shorter title, or the title without its edition.",
-                            color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp,
+                            color = themedSubText(Color.White.copy(alpha = 0.5f)), fontSize = 12.sp,
                         )
                         // Weighted without fill, so the Column measures the fixed rows (Search / Cancel and
                         // the hint below included) first and the list takes only the height left. Unweighted,
@@ -1218,7 +1220,7 @@ internal fun ArtworkStudioContent(
                                 ) {
                                     Text(
                                         candidate.title,
-                                        color = Color.White, fontSize = 13.sp,
+                                        color = themedText(Color.White), fontSize = 13.sp,
                                         modifier = Modifier.weight(1f),
                                     )
                                     // Which release this is, and whether it has art of its own: once the list
@@ -1233,7 +1235,7 @@ internal fun ArtworkStudioContent(
                                         ?.let {
                                             Text(
                                                 it,
-                                                color = Color.White.copy(alpha = 0.45f), fontSize = 11.sp,
+                                                color = themedSubText(Color.White.copy(alpha = 0.45f)), fontSize = 11.sp,
                                             )
                                         }
                                 }
@@ -1244,7 +1246,7 @@ internal fun ArtworkStudioContent(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             "Search",
-                            color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                            color = themedText(Color.White), fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(accent.copy(alpha = 0.30f))
@@ -1254,7 +1256,7 @@ internal fun ArtworkStudioContent(
                         Spacer(Modifier.width(10.dp))
                         Text(
                             "Cancel",
-                            color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp,
+                            color = themedSubText(Color.White.copy(alpha = 0.65f)), fontSize = 12.sp,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color.White.copy(alpha = 0.07f))
@@ -1265,7 +1267,7 @@ internal fun ArtworkStudioContent(
                     Spacer(Modifier.height(8.dp))
                     Text(
                         "Up/Down  Move  •  A  Select  •  X  Edit title  •  B  Back",
-                        color = Color.White.copy(alpha = 0.4f), fontSize = 10.sp,
+                        color = themedSubText(Color.White.copy(alpha = 0.4f)), fontSize = 10.sp,
                     )
                 }
             }
@@ -1313,12 +1315,12 @@ internal fun ArtworkStudioContent(
                 ) {
                     Text(
                         "Search artwork providers",
-                        color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                        color = themedText(Color.White), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
                         "Changes what the providers are asked for. It never renames the game.",
-                        color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp,
+                        color = themedSubText(Color.White.copy(alpha = 0.5f)), fontSize = 11.sp,
                     )
                     Spacer(Modifier.height(12.dp))
                     VirtualKeyboardTextInput(queryEdit) {
@@ -1326,7 +1328,7 @@ internal fun ArtworkStudioContent(
                         value = queryEdit.fieldValue,
                         onValueChange = queryEdit::onFieldValueChange,
                         singleLine = true,
-                        textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
+                        textStyle = TextStyle(color = themedText(Color.White), fontSize = 15.sp),
                         cursorBrush = SolidColor(accent),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(
@@ -1343,7 +1345,7 @@ internal fun ArtworkStudioContent(
                             ) {
                                 if (state.queryDraft.isEmpty()) Text(
                                     state.game?.displayTitle ?: "Game title",
-                                    color = Color.White.copy(alpha = 0.35f), fontSize = 15.sp,
+                                    color = themedSubText(Color.White.copy(alpha = 0.35f)), fontSize = 15.sp,
                                 )
                                 inner()
                             }
@@ -1358,7 +1360,7 @@ internal fun ArtworkStudioContent(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             "Search",
-                            color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                            color = themedText(Color.White), fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(accent.copy(alpha = 0.30f))
@@ -1369,7 +1371,7 @@ internal fun ArtworkStudioContent(
                         Spacer(Modifier.width(10.dp))
                         Text(
                             "Use game title",
-                            color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp,
+                            color = themedSubText(Color.White.copy(alpha = 0.65f)), fontSize = 12.sp,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color.White.copy(alpha = 0.07f))
@@ -1380,7 +1382,7 @@ internal fun ArtworkStudioContent(
                         Spacer(Modifier.weight(1f))
                         Text(
                             "Cancel",
-                            color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp,
+                            color = themedSubText(Color.White.copy(alpha = 0.5f)), fontSize = 12.sp,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .menuCursor(state.searchButton == StudioSearchButton.CANCEL)
@@ -1470,12 +1472,12 @@ internal fun ArtworkStudioContent(
                         .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(14.dp))
                         .padding(20.dp),
                 ) {
-                    Text("FILE INFORMATION", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text("FILE INFORMATION", color = themedText(Color.White), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(12.dp))
                     if (info == null) {
                         Text(
                             "No stored record for this slot (available once the artwork lives in a linked library).",
-                            color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp,
+                            color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 12.sp,
                         )
                     } else {
                         StudioInfoRow("Type", STUDIO_TABS[state.tabIndex].label)
@@ -1491,7 +1493,7 @@ internal fun ArtworkStudioContent(
                     }
                     Spacer(Modifier.height(14.dp))
                     Text(
-                        "Ⓑ  CLOSE", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp,
+                        "Ⓑ  CLOSE", color = themedText(Color.White.copy(alpha = 0.7f)), fontSize = 13.sp,
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(Color.White.copy(alpha = 0.08f))
@@ -1627,8 +1629,8 @@ private fun StudioTileBadge(
 @Composable
 private fun StudioInfoRow(label: String, value: String) {
     Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
-        Text(label, color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp, modifier = Modifier.width(130.dp))
-        Text(value, color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(label, color = themedSubText(Color.White.copy(alpha = 0.5f)), fontSize = 12.sp, modifier = Modifier.width(130.dp))
+        Text(value, color = themedText(Color.White.copy(alpha = 0.9f)), fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }
 

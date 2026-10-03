@@ -41,10 +41,12 @@ class PreviewNavTest {
     // ── Reducer ──────────────────────────────────────────────────────────────
 
     @Test
-    fun `starts on the static Home frame - Video with its second row selected`() {
+    fun `starts where the launcher does - Game, on All Games`() {
         val s = PreviewNavState()
-        assertEquals("catbar_video", categories[s.category].slotKey)
-        assertEquals(SampleContent.SELECTED_ROW, s.currentIndex)
+        assertEquals("catbar_games", categories[s.category].slotKey)
+        assertEquals("All Games", PreviewNav.selectedRow(s)?.title)
+        // The UMD slot sits above it.
+        assertEquals(SampleContent.Leading.UMD, SampleContent.rows[s.currentIndex - 1].leading)
         assertFalse(s.isDrilled)
         assertEquals(s, PreviewNavState.HOME)
     }
@@ -69,17 +71,21 @@ class PreviewNavTest {
     }
 
     @Test
-    fun `each category remembers its own row`() {
-        val video = PreviewNavState().category
-        var s = PreviewNavState().send(PreviewNavAction.Down) // Video row 1 -> 2
-        val videoRow = s.currentIndex
-        s = s.send(PreviewNavAction.Right, PreviewNavAction.Down) // Game, row 0 -> 1
-        assertEquals(1, s.currentIndex)
+    fun `moving onto a category lands on its library card, else its top row, every time`() {
+        var s = PreviewNavState().send(PreviewNavAction.Left) // Game -> Video
+        assertEquals("Videos", PreviewNav.selectedRow(s)?.title)
         s = s.send(PreviewNavAction.Left)
-        assertEquals(video, s.category)
-        assertEquals(videoRow, s.currentIndex)
-        s = s.send(PreviewNavAction.Right)
-        assertEquals(1, s.currentIndex)
+        assertEquals("Midnight Wave", PreviewNav.selectedRow(s)?.title) // Now Playing
+        s = s.send(PreviewNavAction.Left)
+        assertEquals("Photos", PreviewNav.selectedRow(s)?.title)
+        s = s.send(PreviewNavAction.Left)
+        assertEquals("Android Settings", PreviewNav.selectedRow(s)?.title)
+        // A row moved to is not remembered: coming back lands again.
+        s = s.send(PreviewNavAction.Down, PreviewNavAction.Down, PreviewNavAction.Right, PreviewNavAction.Left)
+        assertEquals(0, s.currentIndex)
+        // The rows above the landing row stay reachable.
+        val photo = PreviewNavState().send(PreviewNavAction.Left, PreviewNavAction.Left, PreviewNavAction.Left)
+        assertEquals("Albums", PreviewNav.selectedRow(photo.send(PreviewNavAction.Up, PreviewNavAction.Up))?.title)
     }
 
     @Test
@@ -134,22 +140,45 @@ class PreviewNavTest {
 
     @Test
     fun `drilling two levels deep slides the sibling column down a level`() {
-        val music = categories.indexOfFirst { it.slotKey == "catbar_music" }
-        val playlists = SampleContent.rootRows(music).indexOfFirst { it.title == "Playlists" }
-        assertTrue(SampleContent.rootRows(music)[playlists].children.any { it.children.isNotEmpty() })
+        val video = categories.indexOfFirst { it.slotKey == "catbar_video" }
+        val collections = SampleContent.rootRows(video).indexOfFirst { it.title == "Collections" }
         var s = PreviewNavState()
-        repeat(s.category - music) { s = s.send(PreviewNavAction.Left) }
-        repeat(playlists - s.currentIndex) { s = s.send(PreviewNavAction.Down) }
-        s = s.send(PreviewNavAction.Enter) // into the playlists
-        val playlist = SampleContent.rootRows(music)[playlists].children.indexOfFirst { it.children.isNotEmpty() }
-        repeat(playlist) { s = s.send(PreviewNavAction.Down) }
-        s = s.send(PreviewNavAction.Enter) // into one playlist's tracks
+        repeat(s.category - video) { s = s.send(PreviewNavAction.Left) }
+        repeat(s.currentIndex - collections) { s = s.send(PreviewNavAction.Up) }
+        s = s.send(PreviewNavAction.Enter) // into Collections
+        val children = SampleContent.rootRows(video)[collections].children
+        assertEquals(listOf("Recently Watched", "Favorites", "Playlists"), children.map { it.title })
+        val playlists = children.indexOfFirst { it.title == "Playlists" }
+        repeat(playlists) { s = s.send(PreviewNavAction.Down) }
+        s = s.send(PreviewNavAction.Enter) // into the video playlists
         assertEquals(2, s.drill.size)
         val view = PreviewNav.view(s)
-        assertEquals(SampleContent.rootRows(music)[playlists].children, view.siblings)
-        assertEquals(playlist, view.siblingIndex)
-        assertEquals(SampleContent.rootRows(music)[playlists].children[playlist].children, view.rows)
+        assertEquals(children, view.siblings)
+        assertEquals(playlists, view.siblingIndex)
+        assertEquals(listOf("Highlights", "Create Playlist", "Import Playlist"), view.rows.map { it.title })
         assertEquals(1, s.send(PreviewNavAction.Back).drill.size)
+    }
+
+    @Test
+    fun `a scanned library drills into its files, which open on the device`() {
+        val s = PreviewNavState().send(PreviewNavAction.Left, PreviewNavAction.Enter) // Video > Videos
+        val row = PreviewNav.selectedRow(s)!!
+        assertEquals("item_video_file", row.slotKey)
+        assertEquals(SampleContent.Leading.THUMB, row.leading)
+        assertNotNull(s.send(PreviewNavAction.Enter).message)
+    }
+
+    @Test
+    fun `social is signed in and its hub drills`() {
+        var s = PreviewNavState().send(*Array(3) { PreviewNavAction.Right })
+        assertEquals("PlayerOne", PreviewNav.selectedRow(s)?.title)
+        s = s.send(PreviewNavAction.Enter)
+        assertEquals(listOf("Friends", "Voice", "Activity Settings", "Discord Settings"), PreviewNav.view(s).rows.map { it.title })
+        s = s.send(PreviewNavAction.Down, PreviewNavAction.Enter) // Voice
+        assertEquals(listOf("Create Lobby", "Invites", "Voice Settings"), PreviewNav.view(s).rows.map { it.title })
+        s = s.send(PreviewNavAction.Down, PreviewNavAction.Down, PreviewNavAction.Enter) // Voice Settings
+        assertEquals(3, s.drill.size)
+        assertEquals("Mic Sensitivity", PreviewNav.selectedRow(s)?.title)
     }
 
     @Test
@@ -169,10 +198,10 @@ class PreviewNavTest {
     @Test
     fun `clicks select first and open on the second click`() {
         val s0 = PreviewNavState()
-        val s1 = s0.send(PreviewNavAction.ClickRow(0))
-        assertEquals(0, s1.currentIndex)
+        val s1 = s0.send(PreviewNavAction.ClickRow(2))
+        assertEquals(2, s1.currentIndex)
         assertFalse(s1.isDrilled)
-        val s2 = s1.send(PreviewNavAction.ClickRow(0))
+        val s2 = s1.send(PreviewNavAction.ClickRow(2))
         assertTrue(s2.isDrilled || s2.message != null)
         assertEquals(s0, s0.send(PreviewNavAction.ClickRow(99)))
     }
@@ -196,21 +225,70 @@ class PreviewNavTest {
     @Test
     fun `sample content mirrors the launcher's rows`() {
         val titles = { c: String -> SampleContent.rootRows(categories.indexOfFirst { it.slotKey == c }).map { it.title } }
-        assertTrue(titles("catbar_settings").containsAll(listOf("Library", "Emulators", "Interface", "Achievements", "Media", "System")))
-        assertEquals(listOf("catbar_settings", "catbar_photos", "catbar_music", "catbar_video", "catbar_games"), categories.take(5).map { it.slotKey })
+        assertEquals(
+            listOf(
+                "catbar_settings", "catbar_photos", "catbar_music", "catbar_video", "catbar_games",
+                "catbar_network", "catbar_appstore", "catbar_social", "catbar_achievements",
+            ),
+            categories.map { it.slotKey },
+        )
+        assertEquals(
+            listOf("Android Settings", "Library", "Emulators", "Interface", "Achievements", "Media", "System"),
+            titles("catbar_settings"),
+        )
+        assertEquals(listOf("Camera", "Albums", "Photo Apps", "Photos"), titles("catbar_photos"))
+        assertEquals(listOf("Midnight Wave", "Playlist", "Music Apps", "Music"), titles("catbar_music"))
+        assertEquals(listOf("Collections", "Video Libraries", "Video Apps", "Videos"), titles("catbar_video"))
+        // Network and App Store hold installed apps then Add Apps; Wi-Fi and Bluetooth live in the status strip only.
+        assertEquals("Add Apps", titles("catbar_network").last())
+        assertEquals("Add Apps", titles("catbar_appstore").last())
+        val network = SampleContent.rootRows(categories.indexOfFirst { it.slotKey == "catbar_network" })
+        assertTrue(network.none { it.slotKey?.startsWith("status_") == true })
+        assertEquals(listOf("PlayerOne"), titles("catbar_social"))
+        assertEquals(listOf("Ruffian", "All Tracked Games", "Untracked"), titles("catbar_achievements"))
         val games = SampleContent.rootRows(gameIndex)
+        assertEquals(listOf("All Games", "Favorites", "Co-op Night"), games.drop(1).take(3).map { it.title })
+        val all = games.single { it.title == "All Games" }
+        assertEquals("Total Games ${all.children.size}", all.subtitle)
         listOf("sysicon_ps3", "sysicon_psp", "sysicon_windows").forEach { key ->
             assertTrue(games.any { it.slotKey == key && it.children.isNotEmpty() }, "$key console missing or empty")
         }
     }
 
     @Test
-    fun `every sample slot key is a real icon slot`() {
+    fun `every sample slot key is a real icon slot and only icon rows carry one`() {
         fun walk(rows: List<SampleContent.Row>): Unit = rows.forEach {
-            assertTrue(CustomizableIcons.isValidKey(it.slotKey), "bad slot key ${it.slotKey}")
+            val themeable = it.leading in setOf(SampleContent.Leading.SLOT, SampleContent.Leading.THUMB, SampleContent.Leading.COVER)
+            if (themeable) {
+                val key = it.slotKey
+                assertNotNull(key, "${it.title} has no slot key")
+                assertTrue(CustomizableIcons.isValidKey(key), "bad slot key $key")
+            } else {
+                assertNull(it.slotKey, "${it.title} is not themeable")
+            }
             walk(it.children)
         }
         categories.indices.forEach { walk(SampleContent.rootRows(it)) }
+    }
+
+    @Test
+    fun `the strip and the hint pill name what the list on screen does`() {
+        val root = PreviewNavState()
+        assertNull(PreviewNav.statusLabel(root)) // a Games root never custom-arranged names nothing
+        assertEquals(PreviewNav.IdleHint("Sort", options = true), PreviewNav.idleHint(root))
+        val network = root.send(PreviewNavAction.Right)
+        assertEquals("Sort: A–Z", PreviewNav.statusLabel(network))
+        val settings = root.send(*Array(4) { PreviewNavAction.Left })
+        assertNull(PreviewNav.statusLabel(settings))
+        assertNull(PreviewNav.idleHint(settings)) // nothing to sort, no menu: no pill
+        // The Social account row has a menu (Reconnect) but nothing to sort.
+        val account = root.send(*Array(3) { PreviewNavAction.Right })
+        assertEquals(PreviewNav.IdleHint(null, options = true), PreviewNav.idleHint(account))
+        val videos = root.send(PreviewNavAction.Left, PreviewNavAction.Enter)
+        assertEquals("Sort: Title", PreviewNav.statusLabel(videos))
+        val games = openGame(ps3)
+        assertEquals("Filter: Title", PreviewNav.statusLabel(games))
+        assertEquals(PreviewNav.IdleHint("Filter", options = true), PreviewNav.idleHint(games))
     }
 
     @Test

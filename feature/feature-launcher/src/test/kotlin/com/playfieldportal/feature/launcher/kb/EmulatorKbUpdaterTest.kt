@@ -226,6 +226,17 @@ class EmulatorKbUpdaterTest {
     }
 
     @Test
+    fun `an offline check does not start the 24 hour wait`() = runBlocking<Unit> {
+        manifest = KbDownload.Failure("UnknownHostException")
+        val updater = newUpdater()
+        assertEquals(KbUpdateResult.Offline, updater.check(manual = false))
+        assertEquals(0L, updater.lastCheckAt.first())
+
+        serve(kbText(2026100200))
+        assertEquals(KbUpdateResult.Installed, updater.check(manual = false))
+    }
+
+    @Test
     fun `an automatic check within 24 hours makes no network call`() = runBlocking<Unit> {
         serve(kbText(2026100200))
         assertEquals(KbUpdateResult.Installed, newUpdater().check(manual = false))

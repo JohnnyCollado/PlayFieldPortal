@@ -62,6 +62,7 @@ import com.playfieldportal.core.ui.components.PspContextMenuOverlay
 import com.playfieldportal.core.ui.components.PspMenuRow
 import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.components.rememberPfpModalHost
+import com.playfieldportal.core.ui.detail.unselectedLabel
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.menuCursorFill
 import com.playfieldportal.core.ui.detail.DetailContentPadding
@@ -534,7 +535,7 @@ private fun ViewTab(label: String, selected: Boolean, palette: DetailPalette, on
     ) {
         Text(
             text = label,
-            color = if (selected) palette.textPrimary else palette.textMuted,
+            color = if (selected) palette.textPrimary else palette.unselectedLabel(),
             fontSize = 13.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 1,
@@ -726,7 +727,7 @@ private fun StatusColumn(earned: Boolean, detail: String?, palette: DetailPalett
                 Spacer(Modifier.width(6.dp))
                 Text("Earned", color = EarnedColor, fontSize = 13.sp, maxLines = 1, softWrap = false)
             } else {
-                Icon(Icons.Filled.Lock, contentDescription = null, tint = palette.textMuted, modifier = Modifier.size(13.dp))
+                Icon(Icons.Filled.Lock, contentDescription = null, tint = palette.iconMuted, modifier = Modifier.size(13.dp))
                 Spacer(Modifier.width(6.dp))
                 Text("Locked", color = palette.textMuted, fontSize = 13.sp, maxLines = 1, softWrap = false)
             }
@@ -1015,7 +1016,7 @@ private fun PanelButton(
     val shape = RoundedCornerShape(8.dp)
     Text(
         text = label,
-        color = if (enabled) palette.textPrimary else palette.textMuted,
+        color = if (enabled) palette.textPrimary else palette.unselectedLabel(),
         fontSize = 14.sp,
         fontWeight = FontWeight.Medium,
         modifier = Modifier

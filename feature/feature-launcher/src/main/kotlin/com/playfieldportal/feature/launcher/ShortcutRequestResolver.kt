@@ -40,8 +40,10 @@ class ShortcutRequestResolver @Inject constructor(
         store.enqueue(request)
         tasks.report(
             id = rowId(request.id),
-            label = "${request.hostLabel} wants to add a shortcut: ${request.name}",
-            message = "Only add it if you just asked ${request.hostLabel} to.",
+            // hostLabel is the app the shortcut OPENS, not the sender: the INSTALL_SHORTCUT
+            // broadcast does not say who sent it, so the copy must not attribute it.
+            label = "Shortcut request: ${request.name} (opens ${request.hostLabel})",
+            message = "Only add it if you just made this shortcut yourself.",
             severity = NotificationSeverity.INFO,
             kind = NotificationKind.SYSTEM,
             action = NotificationAction.ReviewShortcut(request.id),

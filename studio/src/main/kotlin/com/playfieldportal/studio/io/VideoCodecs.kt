@@ -148,40 +148,70 @@ object VideoCodecs {
      * A frame the decoder has produced but not yet turned into pixels. Decoding (which every frame
      * needs, because H.264 frames depend on their predecessors) and the RGB conversion (which a late
      * frame can skip) are separate costs, so the live preview pays the second only for frames it shows.
+     * The picture lives in the decoder's own buffer, which the next [FrameReader.next] overwrites:
+     * [copyInto] it before asking for another frame.
      */
     class RawFrame internal constructor(
         private val picture: Picture,
         val ptsMs: Long,
         val durationMs: Long,
     ) {
-        fun toImage(): BufferedImage = AWTUtil.toBufferedImage(picture)
+        fun copyInto(dst: YuvPlanes) = dst.copyFrom(picture, ptsMs, durationMs)
+    }
+
+    /**
+     * One decoded 8-bit 4:2:0 picture, copied out of the decoder so another thread can convert it
+     * while the next frame decodes. The arrays are reused frame to frame (a 1080p copy is three
+     * arraycopies, about 3 MB). Samples are JCodec's signed bytes (value - 128); [cropX]/[cropY] and
+     * [width] x [height] are the visible picture inside the macroblock-padded planes.
+     */
+    class YuvPlanes {
+        var y = ByteArray(0); private set
+        var u = ByteArray(0); private set
+        var v = ByteArray(0); private set
+        var yStride = 0; private set
+        var cStride = 0; private set
+        var cropX = 0; private set
+        var cropY = 0; private set
+        var width = 0; private set
+        var height = 0; private set
+        var ptsMs = 0L; private set
+        var durationMs = 0L; private set
+
+        internal fun copyFrom(picture: Picture, ptsMs: Long, durationMs: Long) {
+            y = copy(picture.getPlaneData(0), y)
+            u = copy(picture.getPlaneData(1), u)
+            v = copy(picture.getPlaneData(2), v)
+            yStride = picture.getPlaneWidth(0)
+            cStride = picture.getPlaneWidth(1)
+            cropX = picture.crop?.x ?: 0
+            cropY = picture.crop?.y ?: 0
+            width = picture.croppedWidth
+            height = picture.croppedHeight
+            this.ptsMs = ptsMs
+            this.durationMs = durationMs
+        }
+
+        private fun copy(src: ByteArray, reuse: ByteArray): ByteArray =
+            (if (reuse.size == src.size) reuse else ByteArray(src.size)).also { System.arraycopy(src, 0, it, 0, src.size) }
     }
 
     /**
      * Sequential frame iterator for the live preview: opens [file], then [next] yields frames in
-     * presentation order until it returns null. [rewind] reopens from the start (JCodec seeks are
-     * imprecise on long-GOP files; a reopen costs one header parse). Not thread-safe — one owner.
+     * presentation order until it returns null. [rewind] seeks back to frame 0 — always a key frame,
+     * so the seek is exact — keeping the open file and decoder; a fresh JCodec decoder per loop would
+     * re-parse the container on every pass and leave its slice thread pool behind (JCodec never shuts
+     * it down). Not thread-safe — one owner.
      */
     class FrameReader private constructor(
         private val file: File,
+        private var channel: SeekableByteChannel?,
+        private var grab: FrameGrab?,
         val width: Int,
         val height: Int,
         val fps: Float,
         val durationMs: Long,
     ) : AutoCloseable {
-        private var channel: SeekableByteChannel? = null
-        private var grab: FrameGrab? = null
-
-        private fun open() {
-            val ch = NIOUtils.readableChannel(file)
-            try {
-                grab = FrameGrab.createFrameGrab(ch)
-                channel = ch
-            } catch (t: Throwable) {
-                ch.close()
-                throw t
-            }
-        }
 
         /** The next frame, or null at the end of the stream. */
         fun next(): RawFrame? {
@@ -192,8 +222,13 @@ object VideoCodecs {
         }
 
         fun rewind() {
+            val current = grab
+            if (current != null && runCatching { current.seekToFramePrecise(0) }.isSuccess) return
+            // A stream the seek cannot handle: reopen from the top instead.
             release()
-            open()
+            val (ch, g) = openGrab(file)
+            channel = ch
+            grab = g
         }
 
         private fun release() {
@@ -205,12 +240,29 @@ object VideoCodecs {
         override fun close() = release()
 
         internal companion object {
+            /** One container parse serves the dimensions, the frame rate and the decoder. */
             fun open(file: File): FrameReader? = runCatching {
-                val probe = probe(file) ?: return null
-                val meta = NIOUtils.readableChannel(file).use { ch -> FrameGrab.createFrameGrab(ch).videoTrack.meta }
-                val fps = if (meta.totalFrames > 0 && meta.totalDuration > 0.0) (meta.totalFrames / meta.totalDuration).toFloat() else 30f
-                FrameReader(file, probe.width, probe.height, fps.coerceIn(1f, 240f), probe.durationMs).also { it.open() }
+                val (ch, g) = openGrab(file)
+                try {
+                    val meta = g.videoTrack.meta
+                    val size = meta.videoCodecMeta.size
+                    val fps = if (meta.totalFrames > 0 && meta.totalDuration > 0.0) (meta.totalFrames / meta.totalDuration).toFloat() else 30f
+                    FrameReader(file, ch, g, size.width, size.height, fps.coerceIn(1f, 240f), (meta.totalDuration * 1000.0).toLong())
+                } catch (t: Throwable) {
+                    ch.close()
+                    throw t
+                }
             }.getOrNull()
+
+            private fun openGrab(file: File): Pair<SeekableByteChannel, FrameGrab> {
+                val ch = NIOUtils.readableChannel(file)
+                try {
+                    return ch to FrameGrab.createFrameGrab(ch)
+                } catch (t: Throwable) {
+                    ch.close()
+                    throw t
+                }
+            }
         }
     }
 

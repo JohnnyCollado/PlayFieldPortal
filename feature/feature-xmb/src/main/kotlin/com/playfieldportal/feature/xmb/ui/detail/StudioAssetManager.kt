@@ -35,6 +35,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.components.XmbHeaderPill
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.artwork.store.StudioArtworkSlot
 
 /**
@@ -81,12 +83,12 @@ internal fun StudioAssetManagerPanel(
         ) {
             Text(
                 "REORDER " + kindLabel.uppercase(),
-                color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold,
+                color = themedText(Color.White), fontSize = 14.sp, fontWeight = FontWeight.Bold,
             )
             Spacer(Modifier.height(2.dp))
             Text(
                 "The first one is what the game shows.",
-                color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp,
+                color = themedSubText(Color.White.copy(alpha = 0.55f)), fontSize = 11.sp,
             )
             Spacer(Modifier.height(12.dp))
 
@@ -94,7 +96,7 @@ internal fun StudioAssetManagerPanel(
                 // Reachable if every record's file was lost between opening the menu and the panel.
                 Text(
                     "Nothing stored for this slot.",
-                    color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp,
+                    color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 12.sp,
                 )
             } else {
                 Column(
@@ -123,18 +125,18 @@ internal fun StudioAssetManagerPanel(
             } else {
                 Text(
                     "Ⓛ Ⓡ  MOVE      Ⓐ  MAKE FIRST",
-                    color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp,
+                    color = themedSubText(Color.White.copy(alpha = 0.7f)), fontSize = 12.sp,
                 )
             }
             Spacer(Modifier.height(10.dp))
             Text(
                 "Re-linking a library rebuilds this order from the filenames, which is how artwork " +
                     "reconnects to re-imported games.",
-                color = Color.White.copy(alpha = 0.45f), fontSize = 10.sp, lineHeight = 13.sp,
+                color = themedSubText(Color.White.copy(alpha = 0.45f)), fontSize = 10.sp, lineHeight = 13.sp,
             )
             Spacer(Modifier.height(12.dp))
             Text(
-                "Ⓑ  CLOSE", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp,
+                "Ⓑ  CLOSE", color = themedText(Color.White.copy(alpha = 0.7f)), fontSize = 13.sp,
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
                     .background(Color.White.copy(alpha = 0.08f))
@@ -178,7 +180,7 @@ private fun StudioAssetRow(
     ) {
         Text(
             (position + 1).toString(),
-            color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp,
+            color = themedSubText(Color.White.copy(alpha = 0.5f)), fontSize = 11.sp,
             modifier = Modifier.width(20.dp),
         )
         Box(
@@ -201,7 +203,7 @@ private fun StudioAssetRow(
         Column(Modifier.weight(1f)) {
             Text(
                 if (position == 0) "Primary" else (asset.provider ?: "Stored artwork"),
-                color = if (position == 0) accent else Color.White.copy(alpha = 0.9f),
+                color = if (position == 0) accent else themedText(Color.White.copy(alpha = 0.9f)),
                 fontSize = 12.sp,
                 fontWeight = if (position == 0) FontWeight.Bold else FontWeight.Normal,
                 maxLines = 1,
@@ -212,7 +214,7 @@ private fun StudioAssetRow(
                     asset.provider.takeIf { position == 0 },
                     formatBytes(asset.sizeBytes).takeIf { asset.sizeBytes > 0 },
                 ).joinToString(" · ").ifEmpty { "—" },
-                color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp,
+                color = themedSubText(Color.White.copy(alpha = 0.5f)), fontSize = 10.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

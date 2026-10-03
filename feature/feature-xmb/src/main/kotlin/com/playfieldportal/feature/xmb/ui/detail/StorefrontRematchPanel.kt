@@ -52,6 +52,8 @@ import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
 import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
 import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
 import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.xmb.ui.SearchGlyph
 
 // ── Rematch Storefront Metadata (C23 T6, Phase 18) ───────────────────────────
@@ -99,12 +101,12 @@ fun StorefrontRematchPanel(
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     "Rematch Storefront Metadata",
-                    color = TextPrimary,
+                    color = themedText(TextPrimary),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
-                Text(ui.gameTitle, color = TextMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(ui.gameTitle, color = themedSubText(TextMuted), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
 
             if (!showTouchControls) {
@@ -116,7 +118,7 @@ fun StorefrontRematchPanel(
                         ui.queryFocused -> "Up/Down  Rows  •  Select  Type a name  •  B  Close"
                         else -> "Up/Down  Rows  •  Left/Right  Action  •  Select  Confirm  •  B  Close"
                     },
-                    color = TextMuted.copy(alpha = 0.55f),
+                    color = themedSubText(TextMuted.copy(alpha = 0.55f)),
                     fontSize = 10.sp,
                 )
             }
@@ -179,7 +181,7 @@ fun StorefrontRematchPanel(
                     Text(
                         "Removing a link removes the link and nothing else. Your description, developer and " +
                             "every other field stay exactly as they are — including anything you typed by hand.",
-                        color = TextPrimary,
+                        color = themedText(TextPrimary),
                         fontSize = 12.sp,
                         lineHeight = 17.sp,
                     )
@@ -199,7 +201,7 @@ fun StorefrontRematchPanel(
             ) {
                 Text(
                     if (ui.searching) "Searching…" else "Search every store again",
-                    color = TextPrimary,
+                    color = themedText(TextPrimary),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -274,14 +276,14 @@ private fun NameSearchBar(
                 onValueChange = queryEdit::onFieldValueChange,
                 readOnly = !ui.editingQuery,
                 singleLine = true,
-                textStyle = TextStyle(color = TextPrimary, fontSize = 14.sp),
+                textStyle = TextStyle(color = themedText(TextPrimary), fontSize = 14.sp),
                 cursorBrush = SolidColor(focusEdge),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { onSearch() }, onDone = { onSearch() }),
                 decorationBox = { inner ->
                     Box {
                         if (ui.query.isEmpty()) {
-                            Text("Search by name", color = TextMuted.copy(alpha = 0.6f), fontSize = 14.sp)
+                            Text("Search by name", color = themedSubText(TextMuted.copy(alpha = 0.6f)), fontSize = 14.sp)
                         }
                         inner()
                     }
@@ -303,14 +305,14 @@ private fun NameSearchBar(
             ) {
                 Text(
                     if (ui.searching) "Searching…" else "Search",
-                    color = if (ui.canSearchByName) TextPrimary else TextMuted.copy(alpha = 0.45f),
+                    color = themedText(if (ui.canSearchByName) TextPrimary else TextMuted.copy(alpha = 0.45f)),
                     fontSize = 12.sp,
                 )
             }
         }
         Text(
             "Searches the stores for this name. Your game's title is not changed.",
-            color = TextMuted.copy(alpha = 0.6f),
+            color = themedSubText(TextMuted.copy(alpha = 0.6f)),
             fontSize = 10.sp,
         )
     }
@@ -343,7 +345,7 @@ private fun StoreRow(
     ) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(row.storeLabel, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Text(row.storeLabel, color = themedText(TextPrimary), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 if (row.userConfirmed) {
                     Text(
                         "Confirmed by you",
@@ -356,8 +358,8 @@ private fun StoreRow(
                     )
                 }
             }
-            Text(row.detail, color = TextMuted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            row.note?.let { Text(it, color = TextMuted.copy(alpha = 0.6f), fontSize = 10.sp) }
+            Text(row.detail, color = themedSubText(TextMuted), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            row.note?.let { Text(it, color = themedSubText(TextMuted.copy(alpha = 0.6f)), fontSize = 10.sp) }
         }
 
         // The actions this row offers. On a controller only the selected one is highlighted —
@@ -378,7 +380,7 @@ private fun StoreRow(
                 ) {
                     Text(
                         action.label,
-                        color = if (row.enabled) TextPrimary else TextMuted.copy(alpha = 0.45f),
+                        color = themedText(if (row.enabled) TextPrimary else TextMuted.copy(alpha = 0.45f)),
                         fontSize = 12.sp,
                     )
                 }

@@ -38,6 +38,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.theme.menuCursorEdge
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -175,15 +177,15 @@ fun ManualViewerOverlay(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(title, color = Color(0xFFEEEEEE), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            Text(title, color = themedText(Color(0xFFEEEEEE)), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val pdf = renderer.value
                 if (pdf != null) {
-                    Text("${page + 1} / ${pdf.pageCount}", color = Color(0xAAEEEEEE), fontSize = 12.sp)
+                    Text("${page + 1} / ${pdf.pageCount}", color = themedSubText(Color(0xAAEEEEEE)), fontSize = 12.sp)
                 }
                 Text(
                     "  ✕  ",
-                    color = Color(0xFFEEEEEE),
+                    color = themedText(Color(0xFFEEEEEE)),
                     fontSize = 16.sp,
                     modifier = Modifier.clickable(onClick = onClose).padding(start = 12.dp),
                 )
@@ -192,7 +194,7 @@ fun ManualViewerOverlay(
 
         Text(
             "◀ ▶  Page   •   ▲ ▼  Scroll   •   B  Close",
-            color = Color(0x66EEEEEE),
+            color = themedSubText(Color(0x66EEEEEE)),
             fontSize = 10.sp,
             modifier = Modifier
                 .align(Alignment.BottomCenter)

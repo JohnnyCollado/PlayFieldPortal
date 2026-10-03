@@ -22,9 +22,18 @@ class PreviewModelConsoleTest {
     }
 
     @Test
-    fun `sample game rows use console keys`() {
-        val consoles = SampleContent.rootRows(4).map { it.slotKey }
-        assertEquals(listOf("sysicon_allgames", "sysicon_favorites", "sysicon_ps3", "sysicon_psp", "sysicon_windows"), consoles)
-        assertTrue(SampleContent.rootRows(4).all { r -> r.children.all { it.slotKey == r.slotKey } })
+    fun `sample game cards use console keys and their games draw letter tiles`() {
+        val root = SampleContent.rootRows(SampleContent.SELECTED_CATEGORY)
+        assertEquals(
+            listOf(null, "sysicon_allgames", "sysicon_favorites", "item_memcard_games", "sysicon_ps3", "sysicon_psp", "sysicon_windows"),
+            root.map { it.slotKey },
+        )
+        val games = root.flatMap { it.children }
+        assertTrue(games.isNotEmpty())
+        // Game tiles are not a themeable slot: no key, the ICON0 tile in the platform's accent.
+        assertTrue(games.all { it.isGame && it.slotKey == null && it.leading == SampleContent.Leading.GAME && it.accentArgb != null })
+        // All Games lists every console's games.
+        val consoles = root.filter { it.menu == RowKind.CONSOLE }
+        assertEquals(consoles.sumOf { it.children.size }, root.single { it.menu == RowKind.ALL_GAMES }.children.size)
     }
 }

@@ -82,6 +82,21 @@ class BootPlaybackTest {
         assertEquals(5_000L, BootPlayback.builtInMs(BootKind.GAMEBOOT))
     }
 
+    @Test
+    fun `clips and gameboot hide the frame throughout, the built-in boot until its fade-out`() {
+        val clip = File("boot.mp4")
+        for (ms in listOf(0L, 3_000L, 9_000L)) {
+            assertTrue(BootPlayback.coversFrame(BootKind.BOOT, clip, ms))
+            assertTrue(BootPlayback.coversFrame(BootKind.GAMEBOOT, clip, ms))
+            assertTrue(BootPlayback.coversFrame(BootKind.GAMEBOOT, null, ms))
+        }
+        assertTrue(BootPlayback.coversFrame(BootKind.BOOT, null, 0L))
+        assertTrue(BootPlayback.coversFrame(BootKind.BOOT, null, 2_999L))
+        assertEquals(1f, BootTimeline.at(2_999L).overlayAlpha, "fully opaque up to the fade-out")
+        assertFalse(BootPlayback.coversFrame(BootKind.BOOT, null, 3_000L))
+        assertFalse(BootPlayback.coversFrame(BootKind.BOOT, null, 3_600L))
+    }
+
     // ── Boot: logo scale, then alpha, hold, overlay fade ─────────────────────
 
     @Test

@@ -15,6 +15,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.settings.viewmodel.ArtworkOrphanViewModel
 
 /**
@@ -109,7 +110,7 @@ private fun OrphanResolver(
                 value = state.query,
                 onValueChange = viewModel::onQueryChange,
                 singleLine = true,
-                textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
+                textStyle = TextStyle(color = themedText(Color.White), fontSize = 15.sp),
                 cursorBrush = androidx.compose.ui.graphics.SolidColor(Color.White),
                 // The keyboard's Search key is the same explicit press as the row below — it is
                 // not typing that triggers a search, it is asking for one.

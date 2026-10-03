@@ -174,6 +174,26 @@ class BackupListStateTest {
     }
 
     @Test
+    fun `an older backup restores category items with an unknown date added`() {
+        val file = File(exportDir, "old-items$BACKUP_FILE_EXTENSION")
+        val json = Json { prettyPrint = false }
+        val manifest = BackupManifest(appVersionCode = 1, appVersionName = "1.0", createdAt = 0L, gameCount = 0, sessionCount = 0, categoryCount = 0)
+        ZipOutputStream(file.outputStream()).use { zip ->
+            zip.putNextEntry(ZipEntry(BackupEntry.MANIFEST))
+            zip.write(json.encodeToString(BackupManifest.serializer(), manifest).toByteArray())
+            zip.closeEntry()
+            // Shaped as a pre-v54 archive wrote it: no addedAt field.
+            zip.putNextEntry(ZipEntry(BackupEntry.CATEGORY_ITEMS))
+            zip.write("""[{"categoryId":"games","itemId":"7","itemType":"game"}]""".toByteArray())
+            zip.closeEntry()
+        }
+
+        restoreFrom(Manager(), file)
+
+        coVerify { categoryDao.addItem(match { it.itemId == "7" && it.addedAt == 0L }) }
+    }
+
+    @Test
     fun `a umd slot is restored only when its game and its category both came back`() {
         val slots = listOf(
             UmdSlotEntity("games", gameId = 1, insertedAt = 0),

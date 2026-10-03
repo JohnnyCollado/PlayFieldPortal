@@ -34,6 +34,8 @@ import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 
 // ── PSP-style context menu panel ──────────────────────────────────────────────
 //
@@ -140,7 +142,7 @@ fun PspContextMenuOverlay(
                 text = title,
                 fontSize = 19.sp,
                 fontWeight = FontWeight.Light,
-                color = Color.White.copy(alpha = 0.92f),
+                color = themedText(Color.White.copy(alpha = 0.92f)),
                 style = TextStyle(shadow = TextDropShadow),
                 maxLines = 2,
                 modifier = Modifier.padding(bottom = 10.dp),
@@ -207,8 +209,11 @@ private fun PspContextMenuRow(
                 color = when {
                     row.isDestructive && isSelected -> Color(0xFFFF7070)
                     row.isDestructive               -> Color(0xAAFF7070)
-                    isSelected                      -> Color.White
-                    else                            -> Color.White.copy(alpha = 0.62f)
+                    // Labels in the user's Main font colour when set, at these same weights
+                    // (values, chevrons and group headers take the Sub colour); the destructive
+                    // reds stay semantic.
+                    isSelected                      -> themedText(Color.White)
+                    else                            -> themedText(Color.White.copy(alpha = 0.62f))
                 },
                 style = TextStyle(shadow = TextDropShadow),
                 // A value fills the row so it can be pushed to the far edge; without one the label
@@ -225,7 +230,7 @@ private fun PspContextMenuRow(
                     // the row. Both brighten together when the cursor arrives.
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Normal,
-                    color = Color.White.copy(alpha = if (isSelected) 0.85f else 0.55f),
+                    color = themedSubText(Color.White.copy(alpha = if (isSelected) 0.85f else 0.55f)),
                     style = TextStyle(shadow = TextDropShadow),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -242,7 +247,7 @@ private fun PspContextMenuRow(
                 Text(
                     text = "›",
                     fontSize = 17.sp,
-                    color = Color.White.copy(alpha = if (isSelected) 0.85f else 0.55f),
+                    color = themedSubText(Color.White.copy(alpha = if (isSelected) 0.85f else 0.55f)),
                     style = TextStyle(shadow = TextDropShadow),
                 )
             }
@@ -266,7 +271,7 @@ private fun PspContextMenuGroupHeader(label: String, first: Boolean) {
         Text(
             text = label,
             fontSize = 11.sp,
-            color = Color.White.copy(alpha = 0.45f),
+            color = themedSubText(Color.White.copy(alpha = 0.45f)),
             style = TextStyle(shadow = TextDropShadow),
             modifier = Modifier.padding(top = if (first) 0.dp else 8.dp),
         )

@@ -19,7 +19,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -49,6 +51,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawBehind
@@ -131,7 +134,6 @@ private val SubtitleShadow = Shadow(color = Color.Black.copy(alpha = 0.75f), off
 
 // XMBItemList: the tap target is shorter than the row; a drilled card column is icon-only.
 private val TapTargetHeight = 72.dp
-private val VectorGlyphSize = 48.dp
 private val SiblingColumnWidth = (PreviewGeometry.DRILL_CHILD_COLUMN_LEFT - 10f).dp
 
 // XmbBackground.kt (the wave maths itself lives in WaveMotion)
@@ -159,6 +161,8 @@ fun XmbPreviewCanvas(
     onAdjust: (AdjustAction) -> Unit = {},
     live: PreviewLiveSpec? = null,
     onBootFinished: () -> Unit = {},
+    screen: PreviewScreen = PreviewScreen.XMB,
+    onCloseScreen: () -> Unit = {},
 ) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
@@ -199,6 +203,12 @@ fun XmbPreviewCanvas(
                         onBootFinished()
                         return@onKeyEvent true
                     }
+                    // An opened screen is a still frame: Esc / Backspace close it, nothing else navigates.
+                    if (screen != PreviewScreen.XMB) {
+                        if (event.key != Key.Escape && event.key != Key.Backspace) return@onKeyEvent false
+                        onCloseScreen()
+                        return@onKeyEvent true
+                    }
                     if (adjustOverlay != null) {
                         val adjust = AdjustOverlay.actionFor(event.key) ?: return@onKeyEvent false
                         onAdjust(adjust)
@@ -229,7 +239,7 @@ fun XmbPreviewCanvas(
                     .graphicsLayer(scaleX = scale, scaleY = scale)
                     .clipToBounds(),
             ) {
-                XmbFrame(model, nav, onNav, adjustOverlay, onAdjust, live, onBootFinished)
+                XmbFrame(model, nav, onNav, adjustOverlay, onAdjust, live, onBootFinished, screen)
             }
         }
     }
@@ -248,10 +258,43 @@ fun XmbFrame(
     onAdjust: (AdjustAction) -> Unit = {},
     live: PreviewLiveSpec? = null,
     onBootFinished: () -> Unit = {},
+    screen: PreviewScreen = PreviewScreen.XMB,
 ) {
     val runtime = rememberPreviewLive(live, model.waveStyle, hasWallpaper = model.wallpaper != null)
     CompositionLocalProvider(LocalPreviewLive provides runtime) {
-        XmbFrameBody(model, nav, onNav, adjustOverlay, onAdjust, runtime, onBootFinished)
+        if (screen == PreviewScreen.XMB) {
+            XmbFrameBody(model, nav, onNav, adjustOverlay, onAdjust, runtime, onBootFinished)
+        } else {
+            Box(Modifier.fillMaxSize()) {
+                ScreenPreview(screen, model)
+                runtime?.spec?.boot?.takeIf { it.isPlaying }?.let { BootOverlay(it, model, onBootFinished) }
+            }
+        }
+    }
+}
+
+/**
+ * The launcher's XMB background as the theme sets it: the wallpaper (plus its motion loop while live)
+ * under the legibility scrim, or the wave. Screens drawn over the XMB start from this.
+ */
+@Composable
+fun XmbBackdrop(model: XmbPreviewModel) {
+    val live = LocalPreviewLive.current
+    if (model.wallpaper != null) {
+        // WallpaperBackground: image fills, plus the legibility scrim. No wave. The poster is
+        // always underneath; the motion loop draws over it while it plays.
+        Image(
+            bitmap = model.wallpaper,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+        live?.spec?.motionFile?.let { MotionWallpaperLayer(live, it) }
+        Box(Modifier.fillMaxSize().background(WallpaperScrim))
+    } else {
+        // Not live (preview.png): the static pose, whatever the style.
+        val params = live?.wave ?: WaveMotion.paramsFor(model.waveStyle)
+        WaveBackground(model, params) { WaveMotion.timeSeconds(params, live?.elapsedMs?.longValue) }
     }
 }
 
@@ -265,47 +308,37 @@ private fun XmbFrameBody(
     live: PreviewLive?,
     onBootFinished: () -> Unit,
 ) {
+    // While a boot sequence covers the whole frame, the frame underneath is not drawn at all; the
+    // flag is read in the draw phase, so its change only redraws and never recomposes.
+    val bootCover = rememberBootCover()
     Box(Modifier.fillMaxSize()) {
-        if (model.wallpaper != null) {
-            // WallpaperBackground: image fills, plus the legibility scrim. No wave. The poster is
-            // always underneath; the motion loop draws over it while it plays.
-            Image(
-                bitmap = model.wallpaper,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-            )
-            live?.spec?.motionFile?.let { MotionWallpaperLayer(live, it) }
-            Box(Modifier.fillMaxSize().background(WallpaperScrim))
-        } else {
-            // Not live (preview.png): the static pose, whatever the style.
-            val params = live?.wave ?: WaveMotion.paramsFor(model.waveStyle)
-            WaveBackground(model, params) { WaveMotion.timeSeconds(params, live?.elapsedMs?.longValue) }
-        }
-        LayoutScaled(model) {
-            XmbCross(model, nav, onNav)
-            Pic0Logo(model, nav)
-            StatusStrip(model, PreviewNav.statusLabel(nav))
-            nav.search?.let {
-                GameSearchBox(
-                    text = nav.filter.term,
-                    onTextChange = { onNav(PreviewNavAction.SetSearch(it)) },
-                    onConfirm = { onNav(PreviewNavAction.Enter) },
-                    onCancel = { onNav(PreviewNavAction.Back) },
+        Box(Modifier.fillMaxSize().drawWithContent { if (!bootCover.coversFrame) drawContent() }) {
+            XmbBackdrop(model)
+            LayoutScaled(model) {
+                XmbCross(model, nav, onNav)
+                StatusStrip(model, PreviewNav.statusLabel(nav))
+                if (nav.flyout == null && nav.search == null) IdleHintPill(nav)
+                nav.search?.let {
+                    GameSearchBox(
+                        text = nav.filter.term,
+                        onTextChange = { onNav(PreviewNavAction.SetSearch(it)) },
+                        onConfirm = { onNav(PreviewNavAction.Enter) },
+                        onCancel = { onNav(PreviewNavAction.Back) },
+                    )
+                }
+            }
+            NavMessage(nav)
+            // Menus open in place over the frame, instantly, like the launcher's PspContextMenuOverlay.
+            FlyoutPanel(model, nav, onNav)
+            if (adjustOverlay != null) AdjustOverlayPanel(adjustOverlay, onAdjust)
+            if (live?.motionFellBack == true) {
+                PlaysOnDeviceBadge(
+                    "Preview shows the poster \u2014 plays on the device",
+                    Modifier.align(Alignment.BottomStart).padding(start = 12.dp, bottom = 12.dp),
                 )
             }
         }
-        NavMessage(nav)
-        // Menus open in place over the frame, instantly, like the launcher's PspContextMenuOverlay.
-        FlyoutPanel(model, nav, onNav)
-        if (adjustOverlay != null) AdjustOverlayPanel(adjustOverlay, onAdjust)
-        if (live?.motionFellBack == true) {
-            PlaysOnDeviceBadge(
-                "Preview shows the poster \u2014 plays on the device",
-                Modifier.align(Alignment.BottomStart).padding(start = 12.dp, bottom = 12.dp),
-            )
-        }
-        live?.spec?.boot?.takeIf { it.isPlaying }?.let { BootOverlay(it, model, onBootFinished) }
+        live?.spec?.boot?.takeIf { it.isPlaying }?.let { BootOverlay(it, model, onBootFinished, cover = bootCover) }
     }
 }
 
@@ -342,7 +375,8 @@ internal fun WaveBackground(model: XmbPreviewModel, params: WaveParams, time: ()
         ),
     )
     Box(Modifier.fillMaxSize().background(gradient)) {
-        Canvas(Modifier.fillMaxSize()) {
+        // Its own layer: a wave tick re-records this canvas alone, not the whole frame above it.
+        Canvas(Modifier.fillMaxSize().graphicsLayer()) {
             val t = time()
             for (fold in WaveMotion.FOLDS) drawFold(fold, params, t)
             // Soft off-centre light bloom.
@@ -626,7 +660,12 @@ private fun ItemRow(
         label = "previewRowScale",
     )
     val rowAlpha by animateFloatAsState(
-        targetValue = if (selected) 1f else 0.68f,
+        targetValue = when {
+            // "Solid Unfocused Icons" skips the unfocused dim; selection still reads by scale + label.
+            selected || model.legibility.solidUnfocusedIcons -> 1f
+            row.leading == SampleContent.Leading.EMPTY -> 0.5f
+            else -> 0.68f
+        },
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
         label = "previewRowAlpha",
     )
@@ -652,12 +691,10 @@ private fun ItemRow(
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
                 .padding(horizontal = 18.dp),
         ) {
-            // Raster art (memory cards, console art) fills the spec's glyph size; vector glyphs are 48 dp.
-            val raster = row.slotKey in StudioIconSet.RESOURCE_SLOTS || row.slotKey.startsWith("sysicon_")
-            Box(Modifier.width(spec.itemIconSlotDp.dp), contentAlignment = Alignment.Center) {
-                SlotIcon(model, row.slotKey, Modifier.size(if (raster) spec.itemIconDp.dp else VectorGlyphSize), focused = selected)
-            }
-            if (showLabel) {
+            LeadingIcon(model, row, selected)
+            // A game's text (the UMD slot's too) shows on the selected card only (no logo art in the sample).
+            val gameRow = row.isGame || row.leading == SampleContent.Leading.UMD
+            if (showLabel && (!gameRow || selected)) {
                 Column(Modifier.weight(1f, fill = false).padding(start = spec.itemTextStartGapDp.dp)) {
                     LegibleLabel(
                         text = row.title,
@@ -694,6 +731,128 @@ private fun ItemRow(
     }
 }
 
+/** XMBItemList.XmbItemLeadingIcon, for the leading kinds the sample uses. */
+@Composable
+private fun LeadingIcon(model: XmbPreviewModel, row: SampleContent.Row, selected: Boolean) {
+    val spec = model.layout
+    when (row.leading) {
+        SampleContent.Leading.EMPTY -> Spacer(Modifier.width(12.dp))
+        SampleContent.Leading.GAME -> {
+            GameLetterTile(row.title, Color(row.accentArgb ?: GameTileFallbackAccent), Modifier.size(GameTileWidth, GameTileHeight))
+            Spacer(Modifier.width(GameTileTextGap))
+        }
+        // A file with no thumbnail: its glyph framed in a 60x40 tile (a photo or video frame grab on device).
+        SampleContent.Leading.THUMB -> Box(Modifier.width(spec.itemIconSlotDp.dp), contentAlignment = Alignment.Center) {
+            FramedGlyph(model, checkNotNull(row.slotKey), Modifier.size(width = 60.dp, height = 40.dp), glyph = 28.dp, selected)
+        }
+        // A track with no cover art: its note framed in a 56 dp square.
+        SampleContent.Leading.COVER -> Box(Modifier.width(spec.itemIconSlotDp.dp), contentAlignment = Alignment.Center) {
+            FramedGlyph(model, checkNotNull(row.slotKey), Modifier.size(56.dp), glyph = 32.dp, selected)
+        }
+        // The PSP's UMD, whatever the game's platform: a bundled silhouette in the icon colour. (On
+        // device a focused, read slot turns into the game's ICON0; the preview keeps the UMD.)
+        SampleContent.Leading.UMD -> {
+            Box(Modifier.width(spec.itemIconSlotDp.dp), contentAlignment = Alignment.Center) {
+                Image(
+                    painter = StudioIconSet.chromePainter("xmb/umd_psp.png"),
+                    contentDescription = null,
+                    colorFilter = ColorFilter.tint(model.iconTint, BlendMode.SrcIn),
+                    modifier = Modifier.size(spec.itemIconDp.dp),
+                )
+            }
+        }
+        // The Shiba Coins player card: "Lv N" in a ring, both in the icon colour.
+        SampleContent.Leading.LEVEL -> Box(Modifier.width(spec.itemIconSlotDp.dp), contentAlignment = Alignment.Center) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size((spec.itemIconDp * 0.8f).dp)
+                    .clip(CircleShape)
+                    .border(2.dp, model.iconTint, CircleShape),
+            ) {
+                Text(row.badge.orEmpty(), color = model.iconTint, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            }
+        }
+        SampleContent.Leading.APP -> Box(Modifier.width(spec.itemIconSlotDp.dp), contentAlignment = Alignment.Center) {
+            AppIconStandIn(row.title)
+        }
+        SampleContent.Leading.SLOT -> {
+            val key = checkNotNull(row.slotKey) { "a SLOT row needs a slot key" }
+            // Raster art (memory cards, console art) fills the spec's icon size; vector glyphs have their own.
+            val raster = key in StudioIconSet.RESOURCE_SLOTS || key.startsWith("sysicon_")
+            val size = if (raster) spec.itemIconDp else StudioIconSet.glyphSizeDp(key, spec.itemIconDp)
+            Box(Modifier.width(spec.itemIconSlotDp.dp), contentAlignment = Alignment.Center) {
+                SlotIcon(model, key, Modifier.size(size.dp), focused = selected)
+            }
+        }
+    }
+}
+
+// GameIconView.PspIcon0Icon: the ICON0 tile a game with no artwork shows (the default Custom Icon display).
+private val GameTileWidth = 126.dp
+private val GameTileHeight = 70.dp
+private val GameTileTextGap = 16.dp
+private val GameTileShape = RoundedCornerShape(4.dp)
+private val GameTileBacking = Color(0xFF0A0A0F)
+private val GameTileBorder = Color(0x55FFFFFF)
+private const val GameTileFallbackAccent = 0xFF4A9EFF
+
+// XmbItemLeadingIcon's fallback frame for files and tracks without art.
+private val GlyphFrame = Color(0xFF1B1B27)
+
+@Composable
+private fun FramedGlyph(model: XmbPreviewModel, key: String, modifier: Modifier, glyph: Dp, selected: Boolean) {
+    Box(contentAlignment = Alignment.Center, modifier = modifier.clip(RoundedCornerShape(6.dp)).background(GlyphFrame)) {
+        SlotIcon(model, key, Modifier.size(glyph), focused = selected)
+    }
+}
+
+@Composable
+private fun GameLetterTile(title: String, accent: Color, modifier: Modifier) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .clip(GameTileShape)
+            .background(GameTileBacking)
+            .background(Brush.verticalGradient(listOf(accent.copy(alpha = 0.6f), GameTileBacking)))
+            .border(1.dp, GameTileBorder, GameTileShape),
+    ) {
+        Text(
+            text = (title.firstOrNull()?.uppercaseChar() ?: '?').toString(),
+            color = Color.White.copy(alpha = 0.85f),
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+        )
+        // The top gloss strip.
+        Box(
+            Modifier
+                .align(Alignment.TopStart)
+                .fillMaxWidth()
+                .fillMaxHeight(0.3f)
+                .background(Brush.verticalGradient(listOf(Color(0x18FFFFFF), Color.Transparent))),
+        )
+    }
+}
+
+/**
+ * An installed app's row shows the app's own launcher icon (AppListIcon, 48 dp), which no theme
+ * changes; the preview cannot load real app icons, so it draws a neutral round badge in its place.
+ */
+@Composable
+private fun AppIconStandIn(title: String) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.size(48.dp).clip(CircleShape).background(Color(0xFFE9ECF2)),
+    ) {
+        Text(
+            text = (title.firstOrNull()?.uppercaseChar() ?: '?').toString(),
+            color = Color(0xFF3B4A66),
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+}
+
 /** What Enter said on a leaf: the preview opens nothing, so it says where the real thing happens. */
 @Composable
 private fun BoxScope.NavMessage(nav: PreviewNavState) {
@@ -710,30 +869,154 @@ private fun BoxScope.NavMessage(nav: PreviewNavState) {
     )
 }
 
+// XmbStatusStrip.kt: palette, metrics and the sample device state the strip reads.
+private val StripPrimary = Color(0xFFEEEEEE)
+private val StripMuted = Color(0xAAEEEEEE)
+private val StripSep = Color(0x55FFFFFF)
+private val MeterInactive = Color(0x40EEEEEE)
+private val StripHeight = 28.dp
+private val StripSidePadding = 20.dp
+private val StripFontSize = 12.sp
+private const val SampleBatteryPercent = 84
+
+/**
+ * XmbPspStatusStrip as a controller user sees it: date | time [| sort label] on the left; bell,
+ * controller, Bluetooth, Wi-Fi, battery and percentage on the right. The sample device has a
+ * controller connected, Bluetooth on, full Wi-Fi, no cellular, and is unplugged. Status icons draw
+ * in the strip's muted white (not the theme icon colour); a theme override draws as authored.
+ */
 @Composable
-private fun BoxScope.StatusStrip(model: XmbPreviewModel, filterLabel: String?) {
+private fun BoxScope.StatusStrip(model: XmbPreviewModel, sortLabel: String?) {
+    val (date, time) = remember {
+        val now = java.util.Date()
+        java.text.SimpleDateFormat("MM/dd/yyyy").format(now) to java.text.SimpleDateFormat("h:mm a").format(now)
+    }
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .fillMaxWidth()
+            .height(StripHeight)
+            .padding(horizontal = StripSidePadding),
     ) {
-        // The Games filter's chip: the one place a short column says why it is short.
-        if (filterLabel != null) {
-            Text(
-                text = filterLabel,
-                color = Color.White.copy(alpha = 0.9f),
-                fontSize = 12.sp,
-                maxLines = 1,
-                modifier = Modifier
-                    .background(Color(0x59000000), RoundedCornerShape(10.dp))
-                    .padding(horizontal = 10.dp, vertical = 2.dp),
-            )
-            Spacer(Modifier.width(10.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(date, color = StripMuted, fontSize = StripFontSize, fontWeight = FontWeight.Normal)
+            StripSeparator()
+            Text(time, color = StripPrimary, fontSize = StripFontSize, fontWeight = FontWeight.Medium)
+            if (sortLabel != null) {
+                StripSeparator()
+                Text(sortLabel, color = StripPrimary, fontSize = StripFontSize, fontWeight = FontWeight.Medium, maxLines = 1)
+            }
         }
-        Text("21:30", color = Color.White, fontSize = 13.sp)
-        Spacer(Modifier.width(8.dp))
-        SlotIcon(model, "status_bluetooth", Modifier.size(14.dp))
-        Spacer(Modifier.width(6.dp))
-        SlotIcon(model, "status_battery_full", Modifier.width(24.dp).height(11.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            StatusGlyph(model, "status_notifications", Modifier.size(13.dp))
+            StatusGlyph(model, "status_controller", Modifier.size(15.dp))
+            StatusGlyph(model, "status_bluetooth", Modifier.size(width = 9.dp, height = 13.dp))
+            val wifi = model.iconOverrides["status_wifi"]
+            if (wifi != null) {
+                Image(bitmap = wifi, contentDescription = null, modifier = Modifier.size(width = 16.dp, height = 13.dp))
+            } else {
+                WifiMeter(level = 4, Modifier.size(width = 16.dp, height = 13.dp))
+            }
+            StatusGlyph(model, batterySlotKey(SampleBatteryPercent), Modifier.size(width = 24.dp, height = 11.dp))
+            Text("$SampleBatteryPercent%", color = StripPrimary, fontSize = StripFontSize, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+/** XmbStatusIcons.batterySlotKey while unplugged: the fill tier by level. */
+private fun batterySlotKey(level: Int): String = when {
+    level >= 76 -> "status_battery_full"
+    level >= 51 -> "status_battery_high"
+    level >= 26 -> "status_battery_medium"
+    else -> "status_battery_low"
+}
+
+@Composable
+private fun StripSeparator() {
+    Box(Modifier.width(1.dp).height(10.dp).background(StripSep))
+}
+
+/** XmbStatusStrip.StatusIcon: the built-in glyph in the strip's muted white, or the theme's art as authored. */
+@Composable
+private fun StatusGlyph(model: XmbPreviewModel, key: String, modifier: Modifier) {
+    val override = model.iconOverrides[key]
+    if (override != null) {
+        Image(bitmap = override, contentDescription = null, modifier = modifier)
+    } else {
+        Image(
+            painter = StudioIconSet.defaultPainter(key),
+            contentDescription = null,
+            colorFilter = ColorFilter.tint(StripMuted),
+            modifier = modifier,
+        )
+    }
+}
+
+/** XmbStatusStrip.WifiMeter: a base dot and three arcs, lit up to [level] (0..4). */
+@Composable
+private fun WifiMeter(level: Int, modifier: Modifier) {
+    Canvas(modifier) {
+        val cx = size.width / 2f
+        val cy = size.height * 0.92f
+        val maxR = size.height * 0.9f
+        val stroke = size.height * 0.11f
+        fun color(threshold: Int) = if (level >= threshold) StripPrimary else MeterInactive
+        drawCircle(color = color(1), radius = stroke * 1.1f, center = Offset(cx, cy))
+        for (i in 1..3) {
+            val r = maxR * i / 3f
+            drawArc(
+                color = color(i + 1),
+                startAngle = 225f,
+                sweepAngle = 90f,
+                useCenter = false,
+                topLeft = Offset(cx - r, cy - r),
+                size = Size(r * 2, r * 2),
+                style = Stroke(width = stroke),
+            )
+        }
+    }
+}
+
+// ContextMenuHint / core-ui ControllerHintBar(compact): the idle hint pill, with the Xbox glyphs for
+// the default bindings (CHANGE_SORT = X, OPEN_CONTEXT_MENU = Y, HOME = Menu).
+private val HintTextShadow = Shadow(color = Color.Black.copy(alpha = 0.75f), offset = Offset(0f, 2f), blurRadius = 4f)
+
+/**
+ * The idle hint pill in the bottom-right corner, as it stands once a controller user has been idle:
+ * Sort (or Filter) only where X does something, Options only where the row has a menu, and
+ * Notifications always. Nothing shows when neither of the first two applies.
+ */
+@Composable
+private fun BoxScope.IdleHintPill(nav: PreviewNavState) {
+    val hint = PreviewNav.idleHint(nav) ?: return
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(bottom = 24.dp, end = 20.dp)
+            .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+    ) {
+        hint.sortLabel?.let { HintPrompt("xmb/ctl_xb_face_west.png", it) }
+        if (hint.options) HintPrompt("xmb/ctl_xb_face_north.png", "Options")
+        HintPrompt("xmb/ctl_xb_start.png", "Notifications")
+    }
+}
+
+@Composable
+private fun HintPrompt(glyph: String, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Image(StudioIconSet.chromePainter(glyph), contentDescription = null, modifier = Modifier.size(15.dp))
+        Text(
+            text = label,
+            color = Color.White,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            style = TextStyle(shadow = HintTextShadow),
+        )
     }
 }
 
@@ -743,6 +1026,14 @@ private fun BoxScope.StatusStrip(model: XmbPreviewModel, filterLabel: String?) {
  * icon-legibility style set, a matte copy sits behind the glyph (IconMatteSurface), one draw node.
  * A GIF override animates only while [focused] in a live preview; otherwise it is its frame 1.
  */
+/**
+ * A themeable slot exactly as the launcher draws it (override as authored, else the built-in glyph in
+ * the icon colour, with the theme's icon matte). For the opened screens to share.
+ */
+@Composable
+fun PreviewSlotIcon(model: XmbPreviewModel, key: String, modifier: Modifier, focused: Boolean = false) =
+    SlotIcon(model, key, modifier, focused)
+
 @Composable
 private fun SlotIcon(model: XmbPreviewModel, key: String, modifier: Modifier, focused: Boolean = false) {
     val override = model.iconOverrides[key]

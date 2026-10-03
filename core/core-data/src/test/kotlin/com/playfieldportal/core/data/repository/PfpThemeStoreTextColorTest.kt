@@ -83,13 +83,42 @@ class PfpThemeStoreTextColorTest {
         assertNull(context.pfpDataStore.data.first()[KEY_TEXT_COLOR])
     }
 
-    private fun bundle(textColor: String = PfpThemeManifest.ICON_COLOR_AUTO): ByteArray =
+    @Test
+    fun `a bundle carrying a sub text colour applies it, and one without removes it`() = runTest {
+        val store = PfpThemeStore(context)
+        val withSub = requireNotNull(store.importBundle(register(bundle(textColor = "#FF8800", subTextColor = "#88CCFF"))))
+        assertTrue(store.apply(withSub.id))
+        assertEquals(0xFF88CCFFL, context.pfpDataStore.data.first()[KEY_SUB_TEXT_COLOR])
+
+        val without = requireNotNull(store.importBundle(register(bundle(textColor = "#FF8800"))))
+        assertTrue(store.apply(without.id))
+        assertNull(
+            context.pfpDataStore.data.first()[KEY_SUB_TEXT_COLOR],
+            "a theme silent about sub text must not leave the last theme's colour behind",
+        )
+    }
+
+    @Test
+    fun `resetting the applied theme clears the sub text colour`() = runTest {
+        val store = PfpThemeStore(context)
+        context.pfpDataStore.edit { it[KEY_SUB_TEXT_COLOR] = 0xFF88CCFFL }
+
+        store.resetApplied()
+
+        assertNull(context.pfpDataStore.data.first()[KEY_SUB_TEXT_COLOR])
+    }
+
+    private fun bundle(
+        textColor: String = PfpThemeManifest.ICON_COLOR_AUTO,
+        subTextColor: String? = null,
+    ): ByteArray =
         PfpThemeCodec.write(
             PfpThemeBundle(
                 manifest = PfpThemeManifest(
                     name = "Text Theme",
                     accentColor = "#0055AA",
                     textColor = textColor,
+                    subTextColor = subTextColor,
                 ),
                 wallpaper = null,
                 preview = null,
@@ -104,5 +133,6 @@ class PfpThemeStoreTextColorTest {
 
     private companion object {
         val KEY_TEXT_COLOR = longPreferencesKey("display_text_color")
+        val KEY_SUB_TEXT_COLOR = longPreferencesKey("display_sub_text_color")
     }
 }

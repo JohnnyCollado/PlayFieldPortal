@@ -62,7 +62,7 @@ import com.playfieldportal.studio.io.FileDialogs
 import com.playfieldportal.studio.io.IconPackReport
 import com.playfieldportal.studio.preview.PreviewRenderer
 import com.playfieldportal.studio.ui.sections.MutedText
-import com.playfieldportal.themekit.CustomizableIcons
+import com.playfieldportal.studio.EditableSlots
 import com.playfieldportal.themekit.IconSlot
 import java.awt.Frame
 import java.io.File
@@ -90,15 +90,14 @@ fun IconEditorPanel(
     var group by rememberSaveable { mutableStateOf<PickerGroup?>(null) }
     var onScreen by rememberSaveable { mutableStateOf(false) }
     var customizedOnly by rememberSaveable { mutableStateOf(false) }
-    var newOnly by rememberSaveable { mutableStateOf(false) }
     var selectedKey by rememberSaveable { mutableStateOf<String?>(null) }
     var report by remember { mutableStateOf<IconPackReport?>(null) }
 
     val customized = state.iconOverrides.keys + state.sysiconOverrides.keys
-    val query = PickerQuery(search, group, onScreen, customizedOnly, newOnly)
+    val query = PickerQuery(search, group, onScreen, customizedOnly)
     val shown = remember(query, customized, onScreenKeys) { IconPicker.filter(query, customized, onScreenKeys) }
     val counts = remember { IconPicker.counts() }
-    val selected = selectedKey?.let(CustomizableIcons::byKey)
+    val selected = selectedKey?.let(EditableSlots::byKey)
 
     fun replace(slot: IconSlot) {
         FileDialogs.openFile(window, "Icon image for ${slot.displayName}", IMAGE_EXTENSIONS)
@@ -123,7 +122,7 @@ fun IconEditorPanel(
         OutlinedTextField(
             value = search,
             onValueChange = { search = it },
-            placeholder = { Text("Search ${CustomizableIcons.ALL.size} slots: battery, PS3, voice…", fontSize = 12.sp) },
+            placeholder = { Text("Search ${EditableSlots.ALL.size} slots: battery, PS3, voice…", fontSize = 12.sp) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -132,7 +131,7 @@ fun IconEditorPanel(
             FilterChip(
                 selected = group == null,
                 onClick = { group = null },
-                label = { Text("All ${CustomizableIcons.ALL.size}", fontSize = 12.sp) },
+                label = { Text("All ${EditableSlots.ALL.size}", fontSize = 12.sp) },
             )
             PickerGroup.entries.forEach { g ->
                 FilterChip(
@@ -149,13 +148,8 @@ fun IconEditorPanel(
                 onClick = { customizedOnly = !customizedOnly },
                 label = { Text("Customized ${customized.size}", fontSize = 12.sp) },
             )
-            FilterChip(
-                selected = newOnly,
-                onClick = { newOnly = !newOnly },
-                label = { Text("New ${IconPicker.NEW_KEYS.size}", fontSize = 12.sp) },
-            )
         }
-        MutedText("Showing ${shown.size} of ${CustomizableIcons.ALL.size}", fontSize = 11)
+        MutedText("Showing ${shown.size} of ${EditableSlots.ALL.size}", fontSize = 11)
 
         if (shown.isEmpty()) {
             Box(Modifier.fillMaxWidth().height(GRID_HEIGHT_DP.dp), contentAlignment = Alignment.Center) {
@@ -259,7 +253,7 @@ private fun PackReportDialog(report: IconPackReport, onDismiss: () -> Unit) {
     )
 }
 
-/** One grid cell: checkerboard, art, a dot when customized, a NEW marker, and the selection outline. */
+/** One grid cell: checkerboard, art, a dot when customized, and the selection outline. */
 @OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
 @Composable
 private fun SlotCell(
@@ -270,7 +264,6 @@ private fun SlotCell(
     onDropFile: (File) -> Unit,
 ) {
     val custom = state.iconBitmaps[slot.key] ?: state.sysiconBitmaps[slot.key]
-    val isNew = slot.key in IconPicker.NEW_KEYS
     var hovering by remember { mutableStateOf(false) }
     val currentDrop by rememberUpdatedState(onDropFile)
     val target = remember {
@@ -309,15 +302,6 @@ private fun SlotCell(
                 Box(
                     Modifier.align(Alignment.TopEnd).padding(4.dp).size(7.dp)
                         .background(MaterialTheme.colorScheme.primary, CircleShape),
-                )
-            }
-            if (isNew) {
-                Text(
-                    "NEW",
-                    fontSize = 7.sp,
-                    color = Color(0xFF1B1F27),
-                    modifier = Modifier.align(Alignment.BottomStart).padding(3.dp)
-                        .background(Color(0xFFE0B96B), RoundedCornerShape(3.dp)).padding(horizontal = 2.dp),
                 )
             }
         }

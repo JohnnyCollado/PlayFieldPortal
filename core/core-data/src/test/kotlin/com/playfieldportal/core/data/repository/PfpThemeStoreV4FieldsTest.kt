@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.data.datastore.pfpDataStore
@@ -179,6 +180,17 @@ class PfpThemeStoreV4FieldsTest {
         assertEquals(false, manifest.textColorExact)
         assertEquals(ThemeLegibility(text = "auto", icon = "none", solidUnfocusedIcons = false), manifest.legibility)
         assertEquals(PfpThemeManifest.WAVE_ANIMATED, manifest.waveStyleV4)
+        assertNull(manifest.subTextColor, "no Sub Font Colour set means the theme says nothing")
+    }
+
+    @Test
+    fun `saveCurrentLook captures the sub text colour`() = runTest {
+        val store = PfpThemeStore(context, PERMISSIVE_PROBE)
+        context.pfpDataStore.edit { it[KEY_SUB_TEXT] = 0xFF88CCFFL }
+        val saved = requireNotNull(store.saveCurrentLook("Sub"))
+        val manifest = requireNotNull(PfpThemeCodec.readManifest(File(context.filesDir, "pfpthemes/${saved.id}.pfptheme")))
+
+        assertEquals("#88CCFF", manifest.subTextColor)
     }
 
     // ── motion crop (plan TS-11) ──
@@ -327,6 +339,7 @@ class PfpThemeStoreV4FieldsTest {
         val KEY_TEXT_LEG = stringPreferencesKey("display_text_legibility")
         val KEY_SOLID = booleanPreferencesKey("display_solid_unfocused_icons")
         val KEY_EXACT = booleanPreferencesKey("display_text_color_exact")
+        val KEY_SUB_TEXT = longPreferencesKey("display_sub_text_color")
         val KEY_CROP = stringPreferencesKey("display_motion_crop")
         val KEY_MOTION = stringPreferencesKey("display_motion_wallpaper")
     }

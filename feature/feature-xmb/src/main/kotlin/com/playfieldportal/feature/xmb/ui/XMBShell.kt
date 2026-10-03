@@ -1716,8 +1716,9 @@ internal fun shellModalSpec(
             PfpModalSpec.Confirm(
                 key = "shortcut:${request.id}",
                 title = "Add Shortcut?",
-                message = "${request.hostLabel} wants to add a shortcut for \"${request.name}\" to " +
-                    "PlayFieldPortal. Only add it if you just asked ${request.hostLabel} to.",
+                // hostLabel is what the shortcut opens; the request's sender is unknown.
+                message = "An app asked to add a shortcut \"${request.name}\" that opens " +
+                    "${request.hostLabel}. Only add it if you just made this shortcut yourself.",
                 confirmLabel = "Add",
                 cancelLabel = "Ignore",
                 openOnCancel = true,

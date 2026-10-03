@@ -20,11 +20,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +33,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.studio.io.PtfConversion
@@ -118,15 +121,6 @@ fun ChoiceChips(options: List<Pair<String, String>>, selected: String, onPick: (
 }
 
 /** "Pick…" toggle that expands the HSV picker under a hex field. */
-@Composable
-fun ExpandablePicker(argb: Int, onChange: (Int) -> Unit) {
-    var open by remember { mutableStateOf(false) }
-    TextButton(onClick = { open = !open }) {
-        Text(if (open) "Hide color picker" else "Color picker…", fontSize = 12.sp)
-    }
-    if (open) HsvColorPicker(argb = argb, onChange = onChange)
-}
-
 /** The 12 preset accents, two rows of six. */
 @Composable
 fun SwatchGrid(selected: Int, onPick: (Int) -> Unit) {
@@ -152,23 +146,45 @@ fun SwatchGrid(selected: Int, onPick: (Int) -> Unit) {
     }
 }
 
-/** `#RRGGBB` field that only commits parseable values but lets the user type freely. */
+/**
+ * A colour setting: the `#RRGGBB` field (commits only parseable values but lets the user type
+ * freely) beside its swatch. The swatch IS the picker: clicking it opens the HSV picker as a
+ * popover anchored to it; clicking outside closes it.
+ */
 @Composable
-fun HexField(label: String, argb: Int, onValid: (Int) -> Unit) {
+fun ColorField(label: String, argb: Int, onChange: (Int) -> Unit) {
     var text by remember(argb) { mutableStateOf(PtfConversion.toHexRgb(argb)) }
     val parsed = PtfConversion.parseHexRgb(text)
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    var pickerOpen by remember { mutableStateOf(false) }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         OutlinedTextField(
             value = text,
             onValueChange = {
                 text = it
-                PtfConversion.parseHexRgb(it)?.let(onValid)
+                PtfConversion.parseHexRgb(it)?.let(onChange)
             },
             label = { Text(label) },
             singleLine = true,
             isError = parsed == null,
             modifier = Modifier.width(160.dp),
         )
-        Box(Modifier.size(28.dp).background(Color(parsed ?: argb), CircleShape).border(1.dp, Color(0x33FFFFFF), CircleShape))
+        Box {
+            Box(
+                Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(Color(parsed ?: argb))
+                    .border(
+                        width = if (pickerOpen) 3.dp else 1.dp,
+                        color = if (pickerOpen) Color.White else Color(0x55FFFFFF),
+                        shape = CircleShape,
+                    )
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable { pickerOpen = !pickerOpen },
+            )
+            DropdownMenu(expanded = pickerOpen, onDismissRequest = { pickerOpen = false }) {
+                Box(Modifier.padding(12.dp)) { HsvColorPicker(argb = argb, onChange = onChange) }
+            }
+        }
     }
 }

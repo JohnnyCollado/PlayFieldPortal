@@ -362,6 +362,9 @@ object PfpThemeCodec {
         if ((raw.description?.length ?: 0) > MANIFEST_DESCRIPTION_MAX) {
             add("Description shortened to $MANIFEST_DESCRIPTION_MAX characters")
         }
+        if (raw.subTextColor != null && sanitized.subTextColor == null) {
+            add("Sub text color \"${raw.subTextColor}\" is not a valid #RRGGBB value and was ignored")
+        }
         raw.legibility?.let { l ->
             if (l.text != null && l.text !in ThemeLegibility.TEXT_VALUES) {
                 add("Text legibility style \"${l.text}\" is not recognized and was ignored")

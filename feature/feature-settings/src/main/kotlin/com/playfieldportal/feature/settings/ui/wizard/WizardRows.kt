@@ -64,6 +64,7 @@ import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.theme.menuCursor
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.menuCursorFill
+import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.feature.settings.ui.ControllerNavItem
 import com.playfieldportal.feature.settings.ui.LocalSettingsCursorVisible
 import com.playfieldportal.feature.settings.ui.LocalSettingsFocusTracker
@@ -222,7 +223,7 @@ fun WizardValueRow(
         trailing = {
             Text(
                 text = value,
-                color = Color.White,
+                color = themedSubText(Color.White),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.End,
@@ -557,7 +558,7 @@ fun WizardMessageRow(
 fun WizardSectionHeader(title: String, modifier: Modifier = Modifier) {
     Text(
         text = title.uppercase(),
-        color = Color.White.copy(alpha = 0.72f),
+        color = themedSubText(Color.White.copy(alpha = 0.72f)),
         fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
         letterSpacing = 1.6.sp,
@@ -572,7 +573,7 @@ fun WizardSectionHeader(title: String, modifier: Modifier = Modifier) {
 fun WizardInfoText(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
-        color = Color.White.copy(alpha = 0.88f),
+        color = themedSubText(Color.White.copy(alpha = 0.88f)),
         fontSize = 13.sp,
         lineHeight = 19.sp,
         modifier = modifier

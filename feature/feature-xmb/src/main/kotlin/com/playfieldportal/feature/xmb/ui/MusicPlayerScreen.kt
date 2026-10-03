@@ -55,6 +55,7 @@ import com.playfieldportal.core.ui.preview.PfpScreenPreview
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.LocalPfpTextColors
 import com.playfieldportal.core.ui.theme.deriveStorefrontColors
+import com.playfieldportal.core.ui.theme.dimmed
 import com.playfieldportal.feature.xmb.music.MusicPlaybackState
 import com.playfieldportal.feature.xmb.ui.media.MediaScrubBar
 import com.playfieldportal.feature.xmb.ui.media.TransportAction
@@ -373,7 +374,7 @@ private fun TrackMetadata(track: MusicTrack?, rule: Color) {
             codecLabel(track?.mimeType)?.let { codec ->
                 Text(
                     codec,
-                    color = SecondaryText.copy(alpha = 0.85f),
+                    color = SecondaryText.dimmed(0.85f),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier
@@ -581,7 +582,7 @@ private fun BottomBand(
                     ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
                     ControllerPromptItem(GamepadAction.BACK, "Close"),
                 ),
-                labelColor = SecondaryText.copy(alpha = 0.7f),
+                labelColor = SecondaryText.dimmed(0.7f),
                 labelStyle = TextStyle(fontSize = 11.sp),
                 glyphSize = 16.dp,
                 arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),

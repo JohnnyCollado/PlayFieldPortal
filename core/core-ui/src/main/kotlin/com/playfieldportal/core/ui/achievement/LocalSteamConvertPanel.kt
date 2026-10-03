@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.components.PfpCheckMark
 import com.playfieldportal.core.ui.components.XmbHeaderPill
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 
 // ── Convert-detected-games picker ─────────────────────────────────────────────
 //
@@ -47,6 +49,8 @@ import com.playfieldportal.core.ui.components.XmbHeaderPill
 // Pure UI. The caller owns the rows, the focus index and every callback, so one panel serves the XMB
 // Windows card, the Library Manager and the batch matcher without any of them importing the others.
 
+// Text reads these through themedText (TextPrimary) / themedSubText (TextMuted), so the user's
+// font colours take over at the same weights.
 private val TextPrimary = Color(0xFFEEEEEE)
 private val TextMuted = Color(0xAAEEEEEE)
 private val RowFill = Color(0xFF1B1B26)
@@ -111,14 +115,14 @@ fun LocalSteamConvertPanel(
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     "Install achievement tracking?",
-                    color = TextPrimary,
+                    color = themedText(TextPrimary),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
                     if (selectedCount > 0) "$selectedCount of ${rows.size}" else "${rows.size} found",
-                    color = TextMuted,
+                    color = themedSubText(TextMuted),
                     fontSize = 12.sp,
                 )
             }
@@ -126,7 +130,7 @@ fun LocalSteamConvertPanel(
             if (!showTouchControls) {
                 Text(
                     "Up/Down  Rows  •  Select  Toggle  •  △  All/None  •  Start  Install  •  B  Cancel",
-                    color = TextMuted.copy(alpha = 0.55f),
+                    color = themedSubText(TextMuted.copy(alpha = 0.55f)),
                     fontSize = 10.sp,
                 )
             }
@@ -195,7 +199,7 @@ private fun WriteNotice() {
             "Into each checked game's folder PFP writes achievements.json, stats.json and " +
                 "configs.user.ini, creates a saves folder, and renames steam_api64.dll to " +
                 "steam_api64_o.dll so the bundled emulator can load through it.",
-            color = TextPrimary,
+            color = themedText(TextPrimary),
             fontSize = 11.sp,
             lineHeight = 16.sp,
         )
@@ -242,7 +246,8 @@ private fun ConvertRow(
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 row.folderName,
-                color = if (row.unselectable) TextMuted else TextPrimary,
+                // An unselectable row's name is Main text dimmed to TextMuted's 0xAA.
+                color = themedText(if (row.unselectable) TextMuted else TextPrimary),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
@@ -250,7 +255,7 @@ private fun ConvertRow(
             )
             Text(
                 row.note,
-                color = if (row.unselectable) WarningAmber.copy(alpha = 0.8f) else TextMuted,
+                color = if (row.unselectable) WarningAmber.copy(alpha = 0.8f) else themedSubText(TextMuted),
                 fontSize = 11.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

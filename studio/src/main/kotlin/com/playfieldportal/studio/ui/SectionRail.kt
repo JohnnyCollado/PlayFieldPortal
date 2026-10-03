@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.sp
 import com.playfieldportal.studio.ExportCheck
 import com.playfieldportal.studio.StudioState
 import com.playfieldportal.studio.io.PtfConversion
-import com.playfieldportal.themekit.XmbLayoutSpec
 
 /**
  * The Studio's sections, in rail order. [id] is the stable key the shell and the section panels
@@ -58,7 +57,8 @@ fun railMeta(section: StudioSection, state: StudioState, check: ExportCheck): St
         else -> "Wave"
     }
     StudioSection.LEGIBILITY -> if (state.legibility == null) "Not set" else "Set"
-    StudioSection.LAYOUT -> if (state.layout == XmbLayoutSpec.DEFAULT) "Default" else "Custom"
+    // The theme carries no XMB sizes; this section only previews the device's own layout adjust.
+    StudioSection.LAYOUT -> "Preview only"
     StudioSection.ICONS -> {
         val n = state.iconOverrides.size + state.sysiconOverrides.size
         if (n == 0) "None custom" else "$n custom"

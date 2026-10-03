@@ -73,6 +73,8 @@ fun DisplaySettingsScreen(
     // Font-colour picker state. Held here rather than in the ViewModel for the same reason the
     // Themes screen holds its icon picker locally: nothing is persisted until Apply.
     var fontPickerOpen by remember { mutableStateOf(false) }
+    // One picker serves both rows; this says which colour it is editing.
+    var pickingSubFont by remember { mutableStateOf(false) }
     var pickerHue by remember { mutableFloatStateOf(0f) }
     var pickerSat by remember { mutableFloatStateOf(0f) }
     var pickerVal by remember { mutableFloatStateOf(1f) }
@@ -358,9 +360,35 @@ fun DisplaySettingsScreen(
                     android.graphics.Color.colorToHSV((seed and 0xFFFFFF).toInt(), hsv)
                     pickerHue = hsv[0]; pickerSat = hsv[1]; pickerVal = hsv[2]
                     pickerChannel = 0
+                    pickingSubFont = false
                     fontPickerOpen = true
                 },
             )
+
+            SettingsValueRow(
+                label    = "Sub Font Colour",
+                sublabel = "Colour for subtitles, sublabels and values. Follows Font Colour until set",
+                value    = state.subTextColorArgb
+                    ?.let { hexOf(Color(it and 0xFFFFFFFFL)) }
+                    ?: "Same as Font Colour",
+                onClick  = {
+                    val seed = state.subTextColorArgb ?: state.textColorArgb ?: 0xFFFFFFFFL
+                    val hsv = FloatArray(3)
+                    android.graphics.Color.colorToHSV((seed and 0xFFFFFF).toInt(), hsv)
+                    pickerHue = hsv[0]; pickerSat = hsv[1]; pickerVal = hsv[2]
+                    pickerChannel = 0
+                    pickingSubFont = true
+                    fontPickerOpen = true
+                },
+            )
+
+            if (state.subTextColorArgb != null) {
+                SettingsRow(
+                    label    = "Reset Sub Font Colour",
+                    sublabel = "Go back to following Font Colour",
+                    onClick  = { viewModel.setSubTextColor(null) },
+                )
+            }
 
             if (state.textColorArgb != null) {
                 SettingsRow(
@@ -608,7 +636,7 @@ fun DisplaySettingsScreen(
                 composite(solveScrimColor(pfp.backgroundBottom, 0.90f).copy(alpha = 0.90f), Color.White)
         }
         HsvColorPickerDialog(
-            title           = "Font Colour",
+            title           = if (pickingSubFont) "Sub Font Colour" else "Font Colour",
             hue             = pickerHue,
             saturation      = pickerSat,
             brightness      = pickerVal,
@@ -625,7 +653,8 @@ fun DisplaySettingsScreen(
                 }
             },
             onConfirm = {
-                viewModel.setTextColor(hsvToArgbLong(pickerHue, pickerSat, pickerVal))
+                val argb = hsvToArgbLong(pickerHue, pickerSat, pickerVal)
+                if (pickingSubFont) viewModel.setSubTextColor(argb) else viewModel.setTextColor(argb)
                 fontPickerOpen = false
             },
             onCancel = { fontPickerOpen = false },

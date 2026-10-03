@@ -15,6 +15,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 
 // The slim ◀ + title + subtitle header the full-page secondary screens share (Shiba Coins, Player
 // Status). The primary entry pages — Game Detail and App Detail — render the richer
@@ -49,13 +51,13 @@ internal fun DetailBreadcrumb(
         ) {
             Text(
                 text     = "◀",
-                color    = TextMuted,
+                color    = themedSubText(TextMuted),
                 fontSize = 16.sp,
                 modifier = Modifier.padding(end = 16.dp),
             )
             Column {
-                Text(title, color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-                Text(subtitle, color = TextMuted, fontSize = 12.sp)
+                Text(title, color = themedText(TextPrimary), fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                Text(subtitle, color = themedSubText(TextMuted), fontSize = 12.sp)
             }
         }
     }

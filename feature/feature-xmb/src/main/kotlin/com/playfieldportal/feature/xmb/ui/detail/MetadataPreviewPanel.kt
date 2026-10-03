@@ -29,6 +29,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.artwork.match.MatchProvider
 import com.playfieldportal.feature.artwork.match.MetadataApplyPolicy
 import com.playfieldportal.feature.artwork.match.MetadataField
@@ -74,7 +76,7 @@ fun MetadataPreviewPanel(
                 .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("Update Metadata", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text("Update Metadata", color = themedText(TextPrimary), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Text(
                 when {
                     ui.nothingFound -> "Select or B  Close"
@@ -83,7 +85,7 @@ fun MetadataPreviewPanel(
                     else ->
                         "Up/Down  Rows  •  Left/Right  Policy  •  L1/R1  Source  •  Select  Toggle / Apply  •  B  Cancel"
                 },
-                color = TextMuted.copy(alpha = 0.5f),
+                color = themedSubText(TextMuted.copy(alpha = 0.5f)),
                 fontSize = 10.sp,
             )
 
@@ -101,13 +103,13 @@ fun MetadataPreviewPanel(
             if (ui.nothingFound) {
                 Text(
                     if (ui.failed) "The metadata sources didn't answer." else "This game couldn't be read.",
-                    color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                    color = themedText(TextPrimary), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(top = 8.dp),
                 )
                 Text(
                     if (ui.failed) "Nothing was changed. Check the connection and try again."
                     else "Nothing was changed. Try reopening this game.",
-                    color = TextMuted, fontSize = 12.sp,
+                    color = themedSubText(TextMuted), fontSize = 12.sp,
                 )
                 Box(
                     modifier = Modifier
@@ -120,7 +122,7 @@ fun MetadataPreviewPanel(
                         .padding(vertical = 12.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("Close", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Close", color = themedText(TextPrimary), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 }
                 return@Column
             }
@@ -130,7 +132,7 @@ fun MetadataPreviewPanel(
             if (ui.noProviderFound) {
                 Text(
                     "No source recognised this game — fill the fields you want by hand.",
-                    color = TextMuted,
+                    color = themedSubText(TextMuted),
                     fontSize = 11.sp,
                 )
             }
@@ -168,11 +170,11 @@ fun MetadataPreviewPanel(
             }
 
             Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp)) {
-                Text("Field", color = TextMuted, fontSize = 11.sp, modifier = Modifier.width(FieldColumn))
-                Text("Current", color = TextMuted, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                Text("Field", color = themedSubText(TextMuted), fontSize = 11.sp, modifier = Modifier.width(FieldColumn))
+                Text("Current", color = themedSubText(TextMuted), fontSize = 11.sp, modifier = Modifier.weight(1f))
                 Text(
                     if (ui.isManual) "Your value" else "Incoming",
-                    color = TextMuted, fontSize = 11.sp, modifier = Modifier.weight(1f),
+                    color = themedSubText(TextMuted), fontSize = 11.sp, modifier = Modifier.weight(1f),
                 )
             }
 
@@ -237,7 +239,7 @@ fun MetadataPreviewPanel(
                     .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(applyLabel, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Text(applyLabel, color = themedText(TextPrimary), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
             }
         }
         // Its dialogs — Replace your title?, and one field's text entry — are Game Detail's shared
@@ -266,7 +268,7 @@ private fun Chip(
 ) {
     Text(
         label,
-        color = TextPrimary,
+        color = themedText(TextPrimary),
         fontSize = 12.sp,
         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
         maxLines = 1,
@@ -304,17 +306,17 @@ private fun FieldRow(
             if (showCheck) {
                 com.playfieldportal.core.ui.components.PfpCheckbox(
                     checked = checked,
-                    color = TextPrimary,
+                    color = themedText(TextPrimary),
                     markColor = RowFill,
                     size = 13.dp,
                     modifier = Modifier.padding(end = 6.dp),
                 )
             }
-            Text(row.field.label, color = TextPrimary, fontSize = 12.sp, maxLines = 1)
+            Text(row.field.label, color = themedText(TextPrimary), fontSize = 12.sp, maxLines = 1)
         }
         Text(
             formatMetadataValue(row.current) ?: "—",
-            color = TextMuted,
+            color = themedSubText(TextMuted),
             fontSize = 12.sp,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -325,8 +327,8 @@ private fun FieldRow(
             // Green is exactly "this policy writes it"; an equal value reads dimmed.
             color = when {
                 writes -> ChangeGreen
-                !row.differs -> TextMuted.copy(alpha = 0.6f)
-                else -> TextPrimary
+                !row.differs -> themedSubText(TextMuted.copy(alpha = 0.6f))
+                else -> themedText(TextPrimary)
             },
             fontSize = 12.sp,
             maxLines = 2,
@@ -366,17 +368,17 @@ private fun ManualRow(
             if (showCheck) {
                 com.playfieldportal.core.ui.components.PfpCheckbox(
                     checked = checked,
-                    color = TextPrimary,
+                    color = themedText(TextPrimary),
                     markColor = RowFill,
                     size = 13.dp,
                     modifier = Modifier.padding(end = 6.dp),
                 )
             }
-            Text(row.field.label, color = TextPrimary, fontSize = 12.sp, maxLines = 1)
+            Text(row.field.label, color = themedText(TextPrimary), fontSize = 12.sp, maxLines = 1)
         }
         Text(
             formatMetadataValue(row.current) ?: "—",
-            color = TextMuted,
+            color = themedSubText(TextMuted),
             fontSize = 12.sp,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -387,8 +389,8 @@ private fun ManualRow(
                 row.text.ifBlank { "Tap to type" },
                 color = when {
                     writes -> ChangeGreen
-                    row.text.isBlank() -> TextMuted.copy(alpha = 0.5f)
-                    else -> TextPrimary
+                    row.text.isBlank() -> themedSubText(TextMuted.copy(alpha = 0.5f))
+                    else -> themedText(TextPrimary)
                 },
                 fontSize = 12.sp,
                 maxLines = 2,
@@ -400,7 +402,7 @@ private fun ManualRow(
             if (row.overridden) {
                 Text(
                     "↺",
-                    color = TextMuted,
+                    color = themedSubText(TextMuted),
                     fontSize = 14.sp,
                     modifier = Modifier
                         .padding(start = 6.dp)

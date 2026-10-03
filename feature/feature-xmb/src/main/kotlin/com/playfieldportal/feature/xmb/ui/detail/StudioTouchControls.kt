@@ -31,6 +31,8 @@ import com.playfieldportal.core.ui.components.XmbKebabTouchButton
 import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.core.ui.theme.LocalPFPColors
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 
 // The Studio's paging and options controls, stateless so they can be previewed: the screen itself
 // takes a Hilt ViewModel. Touch mode draws each as a pill a user can see is tappable; controller
@@ -75,7 +77,7 @@ internal fun StudioPageLine(
             Text(
                 if (unfilteredTotal > totalResults) "$rangeStart–$rangeEnd · $totalResults of $unfilteredTotal shown"
                 else "$rangeStart–$rangeEnd of $totalResults",
-                color = Color.White.copy(alpha = 0.6f), fontSize = 9.5.sp, lineHeight = 12.sp,
+                color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 9.5.sp, lineHeight = 12.sp,
                 maxLines = 1,
             )
         }
@@ -96,7 +98,7 @@ internal fun StudioPageLine(
             TouchPagePill("‹ Prev", enabled = hasPreviousPage, onClick = onPreviousPage)
             Text(
                 "Page ${page + 1} / $pageCount",
-                color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp,
+                color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 11.sp,
                 maxLines = 1,
                 modifier = Modifier.padding(horizontal = 10.dp),
             )
@@ -107,12 +109,12 @@ internal fun StudioPageLine(
                 action = GamepadAction.PREV_CATEGORY,
                 label = "",
                 glyphSize = 12.dp,
-                labelColor = Color.White.copy(alpha = 0.45f),
+                labelColor = themedSubText(Color.White.copy(alpha = 0.45f)),
             )
             PageArrow("‹", enabled = hasPreviousPage, onClick = onPreviousPage)
             Text(
                 "Page ${page + 1} / $pageCount",
-                color = Color.White.copy(alpha = 0.6f), fontSize = 9.5.sp, lineHeight = 12.sp,
+                color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 9.5.sp, lineHeight = 12.sp,
                 maxLines = 1,
             )
             PageArrow("›", enabled = hasNextPage, onClick = onNextPage)
@@ -120,7 +122,7 @@ internal fun StudioPageLine(
                 action = GamepadAction.NEXT_CATEGORY,
                 label = "",
                 glyphSize = 12.dp,
-                labelColor = Color.White.copy(alpha = 0.45f),
+                labelColor = themedSubText(Color.White.copy(alpha = 0.45f)),
             )
         }
     }
@@ -158,7 +160,7 @@ private fun StudioPickStatus(
             }
             Text(
                 changes,
-                color = Color.White, fontSize = 9.5.sp, lineHeight = 12.sp, fontWeight = FontWeight.SemiBold,
+                color = themedText(Color.White), fontSize = 9.5.sp, lineHeight = 12.sp, fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
             )
             if (showTouchControls) {
@@ -168,7 +170,7 @@ private fun StudioPickStatus(
                     action = GamepadAction.HOME,
                     label = "Apply",
                     glyphSize = 12.dp,
-                    labelColor = Color.White.copy(alpha = 0.6f),
+                    labelColor = themedSubText(Color.White.copy(alpha = 0.6f)),
                     labelStyle = TextStyle(fontSize = 9.5.sp, lineHeight = 12.sp),
                     modifier = Modifier.clip(RoundedCornerShape(4.dp)).clickable(onClick = onApply),
                 )
@@ -180,7 +182,7 @@ private fun StudioPickStatus(
                     append("${picks.added} of ${picks.total} added")
                     if (picks.failed > 0) append(" · ${picks.failed} failed")
                 },
-                color = if (picks.failed > 0) Color(0xFFE0A030) else Color.White.copy(alpha = 0.6f),
+                color = if (picks.failed > 0) Color(0xFFE0A030) else themedSubText(Color.White.copy(alpha = 0.6f)),
                 fontSize = 9.5.sp, lineHeight = 12.sp,
                 maxLines = 1,
             )
@@ -216,7 +218,7 @@ internal fun StudioOptionsControl(
             // but not beside the title and query field. The menu names its own rows.
             label = "Options",
             glyphSize = 13.dp,
-            labelColor = Color.White.copy(alpha = 0.6f),
+            labelColor = themedSubText(Color.White.copy(alpha = 0.6f)),
             labelStyle = TextStyle(fontSize = 9.5.sp),
             modifier = modifier
                 .clip(RoundedCornerShape(6.dp))
@@ -242,7 +244,7 @@ internal fun StudioManualPager(
         ManualPagerButton("‹ Prev", hasPrevious, showTouchControls, onPreviousPage)
         Text(
             "Page ${page + 1} / ${pageCount.coerceAtLeast(1)}",
-            color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp,
+            color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 11.sp,
             modifier = Modifier.padding(horizontal = 8.dp),
         )
         ManualPagerButton("Next ›", hasNext, showTouchControls, onNextPage)
@@ -263,7 +265,7 @@ private fun TouchPagePill(label: String, enabled: Boolean, onClick: () -> Unit) 
 private fun PageArrow(glyph: String, enabled: Boolean, onClick: () -> Unit) {
     Text(
         glyph,
-        color = Color.White.copy(alpha = if (enabled) 0.85f else 0.3f),
+        color = themedText(Color.White.copy(alpha = if (enabled) 0.85f else 0.3f)),
         fontSize = 11.sp, fontWeight = FontWeight.SemiBold, lineHeight = 12.sp,
         modifier = Modifier
             .clip(RoundedCornerShape(4.dp))
@@ -278,7 +280,7 @@ private fun ManualPagerButton(label: String, enabled: Boolean, showTouchControls
         TouchPagePill(label, enabled, onClick)
     } else {
         Text(
-            label, color = Color.White.copy(alpha = if (enabled) 0.85f else 0.3f),
+            label, color = themedText(Color.White.copy(alpha = if (enabled) 0.85f else 0.3f)),
             fontSize = 12.sp,
             modifier = Modifier
                 .clip(RoundedCornerShape(6.dp))

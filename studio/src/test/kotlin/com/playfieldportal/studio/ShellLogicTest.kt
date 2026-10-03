@@ -67,7 +67,7 @@ class ShellLogicTest {
         assertTrue(meta(StudioSection.COLOR, s).startsWith("#"))
         assertEquals("Wave", meta(StudioSection.BACKGROUND, s))
         assertEquals("Not set", meta(StudioSection.LEGIBILITY, s))
-        assertEquals("Default", meta(StudioSection.LAYOUT, s))
+        assertEquals("Preview only", meta(StudioSection.LAYOUT, s))
         assertEquals("None custom", meta(StudioSection.ICONS, s))
         assertEquals("None set", meta(StudioSection.SOUNDS, s))
         assertEquals("None set", meta(StudioSection.BOOT, s))
@@ -92,7 +92,8 @@ class ShellLogicTest {
         assertEquals("Untitled", meta(StudioSection.INFO, s))
         assertEquals("Image", meta(StudioSection.BACKGROUND, s))
         assertEquals("Set", meta(StudioSection.LEGIBILITY, s))
-        assertEquals("Custom", meta(StudioSection.LAYOUT, s))
+        // The theme carries no XMB sizes, so an imported layout changes nothing here.
+        assertEquals("Preview only", meta(StudioSection.LAYOUT, s))
         assertEquals("3 custom", meta(StudioSection.ICONS, s))
         assertEquals("2 set", meta(StudioSection.SOUNDS, s))
         assertEquals("1 of 2", meta(StudioSection.BOOT, s))

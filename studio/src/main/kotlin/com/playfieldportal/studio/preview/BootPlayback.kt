@@ -6,23 +6,31 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -35,6 +43,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -52,7 +61,9 @@ import java.io.File
 import kotlin.math.PI
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import org.jetbrains.skia.Image as SkiaImage
 
 /*
@@ -110,6 +121,13 @@ object BootPlayback {
         BootKind.BOOT -> BootTimeline.BOOT_TOTAL_MS
         BootKind.GAMEBOOT -> GameBootTimeline.SEQUENCE_MS
     }
+
+    /**
+     * Whether the overlay hides the whole frame [elapsedMs] into a run: a clip (over black) and
+     * GameBoot (its white field) always do; the built-in Boot does until its fade-out begins.
+     */
+    fun coversFrame(kind: BootKind, clip: File?, elapsedMs: Long): Boolean =
+        clip != null || kind == BootKind.GAMEBOOT || elapsedMs < BootTimeline.FADE_OUT_START_MS
 }
 
 /** BootSequenceOverlay's timeline: scale up, then alpha up, hold, then the whole overlay fades out. */
@@ -117,7 +135,8 @@ object BootTimeline {
     const val FADE_IN_MS = 800L
     const val HOLD_MS = 1_400L
     const val FADE_OUT_MS = 600L
-    const val BOOT_TOTAL_MS = FADE_IN_MS * 2 + HOLD_MS + FADE_OUT_MS
+    const val FADE_OUT_START_MS = FADE_IN_MS * 2 + HOLD_MS
+    const val BOOT_TOTAL_MS = FADE_OUT_START_MS + FADE_OUT_MS
 
     data class Frame(val logoScale: Float, val logoAlpha: Float, val overlayAlpha: Float)
 
@@ -127,7 +146,7 @@ object BootTimeline {
     fun at(ms: Long): Frame {
         val scaleT = ms / FADE_IN_MS.toFloat()
         val alphaT = (ms - FADE_IN_MS) / FADE_IN_MS.toFloat()
-        val fadeOutT = (ms - (FADE_IN_MS * 2 + HOLD_MS)) / FADE_OUT_MS.toFloat()
+        val fadeOutT = (ms - FADE_OUT_START_MS) / FADE_OUT_MS.toFloat()
         return Frame(
             logoScale = 0.92f + 0.08f * ease(scaleT),
             logoAlpha = ease(alphaT),
@@ -188,14 +207,42 @@ object GameBootTimeline {
     }
 }
 
+/**
+ * Whether a playing boot overlay fully hides the preview frame beneath it, so the frame can skip
+ * drawing what nobody sees. Pass it to [BootOverlay] and read [coversFrame] inside a draw lambda,
+ * e.g. `Modifier.drawWithContent { if (!cover.coversFrame) drawContent() }`: it flips at most twice
+ * a run, and each flip only redraws.
+ */
+@Stable
+class BootCover {
+    private var covering by mutableStateOf<State<Boolean>?>(null)
+
+    val coversFrame: Boolean get() = covering?.value == true
+
+    internal fun attach(state: State<Boolean>) {
+        covering = state
+    }
+
+    internal fun detach(state: State<Boolean>) {
+        if (covering === state) covering = null
+    }
+}
+
+@Composable
+fun rememberBootCover(): BootCover = remember { BootCover() }
+
 // ── Composables ──────────────────────────────────────────────────────────────
 
 private const val CLIP_HOLD_MS = 400L
 private const val NOTE_HOLD_MS = 3_000L
 
+/** A clip's black box and GameBoot's white field cover the frame for their whole run. */
+private val ALWAYS_COVERS: State<Boolean> = mutableStateOf(true)
+
 /**
  * Plays [playback] over the whole frame. A press anywhere (or any key, handled by the canvas) ends
  * it. [onFinished] fires exactly once per run: at the natural end, or when the viewer dismisses it.
+ * [cover], when given, tracks whether the overlay currently hides the frame completely.
  */
 @Composable
 internal fun BootOverlay(
@@ -203,6 +250,7 @@ internal fun BootOverlay(
     model: XmbPreviewModel,
     onFinished: () -> Unit,
     modifier: Modifier = Modifier,
+    cover: BootCover? = null,
 ) {
     val kind = playback.kind ?: return
     val finish by rememberUpdatedState(onFinished)
@@ -213,10 +261,26 @@ internal fun BootOverlay(
     ) {
         val clip = playback.clip
         when {
-            clip != null -> ClipPlayback(kind, clip) { finish() }
-            kind == BootKind.BOOT -> BuiltInBoot(model) { finish() }
-            else -> BuiltInGameBoot(WaveMotion.paramsFor(model.waveStyle)) { finish() }
+            clip != null -> {
+                ClipPlayback(kind, clip) { finish() }
+                CoversFrameWhile(cover, ALWAYS_COVERS)
+            }
+            kind == BootKind.BOOT -> BuiltInBoot(model, cover) { finish() }
+            else -> {
+                BuiltInGameBoot(WaveMotion.paramsFor(model.waveStyle)) { finish() }
+                CoversFrameWhile(cover, ALWAYS_COVERS)
+            }
         }
+    }
+}
+
+/** Points [cover] at [covering] while this is composed. */
+@Composable
+private fun CoversFrameWhile(cover: BootCover?, covering: State<Boolean>) {
+    if (cover == null) return
+    DisposableEffect(cover, covering) {
+        cover.attach(covering)
+        onDispose { cover.detach(covering) }
     }
 }
 
@@ -242,9 +306,13 @@ private fun rememberElapsedMs(totalMs: Long, onDone: () -> Unit): androidx.compo
 }
 
 @Composable
-private fun BuiltInBoot(model: XmbPreviewModel, onDone: () -> Unit) {
+private fun BuiltInBoot(model: XmbPreviewModel, cover: BootCover?, onDone: () -> Unit) {
     val elapsed = rememberElapsedMs(BootTimeline.BOOT_TOTAL_MS, onDone)
-    val logo = remember { bootLogo() }
+    val covering = remember { derivedStateOf { BootPlayback.coversFrame(BootKind.BOOT, null, elapsed.longValue) } }
+    CoversFrameWhile(cover, covering)
+    // Decoded off the UI thread, once per session. The logo is fully transparent for its first
+    // FADE_IN_MS anyway, so the first run's decode is never seen.
+    val logo by produceState<ImageBitmap?>(null) { value = withContext(Dispatchers.IO) { BOOT_LOGO } }
     // The launcher's boot always runs the animated wave, whatever the theme's style.
     val params = remember { WaveMotion.paramsFor(PfpThemeManifest.WAVE_ANIMATED) }
     Box(
@@ -278,11 +346,14 @@ private fun BuiltInBoot(model: XmbPreviewModel, onDone: () -> Unit) {
     }
 }
 
-private fun bootLogo(): ImageBitmap? = runCatching {
-    BootTimeline::class.java.classLoader.getResourceAsStream("xmb/pfp_boot_logo.webp")?.use {
-        SkiaImage.makeFromEncoded(it.readBytes()).toComposeImageBitmap()
-    }
-}.getOrNull()
+/** A 1024 px WebP with alpha: decoding it is worth doing once, not on every run. */
+private val BOOT_LOGO: ImageBitmap? by lazy {
+    runCatching {
+        BootTimeline::class.java.classLoader.getResourceAsStream("xmb/pfp_boot_logo.webp")?.use {
+            SkiaImage.makeFromEncoded(it.readBytes()).toComposeImageBitmap()
+        }
+    }.getOrNull()
+}
 
 private val FIELD = Color.White
 private val MARK_INK = Color(0xFF9A9AA4)
@@ -302,17 +373,26 @@ private fun BuiltInGameBoot(params: WaveParams, onDone: () -> Unit) {
     val measurer = rememberTextMeasurer()
     // GameBoot honours the wave style: frozen or reduced drops the blooms and keeps the crossfades.
     val reduced = !params.animated || params.ampScale < 1f
-    Canvas(Modifier.fillMaxSize()) {
-        val ms = elapsed.longValue.toFloat()
-        drawRect(FIELD)
-        drawPfpMark()
-        drawGameTitle(measurer, SAMPLE_GAME_TITLE)
-        if (!reduced) GameBootTimeline.SWEEPS.forEach { drawSweep(it, ms) }
-        val curtain = 1f - GameBootTimeline.rampAt(ms)
-        if (curtain > 0f) drawRect(Color.Black.copy(alpha = curtain))
-        val sink = GameBootTimeline.sinkAt(ms)
-        if (sink > 0f) drawRect(Color.Black.copy(alpha = sink))
-    }
+    // The mark and the title depend only on the size, so they are built once per size; the clock is
+    // read only while drawing, and the node's own layer keeps each tick's redraw to this sequence.
+    Spacer(
+        Modifier.fillMaxSize().graphicsLayer().drawWithCache {
+            val mark = pfpMark(size)
+            val title = measureGameTitle(measurer, SAMPLE_GAME_TITLE, size)
+            val titleTopLeft = Offset((size.width - title.size.width) / 2f, size.height * TITLE_TOP_Y)
+            onDrawBehind {
+                val ms = elapsed.longValue.toFloat()
+                drawRect(FIELD)
+                mark.letters.forEach { drawPath(it, MARK_INK, style = mark.stroke) }
+                drawText(textLayoutResult = title, topLeft = titleTopLeft)
+                if (!reduced) GameBootTimeline.SWEEPS.forEach { drawSweep(it, ms) }
+                val curtain = 1f - GameBootTimeline.rampAt(ms)
+                if (curtain > 0f) drawRect(Color.Black.copy(alpha = curtain))
+                val sink = GameBootTimeline.sinkAt(ms)
+                if (sink > 0f) drawRect(Color.Black.copy(alpha = sink))
+            }
+        },
+    )
 }
 
 private fun smoothstep(t: Float): Float = t * t * (3f - 2f * t)
@@ -333,6 +413,8 @@ private fun DrawScope.drawSweep(sweep: GameBootTimeline.Sweep, ms: Float) {
 
 private fun DrawScope.bloom(color: Color, cx: Float, cy: Float, radius: Float, alpha: Float, blendMode: BlendMode) {
     if (alpha <= 0.002f) return
+    // Only the gradient's own square is filled: beyond its radius it is fully transparent, which
+    // leaves the field unchanged under both Multiply and Plus, so the rest of the canvas was pure fill cost.
     drawRect(
         brush = Brush.radialGradient(
             colorStops = arrayOf(
@@ -343,11 +425,16 @@ private fun DrawScope.bloom(color: Color, cx: Float, cy: Float, radius: Float, a
             center = Offset(cx, cy),
             radius = radius,
         ),
+        topLeft = Offset(cx - radius, cy - radius),
+        size = Size(radius * 2f, radius * 2f),
         blendMode = blendMode,
     )
 }
 
-private fun DrawScope.drawPfpMark() {
+/** The PFP mark's three letters at [size], and the stroke they are drawn with. */
+private class PfpMark(val letters: List<Path>, val stroke: Stroke)
+
+private fun pfpMark(size: Size): PfpMark {
     val h = size.height * MARK_HEIGHT_FRACTION
     val s = h * 0.085f
     val w = h * 0.62f
@@ -357,10 +444,14 @@ private fun DrawScope.drawPfpMark() {
     val top = cy - h / 2f
     val bottom = cy + h / 2f
     val bar = cy - h * 0.04f
-    val style = Stroke(width = s, cap = StrokeCap.Butt, join = StrokeJoin.Miter)
-    drawPath(letterP(left, top, bottom, bar, w, s), MARK_INK, style = style)
-    drawPath(letterF(left + w + gap, top, bottom, bar, w, s), MARK_INK, style = style)
-    drawPath(letterP(left + 2 * (w + gap), top, bottom, bar, w, s), MARK_INK, style = style)
+    return PfpMark(
+        letters = listOf(
+            letterP(left, top, bottom, bar, w, s),
+            letterF(left + w + gap, top, bottom, bar, w, s),
+            letterP(left + 2 * (w + gap), top, bottom, bar, w, s),
+        ),
+        stroke = Stroke(width = s, cap = StrokeCap.Butt, join = StrokeJoin.Miter),
+    )
 }
 
 private fun letterP(l: Float, top: Float, bottom: Float, bar: Float, w: Float, s: Float) = Path().apply {
@@ -379,8 +470,8 @@ private fun letterF(l: Float, top: Float, bottom: Float, bar: Float, w: Float, s
     lineTo(l + w * 0.80f, bar)
 }
 
-private fun DrawScope.drawGameTitle(textMeasurer: TextMeasurer, gameTitle: String) {
-    val measured = textMeasurer.measure(
+private fun measureGameTitle(textMeasurer: TextMeasurer, gameTitle: String, size: Size): TextLayoutResult =
+    textMeasurer.measure(
         text = gameTitle,
         style = TextStyle(
             color = TITLE_INK,
@@ -393,11 +484,6 @@ private fun DrawScope.drawGameTitle(textMeasurer: TextMeasurer, gameTitle: Strin
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
     )
-    drawText(
-        textLayoutResult = measured,
-        topLeft = Offset((size.width - measured.size.width) / 2f, size.height * TITLE_TOP_Y),
-    )
-}
 
 /** A theme's own boot / GameBoot clip, full-frame, played once. */
 @Composable
@@ -406,7 +492,7 @@ private fun ClipPlayback(kind: BootKind, clip: File, onDone: () -> Unit) {
     var note by remember(clip) { mutableStateOf<String?>(null) }
     val done by rememberUpdatedState(onDone)
     LaunchedEffect(clip) {
-        when (MotionPlayer.play(clip, crop = null, speed = 1f, loop = false, maxPlayMs = BootPlayback.clipCapMs(kind)) { frame = it }) {
+        when (MotionPlayer.present(clip, crop = null, speed = 1f, loop = false, maxPlayMs = BootPlayback.clipCapMs(kind)) { frame = it }) {
             MotionOutcome.ENDED -> delay(CLIP_HOLD_MS)
             MotionOutcome.FELL_BACK -> {
                 note = "The preview can't play this clip smoothly — it plays on the device"
@@ -419,7 +505,8 @@ private fun ClipPlayback(kind: BootKind, clip: File, onDone: () -> Unit) {
         }
         done()
     }
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
+    // Its own layer: each new frame redraws this box, not the preview frame underneath.
+    Box(Modifier.fillMaxSize().graphicsLayer().background(Color.Black)) {
         Canvas(Modifier.fillMaxSize()) { frame?.let { drawFrame(it) } }
         note?.let { PlaysOnDeviceBadge(it, Modifier.align(Alignment.BottomCenter).padding(bottom = 14.dp)) }
     }

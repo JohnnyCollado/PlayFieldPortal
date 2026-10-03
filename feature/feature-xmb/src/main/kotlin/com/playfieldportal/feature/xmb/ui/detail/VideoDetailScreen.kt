@@ -71,6 +71,8 @@ import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.components.XmbKebabTouchButton
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.xmb.video.VideoPlayerScreen
 
 // Neutral dark surfaces stay fixed; accent colors come from the active theme so this screen
@@ -223,8 +225,8 @@ fun VideoDetailScreen(
                 )
             }
 
-            Text(video.displayTitle, color = TextPrimary, fontSize = 26.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
-            Text(metadataLine(video), color = TextMuted, fontSize = 13.sp)
+            Text(video.displayTitle, color = themedText(TextPrimary), fontSize = 26.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
+            Text(metadataLine(video), color = themedSubText(TextMuted), fontSize = 13.sp)
             if (video.resumePositionMs > 0) {
                 Text("Resume at ${fmtTime(video.resumePositionMs)}", color = menuCursorEdge(), fontSize = 12.sp)
             }
@@ -300,7 +302,7 @@ fun VideoDetailScreen(
                         ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
                         ControllerPromptItem(GamepadAction.BACK, "Back"),
                     ),
-                    labelColor = TextMuted,
+                    labelColor = themedSubText(TextMuted),
                     labelStyle = TextStyle(fontSize = 12.sp),
                     glyphSize = 16.dp,
                     arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
@@ -385,9 +387,9 @@ private fun ExternalLaunchOverlay(launch: com.playfieldportal.feature.xmb.ui.det
             }
             CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp)
             Spacer(Modifier.height(16.dp))
-            Text("Launching…", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text("Launching…", color = themedText(Color.White), fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(4.dp))
-            Text(launch.playerLabel, color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp)
+            Text(launch.playerLabel, color = themedSubText(Color.White.copy(alpha = 0.7f)), fontSize = 14.sp)
         }
     }
 }

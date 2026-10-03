@@ -47,6 +47,7 @@ import com.playfieldportal.core.ui.components.ControllerHintBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.components.MENU_BACK_KEY
 import com.playfieldportal.core.ui.components.MenuGlyphOverride
+import com.playfieldportal.core.ui.theme.dimmed
 
 // ── Console-style detail page: background, scaffold, header, footer ───────────
 //
@@ -66,6 +67,8 @@ import com.playfieldportal.core.ui.components.MenuGlyphOverride
 // with the mockup's layering).
 internal val DetailTextPrimary: Color @Composable @ReadOnlyComposable get() = detailPalette().textPrimary
 internal val DetailTextMuted: Color @Composable @ReadOnlyComposable get() = detailPalette().textMuted
+internal val DetailIconPrimary: Color @Composable @ReadOnlyComposable get() = detailPalette().iconPrimary
+internal val DetailIconMuted: Color @Composable @ReadOnlyComposable get() = detailPalette().iconMuted
 internal val DetailRowFill: Color @Composable @ReadOnlyComposable get() = detailPalette().rowFill
 internal val DetailRowEdge: Color @Composable @ReadOnlyComposable get() = detailPalette().rowEdge
 internal val DetailDivider: Color @Composable @ReadOnlyComposable get() = detailPalette().divider
@@ -296,7 +299,7 @@ fun PfpDetailSectionLabel(
 ) {
     Text(
         text = text.uppercase(),
-        color = DetailTextMuted.copy(alpha = 0.75f),
+        color = DetailTextMuted.dimmed(0.75f),
         fontSize = 11.sp,
         fontWeight = FontWeight.SemiBold,
         maxLines = 1,

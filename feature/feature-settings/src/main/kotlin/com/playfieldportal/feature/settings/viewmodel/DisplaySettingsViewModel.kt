@@ -81,6 +81,9 @@ private val KEY_UMD_SLOT_MODE = stringPreferencesKey("display_umd_slot_mode")
 // Must match XMBViewModel.KEY_TEXT_COLOR — both read/write this same pref.
 // Absent = inherit the theme's own text colour (white on every preset).
 private val KEY_TEXT_COLOR = longPreferencesKey("display_text_color")
+// Display ▸ Sub Font Colour, same contract (XMBViewModel.KEY_SUB_TEXT_COLOR). Absent = sub text
+// follows the font colour.
+private val KEY_SUB_TEXT_COLOR = longPreferencesKey("display_sub_text_color")
 // "Use my exact colour": skip the lightness clamp. Protection still applies — a plate can rescue
 // a colour without repainting it, which is the whole reason the two are separate settings.
 private val KEY_TEXT_COLOR_EXACT = booleanPreferencesKey("display_text_color_exact")
@@ -162,6 +165,8 @@ data class DisplaySettingsUiState(
     // ── Font colour ──────────────────────────────────────────────────────────
     /** User-picked text colour, or null to inherit the theme's. */
     val textColorArgb: Long? = null,
+    /** User-picked sub text colour, or null to follow [textColorArgb]. */
+    val subTextColorArgb: Long? = null,
     /** Render the pick verbatim, skipping the lightness clamp (protection still applies). */
     val textColorExact: Boolean = false,
     val textLegibility: TextLegibilityStyle = TextLegibilityStyle.DEFAULT,
@@ -270,6 +275,7 @@ class DisplaySettingsViewModel @Inject constructor(
             itemListMotion       = XmbListMotion.fromName(prefs[KEY_ITEM_LIST_MOTION]),
             umdSlotMode          = UmdSlotMode.fromName(prefs[KEY_UMD_SLOT_MODE]),
             textColorArgb        = prefs[KEY_TEXT_COLOR],
+            subTextColorArgb     = prefs[KEY_SUB_TEXT_COLOR],
             textColorExact       = prefs[KEY_TEXT_COLOR_EXACT] ?: false,
             textLegibility       = TextLegibilityStyle.fromName(prefs[KEY_TEXT_LEGIBILITY]),
             textContrastNoticeSuppressed = prefs[KEY_TEXT_NOTICE_SUPPRESSED] ?: false,
@@ -402,6 +408,14 @@ class DisplaySettingsViewModel @Inject constructor(
             }
             _textContrastNotice.value = noticeFor(argb)
         }
+    }
+
+    /**
+     * Persist the picked sub text colour (null clears it back to following the font colour). No
+     * contrast notice: the notice describes the Settings clamp, which only the main colour gets.
+     */
+    fun setSubTextColor(argb: Long?) = save { prefs ->
+        if (argb != null) prefs[KEY_SUB_TEXT_COLOR] = argb else prefs.remove(KEY_SUB_TEXT_COLOR)
     }
 
     /** Render the pick verbatim. Protection (shadow/plate) still applies — the dialog says so. */

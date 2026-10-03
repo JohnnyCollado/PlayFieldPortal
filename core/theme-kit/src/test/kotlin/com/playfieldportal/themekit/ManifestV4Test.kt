@@ -127,9 +127,58 @@ class ManifestV4Test {
         assertNull(m.description)
         assertNull(m.updated)
         assertNull(m.textColorExact)
+        assertNull(m.subTextColor)
         assertNull(m.waveStyleV4)
         assertNull(m.legibility)
         assertNull(m.motionCrop)
+    }
+
+    // ── Sub text colour ──────────────────────────────────────────────────────────────────────
+
+    @Test
+    fun `subTextColor round-trips through the codec`() {
+        val written = PfpThemeCodec.write(
+            PfpThemeBundle(
+                manifest = manifest().copy(textColor = "#FF8800", subTextColor = "#88CCFF"),
+                wallpaper = null,
+                preview = null,
+            ),
+        )
+        val m = assertNotNull(PfpThemeCodec.read(written)).manifest
+        assertEquals("#FF8800", m.textColor)
+        assertEquals("#88CCFF", m.subTextColor)
+    }
+
+    @Test
+    fun `an invalid subTextColor reads as absent and is reported`() {
+        for (bad in listOf("auto", "#GGGGGG", "88CCFF", "#88CCFF00", "")) {
+            assertNull(manifest().copy(subTextColor = bad).sanitized().subTextColor, bad)
+        }
+        val result = assertNotNull(
+            PfpThemeCodec.readDetailed(
+                PfpThemeCodec.write(
+                    PfpThemeBundle(manifest = manifest().copy(subTextColor = "teal"), wallpaper = null, preview = null),
+                ),
+            ),
+        )
+        assertNull(result.bundle.manifest.subTextColor)
+        assertTrue(result.diagnostics.repaired.any { "Sub text color" in it }, result.diagnostics.repaired.toString())
+    }
+
+    @Test
+    fun `a wrongly typed subTextColor costs only that field`() {
+        val json = "{\"manifest\":\"pfptheme\",\"name\":\"T\",\"accentColor\":\"#FFFFFF\"," +
+            "\"textColor\":\"#FF8800\",\"subTextColor\":{\"r\":1}}"
+        val bytes = java.io.ByteArrayOutputStream().also { bos ->
+            java.util.zip.ZipOutputStream(bos).use { zip ->
+                zip.putNextEntry(java.util.zip.ZipEntry("manifest.json"))
+                zip.write(json.toByteArray())
+                zip.closeEntry()
+            }
+        }.toByteArray()
+        val m = assertNotNull(PfpThemeCodec.read(bytes)).manifest
+        assertNull(m.subTextColor)
+        assertEquals("#FF8800", m.textColor)
     }
 
     @Test
@@ -219,6 +268,7 @@ class ManifestV4Test {
             assertNull(m.description)
             assertNull(m.updated)
             assertNull(m.textColorExact)
+            assertNull(m.subTextColor)
             assertNull(m.waveStyleV4)
             assertNull(m.legibility)
             assertNull(m.motionCrop)

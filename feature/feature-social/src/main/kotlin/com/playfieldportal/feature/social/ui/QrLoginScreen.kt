@@ -42,6 +42,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.playfieldportal.core.domain.discord.DeviceAuthChallenge
 import com.playfieldportal.core.domain.discord.DeviceLoginState
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -182,10 +184,10 @@ private fun QrDetails(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("Sign in with Discord", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+        Text("Sign in with Discord", color = themedText(Color.White), fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
         Text(
             userCode,
-            color = Color.White,
+            color = themedText(Color.White),
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
@@ -196,18 +198,18 @@ private fun QrDetails(
         )
         Text(
             if (copied) "Copied!" else "Tap the code to copy",
-            color = Color(0xCCFFFFFF),
+            color = themedSubText(Color(0xCCFFFFFF)),
             fontSize = 13.sp,
         )
         Text(
             "Scan with your phone’s camera, or go to discord.com/activate and paste the code.",
-            color = Color(0xCCFFFFFF),
+            color = themedSubText(Color(0xCCFFFFFF)),
             fontSize = 14.sp,
             textAlign = TextAlign.Center,
         )
         Text(
             if (remaining > 0) "Expires in ${remaining}s" else "Expired",
-            color = Color(0x99FFFFFF),
+            color = themedSubText(Color(0x99FFFFFF)),
             fontSize = 12.sp,
         )
         Button(onClick = onCancel, contentPadding = PaddingValues(horizontal = 28.dp, vertical = 10.dp)) {
@@ -223,7 +225,7 @@ private fun Status(message: String, showSpinner: Boolean) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         if (showSpinner) CircularProgressIndicator(color = Color.White)
-        Text(message, color = Color.White, fontSize = 18.sp)
+        Text(message, color = themedText(Color.White), fontSize = 18.sp)
     }
 }
 
@@ -234,7 +236,7 @@ private fun Retry(message: String, onRetry: () -> Unit, onCancel: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.padding(24.dp),
     ) {
-        Text(message, color = Color.White, fontSize = 18.sp, textAlign = TextAlign.Center)
+        Text(message, color = themedText(Color.White), fontSize = 18.sp, textAlign = TextAlign.Center)
         Button(onClick = onRetry) { Text("Try again") }
         Button(onClick = onCancel) { Text("Cancel") }
     }

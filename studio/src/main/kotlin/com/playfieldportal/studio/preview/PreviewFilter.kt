@@ -1,8 +1,5 @@
 package com.playfieldportal.studio.preview
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -10,10 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -22,10 +15,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -33,7 +23,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.key.Key
@@ -42,17 +31,12 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.playfieldportal.themekit.XmbLayoutAdjust
-import com.playfieldportal.themekit.XmbLayoutSpec
-import kotlinx.coroutines.delay
 
 /*
- * The Games filter (XMBViewModel.gamesFilterRows / currentSortLabel / GameSearchField) and the
- * focused game's PIC0 logo (XMBShell), as pure rules plus the small composables that draw them.
+ * The Games filter (XMBViewModel.gamesFilterRows / currentSortLabel / GameSearchField), as pure
+ * rules plus the small composables that draw them.
  * Sort and search apply to the sample game lists only.
  */
 
@@ -114,80 +98,7 @@ object PreviewFilter {
     }
 }
 
-/** XMBShell's PIC0 logo: centre-right, appears a beat after focus settles, hides instantly. */
-object PreviewPic0 {
-    const val DELAY_MS = 650L
-    private const val FADE_IN_MS = 500
-    const val WIDTH_FRACTION = 0.30f
-    const val HEIGHT_FRACTION = 0.38f
-    const val END_PADDING = 44f
-
-    /** Fade-in only: any focus move snaps it away, so the next logo is never glimpsed early. */
-    fun fadeMs(visible: Boolean): Int = if (visible) FADE_IN_MS else 0
-
-    /** The focused game's name (the stand-in for its clear logo), or null when nothing logo-bearing is focused. */
-    fun logoTitle(nav: PreviewNavState): String? = PreviewNav.selectedRow(nav)?.takeIf { it.isGame }?.title
-
-    /**
-     * Vertical offset of the logo's centre from the screen's centre, in dp of the layout box. At the
-     * root the logo sits on the centre line; drilled it follows the active card's row, kept inside
-     * [19 %, 81 %] so a low crossbar cannot push it off the bottom.
-     */
-    fun centerOffsetDp(spec: XmbLayoutSpec, adjust: XmbLayoutAdjust, layoutHeight: Float, drilled: Boolean): Float {
-        if (!drilled) return 0f
-        val crossHeight = layoutHeight - spec.contentTopPaddingDp
-        val anchorTop = crossHeight * adjust.barTopFraction + PreviewGeometry.CAT_BAR_HEIGHT
-        val rowCenter = spec.contentTopPaddingDp + anchorTop + PreviewGeometry.ROW_HEIGHT / 2
-        return rowCenter.coerceIn(layoutHeight * 0.19f, layoutHeight * 0.81f) - layoutHeight / 2
-    }
-}
-
 // ── Rendering ────────────────────────────────────────────────────────────────
-
-private val LogoShadow = Shadow(Color.Black.copy(alpha = 0.6f), Offset(0f, 3f), 10f)
-
-/** The focused game's logo, faded in after [PreviewPic0.DELAY_MS]; drawn as a wordmark of its name. */
-@Composable
-fun Pic0Logo(model: XmbPreviewModel, nav: PreviewNavState) {
-    val title = PreviewPic0.logoTitle(nav)
-    var visible by remember(title) { mutableStateOf(false) }
-    LaunchedEffect(title) {
-        if (title != null) {
-            delay(PreviewPic0.DELAY_MS)
-            visible = true
-        }
-    }
-    val fade = PreviewPic0.fadeMs(visible)
-    val alpha by animateFloatAsState(
-        targetValue = if (visible && title != null) 1f else 0f,
-        animationSpec = if (fade == 0) snap() else tween(fade),
-        label = "previewPic0Fade",
-    )
-    if (title == null || alpha <= 0f) return
-    val (_, layoutH) = PreviewGeometry.layoutSize(model.layoutAdjust)
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
-        val offset = PreviewPic0.centerOffsetDp(model.layout, model.layoutAdjust, layoutH, nav.isDrilled)
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .fillMaxWidth(PreviewPic0.WIDTH_FRACTION)
-                .fillMaxHeight(PreviewPic0.HEIGHT_FRACTION)
-                .offset(y = offset.dp)
-                .padding(end = PreviewPic0.END_PADDING.dp)
-                .alpha(alpha),
-        ) {
-            Text(
-                text = title,
-                color = Color.White,
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Black,
-                textAlign = TextAlign.Center,
-                maxLines = 3,
-                style = TextStyle(shadow = LogoShadow),
-            )
-        }
-    }
-}
 
 /**
  * GameSearchField: a top-right field under the status strip (y 38 dp, min width 320) that takes the

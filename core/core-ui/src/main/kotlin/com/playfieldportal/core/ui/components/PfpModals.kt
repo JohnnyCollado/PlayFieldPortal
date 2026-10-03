@@ -63,6 +63,8 @@ import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.sound.MenuSoundSink
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 
 // ── The app's two shared modals ───────────────────────────────────────────────
 //
@@ -229,6 +231,9 @@ object PfpModalTags {
 
 internal val ModalScrim = Color(0xCC000000)
 internal val ModalSurface = Color(0xFF15151F)
+// Text reads ModalSubtext and white through themedText (titles, labels, buttons) or themedSubText
+// (messages, details, placeholders, counters), so the user's font colours carry the card's text at
+// the same weights.
 internal val ModalSubtext = Color.White.copy(alpha = 0.7f)
 private val ModalDanger = Color(0xFFFF7070)
 private val ModalCardWidth = 440.dp
@@ -353,11 +358,11 @@ private fun ModalChoiceRow(
             option.label,
             fontSize = 15.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (selected) Color.White else ModalSubtext,
+            color = themedText(if (selected) Color.White else ModalSubtext),
             modifier = Modifier.weight(1f),
         )
         option.detail?.let {
-            Text(it, fontSize = 12.sp, color = ModalSubtext, maxLines = 1)
+            Text(it, fontSize = 12.sp, color = themedSubText(ModalSubtext), maxLines = 1)
         }
     }
 }
@@ -476,7 +481,7 @@ fun PfpTextEntryModal(
         keyboardReserve = if (edit.isOpen) VirtualKeyboardBottomReserve else 0.dp,
     ) { cancel ->
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(label, color = ModalSubtext, fontSize = 13.sp)
+            Text(label, color = themedSubText(ModalSubtext), fontSize = 13.sp)
             VirtualKeyboardTextInput(edit) {
             BasicTextField(
                 value = edit.fieldValue,
@@ -491,7 +496,7 @@ fun PfpTextEntryModal(
                 },
                 singleLine = !multiline,
                 maxLines = if (multiline) MULTILINE_MAX_LINES else 1,
-                textStyle = TextStyle(color = Color.White, fontSize = 16.sp),
+                textStyle = TextStyle(color = themedText(Color.White), fontSize = 16.sp),
                 cursorBrush = SolidColor(accent),
                 keyboardOptions = KeyboardOptions(
                     capitalization = if (multiline) KeyboardCapitalization.Sentences else KeyboardCapitalization.Words,
@@ -528,7 +533,7 @@ fun PfpTextEntryModal(
                         contentAlignment = if (multiline) Alignment.TopStart else Alignment.CenterStart,
                     ) {
                         if (value.isEmpty() && placeholder.isNotEmpty()) {
-                            Text(placeholder, color = Color.White.copy(alpha = 0.45f), fontSize = 16.sp)
+                            Text(placeholder, color = themedSubText(Color.White.copy(alpha = 0.45f)), fontSize = 16.sp)
                         }
                         innerTextField()
                     }
@@ -550,7 +555,7 @@ fun PfpTextEntryModal(
                     if (maxLength != null) {
                         Text(
                             "${value.length} / $maxLength",
-                            color = ModalSubtext,
+                            color = themedSubText(ModalSubtext),
                             fontSize = 12.sp,
                             modifier = Modifier.testTag(PfpModalTags.COUNTER),
                         )
@@ -624,7 +629,7 @@ private fun PfpModalScaffold(
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
                         title,
-                        color = Color.White.copy(alpha = 0.92f),
+                        color = themedText(Color.White.copy(alpha = 0.92f)),
                         fontSize = 19.sp,
                         fontWeight = FontWeight.Light,
                         maxLines = 2,
@@ -646,7 +651,7 @@ private fun PfpModalScaffold(
 private fun ColumnScope.ModalMessage(message: String, scroll: ScrollState) {
     Text(
         message,
-        color = ModalSubtext,
+        color = themedSubText(ModalSubtext),
         fontSize = 15.sp,
         lineHeight = 22.sp,
         modifier = Modifier
@@ -728,10 +733,10 @@ private fun ModalButton(
             fontSize = 15.sp,
             fontWeight = if (showCursor) FontWeight.SemiBold else FontWeight.Normal,
             color = when {
-                !enabled -> Color.White.copy(alpha = 0.3f)
+                !enabled -> themedText(Color.White.copy(alpha = 0.3f))
                 destructive -> ModalDanger
-                showCursor -> Color.White
-                else -> ModalSubtext
+                showCursor -> themedText(Color.White)
+                else -> themedText(ModalSubtext)
             },
         )
     }

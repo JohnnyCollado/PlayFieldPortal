@@ -3,12 +3,14 @@ package com.playfieldportal.feature.artwork.match
 import com.playfieldportal.core.data.database.dao.GameStorefrontIdentityDao
 import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.core.data.database.entity.GameStorefrontIdentityEntity
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.test.assertFailsWith
 
 /**
  * The resolver's order of operations (C23 T6, Phase 17).
@@ -471,6 +473,20 @@ class StorefrontMetadataResolverTest {
 
         assertTrue(resolution.byStore[Storefront.GOG] is StorefrontMetadataResolver.Resolution.Unavailable)
         assertTrue(resolution.byStore[Storefront.STEAM] is StorefrontMetadataResolver.Resolution.Linked)
+    }
+
+    @Test
+    fun `cancellation inside a provider propagates instead of becoming a provider error`() = runTest {
+        val dao = FakeIdentityDao()
+        val stopped = object : StorefrontMetadataProvider {
+            override val store = Storefront.STEAM
+            override suspend fun search(titles: List<String>): StorefrontOutcome<List<StorefrontCandidate>> =
+                throw CancellationException("sync stopped")
+            override suspend fun getMetadata(storeId: String) = StorefrontOutcome.NoMatch
+            override suspend fun validateIdentity(storeId: String) = StorefrontOutcome.Ok(false)
+        }
+
+        assertFailsWith<CancellationException> { resolver(dao, stopped).resolve(game()) }
     }
 
     @Test

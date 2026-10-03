@@ -113,6 +113,8 @@ import com.playfieldportal.core.ui.icons.ThemedGlyph
 import com.playfieldportal.core.ui.icons.categoryIconFor
 import com.playfieldportal.core.ui.icons.systemIconRes
 import com.playfieldportal.core.ui.theme.LocalPFPColors
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.xmb.ui.detail.shibaSlotKeyFor
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 import com.playfieldportal.feature.xmb.viewmodel.XMBItemType
@@ -171,7 +173,9 @@ private val LEADING_ICON_SIZE = XmbLayoutSpec.DEFAULT.itemIconDp.dp
 internal val LEADING_ICON_CENTER = 18.dp + LEADING_ICON_SLOT / 2
 
 // Classic PSP blue theme: the selected row is crisp white; unselected rows recede into a dimmer
-// blue-white so they read against the saturated blue gradient.
+// blue-white so they read against the saturated blue gradient. The user's font colours replace
+// them at their own alphas — titles (selected and dimmed) the Main colour, subtitles the Sub — so
+// the selected/unselected/subtitle steps survive.
 private val PrimaryText = Color.White
 private val SecondaryText = Color(0xAAC8DAF2)
 private val InactiveText = Color(0xCCD8E6FF)
@@ -915,7 +919,9 @@ private fun XmbVerticalListRow(
                         .weight(1f, fill = false)
                         .padding(start = XmbLayoutSpec.DEFAULT.itemTextStartGapDp.dp),
                 ) {
-                    val titleColor = if (isSelected) PrimaryText else InactiveText
+                    // The bone glyph keeps the built-in tone: icons are not text.
+                    val glyphColor = if (isSelected) PrimaryText else InactiveText
+                    val titleColor = themedText(glyphColor)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = item.title,
@@ -939,7 +945,7 @@ private fun XmbVerticalListRow(
                                 maxLines = 1,
                             )
                             Spacer(Modifier.width(4.dp))
-                            BoneGlyph(tint = titleColor, size = 14.dp)
+                            BoneGlyph(tint = glyphColor, size = 14.dp)
                         }
                     }
                     if (!subtitleText.isNullOrBlank() || item.subtitleHintIcon != null) {
@@ -961,7 +967,7 @@ private fun XmbVerticalListRow(
                             subtitleText?.takeIf { it.isNotBlank() }?.let { subtitle ->
                                 Text(
                                     text = subtitle,
-                                    color = SecondaryText,
+                                    color = themedSubText(SecondaryText),
                                     fontSize = if (isSelected) 12.sp else 11.sp,
                                     fontWeight = FontWeight.Normal,
                                     style = subtitleStyle,
@@ -977,7 +983,7 @@ private fun XmbVerticalListRow(
                                 ControllerPromptGlyphs(
                                     icons = listOf(icon),
                                     label = item.subtitleHintLabel.orEmpty(),
-                                    labelColor = SecondaryText,
+                                    labelColor = themedSubText(SecondaryText),
                                     labelStyle = TextStyle(
                                         fontSize = if (isSelected) 12.sp else 11.sp,
                                     ),

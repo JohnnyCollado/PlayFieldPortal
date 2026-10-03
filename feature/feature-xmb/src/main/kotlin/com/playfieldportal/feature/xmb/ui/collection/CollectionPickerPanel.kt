@@ -25,6 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.components.PfpModalSpec
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 
 // ── Shared, controller-navigable "Add to Collection" picker ──────────────────
 // Used by both the console Game Detail and the Android App Detail screens. The owning
@@ -75,10 +77,10 @@ fun CollectionPickerPanel(
                 .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text("Add to Card", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text("Add to Card", color = themedText(TextPrimary), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Text(
                 "Up/Down  Navigate  •  Select  Toggle  •  B  Close",
-                color = TextMuted.copy(alpha = 0.5f),
+                color = themedSubText(TextMuted.copy(alpha = 0.5f)),
                 fontSize = 10.sp,
             )
 
@@ -105,7 +107,7 @@ fun CollectionPickerPanel(
                 if (ui.options.isEmpty()) {
                     Text(
                         "No custom memory cards yet — create one to get started.",
-                        color = TextMuted,
+                        color = themedSubText(TextMuted),
                         fontSize = 12.sp,
                         modifier = Modifier.padding(top = 4.dp, start = 4.dp),
                     )
@@ -148,7 +150,7 @@ private fun PickerRow(
             .clickable(onClick = onClick)
             .padding(vertical = 12.dp, horizontal = 12.dp),
     ) {
-        Text(label, color = TextPrimary, fontSize = 14.sp, maxLines = 1, modifier = Modifier.weight(1f))
+        Text(label, color = themedText(TextPrimary), fontSize = 14.sp, maxLines = 1, modifier = Modifier.weight(1f))
         if (trailingCheck) {
             com.playfieldportal.core.ui.components.PfpCheckMark(CheckGreen, Modifier.padding(start = 8.dp))
         }

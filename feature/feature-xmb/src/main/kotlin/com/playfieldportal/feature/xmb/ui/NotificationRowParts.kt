@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.NotificationDetail
 import com.playfieldportal.core.domain.model.ResultOutcome
 import com.playfieldportal.core.ui.components.resultOutcomeColor
+import com.playfieldportal.core.ui.theme.themedSubText
 
 // The two approved row marks (notification details plan §6.1, artboard 1 of the mockups): a page
 // with lines on a Notes row, and a tally of failures and skips on a Results row.
@@ -79,7 +80,7 @@ internal fun TallyChip(results: NotificationDetail.Results, read: Boolean, modif
                 Box(Modifier.size(6.dp).clip(CircleShape).background(resultOutcomeColor(outcome)))
                 Text(
                     text = count.toString(),
-                    color = Color.White.copy(alpha = if (read) 0.70f else 0.88f),
+                    color = themedSubText(Color.White.copy(alpha = if (read) 0.70f else 0.88f)),
                     fontSize = 11.sp,
                     maxLines = 1,
                 )

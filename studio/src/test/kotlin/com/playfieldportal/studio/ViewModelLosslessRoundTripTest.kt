@@ -60,7 +60,8 @@ class ViewModelLosslessRoundTripTest {
         assertEquals(a.manifestExtras, b.manifestExtras, "$label: manifest extras")
         assertContentEquals(a.wallpaper, b.wallpaper, "$label: wallpaper")
         assertContentEquals(a.preview, b.preview, "$label: preview")
-        assertEquals(a.icons, b.icons, "$label: icons")
+        // Icons for parts themes no longer customize (the status strip, menus...) are left out on open.
+        assertEquals(a.icons.filterKeys(EditableSlots::isEditable), b.icons, "$label: icons")
         assertEquals(a.sysicons, b.sysicons, "$label: sysicons")
         assertEquals(a.motion, b.motion, "$label: motion")
         a.motion?.let { assertContentEquals(bytesOf(it::copyTo), bytesOf(b.motion!!::copyTo), "$label: motion bytes") }

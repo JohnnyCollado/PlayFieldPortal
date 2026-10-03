@@ -2,6 +2,7 @@ package com.playfieldportal.core.ui.theme
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
@@ -52,6 +53,13 @@ data class StorefrontColors(
     val textPrimary: Color,
     /** Secondary / muted text (counts, sublabels). */
     val textSecondary: Color,
+    /**
+     * Drawn glyphs and lines that wear the text tones (the search lens, progress tracks): the
+     * theme's own [textPrimary] / [textSecondary], which the user's font colours never replace —
+     * icons are not text. Equal to the text roles while no font colour is set.
+     */
+    val iconPrimary: Color,
+    val iconSecondary: Color,
     /** Content area background — semi-transparent so the wave shows through. */
     val contentBackground: Color,
     /** Panel background for the category rail (preserved storefront). */
@@ -88,6 +96,8 @@ private val DefaultStorefrontColors = StorefrontColors(
     footerDivider     = Color(0xFF68C9EB),
     textPrimary       = Color.White,
     textSecondary     = Color(0xFFD6EDF7),
+    iconPrimary       = Color.White,
+    iconSecondary     = Color(0xFFD6EDF7),
     contentBackground = Color(0x00000000),
     railBackground    = Color(0x30004590),
     searchField       = Color(0xFF0A2E5A),
@@ -128,6 +138,23 @@ private fun Color.isVividHue(): Boolean {
     val min = minOf(red, green, blue)
     return max - min >= 0.10f && max >= 0.30f
 }
+
+/**
+ * How far secondary text sits from primary, as an alpha for the user's font colour: the derived
+ * secondary is the hue lifted 72% of the way to white, so the picked colour at 0.72 over the same
+ * hued surface lands the same step below primary.
+ */
+const val SECONDARY_TEXT_WEIGHT = 0.72f
+
+/**
+ * An unselected primary label (a tile name, a menu option): [StorefrontColors.textSecondary] by
+ * default. Once the user sets a font colour it is Main text dimmed — that colour at the secondary
+ * weight — not the Sub colour, which belongs to secondary text.
+ */
+@Composable
+@ReadOnlyComposable
+fun StorefrontColors.unselectedLabel(): Color =
+    LocalPFPColors.current.textOr(textSecondary, SECONDARY_TEXT_WEIGHT)
 
 /**
  * Derive a [StorefrontColors] from the live [LocalPFPColors].
@@ -230,8 +257,13 @@ fun storefrontColorsFor(pfp: PFPColors): StorefrontColors {
         tileSelectedInner   = edgeInner,
         footerBackground    = footerBackground,
         footerDivider       = footerDivider,
-        textPrimary         = textPrimary,
-        textSecondary       = textSecondary,
+        // The user's font colours, when set, replace the text roles unclamped (Main → primary, Sub
+        // → secondary). lightChrome above stays decided by the readable white/black, so a picked
+        // colour never restyles surfaces.
+        textPrimary         = pfp.textOr(textPrimary, weight = 1f),
+        textSecondary       = pfp.subTextOr(textSecondary, weight = SECONDARY_TEXT_WEIGHT),
+        iconPrimary         = textPrimary,
+        iconSecondary       = textSecondary,
         contentBackground   = contentBackground,
         railBackground      = railBackground,
         searchField         = searchField,

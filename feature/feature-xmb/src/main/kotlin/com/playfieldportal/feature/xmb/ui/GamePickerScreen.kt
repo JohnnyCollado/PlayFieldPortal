@@ -96,6 +96,8 @@ import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
 import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
 import com.playfieldportal.core.ui.theme.StorefrontColors
 import com.playfieldportal.core.ui.theme.deriveStorefrontColors
+import com.playfieldportal.core.ui.theme.dimmed
+import com.playfieldportal.core.ui.theme.unselectedLabel
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -362,7 +364,7 @@ private fun ShelfListEntry(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = shelf.title,
-                    color = if (isCurrent) colors.textPrimary else colors.textSecondary,
+                    color = if (isCurrent) colors.textPrimary else colors.unselectedLabel(),
                     fontSize = 13.sp,
                     fontWeight = if (isCurrent) FontWeight.Medium else FontWeight.Normal,
                     maxLines = 1,
@@ -374,7 +376,7 @@ private fun ShelfListEntry(
             }
             Spacer(Modifier.height(6.dp))
             val fraction = if (shelf.size > 0) checked.toFloat() / shelf.size else 0f
-            Box(Modifier.fillMaxWidth().height(2.dp).background(colors.textSecondary.copy(alpha = 0.18f))) {
+            Box(Modifier.fillMaxWidth().height(2.dp).background(colors.iconSecondary.copy(alpha = 0.18f))) {
                 Box(Modifier.fillMaxWidth(fraction).height(2.dp).background(colors.tileSelectedInner))
             }
         }
@@ -609,7 +611,7 @@ private fun PickerTile(
                 if (isRemoving) withStyle(SpanStyle(color = colors.destructive)) { append("Removing · ") }
                 append(label)
             },
-            color = if (isFocused) colors.textPrimary else colors.textSecondary,
+            color = if (isFocused) colors.textPrimary else colors.unselectedLabel(),
             fontSize = 11.sp,
             lineHeight = 13.sp,
             maxLines = 2,
@@ -753,7 +755,7 @@ private fun ShelfSearchField(
                     Box {
                         if (state.query.isEmpty()) Text(
                             "Search this shelf\u2026",
-                            color = colors.textSecondary.copy(alpha = 0.6f),
+                            color = colors.textSecondary.dimmed(0.6f),
                             fontSize = 14.sp,
                         )
                         inner()

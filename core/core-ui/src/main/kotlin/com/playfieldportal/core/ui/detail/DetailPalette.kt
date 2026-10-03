@@ -9,10 +9,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.PFPColors
+import com.playfieldportal.core.ui.theme.SECONDARY_TEXT_WEIGHT
 import com.playfieldportal.core.ui.theme.composite
 import com.playfieldportal.core.ui.theme.contrastRatio
 import com.playfieldportal.core.ui.theme.ensureReadable
 import com.playfieldportal.core.ui.theme.storefrontColorsFor
+import com.playfieldportal.core.ui.theme.subTextOr
+import com.playfieldportal.core.ui.theme.textOr
 
 // ── Accent shading for the console-style detail page ──────────────────────────
 //
@@ -41,11 +44,21 @@ data class DetailPalette(
     val focus: Color,
     val textPrimary: Color,
     val textMuted: Color,
+    /**
+     * Icon tints and the page's light/dark direction: the theme's own text colours, which the
+     * user's font colour never replaces — icons are not text, and a picked colour must not
+     * restyle surfaces. Equal to [textPrimary] / [textMuted] while no font colour is set.
+     */
+    val iconPrimary: Color,
+    val iconMuted: Color,
 )
 
 /** Derive the page palette from the active theme colors. Pure: same theme, same palette. */
 fun detailPaletteFor(pfp: PFPColors): DetailPalette {
-    val drawer = storefrontColorsFor(pfp)
+    // Everything is derived without the user's font colours first, so the row glass and the muted
+    // text's contrast repair see the theme's own text; the colours then replace the text roles
+    // unclamped, muted (Sub) at the drawer's secondary weight.
+    val drawer = storefrontColorsFor(pfp.copy(textOverride = null, subTextOverride = null))
     // A pale theme flips the drawer to dark text; dark rows would then bury it, so rows turn to
     // light glass the way the drawer's search field and menu panel do.
     val lightChrome = drawer.textPrimary == Color.Black
@@ -71,10 +84,22 @@ fun detailPaletteFor(pfp: PFPColors): DetailPalette {
         rowEdge = drawer.chromeDivider.copy(alpha = 0.35f),
         track = drawer.chromeDivider.copy(alpha = 0.25f),
         focus = drawer.tileSelectedEdge,
-        textPrimary = drawer.textPrimary,
-        textMuted = textMuted,
+        textPrimary = pfp.textOr(drawer.textPrimary, weight = 1f),
+        textMuted = pfp.subTextOr(textMuted, weight = SECONDARY_TEXT_WEIGHT),
+        iconPrimary = drawer.textPrimary,
+        iconMuted = textMuted,
     )
 }
+
+/**
+ * An unselected primary label (a tab, a disabled action): [DetailPalette.textMuted] by default.
+ * Once the user sets a font colour it is Main text dimmed — that colour at the secondary weight —
+ * not the Sub colour, which belongs to secondary text.
+ */
+@Composable
+@ReadOnlyComposable
+fun DetailPalette.unselectedLabel(): Color =
+    LocalPFPColors.current.textOr(iconMuted, SECONDARY_TEXT_WEIGHT)
 
 /** Muted text keeps the App Drawer's own 3.0 floor. */
 private const val MUTED_TEXT_CONTRAST = 3.0

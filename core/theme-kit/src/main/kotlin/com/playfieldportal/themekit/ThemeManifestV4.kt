@@ -27,7 +27,8 @@ data class ThemeLegibility(
 
     companion object {
         val TEXT_VALUES = setOf("auto", "none", "shadow", "outline", "plate")
-        val ICON_VALUES = setOf("none", "offset_shadow", "contour_dark", "contour_light", "contour_auto")
+        // Lowercase IconLegibilityStyle names: the launcher maps a value by uppercasing it.
+        val ICON_VALUES = setOf("none", "offset_shadow", "offset_shadow_light", "contour_dark", "contour_light", "contour_auto")
     }
 }
 
@@ -92,9 +93,14 @@ object WaveStyles {
 /** Longest description kept on read (plan 5.4). */
 const val MANIFEST_DESCRIPTION_MAX = 500
 
-/** Applies the read-side sanitizers (rules 3 and 4, description clamp). */
+/** `#RRGGBB`, the only form a manifest colour takes. */
+internal val MANIFEST_HEX = Regex("^#[0-9A-Fa-f]{6}$")
+
+/** Applies the read-side sanitizers (rules 3 and 4, description clamp, sub text colour). */
 fun PfpThemeManifest.sanitized(): PfpThemeManifest = copy(
     description = description?.take(MANIFEST_DESCRIPTION_MAX),
+    // Optional with no "auto" spelling, so a malformed value is simply absent.
+    subTextColor = subTextColor?.takeIf { MANIFEST_HEX.matches(it) },
     legibility = legibility?.sanitized(),
     motionCrop = motionCrop?.sanitized(),
 )

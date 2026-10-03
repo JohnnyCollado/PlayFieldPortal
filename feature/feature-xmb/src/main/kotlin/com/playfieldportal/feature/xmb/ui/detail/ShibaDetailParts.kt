@@ -78,7 +78,7 @@ internal val CoinOrder = listOf(ShibaTier.PLATINUM, ShibaTier.GOLD, ShibaTier.SI
 
 /** The design's darker header band: the page darkened in place, so it follows the theme. */
 internal fun headerShade(palette: DetailPalette): Color =
-    Color.Black.copy(alpha = if (palette.textPrimary.luminance() < 0.5f) 0.10f else 0.28f)
+    Color.Black.copy(alpha = if (palette.iconPrimary.luminance() < 0.5f) 0.10f else 0.28f)
 
 /** The focus treatment every focusable element on these pages shares; drawn inside its own bounds. */
 internal fun Modifier.shibaFocus(focused: Boolean, palette: DetailPalette): Modifier =
@@ -164,7 +164,7 @@ internal fun SearchRow(
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
                     .padding(horizontal = 12.dp),
             ) {
-                Icon(Icons.Filled.Search, contentDescription = null, tint = palette.textMuted, modifier = Modifier.size(20.dp))
+                Icon(Icons.Filled.Search, contentDescription = null, tint = palette.iconMuted, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(12.dp))
                 VirtualKeyboardTextInput(searchEdit) {
                 BasicTextField(

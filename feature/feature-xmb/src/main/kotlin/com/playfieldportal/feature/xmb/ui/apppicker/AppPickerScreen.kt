@@ -73,6 +73,8 @@ import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
 import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
 import com.playfieldportal.core.ui.theme.StorefrontColors
 import com.playfieldportal.core.ui.theme.deriveStorefrontColors
+import com.playfieldportal.core.ui.theme.dimmed
+import com.playfieldportal.core.ui.theme.unselectedLabel
 import com.playfieldportal.feature.xmb.viewmodel.AppPickerEntry
 import com.playfieldportal.feature.xmb.viewmodel.AppPickerState
 import com.playfieldportal.feature.xmb.viewmodel.PICKER_GRID_COLUMNS
@@ -276,7 +278,7 @@ private fun AppPickerHeader(
                     Box {
                         if (state.query.isEmpty()) Text(
                             "Search\u2026",
-                            color = colors.textSecondary.copy(alpha = 0.6f),
+                            color = colors.textSecondary.dimmed(0.6f),
                             fontSize = 14.sp,
                         )
                         inner()
@@ -306,13 +308,13 @@ private fun AppPickerHeader(
                 val cy = size.height * 0.42f
                 val r = size.width * 0.30f
                 drawCircle(
-                    color = colors.textSecondary,
+                    color = colors.iconSecondary,
                     radius = r,
                     center = Offset(cx, cy),
                     style = Stroke(strokeW),
                 )
                 drawLine(
-                    color = colors.textSecondary,
+                    color = colors.iconSecondary,
                     start = Offset(cx + r * 0.70f, cy + r * 0.70f),
                     end = Offset(
                         cx + r * 0.70f + size.width * 0.22f,
@@ -504,7 +506,7 @@ private fun AppPickerTile(
         Spacer(Modifier.height(6.dp))
         Text(
             text = entry.label,
-            color = if (isFocused) colors.textPrimary else colors.textSecondary,
+            color = if (isFocused) colors.textPrimary else colors.unselectedLabel(),
             fontSize = 11.sp,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -570,7 +572,7 @@ private fun ConfirmOption(
         animationSpec = tween(CHECK_TWEEN),
         label = "confirmOptionFocus",
     )
-    val baseColor = if (destructive) colors.destructive else colors.textSecondary
+    val baseColor = if (destructive) colors.destructive else colors.unselectedLabel()
     Box(
         modifier = Modifier
             .clickable(onClick = onClick)

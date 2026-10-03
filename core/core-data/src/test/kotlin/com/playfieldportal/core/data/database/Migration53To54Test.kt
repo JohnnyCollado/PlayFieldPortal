@@ -77,6 +77,28 @@ class Migration53To54Test {
     }
 
     @Test
+    fun `collection renumbering follows sort_order, not id order`() {
+        helper.createDatabase(53).use { db ->
+            db.execSQL(category("games"))
+            // A user who reordered cards: sort_order no longer follows id.
+            db.execSQL(collection(id = 1, name = "A", categoryId = "games", sortOrder = 10))
+            db.execSQL(collection(id = 2, name = "B", categoryId = "games", sortOrder = 5))
+            db.execSQL(collection(id = 3, name = "C", categoryId = "games", sortOrder = 7))
+            db.execSQL(collection(id = 5, name = "D", categoryId = "games", sortOrder = 1))
+            db.execSQL(collection(id = 7, name = "E", categoryId = "games", sortOrder = 8))
+        }
+
+        helper.runMigrationsAndValidate(54, migrations).use { db ->
+            assertEquals(
+                listOf("D=0", "B=1", "C=2", "E=3", "A=4"),
+                db.rows("SELECT name, sort_order FROM collections ORDER BY sort_order") {
+                    "${it.getText(0)}=${it.getLong(1)}"
+                },
+            )
+        }
+    }
+
+    @Test
     fun `pinned games of a custom category are pinned on its memory card list`() {
         helper.createDatabase(53).use { db ->
             db.execSQL(category("custom_rpg_9"))

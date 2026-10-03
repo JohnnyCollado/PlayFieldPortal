@@ -27,10 +27,14 @@ import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.achievement.CoinWallet
 import com.playfieldportal.core.domain.achievement.ShibaLevel
 import com.playfieldportal.core.ui.theme.menuCursorEdge
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 
 // Shared surface tones, matching the Game Detail coin strip. Chrome (medallion ring, progress fill)
 // follows the active theme accent via menuCursorEdge(); only the text tones are fixed.
 private val CardFill = Color(0xFF1B1B26)
+// Card text reads these through themedText (TextPrimary) / themedSubText (TextMuted), so the
+// user's font colours take over at the same weights. The level medallion keeps them: a badge.
 private val TextPrimary = Color(0xFFEEEEEE)
 private val TextMuted = Color(0x88EEEEEE)
 
@@ -64,7 +68,7 @@ fun ShibaPlayerCard(
                 Spacer(Modifier.width(8.dp))
                 // Rank standing: "<Rank> • <bones> [bone glyph]"; the bone group appears only once
                 // at least one Bone is minted.
-                Text(wallet.rank.label, color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(wallet.rank.label, color = themedText(TextPrimary), fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 if (wallet.bones > 0) {
                     Spacer(Modifier.width(8.dp))
                     Text("•  ${wallet.bones}", color = accent, fontSize = 14.sp, fontWeight = FontWeight.Bold)
@@ -72,7 +76,7 @@ fun ShibaPlayerCard(
                     BoneGlyph(tint = accent, size = 14.dp)
                 }
                 Spacer(Modifier.weight(1f))
-                Text("${"%,d".format(wallet.totalCoins)} XP", color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                Text("${"%,d".format(wallet.totalCoins)} XP", color = themedSubText(TextMuted), fontSize = 12.sp, fontWeight = FontWeight.Medium)
             }
 
             Spacer(Modifier.height(10.dp))
@@ -93,7 +97,7 @@ fun ShibaPlayerCard(
                 else "level ${wallet.level + 1}"
             Text(
                 text = "${"%,d".format(progress.coinsIntoLevel)} / ${"%,d".format(progress.coinsForNextLevel)} to $nextLabel",
-                color = TextMuted,
+                color = themedSubText(TextMuted),
                 fontSize = 11.sp,
             )
         }

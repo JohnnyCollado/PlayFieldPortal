@@ -53,6 +53,8 @@ import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.domain.model.BackgroundTaskInfo
 import com.playfieldportal.core.domain.model.NotificationDetail
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.xmb.viewmodel.NotificationPanelState
 import com.playfieldportal.feature.xmb.viewmodel.PanelSelection
 import com.playfieldportal.feature.xmb.viewmodel.panelSelection
@@ -189,7 +191,7 @@ fun NotificationPanel(
 private fun SectionHeader(title: String) {
     Text(
         text = title,
-        color = Color.White.copy(alpha = 0.55f),
+        color = themedSubText(Color.White.copy(alpha = 0.55f)),
         fontSize = 11.sp,
         fontWeight = FontWeight.Medium,
         modifier = Modifier.padding(top = 10.dp, bottom = 4.dp),
@@ -200,7 +202,7 @@ private fun SectionHeader(title: String) {
 private fun EmptyRow() {
     Text(
         text = EMPTY_PANEL_MESSAGE,
-        color = Color.White.copy(alpha = 0.55f),
+        color = themedSubText(Color.White.copy(alpha = 0.55f)),
         fontSize = 13.sp,
         modifier = Modifier
             .fillMaxWidth()
@@ -245,7 +247,7 @@ private fun RunningRow(task: BackgroundTaskInfo, isSelected: Boolean, onTap: () 
                         task.detail != null -> "${task.label} — ${task.detail}"
                         else -> task.label
                     },
-                    color = Color.White.copy(alpha = if (stopping) 0.55f else if (isSelected) 0.95f else 0.92f),
+                    color = themedText(Color.White.copy(alpha = if (stopping) 0.55f else if (isSelected) 0.95f else 0.92f)),
                     fontSize = 13.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -253,7 +255,7 @@ private fun RunningRow(task: BackgroundTaskInfo, isSelected: Boolean, onTap: () 
                 )
                 task.countLabel?.let {
                     Spacer(Modifier.width(10.dp))
-                    Text(it, color = Color.White.copy(alpha = if (stopping) 0.45f else 0.70f), fontSize = 12.sp, maxLines = 1)
+                    Text(it, color = themedSubText(Color.White.copy(alpha = if (stopping) 0.45f else 0.70f)), fontSize = 12.sp, maxLines = 1)
                 }
             }
             Spacer(Modifier.height(5.dp))
@@ -345,7 +347,7 @@ private fun HistoryRow(
             text = notification.displayTitle,
             // Read rows step back rather than disappearing: the history is the record, and a row
             // the user has already seen is still one they may need to find again.
-            color = Color.White.copy(alpha = if (notification.isRead) 0.62f else 0.95f),
+            color = themedText(Color.White.copy(alpha = if (notification.isRead) 0.62f else 0.95f)),
             fontWeight = if (notification.isRead) FontWeight.Normal else FontWeight.Medium,
             fontSize = 13.sp,
             maxLines = 1,
@@ -376,7 +378,7 @@ private fun HistoryRow(
         Spacer(Modifier.width(10.dp))
         Text(
             text = notificationTimestamp(notification.createdAt, now),
-            color = Color.White.copy(alpha = 0.60f),
+            color = themedSubText(Color.White.copy(alpha = 0.60f)),
             fontSize = 11.sp,
             maxLines = 1,
         )

@@ -125,11 +125,11 @@ class EmulatorKbUpdater internal constructor(
 
         val body = when (val r = downloader.fetch(EmulatorKbDownloader.MANIFEST_URL, EmulatorKbDownloader.MAX_MANIFEST_BYTES)) {
             is KbDownload.Bytes -> r.bytes
-            is KbDownload.Failure -> return finish(downloadFailure(r))
+            is KbDownload.Failure -> return finishDownloadFailure(r)
         }
         val signature = when (val r = downloader.fetch(EmulatorKbDownloader.SIGNATURE_URL, EmulatorKbDownloader.MAX_SIGNATURE_BYTES)) {
             is KbDownload.Bytes -> String(r.bytes, Charsets.UTF_8)
-            is KbDownload.Failure -> return finish(downloadFailure(r))
+            is KbDownload.Failure -> return finishDownloadFailure(r)
         }
         if (!verifier.verify(body, signature)) return finish(KbUpdateResult.SignatureInvalid)
 
@@ -181,8 +181,10 @@ class EmulatorKbUpdater internal constructor(
         return elapsed !in 0 until CHECK_INTERVAL_MS
     }
 
-    private fun downloadFailure(failure: KbDownload.Failure) =
-        if (failure.reason == "too large") KbUpdateResult.TooLarge else KbUpdateResult.Offline
+    private suspend fun finishDownloadFailure(failure: KbDownload.Failure): KbUpdateResult =
+        if (failure.reason == "too large") finish(KbUpdateResult.TooLarge)
+        // Offline never reached the server, so it must not start the 24 h wait.
+        else finish(KbUpdateResult.Offline, reachedServer = false)
 
     /** Records [result]; a failure keeps the installed file's fields from the previous status. */
     private suspend fun finish(

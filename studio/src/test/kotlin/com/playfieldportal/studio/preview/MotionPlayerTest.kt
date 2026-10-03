@@ -1,18 +1,32 @@
 package com.playfieldportal.studio.preview
 
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asSkiaBitmap
 import com.playfieldportal.studio.MotionTestMedia
 import com.playfieldportal.studio.io.VideoCodecs
 import com.playfieldportal.themekit.MotionCrop
 import com.playfieldportal.themekit.PfpThemeManifest
 import java.awt.EventQueue
+import java.awt.RenderingHints
+import java.awt.image.BufferedImage
+import java.awt.image.DataBufferInt
 import java.io.File
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import kotlin.math.roundToInt
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
+import org.jcodec.api.SequenceEncoder
+import org.jcodec.scale.AWTUtil
+import org.jetbrains.skia.ColorAlphaType
+import org.jetbrains.skia.ColorType
+import org.jetbrains.skia.ImageInfo
 
 /** A frame source with a fixed script and a decode cost charged to a shared fake clock. */
 private class FakeClock : MotionClock {
@@ -135,7 +149,7 @@ class MotionPlayerTest {
             decodeContext = kotlin.coroutines.EmptyCoroutineContext,
             loop = loop,
             shouldStop = { published.size >= stopAfter },
-            publish = { published += clock.now to it },
+            publish = { _, frame -> published += clock.now to frame },
         )
     }
 
@@ -214,7 +228,7 @@ class MotionPlayerTest {
                 clock = FakeClock(),
                 decodeContext = kotlin.coroutines.EmptyCoroutineContext,
                 loop = true,
-                publish = {},
+                publish = { _, _ -> },
             )
         }
         assertEquals(MotionOutcome.FAILED, outcome)
@@ -231,6 +245,76 @@ class MotionPlayerTest {
     }
 
     @Test
+    fun `a lead hands each frame over that much before it is due, with its due time`() {
+        val clock = FakeClock()
+        val source = FakeSource(clock, frames = 10, fps = 30f, decodeCostMs = 2)
+        val handed = mutableListOf<Pair<Long, Long>>() // clock time handed over -> due time
+        runBlocking {
+            MotionEngine.run(
+                open = { source },
+                scheduler = { fps -> MotionScheduler(1f, fps) },
+                clock = clock,
+                decodeContext = kotlin.coroutines.EmptyCoroutineContext,
+                loop = false,
+                leadMs = 10,
+                publish = { due, _ -> handed += clock.now to due },
+            )
+        }
+        assertEquals(10, handed.size)
+        for ((at, due) in handed.drop(1)) assertEquals(due - 10, at)
+        assertEquals(33L, handed[2].second - handed[1].second, "due times keep the clip's spacing")
+    }
+
+    @Test
+    fun `every decoded frame is recycled, shown or dropped`() {
+        val clock = FakeClock()
+        // 100 ms per frame against a 33 ms clip: most frames are dropped.
+        val inner = FakeSource(clock, frames = 40, fps = 30f, decodeCostMs = 100)
+        var decoded = 0
+        var recycled = 0
+        val source = object : MotionFrameSource<Int> by inner {
+            override fun decode(): DecodedFrame<Int>? {
+                val frame = inner.decode() ?: return null
+                decoded++
+                return object : DecodedFrame<Int> by frame {
+                    override fun recycle() {
+                        recycled++
+                    }
+                }
+            }
+        }
+        val published = mutableListOf<Pair<Long, Int>>()
+        play(source, clock, speed = 1f, loop = false, published = published)
+        assertTrue(published.size < decoded, "frames were dropped")
+        assertEquals(decoded, recycled)
+    }
+
+    // ── Mailbox: frames shown on the vsync they are due ──────────────────────
+
+    @Test
+    fun `the mailbox gives the newest due frame and keeps the ones still ahead`() {
+        val box = FrameMailbox<String>()
+        box.offer(100, "a")
+        box.offer(133, "b")
+        box.offer(166, "c")
+        assertNull(box.takeDue(99), "nothing is due yet")
+        assertEquals("b", box.takeDue(140), "a was superseded by b")
+        assertFalse(box.isEmpty())
+        assertEquals("c", box.takeDue(200))
+        assertTrue(box.isEmpty())
+    }
+
+    @Test
+    fun `a full mailbox drops its oldest frame`() {
+        val box = FrameMailbox<String>(capacity = 2)
+        box.offer(1, "a")
+        box.offer(2, "b")
+        box.offer(3, "c")
+        assertEquals("c", box.takeDue(10))
+        assertTrue(box.isEmpty())
+    }
+
+    @Test
     fun `decoding runs on the decode thread and never on the UI thread`() {
         val clock = FakeClock()
         val source = FakeSource(clock, frames = 4, fps = 30f, decodeCostMs = 1)
@@ -242,7 +326,7 @@ class MotionPlayerTest {
                 clock = clock,
                 decodeContext = MotionPlayer.decodeDispatcher,
                 loop = false,
-                publish = {},
+                publish = { _, _ -> },
             )
         }
         assertEquals(MotionOutcome.ENDED, outcome)
@@ -332,7 +416,7 @@ class MotionPlayerTest {
         val file = clip(frames = 6)
         val frames = mutableListOf<androidx.compose.ui.graphics.ImageBitmap>()
         val outcome = runBlocking {
-            MotionPlayer.play(file, crop = null, speed = 1f, loop = false) { frames += it }
+            MotionPlayer.play(file, crop = null, speed = 1f, loop = false) { _, frame -> frames += frame }
         }
         assertEquals(MotionOutcome.ENDED, outcome)
         assertEquals(6, frames.size)
@@ -343,7 +427,133 @@ class MotionPlayerTest {
     @Test
     fun `the real player reports an unreadable file as failed`() {
         val junk = File.createTempFile("not-a-video", ".mp4").also { it.writeText("nope"); it.deleteOnExit() }
-        val outcome = runBlocking { MotionPlayer.play(junk, null, 1f, loop = true) {} }
+        val outcome = runBlocking { MotionPlayer.play(junk, null, 1f, loop = true) { _, _ -> } }
         assertEquals(MotionOutcome.FAILED, outcome)
+    }
+
+    @Test
+    fun `rewinding seeks back to the first frame and replays the same frames`() {
+        val file = clip(frames = 6)
+        assertNotNull(VideoCodecs.openFrames(file)).use { reader ->
+            val first = generateSequence { reader.next() }.map { it.ptsMs }.toList()
+            reader.rewind()
+            val second = generateSequence { reader.next() }.map { it.ptsMs }.toList()
+            assertEquals(first, second)
+        }
+    }
+
+    @Test
+    fun `the read-ahead source loops the real decoder and releases its thread`() {
+        val file = clip(frames = 6)
+        val clock = FakeClock()
+        val published = mutableListOf<Long>()
+        val outcome = runBlocking {
+            MotionEngine.run(
+                open = { ReadAheadSource(assertNotNull(VideoCodecs.openFrames(file)), loop = true, crop = null, outW = 64, outH = 36) },
+                scheduler = { fps -> MotionScheduler(1f, fps) },
+                clock = clock,
+                decodeContext = MotionPlayer.decodeDispatcher,
+                loop = true,
+                shouldStop = { published.size >= 15 },
+                publish = { due, frame ->
+                    assertEquals(64, frame.width)
+                    published += due
+                },
+            )
+        }
+        assertEquals(MotionOutcome.ENDED, outcome)
+        assertEquals(15, published.size, "two and a half passes of a six-frame clip")
+        assertEquals(published.sorted(), published, "the timeline runs on across the loop points")
+        val readers = Thread.getAllStackTraces().keys.filter { it.name == "${MotionPlayer.DECODE_THREAD}-read" && it.isAlive }
+        assertTrue(readers.isEmpty(), "closing the source stops its reader")
+    }
+
+    // ── FrameConverter: the same pixels as JCodec's AWTUtil path ─────────────
+
+    /**
+     * The crop-and-scale the preview did before FrameConverter, kept as the reference it must match:
+     * the ARGB pixels it handed to Skia (as opaque BGRA, so the alpha byte was ignored).
+     */
+    private fun legacyPixels(src: BufferedImage, crop: MotionCrop?, outW: Int, outH: Int): IntArray {
+        val r = MotionFraming.visibleRegion(src.width.toFloat(), src.height.toFloat(), outW.toFloat(), outH.toFloat(), crop)
+        val sx1 = (r.left * src.width).roundToInt().coerceIn(0, src.width - 1)
+        val sy1 = (r.top * src.height).roundToInt().coerceIn(0, src.height - 1)
+        val sx2 = ((r.left + r.width) * src.width).roundToInt().coerceIn(sx1 + 1, src.width)
+        val sy2 = ((r.top + r.height) * src.height).roundToInt().coerceIn(sy1 + 1, src.height)
+        val out = BufferedImage(outW, outH, BufferedImage.TYPE_INT_RGB)
+        val g = out.createGraphics()
+        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR)
+        g.drawImage(src, 0, 0, outW, outH, sx1, sy1, sx2, sy2, null)
+        g.dispose()
+        return (out.raster.dataBuffer as DataBufferInt).data
+    }
+
+    private val OPAQUE = 0xFF000000.toInt()
+
+    /** The ARGB pixels of a frame bitmap, read back through Skia. */
+    private fun ImageBitmap.argb(): IntArray {
+        val bytes = assertNotNull(asSkiaBitmap().readPixels(ImageInfo(width, height, ColorType.BGRA_8888, ColorAlphaType.UNPREMUL)))
+        val out = IntArray(width * height)
+        ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().get(out)
+        return out
+    }
+
+    /** A clip whose size is not a whole number of macroblocks (so the picture is cropped), with detail in every channel. */
+    private fun patternedClip(width: Int, height: Int, frames: Int): File = File.createTempFile("motion-pattern", ".mp4").also {
+        it.deleteOnExit()
+        val encoder = SequenceEncoder.createSequenceEncoder(it, 10)
+        for (i in 0 until frames) {
+            val img = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+            for (x in 0 until width) for (y in 0 until height) {
+                val r = (x * 255 / width + i * 20) and 0xFF
+                val g = (y * 255 / height) and 0xFF
+                val b = ((x xor y) * 7 + i * 31) and 0xFF
+                img.setRGB(x, y, (r shl 16) or (g shl 8) or b)
+            }
+            encoder.encodeNativeFrame(AWTUtil.fromBufferedImageRGB(img))
+        }
+        encoder.finish()
+    }
+
+    @Test
+    fun `the converter draws exactly what the AWTUtil path drew`() {
+        val file = patternedClip(width = 330, height = 250, frames = 3)
+        val crops = listOf(null, MotionCrop(0.1f, 0.2f, 0.5f, 0.6f), MotionCrop(0f, 0f, 0.2f, 1f))
+        assertNotNull(VideoCodecs.openFrames(file)).use { reader ->
+            val planes = VideoCodecs.YuvPlanes()
+            for (index in 0 until 3) {
+                val raw = assertNotNull(reader.next())
+                raw.copyInto(planes)
+                assertEquals(330, planes.width)
+                assertEquals(250, planes.height)
+                val reference = assertNotNull(VideoCodecs.frameAt(file, raw.ptsMs))
+                for (crop in crops) {
+                    val expected = legacyPixels(reference, crop, 640, 360)
+                    val actual = FrameConverter(crop, 640, 360).convert(planes).argb()
+                    val diffs = expected.indices.filter { (expected[it] or OPAQUE) != actual[it] }
+                    assertTrue(
+                        diffs.isEmpty(),
+                        "frame $index, crop $crop: ${diffs.size} pixels differ, first " +
+                            diffs.take(5).joinToString { "#$it ${Integer.toHexString(expected[it])} vs ${Integer.toHexString(actual[it])}" },
+                    )
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `one converter reused across frames matches a fresh one`() {
+        val file = patternedClip(width = 330, height = 250, frames = 3)
+        val reused = FrameConverter(null, 160, 90)
+        assertNotNull(VideoCodecs.openFrames(file)).use { reader ->
+            val planes = VideoCodecs.YuvPlanes()
+            repeat(3) {
+                assertNotNull(reader.next()).copyInto(planes)
+                assertContentEquals(
+                    FrameConverter(null, 160, 90).convert(planes).argb(),
+                    reused.convert(planes).argb(),
+                )
+            }
+        }
     }
 }

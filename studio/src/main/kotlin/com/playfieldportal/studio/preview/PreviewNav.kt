@@ -17,9 +17,8 @@ import com.playfieldportal.themekit.XmbLayoutSpec
  */
 data class PreviewNavState(
     val category: Int = SampleContent.SELECTED_CATEGORY,
-    val rootRows: List<Int> = List(SampleContent.categories.size) {
-        if (it == SampleContent.SELECTED_CATEGORY) SampleContent.SELECTED_ROW else 0
-    },
+    /** Each category starts on the row the launcher lands it on (its library card, else the top). */
+    val rootRows: List<Int> = List(SampleContent.categories.size) { SampleContent.landingRow(it) },
     val drill: List<Int> = emptyList(),
     /** A one-line status for the last Enter on a leaf; any other action clears it. */
     val message: String? = null,
@@ -36,7 +35,7 @@ data class PreviewNavState(
     val currentIndex: Int get() = drill.lastOrNull() ?: rootRows[category]
 
     companion object {
-        /** The frame `preview.png` shows: Video selected, its second row under the bar. */
+        /** The frame `preview.png` shows, and the launcher's first frame: Game, All Games under the bar. */
         val HOME = PreviewNavState()
     }
 }
@@ -116,9 +115,56 @@ object PreviewNav {
     /** A game list is on screen: the Games category drilled into a console. */
     fun inGameList(state: PreviewNavState): Boolean = state.category == gamesCategory && state.isDrilled
 
-    /** The status strip's Filter chip: only a game list carries it. */
-    fun statusLabel(state: PreviewNavState): String? =
-        if (inGameList(state)) PreviewFilter.chipLabel(state.filter) else null
+    /** The row whose children are on screen, or null at a category root. */
+    fun parentRow(state: PreviewNavState): SampleContent.Row? = view(state).let { v -> v.siblings?.getOrNull(v.siblingIndex) }
+
+    private val appCategories: Set<Int> = SampleContent.categories.indices
+        .filter { SampleContent.categories[it].slotKey in setOf("catbar_network", "catbar_appstore") }.toSet()
+
+    /** What X does on the list on screen (XMBUiState.canSortCurrentList): Filter, Sort, or nothing. */
+    private enum class ListSort { FILTER, APPS, MEDIA, ROOT }
+
+    private fun listSort(state: PreviewNavState): ListSort? {
+        if (inGameList(state)) return ListSort.FILTER
+        val parent = parentRow(state)
+        return when {
+            parent == null && state.category == gamesCategory -> ListSort.ROOT
+            parent == null && state.category in appCategories -> ListSort.APPS
+            parent == null -> null
+            // A Photo / Music / Video Apps list is an app list.
+            parent.slotKey in setOf("item_photo_apps", "item_music_apps", "item_video_apps") -> ListSort.APPS
+            // All Videos, the video Favorites and a library's videos sort on VIDEO_SORTS; Recently
+            // Watched and playlists keep their own order.
+            parent.slotKey in setOf("item_memcard_video", "item_video_favorites", "item_video_folder") -> ListSort.MEDIA
+            else -> null
+        }
+    }
+
+    /**
+     * The status strip's sort label (currentSortLabel): the Games filter's chip on a game list, the
+     * app sort on an app list, the media sort on a sortable media list. A root that has never been
+     * custom-arranged names nothing.
+     */
+    fun statusLabel(state: PreviewNavState): String? = when (listSort(state)) {
+        ListSort.FILTER -> PreviewFilter.chipLabel(state.filter)
+        ListSort.APPS -> "Sort: A–Z"
+        ListSort.MEDIA -> "Sort: Title"
+        ListSort.ROOT, null -> null
+    }
+
+    /** The idle hint pill's optional halves; Notifications is always there. */
+    data class IdleHint(val sortLabel: String?, val options: Boolean)
+
+    /** ContextMenuHint: shown only when X sorts the list or the row has a menu (shouldShowContextMenuHint). */
+    fun idleHint(state: PreviewNavState): IdleHint? {
+        val sort = when (listSort(state)) {
+            null -> null
+            ListSort.FILTER -> "Filter"
+            else -> "Sort"
+        }
+        val options = PreviewFlyout.hasOptions(state)
+        return if (sort == null && !options) null else IdleHint(sort, options)
+    }
 
     /** The selected category's `catbar_*` slot key — the icon picker's "On screen" hook. */
     fun categoryKey(state: PreviewNavState): String = SampleContent.categories[state.category].slotKey
@@ -129,8 +175,8 @@ object PreviewNav {
         return buildSet {
             add(categoryKey(state))
             if (state.flyout != null) add("menu_check")
-            v.rows.forEach { add(it.slotKey) }
-            v.siblings?.forEach { add(it.slotKey) }
+            v.rows.forEach { row -> row.slotKey?.let(::add) }
+            v.siblings?.forEach { row -> row.slotKey?.let(::add) }
         }
     }
 
@@ -160,10 +206,15 @@ object PreviewNav {
             is PreviewNavAction.ClickCategory ->
                 if (s.isDrilled || action.index !in SampleContent.categories.indices) s else switchCategory(s, action.index)
             is PreviewNavAction.ClickRow -> clickRow(s, action.index)
+            // Rows with no context menu ignore Y, as on the device.
             PreviewNavAction.OpenOptions ->
-                if (selectedRow(s) == null) s else s.copy(flyout = FlyoutState(FlyoutKind.OPTIONS))
-            PreviewNavAction.OpenFilter ->
-                if (s.category == gamesCategory) s.copy(flyout = FlyoutState(FlyoutKind.GAMES_FILTER)) else s
+                if (!PreviewFlyout.hasOptions(s)) s else s.copy(flyout = FlyoutState(FlyoutKind.OPTIONS))
+            // X: the Games filter on a game list; elsewhere a sortable list opens its Sort picker on the device.
+            PreviewNavAction.OpenFilter -> when {
+                inGameList(s) -> s.copy(flyout = FlyoutState(FlyoutKind.GAMES_FILTER))
+                listSort(s) != null -> s.copy(message = "Sort happens on the device")
+                else -> s
+            }
             is PreviewNavAction.ClickFlyoutRow, PreviewNavAction.DismissFlyout, is PreviewNavAction.SetSearch -> s
         }
     }
@@ -172,9 +223,15 @@ object PreviewNav {
     private fun stepCategory(s: PreviewNavState, delta: Int): PreviewNavState =
         if (s.isDrilled) s else switchCategory(s, (s.category + delta).coerceIn(0, SampleContent.categories.lastIndex))
 
-    // The search term belongs to the list it was typed against; a sort is a standing choice and stays.
+    // Moving onto a category lands on its default row (XmbLists.defaultRootIndex), as the launcher
+    // does on every switch. The search term belongs to the list it was typed against; a sort is a
+    // standing choice and stays.
     private fun switchCategory(s: PreviewNavState, category: Int): PreviewNavState =
-        if (category == s.category) s else s.copy(category = category, filter = s.filter.copy(term = ""))
+        if (category == s.category) s else s.copy(
+            category = category,
+            rootRows = s.rootRows.toMutableList().also { it[category] = SampleContent.landingRow(category) },
+            filter = s.filter.copy(term = ""),
+        )
 
     private fun popDrill(s: PreviewNavState): PreviewNavState =
         s.copy(drill = s.drill.dropLast(1), filter = s.filter.copy(term = ""))
@@ -203,8 +260,11 @@ object PreviewNav {
         val closed = s.copy(flyout = null)
         return when (f.kind) {
             FlyoutKind.OPTIONS ->
-                if (row.opensSubmenu) s.copy(flyout = f.copy(menu = FlyoutMenu.SUBMENU, cursor = 0, rootCursor = index))
-                else closed.copy(message = "${row.label} happens on the device")
+                if (f.menu == FlyoutMenu.ROOT && PreviewFlyout.submenuRows(row.id).isNotEmpty()) {
+                    s.copy(flyout = f.copy(menu = FlyoutMenu.SUBMENU, cursor = 0, rootCursor = index))
+                } else {
+                    closed.copy(message = "${row.label} happens on the device")
+                }
             FlyoutKind.GAMES_FILTER -> when {
                 row.id == PreviewFilter.SORT -> {
                     // A group opens on its active choice.
@@ -248,6 +308,8 @@ object PreviewNav {
     private fun enter(s: PreviewNavState): PreviewNavState {
         val v = view(s)
         val node = v.rows.getOrNull(v.selected) ?: return s
+        // A placeholder row confirms to nothing.
+        if (node.leading == SampleContent.Leading.EMPTY) return s
         return if (node.children.isNotEmpty()) s.copy(drill = s.drill + 0)
         else s.copy(message = "${node.title} opens on the device")
     }

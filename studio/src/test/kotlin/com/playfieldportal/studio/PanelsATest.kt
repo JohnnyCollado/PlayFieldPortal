@@ -11,8 +11,6 @@ import com.playfieldportal.themekit.PfpThemeSource
 import com.playfieldportal.themekit.ThemeLegibility
 import com.playfieldportal.themekit.UpgradeReport
 import com.playfieldportal.themekit.XmbLayoutAdjust
-import com.playfieldportal.themekit.XmbLayoutSpec
-import com.playfieldportal.themekit.XmbLayoutSpecCodec
 import java.time.LocalDate
 import java.util.UUID
 import java.util.prefs.Preferences
@@ -126,33 +124,7 @@ class PanelsATest {
         assertEquals(ThemeLegibility.TEXT_VALUES, LEGIBILITY_TEXT_CHOICES.map { it.first }.toSet())
         assertEquals(ThemeLegibility.ICON_VALUES, LEGIBILITY_ICON_CHOICES.map { it.first }.toSet())
         assertEquals(5, LEGIBILITY_TEXT_CHOICES.size)
-        assertEquals(5, LEGIBILITY_ICON_CHOICES.size)
-    }
-
-    // ── Layout geometry (saved) ─────────────────────────────────────────────
-
-    @Test
-    fun `there are eleven geometry fields and each clamps exactly like the codec`() {
-        assertEquals(11, LayoutField.entries.size)
-        for (field in LayoutField.entries) {
-            val low = field.write(XmbLayoutSpec.DEFAULT, -1_000f)
-            val high = field.write(XmbLayoutSpec.DEFAULT, 1_000f)
-            assertEquals(field.min, field.read(XmbLayoutSpecCodec.sanitize(low)), "${field.name} min")
-            assertEquals(field.max, field.read(XmbLayoutSpecCodec.sanitize(high)), "${field.name} max")
-        }
-    }
-
-    @Test
-    fun `layout field setters clamp, export, and undo`() {
-        vm.setLayoutField(LayoutField.ITEM_ICON, 9_999f)
-        assertEquals(160f, vm.state.value.layout.itemIconDp)
-        assertEquals(160f, manifest().layout?.itemIconDp)
-        vm.setLayoutField(LayoutField.ITEM_TEXT, Float.NaN)
-        assertEquals(XmbLayoutSpec.DEFAULT.itemTextSp, vm.state.value.layout.itemTextSp)
-        vm.undo()
-        vm.undo()
-        assertEquals(XmbLayoutSpec.DEFAULT, vm.state.value.layout)
-        assertNull(manifest().layout)
+        assertEquals(6, LEGIBILITY_ICON_CHOICES.size)
     }
 
     // ── Preview-only adjust (never saved) ───────────────────────────────────

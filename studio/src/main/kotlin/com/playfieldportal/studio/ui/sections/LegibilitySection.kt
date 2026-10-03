@@ -23,7 +23,8 @@ val LEGIBILITY_TEXT_CHOICES: List<Pair<String, String>> = listOf(
 /** (codec value, label) in display order; together they cover `ThemeLegibility.ICON_VALUES`. */
 val LEGIBILITY_ICON_CHOICES: List<Pair<String, String>> = listOf(
     "none" to "None",
-    "offset_shadow" to "Offset shadow",
+    "offset_shadow" to "Offset shadow (dark)",
+    "offset_shadow_light" to "Offset shadow (light)",
     "contour_dark" to "Contour dark",
     "contour_light" to "Contour light",
     "contour_auto" to "Contour auto",

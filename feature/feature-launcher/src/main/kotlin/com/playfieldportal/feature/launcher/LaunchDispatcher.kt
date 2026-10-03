@@ -124,6 +124,9 @@ class LaunchDispatcher @Inject constructor(
         } catch (e: SecurityException) {
             Timber.w(e, "Launch startActivity failed: permission denied (gameId=${game.id})")
             settleImmediateFailure(game, resolved, "Permission denied launching emulator", PfpErrorCode.LN_4002)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // The caller went away after the intent was handed off; that is not a failed launch.
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Launch startActivity failed (gameId=${game.id})")
             settleImmediateFailure(game, resolved, "Could not open emulator: ${e.message}", PfpErrorCode.LN_9001)

@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
@@ -24,7 +25,72 @@ data class PFPColors(
     // PortalIcon. White = the icons' native color, i.e. visually a no-op default.
     // See docs/icon-system-plan.md.
     val iconColor: Color = Color.White,
+    // The user's Display ▸ Font Colour, exact and unclamped; null when none is set. Separate from
+    // textPrimary (which falls back to the theme's white) so screens that compute their own text
+    // colour — the crossbar's constants, the drawer/detail palettes — can tell "the user picked
+    // white" from "nobody picked anything" and stay pixel-identical in the latter case.
+    val textOverride: Color? = null,
+    // The user's Sub Font Colour, for secondary text (subtitles, sublabels, values, muted text);
+    // null when none is set, in which case secondary text follows [textOverride] instead.
+    val subTextOverride: Color? = null,
 )
+
+/**
+ * Main text: [default] repainted in the user's font colour when one is set, else [default]
+ * untouched. The colour takes [default]'s alpha (times its own), so a site's hierarchy survives the
+ * repaint: White titles become the colour, 0xCC unselected labels the colour at 0xCC.
+ */
+fun PFPColors.textOr(default: Color): Color = textOr(default, default.alpha)
+
+/**
+ * As [textOr], for an opaque [default] whose weight is carried by its tone rather than its alpha
+ * (a grey sublabel, a palette's muted text): the colour is drawn at [weight] instead.
+ */
+fun PFPColors.textOr(default: Color, weight: Float): Color = repaint(textOverride, default, weight)
+
+/**
+ * Sub text (subtitles, sublabels, values, muted text): as [textOr], but the Sub Font Colour wins
+ * when set, and the main font colour stands in for it when only that one is.
+ */
+fun PFPColors.subTextOr(default: Color): Color = subTextOr(default, default.alpha)
+
+/** [subTextOr] at an explicit [weight], for an opaque [default] (see [textOr]). */
+fun PFPColors.subTextOr(default: Color, weight: Float): Color =
+    repaint(subTextOverride ?: textOverride, default, weight)
+
+private fun repaint(picked: Color?, default: Color, weight: Float): Color =
+    picked?.let { it.copy(alpha = it.alpha * weight) } ?: default
+
+/**
+ * This colour at [fraction] of its own alpha. For dimming a text role that may itself be
+ * translucent (the user's font colour at a secondary weight), where `copy(alpha = …)` would replace
+ * that weight and lift the dimmed step above its own base. Identical to `copy` on an opaque colour.
+ */
+fun Color.dimmed(fraction: Float): Color = copy(alpha = alpha * fraction)
+
+/** [PFPColors.textOr] against the active theme. */
+@Composable
+@ReadOnlyComposable
+fun themedText(default: Color): Color = LocalPFPColors.current.textOr(default)
+
+/** [PFPColors.subTextOr] against the active theme. */
+@Composable
+@ReadOnlyComposable
+fun themedSubText(default: Color): Color = LocalPFPColors.current.subTextOr(default)
+
+/**
+ * [PFPColors.textOr] at an explicit weight, against the active theme. For sites whose dimmed text
+ * is an opaque grey-blue (#B9C6DC and kin) rather than a translucent white; they pass the
+ * palettes' [SECONDARY_TEXT_WEIGHT] so every screen's secondary step matches.
+ */
+@Composable
+@ReadOnlyComposable
+fun themedText(default: Color, weight: Float): Color = LocalPFPColors.current.textOr(default, weight)
+
+/** [PFPColors.subTextOr] at an explicit weight, against the active theme. */
+@Composable
+@ReadOnlyComposable
+fun themedSubText(default: Color, weight: Float): Color = LocalPFPColors.current.subTextOr(default, weight)
 
 val LocalPFPColors = staticCompositionLocalOf {
     DefaultPFPColors
@@ -98,11 +164,14 @@ fun PFPTheme(
     // Only `primary` is taken from the theme. `secondary` deliberately stays PfpPalette.Subtext:
     // PFPColors.textSecondary is textPrimary at 0.7 alpha, so adopting it here would repaint every
     // sublabel in the app from #AAAAAA to translucent white — a real visual change, smuggled in
-    // under a refactor. Deriving secondary from the user's picked colour is Phase 3's job, where
-    // it is a deliberate decision rather than a side effect.
-    val textColors = remember(colors.textPrimary) {
+    // under a refactor. Once the user picks font colours, secondary (Sub) and inactive (Main,
+    // dimmed) follow them at the weight they carry today: #AAAAAA is white at 0xAA, and inactive's
+    // own alpha is 0xCC.
+    val textColors = remember(colors.textPrimary, colors.textOverride, colors.subTextOverride) {
         DefaultPfpTextColors.copy(
             primary = colors.textPrimary,
+            secondary = colors.subTextOr(DefaultPfpTextColors.secondary, weight = 0xAA / 255f),
+            inactive = colors.textOr(DefaultPfpTextColors.inactive),
             requested = colors.textPrimary,
         )
     }

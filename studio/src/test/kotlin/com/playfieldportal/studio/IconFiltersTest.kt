@@ -8,7 +8,6 @@ import com.playfieldportal.studio.preview.PreviewNavAction
 import com.playfieldportal.studio.preview.PreviewNavState
 import com.playfieldportal.studio.preview.SampleContent
 import com.playfieldportal.themekit.CustomizableIcons
-import com.playfieldportal.themekit.SYSICON_PLATFORM_IDS
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -23,81 +22,55 @@ class IconFiltersTest {
     // ── Groups ───────────────────────────────────────────────────────────────
 
     @Test
-    fun `group counts match the approved chips and sum to 128`() {
+    fun `group counts cover the editable slots only`() {
         val counts = IconPicker.counts()
         assertEquals(
-            mapOf(
-                PickerGroup.CROSSBAR to 10,
-                PickerGroup.ITEMS to 33,
-                PickerGroup.CONSOLES to 47,
-                PickerGroup.STATUS to 10,
-                PickerGroup.SHIBA to 7,
-                PickerGroup.MEDIA to 6,
-                PickerGroup.GAME_DETAIL to 5,
-                PickerGroup.NOTIFICATIONS to 8,
-                PickerGroup.MENUS to 2,
-            ),
+            mapOf(PickerGroup.CROSSBAR to 9, PickerGroup.ITEMS to 34, PickerGroup.CONSOLES to 47),
             counts,
         )
-        assertEquals(128, counts.values.sum())
-        assertEquals(128, CustomizableIcons.ALL.size)
+        assertEquals(EditableSlots.ALL.size, counts.values.sum())
     }
 
     @Test
-    fun `shiba coins chip holds the three item_shiba rows and the four medallions`() {
-        val shiba = keys(PickerQuery(group = PickerGroup.SHIBA)).toSet()
-        assertEquals(
-            setOf(
-                "item_shiba_connect", "item_shiba_track", "item_shiba_untracked",
-                "shiba_coin_bronze", "shiba_coin_silver", "shiba_coin_gold", "shiba_coin_platinum",
-            ),
-            shiba,
-        )
-        assertTrue(keys(PickerQuery(group = PickerGroup.ITEMS)).none { it.startsWith("item_shiba_") })
+    fun `the parts themes keep stock are not editable`() {
+        // Status strip, Shiba Coins, media controls, Game Detail, notifications and menus keep the launcher's art.
+        listOf(
+            "status_wifi", "status_battery_full", "item_shiba_track", "shiba_coin_gold",
+            "media_play", "detail_more", "notif_coin", "menu_check",
+        ).forEach { key ->
+            assertFalse(EditableSlots.isEditable(key), key)
+            assertTrue(CustomizableIcons.isValidKey(key), key) // still a registry slot: the launcher keeps reading it
+            assertTrue(key !in keys(PickerQuery()), key)
+        }
     }
 
     @Test
-    fun `every slot belongs to exactly one chip`() {
+    fun `every editable slot belongs to exactly one chip`() {
         val seen = PickerGroup.entries.flatMap { keys(PickerQuery(group = it)) }
-        assertEquals(CustomizableIcons.ALL.map { it.key }.sorted(), seen.sorted())
+        assertEquals(EditableSlots.ALL.map { it.key }.sorted(), seen.sorted())
     }
 
     // ── Search ───────────────────────────────────────────────────────────────
 
     @Test
     fun `search matches display name key and platform names`() {
-        assertEquals(5, keys(PickerQuery(search = "battery")).size)
+        assertTrue(keys(PickerQuery(search = "battery")).isEmpty()) // the status strip is not editable
         assertTrue("sysicon_ps3" in keys(PickerQuery(search = "PS3")))
         assertTrue("sysicon_ps3" in keys(PickerQuery(search = "playstation 3")))
         assertTrue("item_social_voice_mute" in keys(PickerQuery(search = "voice")))
         // key-only match: the display name never contains the underscore form
-        assertTrue("status_battery_low" in keys(PickerQuery(search = "battery_low")))
+        assertTrue("item_video_recent" in keys(PickerQuery(search = "video_recent")))
         assertTrue("sysicon_cps2" in keys(PickerQuery(search = "capcom")))
     }
 
     @Test
     fun `search is case and spacing tolerant and blank matches everything`() {
         assertEquals(keys(PickerQuery(search = "ps3")), keys(PickerQuery(search = "  PS 3 ")))
-        assertEquals(128, keys(PickerQuery(search = "   ")).size)
+        assertEquals(EditableSlots.ALL.size, keys(PickerQuery(search = "   ")).size)
         assertTrue(keys(PickerQuery(search = "zzzz-nothing")).isEmpty())
     }
 
     // ── Filters ──────────────────────────────────────────────────────────────
-
-    @Test
-    fun `new set is exactly the 36 slots added in v4`() {
-        val v3Statuses = setOf(
-            "status_battery_full", "status_battery_high", "status_battery_medium",
-            "status_battery_low", "status_battery_charging", "status_bluetooth",
-        )
-        assertEquals(36, IconPicker.NEW_KEYS.size)
-        assertTrue(IconPicker.NEW_KEYS.none { it in v3Statuses })
-        assertTrue(IconPicker.NEW_KEYS.none { it.startsWith("catbar_") })
-        assertTrue(SYSICON_PLATFORM_IDS.none { "sysicon_$it" in IconPicker.NEW_KEYS })
-        assertTrue(listOf("status_wifi", "shiba_coin_gold", "menu_back", "sysicon_cps1", "sysicon_default").all { it in IconPicker.NEW_KEYS })
-        assertFalse("item_shiba_connect" in IconPicker.NEW_KEYS)
-        assertEquals(IconPicker.NEW_KEYS, keys(PickerQuery(newOnly = true)).toSet())
-    }
 
     @Test
     fun `customized filter keeps only overridden slots`() {
@@ -109,7 +82,7 @@ class IconFiltersTest {
     @Test
     fun `filters combine with AND`() {
         val custom = setOf("sysicon_cps1", "sysicon_psx", "catbar_games")
-        val query = PickerQuery(search = "c", group = PickerGroup.CONSOLES, customizedOnly = true, newOnly = true)
+        val query = PickerQuery(search = "cps", group = PickerGroup.CONSOLES, customizedOnly = true)
         assertEquals(listOf("sysicon_cps1"), keys(query, customized = custom))
         val onScreen = setOf("catbar_games", "sysicon_psx")
         assertEquals(
@@ -121,13 +94,17 @@ class IconFiltersTest {
     // ── On screen ────────────────────────────────────────────────────────────
 
     @Test
-    fun `home shows the crossbar, status strip and the sample rows`() {
+    fun `home shows the crossbar and the sample rows`() {
         val home = IconPicker.onScreenKeys()
-        val groups = home.mapNotNull(CustomizableIcons::byKey).map(IconPicker::groupOf).toSet()
-        assertTrue(PickerGroup.CROSSBAR in groups && PickerGroup.STATUS in groups)
-        assertEquals(10, home.count { it.startsWith("catbar_") })
-        assertTrue(SampleContent.rows.all { it.slotKey in home })
+        assertTrue(home.all(EditableSlots::isEditable))
+        // The nine seeded categories; Favorites is a custom-category icon, listed with the items.
+        assertEquals(9, home.count { it.startsWith("catbar_") })
+        assertTrue("catbar_favorites" !in home)
+        assertEquals(PickerGroup.ITEMS, IconPicker.groupOf(CustomizableIcons.byKey("catbar_favorites")!!))
         assertTrue(home.all { CustomizableIcons.isValidKey(it) })
+        // With the preview's Home frame fed in, every themeable row on screen is listed.
+        val frame = IconPicker.onScreenKeys(PreviewNav.categoryKey(PreviewNavState.HOME), PreviewNav.shownSlotKeys(PreviewNavState.HOME))
+        assertTrue(SampleContent.rows.mapNotNull { it.slotKey }.all { it in frame })
     }
 
     @Test
@@ -139,35 +116,29 @@ class IconFiltersTest {
     }
 
     @Test
-    fun `an open menu adds the menu check to what is on screen`() {
-        val closed = PreviewNavState()
-        val open = PreviewNav.reduce(closed, PreviewNavAction.OpenOptions)
+    fun `on screen lists only editable slots, so an open menu adds nothing`() {
+        val open = PreviewNav.reduce(PreviewNavState(), PreviewNavAction.OpenOptions)
         val menu = IconPicker.onScreenKeys(PreviewNav.categoryKey(open), PreviewNav.shownSlotKeys(open))
-        assertTrue("menu_check" in menu && "catbar_video" in menu)
-        assertTrue("menu_check" !in IconPicker.onScreenKeys(PreviewNav.categoryKey(closed), PreviewNav.shownSlotKeys(closed)))
-        assertTrue("menu_back" !in menu)
+        assertTrue("menu_check" !in menu && "catbar_video" in menu)
     }
 
     // ── Slot card ────────────────────────────────────────────────────────────
 
     @Test
-    fun `card status reads Built-in, New slot or Custom`() {
+    fun `card status reads Built-in or Custom`() {
         val games = CustomizableIcons.byKey("catbar_games")!!
         val card = IconPicker.cardModel(games, null, null)
         assertEquals("Built-in", card.status)
         assertFalse(card.isCustom)
         assertEquals("catbar_games · Crossbar · ${games.templateSizePx} px", card.detail)
 
-        val wifi = CustomizableIcons.byKey("status_wifi")!!
-        assertEquals("New slot", IconPicker.cardModel(wifi, null, null).status)
-        assertTrue(IconPicker.cardModel(wifi, null, null).isNew)
+        // Every slot reads Built-in until customized; there is no "new" marking.
+        val add = CustomizableIcons.byKey("item_add")!!
+        assertEquals("Built-in", IconPicker.cardModel(add, null, null).status)
 
         assertEquals("Custom", IconPicker.cardModel(games, "png", byteArrayOf(1, 2, 3)).status)
         assertTrue(IconPicker.cardModel(games, "png", byteArrayOf()).isCustom)
-        // a customized new slot is Custom, still flagged new
-        val custom = IconPicker.cardModel(wifi, "png", byteArrayOf())
-        assertEquals("Custom", custom.status)
-        assertTrue(custom.isNew)
+        assertEquals("Custom", IconPicker.cardModel(add, "png", byteArrayOf()).status)
     }
 
     @Test
@@ -186,7 +157,7 @@ class IconFiltersTest {
         assertEquals(0.58f, catbar[1].alpha)
         assertEquals(1f, catbar.first().alpha)
         assertTrue(IconPicker.previewSizes(CustomizableIcons.byKey("item_add")!!).any { it.label == "In list" })
-        CustomizableIcons.ALL.forEach { assertTrue(IconPicker.previewSizes(it).isNotEmpty(), it.key) }
+        EditableSlots.ALL.forEach { assertTrue(IconPicker.previewSizes(it).isNotEmpty(), it.key) }
     }
 
     // ── Pack report ──────────────────────────────────────────────────────────

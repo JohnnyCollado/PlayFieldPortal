@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.menuCursorFill
+import com.playfieldportal.core.ui.theme.themedText
 
 /**
  * The bottom filmstrip: `Off` first, then every field, each tile a **live** preview of the same
@@ -167,7 +168,7 @@ private fun VisualizerTile(
         Spacer(Modifier.height(4.dp))
         Text(
             VisualizerIds.labelFor(visualizerId),
-            color = Color.White.copy(alpha = if (selected || focused) 0.95f else 0.6f),
+            color = themedText(Color.White.copy(alpha = if (selected || focused) 0.95f else 0.6f)),
             fontSize = 11.sp,
         )
     }

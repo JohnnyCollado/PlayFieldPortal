@@ -27,6 +27,7 @@ class BackupKeyCoverageTest {
     fun `font colour and text legibility keys are backed up`() {
         assertCovered(
             "display_text_color",
+            "display_sub_text_color",
             "display_text_color_exact",
             "display_text_legibility",
             "display_text_contrast_notice_suppressed",
@@ -119,6 +120,7 @@ class BackupKeyCoverageTest {
             "controller_scroll_speed",
             "controller_left_backs_out",
             "controller_mappings_v1",
+            "controller_virtual_keyboard",
         )
     }
 

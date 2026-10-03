@@ -3,6 +3,7 @@ package com.playfieldportal.feature.artwork.match
 import com.playfieldportal.core.data.database.dao.GameStorefrontIdentityDao
 import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.core.data.database.entity.GameStorefrontIdentityEntity
+import kotlinx.coroutines.CancellationException
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -118,7 +119,11 @@ class StorefrontMetadataResolver @Inject constructor(
                 if (titleOverride != null) discover(game, provider, allowAutoLink, titleOverride)
                 else resolveOne(game, provider, allowAutoLink, ignoreStoredIdentity)
             }
-                .onFailure { Timber.w(it, "Storefront resolve threw for %s", provider.store.key) }
+                .onFailure {
+                    // A stopped sync is not a provider error: cancellation reaches the caller.
+                    if (it is CancellationException) throw it
+                    Timber.w(it, "Storefront resolve threw for %s", provider.store.key)
+                }
                 .getOrElse {
                     // A provider that throws is still only one provider down (Phase 15).
                     Resolution.Unavailable(

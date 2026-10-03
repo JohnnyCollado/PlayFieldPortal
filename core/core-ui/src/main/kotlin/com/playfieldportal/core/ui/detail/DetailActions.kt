@@ -136,12 +136,12 @@ fun PfpDetailQuickAction(
     ) {
         if (icon != null) {
             if (slotKey != null) {
-                ThemedGlyph(slotKey, icon, null, DetailTextPrimary, Modifier.size(18.dp), overrideAlpha)
+                ThemedGlyph(slotKey, icon, null, DetailIconPrimary, Modifier.size(18.dp), overrideAlpha)
             } else {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = DetailTextPrimary,
+                    tint = DetailIconPrimary,
                     modifier = Modifier.size(18.dp),
                 )
             }

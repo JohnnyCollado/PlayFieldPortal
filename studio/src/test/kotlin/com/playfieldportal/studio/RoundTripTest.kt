@@ -71,15 +71,6 @@ class RoundTripTest {
     }
 
     @Test
-    fun `setBarTopFraction clamps into the safe range`() {
-        val vm = StudioViewModel(TestScope())
-        vm.setBarTopFraction(0.9f)
-        assertEquals(0.45f, vm.state.value.layout.barTopFraction)
-        vm.setBarTopFraction(-1f)
-        assertEquals(0.05f, vm.state.value.layout.barTopFraction)
-    }
-
-    @Test
     fun `auto icon color exports as the auto sentinel`() {
         val manifest = StudioViewModel(TestScope())
             .buildManifest(StudioState(name = "Auto Icons"), today = LocalDate.of(2026, 7, 7))

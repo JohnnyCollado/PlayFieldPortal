@@ -27,6 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.theme.StorefrontColors
+import com.playfieldportal.core.ui.theme.dimmed
+import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.appbar.AppFilter
 
 // ── Horizontal category tabs ──────────────────────────────────────────────────
@@ -98,8 +100,10 @@ private fun AppDrawerCategoryTab(
             ) {
                 Text(
                     text = label.uppercase(),
+                    // An unselected tab is Main text dimmed: with a font colour set it is that
+                    // colour at 0.65 (themedText keeps the alpha), not the Sub colour.
                     color = if (selected) colors.textPrimary
-                    else colors.textSecondary.copy(alpha = 0.65f),
+                    else themedText(colors.textSecondary.copy(alpha = 0.65f)),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -108,7 +112,7 @@ private fun AppDrawerCategoryTab(
                     Text(
                         text = count.toString(),
                         color = if (selected) colors.textPrimary.copy(alpha = 0.85f)
-                        else colors.textSecondary.copy(alpha = 0.55f),
+                        else colors.textSecondary.dimmed(0.55f),
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
                     )

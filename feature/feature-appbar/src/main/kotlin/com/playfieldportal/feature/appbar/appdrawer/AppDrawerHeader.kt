@@ -41,6 +41,7 @@ import com.playfieldportal.core.ui.keyboard.SuppressPlatformKeyboard
 import com.playfieldportal.core.ui.keyboard.VirtualKeyboardEdit
 import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
 import com.playfieldportal.core.ui.theme.StorefrontColors
+import com.playfieldportal.core.ui.theme.dimmed
 
 // ── Header / breadcrumb bar ───────────────────────────────────────────────────
 //
@@ -95,7 +96,7 @@ internal fun AppDrawerHeader(
             )
             Text(
                 text = "\u203A",
-                color = colors.textSecondary.copy(alpha = 0.6f),
+                color = colors.textSecondary.dimmed(0.6f),
                 fontSize = 14.sp,
                 modifier = Modifier.padding(end = 8.dp),
             )
@@ -125,7 +126,7 @@ internal fun AppDrawerHeader(
                     Box {
                         if (searchQuery.isEmpty()) Text(
                             "Search\u2026",
-                            color = colors.textSecondary.copy(alpha = 0.6f),
+                            color = colors.textSecondary.dimmed(0.6f),
                             fontSize = 14.sp,
                         )
                         inner()
@@ -158,7 +159,7 @@ internal fun AppDrawerHeader(
                 val r = size.width * 0.30f
                 // Lens circle
                 drawCircle(
-                    color = colors.textSecondary,
+                    color = colors.iconSecondary,
                     radius = r,
                     center = Offset(cx, cy),
                     style = Stroke(strokeW),
@@ -173,7 +174,7 @@ internal fun AppDrawerHeader(
                     cy + r * 0.70f + size.height * 0.22f,
                 )
                 drawLine(
-                    color = colors.textSecondary,
+                    color = colors.iconSecondary,
                     start = handleStart,
                     end = handleEnd,
                     strokeWidth = strokeW,

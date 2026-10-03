@@ -82,6 +82,9 @@ android {
         // compileSdk (37), which Robolectric rejects outright, so pin the test target here.
         // This affects unit tests only — the published library is unchanged.
         targetSdk = 36
+        // Without the merged manifest Robolectric cannot see targetSdk and falls back to SDK 23,
+        // a jar nothing else uses that must be downloaded. Same setting as every other module.
+        unitTests { isIncludeAndroidResources = true }
     }
 }
 

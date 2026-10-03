@@ -185,6 +185,9 @@ class PfpThemeStore internal constructor(
         val textColor = bundle.manifest.textColor
             .takeIf { it != PfpThemeManifest.ICON_COLOR_AUTO }
             ?.toAccentArgbOrNull()
+        // The sub text colour rides the same contract: absent removes the pref, so sub text falls
+        // back to the main colour rather than keeping the previous theme's.
+        val subTextColor = bundle.manifest.subTextColor?.toAccentArgbOrNull()
         // Per-theme XMB geometry (Theme Studio alignment assist). Sanitized here AND on
         // read so a hostile manifest can never wedge the crossbar offscreen.
         val layoutJson = bundle.manifest.layout
@@ -236,6 +239,7 @@ class PfpThemeStore internal constructor(
             if (accent != null) prefs[KEY_ACCENT_OVERRIDE] = accent else prefs.remove(KEY_ACCENT_OVERRIDE)
             if (iconColor != null) prefs[KEY_ICON_COLOR] = iconColor else prefs.remove(KEY_ICON_COLOR)
             if (textColor != null) prefs[KEY_TEXT_COLOR] = textColor else prefs.remove(KEY_TEXT_COLOR)
+            if (subTextColor != null) prefs[KEY_SUB_TEXT_COLOR] = subTextColor else prefs.remove(KEY_SUB_TEXT_COLOR)
             if (layoutJson != null) prefs[KEY_THEME_LAYOUT] = layoutJson else prefs.remove(KEY_THEME_LAYOUT)
             if (textLegibility != null) prefs[KEY_TEXT_LEGIBILITY] = textLegibility
             if (iconLegibility != null) prefs[KEY_ICON_LEGIBILITY] = iconLegibility
@@ -266,6 +270,7 @@ class PfpThemeStore internal constructor(
             prefs.remove(KEY_ACCENT_OVERRIDE)
             prefs.remove(KEY_ICON_COLOR)
             prefs.remove(KEY_TEXT_COLOR)
+            prefs.remove(KEY_SUB_TEXT_COLOR)
             prefs.remove(KEY_WAVE_STYLE)
             prefs.remove(KEY_THEME_LAYOUT)
             prefs.remove(KEY_THEME_ICONS_STAMP)
@@ -647,6 +652,7 @@ class PfpThemeStore internal constructor(
                 ?: PfpThemeManifest.ICON_COLOR_AUTO,
             textColor = prefs[KEY_TEXT_COLOR]?.let { "#%06X".format(it and 0xFFFFFF) }
                 ?: PfpThemeManifest.ICON_COLOR_AUTO,
+            subTextColor = prefs[KEY_SUB_TEXT_COLOR]?.let { "#%06X".format(it and 0xFFFFFF) },
             waveStyle = waveExact.first,
             waveStyleV4 = waveExact.second,
             textColorExact = prefs[KEY_TEXT_COLOR_EXACT] ?: false,
@@ -848,6 +854,8 @@ class PfpThemeStore internal constructor(
         // Must match DisplaySettingsViewModel / XMBViewModel — the user's font colour, which a
         // theme bundle can also carry.
         private val KEY_TEXT_COLOR = longPreferencesKey("display_text_color")
+        // The user's Sub Font Colour (same consumers); absent = sub text follows the main colour.
+        private val KEY_SUB_TEXT_COLOR = longPreferencesKey("display_sub_text_color")
 
         private const val WAVE_STYLE_ANIMATED = "ANIMATED"
         private const val WAVE_STYLE_REDUCED = "REDUCED"

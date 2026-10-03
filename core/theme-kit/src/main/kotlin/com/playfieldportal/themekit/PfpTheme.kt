@@ -28,6 +28,12 @@ data class PfpThemeManifest(
      * (the never-gate-on-version rule in the schema note below).
      */
     val textColor: String = ICON_COLOR_AUTO,
+    /**
+     * Sub text colour (subtitles, sublabels, values, muted text), `#RRGGBB`. Absent = the theme
+     * says nothing: sub text follows [textColor]. v4-additive; older readers ignore it, and a value
+     * that is not `#RRGGBB` reads as absent (see [sanitized]).
+     */
+    val subTextColor: String? = null,
     /** LEGACY wave field, always written so older readers work; see [waveStyleV4] for the exact value. */
     val waveStyle: String = WAVE_ANIMATED,
     /** Per-theme XMB geometry override; null = the app's default layout. */
@@ -55,8 +61,8 @@ data class PfpThemeManifest(
         // and motion wallpaper travels as motion.<mp4|webm|gif>. Readers never gate on the
         // version — older apps simply ignore the entries they don't know and apply the
         // wallpaper + colors subset, so a v3 bundle still opens everywhere older builds do.
-        // v4 (additive): author/description/updated, textColorExact, waveStyleV4, legibility and
-        // motionCrop manifest fields; same never-gate-on-version rule.
+        // v4 (additive): author/description/updated, textColorExact, subTextColor, waveStyleV4,
+        // legibility and motionCrop manifest fields; same never-gate-on-version rule.
         const val SCHEMA_VERSION = 4
         const val ICON_COLOR_AUTO = "auto"
         const val WAVE_ANIMATED = "animated"

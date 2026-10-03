@@ -334,7 +334,9 @@ open class BackupManager @Inject constructor(
         // Categories: upsert (REPLACE) so backed-up name/position/visibility overwrite the seeded
         // built-ins instead of being ignored; items were wiped above and are re-added fresh.
         categories.forEach { categoryDao.upsert(it) }
-        catItems.forEach   { categoryDao.addItem(it) }
+        // A pre-v54 archive has no added_at, so decoding filled in the entity's "now" default.
+        // Date Added is unknown for those rows: 0, exactly as the 53→54 migration leaves them.
+        catItems.forEach   { categoryDao.addItem(if (hasListState) it else it.copy(addedAt = 0L)) }
 
         backupDao.insertMemoryCards(memoryCards)
         backupDao.insertAppOverrides(appOverrides)
@@ -758,6 +760,8 @@ open class BackupManager @Inject constructor(
             booleanPreferencesKey("display_gameboot_enabled"),
             // Controller — D-pad LEFT as "back out" (Settings ▸ Controller).
             booleanPreferencesKey("controller_left_backs_out"),
+            // Controller — PFP's own Virtual Keyboard on/off (Settings ▸ Controller).
+            booleanPreferencesKey("controller_virtual_keyboard"),
             // Artwork download preferences
             booleanPreferencesKey("pref_dl_clear_logos"),
             booleanPreferencesKey("pref_dl_heroes"),
@@ -830,6 +834,8 @@ open class BackupManager @Inject constructor(
         private val BACKED_UP_LONG_KEYS = listOf(
             // The user's picked font colour (absent = the theme's own).
             longPreferencesKey("display_text_color"),
+            // The user's picked sub font colour (absent = follows the font colour).
+            longPreferencesKey("display_sub_text_color"),
             // The one-colour cascade: accent override and unified icon tint. Pure values — no
             // file behind either, unlike theme_icons_stamp.
             longPreferencesKey("theme_accent_override"),

@@ -56,6 +56,8 @@ import com.playfieldportal.core.ui.icons.CustomIcon
 import com.playfieldportal.core.ui.icons.CustomIconSurface
 import com.playfieldportal.core.ui.icons.LocalCustomIcons
 import com.playfieldportal.core.ui.icons.LocalXmbIconOverrides
+import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.xmb.R
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -64,6 +66,8 @@ import java.util.Locale
 
 // ── Status bar colours ────────────────────────────────────────────────────────
 
+// Text in the strip reads these through themedText / themedSubText, so the user's Main and Sub
+// font colours take over at the same weights (primary opaque, muted 0xAA); icon tints keep them.
 private val StripPrimary = Color(0xFFEEEEEE)
 private val StripMuted   = Color(0xAAEEEEEE)
 private val StripSep     = Color(0x55FFFFFF)
@@ -262,9 +266,9 @@ fun XmbPspStatusStrip(
             verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text(dateString, color = StripMuted,   fontSize = StripFontSize, fontWeight = FontWeight.Normal)
+            Text(dateString, color = themedSubText(StripMuted),   fontSize = StripFontSize, fontWeight = FontWeight.Normal)
             StripSeparator()
-            Text(timeString, color = StripPrimary, fontSize = StripFontSize, fontWeight = FontWeight.Medium)
+            Text(timeString, color = themedText(StripPrimary), fontSize = StripFontSize, fontWeight = FontWeight.Medium)
             // Current sort mode — shown only on sortable lists. Touch: a tappable chip that cycles
             // the sort order; controller: a plain label (X / Square cycles it).
             if (sortLabel != null) {
@@ -279,11 +283,11 @@ fun XmbPspStatusStrip(
                             .clickable(onClick = onSortTapped)
                             .padding(horizontal = 8.dp, vertical = 2.dp),
                     ) {
-                        Text("⇅", color = StripPrimary, fontSize = StripFontSize, fontWeight = FontWeight.Medium)
-                        Text(sortLabel, color = StripPrimary, fontSize = StripFontSize, fontWeight = FontWeight.Medium)
+                        Text("⇅", color = themedText(StripPrimary), fontSize = StripFontSize, fontWeight = FontWeight.Medium)
+                        Text(sortLabel, color = themedText(StripPrimary), fontSize = StripFontSize, fontWeight = FontWeight.Medium)
                     }
                 } else {
-                    Text(sortLabel, color = StripPrimary, fontSize = StripFontSize, fontWeight = FontWeight.Medium)
+                    Text(sortLabel, color = themedText(StripPrimary), fontSize = StripFontSize, fontWeight = FontWeight.Medium)
                 }
             }
         }
@@ -375,7 +379,7 @@ fun XmbPspStatusStrip(
                 }
                 Text(
                     text       = "$batteryLevel%",
-                    color      = if (lowBattery) LowBatteryTint else StripPrimary,
+                    color      = if (lowBattery) LowBatteryTint else themedText(StripPrimary),
                     fontSize   = StripFontSize,
                     fontWeight = FontWeight.Medium,
                 )
@@ -458,7 +462,7 @@ private fun NotificationButton(
         if (unread > 0) {
             Text(
                 text       = unread.toString(),
-                color      = StripPrimary,
+                color      = themedText(StripPrimary),
                 fontSize   = StripFontSize,
                 fontWeight = FontWeight.Medium,
             )
