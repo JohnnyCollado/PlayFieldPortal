@@ -6,6 +6,54 @@ All notable changes to Play Field Portal are documented here. This project follo
 ## [Unreleased]
 
 ### Added
+- **Emulator knowledge base: emulator support is data now, with updates, import and export.** The
+  hard-coded emulator catalog is replaced by a knowledge file that ships inside the app
+  (`assets/emulator_kb/emulators.json`, 84 emulators, `"version": 1`, `"label": "built-in"`).
+  A new screen, *Settings › Emulators › Emulator knowledge*, shows which knowledge is in force and
+  manages two further layers on top of the built-in one:
+  official updates and your own files.
+  **Import a knowledge file** opens a per-entry review before anything is stored: new emulators
+  (*Add*, ticked), emulators already on the device (*Override*, unticked, with a field-by-field diff
+  and **Overrides official** / **Your edit** badges), console extension updates (*Update*,
+  unticked) and blocked entries with their reasons. Imported files are listed under **Your files**
+  and can be removed. **Export your files** saves the custom and edited emulators you pick as one
+  `.json` — launch settings only, never a game list, ROM paths or account details. **Reset to
+  built-in** drops updates and imported files. When knowledge gives a console new file types, the
+  screen lists them and suggests a rescan.
+  Knowledge is data, never commands: every launch is an explicit intent, system packages and PFP
+  itself cannot be targeted, custom-command and shortcut launches are refused, inputs are
+  size-capped and strictly validated on import and on every load, and knowledge can only *add* ROM
+  extensions to a console — never remove one, never touch a list you customized. An entry may pin
+  the emulator's signing certificate, which blocks a look-alike app at import and at launch.
+  Official updates are signed (Ed25519, verified with Tink before the file is parsed), come only
+  from the `emulator-kb` release on GitHub, are checked at most once a day and refuse anything older
+  than what was already accepted. **No release key is pinned in this build**, so *Check for updates*
+  and *Automatic updates* read "Not available in this build" and nothing is downloaded. Release
+  tooling lives in `tools/emulator-kb/`.
+- **Hidden Shiba Coins get real descriptions.** Steam's Web API never returns a hidden
+  achievement's description. Steam and Local Steam games now fill it from **Steam Hunters**
+  (steamhunters.com — keyless; only the Steam app id is sent), for hidden coins earned or not. An
+  earned hidden coin Steam Hunters lacks falls back to a Steam Community achievements page (your own
+  for Steam games; public completionist profiles for Local Steam games). Unearned hidden coins stay
+  redacted until you reveal them. Games synced earlier are filled on the next **manual** *Update
+  Achievements*; automatic checks still skip unchanged games, so their request count stays flat.
+
+### Changed
+- **D-pad LEFT no longer backs out of Settings screens.** This reverses part of C15 (below): LEFT
+  on a Settings screen or a wizard page is a no-op again unless it steps into a row's inline
+  buttons or adjusts a slider — leave with BACK. *Settings › Interface › Controller › Left Backs
+  Out* now applies to XMB folders and flyouts only.
+- **Backup & Restore is switched off for now.** `FeatureFlags.BACKUP_RESTORE = false` hides it from
+  *Settings › System* (the section subtitle no longer mentions backup) and a stale notification can
+  no longer open it, pending a rework of the backup format. The module and its route stay in the
+  build. Emulator knowledge files are kept out of backups by design.
+
+### Removed
+- **Custom-command emulator profiles.** A launch is always an Android intent now: the profile editor
+  no longer offers *Custom command*, existing custom-command profiles are refused at launch with a
+  message to switch them to ACTION_VIEW or COMPONENT, and knowledge files cannot carry one.
+
+### Added
 - **Notifications now explain themselves, list what happened, and can stop running work.** Two
   new kinds of notification row join the panel. A **Notes** row (marked with a small page) opens a
   sheet that says what happened, why, and what to do, with a Sony-style error code such as
@@ -242,8 +290,9 @@ All notable changes to Play Field Portal are documented here. This project follo
   while taps on the ◀ breadcrumb and on rows keep working. Twelve sub-screens (Credits, the Library
   Manager's and Category Manager's detail pages, the Emulator wizard's steps) owned a scroll state
   they never registered, so they were dead in both directions; they register it now.
-  The second gap: backing out cost a button press. D-pad **LEFT** now leaves a folder, a flyout, a
-  settings screen or a wizard page — but strictly as a *fallthrough*, only where LEFT was already a
+  The second gap: backing out cost a button press. *(Later narrowed: LEFT no longer leaves a
+  Settings screen or a wizard page — see "D-pad LEFT no longer backs out of Settings screens" under
+  Changed above.)* D-pad **LEFT** now leaves a folder, a flyout, a settings screen or a wizard page — but strictly as a *fallthrough*, only where LEFT was already a
   documented no-op, so stepping into a row's inline buttons and adjusting a slider are untouched.
   It ships on by default and can be switched off in *Settings ▸ Controller ▸ Left Backs Out*. In
   touch mode a **leftward swipe** does the same inside a flyout or folder, committing on release

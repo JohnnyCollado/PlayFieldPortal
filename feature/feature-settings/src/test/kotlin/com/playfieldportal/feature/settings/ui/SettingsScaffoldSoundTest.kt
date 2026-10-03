@@ -69,7 +69,6 @@ class SettingsScaffoldSoundTest {
 
     private fun showScreen(
         onBack: () -> Unit = {},
-        leftBacksOut: Boolean = true,
         onInterceptAction: ((GamepadAction) -> Boolean)? = null,
         body: @Composable () -> Unit,
     ) {
@@ -84,7 +83,6 @@ class SettingsScaffoldSoundTest {
                 CompositionLocalProvider(
                     LocalSettingsPendingAction provides pendingAction.value,
                     LocalSettingsActionConsumed provides { consumedPlain = true },
-                    LocalSettingsLeftBacksOut provides leftBacksOut,
                     LocalMenuSounds provides sink,
                 ) {
                     SettingsScaffold(
@@ -216,27 +214,22 @@ class SettingsScaffoldSoundTest {
     }
 
     @Test
-    fun `everything that goes back plays the back cue`() {
+    fun `BACK plays the back cue`() {
         var backCount = 0
         showScreen(onBack = { backCount++ }) {
             SettingsRow(label = "Theme", onClick = {})
         }
         drain()
 
-        // A row with no inline actions: LEFT leaves the screen, so it is a back and not a move.
-        press(GamepadAction.NAVIGATE_LEFT)
-        assertEquals(1, backCount)
-        assertEquals(listOf(MenuSound.BACK), drain())
-
         press(GamepadAction.BACK)
-        assertEquals(2, backCount)
+        assertEquals(1, backCount)
         assertEquals(listOf(MenuSound.BACK), drain())
     }
 
     @Test
-    fun `with Left Backs Out off LEFT stays the silent no-op it always was`() {
+    fun `LEFT on a row without inline actions is a silent no-op`() {
         var backCount = 0
-        showScreen(onBack = { backCount++ }, leftBacksOut = false) {
+        showScreen(onBack = { backCount++ }) {
             SettingsRow(label = "Theme", onClick = {})
         }
         drain()

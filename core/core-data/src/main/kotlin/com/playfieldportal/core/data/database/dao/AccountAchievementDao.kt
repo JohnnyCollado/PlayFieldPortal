@@ -49,6 +49,15 @@ interface AccountAchievementDao {
     )
     suspend fun getForSet(provider: String, providerGameId: String): List<AccountAchievementEntity>
 
+    // Whether one set still has a hidden coin with no stored description — the sync's cue to try
+    // filling it again even when nothing was earned.
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM account_achievements " +
+            "WHERE provider = :provider AND provider_game_id = :providerGameId " +
+            "AND is_hidden = 1 AND TRIM(description, ' ' || char(9) || char(10) || char(13)) = '')"
+    )
+    suspend fun hasBlankHiddenDescription(provider: String, providerGameId: String): Boolean
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<AccountAchievementEntity>)
 

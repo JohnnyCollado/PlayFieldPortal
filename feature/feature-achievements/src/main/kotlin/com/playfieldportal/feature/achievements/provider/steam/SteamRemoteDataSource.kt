@@ -3,6 +3,7 @@ package com.playfieldportal.feature.achievements.provider.steam
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import com.playfieldportal.feature.achievements.api.RateLimiter
+import com.playfieldportal.feature.achievements.api.SyncedCoin
 import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -53,6 +54,7 @@ class SteamRemoteDataSource @Inject constructor(
     private val webApi: SteamWebApi,
     private val communityApi: SteamCommunityApi,
     private val credentials: AchievementCredentialsProvider,
+    private val hunters: SteamHuntersDescriptions,
 ) {
     private val rate = RateLimiter(1_100)
 
@@ -184,28 +186,39 @@ class SteamRemoteDataSource @Inject constructor(
     }
 
     /**
-     * Fills in descriptions for EARNED hidden achievements, which the Web API withholds forever,
-     * from the user's own public community achievements page (the one place Steam shows them).
-     * Strictly best-effort: only runs when such coins exist, and any failure — network, a private
-     * page, a Valve markup change, an ambiguous title — returns the coins untouched, leaving the
-     * UI's "Steam keeps this one's description secret" fallback in place. Never fails the sync.
+     * Fills in hidden achievements' descriptions, which the Web API withholds forever. Two sources:
+     * [SteamHuntersDescriptions] first, by apiName, for every hidden coin whether earned or not (the
+     * UI keeps an unearned one redacted until revealed); then the user's own public community
+     * achievements page for EARNED hidden coins still blank — the one place Steam itself shows them.
+     *
+     * Strictly best-effort: only runs when a hidden coin is blank, never overwrites a description,
+     * and any failure — network, a private page, a Valve markup change, an ambiguous title — leaves
+     * the coins as they were, so the UI's "Steam keeps this one's description secret" fallback stays
+     * in place. Never fails the sync. Cancellation propagates.
      */
-    suspend fun enrichHiddenDescriptions(
-        appId: String,
-        coins: List<com.playfieldportal.feature.achievements.api.SyncedCoin>,
-    ): List<com.playfieldportal.feature.achievements.api.SyncedCoin> {
-        if (coins.none { it.isHidden && it.isEarned && it.description.isBlank() }) return coins
+    suspend fun enrichHiddenDescriptions(appId: String, coins: List<SyncedCoin>): List<SyncedCoin> {
+        if (coins.none { it.needsDescription() }) return coins
+        val fromHunters = hunters.byApiName(appId)?.let { byApiName ->
+            coins.map { coin ->
+                if (!coin.needsDescription()) coin
+                else byApiName[coin.providerAchievementId]?.let { coin.copy(description = it) } ?: coin
+            }
+        } ?: coins
+        return fillFromOwnPage(appId, fromHunters)
+    }
+
+    private suspend fun fillFromOwnPage(appId: String, coins: List<SyncedCoin>): List<SyncedCoin> {
+        if (coins.none { it.needsDescription() && it.isEarned }) return coins
         val steamId = credentials.steamId64()?.takeIf { it.isNotBlank() } ?: return coins
         return runCatching {
             rate.await()
             val response = communityApi.achievementsPage(steamId, appId)
-            // Soft size cap: an achievements page is a few hundred KB; anything huge is not the
-            // page we expect, so skip rather than parse it.
-            val body = response.body()?.takeIf { it.contentLength() <= 4_000_000 }?.string()
-                ?: return coins
+            // An achievements page is a few hundred KB; anything larger is not the page we expect.
+            // Capped while reading: gzip pages arrive with no Content-Length to check up front.
+            val body = response.body()?.readUtf8Capped(MAX_PAGE_BYTES) ?: return coins
             val descriptionByTitle = SteamCommunityAchievementsParser.parse(body)
             coins.map { coin ->
-                if (!coin.isHidden || !coin.isEarned || coin.description.isNotBlank()) return@map coin
+                if (!coin.needsDescription() || !coin.isEarned) return@map coin
                 val found = descriptionByTitle[SteamCommunityAchievementsParser.normalizeTitle(coin.title)]
                 if (found != null) coin.copy(description = found) else coin
             }
@@ -213,5 +226,11 @@ class SteamRemoteDataSource @Inject constructor(
             if (e is CancellationException) throw e
             coins
         }
+    }
+
+    private fun SyncedCoin.needsDescription() = isHidden && description.isBlank()
+
+    private companion object {
+        const val MAX_PAGE_BYTES = 4_000_000L
     }
 }

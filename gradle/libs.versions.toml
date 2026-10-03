@@ -29,6 +29,9 @@ splashscreen            = "1.2.0"
 accompanist             = "0.37.3"
 media3                  = "1.11.0"
 zxing                   = "3.5.4"
+# Ed25519 signature verification for the emulator knowledge base (the platform has no Ed25519 on
+# API 29). Only subtle.Ed25519Verify is used.
+tink                    = "1.23.0"
 # OkHttp is never declared directly: it arrives transitively through Coil's network fetcher,
 # Retrofit (Steam) and ktor-client-okhttp, which resolves it to 5.3.2. The version is pinned here
 # only so the one OkHttp artifact that would otherwise stay on 4.12.0 — RetroAchievements'
@@ -113,6 +116,7 @@ coil-gif                        = { group = "io.coil-kt.coil3",       name = "co
 
 # Discord Social integration
 zxing-core                      = { group = "com.google.zxing",       name = "core",                        version.ref = "zxing" }
+tink-android                    = { group = "com.google.crypto.tink", name = "tink-android",            version.ref = "tink" }
 androidx-browser                = { group = "androidx.browser",       name = "browser",                     version.ref = "browser" }
 
 # Ktor (networking)

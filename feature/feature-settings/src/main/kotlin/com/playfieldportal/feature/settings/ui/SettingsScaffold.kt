@@ -116,12 +116,6 @@ val LocalSettingsTouchInput = compositionLocalOf<() -> Unit> { {} }
 /** Host-level touch callback used by the fullscreen settings hint gate. */
 val LocalSettingsHostTouchInput = compositionLocalOf<() -> Unit> { {} }
 val LocalSettingsShowControllerHint = compositionLocalOf { false }
-/**
- * Settings ▸ Controller ▸ Left Backs Out. When on, D-pad LEFT on a row that has no inline actions
- * leaves the screen instead of doing nothing. Defaults to true, matching the stored preference, so
- * previews and tests behave like the app.
- */
-val LocalSettingsLeftBacksOut = compositionLocalOf { true }
 
 /**
  * Whether the user's most recent input anywhere in the app was touch (mirrored from
@@ -361,8 +355,6 @@ fun SettingsScaffold(
     contentKey: Any? = null,
     content: @Composable () -> Unit,
 ) {
-    // Settings ▸ Controller ▸ Left Backs Out, supplied by SettingsNavHost from the XMB's state.
-    val leftBacksOut = LocalSettingsLeftBacksOut.current
     // Voices this screen's cursor. The settings layer navigates in composition rather than in a
     // ViewModel, so the cue for a move or a back lives here, beside the move itself. The cue for
     // ACTIVATING something deliberately does not: it lives on the row that owns the action (see
@@ -727,22 +719,12 @@ fun SettingsScaffold(
                 requestFocusFor(target)
             }
             // Inline trailing actions (e.g. a root row's Replace/Remove buttons) are reached
-            // horizontally. On a row without them moveHorizontal returns null — LEFT was a silent
-            // no-op there — so that null is the signal the fallthrough wants: LEFT leaves the
-            // screen (or, in the wizard, steps back a page), the direction the drill-in implies.
-            //
-            // Everything that already uses LEFT runs EARLIER and never reaches here: slider adjust
-            // mode above, and a screen's own onInterceptAction (remap capture, Themes, Sound).
+            // horizontally. On a row without them LEFT is a silent no-op: it never leaves a
+            // settings screen (Left Backs Out is an XMB-only preference) — only BACK does.
             GamepadAction.NAVIGATE_LEFT -> {
-                val target = navigationState.moveHorizontal(-1)
-                if (target != null) {
+                navigationState.moveHorizontal(-1)?.let {
                     menuSounds.play(MenuSound.SCROLL)
-                    requestFocusFor(target)
-                } else if (leftBacksOut) {
-                    // LEFT that backs out IS a back, so it sounds like one rather than like a move
-                    // — the same split the XMB makes when LEFT leaves a drill-in.
-                    menuSounds.play(MenuSound.BACK)
-                    onBack()
+                    requestFocusFor(it)
                 }
             }
 

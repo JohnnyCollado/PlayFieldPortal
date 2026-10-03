@@ -72,7 +72,6 @@ fun EmulatorsSettingsScreen(
             onMimeTypeChange      = viewModel::updateEditorMimeType,
             onUseFileUriChange    = viewModel::updateEditorUseFileUri,
             onUseSafUriChange     = viewModel::updateEditorUseSafUri,
-            onCustomCommandChange = viewModel::updateEditorCustomCommand,
             onNotesChange         = viewModel::updateEditorNotes,
             onIntentActionChange  = viewModel::updateEditorIntentAction,
             onIntentExtrasChange  = viewModel::updateEditorIntentExtras,
@@ -171,7 +170,7 @@ fun EmulatorsSettingsScreen(
                 SettingsGroup("Available (Not Installed)")
 
                 if (availableNonRetroArch.isEmpty()) {
-                    EmulatorHint("All bundled profiles are installed")
+                    EmulatorHint("Every known emulator is installed")
                 } else {
                     availableNonRetroArch.forEach { profile ->
                         EmulatorProfileRow(profile = profile, onEdit = null)

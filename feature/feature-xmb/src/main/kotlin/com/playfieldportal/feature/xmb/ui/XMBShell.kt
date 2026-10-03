@@ -1146,7 +1146,6 @@ fun XMBShell(
                         pendingGamepadAction = uiState.pendingSettingsAction,
                         onGamepadActionConsumed = onSettingsActionConsumed,
                         showControllerHint = uiState.showSettingsHint,
-                        leftBacksOut = uiState.leftBacksOut,
                         lastInputWasTouch = uiState.lastInputWasTouch,
                         onTouchInteraction = onTouchInput,
                         onOpenColorSchemePicker = onOpenColorSchemePicker,

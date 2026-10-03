@@ -42,7 +42,8 @@ data class AccountAchievementEntity(
     @ColumnInfo(name = "icon_url")
     val iconUrl: String? = null,
 
-    // A hidden/secret coin: description stays redacted in the UI until it is earned.
+    // A hidden/secret coin. Its description may be stored before it is earned (Steam Hunters); the UI
+    // keeps it redacted until the coin is earned or the user reveals it.
     @ColumnInfo(name = "is_hidden")
     val isHidden: Boolean = false,
 

@@ -4,7 +4,7 @@ package com.playfieldportal.core.domain.model
  * Package names the App Drawer tags as emulators (the EMU badge and the Emulators filter).
  *
  * Lives in core-domain so the drawer can use it without depending on feature-launcher.
- * KnownEmulatorCatalogTest fails if a curated launch recipe's package is missing here, so the
+ * KnowledgeBaseInvariantsTest fails if a built-in knowledge base package is missing here, so the
  * two stay in step. The extra packages are emulators PFP recognizes but has no ROM-launch
  * recipe for: RetroArch, RPCSX, ScummVM, and the PC runtimes.
  *
@@ -36,12 +36,12 @@ object KnownEmulatorPackages {
         "org.dolphinemu.dolphinemu", "org.mm.jr", "org.dolphinemu.mmjr",
         "org.dolphinemu.primehack", "org.shiiion.primehack",
         "info.cemu.cemu", "info.cemu.Cemu",
-        "org.azahar_emu.azahar", "io.github.azaharplus.android", "org.citra.citra_emu",
+        "org.azahar_emu.azahar", "io.github.azaharplus.android", "org.citra.citra_emu", "org.citra_emu.citra",
         "org.citra.citra_emu.canary", "org.citra.emu", "io.github.lime3ds.android",
         "io.github.mandarine3ds.mandarine", "io.github.borked3ds.android", "com.panda3ds.pandroid",
         "dev.eden.eden_emulator", "dev.eden.eden_emulator.nightly", "dev.legacy.eden_emulator",
         "org.yuzu.yuzu_emu", "org.yuzu.yuzu_emu.ea", "org.sudachi.sudachi_emu",
-        "org.sudachi.sudachi_emu.ea", "org.citron.citron_emu", "org.citron.citron_emu.ea",
+        "org.sudachi.sudachi_emu.ea", "org.sudachi.android", "org.citron.citron_emu", "org.citron.citron_emu.ea",
         "com.sumi.SumiEmulator", "org.uzuy.uzuy_emu", "org.uzuy.uzuy_emu.ea",
         "org.uzuy.uzuy_emu.mmjr", "org.suyu.suyu_emu", "org.kenjinx.android",
         "org.benjisc.android", "skyline.emu",

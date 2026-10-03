@@ -246,4 +246,28 @@ class AchievementDaoTest {
         assertNull(rows.getValue("999").libraryGameId)
         assertEquals(15 + 5 * 15, sets.observeWalletCoins().first())
     }
+
+    @Test
+    fun `hasBlankHiddenDescription finds only a hidden coin with no text, within its own set`() = runTest {
+        fun hidden(gameId: String, id: String, description: String, isHidden: Boolean = true) =
+            AccountAchievementEntity(
+                provider = "LOCAL_STEAM", providerGameId = gameId, providerAchievementId = id,
+                title = id, description = description, tier = "BRONZE", globalRarity = 30.0,
+                isHidden = isHidden,
+            )
+        coins.upsertAll(
+            listOf(
+                hidden("367520", "ENDING_B", description = " "),
+                hidden("524220", "SECRET", description = "Already known."),
+                hidden("524220", "OPEN", description = "", isHidden = false),
+                // Tabs and line breaks are as blank as spaces, matching Kotlin's isBlank().
+                hidden("620", "WHITESPACE", description = "\t\r\n "),
+            ),
+        )
+
+        assertEquals(true, coins.hasBlankHiddenDescription("LOCAL_STEAM", "367520"))
+        assertEquals(false, coins.hasBlankHiddenDescription("LOCAL_STEAM", "524220"))
+        assertEquals(false, coins.hasBlankHiddenDescription("STEAM", "367520"))
+        assertEquals(true, coins.hasBlankHiddenDescription("LOCAL_STEAM", "620"))
+    }
 }

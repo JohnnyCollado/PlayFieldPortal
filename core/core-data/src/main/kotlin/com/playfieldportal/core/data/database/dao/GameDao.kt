@@ -300,6 +300,10 @@ interface GameDao {
     )
     suspend fun setPreferredEmulator(id: Long, emulatorPackage: String?)
 
+    /** Moves every game override from the retired profile id [old] to [new]; returns the rows changed. */
+    @Query("UPDATE games SET emulator_package = :new WHERE emulator_package = :old")
+    suspend fun renameEmulatorRef(old: String, new: String): Int
+
     // B4 per-platform assignment screen: bulk-clears every per-game emulator override on a
     // platform so those games fall back to the platform default. Scoped to real game rows
     // (content_type = 'GAME') — app-shortcut rows can never carry or receive a ROM emulator.

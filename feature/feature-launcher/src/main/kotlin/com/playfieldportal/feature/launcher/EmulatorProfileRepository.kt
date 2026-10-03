@@ -38,7 +38,9 @@ object EmulatorProfileModule {
 }
 
 /**
- * Owns the emulator profile set: bundled defaults merged with whatever the user has saved.
+ * Owns the emulator profile set: the persisted profiles (detected, edited and custom), plus the two
+ * bundled SHORTCUT profiles (`winlator`, `gamehub`), which still load from bundled_profiles.json. Emulator launch
+ * knowledge itself lives in the built-in knowledge base, not here.
  *
  * Both of this class's contracts are deliberate and were previously implicit.
  *
@@ -63,11 +65,14 @@ class EmulatorProfileRepository @Inject constructor(
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun initialize() {
-        val bundled  = withContext(io) { loadBundledProfiles() }
+        val bundled   = withContext(io) { loadBundledProfiles() }
         val persisted = withContext(io) { loadPersistedProfiles() }
         _profiles.value = mergeProfiles(bundled, persisted)
-        Timber.i("Emulator profiles loaded: ${bundled.size} bundled, ${persisted.size} persisted")
+        Timber.i("Emulator profiles loaded: ${bundled.size} bundled shortcut, ${persisted.size} persisted")
     }
+
+    // Ids of the bundled shortcut profiles (winlator, gamehub); these are never retired or rewritten.
+    suspend fun bundledProfileIds(): Set<String> = withContext(io) { loadBundledProfiles().mapTo(HashSet()) { it.id } }
 
     // Returns every profile saved to local storage (custom + auto-generated).
     // Used by EmulatorAutoConfigService to check existing entries.
@@ -131,8 +136,8 @@ class EmulatorProfileRepository @Inject constructor(
     }
 
     /**
-     * Clears all persisted (auto-generated + custom) emulator profiles and reloads bundled
-     * defaults. Does not touch the game library, ROM paths, artwork, saves, or metadata.
+     * Clears all persisted (auto-generated + custom) emulator profiles, leaving only the bundled
+     * shortcut profiles. Does not touch the game library, ROM paths, artwork, saves, or metadata.
      */
     suspend fun resetPersistedProfiles() = withContext(io) {
         try {
@@ -142,10 +147,10 @@ class EmulatorProfileRepository @Inject constructor(
             Timber.e(e, "Failed to delete persisted profiles during reset")
         }
         _profiles.value = loadBundledProfiles()
-        Timber.i("Emulator profiles reset to bundled defaults")
+        Timber.i("Emulator profiles reset")
     }
 
-    // Merges bundled (read-only) with persisted, deduping by id (persisted wins).
+    // Merges the bundled shortcut profiles (read-only) with persisted, deduping by id (persisted wins).
     private fun mergeProfiles(
         bundled: List<EmulatorProfile>,
         persisted: List<EmulatorProfile>,
@@ -154,8 +159,10 @@ class EmulatorProfileRepository @Inject constructor(
         return bundled.filter { it.id !in persistedIds } + persisted
     }
 
+    // Only the Winlator and GameHub SHORTCUT profiles remain in the asset. Admitted like any
+    // other profile source, so the asset is not trusted just because it ships in the APK.
     private fun loadBundledProfiles(): List<EmulatorProfile> {
-        return try {
+        val parsed = try {
             val jsonStr = context.assets
                 .open("emulator_profiles/bundled_profiles.json")
                 .bufferedReader()
@@ -163,8 +170,13 @@ class EmulatorProfileRepository @Inject constructor(
             json.decodeFromString<List<EmulatorProfile>>(jsonStr)
         } catch (e: Exception) {
             Timber.e(e, "Failed to load bundled emulator profiles")
-            emptyList()
+            return emptyList()
         }
+        val admitted = EmulatorProfileAdmission.admit(parsed, selfPackage = context.packageName)
+        admitted.refused.forEach {
+            Timber.w("Ignoring inadmissible bundled emulator profile %s: %s", it.id, it.reason)
+        }
+        return admitted.admitted
     }
 
     // Blocking by design; every caller reaches it through a withContext(io) hop above.

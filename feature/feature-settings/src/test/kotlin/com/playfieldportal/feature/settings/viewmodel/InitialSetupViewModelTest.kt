@@ -20,7 +20,7 @@ import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
 import com.playfieldportal.feature.artwork.importer.DetectedImportSource
 import com.playfieldportal.feature.artwork.importer.ImportPlan
 import com.playfieldportal.feature.artwork.portable.PortableArtworkLibrary
-import com.playfieldportal.feature.launcher.EmulatorAutoConfigService
+import com.playfieldportal.feature.launcher.kb.EmulatorKnowledgeRefresher
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -55,7 +55,7 @@ class InitialSetupViewModelTest {
     private val artworkImport = mockk<ArtworkImportManager>(relaxed = true)
     private val retroArchLink = mockk<RetroArchLink>(relaxed = true)
     private val vita3KLibrary = mockk<Vita3KLibrary>(relaxed = true)
-    private val autoConfig = mockk<EmulatorAutoConfigService>(relaxed = true)
+    private val refresher = mockk<EmulatorKnowledgeRefresher>(relaxed = true)
     private val sgdbKeys = mockk<SgdbApiKeyProvider>(relaxed = true)
     private val metadataKeys = mockk<MetadataApiKeyProvider>(relaxed = true)
     private val credentials = mockk<AchievementCredentialsProvider>(relaxed = true)
@@ -70,7 +70,7 @@ class InitialSetupViewModelTest {
     private lateinit var vm: InitialSetupViewModel
 
     private fun buildVm() = InitialSetupViewModel(
-        context, romRoots, mediaRoots, artworkImport, retroArchLink, vita3KLibrary, autoConfig,
+        context, romRoots, mediaRoots, artworkImport, retroArchLink, vita3KLibrary, refresher,
         sgdbKeys, metadataKeys, credentials, steamApi, igdbApi, screenScraperApi,
         scanRunner, romRootScanRunner,
         mockk(relaxed = true), // romScanner (B3 create-standard-folders)
@@ -368,7 +368,7 @@ class InitialSetupViewModelTest {
         advanceUntilIdle()
 
         coVerify { retroArchLink.save(uri) }
-        coVerify { autoConfig.runOnStartup() }
+        coVerify { refresher.run() }
         assertTrue(vm.uiState.value.retroArchLinked)
         assertEquals(2, vm.uiState.value.retroArchCoreCount)
         job.cancel()

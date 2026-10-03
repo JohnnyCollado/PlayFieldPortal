@@ -3,9 +3,12 @@ package com.playfieldportal.feature.achievements.provider.steam
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import okhttp3.ResponseBody.Companion.asResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
+import okio.Buffer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -16,7 +19,12 @@ class SteamRemoteDataSourceTest {
     private val webApi = mockk<SteamWebApi>()
     private val communityApi = mockk<SteamCommunityApi>()
     private val credentials = mockk<AchievementCredentialsProvider>()
-    private val dataSource = SteamRemoteDataSource(webApi, communityApi, credentials)
+    // Steam Hunters knows nothing by default, so the community-page cases run as before.
+    private val huntersApi = mockk<SteamHuntersApi> {
+        coEvery { achievements(any()) } answers { Response.success("[]".toResponseBody()) }
+    }
+    private val dataSource =
+        SteamRemoteDataSource(webApi, communityApi, credentials, SteamHuntersDescriptions(huntersApi))
 
     private fun creds(key: String? = "steam-key", id: String? = "76561197960287930") {
         coEvery { credentials.steamApiKey() } returns key
@@ -128,5 +136,86 @@ class SteamRemoteDataSourceTest {
 
         coEvery { credentials.steamApiKey() } returns null
         assertEquals(null, dataSource.resolveVanity("gaben"))
+    }
+
+    // --- Hidden descriptions for owned games: Steam Hunters first, earned or not ---
+
+    private fun hiddenGame(vararg earned: Pair<String, Boolean>) {
+        creds()
+        val schema = earned.map { (name, _) ->
+            SteamSchemaAchievement(name = name, displayName = name, description = "", hidden = 1)
+        }
+        coEvery { webApi.getSchemaForGame(any(), "440") } returns
+            Response.success(SteamSchemaResponse(SteamGame(SteamGameStats(schema))))
+        coEvery { webApi.getGlobalAchievementPercentages("440") } returns Response.success(SteamGlobalResponse())
+        coEvery { webApi.getPlayerAchievements(any(), any(), "440") } returns Response.success(
+            SteamPlayerResponse(
+                SteamPlayerStats(
+                    success = true,
+                    achievements = earned.map { (name, got) ->
+                        SteamPlayerAchievement(name, achieved = if (got) 1 else 0, unlocktime = 1)
+                    },
+                ),
+            ),
+        )
+    }
+
+    private fun hunters(vararg rows: Pair<String, String>) {
+        coEvery { huntersApi.achievements("440") } returns Response.success(
+            rows.joinToString(",", "[", "]") { (api, desc) -> """{"apiName":"$api","description":"$desc"}""" }
+                .toResponseBody(),
+        )
+    }
+
+    @Test
+    fun `an unearned hidden achievement is described from Steam Hunters`() = runTest {
+        hiddenGame("locked" to false)
+        hunters("locked" to "Beat the game without dying.")
+
+        val result = dataSource.fetch("440") as ProviderSyncResult.Success
+
+        assertEquals("Beat the game without dying.", result.coins.single().description)
+        // Nothing earned is left blank, so the user's own page is never read.
+        coVerify(exactly = 0) { communityApi.achievementsPage(any(), any(), any()) }
+    }
+
+    @Test
+    fun `an earned hidden achievement Steam Hunters lacks still comes from the community page`() = runTest {
+        hiddenGame("earned" to true, "locked" to false)
+        hunters("locked" to "From Steam Hunters.")
+        coEvery { communityApi.achievementsPage(any(), "440", any()) } returns Response.success(
+            """<div class="achieveRow"><h3>earned</h3><h5>From my own page.</h5></div>""".toResponseBody(),
+        )
+
+        val result = dataSource.fetch("440") as ProviderSyncResult.Success
+
+        val byId = result.coins.associateBy { it.providerAchievementId }
+        assertEquals("From my own page.", byId.getValue("earned").description)
+        assertEquals("From Steam Hunters.", byId.getValue("locked").description)
+    }
+
+    @Test
+    fun `a gzip community page with no declared length is read when it fits the cap`() = runTest {
+        hiddenGame("earned" to true)
+        coEvery { communityApi.achievementsPage(any(), "440", any()) } returns Response.success(
+            Buffer().writeUtf8("""<div class="achieveRow"><h3>earned</h3><h5>From my own page.</h5></div>""")
+                .asResponseBody(null, -1),
+        )
+
+        val result = dataSource.fetch("440") as ProviderSyncResult.Success
+
+        assertEquals("From my own page.", result.coins.single().description)
+    }
+
+    @Test
+    fun `an oversized community page is skipped`() = runTest {
+        hiddenGame("earned" to true)
+        val page = """<div class="achieveRow"><h3>earned</h3><h5>Leaked.</h5></div>""" + " ".repeat(4_100_000)
+        coEvery { communityApi.achievementsPage(any(), "440", any()) } returns
+            Response.success(Buffer().writeUtf8(page).asResponseBody(null, -1))
+
+        val result = dataSource.fetch("440") as ProviderSyncResult.Success
+
+        assertEquals("", result.coins.single().description)
     }
 }

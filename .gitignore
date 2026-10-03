@@ -104,3 +104,7 @@ docs/feedback/
 # Byte-identical copies of core/core-ui/src/main/res/raw — res/raw is the tracked copy.
 assets/SFX/active/*.wav
 assets/SFX/active/*.mp3
+# Emulator-KB signing keys (tools/emulator-kb/KbSign.java). keygen refuses to write inside the repo;
+# this is the backstop if a key is copied in by hand. Never commit a private key.
+*.private.pem
+pfp-kb-keys/

@@ -47,6 +47,7 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.tink.android)
     ksp(libs.hilt.compiler)
 
     implementation(project(":core:core-common"))

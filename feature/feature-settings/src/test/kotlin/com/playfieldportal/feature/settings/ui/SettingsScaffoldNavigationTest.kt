@@ -65,7 +65,6 @@ class SettingsScaffoldNavigationTest {
 
     private fun showScreen(
         onBack: () -> Unit = {},
-        leftBacksOut: Boolean = true,
         body: @Composable () -> Unit,
     ) {
         composeRule.setContent {
@@ -76,7 +75,6 @@ class SettingsScaffoldNavigationTest {
                 CompositionLocalProvider(
                     LocalSettingsPendingAction provides pendingAction.value,
                     LocalSettingsActionConsumed provides { consumedPlain = true },
-                    LocalSettingsLeftBacksOut provides leftBacksOut,
                 ) {
                     SettingsScaffold(
                         title = "Settings",
@@ -210,7 +208,7 @@ class SettingsScaffoldNavigationTest {
     }
 
     @Test
-    fun `LEFT leaves the screen only where LEFT has nothing else to do`() {
+    fun `LEFT never leaves a settings screen`() {
         var backCount = 0
         var deleteSelects = 0
         showScreen(onBack = { backCount++ }) {
@@ -226,34 +224,20 @@ class SettingsScaffoldNavigationTest {
             SettingsValueRow(label = "Version", value = "1.0")
         }
 
-        // A row WITH inline actions: LEFT still steps into them, and back out of them, as before —
-        // the fallthrough must never outrank an existing consumer.
+        // A row WITH inline actions: LEFT steps into them and back out of them.
         assertFocusedRow("Theme")
         press(GamepadAction.NAVIGATE_RIGHT)
         composeRule.onNode(isFocused()).assert(hasContentDescription("Delete theme"))
         press(GamepadAction.NAVIGATE_LEFT)
         assertFocusedRow("Theme")
-        assertEquals(0, backCount)
 
-        // A row WITHOUT them: LEFT used to be a silent no-op; now it leaves the screen.
+        // A row WITHOUT them: LEFT is a no-op. Left Backs Out is an XMB preference only.
         press(GamepadAction.NAVIGATE_DOWN)
         assertFocusedRow("Version")
         press(GamepadAction.NAVIGATE_LEFT)
-        assertEquals(1, backCount)
-        assertEquals(0, deleteSelects)
-    }
-
-    @Test
-    fun `with the preference off LEFT is the no-op it always was`() {
-        var backCount = 0
-        showScreen(onBack = { backCount++ }, leftBacksOut = false) {
-            SettingsRow(label = "Theme", onClick = {})
-        }
-
-        assertFocusedRow("Theme")
-        press(GamepadAction.NAVIGATE_LEFT)
+        assertFocusedRow("Version")
         assertEquals(0, backCount)
-        assertFocusedRow("Theme")
+        assertEquals(0, deleteSelects)
     }
 
     @Test

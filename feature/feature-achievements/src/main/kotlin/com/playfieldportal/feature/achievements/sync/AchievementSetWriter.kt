@@ -47,8 +47,8 @@ class AchievementSetWriter @Inject constructor(
         return changed
     }
 
-    // A hidden coin's description, once learned (community-page enrichment), is kept when a later
-    // fetch withholds it again — so a routine refresh never needs to re-scrape it.
+    // A hidden coin's description, once learned (Steam Hunters or a community page), is kept when a
+    // later fetch withholds it again — so a routine refresh never needs to look it up again.
     private fun carryDescriptions(fresh: List<SyncedCoin>, stored: List<AccountAchievementEntity>): List<SyncedCoin> {
         if (stored.isEmpty()) return fresh
         val known = stored.filter { it.description.isNotBlank() }.associate { it.providerAchievementId to it.description }

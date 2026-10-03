@@ -593,8 +593,8 @@ internal fun CoinListRow(
         titleItalic = redacted,
         description = when {
             redacted -> "Keep playing — or press Confirm to reveal"
-            // Steam's Web API never returns a hidden achievement's description (even once earned),
-            // so the reveal shows the real title but there is no how-to to show.
+            // Steam's Web API never returns a hidden achievement's description; the sync fills it from
+            // Steam Hunters or a community page. This shows only when neither source had it.
             coin.isHidden && coin.description.isBlank() -> "Steam keeps this one's description secret"
             else -> coin.description
         },
@@ -919,7 +919,7 @@ private fun LinkPanelRow(
                 )
                 if (prompt != null && !prompt.installerEnabled) {
                     PanelBody(
-                        "Install & Link needs Install Goldberg Emulator in Settings ▸ Shiba Coins.",
+                        "Install & Link needs Install Goldberg & Convert Games in Achievement settings.",
                         palette,
                     )
                 }

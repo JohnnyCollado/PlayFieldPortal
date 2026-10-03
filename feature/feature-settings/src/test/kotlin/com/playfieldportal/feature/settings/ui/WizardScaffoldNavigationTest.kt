@@ -54,8 +54,6 @@ class WizardScaffoldNavigationTest {
                 CompositionLocalProvider(
                     LocalSettingsPendingAction provides pendingAction.value,
                     LocalSettingsActionConsumed provides { consumedPlain = true },
-                    // The user's "Left Backs Out" is on: the wizard must still not page on LEFT.
-                    LocalSettingsLeftBacksOut provides true,
                 ) {
                     WizardScaffold(
                         stepNumber = 2,

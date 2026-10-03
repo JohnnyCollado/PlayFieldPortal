@@ -2,7 +2,9 @@ package com.playfieldportal.feature.settings.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import com.playfieldportal.core.domain.model.FeatureFlags
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.feature.settings.viewmodel.CategoryManagerTarget
 
@@ -36,6 +38,7 @@ val SETTINGS_SCREEN_ROUTES: Set<String> = setOf(
     "settings_emulators_custom",
     "settings_emulators_retroarch",
     "settings_emulators_assign",
+    "settings_emulators_knowledge",
     "settings_themes",
     "settings_collections",
     "settings_display",
@@ -59,8 +62,6 @@ fun SettingsNavHost(
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
     showControllerHint: Boolean = false,
-    // Settings ▸ Controller ▸ Left Backs Out, mirrored in the XMB's state (see XMBUiState).
-    leftBacksOut: Boolean = true,
     // Whether the last input was touch — seeds each screen's cursor visibility.
     lastInputWasTouch: Boolean = false,
     onTouchInteraction: () -> Unit = {},
@@ -88,7 +89,6 @@ fun SettingsNavHost(
         LocalSettingsPendingAction provides pendingGamepadAction,
         LocalSettingsActionConsumed provides onGamepadActionConsumed,
         LocalSettingsShowControllerHint provides showControllerHint,
-        LocalSettingsLeftBacksOut provides leftBacksOut,
         LocalSettingsLastInputWasTouch provides lastInputWasTouch,
         LocalSettingsHostTouchInput provides onTouchInteraction,
     ) {
@@ -153,6 +153,7 @@ fun SettingsNavHost(
             "settings_emulators_custom" -> EmulatorsSettingsScreen(onBack = onBack, section = EmulatorSettingsSection.CUSTOM, modifier = modifier)
             "settings_emulators_retroarch" -> EmulatorsSettingsScreen(onBack = onBack, section = EmulatorSettingsSection.RETROARCH, modifier = modifier)
             "settings_emulators_assign" -> EmulatorAssignmentScreen(onBack = onBack, modifier = modifier)
+            "settings_emulators_knowledge" -> EmulatorKnowledgeScreen(onBack = onBack, modifier = modifier)
             "settings_themes"     -> ThemesSettingsScreen(
                 onBack = onBack,
                 onOpenColorSchemePicker = onOpenColorSchemePicker,
@@ -173,7 +174,12 @@ fun SettingsNavHost(
                 modifier = modifier,
             )
             "settings_controller" -> ControllerSettingsScreen(onBack = onBack, modifier = modifier)
-            "settings_backup"     -> BackupSettingsScreen(onBack = onBack, modifier = modifier)
+            // Parked until the backup rework (FeatureFlags): a stray route in closes straight away.
+            "settings_backup"     -> if (FeatureFlags.BACKUP_RESTORE) {
+                BackupSettingsScreen(onBack = onBack, modifier = modifier)
+            } else {
+                LaunchedEffect(Unit) { onBack() }
+            }
             "settings_logs"       -> LogsSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_about"      -> AboutSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_credits"    -> CreditsSettingsScreen(onBack = onBack, modifier = modifier)

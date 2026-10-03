@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.core.domain.model.FeatureFlags
 import com.playfieldportal.feature.settings.ui.SETTINGS_SCREEN_ROUTES
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -55,6 +56,7 @@ class SettingsHierarchyTest {
                 "settings_emulators_custom",
                 "settings_emulators_retroarch",
                 "settings_emulators_assign",
+                "settings_emulators_knowledge",
             ),
             settingsSectionItems(SettingsSection.EMULATORS).map { it.id },
         )
@@ -79,9 +81,20 @@ class SettingsHierarchyTest {
             settingsSectionItems(SettingsSection.ACHIEVEMENTS).map { it.id },
         )
         assertEquals(
-            listOf("settings_about", "settings_logs", "settings_backup", "settings_initial_setup", "settings_credits"),
+            // Backup & Restore is off until its rework (FeatureFlags.BACKUP_RESTORE).
+            listOf("settings_about", "settings_logs", "settings_initial_setup", "settings_credits"),
             settingsSectionItems(SettingsSection.SYSTEM).map { it.id },
         )
+    }
+
+    @Test fun `the System subtitle does not mention backup while Backup and Restore is off`() {
+        assertFalse(FeatureFlags.BACKUP_RESTORE)
+        assertFalse(SettingsSection.SYSTEM.subtitle.contains("backup", ignoreCase = true))
+    }
+
+    @Test fun `a notification cannot open the backup screen while Backup and Restore is off`() {
+        assertFalse(isSettingsRouteEnabled("settings_backup"))
+        assertTrue(isSettingsRouteEnabled("settings_initial_setup"))
     }
 
     @Test fun `every L2 row id resolves to a settings screen route`() {

@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.achievements.sync
 
+import com.playfieldportal.core.data.database.dao.AccountAchievementDao
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.feature.achievements.provider.localsteam.LocalEarnedRead
 import com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSource
@@ -11,10 +12,15 @@ import javax.inject.Singleton
  * state is fingerprinted and compared with the stored one; only a changed (or new) game is rebuilt,
  * and with cached metadata that rebuild is local too. An unreadable file is left unchecked rather
  * than treated as "nothing earned". Steam account playtime is never involved.
+ *
+ * One exception to "unchanged means skipped": on a MANUAL update, a game whose stored hidden coins
+ * still lack a description is rebuilt, so [LocalSteamSource]'s hidden-description backfill reaches
+ * games synced before it existed. Automatic runs never do this, keeping their request count flat.
  */
 @Singleton
 class LocalSteamCheckStrategy @Inject constructor(
     private val source: LocalSteamSource,
+    private val coinDao: AccountAchievementDao,
 ) : ProviderCheckStrategy {
 
     override val provider = AchievementProvider.LOCAL_STEAM
@@ -30,12 +36,17 @@ class LocalSteamCheckStrategy @Inject constructor(
             when {
                 entry.isNew -> toFetch += entry.identity
                 read == null -> Unit
-                read.fingerprint == entry.snapshot -> unchanged += entry.identity
+                read.fingerprint == entry.snapshot ->
+                    if (trigger == SyncTrigger.MANUAL && hasBlankHidden(entry.identity)) toFetch += entry.identity
+                    else unchanged += entry.identity
                 else -> toFetch += entry.identity
             }
         }
         return ProviderCheckPlan(toFetch = toFetch, unchanged = unchanged, snapshots = snapshots)
     }
+
+    private suspend fun hasBlankHidden(identity: AchievementIdentity): Boolean =
+        coinDao.hasBlankHiddenDescription(identity.provider.name, identity.providerGameId)
 }
 
 /**

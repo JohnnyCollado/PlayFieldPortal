@@ -21,7 +21,8 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Intent shapes for the launch recipes verified in docs/emulator-intent-catalog-research.md.
+ * Intent shapes for the launch recipes the built-in emulator knowledge base ships
+ * (feature-launcher assets/emulator_kb/emulators.json).
  * SAF games (romUri set) are used throughout so no FileProvider registration is needed.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -124,6 +125,27 @@ class EmulatorIntentResolverTest {
                     Intent.FLAG_GRANT_READ_URI_PERMISSION
             )
         )
+    }
+
+    @Test
+    fun `rom_uri in an array extra gets the uri and the read grant`() {
+        installPackage("com.example.arr")
+        registerComponentActivity("com.example.arr", "com.example.arr.Main")
+        val profile = EmulatorProfile(
+            id = "test_arr",
+            name = "Arr",
+            packageName = "com.example.arr",
+            activityClass = "com.example.arr.Main",
+            intentType = IntentType.COMPONENT,
+            supportedPlatformIds = listOf("psx"),
+            intentArrayExtras = mapOf("args" to listOf("-g", "{rom_uri}")),
+        )
+
+        val intent = runBlocking { resolver.resolve(safGame("psx"), profile).getOrThrow() }
+
+        assertEquals(listOf("-g", romUri), intent.getStringArrayExtra("args")?.toList())
+        assertTrue(intent.hasFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
+        assertNotNull(intent.clipData)
     }
 
     @Test

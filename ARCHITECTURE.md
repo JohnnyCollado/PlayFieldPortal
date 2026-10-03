@@ -7,17 +7,21 @@ selected category, and launches games through external emulator apps.
 
 - **Package:** `com.playfieldportal.launcher` (debug builds use the `.debug` suffix)
 - **Min / Target / Compile SDK:** 29 (Android 10 — Winlator's floor) / 35 / 37
-- **Version:** `1.2.1` (`versionCode` 9)
+- **Version:** `1.3.0` (`versionCode` 10), unreleased; the last release is `1.2.1`
 - **Stack:** Kotlin, Jetpack Compose, MVVM + Clean Architecture, Hilt DI, Room, DataStore,
-  Coil (image loading), Media3/ExoPlayer, Coroutines/Flow.
+  Coil (image loading), Media3/ExoPlayer, Coroutines/Flow, Ktor (scrapers, knowledge downloads),
+  Retrofit + OkHttp (Steam Web API / Store / Community, Steam Hunters), Tink (`Ed25519Verify` for
+  signed emulator knowledge).
+- **Last reviewed:** 2026-10-02.
 - **Entry points:** [`PFPApplication`](app/src/main/kotlin/com/playfieldportal/launcher/PFPApplication.kt)
   (Hilt + first-run DB seeding) and
   [`MainActivity`](app/src/main/kotlin/com/playfieldportal/launcher/MainActivity.kt)
   (declared as the `HOME` launcher).
 
 > **Unreleased.** The subsystems under [Customization](#customization-icons-ui-media-and-motion)
-> — custom icons, UI media, motion wallpapers, theme schema v3 — live on `more-customization`
-> and are not in the 1.2.1 release. `CHANGELOG.md` draws the same line.
+> — custom icons, UI media, motion wallpapers, theme schema v3 — and the
+> [emulator knowledge base](#game--emulator-launching-featurefeature-launcher) landed after the
+> 1.2.1 release and ship in 1.3.0. `CHANGELOG.md` draws the same line.
 
 ## Design principles
 
@@ -47,26 +51,26 @@ app  ──▶ feature:*  ──▶ core:core-ui ──▶ core:core-data ──
 | `core:theme-kit` | Pure-JVM theme core shared with the Theme Studio: PTF/BMP/GIM/LZR parsers, `.pfptheme` codec, color cascade, icon-slot registry, XMB layout spec, and the shared limit objects (`UiMediaLimits`, `MotionLimits`, `IconGifSupport`) |
 | `core:core-archive` | Pure-JVM bounded ZIP ingestion (`BoundedZipReader`, `SafeArchivePath`) shared by theme parsing, backup restore, and the theme codec |
 | `core:core-common` | Cross-cutting utilities and extensions (incl. the shared Keystore AES-GCM helper) |
-| `core:core-domain` | Domain models, repository interfaces, use-case-level contracts (no Android deps where avoidable) |
-| `core:core-data` | Room database, DAOs, entities, migrations, DataStore, repository implementations, seeders, and the user-asset stores (`CustomIconStore`, `UiMediaStore`, `PfpThemeStore`) |
+| `core:core-domain` | Domain models, repository interfaces, use-case-level contracts (no Android deps where avoidable), `FeatureFlags`, and the pure emulator-knowledge logic in `model/emulatorkb/` (decoder, validator, layer merge, import plan, export, platform-extension planner) |
+| `core:core-data` | Room database, DAOs, entities, migrations, DataStore, repository implementations, seeders, the user-asset stores (`CustomIconStore`, `UiMediaStore`, `PfpThemeStore`), and `kb/` (`EmulatorKbDownloader`, `PlatformKnowledgeApplier`, `LegacyEmulatorIdRewriter`) |
 | `core:core-navigation` | Pure navigation logic with no Android dependency — `NavigationEngine`, `NavigationCommand`, grid movement (`gridMove`). Consumed by feature-xmb and feature-settings so cursor behavior is unit-testable away from Compose |
 | `core:core-ui` | Shared Compose components, theming, the category-icon catalog, wave renderer, motion-wallpaper surfaces, `MenuSoundPlayer` |
 | `feature:feature-xmb` | The XMB shell — wave background, category bar, item list, status bar, game/app detail, context menus, the custom-icon editor overlay, the main `XMBViewModel` |
 | `feature:feature-library` | ROM scanning into the Memory Card library, plus the rescan triggers |
-| `feature:feature-launcher` | Emulator detection, the launch-resolution ladder, and the launch dispatcher |
+| `feature:feature-launcher` | Emulator detection, the launch-resolution ladder, the launch dispatcher, the built-in knowledge asset (`assets/emulator_kb/emulators.json`) and `kb/` (`EmulatorKnowledgeStore`, `EmulatorKnowledgeRefresher`, `EmulatorKbUpdater`, `KbSignatureVerifier`, `SignerProbe`) |
 | `feature:feature-artwork` | Metadata/artwork scrapers (ScreenScraper/TGDB/IGDB/SteamGridDB), the `ArtworkStore` storage seam, the portable artwork library (`portable/` — user-owned SAF folder, manifest, per-entry metadata) and the ES-DE artwork importer (`importer/`) |
-| `feature:feature-achievements` | Shiba Coins: RetroAchievements / Steam / Local Steam (GSE/Goldberg) providers, coin mapping, wallet + standings, sync, emu-kit generation |
+| `feature:feature-achievements` | Shiba Coins: RetroAchievements / Steam / Local Steam (GSE/Goldberg) / PS3 (ARMSX3) providers, hidden-description enrichment (Steam Hunters, then Steam Community pages), coin mapping, wallet + standings, sync, emu-kit generation |
 | `feature:feature-themes` | Theme loader/repository, built-in themes, `.pfptheme` / PSP `.ptf` install paths |
-| `feature:feature-settings` | All settings screens, the first-run setup wizard, PC game import |
+| `feature:feature-settings` | All settings screens (including Emulator knowledge: `EmulatorKnowledgeScreen`, `EmulatorKnowledgeReview`, `EmulatorKnowledgeExport`), the first-run setup wizard, PC game import |
 | `feature:feature-appbar` | App drawer, app→category classification, filtering |
-| `feature:feature-backup` | Backup & restore (`.pfpbackup`) |
+| `feature:feature-backup` | Backup & restore (`.pfpbackup`). **Parked:** `FeatureFlags.BACKUP_RESTORE = false` hides it from Settings until the format is reworked; the module and route stay in the build |
 | `feature:feature-social` | Discord Social UI — full flavor only |
 | `discord:discord-native` | NDK/CMake bridge to the Discord Social SDK (full flavor only) |
 
 ## Data layer (`core:core-data`)
 
 - **Room** database [`PFPDatabase`](core/core-data/src/main/kotlin/com/playfieldportal/core/data/database/PFPDatabase.kt)
-  (currently **v41**). Migrations are hand-written, one `MIGRATION_n_n+1` per version, registered
+  (currently **v55**). Migrations are hand-written, one `MIGRATION_n_n+1` per version, registered
   in [`DatabaseModule`](core/core-data/src/main/kotlin/com/playfieldportal/core/data/database/di/DatabaseModule.kt).
   **Never** use destructive migration — it would wipe the user's library.
 - **Seeding** is first-run only, gated by a DataStore flag, in
@@ -104,10 +108,82 @@ system broadcast — the guards and the rejected alternatives are recorded in
 
 ## Game / emulator launching (`feature:feature-launcher`)
 
-**Detection.** [`KnownEmulatorCatalog`](feature/feature-launcher/src/main/kotlin/com/playfieldportal/feature/launcher/KnownEmulatorCatalog.kt)
-lists supported emulators (package, launch activity, intent shape, supported platforms);
+**Detection.** What PFP knows about emulators is **data**, not code: the emulator knowledge base
+(KB) replaced the old hard-coded `KnownEmulatorCatalog`. Each entry names an emulator's packages,
+the platforms it runs and one launch recipe (intent type, activity, action, category, extras,
+flags, MIME type, optional per-package overrides and optional signer pins).
 [`EmulatorDetector`](feature/feature-launcher/src/main/kotlin/com/playfieldportal/feature/launcher/EmulatorDetector.kt)
-scans installed packages (plus RetroArch cores) into `EmulatorProfile`s on startup.
+turns the effective KB plus installed packages (and RetroArch cores) into `EmulatorProfile`s. The
+Winlator / GameHub SHORTCUT profiles are not KB entries; they still load from
+`assets/emulator_profiles/bundled_profiles.json`.
+
+**Knowledge layers.** [`EmulatorKnowledgeStore`](feature/feature-launcher/src/main/kotlin/com/playfieldportal/feature/launcher/kb/EmulatorKnowledgeStore.kt)
+owns three layers and publishes their merge (`EmulatorKbMerge`, pure, in `core-domain`):
+
+1. **Built-in** — `assets/emulator_kb/emulators.json` (84 emulators, `"version": 1`,
+   `"label": "built-in"`).
+2. **Official** — `filesDir/emulator_kb/official/emulators.json`, installed only by the updater and
+   applied only when its version is greater than the built-in one.
+3. **User files** — `filesDir/emulator_kb/user/<id>.json` plus `index.json`, applied in import order
+   (at most 32).
+
+Later layers replace an entry by id or strip the packages they claim; `legacyIds` (retiring an
+old id) are honoured only from built-in and official layers. A user's own edits to a persisted
+profile still win over every layer. Every layer is re-decoded and re-validated on every load
+(`EmulatorKbDecoder`, `EmulatorKbValidator`); built-in and official layers are all-or-nothing,
+user files per entry (an unreadable user file stays listed so it can be removed). Writes are temp
+file then rename. The KB directory sits outside every backup root, so a restore can never become
+an unreviewed import.
+
+**Validation is the security model.** A KB file is data, never commands: `CUSTOM_COMMAND` and
+`SHORTCUT` launches are refused, as are packages under `android.`, `com.android.`, `com.google.`
+and other OEM system prefixes, PFP's own package, invalid identifiers, unsupported intent flags,
+and extras that are anything but one placeholder or a plain literal (no `/` or `:`, so never a path
+or URI). Sizes are capped (1 MB of text, 500 emulators, 64 platforms, 8 packages per entry, 32
+extensions per platform, bounded string length and nesting depth). Platform ids the app does not
+know are dropped, not refused. `CUSTOM_COMMAND` profiles are also refused at launch by
+`EmulatorIntentResolver` and no longer offered by the profile editor. An entry may pin signer
+SHA-256 digests: the import review blocks it when the installed app's signer differs
+(`SignerProbe`), and `validateBeforeLaunch` refuses to launch a pinned profile whose installed
+package carries none of the pinned certificates, so a look-alike app cannot receive the recipe.
+
+**Refresh.** [`EmulatorKnowledgeRefresher.run()`](feature/feature-launcher/src/main/kotlin/com/playfieldportal/feature/launcher/kb/EmulatorKnowledgeRefresher.kt)
+is the single entry point for "the KB may have changed": app start (after the database seed) and
+every KB-changing flow (official install, import, remove, reset) call it. It runs serially and
+non-cancellably, in this order:
+
+1. **Platform extensions** — `PlatformKnowledgeApplier` (`core-data/kb/`) adds KB ROM extensions to
+   the seeded platform and its Memory Card in one Room transaction. Additive only, and a row is
+   written only while it still equals the seed default or the last KB-applied set
+   (`PlatformExtensionPlanner`), so a list the user customized is never touched. Removing a file or
+   resetting never takes extensions back. Gains are surfaced as `gainedFileTypes` for the
+   "rescan suggested" note; no rescan is triggered.
+2. **Auto-config** — `EmulatorAutoConfigService.runOnStartup()` re-detects and persists profiles.
+3. **Legacy id rewrite** — `LegacyEmulatorIdRewriter` moves stored references to retired bundled ids
+   onto the detected `auto_<pkg>` profile; only built-in/official entries can drive this, and ids a
+   persisted (user-edited) profile or a bundled shortcut still holds are kept.
+
+**Official updates.** [`EmulatorKbUpdater`](feature/feature-launcher/src/main/kotlin/com/playfieldportal/feature/launcher/kb/EmulatorKbUpdater.kt)
+fetches `emulators.json` and `emulators.json.sig` from the `emulator-kb` release of
+`JohnnyCollado/PlayFieldPortal` over HTTPS (`EmulatorKbDownloader`, streaming caps of 1 MiB and
+1 KiB, `User-Agent` the only header). Pipeline: throttle (automatic checks at most once per 24 h,
+toggleable; manual checks bypass both) → download body, then signature → verify the detached
+Ed25519 signature over the exact bytes **before** parsing (`KbSignatureVerifier`, Tink
+`Ed25519Verify`, any of the pinned keys) → decode → schema and `minAppVersion` (an app
+`versionCode`) gates → validate all-or-nothing → **anti-rollback**: refuse a version lower than the
+highest ever accepted (kept in `official/state.json`, which a reset deliberately keeps) or not
+greater than the built-in version; an equal version is allowed so a reset can re-fetch → record the
+new high-water mark first, then install, then refresh. Every failure keeps the installed file and
+records why. `KbSignatureVerifier.PINNED_KEYS` is **empty** in this build, so `isConfigured` is
+false, nothing is downloaded and the Settings rows read "Not available in this build". Releasing
+is documented in [`tools/emulator-kb/README.md`](tools/emulator-kb/README.md).
+
+**Import and export** (Settings › Emulators › Emulator knowledge). An imported file is decoded,
+validated and turned into an `EmulatorKbImportPlan` (New → ticked; Change → unticked with a field
+diff and "Overrides official" / "Your edit" flags; console extension updates → unticked; Blocked
+with reasons). Only the ticked entries are re-serialized into the user file — never the original
+bytes. `EmulatorKbExport` writes the user's custom and edited profiles through the same validator,
+so a recipe that cannot be imported cannot be exported; exports carry launch settings only.
 
 **Resolution.** [`EmulatorLaunchResolver`](feature/feature-launcher/src/main/kotlin/com/playfieldportal/feature/launcher/EmulatorLaunchResolver.kt)
 walks the configuration ladder and returns a typed `ResolvedLaunch(profile, source, core)` — the
@@ -128,7 +204,7 @@ which owns three things that used to be scattered across call sites:
 - **Named failures.** `startActivity` lives here, so an `ActivityNotFoundException` or
   `SecurityException` can never be silently swallowed. Preflight also refuses launches with revoked
   SAF grants, or launch activities dropped by an emulator update.
-- **Outcome recording.** Each settled launch writes a `LaunchOutcome` row (schema v41).
+- **Outcome recording.** Each settled launch writes a `LaunchOutcome` row (the `launch_outcomes` table, added in schema v41).
 - **Post-launch verification.** PFP is the HOME launcher, so no usage-stats permission is needed: a
   successful dispatch backgrounds it. If the host is never stopped inside the stop window, the
   emulator never took the foreground; a return before the minimum session length is treated as an
@@ -159,10 +235,17 @@ per-system defaults, and copyable diagnostics instead of a dead end.
   [`XmbLists.kt`](feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/viewmodel/XmbLists.kt);
   `XMBViewModel` owns the state and the writes. Pins for cards, custom cards and apps stay in
   their own tables' columns.
-- **Settings hierarchy:** two levels. L1 sections (Library, Media, Emulators, Interface, System)
-  open as nested XMB items; L2 entries route to settings screens through the
-  `SETTINGS_SCREEN_ROUTES` allowlist in `SettingsNavHost`. The structure is pinned by
-  `SettingsHierarchyTest`.
+- **Settings hierarchy:** two levels. The Settings root is **Android Settings** followed by the L1
+  sections (`SettingsSection`: Library, Emulators, Interface, Achievements, Media, System), which
+  open as nested XMB items; their L2 rows come from `settingsSectionItems()` and route to settings
+  screens through the `SETTINGS_SCREEN_ROUTES` allowlist in `SettingsNavHost`. A row behind a
+  feature flag is filtered out there (Backup & Restore, via `FeatureFlags.BACKUP_RESTORE`), and
+  `isSettingsRouteEnabled` stops a stale notification from opening it. The structure is pinned by
+  `SettingsHierarchyTest`, and the README's Settings reference mirrors it.
+- **D-pad LEFT:** *Left Backs Out* (`ControllerLayoutPreferences.leftBacksOut`) is an XMB-only
+  preference — LEFT unwinds a crossbar folder or flyout through the same `backOutOfDrill()` ladder
+  as BACK. `SettingsScaffold` never treats LEFT as back: on a row without inline actions it is a
+  no-op, so LEFT cannot leave a Settings screen or a wizard page.
 - **Input:** a gamepad dispatcher routes D-pad/A/B/Y to the focused layer. `hasBlockingOverlay`
   guards the main XMB navigation so input never drives the bar behind a dialog or overlay. Cursor
   movement itself lives in `core:core-navigation`, away from Compose.
@@ -184,7 +267,7 @@ render tiers: **user pick > theme icon > built-in**.
 
 ## Customization: icons, UI media, and motion
 
-*Unreleased — on `more-customization`.* Four subsystems share one shape: a per-slot file store
+*Unreleased — landed after 1.2.1, ships in 1.3.0.* Four subsystems share one shape: a per-slot file store
 under `filesDir/`, a limits object in `core:theme-kit` so the app and the desktop Studio agree on
 the numbers, staged imports, and a DataStore stamp for cache invalidation.
 
@@ -341,8 +424,9 @@ nothing is listening.
 - **Seams over platform mocks.** Wall clocks (`RescanClock`, `LaunchClock`), cache eviction
   (`CustomIconCacheEvictor`) and scan sources (`ScanSourceResolver`) are injected interfaces, so
   timing and IO boundaries are drivable from unit tests.
-- **Long-running work** (scans, artwork fetches, backups) runs off the main thread and surfaces
-  progress through `BackgroundTaskNotifier` (system notifications).
+- **Long-running work** (scans, artwork fetches, achievement updates) runs off the main thread and
+  surfaces progress in the launcher's own notification panel (RUNNING / EARLIER) rather than the
+  Android shade.
 
 ## Where decisions are recorded
 

@@ -87,4 +87,59 @@ class EmulatorIntentResolverPreflightTest {
             "reachable grant must not be refused by the probe; failure: ${result.exceptionOrNull()?.message}",
         )
     }
+
+    // ── Signer pinning (AD-10) and command refusal (AD-1) ─────────────────────
+
+    private val pinA = "a".repeat(64)
+    private val pinB = "b".repeat(64)
+
+    private fun pinnedProfile(vararg pins: String) = componentProfile().copy(signerSha256 = pins.toList())
+
+    @Test
+    fun `pinned profile whose installed signer matches passes the preflight`() {
+        val seen = mutableListOf<Pair<String, String>>()
+        val check = SignerCheck { pkg, sha -> seen += pkg to sha; sha == pinB }
+        val resolver = EmulatorIntentResolver(contextWith(), mockk(relaxed = true), check)
+
+        resolver.validateBeforeLaunch(safGame(), pinnedProfile(pinA, pinB))
+
+        assertTrue(seen.all { it.first == "com.emu" })
+    }
+
+    @Test
+    fun `pinned profile whose installed signer matches none fails naming the emulator`() {
+        val resolver = EmulatorIntentResolver(contextWith(), mockk(relaxed = true), SignerCheck { _, _ -> false })
+
+        val result = runBlocking { resolver.resolve(safGame(), pinnedProfile(pinA)) }
+
+        val message = result.exceptionOrNull()?.message.orEmpty()
+        assertTrue(result.isFailure)
+        assertTrue(message.contains("Emu"), "message should name the emulator: $message")
+        assertTrue(message.contains("expected build", ignoreCase = true), "got: $message")
+    }
+
+    @Test
+    fun `profile without pins never consults the signer check`() {
+        val check = SignerCheck { _, _ -> error("signer check must not run without pins") }
+        val resolver = EmulatorIntentResolver(contextWith(), mockk(relaxed = true), check)
+
+        resolver.validateBeforeLaunch(safGame(), componentProfile())
+    }
+
+    @Test
+    fun `custom command profile fails resolve with a named reason and builds no intent`() {
+        val resolver = EmulatorIntentResolver(contextWith(), mockk(relaxed = true), SignerCheck { _, _ -> true })
+        val profile = componentProfile().copy(
+            intentType = IntentType.CUSTOM_COMMAND,
+            customCommand = "am start -n com.victim/.Main",
+        )
+
+        val result = runBlocking { resolver.resolve(safGame(), profile) }
+
+        assertTrue(result.isFailure)
+        assertTrue(
+            result.exceptionOrNull()!!.message!!.contains("custom command", ignoreCase = true),
+            "got: ${result.exceptionOrNull()!!.message}",
+        )
+    }
 }

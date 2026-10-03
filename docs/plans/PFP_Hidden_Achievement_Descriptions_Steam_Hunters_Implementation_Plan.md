@@ -1,5 +1,9 @@
 # Hidden Achievement Descriptions via Steam Hunters
 
+**Status: 1.1, 2.1, 3.1 implemented, tests green, no warnings (2026-10-02); AD-2 and AD-5 approved. Awaiting device check.**
+
+Deviation from 1.1: `SteamHuntersApi` returns `Response<ResponseBody>`, decoded by `SteamHuntersAchievements.decode`. The endpoint serves gzip + chunked (no Content-Length), so the size cap is a bounded read rather than the roster's Content-Length check.
+
 ## Context
 
 Local Steam (LOCAL_STEAM, emulated Windows games) shows achievements from Steam's Web API schema.
@@ -143,9 +147,9 @@ than breaks if access is withdrawn.
 
 | ID  | Task | Depends On | Status |
 | --- | ---- | ---------- | ------ |
-| 1.1 | Steam Hunters API client and model | None | READY |
-| 2.1 | Steam Hunters-first enrichment, unearned hidden coins, new roster tier | 1.1, AD-2 approval | READY |
-| 3.1 | Backfill on the cached sync path | 2.1, AD-5 approval | READY |
+| 1.1 | Steam Hunters API client and model | None | DONE |
+| 2.1 | Steam Hunters-first enrichment, unearned hidden coins, new roster tier | 1.1, AD-2 approval | DONE |
+| 3.1 | Backfill on the cached sync path | 2.1, AD-5 approval | DONE |
 
 ### Task 1.1 — Steam Hunters API client and model
 

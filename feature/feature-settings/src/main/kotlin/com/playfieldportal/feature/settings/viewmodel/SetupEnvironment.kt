@@ -13,7 +13,7 @@ import javax.inject.Inject
 private const val RETROARCH_PACKAGE = "com.retroarch"
 
 // Vita3K ships under one package name plus a commonly shared variant; either one installed means
-// its data-folder (ux0) section is offered. Same set as KnownEmulatorCatalog.
+// its data-folder (ux0) section is offered. Same set as the built-in knowledge base entry.
 private val VITA3K_PACKAGES = listOf("org.vita3k.emulator", "org.vita3k.emulator.ikhoeyZX")
 
 private const val ARMSX3_PACKAGE = "com.armsx3"

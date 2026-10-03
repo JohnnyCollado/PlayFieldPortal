@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
@@ -35,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPrompt
-import com.playfieldportal.feature.settings.ui.LocalSettingsLeftBacksOut
 import com.playfieldportal.feature.settings.ui.LocalSettingsScrollStateRegistrar
 import com.playfieldportal.feature.settings.ui.SettingsScaffold
 
@@ -93,51 +91,48 @@ fun WizardScaffold(
 ) {
     // Read through State so the interceptor installed once always reaches this page's skip.
     val skip by rememberUpdatedState(onSkip)
-    // LEFT never pages the wizard: a row without inline actions leaves LEFT a no-op here.
-    CompositionLocalProvider(LocalSettingsLeftBacksOut provides false) {
-        SettingsScaffold(
-            title = title,
-            subtitle = "",
-            onBack = onBack,
-            modifier = modifier,
-            onInterceptAction = { action ->
-                val onSkipNow = skip
-                if (action == GamepadAction.NEXT_CATEGORY && onSkipNow != null) {
-                    onSkipNow()
-                    true
-                } else {
-                    false
-                }
-            },
-            // The wave reads through — the wizard sits on a light scrim, not the dark settings one.
-            lightScrim = true,
-            header = { WizardHeader(stepNumber, title) },
-            footer = { WizardFooter(backEnabled, showSkip = onSkip != null, confirmLabel = confirmLabel) },
-            contentKey = contentKey,
-        ) {
-            // The wizard owns the shared scrollable column (registered with the scaffold so
-            // controller boundary navigation and keep-in-view share one scroll owner).
-            val scrollState = rememberScrollState()
-            LocalSettingsScrollStateRegistrar.current(scrollState)
-            // One scroll state serves every page, so without this a tall page's offset carries
-            // into the short page after it and opens it scrolled past its own content. Every page
-            // starts at the top, going forward and back alike.
-            //
-            // scrollTo, not animateScrollTo: a page turn is a cut, not a movement, and animating it
-            // would race the scaffold's keep-in-view clamp as the new page's focus lands.
-            LaunchedEffect(contentKey) { scrollState.scrollTo(0) }
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState),
-            ) {
-                WizardHeading(heading, hint)
-                if (message != null && onDismissMessage != null) {
-                    WizardMessageRow(message, onDismissMessage)
-                }
-                content()
-                Spacer(Modifier.height(24.dp))
+    SettingsScaffold(
+        title = title,
+        subtitle = "",
+        onBack = onBack,
+        modifier = modifier,
+        onInterceptAction = { action ->
+            val onSkipNow = skip
+            if (action == GamepadAction.NEXT_CATEGORY && onSkipNow != null) {
+                onSkipNow()
+                true
+            } else {
+                false
             }
+        },
+        // The wave reads through — the wizard sits on a light scrim, not the dark settings one.
+        lightScrim = true,
+        header = { WizardHeader(stepNumber, title) },
+        footer = { WizardFooter(backEnabled, showSkip = onSkip != null, confirmLabel = confirmLabel) },
+        contentKey = contentKey,
+    ) {
+        // The wizard owns the shared scrollable column (registered with the scaffold so
+        // controller boundary navigation and keep-in-view share one scroll owner).
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
+        // One scroll state serves every page, so without this a tall page's offset carries
+        // into the short page after it and opens it scrolled past its own content. Every page
+        // starts at the top, going forward and back alike.
+        //
+        // scrollTo, not animateScrollTo: a page turn is a cut, not a movement, and animating it
+        // would race the scaffold's keep-in-view clamp as the new page's focus lands.
+        LaunchedEffect(contentKey) { scrollState.scrollTo(0) }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState),
+        ) {
+            WizardHeading(heading, hint)
+            if (message != null && onDismissMessage != null) {
+                WizardMessageRow(message, onDismissMessage)
+            }
+            content()
+            Spacer(Modifier.height(24.dp))
         }
     }
 }

@@ -1,8 +1,11 @@
 package com.playfieldportal.feature.achievements.provider.localsteam
 
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
+import com.playfieldportal.core.data.database.dao.AccountAchievementDao
+import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import com.playfieldportal.feature.achievements.api.RateLimiter
+import com.playfieldportal.feature.achievements.api.SyncedCoin
 import com.playfieldportal.feature.achievements.provider.RemoteAchievementSource
 import com.playfieldportal.feature.achievements.provider.steam.SteamCoinMapper
 import com.playfieldportal.feature.achievements.provider.steam.SteamMetadata
@@ -32,11 +35,14 @@ sealed interface LocalEarnedRead {
  * Schema and rarity come from [SteamMetadataStore] when cached, so a routine refresh — and the
  * launch-return check through [readEarned] + [mapFromCache] — reads only the local file and makes
  * no Steam request. The network path (a new app id, missing metadata, or an explicit repair)
- * fetches both, caches them, and runs the hidden-description enrichment once.
+ * fetches both and caches them. Either path lays already-stored descriptions back on and runs the
+ * hidden-description enrichment only for hidden coins still blank; [readEarned] + [mapFromCache]
+ * never do, so the launch-return check stays network-free. An unchanged game is only re-fetched for
+ * this on a manual update (LocalSteamCheckStrategy).
  *
  * Hidden-description enrichment can't use the STEAM path (which reads the user's OWN profile page,
  * absent for an unowned emu copy), so it goes through [LocalSteamHiddenDescriptions] instead —
- * reading a roster of public top-owner profiles. Best-effort and never fatal.
+ * Steam Hunters first, then a roster of public top-owner profiles. Best-effort and never fatal.
  */
 @Singleton
 class LocalSteamSource @Inject constructor(
@@ -45,6 +51,7 @@ class LocalSteamSource @Inject constructor(
     private val credentials: AchievementCredentialsProvider,
     private val hiddenDescriptions: LocalSteamHiddenDescriptions,
     private val metadataStore: SteamMetadataStore,
+    private val coinDao: AccountAchievementDao,
     private val clock: AchievementClock,
 ) : RemoteAchievementSource {
 
@@ -72,7 +79,7 @@ class LocalSteamSource @Inject constructor(
 
         if (cached != null || key == null) {
             val meta = cached ?: return ProviderSyncResult.MissingCredentials
-            return ProviderSyncResult.Success(appId, SteamCoinMapper.map(appId, meta.schema, meta.rarity, earnedByName))
+            return ProviderSyncResult.Success(appId, backfill(appId, SteamCoinMapper.map(appId, meta.schema, meta.rarity, earnedByName)))
         }
 
         rate.await()
@@ -97,7 +104,23 @@ class LocalSteamSource @Inject constructor(
         metadataStore.put(appId, SteamMetadata(schemaCoins, percentByName, clock.now()))
 
         val coins = SteamCoinMapper.map(appId, schemaCoins, percentByName, earnedByName)
-        return ProviderSyncResult.Success(appId, hiddenDescriptions.enrich(appId, coins))
+        return ProviderSyncResult.Success(appId, backfill(appId, coins))
+    }
+
+    // The schema never carries a hidden coin's description, so descriptions already learned are laid
+    // back on first (the writer would keep them anyway); enrichment then runs, on either path, only
+    // for hidden coins still blank. A fetch only happens when the progress file changed, on a new
+    // match or repair, or when the user asked for an update (see LocalSteamCheckStrategy).
+    private suspend fun backfill(appId: String, coins: List<SyncedCoin>): List<SyncedCoin> {
+        val known = coinDao.getForSet(AchievementProvider.LOCAL_STEAM.name, appId)
+            .filter { it.description.isNotBlank() }
+            .associate { it.providerAchievementId to it.description }
+        val carried = coins.map { coin ->
+            if (coin.description.isNotBlank()) coin
+            else known[coin.providerAchievementId]?.let { coin.copy(description = it) } ?: coin
+        }
+        if (carried.none { it.isHidden && it.description.isBlank() }) return carried
+        return hiddenDescriptions.enrich(appId, carried)
     }
 
     /** Reads only [appId]'s local progress file — no network, no metadata. */

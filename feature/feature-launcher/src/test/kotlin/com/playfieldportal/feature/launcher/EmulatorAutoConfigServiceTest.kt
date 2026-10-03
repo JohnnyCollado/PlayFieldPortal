@@ -7,10 +7,17 @@ import com.playfieldportal.core.data.repository.CoreInventory
 import com.playfieldportal.core.data.repository.RetroArchLink
 import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.core.domain.model.IntentType
+import com.playfieldportal.core.domain.model.emulatorkb.EmulatorKbDecode
+import com.playfieldportal.core.domain.model.emulatorkb.EmulatorKbDecoder
+import com.playfieldportal.core.domain.model.emulatorkb.EmulatorKbDocument
+import com.playfieldportal.feature.launcher.kb.EmulatorKnowledgeStore
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
@@ -33,12 +40,34 @@ class EmulatorAutoConfigServiceTest {
         Dispatchers.Unconfined,
         mockk(relaxed = true),
     )
+    private val store = EmulatorKnowledgeStore(context, Dispatchers.Unconfined)
+    private val detector = EmulatorDetector(context, store)
+
     // Real link, no stored tree → CoreInventory.Unlinked → no RetroArch cores offered.
     private val service = EmulatorAutoConfigService(
-        EmulatorDetector(context),
+        detector,
         repository,
         com.playfieldportal.core.data.repository.RetroArchLink(context),
     )
+
+    @Before
+    fun cleanKnowledgeFiles() {
+        java.io.File(context.filesDir, "emulator_kb").deleteRecursively()
+    }
+
+    private fun userFile(vararg emulators: String): EmulatorKbDocument {
+        val text = """{"format":"pfp-emulator-kb","schemaVersion":1,"version":0,"label":"",
+            "emulators":[${emulators.joinToString(",")}],"platforms":[]}"""
+        return (EmulatorKbDecoder.decode(text) as EmulatorKbDecode.Decoded).document
+    }
+
+    private fun emu(id: String, packages: List<String>, launch: String, extra: String = ""): String {
+        val pkgs = packages.joinToString(",") { "\"$it\"" }
+        return """{"id":"$id","name":"Emu $id","packageNames":[$pkgs],"platformIds":["psx"],"launch":$launch$extra}"""
+    }
+
+    private val viewLaunch = """{"intentType":"ACTION_VIEW","action":"android.intent.action.VIEW"}"""
+    private val componentLaunch = """{"intentType":"COMPONENT","activityClass":"com.example.emu.Main"}"""
 
     private fun installPackage(packageName: String) {
         shadowOf(context.packageManager)
@@ -49,7 +78,7 @@ class EmulatorAutoConfigServiceTest {
     private fun serviceSeeing(state: CoreInventory): EmulatorAutoConfigService {
         val link = mockk<RetroArchLink>()
         coEvery { link.inventory() } returns state
-        return EmulatorAutoConfigService(EmulatorDetector(context), repository, link)
+        return EmulatorAutoConfigService(detector, repository, link)
     }
 
     private fun retroArchCore(fileName: String, platform: String) = EmulatorProfile(
@@ -167,10 +196,10 @@ class EmulatorAutoConfigServiceTest {
     // profiles persisted as available, winning the automatic default for every console without a
     // standalone emulator, launching RetroArch with a core path that did not exist.
     @Test
-    fun `no retroarch profiles are offered without a core inventory`() {
+    fun `no retroarch profiles are offered without a core inventory`() = runBlocking {
         installPackage("com.retroarch")
 
-        val profiles = EmulatorDetector(context).detect(CoreInventory.Unlinked)
+        val profiles = detector.detect(CoreInventory.Unlinked)
             .filter { it.autoSource == "retroarch-core" }
 
         assertTrue(
@@ -180,7 +209,7 @@ class EmulatorAutoConfigServiceTest {
     }
 
     @Test
-    fun `only cores present in the inventory are offered`() {
+    fun `only cores present in the inventory are offered`() = runBlocking {
         installPackage("com.retroarch")
         val inventory = CoreInventory.Verified(
             setOf(
@@ -191,7 +220,7 @@ class EmulatorAutoConfigServiceTest {
             )
         )
 
-        val profiles = EmulatorDetector(context).detect(inventory)
+        val profiles = detector.detect(inventory)
             .filter { it.autoSource == "retroarch-core" }
 
         assertEquals(2, profiles.size, "Only mapped, installed cores may become profiles")
@@ -244,15 +273,145 @@ class EmulatorAutoConfigServiceTest {
     }
 
     @Test
-    fun `detector maps attachRomData through to the profile`() {
+    fun `detector maps attachRomData through to the profile`() = runBlocking {
         installPackage("dev.eden.eden_emulator")
 
-        val eden = EmulatorDetector(context).detect()
+        val eden = detector.detect()
             .first { it.packageName == "dev.eden.eden_emulator" }
 
         assertEquals(IntentType.COMPONENT, eden.intentType)
         assertEquals("android.nfc.action.TECH_DISCOVERED", eden.intentAction)
         assertTrue(eden.attachRomData, "attachRomData lost between catalog and profile")
         assertEquals("org.yuzu.yuzu_emu.activities.EmulationActivity", eden.activityClass)
+    }
+
+    @Test
+    fun `an installed second package yields its own auto id with the knowledge id set`() = runBlocking {
+        store.addUserFile("t", userFile(emu("multi", listOf("com.example.first", "com.example.second"), viewLaunch)))
+        installPackage("com.example.second")
+
+        val profile = detector.detect().single { it.knowledgeId == "multi" }
+
+        assertEquals(EmulatorDetector.autoId("com.example.second"), profile.id)
+        assertEquals("com.example.second", profile.packageName)
+    }
+
+    @Test
+    fun `a launchByPackage override applies only to its own package`() = runBlocking {
+        val builds = emu(
+            "builds", listOf("com.example.base", "com.example.alt"), componentLaunch,
+            extra = ""","launchByPackage":{"com.example.alt":$viewLaunch}""",
+        )
+        store.addUserFile("t", userFile(builds))
+
+        installPackage("com.example.alt")
+        val alt = detector.detect().single { it.knowledgeId == "builds" }
+        assertEquals("com.example.alt", alt.packageName)
+        assertEquals(IntentType.ACTION_VIEW, alt.intentType)
+        assertEquals(null, alt.activityClass)
+
+        // The sibling without an override uses the entry's base launch.
+        installPackage("com.example.base")
+        val base = detector.detect().single { it.knowledgeId == "builds" }
+        assertEquals("com.example.base", base.packageName)
+        assertEquals(IntentType.COMPONENT, base.intentType)
+        assertEquals("com.example.emu.Main", base.activityClass)
+    }
+
+    @Test
+    fun `signer pins are copied onto the detected profile`() = runBlocking {
+        val pin = "a".repeat(64)
+        store.addUserFile(
+            "t",
+            userFile(emu("pinned", listOf("com.example.pinned"), viewLaunch, extra = ""","signerSha256":["$pin"]""")),
+        )
+        installPackage("com.example.pinned")
+
+        assertEquals(listOf(pin), detector.detect().single { it.knowledgeId == "pinned" }.signerSha256)
+    }
+
+    @Test
+    fun `a user layer override changes an untouched auto profile on refresh`() = runBlocking {
+        installPackage("com.github.stenzek.duckstation")
+        service.runOnStartup()
+        val id = EmulatorDetector.autoId("com.github.stenzek.duckstation")
+        assertEquals("{rom_uri}", persistedById(id).intentExtras["bootPath"])
+
+        val override = """{"intentType":"COMPONENT","activityClass":"com.github.stenzek.duckstation.EmulationActivity","extras":{"bootPath":"{rom_path}"}}"""
+        store.addUserFile("t", userFile(emu("duckstation", listOf("com.github.stenzek.duckstation"), override)))
+        service.runOnStartup()
+
+        assertEquals("{rom_path}", persistedById(id).intentExtras["bootPath"])
+    }
+
+    @Test
+    fun `a userModified profile is unchanged by a knowledge change`() = runBlocking {
+        installPackage("com.github.stenzek.duckstation")
+        val id = EmulatorDetector.autoId("com.github.stenzek.duckstation")
+        repository.savePersistedProfile(
+            EmulatorProfile(
+                id = id, name = "Mine", packageName = "com.github.stenzek.duckstation",
+                intentType = IntentType.ACTION_VIEW, supportedPlatformIds = listOf("psx"),
+                isAutoGenerated = true, userModified = true,
+            )
+        )
+        store.addUserFile(
+            "t", userFile(emu("duckstation", listOf("com.github.stenzek.duckstation"), componentLaunch)),
+        )
+
+        service.runOnStartup()
+
+        assertEquals("Mine", persistedById(id).name)
+        assertEquals(IntentType.ACTION_VIEW, persistedById(id).intentType)
+    }
+
+    @Test
+    fun `an untouched auto profile whose package left the knowledge base is kept but unavailable`() = runBlocking {
+        // Kept, not deleted: games and memory cards may still reference its id, and a knowledge base
+        // that fails to load must never be able to wipe every detected emulator.
+        fun stale(pkg: String, userModified: Boolean) = EmulatorProfile(
+            id = EmulatorDetector.autoId(pkg), name = pkg, packageName = pkg,
+            intentType = IntentType.ACTION_VIEW, supportedPlatformIds = listOf("psx"),
+            isAutoGenerated = true, autoSource = "auto-detected", userModified = userModified,
+        )
+        repository.savePersistedProfile(stale("com.example.gone", userModified = false))
+        repository.savePersistedProfile(stale("com.example.mine", userModified = true))
+
+        service.runOnStartup()
+
+        val byId = repository.getAllPersistedProfiles().associateBy { it.id }
+        assertFalse(byId.getValue(EmulatorDetector.autoId("com.example.gone")).isAvailable)
+        assertTrue(byId.getValue(EmulatorDetector.autoId("com.example.mine")).isAvailable, "userModified profile is never touched")
+    }
+
+    @Test
+    fun `persisted json without the knowledge fields still decodes`() {
+        val old = """{"id":"x","name":"X","packageName":"com.example.x","intentType":"ACTION_VIEW","supportedPlatformIds":[]}"""
+
+        val decoded = Json.decodeFromString(EmulatorProfile.serializer(), old)
+
+        assertEquals(null, decoded.knowledgeId)
+        assertEquals(emptyList(), decoded.signerSha256)
+    }
+
+    @Test
+    fun `concurrent runs never overlap`() = runBlocking {
+        val link = mockk<RetroArchLink>()
+        coEvery { link.inventory() } returns CoreInventory.Unlinked
+        val repo = mockk<EmulatorProfileRepository>(relaxed = true)
+        val active = java.util.concurrent.atomic.AtomicInteger()
+        val peak = java.util.concurrent.atomic.AtomicInteger()
+        coEvery { repo.getAllPersistedProfiles() } coAnswers {
+            peak.accumulateAndGet(active.incrementAndGet()) { a, b -> maxOf(a, b) }
+            kotlinx.coroutines.delay(30)
+            active.decrementAndGet()
+            emptyList()
+        }
+        val svc = EmulatorAutoConfigService(detector, repo, link)
+
+        List(4) { async(Dispatchers.Default) { svc.runOnStartup() } }
+            .forEach { it.await() }
+
+        assertEquals(1, peak.get())
     }
 }

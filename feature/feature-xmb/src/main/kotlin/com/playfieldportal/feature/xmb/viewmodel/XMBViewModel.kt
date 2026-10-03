@@ -40,6 +40,7 @@ import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.CategoryType
 import com.playfieldportal.core.domain.model.ControllerIcon
+import com.playfieldportal.core.domain.model.FeatureFlags
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameCollection
 import com.playfieldportal.core.domain.model.GameContentType
@@ -578,8 +579,14 @@ enum class SettingsSection(
     INTERFACE   ("settings_section_interface",    "Interface",    "Categories, themes, display & controller"),
     ACHIEVEMENTS("settings_section_achievements", "Achievements", "RetroAchievements & Steam"),
     MEDIA       ("settings_section_media",        "Media",        "Music, video & photo settings"),
-    SYSTEM      ("settings_section_system",       "System",       "About, logs, backup, setup & credits"),
+    SYSTEM      (
+        "settings_section_system", "System",
+        if (FeatureFlags.BACKUP_RESTORE) "About, logs, backup, setup & credits" else "About, logs, setup & credits",
+    ),
 }
+
+/** False for a screen that is switched off (Backup & Restore), so a stale notification cannot open it. */
+internal fun isSettingsRouteEnabled(routeId: String): Boolean = routeId != "settings_backup" || FeatureFlags.BACKUP_RESTORE
 
 fun settingsSectionForId(id: String): SettingsSection? =
     SettingsSection.entries.firstOrNull { it.id == id }
@@ -604,6 +611,7 @@ fun settingsSectionItems(section: SettingsSection): List<XMBItem> = when (sectio
         // B4: per-platform assignment screen — which emulator + core each console uses, and how
         // many of its games override that (with bulk clearing of those overrides).
         XMBItem(id = "settings_emulators_assign", title = "Per-System Defaults", subtitle = "Default emulator & core per console, and per-game overrides"),
+        XMBItem(id = "settings_emulators_knowledge", title = "Emulator knowledge", subtitle = "Updates, your own files & reset to built-in"),
     )
     SettingsSection.INTERFACE -> listOf(
         XMBItem(id = "settings_display",    title = "Display",    subtitle = "Wave, wallpaper, boot & icons"),
@@ -630,10 +638,12 @@ fun settingsSectionItems(section: SettingsSection): List<XMBItem> = when (sectio
         XMBItem(id = "settings_video", title = "Video", subtitle = "Video libraries, scanning & playback"),
         XMBItem(id = "settings_photo", title = "Photo", subtitle = "Photo libraries & scanning"),
     )
-    SettingsSection.SYSTEM -> listOf(
+    SettingsSection.SYSTEM -> listOfNotNull(
         XMBItem(id = "settings_about",  title = "About",            subtitle = "Play Field Portal"),
         XMBItem(id = "settings_logs",   title = "Logs",             subtitle = "Debug & error log viewer"),
-        XMBItem(id = "settings_backup", title = "Backup & Restore", subtitle = "Export & import"),
+        // Parked until the backup rework; the route stays registered.
+        XMBItem(id = "settings_backup", title = "Backup & Restore", subtitle = "Export & import")
+            .takeIf { FeatureFlags.BACKUP_RESTORE },
         XMBItem(id = XMBViewModel.INITIAL_SETUP_SCREEN_ID, title = "Setup Wizard", subtitle = "Guided folder & account setup"),
         XMBItem(id = "settings_credits", title = "Credits",         subtitle = "Artwork & attributions"),
     )
@@ -918,8 +928,8 @@ data class XMBUiState(
     // null at the flat section root. Deliberately NOT part of hasBlockingOverlay: the flyout is
     // XMB foreground, so input keeps driving the item list exactly like every other drill.
     val settingsSectionNav: SettingsSection? = null,
-    // Settings ▸ Controller ▸ Left Backs Out. Mirrored from ControllerLayoutRepository so both the
-    // XMB's own LEFT and the Settings overlay's read one value. Default true matches the pref's.
+    // Settings ▸ Controller ▸ Left Backs Out. Mirrored from ControllerLayoutRepository for the XMB's
+    // own LEFT (Settings screens never back out on LEFT). Default true matches the pref's.
     val leftBacksOut: Boolean = true,
     val pendingSettingsAction: GamepadAction? = null,
     val activeAppDrawerFilter: String? = null,
@@ -8852,7 +8862,7 @@ class XMBViewModel @Inject constructor(
             is NotificationAction.OpenGame ->
                 _uiState.update { it.copy(activeGameId = action.gameId, activeGameAutoLaunch = false) }
             is NotificationAction.OpenSettingsScreen ->
-                _uiState.update { it.copy(activeSettingsScreen = action.routeId) }
+                if (isSettingsRouteEnabled(action.routeId)) _uiState.update { it.copy(activeSettingsScreen = action.routeId) }
             is NotificationAction.ReviewShortcut -> openShortcutReview(action.requestId)
             NotificationAction.None, is NotificationAction.OpenUrl -> Unit
         }

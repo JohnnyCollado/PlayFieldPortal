@@ -31,7 +31,7 @@ import com.playfieldportal.feature.artwork.api.ScreenScraperApi
 import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
 import com.playfieldportal.feature.artwork.importer.DetectedImportSource
 import com.playfieldportal.feature.artwork.portable.PortableArtworkLibrary
-import com.playfieldportal.feature.launcher.EmulatorAutoConfigService
+import com.playfieldportal.feature.launcher.kb.EmulatorKnowledgeRefresher
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -167,7 +167,7 @@ class InitialSetupViewModel @Inject constructor(
     private val artworkImportManager: ArtworkImportManager,
     private val retroArchLink: RetroArchLink,
     private val vita3KLibrary: Vita3KLibrary,
-    private val autoConfig: EmulatorAutoConfigService,
+    private val refresher: EmulatorKnowledgeRefresher,
     private val sgdbKeys: SgdbApiKeyProvider,
     private val metadataKeys: MetadataApiKeyProvider,
     private val achievementCredentials: AchievementCredentialsProvider,
@@ -503,7 +503,7 @@ class InitialSetupViewModel @Inject constructor(
         viewModelScope.launch {
             scratch.update { it.copy(retroArchDetecting = true) }
             retroArchLink.save(uri)
-            autoConfig.runOnStartup()
+            refresher.run()
             readRetroArchState("RetroArch linked — installed cores are now offered in Emulators.")
         }
     }
@@ -512,7 +512,7 @@ class InitialSetupViewModel @Inject constructor(
         if (!scratch.value.retroArchLinked) return
         viewModelScope.launch {
             scratch.update { it.copy(retroArchDetecting = true) }
-            autoConfig.runOnStartup()
+            refresher.run()
             readRetroArchState("RetroArch cores re-checked.")
         }
     }
@@ -520,7 +520,7 @@ class InitialSetupViewModel @Inject constructor(
     fun unlinkRetroArch() {
         viewModelScope.launch {
             retroArchLink.clear()
-            autoConfig.runOnStartup()
+            refresher.run()
             scratch.update {
                 it.copy(
                     retroArchLinked = false,

@@ -2,16 +2,21 @@ package com.playfieldportal.feature.achievements.provider.localsteam
 
 import android.net.Uri
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
+import com.playfieldportal.core.data.database.dao.AccountAchievementDao
+import com.playfieldportal.core.data.database.entity.AccountAchievementEntity
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
+import com.playfieldportal.feature.achievements.api.SyncedCoin
 import com.playfieldportal.feature.achievements.provider.steam.SteamGame
 import com.playfieldportal.feature.achievements.provider.steam.SteamGameStats
 import com.playfieldportal.feature.achievements.provider.steam.SteamGlobalPct
 import com.playfieldportal.feature.achievements.provider.steam.SteamGlobalResponse
 import com.playfieldportal.feature.achievements.provider.steam.SteamGlobalWrap
+import com.playfieldportal.feature.achievements.provider.steam.SteamMetadata
 import com.playfieldportal.feature.achievements.provider.steam.SteamSchemaAchievement
 import com.playfieldportal.feature.achievements.provider.steam.SteamSchemaResponse
 import com.playfieldportal.feature.achievements.provider.steam.SteamWebApi
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import retrofit2.Response
@@ -31,7 +36,12 @@ class LocalSteamSourceTest {
     }
     // Nothing cached: these cases exercise the network path that fills the metadata cache.
     private val metadataStore = mockk<com.playfieldportal.feature.achievements.provider.steam.SteamMetadataStore>(relaxed = true)
-    private val source = LocalSteamSource(discovery, webApi, credentials, hiddenDescriptions, metadataStore, clock = { 0L })
+    // Nothing stored yet unless a test says so.
+    private val coinDao = mockk<AccountAchievementDao> {
+        coEvery { getForSet(any(), any()) } returns emptyList()
+    }
+    private val source =
+        LocalSteamSource(discovery, webApi, credentials, hiddenDescriptions, metadataStore, coinDao, clock = { 0L })
 
     private val progressUri = mockk<Uri>()
     private val game = LocalSteamGame("MARVEL Cosmic Invasion", "doc:games/marvel", "2753970", progressUri)
@@ -98,5 +108,66 @@ class LocalSteamSourceTest {
 
         assertEquals(2, result.coins.size)
         assertTrue(result.coins.none { it.isEarned })
+    }
+
+    // --- Cached path: hidden-description backfill (AD-5) ---
+
+    private fun cacheSchema(vararg entries: SteamSchemaAchievement) {
+        coEvery { metadataStore.get("2753970") } returns SteamMetadata(entries.toList(), emptyMap(), fetchedAt = 0L)
+        coEvery { discovery.readProgress(progressUri) } returns emptyList()
+    }
+
+    private val hiddenBlank = SteamSchemaAchievement(name = "Secret", displayName = "Secret", hidden = 1)
+    private val visible = SteamSchemaAchievement(name = "Open", displayName = "Open", description = "Plain.")
+
+    @Test
+    fun `a cached sync with a blank hidden coin enriches it`() = runTest {
+        cacheSchema(hiddenBlank, visible)
+        coEvery { hiddenDescriptions.enrich("2753970", any()) } answers {
+            secondArg<List<SyncedCoin>>()
+                .map { if (it.isHidden) it.copy(description = "Backfilled.") else it }
+        }
+
+        val result = assertIs<ProviderSyncResult.Success>(source.fetch("2753970"))
+
+        assertEquals("Backfilled.", result.coins.single { it.providerAchievementId == "Secret" }.description)
+        coVerify(exactly = 0) { webApi.getSchemaForGame(any(), any()) }
+    }
+
+    @Test
+    fun `a cached sync with no blank hidden coin never enriches`() = runTest {
+        cacheSchema(visible, hiddenBlank.copy(description = "Steam shipped this one."))
+
+        source.fetch("2753970")
+
+        coVerify(exactly = 0) { hiddenDescriptions.enrich(any(), any()) }
+    }
+
+    @Test
+    fun `the launch-return check never enriches`() = runTest {
+        cacheSchema(hiddenBlank)
+        coEvery { discovery.readProgressOrNull(progressUri) } returns emptyList()
+
+        val read = assertIs<LocalEarnedRead.Read>(source.readEarned("2753970"))
+        source.mapFromCache("2753970", read)
+
+        coVerify(exactly = 0) { hiddenDescriptions.enrich(any(), any()) }
+    }
+
+    @Test
+    fun `a cached sync whose stored rows already describe every hidden coin makes no enrichment call`() = runTest {
+        cacheSchema(hiddenBlank)
+        coEvery { coinDao.getForSet("LOCAL_STEAM", "2753970") } returns listOf(
+            AccountAchievementEntity(
+                provider = "LOCAL_STEAM", providerGameId = "2753970", providerAchievementId = "Secret",
+                title = "Secret", description = "Learned last week.", tier = "GOLD", globalRarity = 3.0,
+                isHidden = true,
+            ),
+        )
+
+        val result = assertIs<ProviderSyncResult.Success>(source.fetch("2753970"))
+
+        assertEquals("Learned last week.", result.coins.single().description)
+        coVerify(exactly = 0) { hiddenDescriptions.enrich(any(), any()) }
     }
 }

@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
+import kotlinx.coroutines.flow.first
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -180,6 +181,63 @@ class EmulatorProfileRepositoryTest {
 
         repo.initialize()
 
+        assertTrue(repo.getAllPersistedProfiles().isEmpty())
+    }
+
+    // ── Bundled profiles retired (8.3) ────────────────────────────────────────
+
+    // The two SHORTCUT profiles are all that bundled_profiles.json still holds.
+    private val shortcutIds = listOf("winlator", "gamehub")
+
+    @Test
+    fun `the bundled asset holds only the two SHORTCUT profiles`() {
+        val text = context.assets.open("emulator_profiles/bundled_profiles.json").bufferedReader().use { it.readText() }
+        val profiles = json.decodeFromString<List<EmulatorProfile>>(text)
+
+        assertEquals(shortcutIds, profiles.map { it.id })
+        assertTrue(profiles.all { it.intentType == IntentType.SHORTCUT })
+    }
+
+    @Test
+    fun `only the SHORTCUT profiles load from the bundle`() = runTest {
+        val repo = repository(StandardTestDispatcher(testScheduler))
+
+        repo.initialize()
+
+        assertEquals(shortcutIds, repo.profiles.first().map { it.id })
+    }
+
+    @Test
+    fun `persisted profiles are intact next to the bundled SHORTCUT profiles`() = runTest {
+        writePersisted(profile("mine"), profile("duckstation"))
+        val repo = repository(StandardTestDispatcher(testScheduler))
+
+        repo.initialize()
+
+        assertEquals(shortcutIds + listOf("mine", "duckstation"), repo.profiles.first().map { it.id })
+        assertEquals(listOf("mine", "duckstation"), repo.getAllPersistedProfiles().map { it.id })
+    }
+
+    @Test
+    fun `a persisted profile wins over a bundled one with the same id`() = runTest {
+        writePersisted(profile("winlator", packageName = "org.example.winlator"))
+        val repo = repository(StandardTestDispatcher(testScheduler))
+
+        repo.initialize()
+
+        val winlator = repo.profiles.first().single { it.id == "winlator" }
+        assertEquals("org.example.winlator", winlator.packageName)
+    }
+
+    @Test
+    fun `reset clears persisted profiles and leaves only the bundled SHORTCUT profiles`() = runTest {
+        writePersisted(profile("mine"))
+        val repo = repository(StandardTestDispatcher(testScheduler))
+        repo.initialize()
+
+        repo.resetPersistedProfiles()
+
+        assertEquals(shortcutIds, repo.profiles.first().map { it.id })
         assertTrue(repo.getAllPersistedProfiles().isEmpty())
     }
 }
