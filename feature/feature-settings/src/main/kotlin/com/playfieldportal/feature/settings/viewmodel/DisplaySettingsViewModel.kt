@@ -14,6 +14,7 @@ import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.ControllerLayoutRepository
 import com.playfieldportal.core.data.repository.GameBootPreferences
+import com.playfieldportal.core.data.repository.ThemePrefKeys
 import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe
 import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe.clearWallpaperLuma
@@ -54,7 +55,7 @@ import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
 
-private val KEY_WAVE_STYLE         = stringPreferencesKey("display_wave_style")
+private val KEY_WAVE_STYLE         = ThemePrefKeys.WAVE_STYLE
 /** Display ▸ Show Boot Sequence. Internal: the Themes screen switches it on for a theme's boot clip. */
 internal val KEY_SHOW_BOOT        = booleanPreferencesKey("display_show_boot")
 private val KEY_BOOT_ON_RESUME     = booleanPreferencesKey("display_boot_on_resume")
@@ -68,10 +69,8 @@ private val KEY_CONTEXT_MENU_HINT_DELAY_SECONDS = InterfaceHintPrefs.KEY_CONTEXT
 private val KEY_TOUCH_SENSITIVITY  = stringPreferencesKey("interface_touch_sensitivity")
 // Must match GameLaunchPreferences.KEY_DIRECT_LAUNCH — both read/write this same pref.
 private val KEY_DIRECT_LAUNCH      = booleanPreferencesKey("pref_direct_game_launch")
-// Must match XMBViewModel.KEY_ICON_LEGIBILITY — both read/write this same pref.
-private val KEY_ICON_LEGIBILITY    = stringPreferencesKey("display_icon_legibility")
-// Must match XMBViewModel.KEY_SOLID_UNFOCUSED_ICONS — both read/write this same pref.
-private val KEY_SOLID_UNFOCUSED_ICONS = booleanPreferencesKey("display_solid_unfocused_icons")
+private val KEY_ICON_LEGIBILITY    = ThemePrefKeys.ICON_LEGIBILITY
+private val KEY_SOLID_UNFOCUSED_ICONS = ThemePrefKeys.SOLID_UNFOCUSED_ICONS
 // Must match XMBViewModel.KEY_TEXT_SHADOW — both read/write this same pref.
 private val KEY_TEXT_SHADOW = booleanPreferencesKey("display_text_shadow")
 // Must match XMBViewModel.KEY_ITEM_LIST_MOTION — both read/write this same pref.
@@ -79,33 +78,32 @@ private val KEY_ITEM_LIST_MOTION = stringPreferencesKey("display_item_list_motio
 // Must match XMBViewModel.KEY_UMD_SLOT_MODE — both read/write this same pref.
 private val KEY_UMD_SLOT_MODE = stringPreferencesKey("display_umd_slot_mode")
 // ── Font colour (Display ▸ Font Colour) ──────────────────────────────────────
-// Must match XMBViewModel.KEY_TEXT_COLOR — both read/write this same pref.
 // Absent = inherit the theme's own text colour (white on every preset).
-private val KEY_TEXT_COLOR = longPreferencesKey("display_text_color")
-// Display ▸ Sub Font Colour, same contract (XMBViewModel.KEY_SUB_TEXT_COLOR). Absent = sub text
-// follows the font colour.
-private val KEY_SUB_TEXT_COLOR = longPreferencesKey("display_sub_text_color")
+private val KEY_TEXT_COLOR = ThemePrefKeys.TEXT_COLOR
+// Display ▸ Sub Font Colour, same contract. Absent = sub text follows the font colour.
+private val KEY_SUB_TEXT_COLOR = ThemePrefKeys.SUB_TEXT_COLOR
 // "Use my exact colour": skip the lightness clamp. Protection still applies — a plate can rescue
 // a colour without repainting it, which is the whole reason the two are separate settings.
-private val KEY_TEXT_COLOR_EXACT = booleanPreferencesKey("display_text_color_exact")
-// Must match XMBViewModel — the resolved text-protection instrument (AUTO by default).
-private val KEY_TEXT_LEGIBILITY = stringPreferencesKey("display_text_legibility")
+private val KEY_TEXT_COLOR_EXACT = ThemePrefKeys.TEXT_COLOR_EXACT
+// The text-protection request (AUTO by default). Shown and saved here, carried by themes and
+// backup; the launcher's own renderers do not read it yet.
+private val KEY_TEXT_LEGIBILITY = ThemePrefKeys.TEXT_LEGIBILITY
 // "Don't warn again": adjustment continues silently, only the notice stops.
 private val KEY_TEXT_NOTICE_SUPPRESSED = booleanPreferencesKey("display_text_contrast_notice_suppressed")
 // Read-only here: the theme owns these, this screen only needs them to know which backdrop the
-// picked font colour will land on. Must match ThemesSettingsViewModel / XMBViewModel.
-private val KEY_ACCENT_OVERRIDE = longPreferencesKey("theme_accent_override")
-private val KEY_COLOR_SCHEME    = stringPreferencesKey("display_color_scheme")
-internal val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpaper")
-// Motion wallpaper (looping MP4/WebM/GIF). Must match XMBViewModel — shared cascade pref.
+// picked font colour will land on.
+private val KEY_ACCENT_OVERRIDE = ThemePrefKeys.ACCENT_OVERRIDE
+private val KEY_COLOR_SCHEME    = ThemePrefKeys.COLOR_SCHEME
+internal val KEY_CUSTOM_WALLPAPER  = ThemePrefKeys.CUSTOM_WALLPAPER
+// Motion wallpaper (looping MP4/WebM/GIF).
 // INVARIANT: never set without KEY_CUSTOM_WALLPAPER — the poster is the fallback for both the
 // freeze paths and decode failure, so a motion file without one is an unrenderable state.
 // Enforced at the two write sites (import, clear) and on read ("motion set, poster missing"
 // degrades to "no motion").
-internal val KEY_MOTION_WALLPAPER  = stringPreferencesKey("display_motion_wallpaper")
+internal val KEY_MOTION_WALLPAPER  = ThemePrefKeys.MOTION_WALLPAPER
 // A theme's crop of its motion video (compact JSON, owned by PfpThemeStore). Anything that replaces
 // or clears the motion wallpaper here removes it, so it can never frame the user's own video.
-internal val KEY_MOTION_CROP       = stringPreferencesKey("display_motion_crop")
+internal val KEY_MOTION_CROP       = ThemePrefKeys.MOTION_CROP
 // Scale & Layout now live in the XMB's on-screen "Adjust XMB Layout" editor (see XMBViewModel);
 // this screen only launches it, so the old scale/bar prefs and steppers were removed here.
 

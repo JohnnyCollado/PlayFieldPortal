@@ -22,6 +22,9 @@ data class EmulatorProfile(
     // emulators whose EmulationActivity filter matches on action + data rather than extras
     // (e.g. the yuzu lineage's android.nfc.action.TECH_DISCOVERED quirk).
     val attachRomData: Boolean = false,
+    // COMPONENT intents only: a template for the intent data (a deep link carrying the game, e.g.
+    // X360 Mobile's "x360mobile://launch?uri={rom_file_uri_encoded}"). Null sets no such data.
+    val dataUri: String? = null,
     val coreMap: Map<String, String> = emptyMap(),           // platformId → core path
     val mimeType: String? = null,
     val useFileUri: Boolean = true,
@@ -65,4 +68,27 @@ object LaunchTemplate {
     const val PACKAGE     = "{package}"
     const val PLATFORM    = "{platform}"
     const val TITLE_ID    = "{title_id}"   // per-game launch token (e.g. Vita3K installed Title ID)
+    const val ROM_FILE_URI = "{rom_file_uri}"                  // file:// URI of the raw path
+    const val ROM_FILE_URI_ENCODED = "{rom_file_uri_encoded}"  // the same, encoded as a query value
+}
+
+/** Pure URI builders behind the file-URI templates, so the exact strings are JVM-testable. */
+object LaunchUris {
+    // RFC 3986 unreserved characters plus the sub-delims and ':' '@' a path segment may carry as-is.
+    private const val PATH_SAFE = "-._~!$&'()*+,;=:@"
+
+    /** `/a b/c.iso` → `file:///a%20b/c.iso`: only what a URI path cannot hold is escaped. */
+    fun fileUriOf(path: String): String = "file://" + path.split('/').joinToString("/") { segment ->
+        buildString {
+            for (byte in segment.toByteArray(Charsets.UTF_8)) {
+                val c = byte.toInt().toChar()
+                if (byte >= 0 && (c.isLetterOrDigit() || c in PATH_SAFE)) append(c)
+                else append('%').append("%02X".format(byte.toInt() and 0xFF))
+            }
+        }
+    }
+
+    /** Encodes [value] for use as one query parameter value (everything but unreserved is escaped). */
+    fun queryEncode(value: String): String =
+        java.net.URLEncoder.encode(value, "UTF-8").replace("+", "%20")
 }

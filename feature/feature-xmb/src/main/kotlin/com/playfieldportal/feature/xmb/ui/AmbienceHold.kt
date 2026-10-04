@@ -20,9 +20,9 @@ interface AmbienceHoldEntryPoint {
 }
 
 /**
- * Keeps ambience down for as long as this is composed and [active], under [owner] (one of
- * AmbienceController's OWNER_* names, so two holders never release each other). Scoped to
- * composition, so backing out of the screen gives the music back by construction.
+ * Keeps ambience down for as long as this is composed and [active], as its own hold labelled
+ * [owner] (one of AmbienceController's OWNER_* names). Scoped to composition, so backing out of
+ * the screen gives the music back by construction, and no other holder can end it early.
  */
 @Composable
 fun HoldAmbience(owner: String, active: Boolean = true) {
@@ -32,7 +32,7 @@ fun HoldAmbience(owner: String, active: Boolean = true) {
         val ambience = EntryPointAccessors
             .fromApplication(context.applicationContext, AmbienceHoldEntryPoint::class.java)
             .ambienceSuppressor()
-        ambience.setSuppressed(owner, true)
-        onDispose { ambience.setSuppressed(owner, false) }
+        val hold = ambience.hold(owner)
+        onDispose { hold.release() }
     }
 }

@@ -44,7 +44,7 @@ import timber.log.Timber
  *  3. **Foreground** — the launcher is on screen. The player is RELEASED, never paused: a paused
  *     ExoPlayer still holds a codec, a surface and buffers, and every game launch backgrounds us
  *     (the same reasoning MotionWallpaperBackground already applies to video).
- *  4. **Not suppressed** — nothing louder owns the room. See [setSuppressed].
+ *  4. **Not held** — nothing louder owns the room. See [hold].
  *
  * Plus a start condition: [setBootFinished] holds ambience until the boot sequence is done, so the
  * chime plays and THEN the music starts, rather than the two landing on top of each other.
@@ -67,8 +67,10 @@ class AmbienceController @Inject constructor(
 
     // ── The gates ────────────────────────────────────────────────────────────
     private val foreground = MutableStateFlow(false)
+    // Visible but paused (a dialog-style app on top): hold the loop in place rather than release it.
+    private val hostPaused = MutableStateFlow(false)
     private val bootFinished = MutableStateFlow(false)
-    private val suppressors = MutableStateFlow<Set<String>>(emptySet())
+    private val holds = AmbienceHolds()
 
     // Latest resolved values, kept so reevaluate() can read them synchronously.
     private var assignedPath: String? = null
@@ -125,7 +127,9 @@ class AmbienceController @Inject constructor(
             }
             .launchIn(scope)
 
-        combine(foreground, bootFinished, suppressors) { fg, boot, sup -> Triple(fg, boot, sup) }
+        combine(foreground, hostPaused, bootFinished, holds.held) { fg, paused, boot, held ->
+            listOf(fg, paused, boot, held)
+        }
             .distinctUntilChanged()
             .onEach { reevaluate() }
             .launchIn(scope)
@@ -134,7 +138,16 @@ class AmbienceController @Inject constructor(
     // ── Gate inputs ──────────────────────────────────────────────────────────
 
     /** The launcher came to the foreground (MainActivity.onResume). */
-    fun onHostResumed() { foreground.value = true }
+    fun onHostResumed() {
+        hostPaused.value = false
+        foreground.value = true
+    }
+
+    /**
+     * The launcher is still visible but no longer in front (MainActivity.onPause) — a dialog-style
+     * app on top. The loop holds its place; [onHostStopped] is what releases it.
+     */
+    fun onHostPaused() { hostPaused.value = true }
 
     /**
      * The launcher left the foreground (MainActivity.onStop) — in practice, a game launched.
@@ -149,9 +162,10 @@ class AmbienceController @Inject constructor(
     fun setBootFinished(finished: Boolean) { bootFinished.value = finished }
 
     /**
-     * Something louder wants the room. [owner] names the suppressor so two of them cannot
-     * un-suppress each other: the music player stopping must not resume ambience while a video is
-     * still playing.
+     * Something louder wants the room until the returned hold is released. Every call is its own
+     * hold ([AmbienceHolds]), so two holders cannot release each other: the music player stopping
+     * must not resume ambience while a video is still playing, and the boot clip ending must not
+     * resume it under GameBoot.
      *
      * **This is pushed IN from feature-xmb rather than observed from here.** core-ui cannot see
      * MusicPlayerController or VideoPlayerScreen without a dependency cycle, so the arbitration
@@ -160,22 +174,29 @@ class AmbienceController @Inject constructor(
      * Audio focus does NOT cover this case: focus is granted per-application, so our own music
      * player taking it would never make our own ambience yield. Same UID, no signal.
      */
-    override fun setSuppressed(owner: String, suppressed: Boolean) {
-        suppressors.value =
-            if (suppressed) suppressors.value + owner else suppressors.value - owner
-    }
+    override fun hold(owner: String): AmbienceHold = holds.hold(owner)
 
     // ── The decision ─────────────────────────────────────────────────────────
 
-    private fun shouldPlay(): Boolean =
-        assignedPath != null &&
-            gain > 0f &&
-            foreground.value &&
-            bootFinished.value &&
-            suppressors.value.isEmpty()
+    private fun decision(): AmbienceDecision = AmbienceDecision.decide(
+        assigned = assignedPath != null,
+        gain = gain,
+        foreground = foreground.value,
+        hostPaused = hostPaused.value,
+        bootFinished = bootFinished.value,
+        held = holds.isHeld,
+    )
 
     private fun reevaluate() {
-        if (shouldPlay()) start() else stop()
+        when (decision()) {
+            AmbienceDecision.PLAY -> {
+                start()
+                player?.playWhenReady = !pausedByFocus
+            }
+            // Only an already-running loop is held; a paused launcher never starts one.
+            AmbienceDecision.HOLD -> player?.playWhenReady = false
+            AmbienceDecision.RELEASE -> stop()
+        }
     }
 
     private fun start() {
@@ -266,9 +287,9 @@ class AmbienceController @Inject constructor(
                     applyVolume()
                     if (pausedByFocus) {
                         pausedByFocus = false
-                        // Only resume if the other four gates still agree — the user may have
-                        // launched a game during the phone call we just yielded to.
-                        if (shouldPlay()) player?.playWhenReady = true
+                        // Only resume if the other gates still agree — the user may have launched
+                        // a game during the phone call we just yielded to, or be paused under a dialog.
+                        if (decision() == AmbienceDecision.PLAY) player?.playWhenReady = true
                     }
                 }
             }
@@ -288,7 +309,7 @@ class AmbienceController @Inject constructor(
         /** How far a duckable focus loss pulls ambience down, as a factor of the user's level. */
         private const val DUCK_MULTIPLIER = 0.25f
 
-        /** Suppressor names — one per owner, so their suppressions cannot cancel each other. */
+        /** Hold labels, for logs and tests; a hold is a handle, so a shared name cannot release another. */
         const val OWNER_MUSIC = "music"
         const val OWNER_VIDEO = "video"
 
@@ -301,17 +322,10 @@ class AmbienceController @Inject constructor(
         /** Game Detail's video snap, which plays with its sound. */
         const val OWNER_GAME_VIDEO = "game_video"
 
-        /** An audible one-shot (a boot / GameBoot clip with its own track, or its audio), previews included. */
-        const val OWNER_ONE_SHOT = "one_shot"
-    }
-}
+        /** The boot sequence, built in or a clip with its own track, previews included. */
+        const val OWNER_BOOT = "boot"
 
-/**
- * The one thing other features need from [AmbienceController]: hold the background music down
- * while they own the room. An interface so a feature's tests can record it without building the
- * real controller (which owns an ExoPlayer and audio focus).
- */
-fun interface AmbienceSuppressor {
-    /** [owner] keeps ambience down while [suppressed]; owners never release one another. */
-    fun setSuppressed(owner: String, suppressed: Boolean)
+        /** The GameBoot presentation, built in or a clip with its own track, previews included. */
+        const val OWNER_GAMEBOOT = "gameboot"
+    }
 }

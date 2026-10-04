@@ -110,6 +110,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.input.pointer.isPrimaryPressed
 import androidx.compose.ui.input.pointer.isShiftPressed
 import kotlin.math.min
+import com.playfieldportal.core.ui.theme.ThemeTokens
 
 /*
  * A faithful, interactive frame of the launcher's XMB, replicated from the launcher sources so
@@ -130,17 +131,17 @@ private val CatBarHeight = PreviewGeometry.CAT_BAR_HEIGHT.dp
 private val RowHeight = PreviewGeometry.ROW_HEIGHT.dp
 
 // XMBCategoryBar.kt / XMBItemList.kt text colours.
-private val LabelInactive = Color(0xCCD8E6FF)
-private val SecondaryText = Color(0xAAC8DAF2)
+private val LabelInactive = ThemeTokens.XmbInactiveLabel
+private val SecondaryText = ThemeTokens.XmbSecondaryLabel
 private val SelectedLabelShadow = Shadow(color = Color(0x73001627), offset = Offset.Zero, blurRadius = 12f)
-private val SubtitleShadow = Shadow(color = Color.Black.copy(alpha = 0.75f), offset = Offset(0f, 2f), blurRadius = 4f)
+private val SubtitleShadow = ThemeTokens.TextShadow
 
 // XMBItemList: the tap target is shorter than the row; a drilled card column is icon-only.
 private val TapTargetHeight = 72.dp
 private val SiblingColumnWidth = (PreviewGeometry.DRILL_CHILD_COLUMN_LEFT - 10f).dp
 
 // XmbBackground.kt (the wave maths itself lives in WaveMotion)
-private val WallpaperScrim = Color(0x59000000)
+private val WallpaperScrim = ThemeTokens.WallpaperScrim
 
 private val FocusRing = Color(0xFFE6E6EA)
 
@@ -1057,7 +1058,7 @@ private fun WifiMeter(model: XmbPreviewModel, level: Int, modifier: Modifier) {
 
 // ContextMenuHint / core-ui ControllerHintBar(compact): the idle hint pill, with the Xbox glyphs for
 // the default bindings (CHANGE_SORT = X, OPEN_CONTEXT_MENU = Y, HOME = Menu).
-private val HintTextShadow = Shadow(color = Color.Black.copy(alpha = 0.75f), offset = Offset(0f, 2f), blurRadius = 4f)
+private val HintTextShadow = ThemeTokens.TextShadow
 
 /**
  * The idle hint pill in the bottom-right corner, as it stands once a controller user has been idle:

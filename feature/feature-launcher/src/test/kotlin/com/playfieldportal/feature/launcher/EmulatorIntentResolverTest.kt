@@ -295,4 +295,42 @@ class EmulatorIntentResolverTest {
         )
     }
 
+    // ── dataUri (X360 Mobile's frontend deep link) ───────────────────────────
+
+    @Test
+    fun `a dataUri template becomes the intent data, with the game's file uri inside`() {
+        installPackage("emu.x360mobile.com")
+        registerComponentActivity("emu.x360mobile.com", "emu.x360mobile.com.MainActivity")
+        val profile = EmulatorProfile(
+            id = "test_x360_mobile",
+            name = "X360 Mobile",
+            packageName = "emu.x360mobile.com",
+            activityClass = "emu.x360mobile.com.MainActivity",
+            intentType = IntentType.COMPONENT,
+            supportedPlatformIds = listOf("x360"),
+            intentAction = Intent.ACTION_VIEW,
+            intentBoolExtras = mapOf("x360mobile_frontend" to true),
+            intentFlags = listOf("CLEAR_TASK"),
+            dataUri = "x360mobile://launch?uri={rom_file_uri_encoded}",
+        )
+        val game = Game(
+            title = "Dead or Alive 4",
+            platformId = "x360",
+            romPath = "/storage/emulated/0/PFP/Roms/xbox360/Dead or Alive 4 (Asia) (En,Ja,Fr,De,Es,It,Zh,Ko).iso",
+            romUri = romUri,
+        )
+
+        val intent = runBlocking { resolver.resolve(game, profile).getOrThrow() }
+
+        assertEquals(Intent.ACTION_VIEW, intent.action)
+        assertEquals("emu.x360mobile.com.MainActivity", intent.component?.className)
+        // The exact link that booted DOA4 on a device.
+        assertEquals(
+            "x360mobile://launch?uri=file%3A%2F%2F%2Fstorage%2Femulated%2F0%2FPFP%2FRoms%2Fxbox360%2F" +
+                "Dead%2520or%2520Alive%25204%2520%28Asia%29%2520%28En%2CJa%2CFr%2CDe%2CEs%2CIt%2CZh%2CKo%29.iso",
+            intent.dataString,
+        )
+        assertTrue(intent.getBooleanExtra("x360mobile_frontend", false))
+        assertTrue(intent.hasFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+    }
 }

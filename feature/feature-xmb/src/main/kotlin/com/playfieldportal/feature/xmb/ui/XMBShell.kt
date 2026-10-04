@@ -37,6 +37,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,7 +68,8 @@ import androidx.media3.common.util.UnstableApi
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.TouchSensitivity
 import com.playfieldportal.core.ui.motion.MotionWallpaperPolicy
-import com.playfieldportal.core.ui.motion.rememberAppVisible
+import com.playfieldportal.core.ui.motion.MotionCover
+import com.playfieldportal.core.ui.motion.rememberAppInFront
 import com.playfieldportal.core.domain.model.DetailAction
 import com.playfieldportal.core.domain.model.NotificationDetail
 import com.playfieldportal.core.domain.model.NotificationKind
@@ -608,10 +610,8 @@ fun XMBShell(
       // The applied theme's custom icon slots ride alongside the palette: every themeable
       // glyph (crossbar, item rows, status strip) checks this map before its built-in art.
       CompositionLocalProvider(
-          com.playfieldportal.core.ui.icons.LocalXmbIconOverrides provides uiState.iconOverrides,
-          // The user's per-slot picks ride the same rail — the tier ABOVE the theme's icons
-          // (user pick > theme icon > built-in, at every render site).
-          com.playfieldportal.core.ui.icons.LocalCustomIcons provides uiState.customIcons,
+          // Both tiers in one value: XmbIcons answers user pick > theme icon > built-in for every site.
+          com.playfieldportal.core.ui.icons.LocalXmbIcons provides uiState.xmbIcons,
           // Icon display mode + the focused game's approved ICON1 snap ride the same rail so
           // the deeply nested tile composables never need them plumbed through params.
           LocalIconDisplayMode provides uiState.iconDisplayMode,
@@ -690,16 +690,20 @@ fun XMBShell(
             // no blocking overlay covers the XMB (reuses hasBlockingOverlay rather than
             // inventing a second condition). One motion budget, three consumers.
             val iconAnimatingAllowed = !powerThrottled && !uiState.hasBlockingOverlay
-            // The app-visible leg: the composition survives ON_STOP (every game launch), and a
+            // The app-in-front leg: the composition survives ON_STOP (every game launch), and a
             // decoder running behind the emulator is the worst possible outcome for the motion
-            // wallpaper. Folded into the same motion budget the wave obeys.
-            val appVisible = rememberAppVisible()
+            // wallpaper. RESUMED, so a dialog-style app on top pauses it too. Folded into the same
+            // motion budget the wave obeys.
+            val appVisible = rememberAppInFront()
+            // A full-screen preview that plays its own motion (Display Settings) covers the shell's
+            // wallpaper, so only one decoder runs.
+            val previewCovering by MotionCover.Shared.covered.collectAsState()
             val motionDecision = MotionWallpaperPolicy.decide(
                 MotionWallpaperPolicy.Inputs(
                     hasMotion = uiState.motionWallpaperPath != null,
                     hasPoster = uiState.customWallpaperPath != null,
                     style = uiState.waveStyle,
-                    covered = waveCovered,
+                    covered = waveCovered || previewCovering,
                     throttled = powerThrottled,
                     appVisible = appVisible,
                 )
@@ -707,7 +711,9 @@ fun XMBShell(
             // Wave keeps its existing freeze semantics exactly: covered/throttled freezes it,
             // and with a wallpaper set the wave branch is simply not composed (so the old
             // "wallpaper set → frozen wave" clause is no longer needed as such).
-            val effectiveWaveStyle = if (waveCovered || powerThrottled) {
+            // Out of front (paused under a dialog-style app) freezes it as well: Compose only stops
+            // the frame clock at ON_STOP, so a paused launcher would otherwise keep redrawing.
+            val effectiveWaveStyle = if (waveCovered || powerThrottled || !appVisible) {
                 uiState.waveStyle.frozen
             } else uiState.waveStyle
             // GameBoot must NOT read effectiveWaveStyle. `waveCovered` means "something opaque is
@@ -1183,6 +1189,9 @@ fun XMBShell(
                         bootVideoPath = uiState.bootVideoPath,
                         bootAudioPath = uiState.bootAudioPath,
                         bootAudioGain = uiState.bootAudioGain,
+                        // The user's style, frozen when conserving power. Not effectiveWaveStyle:
+                        // the boot itself counts as covering the wave, which would freeze it always.
+                        waveStyle = if (powerThrottled) uiState.waveStyle.frozen else uiState.waveStyle,
                     )
                 } else {
                     Box(modifier = Modifier.fillMaxSize().background(Color.Black))
@@ -1338,8 +1347,7 @@ fun XMBShell(
             uiState.customIconSession?.let { session ->
                 CustomIconsOverlay(
                     session = session,
-                    customIcons = uiState.customIcons,
-                    themeIcons = uiState.iconOverrides,
+                    icons = uiState.xmbIcons,
                     onSlotFocused = onCustomIconsSlotFocused,
                     onIconPicked = onCustomIconPicked,
                     onResetSlot = onCustomResetSlot,
@@ -1623,7 +1631,7 @@ fun XMBShell(
                 com.playfieldportal.core.ui.keyboard.VirtualKeyboardOverlay(virtualKeyboard)
             }
         } // end: BoxWithConstraints (uniform canvas scale)
-      } // end: CompositionLocalProvider (LocalXmbIconOverrides)
+      } // end: CompositionLocalProvider (LocalXmbIcons)
     }
 
 }

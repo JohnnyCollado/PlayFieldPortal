@@ -114,9 +114,9 @@ fun SlotCard(
     onReset: () -> Unit,
     onExportTemplate: () -> Unit,
 ) {
-    val extension = state.iconExtensions[slot.key] ?: state.sysiconExtensions[slot.key]
-    val bytes = state.iconOverrides[slot.key] ?: state.sysiconOverrides[slot.key]
-    val custom = state.iconBitmaps[slot.key] ?: state.sysiconBitmaps[slot.key]
+    val extension = state.iconExtensions[slot.key]
+    val bytes = state.iconOverrides[slot.key]
+    val custom = state.iconBitmaps[slot.key]
     val card: SlotCardModel = remember(slot, extension, bytes) { IconPicker.cardModel(slot, extension, bytes) }
 
     Surface(shape = RoundedCornerShape(10.dp), color = MaterialTheme.colorScheme.surfaceVariant) {

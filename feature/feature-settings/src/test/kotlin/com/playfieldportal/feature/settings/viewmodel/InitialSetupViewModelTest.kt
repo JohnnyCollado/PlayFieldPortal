@@ -7,6 +7,8 @@ import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.data.repository.MediaRootKind
 import com.playfieldportal.core.data.repository.MediaRootRepository
 import com.playfieldportal.core.data.repository.Ps3DataLibrary
+import com.playfieldportal.core.data.repository.Xbox360DataLibrary
+import com.playfieldportal.core.data.repository.Xbox360Emulator
 import com.playfieldportal.core.data.repository.CoreInventory
 import com.playfieldportal.core.data.repository.RetroArchLink
 import com.playfieldportal.core.data.repository.RomRootRepository
@@ -67,6 +69,7 @@ class InitialSetupViewModelTest {
     private val tasks = mockk<com.playfieldportal.core.ui.notification.BackgroundTaskCenter>(relaxed = true)
     private val ps3DataLibrary = mockk<Ps3DataLibrary>(relaxed = true)
     private val environment = mockk<SetupEnvironment>(relaxed = true)
+    private val xbox360DataLibrary = mockk<Xbox360DataLibrary>(relaxed = true)
     private lateinit var vm: InitialSetupViewModel
 
     private fun buildVm() = InitialSetupViewModel(
@@ -78,6 +81,7 @@ class InitialSetupViewModelTest {
         mockk(relaxed = true), // memoryCardRepository
         tasks,
         ps3DataLibrary,
+        xbox360DataLibrary,
         environment,
     )
 
@@ -89,6 +93,7 @@ class InitialSetupViewModelTest {
         every { artworkImport.folderTreeUri } returns flowOf(null)
         every { vita3KLibrary.ux0TreeUriFlow } returns flowOf(null)
         every { ps3DataLibrary.dataTreeUriFlow } returns flowOf(null)
+        every { xbox360DataLibrary.treeUriFlow(any()) } returns flowOf(null)
         // Default: nothing optional installed, PFP not yet Home (tests override per case).
         every { environment.availability() } returns SetupAvailability()
         every { sgdbKeys.apiKeyFlow } returns flowOf(null)
@@ -163,7 +168,7 @@ class InitialSetupViewModelTest {
             listOf(
                 SetupStep.CONTROLLER, SetupStep.ROM_ROOTS, SetupStep.MUSIC, SetupStep.VIDEO,
                 SetupStep.PHOTO, SetupStep.ARTWORK, SetupStep.SERVICES, SetupStep.ACHIEVEMENTS,
-                SetupStep.TROPHIES, SetupStep.RETROARCH, SetupStep.EMULATORS, SetupStep.WINDOWS,
+                SetupStep.LOCAL_ACHIEVEMENTS, SetupStep.RETROARCH, SetupStep.EMULATORS, SetupStep.WINDOWS,
                 SetupStep.HINTS, SetupStep.HOME_APP, SetupStep.FINISH,
             ).forEach { step ->
                 vm.nextStep()
@@ -448,6 +453,47 @@ class InitialSetupViewModelTest {
         advanceUntilIdle()
 
         assertNotNull(vm.uiState.value.ps3FolderName)
+        job.cancel()
+    }
+
+    // ── Local Achievements: Xbox 360 (X360 Mobile, XenDroid) data folders ──────────
+
+    @Test fun `linkXbox360Folder grants each emulator's folder separately`() = runTest(dispatcher) {
+        val mobile = mockk<Uri>()
+        val xenDroid = mockk<Uri>()
+        val job = collectState()
+
+        vm.linkXbox360Folder(Xbox360Emulator.X360_MOBILE, mobile)
+        vm.linkXbox360Folder(Xbox360Emulator.XENDROID, xenDroid)
+        advanceUntilIdle()
+
+        coVerify { xbox360DataLibrary.setFolder(Xbox360Emulator.X360_MOBILE, mobile) }
+        coVerify { xbox360DataLibrary.setFolder(Xbox360Emulator.XENDROID, xenDroid) }
+        job.cancel()
+    }
+
+    @Test fun `forgetXbox360Folder releases only that emulator's grant`() = runTest(dispatcher) {
+        val job = collectState()
+        advanceUntilIdle()
+
+        vm.forgetXbox360Folder(Xbox360Emulator.XENDROID)
+        advanceUntilIdle()
+
+        coVerify { xbox360DataLibrary.clear(Xbox360Emulator.XENDROID) }
+        coVerify(exactly = 0) { xbox360DataLibrary.clear(Xbox360Emulator.X360_MOBILE) }
+        job.cancel()
+    }
+
+    @Test fun `linked Xbox 360 folders are mirrored per emulator`() = runTest(dispatcher) {
+        every { xbox360DataLibrary.treeUriFlow(Xbox360Emulator.XENDROID) } returns
+            flowOf("content://com.android.externalstorage.documents/tree/primary%3AAndroid%2Fdata%2Fxendroid.compose")
+        every { xbox360DataLibrary.treeUriFlow(Xbox360Emulator.X360_MOBILE) } returns flowOf(null)
+        vm = buildVm()
+        val job = collectState()
+        advanceUntilIdle()
+
+        assertNotNull(vm.uiState.value.xenDroidFolderName)
+        kotlin.test.assertNull(vm.uiState.value.x360MobileFolderName)
         job.cancel()
     }
 

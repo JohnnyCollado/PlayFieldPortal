@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.data.repository.Xbox360Emulator
 import com.playfieldportal.core.ui.components.PfpModalSpec
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -105,7 +106,7 @@ fun LibraryManagerScreen(
         onPlatformChosen = { viewModel.onPlatformChosen(it) },
         onEmulatorChosen = { viewModel.onEmulatorChosen(it) },
         onConfirmAddConsole = { viewModel.confirmAddConsole(it) },
-        onLoadEmulatorOptions = { viewModel.loadEmulatorOptionsForDetail() },
+        onLoadEmulatorOptions = { onLoaded -> viewModel.loadEmulatorOptionsForDetail(onLoaded) },
         onRemoveExtension = { p, e -> viewModel.removeExtension(p, e) },
         onAddExtension = { p, e -> viewModel.addExtension(p, e) },
         onScanConsole = { viewModel.scanConsole(it) },
@@ -120,6 +121,7 @@ fun LibraryManagerScreen(
         onOpenImportPcGames = { viewModel.openImportPcGames() },
         onSetVita3KFolder = { viewModel.setVita3KFolder(it) },
         onSetPs3DataFolder = { viewModel.setPs3DataFolder(it) },
+        onSetXbox360DataFolder = { emulator, uri -> viewModel.setXbox360DataFolder(emulator, uri) },
         onScanVitaGames = { viewModel.scanVitaGames() },
         onRemoveApp = { viewModel.removeApp(it) },
         onRefreshHomeStatus = { viewModel.refreshHomeStatus() },
@@ -164,7 +166,7 @@ private fun LibraryManagerContent(
     onPlatformChosen: (PlatformOption) -> Unit,
     onEmulatorChosen: (EmulatorOption) -> Unit,
     onConfirmAddConsole: (scanNow: Boolean) -> Unit,
-    onLoadEmulatorOptions: () -> Unit,
+    onLoadEmulatorOptions: (onLoaded: (List<EmulatorOption>) -> Unit) -> Unit,
     onRemoveExtension: (platformId: String, ext: String) -> Unit,
     onAddExtension: (platformId: String, ext: String) -> Unit,
     onScanConsole: (platformId: String) -> Unit,
@@ -179,6 +181,7 @@ private fun LibraryManagerContent(
     onOpenImportPcGames: () -> Unit,
     onSetVita3KFolder: (Uri) -> Unit,
     onSetPs3DataFolder: (Uri) -> Unit,
+    onSetXbox360DataFolder: (Xbox360Emulator, Uri) -> Unit,
     onScanVitaGames: () -> Unit,
     onRemoveApp: (Long) -> Unit,
     onRefreshHomeStatus: () -> Unit,
@@ -209,7 +212,7 @@ private fun LibraryManagerContent(
         LibraryStep.PICK_PLATFORM -> PickPlatformContent(state, onBack = handleBack, onPlatformChosen = onPlatformChosen, modifier = modifier)
         LibraryStep.PICK_EMULATOR -> PickEmulatorContent(state, onBack = handleBack, onEmulatorChosen = onEmulatorChosen, modifier = modifier)
         LibraryStep.SCAN_PROMPT   -> ScanPromptContent(state, onBack = handleBack, onConfirmAddConsole = onConfirmAddConsole, modifier = modifier)
-        LibraryStep.CARD_DETAIL   -> CardDetailContent(state, onBack = handleBack, onAddAndroidApps = onAddAndroidApps, onLoadEmulatorOptions = onLoadEmulatorOptions, onRemoveExtension = onRemoveExtension, onAddExtension = onAddExtension, onScanConsole = onScanConsole, onBeginRename = onBeginRename, onCancelRename = onCancelRename, onConfirmRename = onConfirmRename, onToggleEnabled = onToggleEnabled, onTogglePinned = onTogglePinned, onMoveCard = onMoveCard, onRemoveCard = onRemoveCard, onSetEmulatorForDetail = onSetEmulatorForDetail, onOpenImportPcGames = onOpenImportPcGames, onSetVita3KFolder = onSetVita3KFolder, onSetPs3DataFolder = onSetPs3DataFolder, onScanVitaGames = onScanVitaGames, onRemoveApp = onRemoveApp, modifier = modifier)
+        LibraryStep.CARD_DETAIL   -> CardDetailContent(state, onBack = handleBack, onAddAndroidApps = onAddAndroidApps, onLoadEmulatorOptions = onLoadEmulatorOptions, onRemoveExtension = onRemoveExtension, onAddExtension = onAddExtension, onScanConsole = onScanConsole, onBeginRename = onBeginRename, onCancelRename = onCancelRename, onConfirmRename = onConfirmRename, onToggleEnabled = onToggleEnabled, onTogglePinned = onTogglePinned, onMoveCard = onMoveCard, onRemoveCard = onRemoveCard, onSetEmulatorForDetail = onSetEmulatorForDetail, onOpenImportPcGames = onOpenImportPcGames, onSetVita3KFolder = onSetVita3KFolder, onSetPs3DataFolder = onSetPs3DataFolder, onSetXbox360DataFolder = onSetXbox360DataFolder, onScanVitaGames = onScanVitaGames, onRemoveApp = onRemoveApp, modifier = modifier)
         LibraryStep.IMPORT_PC     -> ImportPcGamesContent(state, onBack = handleBack, onRefreshHomeStatus = onRefreshHomeStatus, onScanPcGamesFolder = onScanPcGamesFolder, onExportManualPcGames = onExportManualPcGames, onImportPcGame = onImportPcGame, onImportAllPcGames = onImportAllPcGames, onTestLaunchPcGame = onTestLaunchPcGame, onAddPcGameById = onAddPcGameById, onDismissMessage = onDismissMessage, convertPickerOpen = convertPicker != null, onConvertGamepadAction = onConvertGamepadAction, onBatchMatchLocalGames = onBatchMatchLocalGames, onForgetLocalSteamFolder = onForgetLocalSteamFolder, onSetGoldbergInstaller = onSetGoldbergInstaller, onCycleUnknownLauncher = onCycleUnknownLauncher, onShowHiddenUnknownLaunchers = onShowHiddenUnknownLaunchers, homeRoleIntentProvider = homeRoleIntentProvider, modifier = modifier)
     }
 
@@ -458,7 +461,7 @@ private fun CardDetailContent(
     state: LibraryManagerUiState,
     onBack: () -> Unit,
     onAddAndroidApps: () -> Unit,
-    onLoadEmulatorOptions: () -> Unit,
+    onLoadEmulatorOptions: (onLoaded: (List<EmulatorOption>) -> Unit) -> Unit,
     onRemoveExtension: (String, String) -> Unit,
     onAddExtension: (String, String) -> Unit,
     onScanConsole: (String) -> Unit,
@@ -473,13 +476,13 @@ private fun CardDetailContent(
     onOpenImportPcGames: () -> Unit,
     onSetVita3KFolder: (Uri) -> Unit,
     onSetPs3DataFolder: (Uri) -> Unit,
+    onSetXbox360DataFolder: (Xbox360Emulator, Uri) -> Unit,
     onScanVitaGames: () -> Unit,
     onRemoveApp: (Long) -> Unit,
     modifier: Modifier,
 ) {
     val card = state.detailCard ?: return
 
-    var showEmulatorDialog by remember { mutableStateOf(false) }
     var showRemoveConfirm  by remember { mutableStateOf(false) }
     var appToRemove        by remember { mutableStateOf<LibraryAppRow?>(null) }
     val itemMenu = rememberSettingsItemMenu()
@@ -489,12 +492,19 @@ private fun CardDetailContent(
     val isWindows = card.platformId == "windows"
     val isVita    = card.platformId == "psvita"
     val isPs3     = card.platformId == "ps3"
+    val isX360    = card.platformId == "x360"
     val vitaFolderPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri -> uri?.let { onSetVita3KFolder(it) } }
     val ps3FolderPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri -> uri?.let { onSetPs3DataFolder(it) } }
+    val x360MobileFolderPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri -> uri?.let { onSetXbox360DataFolder(Xbox360Emulator.X360_MOBILE, it) } }
+    val xenDroidFolderPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri -> uri?.let { onSetXbox360DataFolder(Xbox360Emulator.XENDROID, it) } }
 
     // Renaming and removing both start from this step, so its scaffold hosts both modals.
     val renameTargetId = state.renameTargetPlatformId
@@ -616,7 +626,23 @@ private fun CardDetailContent(
                 SettingsValueRow(
                     label   = "Emulator",
                     value   = card.emulatorName ?: "None",
-                    onClick = { onLoadEmulatorOptions(); showEmulatorDialog = true },
+                    // The shared item menu: the pad drives it through itemMenu.intercept, like
+                    // every other menu on this screen.
+                    onClick = {
+                        onLoadEmulatorOptions { options ->
+                            itemMenu.show(
+                                "Set Emulator",
+                                options.map { option ->
+                                    SettingsMenuItem(
+                                        option.name,
+                                        value = "Current".takeIf {
+                                            option.id != null && option.name == card.emulatorName
+                                        },
+                                    ) { onSetEmulatorForDetail(option) }
+                                },
+                            )
+                        }
+                    },
                 )
                 SettingsValueRow(label = "Games", value = card.gameCount.toString())
 
@@ -685,6 +711,35 @@ private fun CardDetailContent(
                 }
             }
 
+            // Xbox 360 games scan as ordinary ROMs too; each grant only unlocks achievement reading
+            // from that emulator's Xenia profiles. Both may be set — an unlock in either counts.
+            if (isX360) {
+                SettingsGroup("Achievements")
+                SettingsValueRow(
+                    label    = "X360 Mobile Data Folder",
+                    value    = state.x360MobileFolderLabel ?: "Not set",
+                    sublabel = state.x360MobileFolderLabel
+                        ?.let { "Reading achievements from X360 Mobile's profiles" }
+                        ?: "Pick X360 Mobile in the folder picker's side menu",
+                    onClick  = { x360MobileFolderPicker.launch(Xbox360Emulator.X360_MOBILE.pickerStartUri) },
+                )
+                SettingsValueRow(
+                    label    = "XenDroid Data Folder",
+                    value    = state.xenDroidFolderLabel ?: "Not set",
+                    sublabel = state.xenDroidFolderLabel
+                        ?.let { "Reading achievements from XenDroid's profiles" }
+                        ?: "Pick Android/data/xendroid.compose",
+                    onClick  = { xenDroidFolderPicker.launch(Xbox360Emulator.XENDROID.pickerStartUri) },
+                )
+                if (state.x360MobileFolderLabel == null && state.xenDroidFolderLabel == null) {
+                    Hint(
+                        "Grant the data folder of the emulator you play in, then run Auto-Match in " +
+                            "Settings ▸ Shiba Coins. Title IDs come from each game's own file, so a " +
+                            "game can link before you have ever booted it.",
+                    )
+                }
+            }
+
             if (isAndroid) SettingsGroup("Actions")
             SettingsRow(label = "Rename Memory Card", onClick = { onBeginRename(card.platformId) })
             SettingsToggleRow(
@@ -716,14 +771,6 @@ private fun CardDetailContent(
     itemMenu.Content()
     }
 
-    if (showEmulatorDialog) {
-        EmulatorPickerDialog(
-            options    = state.emulatorOptions,
-            onSelect   = { onSetEmulatorForDetail(it); showEmulatorDialog = false },
-            onDismiss  = { showEmulatorDialog = false },
-        )
-    }
-
     modal.Content()
 }
 
@@ -740,26 +787,6 @@ internal fun libraryExtensionMenuRows(
 ): List<SettingsMenuItem> = listOf(
     SettingsMenuItem("Remove Extension") { onRemove(platformId, ext) },
 )
-
-@Composable
-private fun EmulatorPickerDialog(
-    options: List<EmulatorOption>,
-    onSelect: (EmulatorOption) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title   = { Text("Set Emulator") },
-        text    = {
-            Column {
-                options.forEach { option ->
-                    SettingsRow(label = option.name, onClick = { onSelect(option) })
-                }
-            }
-        },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
-    )
-}
 
 // ── IMPORT PC GAMES ─────────────────────────────────────────────────────────────
 
@@ -1078,7 +1105,7 @@ fun LibraryManagerScreenPreview() {
             onPlatformChosen = {},
             onEmulatorChosen = {},
             onConfirmAddConsole = {},
-            onLoadEmulatorOptions = {},
+            onLoadEmulatorOptions = { _ -> },
             onRemoveExtension = { _, _ -> },
             onAddExtension = { _, _ -> },
             onScanConsole = {},
@@ -1093,6 +1120,7 @@ fun LibraryManagerScreenPreview() {
             onOpenImportPcGames = {},
             onSetVita3KFolder = {},
             onSetPs3DataFolder = {},
+            onSetXbox360DataFolder = { _, _ -> },
             onScanVitaGames = {},
             onRemoveApp = {},
             onRefreshHomeStatus = {},

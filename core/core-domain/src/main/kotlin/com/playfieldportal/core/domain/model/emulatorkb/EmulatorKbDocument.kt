@@ -54,6 +54,9 @@ data class EmulatorKbLaunch(
     val attachRomData: Boolean = false,
     val mimeType: String? = null,
     val useSafUri: Boolean = false,
+    // A template for the intent data, replacing the ROM URI (e.g. X360 Mobile's
+    // "x360mobile://launch?uri={rom_file_uri_encoded}" deep link). Null keeps the default data.
+    val dataUri: String? = null,
 )
 
 /** Extensions a document adds to an existing platform. */

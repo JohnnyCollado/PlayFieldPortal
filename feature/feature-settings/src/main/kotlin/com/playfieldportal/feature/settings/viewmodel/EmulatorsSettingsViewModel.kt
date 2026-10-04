@@ -470,6 +470,7 @@ class EmulatorsSettingsViewModel @Inject constructor(
             intentExtras         = extras,
             intentArrayExtras    = existing?.intentArrayExtras.orEmpty(),
             attachRomData        = existing?.attachRomData ?: false,
+            dataUri              = existing?.dataUri,
             knowledgeId          = existing?.knowledgeId,
             signerSha256         = existing?.signerSha256.orEmpty(),
             intentBoolExtras     = boolExtras,

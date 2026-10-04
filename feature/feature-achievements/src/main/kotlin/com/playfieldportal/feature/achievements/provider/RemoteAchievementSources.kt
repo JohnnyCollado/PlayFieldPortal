@@ -6,6 +6,7 @@ import com.playfieldportal.feature.achievements.provider.ps3.Ps3TrophySource
 import com.playfieldportal.feature.achievements.provider.retro.RetroAchievementsSource
 import com.playfieldportal.feature.achievements.provider.steam.SteamAchievementsSource
 import com.playfieldportal.feature.achievements.provider.vita.VitaTrophySource
+import com.playfieldportal.feature.achievements.provider.x360.X360AchievementSource
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,6 +23,7 @@ class RemoteAchievementSources @Inject constructor(
     private val localSteam: LocalSteamSource,
     private val vitaTrophy: VitaTrophySource,
     private val ps3Trophy: Ps3TrophySource,
+    private val x360Achievement: X360AchievementSource,
 ) {
     fun forProvider(provider: AchievementProvider): RemoteAchievementSource = when (provider) {
         AchievementProvider.RETRO_ACHIEVEMENTS -> retroAchievements
@@ -29,5 +31,6 @@ class RemoteAchievementSources @Inject constructor(
         AchievementProvider.LOCAL_STEAM -> localSteam
         AchievementProvider.VITA_TROPHY -> vitaTrophy
         AchievementProvider.PS3_TROPHY -> ps3Trophy
+        AchievementProvider.X360_ACHIEVEMENT -> x360Achievement
     }
 }

@@ -47,6 +47,7 @@ include(":studio")
 
 // Core modules
 include(":core:theme-kit")   // pure JVM: theme parsing/conversion shared with the desktop companion
+include(":core:theme-render") // pure JVM: the theme's colour rules, shared by the launcher and the Theme Studio
 include(":core:core-archive")  // pure JVM: bounded/confined ZIP ingestion shared by themes and backup
 include(":core:core-common")
 include(":core:core-domain")

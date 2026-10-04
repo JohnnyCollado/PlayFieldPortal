@@ -6,66 +6,6 @@
   "minAppVersion": 0,
   "emulators": [
     {
-      "id": "vita3k",
-      "name": "Vita3K",
-      "packageNames": [
-        "org.vita3k.emulator",
-        "org.vita3k.emulator.ikhoeyZX"
-      ],
-      "platformIds": [
-        "psvita"
-      ],
-      "launch": {
-        "intentType": "COMPONENT",
-        "activityClass": "org.vita3k.emulator.Emulator",
-        "arrayExtras": {
-          "AppStartParameters": [
-            "-r",
-            "{title_id}"
-          ]
-        }
-      }
-    },
-    {
-      "id": "emucorev",
-      "name": "EmuCoreV",
-      "packageNames": [
-        "com.sbro.emucorev"
-      ],
-      "platformIds": [
-        "psvita"
-      ],
-      "launch": {
-        "intentType": "COMPONENT",
-        "activityClass": "com.sbro.emucorev.core.vita.Emulator",
-        "arrayExtras": {
-          "AppStartParameters": [
-            "-r",
-            "{title_id}"
-          ]
-        }
-      }
-    },
-    {
-      "id": "ppsspp",
-      "name": "PPSSPP",
-      "packageNames": [
-        "org.ppsspp.ppssppgold",
-        "org.ppsspp.ppsspp"
-      ],
-      "legacyIds": [
-        "ppsspp_gold"
-      ],
-      "platformIds": [
-        "psp"
-      ],
-      "launch": {
-        "activityClass": "org.ppsspp.ppsspp.PpssppActivity",
-        "mimeType": "application/octet-stream",
-        "useSafUri": true
-      }
-    },
-    {
       "id": "duckstation",
       "name": "DuckStation",
       "packageNames": [
@@ -277,6 +217,25 @@
       }
     },
     {
+      "id": "ppsspp",
+      "name": "PPSSPP",
+      "packageNames": [
+        "org.ppsspp.ppssppgold",
+        "org.ppsspp.ppsspp"
+      ],
+      "legacyIds": [
+        "ppsspp_gold"
+      ],
+      "platformIds": [
+        "psp"
+      ],
+      "launch": {
+        "activityClass": "org.ppsspp.ppsspp.PpssppActivity",
+        "mimeType": "application/octet-stream",
+        "useSafUri": true
+      }
+    },
+    {
       "id": "aps3e",
       "name": "aPS3e",
       "packageNames": [
@@ -306,6 +265,132 @@
       ],
       "launch": {
         "activityClass": "com.armsx2.Main",
+        "useSafUri": true
+      }
+    },
+    {
+      "id": "vita3k",
+      "name": "Vita3K",
+      "packageNames": [
+        "org.vita3k.emulator",
+        "org.vita3k.emulator.ikhoeyZX"
+      ],
+      "platformIds": [
+        "psvita"
+      ],
+      "launch": {
+        "intentType": "COMPONENT",
+        "activityClass": "org.vita3k.emulator.Emulator",
+        "arrayExtras": {
+          "AppStartParameters": [
+            "-r",
+            "{title_id}"
+          ]
+        }
+      }
+    },
+    {
+      "id": "emucorev",
+      "name": "EmuCoreV",
+      "packageNames": [
+        "com.sbro.emucorev"
+      ],
+      "platformIds": [
+        "psvita"
+      ],
+      "launch": {
+        "intentType": "COMPONENT",
+        "activityClass": "com.sbro.emucorev.core.vita.Emulator",
+        "arrayExtras": {
+          "AppStartParameters": [
+            "-r",
+            "{title_id}"
+          ]
+        }
+      }
+    },
+    {
+      "id": "nesemu",
+      "name": "NES.emu",
+      "packageNames": [
+        "com.explusalpha.NesEmu"
+      ],
+      "platformIds": [
+        "nes",
+        "fam"
+      ],
+      "launch": {
+        "activityClass": "com.imagine.BaseActivity",
+        "mimeType": "application/octet-stream",
+        "useSafUri": true
+      }
+    },
+    {
+      "id": "ines",
+      "name": "iNES",
+      "packageNames": [
+        "com.fms.ines.free"
+      ],
+      "platformIds": [
+        "nes",
+        "fam"
+      ],
+      "launch": {
+        "activityClass": "com.fms.emulib.TVActivity",
+        "flags": [
+          "CLEAR_TASK",
+          "CLEAR_TOP"
+        ],
+        "useSafUri": true
+      }
+    },
+    {
+      "id": "snes9xex",
+      "name": "Snes9x EX+",
+      "packageNames": [
+        "com.explusalpha.Snes9xPlus"
+      ],
+      "platformIds": [
+        "snes"
+      ],
+      "launch": {
+        "activityClass": "com.imagine.BaseActivity",
+        "mimeType": "application/octet-stream",
+        "useSafUri": true
+      }
+    },
+    {
+      "id": "m64pfz",
+      "name": "M64Plus FZ",
+      "packageNames": [
+        "org.mupen64plusae.v3.fzurita.pro",
+        "org.mupen64plusae.v3.fzurita",
+        "org.mupen64plusae.v3.fzurita.amazon"
+      ],
+      "legacyIds": [
+        "m64pfz_pro"
+      ],
+      "platformIds": [
+        "n64"
+      ],
+      "launch": {
+        "activityClass": "paulscode.android.mupen64plusae.SplashActivity",
+        "mimeType": "application/octet-stream",
+        "useSafUri": true
+      }
+    },
+    {
+      "id": "mupen64plusae",
+      "name": "Mupen64Plus-AE",
+      "packageNames": [
+        "org.mupen64plusae.v3.alpha"
+      ],
+      "platformIds": [
+        "n64"
+      ],
+      "launch": {
+        "activityClass": "paulscode.android.mupen64plusae.SplashActivity",
+        "mimeType": "application/octet-stream",
         "useSafUri": true
       }
     },
@@ -425,447 +510,6 @@
           "CLEAR_TOP"
         ],
         "mimeType": "application/octet-stream"
-      }
-    },
-    {
-      "id": "dolphin",
-      "name": "Dolphin",
-      "packageNames": [
-        "org.dolphinemu.dolphinemu"
-      ],
-      "platformIds": [
-        "gc",
-        "gamecube",
-        "wii"
-      ],
-      "launch": {
-        "intentType": "COMPONENT",
-        "activityClass": "org.dolphinemu.dolphinemu.ui.main.TvMainActivity",
-        "extras": {
-          "AutoStartFile": "{rom_uri}"
-        },
-        "category": "android.intent.category.LEANBACK_LAUNCHER"
-      }
-    },
-    {
-      "id": "dolphin_mmjr",
-      "name": "Dolphin MMJR",
-      "packageNames": [
-        "org.mm.jr"
-      ],
-      "platformIds": [
-        "gc",
-        "gamecube",
-        "wii"
-      ],
-      "launch": {
-        "intentType": "COMPONENT",
-        "activityClass": "org.dolphinemu.dolphinemu.ui.main.MainActivity",
-        "extras": {
-          "AutoStartFile": "{rom_uri}"
-        },
-        "action": "android.intent.action.VIEW"
-      }
-    },
-    {
-      "id": "dolphin_mmjr2",
-      "name": "Dolphin MMJR2",
-      "packageNames": [
-        "org.dolphinemu.mmjr"
-      ],
-      "platformIds": [
-        "gc",
-        "gamecube",
-        "wii"
-      ],
-      "launch": {
-        "intentType": "COMPONENT",
-        "activityClass": "org.dolphinemu.dolphinemu.ui.main.MainActivity",
-        "extras": {
-          "AutoStartFile": "{rom_uri}"
-        },
-        "action": "android.intent.action.VIEW"
-      }
-    },
-    {
-      "id": "dolphin_primehack",
-      "name": "Dolphin PrimeHack",
-      "packageNames": [
-        "org.dolphinemu.primehack",
-        "org.shiiion.primehack"
-      ],
-      "platformIds": [
-        "gc",
-        "gamecube",
-        "wii"
-      ],
-      "launch": {
-        "intentType": "COMPONENT",
-        "activityClass": "org.dolphinemu.dolphinemu.ui.main.MainActivity",
-        "extras": {
-          "AutoStartFile": "{rom_uri}"
-        },
-        "action": "android.intent.action.VIEW"
-      }
-    },
-    {
-      "id": "cemu",
-      "name": "Cemu",
-      "packageNames": [
-        "info.cemu.cemu"
-      ],
-      "platformIds": [
-        "wiiu"
-      ],
-      "launch": {
-        "activityClass": "info.cemu.cemu.emulation.EmulationActivity",
-        "useSafUri": true
-      }
-    },
-    {
-      "id": "cemu_legacy",
-      "name": "Cemu (legacy)",
-      "packageNames": [
-        "info.cemu.Cemu"
-      ],
-      "platformIds": [
-        "wiiu"
-      ],
-      "launch": {
-        "activityClass": "info.cemu.Cemu.emulation.EmulationActivity",
-        "useSafUri": true
-      }
-    },
-    {
-      "id": "azahar",
-      "name": "Azahar (3DS)",
-      "packageNames": [
-        "org.azahar_emu.azahar"
-      ],
-      "platformIds": [
-        "3ds",
-        "n3ds"
-      ],
-      "launch": {
-        "activityClass": "org.citra.citra_emu.activities.EmulationActivity",
-        "mimeType": "application/octet-stream",
-        "useSafUri": true
-      }
-    },
-    {
-      "id": "azaharplus",
-      "name": "AzaharPlus (3DS)",
-      "packageNames": [
-        "io.github.azaharplus.android"
-      ],
-      "platformIds": [
-        "3ds",
-        "n3ds"
-      ],
-      "launch": {
-        "activityClass": "org.citra.citra_emu.activities.EmulationActivity",
-        "flags": [
-          "CLEAR_TASK",
-          "CLEAR_TOP"
-        ],
-        "useSafUri": true
-      }
-    },
-    {
-      "id": "citra",
-      "name": "Citra (3DS)",
-      "packageNames": [
-        "org.citra.citra_emu",
-        "org.citra.citra_emu.canary",
-        "org.citra_emu.citra"
-      ],
-      "platformIds": [
-        "3ds",
-        "n3ds"
-      ],
-      "launch": {
-        "activityClass": "org.citra.citra_emu.activities.EmulationActivity",
-        "flags": [
-          "CLEAR_TASK",
-          "CLEAR_TOP"
-        ],
-        "mimeType": "application/octet-stream",
-        "useSafUri": true
-      },
-      "launchByPackage": {
-        "org.citra_emu.citra": {
-          "activityClass": "org.citra_emu.citra.activities.EmulationActivity",
-          "mimeType": "application/octet-stream",
-          "useSafUri": true
-        }
-      }
-    },
-    {
-      "id": "citra_mmj_3ds",
-      "name": "Citra MMJ (3DS)",
-      "packageNames": [
-        "org.citra.emu"
-      ],
-      "platformIds": [
-        "3ds",
-        "n3ds"
-      ],
-      "launch": {
-        "intentType": "COMPONENT",
-        "activityClass": "org.citra.emu.ui.EmulationActivity",
-        "extras": {
-          "GamePath": "{rom_path}"
-        }
-      }
-    },
-    {
-      "id": "lime3ds",
-      "name": "Lime3DS",
-      "packageNames": [
-        "io.github.lime3ds.android"
-      ],
-      "platformIds": [
-        "3ds",
-        "n3ds"
-      ],
-      "launch": {
-        "activityClass": "io.github.lime3ds.android.activities.EmulationActivity",
-        "mimeType": "application/octet-stream",
-        "useSafUri": true
-      }
-    },
-    {
-      "id": "mandarine_3ds",
-      "name": "Mandarine (3DS)",
-      "packageNames": [
-        "io.github.mandarine3ds.mandarine"
-      ],
-      "platformIds": [
-        "3ds",
-        "n3ds"
-      ],
-      "launch": {
-        "activityClass": "io.github.mandarine3ds.mandarine.activities.EmulationActivity",
-        "flags": [
-          "CLEAR_TASK",
-          "CLEAR_TOP"
-        ],
-        "useSafUri": true
-      }
-    },
-    {
-      "id": "borked3ds",
-      "name": "Borked3DS",
-      "packageNames": [
-        "io.github.borked3ds.android"
-      ],
-      "platformIds": [
-        "3ds",
-        "n3ds"
-      ],
-      "launch": {
-        "activityClass": "io.github.borked3ds.android.activities.EmulationActivity",
-        "flags": [
-          "CLEAR_TASK",
-          "CLEAR_TOP"
-        ],
-        "useSafUri": true
-      }
-    },
-    {
-      "id": "panda3ds",
-      "name": "Panda3DS",
-      "packageNames": [
-        "com.panda3ds.pandroid"
-      ],
-      "platformIds": [
-        "3ds",
-        "n3ds"
-      ],
-      "launch": {
-        "activityClass": "com.panda3ds.pandroid.app.MainActivity"
-      }
-    },
-    {
-      "id": "eden",
-      "name": "Eden (Switch)",
-      "packageNames": [
-        "dev.eden.eden_emulator",
-        "dev.eden.eden_emulator.nightly",
-        "dev.legacy.eden_emulator"
-      ],
-      "platformIds": [
-        "switch",
-        "nx"
-      ],
-      "launch": {
-        "intentType": "COMPONENT",
-        "activityClass": "org.yuzu.yuzu_emu.activities.EmulationActivity",
-        "action": "android.nfc.action.TECH_DISCOVERED",
-        "attachRomData": true
-      }
-    },
-    {
-      "id": "yuzu_switch",
-      "name": "Yuzu (Switch)",
-      "packageNames": [
-        "org.yuzu.yuzu_emu",
-        "org.yuzu.yuzu_emu.ea"
-      ],
-      "platformIds": [
-        "switch",
-        "nx"
-      ],
-      "launch": {
-        "intentType": "COMPONENT",
-        "activityClass": "org.yuzu.yuzu_emu.activities.EmulationActivity",
-        "action": "android.nfc.action.TECH_DISCOVERED",
-        "attachRomData": true
-      }
-    },
-    {
-      "id": "sudachi",
-      "name": "Sudachi (Switch)",
-      "packageNames": [
-        "org.sudachi.sudachi_emu",
-        "org.sudachi.sudachi_emu.ea",
-        "org.sudachi.android"
-      ],
-      "platformIds": [
-        "switch",
-        "nx"
-      ],
-      "launch": {
-        "intentType": "COMPONENT",
-        "activityClass": "org.sudachi.sudachi_emu.activities.EmulationActivity",
-        "action": "android.nfc.action.TECH_DISCOVERED",
-        "attachRomData": true
-      },
-      "launchByPackage": {
-        "org.sudachi.android": {
-          "mimeType": "application/octet-stream",
-          "useSafUri": true
-        }
-      }
-    },
-    {
-      "id": "citron_switch",
-      "name": "Citron (Switch)",
-      "packageNames": [
-        "org.citron.citron_emu",
-        "org.citron.citron_emu.ea"
-      ],
-      "platformIds": [
-        "switch",
-        "nx"
-      ],
-      "launch": {
-        "intentType": "COMPONENT",
-        "activityClass": "org.citron.citron_emu.activities.EmulationActivity",
-        "action": "android.nfc.action.TECH_DISCOVERED",
-        "attachRomData": true
-      }
-    },
-    {
-      "id": "sumi_switch",
-      "name": "Sumi (Switch)",
-      "packageNames": [
-        "com.sumi.SumiEmulator"
-      ],
-      "platformIds": [
-        "switch",
-        "nx"
-      ],
-      "launch": {
-        "intentType": "COMPONENT",
-        "activityClass": "org.sumi.sumi_emu.activities.EmulationActivity",
-        "action": "android.nfc.action.TECH_DISCOVERED",
-        "attachRomData": true
-      }
-    },
-    {
-      "id": "uzuy_switch",
-      "name": "Uzuy (Switch)",
-      "packageNames": [
-        "org.uzuy.uzuy_emu",
-        "org.uzuy.uzuy_emu.ea",
-        "org.uzuy.uzuy_emu.mmjr"
-      ],
-      "platformIds": [
-        "switch",
-        "nx"
-      ],
-      "launch": {
-        "intentType": "COMPONENT",
-        "activityClass": "org.uzuy.uzuy_emu.activities.EmulationActivity",
-        "action": "android.nfc.action.TECH_DISCOVERED",
-        "attachRomData": true
-      }
-    },
-    {
-      "id": "suyu_switch",
-      "name": "Suyu (Switch)",
-      "packageNames": [
-        "org.suyu.suyu_emu"
-      ],
-      "platformIds": [
-        "switch",
-        "nx"
-      ],
-      "launch": {
-        "activityClass": "org.suyu.suyu_emu.activities.EmulationActivity"
-      }
-    },
-    {
-      "id": "kenji_nx_switch",
-      "name": "Kenji-NX (Switch)",
-      "packageNames": [
-        "org.kenjinx.android"
-      ],
-      "platformIds": [
-        "switch",
-        "nx"
-      ],
-      "launch": {
-        "intentType": "COMPONENT",
-        "activityClass": "org.kenjinx.android.MainActivity",
-        "extras": {
-          "bootPath": "{rom_uri}"
-        },
-        "action": "org.kenjinx.android.LAUNCH_GAME"
-      }
-    },
-    {
-      "id": "benji_sc_switch",
-      "name": "Benji-SC (Switch)",
-      "packageNames": [
-        "org.benjisc.android"
-      ],
-      "platformIds": [
-        "switch",
-        "nx"
-      ],
-      "launch": {
-        "intentType": "COMPONENT",
-        "activityClass": "org.kenjinx.android.MainActivity",
-        "extras": {
-          "bootPath": "{rom_uri}"
-        },
-        "action": "org.kenjinx.android.LAUNCH_GAME"
-      }
-    },
-    {
-      "id": "skyline_switch",
-      "name": "Skyline (Switch)",
-      "packageNames": [
-        "skyline.emu"
-      ],
-      "platformIds": [
-        "switch",
-        "nx"
-      ],
-      "launch": {
-        "activityClass": "emu.skyline.EmulationActivity"
       }
     },
     {
@@ -1065,68 +709,33 @@
       }
     },
     {
-      "id": "m64pfz",
-      "name": "M64Plus FZ",
+      "id": "azahar",
+      "name": "Azahar (3DS)",
       "packageNames": [
-        "org.mupen64plusae.v3.fzurita.pro",
-        "org.mupen64plusae.v3.fzurita",
-        "org.mupen64plusae.v3.fzurita.amazon"
-      ],
-      "legacyIds": [
-        "m64pfz_pro"
+        "org.azahar_emu.azahar"
       ],
       "platformIds": [
-        "n64"
+        "3ds",
+        "n3ds"
       ],
       "launch": {
-        "activityClass": "paulscode.android.mupen64plusae.SplashActivity",
+        "activityClass": "org.citra.citra_emu.activities.EmulationActivity",
         "mimeType": "application/octet-stream",
         "useSafUri": true
       }
     },
     {
-      "id": "mupen64plusae",
-      "name": "Mupen64Plus-AE",
+      "id": "azaharplus",
+      "name": "AzaharPlus (3DS)",
       "packageNames": [
-        "org.mupen64plusae.v3.alpha"
+        "io.github.azaharplus.android"
       ],
       "platformIds": [
-        "n64"
+        "3ds",
+        "n3ds"
       ],
       "launch": {
-        "activityClass": "paulscode.android.mupen64plusae.SplashActivity",
-        "mimeType": "application/octet-stream",
-        "useSafUri": true
-      }
-    },
-    {
-      "id": "nesemu",
-      "name": "NES.emu",
-      "packageNames": [
-        "com.explusalpha.NesEmu"
-      ],
-      "platformIds": [
-        "nes",
-        "fam"
-      ],
-      "launch": {
-        "activityClass": "com.imagine.BaseActivity",
-        "mimeType": "application/octet-stream",
-        "useSafUri": true
-      }
-    },
-    {
-      "id": "ines",
-      "name": "iNES",
-      "packageNames": [
-        "com.fms.ines.free"
-      ],
-      "platformIds": [
-        "nes",
-        "fam"
-      ],
-      "launch": {
-        "activityClass": "com.fms.emulib.TVActivity",
+        "activityClass": "org.citra.citra_emu.activities.EmulationActivity",
         "flags": [
           "CLEAR_TASK",
           "CLEAR_TOP"
@@ -1135,18 +744,409 @@
       }
     },
     {
-      "id": "snes9xex",
-      "name": "Snes9x EX+",
+      "id": "citra",
+      "name": "Citra (3DS)",
       "packageNames": [
-        "com.explusalpha.Snes9xPlus"
+        "org.citra.citra_emu",
+        "org.citra.citra_emu.canary",
+        "org.citra_emu.citra"
       ],
       "platformIds": [
-        "snes"
+        "3ds",
+        "n3ds"
       ],
       "launch": {
-        "activityClass": "com.imagine.BaseActivity",
+        "activityClass": "org.citra.citra_emu.activities.EmulationActivity",
+        "flags": [
+          "CLEAR_TASK",
+          "CLEAR_TOP"
+        ],
         "mimeType": "application/octet-stream",
         "useSafUri": true
+      },
+      "launchByPackage": {
+        "org.citra_emu.citra": {
+          "activityClass": "org.citra_emu.citra.activities.EmulationActivity",
+          "mimeType": "application/octet-stream",
+          "useSafUri": true
+        }
+      }
+    },
+    {
+      "id": "citra_mmj_3ds",
+      "name": "Citra MMJ (3DS)",
+      "packageNames": [
+        "org.citra.emu"
+      ],
+      "platformIds": [
+        "3ds",
+        "n3ds"
+      ],
+      "launch": {
+        "intentType": "COMPONENT",
+        "activityClass": "org.citra.emu.ui.EmulationActivity",
+        "extras": {
+          "GamePath": "{rom_path}"
+        }
+      }
+    },
+    {
+      "id": "lime3ds",
+      "name": "Lime3DS",
+      "packageNames": [
+        "io.github.lime3ds.android"
+      ],
+      "platformIds": [
+        "3ds",
+        "n3ds"
+      ],
+      "launch": {
+        "activityClass": "io.github.lime3ds.android.activities.EmulationActivity",
+        "mimeType": "application/octet-stream",
+        "useSafUri": true
+      }
+    },
+    {
+      "id": "mandarine_3ds",
+      "name": "Mandarine (3DS)",
+      "packageNames": [
+        "io.github.mandarine3ds.mandarine"
+      ],
+      "platformIds": [
+        "3ds",
+        "n3ds"
+      ],
+      "launch": {
+        "activityClass": "io.github.mandarine3ds.mandarine.activities.EmulationActivity",
+        "flags": [
+          "CLEAR_TASK",
+          "CLEAR_TOP"
+        ],
+        "useSafUri": true
+      }
+    },
+    {
+      "id": "borked3ds",
+      "name": "Borked3DS",
+      "packageNames": [
+        "io.github.borked3ds.android"
+      ],
+      "platformIds": [
+        "3ds",
+        "n3ds"
+      ],
+      "launch": {
+        "activityClass": "io.github.borked3ds.android.activities.EmulationActivity",
+        "flags": [
+          "CLEAR_TASK",
+          "CLEAR_TOP"
+        ],
+        "useSafUri": true
+      }
+    },
+    {
+      "id": "panda3ds",
+      "name": "Panda3DS",
+      "packageNames": [
+        "com.panda3ds.pandroid"
+      ],
+      "platformIds": [
+        "3ds",
+        "n3ds"
+      ],
+      "launch": {
+        "activityClass": "com.panda3ds.pandroid.app.MainActivity"
+      }
+    },
+    {
+      "id": "dolphin",
+      "name": "Dolphin",
+      "packageNames": [
+        "org.dolphinemu.dolphinemu"
+      ],
+      "platformIds": [
+        "gc",
+        "gamecube",
+        "wii"
+      ],
+      "launch": {
+        "intentType": "COMPONENT",
+        "activityClass": "org.dolphinemu.dolphinemu.ui.main.TvMainActivity",
+        "extras": {
+          "AutoStartFile": "{rom_uri}"
+        },
+        "category": "android.intent.category.LEANBACK_LAUNCHER"
+      }
+    },
+    {
+      "id": "dolphin_mmjr",
+      "name": "Dolphin MMJR",
+      "packageNames": [
+        "org.mm.jr"
+      ],
+      "platformIds": [
+        "gc",
+        "gamecube",
+        "wii"
+      ],
+      "launch": {
+        "intentType": "COMPONENT",
+        "activityClass": "org.dolphinemu.dolphinemu.ui.main.MainActivity",
+        "extras": {
+          "AutoStartFile": "{rom_uri}"
+        },
+        "action": "android.intent.action.VIEW"
+      }
+    },
+    {
+      "id": "dolphin_mmjr2",
+      "name": "Dolphin MMJR2",
+      "packageNames": [
+        "org.dolphinemu.mmjr"
+      ],
+      "platformIds": [
+        "gc",
+        "gamecube",
+        "wii"
+      ],
+      "launch": {
+        "intentType": "COMPONENT",
+        "activityClass": "org.dolphinemu.dolphinemu.ui.main.MainActivity",
+        "extras": {
+          "AutoStartFile": "{rom_uri}"
+        },
+        "action": "android.intent.action.VIEW"
+      }
+    },
+    {
+      "id": "dolphin_primehack",
+      "name": "Dolphin PrimeHack",
+      "packageNames": [
+        "org.dolphinemu.primehack",
+        "org.shiiion.primehack"
+      ],
+      "platformIds": [
+        "gc",
+        "gamecube",
+        "wii"
+      ],
+      "launch": {
+        "intentType": "COMPONENT",
+        "activityClass": "org.dolphinemu.dolphinemu.ui.main.MainActivity",
+        "extras": {
+          "AutoStartFile": "{rom_uri}"
+        },
+        "action": "android.intent.action.VIEW"
+      }
+    },
+    {
+      "id": "cemu",
+      "name": "Cemu",
+      "packageNames": [
+        "info.cemu.cemu"
+      ],
+      "platformIds": [
+        "wiiu"
+      ],
+      "launch": {
+        "activityClass": "info.cemu.cemu.emulation.EmulationActivity",
+        "useSafUri": true
+      }
+    },
+    {
+      "id": "cemu_legacy",
+      "name": "Cemu (legacy)",
+      "packageNames": [
+        "info.cemu.Cemu"
+      ],
+      "platformIds": [
+        "wiiu"
+      ],
+      "launch": {
+        "activityClass": "info.cemu.Cemu.emulation.EmulationActivity",
+        "useSafUri": true
+      }
+    },
+    {
+      "id": "eden",
+      "name": "Eden (Switch)",
+      "packageNames": [
+        "dev.eden.eden_emulator",
+        "dev.eden.eden_emulator.nightly",
+        "dev.legacy.eden_emulator"
+      ],
+      "platformIds": [
+        "switch",
+        "nx"
+      ],
+      "launch": {
+        "intentType": "COMPONENT",
+        "activityClass": "org.yuzu.yuzu_emu.activities.EmulationActivity",
+        "action": "android.nfc.action.TECH_DISCOVERED",
+        "attachRomData": true
+      }
+    },
+    {
+      "id": "yuzu_switch",
+      "name": "Yuzu (Switch)",
+      "packageNames": [
+        "org.yuzu.yuzu_emu",
+        "org.yuzu.yuzu_emu.ea"
+      ],
+      "platformIds": [
+        "switch",
+        "nx"
+      ],
+      "launch": {
+        "intentType": "COMPONENT",
+        "activityClass": "org.yuzu.yuzu_emu.activities.EmulationActivity",
+        "action": "android.nfc.action.TECH_DISCOVERED",
+        "attachRomData": true
+      }
+    },
+    {
+      "id": "sudachi",
+      "name": "Sudachi (Switch)",
+      "packageNames": [
+        "org.sudachi.sudachi_emu",
+        "org.sudachi.sudachi_emu.ea",
+        "org.sudachi.android"
+      ],
+      "platformIds": [
+        "switch",
+        "nx"
+      ],
+      "launch": {
+        "intentType": "COMPONENT",
+        "activityClass": "org.sudachi.sudachi_emu.activities.EmulationActivity",
+        "action": "android.nfc.action.TECH_DISCOVERED",
+        "attachRomData": true
+      },
+      "launchByPackage": {
+        "org.sudachi.android": {
+          "mimeType": "application/octet-stream",
+          "useSafUri": true
+        }
+      }
+    },
+    {
+      "id": "citron_switch",
+      "name": "Citron (Switch)",
+      "packageNames": [
+        "org.citron.citron_emu",
+        "org.citron.citron_emu.ea"
+      ],
+      "platformIds": [
+        "switch",
+        "nx"
+      ],
+      "launch": {
+        "intentType": "COMPONENT",
+        "activityClass": "org.citron.citron_emu.activities.EmulationActivity",
+        "action": "android.nfc.action.TECH_DISCOVERED",
+        "attachRomData": true
+      }
+    },
+    {
+      "id": "sumi_switch",
+      "name": "Sumi (Switch)",
+      "packageNames": [
+        "com.sumi.SumiEmulator"
+      ],
+      "platformIds": [
+        "switch",
+        "nx"
+      ],
+      "launch": {
+        "intentType": "COMPONENT",
+        "activityClass": "org.sumi.sumi_emu.activities.EmulationActivity",
+        "action": "android.nfc.action.TECH_DISCOVERED",
+        "attachRomData": true
+      }
+    },
+    {
+      "id": "uzuy_switch",
+      "name": "Uzuy (Switch)",
+      "packageNames": [
+        "org.uzuy.uzuy_emu",
+        "org.uzuy.uzuy_emu.ea",
+        "org.uzuy.uzuy_emu.mmjr"
+      ],
+      "platformIds": [
+        "switch",
+        "nx"
+      ],
+      "launch": {
+        "intentType": "COMPONENT",
+        "activityClass": "org.uzuy.uzuy_emu.activities.EmulationActivity",
+        "action": "android.nfc.action.TECH_DISCOVERED",
+        "attachRomData": true
+      }
+    },
+    {
+      "id": "suyu_switch",
+      "name": "Suyu (Switch)",
+      "packageNames": [
+        "org.suyu.suyu_emu"
+      ],
+      "platformIds": [
+        "switch",
+        "nx"
+      ],
+      "launch": {
+        "activityClass": "org.suyu.suyu_emu.activities.EmulationActivity"
+      }
+    },
+    {
+      "id": "kenji_nx_switch",
+      "name": "Kenji-NX (Switch)",
+      "packageNames": [
+        "org.kenjinx.android"
+      ],
+      "platformIds": [
+        "switch",
+        "nx"
+      ],
+      "launch": {
+        "intentType": "COMPONENT",
+        "activityClass": "org.kenjinx.android.MainActivity",
+        "extras": {
+          "bootPath": "{rom_uri}"
+        },
+        "action": "org.kenjinx.android.LAUNCH_GAME"
+      }
+    },
+    {
+      "id": "benji_sc_switch",
+      "name": "Benji-SC (Switch)",
+      "packageNames": [
+        "org.benjisc.android"
+      ],
+      "platformIds": [
+        "switch",
+        "nx"
+      ],
+      "launch": {
+        "intentType": "COMPONENT",
+        "activityClass": "org.kenjinx.android.MainActivity",
+        "extras": {
+          "bootPath": "{rom_uri}"
+        },
+        "action": "org.kenjinx.android.LAUNCH_GAME"
+      }
+    },
+    {
+      "id": "skyline_switch",
+      "name": "Skyline (Switch)",
+      "packageNames": [
+        "skyline.emu"
+      ],
+      "platformIds": [
+        "switch",
+        "nx"
+      ],
+      "launch": {
+        "activityClass": "emu.skyline.EmulationActivity"
       }
     },
     {
@@ -1297,6 +1297,73 @@
       }
     },
     {
+      "id": "flycast",
+      "name": "Flycast (Dreamcast)",
+      "packageNames": [
+        "com.flycast.emulator",
+        "com.flycast.emulator.gles2"
+      ],
+      "legacyIds": [
+        "flycast_gles2"
+      ],
+      "platformIds": [
+        "dreamcast",
+        "dc"
+      ],
+      "launch": {
+        "activityClass": "com.flycast.emulator.MainActivity",
+        "mimeType": "application/octet-stream",
+        "useSafUri": true
+      }
+    },
+    {
+      "id": "redream",
+      "name": "Redream (Dreamcast)",
+      "packageNames": [
+        "io.recompiled.redream"
+      ],
+      "platformIds": [
+        "dreamcast",
+        "dc"
+      ],
+      "launch": {
+        "activityClass": "io.recompiled.redream.MainActivity",
+        "mimeType": "application/octet-stream",
+        "useSafUri": true
+      }
+    },
+    {
+      "id": "2600_emu",
+      "name": "2600.emu",
+      "packageNames": [
+        "com.explusalpha.A2600Emu"
+      ],
+      "platformIds": [
+        "atari2600"
+      ],
+      "launch": {
+        "activityClass": "com.imagine.BaseActivity",
+        "mimeType": "application/octet-stream",
+        "useSafUri": true
+      }
+    },
+    {
+      "id": "lynxemu",
+      "name": "Lynx.emu",
+      "packageNames": [
+        "com.explusalpha.LynxEmu"
+      ],
+      "platformIds": [
+        "atarilynx",
+        "lynx"
+      ],
+      "launch": {
+        "activityClass": "com.imagine.BaseActivity",
+        "mimeType": "application/octet-stream",
+        "useSafUri": true
+      }
+    },
+    {
       "id": "pceemu",
       "name": "PCE.emu",
       "packageNames": [
@@ -1346,6 +1413,39 @@
       }
     },
     {
+      "id": "swanemu",
+      "name": "Swan.emu",
+      "packageNames": [
+        "com.explusalpha.SwanEmu"
+      ],
+      "platformIds": [
+        "wonderswan",
+        "wonderswancolor",
+        "ws",
+        "wsc"
+      ],
+      "launch": {
+        "activityClass": "com.imagine.BaseActivity",
+        "mimeType": "application/octet-stream",
+        "useSafUri": true
+      }
+    },
+    {
+      "id": "c64_emu",
+      "name": "C64.emu",
+      "packageNames": [
+        "com.explusalpha.C64Emu"
+      ],
+      "platformIds": [
+        "c64"
+      ],
+      "launch": {
+        "activityClass": "com.imagine.BaseActivity",
+        "mimeType": "application/octet-stream",
+        "useSafUri": true
+      }
+    },
+    {
       "id": "mame4droid_2024",
       "name": "MAME4droid 2024",
       "packageNames": [
@@ -1381,106 +1481,6 @@
       }
     },
     {
-      "id": "swanemu",
-      "name": "Swan.emu",
-      "packageNames": [
-        "com.explusalpha.SwanEmu"
-      ],
-      "platformIds": [
-        "wonderswan",
-        "wonderswancolor",
-        "ws",
-        "wsc"
-      ],
-      "launch": {
-        "activityClass": "com.imagine.BaseActivity",
-        "mimeType": "application/octet-stream",
-        "useSafUri": true
-      }
-    },
-    {
-      "id": "lynxemu",
-      "name": "Lynx.emu",
-      "packageNames": [
-        "com.explusalpha.LynxEmu"
-      ],
-      "platformIds": [
-        "atarilynx",
-        "lynx"
-      ],
-      "launch": {
-        "activityClass": "com.imagine.BaseActivity",
-        "mimeType": "application/octet-stream",
-        "useSafUri": true
-      }
-    },
-    {
-      "id": "2600_emu",
-      "name": "2600.emu",
-      "packageNames": [
-        "com.explusalpha.A2600Emu"
-      ],
-      "platformIds": [
-        "atari2600"
-      ],
-      "launch": {
-        "activityClass": "com.imagine.BaseActivity",
-        "mimeType": "application/octet-stream",
-        "useSafUri": true
-      }
-    },
-    {
-      "id": "c64_emu",
-      "name": "C64.emu",
-      "packageNames": [
-        "com.explusalpha.C64Emu"
-      ],
-      "platformIds": [
-        "c64"
-      ],
-      "launch": {
-        "activityClass": "com.imagine.BaseActivity",
-        "mimeType": "application/octet-stream",
-        "useSafUri": true
-      }
-    },
-    {
-      "id": "flycast",
-      "name": "Flycast (Dreamcast)",
-      "packageNames": [
-        "com.flycast.emulator",
-        "com.flycast.emulator.gles2"
-      ],
-      "legacyIds": [
-        "flycast_gles2"
-      ],
-      "platformIds": [
-        "dreamcast",
-        "dc"
-      ],
-      "launch": {
-        "activityClass": "com.flycast.emulator.MainActivity",
-        "mimeType": "application/octet-stream",
-        "useSafUri": true
-      }
-    },
-    {
-      "id": "redream",
-      "name": "Redream (Dreamcast)",
-      "packageNames": [
-        "io.recompiled.redream"
-      ],
-      "platformIds": [
-        "dreamcast",
-        "dc"
-      ],
-      "launch": {
-        "activityClass": "io.recompiled.redream.MainActivity",
-        "mimeType": "application/octet-stream",
-        "useSafUri": true
-      }
-    },
-    {
       "id": "x1box",
       "name": "X1 BOX (xemu)",
       "packageNames": [
@@ -1505,9 +1505,16 @@
         "xbox360"
       ],
       "launch": {
-        "activityClass": "emu.x360.mobile.X360MobileGameLaunchActivity",
-        "mimeType": "application/octet-stream",
-        "useSafUri": true
+        "intentType": "COMPONENT",
+        "activityClass": "emu.x360mobile.com.MainActivity",
+        "action": "android.intent.action.VIEW",
+        "boolExtras": {
+          "x360mobile_frontend": true
+        },
+        "flags": [
+          "CLEAR_TASK"
+        ],
+        "dataUri": "x360mobile://launch?uri={rom_file_uri_encoded}"
       }
     },
     {
@@ -1528,6 +1535,25 @@
           "game_uri": "{rom_uri}"
         },
         "action": "aenu.intent.action.AX360E"
+      }
+    },
+    {
+      "id": "xendroid",
+      "name": "XenDroid",
+      "packageNames": [
+        "xendroid.compose",
+        "xendroid.compose.debug"
+      ],
+      "platformIds": [
+        "x360"
+      ],
+      "launch": {
+        "intentType": "COMPONENT",
+        "activityClass": "xendroid.compose.EmulatorHostActivity",
+        "extras": {
+          "game_uri": "{rom_path}"
+        },
+        "action": "xendroid.intent.action.xendroid"
       }
     }
   ],

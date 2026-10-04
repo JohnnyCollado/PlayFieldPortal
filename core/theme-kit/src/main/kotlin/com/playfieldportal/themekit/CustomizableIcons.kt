@@ -146,6 +146,9 @@ object CustomizableIcons {
     /** Template size for console art, matching the catbar/item templates. */
     private const val CONSOLE_TEMPLATE_PX = 256
 
+    /** Prefix of the console-art keys; the rest of the key is the platform id. */
+    const val SYSICON_PREFIX = "sysicon_"
+
     /** Prefix of the physical-media keys; the rest of the key is the platform id. */
     const val PHYSICAL_MEDIA_PREFIX = "physmedia_"
 
@@ -154,7 +157,7 @@ object CustomizableIcons {
     val ALL: List<IconSlot> = IconSlots.ALL +
         CONSOLE_IDS.map { id ->
             IconSlot(
-                key = "sysicon_$id",
+                key = "$SYSICON_PREFIX$id",
                 group = IconSlot.Group.CONSOLE,
                 displayName = consoleDisplayName(id),
                 templateSizePx = CONSOLE_TEMPLATE_PX,

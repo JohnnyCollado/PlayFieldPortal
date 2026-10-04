@@ -135,10 +135,11 @@ class GameDetailViewModelTest {
             context           = context,
             gameRepository    = gameRepository,
             platformDao       = platformDao,
-            memoryCardRepository = memoryCardRepository,
             collectionRepository = mockk(relaxed = true),
             profileRepository = profileRepository,
-            autoCoreMemory    = autoCoreMemory,
+            launchLadder      = com.playfieldportal.feature.launcher.GameLaunchLadder(
+                profileRepository, memoryCardRepository, platformDao, autoCoreMemory,
+            ),
             intentResolver    = intentResolver,
             artworkRepository = artworkRepository,
             artworkStore      = artworkStore,

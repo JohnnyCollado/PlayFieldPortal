@@ -26,6 +26,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import com.playfieldportal.themekit.consoleArt
+import com.playfieldportal.themekit.mediaArt
+import com.playfieldportal.themekit.slotIcons
 
 /**
  * Open a file in the real ViewModel, export it, read both back: nothing the format carries may
@@ -62,8 +65,8 @@ class ViewModelLosslessRoundTripTest {
         assertContentEquals(a.preview, b.preview, "$label: preview")
         // Icons for parts themes no longer customize (the status strip, menus...) are left out on open.
         assertEquals(a.icons.filterKeys(EditableSlots::isKept), b.icons, "$label: icons")
-        assertEquals(a.sysicons, b.sysicons, "$label: sysicons")
-        assertEquals(a.mediaicons, b.mediaicons, "$label: mediaicons")
+        assertEquals(a.consoleArt, b.consoleArt, "$label: sysicons")
+        assertEquals(a.mediaArt, b.mediaArt, "$label: mediaicons")
         assertEquals(a.motion, b.motion, "$label: motion")
         a.motion?.let { assertContentEquals(bytesOf(it::copyTo), bytesOf(b.motion!!::copyTo), "$label: motion bytes") }
         assertEquals(a.media, b.media, "$label: media keys")
@@ -124,10 +127,40 @@ class ViewModelLosslessRoundTripTest {
         val dir = createTempDirectory("studio-lossless-c").toFile()
         try {
             val (before, after, vm) = roundTrip(dir, "v3", ThemeFixtures.v3())
-            assertEquals(setOf("psx"), before.sysicons.keys)
-            assertEquals(setOf("psx"), after.sysicons.keys, "sysicons/psx must survive")
-            assertContentEquals(ThemeFixtures.SYSICON_PNG, after.sysicons.getValue("psx").bytes)
-            assertEquals(setOf("sysicon_psx"), vm.state.value.sysiconOverrides.keys)
+            assertEquals(setOf("psx"), before.consoleArt.keys)
+            assertEquals(setOf("psx"), after.consoleArt.keys, "sysicons/psx must survive")
+            assertContentEquals(ThemeFixtures.SYSICON_PNG, after.consoleArt.getValue("psx").bytes)
+            assertTrue("sysicon_psx" in vm.state.value.iconOverrides, "console art is an icon like any other")
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `every theme parameter the launcher applies survives open and export`() = runBlocking {
+        // Every field the launcher's ThemeParameters applies, each set away from its default. A new
+        // ThemeParameterFields entry fails here until the Studio opens and exports it too.
+        val full = PfpThemeManifest(
+            name = "Parameters",
+            accentColor = "#FF72B1",
+            iconColor = "#00FF00",
+            textColor = "#112233",
+            subTextColor = "#445566",
+            waveStyle = PfpThemeManifest.WAVE_STATIC,
+            waveStyleV4 = PfpThemeManifest.WAVE_REDUCED_STATIC,
+            layout = com.playfieldportal.themekit.XmbLayoutSpec(barTopFraction = 0.2f),
+            textColorExact = true,
+            legibility = ThemeLegibility(text = "plate", icon = "contour_dark", solidUnfocusedIcons = true),
+        )
+        val defaults = com.playfieldportal.themekit.ThemeParameterFields.valuesOf(PfpThemeManifest(name = "", accentColor = ""))
+        val values = com.playfieldportal.themekit.ThemeParameterFields.valuesOf(full)
+        for (field in com.playfieldportal.themekit.ThemeParameterFields.ALL) {
+            assertTrue(values[field] != defaults[field], "the test must set $field away from its default")
+        }
+        val dir = createTempDirectory("studio-parameters").toFile()
+        try {
+            val (_, after, _) = roundTrip(dir, "parameters", PfpThemeCodec.write(PfpThemeBundle(full, wallpaper = null, preview = null)))
+            assertEquals(values, com.playfieldportal.themekit.ThemeParameterFields.valuesOf(after.manifest))
         } finally {
             dir.deleteRecursively()
         }
@@ -221,7 +254,7 @@ class ViewModelLosslessRoundTripTest {
     }
 
     @Test
-    fun `setIconOverride routes a console key to sysicons and exports it`() = runBlocking {
+    fun `setIconOverride takes a console key like any slot and exports it under sysicons`() = runBlocking {
         val dir = createTempDirectory("studio-lossless-console").toFile()
         try {
             val vm = StudioViewModel(CoroutineScope(Dispatchers.Default))
@@ -230,20 +263,19 @@ class ViewModelLosslessRoundTripTest {
             vm.setIconOverride("catbar_games", pngFile(dir, "cat.png"))
             vm.awaitIdle()
             val s = vm.state.value
-            assertEquals(setOf("sysicon_cps1"), s.sysiconOverrides.keys)
-            assertEquals(setOf("catbar_games"), s.iconOverrides.keys)
-            assertEquals(setOf("sysicon_cps1"), s.sysiconBitmaps.keys)
+            assertEquals(setOf("sysicon_cps1", "catbar_games"), s.iconOverrides.keys)
+            assertEquals(setOf("sysicon_cps1", "catbar_games"), s.iconBitmaps.keys)
 
             val out = File(dir, "out.pfptheme")
             vm.exportTo(out) { null }
             vm.awaitIdle()
             val read = assertNotNull(PfpThemeCodec.read(out))
-            assertEquals(setOf("cps1"), read.sysicons.keys)
-            assertEquals(setOf("catbar_games"), read.icons.keys)
+            assertEquals(setOf("cps1"), read.consoleArt.keys)
+            assertEquals(setOf("catbar_games"), read.slotIcons.keys)
 
             vm.clearIconOverride("sysicon_cps1")
-            assertTrue(vm.state.value.sysiconOverrides.isEmpty())
-            assertTrue(vm.state.value.sysiconBitmaps.isEmpty())
+            assertEquals(setOf("catbar_games"), vm.state.value.iconOverrides.keys)
+            assertEquals(setOf("catbar_games"), vm.state.value.iconBitmaps.keys)
         } finally {
             dir.deleteRecursively()
         }

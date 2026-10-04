@@ -8,6 +8,8 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.GameBootPreferences
+import com.playfieldportal.core.data.repository.ThemePrefKeys
+import com.playfieldportal.core.data.repository.ThemeTiers
 import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.domain.model.TextLegibilityStyle
 import kotlinx.coroutines.Dispatchers
@@ -50,7 +52,7 @@ class DisplaySettingsViewModelFontColorTest {
         runBlocking { context.pfpDataStore.edit { it.clear() } }
         vm = DisplaySettingsViewModel(
             context,
-            UiMediaStore(context),
+            UiMediaStore(context, ThemeTiers(context)),
             GameBootPreferences(context),
             io.mockk.mockk(relaxed = true),
             // The layout repo only feeds the media rows' face-button shortcuts. A relaxed mock
@@ -167,9 +169,9 @@ class DisplaySettingsViewModelFontColorTest {
     private companion object {
         // Mirrored by their string contract, like the sibling tests — these keys are private to
         // the ViewModel, and the string is the part that must not drift.
-        val KEY_TEXT_COLOR = longPreferencesKey("display_text_color")
-        val KEY_EXACT = booleanPreferencesKey("display_text_color_exact")
-        val KEY_LEGIBILITY = stringPreferencesKey("display_text_legibility")
+        val KEY_TEXT_COLOR = ThemePrefKeys.TEXT_COLOR
+        val KEY_EXACT = ThemePrefKeys.TEXT_COLOR_EXACT
+        val KEY_LEGIBILITY = ThemePrefKeys.TEXT_LEGIBILITY
         val KEY_NOTICE_SUPPRESSED = booleanPreferencesKey("display_text_contrast_notice_suppressed")
     }
 }

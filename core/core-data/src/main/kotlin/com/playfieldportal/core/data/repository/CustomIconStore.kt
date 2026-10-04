@@ -6,11 +6,8 @@ import android.net.Uri
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import com.playfieldportal.core.data.datastore.pfpDataStore
-import com.playfieldportal.core.ui.icons.CustomIcon
 import com.playfieldportal.core.ui.icons.CustomIconLimits
-import com.playfieldportal.core.ui.icons.GifFrameProbe
 import com.playfieldportal.core.ui.icons.UserCategoryIconKeys
-import com.playfieldportal.themekit.CustomizableIcons
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
@@ -21,12 +18,11 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import androidx.compose.ui.graphics.asImageBitmap
 
 /**
  * The user's per-slot custom icon storage — the user tier of the icon render precedence
- * (`user pick > theme icon > built-in`). The directory is the source of truth, matching how
- * PfpThemeStore handles the extracted `theme-icons/`:
+ * (`user pick > theme icon > built-in`, owned by [ThemeTiers], which also reads this tier). The
+ * directory is the source of truth, matching how PfpThemeStore handles the extracted `theme-icons/`:
  *
  * ```
  * filesDir/custom-icons/<slotKey>.<png|jpg|webp|gif>
@@ -39,20 +35,21 @@ import androidx.compose.ui.graphics.asImageBitmap
  * keeps playing — the single easiest bug to ship in this feature.
  *
  * Keys come from two families, used verbatim as file names, which makes the gate
- * ([isStorableKey]) load-bearing: it is what stops a crafted key escaping the directory.
- * [CustomizableIcons] (theme slots plus console slots) are themeable; [UserCategoryIconKeys]
+ * ([ThemeTiers.isIconKey]) load-bearing: it is what stops a crafted key escaping the directory.
+ * CustomizableIcons (theme slots plus console slots) are themeable; [UserCategoryIconKeys]
  * (`usercat_<categoryId>`) are device-local category images that are never themed or exported.
  */
 @Singleton
 class CustomIconStore @Inject constructor(
     @ApplicationContext private val context: Context,
     private val cacheEvictor: CustomIconCacheEvictor,
+    private val tiers: ThemeTiers,
 ) {
 
     /** Import outcome: [ok] with a null message on success; a user-facing reason on failure. */
     data class ImportResult(val ok: Boolean, val message: String? = null)
 
-    private val dir = File(context.filesDir, CUSTOM_ICONS_DIR)
+    private val dir = tiers.iconDir(ThemeTiers.Tier.USER)
 
     /** Extension → MIME for the stored suffixes (jpg normalizes jpeg's report). */
     private val mimeForExtension = mapOf(
@@ -179,7 +176,7 @@ class CustomIconStore @Inject constructor(
 
     /**
      * The set of slot keys that currently hold a file, re-listed whenever the stamp changes —
-     * the same signal that makes observers reload [load], without paying for any decode.
+     * the same signal that makes the XMB reload this tier (ThemeTiers.loadIcons), without paying for any decode.
      * Lets a screen ask "does this slot have an image?" cheaply.
      */
     fun observeStoredKeys(): Flow<Set<String>> =
@@ -189,14 +186,7 @@ class CustomIconStore @Inject constructor(
             .map { listStoredKeys() }
             .flowOn(Dispatchers.IO)
 
-    /** The slot keys with a user icon right now — [observeStoredKeys]'s current value, for one-off checks. */
-    suspend fun storedKeys(): Set<String> = withContext(Dispatchers.IO) { listStoredKeys() }
-
-    private fun listStoredKeys(): Set<String> =
-        dir.listFiles { f -> f.isFile }.orEmpty()
-            .filter { it.extension.lowercase() in mimeForExtension && isStorableKey(it.nameWithoutExtension) }
-            .map { it.nameWithoutExtension }
-            .toSet()
+    private fun listStoredKeys(): Set<String> = tiers.iconKeys(ThemeTiers.Tier.USER)
 
     /**
      * Sweeps every `usercat_*` file whose category no longer exists: images of deleted
@@ -234,40 +224,8 @@ class CustomIconStore @Inject constructor(
      * pressing a button that appears dead.
      */
     suspend fun clearAll(): Boolean = withContext(Dispatchers.IO) {
-        val had = dir.listFiles { f -> f.isFile }.orEmpty().isNotEmpty()
         context.pfpDataStore.edit { prefs -> prefs.remove(KEY_CUSTOM_ICONS_STAMP) }
-        dir.deleteRecursively()
-        had
-    }
-
-    /**
-     * Loads every stored pick as slot key → [CustomIcon], scanning the directory on IO.
-     * GIFs that genuinely carry multiple frames load as [CustomIcon.Animated]; everything
-     * else — stills AND single-frame GIFs — as [CustomIcon.Still], so no decoder is ever
-     * started for them. Invalid slot keys and extensions are skipped, never crashed on.
-     */
-    suspend fun load(): Map<String, CustomIcon> = withContext(Dispatchers.IO) {
-        dir.listFiles { f -> f.isFile }.orEmpty().mapNotNull { file ->
-            val key = file.nameWithoutExtension
-            if (!isStorableKey(key)) return@mapNotNull null
-            val ext = file.extension.lowercase()
-            if (ext !in mimeForExtension) return@mapNotNull null
-            // Bounds-checked decode: the dir is ours, but the picked file isn't — a 20k×20k
-            // "icon" must never reach a pixel allocation (same rule as theme-icons).
-            val bitmap = SafeMedia.decodeFileCapped(
-                file.absolutePath,
-                maxDimension = DECODE_MAX_DIMENSION,
-                targetDimension = DECODE_TARGET_DIMENSION,
-            ) ?: return@mapNotNull null
-            val firstFrame = bitmap.asImageBitmap()
-            // Single-frame GIFs load as Still — no decoder is ever started for them.
-            val icon = if (ext == "gif" && GifFrameProbe.countFrames(file) > 1) {
-                CustomIcon.Animated(path = file.absolutePath, firstFrame = firstFrame)
-            } else {
-                CustomIcon.Still(firstFrame)
-            }
-            key to icon
-        }.toMap()
+        tiers.clearIcons(ThemeTiers.Tier.USER)
     }
 
     /**
@@ -292,8 +250,7 @@ class CustomIconStore @Inject constructor(
         return CustomIconLimits.validate(probe)
     }
 
-    private fun isStorableKey(key: String): Boolean =
-        CustomizableIcons.isValidKey(key) || UserCategoryIconKeys.isValidKey(key)
+    private fun isStorableKey(key: String): Boolean = ThemeTiers.isIconKey(key)
 
     private fun mimeToExtension(mime: String?): String? = when (mime?.lowercase()) {
         "image/png" -> "png"
@@ -311,14 +268,9 @@ class CustomIconStore @Inject constructor(
 
         /**
          * Present ⇒ user picks exist under [CUSTOM_ICONS_DIR]; the value only bumps so
-         * observers reload. Copies PfpThemeStore.KEY_THEME_ICONS_STAMP's contract. Mirrored
+         * observers reload. Copies ThemePrefKeys.THEME_ICONS_STAMP's contract. Mirrored
          * by feature-backup's long-key list.
          */
         val KEY_CUSTOM_ICONS_STAMP = longPreferencesKey("custom_icons_stamp")
-
-        // Stills downscale toward 512 (the cap GIFs must fit under); the hard ceiling matches
-        // SafeMedia's theme-image rule.
-        private const val DECODE_MAX_DIMENSION = 8192
-        private const val DECODE_TARGET_DIMENSION = 512
     }
 }

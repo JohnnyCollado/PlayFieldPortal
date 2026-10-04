@@ -62,6 +62,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import com.playfieldportal.themekit.CustomizableIcons
+import com.playfieldportal.themekit.PhysicalMediaIds
 
 /**
  * The Studio's copy of the launcher's default icon set, keyed by
@@ -203,7 +204,7 @@ object StudioIconSet {
     fun glyphSizeDp(key: String, itemIconDp: Float): Float =
         if (key in GLYPH_SIZES_DP) GLYPH_SIZES_DP[key] ?: itemIconDp else 48f
 
-    private const val CONSOLE_PREFIX = "sysicon_"
+    private const val CONSOLE_PREFIX = CustomizableIcons.SYSICON_PREFIX
 
     /**
      * The launcher's console art (core-ui drawable-nodpi/sysicon_*.png) for a `sysicon_<id>` key, with
@@ -222,15 +223,12 @@ object StudioIconSet {
 
     /**
      * The launcher's physical-media art (feature-xmb assets/systems/physical-media) for a
-     * `physmedia_<id>` key, with PhysicalMediaIcons.kt's one alias that applies (x360 -> xbox360).
-     * Null for any other key.
+     * `physmedia_<id>` key, through the launcher's own table ([PhysicalMediaIds]). Null for any
+     * other key.
      */
     internal fun physicalMediaResource(key: String): String? {
-        val id = when (val raw = CustomizableIcons.physicalMediaId(key) ?: return null) {
-            "x360" -> "xbox360"
-            else -> raw
-        }
-        return "xmb/physical-media/$id.png"
+        val file = PhysicalMediaIds.artFile(CustomizableIcons.physicalMediaId(key) ?: return null) ?: return null
+        return "xmb/physical-media/$file.png"
     }
 
     /**

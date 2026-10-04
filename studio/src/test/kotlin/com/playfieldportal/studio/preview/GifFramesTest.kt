@@ -67,7 +67,7 @@ class GifFramesTest {
     fun `console art gifs animate too`() {
         val moving = IconGifTestMedia.animatedGif(frames = 3)
         val picked = GifFrames.animatedIcons(
-            StudioState(sysiconOverrides = mapOf("sysicon_ps3" to moving), sysiconExtensions = mapOf("sysicon_ps3" to "gif")),
+            StudioState(iconOverrides = mapOf("sysicon_ps3" to moving), iconExtensions = mapOf("sysicon_ps3" to "gif")),
         )
         assertEquals(setOf("sysicon_ps3"), picked.keys)
     }

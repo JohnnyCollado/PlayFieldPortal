@@ -53,6 +53,6 @@ internal fun categoryLongPressMenu(state: XMBUiState, index: Int): XMBContextMen
     if (state.hasBlockingOverlay) return null
     val category = state.categories.getOrNull(index) ?: return null
     // Built-ins and ids that do not fit the key pattern never carry a device image.
-    val hasImage = UserCategoryIconKeys.keyFor(category.id)?.let { it in state.customIcons } == true
+    val hasImage = UserCategoryIconKeys.keyFor(category.id)?.let { it in state.xmbIcons.userKeys } == true
     return categoryContextMenu(category, hasImage)
 }

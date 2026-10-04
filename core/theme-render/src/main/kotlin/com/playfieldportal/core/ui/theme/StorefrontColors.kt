@@ -1,9 +1,6 @@
 package com.playfieldportal.core.ui.theme
 
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.ReadOnlyComposable
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 
@@ -78,7 +75,8 @@ data class StorefrontColors(
     val destructive: Color,
 )
 
-private val DefaultStorefrontColors = StorefrontColors(
+/** The classic PSP blue storefront, before any theme derives its own. */
+val DefaultStorefrontColors = StorefrontColors(
     backgroundDeep    = Color(0xFF0743A2),
     backgroundMid     = Color(0xFF128BC9),
     selectionGlow     = Color(0x297EE8FF),
@@ -107,8 +105,6 @@ private val DefaultStorefrontColors = StorefrontColors(
     menuRowSelected   = Color(0x347EE8FF),
     destructive       = Color(0xFFFF6B6B),
 )
-
-val LocalStorefrontColors = staticCompositionLocalOf { DefaultStorefrontColors }
 
 // ── Contrast helpers ───────────────────────────────────────────────────────────
 // relativeLuminance / contrastRatio / ensureReadable now live in TextLegibility.kt (same package,
@@ -147,29 +143,16 @@ private fun Color.isVividHue(): Boolean {
 const val SECONDARY_TEXT_WEIGHT = 0.72f
 
 /**
- * An unselected primary label (a tile name, a menu option): [StorefrontColors.textSecondary] by
- * default. Once the user sets a font colour it is Main text dimmed — that colour at the secondary
+ * An unselected primary label (a tile name, a menu option) under [pfp]: [StorefrontColors.textSecondary]
+ * by default. Once the user sets a font colour it is Main text dimmed — that colour at the secondary
  * weight — not the Sub colour, which belongs to secondary text.
  */
-@Composable
-@ReadOnlyComposable
-fun StorefrontColors.unselectedLabel(): Color =
-    LocalPFPColors.current.textOr(textSecondary, SECONDARY_TEXT_WEIGHT)
+fun StorefrontColors.unselectedLabel(pfp: PFPColors): Color = pfp.textOr(textSecondary, SECONDARY_TEXT_WEIGHT)
 
 /**
- * Derive a [StorefrontColors] from the live [LocalPFPColors].
- *
- * Hue comes from [resolveHueSource]; the palette is built with the same accent-tint idiom as
- * [menuCursorEdge] (the hue pulled toward white for bright edges) rather than lerping a literal
- * PSP cyan toward the accent, so every preset — Silver Mono and Golden Amber included — visibly
- * changes the drawer while text keeps a contrast floor ([ensureReadable]).
- */
-@Composable
-fun deriveStorefrontColors(): StorefrontColors = storefrontColorsFor(LocalPFPColors.current)
-
-/**
- * The pure derivation behind [deriveStorefrontColors], for callers that already hold the theme
- * colors (the detail page's palette, which must match the App Drawer exactly) and for tests.
+ * The pure derivation behind core-ui's `deriveStorefrontColors`, for callers that already hold the
+ * theme colors (the detail page's palette, which must match the App Drawer exactly, the Theme
+ * Studio's preview) and for tests.
  */
 fun storefrontColorsFor(pfp: PFPColors): StorefrontColors {
     val hue = resolveHueSource(pfp.accentColor, pfp.waveColor, pfp.backgroundBottom)

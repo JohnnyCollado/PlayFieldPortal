@@ -26,6 +26,9 @@ val javacppPlatform: String = run {
 
 dependencies {
     implementation(project(":core:theme-kit"))
+    // The launcher's own colour rules (contrast, text roles, palettes, tokens): the preview runs
+    // them rather than a copy.
+    implementation(project(":core:theme-render"))
     implementation(compose.desktop.currentOs)
     implementation(libs.compose.mp.material3)
     // Same Material glyph set the launcher's item rows use — drives default icon-slot

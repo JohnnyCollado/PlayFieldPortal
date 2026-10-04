@@ -13,6 +13,7 @@ import com.playfieldportal.feature.achievements.sync.Ps3TrophyCheckStrategy
 import com.playfieldportal.feature.achievements.sync.RaCheckStrategy
 import com.playfieldportal.feature.achievements.sync.SteamCheckStrategy
 import com.playfieldportal.feature.achievements.sync.VitaTrophyCheckStrategy
+import com.playfieldportal.feature.achievements.sync.X360AchievementCheckStrategy
 import com.playfieldportal.feature.launcher.GameSessionReturnListener
 import dagger.Binds
 import dagger.Module
@@ -42,6 +43,7 @@ interface AchievementModule {
     @Binds @IntoSet fun localSteamStrategy(impl: LocalSteamCheckStrategy): ProviderCheckStrategy
     @Binds @IntoSet fun vitaStrategy(impl: VitaTrophyCheckStrategy): ProviderCheckStrategy
     @Binds @IntoSet fun ps3Strategy(impl: Ps3TrophyCheckStrategy): ProviderCheckStrategy
+    @Binds @IntoSet fun x360Strategy(impl: X360AchievementCheckStrategy): ProviderCheckStrategy
 
     @Binds @IntoSet fun localSteamReturn(impl: LocalSteamReturnListener): GameSessionReturnListener
 }

@@ -62,4 +62,22 @@ class ShibaTierTest {
         val tiers = (0..200).map { ShibaTier.forRaPoints(it) }
         assertEquals(false, tiers.contains(ShibaTier.PLATINUM))
     }
+
+    @Test
+    fun `gamerscore 50 and up is Gold`() {
+        assertEquals(ShibaTier.GOLD, ShibaTier.forGamerscore(50))
+        assertEquals(ShibaTier.GOLD, ShibaTier.forGamerscore(200))
+    }
+
+    @Test
+    fun `gamerscore 25 to 49 is Silver`() {
+        assertEquals(ShibaTier.SILVER, ShibaTier.forGamerscore(25))
+        assertEquals(ShibaTier.SILVER, ShibaTier.forGamerscore(49))
+    }
+
+    @Test
+    fun `gamerscore below 25 is Bronze, including 0G achievements`() {
+        assertEquals(ShibaTier.BRONZE, ShibaTier.forGamerscore(24))
+        assertEquals(ShibaTier.BRONZE, ShibaTier.forGamerscore(0))
+    }
 }

@@ -72,8 +72,7 @@ import com.playfieldportal.themekit.IconSlot
 @Composable
 fun CustomIconsOverlay(
     session: CustomIconSession,
-    customIcons: Map<String, CustomIcon>,
-    themeIcons: Map<String, CustomIcon>,
+    icons: com.playfieldportal.core.ui.icons.XmbIcons,
     onSlotFocused: (Int) -> Unit,
     onIconPicked: (String, android.net.Uri) -> Unit,
     onResetSlot: (String) -> Unit,
@@ -175,17 +174,17 @@ fun CustomIconsOverlay(
                     CompositionLocalProvider(com.playfieldportal.core.ui.motion.LocalIconFocused provides true) {
                         SlotPreview(
                             slot = focused,
-                            icon = customIcons[focused.key] ?: themeIcons[focused.key],
+                            icon = icons[focused.key],
                             userSlot = userSlots[focused.key],
                             modifier = Modifier.size(56.dp),
                         )
                     }
                     Column {
                         Text(focused.displayName, color = themedText(Color.White), fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                        val source = when {
-                            customIcons.containsKey(focused.key) -> "Your pick"
-                            themeIcons.containsKey(focused.key) -> "From theme"
-                            else -> "Default"
+                        val source = when (icons.tierOf(focused.key)) {
+                            com.playfieldportal.core.ui.icons.IconTier.USER -> "Your pick"
+                            com.playfieldportal.core.ui.icons.IconTier.THEME -> "From theme"
+                            null -> "Default"
                         }
                         Text(
                             text = runs.getOrNull(session.focusedRunIndex)?.let { "$source · ${it.label} column" } ?: source,
@@ -235,7 +234,7 @@ fun CustomIconsOverlay(
                             CompositionLocalProvider(com.playfieldportal.core.ui.motion.LocalIconFocused provides selected) {
                                 SlotPreview(
                                     slot = slot,
-                                    icon = customIcons[slot.key] ?: themeIcons[slot.key],
+                                    icon = icons[slot.key],
                                     userSlot = userSlots[slot.key],
                                     modifier = Modifier.size(40.dp),
                                 )
@@ -297,9 +296,9 @@ fun CustomIconsOverlay(
                 // is available on controller too.
                 OutlinedButton(
                     onClick = { focused?.let { onResetSlot(it.key) } },
-                    enabled = focused != null && customIcons.containsKey(focused.key),
+                    enabled = focused != null && icons.tierOf(focused.key) == com.playfieldportal.core.ui.icons.IconTier.USER,
                 ) { Text("Reset") }
-                OutlinedButton(onClick = onResetAll, enabled = customIcons.isNotEmpty()) { Text("Reset All") }
+                OutlinedButton(onClick = onResetAll, enabled = icons.userKeys.isNotEmpty()) { Text("Reset All") }
                 OutlinedButton(onClick = onSaveAsTheme) { Text("Save as Theme…") }
                 Box(Modifier.width(1.dp)) // spacer flex
                 OutlinedButton(onClick = onDone) { Text("Done") }

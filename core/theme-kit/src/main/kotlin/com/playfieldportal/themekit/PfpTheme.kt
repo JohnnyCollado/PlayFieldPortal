@@ -157,23 +157,15 @@ data class PfpThemeBundle(
     /** Encoded preview render; always written by the app's preview gate, but optional on read. */
     val preview: ByteArray?,
     /**
-     * Custom icon overrides: [IconSlots] key → encoded image. Slots not present render the
-     * built-in glyph. Stored as `icons/<key>.<ext>` entries (v2 was png-only; v3 widens to
-     * gif for animated icons).
+     * Every icon override the theme carries: [CustomizableIcons] slot key → encoded image. Slots
+     * not present render the built-in glyph.
+     *
+     * One map for every family: the zip folder an icon travels in is the codec's business alone
+     * ([PfpThemeCodec]). Theme slots go to `icons/<key>.<ext>` (v2 png-only; v3 widens to gif),
+     * console art (`sysicon_<id>`) to `sysicons/<id>.<ext>` (v3), physical-media art
+     * (`physmedia_<id>`) to `mediaicons/<id>.<ext>` (v4).
      */
     val icons: Map<String, ThemeImage> = emptyMap(),
-    /**
-     * Console art overrides (v3): platform id → encoded image, stored as
-     * `sysicons/<platformId>.<ext>` entries. Gated by CustomizableIcons' console keys —
-     * NOT part of IconSlots.ALL, so the desktop Studio's slot list is unaffected.
-     */
-    val sysicons: Map<String, ThemeImage> = emptyMap(),
-    /**
-     * Physical-media art: platform id → encoded image, stored as `mediaicons/<platformId>.<ext>`
-     * entries and gated by CustomizableIcons' `physmedia_` keys. Older builds keep these entries
-     * as passthrough, which is how the Theme Studio carried them before the launcher knew them.
-     */
-    val mediaicons: Map<String, ThemeImage> = emptyMap(),
     /**
      * Motion wallpaper (v3), or null for none.
      *
@@ -188,8 +180,8 @@ data class PfpThemeBundle(
      */
     val manifestExtras: JsonObject = JsonObject(emptyMap()),
     /**
-     * Zip entries this build does not understand (including unregistered `icons/`,
-     * `sysicons/` and `mediaicons/` names), streamed back out on write. Empty when read from a plain stream.
+     * Zip entries this build does not understand (including unregistered `icons/`, `sysicons/`
+     * and `mediaicons/` names), streamed back out on write. Empty when read from a plain stream.
      */
     val passthrough: List<PassthroughEntry> = emptyList(),
     /**
@@ -212,20 +204,13 @@ data class PfpThemeBundle(
             passthrough == other.passthrough &&
             wallpaper.contentEquals(other.wallpaper) &&
             preview.contentEquals(other.preview) &&
-            icons.keys == other.icons.keys &&
-            icons.all { (key, image) -> image == other.icons[key] } &&
-            sysicons.keys == other.sysicons.keys &&
-            sysicons.all { (key, image) -> image == other.sysicons[key] } &&
-            mediaicons.keys == other.mediaicons.keys &&
-            mediaicons.all { (key, image) -> image == other.mediaicons[key] } &&
+            icons == other.icons &&
             motion == other.motion &&
             media == other.media
 
     override fun hashCode(): Int {
         var h = 31 * (31 * manifest.hashCode() + wallpaper.contentHashCode()) + preview.contentHashCode()
-        for ((key, image) in icons) h = 31 * h + (key.hashCode() xor image.hashCode())
-        for ((key, image) in sysicons) h = 31 * h + (key.hashCode() xor image.hashCode())
-        for ((key, image) in mediaicons) h = 31 * h + (key.hashCode() xor image.hashCode())
+        h = 31 * h + icons.hashCode()
         motion?.let { h = 31 * h + it.hashCode() }
         h = 31 * h + manifestExtras.hashCode()
         h = 31 * h + passthrough.hashCode()

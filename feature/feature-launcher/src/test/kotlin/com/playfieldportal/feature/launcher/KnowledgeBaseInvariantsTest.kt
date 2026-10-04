@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.launcher
 
 import android.content.Context
+import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.data.database.seeder.PlatformSeeder
 import com.playfieldportal.core.domain.model.IntentType
@@ -78,6 +79,34 @@ class KnowledgeBaseInvariantsTest {
     }
 
     @Test
+    fun `X360 Mobile launches through its frontend deep link`() {
+        // A plain file open only adds the game to X360 Mobile's library; its own launch link boots it.
+        val launch = entry("emu.x360mobile.com")!!.launch
+        assertEquals(IntentType.COMPONENT, launch.intentType)
+        assertEquals("emu.x360mobile.com.MainActivity", launch.activityClass)
+        assertEquals(Intent.ACTION_VIEW, launch.action)
+        assertEquals("x360mobile://launch?uri={rom_file_uri_encoded}", launch.dataUri)
+        assertEquals(mapOf("x360mobile_frontend" to true), launch.boolExtras)
+        // Its own home shortcuts start MainActivity in a cleared task, so a backgrounded instance
+        // can't swallow the launch.
+        assertEquals(listOf("CLEAR_TASK"), launch.flags)
+    }
+
+    @Test
+    fun `XenDroid launches its emulator host with the game path in game_uri`() {
+        val xenDroid = entry("xendroid.compose")!!
+        assertEquals(xenDroid, entry("xendroid.compose.debug"))
+        assertEquals(listOf("x360"), xenDroid.platformIds)
+        with(xenDroid.launch) {
+            assertEquals(IntentType.COMPONENT, intentType)
+            assertEquals("xendroid.compose.EmulatorHostActivity", activityClass)
+            assertEquals("xendroid.intent.action.xendroid", action)
+            // A plain path, as XenDroid prefers (its frontend-integration doc) and as tested on device.
+            assertEquals("{rom_path}", extras["game_uri"])
+        }
+    }
+
+    @Test
     fun `component launches pin an activity`() {
         val missing = entries.flatMap { it.launches() }
             .filter { (_, l) -> l.intentType == IntentType.COMPONENT && l.activityClass == null }
@@ -93,6 +122,8 @@ class KnowledgeBaseInvariantsTest {
                 l.attachRomData || l.extras.values.any {
                     it.contains("{rom_uri}") || it.contains("{rom_path}")
                 } ||
+                    // Deep-link entries (e.g. X360 Mobile) carry the game inside their data URI.
+                    l.dataUri?.contains("{rom_file_uri") == true ||
                     // ID-launch entries (e.g. Vita3K) boot an installed title by {title_id} and
                     // deliver no ROM file by design.
                     (l.extras.values + l.arrayExtras.values.flatten()).any { it.contains("{title_id}") }

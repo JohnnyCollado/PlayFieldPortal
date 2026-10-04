@@ -86,7 +86,9 @@ class AudioSettingsViewModel @Inject constructor(
     private val ambience: com.playfieldportal.core.ui.sound.AmbienceSuppressor,
 ) : ViewModel() {
 
+    // The running audition's timer and its hold on the background music.
     private var previewHold: kotlinx.coroutines.Job? = null
+    private var previewAmbienceHold: com.playfieldportal.core.ui.sound.AmbienceHold? = null
 
     private val _message = MutableStateFlow<String?>(null)
     private val _importing = MutableStateFlow(false)
@@ -192,19 +194,22 @@ class AudioSettingsViewModel @Inject constructor(
     }
 
     private fun holdAmbienceFor(ms: Long) {
-        val owner = com.playfieldportal.core.ui.sound.AmbienceController.OWNER_SOUND_PREVIEW
         previewHold?.cancel()
-        ambience.setSuppressed(owner, true)
+        // A new audition takes its hold before the last one lets go, so the music never slips back
+        // in between two sounds.
+        val hold = ambience.hold(com.playfieldportal.core.ui.sound.AmbienceController.OWNER_SOUND_PREVIEW)
+        previewAmbienceHold?.release()
+        previewAmbienceHold = hold
         previewHold = viewModelScope.launch {
             kotlinx.coroutines.delay(ms)
-            ambience.setSuppressed(owner, false)
+            hold.release()
         }
     }
 
     override fun onCleared() {
         // Leaving the screen mid-audition must not leave the music held down.
         previewHold?.cancel()
-        ambience.setSuppressed(com.playfieldportal.core.ui.sound.AmbienceController.OWNER_SOUND_PREVIEW, false)
+        previewAmbienceHold?.release()
         super.onCleared()
     }
 

@@ -1268,6 +1268,8 @@ private fun GameVideoOverlay(videoUri: String, onClose: () -> Unit) {
         player.addListener(listener)
         onDispose { player.removeListener(listener); player.release() }
     }
+    // Leaving the launcher pauses the snap rather than playing it, with sound, behind the game.
+    com.playfieldportal.feature.xmb.ui.PausePlayerWhenStopped(player)
     Box(
         modifier = Modifier
             .fillMaxSize()

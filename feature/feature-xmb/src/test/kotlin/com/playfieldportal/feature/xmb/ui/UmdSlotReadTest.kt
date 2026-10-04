@@ -2,9 +2,11 @@ package com.playfieldportal.feature.xmb.ui
 
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 import com.playfieldportal.feature.xmb.viewmodel.XMBItemType
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -47,5 +49,35 @@ class UmdSlotReadTest {
         val other = umd.copy(gameId = 9L)
         assert(umdReadKey(umd, columnIndex = 2) != umdReadKey(other, columnIndex = 3))
         assert(umdReadKey(umd, columnIndex = 2) != umdReadKey(umd, columnIndex = 3))
+    }
+
+    // ── The title beside ICON0 once the disc is read ──────────────────────────
+
+    private val logoless = umd.copy(logoUri = null)
+
+    @Test
+    fun `the UMD glyph is always named`() {
+        assertTrue(xmbRowShowsTitle(umd, isSelected = true, umdShowsGame = false, moving = false))
+        assertTrue(xmbRowShowsTitle(logoless, isSelected = true, umdShowsGame = false, moving = false))
+    }
+
+    @Test
+    fun `a read game with a logo is bare - the logo is its name`() {
+        assertFalse(xmbRowShowsTitle(umd, isSelected = true, umdShowsGame = true, moving = false))
+    }
+
+    @Test
+    fun `a read game with no logo shows its title beside ICON0, like a hot list row`() {
+        assertTrue(xmbRowShowsTitle(logoless, isSelected = true, umdShowsGame = true, moving = false))
+        val hotListRow = XMBItem("g", "Patapon", gameId = 8L, isRealGame = true)
+        assertTrue(xmbRowShowsTitle(hotListRow, isSelected = true, umdShowsGame = false, moving = false))
+    }
+
+    @Test
+    fun `game rows keep their rules`() {
+        val withLogo = XMBItem("g", "Patapon", logoUri = "logo.png", gameId = 8L, isRealGame = true)
+        assertFalse(xmbRowShowsTitle(withLogo, isSelected = true, umdShowsGame = false, moving = false))
+        assertFalse(xmbRowShowsTitle(withLogo.copy(logoUri = null), isSelected = false, umdShowsGame = false, moving = false))
+        assertTrue(xmbRowShowsTitle(withLogo, isSelected = false, umdShowsGame = false, moving = true))
     }
 }

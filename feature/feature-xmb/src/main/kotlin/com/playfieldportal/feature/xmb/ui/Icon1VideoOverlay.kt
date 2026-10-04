@@ -67,6 +67,9 @@ fun Icon1VideoOverlay(
         }
     }
 
+    // The tile snap never decodes behind a game or with the screen off.
+    PausePlayerWhenStopped(player)
+
     DisposableEffect(player) {
         val listener = object : Player.Listener {
             override fun onRenderedFirstFrame() { firstFrameRendered = true }

@@ -163,6 +163,9 @@ fun VideoPlayerScreen(
         }
     }
 
+    // Leaving the launcher pauses the video instead of decoding (and playing sound) behind the game.
+    com.playfieldportal.feature.xmb.ui.PausePlayerWhenStopped(player)
+
     // Load whichever video is current. Validates the URI up front so a bad file shows a friendly
     // error instead of crashing. The first load honours the resume position.
     LaunchedEffect(index) {

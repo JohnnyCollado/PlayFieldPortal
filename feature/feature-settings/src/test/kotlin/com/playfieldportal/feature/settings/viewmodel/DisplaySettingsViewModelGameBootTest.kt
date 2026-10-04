@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.GameBootPreferences
+import com.playfieldportal.core.data.repository.ThemeTiers
 import com.playfieldportal.core.data.repository.UiMediaStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -43,7 +44,7 @@ class DisplaySettingsViewModelGameBootTest {
         runBlocking { context.pfpDataStore.edit { it.clear() } }
         vm = DisplaySettingsViewModel(
             context,
-            UiMediaStore(context),
+            UiMediaStore(context, ThemeTiers(context)),
             GameBootPreferences(context),
             io.mockk.mockk(relaxed = true),
             // The layout repo only feeds the media rows' face-button shortcuts. A relaxed mock

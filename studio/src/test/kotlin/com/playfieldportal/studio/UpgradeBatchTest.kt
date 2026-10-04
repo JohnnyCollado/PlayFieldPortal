@@ -5,6 +5,7 @@ import com.playfieldportal.studio.io.UpgradeBatch
 import com.playfieldportal.themekit.PfpThemeCodec
 import com.playfieldportal.themekit.PfpThemeManifest
 import com.playfieldportal.themekit.ThemeFixtures
+import com.playfieldportal.themekit.consoleArt
 import java.io.File
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
@@ -64,7 +65,7 @@ class UpgradeBatchTest {
     fun `a v3 theme keeps its console icons through the batch`() = withDir { dir ->
         dir.put("v3.pfptheme", ThemeFixtures.v3())
         UpgradeBatch.run(dir, today)
-        assertEquals(setOf("psx"), assertNotNull(PfpThemeCodec.read(File(dir, "v3.pfptheme"))).sysicons.keys)
+        assertEquals(setOf("psx"), assertNotNull(PfpThemeCodec.read(File(dir, "v3.pfptheme"))).consoleArt.keys)
     }
 
     @Test

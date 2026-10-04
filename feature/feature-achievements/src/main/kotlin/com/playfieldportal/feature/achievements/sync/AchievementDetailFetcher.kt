@@ -6,6 +6,7 @@ import com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSo
 import com.playfieldportal.feature.achievements.provider.ps3.Ps3TrophySource
 import com.playfieldportal.feature.achievements.provider.retro.RetroAchievementsSource
 import com.playfieldportal.feature.achievements.provider.vita.VitaTrophySource
+import com.playfieldportal.feature.achievements.provider.x360.X360AchievementSource
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -16,7 +17,8 @@ interface AchievementDetailFetcher {
 
 /**
  * Routes a full-detail fetch to its provider: RA's GetGameInfoAndUserProgress, Steam's tiered
- * [SteamDetailFetcher], Local Steam's file + cached metadata, Vita's local trophy files.
+ * [SteamDetailFetcher], Local Steam's file + cached metadata, Vita's and PS3's local trophy files,
+ * and Xbox 360's local profile GPDs.
  */
 @Singleton
 class DefaultAchievementDetailFetcher @Inject constructor(
@@ -25,6 +27,7 @@ class DefaultAchievementDetailFetcher @Inject constructor(
     private val localSteam: LocalSteamSource,
     private val vita: VitaTrophySource,
     private val ps3: Ps3TrophySource,
+    private val x360: X360AchievementSource,
 ) : AchievementDetailFetcher {
 
     override suspend fun fetch(identity: AchievementIdentity, reason: FetchReason): ProviderSyncResult {
@@ -36,6 +39,7 @@ class DefaultAchievementDetailFetcher @Inject constructor(
             AchievementProvider.LOCAL_STEAM -> localSteam.fetch(id, renewMetadata = reason == FetchReason.EXPLICIT)
             AchievementProvider.VITA_TROPHY -> vita.fetch(id)
             AchievementProvider.PS3_TROPHY -> ps3.fetch(id)
+            AchievementProvider.X360_ACHIEVEMENT -> x360.fetch(id)
         }
     }
 }

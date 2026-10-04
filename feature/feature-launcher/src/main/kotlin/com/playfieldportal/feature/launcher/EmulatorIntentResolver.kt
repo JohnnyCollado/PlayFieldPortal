@@ -11,6 +11,7 @@ import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.IntentType
 import com.playfieldportal.core.domain.model.LaunchTemplate
+import com.playfieldportal.core.domain.model.LaunchUris
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import java.io.File
@@ -238,6 +239,10 @@ class EmulatorIntentResolver(
                 ?: romUriMinter.mint(game.romPath ?: error("ROM path required for ${profile.name}"))
         } else null
 
+        if (profile.dataUri?.contains("{rom_file_uri") == true && game.romPath == null) {
+            error("${game.title} has no file path on this device, so ${profile.name} can't be told which game to start.")
+        }
+
         val action = profile.intentAction ?: Intent.ACTION_MAIN
         return Intent(action).apply {
             component = ComponentName(profile.packageName, activity)
@@ -245,6 +250,8 @@ class EmulatorIntentResolver(
             applyProfileFlags(profile)
 
             if (profile.attachRomData && romUri != null) data = romUri
+            // A deep-link launch carries the game inside its own data URI instead.
+            profile.dataUri?.let { data = Uri.parse(resolveTemplate(it, game, profile, romUri)) }
 
             profile.intentCategory?.let { addCategory(it) }
 
@@ -316,7 +323,10 @@ class EmulatorIntentResolver(
         val romFile = game.romPath?.let { File(it) }
         val corePath = profile.corePathFor(game.platformId) ?: ""
 
+        val romFileUri = game.romPath?.let(LaunchUris::fileUriOf) ?: ""
         return template
+            .replace(LaunchTemplate.ROM_FILE_URI_ENCODED, LaunchUris.queryEncode(romFileUri))
+            .replace(LaunchTemplate.ROM_FILE_URI, romFileUri)
             .replace(LaunchTemplate.ROM_PATH, game.romPath ?: "")
             .replace(LaunchTemplate.ROM_URI, romUri?.toString() ?: "")
             .replace(LaunchTemplate.ROM_NAME, romFile?.nameWithoutExtension ?: "")

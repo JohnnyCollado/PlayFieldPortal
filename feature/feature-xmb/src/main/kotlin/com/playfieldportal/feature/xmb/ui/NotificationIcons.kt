@@ -20,8 +20,7 @@ import com.playfieldportal.core.domain.model.NotificationKind
 import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.core.ui.icons.CustomIconSurface
-import com.playfieldportal.core.ui.icons.LocalCustomIcons
-import com.playfieldportal.core.ui.icons.LocalXmbIconOverrides
+import com.playfieldportal.core.ui.icons.LocalXmbIcons
 
 /**
  * Kind → glyph, as one table.
@@ -65,7 +64,7 @@ internal fun notificationSlotKey(kind: NotificationKind): String = when (kind) {
 @Composable
 internal fun NotificationKindIcon(kind: NotificationKind, tint: Color, size: Dp, modifier: Modifier = Modifier) {
     val key = notificationSlotKey(kind)
-    val override = LocalCustomIcons.current[key] ?: LocalXmbIconOverrides.current[key]
+    val override = LocalXmbIcons.current[key]
     if (override != null) {
         CustomIconSurface(icon = override, contentDescription = null, modifier = modifier.size(size))
     } else {

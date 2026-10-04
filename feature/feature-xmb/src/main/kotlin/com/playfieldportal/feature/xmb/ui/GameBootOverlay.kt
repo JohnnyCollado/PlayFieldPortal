@@ -66,7 +66,7 @@ fun GameBootOverlay(
 ) {
     // The presentation owns the room — the built-in sound or the clip's own track. A real launch is
     // already held by LaunchDispatcher; this covers Settings' GameBoot preview too.
-    HoldAmbience(com.playfieldportal.core.ui.sound.AmbienceController.OWNER_ONE_SHOT)
+    HoldAmbience(com.playfieldportal.core.ui.sound.AmbienceController.OWNER_GAMEBOOT)
     val currentComplete by rememberUpdatedState(onComplete)
     val completed = remember { AtomicBoolean(false) }
     val overlayAlpha = remember { Animatable(1f) }

@@ -230,7 +230,7 @@ class PfpThemeStoreMediaTest {
     @Test
     fun `a motion over the byte cap is rejected before the probe runs`() {
         var probed = false
-        val installer = ThemeMediaInstaller { _, _ -> probed = true; video() }
+        val installer = ThemeMediaInstaller(MediaGate(probe = { _, _ -> probed = true; video() }))
         val dest = File(context.filesDir, "wallpaper/motion_big.mp4").apply { parentFile?.mkdirs() }
 
         val ok = installer.installMotion(ThemeMotion.ofFile(sparseFile(MotionLimits.MAX_BYTES + 1), "mp4"), dest)
@@ -244,7 +244,7 @@ class PfpThemeStoreMediaTest {
     @Test
     fun `a sound over the theme byte cap is rejected before the probe runs`() {
         var probed = false
-        val installer = ThemeMediaInstaller { _, _ -> probed = true; audio(200) }
+        val installer = ThemeMediaInstaller(MediaGate(probe = { _, _ -> probed = true; audio(200) }))
         val dir = File(context.filesDir, "theme-media")
 
         val installed = installer.installMedia(
@@ -261,10 +261,12 @@ class PfpThemeStoreMediaTest {
     @Test
     fun `a float WAV in a theme installs as 16-bit PCM, probed after conversion`() {
         var probedFormatTag = -1
-        val installer = ThemeMediaInstaller { file, _ ->
-            probedFormatTag = WavFixtures.readPcm16(file).formatTag
-            audio(100)
-        }
+        val installer = ThemeMediaInstaller(
+            MediaGate(probe = { file, _ ->
+                probedFormatTag = WavFixtures.readPcm16(file).formatTag
+                audio(100)
+            }),
+        )
         val dir = File(context.filesDir, "theme-media")
         val src = File(context.cacheDir, "float.wav").apply {
             writeBytes(WavFixtures.sampleWav(3, 32, 2, 44_100, WavFixtures.floats32(0.5f, -0.5f), extraChunks = true))
@@ -419,8 +421,8 @@ class PfpThemeStoreMediaTest {
     }
 
     private companion object {
-        val KEY_MOTION = stringPreferencesKey("display_motion_wallpaper")
-        val KEY_CROP = stringPreferencesKey("display_motion_crop")
-        val KEY_APPLIED_NAME = stringPreferencesKey("theme_applied_name")
+        val KEY_MOTION = ThemePrefKeys.MOTION_WALLPAPER
+        val KEY_CROP = ThemePrefKeys.MOTION_CROP
+        val KEY_APPLIED_NAME = ThemePrefKeys.APPLIED_THEME_NAME
     }
 }

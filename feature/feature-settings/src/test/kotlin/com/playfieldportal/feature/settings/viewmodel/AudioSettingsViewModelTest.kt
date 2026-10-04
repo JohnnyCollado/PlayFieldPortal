@@ -9,6 +9,7 @@ import com.playfieldportal.core.data.repository.AudioLevelStore
 import com.playfieldportal.core.data.repository.ControllerLayoutRepository
 import com.playfieldportal.core.data.repository.ControllerMappingRepository
 import com.playfieldportal.core.data.repository.MediaDisplayNames
+import com.playfieldportal.core.data.repository.ThemeTiers
 import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.domain.model.AudioChannel
 import com.playfieldportal.core.domain.model.UiMediaSlot
@@ -74,13 +75,10 @@ class AudioSettingsViewModelTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val menuSound: MenuSoundPlayer = mockk(relaxed = true)
 
-    /** Who holds ambience down right now (AmbienceController's suppressor set). */
-    private val ambienceOwners = mutableSetOf<String>()
-    private val ambience = com.playfieldportal.core.ui.sound.AmbienceSuppressor { owner, suppressed ->
-        if (suppressed) ambienceOwners += owner else ambienceOwners -= owner
-    }
+    /** The real hold set AmbienceController keeps: who holds ambience down right now. */
+    private val ambience = com.playfieldportal.core.ui.sound.AmbienceHolds()
     private val previewHoldsAmbience: Boolean
-        get() = com.playfieldportal.core.ui.sound.AmbienceController.OWNER_SOUND_PREVIEW in ambienceOwners
+        get() = com.playfieldportal.core.ui.sound.AmbienceController.OWNER_SOUND_PREVIEW in ambience.owners
     private lateinit var store: UiMediaStore
     private lateinit var vm: AudioSettingsViewModel
 
@@ -92,7 +90,7 @@ class AudioSettingsViewModelTest {
         runBlocking { withTimeout(5_000) { context.pfpDataStore.edit { it.clear() } } }
         File(context.filesDir, UiMediaStore.UI_MEDIA_DIR).deleteRecursively()
         MediaDisplayNames.clearCache()
-        store = UiMediaStore(context)
+        store = UiMediaStore(context, ThemeTiers(context))
         vm = AudioSettingsViewModel(
             context,
             store,

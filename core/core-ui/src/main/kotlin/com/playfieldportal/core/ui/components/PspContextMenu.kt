@@ -36,6 +36,7 @@ import com.playfieldportal.core.ui.theme.deriveStorefrontColors
 import com.playfieldportal.core.ui.theme.menuCursorFill
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
+import com.playfieldportal.core.ui.theme.menuTextShadowFor
 
 // ── PSP-style context menu panel ──────────────────────────────────────────────
 //
@@ -88,21 +89,6 @@ data class PspMenuRow(
 
 private val PanelWidth = 300.dp
 
-// Black drop shadow on the menu text so it stays legible over the wave/backdrop.
-internal const val MENU_SHADOW_ALPHA = 0.75f
-private val TextDropShadow = Shadow(
-    color = Color.Black.copy(alpha = MENU_SHADOW_ALPHA),
-    offset = Offset(0f, 2f),
-    blurRadius = 4f,
-)
-
-/**
- * The shadow under a fill of [fill]: the standard one, dimmed with the fill. Compose draws a text
- * shadow at its own alpha whatever the letters' is, so a 45% group header under the full-strength
- * shadow was darker behind than in front and read as a smudge. The Studio's PreviewFlyout mirrors it.
- */
-internal fun menuTextShadowFor(fill: Color): Shadow =
-    TextDropShadow.copy(color = TextDropShadow.color.copy(alpha = MENU_SHADOW_ALPHA * fill.alpha))
 
 @Composable
 fun PspContextMenuOverlay(
@@ -242,7 +228,7 @@ private fun PspContextMenuRow(
             if (row.checked) {
                 Spacer(Modifier.width(10.dp))
                 if (!MenuGlyphOverride(MENU_CHECK_KEY, 15.dp)) {
-                    PfpCheckMark(Color.White, size = 15.dp, shadow = TextDropShadow.color)
+                    PfpCheckMark(Color.White, size = 15.dp, shadow = com.playfieldportal.core.ui.theme.ThemeTokens.TextShadow.color)
                 }
             }
             if (row.opensMenu) {

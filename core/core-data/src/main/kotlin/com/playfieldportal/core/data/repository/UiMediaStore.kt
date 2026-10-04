@@ -1,7 +1,6 @@
 package com.playfieldportal.core.data.repository
 
 import android.content.Context
-import android.media.MediaMetadataRetriever
 import android.net.Uri
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -11,7 +10,6 @@ import com.playfieldportal.core.domain.model.UiMediaKind
 import com.playfieldportal.core.domain.model.UiMediaSlot
 import com.playfieldportal.core.ui.media.UiMediaPaths
 import com.playfieldportal.themekit.UiMediaLimits
-import com.playfieldportal.themekit.WavPcm16
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -51,32 +49,30 @@ import kotlinx.coroutines.withContext
      * held for the app's lifetime) or a boot-time ExoPlayer must never depend on one.
  */
 @Singleton
-class UiMediaStore @Inject constructor(
-    @ApplicationContext private val context: Context,
+class UiMediaStore internal constructor(
+    private val context: Context,
+    private val tiers: ThemeTiers,
+    /** The import gate a theme's media passes too ([MediaGate]); tests hand in fake probes. */
+    private val gate: MediaGate,
 ) : UiMediaPaths {
+
+    @Inject
+    constructor(@ApplicationContext context: Context, tiers: ThemeTiers) : this(context, tiers, MediaGate())
 
     /** Import outcome: [ok] with a null message on success; a user-facing reason on failure. */
     data class ImportResult(val ok: Boolean, val message: String? = null)
 
-    private val dir = File(context.filesDir, UI_MEDIA_DIR)
-    private val themeDir = File(context.filesDir, PfpThemeStore.THEME_MEDIA_DIR)
+    private val dir = tiers.mediaDir(ThemeTiers.Tier.USER)
 
     // ── UiMediaPaths (the core-ui seam) ──────────────────────────────────────
 
     /**
      * Absolute path of the file that should play for [slot]: the user's own pick, else the applied
-     * theme's file under `theme-media/`, else null (the built-in default). [assignments] stays
-     * user-only so the settings screens never show a theme's media as the user's choice.
+     * theme's file under `theme-media/`, else null (the built-in default) — [ThemeTiers.resolveMedia].
+     * [assignments] stays user-only so the settings screens never show a theme's media as the
+     * user's choice.
      */
-    override fun pathFor(slot: UiMediaSlot): String? {
-        if (!UiMediaSlot.isValidKey(slot.key)) return null
-        return findIn(dir, slot) ?: findIn(themeDir, slot)
-    }
-
-    private fun findIn(directory: File, slot: UiMediaSlot): String? =
-        directory.listFiles { f -> f.isFile }
-            ?.firstOrNull { it.nameWithoutExtension == slot.key }
-            ?.absolutePath
+    override fun pathFor(slot: UiMediaSlot): String? = tiers.resolveMedia(slot)?.absolutePath
 
     /** Bumps on every import/clear so observers (MenuSoundPlayer, overlays) reload. */
     override val stamp: Flow<Long> = context.pfpDataStore.data.map { prefs ->
@@ -90,25 +86,19 @@ class UiMediaStore @Inject constructor(
      * has not assigned their own ([assignments] wins in [pathFor]); the settings rows show them as
      * "From theme".
      */
-    fun themeAssignments(): Set<UiMediaSlot> =
-        themeDir.listFiles { f -> f.isFile }.orEmpty()
-            .filter { it.extension.lowercase() in storedExtensions }
-            .mapNotNullTo(HashSet()) { UiMediaSlot.fromKey(it.nameWithoutExtension) }
+    fun themeAssignments(): Set<UiMediaSlot> = tiers.mediaSlots(ThemeTiers.Tier.THEME)
 
     /**
-     * Every assigned slot → its file's absolute path. Cheap: one directory listing. Powers the
-     * settings screens' value rows.
+     * The user's own assignments: every assigned slot → its file's absolute path. Cheap: one
+     * directory listing. Powers the settings screens' value rows.
+     *
+     * A slot whose file disappears between the listing and the lookup (a reset or clear running
+     * while a screen reads this) is simply left out — it is being unassigned, not an error.
      */
-    fun assignments(): Map<UiMediaSlot, String> {
-        val files = dir.listFiles { f -> f.isFile } ?: return emptyMap()
-        val out = HashMap<UiMediaSlot, String>()
-        for (file in files) {
-            val slot = UiMediaSlot.fromKey(file.nameWithoutExtension) ?: continue
-            if (file.extension.lowercase() !in storedExtensions) continue
-            out[slot] = file.absolutePath
-        }
-        return out
-    }
+    fun assignments(): Map<UiMediaSlot, String> =
+        tiers.mediaSlots(ThemeTiers.Tier.USER).mapNotNull { slot ->
+            tiers.mediaFile(ThemeTiers.Tier.USER, slot.key)?.let { slot to it.absolutePath }
+        }.toMap()
 
     // ── Mutations ────────────────────────────────────────────────────────────
 
@@ -143,26 +133,24 @@ class UiMediaStore @Inject constructor(
         }
 
         dir.mkdirs()
-        val copiedFile = File(dir, "staging_${System.currentTimeMillis()}.$ext")
+        val staged = File(dir, "staging_${System.currentTimeMillis()}.$ext")
         val copied = runCatching {
             context.contentResolver.openInputStream(uri)?.use { input ->
                 // Stream to the staged file: the descriptor can lie, but a crafted pick must
                 // never make us allocate the entire untrusted audio file on the heap.
-                copiedFile.outputStream().use { output ->
+                staged.outputStream().use { output ->
                     with(SafeMedia) { input.copyCappedTo(output, spec.maxBytes) }
                 }
             }
         }.getOrNull()
         if (copied == null) {
-            runCatching { copiedFile.delete() }
+            runCatching { staged.delete() }
             return@withContext ImportResult(false, UiMediaLimits.MSG_UNDECODABLE)
         }
-        // A float / 24-bit / extensible WAV becomes plain 16-bit PCM before it is gated: neither
-        // the extractor nor the header fallback reliably times the original, and SoundPool is not
-        // guaranteed to play it.
-        val staged = if (ext == "wav") pcm16(copiedFile) else copiedFile
 
-        val rejection = validateImported(staged, spec)
+        // The same gate a theme's media passes: a float / 24-bit / extensible WAV becomes plain
+        // 16-bit PCM first, duration is mandatory, and a boot / GameBoot clip must have a decoder.
+        val rejection = gate.check(staged, ext, spec)
         if (rejection != null) {
             runCatching { staged.delete() }
             return@withContext ImportResult(false, rejection)
@@ -283,57 +271,12 @@ class UiMediaStore @Inject constructor(
         context.pfpDataStore.edit { prefs -> prefs[displayNameKey(slot)] = name }
     }
 
-    /**
-     * Runs the import gate on the staged copy. Duration is MANDATORY for every kind —
-     * [UiMediaLimits.Probe.durationMs] is null when MediaMetadataRetriever cannot read a length,
-     * and that is a rejection, not a pass. Some devices return null for otherwise-playable
-     * short/VBR MP3s and some WAVs, so a null read first falls back to [MediaDurationFallback]'s
-     * container-header math; only a file neither can time is rejected.
-     */
-    private fun validateImported(file: File, spec: UiMediaLimits.Spec): String? = runCatching {
-        MediaMetadataRetriever().use { retriever ->
-            retriever.setDataSource(file.absolutePath)
-            val durationRaw = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
-            val mime = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE)
-                ?: mimeGuessFor(file)
-            UiMediaLimits.validate(
-                spec,
-                UiMediaLimits.Probe(
-                    mime = mime,
-                    durationMs = durationRaw?.toLongOrNull()
-                        ?: MediaDurationFallback.durationMs(file, mime),
-                    bytes = file.length(),
-                ),
-            )
-        }
-    }.getOrDefault(UiMediaLimits.MSG_UNDECODABLE)
-
-    /**
-     * [staged] as plain 16-bit PCM ([WavPcm16]) when it is a WAV that is not already 8/16-bit PCM;
-     * the original staging file is replaced. Anything [WavPcm16] cannot read is returned as it is,
-     * for the gate to judge.
-     */
-    private fun pcm16(staged: File): File {
-        if (!WavPcm16.needsConversion(staged)) return staged
-        val converted = File(dir, "${staged.nameWithoutExtension}_pcm16.wav")
-        if (!WavPcm16.convert(staged, converted)) return staged
-        staged.delete()
-        return converted
-    }
-
-    /**
-     * Some containers (WAV notably) report no MIME metadata; the extension we stored them under
-     * was derived from the picker's MIME, so it is authoritative here.
-     */
-    private fun mimeGuessFor(file: File): String? =
-        UiMediaLimits.mimeForExtension(file.extension.lowercase())
-
     companion object {
         /** User UI media lives here, one file per slot, named `<slotKey>.<ext>`. */
         const val UI_MEDIA_DIR = "ui-media"
 
-        /** The extension set [extensionForMime] can produce — the only suffixes this store writes. */
-        val storedExtensions = setOf("mp3", "wav", "ogg", "m4a", "mp4", "webm")
+        /** The extension set [UiMediaLimits.extensionForMime] can produce — the only suffixes this store writes. */
+        val storedExtensions: Set<String> = ThemeTiers.MEDIA_EXTENSIONS
 
         /**
          * Present ⇒ user UI media exists under [UI_MEDIA_DIR]; the value only bumps so observers

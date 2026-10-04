@@ -169,6 +169,11 @@ accompanist-drawablepainter     = { group = "com.google.accompanist",  name = "a
 compose-mp-material3            = { group = "org.jetbrains.compose.material3", name = "material3",              version.ref = "compose-mp-material3" }
 compose-mp-icons-extended       = { group = "org.jetbrains.compose.material",  name = "material-icons-extended", version.ref = "compose-mp-icons" }
 compose-mp-resources            = { group = "org.jetbrains.compose.components", name = "components-resources", version.ref = "compose-multiplatform" }
+# The theme-render rules' Compose types: Color, lerp, Shadow (ui-graphics) and @Immutable (runtime).
+# Multiplatform artifacts, so the one pure-JVM module resolves to androidx on the launcher and to
+# the desktop build in the Theme Studio.
+compose-mp-ui-graphics          = { group = "org.jetbrains.compose.ui",       name = "ui-graphics",             version.ref = "compose-multiplatform" }
+compose-mp-runtime              = { group = "org.jetbrains.compose.runtime",  name = "runtime",                 version.ref = "compose-multiplatform" }
 jcodec                          = { group = "org.jcodec",                    name = "jcodec",                  version.ref = "jcodec" }
 jcodec-javase                   = { group = "org.jcodec",                    name = "jcodec-javase",           version.ref = "jcodec" }
 javacv                          = { group = "org.bytedeco",                  name = "javacv",                  version.ref = "javacv" }

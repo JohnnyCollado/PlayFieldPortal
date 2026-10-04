@@ -77,7 +77,8 @@ class AchievementSetWriter @Inject constructor(
         when (provider) {
             AchievementProvider.RETRO_ACHIEVEMENTS -> return fresh
             AchievementProvider.STEAM, AchievementProvider.LOCAL_STEAM,
-            AchievementProvider.VITA_TROPHY, AchievementProvider.PS3_TROPHY -> Unit
+            AchievementProvider.VITA_TROPHY, AchievementProvider.PS3_TROPHY,
+            AchievementProvider.X360_ACHIEVEMENT -> Unit
         }
         val lastSyncedAt = storedSet?.lastSyncedAt ?: return fresh
         if (now - lastSyncedAt >= TIER_STABILITY_WINDOW_MS) return fresh

@@ -79,8 +79,7 @@ class ShellLogicTest {
         val s = StudioState(
             name = "  ",
             wallpaperPng = ByteArray(10),
-            iconOverrides = mapOf("a" to ByteArray(1), "b" to ByteArray(1)),
-            sysiconOverrides = mapOf("sysicon_psx" to ByteArray(1)),
+            iconOverrides = mapOf("a" to ByteArray(1), "b" to ByteArray(1), "sysicon_psx" to ByteArray(1)),
             legibility = ThemeLegibility(text = "outline"),
             layout = com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT.copy(barTopFraction = 0.4f),
             mediaFiles = mapOf(

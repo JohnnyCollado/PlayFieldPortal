@@ -356,15 +356,23 @@ private val BOOT_LOGO: ImageBitmap? by lazy {
 }
 
 private val FIELD = Color.White
-private val MARK_INK = Color(0xFF9A9AA4)
-private val TITLE_INK = Color(0xFFA6A6AE)
+private val MARK_INK = Color.Black
+private val TITLE_INK = Color.Black
 private val BLOOM_WARM = Color(0xFFF6F05A)
 private val BLOOM_COOL = Color(0xFF6EE8E0)
 private val BLOOM_MID = Color(0xFFA8EC78)
-private const val MARK_CENTER_Y = 0.40f
+private const val MARK_CENTER_Y = 0.45f
 private const val MARK_HEIGHT_FRACTION = 0.18f
-private const val TITLE_TOP_Y = 0.585f
+private const val MARK_MAX_WIDTH_FRACTION = 0.85f
+private const val TITLE_TOP_Y = 0.60f
 private const val TITLE_WIDTH_FRACTION = 0.80f
+// The logo's proportions as fractions of the mark's height (GameBootSequence's, verbatim).
+private const val P_WIDTH = 1.66f
+private const val F_WIDTH = 1.53f
+private const val F_BAR_LENGTH = 0.90f
+private const val LETTER_GAP = 0.34f
+private const val STROKE = 0.055f
+private const val BAR_Y = 0.47f
 private const val SAMPLE_GAME_TITLE = "Portal Quest"
 
 @Composable
@@ -435,39 +443,42 @@ private fun DrawScope.bloom(color: Color, cx: Float, cy: Float, radius: Float, a
 private class PfpMark(val letters: List<Path>, val stroke: Stroke)
 
 private fun pfpMark(size: Size): PfpMark {
-    val h = size.height * MARK_HEIGHT_FRACTION
-    val s = h * 0.085f
-    val w = h * 0.62f
-    val gap = h * 0.30f
-    val left = (size.width - (3 * w + 2 * gap)) / 2f
-    val cy = size.height * MARK_CENTER_Y
-    val top = cy - h / 2f
-    val bottom = cy + h / 2f
-    val bar = cy - h * 0.04f
+    val widthPerHeight = 2 * P_WIDTH + F_WIDTH + 2 * LETTER_GAP
+    val h = minOf(size.height * MARK_HEIGHT_FRACTION, size.width * MARK_MAX_WIDTH_FRACTION / widthPerHeight)
+    val s = h * STROKE
+    val pw = h * P_WIDTH
+    val fw = h * F_WIDTH
+    val gap = h * LETTER_GAP
+    val left = (size.width - h * widthPerHeight) / 2f
+    val top = size.height * MARK_CENTER_Y - h / 2f
+    val bottom = top + h
+    val bar = top + h * BAR_Y
+    val fLeft = left + pw + gap
     return PfpMark(
         letters = listOf(
-            letterP(left, top, bottom, bar, w, s),
-            letterF(left + w + gap, top, bottom, bar, w, s),
-            letterP(left + 2 * (w + gap), top, bottom, bar, w, s),
+            letterP(left, top, bottom, bar, pw, s),
+            letterF(fLeft, top, bottom, bar, fw, s),
+            letterP(fLeft + fw + gap, top, bottom, bar, pw, s),
         ),
         stroke = Stroke(width = s, cap = StrokeCap.Butt, join = StrokeJoin.Miter),
     )
 }
 
+// The logo's open P: along the top, down the right, back along the bar, then the stem down from it.
 private fun letterP(l: Float, top: Float, bottom: Float, bar: Float, w: Float, s: Float) = Path().apply {
-    moveTo(l + s / 2f, bottom)
-    lineTo(l + s / 2f, top + s / 2f)
+    moveTo(l, top + s / 2f)
     lineTo(l + w - s / 2f, top + s / 2f)
     lineTo(l + w - s / 2f, bar)
     lineTo(l + s / 2f, bar)
+    lineTo(l + s / 2f, bottom)
 }
 
 private fun letterF(l: Float, top: Float, bottom: Float, bar: Float, w: Float, s: Float) = Path().apply {
     moveTo(l + s / 2f, bottom)
     lineTo(l + s / 2f, top + s / 2f)
-    lineTo(l + w - s / 2f, top + s / 2f)
+    lineTo(l + w, top + s / 2f)
     moveTo(l + s / 2f, bar)
-    lineTo(l + w * 0.80f, bar)
+    lineTo(l + w * F_BAR_LENGTH, bar)
 }
 
 private fun measureGameTitle(textMeasurer: TextMeasurer, gameTitle: String, size: Size): TextLayoutResult =
@@ -475,9 +486,9 @@ private fun measureGameTitle(textMeasurer: TextMeasurer, gameTitle: String, size
         text = gameTitle,
         style = TextStyle(
             color = TITLE_INK,
-            fontWeight = FontWeight.Light,
-            fontSize = 24.sp,
-            letterSpacing = 2.sp,
+            fontWeight = FontWeight.Normal,
+            fontSize = 30.sp,
+            letterSpacing = 0.5.sp,
             textAlign = TextAlign.Center,
         ),
         constraints = Constraints(maxWidth = (size.width * TITLE_WIDTH_FRACTION).toInt()),

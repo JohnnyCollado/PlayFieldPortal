@@ -3,6 +3,7 @@ package com.playfieldportal.discord
 import android.app.Activity
 import com.discord.socialsdk.DiscordSocialSdkInit
 import com.playfieldportal.core.domain.discord.DiscordConfig
+import com.playfieldportal.core.domain.discord.DiscordPumpPolicy
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -14,6 +15,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 object DiscordNativeBridge {
     private val libraryLoaded = AtomicBoolean(false)
     private val clientStarted = AtomicBoolean(false)
+
+    // The idle cadence last asked for, applied when the client starts (sign-in can finish after the
+    // launcher has already gone to the background).
+    @Volatile private var idlePumpIntervalMs = DiscordPumpPolicy.FOREGROUND_IDLE_MS
 
     private fun ensureLibraryLoaded() {
         if (libraryLoaded.compareAndSet(false, true)) System.loadLibrary("discord_bridge")
@@ -33,6 +38,7 @@ object DiscordNativeBridge {
         ensureLibraryLoaded()
         if (clientStarted.compareAndSet(false, true)) {
             nativeInit(DiscordConfig.APPLICATION_ID.toLong())
+            nativeSetIdlePumpInterval(idlePumpIntervalMs)
         }
     }
 
@@ -44,6 +50,15 @@ object DiscordNativeBridge {
 
     fun disconnect() {
         if (clientStarted.get()) nativeDisconnect()
+    }
+
+    /**
+     * How long the native pump sleeps while nothing is pending ([DiscordPumpPolicy]). Calls and
+     * in-flight requests always run at the fast cadence. Remembered until sign-in starts the client.
+     */
+    fun setIdlePumpInterval(intervalMs: Int) {
+        idlePumpIntervalMs = intervalMs
+        if (clientStarted.get()) nativeSetIdlePumpInterval(intervalMs)
     }
 
     /** Current status ordinal (mirrors `discordpp::Client::Status`; 0 = Disconnected). */
@@ -175,6 +190,7 @@ object DiscordNativeBridge {
     private external fun nativeInit(applicationId: Long)
     private external fun nativeUpdateToken(token: String): Boolean
     private external fun nativeDisconnect()
+    private external fun nativeSetIdlePumpInterval(intervalMs: Int)
     private external fun nativeGetStatus(): Int
     private external fun nativeGetCurrentUserJson(): String
     private external fun nativeGetFriendsJson(): String

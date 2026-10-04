@@ -65,6 +65,9 @@ import com.playfieldportal.studio.preview.WaveMotion
 import com.playfieldportal.studio.preview.XmbPreviewModel
 import kotlin.math.cos
 import kotlin.math.sin
+import com.playfieldportal.core.ui.detail.DetailPalette
+import com.playfieldportal.core.ui.detail.detailPaletteFor
+import com.playfieldportal.core.ui.theme.ThemeTokens
 
 /*
  * The launcher's console-style detail page chrome, shared by the Game Detail, achievements library
@@ -104,132 +107,15 @@ internal val DetailPreviewBodyLarge = TextStyle(
     ),
 )
 
-// ── Palette (DetailPalette.kt + StorefrontColors.kt) ────────────────────────
-
-@Immutable
-internal data class DetailPreviewPalette(
-    val pageTop: Color,
-    val pageBottom: Color,
-    val divider: Color,
-    val rowFill: Color,
-    val rowEdge: Color,
-    val track: Color,
-    val focus: Color,
-    /** Text roles, themed: Main replaces primary, Sub (else Main) the muted text at 0.72. */
-    val textPrimary: Color,
-    val textMuted: Color,
-    /** DetailPalette.iconPrimary / iconMuted: the palette's own tones, never the font colours. */
-    val iconPrimary: Color,
-    val iconMuted: Color,
-    /** DetailPalette.unselectedLabel(): Main at 0.72 once set, else [iconMuted]. */
-    val unselectedLabel: Color,
-)
+// ── Palette ─────────────────────────────────────────────────────────────────
 
 /**
- * core-ui Color.dimmed: this colour at [fraction] of its own alpha. A themed text role may itself be
- * translucent (Sub at 0.72), so dimming must multiply its weight, never replace it as copy(alpha) does.
+ * The detail palette, as the launcher derives it ([detailPaletteFor], theme-render) from the
+ * model's PFPColors; recomputed only when one of its inputs changes.
  */
-internal fun Color.dimmed(fraction: Float): Color = copy(alpha = alpha * fraction)
-
-/** DetailPalette.MUTED_TEXT_CONTRAST: muted text keeps the App Drawer's own 3.0 floor. */
-private const val MUTED_TEXT_CONTRAST = 3.0
-
-/** StorefrontColors.storefrontColorsFor's contrast floor. */
-private const val DRAWER_TEXT_CONTRAST = 3.0f
-
-/**
- * detailPaletteFor(PFPColors) over storefrontColorsFor(PFPColors), with PFPColors mapped from the
- * model: waveColor = [XmbPreviewModel.accent], accentColor = White (XMBViewModel never retints it),
- * backgroundTop/backgroundBottom = the model's anchors. Pure; callers remember it.
- */
-internal fun detailPreviewPaletteFor(model: XmbPreviewModel): DetailPreviewPalette {
-    val accentColor = Color.White
-    val bgTop = model.backgroundTop
-    val bgBottom = model.backgroundBottom
-    // resolveHueSource: a neutral accent falls back to the wave, a neutral wave to its gradient anchor.
-    val hue = when {
-        accentColor.isVividHue() -> accentColor
-        model.accent.isVividHue() -> model.accent
-        else -> bgBottom
-    }
-    val accentEdge = lerp(hue, Color.White, 0.55f)
-    val backgroundDeep = bgTop.copy(alpha = 0.88f)
-    val backgroundMid = lerp(bgTop, bgBottom, 0.55f).copy(alpha = 0.88f)
-    val drawerTextPrimary = ensureReadable(Color.White, backgroundMid, DRAWER_TEXT_CONTRAST)
-    val lightChrome = drawerTextPrimary == Color.Black
-    val drawerTextSecondary = ensureReadable(
-        fg = if (lightChrome) lerp(Color.Black, Color.White, 0.25f) else lerp(hue, Color.White, 0.72f),
-        bg = backgroundMid,
-        minContrast = DRAWER_TEXT_CONTRAST,
-    )
-    val edge = if (lightChrome) lerp(hue, Color.Black, 0.45f) else accentEdge
-
-    // detailPaletteFor
-    val rowFill = if (lightChrome) Color.White.copy(alpha = 0.30f)
-    else lerp(bgTop, Color.Black, 0.30f).copy(alpha = 0.60f)
-    val rowOnScreen = composite(rowFill, composite(backgroundDeep, Color.White))
-    val textMuted = if (contrastRatio(drawerTextSecondary, rowOnScreen) >= MUTED_TEXT_CONTRAST) {
-        drawerTextSecondary
-    } else {
-        ensureReadable(lerp(drawerTextPrimary, rowOnScreen, 0.18f), rowOnScreen, MUTED_TEXT_CONTRAST.toFloat())
-    }
-    return DetailPreviewPalette(
-        pageTop = backgroundDeep,
-        pageBottom = backgroundMid,
-        divider = edge,
-        rowFill = rowFill,
-        rowEdge = edge.copy(alpha = 0.35f),
-        track = edge.copy(alpha = 0.25f),
-        focus = edge,
-        // detailPaletteFor: derived without the font colours, which then replace the text roles.
-        textPrimary = model.textOr(drawerTextPrimary, 1f),
-        textMuted = model.subTextOr(textMuted, 0.72f),
-        iconPrimary = drawerTextPrimary,
-        iconMuted = textMuted,
-        unselectedLabel = model.textOr(textMuted, 0.72f),
-    )
-}
-
-/** The model's palette, recomputed only when one of its three inputs changes. */
 @Composable
-internal fun rememberDetailPreviewPalette(model: XmbPreviewModel): DetailPreviewPalette =
-    remember(model.accent, model.backgroundTop, model.backgroundBottom, model.textOverride, model.subTextOverride) { detailPreviewPaletteFor(model) }
-
-// StorefrontColors.isVividHue
-private fun Color.isVividHue(): Boolean {
-    val max = maxOf(red, green, blue)
-    val min = minOf(red, green, blue)
-    return max - min >= 0.10f && max >= 0.30f
-}
-
-// TextLegibility.kt: relativeLuminance / contrastRatio / ensureReadable / bestPolarity / composite.
-private fun relativeLuminance(c: Color): Double {
-    fun linearize(channel: Float): Double {
-        val v = channel.toDouble()
-        return if (v <= 0.04045) v / 12.92 else Math.pow((v + 0.055) / 1.055, 2.4)
-    }
-    return 0.2126 * linearize(c.red) + 0.7152 * linearize(c.green) + 0.0722 * linearize(c.blue)
-}
-
-private fun contrastRatio(a: Color, b: Color): Double {
-    val la = relativeLuminance(a)
-    val lb = relativeLuminance(b)
-    return (maxOf(la, lb) + 0.05) / (minOf(la, lb) + 0.05)
-}
-
-private fun ensureReadable(fg: Color, bg: Color, minContrast: Float): Color {
-    if (contrastRatio(fg, bg) >= minContrast) return fg
-    return if (contrastRatio(Color.Black, bg) >= contrastRatio(Color.White, bg)) Color.Black else Color.White
-}
-
-private fun composite(top: Color, bottom: Color): Color {
-    val a = top.alpha
-    return Color(
-        red = top.red * a + bottom.red * (1f - a),
-        green = top.green * a + bottom.green * (1f - a),
-        blue = top.blue * a + bottom.blue * (1f - a),
-    )
-}
+internal fun rememberDetailPreviewPalette(model: XmbPreviewModel): DetailPalette =
+    remember(model.pfp) { detailPaletteFor(model.pfp) }
 
 // ── Page frame (DetailScaffold.kt) ──────────────────────────────────────────
 
@@ -243,10 +129,10 @@ internal val DetailPreviewContentMaxWidth: Dp = 920.dp
 private val DetailFooterHeight: Dp = 58.dp
 
 /** DetailScaffold.DetailTextShadow. */
-internal val DetailPreviewTextShadow = Shadow(color = Color.Black.copy(alpha = 0.72f), offset = Offset(0f, 2f), blurRadius = 4f)
+internal val DetailPreviewTextShadow = ThemeTokens.DetailTextShadow
 
 // XmbBackground.WallpaperBackground's legibility scrim.
-private val WallpaperScrim = Color(0x59000000)
+private val WallpaperScrim = ThemeTokens.WallpaperScrim
 
 /**
  * The XMB background as it stands behind a detail page: the wallpaper poster under its scrim, or the
@@ -278,7 +164,7 @@ internal fun DetailPreviewBackdrop(model: XmbPreviewModel) {
 @Composable
 internal fun DetailPreviewPage(
     model: XmbPreviewModel,
-    palette: DetailPreviewPalette,
+    palette: DetailPalette,
     content: @Composable BoxScope.() -> Unit,
 ) {
     Box(Modifier.fillMaxSize().clipToBounds()) {
@@ -303,7 +189,7 @@ private const val MENU_BACK_KEY = "menu_back"
 @Composable
 internal fun DetailPreviewBreadcrumb(
     model: XmbPreviewModel,
-    palette: DetailPreviewPalette,
+    palette: DetailPalette,
     title: String,
     subtitle: String,
     modifier: Modifier = Modifier,
@@ -392,7 +278,7 @@ internal data class DetailPreviewHint(val glyphs: List<String>, val label: Strin
 private val HintLabelStyle = TextStyle(
     fontSize = 14.sp,
     fontWeight = FontWeight.SemiBold,
-    shadow = Shadow(color = Color.Black.copy(alpha = 0.75f), offset = Offset(0f, 2f), blurRadius = 4f),
+    shadow = ThemeTokens.TextShadow,
 )
 
 /** ControllerIconGlyph: the family's drawable at [size]. */
@@ -406,7 +292,7 @@ internal fun DetailPreviewPadGlyph(path: String, size: Dp) {
  * centred in the rest on a 0.70 black rounded pill. Shown as a controller user sees it (hints up).
  */
 @Composable
-internal fun DetailPreviewFooter(palette: DetailPreviewPalette, items: List<DetailPreviewHint>) {
+internal fun DetailPreviewFooter(palette: DetailPalette, items: List<DetailPreviewHint>) {
     Column(modifier = Modifier.fillMaxWidth().height(DetailFooterHeight)) {
         Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(palette.divider))
         Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
@@ -573,11 +459,11 @@ private val ShibaSearchRowHeight: Dp = 48.dp
 internal val ShibaPreviewFocusShape = RoundedCornerShape(4.dp)
 
 /** ShibaDetailParts.headerShade: the page darkened in place, so it follows the theme. */
-internal fun shibaPreviewHeaderShade(palette: DetailPreviewPalette): Color =
+internal fun shibaPreviewHeaderShade(palette: DetailPalette): Color =
     Color.Black.copy(alpha = if (palette.iconPrimary.luminance() < 0.5f) 0.10f else 0.28f)
 
 /** ShibaDetailParts.shibaFocus: drawn inside the element's own bounds. */
-internal fun Modifier.shibaPreviewFocus(focused: Boolean, palette: DetailPreviewPalette): Modifier =
+internal fun Modifier.shibaPreviewFocus(focused: Boolean, palette: DetailPalette): Modifier =
     if (focused) {
         background(palette.focus.copy(alpha = 0.14f), ShibaPreviewFocusShape).border(1.5.dp, palette.focus, ShibaPreviewFocusShape)
     } else {
@@ -619,7 +505,7 @@ internal fun ShibaPreviewCoinCount(
     model: XmbPreviewModel,
     tier: ShibaPreviewTier,
     count: Int,
-    palette: DetailPreviewPalette,
+    palette: DetailPalette,
     iconSize: Dp,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -633,7 +519,7 @@ internal fun ShibaPreviewCoinCount(
 @Composable
 internal fun ShibaPreviewProgressLine(
     fraction: Float,
-    palette: DetailPreviewPalette,
+    palette: DetailPalette,
     modifier: Modifier = Modifier,
     height: Dp = 3.dp,
 ) {
@@ -644,7 +530,7 @@ internal fun ShibaPreviewProgressLine(
 
 /** ShibaDetailParts.Separator: the hairline between list rows. */
 @Composable
-internal fun ShibaPreviewSeparator(palette: DetailPreviewPalette) {
+internal fun ShibaPreviewSeparator(palette: DetailPalette) {
     Box(Modifier.fillMaxWidth().height(1.dp).background(palette.rowEdge))
 }
 
@@ -655,7 +541,7 @@ internal fun ShibaPreviewSeparator(palette: DetailPreviewPalette) {
  */
 @Composable
 internal fun ShibaPreviewSearchRow(
-    palette: DetailPreviewPalette,
+    palette: DetailPalette,
     focused: Boolean,
     placeholder: String,
     trailing: (@Composable RowScope.() -> Unit)? = null,

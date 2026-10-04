@@ -32,8 +32,7 @@ fun CategoryIconGlyph(
     val icon = resolveCategoryCustomIcon(
         iconKey = iconKey,
         categoryId = categoryId,
-        userIcons = LocalCustomIcons.current,
-        themeIcons = LocalXmbIconOverrides.current,
+        icons = LocalXmbIcons.current,
     )
     if (icon != null) {
         CustomIconSurface(icon, contentDescription, modifier)
@@ -58,21 +57,20 @@ fun CategoryIconGlyph(
 }
 
 /**
- * The custom-icon tiers for a crossbar glyph, highest first: the user category's own image
- * (`usercat_<categoryId>`, user tier only — theme bundles never carry these keys), the user's
- * pick for the shared `catbar_*` slot, the theme's icon for that slot, else null (built-in
- * drawable, or console art for slot-less keys). A null or non-user [categoryId] skips the first
- * tier, which is exactly the pre-feature lookup.
+ * The custom icon for a crossbar glyph, highest first: the user category's own image
+ * (`usercat_<categoryId>`, user tier only — [XmbIcons] never takes these from a theme), then the
+ * icon [icons] resolves for the shared `catbar_*` slot, else null (built-in drawable, or console
+ * art for slot-less keys). A null or non-user [categoryId] skips the first step, which is exactly
+ * the pre-feature lookup.
  */
 fun resolveCategoryCustomIcon(
     iconKey: String,
     categoryId: String?,
-    userIcons: Map<String, CustomIcon>,
-    themeIcons: Map<String, CustomIcon>,
+    icons: XmbIcons,
 ): CustomIcon? {
-    categoryId?.let(UserCategoryIconKeys::keyFor)?.let { key -> userIcons[key]?.let { return it } }
+    categoryId?.let(UserCategoryIconKeys::keyFor)?.let { key -> icons[key]?.let { return it } }
     val slotKey = catbarSlotKeyFor(iconKey) ?: return null
-    return userIcons[slotKey] ?: themeIcons[slotKey]
+    return icons[slotKey]
 }
 
 /**

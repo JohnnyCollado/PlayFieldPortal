@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
 import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
+import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.core.data.saf.querySafChildren
 import com.playfieldportal.core.domain.model.Game
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -470,7 +471,7 @@ class RomScanner @Inject constructor(
                     // game's parts. Checked before [recursive], which governs looking inside
                     // ordinary folders only.
                     if (DirectoryGameExtensions.isGameFolder(child.name, allowed)) {
-                        val dirPath = safDocumentIdToRawPath(child.documentId) ?: child.uri.toString()
+                        val dirPath = safDocumentIdToRawPath(child.documentId, child.uri.authority) ?: child.uri.toString()
                         folderGameChildren.add(SafFileChild(child.name, dirPath, child.uri.toString()))
                         continue
                     }
@@ -480,7 +481,7 @@ class RomScanner @Inject constructor(
                 if (child.name.startsWith(".")) continue
                 // Derive the raw path from the document id (pure string math, no file access) so it
                 // stays the stable dedupe key and the {rom_path} value.
-                val rawPath = safDocumentIdToRawPath(child.documentId) ?: child.uri.toString()
+                val rawPath = safDocumentIdToRawPath(child.documentId, child.uri.authority) ?: child.uri.toString()
                 fileChildren.add(SafFileChild(child.name, rawPath, child.uri.toString()))
             }
         }
@@ -643,7 +644,7 @@ class RomScanner @Inject constructor(
                             title      = title,
                             extension  = ext,
                             idContent  = idContent,
-                            rawPath    = safDocumentIdToRawPath(child.documentId),
+                            rawPath    = safDocumentIdToRawPath(child.documentId, child.uri.authority),
                             uri        = child.uri.toString(),
                         )
                     )
@@ -683,17 +684,11 @@ class RomScanner @Inject constructor(
 // Converts a SAF externalstorage document id ("primary:ROMs/game.iso", "1A2B-3C4D:Games/game.iso")
 // to its raw filesystem path. Pure string math — needs no storage access and is safe to derive even
 // without MANAGE_EXTERNAL_STORAGE. Returns null for non-volume document ids (kept as a fallback by
-// the caller). Mirrors the derivation used when a card's folder is first picked.
-fun safDocumentIdToRawPath(documentId: String): String? {
-    val parts = documentId.split(":", limit = 2)
-    if (parts.size != 2 || parts[1].isBlank()) return null
-    val (volume, relative) = parts
-    return if (volume.equals("primary", ignoreCase = true)) {
-        "/storage/emulated/0/$relative"
-    } else {
-        "/storage/$volume/$relative"
-    }
-}
+// the caller). Mirrors the derivation used when a card's folder is first picked. [authority] is the
+// document's provider: only shared storage uses volume ids, so another app's provider never gets an
+// invented /storage path (null keeps the shared-storage reading).
+fun safDocumentIdToRawPath(documentId: String, authority: String? = null): String? =
+    RomRootRepository.rawPathOfDocument(authority, documentId)
 
 // ── ROM title cleaning ──────────────────────────────────────────────────────────
 //

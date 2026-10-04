@@ -91,3 +91,21 @@ class Ps3TrophyCheckStrategy @Inject constructor() : ProviderCheckStrategy {
         return ProviderCheckPlan(toFetch = due.mapTo(mutableSetOf()) { it.identity })
     }
 }
+
+/**
+ * X360_ACHIEVEMENT (Xenia's local profile GPDs) clones [VitaTrophyCheckStrategy]'s conservative
+ * cadence too: re-reading a GPD is the whole read, so there is no cheaper signal to check first.
+ */
+@Singleton
+class X360AchievementCheckStrategy @Inject constructor() : ProviderCheckStrategy {
+
+    override val provider = AchievementProvider.X360_ACHIEVEMENT
+
+    override suspend fun plan(entries: List<TrackedEntry>, trigger: SyncTrigger, now: Long): ProviderCheckPlan {
+        val due = entries.filter { entry ->
+            trigger == SyncTrigger.MANUAL || entry.isNew ||
+                entry.lastCheckedAt == null || now - entry.lastCheckedAt >= VitaTrophyCheckStrategy.INTERVAL_MS
+        }
+        return ProviderCheckPlan(toFetch = due.mapTo(mutableSetOf()) { it.identity })
+    }
+}

@@ -30,6 +30,9 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import com.playfieldportal.themekit.consoleArt
+import com.playfieldportal.themekit.slotIcons
+import com.playfieldportal.themekit.mediaArt
 
 /**
  * Schema-v3 behaviour of the theme library: `apply()` writing gif/sysicon/motion entries, and
@@ -58,8 +61,12 @@ class PfpThemeStoreV3Test {
         val store = PfpThemeStore(context, PERMISSIVE_PROBE)
         val saved = requireNotNull(store.importBundle(register(v3BundleBytes())))
 
-        val result = assertNotNull(store.applyDetailed(saved.id))
-        assertEquals(setOf("catbar_games", "sysicon_psx"), result.installedIcons, "apply reports the icon keys it wrote")
+        assertNotNull(store.applyDetailed(saved.id))
+        assertEquals(
+            setOf("catbar_games", "sysicon_psx"),
+            ThemeTiers(context.filesDir).iconKeys(ThemeTiers.Tier.THEME),
+            "the theme tier holds exactly the icons the bundle carried",
+        )
 
         val iconsDir = File(context.filesDir, PfpThemeStore.THEME_ICONS_DIR)
         assertTrue(File(iconsDir, "catbar_games.gif").isFile, "gif icon keeps its extension")
@@ -69,7 +76,7 @@ class PfpThemeStoreV3Test {
         val motionPath = prefs[KEY_MOTION_WALLPAPER]
         assertNotNull(motionPath, "a bundle carrying motion sets KEY_MOTION_WALLPAPER")
         assertTrue(File(motionPath).isFile, "the motion file was written into the wallpaper dir")
-        assertTrue(PfpThemeStore.KEY_THEME_ICONS_STAMP in prefs.asMap(), "the icon stamp is bumped")
+        assertTrue(ThemePrefKeys.THEME_ICONS_STAMP in prefs.asMap(), "the icon stamp is bumped")
     }
 
     @Test
@@ -126,7 +133,7 @@ class PfpThemeStoreV3Test {
                             manifest = PfpThemeManifest(name = "Discs", accentColor = "#00FF00"),
                             wallpaper = null,
                             preview = null,
-                            mediaicons = mapOf("psp" to ThemeImage(pngBytes(), "png"), "snes" to ThemeImage(gifBytes(), "gif")),
+                            icons = mediaArt("psp" to ThemeImage(pngBytes(), "png"), "snes" to ThemeImage(gifBytes(), "gif")),
                         ),
                     ),
                 ),
@@ -138,6 +145,38 @@ class PfpThemeStoreV3Test {
         val iconsDir = File(context.filesDir, PfpThemeStore.THEME_ICONS_DIR)
         assertTrue(File(iconsDir, "physmedia_psp.png").isFile)
         assertTrue(File(iconsDir, "physmedia_snes.gif").isFile)
+    }
+
+    // ── clearThemeLook(): a colour preset replaces the theme's look ───────────
+
+    @Test
+    fun `choosing a preset takes the theme's icons, layout, accent and name and leaves the rest`() = runTest {
+        val store = PfpThemeStore(context, PERMISSIVE_PROBE)
+        val saved = requireNotNull(store.importBundle(register(v3BundleBytes())))
+        assertTrue(store.apply(saved.id))
+        context.pfpDataStore.edit {
+            it[ThemePrefKeys.THEME_LAYOUT] = XmbLayoutSpecCodec.encode(XmbLayoutSpec(barTopFraction = 0.2f))
+            it[KEY_TEXT_COLOR] = 0xFF112233L
+        }
+        val userDir = File(context.filesDir, CustomIconStore.CUSTOM_ICONS_DIR).apply { mkdirs() }
+        File(userDir, "catbar_music.png").writeBytes(pngBytes())
+        val motionBefore = context.pfpDataStore.data.first()[KEY_MOTION_WALLPAPER]
+
+        store.clearThemeLook()
+
+        val prefs = context.pfpDataStore.data.first()
+        assertTrue(File(context.filesDir, PfpThemeStore.THEME_ICONS_DIR).listFiles().isNullOrEmpty(), "no theme icon is left to resolve")
+        assertNull(prefs[ThemePrefKeys.THEME_ICONS_STAMP])
+        assertNull(prefs[ThemePrefKeys.THEME_LAYOUT])
+        assertNull(prefs[KEY_ACCENT_OVERRIDE])
+        assertNull(prefs[ThemePrefKeys.APPLIED_THEME_NAME], "Settings no longer names the theme")
+        assertEquals(0xFF112233L, prefs[KEY_TEXT_COLOR], "text colours stay")
+        assertEquals(motionBefore, prefs[KEY_MOTION_WALLPAPER], "the wallpaper stays")
+        assertTrue(File(userDir, "catbar_music.png").isFile, "the user's own picks are untouched")
+
+        val look = assertNotNull(store.saveCurrentLook("After Preset"))
+        val bundle = assertNotNull(PfpThemeCodec.read(File(context.filesDir, "pfpthemes/${look.id}.pfptheme").readBytes()))
+        assertEquals(setOf("catbar_music"), bundle.icons.keys, "Save as Theme exports no theme icon after a preset")
     }
 
     // ── saveCurrentLook() ─────────────────────────────────────────────────────
@@ -170,9 +209,9 @@ class PfpThemeStoreV3Test {
         val saved = assertNotNull(store.saveCurrentLook("Discs"))
         val bundle = assertNotNull(PfpThemeCodec.read(File(context.filesDir, "pfpthemes/${saved.id}.pfptheme").readBytes()))
 
-        assertEquals(setOf("psp", "snes"), bundle.mediaicons.keys)
-        assertEquals("gif", bundle.mediaicons["psp"]?.extension)
-        assertTrue(bundle.icons.isEmpty() && bundle.sysicons.isEmpty(), "physical media never lands in icons/ or sysicons/")
+        assertEquals(setOf("psp", "snes"), bundle.mediaArt.keys)
+        assertEquals("gif", bundle.mediaArt["psp"]?.extension)
+        assertTrue(bundle.slotIcons.isEmpty() && bundle.consoleArt.isEmpty(), "physical media never lands in icons/ or sysicons/")
     }
 
     @Test
@@ -187,7 +226,7 @@ class PfpThemeStoreV3Test {
 
         assertEquals(setOf("catbar_games"), bundle.icons.keys, "device-local category images stay out of the theme")
         assertTrue(bundle.icons.keys.none { it.startsWith("usercat_") })
-        assertTrue(bundle.sysicons.keys.none { it.startsWith("usercat_") })
+        assertTrue(bundle.consoleArt.keys.none { it.startsWith("usercat_") })
     }
 
     @Test
@@ -201,7 +240,7 @@ class PfpThemeStoreV3Test {
             it[KEY_ACCENT_OVERRIDE] = 0xFFFF72B1L
             it[KEY_ICON_COLOR] = 0xFF00FF00L
             it[KEY_WAVE_STYLE] = "STATIC"
-            it[PfpThemeStore.KEY_THEME_LAYOUT] = layoutJson
+            it[ThemePrefKeys.THEME_LAYOUT] = layoutJson
         }
 
         val saved = assertNotNull(store.saveCurrentLook("Full Look"))
@@ -285,8 +324,7 @@ class PfpThemeStoreV3Test {
             manifest = PfpThemeManifest(name = "V3 Theme", accentColor = "#FF0000"),
             wallpaper = null,
             preview = null,
-            icons = mapOf("catbar_games" to ThemeImage(gifBytes(), "gif")),
-            sysicons = mapOf("psx" to ThemeImage(pngBytes(), "png")),
+            icons = mapOf("catbar_games" to ThemeImage(gifBytes(), "gif")) + consoleArt("psx" to ThemeImage(pngBytes(), "png")),
             motion = ThemeMotion.ofBytes(mp4Bytes(), "mp4"),
         ),
     )
@@ -308,10 +346,11 @@ class PfpThemeStoreV3Test {
     private companion object {
         /** Robolectric cannot probe media; these tests use placeholder video bytes and only assert plumbing. */
         val PERMISSIVE_PROBE: MediaProbe = { _, mime -> MediaFacts(mime, 1920, 1080, 1_000L) }
-        val KEY_CUSTOM_WALLPAPER = stringPreferencesKey("display_custom_wallpaper")
-        val KEY_MOTION_WALLPAPER = stringPreferencesKey("display_motion_wallpaper")
-        val KEY_WAVE_STYLE = stringPreferencesKey("display_wave_style")
-        val KEY_ACCENT_OVERRIDE = longPreferencesKey("theme_accent_override")
-        val KEY_ICON_COLOR = longPreferencesKey("theme_icon_color")
+        val KEY_CUSTOM_WALLPAPER = ThemePrefKeys.CUSTOM_WALLPAPER
+        val KEY_MOTION_WALLPAPER = ThemePrefKeys.MOTION_WALLPAPER
+        val KEY_WAVE_STYLE = ThemePrefKeys.WAVE_STYLE
+        val KEY_ACCENT_OVERRIDE = ThemePrefKeys.ACCENT_OVERRIDE
+        val KEY_ICON_COLOR = ThemePrefKeys.ICON_COLOR
+        val KEY_TEXT_COLOR = ThemePrefKeys.TEXT_COLOR
     }
 }

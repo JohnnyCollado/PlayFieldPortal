@@ -88,11 +88,7 @@ val DetailContentPadding: Dp = 28.dp
  */
 val DetailFooterHeight: Dp = 58.dp
 
-internal val DetailTextShadow = Shadow(
-    color = Color.Black.copy(alpha = 0.72f),
-    offset = Offset(0f, 2f),
-    blurRadius = 4f,
-)
+internal val DetailTextShadow = com.playfieldportal.core.ui.theme.ThemeTokens.DetailTextShadow
 
 /**
  * The page surface colors: the App Drawer's translucent theme gradient, with see-through header and

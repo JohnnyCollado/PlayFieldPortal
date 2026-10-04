@@ -36,4 +36,17 @@ class SafDocumentIdPathTest {
         assertNull(safDocumentIdToRawPath("primary"))
         assertNull(safDocumentIdToRawPath(""))
     }
+
+    @Test
+    fun `a file under an app's own provider never gets an invented storage path`() {
+        assertNull(safDocumentIdToRawPath("v:root/Games/halo3.iso", "emu.x360mobile.com.documents"))
+        assertEquals(
+            "/storage/emulated/0/Games/halo3.iso",
+            safDocumentIdToRawPath("/storage/emulated/0/Games/halo3.iso", "xendroid.compose.DocumentsProvider"),
+        )
+        assertEquals(
+            "/storage/emulated/0/a.bin",
+            safDocumentIdToRawPath("primary:a.bin", "com.android.externalstorage.documents"),
+        )
+    }
 }

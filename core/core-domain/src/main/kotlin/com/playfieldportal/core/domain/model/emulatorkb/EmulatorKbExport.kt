@@ -108,6 +108,7 @@ object EmulatorKbExport {
             attachRomData = p.attachRomData,
             mimeType = p.mimeType,
             useSafUri = p.useSafUri,
+            dataUri = p.dataUri,
         ),
         signerSha256 = p.signerSha256,
     )

@@ -136,20 +136,16 @@ data class StudioState(
      * so opened manifests round-trip hand-authored fields untouched.
      */
     val layout: com.playfieldportal.themekit.XmbLayoutSpec = com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT,
-    /** Custom icon slots: IconSlots key → encoded bytes (what exports) ... */
+    /**
+     * Custom icons: [CustomizableIcons] slot key → encoded bytes (what exports) — theme slots,
+     * console art (`sysicon_psx`) and physical-media art (`physmedia_psx`) alike, as the bundle
+     * holds them; which zip folder each travels in is the codec's business ...
+     */
     val iconOverrides: Map<String, ByteArray> = emptyMap(),
     /** ... the extension each entry ships as ("png" stills, "gif" animations) — parallel to [iconOverrides]. */
     val iconExtensions: Map<String, String> = emptyMap(),
     /** ... and the decoded bitmaps the preview/editor draw. Kept in lockstep with [iconOverrides]. */
     val iconBitmaps: Map<String, ImageBitmap> = emptyMap(),
-    /**
-     * Console art overrides, same shape as the icon maps but keyed by the full
-     * [CustomizableIcons] key (`sysicon_psx`); export strips the prefix into `sysicons/<id>`.
-     * Physical-media art (`physmedia_psx`) shares these maps and exports as `mediaicons/<id>` instead.
-     */
-    val sysiconOverrides: Map<String, ByteArray> = emptyMap(),
-    val sysiconExtensions: Map<String, String> = emptyMap(),
-    val sysiconBitmaps: Map<String, ImageBitmap> = emptyMap(),
     /** Manifest keys this build has no typed field for, merged back on export. */
     val manifestExtras: JsonObject = JsonObject(emptyMap()),
     /**
@@ -444,9 +440,6 @@ class StudioViewModel(private val scope: CoroutineScope) {
             runCatching { key to spill("studio-media-", media.extension, media::copyTo) }
                 .onFailure { notKept += key }.getOrNull()
         }.toMap()
-        // Physical-media art shares the console-art maps: an icon edit like any other.
-        val consoleArt = bundle.sysicons.mapKeys { (id, _) -> "$SYSICON_KEY_PREFIX$id" } +
-            bundle.mediaicons.mapKeys { (id, _) -> "${CustomizableIcons.PHYSICAL_MEDIA_PREFIX}$id" }
         val passthroughFiles = bundle.passthrough.mapNotNull { entry ->
             runCatching {
                 entry.name to spill("studio-extra-", entry.name.substringAfterLast('.'), entry::copyTo)
@@ -483,11 +476,6 @@ class StudioViewModel(private val scope: CoroutineScope) {
                 iconOverrides = icons.mapValues { (_, image) -> image.bytes },
                 iconExtensions = icons.mapValues { (_, image) -> image.extension.lowercase() },
                 iconBitmaps = iconBitmaps,
-                sysiconOverrides = consoleArt.mapValues { (_, image) -> image.bytes },
-                sysiconExtensions = consoleArt.mapValues { (_, image) -> image.extension.lowercase() },
-                sysiconBitmaps = consoleArt.mapNotNull { (key, image) ->
-                    ImageCodecs.toImageBitmap(image.bytes)?.let { key to it }
-                }.toMap(),
                 manifestExtras = bundle.manifestExtras,
                 passthroughFiles = passthroughFiles,
                 mediaFiles = mediaFiles,
@@ -800,14 +788,13 @@ class StudioViewModel(private val scope: CoroutineScope) {
      * frames are rejected here, by name, instead of shipping a theme the device refuses.
      */
     fun setIconOverride(key: String, file: File) = runBusy {
-        // Console art (sysicon_*) is a slot too: same pipeline, filed under the sysicon maps.
+        // Console and physical-media art are slots too: the same pipeline, the same map.
         val slot = EditableSlots.byKey(key) ?: return@runBusy
-        val console = isConsoleArt(key)
         // Read with headroom so an oversized pick reaches the specific byte-cap rejection in
         // the gate (MAX_ICON_BYTES), not a generic unreadable-file error.
         val bytes = com.playfieldportal.studio.io.SafeIo.readBytesCapped(file)
         when (val gate = gateIcon(slot, bytes, file.name)) {
-            is IconGate.Ok -> edit { it.withIcon(console, key, gate.bytes, gate.extension, gate.bitmap) }
+            is IconGate.Ok -> edit { it.withIcon(key, gate.bytes, gate.extension, gate.bitmap) }
             is IconGate.Reject -> _state.update { it.copy(dialog = StudioDialog.Error(gate.reason)) }
         }
     }
@@ -866,11 +853,11 @@ class StudioViewModel(private val scope: CoroutineScope) {
         var replaced = emptyList<String>()
         if (ready.isNotEmpty()) {
             edit {
-                val (again, fresh) = ready.keys.partition { k -> k in it.iconOverrides || k in it.sysiconOverrides }
+                val (again, fresh) = ready.keys.partition { k -> k in it.iconOverrides }
                 added = fresh
                 replaced = again
                 ready.entries.fold(it) { acc, (k, gate) ->
-                    acc.withIcon(isConsoleArt(k), k, gate.bytes, gate.extension, gate.bitmap)
+                    acc.withIcon(k, gate.bytes, gate.extension, gate.bitmap)
                 }
             }
         }
@@ -887,51 +874,23 @@ class StudioViewModel(private val scope: CoroutineScope) {
         onDone(report)
     }
 
-    /** Console art and physical-media art share the sysicon maps; export splits them apart again. */
-    private fun isConsoleArt(key: String): Boolean =
-        key.startsWith(SYSICON_KEY_PREFIX) || CustomizableIcons.physicalMediaId(key) != null
-
-    private fun StudioState.withIcon(
-        console: Boolean,
-        key: String,
-        bytes: ByteArray,
-        extension: String,
-        bitmap: ImageBitmap,
-    ): StudioState = if (console) {
-        copy(
-            sysiconOverrides = sysiconOverrides + (key to bytes),
-            sysiconExtensions = sysiconExtensions + (key to extension),
-            sysiconBitmaps = sysiconBitmaps + (key to bitmap),
-        )
-    } else {
+    private fun StudioState.withIcon(key: String, bytes: ByteArray, extension: String, bitmap: ImageBitmap): StudioState =
         copy(
             iconOverrides = iconOverrides + (key to bytes),
             iconExtensions = iconExtensions + (key to extension),
             iconBitmaps = iconBitmaps + (key to bitmap),
         )
-    }
 
-    /** Clears [key] from whichever family (icons or console art) holds it. */
     fun clearIconOverride(key: String) = edit {
         it.copy(
             iconOverrides = it.iconOverrides - key,
             iconExtensions = it.iconExtensions - key,
             iconBitmaps = it.iconBitmaps - key,
-            sysiconOverrides = it.sysiconOverrides - key,
-            sysiconExtensions = it.sysiconExtensions - key,
-            sysiconBitmaps = it.sysiconBitmaps - key,
         )
     }
 
     fun clearAllIconOverrides() = edit {
-        it.copy(
-            iconOverrides = emptyMap(),
-            iconExtensions = emptyMap(),
-            iconBitmaps = emptyMap(),
-            sysiconOverrides = emptyMap(),
-            sysiconExtensions = emptyMap(),
-            sysiconBitmaps = emptyMap(),
-        )
+        it.copy(iconOverrides = emptyMap(), iconExtensions = emptyMap(), iconBitmaps = emptyMap())
     }
 
     // ── UI media (sounds, ambience, boot, GameBoot) ──────────────────────────
@@ -1037,15 +996,9 @@ class StudioViewModel(private val scope: CoroutineScope) {
                 ThemeImage(png, snapshot.iconExtensions[key] ?: "png")
             },
             motion = motion,
-            sysicons = snapshot.sysiconOverrides.filterKeys { it.startsWith(SYSICON_KEY_PREFIX) }.entries.associate { (key, png) ->
-                key.removePrefix(SYSICON_KEY_PREFIX) to ThemeImage(png, snapshot.sysiconExtensions[key] ?: "png")
-            },
             media = snapshot.mediaFiles.filterValues { it.isFile }
                 .mapValues { (_, f) -> ThemeMotion.ofFile(f, f.extension.lowercase()) },
             manifestExtras = snapshot.manifestExtras,
-            mediaicons = snapshot.sysiconOverrides.entries.mapNotNull { (key, png) ->
-                CustomizableIcons.physicalMediaId(key)?.let { id -> id to ThemeImage(png, snapshot.sysiconExtensions[key] ?: "png") }
-            }.toMap(),
             passthrough = snapshot.passthroughFiles.filterValues { it.isFile }
                 .map { (name, f) -> PassthroughEntry.ofFile(name, f) },
         )
@@ -1135,7 +1088,6 @@ class StudioViewModel(private val scope: CoroutineScope) {
     }
 
     private companion object {
-        const val SYSICON_KEY_PREFIX = "sysicon_"
         const val AMBIENCE_KEY = "ambience_audio"
         const val BOOT_KEY = "boot_video"
         const val GAMEBOOT_KEY = "gameboot_video"

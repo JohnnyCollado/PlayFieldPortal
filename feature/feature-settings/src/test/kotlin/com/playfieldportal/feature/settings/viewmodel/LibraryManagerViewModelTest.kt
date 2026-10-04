@@ -67,6 +67,8 @@ class LibraryManagerViewModelTest {
     private val vita3KLibrary = mockk<Vita3KLibrary>(relaxed = true)
     private val ps3DataLibrary =
         mockk<com.playfieldportal.core.data.repository.Ps3DataLibrary>(relaxed = true)
+    private val xbox360DataLibrary =
+        mockk<com.playfieldportal.core.data.repository.Xbox360DataLibrary>(relaxed = true)
     private val vitaGameScanner = mockk<VitaGameScanner>(relaxed = true)
     private val libraryScanner = mockk<LibraryScanner>(relaxed = true)
     private val romRootScanRunner = mockk<RomRootScanRunner>(relaxed = true)
@@ -86,32 +88,36 @@ class LibraryManagerViewModelTest {
         every { emulatorProfileRepository.profiles } returns flowOf(emptyList())
         every { vita3KLibrary.ux0TreeUriFlow } returns flowOf(null)
         every { ps3DataLibrary.dataTreeUriFlow } returns flowOf(null)
-        vm = LibraryManagerViewModel(
-            context,
-            memoryCardRepository,
-            romScanner,
-            gameRepository,
-            emulatorProfileRepository,
-            romRootRepository,
-            folderHintResolver,
-            launcherShortcutRepository,
-            windowsLibrarySetup,
-            pcGameScanner,
-            localSteamSchemaGenerator,
-            localSteamBatchMatcher,
-            localSteamDiscovery,
-            credentials,
-            vita3KLibrary,
-            ps3DataLibrary,
-            vitaGameScanner,
-            libraryScanner,
-            romRootScanRunner,
-            pcGameExporter,
-            tasks,
-            launcherChoices,
-            kotlinx.coroutines.CoroutineScope(dispatcher),
-        )
+        every { xbox360DataLibrary.treeUriFlow(any()) } returns flowOf(null)
+        vm = buildVm()
     }
+
+    private fun buildVm() = LibraryManagerViewModel(
+        context,
+        memoryCardRepository,
+        romScanner,
+        gameRepository,
+        emulatorProfileRepository,
+        romRootRepository,
+        folderHintResolver,
+        launcherShortcutRepository,
+        windowsLibrarySetup,
+        pcGameScanner,
+        localSteamSchemaGenerator,
+        localSteamBatchMatcher,
+        localSteamDiscovery,
+        credentials,
+        vita3KLibrary,
+        ps3DataLibrary,
+        xbox360DataLibrary,
+        vitaGameScanner,
+        libraryScanner,
+        romRootScanRunner,
+        pcGameExporter,
+        tasks,
+        launcherChoices,
+        kotlinx.coroutines.CoroutineScope(dispatcher),
+    )
 
     @After
     fun tearDown() = Dispatchers.resetMain()
@@ -131,6 +137,20 @@ class LibraryManagerViewModelTest {
         every { packageManager.getApplicationLabel(app) } returns "Wine Fork"
         every { packageManager.getPackageInfo(any<String>(), any<Int>()) } throws
             android.content.pm.PackageManager.NameNotFoundException()
+    }
+
+    @Test
+    fun `each Xbox 360 emulator's data folder is granted on its own`() = runTest(dispatcher) {
+        val xenDroid = com.playfieldportal.core.data.repository.Xbox360Emulator.XENDROID
+        val uri = mockk<android.net.Uri>()
+
+        vm.setXbox360DataFolder(xenDroid, uri)
+        advanceUntilIdle()
+
+        coVerify { xbox360DataLibrary.setFolder(xenDroid, uri) }
+        coVerify(exactly = 0) {
+            xbox360DataLibrary.setFolder(com.playfieldportal.core.data.repository.Xbox360Emulator.X360_MOBILE, any())
+        }
     }
 
     @Test
@@ -207,6 +227,27 @@ class LibraryManagerViewModelTest {
 
     // uiState is WhileSubscribed — tests that assert on it need an active collector.
     private fun TestScope.collectState() = launch { vm.uiState.collect {} }
+
+    @Test
+    fun `the emulator picker receives this card's options, ending with Decide later`() = runTest(dispatcher) {
+        val job = collectState()
+        val x1 = com.playfieldportal.core.domain.model.EmulatorProfile(
+            id = "x360mobile", name = "X360 Mobile", packageName = "emu.x360mobile.com",
+            intentType = com.playfieldportal.core.domain.model.IntentType.ACTION_VIEW,
+            supportedPlatformIds = listOf("x360"), isAvailable = true,
+        )
+        coEvery { emulatorProfileRepository.getProfilesForPlatform("x360") } returns listOf(x1)
+        vm.openCardDetail("x360")
+        advanceUntilIdle()
+
+        var received: List<EmulatorOption>? = null
+        vm.loadEmulatorOptionsForDetail { received = it }
+        advanceUntilIdle()
+
+        // The menu opens on exactly what was loaded for this card, never a list left from another.
+        assertEquals(listOf(EmulatorOption("x360mobile", "X360 Mobile"), EmulatorOption(null, "Decide later")), received)
+        job.cancel()
+    }
 
     @Test
     fun `Windows Games back unwinds import to card detail then to list`() = runTest(dispatcher) {

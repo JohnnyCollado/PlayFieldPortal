@@ -15,6 +15,8 @@ import com.playfieldportal.core.data.repository.MediaRootKind
 import com.playfieldportal.core.data.repository.MediaRootRepository
 import com.playfieldportal.core.data.repository.CoreInventory
 import com.playfieldportal.core.data.repository.Ps3DataLibrary
+import com.playfieldportal.core.data.repository.Xbox360DataLibrary
+import com.playfieldportal.core.data.repository.Xbox360Emulator
 import com.playfieldportal.core.data.repository.RetroArchLink
 import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.core.data.repository.Vita3KLibrary
@@ -51,7 +53,7 @@ data class ArtworkSourceUi(val label: String, val systems: Int)
 data class InitialSetupUiState(
     val step: SetupStep = SetupStep.WELCOME,
     // What was installed and set when the wizard opened — decides the optional pages (and the
-    // Trophies page's sections). Snapshotted once, so a page never vanishes under the cursor.
+    // Local Achievements page's sections). Snapshotted once, so a page never vanishes under the cursor.
     val availability: SetupAvailability = SetupAvailability(),
     // Multi-root lists per section (Library-Manager rows — a section can span several folders).
     val romRoots: List<RootFolderRow> = emptyList(),
@@ -78,6 +80,9 @@ data class InitialSetupUiState(
     val vitaFolderName: String? = null,
     // ARMSX3 PS3 data folder (dev_hdd0 or a folder above/below it), null = not set.
     val ps3FolderName: String? = null,
+    // Xbox 360 data folders, one per emulator (X360 Mobile, XenDroid), null = not set.
+    val x360MobileFolderName: String? = null,
+    val xenDroidFolderName: String? = null,
     val message: String? = null,
     // Per-service validation results (\"Testing…\" / \"Valid …\" / \"Invalid …\"), shown inline.
     val igdbStatus: String? = null,
@@ -92,6 +97,8 @@ data class InitialSetupUiState(
     val retroArchInstalled: Boolean get() = availability.retroArch
     val vita3KInstalled: Boolean get() = availability.vita3K
     val armsx3Installed: Boolean get() = availability.armsx3
+    val x360MobileInstalled: Boolean get() = availability.x360Mobile
+    val xenDroidInstalled: Boolean get() = availability.xenDroid
 
     /** The pages this run shows, in order. */
     val steps: List<SetupStep> get() = setupSteps(availability)
@@ -124,6 +131,8 @@ private data class RootLists(
     val artwork: String?,   // artwork folder display name
     val vita: String?,      // Vita3K ux0 folder display name
     val ps3: String?,       // ARMSX3 PS3 data folder display name
+    val x360Mobile: String?, // X360 Mobile data folder display name
+    val xenDroid: String?,   // XenDroid data folder display name
 )
 
 // The two plain API-key services. Grouped so `serviceIdentities` stays within combine's typed
@@ -151,7 +160,7 @@ private val KEY_INITIAL_SETUP_SEEN = booleanPreferencesKey("initial_setup_seen")
 /**
  * First-run setup wizard, broken into one task per page per the approved plans: Welcome →
  * Controller → ROM Roots → Music → Video → Photo → Artwork → Online Services → Achievements →
- * Trophies* → RetroArch* → Emulators* → Windows Games* → Hints & Touch → Home App* → Finish
+ * Local Achievements* → RetroArch* → Emulators* → Windows Games* → Hints & Touch → Home App* → Finish
  * (* only when it applies — see [setupSteps]). This view model owns the page flow and the folder
  * and service pages; the device pages live in [SetupPagesViewModel]. Each folder section is multi-root exactly like Settings ▸ Library
  * ROM Root Access and the Music/Video/Photo screens, artwork is one folder with an embedded
@@ -181,6 +190,7 @@ class InitialSetupViewModel @Inject constructor(
     private val memoryCardRepository: com.playfieldportal.core.data.repository.MemoryCardRepository,
     private val tasks: BackgroundTaskCenter,
     private val ps3DataLibrary: Ps3DataLibrary,
+    private val xbox360DataLibrary: Xbox360DataLibrary,
     private val environment: SetupEnvironment,
 ) : ViewModel() {
 
@@ -219,7 +229,8 @@ class InitialSetupViewModel @Inject constructor(
     // Display-name rows derive per-flow; grant status is snapshotted at emission time so a lost
     // grant (reinstall) reports ACCESS_LOST immediately, like the settings screens.
     // combine() is typed to 5 flows — the folder roots pack into one RootLists, then the Vita3K
-    // ux0 and PS3 data folders are layered on top (keeping the typed lambda, never an Array<Any?> cast).
+    // ux0, PS3 and two Xbox 360 data folders are layered on top (keeping the typed lambda, never an
+    // Array<Any?> cast).
     private val rootLists = combine(
         combine(
             romRootRepository.roots,
@@ -237,12 +248,22 @@ class InitialSetupViewModel @Inject constructor(
                 artwork = artwork?.let(::rootDisplayName),
                 vita    = null,
                 ps3     = null,
+                x360Mobile = null,
+                xenDroid   = null,
             )
         },
         vita3KLibrary.ux0TreeUriFlow,
         ps3DataLibrary.dataTreeUriFlow,
-    ) { lists, vita, ps3 ->
-        lists.copy(vita = vita?.let(::rootDisplayName), ps3 = ps3?.let(::rootDisplayName))
+        xbox360DataLibrary.treeUriFlow(Xbox360Emulator.X360_MOBILE),
+        xbox360DataLibrary.treeUriFlow(Xbox360Emulator.XENDROID),
+    ) { lists, vita, ps3, x360Mobile, xenDroid ->
+        lists.copy(
+            vita = vita?.let(::rootDisplayName),
+            ps3 = ps3?.let(::rootDisplayName),
+            // The emulators grant through their own providers, which rootDisplayName misreads.
+            x360Mobile = x360Mobile?.let { Xbox360DataLibrary.folderLabel(it, Xbox360Emulator.X360_MOBILE) },
+            xenDroid = xenDroid?.let { Xbox360DataLibrary.folderLabel(it, Xbox360Emulator.XENDROID) },
+        )
     }
 
     private val artworkKeys = combine(
@@ -283,6 +304,8 @@ class InitialSetupViewModel @Inject constructor(
             artworkFolderName = roots.artwork,
             vitaFolderName    = roots.vita,
             ps3FolderName     = roots.ps3,
+            x360MobileFolderName = roots.x360Mobile,
+            xenDroidFolderName   = roots.xenDroid,
             hasSgdb           = services.hasSgdb,
             hasTgdb           = services.hasTgdb,
             igdbClientId      = services.igdbClientId,
@@ -587,6 +610,31 @@ class InitialSetupViewModel @Inject constructor(
         viewModelScope.launch {
             ps3DataLibrary.clear()
             announce("setup_ps3", "PS3 data folder released — files on disk were not touched.")
+        }
+    }
+
+    // ── Xbox 360 data folders (X360 Mobile, XenDroid) ─────────────────────────
+
+    /** Grants [emulator]'s data folder through the same [Xbox360DataLibrary] call Library Manager makes. */
+    fun linkXbox360Folder(emulator: Xbox360Emulator, uri: Uri) {
+        viewModelScope.launch {
+            xbox360DataLibrary.setFolder(emulator, uri)
+            announce(
+                "setup_x360_${emulator.name.lowercase()}",
+                "${emulator.label} data folder set. Run Auto-Match in Settings ▸ Shiba Coins to link " +
+                    "Xbox 360 achievements.",
+            )
+        }
+    }
+
+    /** Releases [emulator]'s data-folder link (files are never touched). */
+    fun forgetXbox360Folder(emulator: Xbox360Emulator) {
+        viewModelScope.launch {
+            xbox360DataLibrary.clear(emulator)
+            announce(
+                "setup_x360_${emulator.name.lowercase()}",
+                "${emulator.label} data folder released — files on disk were not touched.",
+            )
         }
     }
 

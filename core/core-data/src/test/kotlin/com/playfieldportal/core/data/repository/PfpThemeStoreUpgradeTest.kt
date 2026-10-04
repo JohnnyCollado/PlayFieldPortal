@@ -26,6 +26,8 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import com.playfieldportal.themekit.consoleArt
+import com.playfieldportal.themekit.slotIcons
 
 /** Older-format detection and in-place upgrade of saved themes (plan TS-14). */
 @RunWith(RobolectricTestRunner::class)
@@ -85,8 +87,8 @@ class PfpThemeStoreUpgradeTest {
         assertEquals("#EEEEEE", bundle.manifest.textColor)
         assertContentEquals(ThemeFixtures.WALLPAPER, bundle.wallpaper)
         assertContentEquals(ThemeFixtures.PREVIEW, bundle.preview)
-        assertEquals(setOf("catbar_games", "status_bluetooth"), bundle.icons.keys)
-        assertEquals(setOf("psx"), bundle.sysicons.keys)
+        assertEquals(setOf("catbar_games", "status_bluetooth"), bundle.slotIcons.keys)
+        assertEquals(setOf("psx"), bundle.consoleArt.keys)
         assertContentEquals(ThemeFixtures.MOTION_MP4, text(requireNotNull(bundle.motion)))
         assertEquals(PfpThemeManifest.SCHEMA_VERSION, store.themes.value.single().schemaVersion)
     }
@@ -182,7 +184,7 @@ class PfpThemeStoreUpgradeTest {
 
         assertTrue(store.apply("old"))
 
-        assertEquals("Golden V1", context.pfpDataStore.data.first()[stringPreferencesKey("theme_applied_name")])
+        assertEquals("Golden V1", context.pfpDataStore.data.first()[ThemePrefKeys.APPLIED_THEME_NAME])
         assertNull(File(dir, "old.wallpaper.jpg").takeIf { it.exists() })
     }
 }

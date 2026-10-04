@@ -13,7 +13,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,13 +23,16 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import com.playfieldportal.core.ui.motion.MotionWallpaperBackground
@@ -36,6 +41,7 @@ import com.playfieldportal.themekit.MotionCrop
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.wave.WaveStyle
 import kotlin.math.sin
+import kotlinx.coroutines.delay
 
 // Frozen "time" (seconds) used to pose the wave when animation is disabled.
 private const val STATIC_TIME = 2.0f
@@ -153,7 +159,7 @@ private fun WallpaperBackground(
             modifier           = Modifier.fillMaxSize(),
         )
         // Light scrim so the XMB labels stay readable over any wallpaper.
-        Box(Modifier.fillMaxSize().background(Color(0x59000000)))
+        Box(Modifier.fillMaxSize().background(com.playfieldportal.core.ui.theme.ThemeTokens.WallpaperScrim))
     }
 }
 
@@ -167,11 +173,16 @@ private fun WaveBackground(
     val ampScale   = if (waveStyle.reduced) 0.65f else 1f
 
     // Continuously-increasing time in seconds since the first frame (so float precision stays sharp),
-    // scaled by style speed. Frozen at STATIC_TIME when the wave shouldn't animate — no frame loop,
-    // no per-frame recomposition. Only advances while this background is on screen.
+    // scaled by style speed. Frozen at STATIC_TIME when the wave shouldn't animate — no frame loop.
+    // Only advances while this background is on screen.
+    //
+    // Two things keep it cheap. It is READ ONLY WHILE DRAWING (the waves take a State, not a
+    // Float), so a tick repaints the wave's own layer and never recomposes this tree. And it ticks
+    // at ~30 fps (WAVE_FRAME_INTERVAL_MS), not every vsync: the folds drift over seconds, and the
+    // panel runs at 60-144 Hz. The clock is wall time, so the cap never changes the speed.
     val animated = waveStyle.animated
     val speed = if (waveStyle.reduced) 0.5f else 1f
-    val time by produceState(STATIC_TIME, animated, speed) {
+    val time = produceState(STATIC_TIME, animated, speed) {
         if (!animated) {
             value = STATIC_TIME
             return@produceState
@@ -180,40 +191,55 @@ private fun WaveBackground(
         while (true) {
             withInfiniteAnimationFrameMillis { frameMs ->
                 if (startMs < 0L) startMs = frameMs
-                value = (frameMs - startMs) / 1000f * speed
+                value = waveTimeSeconds(frameMs, startMs, speed)
             }
+            delay(WAVE_FRAME_INTERVAL_MS)
         }
     }
 
     // Monthly-tinted vertical gradient: deep top (keeps the status strip legible) easing to the pale
-    // bottom the wave sits against.
-    val gradient = Brush.linearGradient(
-        colorStops = arrayOf(
-            0.00f to colors.backgroundTop,
-            0.30f to colors.backgroundTop,
-            0.70f to lerp(colors.backgroundTop, colors.backgroundBottom, 0.5f),
-            1.00f to colors.backgroundBottom,
+    // bottom the wave sits against. Rebuilt only when the theme colours change.
+    val gradient = remember(colors.backgroundTop, colors.backgroundBottom) {
+        Brush.linearGradient(
+            colorStops = arrayOf(
+                0.00f to colors.backgroundTop,
+                0.30f to colors.backgroundTop,
+                0.70f to lerp(colors.backgroundTop, colors.backgroundBottom, 0.5f),
+                1.00f to colors.backgroundBottom,
+            )
         )
-    )
+    }
 
     Box(modifier = modifier.fillMaxSize().background(gradient)) {
+        // Its own layer, so each tick re-records only the wave — not the gradient, the bloom, or
+        // anything drawn alongside the background.
+        val waveLayer = Modifier.fillMaxSize().graphicsLayer()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ShaderWave(time, alphaScale, ampScale)
+            ShaderWave(time, alphaScale, ampScale, waveLayer)
         } else {
-            FallbackWave(time, alphaScale, ampScale)
+            FallbackWave(time, alphaScale, ampScale, waveLayer)
         }
         // Soft off-centre light bloom — the same gentle highlight the XMB has near the crossbar.
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawRect(
-                brush = Brush.radialGradient(
+        // The brush is built once per size, never per frame.
+        Spacer(
+            modifier = Modifier.fillMaxSize().drawWithCache {
+                val bloom = Brush.radialGradient(
                     colors = listOf(Color.White.copy(alpha = 0.10f), Color.Transparent),
-                    center = center.copy(x = size.width * 0.48f, y = size.height * 0.30f),
+                    center = Offset(x = size.width * 0.48f, y = size.height * 0.30f),
                     radius = size.minDimension * 0.62f,
                 )
-            )
-        }
+                onDrawBehind { drawRect(brush = bloom) }
+            },
+        )
     }
 }
+
+/** The animated wave repaints at ~30 fps; see WaveBackground. */
+internal const val WAVE_FRAME_INTERVAL_MS = 33L
+
+/** The wave's clock: seconds since its first frame, scaled by the style's speed. */
+internal fun waveTimeSeconds(frameMs: Long, startMs: Long, speed: Float): Float =
+    (frameMs - startMs) / 1000f * speed
 
 // ── AGSL wave (API 33+) ──────────────────────────────────────────────────────
 // The real PSP "Original" wave: soft, long-wavelength light FOLDS — gentle luminance sheets that
@@ -254,12 +280,13 @@ half4 main(float2 fragCoord) {
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
-private fun ShaderWave(time: Float, alphaScale: Float, ampScale: Float) {
+private fun ShaderWave(time: State<Float>, alphaScale: Float, ampScale: Float, modifier: Modifier) {
     val shader = remember { RuntimeShader(AGSL_WAVE) }
     val brush = remember(shader) { ShaderBrush(shader) }
-    Canvas(modifier = Modifier.fillMaxSize()) {
+    Canvas(modifier = modifier) {
         shader.setFloatUniform("iResolution", size.width, size.height)
-        shader.setFloatUniform("iTime", time)   // reading `time` here drives the per-frame redraw
+        // Read here, in the draw phase: a tick invalidates this draw only, never composition.
+        shader.setFloatUniform("iTime", time.value)
         shader.setFloatUniform("ampScale", ampScale)
         shader.setFloatUniform("alphaScale", alphaScale)
         drawRect(brush = brush)
@@ -269,23 +296,35 @@ private fun ShaderWave(time: Float, alphaScale: Float, ampScale: Float) {
 // ── Canvas fallback (API < 33) ───────────────────────────────────────────────
 // Same soft folds approximated with low-alpha white fills (the sheet) + faint crest strokes.
 @Composable
-private fun FallbackWave(time: Float, alphaScale: Float, ampScale: Float) {
+private fun FallbackWave(time: State<Float>, alphaScale: Float, ampScale: Float, modifier: Modifier) {
     val amp = 0.05f * ampScale
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        drawFold(time, base01 = 0.63f, amp01 = amp * 0.9f, freq = 0.80f, phase = 1.7f, drift = -0.38f, sheet = 0.090f * alphaScale, edge = 0.125f * alphaScale)
-        drawFold(time, base01 = 0.75f, amp01 = amp * 1.2f, freq = 0.42f, phase = 3.1f, drift = 0.30f,  sheet = 0.105f * alphaScale, edge = 0.145f * alphaScale)
-    }
+    Spacer(
+        modifier = modifier.drawWithCache {
+            // Paths and strokes are made once per size and reused every frame; only their points move.
+            val crest = Path()
+            val fill = Path()
+            val wide = Stroke(width = size.height * 0.022f)
+            val thin = Stroke(width = size.height * 0.006f)
+            onDrawBehind {
+                // Read here, in the draw phase: a tick invalidates this draw only, never composition.
+                val t = time.value
+                drawFold(t, crest, fill, wide, thin, base01 = 0.63f, amp01 = amp * 0.9f, freq = 0.80f, phase = 1.7f, drift = -0.38f, sheet = 0.090f * alphaScale, edge = 0.125f * alphaScale)
+                drawFold(t, crest, fill, wide, thin, base01 = 0.75f, amp01 = amp * 1.2f, freq = 0.42f, phase = 3.1f, drift = 0.30f,  sheet = 0.105f * alphaScale, edge = 0.145f * alphaScale)
+            }
+        },
+    )
 }
 
 private fun DrawScope.drawFold(
-    t: Float, base01: Float, amp01: Float, freq: Float, phase: Float, drift: Float,
+    t: Float, crestPath: Path, fillPath: Path, wide: Stroke, thin: Stroke,
+    base01: Float, amp01: Float, freq: Float, phase: Float, drift: Float,
     sheet: Float, edge: Float,
 ) {
     val w = size.width
     val h = size.height
     val n = 48
-    val crestPath = Path()
-    val fillPath = Path()
+    crestPath.reset()
+    fillPath.reset()
     fillPath.moveTo(0f, h)
     for (i in 0..n) {
         val xx = i / n.toFloat()
@@ -300,6 +339,6 @@ private fun DrawScope.drawFold(
     // Sheet: a flat, faint white wash from the crest down — stacking the folds brightens the lower
     // screen like the reference. Crest: two soft white strokes for the gentle fold highlight.
     drawPath(fillPath, color = Color.White.copy(alpha = sheet))
-    drawPath(crestPath, color = Color.White.copy(alpha = edge * 0.5f), style = Stroke(width = h * 0.022f))
-    drawPath(crestPath, color = Color.White.copy(alpha = edge), style = Stroke(width = h * 0.006f))
+    drawPath(crestPath, color = Color.White.copy(alpha = edge * 0.5f), style = wide)
+    drawPath(crestPath, color = Color.White.copy(alpha = edge), style = thin)
 }

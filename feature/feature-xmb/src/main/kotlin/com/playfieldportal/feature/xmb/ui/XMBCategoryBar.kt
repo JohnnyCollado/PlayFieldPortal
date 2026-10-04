@@ -46,7 +46,7 @@ import com.playfieldportal.themekit.XmbLayoutSpec
 // other categories are hidden entirely (alpha 0) until the user navigates to them — the bar stays
 // uncluttered and only the focused category announces itself.
 private val SelectedIcon = Color.White
-private val LabelInactive = Color(0xCCD8E6FF)
+private val LabelInactive = com.playfieldportal.core.ui.theme.ThemeTokens.XmbInactiveLabel
 private val SelectedLabelShadow = Shadow(
     color = Color(0x73001627),
     offset = Offset.Zero,

@@ -75,13 +75,10 @@ class LaunchDispatcherTest {
         val autoCoreMemory: AutoCoreMemory = mockk(relaxed = true)
         val gameRepository: com.playfieldportal.core.domain.repository.GameRepository = mockk(relaxed = true)
 
-        /** Who is holding ambience down right now (AmbienceController's suppressor set). */
-        val ambienceOwners = mutableSetOf<String>()
-        val ambience = com.playfieldportal.core.ui.sound.AmbienceSuppressor { owner, suppressed ->
-            if (suppressed) ambienceOwners += owner else ambienceOwners -= owner
-        }
+        /** The real hold set AmbienceController keeps: who is holding ambience down right now. */
+        val ambience = com.playfieldportal.core.ui.sound.AmbienceHolds()
         val gameHoldsAmbience: Boolean
-            get() = com.playfieldportal.core.ui.sound.AmbienceController.OWNER_GAME in ambienceOwners
+            get() = com.playfieldportal.core.ui.sound.AmbienceController.OWNER_GAME in ambience.owners
 
         val dispatcher = LaunchDispatcher(
             context = context,
@@ -462,6 +459,19 @@ class LaunchDispatcherTest {
         assertTrue(h.gameHoldsAmbience, "GameBoot never plays over the background music")
         h.gameBootGate.onPresentationFinished()
         eventually("the shortcut launch completes") { launching.isCompleted }
+    }
+
+    @Test
+    fun `a second launch while one is pending still leaves one hold to release`() = runTest {
+        val h = harness()
+        h.launchAccepted()
+        h.launchAccepted()
+        assertTrue(h.gameHoldsAmbience)
+        h.dispatcher.onHostStopped()
+        h.now = 60_000
+        h.dispatcher.onHostResumed()
+        advanceUntilIdle()
+        assertFalse(h.ambience.isHeld, "one return to the launcher gives the room back, however many launches")
     }
 
     @Test

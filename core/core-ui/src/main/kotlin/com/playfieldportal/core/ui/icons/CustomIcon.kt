@@ -1,6 +1,5 @@
 package com.playfieldportal.core.ui.icons
 
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.ImageBitmap
 
 /**
@@ -26,12 +25,4 @@ sealed interface CustomIcon {
      */
     data class Animated(val path: String, override val firstFrame: ImageBitmap) : CustomIcon
 }
-
-/**
- * The user's per-slot picks (`custom-icons/`), slot key → icon. Provided by XMBShell;
- * empty when nothing has been customized. Precedence at every render site is
- * `LocalCustomIcons` > `LocalXmbIconOverrides` > built-in — user picks win over the applied
- * theme's icons and survive theme switches.
- */
-val LocalCustomIcons = staticCompositionLocalOf<Map<String, CustomIcon>> { emptyMap() }
 

@@ -1,9 +1,12 @@
 package com.playfieldportal.launcher.discord
 
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.lifecycleScope
 import com.playfieldportal.core.data.discord.DiscordAuthRepository
 import com.playfieldportal.core.data.discord.DiscordPresenceController
+import com.playfieldportal.core.domain.discord.DiscordPumpPolicy
 import com.playfieldportal.discord.DiscordNativeBridge
 import dagger.Binds
 import dagger.Module
@@ -31,6 +34,19 @@ class FullDiscordBootstrap @Inject constructor(
 
     override fun onCreate(activity: ComponentActivity) {
         DiscordNativeBridge.attachActivity(activity)
+        // The SDK pump idles fast on screen and slow behind other apps or with the screen off;
+        // calls and requests stay fast either way (DiscordPumpPolicy).
+        activity.lifecycle.addObserver(
+            LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_START ->
+                        DiscordNativeBridge.setIdlePumpInterval(DiscordPumpPolicy.idleIntervalMs(foreground = true))
+                    Lifecycle.Event.ON_STOP ->
+                        DiscordNativeBridge.setIdlePumpInterval(DiscordPumpPolicy.idleIntervalMs(foreground = false))
+                    else -> Unit
+                }
+            },
+        )
         activity.lifecycleScope.launch {
             if (discordAuthRepository.hasSession()) {
                 discordAuthRepository.restoreSession()

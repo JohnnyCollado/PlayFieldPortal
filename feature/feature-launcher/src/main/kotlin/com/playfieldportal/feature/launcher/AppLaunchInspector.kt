@@ -83,6 +83,7 @@ class AppLaunchInspector @Inject constructor(
                     intentExtras         = launch.extras,
                     intentArrayExtras    = launch.arrayExtras,
                     attachRomData        = launch.attachRomData,
+                    dataUri              = launch.dataUri,
                     knowledgeId          = known.id,
                     signerSha256         = known.signerSha256,
                     intentBoolExtras     = launch.boolExtras,

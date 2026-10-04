@@ -2,6 +2,7 @@ package com.playfieldportal.feature.settings.viewmodel
 
 import android.content.Context
 import android.content.Intent
+import com.playfieldportal.core.data.repository.Xbox360Emulator
 import com.playfieldportal.feature.appbar.LauncherShortcutRepository
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.launcher.InstalledPcLauncher
@@ -32,6 +33,8 @@ class SetupEnvironment @Inject constructor(
         retroArch = isInstalled(RETROARCH_PACKAGE),
         vita3K = VITA3K_PACKAGES.any(::isInstalled),
         armsx3 = isInstalled(ARMSX3_PACKAGE),
+        x360Mobile = Xbox360Emulator.X360_MOBILE.packages.any(::isInstalled),
+        xenDroid = Xbox360Emulator.XENDROID.packages.any(::isInstalled),
         knownEmulator = profiles.getInstalledProfiles().any { !it.isRetroArchProfile() },
         pcLauncher = pcLaunchers().isNotEmpty(),
         alreadyHome = isHomeApp(),

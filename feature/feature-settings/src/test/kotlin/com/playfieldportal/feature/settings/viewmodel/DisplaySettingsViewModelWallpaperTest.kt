@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.data.repository.ThemePrefKeys
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -22,6 +23,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import com.playfieldportal.core.data.repository.GameBootPreferences
+import com.playfieldportal.core.data.repository.ThemeTiers
 import com.playfieldportal.core.data.repository.UiMediaStore
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -62,7 +64,7 @@ class DisplaySettingsViewModelWallpaperTest {
         File(context.filesDir, "wallpaper").deleteRecursively()
         vm = DisplaySettingsViewModel(
             context,
-            UiMediaStore(context),
+            UiMediaStore(context, ThemeTiers(context)),
             GameBootPreferences(context),
             io.mockk.mockk(relaxed = true),
             // The layout repo only feeds the media rows' face-button shortcuts. A relaxed mock
@@ -217,9 +219,9 @@ class DisplaySettingsViewModelWallpaperTest {
 
     private companion object {
         // Mirror the (internal) ViewModel keys by their string contract, like PfpThemeStoreTest does.
-        val KEY_CUSTOM_WALLPAPER = stringPreferencesKey("display_custom_wallpaper")
-        val KEY_MOTION_WALLPAPER = stringPreferencesKey("display_motion_wallpaper")
-        val KEY_MOTION_CROP = stringPreferencesKey("display_motion_crop")
+        val KEY_CUSTOM_WALLPAPER = ThemePrefKeys.CUSTOM_WALLPAPER
+        val KEY_MOTION_WALLPAPER = ThemePrefKeys.MOTION_WALLPAPER
+        val KEY_MOTION_CROP = ThemePrefKeys.MOTION_CROP
         const val CROP_JSON = """{"x":0.1,"y":0.0,"w":0.8,"h":1.0}"""
     }
 }

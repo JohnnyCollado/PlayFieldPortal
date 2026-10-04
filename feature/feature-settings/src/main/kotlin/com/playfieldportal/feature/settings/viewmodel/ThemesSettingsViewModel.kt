@@ -13,6 +13,8 @@ import com.playfieldportal.core.data.repository.CustomIconStore
 import com.playfieldportal.core.data.repository.GameBootPreferences
 import com.playfieldportal.core.data.repository.PfpThemeStore
 import com.playfieldportal.core.data.repository.PtfThemeImporter
+import com.playfieldportal.core.data.repository.ThemePrefKeys
+import com.playfieldportal.core.data.repository.ThemeTiers
 import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.NotificationSeverity
@@ -63,6 +65,7 @@ class ThemesSettingsViewModel @Inject constructor(
     private val uiMediaStore: UiMediaStore,
     private val gameBootPreferences: GameBootPreferences,
     private val customIconStore: CustomIconStore,
+    private val themeTiers: ThemeTiers,
 ) : ViewModel() {
 
     private val _extra = MutableStateFlow(ThemesSettingsUiState())
@@ -75,7 +78,7 @@ class ThemesSettingsViewModel @Inject constructor(
     ) { prefs, saved, iconKeys, extra ->
         extra.copy(
             customIconsValue   = CustomIconsRowText.value(iconKeys),
-            activeThemeName    = prefs[PfpThemeStore.KEY_APPLIED_THEME_NAME] ?: "Default",
+            activeThemeName    = prefs[ThemePrefKeys.APPLIED_THEME_NAME] ?: "Default",
             accentOverrideArgb = prefs[KEY_ACCENT_OVERRIDE],
             iconColorArgb      = prefs[KEY_ICON_COLOR],
             savedThemes        = saved,
@@ -200,14 +203,15 @@ class ThemesSettingsViewModel @Inject constructor(
             )
         }
         val prefs = context.pfpDataStore.data.first()
+        // The theme is on disk now: ThemeTiers says what it supplies and what the user's own
+        // choices hide.
         val prompt = withContext(Dispatchers.IO) {
             ThemeMediaPrompt.of(
-                installed = result.installedMedia,
-                userAssigned = uiMediaStore.assignments().keys,
+                themeMedia = themeTiers.mediaSlots(ThemeTiers.Tier.THEME),
+                shadowedMedia = themeTiers.shadowedMedia(),
+                shadowedIcons = themeTiers.shadowedIcons(),
                 gameBootEnabled = GameBootPreferences.resolve(prefs),
                 bootEnabled = prefs[KEY_SHOW_BOOT] ?: true,
-                installedIcons = result.installedIcons,
-                userIcons = customIconStore.storedKeys(),
             )
         }
         _extra.update { it.copy(mediaPrompt = prompt) }
@@ -317,8 +321,7 @@ class ThemesSettingsViewModel @Inject constructor(
     }
 
     private companion object {
-        // Must match XMBViewModel — shared prefs contract for the theme cascade.
-        val KEY_ACCENT_OVERRIDE = longPreferencesKey("theme_accent_override")
-        val KEY_ICON_COLOR      = longPreferencesKey("theme_icon_color")
+        val KEY_ACCENT_OVERRIDE = ThemePrefKeys.ACCENT_OVERRIDE
+        val KEY_ICON_COLOR      = ThemePrefKeys.ICON_COLOR
     }
 }

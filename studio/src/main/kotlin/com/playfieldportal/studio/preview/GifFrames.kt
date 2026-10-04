@@ -65,8 +65,8 @@ object GifFrames {
      * single-frame GIF, or a GIF over the caps is left to its static bitmap.
      */
     fun animatedIcons(state: StudioState): Map<String, ByteArray> = buildMap {
-        val extensions = state.iconExtensions + state.sysiconExtensions
-        for ((key, bytes) in state.iconOverrides + state.sysiconOverrides) {
+        val extensions = state.iconExtensions
+        for ((key, bytes) in state.iconOverrides) {
             if (extensions[key]?.lowercase() != "gif" || !IconGifSupport.isGif(bytes)) continue
             val size = IconGifSupport.logicalScreenSize(bytes) ?: continue
             val frames = IconGifSupport.countFrames(bytes)

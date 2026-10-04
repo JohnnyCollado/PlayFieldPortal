@@ -38,7 +38,7 @@ class AchievementPreviewRepositoryTest {
     private val localSteam = mockk<LocalSteamSource>()
     private val vita = mockk<VitaTrophySource>()
     private val ps3 = mockk<com.playfieldportal.feature.achievements.provider.ps3.Ps3TrophySource>()
-    private val sources = RemoteAchievementSources(retro, steam, localSteam, vita, ps3)
+    private val sources = RemoteAchievementSources(retro, steam, localSteam, vita, ps3, mockk())
     private val steamResolver = mockk<SteamAppListResolver>()
     private val raRemote = mockk<RaRemoteDataSource>()
     private val raCatalog = RaHashResolver(raRemote)

@@ -28,6 +28,9 @@ dependencies {
     // desktop Theme Studio authors motion wallpapers too and must validate against the same
     // numbers — a second copy would drift into themes the launcher silently refuses.
     api(project(":core:theme-kit"))
+    // Pure JVM: the theme's colour rules (contrast, text roles, palettes, tokens), shared with the
+    // Theme Studio's preview. api: PFPColors and the palettes are in this module's public types.
+    api(project(":core:theme-render"))
     // Pure JVM cursor maths (spanGridMove) for the virtual keyboard. api: the keyboard state
     // exposes its SpanGridCursor to the feature modules that host the keyboard.
     api(project(":core:core-navigation"))

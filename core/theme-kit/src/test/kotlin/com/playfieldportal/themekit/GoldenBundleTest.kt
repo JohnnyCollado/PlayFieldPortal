@@ -69,7 +69,7 @@ class GoldenBundleTest {
         assertContentEquals(ThemeFixtures.WALLPAPER, b.wallpaper)
         assertContentEquals(ThemeFixtures.PREVIEW, b.preview)
         assertTrue(b.icons.isEmpty())
-        assertTrue(b.sysicons.isEmpty())
+        assertTrue(b.consoleArt.isEmpty())
         assertNull(b.motion)
 
         val f = frozen("v1")
@@ -93,7 +93,7 @@ class GoldenBundleTest {
         assertNull(b.manifest.layout)
         assertEquals(setOf("catbar_games", "item_add"), b.icons.keys)
         assertEquals(ThemeImage(ThemeFixtures.ICON_PNG, "png"), b.icons["catbar_games"])
-        assertTrue(b.sysicons.isEmpty())
+        assertTrue(b.consoleArt.isEmpty())
         assertNull(b.motion)
 
         val f = frozen("v2")
@@ -111,9 +111,9 @@ class GoldenBundleTest {
         assertEquals(PfpThemeManifest.WAVE_ANIMATED, b.manifest.waveStyle)
         assertEquals(0.15f, b.manifest.layout?.barTopFraction)
         assertEquals(0.4f, b.manifest.layout?.previousItemRiseRows)
-        assertEquals(setOf("catbar_games", "status_bluetooth"), b.icons.keys)
+        assertEquals(setOf("catbar_games", "status_bluetooth"), b.slotIcons.keys)
         assertEquals(ThemeImage(ThemeFixtures.ICON_GIF, "gif"), b.icons["status_bluetooth"])
-        assertEquals(setOf("psx"), b.sysicons.keys)
+        assertEquals(setOf("psx"), b.consoleArt.keys)
         assertEquals("mp4", b.motion?.extension)
         val motion = ByteArrayOutputStream().also { b.motion!!.copyTo(it) }.toByteArray()
         assertContentEquals(ThemeFixtures.MOTION_MP4, motion)
@@ -139,8 +139,8 @@ class GoldenBundleTest {
         assertContentEquals(ThemeFixtures.WALLPAPER, b.wallpaper)
         // status_wifi is a v4-only key; TS-06 registered it, so the current reader keeps it
         // (the frozen v3-era reader below still drops it).
-        assertEquals(setOf("catbar_games", "status_wifi"), b.icons.keys)
-        assertEquals(setOf("psx"), b.sysicons.keys)
+        assertEquals(setOf("catbar_games", "status_wifi"), b.slotIcons.keys)
+        assertEquals(setOf("psx"), b.consoleArt.keys)
         assertEquals("mp4", b.motion?.extension)
 
         val f = frozen("v4")
@@ -164,8 +164,8 @@ class GoldenBundleTest {
         assertEquals("wobbly", b.manifest.waveStyle)
         assertContentEquals(ThemeFixtures.WALLPAPER, b.wallpaper)
         assertNull(b.preview)
-        assertEquals(setOf("catbar_games"), b.icons.keys, "unregistered icon key dropped")
-        assertEquals(setOf("psx"), b.sysicons.keys, "unregistered console key dropped")
+        assertEquals(setOf("catbar_games"), b.slotIcons.keys, "unregistered icon key dropped")
+        assertEquals(setOf("psx"), b.consoleArt.keys, "unregistered console key dropped")
         assertNull(b.motion)
 
         val f = frozen("future")

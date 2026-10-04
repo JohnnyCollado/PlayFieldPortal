@@ -22,7 +22,18 @@ class ThemeMediaPromptTest {
         bootOn: Boolean = true,
         installedIcons: Set<String> = emptySet(),
         userIcons: Set<String> = emptySet(),
-    ) = ThemeMediaPrompt.of(installed, userAssigned, gameBootOn, bootOn, installedIcons, userIcons)
+    ): ThemeMediaPrompt? {
+        // What ThemeTiers answers once the theme is on disk: the theme tier's slots, and the keys
+        // both tiers hold.
+        val themeMedia = installed.mapNotNullTo(HashSet()) { UiMediaSlot.fromKey(it) }
+        return ThemeMediaPrompt.of(
+            themeMedia = themeMedia,
+            shadowedMedia = themeMedia intersect userAssigned,
+            shadowedIcons = installedIcons intersect userIcons,
+            gameBootEnabled = gameBootOn,
+            bootEnabled = bootOn,
+        )
+    }
 
     @Test
     fun `nothing to ask when the theme's media already plays`() {

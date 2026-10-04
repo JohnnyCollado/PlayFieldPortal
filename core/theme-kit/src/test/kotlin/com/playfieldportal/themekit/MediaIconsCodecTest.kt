@@ -23,8 +23,9 @@ class MediaIconsCodecTest {
     private val png = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A) + ByteArray(8) { it.toByte() }
     private val gif = "GIF89a".toByteArray() + ByteArray(16) { it.toByte() }
 
-    private fun bundle(mediaicons: Map<String, ThemeImage>) =
-        PfpThemeBundle(manifest = manifest, wallpaper = null, preview = null, mediaicons = mediaicons)
+    /** A bundle carrying [art] (platform id → image) as physical-media art. */
+    private fun bundle(art: Map<String, ThemeImage>) =
+        PfpThemeBundle(manifest = manifest, wallpaper = null, preview = null, icons = mediaArt(*art.toList().toTypedArray()))
 
     @Test
     fun `media icons round-trip under mediaicons`() {
@@ -34,9 +35,9 @@ class MediaIconsCodecTest {
 
         assertEquals(listOf("manifest.json", "mediaicons/psp.png", "mediaicons/snes.gif"), zipNames(written))
         val read = assertNotNull(PfpThemeCodec.readDetailed(written))
-        assertEquals(setOf("psp", "snes"), read.bundle.mediaicons.keys)
-        assertContentEquals(gif, read.bundle.mediaicons["snes"]!!.bytes)
-        assertEquals("gif", read.bundle.mediaicons["snes"]!!.extension)
+        assertEquals(setOf("psp", "snes"), read.bundle.mediaArt.keys)
+        assertContentEquals(gif, read.bundle.mediaArt["snes"]!!.bytes)
+        assertEquals("gif", read.bundle.mediaArt["snes"]!!.extension)
         assertTrue(read.bundle.passthrough.isEmpty(), "registered media icons are never passthrough")
     }
 
@@ -47,7 +48,7 @@ class MediaIconsCodecTest {
             "mediaicons/psx.png" to png,
         )
         val read = assertNotNull(PfpThemeCodec.readDetailed(legacy))
-        assertEquals(setOf("psx"), read.bundle.mediaicons.keys)
+        assertEquals(setOf("psx"), read.bundle.mediaArt.keys)
         assertTrue(read.bundle.passthrough.none { it.name == "mediaicons/psx.png" })
     }
 
@@ -73,8 +74,24 @@ class MediaIconsCodecTest {
             "mediaicons/android.png" to png,
         )
         val read = assertNotNull(PfpThemeCodec.readDetailed(bytes))
-        assertTrue(read.bundle.mediaicons.isEmpty())
+        assertTrue(read.bundle.mediaArt.isEmpty())
         assertEquals(listOf("mediaicons/android.png"), read.bundle.passthrough.map { it.name })
+    }
+
+    @Test
+    fun `a registered media id with a refused extension stays passthrough, as in icons and sysicons`() {
+        val bytes = zip(
+            "manifest.json" to """{"manifest":"pfptheme","schemaVersion":4,"name":"X","accentColor":"#000000"}""".toByteArray(),
+            "mediaicons/psp.bmp" to png,
+            "sysicons/psx.bmp" to png,
+            "icons/catbar_games.bmp" to png,
+        )
+        val read = assertNotNull(PfpThemeCodec.readDetailed(bytes))
+        assertTrue(read.bundle.icons.isEmpty())
+        assertEquals(
+            setOf("mediaicons/psp.bmp", "sysicons/psx.bmp", "icons/catbar_games.bmp"),
+            read.bundle.passthrough.map { it.name }.toSet(),
+        )
     }
 
     @Test
@@ -84,7 +101,7 @@ class MediaIconsCodecTest {
             "mediaicons/psp.png" to ByteArray(PfpThemeCodec.MAX_ICON_BYTES + 1),
         )
         val read = assertNotNull(PfpThemeCodec.readDetailed(bytes))
-        assertTrue(read.bundle.mediaicons.isEmpty())
+        assertTrue(read.bundle.mediaArt.isEmpty())
         assertEquals(listOf(DroppedEntry("mediaicons/psp.png", DropReason.OVER_CAP)), read.diagnostics.dropped)
     }
 
@@ -95,7 +112,7 @@ class MediaIconsCodecTest {
                 manifest = manifest,
                 wallpaper = null,
                 preview = null,
-                mediaicons = mapOf("psp" to ThemeImage(png, "png")),
+                icons = mediaArt("psp" to ThemeImage(png, "png")),
                 passthrough = listOf(PassthroughEntry.ofBytes("mediaicons/psp.png", gif)),
             ),
         )

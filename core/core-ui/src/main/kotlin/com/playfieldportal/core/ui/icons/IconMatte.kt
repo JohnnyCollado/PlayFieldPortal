@@ -87,7 +87,7 @@ private const val AUTO_LUMINANCE_THRESHOLD = 0.5f
 
 /**
  * The ambient icon-legibility treatment for the whole XMB. `staticCompositionLocalOf` matches
- * [LocalXmbIconOverrides]: the value changes rarely (a settings cycle), so a full subtree
+ * [LocalXmbIcons]: the value changes rarely (a settings cycle), so a full subtree
  * recomposition on change is the right trade over per-read bookkeeping.
  */
 val LocalIconLegibility = staticCompositionLocalOf { IconLegibilityStyle.DEFAULT }

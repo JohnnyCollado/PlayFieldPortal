@@ -55,6 +55,7 @@ class AchievementAutoMatcherTest {
         gameRepository, linkDao, matchNoteDao, raHashResolver, repository, romReader, discOpener,
         steamGridDb, localSteamDiscovery, localSteamOwnership, steamNames, ps3TropDirReader,
         ps3TrophyDiscovery, steamGate,
+        mockk<com.playfieldportal.feature.achievements.provider.x360.X360TitleMatcher>(),
     )
 
     private fun game(id: Long, platform: String, title: String = "Game $id") =

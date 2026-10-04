@@ -97,7 +97,7 @@ class ArtworkImportViewModel @Inject constructor(
             importManager.folderTreeUri.distinctUntilChanged().collect { uri ->
                 val alive = uri != null && importManager.hasLiveGrant()
                 _uiState.value = _uiState.value.copy(
-                    folderDisplay = uri?.let { RomRootRepository.rawPathOfTree(it) ?: it },
+                    folderDisplay = uri?.let { RomRootRepository.displayNameOfTree(it) },
                     folderLinked = uri != null,
                     grantAlive = alive,
                 )

@@ -93,7 +93,7 @@ fun IconEditorPanel(
     var selectedKey by rememberSaveable { mutableStateOf<String?>(null) }
     var report by remember { mutableStateOf<IconPackReport?>(null) }
 
-    val customized = state.iconOverrides.keys + state.sysiconOverrides.keys
+    val customized = state.iconOverrides.keys
     val query = PickerQuery(search, group, onScreen, customizedOnly)
     val shown = remember(query, customized, onScreenKeys) { IconPicker.filter(query, customized, onScreenKeys) }
     val counts = remember { IconPicker.counts() }
@@ -263,7 +263,7 @@ private fun SlotCell(
     onSelect: () -> Unit,
     onDropFile: (File) -> Unit,
 ) {
-    val custom = state.iconBitmaps[slot.key] ?: state.sysiconBitmaps[slot.key]
+    val custom = state.iconBitmaps[slot.key]
     var hovering by remember { mutableStateOf(false) }
     val currentDrop by rememberUpdatedState(onDropFile)
     val target = remember {

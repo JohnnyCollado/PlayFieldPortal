@@ -42,6 +42,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.studio.preview.XmbPreviewModel
+import com.playfieldportal.core.ui.detail.DetailPalette
+import com.playfieldportal.core.ui.theme.dimmed
 
 /*
  * The launcher's Game Detail page (feature-xmb ui/detail/GameDetailScreen.kt GameDetailContent) as it
@@ -58,7 +60,7 @@ import com.playfieldportal.studio.preview.XmbPreviewModel
  * wallpaper / frozen wave behind the 0.88 page gradient, the detail_play / detail_favorite /
  * detail_artwork / detail_manual / detail_more and menu_back icon overrides, and the icon legibility
  * matte on the built-in action glyphs, and the Main / Sub text colours through the palette
- * ([DetailPreviewPalette]: primary and muted text). Icon colour is not read by this page.
+ * ([DetailPalette]: primary and muted text). Icon colour is not read by this page.
  */
 
 // ── Sample (consistent with SampleContent's Game category and the Shiba hub) ──
@@ -152,7 +154,7 @@ private fun confirmLabelFor(node: DetailNode): String = when (node) {
 }
 
 @Composable
-private fun GameDetailBody(model: XmbPreviewModel, palette: DetailPreviewPalette, heroHeight: Dp) {
+private fun GameDetailBody(model: XmbPreviewModel, palette: DetailPalette, heroHeight: Dp) {
     // The page-top bring-into-view anchor, then the lead-in.
     Box(Modifier.fillMaxWidth().height(1.dp))
     Spacer(Modifier.height(16.dp))
@@ -223,7 +225,7 @@ private fun GameDetailBody(model: XmbPreviewModel, palette: DetailPreviewPalette
 
 @Composable
 private fun HeroBanner(
-    palette: DetailPreviewPalette,
+    palette: DetailPalette,
     title: String,
     platform: String,
     facts: List<String>,
@@ -279,7 +281,7 @@ private fun HeroBanner(
 private val StarColor = lerp(Color.White, Color(0xFFFFD766), 0.85f)
 
 @Composable
-private fun FavoriteBadge(palette: DetailPreviewPalette, modifier: Modifier) {
+private fun FavoriteBadge(palette: DetailPalette, modifier: Modifier) {
     val shape = RoundedCornerShape(6.dp)
     Row(
         modifier = modifier
@@ -299,7 +301,7 @@ private fun FavoriteBadge(palette: DetailPreviewPalette, modifier: Modifier) {
 
 /** PfpDetailIconTile with no icon art: the title's first letter in muted text. */
 @Composable
-private fun IconTile(palette: DetailPreviewPalette, title: String) {
+private fun IconTile(palette: DetailPalette, title: String) {
     val shape = RoundedCornerShape(10.dp)
     Box(
         modifier = Modifier
@@ -316,7 +318,7 @@ private fun IconTile(palette: DetailPreviewPalette, title: String) {
 
 /** PfpDetailLaunchButton: green fill (lifted toward white under focus), focus edge, dark label. */
 @Composable
-private fun LaunchButton(model: XmbPreviewModel, palette: DetailPreviewPalette, focused: Boolean) {
+private fun LaunchButton(model: XmbPreviewModel, palette: DetailPalette, focused: Boolean) {
     val shape = RoundedCornerShape(10.dp)
     Row(
         modifier = Modifier
@@ -349,7 +351,7 @@ private fun LaunchButton(model: XmbPreviewModel, palette: DetailPreviewPalette, 
 @Composable
 private fun QuickAction(
     model: XmbPreviewModel,
-    palette: DetailPreviewPalette,
+    palette: DetailPalette,
     label: String,
     icon: ImageVector,
     slotKey: String,
@@ -385,7 +387,7 @@ private fun QuickAction(
 /** DetailScaffold.detailFocusRing: a thin bright edge plus a fill lift, inside the node's bounds. */
 private fun Modifier.detailFocusRing(
     focused: Boolean,
-    palette: DetailPreviewPalette,
+    palette: DetailPalette,
     fill: Color,
     shape: RoundedCornerShape,
 ): Modifier = this
@@ -399,7 +401,7 @@ private fun Modifier.detailFocusRing(
 // ── Rows (DetailRows.kt) ────────────────────────────────────────────────────
 
 @Composable
-private fun RowShell(palette: DetailPreviewPalette, focused: Boolean, content: @Composable () -> Unit) {
+private fun RowShell(palette: DetailPalette, focused: Boolean, content: @Composable () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -415,7 +417,7 @@ private fun RowShell(palette: DetailPreviewPalette, focused: Boolean, content: @
 /** PfpDetailProgressRow with its disclosure chevron. */
 @Composable
 private fun ProgressRow(
-    palette: DetailPreviewPalette,
+    palette: DetailPalette,
     label: String,
     value: String,
     secondary: String,
@@ -467,7 +469,7 @@ private fun ProgressRow(
 
 /** PfpDetailTextRow, collapsed to three lines, with its Confirm-to-expand affordance (> 190 chars). */
 @Composable
-private fun TextRow(palette: DetailPreviewPalette, label: String, text: String, focused: Boolean) {
+private fun TextRow(palette: DetailPalette, label: String, text: String, focused: Boolean) {
     RowShell(palette, focused) {
         Text(
             text = label.uppercase(),

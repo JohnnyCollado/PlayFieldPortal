@@ -1,7 +1,6 @@
 package com.playfieldportal.core.ui.theme
 
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 /**
@@ -75,7 +74,7 @@ data class PfpTextColors(
 val DefaultPfpTextColors = PfpTextColors(
     primary = Color.White,
     secondary = PfpPalette.Subtext,
-    inactive = Color(0xCCD8E6FF),
+    inactive = ThemeTokens.XmbInactiveLabel,
     destructive = Color(0xFFFF6B6B),
     requested = Color.White,
     adjusted = false,
@@ -84,8 +83,15 @@ val DefaultPfpTextColors = PfpTextColors(
 )
 
 /**
- * `staticCompositionLocalOf`, matching [LocalPFPColors] and `LocalIconLegibility`: the value only
- * changes on a settings edit, so paying a full-subtree recomposition then is the right trade
- * against reading it on every frame.
+ * The text palette [colors] resolves to: primary is the theme's text colour; secondary and inactive
+ * follow the user's Sub / Main font colours at the weight they carry by default (#AAAAAA is white
+ * at 0xAA, inactive's own alpha is 0xCC) and stay the stock greys until a colour is picked. Only
+ * `primary` is taken from the theme: adopting PFPColors.textSecondary (white at 0.7) would repaint
+ * every sublabel in the app from #AAAAAA.
  */
-val LocalPfpTextColors = staticCompositionLocalOf { DefaultPfpTextColors }
+fun pfpTextColorsFor(colors: PFPColors): PfpTextColors = DefaultPfpTextColors.copy(
+    primary = colors.textPrimary,
+    secondary = colors.subTextOr(DefaultPfpTextColors.secondary, weight = 0xAA / 255f),
+    inactive = colors.textOr(DefaultPfpTextColors.inactive),
+    requested = colors.textPrimary,
+)

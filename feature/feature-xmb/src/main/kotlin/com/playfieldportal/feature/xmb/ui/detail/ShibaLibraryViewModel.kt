@@ -46,6 +46,7 @@ enum class LibraryProviderFilter(val provider: AchievementProvider?) {
     LOCAL(AchievementProvider.LOCAL_STEAM),
     VITA(AchievementProvider.VITA_TROPHY),
     PS3(AchievementProvider.PS3_TROPHY),
+    X360(AchievementProvider.X360_ACHIEVEMENT),
     ;
 
     val label: String get() = provider?.let(::providerLabel) ?: "All"

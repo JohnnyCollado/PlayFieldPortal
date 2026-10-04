@@ -603,10 +603,13 @@ fun DisplaySettingsScreen(
             val motionPath = state.motionWallpaperPath
             if (motionPath != null && posterPath != null) {
                 // A preview that shows a frozen frame of a video is a bug report waiting to
-                // happen — the full-screen preview PLAYS the motion file. The Settings overlay
-                // covers the shell, so the shell's own motion decision doesn't apply here; this
-                // preview plays unconditionally while visible (it lives and dies with this
-                // screen, and dismissing it disposes the player).
+                // happen — the full-screen preview PLAYS the motion file. It plays while visible
+                // (it lives and dies with this screen, and dismissing it disposes the player), and
+                // while it is up it covers the shell's own wallpaper so only one decoder runs.
+                androidx.compose.runtime.DisposableEffect(Unit) {
+                    val cover = com.playfieldportal.core.ui.motion.MotionCover.Shared.hold()
+                    onDispose { cover.release() }
+                }
                 MotionWallpaperBackground(
                     posterPath = posterPath,
                     motionPath = motionPath,

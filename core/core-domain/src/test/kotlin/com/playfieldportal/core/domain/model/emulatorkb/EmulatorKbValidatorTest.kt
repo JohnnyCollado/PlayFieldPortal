@@ -20,6 +20,7 @@ class EmulatorKbValidatorTest {
         category: String? = null,
         flags: List<String> = emptyList(),
         mimeType: String? = null,
+        dataUri: String? = null,
     ) = EmulatorKbLaunch(
         intentType = intentType,
         activityClass = activityClass,
@@ -30,6 +31,7 @@ class EmulatorKbValidatorTest {
         category = category,
         flags = flags,
         mimeType = mimeType,
+        dataUri = dataUri,
     )
 
     private fun emu(
@@ -84,6 +86,42 @@ class EmulatorKbValidatorTest {
     }
 
     private fun extrasLaunch(extras: Map<String, String>) = launch(extras = extras)
+
+    // -- dataUri (deep-link launches) ---------------------------------------------
+
+    @Test
+    fun `a deep link carrying the game is admitted`() =
+        assertAdmitted(emu(launch = launch(dataUri = "x360mobile://launch?uri={rom_file_uri_encoded}")))
+
+    @Test
+    fun `a deep link with no game placeholder is refused`() =
+        assertRefused(emu(launch = launch(dataUri = "x360mobile://launch")), "data URI")
+
+    @Test
+    fun `a deep link may hold only one placeholder`() =
+        assertRefused(
+            emu(launch = launch(dataUri = "emu://launch?uri={rom_file_uri_encoded}&t={title_id}")),
+            "data URI",
+        )
+
+    @Test
+    fun `file content web and intent data uris are refused`() {
+        for (uri in listOf(
+            "file://{rom_file_uri_encoded}", "content://x/{rom_file_uri_encoded}",
+            "https://example.com/?u={rom_file_uri_encoded}", "intent://x?u={rom_file_uri_encoded}",
+            "javascript:{rom_file_uri_encoded}",
+        )) {
+            assertRefused(emu(launch = launch(dataUri = uri)), "data URI")
+        }
+    }
+
+    @Test
+    fun `a deep link on a view launch is refused`() =
+        assertRefused(
+            emu(launch = launch(intentType = IntentType.ACTION_VIEW, activityClass = null,
+                dataUri = "x360mobile://launch?uri={rom_file_uri_encoded}")),
+            "data URI",
+        )
 
     // -- Accepted ---------------------------------------------------------------
 

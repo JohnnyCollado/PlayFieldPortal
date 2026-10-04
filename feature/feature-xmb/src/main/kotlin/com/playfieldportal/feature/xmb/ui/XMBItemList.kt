@@ -106,7 +106,7 @@ import com.playfieldportal.core.domain.model.XmbListMotion
 import com.playfieldportal.core.ui.achievement.BoneGlyph
 import com.playfieldportal.core.ui.components.ControllerPromptGlyphs
 import com.playfieldportal.core.ui.icons.GameIconStyle
-import com.playfieldportal.core.ui.icons.LocalXmbIconOverrides
+import com.playfieldportal.core.ui.icons.LocalXmbIcons
 import com.playfieldportal.core.ui.icons.OverrideGlyphSurface
 import com.playfieldportal.core.ui.icons.PortalIcon
 import com.playfieldportal.core.ui.icons.ThemedGlyph
@@ -177,8 +177,8 @@ internal val LEADING_ICON_CENTER = 18.dp + LEADING_ICON_SLOT / 2
 // them at their own alphas — titles (selected and dimmed) the Main colour, subtitles the Sub — so
 // the selected/unselected/subtitle steps survive.
 private val PrimaryText = Color.White
-private val SecondaryText = Color(0xAAC8DAF2)
-private val InactiveText = Color(0xCCD8E6FF)
+private val SecondaryText = com.playfieldportal.core.ui.theme.ThemeTokens.XmbSecondaryLabel
+private val InactiveText = com.playfieldportal.core.ui.theme.ThemeTokens.XmbInactiveLabel
 // Soft dark halo behind the bright selected label — keeps white legible on the light wave.
 private val SelectedTextShadow = Shadow(
     color = Color(0x73001627),
@@ -194,11 +194,7 @@ private val ROW_HORIZONTAL_PADDING = 18.dp
 // values PspContextMenu / ControllerHintBar use — applied to XMB row
 // subtitles. The settings scaffold's SettingsTextShadow is feature-internal, so the same idiom is
 // restated here for the shell (the XMB draws over the raw wallpaper, no scrim at all).
-val XmbTextShadow = Shadow(
-    color = Color.Black.copy(alpha = 0.75f),
-    offset = Offset(0f, 2f),
-    blurRadius = 4f,
-)
+val XmbTextShadow = com.playfieldportal.core.ui.theme.ThemeTokens.TextShadow
 
 // Physical-media memory-card art for rows that should read as a memory card but have no console icon
 // of their own (collections). Mirrors the ViewModel's MEMORY_CARD_ASSET_URI.
@@ -209,6 +205,23 @@ internal const val UMD_SLOT_ART = "file:///android_asset/systems/physical-media/
 
 /** The UMD slot's themeable art (theme-kit IconSlots key). */
 internal const val UMD_SLOT_KEY = "item_umd"
+
+/**
+ * Whether a row shows its title. Game entities are icon-first: NO text on any game row except the
+ * ACTIVE row of a logo-less game, where title + emulator show immediately — there is no logo
+ * overlay to wait for. Games with a logo never show text — the logo overlay IS the identity.
+ * Non-game rows keep their labels as always; a textOnly row (e.g. Untracked) always labels.
+ *
+ * The UMD slot is named while it is the UMD glyph. Once the read turns it into the inserted game's
+ * ICON0 it follows the game rule: bare when the game has a logo, titled beside ICON0 when it has
+ * none — the same as a hot list row.
+ */
+internal fun xmbRowShowsTitle(item: XMBItem, isSelected: Boolean, umdShowsGame: Boolean, moving: Boolean): Boolean = when {
+    item.type == XMBItemType.UMD_SLOT -> !umdShowsGame || item.logoUri == null
+    // A row being moved always says so, logo or not.
+    moving -> true
+    else -> item.textOnly || !item.isRealGame || (isSelected && item.logoUri == null)
+}
 
 // ── Drill flyout layout ──────────────────────────────────────────────────────
 // Left inset of the game-card column, measured from the flyout's left edge (which the caller has
@@ -899,19 +912,7 @@ private fun XmbVerticalListRow(
                 }
             }
 
-            // Game entities are icon-first: NO text on any game row except the ACTIVE row of
-            // a logo-less game, where title + emulator show immediately — there is no logo
-            // overlay to wait for, so the old PIC0-timeline fade only made the identity late.
-            // Games with a logo never show text — the logo overlay IS the identity. Non-game
-            // rows keep their labels as always. A textOnly row (e.g. Untracked) always labels.
-            val showGameText = when {
-                // The UMD slot is the reverse of a game row: named while it is the UMD glyph,
-                // bare once the read turns it into the game's own icon over the game's art.
-                item.type == XMBItemType.UMD_SLOT -> !umdShowsGame
-                // A row being moved always says so, logo or not.
-                moving -> true
-                else -> item.textOnly || !item.isRealGame || (isSelected && item.logoUri == null)
-            }
+            val showGameText = xmbRowShowsTitle(item, isSelected, umdShowsGame, moving)
             // "Moving · 2 of 5" replaces the subtitle on the lifted row.
             val subtitleText = if (moving) decor.movingLabel else item.subtitle
             if (showText && showGameText) {
@@ -1394,8 +1395,7 @@ private fun XmbItemLeadingIcon(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.width(LEADING_ICON_SLOT),
             ) {
-                val umdOverride = com.playfieldportal.core.ui.icons.LocalCustomIcons.current[UMD_SLOT_KEY]
-                    ?: LocalXmbIconOverrides.current[UMD_SLOT_KEY]
+                val umdOverride = LocalXmbIcons.current[UMD_SLOT_KEY]
                 if (umdOverride != null) {
                     com.playfieldportal.core.ui.icons.CustomIconSurface(
                         icon = umdOverride,
@@ -1458,8 +1458,7 @@ private fun XmbItemLeadingIcon(
                     (memoryCardArt == null || memoryCardArt.startsWith("file:///android_asset/systems/physical-media/"))
                 ) {
                     memoryCardSlotKeyFor(item)?.let { key ->
-                        com.playfieldportal.core.ui.icons.LocalCustomIcons.current[key]
-                            ?: LocalXmbIconOverrides.current[key]
+                        LocalXmbIcons.current[key]
                     }
                 } else {
                     null
@@ -1567,8 +1566,7 @@ private fun XmbItemLeadingIcon(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.width(LEADING_ICON_SLOT),
             ) {
-                val settingsOverride = com.playfieldportal.core.ui.icons.LocalCustomIcons.current["item_settings"]
-                    ?: LocalXmbIconOverrides.current["item_settings"]
+                val settingsOverride = LocalXmbIcons.current["item_settings"]
                 if (settingsOverride != null) {
                     com.playfieldportal.core.ui.icons.CustomIconSurface(
                         icon = settingsOverride,
@@ -1613,8 +1611,7 @@ private fun XmbItemLeadingIcon(
                 // Two-tier override (user pick, then theme) before the bundled card art.
                 val trackKey = shibaSlotKeyFor(item.id)
                 val trackOverride = trackKey?.let {
-                    com.playfieldportal.core.ui.icons.LocalCustomIcons.current[it]
-                        ?: LocalXmbIconOverrides.current[it]
+                    LocalXmbIcons.current[it]
                 }
                 if (trackOverride != null) {
                     com.playfieldportal.core.ui.icons.CustomIconSurface(

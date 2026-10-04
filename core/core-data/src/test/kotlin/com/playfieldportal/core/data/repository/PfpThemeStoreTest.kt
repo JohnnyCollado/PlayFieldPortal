@@ -217,10 +217,10 @@ class PfpThemeStoreTest {
         // Everything apply() writes, reset must take back: the legibility styles and the exact
         // text-colour flag came from the theme too, and were the ones left behind.
         val store = PfpThemeStore(context)
-        val textLegibility = stringPreferencesKey("display_text_legibility")
-        val iconLegibility = stringPreferencesKey("display_icon_legibility")
-        val solidUnfocused = booleanPreferencesKey("display_solid_unfocused_icons")
-        val textColorExact = booleanPreferencesKey("display_text_color_exact")
+        val textLegibility = ThemePrefKeys.TEXT_LEGIBILITY
+        val iconLegibility = ThemePrefKeys.ICON_LEGIBILITY
+        val solidUnfocused = ThemePrefKeys.SOLID_UNFOCUSED_ICONS
+        val textColorExact = ThemePrefKeys.TEXT_COLOR_EXACT
         context.pfpDataStore.edit {
             it[textLegibility] = "OUTLINE"
             it[iconLegibility] = "CONTOUR_DARK"
@@ -279,11 +279,11 @@ class PfpThemeStoreTest {
         val store = PfpThemeStore(context)
         val saved = requireNotNull(store.importBundle(register(bundleBytes("Blue", "#0000FF"))))
         assertTrue(store.apply(saved.id))
-        assertEquals("Blue", context.pfpDataStore.data.first()[PfpThemeStore.KEY_APPLIED_THEME_NAME])
+        assertEquals("Blue", context.pfpDataStore.data.first()[ThemePrefKeys.APPLIED_THEME_NAME])
 
         assertTrue(store.rename(saved.id, "  Ocean "))
 
-        assertEquals("Ocean", context.pfpDataStore.data.first()[PfpThemeStore.KEY_APPLIED_THEME_NAME])
+        assertEquals("Ocean", context.pfpDataStore.data.first()[ThemePrefKeys.APPLIED_THEME_NAME])
     }
 
     @Test
@@ -306,7 +306,7 @@ class PfpThemeStoreTest {
 
         assertTrue(store.rename(other.id, "Crimson"))
 
-        assertEquals("Blue", context.pfpDataStore.data.first()[PfpThemeStore.KEY_APPLIED_THEME_NAME])
+        assertEquals("Blue", context.pfpDataStore.data.first()[ThemePrefKeys.APPLIED_THEME_NAME])
     }
 
     @Test
@@ -360,11 +360,11 @@ class PfpThemeStoreTest {
 
     private companion object {
         // Mirror PfpThemeStore's private cascade-pref keys by their string contract.
-        val KEY_CUSTOM_WALLPAPER = stringPreferencesKey("display_custom_wallpaper")
-        val KEY_MOTION_WALLPAPER = stringPreferencesKey("display_motion_wallpaper")
-        val KEY_WAVE_STYLE = stringPreferencesKey("display_wave_style")
-        val KEY_ACCENT_OVERRIDE = longPreferencesKey("theme_accent_override")
-        val KEY_TEXT_COLOR = longPreferencesKey("display_text_color")
-        val KEY_SUB_TEXT_COLOR = longPreferencesKey("display_sub_text_color")
+        val KEY_CUSTOM_WALLPAPER = ThemePrefKeys.CUSTOM_WALLPAPER
+        val KEY_MOTION_WALLPAPER = ThemePrefKeys.MOTION_WALLPAPER
+        val KEY_WAVE_STYLE = ThemePrefKeys.WAVE_STYLE
+        val KEY_ACCENT_OVERRIDE = ThemePrefKeys.ACCENT_OVERRIDE
+        val KEY_TEXT_COLOR = ThemePrefKeys.TEXT_COLOR
+        val KEY_SUB_TEXT_COLOR = ThemePrefKeys.SUB_TEXT_COLOR
     }
 }

@@ -141,6 +141,11 @@ order (`IconEditorLayout`): Crossbar, Items (grouped by XMB column, with `sysico
 `sysicon_favorites` in the Game column), Consoles, Physical Media. `catbar_favorites` is not listed;
 a theme that carries it still applies it.
 
+In code, `PfpThemeBundle.icons` holds every family in one map keyed by slot key; only the codec maps
+a key to its folder (`sysicon_<id>` ↔ `sysicons/<id>`, `physmedia_<id>` ↔ `mediaicons/<id>`, the rest
+under `icons/`). Which `physmedia_` slot and which bundled art file a platform alias resolves to is
+one table, `PhysicalMediaIds`, read by the launcher and the Studio alike.
+
 `mediaicons/` entries were written by the Theme Studio as passthrough before the launcher read them;
 any build that knows the folder reads those bundles as typed media icons. Template sizes: catbar/items/new groups/console 256 px, status 128 px.
 

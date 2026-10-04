@@ -192,6 +192,9 @@ data class LibraryManagerUiState(
     val vita3KFolderLabel: String? = null,
     // Display name of the granted ARMSX3 PS3 data folder (null = not set).
     val ps3FolderLabel: String? = null,
+    // Display names of the granted Xbox 360 data folders, one per emulator (null = not set).
+    val x360MobileFolderLabel: String? = null,
+    val xenDroidFolderLabel: String? = null,
     // True when PFP is the active Home app (unlocks auto-import of published game shortcuts).
     val isHomeLauncher: Boolean = false,
 
@@ -261,6 +264,7 @@ class LibraryManagerViewModel @Inject constructor(
     private val credentials: com.playfieldportal.core.data.achievement.AchievementCredentialsProvider,
     private val vita3KLibrary: com.playfieldportal.core.data.repository.Vita3KLibrary,
     private val ps3DataLibrary: com.playfieldportal.core.data.repository.Ps3DataLibrary,
+    private val xbox360DataLibrary: com.playfieldportal.core.data.repository.Xbox360DataLibrary,
     private val vitaGameScanner: com.playfieldportal.feature.achievements.provider.vita.VitaGameScanner,
     private val libraryScanner: LibraryScanner,
     private val romRootScanRunner: RomRootScanRunner,
@@ -329,10 +333,22 @@ class LibraryManagerViewModel @Inject constructor(
         )
     }
 
-    // combine() is typed to 5 flows, so the two emulator data-folder grants travel as one typed
-    // pair rather than pushing the whole combine onto an Array<Any?> lambda.
-    private val emulatorFolderGrants: kotlinx.coroutines.flow.Flow<Pair<String?, String?>> =
-        combine(vita3KLibrary.ux0TreeUriFlow, ps3DataLibrary.dataTreeUriFlow) { vita, ps3 -> vita to ps3 }
+    // combine() is typed to 5 flows, so the emulator data-folder grants travel as one typed
+    // value rather than pushing the whole combine onto an Array<Any?> lambda.
+    private data class EmulatorFolderGrants(
+        val vitaUx0: String?,
+        val ps3Data: String?,
+        val x360Mobile: String?,
+        val xenDroid: String?,
+    )
+
+    private val emulatorFolderGrants: kotlinx.coroutines.flow.Flow<EmulatorFolderGrants> = combine(
+        vita3KLibrary.ux0TreeUriFlow,
+        ps3DataLibrary.dataTreeUriFlow,
+        xbox360DataLibrary.treeUriFlow(com.playfieldportal.core.data.repository.Xbox360Emulator.X360_MOBILE),
+        xbox360DataLibrary.treeUriFlow(com.playfieldportal.core.data.repository.Xbox360Emulator.XENDROID),
+        ::EmulatorFolderGrants,
+    )
 
     val uiState: StateFlow<LibraryManagerUiState> = combine(
         memoryCardRepository.observeAll(),
@@ -341,12 +357,22 @@ class LibraryManagerViewModel @Inject constructor(
         emulatorFolderGrants,
         _scratch,
     ) { cards, games, profiles, grants, scratch ->
-        val (vitaUx0, ps3Data) = grants
         val emulatorNames = profiles.associate { it.id to it.name }
         val counts = games.groupBy { it.platformId }.mapValues { it.value.size }
         scratch.copy(
-            vita3KFolderLabel = vitaUx0?.let(::folderLabelOf),
-            ps3FolderLabel = ps3Data?.let(::folderLabelOf),
+            vita3KFolderLabel = grants.vitaUx0?.let(::folderLabelOf),
+            ps3FolderLabel = grants.ps3Data?.let(::folderLabelOf),
+            // The emulators grant through their own providers, which folderLabelOf misreads.
+            x360MobileFolderLabel = grants.x360Mobile?.let {
+                com.playfieldportal.core.data.repository.Xbox360DataLibrary.folderLabel(
+                    it, com.playfieldportal.core.data.repository.Xbox360Emulator.X360_MOBILE,
+                )
+            },
+            xenDroidFolderLabel = grants.xenDroid?.let {
+                com.playfieldportal.core.data.repository.Xbox360DataLibrary.folderLabel(
+                    it, com.playfieldportal.core.data.repository.Xbox360Emulator.XENDROID,
+                )
+            },
             // Each root shows the consoles homed under it (matched by the card's directory).
             romRoots = scratch.romRoots.map { root ->
                 val rootRaw = RomRootRepository.rawPathOfTree(root.treeUri)?.trimEnd('/')
@@ -700,10 +726,16 @@ class LibraryManagerViewModel @Inject constructor(
         }
     }
 
-    fun loadEmulatorOptionsForDetail() {
+    /**
+     * Loads the open card's emulator options; [onLoaded] receives them, so a picker opens on this
+     * card's list rather than one left over from the last card.
+     */
+    fun loadEmulatorOptionsForDetail(onLoaded: (List<EmulatorOption>) -> Unit = {}) {
         viewModelScope.launch {
             val platformId = _scratch.value.detailPlatformId
-            _scratch.update { it.copy(emulatorOptions = buildEmulatorOptions(platformId)) }
+            val options = buildEmulatorOptions(platformId)
+            _scratch.update { it.copy(emulatorOptions = options) }
+            onLoaded(options)
         }
     }
 
@@ -753,11 +785,10 @@ class LibraryManagerViewModel @Inject constructor(
         }
     }
 
-    // A granted tree's last path segment, for a settings row — the raw path when the provider
-    // exposes one, else the decoded document id's leaf.
+    // A granted tree's last path segment, for a settings row — the raw path's leaf when the
+    // provider exposes one, else the decoded document id's leaf.
     private fun folderLabelOf(uri: String): String =
-        RomRootRepository.rawPathOfTree(uri)?.substringAfterLast('/')
-            ?: Uri.decode(uri).substringAfterLast('/').substringAfterLast(':')
+        RomRootRepository.displayNameOfTree(uri).trimEnd('/').substringAfterLast('/')
 
     /**
      * Grants (and persists) the ARMSX3 PS3 data folder. Unlike Vita there is nothing to scan: PS3
@@ -770,6 +801,24 @@ class LibraryManagerViewModel @Inject constructor(
             ps3DataLibrary.setDataFolder(uri)   // persists the SAF read grant
             _scratch.update {
                 it.copy(message = "PS3 data folder set. Run Auto-Match in Settings ▸ Shiba Coins to link PS3 trophies.")
+            }
+        }
+    }
+
+    /**
+     * Grants (and persists) one Xbox 360 emulator's data folder. Like PS3 there is nothing to scan:
+     * Xbox 360 games are ordinary ROMs, so the grant only unlocks reading achievements from the
+     * emulator's Xenia profiles.
+     */
+    fun setXbox360DataFolder(emulator: com.playfieldportal.core.data.repository.Xbox360Emulator, uri: Uri?) {
+        if (uri == null) return
+        viewModelScope.launch {
+            xbox360DataLibrary.setFolder(emulator, uri)   // persists the SAF read grant
+            _scratch.update {
+                it.copy(
+                    message = "${emulator.label} data folder set. Run Auto-Match in Settings ▸ Shiba Coins " +
+                        "to link Xbox 360 achievements.",
+                )
             }
         }
     }

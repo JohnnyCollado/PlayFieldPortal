@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import com.playfieldportal.core.data.repository.Xbox360Emulator
 import com.playfieldportal.core.data.repository.MediaRootKind
 import com.playfieldportal.core.domain.model.ControllerLayoutPrefs
 import com.playfieldportal.core.domain.model.XYLayout
@@ -55,7 +56,7 @@ private enum class AddSlot { ROM, MUSIC, VIDEO, PHOTO }
 /**
  * First-run setup wizard, one task per page (per the approved plans): Welcome → Controller → ROM
  * Roots → Music → Video → Photo → Artwork (with import offer) → Online Services → Achievements →
- * Trophies* → RetroArch* → Emulators* → Windows Games* → Hints & Touch → Home App* → Finish
+ * Local Achievements* → RetroArch* → Emulators* → Windows Games* → Hints & Touch → Home App* → Finish
  * (* only when it applies). Channels the mockup's PSP skin via [WizardScaffold] — strongly
  * controller driven (Back steps out, Confirm activates the focused row, RB skips the page), touch
  * everywhere (rows, fields tap to edit). Everything is optional and written through the same
@@ -133,6 +134,14 @@ fun InitialSetupScreen(
     val ps3Picker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri -> if (uri != null) viewModel.linkPs3Folder(uri) }
+
+    val x360MobilePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri -> if (uri != null) viewModel.linkXbox360Folder(Xbox360Emulator.X360_MOBILE, uri) }
+
+    val xenDroidPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri -> if (uri != null) viewModel.linkXbox360Folder(Xbox360Emulator.XENDROID, uri) }
 
     val windowsPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
@@ -276,12 +285,16 @@ fun InitialSetupScreen(
                 onContinue = { viewModel.nextStep() },
                 nextLabel = nextLabel,
             )
-            SetupStep.TROPHIES -> TrophiesPage(
+            SetupStep.LOCAL_ACHIEVEMENTS -> LocalAchievementsPage(
                 state = state,
                 onLinkVita = { vitaPicker.launch(null) },
                 onForgetVita = viewModel::forgetVitaFolder,
                 onLinkPs3 = { ps3Picker.launch(null) },
                 onForgetPs3 = viewModel::forgetPs3Folder,
+                onLinkX360Mobile = { x360MobilePicker.launch(Xbox360Emulator.X360_MOBILE.pickerStartUri) },
+                onForgetX360Mobile = { viewModel.forgetXbox360Folder(Xbox360Emulator.X360_MOBILE) },
+                onLinkXenDroid = { xenDroidPicker.launch(Xbox360Emulator.XENDROID.pickerStartUri) },
+                onForgetXenDroid = { viewModel.forgetXbox360Folder(Xbox360Emulator.XENDROID) },
                 onContinue = { viewModel.nextStep() },
                 nextLabel = nextLabel,
             )
@@ -346,7 +359,7 @@ private fun stepTitle(step: SetupStep): String = when (step) {
     SetupStep.ARTWORK      -> "Artwork"
     SetupStep.SERVICES     -> "Online Services"
     SetupStep.ACHIEVEMENTS -> "Achievement Services"
-    SetupStep.TROPHIES     -> "Trophies"
+    SetupStep.LOCAL_ACHIEVEMENTS -> "Local Achievements"
     SetupStep.RETROARCH    -> "RetroArch"
     SetupStep.EMULATORS    -> "Emulators"
     SetupStep.WINDOWS      -> "Windows Games"
@@ -365,7 +378,7 @@ private fun headingFor(step: SetupStep): String = when (step) {
     SetupStep.ARTWORK     -> "Choose your artwork folder."
     SetupStep.SERVICES    -> "Connect your artwork sources."
     SetupStep.ACHIEVEMENTS -> "Connect your achievement services."
-    SetupStep.TROPHIES    -> "Link your trophy folders."
+    SetupStep.LOCAL_ACHIEVEMENTS -> "Link your emulator data folders."
     SetupStep.RETROARCH   -> "Link RetroArch's cores folder."
     SetupStep.EMULATORS   -> "Check your emulators."
     SetupStep.WINDOWS     -> "Set up Windows games."
@@ -384,7 +397,7 @@ private fun hintFor(step: SetupStep): String? = when (step) {
     SetupStep.ARTWORK   -> "One folder hosts the artwork library — you can import into it right after."
     SetupStep.SERVICES  -> "All optional and free. SteamGridDB, TheGamesDB, IGDB, and ScreenScraper fetch game artwork and metadata."
     SetupStep.ACHIEVEMENTS -> "RetroAchievements and Steam track achievements as Shiba Coins."
-    SetupStep.TROPHIES  -> "One grant per emulator links every installed title for discovery and trophies."
+    SetupStep.LOCAL_ACHIEVEMENTS -> "Trophies and achievements your emulators save on this device. One grant per emulator links every title."
     SetupStep.RETROARCH -> "Lets the launcher know exactly which cores you have, so only those are offered."
     SetupStep.EMULATORS -> "Each console's default, picked from what's installed. Change any that look wrong."
     SetupStep.WINDOWS   -> "A Windows emulator is installed — choose where your PC games live."
@@ -747,14 +760,21 @@ private fun ControllerPage(
     WizardContinueRow(nextLabel, onContinue)
 }
 
-/** Vita3K and ARMSX3 trophy folders — each section only when its emulator is installed. */
+/**
+ * Emulator data folders that hold locally saved trophies and achievements — Vita3K, ARMSX3, and
+ * the Xbox 360 emulators — each section only when its emulator is installed.
+ */
 @Composable
-private fun TrophiesPage(
+private fun LocalAchievementsPage(
     state: InitialSetupUiState,
     onLinkVita: () -> Unit,
     onForgetVita: () -> Unit,
     onLinkPs3: () -> Unit,
     onForgetPs3: () -> Unit,
+    onLinkX360Mobile: () -> Unit,
+    onForgetX360Mobile: () -> Unit,
+    onLinkXenDroid: () -> Unit,
+    onForgetXenDroid: () -> Unit,
     onContinue: () -> Unit,
     nextLabel: String,
 ) {
@@ -791,6 +811,42 @@ private fun TrophiesPage(
                 sublabel = "ARMSX3 data folder — use ✎ to pick a different one",
                 onEdit = onLinkPs3,
                 onRemove = onForgetPs3,
+            )
+        }
+    }
+    if (state.x360MobileInstalled) {
+        WizardSectionHeader("Xbox 360 · X360 Mobile")
+        val folder = state.x360MobileFolderName
+        if (folder == null) {
+            WizardRow(
+                label = "Set X360 Mobile Data Folder",
+                sublabel = "Pick X360 Mobile in the folder picker's side menu, then allow access",
+                onClick = onLinkX360Mobile,
+            )
+        } else {
+            WizardRootRow(
+                name = folder,
+                sublabel = "X360 Mobile data folder — use ✎ to pick a different one",
+                onEdit = onLinkX360Mobile,
+                onRemove = onForgetX360Mobile,
+            )
+        }
+    }
+    if (state.xenDroidInstalled) {
+        WizardSectionHeader("Xbox 360 · XenDroid")
+        val folder = state.xenDroidFolderName
+        if (folder == null) {
+            WizardRow(
+                label = "Set XenDroid Data Folder",
+                sublabel = "Grant Android/data/xendroid.compose — or any folder above or below it",
+                onClick = onLinkXenDroid,
+            )
+        } else {
+            WizardRootRow(
+                name = folder,
+                sublabel = "XenDroid data folder — use ✎ to pick a different one",
+                onEdit = onLinkXenDroid,
+                onRemove = onForgetXenDroid,
             )
         }
     }
@@ -962,6 +1018,12 @@ private fun FinishPage(
     }
     if (state.armsx3Installed) {
         WizardValueRow(label = "PS3 Data Folder", value = folderSummary(state.ps3FolderName))
+    }
+    if (state.x360MobileInstalled) {
+        WizardValueRow(label = "X360 Mobile Data Folder", value = folderSummary(state.x360MobileFolderName))
+    }
+    if (state.xenDroidInstalled) {
+        WizardValueRow(label = "XenDroid Data Folder", value = folderSummary(state.xenDroidFolderName))
     }
     if (state.retroArchInstalled) {
         WizardValueRow(
@@ -1244,21 +1306,26 @@ private fun ControllerPagePreview() {
 
 @CombinedPreviews
 @Composable
-private fun TrophiesPagePreview() {
+private fun LocalAchievementsPagePreview() {
     WizardPagePreview(
         stepNumber = 10,
-        heading = "Link your trophy folders.",
-        hint = "One grant per emulator links every installed title for discovery and trophies.",
+        heading = "Link your emulator data folders.",
+        hint = "Trophies and achievements your emulators save on this device. One grant per emulator links every title.",
     ) {
-        TrophiesPage(
+        LocalAchievementsPage(
             state = InitialSetupUiState(
-                availability = SetupAvailability(vita3K = true, armsx3 = true),
+                availability = SetupAvailability(vita3K = true, armsx3 = true, x360Mobile = true, xenDroid = true),
                 vitaFolderName = "ux0",
+                xenDroidFolderName = "xendroid.compose",
             ),
             onLinkVita = {},
             onForgetVita = {},
             onLinkPs3 = {},
             onForgetPs3 = {},
+            onLinkX360Mobile = {},
+            onForgetX360Mobile = {},
+            onLinkXenDroid = {},
+            onForgetXenDroid = {},
             onContinue = {},
             nextLabel = "RetroArch",
         )
@@ -1378,9 +1445,13 @@ private fun FinishPagePreview() {
                 ssUsername = "scraper_user",
                 raUsername = "player_one",
                 steamId64 = "76561198012345678",
-                availability = SetupAvailability(retroArch = true, vita3K = true, armsx3 = true, pcLauncher = true),
+                availability = SetupAvailability(
+                    retroArch = true, vita3K = true, armsx3 = true, x360Mobile = true, xenDroid = true,
+                    pcLauncher = true,
+                ),
                 vitaFolderName = "ux0",
                 ps3FolderName = "dev_hdd0",
+                xenDroidFolderName = "xendroid.compose",
                 retroArchLinked = true,
                 retroArchCoreCount = 42,
             ),

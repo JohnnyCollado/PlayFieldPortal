@@ -316,13 +316,13 @@ class PfpThemeStoreV4FieldsTest {
     private companion object {
         /** Robolectric cannot probe media; these tests use placeholder video bytes and only assert plumbing. */
         val PERMISSIVE_PROBE: MediaProbe = { _, mime -> MediaFacts(mime, 1920, 1080, 1_000L) }
-        val KEY_WAVE = stringPreferencesKey("display_wave_style")
-        val KEY_ICON_LEG = stringPreferencesKey("display_icon_legibility")
-        val KEY_TEXT_LEG = stringPreferencesKey("display_text_legibility")
-        val KEY_SOLID = booleanPreferencesKey("display_solid_unfocused_icons")
-        val KEY_EXACT = booleanPreferencesKey("display_text_color_exact")
-        val KEY_SUB_TEXT = longPreferencesKey("display_sub_text_color")
-        val KEY_CROP = stringPreferencesKey("display_motion_crop")
-        val KEY_MOTION = stringPreferencesKey("display_motion_wallpaper")
+        val KEY_WAVE = ThemePrefKeys.WAVE_STYLE
+        val KEY_ICON_LEG = ThemePrefKeys.ICON_LEGIBILITY
+        val KEY_TEXT_LEG = ThemePrefKeys.TEXT_LEGIBILITY
+        val KEY_SOLID = ThemePrefKeys.SOLID_UNFOCUSED_ICONS
+        val KEY_EXACT = ThemePrefKeys.TEXT_COLOR_EXACT
+        val KEY_SUB_TEXT = ThemePrefKeys.SUB_TEXT_COLOR
+        val KEY_CROP = ThemePrefKeys.MOTION_CROP
+        val KEY_MOTION = ThemePrefKeys.MOTION_WALLPAPER
     }
 }

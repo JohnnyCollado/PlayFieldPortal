@@ -14,8 +14,7 @@ class PreviewModelConsoleTest {
         val icon = ImageBitmap(2, 2)
         val console = ImageBitmap(2, 2)
         val model = StudioState(
-            iconBitmaps = mapOf("item_add" to icon),
-            sysiconBitmaps = mapOf("sysicon_ps3" to console),
+            iconBitmaps = mapOf("item_add" to icon, "sysicon_ps3" to console),
         ).toPreviewModel()
         assertSame(icon, model.iconOverrides["item_add"])
         assertSame(console, model.iconOverrides["sysicon_ps3"])

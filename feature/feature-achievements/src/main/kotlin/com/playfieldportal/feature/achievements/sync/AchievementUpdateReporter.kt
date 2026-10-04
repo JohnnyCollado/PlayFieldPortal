@@ -179,6 +179,7 @@ class AchievementUpdateReporter @Inject constructor(
         AchievementProvider.STEAM, AchievementProvider.LOCAL_STEAM -> "Steam"
         AchievementProvider.VITA_TROPHY -> "PS Vita"
         AchievementProvider.PS3_TROPHY -> "PS3"
+        AchievementProvider.X360_ACHIEVEMENT -> "Xbox 360"
     }
 
     private fun games(count: Int) = if (count == 1) "game" else "games"

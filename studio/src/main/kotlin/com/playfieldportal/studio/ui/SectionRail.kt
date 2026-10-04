@@ -60,7 +60,7 @@ fun railMeta(section: StudioSection, state: StudioState, check: ExportCheck): St
     // The theme carries no XMB sizes; this section only previews the device's own layout adjust.
     StudioSection.LAYOUT -> "Preview only"
     StudioSection.ICONS -> {
-        val n = state.iconOverrides.size + state.sysiconOverrides.size
+        val n = state.iconOverrides.size
         if (n == 0) "None custom" else "$n custom"
     }
     StudioSection.SOUNDS -> {

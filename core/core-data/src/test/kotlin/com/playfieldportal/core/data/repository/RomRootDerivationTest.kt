@@ -67,4 +67,64 @@ class RomRootDerivationTest {
             )
         )
     }
+
+    // ── Grants made through an app's own documents provider ─────────────────────
+    // Real URIs from a device: XenDroid's provider ids are absolute paths, X360 Mobile's are opaque.
+
+    private val xenDroidTree =
+        "content://xendroid.compose.DocumentsProvider/tree/%2Fstorage%2Femulated%2F0%2FAndroid%2Fdata%2Fxendroid.compose%2Ffiles%2Fcompose"
+    private val x360MobileTree = "content://emu.x360mobile.com.documents/tree/v%3Aroot"
+
+    @Test
+    fun `rawPathOfTree maps shared-storage trees as before`() {
+        assertEquals(
+            "/storage/emulated/0/Roms",
+            RomRootRepository.rawPathOfTree("content://com.android.externalstorage.documents/tree/primary%3ARoms"),
+        )
+        assertEquals(
+            "/storage/1A2B-3C4D/Games/PS2",
+            RomRootRepository.rawPathOfTree("content://com.android.externalstorage.documents/tree/1A2B-3C4D%3AGames%2FPS2"),
+        )
+    }
+
+    @Test
+    fun `rawPathOfTree reads a provider whose ids are absolute paths`() {
+        assertEquals(
+            "/storage/emulated/0/Android/data/xendroid.compose/files/compose",
+            RomRootRepository.rawPathOfTree(xenDroidTree),
+        )
+    }
+
+    @Test
+    fun `rawPathOfTree never invents a storage path for an opaque provider id`() {
+        // "v:root" is not a storage volume; it used to become "/storage/v/root".
+        assertNull(RomRootRepository.rawPathOfTree(x360MobileTree))
+    }
+
+    @Test
+    fun `rawPathOfDocument only maps volume ids for shared storage`() {
+        assertEquals("/storage/emulated/0/a", RomRootRepository.rawPathOfDocument("com.android.externalstorage.documents", "primary:a"))
+        assertNull(RomRootRepository.rawPathOfDocument("emu.x360mobile.com.documents", "v:root/a"))
+        assertEquals("/data/x", RomRootRepository.rawPathOfDocument("some.provider", "/data/x"))
+        // Without an authority the caller's id is taken as shared storage, as it always was.
+        assertEquals("/storage/emulated/0/a", RomRootRepository.rawPathOfDocument(null, "primary:a"))
+    }
+
+    @Test
+    fun `displayNameOfTree is readable for every kind of grant`() {
+        assertEquals(
+            "/storage/emulated/0/Android/data/xendroid.compose/files/compose",
+            RomRootRepository.displayNameOfTree(xenDroidTree),
+        )
+        assertEquals("root", RomRootRepository.displayNameOfTree(x360MobileTree))
+        assertEquals(
+            "profiles",
+            RomRootRepository.displayNameOfTree("content://emu.x360mobile.com.documents/tree/v%3Aroot%2Fprofiles"),
+        )
+        assertEquals(
+            "/storage/emulated/0",
+            RomRootRepository.displayNameOfTree("content://com.android.externalstorage.documents/tree/primary%3A"),
+        )
+        assertEquals("not a uri", RomRootRepository.displayNameOfTree("not a uri"))
+    }
 }

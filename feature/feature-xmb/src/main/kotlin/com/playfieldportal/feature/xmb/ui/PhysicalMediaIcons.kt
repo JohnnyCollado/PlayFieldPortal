@@ -2,45 +2,14 @@ package com.playfieldportal.feature.xmb.ui
 
 import androidx.annotation.DrawableRes
 import com.playfieldportal.feature.xmb.R
-import com.playfieldportal.themekit.CustomizableIcons
+import com.playfieldportal.themekit.PhysicalMediaIds
 
 /**
- * Resolves a platform ID to the PNG filename (without extension) under
- * assets/systems/physical-media/.  Returns the platformId unchanged when it
- * already has a matching file; maps known aliases to the file that exists.
- * Returns null for digital-only platforms that have no physical media.
+ * The PNG filename (without extension) under assets/systems/physical-media/ for [platformId] —
+ * regional art included — or null for digital-only platforms. One table with the slot below:
+ * [PhysicalMediaIds], which the Theme Studio reads too.
  */
-fun physicalMediaAssetName(platformId: String?): String? = when (platformId) {
-
-    // ── Aliases that differ from the PNG filename ──────────────────────────────
-    "ps1"                            -> "psx"
-    "fam", "famicom"                 -> "nes"
-    "ds"                             -> "nds"
-    "3ds"                            -> "n3ds"
-    "nx"                             -> "switch"
-    "gamecube"                       -> "gc"
-    "md"                             -> "megadrive"
-    "sms"                            -> "mastersystem"
-    "dc"                             -> "dreamcast"
-    "naomi", "atomiswave"            -> "arcade"
-    "pce"                            -> "pcengine"
-    "tgfx16"                         -> "tg16"
-    "lynx"                           -> "atarilynx"
-    "vb"                             -> "virtualboy"
-    "ws"                             -> "wonderswan"
-    "wsc"                            -> "wonderswancolor"
-    "x360"                           -> "xbox360"
-
-    // ── Digital-only — no physical media ──────────────────────────────────────
-    // "windows" is NOT here: PC games ship on discs, so the card gets windows.png (the same
-    // disc silhouette PS2 uses) rather than falling through to the generic cartridge. Storefront
-    // platforms stay digital-only.
-    "android", "steam",
-    "gog", "default"                 -> null
-
-    // ── Everything else: platformId == filename ────────────────────────────────
-    else                             -> platformId
-}
+fun physicalMediaAssetName(platformId: String?): String? = PhysicalMediaIds.artFile(platformId)
 
 /**
  * Fallback generic vector drawable used when the PNG asset is absent.
@@ -90,33 +59,8 @@ fun physicalMediaIconRes(platformId: String?): Int? = when (platformId) {
     else                            -> null
 }
 
-/** Platform aliases to the console id whose `physmedia_` slot themes their media art. */
-private val SLOT_ALIASES = mapOf(
-    "ps1" to "psx",
-    "fam" to "nes", "famicom" to "nes",
-    "sfc" to "snes",
-    "ds" to "nds",
-    "3ds" to "n3ds",
-    "nx" to "switch",
-    "gamecube" to "gc",
-    "md" to "megadrive", "genesis" to "megadrive",
-    "sms" to "mastersystem",
-    "dc" to "dreamcast",
-    "arcade" to "mame", "naomi" to "mame", "atomiswave" to "mame",
-    "pce" to "pcengine", "tgfx16" to "pcengine",
-    "lynx" to "atarilynx",
-    "vb" to "virtualboy",
-    "ws" to "wonderswan",
-    "wsc" to "wonderswancolor",
-    "ngpc" to "ngp",
-    "xbox360" to "x360",
-)
-
 /**
  * The `physmedia_<id>` slot a user pick or the applied theme replaces [platformId]'s media art
  * through, or null for a platform with no themeable media (digital-only or unknown).
  */
-fun physicalMediaSlotKey(platformId: String?): String? {
-    val id = platformId ?: return null
-    return (CustomizableIcons.PHYSICAL_MEDIA_PREFIX + (SLOT_ALIASES[id] ?: id)).takeIf(CustomizableIcons::isValidKey)
-}
+fun physicalMediaSlotKey(platformId: String?): String? = PhysicalMediaIds.slotKey(platformId)

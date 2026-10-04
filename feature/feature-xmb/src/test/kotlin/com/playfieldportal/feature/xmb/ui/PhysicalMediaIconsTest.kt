@@ -7,6 +7,24 @@ import org.junit.Test
 
 class PhysicalMediaIconsTest {
 
+    // ── One table: every themeable media slot draws a bundled PNG when nothing replaces it ──
+
+    @Test fun `every physical media slot has bundled art`() {
+        val dir = java.io.File("src/main/assets/systems/physical-media")
+        val missing = com.playfieldportal.themekit.CustomizableIcons
+            .group(com.playfieldportal.themekit.IconSlot.Group.PHYSICAL_MEDIA)
+            .mapNotNull { com.playfieldportal.themekit.CustomizableIcons.physicalMediaId(it.key) }
+            .filterNot { id -> java.io.File(dir, "${physicalMediaAssetName(id)}.png").isFile }
+        assertEquals(emptyList<String>(), missing)
+    }
+
+    @Test fun `every alias draws a bundled PNG`() {
+        val dir = java.io.File("src/main/assets/systems/physical-media")
+        val missing = com.playfieldportal.themekit.PhysicalMediaIds.ALIASES.keys
+            .filterNot { alias -> java.io.File(dir, "${physicalMediaAssetName(alias)}.png").isFile }
+        assertEquals(emptyList<String>(), missing)
+    }
+
     // ── physicalMediaSlotKey: the themeable slot a game's media art reads ──────
 
     @Test fun `a console id is its own slot`() = assertEquals("physmedia_psp", physicalMediaSlotKey("psp"))

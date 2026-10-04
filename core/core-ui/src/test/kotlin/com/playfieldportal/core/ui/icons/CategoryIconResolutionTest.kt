@@ -24,8 +24,10 @@ class CategoryIconResolutionTest {
         val resolved = resolveCategoryCustomIcon(
             iconKey = "ic_favorites",
             categoryId = categoryId,
-            userIcons = mapOf(categoryKey to image, "catbar_favorites" to still()),
-            themeIcons = mapOf("catbar_favorites" to still()),
+            icons = XmbIcons(
+                user = mapOf(categoryKey to image, "catbar_favorites" to still()),
+                theme = mapOf("catbar_favorites" to still()),
+            ),
         )
         assertSame(image, resolved)
     }
@@ -38,47 +40,45 @@ class CategoryIconResolutionTest {
             pick,
             resolveCategoryCustomIcon(
                 "ic_favorites", categoryId,
-                userIcons = mapOf("catbar_favorites" to pick),
-                themeIcons = mapOf("catbar_favorites" to theme),
+                XmbIcons(user = mapOf("catbar_favorites" to pick), theme = mapOf("catbar_favorites" to theme)),
             ),
         )
         assertSame(
             theme,
             resolveCategoryCustomIcon(
                 "ic_favorites", categoryId,
-                userIcons = emptyMap(),
-                themeIcons = mapOf("catbar_favorites" to theme),
+                XmbIcons(theme = mapOf("catbar_favorites" to theme)),
             ),
         )
-        assertNull(resolveCategoryCustomIcon("ic_favorites", categoryId, emptyMap(), emptyMap()))
+        assertNull(resolveCategoryCustomIcon("ic_favorites", categoryId, XmbIcons.EMPTY))
     }
 
     @Test
     fun `null category id gives exactly the pre-feature result`() {
         val pick = still()
         val userIcons = mapOf(categoryKey to still(), "catbar_favorites" to pick)
-        assertSame(pick, resolveCategoryCustomIcon("ic_favorites", null, userIcons, emptyMap()))
-        assertNull(resolveCategoryCustomIcon("ic_favorites", null, mapOf(categoryKey to still()), emptyMap()))
+        assertSame(pick, resolveCategoryCustomIcon("ic_favorites", null, XmbIcons(user = userIcons)))
+        assertNull(resolveCategoryCustomIcon("ic_favorites", null, XmbIcons(user = mapOf(categoryKey to still()))))
     }
 
     @Test
     fun `a usercat key in the theme map is ignored`() {
         // Theme bundles never carry these keys; if a stray one appeared it must not draw.
         assertNull(
-            resolveCategoryCustomIcon("ic_favorites", categoryId, emptyMap(), mapOf(categoryKey to still())),
+            resolveCategoryCustomIcon("ic_favorites", categoryId, XmbIcons(theme = mapOf(categoryKey to still()))),
         )
     }
 
     @Test
     fun `a category id that is not a user category gets no image tier`() {
         assertNull(
-            resolveCategoryCustomIcon("ic_favorites", "games", mapOf("usercat_games" to still()), emptyMap()),
+            resolveCategoryCustomIcon("ic_favorites", "games", XmbIcons(user = mapOf("usercat_games" to still()))),
         )
     }
 
     @Test
     fun `console art keys still resolve to null so the ConsoleIcon path runs`() {
-        assertNull(resolveCategoryCustomIcon("ic_ps1", categoryId, emptyMap(), emptyMap()))
-        assertNull(resolveCategoryCustomIcon("ic_ps1", null, emptyMap(), emptyMap()))
+        assertNull(resolveCategoryCustomIcon("ic_ps1", categoryId, XmbIcons.EMPTY))
+        assertNull(resolveCategoryCustomIcon("ic_ps1", null, XmbIcons.EMPTY))
     }
 }

@@ -91,6 +91,6 @@ class PtfThemeImporter @Inject constructor(
     }
 
     private companion object {
-        val KEY_ACCENT_OVERRIDE = longPreferencesKey("theme_accent_override")
+        val KEY_ACCENT_OVERRIDE = ThemePrefKeys.ACCENT_OVERRIDE
     }
 }

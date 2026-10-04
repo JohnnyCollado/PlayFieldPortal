@@ -57,7 +57,7 @@ import timber.log.Timber
  *  • TextureView, not SurfaceView: the layer sits under the whole Compose tree and must
  *    composite with the fade-in (a SurfaceView behind the window needs a punched-through hole
  *    in an opaque window and breaks the crossfade).
- *  • The app-visible gate is [rememberAppVisible], folded into the decision upstream, so
+ *  • The app-in-front gate is [rememberAppInFront], folded into the decision upstream, so
  *    backgrounding the launcher (every game launch) lands in POSTER and releases the player.
  */
 @Composable
@@ -231,25 +231,27 @@ private fun applyMotionTransform(view: TextureView, size: VideoSize?, crop: Moti
 }
 
 /**
- * Folds the app's ON_START..ON_STOP window into the motion decision. The [covered]/[throttled]
- * inputs come from XMBShell's existing pipeline, but nothing there reacts to the app being
- * backgrounded — the composition survives ON_STOP, and a launcher is backgrounded constantly
- * (every game launch). Missing this would leave a decoder running behind the emulator.
+ * Folds "the launcher is in front" (ON_RESUME..ON_PAUSE) into the motion decision. The
+ * [covered]/[throttled] inputs come from XMBShell's existing pipeline, but nothing there reacts to
+ * the app leaving the front — the composition survives ON_STOP, and a launcher is backgrounded
+ * constantly (every game launch). Missing this would leave a decoder running behind the emulator.
+ * RESUMED rather than STARTED: a dialog-style app on top leaves the launcher visible but paused,
+ * and nothing should animate behind it either.
  */
 @Composable
-fun rememberAppVisible(): Boolean {
+fun rememberAppInFront(): Boolean {
     val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    var appVisible by remember { mutableStateOf(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) }
+    var inFront by remember { mutableStateOf(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) }
     DisposableEffect(owner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_START -> appVisible = true
-                Lifecycle.Event.ON_STOP -> appVisible = false
+                Lifecycle.Event.ON_RESUME -> inFront = true
+                Lifecycle.Event.ON_PAUSE -> inFront = false
                 else -> Unit
             }
         }
         owner.lifecycle.addObserver(observer)
         onDispose { owner.lifecycle.removeObserver(observer) }
     }
-    return appVisible
+    return inFront
 }

@@ -32,6 +32,23 @@ enum class ShibaTier(val coinValue: Int) {
         /** RA points at or above this, and below [GOLD_MIN_POINTS], earn Silver (RA's 10 / 25). */
         const val SILVER_MIN_POINTS = 10
 
+        /** Xbox gamerscore at or above this earns Gold (the big 50G-100G unlocks). */
+        const val GOLD_MIN_GAMERSCORE = 50
+
+        /** Xbox gamerscore at or above this, and below [GOLD_MIN_GAMERSCORE], earns Silver. */
+        const val SILVER_MIN_GAMERSCORE = 25
+
+        /**
+         * Tier for an Xbox 360 coin from its gamerscore. Developers weight gamerscore by effort
+         * (typically 5-50G, occasionally 100G+), so like RA points it maps straight to tiers:
+         * 50G+ Gold, 25-49G Silver, below 25G (including 0G) Bronze. Never returns [PLATINUM].
+         */
+        fun forGamerscore(gamerscore: Int): ShibaTier = when {
+            gamerscore >= GOLD_MIN_GAMERSCORE   -> GOLD
+            gamerscore >= SILVER_MIN_GAMERSCORE -> SILVER
+            else                                -> BRONZE
+        }
+
         /**
          * Tier for a RetroAchievements coin from its point value. RA sets points by difficulty, so
          * they map straight to tiers: 50+ Gold, 10-49 Silver, below 10 (0-5) Bronze. Never returns

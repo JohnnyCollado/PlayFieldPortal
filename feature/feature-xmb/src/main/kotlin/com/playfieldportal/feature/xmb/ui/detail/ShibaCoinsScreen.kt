@@ -851,6 +851,23 @@ private fun LinkPanelRow(
                         ) { viewModel.autoMatchPs3() }
                     }
                 }
+                // Xbox 360 links by the title ID in the game's own file, so it matches here too.
+                AchievementProvider.X360_ACHIEVEMENT -> {
+                    PanelTitle("Not linked yet", palette)
+                    PanelBody(
+                        "Xbox 360 achievements link from the game's own title ID — set the X360 Mobile " +
+                            "or XenDroid Data Folder in the library and Auto-Match.",
+                        palette,
+                    )
+                    PanelActions {
+                        PanelButton(
+                            label = if (state.isMatching) "Matching…" else "Auto-Match",
+                            palette = palette,
+                            enabled = !state.isMatching,
+                            highlighted = focused,
+                        ) { viewModel.autoMatchX360() }
+                    }
+                }
             }
             AutoMatchStep.CONFIRM_COPY -> {
                 PanelTitle("Is this a legitimate Steam copy?", palette)

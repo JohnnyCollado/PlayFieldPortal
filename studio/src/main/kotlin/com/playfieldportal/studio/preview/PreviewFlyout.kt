@@ -43,6 +43,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.theme.ThemeTokens
+import com.playfieldportal.core.ui.theme.menuTextShadowFor
+import com.playfieldportal.core.ui.theme.menuCursorFillFor
 
 /*
  * The options flyout: a replica of core-ui PspContextMenuOverlay (300 dp right panel, waveColor at
@@ -319,14 +322,6 @@ object PreviewFlyout {
 
 private val PanelWidth = 300.dp
 
-// PspContextMenu TextDropShadow: black .75, (0, 2), blur 4.
-internal const val MENU_SHADOW_ALPHA = 0.75f
-private val MenuTextShadow = Shadow(Color.Black.copy(alpha = MENU_SHADOW_ALPHA), Offset(0f, 2f), 4f)
-
-/** PspContextMenu.menuTextShadowFor: the shadow dims with the fill, so a 45% header is not darker behind than in front. */
-internal fun menuTextShadowFor(fill: Color): Shadow =
-    MenuTextShadow.copy(color = MenuTextShadow.color.copy(alpha = MENU_SHADOW_ALPHA * fill.alpha))
-
 /**
  * PspContextMenuOverlay over the frame: light scrim (a click dismisses), then the right-edge panel
  * (a click inside is swallowed). Instant: no enter or exit transition, like the launcher.
@@ -384,7 +379,7 @@ private fun FlyoutRow(model: XmbPreviewModel, row: PreviewMenuRow, selected: Boo
         modifier = Modifier
             .fillMaxWidth()
             // The cursor: PspContextMenu's solid row fill, the Settings rows' menuCursorFill.
-            .background(if (selected) lerp(model.drillCursor, Color.White, 0.20f).copy(alpha = 0.34f) else Color.Transparent)
+            .background(if (selected) menuCursorFillFor(model.pfp.accentColor) else Color.Transparent)
             .focusProperties { canFocus = false }
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
             .padding(vertical = 12.dp),
@@ -473,7 +468,7 @@ private fun CheckMark(model: XmbPreviewModel) {
         }
         val stroke = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
         // Shadow first, offset like the menu text's, then the tick.
-        translate(top = MenuTextShadow.offset.y) { drawPath(tick, MenuTextShadow.color, style = stroke) }
+        translate(top = ThemeTokens.TextShadow.offset.y) { drawPath(tick, ThemeTokens.TextShadow.color, style = stroke) }
         drawPath(tick, Color.White, style = stroke)
     }
 }
@@ -485,6 +480,6 @@ private const val MENU_CHECK_KEY = "menu_check"
  * never the raw accent — a bright accent made the old panel lighter than the page behind it.
  */
 internal fun optionsPanelBackdrop(model: XmbPreviewModel): List<Color> {
-    val sf = com.playfieldportal.studio.preview.screens.drawerPalette(model)
+    val sf = com.playfieldportal.core.ui.theme.storefrontColorsFor(model.pfp)
     return listOf(sf.backgroundDeep, sf.backgroundMid)
 }

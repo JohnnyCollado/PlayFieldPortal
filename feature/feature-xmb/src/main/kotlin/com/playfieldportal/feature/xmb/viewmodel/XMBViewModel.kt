@@ -24,14 +24,11 @@ import com.playfieldportal.core.data.repository.ControllerMappingRepository
 import com.playfieldportal.core.data.repository.CustomIconStore
 import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.data.repository.PfpThemeStore
+import com.playfieldportal.core.data.repository.ThemePrefKeys
 import com.playfieldportal.core.ui.components.PspMenuCue
 import com.playfieldportal.core.ui.components.PspMenuNav
 import com.playfieldportal.core.ui.components.PspMenuOutcome
 import com.playfieldportal.core.ui.components.PspMenuRow
-import com.playfieldportal.core.ui.icons.CustomIcon
-import com.playfieldportal.core.ui.icons.GifFrameProbe
-import com.playfieldportal.core.ui.media.bootDefaultAudioUri
-import com.playfieldportal.core.ui.media.resolveBootAudio
 import com.playfieldportal.core.ui.media.resolveGameBootAudio
 import com.playfieldportal.themekit.CustomizableIcons
 import com.playfieldportal.core.domain.discord.DiscordFriend
@@ -51,7 +48,6 @@ import com.playfieldportal.core.domain.model.IconDisplayMode
 import com.playfieldportal.core.domain.model.MemoryCard
 import com.playfieldportal.core.domain.model.MusicTrack
 import com.playfieldportal.core.domain.model.XmbColorScheme
-import com.playfieldportal.core.domain.model.XmbPalette
 import com.playfieldportal.core.domain.model.displayLabel
 import com.playfieldportal.core.domain.model.resolve
 import com.playfieldportal.core.domain.repository.GameRepository
@@ -84,9 +80,7 @@ import com.playfieldportal.feature.appbar.CategorizedApp
 import com.playfieldportal.feature.appbar.LauncherShortcutRepository
 import com.playfieldportal.feature.launcher.LaunchDispatchResult
 import com.playfieldportal.feature.launcher.LaunchRecoveryAction
-import com.playfieldportal.feature.launcher.LaunchSource
 import com.playfieldportal.feature.launcher.ResolvedLaunch
-import com.playfieldportal.feature.launcher.corePathFor
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.feature.artwork.api.ScrapeProgress
 import com.playfieldportal.feature.artwork.api.relinkAll
@@ -134,30 +128,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-
-private fun XmbPalette.toPFPColors() = PFPColors(
-    waveColor         = androidx.compose.ui.graphics.Color(waveColor),
-    accentColor       = androidx.compose.ui.graphics.Color(accentColor),
-    textPrimary       = androidx.compose.ui.graphics.Color(textColor),
-    textSecondary     = androidx.compose.ui.graphics.Color(textColor).copy(alpha = 0.7f),
-    backgroundOverlay = androidx.compose.ui.graphics.Color(0x88000000),
-    selectedItem      = androidx.compose.ui.graphics.Color(accentColor),
-    categoryBar       = androidx.compose.ui.graphics.Color(0x00000000),
-    backgroundTop     = androidx.compose.ui.graphics.Color(backgroundTop),
-    backgroundBottom  = androidx.compose.ui.graphics.Color(backgroundBottom),
-)
-
-// Set the wave color AND re-derive the light PSP background gradient from it, so the background
-// always matches whatever hue the wave is (theme default or per-category accent tint).
-private fun PFPColors.withWaveTint(wave: androidx.compose.ui.graphics.Color): PFPColors {
-    val argb = wave.toArgb().toLong() and 0xFFFFFFFFL
-    val anchors = com.playfieldportal.core.domain.model.lightBackgroundAnchors(argb)
-    return copy(
-        waveColor        = wave,
-        backgroundTop    = androidx.compose.ui.graphics.Color(anchors.first),
-        backgroundBottom = androidx.compose.ui.graphics.Color(anchors.second),
-    )
-}
 
 // ── Context menu types ────────────────────────────────────────────────────────
 
@@ -1061,12 +1031,9 @@ data class XMBUiState(
     val focusedGameVideo: com.playfieldportal.feature.xmb.ui.FocusedGameVideo? = null,
     val librarySetupComplete: Boolean = false,
     val themeColors: PFPColors = DefaultPFPColors,
-    // Custom icon slots of the applied theme (theme slot key → CustomIcon); empty = the
-    // theme tier contributes nothing. Provided as LocalXmbIconOverrides.
-    val iconOverrides: Map<String, CustomIcon> = emptyMap(),
-    // The user's per-slot picks (custom-icons dir), ABOVE the theme tier at every render
-    // site. Empty = nothing customized; user picks survive theme switches by design.
-    val customIcons: Map<String, CustomIcon> = emptyMap(),
+    // Both icon tiers — the user's picks (custom-icons/) over the applied theme's (theme-icons/).
+    // Provided as LocalXmbIcons; render sites ask it rather than restating the precedence.
+    val xmbIcons: com.playfieldportal.core.ui.icons.XmbIcons = com.playfieldportal.core.ui.icons.XmbIcons.EMPTY,
     // Non-null while the live "Customize XMB Icons" editor is open (rendered over the real XMB).
     val customIconSession: CustomIconSession? = null,
     // One-shot: a saved-theme bundle awaiting the share sheet (Save as Theme… flow). Consumed
@@ -1773,6 +1740,8 @@ class XMBViewModel @Inject constructor(
     private val musicScanner: com.playfieldportal.feature.library.scanner.MusicScanner,
     private val musicPlayer: com.playfieldportal.feature.xmb.music.MusicPlayerController,
     private val emulatorProfileRepository: com.playfieldportal.feature.launcher.EmulatorProfileRepository,
+    // Which emulator launches a game — shared with Game Detail, so a console default decides both.
+    private val gameLaunchLadder: com.playfieldportal.feature.launcher.GameLaunchLadder,
     private val intentResolver: com.playfieldportal.feature.launcher.EmulatorIntentResolver,
     private val videoRepository: com.playfieldportal.core.domain.repository.VideoRepository,
     private val photoRepository: com.playfieldportal.core.domain.repository.PhotoRepository,
@@ -1792,6 +1761,7 @@ class XMBViewModel @Inject constructor(
     // Enqueues the scheduled achievement check when PFP is used (startup and each return).
     private val achievementAutoUpdates: com.playfieldportal.feature.achievements.sync.AchievementAutoUpdateScheduler,
     private val achievementCredentials: com.playfieldportal.core.data.achievement.AchievementCredentialsProvider,
+    private val localAchievementFolders: com.playfieldportal.core.data.repository.LocalAchievementFolders,
     private val windowsLibrarySetup: com.playfieldportal.core.data.repository.WindowsLibrarySetup,
     private val pcShortcutImporter: com.playfieldportal.feature.launcher.PcShortcutImporter,
     private val pcGameScanner: com.playfieldportal.feature.settings.pc.PcGameScanner,
@@ -1804,6 +1774,10 @@ class XMBViewModel @Inject constructor(
     private val setupStateProvider: com.playfieldportal.feature.launcher.SetupStateProvider,
     private val customIconStore: CustomIconStore,
     private val pfpThemeStore: PfpThemeStore,
+    // Both icon tiers on disk and the rule between them (the user's pick over the theme's).
+    private val themeTiers: com.playfieldportal.core.data.repository.ThemeTiers,
+    // The colours, icons, geometry and boot media the XMB draws, as one observed value.
+    private val themeLook: ThemeLook,
     private val uiMediaStore: com.playfieldportal.core.data.repository.UiMediaStore,
     private val gameBootGate: com.playfieldportal.feature.launcher.GameBootGate,
     /** The app's one virtual-keyboard session; fields reach it through LocalVirtualKeyboard. */
@@ -2069,6 +2043,7 @@ class XMBViewModel @Inject constructor(
     // emulator package → friendly name (e.g. "org.ppsspp.ppsspp" → "PPSSPP"), for the game subtitle's
     // "Platform (Emulator)" label. Populated from the emulator profiles.
     private var emulatorNameByPackage: Map<String, String> = emptyMap()
+    private val hostVisible = MutableStateFlow(true)
     private var enabledCards: List<MemoryCard> = emptyList()
     private var baseThemeColors: PFPColors = DefaultPFPColors
 
@@ -2086,7 +2061,7 @@ class XMBViewModel @Inject constructor(
         observeLibrarySetupState()
         checkInitialSetup()
         logStartupSequence()
-        observeColorScheme()
+        observeThemeLook()
         observeCategoryBar()
         observeCategories()
         observeListArrangement()
@@ -2237,7 +2212,10 @@ class XMBViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            musicPlayer.state.collect { playback ->
+            // Hidden, the half-second position ticks are not copied in (nothing shows them); the
+            // latest state lands the moment the launcher is visible again.
+            musicPlayer.state.combine(hostVisible) { playback, visible -> playback to visible }.collect { (playback, visible) ->
+                if (!shouldApplyMusicUpdate(_uiState.value.musicPlayback, playback, visible)) return@collect
                 _uiState.update { it.copy(musicPlayback = playback) }
                 syncBrowserNowPlaying(playback)
                 // Rebuild the Music root only when the "Now Playing" row's own contents change —
@@ -2259,149 +2237,29 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    // ── Color scheme ────────────────────────────────────────────────────────────
+    // ── Theme look ──────────────────────────────────────────────────────────────
 
-    // The active XMB color scheme (PSP-style presets + the month-based "Original" theme)
-    // is the source of truth for the palette. ORIGINAL re-resolves to the current month each
-    // time the scheme is (re)observed — i.e. on app start and whenever the user changes it.
-    // A custom-theme accent override (imported/created themes — the one-color cascade) takes
-    // precedence over the preset; the unified icon tint rides along either way.
-    private data class SchemePrefs(
-        val schemeName: String,
-        val accentOverride: Long?,
-        val iconColor: Long?,
-        val iconsStamp: Long?,
-        val layoutJson: String?,
-        // Display ▸ Scale & Layout: whole-UI scale factor and the user's crossbar-position
-        // override (null = keep the theme's / default bar position).
-        val xmbScale: Float?,
-        val barTopOverride: Float?,
-        // Per-form-factor "Adjust XMB Layout" tunings (JSON map, one prefs string).
-        val layoutAdjustJson: String?,
-        // User-tier icon stamp (custom-icons dir) — separate from the theme's icons stamp so
-        // a theme apply/revert never reloads (or drops) the user's picks.
-        val customIconsStamp: Long?,
-        // Display ▸ Font Colour. null = the theme's own text colour (white on every preset).
-        val textColor: Long?,
-        // Display ▸ Sub Font Colour. null = sub text follows the font colour.
-        val subTextColor: Long?,
-    )
-
-    private fun observeColorScheme() {
+    // The colours, both icon tiers, the XMB geometry and the boot media, as ThemeLook derives them
+    // (each input re-read only when it moves). One theme colour across the whole XMB
+    // (PSP-authentic) — no per-category tint.
+    private fun observeThemeLook() {
         viewModelScope.launch {
-            context.pfpDataStore.data
-                .map { prefs ->
-                    SchemePrefs(
-                        schemeName = prefs[KEY_COLOR_SCHEME] ?: XmbColorScheme.CLASSIC_BLUE.name,
-                        accentOverride = prefs[KEY_ACCENT_OVERRIDE],
-                        iconColor = prefs[KEY_ICON_COLOR],
-                        iconsStamp = prefs[com.playfieldportal.core.data.repository.PfpThemeStore.KEY_THEME_ICONS_STAMP],
-                        layoutJson = prefs[com.playfieldportal.core.data.repository.PfpThemeStore.KEY_THEME_LAYOUT],
-                        xmbScale = prefs[KEY_XMB_SCALE],
-                        barTopOverride = prefs[KEY_BAR_TOP_FRACTION],
-                        layoutAdjustJson = prefs[KEY_XMB_LAYOUT_ADJUST],
-                        customIconsStamp = prefs[CustomIconStore.KEY_CUSTOM_ICONS_STAMP],
-                        textColor = prefs[KEY_TEXT_COLOR],
-                        subTextColor = prefs[KEY_SUB_TEXT_COLOR],
+            themeLook.observe().collect { look ->
+                baseThemeColors = look.colors
+                _uiState.update {
+                    it.copy(
+                        themeColors = look.colors,
+                        xmbIcons = look.icons,
+                        layoutSpec = look.layoutSpec,
+                        xmbScale = look.xmbScale,
+                        xmbLayoutAdjustMap = look.layoutAdjustMap,
+                        bootVideoPath = look.bootVideoPath,
+                        bootAudioPath = look.bootAudioPath,
                     )
                 }
-                .distinctUntilChanged()
-                .collect { (name, accentOverride, iconColorArgb, iconsStamp, layoutJson, xmbScale, barTopOverride, layoutAdjustJson, customIconsStamp, textColorArgb, subTextColorArgb) ->
-                    val base = if (accentOverride != null) {
-                        // One accent drives everything: wave color + re-derived gradient.
-                        DefaultPFPColors.withWaveTint(
-                            androidx.compose.ui.graphics.Color(accentOverride and 0xFFFFFFFFL),
-                        )
-                    } else {
-                        val scheme = runCatching { XmbColorScheme.valueOf(name) }
-                            .getOrDefault(XmbColorScheme.CLASSIC_BLUE)
-                        val month = java.time.LocalDate.now().monthValue
-                        scheme.resolve(month).toPFPColors()
-                    }
-                    // The user's font colour joins here, beside iconColor and by the same rule:
-                    // absent = inherit the theme's own value, which is white on every preset, so
-                    // this is a no-op until Display ▸ Font Colour is set. Secondary keeps the 0.7
-                    // alpha relationship toPFPColors already establishes, so a picked colour
-                    // carries its own sublabels rather than stranding them on white.
-                    val pickedTextColor = textColorArgb
-                        ?.let { androidx.compose.ui.graphics.Color(it and 0xFFFFFFFFL) }
-                    val textColor = pickedTextColor ?: base.textPrimary
-                    baseThemeColors = base.copy(
-                        iconColor = iconColorArgb
-                            ?.let { androidx.compose.ui.graphics.Color(it and 0xFFFFFFFFL) }
-                            ?: androidx.compose.ui.graphics.Color.White,
-                        textPrimary = textColor,
-                        textSecondary = textColor.copy(alpha = 0.7f),
-                        // The same pick, but null when unset: the crossbar, status strip and
-                        // palette-driven screens repaint only when the user actually chose one.
-                        textOverride = pickedTextColor,
-                        subTextOverride = subTextColorArgb
-                            ?.let { androidx.compose.ui.graphics.Color(it and 0xFFFFFFFFL) },
-                    )
-                    // Custom icon slots of the applied theme (stamp present = extracted dir
-                    // has icons; the stamp value only bumps to trigger reloads), plus the
-                    // user's per-slot picks (custom-icons dir, its own stamp). Two tiers by
-                    // design: user picks survive theme switches, theme icons don't.
-                    val iconOverrides = if (iconsStamp != null) loadThemeIconOverrides() else emptyMap()
-                    val customIcons =
-                        if (customIconsStamp != null) customIconStore.load() else emptyMap()
-                    // Per-theme XMB geometry — lenient + sanitized, so a mangled pref can
-                    // never wedge the crossbar offscreen. The user's Display ▸ bar-position
-                    // override wins over the theme's value; the codec clamp still applies.
-                    val themeSpec = com.playfieldportal.themekit.XmbLayoutSpecCodec.decode(layoutJson)
-                        ?: com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT
-                    val layoutSpec = if (barTopOverride != null) {
-                        com.playfieldportal.themekit.XmbLayoutSpecCodec.sanitize(
-                            themeSpec.copy(barTopFraction = barTopOverride)
-                        )
-                    } else themeSpec
-                    // One theme color across the whole XMB (PSP-authentic) — no per-category tint.
-                    val adjustMap = com.playfieldportal.themekit.XmbLayoutAdjustCodec.decode(layoutAdjustJson)
-                    _uiState.update {
-                        it.copy(
-                            themeColors = baseThemeColors,
-                            iconOverrides = iconOverrides,
-                            customIcons = customIcons,
-                            layoutSpec = layoutSpec,
-                            xmbScale = (xmbScale ?: 1f).coerceIn(0.75f, 1.3f),
-                            xmbLayoutAdjustMap = adjustMap,
-                        )
-                    }
-                }
+            }
         }
     }
-
-    /**
-     * Loads the THEME tier (filesDir/theme-icons/) as slot key → CustomIcon, mirroring
-     * CustomIconStore.load's extension handling: png loads as Still, gif as Animated (or
-     * Still when it carries a single frame). Ignoring stray files, never crashing.
-     */
-    private suspend fun loadThemeIconOverrides(): Map<String, CustomIcon> =
-        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            val iconsDir = java.io.File(context.filesDir, PfpThemeStore.THEME_ICONS_DIR)
-            iconsDir.listFiles { f -> f.isFile }.orEmpty().mapNotNull { file ->
-                val key = file.nameWithoutExtension
-                if (!CustomizableIcons.isValidKey(key)) return@mapNotNull null
-                val ext = file.extension.lowercase()
-                // Bounds-checked decode: the extraction dir is ours, but the bundle author
-                // isn't — a 20k×20k "icon" must never reach a pixel allocation.
-                val bitmap = com.playfieldportal.core.data.repository.SafeMedia
-                    .decodeFileCapped(file.absolutePath, maxDimension = 2048, targetDimension = 2048)
-                    ?: return@mapNotNull null
-                val firstFrame = bitmap.asImageBitmap()
-                if (ext == "gif") {
-                    // Frame-count probe: 1 frame = Still, no decoder started (same rule as
-                    // the user tier's store).
-                    if (GifFrameProbe.countFrames(file) > 1) {
-                        key to CustomIcon.Animated(path = file.absolutePath, firstFrame = firstFrame)
-                    } else {
-                        key to CustomIcon.Still(firstFrame)
-                    }
-                } else {
-                    key to CustomIcon.Still(firstFrame)
-                }
-            }.toMap()
-        }
 
     // ── Category bar (DB-driven) ────────────────────────────────────────────────
 
@@ -5911,8 +5769,11 @@ class XMBViewModel @Inject constructor(
                 achievementRepository.observeLibraryStanding(),
                 achievementCredentials.raUsernameFlow,
                 achievementCredentials.steamId64Flow,
-            ) { standing, raUser, steamId ->
-                standing to (!raUser.isNullOrBlank() || !steamId.isNullOrBlank())
+                localAchievementFolders.anyLinked,
+            ) { standing, raUser, steamId, emulatorFolder ->
+                // An emulator data folder (Vita3K, ARMSX3, X360 Mobile, XenDroid) is a connected
+                // source too: its trophies and achievements need no account at all.
+                standing to (!raUser.isNullOrBlank() || !steamId.isNullOrBlank() || emulatorFolder)
             }.collect { (standing, connected) ->
                 _uiState.update { it.copy(libraryStanding = standing, achievementsConnected = connected) }
                 // Refresh the hub in place when it is the visible category.
@@ -5944,7 +5805,8 @@ class XMBViewModel @Inject constructor(
             XMBItem(id = ACH_UNTRACKED_ITEM_ID, title = "Untracked", subtitle = "${standing.untracked.size} games", type = XMBItemType.STANDARD),
         )
         // Nothing connected yet: the connect prompt is the only entry. Once RA or Steam credentials
-        // are saved the player card shows immediately (Lv 1 / 0 coins) and fills in as syncs land.
+        // are saved, or an emulator data folder is linked, the player card shows immediately
+        // (Lv 1 / 0 coins) and fills in as syncs land.
         if (!connected && standing.gamesTracked == 0) {
             val connect = XMBItem(
                 id = ACH_CONNECT_ITEM_ID,
@@ -6078,8 +5940,9 @@ class XMBViewModel @Inject constructor(
 
     private fun observeContextMenuHintIdle() {
         viewModelScope.launch {
-            while (isActive) {
-                delay(IDLE_HINT_POLL_MS)
+            // Only while the launcher is visible: this used to wake every 500 ms forever, behind
+            // games and with the screen off.
+            tickWhileVisible(hostVisible, IDLE_HINT_POLL_MS) {
                 val s = _uiState.value
                 val idleMs = SystemClock.elapsedRealtime() - lastInteractionMs
                 val shouldShow = com.playfieldportal.feature.xmb.viewmodel.shouldShowContextMenuHint(
@@ -10279,26 +10142,22 @@ class XMBViewModel @Inject constructor(
             )
             return
         }
-        val profile = emulatorProfileRepository.getProfilesForPlatform(game.platformId)
-            .firstOrNull { it.isAvailable }
-        if (profile == null) {
-            Timber.w("No emulator available for direct launch: ${game.platformId}")
+        // The same ladder Game Detail walks: the game's own choice, then the console's assigned
+        // default, then the platform's, then the first installed emulator.
+        val resolvedLaunch = gameLaunchLadder.resolve(game).getOrElse { e ->
+            Timber.w(e, "No emulator resolved for direct launch: ${game.platformId}")
             launchDispatcher.recordPreflightFailure(
                 game, null,
-                "No emulator is set up for ${game.platformId.uppercase()}. " +
-                    "Assign one under Settings ▸ Emulators ▸ Per-System Defaults.",
+                e.message ?: ("No emulator is set up for ${game.platformId.uppercase()}. " +
+                    "Assign one under Settings ▸ Emulators ▸ Per-System Defaults."),
                 code = com.playfieldportal.core.domain.model.PfpErrorCode.LN_1001,
             )
             return
         }
+        val profile = resolvedLaunch.profile
         // Preflight the same checks Game Detail's resolver applies, so a stale RetroArch core
         // mapping (or a dropped launch activity) refuses here with a repair, not at startActivity.
         val validation = runCatching { intentResolver.validateBeforeLaunch(game, profile) }
-        val resolvedLaunch = ResolvedLaunch(
-            profile  = profile,
-            source   = LaunchSource.CATALOG_DEFAULT,
-            corePath = profile.corePathFor(game.platformId),
-        )
         if (validation.isFailure) {
             Timber.w(
                 validation.exceptionOrNull(),
@@ -10649,16 +10508,11 @@ class XMBViewModel @Inject constructor(
         menuSound.play(MenuSound.CONFIRM)
         viewModelScope.launch {
             if (chosen != null) {
-                context.pfpDataStore.edit {
-                    it[KEY_COLOR_SCHEME] = chosen.name
-                    // Explicitly choosing a preset exits custom-theme mode — otherwise the
-                    // imported-theme accent would keep overriding the pick invisibly. The
-                    // theme's custom icons and layout leave with it (presets use the
-                    // built-in glyphs and the default geometry).
-                    it.remove(KEY_ACCENT_OVERRIDE)
-                    it.remove(com.playfieldportal.core.data.repository.PfpThemeStore.KEY_THEME_ICONS_STAMP)
-                    it.remove(com.playfieldportal.core.data.repository.PfpThemeStore.KEY_THEME_LAYOUT)
-                }
+                // Explicitly choosing a preset exits custom-theme mode — otherwise the imported
+                // theme's accent would keep overriding the pick invisibly. The theme's icons,
+                // geometry and name leave with it (PfpThemeStore.clearThemeLook).
+                pfpThemeStore.clearThemeLook()
+                context.pfpDataStore.edit { it[KEY_COLOR_SCHEME] = chosen.name }
             }
             colorSchemeOriginal = null
             accentOverrideOriginal = null
@@ -10759,7 +10613,7 @@ class XMBViewModel @Inject constructor(
         map[session.bucketKey] = session.draft
         viewModelScope.launch {
             context.pfpDataStore.edit {
-                it[KEY_XMB_LAYOUT_ADJUST] = com.playfieldportal.themekit.XmbLayoutAdjustCodec.encode(map)
+                it[ThemeLook.KEY_XMB_LAYOUT_ADJUST] = com.playfieldportal.themekit.XmbLayoutAdjustCodec.encode(map)
             }
             _uiState.update { it.copy(xmbLayoutAdjust = null) }
         }
@@ -10856,7 +10710,7 @@ class XMBViewModel @Inject constructor(
             val removed = customIconStore.clear(slotKey)
             _uiState.update {
                 val s = it.customIconSession ?: return@update it
-                val themed = it.iconOverrides.containsKey(slotKey)
+                val themed = themeTiers.iconFile(com.playfieldportal.core.data.repository.ThemeTiers.Tier.THEME, slotKey) != null
                 val message = when {
                     removed && themed -> context.getString(R.string.xmb_icons_reset_removed_themed)
                     removed -> null
@@ -10876,7 +10730,8 @@ class XMBViewModel @Inject constructor(
                 val s = it.customIconSession ?: return@update it
                 val message = when {
                     !removed -> context.getString(R.string.xmb_icons_reset_all_none)
-                    it.iconOverrides.isNotEmpty() -> context.getString(R.string.xmb_icons_reset_all_themed)
+                    themeTiers.iconKeys(com.playfieldportal.core.data.repository.ThemeTiers.Tier.THEME).isNotEmpty() ->
+                        context.getString(R.string.xmb_icons_reset_all_themed)
                     else -> null
                 }
                 it.copy(customIconSession = s.copy(message = message, revision = s.revision + 1))
@@ -11031,29 +10886,8 @@ class XMBViewModel @Inject constructor(
                     bootOnResume = onResume
                 }
         }
-        // Resolve the user's boot media here rather than in the overlay: the store's lookup is
-        // file IO, and it must not run on the composition that is trying to draw the first frame.
-        // Re-resolved on every stamp bump, so an import or a restored backup is picked up.
-        //
-        // Audio is the bundled opening chime ONLY when there is no custom boot video: a custom
-        // video keeps its own audio track — see resolveBootAudio, which pins that rule in one
-        // tested place. There is no separate boot-sound slot; replacing the video replaces the
-        // whole presentation, sound included.
-        viewModelScope.launch {
-            uiMediaStore.stamp
-                .distinctUntilChanged()
-                .collect {
-                    val (video, audio) = withContext(Dispatchers.IO) {
-                        val video = uiMediaStore.pathFor(com.playfieldportal.core.domain.model.UiMediaSlot.BOOT_VIDEO)
-                        val audio = resolveBootAudio(
-                            customVideoPath = video,
-                            defaultUri = bootDefaultAudioUri(context.packageName),
-                        )
-                        video to audio
-                    }
-                    _uiState.update { it.copy(bootVideoPath = video, bootAudioPath = audio) }
-                }
-        }
+        // The boot media (the user's clip, else the theme's, else the built-in animation and its
+        // chime) arrive with the theme look — see observeThemeLook.
     }
 
     /**
@@ -11061,6 +10895,14 @@ class XMBViewModel @Inject constructor(
      * Replays the boot sequence when the user asked for it. Show Boot Sequence gates this too:
      * turning boot off skips BOTH of its media components, resume included (design rule 7).
      */
+    /**
+     * Whether the launcher is on screen (MainActivity onStart/onStop). Clocks that only feed the
+     * UI — the idle-hint poll, music position ticks — sleep while it is false.
+     */
+    fun setHostVisible(visible: Boolean) {
+        hostVisible.value = visible
+    }
+
     fun onHostResumed() {
         scheduleAchievementCheck()
         viewModelScope.launch { maybeShowShortcutReview() }
@@ -11577,28 +11419,17 @@ class XMBViewModel @Inject constructor(
     // ── Static data ───────────────────────────────────────────────────────────
 
     companion object {
-        private val KEY_WAVE_STYLE        = stringPreferencesKey("display_wave_style")
+        private val KEY_WAVE_STYLE        = ThemePrefKeys.WAVE_STYLE
         // Must match DisplaySettingsViewModel — both read/write these wave power-throttle prefs.
         private val KEY_RESPECT_BATTERY   = booleanPreferencesKey("display_battery_saver")
         private val KEY_THERMAL_AWARE     = booleanPreferencesKey("display_thermal_aware")
-        private val KEY_COLOR_SCHEME      = stringPreferencesKey("display_color_scheme")
+        private val KEY_COLOR_SCHEME      = ThemePrefKeys.COLOR_SCHEME
         // Custom-theme cascade (docs/theme-format.md): when set, this ARGB accent
         // overrides the preset scheme — wave, gradient, and cursor all derive from it.
-        private val KEY_ACCENT_OVERRIDE   = longPreferencesKey("theme_accent_override")
-        // Unified icon tint (ARGB); unset = white = the icon art's native color.
-        private val KEY_ICON_COLOR        = longPreferencesKey("theme_icon_color")
-        // display_-prefixed, matching DisplaySettingsViewModel's keys: the font colour is a
-        // Display setting, but a theme applies it wholesale (PfpThemeStore.apply sets or clears it).
-        private val KEY_TEXT_COLOR        = longPreferencesKey("display_text_color")
-        private val KEY_SUB_TEXT_COLOR    = longPreferencesKey("display_sub_text_color")
-        // Display ▸ Scale & Layout — must match DisplaySettingsViewModel (shared prefs contract).
-        private val KEY_XMB_SCALE         = androidx.datastore.preferences.core.floatPreferencesKey("display_xmb_scale")
-        private val KEY_BAR_TOP_FRACTION  = androidx.datastore.preferences.core.floatPreferencesKey("display_bar_top_fraction")
-        // Per-form-factor live layout tunings (scale + horizontal + vertical), one JSON prefs string.
+        private val KEY_ACCENT_OVERRIDE   = ThemePrefKeys.ACCENT_OVERRIDE
         // Idle context-menu hint: how long to wait before showing, and how often to recheck.
         internal const val IDLE_HINT_DELAY_MS = 2_500L
         internal const val IDLE_HINT_POLL_MS  = 500L
-        private val KEY_XMB_LAYOUT_ADJUST = stringPreferencesKey("display_xmb_layout_adjust")
         private val KEY_SETUP_COMPLETE    = booleanPreferencesKey("library_setup_complete")
         // First-run wizard: set the moment the wizard is shown (or silently seeded for installs
         // that already carry configuration), so it only ever auto-opens once.
@@ -11631,11 +11462,10 @@ class XMBViewModel @Inject constructor(
         internal fun hasExistingSetupConfig(prefs: androidx.datastore.preferences.core.Preferences): Boolean =
             prefs[KEY_SETUP_COMPLETE] == true ||
                 EXISTING_CONFIG_STRING_KEYS.any { !prefs[it].isNullOrBlank() }
-        private val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpaper")
-        // Must match DisplaySettingsViewModel — shared wallpaper cascade prefs. Motion is never
-        // set without the poster key (invariant enforced at the write sites).
-        private val KEY_MOTION_WALLPAPER = stringPreferencesKey("display_motion_wallpaper")
-        private val KEY_MOTION_CROP = stringPreferencesKey("display_motion_crop")
+        private val KEY_CUSTOM_WALLPAPER  = ThemePrefKeys.CUSTOM_WALLPAPER
+        // Motion is never set without the poster key (invariant enforced at the write sites).
+        private val KEY_MOTION_WALLPAPER = ThemePrefKeys.MOTION_WALLPAPER
+        private val KEY_MOTION_CROP = ThemePrefKeys.MOTION_CROP
         // Must match DisplaySettingsViewModel — the Boot Sequence toggles. Before this both keys
         // were written by settings and read by nothing: the boot animation always played.
         private val KEY_SHOW_BOOT       = booleanPreferencesKey("display_show_boot")
@@ -11648,10 +11478,8 @@ class XMBViewModel @Inject constructor(
             floatPreferencesKey("interface_context_menu_hint_delay_seconds")
         // Must match DisplaySettingsViewModel.KEY_TOUCH_SENSITIVITY — both read/write this pref.
         private val KEY_TOUCH_SENSITIVITY = stringPreferencesKey("interface_touch_sensitivity")
-        // Must match DisplaySettingsViewModel.KEY_ICON_LEGIBILITY — both read/write this pref.
-        private val KEY_ICON_LEGIBILITY = stringPreferencesKey("display_icon_legibility")
-        // Must match DisplaySettingsViewModel.KEY_SOLID_UNFOCUSED_ICONS — both read/write this pref.
-        private val KEY_SOLID_UNFOCUSED_ICONS = booleanPreferencesKey("display_solid_unfocused_icons")
+        private val KEY_ICON_LEGIBILITY = ThemePrefKeys.ICON_LEGIBILITY
+        private val KEY_SOLID_UNFOCUSED_ICONS = ThemePrefKeys.SOLID_UNFOCUSED_ICONS
         // Must match DisplaySettingsViewModel.KEY_TEXT_SHADOW — both read/write this pref.
         private val KEY_TEXT_SHADOW = booleanPreferencesKey("display_text_shadow")
         // Must match DisplaySettingsViewModel.KEY_ITEM_LIST_MOTION — both read/write this pref.

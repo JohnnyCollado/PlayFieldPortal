@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.sp
 import com.playfieldportal.studio.preview.XmbPreviewModel
 import java.util.Locale
 import kotlin.math.roundToInt
+import com.playfieldportal.core.ui.detail.unselectedLabel
+import com.playfieldportal.core.ui.detail.DetailPalette
 
 /*
  * One game's achievements: "View Shiba Coins" / the Shiba Coins row on Game Detail opens
@@ -120,7 +122,7 @@ fun GameAchievementsScreenPreview(model: XmbPreviewModel) {
 
             // Focus starts on the pinned Search row; its right half holds the view tabs.
             ShibaPreviewSearchRow(palette, focused = true, placeholder = "Search coins…") {
-                ViewTabs(palette)
+                ViewTabs(palette, unselected = palette.unselectedLabel(model.pfp))
             }
 
             Box(Modifier.fillMaxWidth().weight(1f).clipToBounds()) {
@@ -182,7 +184,7 @@ fun GameAchievementsScreenPreview(model: XmbPreviewModel) {
 // ── Header (ShibaCoinsHeader) ───────────────────────────────────────────────
 
 @Composable
-private fun CoinsHeader(model: XmbPreviewModel, palette: DetailPreviewPalette) {
+private fun CoinsHeader(model: XmbPreviewModel, palette: DetailPalette) {
     Column(Modifier.fillMaxWidth().background(shibaPreviewHeaderShade(palette))) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -233,7 +235,7 @@ private fun CoinsHeader(model: XmbPreviewModel, palette: DetailPreviewPalette) {
 private fun HeaderStat(
     label: String,
     value: String,
-    palette: DetailPreviewPalette,
+    palette: DetailPalette,
     below: @Composable () -> Unit = {},
 ) {
     Column {
@@ -244,7 +246,7 @@ private fun HeaderStat(
 }
 
 @Composable
-private fun HeaderTierCell(model: XmbPreviewModel, palette: DetailPreviewPalette, tier: ShibaPreviewTier, earned: Int, total: Int) {
+private fun HeaderTierCell(model: XmbPreviewModel, palette: DetailPalette, tier: ShibaPreviewTier, earned: Int, total: Int) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         ShibaPreviewCoin(model, tier, Modifier.size(HeaderTierIconSize))
         Spacer(Modifier.width(6.dp))
@@ -258,7 +260,7 @@ private fun HeaderTierCell(model: XmbPreviewModel, palette: DetailPreviewPalette
 // ── View tabs (ShibaCoinsViewTabs) ──────────────────────────────────────────
 
 @Composable
-private fun ViewTabs(palette: DetailPreviewPalette) {
+private fun ViewTabs(palette: DetailPalette, unselected: Color) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -266,9 +268,9 @@ private fun ViewTabs(palette: DetailPreviewPalette) {
     ) {
         // ControllerPrompt(PREV_CATEGORY, label = "", glyphSize = 18dp): the glyph, 4dp, an empty label.
         ShoulderPrompt(DetailPadGlyphs.LB)
-        ViewTab(palette, "All $TOTAL", selected = true)
-        ViewTab(palette, "Earned $EARNED", selected = false)
-        ViewTab(palette, "Locked ${TOTAL - EARNED}", selected = false)
+        ViewTab(palette, unselected, "All $TOTAL", selected = true)
+        ViewTab(palette, unselected, "Earned $EARNED", selected = false)
+        ViewTab(palette, unselected, "Locked ${TOTAL - EARNED}", selected = false)
         ShoulderPrompt(DetailPadGlyphs.RB)
     }
 }
@@ -282,11 +284,11 @@ private fun ShoulderPrompt(glyph: String) {
 }
 
 @Composable
-private fun ViewTab(palette: DetailPreviewPalette, label: String, selected: Boolean) {
+private fun ViewTab(palette: DetailPalette, unselected: Color, label: String, selected: Boolean) {
     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxHeight()) {
         Text(
             text = label,
-            color = if (selected) palette.textPrimary else palette.unselectedLabel,
+            color = if (selected) palette.textPrimary else unselected,
             fontSize = 13.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 1,
@@ -312,7 +314,7 @@ private fun ViewTab(palette: DetailPreviewPalette, label: String, selected: Bool
 @Composable
 private fun CoinRow(
     model: XmbPreviewModel,
-    palette: DetailPreviewPalette,
+    palette: DetailPalette,
     tier: ShibaPreviewTier,
     dimmed: Boolean,
     title: String,

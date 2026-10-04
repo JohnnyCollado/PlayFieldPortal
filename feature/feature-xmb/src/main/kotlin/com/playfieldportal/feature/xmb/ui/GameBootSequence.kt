@@ -89,8 +89,8 @@ private const val DECAY_MS = 600
 // user's route to a look of their own is assigning their own clip, which replaces the whole
 // presentation — see GameBootOverlay.
 private val FIELD = Color.White
-private val MARK_INK = Color(0xFF9A9AA4)
-private val TITLE_INK = Color(0xFFA6A6AE)
+private val MARK_INK = Color.Black
+private val TITLE_INK = Color.Black
 
 // The bloom's three tints, laid down with BlendMode.Multiply so they darken the white field into
 // colour the way a lens flare across a white screen does, rather than adding light to something
@@ -100,10 +100,20 @@ private val BLOOM_COOL = Color(0xFF6EE8E0)
 private val BLOOM_MID = Color(0xFFA8EC78)
 
 // Layout, in fractions of the drawn area so the composition holds at any aspect ratio.
-private const val MARK_CENTER_Y = 0.40f
+private const val MARK_CENTER_Y = 0.45f
 private const val MARK_HEIGHT_FRACTION = 0.18f
-private const val TITLE_TOP_Y = 0.585f
+// The widest the mark may get, so a portrait or narrow screen shrinks it rather than clipping it.
+private const val MARK_MAX_WIDTH_FRACTION = 0.85f
+internal const val TITLE_TOP_Y = 0.60f
 private const val TITLE_WIDTH_FRACTION = 0.80f
+
+// The logo's proportions, as fractions of the mark's height, measured off the reference artwork.
+private const val P_WIDTH = 1.66f
+private const val F_WIDTH = 1.53f
+private const val F_BAR_LENGTH = 0.90f // of the F's own width
+private const val LETTER_GAP = 0.34f
+private const val STROKE = 0.055f
+private const val BAR_Y = 0.47f // from the top
 
 /** One light event: the window it travels across, and how strong it is at full loudness. */
 internal data class Sweep(val startMs: Int, val endMs: Int, val intensity: Float)
@@ -270,47 +280,77 @@ private fun DrawScope.bloom(
     )
 }
 
-/**
- * The `PFP` mark: three monoline letters on one stroke weight, all right angles, mitred joins and
- * butt caps. Every measurement is a fraction of the mark's own height, so the whole lockup scales
- * as one thing.
- */
-private fun DrawScope.drawPfpMark() {
-    val h = size.height * MARK_HEIGHT_FRACTION
-    val s = h * 0.085f
-    val w = h * 0.62f
-    val gap = h * 0.30f
-    val left = (size.width - (3 * w + 2 * gap)) / 2f
-    val cy = size.height * MARK_CENTER_Y
-    val top = cy - h / 2f
-    val bottom = cy + h / 2f
-    val bar = cy - h * 0.04f
-    val style = Stroke(width = s, cap = StrokeCap.Butt, join = StrokeJoin.Miter)
-
-    drawPath(letterP(left, top, bottom, bar, w, s), MARK_INK, style = style)
-    drawPath(letterF(left + w + gap, top, bottom, bar, w, s), MARK_INK, style = style)
-    drawPath(letterP(left + 2 * (w + gap), top, bottom, bar, w, s), MARK_INK, style = style)
+/** Where the `PFP` mark sits on a surface, in pixels. Pure, so the layout is testable without drawing. */
+internal data class PfpMarkLayout(
+    val left: Float,
+    val top: Float,
+    val height: Float,
+    val letterWidth: Float,
+    val fWidth: Float,
+    val gap: Float,
+    val stroke: Float,
+    val bar: Float,
+) {
+    val bottom: Float get() = top + height
+    val totalWidth: Float get() = 2 * letterWidth + fWidth + 2 * gap
 }
 
-/** `P` — stem up the left, over the top, down the right, and back along the bar. One stroke. */
-private fun letterP(l: Float, top: Float, bottom: Float, bar: Float, w: Float, s: Float) =
-    Path().apply {
-        moveTo(l + s / 2f, bottom)
-        lineTo(l + s / 2f, top + s / 2f)
-        lineTo(l + w - s / 2f, top + s / 2f)
-        lineTo(l + w - s / 2f, bar)
-        lineTo(l + s / 2f, bar)
-    }
+/**
+ * Lays the mark out on a [width] x [height] surface: [MARK_HEIGHT_FRACTION] of the height, unless
+ * that would be wider than [MARK_MAX_WIDTH_FRACTION] of the width, then centred on [MARK_CENTER_Y].
+ */
+internal fun pfpMarkLayout(width: Float, height: Float): PfpMarkLayout {
+    val widthPerHeight = 2 * P_WIDTH + F_WIDTH + 2 * LETTER_GAP
+    val h = minOf(height * MARK_HEIGHT_FRACTION, width * MARK_MAX_WIDTH_FRACTION / widthPerHeight)
+    val top = height * MARK_CENTER_Y - h / 2f
+    return PfpMarkLayout(
+        left = (width - h * widthPerHeight) / 2f,
+        top = top,
+        height = h,
+        letterWidth = h * P_WIDTH,
+        fWidth = h * F_WIDTH,
+        gap = h * LETTER_GAP,
+        stroke = h * STROKE,
+        bar = top + h * BAR_Y,
+    )
+}
 
-/** `F` — the same stem and top arm, plus a detached bar that stops short of the full width. */
-private fun letterF(l: Float, top: Float, bottom: Float, bar: Float, w: Float, s: Float) =
-    Path().apply {
-        moveTo(l + s / 2f, bottom)
-        lineTo(l + s / 2f, top + s / 2f)
-        lineTo(l + w - s / 2f, top + s / 2f)
-        moveTo(l + s / 2f, bar)
-        lineTo(l + w * 0.80f, bar)
-    }
+/**
+ * The `PFP` mark: three wide monoline letters on one thin stroke, all right angles, mitred joins
+ * and butt caps. Every measurement is a fraction of the mark's own height, so the whole lockup
+ * scales as one thing.
+ */
+private fun DrawScope.drawPfpMark() {
+    val m = pfpMarkLayout(size.width, size.height)
+    val style = Stroke(width = m.stroke, cap = StrokeCap.Butt, join = StrokeJoin.Miter)
+    val fLeft = m.left + m.letterWidth + m.gap
+    drawPath(letterP(m.left, m), MARK_INK, style = style)
+    drawPath(letterF(fLeft, m), MARK_INK, style = style)
+    drawPath(letterP(fLeft + m.fWidth + m.gap, m), MARK_INK, style = style)
+}
+
+/**
+ * `P` — the logo's open P: along the top, down the right, back along the bar, then the stem down
+ * from the bar. There is no stem above the bar. One stroke.
+ */
+private fun letterP(l: Float, m: PfpMarkLayout) = Path().apply {
+    val half = m.stroke / 2f
+    moveTo(l, m.top + half)
+    lineTo(l + m.letterWidth - half, m.top + half)
+    lineTo(l + m.letterWidth - half, m.bar)
+    lineTo(l + half, m.bar)
+    lineTo(l + half, m.bottom)
+}
+
+/** `F` — a full stem and top arm, plus a detached bar that stops short of the arm. */
+private fun letterF(l: Float, m: PfpMarkLayout) = Path().apply {
+    val half = m.stroke / 2f
+    moveTo(l + half, m.bottom)
+    lineTo(l + half, m.top + half)
+    lineTo(l + m.fWidth, m.top + half)
+    moveTo(l + half, m.bar)
+    lineTo(l + m.fWidth * F_BAR_LENGTH, m.bar)
+}
 
 /**
  * The game's title, centred under the mark. Sized in sp rather than as a fraction of the surface
@@ -324,9 +364,9 @@ private fun DrawScope.drawGameTitle(textMeasurer: TextMeasurer, gameTitle: Strin
         style = TextStyle(
             color = TITLE_INK,
             fontFamily = InterFamily,
-            fontWeight = FontWeight.Light,
-            fontSize = 24.sp,
-            letterSpacing = 2.sp,
+            fontWeight = FontWeight.Normal,
+            fontSize = 30.sp,
+            letterSpacing = 0.5.sp,
             textAlign = TextAlign.Center,
         ),
         constraints = Constraints(maxWidth = maxWidth),

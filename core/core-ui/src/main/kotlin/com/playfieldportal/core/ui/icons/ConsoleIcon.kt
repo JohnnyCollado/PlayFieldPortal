@@ -18,8 +18,8 @@ fun ConsoleIcon(
     contentDescription: String?,
     modifier: Modifier = Modifier,
 ) {
-    val key = "sysicon_${platformId ?: "default"}"
-    val icon = LocalCustomIcons.current[key] ?: LocalXmbIconOverrides.current[key]
+    val key = "${com.playfieldportal.themekit.CustomizableIcons.SYSICON_PREFIX}${platformId ?: "default"}"
+    val icon = LocalXmbIcons.current[key]
     if (icon != null) {
         CustomIconSurface(icon, contentDescription, modifier)
         return

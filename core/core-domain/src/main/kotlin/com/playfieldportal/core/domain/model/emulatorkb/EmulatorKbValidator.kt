@@ -41,6 +41,14 @@ object EmulatorKbValidator {
     private val EXTENSION = Regex("[a-z0-9]{1,10}")
     private val SIGNER = Regex("[0-9a-f]{64}")
 
+    // A deep link: an app's own scheme, plain URL characters, and exactly one game placeholder.
+    private val DATA_URI = Regex("""([a-z][a-z0-9+.-]{1,30})://[A-Za-z0-9._~/?=&%-]{0,200}""")
+    private val DATA_URI_PLACEHOLDERS = setOf(
+        LaunchTemplate.ROM_FILE_URI_ENCODED, LaunchTemplate.ROM_FILE_URI, LaunchTemplate.ROM_URI, LaunchTemplate.ROM_PATH,
+    )
+    // Schemes that would point the emulator at a file, a web page, or another app.
+    private val REFUSED_DATA_SCHEMES = setOf("file", "content", "http", "https", "intent", "android-app", "javascript", "data")
+
     private val PLACEHOLDERS = setOf(
         LaunchTemplate.ROM_PATH, LaunchTemplate.ROM_URI, LaunchTemplate.ROM_NAME, LaunchTemplate.ROM_DIR,
         LaunchTemplate.CORE_PATH, LaunchTemplate.CONFIG_PATH, LaunchTemplate.PACKAGE, LaunchTemplate.PLATFORM,
@@ -171,7 +179,21 @@ object EmulatorKbValidator {
         l.flags.firstOrNull { it !in EmulatorProfileAdmission.ALLOWED_INTENT_FLAGS }
             ?.let { return "requests unsupported intent flag '$it'" }
         l.mimeType?.takeIf { !MIME_TYPE.matches(it) }?.let { return "has an invalid MIME type" }
+        l.dataUri?.let { uri -> dataUriRefusal(uri, l.intentType)?.let { return it } }
         return extrasRefusal(l)
+    }
+
+    private fun dataUriRefusal(uri: String, type: IntentType): String? {
+        if (type != IntentType.COMPONENT) return "has a data URI on a launch that is not a component intent"
+        val placeholders = Regex("""\{[a-z_]+\}""").findAll(uri).map { it.value }.toList()
+        if (placeholders.size != 1 || placeholders[0] !in DATA_URI_PLACEHOLDERS) {
+            return "has a data URI that does not carry exactly one game placeholder"
+        }
+        val literal = uri.replace(placeholders[0], "")
+        val scheme = DATA_URI.matchEntire(literal)?.groupValues?.get(1)
+            ?: return "has an invalid data URI"
+        if (scheme in REFUSED_DATA_SCHEMES) return "has a data URI with a refused scheme '$scheme'"
+        return null
     }
 
     private fun extrasRefusal(l: EmulatorKbLaunch): String? {

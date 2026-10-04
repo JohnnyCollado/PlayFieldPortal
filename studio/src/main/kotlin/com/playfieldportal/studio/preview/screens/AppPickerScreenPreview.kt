@@ -37,6 +37,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.studio.preview.XmbBackdrop
 import com.playfieldportal.studio.preview.XmbPreviewModel
+import com.playfieldportal.core.ui.theme.StorefrontColors
+import com.playfieldportal.core.ui.theme.unselectedLabel
 
 // ── App Picker (feature-xmb ui/apppicker/AppPickerScreen.kt) ──────────────────────────────────
 //
@@ -73,7 +75,7 @@ private val PickerPromptLabel = TextStyle(fontSize = 12.sp)
 
 @Composable
 fun AppPickerScreenPreview(model: XmbPreviewModel) {
-    val sf = remember(model.accent, model.backgroundTop, model.backgroundBottom, model.textOverride, model.subTextOverride) { drawerPalette(model) }
+    val sf = rememberDrawerPalette(model)
     Box(Modifier.fillMaxSize()) {
         XmbBackdrop(model)
         CompositionLocalProvider(LocalTextStyle provides DrawerBodyLarge) {
@@ -94,6 +96,7 @@ fun AppPickerScreenPreview(model: XmbPreviewModel) {
                                 checked = label in PickerSelected,
                                 artwork = artwork,
                                 sf = sf,
+                                unselected = sf.unselectedLabel(model.pfp),
                             )
                         }
                     }
@@ -116,7 +119,7 @@ fun AppPickerScreenPreview(model: XmbPreviewModel) {
 
 // AppPickerHeader: ‹ + title on the left, "N Selected" then the magnifier + "Search" on the right.
 @Composable
-private fun PickerHeader(title: String, selectedCount: Int, sf: DrawerPalette) {
+private fun PickerHeader(title: String, selectedCount: Int, sf: StorefrontColors) {
     Row(
         modifier = Modifier.fillMaxWidth().height(DrawerHeaderHeight).padding(horizontal = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -151,7 +154,7 @@ private fun PickerHeader(title: String, selectedCount: Int, sf: DrawerPalette) {
 // plus the independent selection layer — a tileSelectedInner @ 0.10 tint and the PfpCheckBadge
 // (18 dp, tileSelectedEdge fill, backgroundDeep mark) top-right, 3 dp in.
 @Composable
-private fun PickerTile(label: String, focused: Boolean, checked: Boolean, artwork: Dp, sf: DrawerPalette) {
+private fun PickerTile(label: String, focused: Boolean, checked: Boolean, artwork: Dp, sf: StorefrontColors, unselected: Color) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -173,7 +176,7 @@ private fun PickerTile(label: String, focused: Boolean, checked: Boolean, artwor
             }
         }
         Spacer(Modifier.height(6.dp))
-        DrawerTileLabel(label, if (focused) sf.textPrimary else sf.unselectedLabel)
+        DrawerTileLabel(label, if (focused) sf.textPrimary else unselected)
     }
 }
 

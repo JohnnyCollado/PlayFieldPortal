@@ -27,7 +27,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,6 +47,9 @@ import com.playfieldportal.studio.preview.XmbBackdrop
 import com.playfieldportal.studio.preview.XmbPreviewModel
 import kotlin.math.ceil
 import kotlin.math.floor
+import com.playfieldportal.studio.preview.LocalPreviewModel
+import com.playfieldportal.studio.preview.previewText
+import com.playfieldportal.studio.preview.previewSubText
 
 /*
  * The Artwork Studio for one game, replicated from feature-xmb ui/detail:
@@ -67,20 +69,9 @@ import kotlin.math.floor
  * backgroundBottom over the XMB background (wallpaper/wave, via [XmbBackdrop]); every highlight is
  * menuCursorEdge(), which derives from PFPColors.accentColor (white on every theme). Text is white at
  * fixed alphas, repainted by the theme's Main / Sub text colours where the launcher's Studio calls
- * themedText / themedSubText ([studioText] / [studioSubText]); source chips, result tile labels and
+ * themedText / themedSubText ([previewText] / [previewSubText]); source chips, result tile labels and
  * "No artwork set" stay fixed, as they do on the device. Legibility and icons are not read.
  */
-
-/** The preview model, for the text roles of the composables below. */
-private val LocalStudioModel = staticCompositionLocalOf<XmbPreviewModel?> { null }
-
-/** themedText(default): the Main colour at [default]'s weight, else [default]. */
-@Composable
-private fun studioText(default: Color): Color = LocalStudioModel.current?.textOr(default) ?: default
-
-/** themedSubText(default): the Sub (else Main) colour at [default]'s weight, else [default]. */
-@Composable
-private fun studioSubText(default: Color): Color = LocalStudioModel.current?.subTextOr(default) ?: default
 
 // The launcher's Text calls without a style inherit MaterialTheme's bodyLarge (24 sp line height,
 // 0.5 sp tracking); PFPTheme keeps the default typography, so this is the same style.
@@ -135,7 +126,7 @@ fun ArtworkStudioScreenPreview(model: XmbPreviewModel) {
     val accent = model.menuCursorEdge
     Box(Modifier.fillMaxSize()) {
         XmbBackdrop(model)
-        CompositionLocalProvider(LocalTextStyle provides BodyLarge, LocalStudioModel provides model) {
+        CompositionLocalProvider(LocalTextStyle provides BodyLarge, LocalPreviewModel provides model) {
             Box(
                 Modifier
                     .fillMaxSize()
@@ -173,18 +164,18 @@ fun ArtworkStudioScreenPreview(model: XmbPreviewModel) {
 private fun StudioHeader(accent: Color) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().height(36.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("◀", color = studioSubText(Color.White.copy(alpha = 0.55f)), fontSize = 14.sp, modifier = Modifier.padding(end = 12.dp))
+            Text("◀", color = previewSubText(Color.White.copy(alpha = 0.55f)), fontSize = 14.sp, modifier = Modifier.padding(end = 12.dp))
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     GAME_TITLE,
-                    color = studioText(Color.White), fontSize = 18.sp, fontWeight = FontWeight.Bold,
+                    color = previewText(Color.White), fontSize = 18.sp, fontWeight = FontWeight.Bold,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.widthIn(max = 320.dp),
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
                     "Artwork Studio · ${PLATFORM_ID.uppercase()}",
-                    color = studioSubText(Color.White.copy(alpha = 0.55f)), fontSize = 11.sp,
+                    color = previewSubText(Color.White.copy(alpha = 0.55f)), fontSize = 11.sp,
                     maxLines = 1,
                 )
             }
@@ -204,21 +195,21 @@ private fun StudioHeader(accent: Color) {
             GlyphOnly(GLYPH_X, 13.dp)
             Text(
                 GAME_TITLE,
-                color = studioText(Color.White.copy(alpha = 0.92f)),
+                color = previewText(Color.White.copy(alpha = 0.92f)),
                 fontSize = 12.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false).padding(start = 4.dp),
             )
             Spacer(Modifier.weight(1f))
-            Text("game title", color = studioSubText(Color.White.copy(alpha = 0.45f)), fontSize = 9.sp)
+            Text("game title", color = previewSubText(Color.White.copy(alpha = 0.45f)), fontSize = 9.sp)
         }
         // StudioOptionsControl, controller mode: the Y hint.
         Prompt(
             glyph = GLYPH_Y,
             label = "Options",
             glyphSize = 13.dp,
-            labelColor = studioSubText(Color.White.copy(alpha = 0.6f)),
+            labelColor = previewSubText(Color.White.copy(alpha = 0.6f)),
             labelStyle = TextStyle(fontSize = 9.5.sp),
             modifier = Modifier.padding(start = 12.dp).padding(vertical = 4.dp),
         )
@@ -248,7 +239,7 @@ private fun StudioTabs(accent: Color) {
                 ) {
                     Text(
                         label,
-                        color = studioText(if (selected) Color.White else Color.White.copy(alpha = 0.62f)),
+                        color = previewText(if (selected) Color.White else Color.White.copy(alpha = 0.62f)),
                         fontSize = 10.5.sp,
                         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
                         maxLines = 1,
@@ -266,8 +257,8 @@ private fun StudioTabs(accent: Color) {
 private fun CurrentArtRail() {
     Column(Modifier.width(RailWidth).fillMaxHeight()) {
         Column(Modifier.weight(1f)) {
-            Text(TABS[TAB_INDEX], color = studioText(Color.White), fontSize = 13.sp, fontWeight = FontWeight.Bold)
-            Text(TAB_CONTRACT, color = studioSubText(Color.White.copy(alpha = 0.55f)), fontSize = 9.5.sp, lineHeight = 12.sp)
+            Text(TABS[TAB_INDEX], color = previewText(Color.White), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Text(TAB_CONTRACT, color = previewSubText(Color.White.copy(alpha = 0.55f)), fontSize = 9.5.sp, lineHeight = 12.sp)
             Spacer(Modifier.height(6.dp))
             // The thumbnail, in the tab's tile shape.
             Box(
@@ -324,7 +315,7 @@ private fun SourceChips(accent: Color) {
                 .padding(horizontal = 8.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text("Mature off", color = studioText(Color.White.copy(alpha = 0.6f)), fontSize = 9.sp, lineHeight = 12.sp, maxLines = 1)
+            Text("Mature off", color = previewText(Color.White.copy(alpha = 0.6f)), fontSize = 9.sp, lineHeight = 12.sp, maxLines = 1)
         }
     }
 }
@@ -339,10 +330,10 @@ private fun MatchLine() {
         CheckMark(MatchGreen, 12.dp)
         Spacer(Modifier.width(7.dp))
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-            Text("Matched as ", color = studioSubText(Color.White.copy(alpha = 0.75f)), fontSize = 10.5.sp, maxLines = 1)
+            Text("Matched as ", color = previewSubText(Color.White.copy(alpha = 0.75f)), fontSize = 10.5.sp, maxLines = 1)
             Text(
                 GAME_TITLE,
-                color = studioText(Color.White), fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold,
+                color = previewText(Color.White), fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false),
             )
@@ -352,7 +343,7 @@ private fun MatchLine() {
             modifier = Modifier.fillMaxHeight().clip(RoundedCornerShape(6.dp)).padding(horizontal = 6.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text("CHANGE MATCH", color = studioText(Color.White), fontSize = 9.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            Text("CHANGE MATCH", color = previewText(Color.White), fontSize = 9.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
         }
     }
 }
@@ -474,7 +465,7 @@ private fun PageLine(rangeEnd: Int, pageCount: Int) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().height(PageLineHeight)) {
         Text(
             "1–$rangeEnd of $TOTAL_RESULTS",
-            color = studioSubText(Color.White.copy(alpha = 0.6f)), fontSize = 9.5.sp, lineHeight = 12.sp,
+            color = previewSubText(Color.White.copy(alpha = 0.6f)), fontSize = 9.5.sp, lineHeight = 12.sp,
             maxLines = 1,
         )
         Spacer(Modifier.weight(1f))
@@ -483,7 +474,7 @@ private fun PageLine(rangeEnd: Int, pageCount: Int) {
             PageArrow("‹", enabled = false)
             Text(
                 "Page 1 / $pageCount",
-                color = studioSubText(Color.White.copy(alpha = 0.6f)), fontSize = 9.5.sp, lineHeight = 12.sp,
+                color = previewSubText(Color.White.copy(alpha = 0.6f)), fontSize = 9.5.sp, lineHeight = 12.sp,
                 maxLines = 1,
             )
             PageArrow("›", enabled = true)
@@ -496,7 +487,7 @@ private fun PageLine(rangeEnd: Int, pageCount: Int) {
 private fun PageArrow(glyph: String, enabled: Boolean) {
     Text(
         glyph,
-        color = studioText(Color.White.copy(alpha = if (enabled) 0.85f else 0.3f)),
+        color = previewText(Color.White.copy(alpha = if (enabled) 0.85f else 0.3f)),
         fontSize = 11.sp, fontWeight = FontWeight.SemiBold, lineHeight = 12.sp,
         modifier = Modifier.clip(RoundedCornerShape(4.dp)).padding(horizontal = 8.dp),
     )
@@ -510,7 +501,7 @@ private fun PageArrow(glyph: String, enabled: Boolean) {
  */
 @Composable
 private fun FooterPrompts() {
-    val labelColor = studioSubText(Color.White.copy(alpha = 0.35f))
+    val labelColor = previewSubText(Color.White.copy(alpha = 0.35f))
     val labelStyle = TextStyle(fontSize = 10.sp)
     Row(
         verticalAlignment = Alignment.CenterVertically,

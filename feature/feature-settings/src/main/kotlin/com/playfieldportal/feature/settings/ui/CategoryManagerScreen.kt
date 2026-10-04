@@ -37,7 +37,7 @@ import com.playfieldportal.core.ui.icons.CategoryIconGlyph
 import com.playfieldportal.core.ui.icons.CustomIcon
 import com.playfieldportal.core.ui.icons.CustomIconSurface
 import com.playfieldportal.core.ui.icons.FALLBACK_CATEGORY_ICON
-import com.playfieldportal.core.ui.icons.LocalCustomIcons
+import com.playfieldportal.core.ui.icons.LocalXmbIcons
 import com.playfieldportal.core.ui.icons.UserCategoryIconKeys
 import com.playfieldportal.core.ui.icons.categoryIconFor
 import com.playfieldportal.core.ui.motion.LocalIconFocused
@@ -331,7 +331,7 @@ private fun PickIconContent(
                         onClick  = { picker.launch(DEVICE_IMAGE_MIME) },
                     )
                 } else {
-                    val icon = LocalCustomIcons.current[imageKey]
+                    val icon = LocalXmbIcons.current[imageKey]
                     // Read-only preview row: it plays under Animated Images while the cursor is on it.
                     SettingsRow(
                         label    = "Your Image",
@@ -452,7 +452,7 @@ private fun CategoryDetailContent(
                 trailing = {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(cat.iconLabel, color = SettingsText, fontSize = 13.sp)
-                        val image = cat.deviceImageKey?.takeIf { cat.hasImage }?.let { LocalCustomIcons.current[it] }
+                        val image = cat.deviceImageKey?.takeIf { cat.hasImage }?.let { LocalXmbIcons.current[it] }
                         if (image != null) {
                             CompositionLocalProvider(LocalIconFocused provides iconRowFocused) {
                                 CustomIconSurface(image, contentDescription = cat.iconLabel, modifier = Modifier.size(32.dp))

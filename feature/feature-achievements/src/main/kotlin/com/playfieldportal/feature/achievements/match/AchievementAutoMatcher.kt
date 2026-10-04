@@ -52,6 +52,7 @@ class AchievementAutoMatcher @Inject constructor(
     private val ps3TropDirReader: com.playfieldportal.feature.achievements.provider.ps3.Ps3TropDirReader,
     private val ps3TrophyDiscovery: com.playfieldportal.feature.achievements.provider.ps3.Ps3TrophyDiscovery,
     private val steamGate: WindowsSteamGate,
+    private val x360TitleMatcher: com.playfieldportal.feature.achievements.provider.x360.X360TitleMatcher,
 ) {
     private sealed interface Outcome {
         data object Matched : Outcome
@@ -195,6 +196,9 @@ class AchievementAutoMatcher @Inject constructor(
         // PS3 games link from the trophy set id the disc itself declares, never from a hash: RA
         // has no PS3 console, and ARMSX3's trophy files are keyed by NPCOMMID.
         if (game.platformId == PS3_PLATFORM_ID) return matchPs3(game)
+        // Xbox 360 games link by title ID — the name of the profile GPD X360 Mobile / XenDroid
+        // write. RA has no Xbox 360 console.
+        if (game.platformId == X360_PLATFORM_ID) return matchX360(game)
         // RetroAchievements is hash-only: a game links solely by its ROM/disc content hash, never
         // by title. If the hash isn't a registered RA hash, the game stays untracked.
         val consoleId = RaConsole.idFor(game.platformId)
@@ -283,6 +287,40 @@ class AchievementAutoMatcher @Inject constructor(
         }
         repository.linkManually(game.id, AchievementProvider.PS3_TROPHY, hit)
         return Outcome.Matched
+    }
+
+    private suspend fun matchX360(game: Game): Outcome =
+        when (val result = x360TitleMatcher.match(game)) {
+            is com.playfieldportal.feature.achievements.provider.x360.X360TitleMatcher.Result.Matched -> {
+                repository.linkManually(game.id, AchievementProvider.X360_ACHIEVEMENT, result.titleId)
+                Outcome.Matched
+            }
+            is com.playfieldportal.feature.achievements.provider.x360.X360TitleMatcher.Result.Unmatched ->
+                Outcome.Unmatched(result.reason, ownReason = true)
+        }
+
+    /** Outcome of the explicit per-game Xbox 360 match, so the Shiba page can say what to fix. */
+    sealed interface X360MatchResult {
+        data object Matched : X360MatchResult
+        data class Unmatched(val reason: String) : X360MatchResult
+    }
+
+    /** Single-game Auto-Match for an Xbox 360 game: the batch run's branch, with its match note kept in step. */
+    suspend fun matchSingleAsX360(gameId: Long): X360MatchResult {
+        val game = gameRepository.getById(gameId)
+            ?: return X360MatchResult.Unmatched("Game not found")
+        return when (val outcome = matchX360(game)) {
+            Outcome.Matched -> {
+                matchNoteDao.deleteForGame(gameId)
+                X360MatchResult.Matched
+            }
+            is Outcome.Unmatched -> {
+                matchNoteDao.upsert(
+                    AchievementMatchNoteEntity(gameId, outcome.reason, System.currentTimeMillis()),
+                )
+                X360MatchResult.Unmatched(outcome.reason)
+            }
+        }
     }
 
     // The 5-rule normalizer's strict equality key — the same one the storefront matcher compares on.
@@ -482,5 +520,6 @@ class AchievementAutoMatcher @Inject constructor(
 
     private companion object {
         const val PS3_PLATFORM_ID = "ps3"
+        const val X360_PLATFORM_ID = "x360"
     }
 }

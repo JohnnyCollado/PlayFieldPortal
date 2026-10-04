@@ -19,10 +19,10 @@ class SysiconExtrasTest {
             manifest = PfpThemeManifest(name = "Extras", accentColor = "#FF72B1"),
             wallpaper = null,
             preview = null,
-            sysicons = mapOf("cps1" to ThemeImage(png, "png"), "default" to ThemeImage(png, "png")),
+            icons = consoleArt("cps1" to ThemeImage(png, "png"), "default" to ThemeImage(png, "png")),
         )
         val decoded = assertNotNull(PfpThemeCodec.read(PfpThemeCodec.write(bundle)))
-        assertEquals(setOf("cps1", "default"), decoded.sysicons.keys)
+        assertEquals(setOf("cps1", "default"), decoded.consoleArt.keys)
     }
 
     @Test
@@ -36,7 +36,7 @@ class SysiconExtrasTest {
         val frozen = assertNotNull(V3EraReader.read(bytes))
         assertEquals(setOf("psx"), frozen.sysicons.keys)
         val current = assertNotNull(PfpThemeCodec.read(bytes))
-        assertEquals(setOf("psx", "cps1", "default"), current.sysicons.keys)
+        assertEquals(setOf("psx", "cps1", "default"), current.consoleArt.keys)
         assertTrue(V3EraReader.SYSICON_IDS.none { it in SYSICON_EXTRA_IDS })
     }
 

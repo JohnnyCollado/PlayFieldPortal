@@ -176,6 +176,7 @@ class EmulatorKbImportPlan private constructor(val items: List<ImportItem>) {
             field("MIME type", a.launch.mimeType, b.launch.mimeType)
             field("URI mode", a.launch.useSafUri, b.launch.useSafUri) { if (it) "SAF URI" else "File path" }
             field("Attach ROM data", a.launch.attachRomData, b.launch.attachRomData)
+            field("Data URI", a.launch.dataUri, b.launch.dataUri)
             field("Per-package launch", a.launchByPackage, b.launchByPackage) { m ->
                 m.entries.sortedBy { it.key }.joinToString("; ") { (pkg, l) ->
                     "$pkg: ${launchText(l, ::list, ::map)}"
@@ -202,6 +203,7 @@ class EmulatorKbImportPlan private constructor(val items: List<ImportItem>) {
             "MIME ${l.mimeType ?: NONE}",
             if (l.useSafUri) "SAF URI" else "file path",
             "attach ROM data ${l.attachRomData}",
+            "data URI ${l.dataUri ?: NONE}",
         ).joinToString(", ")
 
         private const val NONE = "none"

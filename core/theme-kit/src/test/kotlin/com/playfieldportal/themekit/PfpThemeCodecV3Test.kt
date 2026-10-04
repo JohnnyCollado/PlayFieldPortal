@@ -35,8 +35,7 @@ class PfpThemeCodecV3Test {
             icons = mapOf(
                 "catbar_games" to ThemeImage(gifBytes(), "gif"),
                 "catbar_music" to ThemeImage(pngV3Bytes(), "png"),
-            ),
-            sysicons = mapOf(
+            ) + consoleArt(
                 "psx" to ThemeImage(pngV3Bytes(), "png"),
                 "nes" to ThemeImage(gifBytes(), "gif"),
             ),
@@ -46,10 +45,10 @@ class PfpThemeCodecV3Test {
         val decoded = assertNotNull(PfpThemeCodec.read(PfpThemeCodec.write(bundle)))
 
         assertEquals(bundle.manifest, decoded.manifest)
-        assertEquals(setOf("catbar_games", "catbar_music"), decoded.icons.keys)
+        assertEquals(setOf("catbar_games", "catbar_music"), decoded.slotIcons.keys)
         assertEquals("gif", decoded.icons["catbar_games"]?.extension)
         assertTrue(decoded.icons["catbar_games"]!!.bytes.contentEquals(gifBytes()))
-        assertEquals(setOf("psx", "nes"), decoded.sysicons.keys)
+        assertEquals(setOf("psx", "nes"), decoded.consoleArt.keys)
         assertEquals("mp4", decoded.motion?.extension)
         // The motion entry is never held as bytes — it streams on demand, so the round-trip is
         // asserted by draining it rather than by reading a `bytes` property that no longer exists.
@@ -63,8 +62,7 @@ class PfpThemeCodecV3Test {
                 manifest = manifest,
                 wallpaper = null,
                 preview = null,
-                icons = icons,
-                sysicons = mapOf("nes" to ThemeImage(gifBytes(), "gif"), "psx" to ThemeImage(pngV3Bytes(), "png")),
+                icons = icons + consoleArt("nes" to ThemeImage(gifBytes(), "gif"), "psx" to ThemeImage(pngV3Bytes(), "png")),
             ),
         )
 
@@ -103,7 +101,7 @@ class PfpThemeCodecV3Test {
             "sysicons/psx.png" to ByteArray(4),
         )
         val decoded = assertNotNull(PfpThemeCodec.read(hostile))
-        assertEquals(setOf("psx"), decoded.sysicons.keys, "only registered console keys survive read")
+        assertEquals(setOf("psx"), decoded.consoleArt.keys, "only registered console keys survive read")
     }
 
     @Test
@@ -114,7 +112,7 @@ class PfpThemeCodecV3Test {
             "sysicons/psx.png" to pngV3Bytes(),
         )
         val decoded = assertNotNull(PfpThemeCodec.read(hostile))
-        assertEquals(setOf("psx"), decoded.sysicons.keys)
+        assertEquals(setOf("psx"), decoded.consoleArt.keys)
     }
 
     /** Streams a [ThemeMotion] into memory so a test can assert its content. */
@@ -142,7 +140,7 @@ class PfpThemeCodecV3Test {
         )
         val decoded = assertNotNull(PfpThemeCodec.read(hostile))
         assertEquals(setOf("catbar_games"), decoded.icons.keys)
-        assertTrue(decoded.sysicons.isEmpty(), "sysicon keys live under sysicons/, not icons/")
+        assertTrue(decoded.consoleArt.isEmpty(), "sysicon keys live under sysicons/, not icons/")
     }
 
     // ── limits ────────────────────────────────────────────────────────────────
@@ -183,7 +181,7 @@ class PfpThemeCodecV3Test {
         assertEquals(2, decoded.manifest.schemaVersion)
         assertEquals(setOf("catbar_games"), decoded.icons.keys)
         assertEquals("png", decoded.icons["catbar_games"]?.extension)
-        assertTrue(decoded.sysicons.isEmpty())
+        assertTrue(decoded.consoleArt.isEmpty())
         assertNull(decoded.motion)
     }
 

@@ -34,8 +34,7 @@ class ExportCheckTest {
         val state = StudioState(
             wallpaperPng = ByteArray(1000),
             previewPng = ByteArray(200),
-            iconOverrides = mapOf("a" to ByteArray(30), "b" to ByteArray(20)),
-            sysiconOverrides = mapOf("sysicon_psx" to ByteArray(10)),
+            iconOverrides = mapOf("a" to ByteArray(30), "b" to ByteArray(20), "sysicon_psx" to ByteArray(10)),
             motionFile = file("m.mp4", 5000),
             mediaFiles = mapOf(
                 "sound_scroll" to file("s1.wav", 100),

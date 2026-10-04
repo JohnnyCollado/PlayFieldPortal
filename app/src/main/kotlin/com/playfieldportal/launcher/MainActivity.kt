@@ -163,7 +163,9 @@ class MainActivity : ComponentActivity() {
                 val imageMotion by iconDisplayPreferences.imageMotionFlow
                     .collectAsState(initial = com.playfieldportal.core.domain.model.ImageMotion.DEFAULT)
                 val lifecycleState by lifecycle.currentStateFlow.collectAsState()
-                val appVisible = lifecycleState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)
+                // RESUMED, not STARTED: a dialog-style app over the launcher leaves it visible but
+                // paused, and nothing should animate behind it either.
+                val appVisible = lifecycleState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)
                 androidx.compose.runtime.SideEffect {
                     com.playfieldportal.core.ui.motion.MotionGate.Shared
                         .update(imageMotion, focused = true, allowed = appVisible)
@@ -216,12 +218,25 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        // UI-only clocks (idle hints, music position) run only while the launcher is on screen.
+        xmbViewModel.setHostVisible(true)
+    }
+
+    override fun onPause() {
+        // Visible but not in front (a dialog-style app on top): ambience holds its place.
+        ambienceController.onHostPaused()
+        super.onPause()
+    }
+
     override fun onStop() {
         // B1: another activity covered the launcher — the dispatched emulator came to front.
         launchDispatcher.onHostStopped()
         // Releases the ambience player outright rather than pausing it: a game is about to want
         // the audio hardware, and a paused ExoPlayer still holds a codec.
         ambienceController.onHostStopped()
+        xmbViewModel.setHostVisible(false)
         wasStopped = true
         super.onStop()
     }

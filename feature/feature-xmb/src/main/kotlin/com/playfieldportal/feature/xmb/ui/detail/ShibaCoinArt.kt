@@ -17,8 +17,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.ui.icons.CustomIconSurface
-import com.playfieldportal.core.ui.icons.LocalCustomIcons
-import com.playfieldportal.core.ui.icons.LocalXmbIconOverrides
+import com.playfieldportal.core.ui.icons.LocalXmbIcons
 import com.playfieldportal.feature.xmb.R
 
 /** The bundled Shiba coin medallion for a tier. */
@@ -35,7 +34,7 @@ fun shibaCoinRes(tier: ShibaTier): Int = when (tier) {
 fun ShibaCoinIcon(tier: ShibaTier, modifier: Modifier = Modifier, colorFilter: ColorFilter? = null) {
     // Two-tier: user pick, then the applied theme's art.
     val slotKey = shibaCoinSlotKeyFor(tier)
-    val override = LocalCustomIcons.current[slotKey] ?: LocalXmbIconOverrides.current[slotKey]
+    val override = LocalXmbIcons.current[slotKey]
     if (override != null) {
         // Custom art renders as authored, but a locked coin's greyscale still applies to it:
         // without it a themed coin you haven't earned reads as earned.

@@ -1,6 +1,7 @@
 package com.playfieldportal.studio.preview
 
 import androidx.compose.ui.graphics.Color
+import com.playfieldportal.core.ui.theme.ThemeTokens
 import com.playfieldportal.studio.StudioState
 import com.playfieldportal.studio.TextColorChoice
 import kotlin.test.Test
@@ -20,8 +21,8 @@ class PreviewTextColorTest {
 
     // The launcher's built-in label colours (XMBCategoryBar / XMBItemList / XmbStatusStrip).
     private val selected = Color.White
-    private val inactive = Color(0xCCD8E6FF)
-    private val secondary = Color(0xAAC8DAF2)
+    private val inactive = ThemeTokens.XmbInactiveLabel
+    private val secondary = ThemeTokens.XmbSecondaryLabel
 
     private fun model(main: TextColorChoice, sub: TextColorChoice = TextColorChoice.Auto) =
         StudioState(textColor = main, subTextColor = sub).toPreviewModel()

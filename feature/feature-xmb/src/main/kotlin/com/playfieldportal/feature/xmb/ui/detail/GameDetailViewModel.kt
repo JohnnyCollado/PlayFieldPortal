@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.entity.PlatformEntity
 import com.playfieldportal.core.data.repository.CollectionRepository
-import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.isDirectional
 import com.playfieldportal.core.ui.sound.MenuSound
@@ -36,12 +35,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import com.playfieldportal.feature.artwork.store.ArtworkStore
 import com.playfieldportal.feature.launcher.EmulatorIntentResolver
-import com.playfieldportal.feature.launcher.EmulatorLaunchResolver
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.launcher.LaunchDispatchResult
 import com.playfieldportal.feature.launcher.ResolvedLaunch
 import com.playfieldportal.feature.launcher.byLaunchPreference
-import com.playfieldportal.feature.launcher.stabilizeCore
 import com.playfieldportal.feature.launcher.supportsPlatform
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -447,10 +444,10 @@ class GameDetailViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val gameRepository: GameRepository,
     private val platformDao: PlatformDao,
-    private val memoryCardRepository: MemoryCardRepository,
     private val collectionRepository: CollectionRepository,
     private val profileRepository: EmulatorProfileRepository,
-    private val autoCoreMemory: com.playfieldportal.feature.launcher.AutoCoreMemory,
+    // Which emulator launches a game: the same ladder inputs the XMB's direct launch reads.
+    private val launchLadder: com.playfieldportal.feature.launcher.GameLaunchLadder,
     private val intentResolver: EmulatorIntentResolver,
     private val artworkRepository: ArtworkRepository,
     private val artworkStore: ArtworkStore,
@@ -1699,35 +1696,13 @@ class GameDetailViewModel @Inject constructor(
     }
 
     /**
-     * Resolves which emulator (and RetroArch core) will launch [game]. This function only gathers
-     * the ladder's inputs from their stores; the precedence itself lives in
-     * [EmulatorLaunchResolver] (feature-launcher) so it is shared, tested logic.
+     * Resolves which emulator (and RetroArch core) will launch [game] — [GameLaunchLadder], shared
+     * with the XMB's direct launch, so both decide the same way.
      */
     private suspend fun resolveLaunchProfile(
         game: Game,
         platform: PlatformEntity? = null,
-    ): Result<ResolvedLaunch> {
-        val platformId = game.platformId
-        val installed = profileRepository.getInstalledProfiles()
-        // Ordered so the automatic fallback picks a standalone emulator over a RetroArch core when
-        // both support the console. Unavailable profiles (e.g. a RetroArch core the SAF link
-        // detected as not installed) are excluded so the fallback never lands on one. The console's
-        // remembered RetroArch core is then lifted to the front of the core tier, so the core (and
-        // its RetroArch configs) stays stable even as the detected core set changes.
-        val platformProfiles =
-            installed.filter { it.isAvailable && it.supportsPlatform(platformId) }
-                .byLaunchPreference()
-                .stabilizeCore(autoCoreMemory.rememberedProfileId(platformId))
-        return EmulatorLaunchResolver.resolve(
-            platformId           = platformId,
-            installedProfiles    = installed,
-            platformProfiles     = platformProfiles,
-            perGameOverride      = game.emulatorPackage?.takeIf { it.isNotBlank() },
-            memoryCardEmulatorId = memoryCardRepository.getById(platformId)?.emulatorId?.takeIf { it.isNotBlank() },
-            platformDefault      = (platform?.preferredEmulatorPackage
-                ?: platformDao.getById(platformId)?.preferredEmulatorPackage)?.takeIf { it.isNotBlank() },
-        )
-    }
+    ): Result<ResolvedLaunch> = launchLadder.resolve(game, platform)
 
     // ── Emulator picker ───────────────────────────────────────────────────
 

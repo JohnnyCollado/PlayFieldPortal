@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui
 
+import androidx.lifecycle.compose.LifecycleStartEffect
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -8,7 +9,6 @@ import android.os.BatteryManager
 import androidx.annotation.DrawableRes
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.foundation.Canvas
@@ -32,7 +32,6 @@ import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -54,8 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.icons.CustomIcon
 import com.playfieldportal.core.ui.icons.CustomIconSurface
-import com.playfieldportal.core.ui.icons.LocalCustomIcons
-import com.playfieldportal.core.ui.icons.LocalXmbIconOverrides
+import com.playfieldportal.core.ui.icons.LocalXmbIcons
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.textOr
 import com.playfieldportal.core.ui.theme.themedText
@@ -188,7 +186,7 @@ fun XmbPspStatusStrip(
     var dateString     by remember { mutableStateOf(currentDateString()) }
     var timeString     by remember { mutableStateOf(currentTimeString()) }
 
-    DisposableEffect(Unit) {
+    LifecycleStartEffect(Unit) {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(ctx: Context, intent: Intent) {
                 val level  = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
@@ -207,7 +205,7 @@ fun XmbPspStatusStrip(
             IntentFilter(Intent.ACTION_BATTERY_CHANGED),
             ContextCompat.RECEIVER_NOT_EXPORTED,
         )
-        onDispose { context.unregisterReceiver(receiver) }
+        onStopOrDispose { context.unregisterReceiver(receiver) }
     }
 
     // The clock was a 30s poll, which made it wrong in two ways. A timezone or manual time change
@@ -219,7 +217,13 @@ fun XmbPspStatusStrip(
     // boundary to registered receivers only (it cannot be declared in a manifest), which is what
     // the system status bar itself listens to. TIME_SET and TIMEZONE_CHANGED land an explicit
     // change immediately; LOCALE_CHANGED keeps the 12/24-hour and date formats honest.
-    DisposableEffect(Unit) {
+    //
+    // Registered only while the launcher is started. TIME_TICK is not delivered to a backgrounded
+    // process anyway, so every start recomputes first: the strip never comes back holding a value
+    // up to a minute stale and then waits for the next tick.
+    LifecycleStartEffect(Unit) {
+        dateString = currentDateString()
+        timeString = currentTimeString()
         val clockReceiver = object : BroadcastReceiver() {
             override fun onReceive(ctx: Context, intent: Intent) {
                 dateString = currentDateString()
@@ -237,23 +241,7 @@ fun XmbPspStatusStrip(
             },
             ContextCompat.RECEIVER_NOT_EXPORTED,
         )
-        onDispose { context.unregisterReceiver(clockReceiver) }
-    }
-
-    // TIME_TICK is not delivered while the process is backgrounded, so the strip can come back
-    // holding a value up to a minute stale and then wait a further minute for the next tick. The
-    // composition survives ON_STOP (this is the home app), so a DisposableEffect keyed on Unit
-    // would not re-run to cover it — the resume itself has to recompute.
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                dateString = currentDateString()
-                timeString = currentTimeString()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        onStopOrDispose { context.unregisterReceiver(clockReceiver) }
     }
 
     Row(
@@ -541,7 +529,7 @@ private fun WifiMeter(level: Int, modifier: Modifier = Modifier) {
 /** User pick, then the applied theme's art, for a `status_*` slot; null = draw the built-in. */
 @Composable
 private fun statusSlotOverride(slotKey: String): CustomIcon? =
-    LocalCustomIcons.current[slotKey] ?: LocalXmbIconOverrides.current[slotKey]
+    LocalXmbIcons.current[slotKey]
 
 /**
  * The battery slot to show right now while charging: the fill tiers of

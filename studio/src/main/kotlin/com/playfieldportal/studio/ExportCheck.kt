@@ -68,7 +68,7 @@ data class ExportCheck(
             add(BudgetKind.PREVIEW, (state.previewPng?.size ?: 0).toLong())
             add(
                 BudgetKind.ICONS,
-                (state.iconOverrides.values + state.sysiconOverrides.values).sumOf { it.size.toLong() },
+                state.iconOverrides.values.sumOf { it.size.toLong() },
             )
             add(BudgetKind.MOTION, state.motionFile?.takeIf { it.isFile }?.length() ?: 0L)
             for ((key, file) in state.mediaFiles) {

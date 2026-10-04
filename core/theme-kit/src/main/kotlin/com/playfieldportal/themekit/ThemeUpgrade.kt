@@ -62,9 +62,13 @@ object ThemeUpgrade {
         val kept = buildList {
             if (bundle.wallpaper != null) add("Wallpaper")
             if (bundle.preview != null) add("Preview image")
-            if (bundle.icons.isNotEmpty()) add(count(bundle.icons.size, "custom icon"))
-            if (bundle.sysicons.isNotEmpty()) add(count(bundle.sysicons.size, "console icon"))
-            if (bundle.mediaicons.isNotEmpty()) add(count(bundle.mediaicons.size, "physical media icon"))
+            val groups = bundle.icons.keys.groupingBy { CustomizableIcons.byKey(it)?.group }.eachCount()
+            val consoles = groups[IconSlot.Group.CONSOLE] ?: 0
+            val discs = groups[IconSlot.Group.PHYSICAL_MEDIA] ?: 0
+            val custom = bundle.icons.size - consoles - discs
+            if (custom > 0) add(count(custom, "custom icon"))
+            if (consoles > 0) add(count(consoles, "console icon"))
+            if (discs > 0) add(count(discs, "physical media icon"))
             bundle.motion?.let { add("Motion wallpaper (${it.extension})") }
             val sounds = bundle.media.keys.count { ThemeMediaSlots.slot(it)?.kind == UiMediaLimits.Kind.SOUND }
             if (sounds > 0) add(count(sounds, "menu sound"))

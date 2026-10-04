@@ -31,7 +31,6 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -54,13 +53,20 @@ import com.playfieldportal.studio.preview.LabelProtection
 import com.playfieldportal.studio.preview.StudioIconSet
 import com.playfieldportal.studio.preview.XmbBackdrop
 import com.playfieldportal.studio.preview.XmbPreviewModel
+import com.playfieldportal.core.ui.theme.ThemeTokens
+import com.playfieldportal.core.ui.theme.PfpPalette
+import com.playfieldportal.core.ui.theme.pfpTextColorsFor
+import com.playfieldportal.core.ui.theme.solveScrimColor
+import com.playfieldportal.core.ui.theme.menuCursorFillFor
+import com.playfieldportal.studio.preview.LocalPreviewModel
+import com.playfieldportal.studio.preview.previewText
 
 /*
  * Settings ▸ Interface ▸ Display, replicated from feature-settings:
- *  - SettingsScaffold.kt (scrim 850-862, header 886-931, content fade 984-998, helper footer 291-315)
- *  - the row family in SettingsScaffold.kt (SettingsGroup 1048, SettingsRow 1092, SettingsToggleRow
- *    1313, SettingsValueRow 1349), SettingsSliderRow.kt and MediaAssignmentRow.kt
- *  - DisplaySettingsScreen.kt 244-566 for the rows, in order, with DisplaySettingsUiState's defaults.
+ *  - SettingsScaffold.kt (the scrim, the header, the content fade, the helper footer)
+ *  - the row family in SettingsScaffold.kt (SettingsGroup, SettingsRow, SettingsToggleRow,
+ *    SettingsValueRow), SettingsSliderRow.kt and MediaAssignmentRow.kt
+ *  - DisplaySettingsScreen.kt for the rows, in order, with DisplaySettingsUiState's defaults.
  *
  * Shown as it opens with a controller: the cursor on the first action row and the idle Enter / Back
  * pill up. The body scrolls with the mouse wheel, as the column does on the device, so every row
@@ -81,22 +87,19 @@ import com.playfieldportal.studio.preview.XmbPreviewModel
  * SettingsAccent / Subtext / Divider are fixed palette colours.
  */
 
-// ── Palette (core-ui PFPTheme.kt PfpPalette + SettingsScaffold.kt 214-239) ─────
+// ── Palette (theme-render PfpPalette, as SettingsScaffold uses it) ────────────
 
-private val SettingsAccent = Color(0xFF4A90D9)   // PfpPalette.Accent
-private val SettingsSubtext = Color(0xFFAAAAAA)  // PfpPalette.Subtext — raw; text reads [settingsSubtext]
-
-/** The preview model for the Settings rows' text roles, provided by [SettingsScreenPreview]. */
-private val LocalSettingsModel = staticCompositionLocalOf<XmbPreviewModel?> { null }
+private val SettingsAccent = PfpPalette.Accent
+private val SettingsSubtext = PfpPalette.Subtext // raw; text reads [settingsSubtext]
 
 /** LocalPfpTextColors.secondary: the theme's Sub (else Main) colour at #AAAAAA's weight, else #AAAAAA. */
 @Composable
 private fun settingsSubtext(): Color =
-    LocalSettingsModel.current?.subTextOr(SettingsSubtext, 0xAA / 255f) ?: SettingsSubtext
-private val SettingsDivider = Color(0xFF2A2A2A)  // PfpPalette.Divider
+    LocalPreviewModel.current?.let { pfpTextColorsFor(it.pfp).secondary } ?: SettingsSubtext
+private val SettingsDivider = PfpPalette.Divider
 
 // SettingsTextShadow: black 0.75, (0, 2), blur 4.
-private val SettingsTextShadow = Shadow(color = Color.Black.copy(alpha = 0.75f), offset = Offset(0f, 2f), blurRadius = 4f)
+private val SettingsTextShadow = ThemeTokens.TextShadow
 private val ShadowStyle = TextStyle(shadow = SettingsTextShadow)
 
 // SettingsRow: a disabled row's text fades to 0.4 of its alpha.
@@ -139,11 +142,11 @@ fun SettingsScreenPreview(model: XmbPreviewModel) {
     val scrimBottom = remember(model.backgroundBottom) { solveScrimColor(model.backgroundBottom, alpha = 0.90f) }
     val text = model.textPrimary
     // core-ui MenuCursor.menuCursorFill: lerp(accentColor, White, 0.20) at 0.34 (accentColor stays white).
-    val cursorFill = lerp(model.drillCursor, Color.White, 0.20f).copy(alpha = 0.34f)
+    val cursorFill = menuCursorFillFor(model.pfp.accentColor)
     val state = remember(model) { DisplayState.of(model) }
 
     MaterialTheme(colorScheme = PfpDarkColorScheme) {
-      CompositionLocalProvider(LocalSettingsModel provides model) {
+      CompositionLocalProvider(LocalPreviewModel provides model) {
         Box(Modifier.fillMaxSize()) {
             // XMBShell keeps XmbBackground composed under Settings and hides only the XMB foreground.
             XmbBackdrop(model)
@@ -193,7 +196,7 @@ fun SettingsScreenPreview(model: XmbPreviewModel) {
     }
 }
 
-// ── The screen's rows (DisplaySettingsScreen.kt 249-565) ──────────────────────
+// ── The screen's rows (DisplaySettingsScreen) ─────────────────────────────────
 
 /** The rows' values: DisplaySettingsUiState's defaults, with what applying this theme writes. */
 private data class DisplayState(
@@ -486,7 +489,7 @@ private fun SettingsGroup(title: String) {
             .padding(start = 48.dp, top = 10.dp, bottom = 10.dp),
         text = title.uppercase(),
         // SettingsScaffold: themedText(Color.White).
-        color = LocalSettingsModel.current?.textOr(Color.White) ?: Color.White,
+        color = previewText(Color.White),
         fontSize = 15.sp,
         fontWeight = FontWeight.Bold,
         letterSpacing = 1.8.sp,
@@ -636,49 +639,3 @@ private fun SliderRow(label: String, sublabel: String, value: Float, valueText: 
     HorizontalDivider(color = SettingsDivider, modifier = Modifier.padding(start = 48.dp))
 }
 
-// ── core-ui TextLegibility.kt: the scrim solve, verbatim ─────────────────────
-
-private const val BODY_CONTRAST = 4.5 // TextContrastRole.BODY
-
-private fun relativeLuminance(c: Color): Double {
-    fun linearize(channel: Float): Double {
-        val v = channel.toDouble()
-        return if (v <= 0.04045) v / 12.92 else Math.pow((v + 0.055) / 1.055, 2.4)
-    }
-    return 0.2126 * linearize(c.red) + 0.7152 * linearize(c.green) + 0.0722 * linearize(c.blue)
-}
-
-private fun contrastRatio(a: Color, b: Color): Double {
-    val la = relativeLuminance(a)
-    val lb = relativeLuminance(b)
-    return (maxOf(la, lb) + 0.05) / (minOf(la, lb) + 0.05)
-}
-
-/** Source-over of [top] (its alpha) onto opaque [bottom], in sRGB channel space like Modifier.background. */
-private fun composite(top: Color, bottom: Color): Color {
-    val a = top.alpha
-    return Color(
-        red = top.red * a + bottom.red * (1f - a),
-        green = top.green * a + bottom.green * (1f - a),
-        blue = top.blue * a + bottom.blue * (1f - a),
-    )
-}
-
-/**
- * solveScrimColor: darken [base] toward black just far enough that, at [alpha] over a pure-white
- * wallpaper, white text clears 4.5:1 (12 bisection steps).
- */
-private fun solveScrimColor(base: Color, alpha: Float): Color {
-    fun passes(t: Float): Boolean =
-        contrastRatio(Color.White, composite(lerp(base, Color.Black, t).copy(alpha = alpha), Color.White)) >= BODY_CONTRAST
-
-    if (passes(0f)) return base
-    if (!passes(1f)) return Color.Black
-    var lo = 0f
-    var hi = 1f
-    repeat(12) {
-        val mid = (lo + hi) / 2f
-        if (passes(mid)) hi = mid else lo = mid
-    }
-    return lerp(base, Color.Black, hi)
-}

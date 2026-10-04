@@ -85,6 +85,10 @@ class LaunchDispatcher @Inject constructor(
     private var pending: PendingLaunch? = null
     private var hostStopped = false
     private var watchdog: Job? = null
+    // The launch's hold on the background music: taken when a launch starts, released once — on
+    // the way out of a launch that never handed off, or when the launcher is back / the watchdog
+    // settles one that did.
+    private var ambienceHold: com.playfieldportal.core.ui.sound.AmbienceHold? = null
 
     /**
      * Hands [intent] to the system for [game] and records what happens. [resolved] is the B4 ladder
@@ -98,12 +102,14 @@ class LaunchDispatcher @Inject constructor(
         // game-launch call sites (Game Detail and the XMB's direct launch) get it for free;
         // shortcut launches pass the same gate through [launchShortcut].
         // No-op when GameBoot is disabled, and bounded by its own watchdog — see GameBootGate.
-        holdAmbience(true)
-        awaitGameBoot(game)
+        holdAmbience()
+        var handedOff = false
         return try {
+            gameBootGate.awaitPresentation(game.title)
             // Every dispatcher launch comes from an app-graph context (ViewModel/Activity via the
             // shared singleton), so NEW_TASK is required to start outside our own task. Idempotent.
             context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            handedOff = true
             // A RetroArch core launch pins the console to that core (see AutoCoreMemory), so the
             // console's automatic pick — and its RetroArch configs — stay stable across detection
             // passes. Written only once the intent actually reached the emulator, so a launch that
@@ -135,6 +141,9 @@ class LaunchDispatcher @Inject constructor(
         } catch (e: Exception) {
             Timber.w(e, "Launch startActivity failed (gameId=${game.id})")
             settleImmediateFailure(game, resolved, "Could not open emulator: ${e.message}", PfpErrorCode.LN_9001)
+        } finally {
+            // Abandoned during GameBoot, refused by the system: the user is still in the launcher.
+            if (!handedOff) releaseAmbience()
         }
     }
 
@@ -173,14 +182,20 @@ class LaunchDispatcher @Inject constructor(
      * own preflight-failure handling.
      */
     suspend fun launchShortcut(game: Game, start: () -> Result<Unit>): Result<Unit> {
-        holdAmbience(true)
-        awaitGameBoot(game)
-        val result = start()
+        holdAmbience()
+        val result = try {
+            gameBootGate.awaitPresentation(game.title)
+            start()
+        } catch (e: Throwable) {
+            // Abandoned during GameBoot: the user is still in the launcher.
+            releaseAmbience()
+            throw e
+        }
         if (result.isSuccess) {
             handoffTracker.onDispatched(game)
             markLaunched(game)
         } else {
-            holdAmbience(false)
+            releaseAmbience()
         }
         return result
     }
@@ -216,7 +231,7 @@ class LaunchDispatcher @Inject constructor(
     fun onHostResumed() {
         handoffTracker.onHostResumed()
         // Back in the launcher, whatever the verdict: the game no longer holds the room.
-        holdAmbience(false)
+        releaseAmbience()
         val p = pending ?: return
         pending = null
         val emulatorTookForeground = hostStopped
@@ -271,7 +286,7 @@ class LaunchDispatcher @Inject constructor(
             if (stillPending && !hostStopped) {
                 pending = null
                 // Nothing came to the front, so the user is still here: the music may come back.
-                holdAmbience(false)
+                releaseAmbience()
                 Timber.w("No activity covered the launcher within ${STOP_WINDOW_MS}ms of dispatch")
                 outcomeRecorder.record(
                     outcomeFor(
@@ -294,18 +309,17 @@ class LaunchDispatcher @Inject constructor(
     // LaunchDispatcherModule) so acceptPending (ViewModel launch site), onHostStopped/onHostResumed
     // (MainActivity lifecycle) and the watchdog (scope) are confined to one thread by construction.
 
-    /** GameBoot, giving ambience back if the launch is abandoned while it presents. */
-    private suspend fun awaitGameBoot(game: Game) {
-        try {
-            gameBootGate.awaitPresentation(game.title)
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            holdAmbience(false)
-            throw e
+    /** Takes the launch's hold on the background music, unless a pending launch already has it. */
+    private fun holdAmbience() {
+        if (ambienceHold == null) {
+            ambienceHold = ambience.hold(com.playfieldportal.core.ui.sound.AmbienceController.OWNER_GAME)
         }
     }
 
-    private fun holdAmbience(hold: Boolean) =
-        ambience.setSuppressed(com.playfieldportal.core.ui.sound.AmbienceController.OWNER_GAME, hold)
+    private fun releaseAmbience() {
+        ambienceHold?.release()
+        ambienceHold = null
+    }
 
     private suspend fun settleImmediateFailure(
         game: Game,
@@ -313,8 +327,6 @@ class LaunchDispatcher @Inject constructor(
         message: String,
         code: PfpErrorCode,
     ): LaunchDispatchResult {
-        // The launch never happened, so the user is still in the launcher.
-        holdAmbience(false)
         outcomeRecorder.record(
             outcomeFor(game, resolved, LaunchOutcomeStatus.INTENT_FAILED, message, code)
         )

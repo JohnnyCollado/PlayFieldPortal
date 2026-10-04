@@ -290,11 +290,12 @@ data class ShibaCoinsUiState(
 
     /**
      * Steam asks about the copy first, RetroAchievements matches by ROM hash, and PS3 reads the
-     * trophy id out of the game's own disc. Local Steam and Vita link from a scan instead.
+     * trophy id out of the game's own disc, Xbox 360 the title id out of its own file. Local Steam
+     * and Vita link from a scan instead.
      */
     val canAutoMatch: Boolean
         get() = provider == AchievementProvider.STEAM || provider == AchievementProvider.RETRO_ACHIEVEMENTS ||
-            provider == AchievementProvider.PS3_TROPHY
+            provider == AchievementProvider.PS3_TROPHY || provider == AchievementProvider.X360_ACHIEVEMENT
 
     /** Refresh is offered for an installed game with a provider identity to refresh against. */
     val canSync: Boolean get() = (linked || accountOnly) && installed
@@ -829,6 +830,8 @@ class ShibaCoinsViewModel @Inject constructor(
             AchievementProvider.LOCAL_STEAM, AchievementProvider.VITA_TROPHY -> Unit
             // PS3 links from the disc's own TROPDIR, so Confirm can do the whole job here.
             AchievementProvider.PS3_TROPHY -> autoMatchPs3()
+            // Xbox 360 links from the title ID in the game's own file, the same one-step way.
+            AchievementProvider.X360_ACHIEVEMENT -> autoMatchX360()
         }
     }
 
@@ -888,6 +891,24 @@ class ShibaCoinsViewModel @Inject constructor(
             when (result) {
                 AchievementAutoMatcher.Ps3MatchResult.Matched -> sync()
                 is AchievementAutoMatcher.Ps3MatchResult.Unmatched ->
+                    _state.update { it.copy(message = result.reason) }
+            }
+        }
+    }
+
+    /**
+     * Xbox 360 Auto-Match: read the title ID from the game's own file (or, for an unreadable one,
+     * match a played title by name) and link it. Failures come back in the matcher's own words.
+     */
+    fun autoMatchX360() {
+        if (_state.value.isMatching) return
+        viewModelScope.launch {
+            _state.update { it.copy(isMatching = true) }
+            val result = autoMatcher.matchSingleAsX360(gameId)
+            _state.update { it.copy(isMatching = false) }
+            when (result) {
+                AchievementAutoMatcher.X360MatchResult.Matched -> sync()
+                is AchievementAutoMatcher.X360MatchResult.Unmatched ->
                     _state.update { it.copy(message = result.reason) }
             }
         }
@@ -1335,6 +1356,8 @@ class ShibaCoinsViewModel @Inject constructor(
         "windows" -> AchievementProvider.STEAM
         // PS3 has no RetroAchievements console: its coins always come from ARMSX3's trophy files.
         "ps3" -> AchievementProvider.PS3_TROPHY
+        // Nor Xbox 360: its coins come from X360 Mobile's / XenDroid's profile GPDs.
+        "x360" -> AchievementProvider.X360_ACHIEVEMENT
         else -> AchievementProvider.RETRO_ACHIEVEMENTS
     }
 }
@@ -1420,6 +1443,7 @@ internal fun providerLabel(provider: AchievementProvider): String = when (provid
     AchievementProvider.LOCAL_STEAM -> "Local Steam"
     AchievementProvider.VITA_TROPHY -> "PS Vita"
     AchievementProvider.PS3_TROPHY -> "PS3"
+    AchievementProvider.X360_ACHIEVEMENT -> "Xbox 360"
 }
 
 private fun AccountAchievementEntity.toRow() = CoinRow(

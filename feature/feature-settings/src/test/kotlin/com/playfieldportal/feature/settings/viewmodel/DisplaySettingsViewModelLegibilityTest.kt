@@ -7,6 +7,8 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.GameBootPreferences
+import com.playfieldportal.core.data.repository.ThemePrefKeys
+import com.playfieldportal.core.data.repository.ThemeTiers
 import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.domain.model.IconLegibilityStyle
 import kotlinx.coroutines.Dispatchers
@@ -44,7 +46,7 @@ class DisplaySettingsViewModelLegibilityTest {
         runBlocking { context.pfpDataStore.edit { it.clear() } }
         vm = DisplaySettingsViewModel(
             context,
-            UiMediaStore(context),
+            UiMediaStore(context, ThemeTiers(context)),
             GameBootPreferences(context),
             io.mockk.mockk(relaxed = true),
             // The layout repo only feeds the media rows' face-button shortcuts. A relaxed mock
@@ -140,8 +142,8 @@ class DisplaySettingsViewModelLegibilityTest {
 
     private companion object {
         // Mirror the (private) ViewModel keys by their string contract, like the wallpaper test.
-        val KEY_ICON_LEGIBILITY = stringPreferencesKey("display_icon_legibility")
-        val KEY_SOLID_UNFOCUSED_ICONS = booleanPreferencesKey("display_solid_unfocused_icons")
+        val KEY_ICON_LEGIBILITY = ThemePrefKeys.ICON_LEGIBILITY
+        val KEY_SOLID_UNFOCUSED_ICONS = ThemePrefKeys.SOLID_UNFOCUSED_ICONS
         val KEY_TEXT_SHADOW = booleanPreferencesKey("display_text_shadow")
     }
 }

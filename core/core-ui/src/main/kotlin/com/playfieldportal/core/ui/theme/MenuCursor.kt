@@ -8,7 +8,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
 
 // The one menu-cursor treatment every menu shares, derived from the active theme's accent color so
@@ -18,13 +17,11 @@ import androidx.compose.ui.unit.dp
 
 /** Fill behind the focused menu row. */
 @Composable
-fun menuCursorFill(): Color =
-    lerp(LocalPFPColors.current.accentColor, Color.White, 0.20f).copy(alpha = 0.34f)
+fun menuCursorFill(): Color = menuCursorFillFor(LocalPFPColors.current.accentColor)
 
 /** Bright edge/border of the focused menu row — the part that makes the cursor unmistakable. */
 @Composable
-fun menuCursorEdge(): Color =
-    lerp(LocalPFPColors.current.accentColor, Color.White, 0.55f).copy(alpha = 0.95f)
+fun menuCursorEdge(): Color = menuCursorEdgeFor(LocalPFPColors.current.accentColor)
 
 /**
  * The shared focus-cursor for menu rows: accent-tinted fill plus a bright border. No-op when

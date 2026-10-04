@@ -41,6 +41,9 @@ import androidx.compose.ui.unit.sp
 import com.playfieldportal.studio.preview.GameLetterTile
 import com.playfieldportal.studio.preview.XmbBackdrop
 import com.playfieldportal.studio.preview.XmbPreviewModel
+import com.playfieldportal.core.ui.theme.ThemeTokens
+import com.playfieldportal.core.ui.theme.StorefrontColors
+import com.playfieldportal.core.ui.theme.unselectedLabel
 
 // ── Game Picker (feature-xmb ui/GamePickerScreen.kt + GamePickerLogic.kt) ─────────────────────
 //
@@ -110,12 +113,12 @@ private val TileSpacing = 8.dp
 private val ListWidth = 220.dp
 
 // XMBItemList.XmbTextShadow: the Launcher's drop shadow, over light storefront text (Text Shadow on).
-private val PickerShadow = Shadow(color = Color.Black.copy(alpha = 0.75f), offset = Offset(0f, 2f), blurRadius = 4f)
+private val PickerShadow = ThemeTokens.TextShadow
 
 @Composable
 fun GamePickerScreenPreview(model: XmbPreviewModel) {
-    val sf = remember(model.accent, model.backgroundTop, model.backgroundBottom, model.textOverride, model.subTextOverride) { drawerPalette(model) }
-    val unselected = sf.unselectedLabel
+    val sf = rememberDrawerPalette(model)
+    val unselected = sf.unselectedLabel(model.pfp)
     val shadow = PickerShadow.takeIf { sf.textPrimary.luminance() > 0.5f }
     Box(Modifier.fillMaxSize()) {
         XmbBackdrop(model)
@@ -148,7 +151,7 @@ fun GamePickerScreenPreview(model: XmbPreviewModel) {
 
 // PickerHeader: ‹ "Add Games · Party" on the left, pendingChangeLabel on the right.
 @Composable
-private fun Header(sf: DrawerPalette) {
+private fun Header(sf: StorefrontColors) {
     Row(
         modifier = Modifier.fillMaxWidth().height(DrawerHeaderHeight).padding(horizontal = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -173,7 +176,7 @@ private fun Header(sf: DrawerPalette) {
 
 // GamePickerScreen.FocusChrome at full focus: glow, bright outer edge, inner hairline.
 @Composable
-private fun BoxScope.Focus(sf: DrawerPalette) {
+private fun BoxScope.Focus(sf: StorefrontColors) {
     Box(Modifier.matchParentSize().background(sf.selectionGlow))
     Box(Modifier.matchParentSize().border(1.dp, sf.tileSelectedEdge.copy(alpha = 1f)))
     Box(Modifier.matchParentSize().padding(2.dp).border(1.dp, sf.tileSelectedInner.copy(alpha = 1f)))
@@ -184,7 +187,7 @@ private fun checkedIn(shelf: SampleShelf): Int = shelf.games.count { it.title in
 // ShelfList / ShelfListEntry: the open shelf keeps its fill and a 2 dp right edge; the cursor is in
 // the grid, so no entry carries the focus chrome. A gap sets the memory cards apart.
 @Composable
-private fun ShelfList(sf: DrawerPalette, unselected: Color) {
+private fun ShelfList(sf: StorefrontColors, unselected: Color) {
     Column(
         verticalArrangement = Arrangement.spacedBy(2.dp),
         modifier = Modifier
@@ -236,7 +239,7 @@ private fun ShelfList(sf: DrawerPalette, unselected: Color) {
 
 // ShelfPane: the shelf's title, its counts, the "View:" pill, then the tile rows.
 @Composable
-private fun ShelfPane(sf: DrawerPalette, unselected: Color, modifier: Modifier) {
+private fun ShelfPane(sf: StorefrontColors, unselected: Color, modifier: Modifier) {
     val shelf = Shelves[OpenShelf]
     Column(modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -271,7 +274,7 @@ private fun ShelfPane(sf: DrawerPalette, unselected: Color, modifier: Modifier) 
 // PickerTile: the slot reserves the natural-art height so every ledge lines up; the ICON0 stands on
 // it, the chrome hugs the art, and the 16 dp check badge sits top-right.
 @Composable
-private fun Tile(game: SampleGame, focused: Boolean, checked: Boolean, sf: DrawerPalette, unselected: Color) {
+private fun Tile(game: SampleGame, focused: Boolean, checked: Boolean, sf: StorefrontColors, unselected: Color) {
     val ledge = sf.chromeDivider
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(Icon0Width + FramePad * 2)) {
         Box(

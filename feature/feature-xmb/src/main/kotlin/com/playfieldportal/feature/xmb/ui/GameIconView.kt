@@ -52,8 +52,7 @@ import com.playfieldportal.core.ui.image.ArtworkRevisions
 import com.playfieldportal.core.domain.model.IconDisplayMode
 import com.playfieldportal.core.ui.icons.CustomIconSurface
 import com.playfieldportal.core.ui.icons.GameIconStyle
-import com.playfieldportal.core.ui.icons.LocalCustomIcons
-import com.playfieldportal.core.ui.icons.LocalXmbIconOverrides
+import com.playfieldportal.core.ui.icons.LocalXmbIcons
 import com.playfieldportal.feature.artwork.store.ArtworkDimensions
 import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
@@ -585,7 +584,7 @@ fun PhysicalMediaIcon(
     var assetFailed by remember(assetName) { mutableStateOf(false) }
     // Same precedence as every themeable glyph: the user's pick, then the applied theme's icon.
     val override = physicalMediaSlotKey(platformId)?.let { key ->
-        LocalCustomIcons.current[key] ?: LocalXmbIconOverrides.current[key]
+        LocalXmbIcons.current[key]
     }
 
     Box(

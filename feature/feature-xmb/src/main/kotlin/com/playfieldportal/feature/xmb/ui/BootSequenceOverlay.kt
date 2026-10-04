@@ -85,9 +85,14 @@ fun BootSequenceOverlay(
     bootAudioGain: Float = 1f,
     /** The clip would not play and the built-in animation took over: the shell reports it in the tray. */
     onClipFailed: () -> Unit = {},
+    /**
+     * The wave behind the logo. The shell passes the user's own style, frozen under battery saver or
+     * thermal throttling — the boot used to force ANIMATED whatever the user had chosen.
+     */
+    waveStyle: WaveStyle = WaveStyle.ANIMATED,
 ) {
     // The presentation owns the room — its chime or the clip's own track, previews included.
-    HoldAmbience(com.playfieldportal.core.ui.sound.AmbienceController.OWNER_ONE_SHOT)
+    HoldAmbience(com.playfieldportal.core.ui.sound.AmbienceController.OWNER_BOOT)
     val logoAlpha    = remember { Animatable(0f) }
     val logoScale    = remember { Animatable(0.92f) }
     val overlayAlpha = remember { Animatable(1f) }
@@ -152,7 +157,7 @@ fun BootSequenceOverlay(
             // Same background the XMB uses — the classic blue "Original" gradient with the soft
             // wave folds, tinted by whatever theme is active (LocalPFPColors), so boot and menu
             // are visually identical. Deliberately no wallpaper args: see the KDoc.
-            XmbBackground(waveStyle = WaveStyle.ANIMATED, modifier = Modifier.fillMaxSize())
+            XmbBackground(waveStyle = waveStyle, modifier = Modifier.fillMaxSize())
 
             // PFP logo (transparent mark, sits on the wave).
             Image(

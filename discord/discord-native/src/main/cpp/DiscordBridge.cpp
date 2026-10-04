@@ -14,6 +14,7 @@
 #include <jni.h>
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <cstdio>
 #include <functional>
 #include <future>
@@ -36,6 +37,22 @@ std::atomic<int> gStatus{0};
 
 std::mutex gTaskMutex;
 std::queue<std::function<void()>> gTasks;
+// Wakes the pump the moment a task is queued, so a long idle wait never delays a request.
+std::condition_variable gTaskCv;
+
+// Pump cadence (see DiscordPumpPolicy in core-domain). Busy = a call is up, or a request was queued
+// within the last kBusyWindow, so its callback is delivered promptly. Otherwise the pump idles at
+// gIdleIntervalMs, which Kotlin lowers on screen and raises in the background. It used to sleep a
+// flat 10 ms forever: 100 wakeups a second even with the screen off.
+constexpr auto kBusyInterval = std::chrono::milliseconds(10);
+constexpr auto kBusyWindow = std::chrono::seconds(10);
+std::atomic<int> gIdleIntervalMs{100};
+std::atomic<int64_t> gBusyUntilMs{0};
+
+int64_t nowMs() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+}
 
 // ── Voice state (all touched only on the pump thread, except the atomics) ──────────
 // The active call is kept alive here so its registered callbacks keep firing. StartCall returns a
@@ -66,6 +83,8 @@ std::string gPendingJoinSecret;
 void post(std::function<void()> task) {
     std::lock_guard<std::mutex> lock(gTaskMutex);
     gTasks.push(std::move(task));
+    gBusyUntilMs.store(nowMs() + std::chrono::duration_cast<std::chrono::milliseconds>(kBusyWindow).count());
+    gTaskCv.notify_one();
 }
 
 void drainTasks() {
@@ -187,11 +206,15 @@ std::string jstr(JNIEnv* env, jstring s) {
 }
 
 // The single thread on which the client lives: run queued SDK calls, then pump SDK callbacks.
+// Fast while busy (a call, or a request in flight), slow when idle; a queued task always wakes it.
 void pumpLoop() {
     while (gRunning.load()) {
         drainTasks();
         discordpp::RunCallbacks();
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        const bool busy = gCall.has_value() || nowMs() < gBusyUntilMs.load();
+        const auto wait = busy ? kBusyInterval : std::chrono::milliseconds(gIdleIntervalMs.load());
+        std::unique_lock<std::mutex> lock(gTaskMutex);
+        gTaskCv.wait_for(lock, wait, [] { return !gTasks.empty() || !gRunning.load(); });
     }
 }
 
@@ -704,11 +727,20 @@ Java_com_playfieldportal_discord_DiscordNativeBridge_nativeDisconnect(
     future.wait_for(std::chrono::seconds(5));
 }
 
+// How long the pump sleeps when nothing is pending (DiscordPumpPolicy). Busy cadence is unaffected.
+JNIEXPORT void JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeSetIdlePumpInterval(
+    JNIEnv* /*env*/, jobject /*thiz*/, jint intervalMs) {
+    gIdleIntervalMs.store(intervalMs < 10 ? 10 : intervalMs);
+    gTaskCv.notify_one();
+}
+
 // Stop the pump and destroy the client.
 JNIEXPORT void JNICALL
 Java_com_playfieldportal_discord_DiscordNativeBridge_nativeShutdown(
     JNIEnv* /*env*/, jobject /*thiz*/) {
     gRunning.store(false);
+    gTaskCv.notify_one();
     if (gPumpThread.joinable()) gPumpThread.join();
     gCall.reset();
     gLobbyId.store(0);

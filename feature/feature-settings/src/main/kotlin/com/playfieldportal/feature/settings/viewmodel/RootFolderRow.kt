@@ -17,7 +17,5 @@ data class RootFolderRow(
     val consoles: String? = null,
 )
 
-/** Human-readable label for a root tree URI: its raw path when derivable, else the URI tail. */
-fun rootDisplayName(treeUri: String): String =
-    RomRootRepository.rawPathOfTree(treeUri)
-        ?: treeUri.substringAfterLast('/').ifBlank { treeUri }
+/** Human-readable label for a root tree URI: its raw path when derivable, else its folder's name. */
+fun rootDisplayName(treeUri: String): String = RomRootRepository.displayNameOfTree(treeUri)

@@ -14,6 +14,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import com.playfieldportal.themekit.consoleArt
+import com.playfieldportal.themekit.mediaArt
 
 /**
  * Drives the REAL ViewModel through the user flow: set a custom icon → export → New →
@@ -111,17 +113,20 @@ class ViewModelIconRoundTripTest {
         val file = File.createTempFile("studio-roundtrip", ".pfptheme")
         try {
             vm.update { it.copy(name = "Media Round Trip") }
+            // One edit at a time: each runs on the VM's busy queue, and a single wait can land
+            // between the two.
             vm.setIconOverride("physmedia_psx", pick)
+            vm.awaitIdle()
             vm.setIconOverride("sysicon_psx", pick)
             vm.awaitIdle()
-            assertEquals(setOf("physmedia_psx", "sysicon_psx"), vm.state.value.sysiconOverrides.keys)
-            assertEquals(setOf("physmedia_psx", "sysicon_psx"), vm.state.value.sysiconBitmaps.keys)
+            assertEquals(setOf("physmedia_psx", "sysicon_psx"), vm.state.value.iconOverrides.keys)
+            assertEquals(setOf("physmedia_psx", "sysicon_psx"), vm.state.value.iconBitmaps.keys)
 
             vm.exportTo(file) { null }
             vm.awaitIdle()
             val bundle = assertNotNull(PfpThemeCodec.readDetailed(file.readBytes())).bundle
-            assertEquals(setOf("psx"), bundle.sysicons.keys, "media art must not land in sysicons/")
-            assertEquals(setOf("psx"), bundle.mediaicons.keys, "media art lands in mediaicons/")
+            assertEquals(setOf("psx"), bundle.consoleArt.keys, "media art must not land in sysicons/")
+            assertEquals(setOf("psx"), bundle.mediaArt.keys, "media art lands in mediaicons/")
             assertTrue(bundle.passthrough.isEmpty(), "media art is typed, never passthrough")
 
             vm.newTheme()
@@ -129,9 +134,9 @@ class ViewModelIconRoundTripTest {
             vm.awaitIdle()
             val state = vm.state.value
             assertEquals(null, state.dialog, "open reported: ${state.dialog}")
-            assertEquals(setOf("physmedia_psx", "sysicon_psx"), state.sysiconOverrides.keys)
-            assertEquals("png", state.sysiconExtensions["physmedia_psx"])
-            assertTrue("physmedia_psx" in state.sysiconBitmaps)
+            assertEquals(setOf("physmedia_psx", "sysicon_psx"), state.iconOverrides.keys)
+            assertEquals("png", state.iconExtensions["physmedia_psx"])
+            assertTrue("physmedia_psx" in state.iconBitmaps)
             assertTrue(state.passthroughFiles.isEmpty(), "media art is an edit, not an unknown entry: ${state.passthroughFiles.keys}")
 
             vm.clearIconOverride("physmedia_psx")

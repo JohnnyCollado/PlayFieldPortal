@@ -55,6 +55,10 @@ class CustomIconStoreTest {
 
     private lateinit var evictor: RecordingEvictor
     private lateinit var store: CustomIconStore
+    private val tiers by lazy { ThemeTiers(context.filesDir) }
+
+    /** The user tier as the XMB loads it. */
+    private suspend fun loadPicks() = tiers.loadIcons(ThemeTiers.Tier.USER)
 
     @Before
     fun setUp() {
@@ -63,7 +67,7 @@ class CustomIconStoreTest {
         runBlocking { context.pfpDataStore.edit { it.clear() } }
         File(context.filesDir, CustomIconStore.CUSTOM_ICONS_DIR).deleteRecursively()
         evictor = RecordingEvictor()
-        store = CustomIconStore(context, evictor)
+        store = CustomIconStore(context, evictor, tiers)
     }
 
     // ── import ────────────────────────────────────────────────────────────────
@@ -83,7 +87,7 @@ class CustomIconStoreTest {
     fun `imported stills load as CustomIcon Still`() = runTest {
         store.import("catbar_games", register(pngBytes()), "image/png")
 
-        val loaded = store.load()
+        val loaded = loadPicks()
         val icon = assertNotNull(loaded["catbar_games"], "the imported slot is present")
         assertIs<CustomIcon.Still>(icon)
     }
@@ -145,7 +149,7 @@ class CustomIconStoreTest {
         assertTrue(dest.isFile)
         assertNotNull(stampPref())
         assertEquals(listOf(dest.absolutePath), evictor.evicted)
-        assertIs<CustomIcon.Still>(assertNotNull(store.load()["usercat_custom_x_1"]))
+        assertIs<CustomIcon.Still>(assertNotNull(loadPicks()["usercat_custom_x_1"]))
     }
 
     @Test
@@ -180,7 +184,7 @@ class CustomIconStoreTest {
         iconFile("not_a_slot", "png").writeBytes(pngBytes())
         iconFile("catbar_music", "mp4").writeBytes(pngBytes())
 
-        val loaded = store.load()
+        val loaded = loadPicks()
 
         assertEquals(setOf("catbar_games"), loaded.keys, "unknown slot keys and extensions are skipped, not crashed on")
     }
@@ -194,7 +198,7 @@ class CustomIconStoreTest {
 
         assertTrue(store.clear("status_bluetooth"), "a stored pick reports as removed")
 
-        val loaded = store.load()
+        val loaded = loadPicks()
         assertNull(loaded["status_bluetooth"])
         assertNotNull(loaded["catbar_games"], "clear is per-slot — other slots untouched")
     }
@@ -215,7 +219,7 @@ class CustomIconStoreTest {
 
         assertTrue(store.clearAll(), "stored picks report as cleared")
 
-        assertTrue(store.load().isEmpty())
+        assertTrue(loadPicks().isEmpty())
         assertTrue(iconDir().listFiles().isNullOrEmpty())
     }
 

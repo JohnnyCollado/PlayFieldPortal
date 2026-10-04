@@ -2,13 +2,19 @@ package com.playfieldportal.studio.preview
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.lerp
+import com.playfieldportal.core.ui.theme.DefaultPFPColors
+import com.playfieldportal.core.ui.theme.PFPColors
+import com.playfieldportal.core.ui.theme.menuCursorEdgeFor
+import com.playfieldportal.core.ui.theme.subTextOr
+import com.playfieldportal.core.ui.theme.textOr
 import com.playfieldportal.studio.IconColorChoice
 import com.playfieldportal.studio.StudioState
 import com.playfieldportal.studio.TextColorChoice
 import com.playfieldportal.themekit.ColorCascade
 import com.playfieldportal.themekit.XmbLayoutAdjust
 import com.playfieldportal.themekit.XmbLayoutSpec
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 
 /** Everything the preview canvas needs, resolved from [StudioState]. */
 data class XmbPreviewModel(
@@ -42,35 +48,58 @@ data class XmbPreviewModel(
     val textOverride: Color? = null,
     val subTextOverride: Color? = null,
 ) {
+    /**
+     * The launcher's PFPColors for this theme, as XMBViewModel builds them: the one theme colour
+     * drives the wave and the gradient anchors, the accent stays white (presets and imports alike),
+     * and the text roles follow the Main / Sub colours. Every preview screen derives its palette
+     * and its text roles from this through the launcher's own rules (theme-render).
+     */
+    val pfp: PFPColors = DefaultPFPColors.copy(
+        waveColor = accent,
+        backgroundTop = backgroundTop,
+        backgroundBottom = backgroundBottom,
+        iconColor = iconTint,
+        textPrimary = textPrimary,
+        textSecondary = textPrimary.copy(alpha = 0.7f),
+        textOverride = textOverride,
+        subTextOverride = subTextOverride,
+    )
+
     /** PFPColors.textOr: the Main text colour at [default]'s weight, else [default] untouched. */
-    fun textOr(default: Color): Color = textOr(default, default.alpha)
+    fun textOr(default: Color): Color = pfp.textOr(default)
 
     /** PFPColors.textOr(default, weight): for an opaque [default] whose weight is its tone, not its alpha. */
-    fun textOr(default: Color, weight: Float): Color = repaint(textOverride, default, weight)
+    fun textOr(default: Color, weight: Float): Color = pfp.textOr(default, weight)
 
     /** PFPColors.subTextOr: the Sub text colour, else the Main one, at [default]'s weight; else [default]. */
-    fun subTextOr(default: Color): Color = subTextOr(default, default.alpha)
+    fun subTextOr(default: Color): Color = pfp.subTextOr(default)
 
     /** PFPColors.subTextOr(default, weight). */
-    fun subTextOr(default: Color, weight: Float): Color = repaint(subTextOverride ?: textOverride, default, weight)
-
-    private fun repaint(picked: Color?, default: Color, weight: Float): Color =
-        picked?.let { it.copy(alpha = it.alpha * weight) } ?: default
+    fun subTextOr(default: Color, weight: Float): Color = pfp.subTextOr(default, weight)
 
     /** PFPColors.textSecondary: the text colour at 0.7 alpha, as XMBViewModel derives it. */
-    val textSecondary: Color get() = textPrimary.copy(alpha = 0.7f)
+    val textSecondary: Color get() = pfp.textSecondary
 
-    // Launcher parity: PFPColors.accentColor stays WHITE for presets and imports alike
-    // (XMBViewModel.toPFPColors / withWaveTint only retint waveColor + gradient), so the
-    // menu cursor formulas below lerp from white — matching MenuCursor.kt on device.
-    private val pfpAccentColor = Color.White
+    /** The drill ◀ colour: PFPColors.accentColor, which stays white. */
+    val drillCursor: Color get() = pfp.accentColor
 
-    /** The drill ◀ colour: PFPColors.accentColor, which stays white (see above). */
-    val drillCursor: Color get() = pfpAccentColor
-
-    /** MenuCursor.menuCursorEdge(): lerp(accent, White, 0.55).copy(alpha = 0.95). */
-    val menuCursorEdge: Color get() = lerp(pfpAccentColor, Color.White, 0.55f).copy(alpha = 0.95f)
+    /** MenuCursor.menuCursorEdge(). */
+    val menuCursorEdge: Color get() = menuCursorEdgeFor(pfp.accentColor)
 }
+
+/**
+ * The preview model for the subtree, for screens whose text roles the launcher reads from
+ * LocalPFPColors through themedText / themedSubText rather than from a palette.
+ */
+val LocalPreviewModel = staticCompositionLocalOf<XmbPreviewModel?> { null }
+
+/** themedText(default): the Main colour at [default]'s weight, else [default]. */
+@Composable
+fun previewText(default: Color): Color = LocalPreviewModel.current?.textOr(default) ?: default
+
+/** themedSubText(default): the Sub (else Main) colour at [default]'s weight, else [default]. */
+@Composable
+fun previewSubText(default: Color): Color = LocalPreviewModel.current?.subTextOr(default) ?: default
 
 /**
  * [adjust] is the preview-only "Preview with my layout" value (null = off, so the theme's own geometry
@@ -91,8 +120,8 @@ fun StudioState.toPreviewModel(adjust: XmbLayoutAdjust? = null): XmbPreviewModel
         backgroundBottom = Color(bottom.toInt()),
         wallpaper = wallpaperBitmap,
         waveStyle = waveStyle,
-        // Console art (full `sysicon_<id>` keys) rides in the same map: the canvas looks every slot up by key.
-        iconOverrides = iconBitmaps + sysiconBitmaps,
+        // Every slot key — theme slots, console and physical-media art — in one map: the canvas looks each up by key.
+        iconOverrides = iconBitmaps,
         layout = layout,
         layoutAdjust = PreviewGeometry.effectiveAdjust(
             layout, enabled = adjust != null, stored = adjust ?: XmbLayoutAdjust.DEFAULT,

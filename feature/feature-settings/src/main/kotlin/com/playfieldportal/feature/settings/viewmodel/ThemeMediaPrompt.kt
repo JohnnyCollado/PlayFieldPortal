@@ -51,21 +51,23 @@ data class ThemeMediaPrompt(
         }.joinToString("\n\n")
 
     companion object {
-        /** Null when the theme's media and icons already show as things stand. */
+        /**
+         * Null when the theme's media and icons already show as things stand. The sets are
+         * ThemeTiers' answers once the theme is on disk: [themeMedia] what the theme tier supplies,
+         * [shadowedMedia] / [shadowedIcons] what the user's own choices hide.
+         */
         fun of(
-            installed: Set<String>,
-            userAssigned: Set<UiMediaSlot>,
+            themeMedia: Set<UiMediaSlot>,
+            shadowedMedia: Set<UiMediaSlot>,
+            shadowedIcons: Set<String>,
             gameBootEnabled: Boolean,
             bootEnabled: Boolean,
-            installedIcons: Set<String> = emptySet(),
-            userIcons: Set<String> = emptySet(),
         ): ThemeMediaPrompt? {
-            val supplied = installed.mapNotNullTo(HashSet()) { UiMediaSlot.fromKey(it) }
             val prompt = ThemeMediaPrompt(
-                replace = UiMediaSlot.entries.filter { it in supplied && it in userAssigned },
-                turnOnGameBoot = UiMediaSlot.GAMEBOOT_VIDEO in supplied && !gameBootEnabled,
-                turnOnBoot = UiMediaSlot.BOOT_VIDEO in supplied && !bootEnabled,
-                replaceIcons = CustomizableIcons.ALL.map { it.key }.filter { it in installedIcons && it in userIcons },
+                replace = UiMediaSlot.entries.filter { it in shadowedMedia },
+                turnOnGameBoot = UiMediaSlot.GAMEBOOT_VIDEO in themeMedia && !gameBootEnabled,
+                turnOnBoot = UiMediaSlot.BOOT_VIDEO in themeMedia && !bootEnabled,
+                replaceIcons = CustomizableIcons.ALL.map { it.key }.filter { it in shadowedIcons },
             )
             return prompt.takeIf { it.replacesAnything || it.turnOnGameBoot || it.turnOnBoot }
         }

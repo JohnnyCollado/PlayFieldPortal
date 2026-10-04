@@ -65,6 +65,7 @@ object KnownEmulatorPackages {
         "com.explusalpha.C64Emu",
         // Microsoft
         "com.izzy2lost.x1box", "emu.x360mobile.com", "aenu.ax360e", "aenu.ax360e.free",
+        "xendroid.compose", "xendroid.compose.debug",
         // Other systems
         "com.github.eka2l1", "org.scummvm.scummvm", "io.wip.pico8", "com.rfandango.haku_x",
         // PC runtimes (Winlator is a family above)

@@ -9,7 +9,8 @@ enum class AchievementProvider {
     STEAM,              // PC titles, matched by Steam appid
     LOCAL_STEAM,        // PC titles run through a Steam emulator, earned state from its local file
     VITA_TROPHY,        // PS Vita titles under Vita3K, earned state from its local TROPUSR.DAT
-    PS3_TROPHY;         // PS3 titles under ARMSX3, earned state from its local (big-endian) TROPUSR.DAT
+    PS3_TROPHY,         // PS3 titles under ARMSX3, earned state from its local (big-endian) TROPUSR.DAT
+    X360_ACHIEVEMENT;   // Xbox 360 titles under X360 Mobile / XenDroid, from Xenia's local profile GPDs
 
     companion object {
         fun fromName(name: String?): AchievementProvider? =

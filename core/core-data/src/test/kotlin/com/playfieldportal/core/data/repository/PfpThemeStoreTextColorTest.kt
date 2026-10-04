@@ -132,7 +132,7 @@ class PfpThemeStoreTextColorTest {
     }
 
     private companion object {
-        val KEY_TEXT_COLOR = longPreferencesKey("display_text_color")
-        val KEY_SUB_TEXT_COLOR = longPreferencesKey("display_sub_text_color")
+        val KEY_TEXT_COLOR = ThemePrefKeys.TEXT_COLOR
+        val KEY_SUB_TEXT_COLOR = ThemePrefKeys.SUB_TEXT_COLOR
     }
 }

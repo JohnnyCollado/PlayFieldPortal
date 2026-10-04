@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui
 
+import androidx.lifecycle.compose.LifecycleStartEffect
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.BroadcastReceiver
@@ -18,7 +19,6 @@ import android.telephony.TelephonyCallback
 import android.telephony.TelephonyManager
 import android.view.InputDevice
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,7 +56,7 @@ fun rememberSystemStatus(): SystemStatus {
     var status by remember { mutableStateOf(SystemStatus()) }
 
     // ── Bluetooth on/off ──────────────────────────────────────────────────────
-    DisposableEffect(Unit) {
+    LifecycleStartEffect(Unit) {
         val adapter = context.getSystemService<BluetoothManager>()?.adapter
         fun push() { status = status.copy(bluetoothOn = adapter?.isEnabled == true) }
         push()
@@ -65,14 +65,14 @@ fun rememberSystemStatus(): SystemStatus {
         }
         // ACTION_STATE_CHANGED is a protected system broadcast; receiving it needs no permission.
         context.registerReceiver(receiver, IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED))
-        onDispose { runCatching { context.unregisterReceiver(receiver) } }
+        onStopOrDispose { runCatching { context.unregisterReceiver(receiver) } }
     }
 
     // ── Wi-Fi connected + strength ────────────────────────────────────────────
-    DisposableEffect(Unit) {
+    LifecycleStartEffect(Unit) {
         val cm = context.getSystemService<ConnectivityManager>()
         if (cm == null) {
-            onDispose { }
+            onStopOrDispose { }
         } else {
             val callback = object : ConnectivityManager.NetworkCallback() {
                 override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
@@ -88,18 +88,18 @@ fun rememberSystemStatus(): SystemStatus {
                 .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
                 .build()
             runCatching { cm.registerNetworkCallback(request, callback) }
-            onDispose { runCatching { cm.unregisterNetworkCallback(callback) } }
+            onStopOrDispose { runCatching { cm.unregisterNetworkCallback(callback) } }
         }
     }
 
     // ── Cellular presence + signal strength ───────────────────────────────────
-    DisposableEffect(Unit) {
+    LifecycleStartEffect(Unit) {
         val tm = context.getSystemService<TelephonyManager>()
         val hasModem = tm != null && tm.phoneType != TelephonyManager.PHONE_TYPE_NONE
         // No modem or no ready SIM ⇒ there is no cellular service on this device: hide Signal.
         if (tm == null || !hasModem || tm.simState != TelephonyManager.SIM_STATE_READY) {
             status = status.copy(cellularLevel = null)
-            onDispose { }
+            onStopOrDispose { }
         } else {
             // Start at 0 bars (searching) until the first callback; getLevel() needs no permission.
             status = status.copy(cellularLevel = 0)
@@ -110,7 +110,7 @@ fun rememberSystemStatus(): SystemStatus {
                     }
                 }
                 runCatching { tm.registerTelephonyCallback(context.mainExecutor, callback) }
-                onDispose { runCatching { tm.unregisterTelephonyCallback(callback) } }
+                onStopOrDispose { runCatching { tm.unregisterTelephonyCallback(callback) } }
             } else {
                 @Suppress("DEPRECATION")
                 val listener = object : PhoneStateListener() {
@@ -123,13 +123,13 @@ fun rememberSystemStatus(): SystemStatus {
                 @Suppress("DEPRECATION")
                 runCatching { tm.listen(listener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS) }
                 @Suppress("DEPRECATION")
-                onDispose { runCatching { tm.listen(listener, PhoneStateListener.LISTEN_NONE) } }
+                onStopOrDispose { runCatching { tm.listen(listener, PhoneStateListener.LISTEN_NONE) } }
             }
         }
     }
 
     // ── Game controller connected ─────────────────────────────────────────────
-    DisposableEffect(Unit) {
+    LifecycleStartEffect(Unit) {
         val im = context.getSystemService<InputManager>()
         fun push() { status = status.copy(controllerConnected = anyControllerConnected()) }
         push()
@@ -139,7 +139,7 @@ fun rememberSystemStatus(): SystemStatus {
             override fun onInputDeviceChanged(deviceId: Int) = push()
         }
         runCatching { im?.registerInputDeviceListener(listener, null) }
-        onDispose { runCatching { im?.unregisterInputDeviceListener(listener) } }
+        onStopOrDispose { runCatching { im?.unregisterInputDeviceListener(listener) } }
     }
 
     return status

@@ -92,10 +92,57 @@ class RomRootRepository @Inject constructor(
     }
 
     companion object {
-        /** Root tree URI → its raw filesystem path (pure string math, no file access). */
+        const val EXTERNAL_STORAGE_AUTHORITY = "com.android.externalstorage.documents"
+
+        private val TREE_URI = Regex("""^content://([^/]+)/tree/([^/?#]+)""")
+
+        /**
+         * Root tree URI → its raw filesystem path (pure string math, no file access), or null when
+         * the grant has none. Only shared storage uses `volume:path` ids; a folder granted through
+         * an app's own documents provider either uses absolute paths (XenDroid) or opaque ids
+         * (X360 Mobile's `v:root`), which must never be read as a storage volume.
+         */
         fun rawPathOfTree(treeUri: String): String? {
-            val docId = treeDocId(treeUri) ?: return null
-            return docIdToRawPath(docId)
+            val (authority, docId) = parseTree(treeUri) ?: return null
+            return rawPathOfDocument(authority, docId)
+        }
+
+        /**
+         * A document id → its raw path, given the [authority] that issued it. A null authority is
+         * taken as shared storage — what every caller assumed before authorities were checked.
+         */
+        fun rawPathOfDocument(authority: String?, documentId: String): String? = when {
+            authority == null || authority == EXTERNAL_STORAGE_AUTHORITY -> docIdToRawPath(documentId)
+            documentId.startsWith("/") -> documentId.trimEnd('/').ifEmpty { "/" }
+            else -> null
+        }
+
+        /**
+         * A readable name for a granted tree: its raw path when it has one, else the leaf of its
+         * decoded document id (`v:root` → "root"), else the URI itself.
+         */
+        fun displayNameOfTree(treeUri: String): String {
+            rawPathOfTree(treeUri)?.let { return it }
+            val (authority, docId) = parseTree(treeUri) ?: return treeUri
+            val volume = docId.substringBefore(':', missingDelimiterValue = "")
+            val relative = docId.substringAfter(':', missingDelimiterValue = docId).trim('/')
+            if (authority == EXTERNAL_STORAGE_AUTHORITY && relative.isEmpty() && volume.isNotEmpty()) {
+                return if (volume.equals("primary", ignoreCase = true)) "/storage/emulated/0" else "/storage/$volume"
+            }
+            return relative.substringAfterLast('/').ifEmpty { docId.ifEmpty { treeUri } }
+        }
+
+        /** The tree's document id, percent-decoded, without touching Android's Uri (JVM-safe). */
+        fun decodedTreeDocId(treeUri: String): String? = parseTree(treeUri)?.second
+
+        // (authority, decoded tree document id) — pure, so labels and paths are JVM-testable.
+        private fun parseTree(treeUri: String): Pair<String, String>? {
+            val match = TREE_URI.find(treeUri) ?: return null
+            // A literal '+' is always percent-encoded in a SAF URI; keep URLDecoder from reading it as a space.
+            val docId = runCatching {
+                java.net.URLDecoder.decode(match.groupValues[2].replace("+", "%2B"), "UTF-8")
+            }.getOrNull() ?: return null
+            return match.groupValues[1] to docId
         }
 
         fun treeDocId(treeUri: String): String? =

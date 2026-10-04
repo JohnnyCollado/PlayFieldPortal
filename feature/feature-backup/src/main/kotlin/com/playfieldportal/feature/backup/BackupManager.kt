@@ -37,6 +37,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
 import com.playfieldportal.core.common.security.KeystoreSecretCipher
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.BackupFolderRepository
+import com.playfieldportal.core.data.repository.ThemePrefKeys
 import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.domain.model.UiMediaSlot
 import com.playfieldportal.feature.backup.restore.RestoreArchive
@@ -626,25 +627,25 @@ open class BackupManager @Inject constructor(
     private val BACKED_UP_STRING_KEYS = listOf(
         // Display
         stringPreferencesKey("display_wave_mode"),
-        stringPreferencesKey("display_wave_style"),
+        ThemePrefKeys.WAVE_STYLE,
         stringPreferencesKey("display_icon_style"),
         // The retired GameBoot three-way mode key. GameBoot is a boolean again
         // (display_gameboot_enabled, in the boolean list below), but this stays here so an
         // archive written during the mode era restores and migrates through GameBootPreferences'
         // read-time rule instead of silently reverting to the default.
         stringPreferencesKey("display_gameboot_mode"),
-        stringPreferencesKey("display_color_scheme"),
-        stringPreferencesKey("display_custom_wallpaper"),
-        stringPreferencesKey("display_motion_wallpaper"),
+        ThemePrefKeys.COLOR_SCHEME,
+        ThemePrefKeys.CUSTOM_WALLPAPER,
+        ThemePrefKeys.MOTION_WALLPAPER,
         // The theme's crop of that video (compact JSON of fractions, no paths) — travels with it.
-        stringPreferencesKey("display_motion_crop"),
+        ThemePrefKeys.MOTION_CROP,
         // Font colour / text legibility. This list is explicit, so a key that is not named here
         // silently fails to survive a restore — see BackupKeyCoverageTest.
-        stringPreferencesKey("display_text_legibility"),
+        ThemePrefKeys.TEXT_LEGIBILITY,
         // Icon appearance + XMB geometry. These had been missing since they were added: all four
         // are cosmetic settings the user chose, with no file or grant behind them, so they
         // restore cleanly onto any device.
-        stringPreferencesKey("display_icon_legibility"),
+        ThemePrefKeys.ICON_LEGIBILITY,
         stringPreferencesKey("display_xmb_layout_adjust"),
         // Item List Motion (Rewind / Glide), stored by enum name.
         stringPreferencesKey("display_item_list_motion"),
@@ -661,8 +662,8 @@ open class BackupManager @Inject constructor(
         // Theme cascade values. The applied theme's NAME and layout are plain data; the theme's
         // extracted icon files are not bundled, so theme_icons_stamp is deliberately absent —
         // restoring it would point observers at a directory that isn't there.
-        stringPreferencesKey("theme_applied_name"),
-        stringPreferencesKey("theme_layout_spec"),
+        ThemePrefKeys.APPLIED_THEME_NAME,
+        ThemePrefKeys.THEME_LAYOUT,
             // Controller
             stringPreferencesKey("controller_scroll_speed"),
             // Controller
@@ -730,10 +731,10 @@ open class BackupManager @Inject constructor(
             booleanPreferencesKey("display_battery_saver"),
             booleanPreferencesKey("interface_context_menu_hint"),
             // Font colour opt-outs — see the string list above for why these are spelled out.
-            booleanPreferencesKey("display_text_color_exact"),
+            ThemePrefKeys.TEXT_COLOR_EXACT,
             booleanPreferencesKey("display_text_contrast_notice_suppressed"),
             // Icon + text appearance toggles, missing since they were introduced.
-            booleanPreferencesKey("display_solid_unfocused_icons"),
+            ThemePrefKeys.SOLID_UNFOCUSED_ICONS,
             booleanPreferencesKey("display_text_shadow"),
             booleanPreferencesKey("pref_animated_icons"),
             // Launch behaviour
@@ -833,13 +834,13 @@ open class BackupManager @Inject constructor(
 
         private val BACKED_UP_LONG_KEYS = listOf(
             // The user's picked font colour (absent = the theme's own).
-            longPreferencesKey("display_text_color"),
+            ThemePrefKeys.TEXT_COLOR,
             // The user's picked sub font colour (absent = follows the font colour).
-            longPreferencesKey("display_sub_text_color"),
+            ThemePrefKeys.SUB_TEXT_COLOR,
             // The one-colour cascade: accent override and unified icon tint. Pure values — no
             // file behind either, unlike theme_icons_stamp.
-            longPreferencesKey("theme_accent_override"),
-            longPreferencesKey("theme_icon_color"),
+            ThemePrefKeys.ACCENT_OVERRIDE,
+            ThemePrefKeys.ICON_COLOR,
             longPreferencesKey("custom_icons_stamp"),
             longPreferencesKey("ui_media_stamp"),
         )

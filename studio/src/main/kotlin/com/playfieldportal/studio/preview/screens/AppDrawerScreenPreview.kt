@@ -52,6 +52,11 @@ import com.playfieldportal.studio.preview.WaveBackground
 import com.playfieldportal.studio.preview.WaveMotion
 import com.playfieldportal.studio.preview.XmbPreviewModel
 import kotlin.math.pow
+import com.playfieldportal.core.ui.theme.ThemeTokens
+import com.playfieldportal.core.ui.theme.StorefrontColors
+import com.playfieldportal.core.ui.theme.storefrontColorsFor
+import com.playfieldportal.core.ui.theme.dimmed
+import com.playfieldportal.core.ui.theme.unselectedLabel
 
 // ── App Drawer (feature-appbar AppDrawerScreen.kt + appdrawer/*) ──────────────────────────────
 //
@@ -85,109 +90,14 @@ internal val DrawerBodyLarge = TextStyle(
     ),
 )
 
-/** The StorefrontColors roles the drawer and the picker use (core-ui StorefrontColors.kt). */
-@Immutable
-internal data class DrawerPalette(
-    val backgroundDeep: Color,
-    val backgroundMid: Color,
-    val selectionGlow: Color,
-    val chromeDivider: Color,
-    val categorySelectedEdge: Color,
-    /** The Game Picker's shelf list (StorefrontColors.railBackground / categorySelected). */
-    val railBackground: Color,
-    val categorySelected: Color,
-    val tileSelectedEdge: Color,
-    val tileSelectedInner: Color,
-    /** Text roles, themed: Main replaces primary, Sub (else Main) the secondary at 0.72. */
-    val textPrimary: Color,
-    val textSecondary: Color,
-    /** StorefrontColors.iconPrimary / iconSecondary: the palette's own tones, never the font colours. */
-    val iconPrimary: Color,
-    val iconSecondary: Color,
-    /** StorefrontColors.unselectedLabel(): Main at 0.72 once set, else [textSecondary]. */
-    val unselectedLabel: Color,
-    /** AppDrawerCategoryTabs' unselected tab: themedText(textSecondary @ 0.65) — Main at 0.65 once set. */
-    val tabUnselected: Color,
-)
-
-// TextLegibility.kt relativeLuminance / contrastRatio / ensureReadable (alpha ignored, as there).
-private fun drawerLuminance(c: Color): Double {
-    fun linearize(channel: Float): Double {
-        val v = channel.toDouble()
-        return if (v <= 0.04045) v / 12.92 else ((v + 0.055) / 1.055).pow(2.4)
-    }
-    return 0.2126 * linearize(c.red) + 0.7152 * linearize(c.green) + 0.0722 * linearize(c.blue)
-}
-
-private fun drawerContrast(a: Color, b: Color): Double {
-    val la = drawerLuminance(a)
-    val lb = drawerLuminance(b)
-    return (maxOf(la, lb) + 0.05) / (minOf(la, lb) + 0.05)
-}
-
-private fun drawerEnsureReadable(fg: Color, bg: Color, minContrast: Float): Color {
-    if (drawerContrast(fg, bg) >= minContrast) return fg
-    return if (drawerContrast(Color.Black, bg) >= drawerContrast(Color.White, bg)) Color.Black else Color.White
-}
-
-// StorefrontColors.kt isVividHue.
-private fun Color.drawerIsVividHue(): Boolean {
-    val max = maxOf(red, green, blue)
-    val min = minOf(red, green, blue)
-    return max - min >= 0.10f && max >= 0.30f
-}
-
 /**
- * StorefrontColors.storefrontColorsFor(LocalPFPColors.current), the roles the two screens draw.
- * resolveHueSource: PFPColors.accentColor stays white on device (XmbPreviewModel notes it), so the
- * hue is the wave colour when vivid, else backgroundBottom.
+ * The drawer's palette, as the launcher derives it ([storefrontColorsFor], theme-render) from the
+ * model's PFPColors; recomputed only when one of its inputs changes. The drawer and both pickers
+ * draw from it.
  */
-internal fun drawerPalette(model: XmbPreviewModel): DrawerPalette {
-    val accent = Color.White // PFPColors.accentColor (never vivid → falls through to the wave)
-    val hue = when {
-        accent.drawerIsVividHue() -> accent
-        model.accent.drawerIsVividHue() -> model.accent
-        else -> model.backgroundBottom
-    }
-    val accentEdge = lerp(hue, Color.White, 0.55f)
-    val accentInner = lerp(hue, Color.White, 0.32f)
-    val bgTop = model.backgroundTop
-    val bgBottom = model.backgroundBottom
-    // ~0.88 alpha so the XMB background reads through.
-    val backgroundDeep = bgTop.copy(alpha = 0.88f)
-    val backgroundMid = lerp(bgTop, bgBottom, 0.55f).copy(alpha = 0.88f)
-    // 3.0 contrast floor; a pale wash flips the whole palette to its light direction.
-    val textPrimary = drawerEnsureReadable(Color.White, backgroundMid, 3.0f)
-    val lightChrome = textPrimary == Color.Black
-    val textSecondary = drawerEnsureReadable(
-        fg = if (lightChrome) lerp(Color.Black, Color.White, 0.25f) else lerp(hue, Color.White, 0.72f),
-        bg = backgroundMid,
-        minContrast = 3.0f,
-    )
-    val edge = if (lightChrome) lerp(hue, Color.Black, 0.45f) else accentEdge
-    val edgeInner = if (lightChrome) lerp(hue, Color.Black, 0.20f) else accentInner
-    val themedSecondary = model.subTextOr(textSecondary, 0.72f)
-    return DrawerPalette(
-        backgroundDeep = backgroundDeep,
-        backgroundMid = backgroundMid,
-        selectionGlow = (if (lightChrome) lerp(hue, Color.Black, 0.55f) else lerp(hue, Color.White, 0.45f))
-            .copy(alpha = 0.16f),
-        chromeDivider = edge,
-        categorySelectedEdge = edge,
-        railBackground = bgTop.copy(alpha = 0.35f),
-        categorySelected = lerp(bgBottom, hue, 0.35f).copy(alpha = 0.92f),
-        tileSelectedEdge = edge,
-        tileSelectedInner = edgeInner,
-        // storefrontColorsFor: the user's font colours replace the text roles unclamped; the icon
-        // roles keep the readable white/black and its secondary.
-        textPrimary = model.textOr(textPrimary, 1f),
-        textSecondary = themedSecondary,
-        iconPrimary = textPrimary,
-        iconSecondary = textSecondary,
-        unselectedLabel = model.textOr(themedSecondary, 0.72f),
-        tabUnselected = model.textOr(themedSecondary.copy(alpha = 0.65f)),
-    )
-}
+@Composable
+internal fun rememberDrawerPalette(model: XmbPreviewModel): StorefrontColors =
+    remember(model.pfp) { storefrontColorsFor(model.pfp) }
 
 /** AppDrawerHeader / AppPickerHeader HEADER_HEIGHT. */
 internal val DrawerHeaderHeight = 56.dp
@@ -338,15 +248,15 @@ private val DrawerHints = listOf(
 private val DrawerHintLabel = TextStyle(
     fontSize = 14.sp,
     fontWeight = FontWeight.SemiBold,
-    shadow = Shadow(color = Color.Black.copy(alpha = 0.75f), offset = Offset(0f, 2f), blurRadius = 4f),
+    shadow = ThemeTokens.TextShadow,
 )
 
 // XmbPreviewCanvas WallpaperScrim (WallpaperBackground's legibility scrim).
-private val DrawerWallpaperScrim = Color(0x59000000)
+private val DrawerWallpaperScrim = ThemeTokens.WallpaperScrim
 
 @Composable
 fun AppDrawerScreenPreview(model: XmbPreviewModel) {
-    val sf = remember(model.accent, model.backgroundTop, model.backgroundBottom, model.textOverride, model.subTextOverride) { drawerPalette(model) }
+    val sf = rememberDrawerPalette(model)
     Box(Modifier.fillMaxSize()) {
         // XMBShell hides the XMB foreground while the drawer is open and freezes the wave
         // (waveCovered) / releases the motion wallpaper (poster only): a still background.
@@ -361,11 +271,12 @@ fun AppDrawerScreenPreview(model: XmbPreviewModel) {
                     DrawerHeader(sf)
                     // Thin accent divider under the header.
                     Box(Modifier.fillMaxWidth().height(1.dp).background(sf.chromeDivider))
-                    DrawerCategoryTabs(sf)
+                    // AppDrawerCategoryTabs' unselected tab: themedText(textSecondary @ 0.65).
+                    DrawerCategoryTabs(sf, tabUnselected = model.textOr(sf.textSecondary.copy(alpha = 0.65f)))
                     BoxWithConstraints(Modifier.weight(1f)) {
                         val artwork = drawerAdaptiveArtworkSize(maxHeight)
                         DrawerStaticGrid(DrawerSampleApps, DrawerColumns, maxRows = 4) { index, label ->
-                            DrawerGridTile(label, selected = index == 0, artwork = artwork, sf = sf)
+                            DrawerGridTile(label, selected = index == 0, artwork = artwork, sf = sf, unselected = sf.unselectedLabel(model.pfp))
                         }
                     }
                     // Permanent footer: the idle hint pill (shown — the controller is idle).
@@ -401,7 +312,7 @@ private fun DrawerFrozenBackdrop(model: XmbPreviewModel) {
 // AppDrawerHeader: ‹ Android › <category> on the left, the magnifier + "Search" on the right
 // (the inline field only shows while search is active).
 @Composable
-private fun DrawerHeader(sf: DrawerPalette) {
+private fun DrawerHeader(sf: StorefrontColors) {
     Row(
         modifier = Modifier.fillMaxWidth().height(DrawerHeaderHeight).padding(horizontal = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -430,7 +341,7 @@ private fun DrawerHeader(sf: DrawerPalette) {
 // categorySelectedEdge underline the width of the label row; unselected = secondary @ 0.65
 // (themedText: the Main colour at 0.65 once set).
 @Composable
-private fun DrawerCategoryTabs(sf: DrawerPalette) {
+private fun DrawerCategoryTabs(sf: StorefrontColors, tabUnselected: Color) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
         horizontalArrangement = Arrangement.spacedBy(28.dp),
@@ -454,7 +365,7 @@ private fun DrawerCategoryTabs(sf: DrawerPalette) {
                     Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(bottom = 5.dp)) {
                         Text(
                             text = label.uppercase(),
-                            color = if (selected) sf.textPrimary else sf.tabUnselected,
+                            color = if (selected) sf.textPrimary else tabUnselected,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                         )
@@ -477,7 +388,7 @@ private fun DrawerCategoryTabs(sf: DrawerPalette) {
 // AppDrawerGridItem: bare artwork; the selected tile adds the selectionGlow plate, a 1 dp
 // tileSelectedEdge border and a 1 dp tileSelectedInner hairline inset 2 dp; label secondary → primary.
 @Composable
-private fun DrawerGridTile(label: String, selected: Boolean, artwork: Dp, sf: DrawerPalette) {
+private fun DrawerGridTile(label: String, selected: Boolean, artwork: Dp, sf: StorefrontColors, unselected: Color) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -491,7 +402,7 @@ private fun DrawerGridTile(label: String, selected: Boolean, artwork: Dp, sf: Dr
             DrawerAppIcon(label, artwork, Modifier.align(Alignment.Center))
         }
         Spacer(Modifier.height(6.dp))
-        DrawerTileLabel(label, if (selected) sf.textPrimary else sf.unselectedLabel)
+        DrawerTileLabel(label, if (selected) sf.textPrimary else unselected)
     }
 }
 

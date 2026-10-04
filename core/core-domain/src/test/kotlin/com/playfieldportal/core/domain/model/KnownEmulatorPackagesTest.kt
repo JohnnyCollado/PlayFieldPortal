@@ -39,7 +39,12 @@ class KnownEmulatorPackagesTest {
     @Test
     fun `held Obtainium entries stay untagged until their system is confirmed`() {
         assertFalse(KnownEmulatorPackages.isEmulator("io.navivani.swiff"))
-        assertFalse(KnownEmulatorPackages.isEmulator("xendroid.compose"))
+    }
+
+    @Test
+    fun `XenDroid is tagged now that it is confirmed as an Xbox 360 emulator`() {
+        assertTrue(KnownEmulatorPackages.isEmulator("xendroid.compose"))
+        assertTrue(KnownEmulatorPackages.isEmulator("xendroid.compose.debug"))
     }
 
     @Test

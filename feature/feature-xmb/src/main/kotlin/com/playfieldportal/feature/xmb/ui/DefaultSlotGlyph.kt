@@ -101,7 +101,7 @@ internal sealed interface SlotGlyphDefault {
  */
 internal fun defaultGlyphFor(slot: IconSlot): SlotGlyphDefault {
     if (slot.group == IconSlot.Group.CONSOLE) {
-        return SlotGlyphDefault.Console(slot.key.removePrefix("sysicon_"))
+        return SlotGlyphDefault.Console(slot.key.removePrefix(CustomizableIcons.SYSICON_PREFIX))
     }
     CustomizableIcons.physicalMediaId(slot.key)?.let { return SlotGlyphDefault.PhysicalMedia(it) }
     // Crossbar art, via the catalog — catbarSlotKeyFor's inverse keeps the pairing single-sourced.

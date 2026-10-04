@@ -91,7 +91,7 @@ class UiMediaStoreTest {
                     .apply { addRow(arrayOf(uri.lastPathSegment)) }
             }
         }
-        store = UiMediaStore(context)
+        store = UiMediaStore(context, ThemeTiers(context))
     }
 
     @After

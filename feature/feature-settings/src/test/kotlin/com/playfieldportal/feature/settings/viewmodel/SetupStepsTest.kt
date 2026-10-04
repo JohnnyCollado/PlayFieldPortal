@@ -12,7 +12,7 @@ import com.playfieldportal.feature.settings.viewmodel.SetupStep.PHOTO
 import com.playfieldportal.feature.settings.viewmodel.SetupStep.RETROARCH
 import com.playfieldportal.feature.settings.viewmodel.SetupStep.ROM_ROOTS
 import com.playfieldportal.feature.settings.viewmodel.SetupStep.SERVICES
-import com.playfieldportal.feature.settings.viewmodel.SetupStep.TROPHIES
+import com.playfieldportal.feature.settings.viewmodel.SetupStep.LOCAL_ACHIEVEMENTS
 import com.playfieldportal.feature.settings.viewmodel.SetupStep.VIDEO
 import com.playfieldportal.feature.settings.viewmodel.SetupStep.WELCOME
 import com.playfieldportal.feature.settings.viewmodel.SetupStep.WINDOWS
@@ -30,24 +30,38 @@ class SetupStepsTest {
         assertEquals(always + listOf(HINTS, HOME_APP, FINISH), setupSteps(SetupAvailability()))
     }
 
-    @Test fun `Vita3K alone brings the Trophies page`() {
+    @Test fun `Vita3K alone brings the Local Achievements page`() {
         assertEquals(
-            always + listOf(TROPHIES, HINTS, HOME_APP, FINISH),
+            always + listOf(LOCAL_ACHIEVEMENTS, HINTS, HOME_APP, FINISH),
             setupSteps(SetupAvailability(vita3K = true)),
         )
     }
 
-    @Test fun `ARMSX3 alone brings the Trophies page`() {
+    @Test fun `ARMSX3 alone brings the Local Achievements page`() {
         assertEquals(
-            always + listOf(TROPHIES, HINTS, HOME_APP, FINISH),
+            always + listOf(LOCAL_ACHIEVEMENTS, HINTS, HOME_APP, FINISH),
             setupSteps(SetupAvailability(armsx3 = true)),
         )
     }
 
-    @Test fun `Vita3K and ARMSX3 together share one Trophies page`() {
+    @Test fun `Vita3K and ARMSX3 together share one Local Achievements page`() {
         assertEquals(
-            always + listOf(TROPHIES, HINTS, HOME_APP, FINISH),
+            always + listOf(LOCAL_ACHIEVEMENTS, HINTS, HOME_APP, FINISH),
             setupSteps(SetupAvailability(vita3K = true, armsx3 = true)),
+        )
+    }
+
+    @Test fun `X360 Mobile alone brings the Local Achievements page`() {
+        assertEquals(
+            always + listOf(LOCAL_ACHIEVEMENTS, HINTS, HOME_APP, FINISH),
+            setupSteps(SetupAvailability(x360Mobile = true)),
+        )
+    }
+
+    @Test fun `XenDroid alone brings the Local Achievements page`() {
+        assertEquals(
+            always + listOf(LOCAL_ACHIEVEMENTS, HINTS, HOME_APP, FINISH),
+            setupSteps(SetupAvailability(xenDroid = true)),
         )
     }
 
@@ -71,7 +85,7 @@ class SetupStepsTest {
 
     @Test fun `everything installed shows every page in plan order`() {
         assertEquals(
-            always + listOf(TROPHIES, RETROARCH, EMULATORS, WINDOWS, HINTS, HOME_APP, FINISH),
+            always + listOf(LOCAL_ACHIEVEMENTS, RETROARCH, EMULATORS, WINDOWS, HINTS, HOME_APP, FINISH),
             setupSteps(
                 SetupAvailability(
                     retroArch = true, vita3K = true, armsx3 = true,

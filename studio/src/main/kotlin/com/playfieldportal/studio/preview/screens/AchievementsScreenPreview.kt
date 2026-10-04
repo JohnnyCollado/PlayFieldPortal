@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.studio.preview.XmbPreviewModel
 import kotlin.math.roundToInt
+import com.playfieldportal.core.ui.detail.DetailPalette
 
 /*
  * "The achievement screen": the Shiba Coins library in its Tracked Games view (feature-xmb
@@ -159,7 +160,7 @@ fun AchievementsScreenPreview(model: XmbPreviewModel) {
 // ── Header summary ──────────────────────────────────────────────────────────
 
 @Composable
-private fun SummaryBlock(model: XmbPreviewModel, palette: DetailPreviewPalette) {
+private fun SummaryBlock(model: XmbPreviewModel, palette: DetailPalette) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         LevelMedallion(LEVEL, size = 40.dp, accent = palette.focus)
         SummaryStat("NEXT LEVEL", "${(NEXT_LEVEL_FRACTION * 100).roundToInt()}%", palette) {
@@ -178,7 +179,7 @@ private fun SummaryBlock(model: XmbPreviewModel, palette: DetailPreviewPalette) 
 private fun SummaryStat(
     label: String,
     value: String,
-    palette: DetailPreviewPalette,
+    palette: DetailPalette,
     below: @Composable () -> Unit = {},
 ) {
     Column {
@@ -211,7 +212,7 @@ private fun LevelMedallion(level: Int, size: Dp, accent: Color) {
 
 /** The pinned "Search online" row: library row geometry, a magnifier-over-globe tile, a › at the end. */
 @Composable
-private fun SearchOnlineRow(palette: DetailPreviewPalette) {
+private fun SearchOnlineRow(palette: DetailPalette) {
     Column {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -235,7 +236,7 @@ private fun SearchOnlineRow(palette: DetailPreviewPalette) {
 
 /** ShibaLibraryScreen.SearchOnlineTile: the launcher's own canvas glyph, in the page accent. */
 @Composable
-private fun SearchOnlineTile(palette: DetailPreviewPalette, modifier: Modifier) {
+private fun SearchOnlineTile(palette: DetailPalette, modifier: Modifier) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
@@ -261,7 +262,7 @@ private fun SearchOnlineTile(palette: DetailPreviewPalette, modifier: Modifier) 
 
 /** ShibaLibraryScreen.GameRow for a tracked game: ICON0, title / platform, percent + bar, tier counts. */
 @Composable
-private fun GameRow(model: XmbPreviewModel, palette: DetailPreviewPalette, game: LibraryGame, focused: Boolean) {
+private fun GameRow(model: XmbPreviewModel, palette: DetailPalette, game: LibraryGame, focused: Boolean) {
     val primary = if (focused) palette.textPrimary else palette.textPrimary.copy(alpha = 0.85f)
     Column {
         Row(

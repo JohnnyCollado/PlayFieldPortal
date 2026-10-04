@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.data.repository.ThemePrefKeys
 import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe
 import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe.clearWallpaperLuma
 import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe.setWallpaperLuma
@@ -131,7 +132,7 @@ class StartupDataPrep @Inject constructor(
 
     private companion object {
         val KEY_DATA_PREP_VERSION = intPreferencesKey("data_prep_version")
-        val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpaper")
+        val KEY_CUSTOM_WALLPAPER  = ThemePrefKeys.CUSTOM_WALLPAPER
         const val FILES_MARKER = "/files/"
     }
 }

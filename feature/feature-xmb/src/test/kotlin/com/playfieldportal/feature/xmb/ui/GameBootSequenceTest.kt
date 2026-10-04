@@ -154,6 +154,45 @@ class GameBootSequenceTest {
         assertTrue("the late lift reads as a second event, not an answer", late < main * 0.5f)
     }
 
+    // --- The PFP mark's layout ---------------------------------------------------------------
+
+    @Test
+    fun `mark takes its height from the screen on a landscape display`() {
+        val mark = pfpMarkLayout(1920f, 1080f)
+        assertEquals(1080f * 0.18f, mark.height, 0.5f)
+    }
+
+    @Test
+    fun `mark keeps the reference letter proportions`() {
+        val mark = pfpMarkLayout(1920f, 1080f)
+        // Measured off the logo: wide letters, a thin stroke, the bar just above the middle.
+        assertEquals(1.66f, mark.letterWidth / mark.height, 0.01f)
+        assertEquals(1.53f, mark.fWidth / mark.height, 0.01f)
+        assertEquals(0.34f, mark.gap / mark.height, 0.01f)
+        assertEquals(0.055f, mark.stroke / mark.height, 0.005f)
+        assertEquals(0.47f, (mark.bar - mark.top) / mark.height, 0.01f)
+    }
+
+    @Test
+    fun `mark is centred horizontally`() {
+        val mark = pfpMarkLayout(1920f, 1080f)
+        val right = mark.left + mark.totalWidth
+        assertEquals(mark.left, 1920f - right, 0.5f)
+    }
+
+    @Test
+    fun `mark shrinks to fit a narrow screen instead of running off it`() {
+        val mark = pfpMarkLayout(1080f, 1920f)
+        assertTrue("mark is ${mark.totalWidth} wide on a 1080 px screen", mark.totalWidth <= 1080f * 0.85f + 0.5f)
+        assertTrue(mark.left > 0f)
+    }
+
+    @Test
+    fun `mark sits above the title`() {
+        val mark = pfpMarkLayout(1920f, 1080f)
+        assertTrue(mark.top + mark.height < 1080f * TITLE_TOP_Y)
+    }
+
     /** The millisecond at which [sweep] is at its brightest, found by sampling its own window. */
     private fun crestOf(sweep: Sweep): Float {
         var best = sweep.startMs.toFloat()

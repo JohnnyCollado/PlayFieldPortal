@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.data.repository.ThemePrefKeys
 import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe
 import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe.setWallpaperLuma
 import com.playfieldportal.core.domain.model.GamepadAction
@@ -38,12 +39,12 @@ import java.io.FileOutputStream
 import javax.inject.Inject
 
 // Same key Display settings and XMBViewModel use — the XMB re-renders the background reactively.
-private val KEY_CUSTOM_WALLPAPER = stringPreferencesKey("display_custom_wallpaper")
+private val KEY_CUSTOM_WALLPAPER = ThemePrefKeys.CUSTOM_WALLPAPER
 // Must match DisplaySettingsViewModel — written as a pair with the poster when an animated
 // source is applied, cleared when a still replaces it.
-private val KEY_MOTION_WALLPAPER = stringPreferencesKey("display_motion_wallpaper")
+private val KEY_MOTION_WALLPAPER = ThemePrefKeys.MOTION_WALLPAPER
 // A theme's motion crop frames the theme's video only; any wallpaper picked here drops it.
-private val KEY_MOTION_CROP = stringPreferencesKey("display_motion_crop")
+private val KEY_MOTION_CROP = ThemePrefKeys.MOTION_CROP
 
 // Header bytes enough to walk a WebP's top-level chunks in practice (metadata chunks can push
 // ANMF deep; the walk simply fails closed to "still" if the cap is hit).

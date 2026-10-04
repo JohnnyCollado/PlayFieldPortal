@@ -142,12 +142,12 @@ class IconPackImportTest {
             assertEquals(listOf("sysicon_psp"), r.added)
             assertEquals(listOf("catbar_games"), r.replaced)
             assertEquals(listOf("bogus.png"), r.unmatched.map { it.name })
-            assertNotNull(vm.state.value.sysiconOverrides["sysicon_psp"])
+            assertNotNull(vm.state.value.iconOverrides["sysicon_psp"])
             assertNotNull(vm.state.value.iconBitmaps["catbar_games"])
 
             vm.undo()
             val after = vm.state.value
-            assertNull(after.sysiconOverrides["sysicon_psp"], "one undo reverts the whole pack")
+            assertNull(after.iconOverrides["sysicon_psp"], "one undo reverts the whole pack")
             assertNotNull(after.iconOverrides["catbar_games"], "the seed icon from before the import remains")
         } finally {
             dir.deleteRecursively()
