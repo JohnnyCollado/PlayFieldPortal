@@ -3,6 +3,7 @@ package com.playfieldportal.core.data.repository
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -212,6 +213,32 @@ class PfpThemeStoreTest {
     }
 
     @Test
+    fun `resetApplied clears the legibility and text-colour flags a theme sets`() = runTest {
+        // Everything apply() writes, reset must take back: the legibility styles and the exact
+        // text-colour flag came from the theme too, and were the ones left behind.
+        val store = PfpThemeStore(context)
+        val textLegibility = stringPreferencesKey("display_text_legibility")
+        val iconLegibility = stringPreferencesKey("display_icon_legibility")
+        val solidUnfocused = booleanPreferencesKey("display_solid_unfocused_icons")
+        val textColorExact = booleanPreferencesKey("display_text_color_exact")
+        context.pfpDataStore.edit {
+            it[textLegibility] = "OUTLINE"
+            it[iconLegibility] = "CONTOUR_DARK"
+            it[solidUnfocused] = true
+            it[textColorExact] = true
+            it[KEY_TEXT_COLOR] = 0xFF40FFC2L
+            it[KEY_SUB_TEXT_COLOR] = 0xFF00AA88L
+        }
+
+        store.resetApplied()
+
+        val prefs = context.pfpDataStore.data.first()
+        for (key in listOf(textLegibility, iconLegibility, solidUnfocused, textColorExact, KEY_TEXT_COLOR, KEY_SUB_TEXT_COLOR)) {
+            assertNull(prefs[key], "${key.name} survives a reset")
+        }
+    }
+
+    @Test
     fun `applying a theme applies its wave style and reset clears the override`() = runTest {
         val store = PfpThemeStore(context)
         val saved = requireNotNull(
@@ -257,6 +284,17 @@ class PfpThemeStoreTest {
         assertTrue(store.rename(saved.id, "  Ocean "))
 
         assertEquals("Ocean", context.pfpDataStore.data.first()[PfpThemeStore.KEY_APPLIED_THEME_NAME])
+    }
+
+    @Test
+    fun `themes imported inside the same millisecond get distinct ids and all survive`() = runTest {
+        val store = PfpThemeStore(context)
+        // Fast enough that several imports land in one clock tick; a clock-only id made the later
+        // import overwrite the earlier one.
+        val ids = (1..25).map { requireNotNull(store.importBundle(register(bundleBytes("T$it", "#0000FF")))).id }
+
+        assertEquals(ids.size, ids.toSet().size, "ids: $ids")
+        assertEquals(25, store.themes.value.size)
     }
 
     @Test
@@ -326,5 +364,7 @@ class PfpThemeStoreTest {
         val KEY_MOTION_WALLPAPER = stringPreferencesKey("display_motion_wallpaper")
         val KEY_WAVE_STYLE = stringPreferencesKey("display_wave_style")
         val KEY_ACCENT_OVERRIDE = longPreferencesKey("theme_accent_override")
+        val KEY_TEXT_COLOR = longPreferencesKey("display_text_color")
+        val KEY_SUB_TEXT_COLOR = longPreferencesKey("display_sub_text_color")
     }
 }

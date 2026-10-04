@@ -134,24 +134,6 @@ class PfpThemeStoreV4FieldsTest {
     }
 
     @Test
-    fun `resetApplied leaves the four display fields alone`() = runTest {
-        val store = PfpThemeStore(context, PERMISSIVE_PROBE)
-        context.pfpDataStore.edit {
-            it[KEY_ICON_LEG] = "CONTOUR_AUTO"
-            it[KEY_TEXT_LEG] = "PLATE"
-            it[KEY_SOLID] = true
-            it[KEY_EXACT] = true
-        }
-        store.resetApplied()
-
-        val prefs = context.pfpDataStore.data.first()
-        assertEquals("CONTOUR_AUTO", prefs[KEY_ICON_LEG])
-        assertEquals("PLATE", prefs[KEY_TEXT_LEG])
-        assertEquals(true, prefs[KEY_SOLID])
-        assertEquals(true, prefs[KEY_EXACT])
-    }
-
-    @Test
     fun `saveCurrentLook captures the four fields and stamps updated`() = runTest {
         val store = PfpThemeStore(context, PERMISSIVE_PROBE)
         context.pfpDataStore.edit {

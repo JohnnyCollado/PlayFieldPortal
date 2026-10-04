@@ -12,9 +12,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -29,8 +31,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.CompositionLocalProvider
@@ -46,6 +52,7 @@ import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.xmb.viewmodel.CustomIconSession
 import com.playfieldportal.feature.xmb.viewmodel.UserCategoryIconSlot
+import com.playfieldportal.themekit.IconColumnRun
 import com.playfieldportal.themekit.IconSlot
 
 /**
@@ -72,8 +79,7 @@ fun CustomIconsOverlay(
     onResetSlot: (String) -> Unit,
     onResetAll: () -> Unit,
     onSaveAsTheme: () -> Unit,
-    onGroupMove: (Int) -> Unit,
-    onSlotMove: (Int) -> Unit,
+    onTabMove: (Int) -> Unit,
     onDone: () -> Unit,
     forwardedAction: GamepadAction? = null,
     onActionConsumed: () -> Unit = {},
@@ -98,11 +104,14 @@ fun CustomIconsOverlay(
         if (forwardedAction != null) onActionConsumed()
     }
 
-    val slots = remember(session.groupIndex, session.userCategorySlots) { session.slots() }
+    val slots = remember(session.tabIndex, session.barKeys, session.userCategorySlots) { session.slots() }
+    // The Items tab's XMB columns, each captioned over its run of the strip.
+    val runs = remember(session.tabIndex, session.barKeys) { session.runs() }
+    val runOfIndex = remember(runs) { runs.flatMapIndexed { r, run -> List(run.slots.size) { r } } }
     // A user slot with no image previews as the bar draws it: the category's catalog glyph.
     val userSlots = remember(session.userCategorySlots) { session.userCategorySlots.associateBy { it.key } }
     val stripState = rememberLazyListState()
-    LaunchedEffect(session.groupIndex, session.slotIndex) {
+    LaunchedEffect(session.tabIndex, session.slotIndex) {
         if (session.slotIndex in slots.indices) {
             stripState.animateScrollToItem(session.slotIndex)
         }
@@ -134,12 +143,12 @@ fun CustomIconsOverlay(
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
             )
-            // Group tabs (L/R on the pad).
+            // Tabs (L1/R1 on the pad), shared with the Theme Studio's picker.
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                for ((index, group) in session.groups.withIndex()) {
-                    val selected = index == session.groupIndex
+                for ((index, tab) in session.tabs.withIndex()) {
+                    val selected = index == session.tabIndex
                     Text(
-                        text = groupLabel(group),
+                        text = tab.label,
                         // The selected tab sits on its solid blue pill and keeps white; the rest
                         // are Main text dimmed (#B9C6DC → the font colour at 0.72).
                         color = if (selected) Color.White else themedText(Color(0xFFB9C6DC), SECONDARY_TEXT_WEIGHT),
@@ -153,7 +162,7 @@ fun CustomIconsOverlay(
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
-                            ) { onGroupMove(if (index > session.groupIndex) +1 else -1) }
+                            ) { if (index != session.tabIndex) onTabMove(index - session.tabIndex) }
                             .padding(horizontal = 10.dp, vertical = 4.dp),
                     )
                 }
@@ -173,12 +182,13 @@ fun CustomIconsOverlay(
                     }
                     Column {
                         Text(focused.displayName, color = themedText(Color.White), fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        val source = when {
+                            customIcons.containsKey(focused.key) -> "Your pick"
+                            themeIcons.containsKey(focused.key) -> "From theme"
+                            else -> "Default"
+                        }
                         Text(
-                            text = when {
-                                customIcons.containsKey(focused.key) -> "Your pick"
-                                themeIcons.containsKey(focused.key) -> "From theme"
-                                else -> "Default"
-                            },
+                            text = runs.getOrNull(session.focusedRunIndex)?.let { "$source · ${it.label} column" } ?: source,
                             color = themedSubText(Color(0xFFB9C6DC), SECONDARY_TEXT_WEIGHT),
                             fontSize = 12.sp,
                         )
@@ -196,37 +206,47 @@ fun CustomIconsOverlay(
                 items(slots, key = { it.key }, contentType = { "slot" }) { slot ->
                     val index = slots.indexOf(slot)
                     val selected = index == session.slotIndex
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier
-                            .width(84.dp)
-                            .background(
-                                if (selected) Color(0x33203A5A) else Color.Transparent,
-                                RoundedCornerShape(10.dp),
-                            )
-                            .border(
-                                width = if (selected) 1.dp else 0.dp,
-                                color = if (selected) Color(0xFF3A82F6) else Color.Transparent,
-                                shape = RoundedCornerShape(10.dp),
-                            )
-                            .clickable { onSlotFocused(index) }
-                            .padding(8.dp),
-                    ) {
-                        CompositionLocalProvider(com.playfieldportal.core.ui.motion.LocalIconFocused provides selected) {
-                            SlotPreview(
-                                slot = slot,
-                                icon = customIcons[slot.key] ?: themeIcons[slot.key],
-                                userSlot = userSlots[slot.key],
-                                modifier = Modifier.size(40.dp),
+                    Column {
+                        if (runs.isNotEmpty()) {
+                            val run = runOfIndex.getOrNull(index)
+                            ColumnCaption(
+                                label = run?.takeIf { index == 0 || runOfIndex.getOrNull(index - 1) != it }?.let { runs[it] },
+                                active = run == session.focusedRunIndex,
+                                continuesRight = run != null && runOfIndex.getOrNull(index + 1) == run,
                             )
                         }
-                        Text(
-                            text = slot.displayName,
-                            color = themedText(if (selected) Color.White else Color(0xFFB9C6DC), if (selected) 1f else SECONDARY_TEXT_WEIGHT),
-                            fontSize = 10.sp,
-                            maxLines = 1,
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier
+                                .width(84.dp)
+                                .background(
+                                    if (selected) Color(0x33203A5A) else Color.Transparent,
+                                    RoundedCornerShape(10.dp),
+                                )
+                                .border(
+                                    width = if (selected) 1.dp else 0.dp,
+                                    color = if (selected) Color(0xFF3A82F6) else Color.Transparent,
+                                    shape = RoundedCornerShape(10.dp),
+                                )
+                                .clickable { onSlotFocused(index) }
+                                .padding(8.dp),
+                        ) {
+                            CompositionLocalProvider(com.playfieldportal.core.ui.motion.LocalIconFocused provides selected) {
+                                SlotPreview(
+                                    slot = slot,
+                                    icon = customIcons[slot.key] ?: themeIcons[slot.key],
+                                    userSlot = userSlots[slot.key],
+                                    modifier = Modifier.size(40.dp),
+                                )
+                            }
+                            Text(
+                                text = slot.displayName,
+                                color = themedText(if (selected) Color.White else Color(0xFFB9C6DC), if (selected) 1f else SECONDARY_TEXT_WEIGHT),
+                                fontSize = 10.sp,
+                                maxLines = 1,
+                            )
+                        }
                     }
                 }
             }
@@ -237,11 +257,18 @@ fun CustomIconsOverlay(
 
             // Controller hints.
             ControllerPromptBar(
-                items = listOf(
-                    ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Move"),
+                items = listOfNotNull(
+                    if (runs.isEmpty()) {
+                        ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Move")
+                    } else {
+                        ControllerPromptItem.fixed(listOf(ControllerIcon.DPAD_LEFT, ControllerIcon.DPAD_RIGHT), "Move")
+                    },
+                    runs.takeIf { it.isNotEmpty() }?.let {
+                        ControllerPromptItem.fixed(listOf(ControllerIcon.DPAD_UP, ControllerIcon.DPAD_DOWN), "Column")
+                    },
                     ControllerPromptItem(
                         listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY),
-                        "Group",
+                        "Tab",
                     ),
                     ControllerPromptItem(GamepadAction.SELECT, "Pick"),
                     ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Reset"),
@@ -281,6 +308,9 @@ fun CustomIconsOverlay(
     }
 }
 
+/** The Items tab's column caption line: the label's line box and the row it sits in, as one number. */
+private val CAPTION_LINE = 14.sp
+
 /** The picker's accepted set — the plan's still formats plus GIF. */
 private val PICK_MIME = arrayOf(
     "image/png",
@@ -292,18 +322,55 @@ private val PICK_MIME = arrayOf(
     "image/heic",
 )
 
-private fun groupLabel(group: IconSlot.Group): String = when (group) {
-    IconSlot.Group.CATEGORY_BAR -> "Category Bar"
-    IconSlot.Group.ITEMS -> "Items"
-    IconSlot.Group.STATUS -> "Status"
-    IconSlot.Group.CONSOLE -> "Consoles"
-    // Theme-only groups (A5): the on-device editor's customIconGroups never lists them, so
-    // these labels are unreachable today; they exist to keep the `when` exhaustive.
-    IconSlot.Group.SHIBA -> "Shiba Coins"
-    IconSlot.Group.MEDIA -> "Media Controls"
-    IconSlot.Group.GAME_DETAIL -> "Game Detail"
-    IconSlot.Group.NOTIFICATIONS -> "Notifications"
-    IconSlot.Group.MENUS -> "Menus"
+/**
+ * One strip cell's slice of the Items tab's column caption: the first cell of a run carries the
+ * column's name (it runs on over the run's other cells), and every cell draws its share of the
+ * underline, bridging the gap to the next cell of the same run. The focused slot's column is
+ * white over a blue line; the rest are muted.
+ */
+@Composable
+private fun ColumnCaption(label: IconColumnRun?, active: Boolean, continuesRight: Boolean) {
+    val cellWidth = 84.dp
+    val gap = 10.dp
+    Column(
+        modifier = Modifier.width(cellWidth).padding(bottom = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        // The caption row is the same height in every cell (so the underlines line up across
+        // cells that carry no name), and the label's line box is pinned to exactly that height:
+        // left to its default, Android's font padding makes a 10 sp line taller than 14 dp and the
+        // underline row clips the bottom of the letters.
+        val captionHeight = with(LocalDensity.current) { CAPTION_LINE.toDp() }
+        Box(Modifier.fillMaxWidth().height(captionHeight)) {
+            if (label != null) {
+                val runWidth = cellWidth * label.slots.size + gap * (label.slots.size - 1)
+                Text(
+                    text = label.label.uppercase(),
+                    color = if (active) Color.White else Color(0xFF7E8CA6),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.2.sp,
+                    lineHeight = CAPTION_LINE,
+                    style = TextStyle(
+                        platformStyle = PlatformTextStyle(includeFontPadding = false),
+                        lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both),
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .wrapContentWidth(Alignment.Start, unbounded = true)
+                        .width(runWidth),
+                )
+            }
+        }
+        Box(
+            Modifier
+                .wrapContentWidth(Alignment.Start, unbounded = true)
+                .width(if (continuesRight) cellWidth + gap else cellWidth)
+                .height(2.dp)
+                .background(if (active) Color(0xFF3A82F6) else Color(0xFF2A3346), RoundedCornerShape(1.dp)),
+        )
+    }
 }
 
 /**

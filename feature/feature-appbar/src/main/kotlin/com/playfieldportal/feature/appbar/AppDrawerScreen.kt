@@ -419,7 +419,6 @@ internal fun AppDrawerContent(
                 selectedIndex = state.menuIndex,
                 onRowActivated = { onMenuAction(actions[it]) },
                 onDismiss = onCloseMenu,
-                panelAlpha = 0.88f,
             )
         }
     }

@@ -58,8 +58,15 @@ fun GameBootOverlay(
     modifier: Modifier = Modifier,
     videoPath: String? = null,
     audioPath: String? = null,
+    /** The GameBoot channel's gain, for a clip's own track (the built-in sound is set by its player). */
+    audioGain: Float = 1f,
     waveStyle: WaveStyle = WaveStyle.ANIMATED,
+    /** The clip would not play and the built-in sequence took over: the shell reports it in the tray. */
+    onClipFailed: () -> Unit = {},
 ) {
+    // The presentation owns the room — the built-in sound or the clip's own track. A real launch is
+    // already held by LaunchDispatcher; this covers Settings' GameBoot preview too.
+    HoldAmbience(com.playfieldportal.core.ui.sound.AmbienceController.OWNER_ONE_SHOT)
     val currentComplete by rememberUpdatedState(onComplete)
     val completed = remember { AtomicBoolean(false) }
     val overlayAlpha = remember { Animatable(1f) }
@@ -98,8 +105,11 @@ fun GameBootOverlay(
                 onEnded = { presentationDone = true },
                 // A clip that will not decode must not delay the launch: fall through to the
                 // default flash, which ends on its own timer.
-                onFailed = { useTitleCard = true },
-                muted = audioPath != null,
+                onFailed = {
+                    useTitleCard = true
+                    onClipFailed()
+                },
+                volume = presentationClipVolume(separateAudio = audioPath != null, gain = audioGain),
                 modifier = Modifier.fillMaxSize(),
             )
         } else {

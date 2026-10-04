@@ -54,7 +54,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.studio.IconPicker
-import com.playfieldportal.studio.PickerGroup
 import com.playfieldportal.studio.PickerQuery
 import com.playfieldportal.studio.StudioState
 import com.playfieldportal.studio.StudioViewModel
@@ -63,6 +62,7 @@ import com.playfieldportal.studio.io.IconPackReport
 import com.playfieldportal.studio.preview.PreviewRenderer
 import com.playfieldportal.studio.ui.sections.MutedText
 import com.playfieldportal.studio.EditableSlots
+import com.playfieldportal.themekit.IconEditorTab
 import com.playfieldportal.themekit.IconSlot
 import java.awt.Frame
 import java.io.File
@@ -87,7 +87,7 @@ fun IconEditorPanel(
     onScreenKeys: Set<String>,
 ) {
     var search by rememberSaveable { mutableStateOf("") }
-    var group by rememberSaveable { mutableStateOf<PickerGroup?>(null) }
+    var group by rememberSaveable { mutableStateOf<IconEditorTab?>(null) }
     var onScreen by rememberSaveable { mutableStateOf(false) }
     var customizedOnly by rememberSaveable { mutableStateOf(false) }
     var selectedKey by rememberSaveable { mutableStateOf<String?>(null) }
@@ -133,7 +133,7 @@ fun IconEditorPanel(
                 onClick = { group = null },
                 label = { Text("All ${EditableSlots.ALL.size}", fontSize = 12.sp) },
             )
-            PickerGroup.entries.forEach { g ->
+            IconEditorTab.entries.forEach { g ->
                 FilterChip(
                     selected = group == g,
                     onClick = { group = if (group == g) null else g },

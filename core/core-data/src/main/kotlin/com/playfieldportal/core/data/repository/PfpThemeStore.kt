@@ -58,12 +58,34 @@ class PfpThemeStore internal constructor(
     private val context: Context,
     /** Probe seam for the apply-side media gate; production is [probeWithPlatform]. */
     mediaProbe: MediaProbe,
+    /** Decoder seam for boot / GameBoot clips; production is [platformDecodeCheck]. */
+    decodeCheck: VideoDecodeCheck,
+    /**
+     * Drops a rewritten icon from Coil's path-keyed cache (see [CustomIconCacheEvictor]). The theme
+     * tier's files sit at fixed paths, so a newer export of the same theme overwrites them in
+     * place — without this an animated icon already on screen kept playing the old bytes.
+     */
+    private val cacheEvictor: CustomIconCacheEvictor,
 ) {
 
     @Inject
-    constructor(@ApplicationContext context: Context) : this(context, ::probeWithPlatform)
+    constructor(@ApplicationContext context: Context, cacheEvictor: CustomIconCacheEvictor) :
+        this(context, ::probeWithPlatform, ::platformDecodeCheck, cacheEvictor)
 
-    private val mediaInstaller = ThemeMediaInstaller(mediaProbe)
+    /** Production probe and decoder, no cache to evict: the tests' plain store. */
+    internal constructor(context: Context) : this(context, ::probeWithPlatform)
+
+    /** Probe-only seam (no default on the primary, so a trailing probe lambda never lands on [decodeCheck]). */
+    internal constructor(
+        context: Context,
+        mediaProbe: MediaProbe,
+        cacheEvictor: CustomIconCacheEvictor = CustomIconCacheEvictor {},
+    ) : this(context, mediaProbe, ::platformDecodeCheck, cacheEvictor)
+
+    internal constructor(context: Context, mediaProbe: MediaProbe, decodeCheck: VideoDecodeCheck) :
+        this(context, mediaProbe, decodeCheck, CustomIconCacheEvictor {})
+
+    private val mediaInstaller = ThemeMediaInstaller(decodeCheck = decodeCheck, probe = mediaProbe)
 
     data class SavedTheme(
         val id: String,
@@ -117,13 +139,30 @@ class PfpThemeStore internal constructor(
         }
 
     /** Applies a saved theme: wallpaper + wave style + accent + custom icons through the standard cascade prefs. */
-    suspend fun apply(id: String): Boolean = withContext(Dispatchers.IO) {
+    suspend fun apply(id: String): Boolean = applyDetailed(id) != null
+
+    /**
+     * What applying a theme did with its media: [installedMedia] are the slot keys now in the theme
+     * tier, [droppedMedia] the ones the install gate refused, with its reason. The caller surfaces
+     * both — a refused clip must never vanish silently, and a theme clip under a slot the user
+     * assigned themselves does not play until they choose the theme's (the user tier wins).
+     * [installedIcons] are the icon keys now in the theme tier (`sysicon_<id>` for console art),
+     * for the same reason: a user's own icon under one of these keys hides the theme's.
+     */
+    data class ApplyResult(
+        val installedMedia: Set<String>,
+        val droppedMedia: Map<String, String>,
+        val installedIcons: Set<String> = emptySet(),
+    )
+
+    /** [apply], reporting the theme's media; null when the theme could not be applied. */
+    suspend fun applyDetailed(id: String): ApplyResult? = withContext(Dispatchers.IO) {
         val wallpaperSidecar = File(dir, "$id.wallpaper.jpg")
         // read(File), not read(bytes): a bundle carrying a motion wallpaper is tens of MB, and
         // readBytes() used to put the whole thing on the heap before the codec inflated the
         // video on top of it. The file overload streams the motion entry instead.
         val bundle = runCatching { PfpThemeCodec.read(File(dir, "$id.pfptheme")) }.getOrNull()
-            ?: return@withContext false
+            ?: return@withContext null
 
         // Copy into the standard wallpaper dir (same convention as Set-as-Wallpaper / PTF import).
         val destDir = File(context.filesDir, "wallpaper").apply { mkdirs() }
@@ -134,7 +173,7 @@ class PfpThemeStore internal constructor(
         // never bleed into this one. The stamp pref tells the live XMB to (re)load the dir;
         // its absence means "no custom icons". Entries keep the extension they shipped with
         // (png stills, gif animations), and console art lands under its sysicon_<id> key in
-        // the same dir — the theme tier of the two-tier render precedence. The USER tier
+        // the same dir (physical-media art under physmedia_<id>) — the theme tier of the two-tier render precedence. The USER tier
         // (filesDir/custom-icons) is deliberately untouched: applying a theme never deletes
         // a user pick.
         val iconsDir = File(context.filesDir, THEME_ICONS_DIR)
@@ -142,12 +181,16 @@ class PfpThemeStore internal constructor(
         val iconEntries: Map<String, com.playfieldportal.themekit.ThemeImage> = buildMap {
             putAll(bundle.icons)
             for ((platformId, image) in bundle.sysicons) put("sysicon_$platformId", image)
+            for ((platformId, image) in bundle.mediaicons) put("${CustomizableIcons.PHYSICAL_MEDIA_PREFIX}$platformId", image)
         }
         if (iconEntries.isNotEmpty()) {
             iconsDir.mkdirs()
             // Keys were validated against the registries by the codec — safe as file names.
             for ((key, image) in iconEntries) {
-                File(iconsDir, "$key.${image.extension.lowercase()}").writeBytes(image.bytes)
+                val file = File(iconsDir, "$key.${image.extension.lowercase()}")
+                file.writeBytes(image.bytes)
+                // Same path as the last theme's icon under this key: Coil must not serve that one.
+                cacheEvictor.evict(file.absolutePath)
             }
         }
 
@@ -169,8 +212,8 @@ class PfpThemeStore internal constructor(
         val mediaDir = File(context.filesDir, THEME_MEDIA_DIR)
         val hadThemeMedia = mediaDir.exists()
         mediaDir.deleteRecursively()
-        val installedMedia = mediaInstaller.installMedia(bundle.media, mediaDir)
-        val themeMediaChanged = hadThemeMedia || installedMedia.isNotEmpty()
+        val mediaReport = mediaInstaller.installMedia(bundle.media, mediaDir)
+        val themeMediaChanged = hadThemeMedia || mediaReport.installed.isNotEmpty()
 
         val accent = bundle.manifest.accentColor.toAccentArgbOrNull()
         // The theme owns the unified icon tint too: an explicit hex applies, "auto" (or
@@ -246,13 +289,13 @@ class PfpThemeStore internal constructor(
             if (solidUnfocused != null) prefs[KEY_SOLID_UNFOCUSED_ICONS] = solidUnfocused
             if (textColorExact != null) prefs[KEY_TEXT_COLOR_EXACT] = textColorExact
             if (iconEntries.isNotEmpty()) {
-                prefs[KEY_THEME_ICONS_STAMP] = System.currentTimeMillis()
+                prefs.bumpStamp(KEY_THEME_ICONS_STAMP)
             } else {
                 prefs.remove(KEY_THEME_ICONS_STAMP)
             }
-            if (themeMediaChanged) prefs[UiMediaStore.KEY_UI_MEDIA_STAMP] = System.currentTimeMillis()
+            if (themeMediaChanged) prefs.bumpStamp(UiMediaStore.KEY_UI_MEDIA_STAMP)
         }
-        true
+        ApplyResult(mediaReport.installed, mediaReport.dropped, iconEntries.keys)
     }
 
     /**
@@ -273,11 +316,17 @@ class PfpThemeStore internal constructor(
             prefs.remove(KEY_SUB_TEXT_COLOR)
             prefs.remove(KEY_WAVE_STYLE)
             prefs.remove(KEY_THEME_LAYOUT)
+            // The legibility styles and the exact-colour flag are theme parameters too (apply
+            // writes them when the manifest carries them), so a reset takes them back to stock.
+            prefs.remove(KEY_TEXT_LEGIBILITY)
+            prefs.remove(KEY_ICON_LEGIBILITY)
+            prefs.remove(KEY_SOLID_UNFOCUSED_ICONS)
+            prefs.remove(KEY_TEXT_COLOR_EXACT)
             prefs.remove(KEY_THEME_ICONS_STAMP)
             prefs.remove(KEY_APPLIED_THEME_NAME)
             // Observers reload theme media on the shared UI-media stamp (the user's own picks and
             // their ui_media_* prefs are untouched).
-            prefs[UiMediaStore.KEY_UI_MEDIA_STAMP] = System.currentTimeMillis()
+            prefs.bumpStamp(UiMediaStore.KEY_UI_MEDIA_STAMP)
         }
         // Prefs are gone first, so nothing references these files when they're deleted.
         File(context.filesDir, THEME_ICONS_DIR).deleteRecursively()
@@ -514,7 +563,7 @@ class PfpThemeStore internal constructor(
         // doesn't materialize — custom icons, wave style, layout spec — survive the
         // import → library → apply round-trip.
         val saved = runCatching {
-            val id = "pfp_${System.currentTimeMillis()}"
+            val id = newThemeId()
             val name = bundle.manifest.name.ifBlank { nextDefaultName() }
             // The staged file IS the stored bundle — a rename, not a second copy. Note this
             // invalidates `bundle.motion`, which streams from the staged path: safe only because
@@ -586,11 +635,12 @@ class PfpThemeStore internal constructor(
         val themeIconsDir = File(context.filesDir, THEME_ICONS_DIR)
         val icons = mutableMapOf<String, ThemeImage>()
         val sysicons = mutableMapOf<String, ThemeImage>()
+        val mediaicons = mutableMapOf<String, ThemeImage>()
         for (slot in CustomizableIcons.ALL) {
             val source = findIconFile(customDir, slot.key) ?: findIconFile(themeIconsDir, slot.key) ?: continue
             if (source.extension.equals("gif", ignoreCase = true)) {
                 // GIFs travel verbatim — re-encoding an animation is out of scope.
-                iconsOrSysicons(slot.key, ThemeImage(source.readBytes(), "gif"), icons, sysicons)
+                iconsOrSysicons(slot.key, ThemeImage(source.readBytes(), "gif"), icons, sysicons, mediaicons)
             } else {
                 // Re-encode non-PNG stills (jpg/webp/bmp/heif) to PNG so the bundle entry is
                 // self-describing; a decode failure skips the slot rather than shipping junk.
@@ -598,7 +648,7 @@ class PfpThemeStore internal constructor(
                     ?: continue
                 val png = ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
                 bitmap.recycle()
-                iconsOrSysicons(slot.key, ThemeImage(png, "png"), icons, sysicons)
+                iconsOrSysicons(slot.key, ThemeImage(png, "png"), icons, sysicons, mediaicons)
             }
         }
 
@@ -680,7 +730,7 @@ class PfpThemeStore internal constructor(
 
         return@withContext runCatching {
             dir.mkdirs()
-            val id = "pfp_${System.currentTimeMillis()}"
+            val id = newThemeId()
             // Streamed straight to the file: write(bundle) would build the entire archive —
             // motion video and all — as one ByteArray first.
             FileOutputStream(File(dir, "$id.pfptheme")).use { out ->
@@ -691,6 +741,7 @@ class PfpThemeStore internal constructor(
                         preview = previewBytes,
                         icons = icons,
                         sysicons = sysicons,
+                        mediaicons = mediaicons,
                         motion = motion,
                         media = media,
                     ),
@@ -716,15 +767,20 @@ class PfpThemeStore internal constructor(
         }.onFailure { Timber.w(it, "PfpThemeStore: saveCurrentLook failed") }.getOrNull()
     }
 
-    /** Routes [image] into the icons or sysicons map by the slot's group. */
+    /** Routes [image] into the icons, sysicons or mediaicons map by the slot's key. */
     private fun iconsOrSysicons(
         slotKey: String,
         image: ThemeImage,
         icons: MutableMap<String, ThemeImage>,
         sysicons: MutableMap<String, ThemeImage>,
+        mediaicons: MutableMap<String, ThemeImage>,
     ) {
-        if (slotKey.startsWith("sysicon_")) sysicons[slotKey.removePrefix("sysicon_")] = image
-        else icons[slotKey] = image
+        val mediaId = CustomizableIcons.physicalMediaId(slotKey)
+        when {
+            mediaId != null -> mediaicons[mediaId] = image
+            slotKey.startsWith("sysicon_") -> sysicons[slotKey.removePrefix("sysicon_")] = image
+            else -> icons[slotKey] = image
+        }
     }
 
     /** The stored file for [slotKey] under any accepted extension, or null. */
@@ -742,10 +798,22 @@ class PfpThemeStore internal constructor(
 
     // ── internals ────────────────────────────────────────────────────────────
 
+    /**
+     * A fresh id for a theme about to be written. Clock-based for stable library ordering, but
+     * checked against the directory: two saves inside one millisecond must never share an id, or
+     * the second silently overwrites the first.
+     */
+    private fun newThemeId(): String {
+        val base = System.currentTimeMillis()
+        var candidate = base
+        while (File(dir, "pfp_$candidate.pfptheme").exists()) candidate++
+        return "pfp_$candidate"
+    }
+
     private fun save(name: String, wallpaper: Bitmap, accentArgb: Long?, source: PfpThemeSource): SavedTheme? {
         return runCatching {
             dir.mkdirs()
-            val id = "pfp_${System.currentTimeMillis()}"
+            val id = newThemeId()
 
             val manifest = PfpThemeManifest(
                 name = name,

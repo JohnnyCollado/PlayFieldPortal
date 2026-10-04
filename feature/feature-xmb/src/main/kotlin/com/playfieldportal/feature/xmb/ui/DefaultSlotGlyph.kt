@@ -57,6 +57,7 @@ import com.playfieldportal.core.ui.icons.catbarIconKeyFor
 import com.playfieldportal.core.ui.icons.categoryIconFor
 import com.playfieldportal.core.ui.icons.systemIconRes
 import com.playfieldportal.feature.xmb.ui.detail.shibaCoinRes
+import com.playfieldportal.themekit.CustomizableIcons
 import com.playfieldportal.themekit.IconSlot
 
 /**
@@ -78,8 +79,11 @@ internal sealed interface SlotGlyphDefault {
     /** A bundled drawable (crossbar art, the status strip, the settings wrench). */
     data class Drawable(@DrawableRes val resId: Int) : SlotGlyphDefault
 
-    /** A `file:///android_asset/...` silhouette — the physical-media memory card. */
+    /** A `file:///android_asset/...` silhouette — the physical-media memory card or the UMD. */
     data class BundledAsset(val assetUri: String) : SlotGlyphDefault
+
+    /** Physical-media art for a console id, drawn as Physical Media mode draws it. */
+    data class PhysicalMedia(val platformId: String) : SlotGlyphDefault
 
     /** A Material vector, as the item rows draw it. */
     data class Vector(val image: ImageVector) : SlotGlyphDefault
@@ -99,6 +103,7 @@ internal fun defaultGlyphFor(slot: IconSlot): SlotGlyphDefault {
     if (slot.group == IconSlot.Group.CONSOLE) {
         return SlotGlyphDefault.Console(slot.key.removePrefix("sysicon_"))
     }
+    CustomizableIcons.physicalMediaId(slot.key)?.let { return SlotGlyphDefault.PhysicalMedia(it) }
     // Crossbar art, via the catalog — catbarSlotKeyFor's inverse keeps the pairing single-sourced.
     catbarIconKeyFor(slot.key)?.let { iconKey ->
         return SlotGlyphDefault.Drawable(categoryIconFor(iconKey).resId)
@@ -113,6 +118,8 @@ internal fun defaultGlyphFor(slot: IconSlot): SlotGlyphDefault {
         "item_memcard_games", "item_memcard_music", "item_memcard_video", "item_memcard_photos",
         "item_shiba_track",
         -> SlotGlyphDefault.BundledAsset(MEMORY_CARD_DEFAULT_ART)
+        // The UMD slot's unfocused art: the PSP's UMD.
+        "item_umd" -> SlotGlyphDefault.BundledAsset(UMD_SLOT_ART)
         // The Settings rows' wrench badge is console art, not a Material glyph.
         "item_settings" -> SlotGlyphDefault.Drawable(systemIconRes("settings"))
         else -> ITEM_VECTORS[slot.key]?.let { SlotGlyphDefault.Vector(it) } ?: SlotGlyphDefault.None
@@ -226,6 +233,12 @@ internal fun DefaultSlotGlyph(
         )
         is SlotGlyphDefault.BundledAsset -> BundledSilhouetteIcon(
             assetUri = default.assetUri,
+            modifier = modifier,
+        )
+        is SlotGlyphDefault.PhysicalMedia -> PhysicalMediaIcon(
+            platformId = default.platformId,
+            accentColor = null,
+            title = slot.displayName,
             modifier = modifier,
         )
         is SlotGlyphDefault.Vector -> PortalIcon(

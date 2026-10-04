@@ -50,7 +50,10 @@ import androidx.compose.foundation.layout.aspectRatio
 import coil3.compose.AsyncImage
 import com.playfieldportal.core.ui.image.ArtworkRevisions
 import com.playfieldportal.core.domain.model.IconDisplayMode
+import com.playfieldportal.core.ui.icons.CustomIconSurface
 import com.playfieldportal.core.ui.icons.GameIconStyle
+import com.playfieldportal.core.ui.icons.LocalCustomIcons
+import com.playfieldportal.core.ui.icons.LocalXmbIconOverrides
 import com.playfieldportal.feature.artwork.store.ArtworkDimensions
 import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
@@ -565,6 +568,7 @@ fun CartridgeIcon(
 //   feature/feature-xmb/src/main/assets/systems/physical-media/
 //   e.g. psx.png, snes.png, psp.png, megadrive.png …
 //
+// Override: a user pick or the applied theme's `physmedia_<id>` icon replaces the PNG.
 // Fallback: built-in generic shape vector when the PNG is absent.
 
 private const val ASSET_BASE = "file:///android_asset/systems/physical-media"
@@ -579,12 +583,18 @@ fun PhysicalMediaIcon(
     val assetName   = physicalMediaAssetName(platformId)
     val fallbackRes = physicalMediaIconRes(platformId) ?: R.drawable.media_cartridge
     var assetFailed by remember(assetName) { mutableStateOf(false) }
+    // Same precedence as every themeable glyph: the user's pick, then the applied theme's icon.
+    val override = physicalMediaSlotKey(platformId)?.let { key ->
+        LocalCustomIcons.current[key] ?: LocalXmbIconOverrides.current[key]
+    }
 
     Box(
         modifier         = modifier,
         contentAlignment = Alignment.Center,
     ) {
-        if (assetName != null && !assetFailed) {
+        if (override != null) {
+            CustomIconSurface(icon = override, contentDescription = null, modifier = Modifier.fillMaxSize())
+        } else if (assetName != null && !assetFailed) {
             // Resolved filename: e.g. "ps1" → "psx.png", "dc" → "dreamcast.png".
             AsyncImage(
                 model              = "$ASSET_BASE/$assetName.png",

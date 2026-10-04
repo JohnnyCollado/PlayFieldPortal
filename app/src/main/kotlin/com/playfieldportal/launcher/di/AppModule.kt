@@ -22,6 +22,13 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
+    /** Features hold ambience down through this seam; the controller is the one implementation. */
+    @Provides
+    fun provideAmbienceSuppressor(
+        controller: com.playfieldportal.core.ui.sound.AmbienceController,
+    ): com.playfieldportal.core.ui.sound.AmbienceSuppressor = controller
+
+
     // System services used across features
     @Provides
     @Singleton

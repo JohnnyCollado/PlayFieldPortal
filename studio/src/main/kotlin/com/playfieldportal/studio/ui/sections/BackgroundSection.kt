@@ -23,6 +23,8 @@ import com.playfieldportal.studio.CropFrame
 import com.playfieldportal.studio.PendingWallpaper
 import com.playfieldportal.studio.StudioState
 import com.playfieldportal.studio.StudioViewModel
+import com.playfieldportal.studio.WallpaperFit
+import com.playfieldportal.studio.WallpaperFitStore
 import com.playfieldportal.studio.WallpaperPreset
 import com.playfieldportal.studio.io.FileDialogs
 import com.playfieldportal.themekit.PfpThemeManifest
@@ -74,8 +76,15 @@ private val VIDEO_EXTENSIONS = setOf("mp4", "m4v")
 fun BackgroundSection(state: StudioState, viewModel: StudioViewModel, window: Frame) {
     val source = backgroundSourceOf(state)
     val pending = state.pendingWallpaper
-    // Hoisted so the chosen fit survives re-staging (a chip click with no crop open re-opens it).
-    var fit by remember { mutableStateOf(WallpaperPreset.HD) }
+    // Starts from the theme's own wallpaper (its size names the fit), else the author's last choice
+    // (remembered across sessions), else HD. Re-keyed per document so an opened theme shows its fit.
+    val fitStore = remember { WallpaperFitStore() }
+    val wallpaperSize = state.wallpaperBitmap?.let { it.width to it.height }
+    var fit by remember(wallpaperSize) { mutableStateOf(WallpaperFit.initial(wallpaperSize, fitStore.remembered)) }
+    val chooseFit: (WallpaperPreset) -> Unit = { picked ->
+        fit = picked
+        fitStore.remember(picked)
+    }
 
     fun pickImage() = FileDialogs.openFile(window, "Import wallpaper", IMAGE_EXTENSIONS)?.let(viewModel::stageWallpaper)
     fun pickVideo() = FileDialogs.openFile(window, "Import video", VIDEO_EXTENSIONS)?.let(viewModel::importVideo)
@@ -112,12 +121,12 @@ fun BackgroundSection(state: StudioState, viewModel: StudioViewModel, window: Fr
 
         if (pending != null) {
             HorizontalDivider()
-            CropEditor(pending, fit, onFit = { fit = it }, viewModel)
+            CropEditor(pending, fit, onFit = chooseFit, viewModel)
         } else if (source != BackgroundSource.WAVE) {
             HorizontalDivider()
             SectionHeading("Fit")
             ChoiceChips(FIT_CHOICES.map { it.first.name to it.second }, fit.name) { picked ->
-                fit = WallpaperPreset.valueOf(picked)
+                chooseFit(WallpaperPreset.valueOf(picked))
                 if (source == BackgroundSource.VIDEO) viewModel.restageVideoFrame() else viewModel.restageEmbeddedWallpaper()
             }
             if (source == BackgroundSource.VIDEO) {

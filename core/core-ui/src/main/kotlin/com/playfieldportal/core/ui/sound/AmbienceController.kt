@@ -58,7 +58,7 @@ class AmbienceController @Inject constructor(
     @ApplicationContext private val context: Context,
     private val uiMedia: UiMediaPaths,
     private val levels: AudioLevels,
-) {
+) : AmbienceSuppressor {
     // Main.immediate: every gate write arrives from the main thread (lifecycle, ViewModel, UI),
     // and ExoPlayer must be touched from the thread that built it. Confinement by construction.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -160,7 +160,7 @@ class AmbienceController @Inject constructor(
      * Audio focus does NOT cover this case: focus is granted per-application, so our own music
      * player taking it would never make our own ambience yield. Same UID, no signal.
      */
-    fun setSuppressed(owner: String, suppressed: Boolean) {
+    override fun setSuppressed(owner: String, suppressed: Boolean) {
         suppressors.value =
             if (suppressed) suppressors.value + owner else suppressors.value - owner
     }
@@ -291,5 +291,27 @@ class AmbienceController @Inject constructor(
         /** Suppressor names — one per owner, so their suppressions cannot cancel each other. */
         const val OWNER_MUSIC = "music"
         const val OWNER_VIDEO = "video"
+
+        /** A game launch, from the moment it starts (before GameBoot) until PFP is foreground again. */
+        const val OWNER_GAME = "game"
+
+        /** A sound auditioned on Settings ▸ Sound, for as long as it can sound. */
+        const val OWNER_SOUND_PREVIEW = "sound_preview"
+
+        /** Game Detail's video snap, which plays with its sound. */
+        const val OWNER_GAME_VIDEO = "game_video"
+
+        /** An audible one-shot (a boot / GameBoot clip with its own track, or its audio), previews included. */
+        const val OWNER_ONE_SHOT = "one_shot"
     }
+}
+
+/**
+ * The one thing other features need from [AmbienceController]: hold the background music down
+ * while they own the room. An interface so a feature's tests can record it without building the
+ * real controller (which owns an ExoPlayer and audio focus).
+ */
+fun interface AmbienceSuppressor {
+    /** [owner] keeps ambience down while [suppressed]; owners never release one another. */
+    fun setSuppressed(owner: String, suppressed: Boolean)
 }

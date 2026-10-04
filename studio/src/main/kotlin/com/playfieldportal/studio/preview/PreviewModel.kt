@@ -29,12 +29,34 @@ data class XmbPreviewModel(
     /** The theme's text/icon legibility, approximating the launcher's rendering. */
     val legibility: PreviewLegibility = PreviewLegibility.DEFAULT,
     /**
-     * PFPColors.textPrimary: the theme's text colour, else white. The XMB crossbar's own labels are
-     * fixed colours on the launcher; the screens built on PFPColors (detail, Shiba, pickers,
-     * Settings) read this one.
+     * PFPColors.textPrimary: the theme's text colour, else white. Read by the screens built on
+     * PFPColors (detail, Shiba, pickers, Settings); the XMB's own labels go through [textOr].
      */
     val textPrimary: Color = Color.White,
+    /**
+     * PFPColors.textOverride / subTextOverride: the theme's Main and Sub text colours, null when the
+     * theme leaves them to the built-in label colours. The XMB's own labels (crossbar, rows, status
+     * strip) repaint through [textOr] / [subTextOr], exactly as the launcher's themedText /
+     * themedSubText do.
+     */
+    val textOverride: Color? = null,
+    val subTextOverride: Color? = null,
 ) {
+    /** PFPColors.textOr: the Main text colour at [default]'s weight, else [default] untouched. */
+    fun textOr(default: Color): Color = textOr(default, default.alpha)
+
+    /** PFPColors.textOr(default, weight): for an opaque [default] whose weight is its tone, not its alpha. */
+    fun textOr(default: Color, weight: Float): Color = repaint(textOverride, default, weight)
+
+    /** PFPColors.subTextOr: the Sub text colour, else the Main one, at [default]'s weight; else [default]. */
+    fun subTextOr(default: Color): Color = subTextOr(default, default.alpha)
+
+    /** PFPColors.subTextOr(default, weight). */
+    fun subTextOr(default: Color, weight: Float): Color = repaint(subTextOverride ?: textOverride, default, weight)
+
+    private fun repaint(picked: Color?, default: Color, weight: Float): Color =
+        picked?.let { it.copy(alpha = it.alpha * weight) } ?: default
+
     /** PFPColors.textSecondary: the text colour at 0.7 alpha, as XMBViewModel derives it. */
     val textSecondary: Color get() = textPrimary.copy(alpha = 0.7f)
 
@@ -48,9 +70,6 @@ data class XmbPreviewModel(
 
     /** MenuCursor.menuCursorEdge(): lerp(accent, White, 0.55).copy(alpha = 0.95). */
     val menuCursorEdge: Color get() = lerp(pfpAccentColor, Color.White, 0.55f).copy(alpha = 0.95f)
-
-    /** ContextMenuOverlay panel backdrop: waveColor at 75% alpha. */
-    val menuPanelBackdrop: Color get() = accent.copy(alpha = 0.75f)
 }
 
 /**
@@ -83,6 +102,8 @@ fun StudioState.toPreviewModel(adjust: XmbLayoutAdjust? = null): XmbPreviewModel
             TextColorChoice.Auto -> Color.White
             is TextColorChoice.Custom -> Color(c.argb)
         },
+        textOverride = (textColor as? TextColorChoice.Custom)?.let { Color(it.argb) },
+        subTextOverride = (subTextColor as? TextColorChoice.Custom)?.let { Color(it.argb) },
     )
 }
 
@@ -122,7 +143,7 @@ object SampleContent {
         /** A music track with no cover: [Row.slotKey]'s glyph framed in a 56 dp square. */
         COVER,
 
-        /** The UMD slot: the PSP's UMD, in the icon colour. Not themeable. */
+        /** The UMD slot: the item_umd slot (the PSP's UMD, in the icon colour, by default). */
         UMD,
 
         /** The Shiba Coins player card: a ring around [Row.badge] ("Lv 27"), in the icon colour. */
@@ -204,7 +225,7 @@ object SampleContent {
             "Sound" to "Menu & boot sounds",
             "Notifications" to "Panel history & retention",
             "Categories" to "Manage XMB categories",
-            "Themes" to "XMB appearance & color scheme",
+            "Themes" to "XMB appearance, colors & icons",
             "Controller" to "Button mapping",
         ),
         section(

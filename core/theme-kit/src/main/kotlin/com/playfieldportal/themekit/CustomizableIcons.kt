@@ -77,6 +77,13 @@ val SYSICON_EXTRA_IDS: List<String> = listOf(
  */
 fun consoleDisplayName(platformId: String): String = when (platformId) {
     "allgames" -> "All Games"
+    "android" -> "Android"
+    "dreamcast" -> "Dreamcast"
+    "saturn" -> "Saturn"
+    "switch" -> "Switch"
+    "wii" -> "Wii"
+    "wiiu" -> "Wii U"
+    "windows" -> "Windows"
     "atari2600" -> "Atari 2600"
     "atari5200" -> "Atari 5200"
     "atari7800" -> "Atari 7800"
@@ -119,9 +126,13 @@ fun consoleDisplayName(platformId: String): String = when (platformId) {
     else -> platformId.uppercase()
 }
 
+/** Console ids with no physical media: the storefront/UI buckets and the generic fallback. */
+private val NO_PHYSICAL_MEDIA_IDS = setOf("allgames", "android", "favorites", "desktop", "default")
+
 /**
  * The superset registry the icon customizer edits and the v3 codec gates on: every theme
- * slot plus the console icons, under forever-stable `sysicon_<platformId>` keys.
+ * slot plus the console icons, under forever-stable `sysicon_<platformId>` keys, then the
+ * physical-media art (the disc, cart or UMD Physical Media mode draws) under `physmedia_<platformId>`.
  *
  * `IconSlots.ALL` is the bundle contract (keys are zip entry names) and its KDoc states
  * console art is deliberately not a slot — so this registry EXTENDS it without touching it:
@@ -135,16 +146,34 @@ object CustomizableIcons {
     /** Template size for console art, matching the catbar/item templates. */
     private const val CONSOLE_TEMPLATE_PX = 256
 
-    val ALL: List<IconSlot> = IconSlots.ALL + (SYSICON_PLATFORM_IDS + SYSICON_EXTRA_IDS).map { id ->
-        IconSlot(
-            key = "sysicon_$id",
-            group = IconSlot.Group.CONSOLE,
-            displayName = consoleDisplayName(id),
-            templateSizePx = CONSOLE_TEMPLATE_PX,
-        )
-    }
+    /** Prefix of the physical-media keys; the rest of the key is the platform id. */
+    const val PHYSICAL_MEDIA_PREFIX = "physmedia_"
+
+    private val CONSOLE_IDS = SYSICON_PLATFORM_IDS + SYSICON_EXTRA_IDS
+
+    val ALL: List<IconSlot> = IconSlots.ALL +
+        CONSOLE_IDS.map { id ->
+            IconSlot(
+                key = "sysicon_$id",
+                group = IconSlot.Group.CONSOLE,
+                displayName = consoleDisplayName(id),
+                templateSizePx = CONSOLE_TEMPLATE_PX,
+            )
+        } +
+        CONSOLE_IDS.filter { it !in NO_PHYSICAL_MEDIA_IDS }.map { id ->
+            IconSlot(
+                key = "$PHYSICAL_MEDIA_PREFIX$id",
+                group = IconSlot.Group.PHYSICAL_MEDIA,
+                displayName = consoleDisplayName(id),
+                templateSizePx = CONSOLE_TEMPLATE_PX,
+            )
+        }
 
     private val byKey: Map<String, IconSlot> = ALL.associateBy { it.key }
+
+    /** The platform id behind a registered `physmedia_` key, or null for any other key. */
+    fun physicalMediaId(key: String): String? =
+        key.takeIf { it.startsWith(PHYSICAL_MEDIA_PREFIX) && isValidKey(it) }?.removePrefix(PHYSICAL_MEDIA_PREFIX)
 
     fun byKey(key: String): IconSlot? = byKey[key]
 

@@ -24,8 +24,9 @@ import kotlinx.serialization.json.jsonObject
  * ├── manifest.json                        (required; written first; schemaVersion 4)
  * ├── wallpaper.png                        (optional; absent -> live wave background)
  * ├── preview.png                          (optional on read; the app's preview gate writes one)
- * ├── icons/<key>.<png|gif>                (v2 as png-only; v3 widens to gif; v4: 81 keys)
+ * ├── icons/<key>.<png|gif>                (v2 as png-only; v3 widens to gif; v4: 82 keys)
  * ├── sysicons/<platformId>.<png|gif>      (v3; console art; v4: 47 ids)
+ * ├── mediaicons/<platformId>.<png|gif>    (v4; physical-media art; 42 ids)
  * ├── motion.<mp4|webm|gif>                (v3; motion wallpaper)
  * ├── sounds/<sound_key>.<mp3|wav|ogg|m4a> (v4; five menu sounds, streamed)
  * ├── ambience.<mp3|wav|ogg|m4a>           (v4; streamed)
@@ -38,7 +39,8 @@ import kotlinx.serialization.json.jsonObject
  * Every change since v2 is additive: unknown manifest fields are preserved ([PfpThemeBundle.manifestExtras]),
  * unknown zip entries with safe names are preserved ([PassthroughEntry]), and the readers never
  * gate on schemaVersion, so a v4 bundle still opens on older builds (they see the subset they
- * know). `sysicons/` gating rides on [CustomizableIcons]'s console keys, `icons/` on
+ * know). `sysicons/` gating rides on [CustomizableIcons]'s console keys, `mediaicons/` on its
+ * physical-media keys, `icons/` on
  * [IconSlots], and media entries on [ThemeMediaSlots]. Format reference: docs/theme-format.md.
  */
 object PfpThemeCodec {
@@ -49,6 +51,7 @@ object PfpThemeCodec {
     private const val ENTRY_PREVIEW = "preview.png"
     private const val ICONS_PREFIX = "icons/"
     private const val SYSICONS_PREFIX = "sysicons/"
+    private const val MEDIAICONS_PREFIX = "mediaicons/"
     private const val MOTION_PREFIX = "motion."
 
     /** Accepted extensions per directory. v2 accepted png only for icons; v3 adds gif. */
@@ -91,6 +94,11 @@ object PfpThemeCodec {
             for ((platformId, image) in bundle.sysicons.toSortedMap()) {
                 if (CustomizableIcons.isValidKey("sysicon_$platformId") && image.extension.lowercase() in ICON_EXTENSIONS) {
                     zip.writeEntry("$SYSICONS_PREFIX$platformId.${image.extension.lowercase()}", image.bytes)
+                }
+            }
+            for ((platformId, image) in bundle.mediaicons.toSortedMap()) {
+                if (isMediaIconId(platformId) && image.extension.lowercase() in ICON_EXTENSIONS) {
+                    zip.writeEntry("$MEDIAICONS_PREFIX$platformId.${image.extension.lowercase()}", image.bytes)
                 }
             }
             // Streamed, never held: copyTo pulls from the motion's own source (a file on disk,
@@ -209,6 +217,7 @@ object PfpThemeCodec {
         var preview: ByteArray? = null
         val icons = mutableMapOf<String, ThemeImage>()
         val sysicons = mutableMapOf<String, ThemeImage>()
+        val mediaicons = mutableMapOf<String, ThemeImage>()
         var motionExtension: String? = null
         val media = mutableMapOf<String, ThemeMotion>()
         val seenMedia = mutableSetOf<String>()
@@ -251,6 +260,16 @@ object PfpThemeCodec {
                             val bytes = entry.readBytes()
                             if (bytes.size <= MAX_ICON_BYTES) sysicons[platformId] = ThemeImage(bytes, ext)
                             else dropped += DroppedEntry(entry.name, DropReason.OVER_CAP)
+                        }
+                    }
+                    entry.name.startsWith(MEDIAICONS_PREFIX) && isRegisteredName(entry.name) -> {
+                        // Physical-media art: the key is the platform id, gated as physmedia_<id>.
+                        val name = entry.name.removePrefix(MEDIAICONS_PREFIX)
+                        val bytes = entry.readBytes()
+                        if (bytes.size <= MAX_ICON_BYTES) {
+                            mediaicons[name.substringBeforeLast('.')] = ThemeImage(bytes, name.substringAfterLast('.').lowercase())
+                        } else {
+                            dropped += DroppedEntry(entry.name, DropReason.OVER_CAP)
                         }
                     }
                     entry.name.startsWith(MOTION_PREFIX) && isRegisteredName(entry.name) -> {
@@ -321,6 +340,7 @@ object PfpThemeCodec {
             preview = preview,
             icons = icons,
             sysicons = sysicons,
+            mediaicons = mediaicons,
             motion = motionExtension?.let { ext -> reopen?.invoke(ext) },
             manifestExtras = manifestExtras,
             passthrough = passthrough,
@@ -413,12 +433,19 @@ object PfpThemeCodec {
             file.substringAfterLast('.', "").lowercase() in ICON_EXTENSIONS &&
                 CustomizableIcons.isValidKey("sysicon_${file.substringBeforeLast('.')}")
         }
+        name.startsWith(MEDIAICONS_PREFIX) -> {
+            val file = name.removePrefix(MEDIAICONS_PREFIX)
+            file.substringAfterLast('.', "").lowercase() in ICON_EXTENSIONS && isMediaIconId(file.substringBeforeLast('.'))
+        }
         name.startsWith(MOTION_PREFIX) -> name.removePrefix(MOTION_PREFIX).lowercase() in MOTION_EXTENSIONS
         // Any name a media slot claims, even with an extension it would refuse: the reader drops
         // those, so a passthrough entry must not smuggle one back in.
         ThemeMediaSlots.claimedBy(name) != null -> true
         else -> false
     }
+
+    private fun isMediaIconId(platformId: String): Boolean =
+        CustomizableIcons.physicalMediaId(CustomizableIcons.PHYSICAL_MEDIA_PREFIX + platformId) != null
 
     /**
      * Reads a bundle held in memory. Motion streams back out of [bytes] — already on the heap,

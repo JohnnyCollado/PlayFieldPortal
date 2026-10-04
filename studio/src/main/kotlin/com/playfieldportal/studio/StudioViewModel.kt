@@ -1,6 +1,7 @@
 package com.playfieldportal.studio
 
 import androidx.compose.ui.graphics.ImageBitmap
+import com.playfieldportal.studio.io.AndroidVideo
 import com.playfieldportal.studio.io.ConvertOutcome
 import com.playfieldportal.studio.io.IconPackImport
 import com.playfieldportal.studio.io.IconPackReport
@@ -103,8 +104,16 @@ sealed interface UpgradeBanner {
 data class StudioState(
     val name: String = "Untitled Theme",
     val accentArgb: Int = PtfConversion.DEFAULT_ACCENT,
+    /**
+     * Auto: each new wallpaper or video poster re-derives [accentArgb] (AccentDeriver, as Quick
+     * Create does). Custom (false): the accent is the author's and no wallpaper touches it. An
+     * authoring aid only — the theme file carries the colour alone, so an opened theme is Custom.
+     */
+    val accentAuto: Boolean = true,
     val iconColor: IconColorChoice = IconColorChoice.Auto,
     val textColor: TextColorChoice = TextColorChoice.Auto,
+    /** Sub text (subtitles, sublabels, muted text). Auto = follows [textColor], as on the device. */
+    val subTextColor: TextColorChoice = TextColorChoice.Auto,
     /** The EXACT wave style (any of [WaveStyles]); export writes the legacy fallback beside it. */
     val waveStyle: String = PfpThemeManifest.WAVE_ANIMATED,
     val wallpaperPng: ByteArray? = null,
@@ -136,6 +145,7 @@ data class StudioState(
     /**
      * Console art overrides, same shape as the icon maps but keyed by the full
      * [CustomizableIcons] key (`sysicon_psx`); export strips the prefix into `sysicons/<id>`.
+     * Physical-media art (`physmedia_psx`) shares these maps and exports as `mediaicons/<id>` instead.
      */
     val sysiconOverrides: Map<String, ByteArray> = emptyMap(),
     val sysiconExtensions: Map<String, String> = emptyMap(),
@@ -300,9 +310,24 @@ class StudioViewModel(private val scope: CoroutineScope) {
     }
 
     fun setName(name: String) = edit("name") { it.copy(name = name) }
-    fun setAccent(argb: Int) = edit("accent") { it.copy(accentArgb = argb) }
+    /** A picked accent is Custom: wallpapers stop changing it. */
+    fun setAccent(argb: Int) = edit("accent") { it.copy(accentArgb = argb, accentAuto = false) }
+
+    /** Auto re-derives from the current wallpaper at once (nothing to derive from: the colour stays). */
+    fun setAccentAuto(auto: Boolean) = runBusy {
+        val derived = if (auto) {
+            _state.value.wallpaperPng
+                ?.let(ImageCodecs::decodeImage)
+                ?.let { com.playfieldportal.themekit.AccentDeriver.deriveAccent(ImageCodecs.toBmpImage(it)) }
+        } else {
+            null
+        }
+        edit { it.copy(accentAuto = auto, accentArgb = derived ?: it.accentArgb) }
+    }
     fun setIconColor(choice: IconColorChoice) = edit("iconColor") { it.copy(iconColor = choice) }
     fun setTextColor(choice: TextColorChoice) = edit("textColor") { it.copy(textColor = choice) }
+
+    fun setSubTextColor(choice: TextColorChoice) = edit("subTextColor") { it.copy(subTextColor = choice) }
     fun setWaveStyle(style: String) = edit { it.copy(waveStyle = style) }
 
     // Blank collapses to null so an empty field never writes `""` into the manifest.
@@ -386,7 +411,7 @@ class StudioViewModel(private val scope: CoroutineScope) {
         val manifest = bundle.manifest
         // Icons for parts a Studio theme no longer replaces (status strip, Shiba Coins, menus...)
         // are left out: they would not be editable, and re-exporting them would keep them alive.
-        val (icons, notThemeable) = bundle.icons.entries.partition { (key, _) -> EditableSlots.isEditable(key) }
+        val (icons, notThemeable) = bundle.icons.entries.partition { (key, _) -> EditableSlots.isKept(key) }
             .let { (kept, dropped) -> kept.associate { it.toPair() } to dropped.map { it.key } }
         val iconBitmaps = icons.mapNotNull { (key, png) ->
             ImageCodecs.toImageBitmap(png.bytes)?.let { key to it }
@@ -419,6 +444,9 @@ class StudioViewModel(private val scope: CoroutineScope) {
             runCatching { key to spill("studio-media-", media.extension, media::copyTo) }
                 .onFailure { notKept += key }.getOrNull()
         }.toMap()
+        // Physical-media art shares the console-art maps: an icon edit like any other.
+        val consoleArt = bundle.sysicons.mapKeys { (id, _) -> "$SYSICON_KEY_PREFIX$id" } +
+            bundle.mediaicons.mapKeys { (id, _) -> "${CustomizableIcons.PHYSICAL_MEDIA_PREFIX}$id" }
         val passthroughFiles = bundle.passthrough.mapNotNull { entry ->
             runCatching {
                 entry.name to spill("studio-extra-", entry.name.substringAfterLast('.'), entry::copyTo)
@@ -428,6 +456,8 @@ class StudioViewModel(private val scope: CoroutineScope) {
             StudioState(
                 name = manifest.name,
                 accentArgb = PtfConversion.parseHexRgb(manifest.accentColor) ?: PtfConversion.DEFAULT_ACCENT,
+                // The file's accent is a choice someone made: keep it until the author asks for Auto.
+                accentAuto = false,
                 iconColor = manifest.iconColor
                     .takeIf { c -> c != PfpThemeManifest.ICON_COLOR_AUTO }
                     ?.let { c -> PtfConversion.parseHexRgb(c) }
@@ -435,6 +465,10 @@ class StudioViewModel(private val scope: CoroutineScope) {
                     ?: IconColorChoice.Auto,
                 textColor = manifest.textColor
                     .takeIf { c -> c != PfpThemeManifest.ICON_COLOR_AUTO }
+                    ?.let { c -> PtfConversion.parseHexRgb(c) }
+                    ?.let { argb -> TextColorChoice.Custom(argb) }
+                    ?: TextColorChoice.Auto,
+                subTextColor = manifest.subTextColor
                     ?.let { c -> PtfConversion.parseHexRgb(c) }
                     ?.let { argb -> TextColorChoice.Custom(argb) }
                     ?: TextColorChoice.Auto,
@@ -449,12 +483,10 @@ class StudioViewModel(private val scope: CoroutineScope) {
                 iconOverrides = icons.mapValues { (_, image) -> image.bytes },
                 iconExtensions = icons.mapValues { (_, image) -> image.extension.lowercase() },
                 iconBitmaps = iconBitmaps,
-                sysiconOverrides = bundle.sysicons.entries.associate { (id, image) -> "sysicon_$id" to image.bytes },
-                sysiconExtensions = bundle.sysicons.entries.associate { (id, image) ->
-                    "sysicon_$id" to image.extension.lowercase()
-                },
-                sysiconBitmaps = bundle.sysicons.entries.mapNotNull { (id, image) ->
-                    ImageCodecs.toImageBitmap(image.bytes)?.let { "sysicon_$id" to it }
+                sysiconOverrides = consoleArt.mapValues { (_, image) -> image.bytes },
+                sysiconExtensions = consoleArt.mapValues { (_, image) -> image.extension.lowercase() },
+                sysiconBitmaps = consoleArt.mapNotNull { (key, image) ->
+                    ImageCodecs.toImageBitmap(image.bytes)?.let { key to it }
                 }.toMap(),
                 manifestExtras = bundle.manifestExtras,
                 passthroughFiles = passthroughFiles,
@@ -557,13 +589,32 @@ class StudioViewModel(private val scope: CoroutineScope) {
      * to prevent.
      */
     fun importVideo(file: File) = runBusy {
-        when (val outcome = VideoCodecs.accept(file)) {
+        // A wallpaper the handheld cannot decode is re-encoded first; every check after this runs on
+        // what the theme will actually carry.
+        val playable = AndroidVideo.playable(file)
+        if (playable is AndroidVideo.Playable.Failed) {
+            _state.update { it.copy(dialog = StudioDialog.Error(playable.message)) }
+            return@runBusy
+        }
+        val reencoded = playable as? AndroidVideo.Playable.Converted
+        try {
+            importAcceptedVideo(file, reencoded?.file ?: file, reencoded?.reason)
+        } finally {
+            reencoded?.file?.delete()
+        }
+    }
+
+    private fun importAcceptedVideo(file: File, source: File, conversion: String?) {
+        when (val outcome = VideoCodecs.accept(source)) {
             is VideoCodecs.Outcome.Rejected ->
                 // The strings are written for the author — surface them verbatim.
                 _state.update { it.copy(dialog = StudioDialog.Error(outcome.message)) }
 
             is VideoCodecs.Outcome.Accepted -> {
-                val scratch = scratchMotion(file)
+                val scratch = scratchMotion(source)
+                conversion?.let { reason ->
+                    _state.update { it.copy(statusMessage = "${file.name} converted to H.264 for Android ($reason)") }
+                }
                 // This import replaces a video pending behind an open crop dialog. A confirmed
                 // video stays in state until the crop is confirmed (one undoable edit), so a
                 // cancel keeps the old motion with its old poster - still a valid pair.
@@ -676,8 +727,8 @@ class StudioViewModel(private val scope: CoroutineScope) {
         val png = ImageCodecs.toPngBytes(image)
         val bitmap = ImageCodecs.toImageBitmap(png)
         val bmp = ImageCodecs.toBmpImage(image)
-        // A fresh wallpaper usually wants a matching accent — pre-fill from its dominant
-        // hue exactly like Quick Create, keeping the user's step optional.
+        // On Auto, a fresh wallpaper brings a matching accent — its dominant hue, exactly like
+        // Quick Create. A Custom accent is the author's and is left alone.
         val derived = com.playfieldportal.themekit.AccentDeriver.deriveAccent(bmp)
         // Attach the staged video exactly when its poster is confirmed; the name was stashed
         // alongside it because pendingMotion is deliberately not state.
@@ -709,7 +760,7 @@ class StudioViewModel(private val scope: CoroutineScope) {
                     it.motionFile != null -> it.posterAtMs
                     else -> null
                 },
-                accentArgb = derived ?: it.accentArgb,
+                accentArgb = if (it.accentAuto) derived ?: it.accentArgb else it.accentArgb,
                 statusMessage = "Wallpaper: ${pending.fileName} (${image.width}×${image.height})",
             )
         }
@@ -751,7 +802,7 @@ class StudioViewModel(private val scope: CoroutineScope) {
     fun setIconOverride(key: String, file: File) = runBusy {
         // Console art (sysicon_*) is a slot too: same pipeline, filed under the sysicon maps.
         val slot = EditableSlots.byKey(key) ?: return@runBusy
-        val console = key.startsWith(SYSICON_KEY_PREFIX)
+        val console = isConsoleArt(key)
         // Read with headroom so an oversized pick reaches the specific byte-cap rejection in
         // the gate (MAX_ICON_BYTES), not a generic unreadable-file error.
         val bytes = com.playfieldportal.studio.io.SafeIo.readBytesCapped(file)
@@ -819,7 +870,7 @@ class StudioViewModel(private val scope: CoroutineScope) {
                 added = fresh
                 replaced = again
                 ready.entries.fold(it) { acc, (k, gate) ->
-                    acc.withIcon(k.startsWith(SYSICON_KEY_PREFIX), k, gate.bytes, gate.extension, gate.bitmap)
+                    acc.withIcon(isConsoleArt(k), k, gate.bytes, gate.extension, gate.bitmap)
                 }
             }
         }
@@ -835,6 +886,10 @@ class StudioViewModel(private val scope: CoroutineScope) {
         }
         onDone(report)
     }
+
+    /** Console art and physical-media art share the sysicon maps; export splits them apart again. */
+    private fun isConsoleArt(key: String): Boolean =
+        key.startsWith(SYSICON_KEY_PREFIX) || CustomizableIcons.physicalMediaId(key) != null
 
     private fun StudioState.withIcon(
         console: Boolean,
@@ -901,13 +956,16 @@ class StudioViewModel(private val scope: CoroutineScope) {
             is MediaGates.Outcome.Rejected ->
                 _state.update { it.copy(dialog = StudioDialog.Error(outcome.message)) }
             is MediaGates.Outcome.Accepted -> {
-                // The gate may hand back a conversion (a float WAV as 16-bit PCM) rather than the pick.
+                // The gate may hand back a conversion (a float WAV as 16-bit PCM, a clip re-encoded
+                // for Android) rather than the pick.
                 val scratch = try {
                     spill("studio-media-", outcome.extension) { out -> outcome.source.inputStream().use { it.copyTo(out) } }
                 } finally {
                     if (outcome.source != file) outcome.source.delete()
                 }
-                edit { it.copy(mediaFiles = it.mediaFiles + (slotKey to scratch), statusMessage = "Added ${file.name}") }
+                val status = outcome.note?.let { "Added ${file.name} — converted to H.264 for Android ($it)" }
+                    ?: "Added ${file.name}"
+                edit { it.copy(mediaFiles = it.mediaFiles + (slotKey to scratch), statusMessage = status) }
             }
         }
     }
@@ -933,6 +991,8 @@ class StudioViewModel(private val scope: CoroutineScope) {
                 TextColorChoice.Auto -> PfpThemeManifest.ICON_COLOR_AUTO
                 is TextColorChoice.Custom -> PtfConversion.toHexRgb(c.argb)
             },
+            // Absent = sub text follows the main colour (the manifest's own contract).
+            subTextColor = (state.subTextColor as? TextColorChoice.Custom)?.let { PtfConversion.toHexRgb(it.argb) },
             // Legacy field = fallback of the exact value, waveStyleV4 = the exact one (plan 5.1).
             waveStyle = WaveStyles.encode(state.waveStyle).first,
             waveStyleV4 = WaveStyles.encode(state.waveStyle).second,
@@ -977,12 +1037,15 @@ class StudioViewModel(private val scope: CoroutineScope) {
                 ThemeImage(png, snapshot.iconExtensions[key] ?: "png")
             },
             motion = motion,
-            sysicons = snapshot.sysiconOverrides.entries.associate { (key, png) ->
+            sysicons = snapshot.sysiconOverrides.filterKeys { it.startsWith(SYSICON_KEY_PREFIX) }.entries.associate { (key, png) ->
                 key.removePrefix(SYSICON_KEY_PREFIX) to ThemeImage(png, snapshot.sysiconExtensions[key] ?: "png")
             },
             media = snapshot.mediaFiles.filterValues { it.isFile }
                 .mapValues { (_, f) -> ThemeMotion.ofFile(f, f.extension.lowercase()) },
             manifestExtras = snapshot.manifestExtras,
+            mediaicons = snapshot.sysiconOverrides.entries.mapNotNull { (key, png) ->
+                CustomizableIcons.physicalMediaId(key)?.let { id -> id to ThemeImage(png, snapshot.sysiconExtensions[key] ?: "png") }
+            }.toMap(),
             passthrough = snapshot.passthroughFiles.filterValues { it.isFile }
                 .map { (name, f) -> PassthroughEntry.ofFile(name, f) },
         )

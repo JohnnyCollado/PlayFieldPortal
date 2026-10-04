@@ -1,20 +1,16 @@
 package com.playfieldportal.studio
 
 import com.playfieldportal.studio.io.IconPackReport
+import com.playfieldportal.themekit.IconEditorLayout
+import com.playfieldportal.themekit.IconEditorTab
 import com.playfieldportal.themekit.IconGifSupport
 import com.playfieldportal.themekit.IconSlot
-
-/** The picker's chips: the groups of [EditableSlots], the only slots a Studio theme replaces. */
-enum class PickerGroup(val label: String) {
-    CROSSBAR("Crossbar"),
-    ITEMS("Items"),
-    CONSOLES("Consoles"),
-}
 
 /** What the search box and the chips/toggles currently ask for. All set criteria must hold. */
 data class PickerQuery(
     val search: String = "",
-    val group: PickerGroup? = null,
+    /** The chip: one of the editors' shared tabs ([IconEditorTab]). */
+    val group: IconEditorTab? = null,
     /** Only slots the preview currently shows. */
     val onScreen: Boolean = false,
     val customizedOnly: Boolean = false,
@@ -38,21 +34,13 @@ data class SlotCardModel(
 /** Pure picker logic: no Compose, no state, so every rule here is unit-tested. */
 object IconPicker {
 
-    /** A crossbar slot for a category the launcher never seeds (custom categories can pick its icon). */
-    private const val FAVORITES_CATEGORY_ICON = "catbar_favorites"
-
-    fun groupOf(slot: IconSlot): PickerGroup = when (slot.group) {
-        // The XMB seeds no Favorites category; its icon is one a custom category can pick, so it lists with the items.
-        IconSlot.Group.CATEGORY_BAR -> if (slot.key == FAVORITES_CATEGORY_ICON) PickerGroup.ITEMS else PickerGroup.CROSSBAR
-        IconSlot.Group.CONSOLE -> PickerGroup.CONSOLES
-        else -> PickerGroup.ITEMS
-    }
+    /** The chip an editable slot lists under — the tab the launcher's editor shows it on. */
+    fun groupOf(slot: IconSlot): IconEditorTab =
+        requireNotNull(IconEditorLayout.tabOf(slot.key)) { "${slot.key} is not an editable slot" }
 
     /** Slots per chip, in chip order (always totals, independent of any other filter). */
-    fun counts(): Map<PickerGroup, Int> {
-        val byGroup = EditableSlots.ALL.groupingBy(::groupOf).eachCount()
-        return PickerGroup.entries.associateWith { byGroup[it] ?: 0 }
-    }
+    fun counts(): Map<IconEditorTab, Int> =
+        IconEditorTab.entries.associateWith { IconEditorLayout.slots(it).size }
 
     private fun compact(text: String): String = text.lowercase().filter { it.isLetterOrDigit() }
 
@@ -83,7 +71,7 @@ object IconPicker {
             "catbar_video" -> { k -> k.startsWith("item_video_") || k == "item_playlist" || k == "item_memcard_video" || k == "item_add" }
             "catbar_music" -> { k -> k.startsWith("item_music_") || k == "item_playlist" || k == "item_memcard_music" || k == "item_add" }
             "catbar_photos" -> { k -> k.startsWith("item_photo_") || k == "item_camera" || k == "item_memcard_photos" || k == "item_add" }
-            "catbar_games" -> { k -> k == "item_memcard_games" || k == "item_add" || k == "item_missing" }
+            "catbar_games" -> { k -> k == "item_memcard_games" || k == "item_add" || k == "item_missing" || k == "item_umd" }
             // Installed apps draw their own icons; Add Apps is the one slot these lists show.
             "catbar_network", "catbar_appstore" -> { k -> k == "item_add" }
             "catbar_social" -> { k -> k.startsWith("item_social_") }
@@ -101,7 +89,7 @@ object IconPicker {
      * `PreviewNav.shownSlotKeys`). The crossbar and status strip are always up.
      */
     fun onScreenKeys(categoryKey: String = "catbar_games", shown: Set<String> = emptySet()): Set<String> {
-        val crossbar = EditableSlots.group(IconSlot.Group.CATEGORY_BAR).map { it.key }.toSet() - FAVORITES_CATEGORY_ICON
+        val crossbar = IconEditorLayout.crossbar().map { it.key }.toSet()
         // Only editable slots can be "on screen" in the picker; the strip and menus keep the launcher's art.
         return crossbar + categoryKeys(categoryKey) + shown.filter(EditableSlots::isEditable)
     }
@@ -129,9 +117,11 @@ object IconPicker {
 
     /** Real-size renderings, from the launcher's render sites (crossbar 72/56 at .58, rows, strip). */
     fun previewSizes(slot: IconSlot): List<PreviewSize> = when (groupOf(slot)) {
-        PickerGroup.CROSSBAR, PickerGroup.CONSOLES ->
+        IconEditorTab.CROSSBAR, IconEditorTab.CONSOLES ->
             listOf(PreviewSize("Selected", 72), PreviewSize("Unselected", 56, 0.58f), PreviewSize("In list", 40))
-        PickerGroup.ITEMS -> listOf(PreviewSize("Selected", 52), PreviewSize("In list", 40))
+        IconEditorTab.ITEMS -> listOf(PreviewSize("Selected", 52), PreviewSize("In list", 40))
+        // GameIconView.NATURAL_ART_HEIGHT: Physical Media mode draws the art 84 dp tall, focused or not.
+        IconEditorTab.PHYSICAL_MEDIA -> listOf(PreviewSize("In list", 84))
     }
 
     // ── Pack report ──────────────────────────────────────────────────────────

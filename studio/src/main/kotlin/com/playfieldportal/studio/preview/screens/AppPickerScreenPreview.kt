@@ -49,7 +49,8 @@ import com.playfieldportal.studio.preview.XmbPreviewModel
 // Theme inputs: like the App Drawer, only StorefrontColors (deriveStorefrontColors — waveColor and
 // backgroundTop/Bottom) over the XMB background. XMBShell hides the XMB foreground under the picker
 // but does NOT freeze the wave (the picker is not in waveCovered), so the backdrop is XmbBackdrop.
-// PFPColors.textPrimary, iconColor, legibility and icon overrides are not read.
+// The Main / Sub text colours come through the palette, as in the drawer; iconColor, legibility and
+// icon overrides are not read.
 
 // XMBViewModel PICKER_GRID_COLUMNS — one denser than the drawer's 6.
 private const val PickerColumns = 7
@@ -72,7 +73,7 @@ private val PickerPromptLabel = TextStyle(fontSize = 12.sp)
 
 @Composable
 fun AppPickerScreenPreview(model: XmbPreviewModel) {
-    val sf = remember(model.accent, model.backgroundTop, model.backgroundBottom) { drawerPalette(model) }
+    val sf = remember(model.accent, model.backgroundTop, model.backgroundBottom, model.textOverride, model.subTextOverride) { drawerPalette(model) }
     Box(Modifier.fillMaxSize()) {
         XmbBackdrop(model)
         CompositionLocalProvider(LocalTextStyle provides DrawerBodyLarge) {
@@ -139,7 +140,7 @@ private fun PickerHeader(title: String, selectedCount: Int, sf: DrawerPalette) {
         )
         Spacer(Modifier.width(16.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            DrawerMagnifier(sf.textSecondary)
+            DrawerMagnifier(sf.iconSecondary)
             Spacer(Modifier.width(5.dp))
             Text("Search", color = sf.textSecondary, fontSize = 13.sp)
         }
@@ -172,15 +173,16 @@ private fun PickerTile(label: String, focused: Boolean, checked: Boolean, artwor
             }
         }
         Spacer(Modifier.height(6.dp))
-        DrawerTileLabel(label, if (focused) sf.textPrimary else sf.textSecondary)
+        DrawerTileLabel(label, if (focused) sf.textPrimary else sf.unselectedLabel)
     }
 }
 
-// core-ui PfpCheck.kt PfpCheckBadge (18 dp circle) carrying PfpCheckMark at 0.67 of it: the
-// launcher's own check path (0.21,0.52 → 0.40,0.71 → 0.79,0.31), stroke 0.14 of the box, round caps.
+// core-ui PfpCheck.kt PfpCheckBadge ([diameter] circle, 18 dp by default; the Game Picker's is 16)
+// carrying PfpCheckMark at 0.67 of it: the launcher's own check path
+// (0.21,0.52 → 0.40,0.71 → 0.79,0.31), stroke 0.14 of the box, round caps.
 @Composable
-private fun PickerCheckBadge(fill: Color, markColor: Color, modifier: Modifier = Modifier) {
-    val badge = 18.dp
+internal fun PickerCheckBadge(fill: Color, markColor: Color, modifier: Modifier = Modifier, diameter: Dp = 18.dp) {
+    val badge = diameter
     Box(
         modifier = modifier.size(badge).background(fill, CircleShape),
         contentAlignment = Alignment.Center,

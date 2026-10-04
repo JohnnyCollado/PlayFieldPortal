@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.text.font.FontWeight
@@ -151,6 +152,7 @@ fun AdjustOverlayPanel(state: AdjustOverlayState, onAction: (AdjustAction) -> Un
             Modifier
                 .fillMaxSize()
                 .background(Color(0x22000000))
+                .focusProperties { canFocus = false }
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { /* swallow */ },
         )
         Column(

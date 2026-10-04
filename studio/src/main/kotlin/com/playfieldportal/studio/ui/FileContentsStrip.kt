@@ -3,8 +3,10 @@ package com.playfieldportal.studio.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -76,6 +78,7 @@ private val SEGMENT_COLORS = mapOf(
 )
 
 /** Center-bottom "In this file" strip: a proportional bar plus a legend and the total against the cap. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun FileContentsStrip(check: ExportCheck, modifier: Modifier = Modifier) {
     val model = contentsModel(check)
@@ -111,7 +114,13 @@ fun FileContentsStrip(check: ExportCheck, modifier: Modifier = Modifier) {
                 if (rest > 0f) Box(Modifier.weight(rest))
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+        // Wraps onto further lines: a theme carrying every kind has more legend than one line holds,
+        // and a plain Row squeezed the last entries into one-letter columns.
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             if (model.segments.isEmpty()) {
                 Text("Nothing embedded yet", fontSize = 11.sp, color = MaterialTheme.colorScheme.outline)
             }

@@ -180,11 +180,18 @@ class MediaGatesTest {
     }
 
     @Test
-    fun `video over ten seconds is rejected naming the cap`() {
-        val long = mp4("long.mp4", frames = 110) // 10 fps -> 11 s
-        assertEquals(UiMediaLimits.tooLong(UiMediaLimits.BOOT_CLIP), rejected("boot_video", long))
-        assertEquals(UiMediaLimits.tooLong(UiMediaLimits.GAMEBOOT_CLIP), rejected("gameboot_video", long))
-        assertEquals("That clip is too long — 10 s or less", rejected("boot_video", long))
+    fun `video over its cap is rejected naming the cap`() {
+        val eleven = mp4("eleven.mp4", frames = 110) // 10 fps -> 11 s
+        assertEquals(UiMediaLimits.tooLong(UiMediaLimits.GAMEBOOT_CLIP), rejected("gameboot_video", eleven))
+        assertEquals("That clip is too long — 10 s or less", rejected("gameboot_video", eleven))
+        val sixteen = mp4("sixteen.mp4", frames = 160) // 16 s
+        assertEquals(UiMediaLimits.tooLong(UiMediaLimits.BOOT_CLIP), rejected("boot_video", sixteen))
+        assertEquals("That clip is too long — 15 s or less", rejected("boot_video", sixteen))
+    }
+
+    @Test
+    fun `a boot intro may run up to fifteen seconds`() {
+        accepted("boot_video", mp4("intro.mp4", frames = 140)) // 14 s
     }
 
     @Test

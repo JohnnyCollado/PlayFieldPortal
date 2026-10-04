@@ -58,7 +58,8 @@ class PfpThemeStoreV3Test {
         val store = PfpThemeStore(context, PERMISSIVE_PROBE)
         val saved = requireNotNull(store.importBundle(register(v3BundleBytes())))
 
-        assertTrue(store.apply(saved.id))
+        val result = assertNotNull(store.applyDetailed(saved.id))
+        assertEquals(setOf("catbar_games", "sysicon_psx"), result.installedIcons, "apply reports the icon keys it wrote")
 
         val iconsDir = File(context.filesDir, PfpThemeStore.THEME_ICONS_DIR)
         assertTrue(File(iconsDir, "catbar_games.gif").isFile, "gif icon keeps its extension")
@@ -114,6 +115,31 @@ class PfpThemeStoreV3Test {
         assertTrue(File(File(context.filesDir, PfpThemeStore.THEME_ICONS_DIR), "catbar_games.gif").isFile)
     }
 
+    @Test
+    fun `applying a bundle with physical media art lands it under physmedia keys`() = runTest {
+        val store = PfpThemeStore(context, PERMISSIVE_PROBE)
+        val saved = requireNotNull(
+            store.importBundle(
+                register(
+                    PfpThemeCodec.write(
+                        PfpThemeBundle(
+                            manifest = PfpThemeManifest(name = "Discs", accentColor = "#00FF00"),
+                            wallpaper = null,
+                            preview = null,
+                            mediaicons = mapOf("psp" to ThemeImage(pngBytes(), "png"), "snes" to ThemeImage(gifBytes(), "gif")),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        assertTrue(store.apply(saved.id))
+
+        val iconsDir = File(context.filesDir, PfpThemeStore.THEME_ICONS_DIR)
+        assertTrue(File(iconsDir, "physmedia_psp.png").isFile)
+        assertTrue(File(iconsDir, "physmedia_snes.gif").isFile)
+    }
+
     // ── saveCurrentLook() ─────────────────────────────────────────────────────
 
     @Test
@@ -131,6 +157,22 @@ class PfpThemeStoreV3Test {
         assertEquals("gif", bundle.icons["catbar_games"]?.extension, "the user pick wins, verbatim gif")
         assertEquals(setOf("catbar_games", "item_playlist"), bundle.icons.keys, "theme icon fills the slot the user left alone")
         assertEquals(PfpThemeSource.TYPE_USER_CREATED, bundle.manifest.source?.type)
+    }
+
+    @Test
+    fun `saveCurrentLook exports physical media art under mediaicons`() = runTest {
+        val store = PfpThemeStore(context, PERMISSIVE_PROBE)
+        val customDir = File(context.filesDir, CustomIconStore.CUSTOM_ICONS_DIR).apply { mkdirs() }
+        File(customDir, "physmedia_psp.gif").writeBytes(gifBytes())
+        val themeDir = File(context.filesDir, PfpThemeStore.THEME_ICONS_DIR).apply { mkdirs() }
+        File(themeDir, "physmedia_snes.png").writeBytes(pngBytes())
+
+        val saved = assertNotNull(store.saveCurrentLook("Discs"))
+        val bundle = assertNotNull(PfpThemeCodec.read(File(context.filesDir, "pfpthemes/${saved.id}.pfptheme").readBytes()))
+
+        assertEquals(setOf("psp", "snes"), bundle.mediaicons.keys)
+        assertEquals("gif", bundle.mediaicons["psp"]?.extension)
+        assertTrue(bundle.icons.isEmpty() && bundle.sysicons.isEmpty(), "physical media never lands in icons/ or sysicons/")
     }
 
     @Test
@@ -215,6 +257,24 @@ class PfpThemeStoreV3Test {
 
         val themeDir = File(context.filesDir, PfpThemeStore.THEME_ICONS_DIR)
         assertTrue(File(themeDir, "status_bluetooth.png").isFile, "the flattened look re-applies as the theme tier")
+    }
+
+    @Test
+    fun `applying a theme evicts every icon it wrote, so a replaced gif at the same path reloads`() = runTest {
+        // The theme tier writes <key>.<ext> under one fixed dir, so a newer export of the same theme
+        // lands at the SAME paths. Coil keys by path and an icon already on screen never asks
+        // again — the user tier evicts on every import for exactly this reason; so must apply.
+        val evicted = mutableListOf<String>()
+        val store = PfpThemeStore(context, PERMISSIVE_PROBE, cacheEvictor = { evicted += it })
+        val saved = requireNotNull(store.importBundle(register(v3BundleBytes())))
+
+        assertTrue(store.apply(saved.id))
+
+        val iconsDir = File(context.filesDir, PfpThemeStore.THEME_ICONS_DIR)
+        assertEquals(
+            setOf(File(iconsDir, "catbar_games.gif").absolutePath, File(iconsDir, "sysicon_psx.png").absolutePath),
+            evicted.toSet(),
+        )
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

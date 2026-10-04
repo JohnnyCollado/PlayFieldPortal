@@ -36,7 +36,7 @@ data class AudioSettingsUiState(
     val masterLevel: Float = 1f,
     /** Per-channel level, 0..1. Every channel is present; a missing entry would render as 0. */
     val channelLevels: Map<AudioChannel, Float> = emptyMap(),
-    /** Per-sound-slot row summary: the imported file's name, or [PFP_DEFAULT_LABEL]. */
+    /** Per-sound-slot row summary: the imported file's name, "From theme", or [PFP_DEFAULT_LABEL] ([UiMediaRowText.label]). */
     val soundLabels: Map<UiMediaSlot, String> = emptyMap(),
     /** Slots the user has actually assigned — drives whether "Use Default" is offered. */
     val assignedSlots: Set<UiMediaSlot> = emptySet(),
@@ -82,7 +82,11 @@ class AudioSettingsViewModel @Inject constructor(
     private val menuSound: MenuSoundPlayer,
     private val levels: AudioLevelStore,
     private val controllerLayout: ControllerLayoutRepository,
+    // An audition is heard alone: the background music steps aside while it sounds.
+    private val ambience: com.playfieldportal.core.ui.sound.AmbienceSuppressor,
 ) : ViewModel() {
+
+    private var previewHold: kotlinx.coroutines.Job? = null
 
     private val _message = MutableStateFlow<String?>(null)
     private val _importing = MutableStateFlow(false)
@@ -101,9 +105,14 @@ class AudioSettingsViewModel @Inject constructor(
         // Re-read on every prefs emission: the stamp bumps inside the same store, so an import
         // or a clear re-runs this and the row summaries follow the directory.
         val assigned = store.assignments().keys
+        val themed = store.themeAssignments()
         val labels = SOUND_SLOTS.associateWith { slot ->
-            if (slot in assigned) prefs[UiMediaStore.displayNameKey(slot)] ?: "Custom sound"
-            else PFP_DEFAULT_LABEL
+            UiMediaRowText.label(
+                userName = prefs[UiMediaStore.displayNameKey(slot)],
+                userAssigned = slot in assigned,
+                themeSupplied = slot in themed,
+                fallback = "Custom sound",
+            )
         }
         AudioSettingsUiState(
             // Read straight from the same prefs snapshot the labels came from, so a level and a
@@ -169,13 +178,34 @@ class AudioSettingsViewModel @Inject constructor(
      * a sound you just picked has to be audible while you are deciding about it.
      *
      * **Ambience deliberately has no preview.** It is already playing behind this screen: the
-     * settings UI is an overlay on the XMB, so the launcher is still foregrounded and unsuppressed
-     * and the loop is running. Auditioning it would mean starting a second copy of a track the
-     * user can already hear, and its slider is the honest way to judge it.
+     * settings UI is an overlay on the XMB, so the launcher is still foregrounded and the loop is
+     * running. Auditioning it would mean starting a second copy of a track the user can already
+     * hear, and its slider is the honest way to judge it.
+     *
+     * A menu sound IS heard alone: ambience is held down for the slot's longest possible length
+     * (its hard cap), and a second audition restarts that window rather than ending it early.
      */
     fun preview(slot: UiMediaSlot) {
         val event = MenuSound.entries.firstOrNull { it.slot == slot } ?: return
+        holdAmbienceFor(slot.limits.hardMaxMs)
         menuSound.play(event, ignoreMute = true)
+    }
+
+    private fun holdAmbienceFor(ms: Long) {
+        val owner = com.playfieldportal.core.ui.sound.AmbienceController.OWNER_SOUND_PREVIEW
+        previewHold?.cancel()
+        ambience.setSuppressed(owner, true)
+        previewHold = viewModelScope.launch {
+            kotlinx.coroutines.delay(ms)
+            ambience.setSuppressed(owner, false)
+        }
+    }
+
+    override fun onCleared() {
+        // Leaving the screen mid-audition must not leave the music held down.
+        previewHold?.cancel()
+        ambience.setSuppressed(com.playfieldportal.core.ui.sound.AmbienceController.OWNER_SOUND_PREVIEW, false)
+        super.onCleared()
     }
 
     /**

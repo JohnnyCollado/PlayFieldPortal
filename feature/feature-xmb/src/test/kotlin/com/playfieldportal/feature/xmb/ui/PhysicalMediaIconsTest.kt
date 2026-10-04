@@ -7,6 +7,28 @@ import org.junit.Test
 
 class PhysicalMediaIconsTest {
 
+    // ── physicalMediaSlotKey: the themeable slot a game's media art reads ──────
+
+    @Test fun `a console id is its own slot`() = assertEquals("physmedia_psp", physicalMediaSlotKey("psp"))
+    @Test fun `aliases land on the registry id`() {
+        assertEquals("physmedia_psx", physicalMediaSlotKey("ps1"))
+        assertEquals("physmedia_megadrive", physicalMediaSlotKey("genesis"))
+        assertEquals("physmedia_megadrive", physicalMediaSlotKey("md"))
+        assertEquals("physmedia_snes", physicalMediaSlotKey("sfc"))
+        assertEquals("physmedia_x360", physicalMediaSlotKey("xbox360"))
+        assertEquals("physmedia_nes", physicalMediaSlotKey("famicom"))
+        assertEquals("physmedia_mame", physicalMediaSlotKey("arcade"))
+    }
+    @Test fun `digital-only and unknown platforms have no slot`() {
+        assertNull(physicalMediaSlotKey("android"))
+        assertNull(physicalMediaSlotKey("steam"))
+        assertNull(physicalMediaSlotKey("amiga"))
+        assertNull(physicalMediaSlotKey(null))
+    }
+
+    // Xbox 360 games used to ask for x360.png, which does not exist, and fell back to the generic disc.
+    @Test fun `x360 resolves to the xbox360 art`() = assertEquals("xbox360", physicalMediaAssetName("x360"))
+
     // ── physicalMediaAssetName: aliases map to the correct PNG filename ─────────
 
     @Test fun `ps1 alias resolves to psx`() = assertEquals("psx", physicalMediaAssetName("ps1"))

@@ -33,6 +33,13 @@ internal data class MediaFacts(
 internal typealias MediaProbe = (File, String?) -> MediaFacts?
 
 /**
+ * The decoder seam: `(staged video) -> why this device cannot decode it`, or null when it can (or
+ * the question cannot be answered — the playback fallback still covers that). Production is
+ * [platformDecodeCheck]; tests inject a fake.
+ */
+internal typealias VideoDecodeCheck = (File) -> String?
+
+/**
  * The apply-side gate for media shipped inside a `.pfptheme` (plan 5.4, TS-12). A bundle is
  * untrusted input that reaches native parsers (MediaCodec / MediaMetadataRetriever) once played, so
  * nothing is installed until it has been streamed to a staging file, probed and checked against the
@@ -44,7 +51,14 @@ internal typealias MediaProbe = (File, String?) -> MediaFacts?
  * still applies. A staged file is renamed into place only after it passes, so nothing unvalidated
  * ever sits under its final name.
  */
-internal class ThemeMediaInstaller(private val probe: MediaProbe = ::probeWithPlatform) {
+/** What [ThemeMediaInstaller.installMedia] did: slot keys installed, and refused keys with the reason. */
+data class MediaInstallReport(val installed: Set<String>, val dropped: Map<String, String>)
+
+internal class ThemeMediaInstaller(
+    // The probe stays LAST, so the tests' trailing probe lambda lands on it, never on decodeCheck.
+    private val decodeCheck: VideoDecodeCheck = ::platformDecodeCheck,
+    private val probe: MediaProbe = ::probeWithPlatform,
+) {
 
     /**
      * Streams [motion] to [dest], validates it with [MotionLimits.validate] and leaves it there.
@@ -52,7 +66,10 @@ internal class ThemeMediaInstaller(private val probe: MediaProbe = ::probeWithPl
      */
     fun installMotion(motion: ThemeMotion, dest: File): Boolean {
         val ext = dest.extension.lowercase()
-        val mime = MotionLimits.mimeForExtension(ext) ?: return reject("motion", "unsupported extension .$ext")
+        val mime = MotionLimits.mimeForExtension(ext) ?: run {
+            reject("motion", "unsupported extension .$ext")
+            return false
+        }
         return stageValidateAndPlace(motion, dest, MotionLimits.MAX_BYTES, "motion") { staged ->
             val facts = probe(staged, mime) ?: return@stageValidateAndPlace MotionLimits.MSG_UNDECODABLE
             MotionLimits.validate(
@@ -64,21 +81,27 @@ internal class ThemeMediaInstaller(private val probe: MediaProbe = ::probeWithPl
                     bytes = staged.length(),
                 ),
             )
-        }
+        } == null
     }
 
     /**
      * Installs each entry of [media] (keyed by [ThemeMediaSlots] key) as `<dir>/<key>.<ext>`.
-     * Returns the keys that were installed. [dir] is created lazily, so a theme whose every entry
-     * is refused leaves no directory behind.
+     * Reports what was installed and, for every refused entry, the gate's own reason — the caller
+     * surfaces those, so a theme never loses a clip silently. [dir] is created lazily, so a theme
+     * whose every entry is refused leaves no directory behind.
      */
-    fun installMedia(media: Map<String, ThemeMotion>, dir: File): Set<String> {
+    fun installMedia(media: Map<String, ThemeMotion>, dir: File): MediaInstallReport {
         val installed = mutableSetOf<String>()
+        val dropped = linkedMapOf<String, String>()
         for ((key, entry) in media) {
             val slot = ThemeMediaSlots.slot(key) ?: continue
             val ext = entry.extension.lowercase()
             if (!slot.accepts(ext)) {
-                reject(key, "extension .$ext not accepted")
+                dropped[key] = reject(
+                    key,
+                    if (slot.kind == UiMediaLimits.Kind.VIDEO) UiMediaLimits.MSG_UNSUPPORTED_FORMAT_VIDEO
+                    else UiMediaLimits.MSG_UNSUPPORTED_FORMAT_AUDIO,
+                )
                 continue
             }
             val mime = UiMediaLimits.mimeForExtension(ext)
@@ -86,7 +109,7 @@ internal class ThemeMediaInstaller(private val probe: MediaProbe = ::probeWithPl
             val spec = slot.spec.copy(maxBytes = slot.maxBytes)
             dir.mkdirs()
             val normalize: (File) -> Unit = if (ext == "wav") ::pcm16InPlace else { _ -> }
-            val ok = stageValidateAndPlace(entry, File(dir, "$key.$ext"), slot.maxBytes, key, normalize) { staged ->
+            val rejection = stageValidateAndPlace(entry, File(dir, "$key.$ext"), slot.maxBytes, key, normalize) { staged ->
                 val facts = probe(staged, mime) ?: return@stageValidateAndPlace UiMediaLimits.MSG_UNDECODABLE
                 UiMediaLimits.validate(
                     spec,
@@ -96,16 +119,20 @@ internal class ThemeMediaInstaller(private val probe: MediaProbe = ::probeWithPl
                         bytes = staged.length(),
                     ),
                 )
+                    // A boot / GameBoot clip this device has no decoder for would install, then fall
+                    // back to the built-in presentation at every launch without a word. Refused here
+                    // instead, by name (the H.264 High 4:4:4 GameBoot clip that started this).
+                    ?: if (slot.kind == UiMediaLimits.Kind.VIDEO) decodeCheck(staged) else null
             }
-            if (ok) installed += key
+            if (rejection == null) installed += key else dropped[key] = rejection
         }
         if (installed.isEmpty()) dir.delete()
-        return installed
+        return MediaInstallReport(installed, dropped)
     }
 
     /**
      * Stream, [normalize] (rewrite the staged file in place, e.g. a float WAV as 16-bit PCM), gate,
-     * then rename; every failure path removes the staging file.
+     * then rename; every failure path removes the staging file. Null when placed, else the reason.
      */
     private fun stageValidateAndPlace(
         source: ThemeMotion,
@@ -114,7 +141,7 @@ internal class ThemeMediaInstaller(private val probe: MediaProbe = ::probeWithPl
         label: String,
         normalize: (File) -> Unit = {},
         validate: (File) -> String?,
-    ): Boolean {
+    ): String? {
         val staged = File(dest.parentFile, "${dest.name}.part")
         try {
             FileOutputStream(staged).use { out -> source.copyTo(CappedOutputStream(out, maxBytes)) }
@@ -125,7 +152,7 @@ internal class ThemeMediaInstaller(private val probe: MediaProbe = ::probeWithPl
             if (!staged.renameTo(dest)) {
                 staged.copyTo(dest, overwrite = true)
             }
-            return true
+            return null
         } catch (e: Exception) {
             return reject(label, e.message ?: e.javaClass.simpleName)
         } finally {
@@ -149,9 +176,10 @@ internal class ThemeMediaInstaller(private val probe: MediaProbe = ::probeWithPl
         }
     }
 
-    private fun reject(label: String, reason: String): Boolean {
+    /** Logs a refused entry and hands its reason back. */
+    private fun reject(label: String, reason: String): String {
         Timber.w("ThemeMediaInstaller: dropped %s - %s", label, reason)
-        return false
+        return reason
     }
 
     /** Fails the stream once more than [cap] bytes arrive, so a crafted entry cannot fill the disk. */
@@ -201,3 +229,44 @@ internal fun probeWithPlatform(file: File, expectedMime: String?): MediaFacts? =
         }
     }
 }.getOrNull()
+
+/**
+ * Asks this device's codecs whether any decoder takes [file]'s video track, profile included —
+ * the check that catches an H.264 High 4:4:4 clip, which every container probe happily times.
+ * Null when it can be decoded, or when the question cannot be answered here.
+ */
+internal fun platformDecodeCheck(file: File): String? {
+    val extractor = android.media.MediaExtractor()
+    return try {
+        extractor.setDataSource(file.absolutePath)
+        val format = (0 until extractor.trackCount)
+            .map(extractor::getTrackFormat)
+            .firstOrNull { it.getString(android.media.MediaFormat.KEY_MIME)?.startsWith("video/") == true }
+            ?: return null
+        // A frame rate in the query makes some releases refuse a format they decode fine.
+        format.removeKey(android.media.MediaFormat.KEY_FRAME_RATE)
+        val decoder = android.media.MediaCodecList(android.media.MediaCodecList.REGULAR_CODECS).findDecoderForFormat(format)
+        if (decoder != null) null
+        else "This device can't play this video (${describeVideo(format)}) — re-export the theme from the Theme Studio, which converts it"
+    } catch (e: Exception) {
+        Timber.w(e, "ThemeMediaInstaller: could not check %s against the decoders", file.name)
+        null
+    } finally {
+        extractor.release()
+    }
+}
+
+/** "H.264 High 4:4:4" for an AVC track; the MIME type and profile number for anything else. */
+private fun describeVideo(format: android.media.MediaFormat): String {
+    val mime = format.getString(android.media.MediaFormat.KEY_MIME).orEmpty()
+    val profile = if (format.containsKey(android.media.MediaFormat.KEY_PROFILE)) format.getInteger(android.media.MediaFormat.KEY_PROFILE) else null
+    if (mime != android.media.MediaFormat.MIMETYPE_VIDEO_AVC) return listOfNotNull(mime, profile?.let { "profile $it" }).joinToString(", ")
+    val name = when (profile) {
+        android.media.MediaCodecInfo.CodecProfileLevel.AVCProfileHigh444 -> "High 4:4:4"
+        android.media.MediaCodecInfo.CodecProfileLevel.AVCProfileHigh422 -> "High 4:2:2"
+        android.media.MediaCodecInfo.CodecProfileLevel.AVCProfileHigh10 -> "High 10"
+        null -> null
+        else -> "profile $profile"
+    }
+    return listOfNotNull("H.264", name).joinToString(" ")
+}

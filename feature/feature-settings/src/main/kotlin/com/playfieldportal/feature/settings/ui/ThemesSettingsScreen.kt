@@ -60,7 +60,8 @@ import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ColorSwatchRow
 import com.playfieldportal.core.ui.components.HsvColorPickerDialog
 import com.playfieldportal.core.ui.components.PfpColorChoices
-import com.playfieldportal.core.ui.components.hsvToArgbLong
+import com.playfieldportal.core.ui.components.HsvPickerNav
+import com.playfieldportal.core.ui.components.HsvPickerState
 import com.playfieldportal.core.data.repository.PfpThemeStore
 import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
@@ -74,6 +75,7 @@ fun ThemesSettingsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenColorSchemePicker: () -> Unit = {},
+    onOpenCustomIcons: () -> Unit = {},
     viewModel: ThemesSettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -82,6 +84,7 @@ fun ThemesSettingsScreen(
         state = state,
         onBack = onBack,
         onOpenColorSchemePicker = onOpenColorSchemePicker,
+        onOpenCustomIcons = onOpenCustomIcons,
         onImportPtfTheme = { viewModel.importPtfTheme(it) },
         onCreateThemeFromPhoto = { viewModel.createThemeFromPhoto(it) },
         onImportPfpTheme = { viewModel.importPfpTheme(it) },
@@ -94,6 +97,8 @@ fun ThemesSettingsScreen(
         onClearAccentOverride = { viewModel.clearAccentOverride() },
         onResetTheme = { viewModel.resetTheme() },
         onSaveCurrentLook = { viewModel.saveCurrentLookAsTheme(it) },
+        onConfirmMediaPrompt = { viewModel.confirmMediaPrompt() },
+        onDismissMediaPrompt = { viewModel.dismissMediaPrompt() },
         modifier = modifier
     )
 }
@@ -103,6 +108,7 @@ private fun ThemesSettingsContent(
     state: ThemesSettingsUiState,
     onBack: () -> Unit,
     onOpenColorSchemePicker: () -> Unit,
+    onOpenCustomIcons: () -> Unit,
     onImportPtfTheme: (Uri) -> Unit,
     onCreateThemeFromPhoto: (Uri) -> Unit,
     onImportPfpTheme: (Uri) -> Unit,
@@ -115,6 +121,8 @@ private fun ThemesSettingsContent(
     onResetTheme: () -> Unit,
     onSaveCurrentLook: (String) -> Unit = {},
     onUpdateThemeFile: (String) -> Unit = {},
+    onConfirmMediaPrompt: () -> Unit = {},
+    onDismissMediaPrompt: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val ptfPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { onImportPtfTheme(it) } }
@@ -164,6 +172,22 @@ private fun ThemesSettingsContent(
         },
     )
 
+    // After an apply: the theme's sounds / clips sit behind the user's own assignments, or need
+    // GameBoot / the boot sequence on. The view model decides; this only asks.
+    val mediaPromptModal = rememberSettingsModal(
+        state.mediaPrompt?.let { prompt ->
+            PfpModalSpec.Confirm(
+                key = prompt,
+                title = prompt.title,
+                message = prompt.message,
+                confirmLabel = prompt.confirmLabel,
+                cancelLabel = prompt.cancelLabel,
+                onConfirm = onConfirmMediaPrompt,
+                onCancel = onDismissMediaPrompt,
+            )
+        },
+    )
+
     val itemMenu = rememberSettingsItemMenu()
     var myThemesFocused by remember { mutableStateOf(false) }
     var cardIndex by remember { mutableStateOf(0) }
@@ -171,11 +195,8 @@ private fun ThemesSettingsContent(
     val iconStripRequester = remember { FocusRequester() }
     var iconIndex by remember { mutableStateOf(0) }
     // Icon color picker state
-    var customPicker by remember { mutableStateOf(false) }
-    var pickerHue by remember { mutableStateOf(0f) }
-    var pickerSat by remember { mutableStateOf(0f) }
-    var pickerVal by remember { mutableStateOf(1f) }
-    var pickerChannel by remember { mutableStateOf(0) }
+    var picker by remember { mutableStateOf<HsvPickerState?>(null) }
+    val pickerNav = remember { HsvPickerNav() }
     val customIndex = PfpColorChoices.size
     // Every branch of this screen's interceptor moves a cursor the scaffold cannot see — a strip
     // index, a menu index, an HSV channel — so the cue is voiced alongside each move. A consumed
@@ -183,11 +204,7 @@ private fun ThemesSettingsContent(
     val menuSounds = LocalMenuSounds.current
 
     fun openIconPicker() {
-        val argb = state.iconColorArgb ?: 0xFFFFFFFFL
-        val hsv = FloatArray(3)
-        android.graphics.Color.colorToHSV((argb and 0xFFFFFFFFL).toInt(), hsv)
-        pickerHue = hsv[0]; pickerSat = hsv[1]; pickerVal = hsv[2]; pickerChannel = 0
-        customPicker = true
+        picker = HsvPickerState.fromArgb(state.iconColorArgb ?: 0xFFFFFFFFL)
     }
 
     fun openMenuForSavedTheme(theme: PfpThemeStore.SavedTheme) {
@@ -209,48 +226,26 @@ private fun ThemesSettingsContent(
             subtitle = "Themes",
             onBack   = onBack,
             modifier = Modifier.fillMaxSize(),
-            modalOpen = saveNameModal.open || renameModal.open || deleteModal.open,
+            modalOpen = saveNameModal.open || renameModal.open || deleteModal.open || mediaPromptModal.open ||
+                picker != null,
             onInterceptAction = { action ->
                 when {
                     // A modal is a hard input boundary: nothing behind it sees a press.
                     saveNameModal.intercept(action) -> true
                     renameModal.intercept(action) -> true
                     deleteModal.intercept(action) -> true
-                    customPicker -> {
-                        when (action) {
-                            GamepadAction.NAVIGATE_UP   -> {
-                                menuSounds.play(MenuSound.SCROLL); pickerChannel = (pickerChannel + 2) % 3
-                            }
-                            GamepadAction.NAVIGATE_DOWN -> {
-                                menuSounds.play(MenuSound.SCROLL); pickerChannel = (pickerChannel + 1) % 3
-                            }
-                            // Stepping a channel's value is a move along it, so it ticks like
-                            // one — the same reading the scaffold gives a slider's LEFT/RIGHT.
-                            GamepadAction.NAVIGATE_LEFT -> {
-                                menuSounds.play(MenuSound.SCROLL)
-                                when (pickerChannel) {
-                                    0 -> pickerHue = ((pickerHue - 6f) % 360f + 360f) % 360f
-                                    1 -> pickerSat = (pickerSat - 0.04f).coerceIn(0f, 1f)
-                                    else -> pickerVal = (pickerVal - 0.04f).coerceIn(0f, 1f)
-                                }
-                            }
-                            GamepadAction.NAVIGATE_RIGHT -> {
-                                menuSounds.play(MenuSound.SCROLL)
-                                when (pickerChannel) {
-                                    0 -> pickerHue = ((pickerHue + 6f) % 360f + 360f) % 360f
-                                    1 -> pickerSat = (pickerSat + 0.04f).coerceIn(0f, 1f)
-                                    else -> pickerVal = (pickerVal + 0.04f).coerceIn(0f, 1f)
-                                }
-                            }
-                            GamepadAction.SELECT -> {
-                                // Committing the picked colour, not descending into anything.
-                                menuSounds.play(MenuSound.CONFIRM)
-                                onSetIconColor(hsvToArgbLong(pickerHue, pickerSat, pickerVal))
-                                customPicker = false
-                            }
-                            GamepadAction.BACK -> { menuSounds.play(MenuSound.BACK); customPicker = false }
-                            else -> Unit
-                        }
+                    mediaPromptModal.intercept(action) -> true
+                    picker != null -> {
+                        val open = picker!!
+                        var closed = false
+                        val next = pickerNav.handle(
+                            state = open,
+                            action = action,
+                            sounds = menuSounds,
+                            onApply = { argb -> closed = true; onSetIconColor(argb) },
+                            onCancel = { closed = true },
+                        )
+                        picker = if (closed) null else next
                         true
                     }
                     itemMenu.intercept(action) -> true
@@ -329,6 +324,14 @@ private fun ThemesSettingsContent(
                     )
                 }
 
+                SettingsGroup("Icons")
+                SettingsValueRow(
+                    label    = "Customize XMB Icons",
+                    value    = state.customIconsValue,
+                    sublabel = "Crossbar, items, consoles and physical media — in XMB order, live over the XMB",
+                    onClick  = onOpenCustomIcons,
+                )
+
                 SettingsGroup("My Themes")
                 SettingsRow(
                     label    = "New Theme from Photo",
@@ -397,34 +400,26 @@ private fun ThemesSettingsContent(
 
         itemMenu.Content()
 
-        if (customPicker) {
+        picker?.let { open ->
             HsvColorPickerDialog(
                 title = "Custom Icon Color",
-                hue             = pickerHue,
-                saturation      = pickerSat,
-                brightness      = pickerVal,
-                selectedChannel = pickerChannel,
+                state = open,
+                onStateChange = { picker = it },
                 accent = SettingsAccent,
                 subtext = SettingsSubtext,
-                onChannelFraction = { channel, fraction ->
-                    pickerChannel = channel
-                    when (channel) {
-                        0 -> pickerHue = (fraction * 360f).coerceIn(0f, 360f)
-                        1 -> pickerSat = fraction.coerceIn(0f, 1f)
-                        else -> pickerVal = fraction.coerceIn(0f, 1f)
-                    }
-                },
                 onConfirm = {
-                    onSetIconColor(hsvToArgbLong(pickerHue, pickerSat, pickerVal))
-                    customPicker = false
+                    onSetIconColor(open.argb)
+                    picker = null
                 },
-                onCancel = { customPicker = false },
+                onCancel = { picker = null },
+                showHints = LocalSettingsShowControllerHint.current,
             )
         }
 
         saveNameModal.Content()
         renameModal.Content()
         deleteModal.Content()
+        mediaPromptModal.Content()
     }
 }
 
@@ -593,6 +588,7 @@ fun ThemesSettingsScreenPreview() {
             state = mockState,
             onBack = {},
             onOpenColorSchemePicker = {},
+            onOpenCustomIcons = {},
             onImportPtfTheme = {},
             onCreateThemeFromPhoto = {},
             onImportPfpTheme = {},

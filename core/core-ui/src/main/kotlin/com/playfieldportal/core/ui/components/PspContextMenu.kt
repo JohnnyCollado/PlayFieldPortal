@@ -32,8 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
-import com.playfieldportal.core.ui.theme.LocalPFPColors
-import com.playfieldportal.core.ui.theme.menuCursorEdge
+import com.playfieldportal.core.ui.theme.deriveStorefrontColors
+import com.playfieldportal.core.ui.theme.menuCursorFill
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
 
@@ -41,8 +41,8 @@ import com.playfieldportal.core.ui.theme.themedText
 //
 // The canonical XMB sub-menu look: a translucent column anchored to the right
 // edge over a light scrim, a plain title underlined by a thin rule, and the
-// selected item marked by a soft horizontal glow band that bleeds to the screen
-// edge (no boxed panel). Shared by the XMB's Y/Triangle menu and any settings
+// selected item marked by the Settings rows' cursor — one solid accent-tinted
+// fill across the row (no boxed panel). Shared by the XMB's Y/Triangle menu and any settings
 // screen that opens a per-item options menu — one source, no style drift.
 //
 // Controller navigation is the caller's job (selectedIndex in, activation out);
@@ -89,11 +89,20 @@ data class PspMenuRow(
 private val PanelWidth = 300.dp
 
 // Black drop shadow on the menu text so it stays legible over the wave/backdrop.
+internal const val MENU_SHADOW_ALPHA = 0.75f
 private val TextDropShadow = Shadow(
-    color = Color.Black.copy(alpha = 0.75f),
+    color = Color.Black.copy(alpha = MENU_SHADOW_ALPHA),
     offset = Offset(0f, 2f),
     blurRadius = 4f,
 )
+
+/**
+ * The shadow under a fill of [fill]: the standard one, dimmed with the fill. Compose draws a text
+ * shadow at its own alpha whatever the letters' is, so a 45% group header under the full-strength
+ * shadow was darker behind than in front and read as a smudge. The Studio's PreviewFlyout mirrors it.
+ */
+internal fun menuTextShadowFor(fill: Color): Shadow =
+    TextDropShadow.copy(color = TextDropShadow.color.copy(alpha = MENU_SHADOW_ALPHA * fill.alpha))
 
 @Composable
 fun PspContextMenuOverlay(
@@ -106,10 +115,12 @@ fun PspContextMenuOverlay(
     // Default keeps the XMB's light PSP-style scrim (wave visible behind); busier hosts
     // (e.g. the Artwork Studio) pass a darker one so the menu reads clearly.
     scrim: Color = Color(0x40000000),
-    // The panel's backdrop alpha over the scheme's wave colour; Game Detail passes 0.88.
-    panelAlpha: Float = 0.75f,
 ) {
-    val colors = LocalPFPColors.current
+    // The panel sits on the same backdrop as the full-screen pages it opens over (the App Drawer,
+    // Settings, the detail screens): the storefront's deep-to-mid gradient from the theme's
+    // darkened anchors. The raw wave colour it used before is the theme accent itself, so a bright
+    // accent made the menu lighter than the page behind it, and its light text hard to read.
+    val storefront = deriveStorefrontColors()
     val listState = rememberLazyListState()
 
     LaunchedEffect(selectedIndex) {
@@ -124,15 +135,13 @@ fun PspContextMenuOverlay(
             .background(scrim)
             .clickable(onClick = onDismiss),
     ) {
-        // Right-edge column. A backdrop (75% alpha by default) in the scheme's theme
-        // color (the wave color — blue for Classic Blue, etc.) gives contrast
-        // while still letting the wave show through.
+        // Right-edge column on the storefront backdrop (0.88 alpha), so the wave still shows through.
         Column(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .fillMaxHeight()
                 .width(PanelWidth)
-                .background(colors.waveColor.copy(alpha = panelAlpha))
+                .background(Brush.verticalGradient(listOf(storefront.backgroundDeep, storefront.backgroundMid)))
                 .clickable(onClick = {}) // consume clicks so the scrim isn't triggered inside
                 .padding(start = 28.dp, end = 40.dp),
             verticalArrangement = Arrangement.Center,
@@ -143,7 +152,7 @@ fun PspContextMenuOverlay(
                 fontSize = 19.sp,
                 fontWeight = FontWeight.Light,
                 color = themedText(Color.White.copy(alpha = 0.92f)),
-                style = TextStyle(shadow = TextDropShadow),
+                style = TextStyle(shadow = menuTextShadowFor(themedText(Color.White.copy(alpha = 0.92f)))),
                 maxLines = 2,
                 modifier = Modifier.padding(bottom = 10.dp),
             )
@@ -180,42 +189,36 @@ private fun PspContextMenuRow(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
-    // Accent-tinted glow so the cursor follows the chosen color scheme; blended toward white in
-    // menuCursorEdge so a dark theme accent still reads clearly on the scrim.
-    val glow = menuCursorEdge()
+    // Accent-tinted so the cursor follows the chosen color scheme; menuCursorFill blends it toward
+    // white so a dark theme accent still reads clearly on the scrim.
+    val cursorFill = menuCursorFill()
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            // Horizontal glow band for the active item — brighter toward the
-            // screen edge, fading out to the left. No border or rounded box.
-            .background(
-                if (isSelected) {
-                    Brush.horizontalGradient(
-                        0f to Color.Transparent,
-                        1f to glow.copy(alpha = 0.40f),
-                    )
-                } else {
-                    Brush.horizontalGradient(0f to Color.Transparent, 1f to Color.Transparent)
-                }
-            )
+            // The Settings rows' cursor: one solid accent-tinted fill across the whole row, no
+            // border or rounding — so a menu and the page it opens over highlight the same way.
+            .background(if (isSelected) cursorFill else Color.Transparent)
             .clickable(onClick = onClick)
             .padding(vertical = 12.dp),
     ) {
+        val labelColor = when {
+            row.isDestructive && isSelected -> Color(0xFFFF7070)
+            row.isDestructive               -> Color(0xAAFF7070)
+            // The focused label is plain white on the cursor, as a focused Settings row's is;
+            // the others take the user's Main font colour when set, at their own weight
+            // (values, chevrons and group headers take the Sub colour). Reds stay semantic.
+            isSelected                      -> Color.White
+            else                            -> themedText(Color.White.copy(alpha = 0.62f))
+        }
+        // Values and the submenu arrow share one sub-text weight.
+        val subColor = themedSubText(Color.White.copy(alpha = if (isSelected) 0.85f else 0.55f))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = row.label,
                 fontSize = if (isSelected) 16.sp else 15.sp,
                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                color = when {
-                    row.isDestructive && isSelected -> Color(0xFFFF7070)
-                    row.isDestructive               -> Color(0xAAFF7070)
-                    // Labels in the user's Main font colour when set, at these same weights
-                    // (values, chevrons and group headers take the Sub colour); the destructive
-                    // reds stay semantic.
-                    isSelected                      -> themedText(Color.White)
-                    else                            -> themedText(Color.White.copy(alpha = 0.62f))
-                },
-                style = TextStyle(shadow = TextDropShadow),
+                color = labelColor,
+                style = TextStyle(shadow = menuTextShadowFor(labelColor)),
                 // A value fills the row so it can be pushed to the far edge; without one the label
                 // keeps hugging its text, which is what puts a checkmark right beside the words
                 // instead of stranding it across the panel.
@@ -230,8 +233,8 @@ private fun PspContextMenuRow(
                     // the row. Both brighten together when the cursor arrives.
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Normal,
-                    color = themedSubText(Color.White.copy(alpha = if (isSelected) 0.85f else 0.55f)),
-                    style = TextStyle(shadow = TextDropShadow),
+                    color = subColor,
+                    style = TextStyle(shadow = menuTextShadowFor(subColor)),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -247,8 +250,8 @@ private fun PspContextMenuRow(
                 Text(
                     text = "›",
                     fontSize = 17.sp,
-                    color = themedSubText(Color.White.copy(alpha = if (isSelected) 0.85f else 0.55f)),
-                    style = TextStyle(shadow = TextDropShadow),
+                    color = subColor,
+                    style = TextStyle(shadow = menuTextShadowFor(subColor)),
                 )
             }
         }
@@ -268,11 +271,12 @@ private fun PspContextMenuGroupHeader(label: String, first: Boolean) {
                     .background(Color.White.copy(alpha = 0.14f)),
             )
         }
+        val color = themedSubText(Color.White.copy(alpha = 0.45f))
         Text(
             text = label,
             fontSize = 11.sp,
-            color = themedSubText(Color.White.copy(alpha = 0.45f)),
-            style = TextStyle(shadow = TextDropShadow),
+            color = color,
+            style = TextStyle(shadow = menuTextShadowFor(color)),
             modifier = Modifier.padding(top = if (first) 0.dp else 8.dp),
         )
     }

@@ -7,7 +7,7 @@ package com.playfieldportal.themekit
  * applied theme's `icons/<key>.png` overrides at render time) and the desktop Theme Studio
  * (which edits the slots and exports the editable template pack). Platform/console icons
  * (`sysicon_*`) are not part of this list: they travel under `sysicons/` and are registered by
- * [CustomizableIcons]. Physical-media art is not themeable.
+ * [CustomizableIcons], as is physical-media art (`physmedia_*`, under `mediaicons/`).
  *
  * Keys are also the bundle entry names (`icons/<key>.png` inside a `.pfptheme`), so they are
  * forever-stable: never rename one, only add.
@@ -27,9 +27,10 @@ data class IconSlot(
      * `sysicons/` bundle directory (schema v3).
      *
      * SHIBA, MEDIA, GAME_DETAIL, NOTIFICATIONS and MENUS (schema v4) are theme-only groups:
-     * they travel under `icons/` like the rest but the on-device editor does not list them.
+     * they travel under `icons/` like the rest but neither editor lists them. PHYSICAL_MEDIA is,
+     * like CONSOLE, a [CustomizableIcons] group: its slots travel under `mediaicons/`.
      */
-    enum class Group { CATEGORY_BAR, ITEMS, STATUS, CONSOLE, SHIBA, MEDIA, GAME_DETAIL, NOTIFICATIONS, MENUS }
+    enum class Group { CATEGORY_BAR, ITEMS, STATUS, CONSOLE, SHIBA, MEDIA, GAME_DETAIL, NOTIFICATIONS, MENUS, PHYSICAL_MEDIA }
 }
 
 object IconSlots {
@@ -150,6 +151,10 @@ object IconSlots {
 
         slot("menu_check", IconSlot.Group.MENUS, "Check mark"),
         slot("menu_back", IconSlot.Group.MENUS, "Back arrow"),
+
+        // The UMD slot atop each gaming column, unfocused: the PSP's UMD whatever the game.
+        // Appended (keys only ever add); focused, it still turns into the game's ICON0.
+        item("item_umd", "UMD slot"),
     )
 
     private val byKey: Map<String, IconSlot> = ALL.associateBy { it.key }

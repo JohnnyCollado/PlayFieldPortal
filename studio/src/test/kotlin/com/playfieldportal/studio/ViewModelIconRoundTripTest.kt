@@ -1,11 +1,13 @@
 package com.playfieldportal.studio
 
+import com.playfieldportal.themekit.PfpThemeCodec
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.File
 import javax.imageio.ImageIO
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -67,6 +69,77 @@ class ViewModelIconRoundTripTest {
                 "custom icons dropped on reopen",
             )
         } finally {
+            file.delete()
+        }
+    }
+
+    @Test
+    fun `main and sub text colours export and come back on open`() = runBlocking {
+        val vm = StudioViewModel(CoroutineScope(Dispatchers.Default))
+        val file = File.createTempFile("studio-roundtrip", ".pfptheme")
+        try {
+            vm.update { it.copy(name = "Text Colours") }
+            vm.setTextColor(TextColorChoice.Custom(0xFFFF8800.toInt()))
+            vm.setSubTextColor(TextColorChoice.Custom(0xFF00AA88.toInt()))
+            vm.exportTo(file) { null }
+            vm.awaitIdle()
+            val manifest = assertNotNull(PfpThemeCodec.readDetailed(file.readBytes())).bundle.manifest
+            assertEquals("#FF8800", manifest.textColor)
+            assertEquals("#00AA88", manifest.subTextColor)
+
+            vm.newTheme()
+            assertEquals(TextColorChoice.Auto, vm.state.value.subTextColor)
+            vm.openFile(file)
+            vm.awaitIdle()
+            assertEquals(TextColorChoice.Custom(0xFFFF8800.toInt()), vm.state.value.textColor)
+            assertEquals(TextColorChoice.Custom(0xFF00AA88.toInt()), vm.state.value.subTextColor)
+
+            // Auto writes nothing: sub text follows the main colour on the device.
+            vm.setSubTextColor(TextColorChoice.Auto)
+            vm.exportTo(file) { null }
+            vm.awaitIdle()
+            assertEquals(null, assertNotNull(PfpThemeCodec.readDetailed(file.readBytes())).bundle.manifest.subTextColor)
+        } finally {
+            file.delete()
+        }
+    }
+
+    @Test
+    fun `physical media art exports under mediaicons and comes back on open`() = runBlocking {
+        val vm = StudioViewModel(CoroutineScope(Dispatchers.Default))
+        val pick = File.createTempFile("studio-media", ".png").apply { writeBytes(pngBytes(64)) }
+        val file = File.createTempFile("studio-roundtrip", ".pfptheme")
+        try {
+            vm.update { it.copy(name = "Media Round Trip") }
+            vm.setIconOverride("physmedia_psx", pick)
+            vm.setIconOverride("sysicon_psx", pick)
+            vm.awaitIdle()
+            assertEquals(setOf("physmedia_psx", "sysicon_psx"), vm.state.value.sysiconOverrides.keys)
+            assertEquals(setOf("physmedia_psx", "sysicon_psx"), vm.state.value.sysiconBitmaps.keys)
+
+            vm.exportTo(file) { null }
+            vm.awaitIdle()
+            val bundle = assertNotNull(PfpThemeCodec.readDetailed(file.readBytes())).bundle
+            assertEquals(setOf("psx"), bundle.sysicons.keys, "media art must not land in sysicons/")
+            assertEquals(setOf("psx"), bundle.mediaicons.keys, "media art lands in mediaicons/")
+            assertTrue(bundle.passthrough.isEmpty(), "media art is typed, never passthrough")
+
+            vm.newTheme()
+            vm.openFile(file)
+            vm.awaitIdle()
+            val state = vm.state.value
+            assertEquals(null, state.dialog, "open reported: ${state.dialog}")
+            assertEquals(setOf("physmedia_psx", "sysicon_psx"), state.sysiconOverrides.keys)
+            assertEquals("png", state.sysiconExtensions["physmedia_psx"])
+            assertTrue("physmedia_psx" in state.sysiconBitmaps)
+            assertTrue(state.passthroughFiles.isEmpty(), "media art is an edit, not an unknown entry: ${state.passthroughFiles.keys}")
+
+            vm.clearIconOverride("physmedia_psx")
+            vm.exportTo(file) { null }
+            vm.awaitIdle()
+            assertTrue(assertNotNull(PfpThemeCodec.readDetailed(file.readBytes())).bundle.passthrough.isEmpty())
+        } finally {
+            pick.delete()
             file.delete()
         }
     }

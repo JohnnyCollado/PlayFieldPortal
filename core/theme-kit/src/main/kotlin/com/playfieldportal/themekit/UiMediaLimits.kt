@@ -78,8 +78,12 @@ object UiMediaLimits {
      * The built-in Boot Sequence's own chime (`sfx_opening`) and the ceiling for a user's boot
      * clip. Like [GAMEBOOT_SEQUENCE_MS], the audio side of this is not an import cap: there is no
      * boot-audio slot to import into. It survives as [BOOT_CLIP]'s duration ceiling.
+     *
+     * 15 s, raised from 10 (owner decision): room for an intro with a build and a payoff. Steam
+     * Deck's own startup-movie limit went from 10 s to 30 s, yet the clips people share for it
+     * stay short, so the recommended range on [BOOT_CLIP] still tops out at 10 s.
      */
-    const val BOOT_MAX_MS           = 10_000L
+    const val BOOT_MAX_MS           = 15_000L
     /**
      * Ambience runs far longer than anything else here because it is the only sound that LOOPS —
      * a two-minute bed repeats often enough to be heard as music rather than as a cue, where a
@@ -128,7 +132,7 @@ object UiMediaLimits {
     // imported, and GAMEBOOT_SEQUENCE_MS / BOOT_MAX_MS are what the gates clip them to. There is
     // likewise no LAUNCH spec: opening an app is silent and opening a game is GameBoot's job.
     val GAMEBOOT_CLIP = Spec(Kind.VIDEO,      1_000L, 8_000L, GAMEBOOT_CLIP_MAX_MS, VIDEO_MAX_BYTES)
-    val BOOT_CLIP    = Spec(Kind.VIDEO,       1_000L, 8_000L, BOOT_MAX_MS,    VIDEO_MAX_BYTES)
+    val BOOT_CLIP    = Spec(Kind.VIDEO,       1_000L, 10_000L, BOOT_MAX_MS,   VIDEO_MAX_BYTES)
     /**
      * Ambience accepts the FULL [AUDIO_MIME] set by decision, not by omission.
      *

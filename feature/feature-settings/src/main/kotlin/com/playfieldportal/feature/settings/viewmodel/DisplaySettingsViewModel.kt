@@ -55,7 +55,8 @@ import java.io.File
 import javax.inject.Inject
 
 private val KEY_WAVE_STYLE         = stringPreferencesKey("display_wave_style")
-private val KEY_SHOW_BOOT          = booleanPreferencesKey("display_show_boot")
+/** Display ▸ Show Boot Sequence. Internal: the Themes screen switches it on for a theme's boot clip. */
+internal val KEY_SHOW_BOOT        = booleanPreferencesKey("display_show_boot")
 private val KEY_BOOT_ON_RESUME     = booleanPreferencesKey("display_boot_on_resume")
 private val KEY_THERMAL_AWARE      = booleanPreferencesKey("display_thermal_aware")
 private val KEY_RESPECT_BATTERY    = booleanPreferencesKey("display_battery_saver")
@@ -189,13 +190,13 @@ data class DisplaySettingsUiState(
     // ONE field, exactly like GameBoot: the boot sequence is the built-in logo animation until
     // the user replaces the whole thing with a clip of their own. Boot SOUND is not here — it is
     // the seventh row of Interface ▸ Sound, which owns every sound in the app.
-    val bootVideoLabel: String = UI_MEDIA_DEFAULT_LABEL,
+    val bootVideoLabel: String = PFP_DEFAULT_LABEL,
     val bootVideoAssigned: Boolean = false,
     val bootPreviewVisible: Boolean = false,
     // ── GameBoot (Display ▸ GameBoot) ────────────────────────────────────────
     // One switch and one replaceable asset: on/off, plus the user's own clip when they have one.
     val gameBootEnabled: Boolean = true,
-    val gameBootVideoLabel: String = UI_MEDIA_DEFAULT_LABEL,
+    val gameBootVideoLabel: String = PFP_DEFAULT_LABEL,
     val gameBootVideoAssigned: Boolean = false,
     val gameBootPreviewVisible: Boolean = false,
     /**
@@ -208,9 +209,6 @@ data class DisplaySettingsUiState(
 ) {
     val waveStyleLabel: String get() = WAVE_STYLE_LABELS[waveStyle] ?: waveStyle.name
 }
-
-/** Row summary for a UI-media slot with no user assignment. */
-const val UI_MEDIA_DEFAULT_LABEL = "PFP Default"
 
 @HiltViewModel
 class DisplaySettingsViewModel @Inject constructor(
@@ -255,11 +253,13 @@ class DisplaySettingsViewModel @Inject constructor(
         // Every UI-media fact below comes from the same DataStore emission plus one directory
         // listing, so the rows follow an import or a clear without a second flow.
         val assigned = uiMediaStore.assignments()
-        fun label(slot: UiMediaSlot): String = when {
-            slot !in assigned -> UI_MEDIA_DEFAULT_LABEL
-            else -> prefs[UiMediaStore.displayNameKey(slot)]
-                ?: if (slot.kind == UiMediaKind.VIDEO) "Custom video" else "Custom sound"
-        }
+        val themed = uiMediaStore.themeAssignments()
+        fun label(slot: UiMediaSlot): String = UiMediaRowText.label(
+            userName = prefs[UiMediaStore.displayNameKey(slot)],
+            userAssigned = slot in assigned,
+            themeSupplied = slot in themed,
+            fallback = if (slot.kind == UiMediaKind.VIDEO) "Custom video" else "Custom sound",
+        )
         DisplaySettingsUiState(
             waveStyle            = runCatching {
                 WaveStyle.valueOf(prefs[KEY_WAVE_STYLE] ?: WaveStyle.ANIMATED.name)

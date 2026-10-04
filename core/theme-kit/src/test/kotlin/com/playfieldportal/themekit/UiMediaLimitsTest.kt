@@ -59,9 +59,14 @@ class UiMediaLimitsTest {
         assertNotNull(UiMediaLimits.validate(UiMediaLimits.GAMEBOOT_CLIP, videoProbe(durationMs = 10_001L)))
     }
 
-    @Test fun `boot media accepts exactly at 10 s and rejects over`() {
-        assertNull(UiMediaLimits.validate(UiMediaLimits.BOOT_CLIP, videoProbe(durationMs = 10_000L)))
-        assertNotNull(UiMediaLimits.validate(UiMediaLimits.BOOT_CLIP, videoProbe(durationMs = 10_001L)))
+    @Test fun `boot media accepts exactly at 15 s and rejects over`() {
+        assertNull(UiMediaLimits.validate(UiMediaLimits.BOOT_CLIP, videoProbe(durationMs = 12_500L)))
+        assertNull(UiMediaLimits.validate(UiMediaLimits.BOOT_CLIP, videoProbe(durationMs = 15_000L)))
+        assertNotNull(UiMediaLimits.validate(UiMediaLimits.BOOT_CLIP, videoProbe(durationMs = 15_001L)))
+    }
+
+    @Test fun `a boot clip is recommended at 10 s or less`() {
+        assertEquals(10_000L, UiMediaLimits.BOOT_CLIP.recommendedMaxMs)
     }
 
     @Test fun `recommended range is advisory only - outside it still validates`() {

@@ -72,6 +72,10 @@ class LaunchDispatcher @Inject constructor(
     private val handoffTracker: GameHandoffTracker,
     // Stamps "last played" at hand-off — the only moment PFP knows a game was actually started.
     private val gameRepository: com.playfieldportal.core.domain.repository.GameRepository,
+    // Background music goes quiet the moment a launch starts — before GameBoot, and whether or not
+    // Android ever fully stops the launcher — and comes back on every outcome: PFP foreground
+    // again, a launch that never started, or one nothing covered.
+    private val ambience: com.playfieldportal.core.ui.sound.AmbienceSuppressor,
 ) {
     private val _recoveryRequests = MutableStateFlow<LaunchRecoveryRequest?>(null)
     /** Non-null while a recovery sheet should be shown; cleared by [dismissRecovery]. */
@@ -94,7 +98,8 @@ class LaunchDispatcher @Inject constructor(
         // game-launch call sites (Game Detail and the XMB's direct launch) get it for free;
         // shortcut launches pass the same gate through [launchShortcut].
         // No-op when GameBoot is disabled, and bounded by its own watchdog — see GameBootGate.
-        gameBootGate.awaitPresentation(game.title)
+        holdAmbience(true)
+        awaitGameBoot(game)
         return try {
             // Every dispatcher launch comes from an app-graph context (ViewModel/Activity via the
             // shared singleton), so NEW_TASK is required to start outside our own task. Idempotent.
@@ -168,11 +173,14 @@ class LaunchDispatcher @Inject constructor(
      * own preflight-failure handling.
      */
     suspend fun launchShortcut(game: Game, start: () -> Result<Unit>): Result<Unit> {
-        gameBootGate.awaitPresentation(game.title)
+        holdAmbience(true)
+        awaitGameBoot(game)
         val result = start()
         if (result.isSuccess) {
             handoffTracker.onDispatched(game)
             markLaunched(game)
+        } else {
+            holdAmbience(false)
         }
         return result
     }
@@ -207,6 +215,8 @@ class LaunchDispatcher @Inject constructor(
     /** MainActivity reports PFP is foreground again — classify the pending hand-off. */
     fun onHostResumed() {
         handoffTracker.onHostResumed()
+        // Back in the launcher, whatever the verdict: the game no longer holds the room.
+        holdAmbience(false)
         val p = pending ?: return
         pending = null
         val emulatorTookForeground = hostStopped
@@ -260,6 +270,8 @@ class LaunchDispatcher @Inject constructor(
             val stillPending = pending?.game?.id == p.game.id
             if (stillPending && !hostStopped) {
                 pending = null
+                // Nothing came to the front, so the user is still here: the music may come back.
+                holdAmbience(false)
                 Timber.w("No activity covered the launcher within ${STOP_WINDOW_MS}ms of dispatch")
                 outcomeRecorder.record(
                     outcomeFor(
@@ -282,12 +294,27 @@ class LaunchDispatcher @Inject constructor(
     // LaunchDispatcherModule) so acceptPending (ViewModel launch site), onHostStopped/onHostResumed
     // (MainActivity lifecycle) and the watchdog (scope) are confined to one thread by construction.
 
+    /** GameBoot, giving ambience back if the launch is abandoned while it presents. */
+    private suspend fun awaitGameBoot(game: Game) {
+        try {
+            gameBootGate.awaitPresentation(game.title)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            holdAmbience(false)
+            throw e
+        }
+    }
+
+    private fun holdAmbience(hold: Boolean) =
+        ambience.setSuppressed(com.playfieldportal.core.ui.sound.AmbienceController.OWNER_GAME, hold)
+
     private suspend fun settleImmediateFailure(
         game: Game,
         resolved: ResolvedLaunch?,
         message: String,
         code: PfpErrorCode,
     ): LaunchDispatchResult {
+        // The launch never happened, so the user is still in the launcher.
+        holdAmbience(false)
         outcomeRecorder.record(
             outcomeFor(game, resolved, LaunchOutcomeStatus.INTENT_FAILED, message, code)
         )

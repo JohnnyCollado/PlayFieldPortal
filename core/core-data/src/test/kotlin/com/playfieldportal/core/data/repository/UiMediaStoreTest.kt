@@ -284,6 +284,19 @@ class UiMediaStoreTest {
         assertEquals(setOf(UiMediaSlot.SOUND_SCROLL, UiMediaSlot.BOOT_VIDEO), assignments.keys)
     }
 
+    @Test
+    fun `theme assignments list the applied theme's media, apart from the user's`() = runTest {
+        probeReturns(100L)
+        store.import(UiMediaSlot.SOUND_SCROLL, register(wavBytes()))
+        File(context.filesDir, PfpThemeStore.THEME_MEDIA_DIR).apply { mkdirs() }.let { dir ->
+            File(dir, "boot_video.mp4").writeBytes(byteArrayOf(1))
+            File(dir, "sound_scroll.wav").writeBytes(wavBytes())
+            File(dir, "not_a_slot.wav").writeBytes(wavBytes())
+        }
+        assertEquals(setOf(UiMediaSlot.BOOT_VIDEO, UiMediaSlot.SOUND_SCROLL), store.themeAssignments())
+        assertEquals(setOf(UiMediaSlot.SOUND_SCROLL), store.assignments().keys, "the user tier is unchanged")
+    }
+
     // ── clear / clearAll ──────────────────────────────────────────────────────
 
     @Test

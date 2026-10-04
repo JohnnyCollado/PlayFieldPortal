@@ -52,7 +52,8 @@ import kotlin.math.roundToInt
  * Theme inputs: wave colour + background anchors (detailPaletteFor: page, accent, text, rows, tabs,
  * bars), the wallpaper / frozen wave behind the page, and the shiba_coin_* icon overrides (drawn as
  * authored; a locked coin's greyscale + 0.6 alpha still applies to custom art). The header's ◀ is
- * plain text here (no menu_back slot). Text colour, icon colour and legibility are not read.
+ * plain text here (no menu_back slot). The Main / Sub text colours come through the palette (an
+ * unselected tab is Main at 0.72); icon colour and legibility are not read.
  */
 
 // ShibaCoinsScreen.kt constants.
@@ -285,7 +286,7 @@ private fun ViewTab(palette: DetailPreviewPalette, label: String, selected: Bool
     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxHeight()) {
         Text(
             text = label,
-            color = if (selected) palette.textPrimary else palette.textMuted,
+            color = if (selected) palette.textPrimary else palette.unselectedLabel,
             fontSize = 13.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 1,
@@ -366,7 +367,7 @@ private fun CoinRow(
                         Spacer(Modifier.width(6.dp))
                         Text("Earned", color = EarnedColor, fontSize = 13.sp, maxLines = 1, softWrap = false)
                     } else {
-                        Icon(Icons.Filled.Lock, contentDescription = null, tint = palette.textMuted, modifier = Modifier.size(13.dp))
+                        Icon(Icons.Filled.Lock, contentDescription = null, tint = palette.iconMuted, modifier = Modifier.size(13.dp))
                         Spacer(Modifier.width(6.dp))
                         Text("Locked", color = palette.textMuted, fontSize = 13.sp, maxLines = 1, softWrap = false)
                     }

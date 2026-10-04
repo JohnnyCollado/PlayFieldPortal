@@ -44,7 +44,7 @@ class PfpThemeStoreUpgradeTest {
         File(context.filesDir, "theme-icons").deleteRecursively()
     }
 
-    private fun store() = PfpThemeStore(context) { _, _ -> MediaFacts("video/mp4", 1920, 1080, 5_000) }
+    private fun store() = PfpThemeStore(context, mediaProbe = { _, _ -> MediaFacts("video/mp4", 1920, 1080, 5_000) })
 
     private fun place(id: String, bytes: ByteArray): File =
         File(dir.apply { mkdirs() }, "$id.pfptheme").apply { writeBytes(bytes) }

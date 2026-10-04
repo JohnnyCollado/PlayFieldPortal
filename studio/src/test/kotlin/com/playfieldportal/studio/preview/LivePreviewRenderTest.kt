@@ -29,6 +29,11 @@ class LivePreviewRenderTest {
 
     private val frameNanos = 16_666_667L
 
+    private companion object {
+        /** Any fixed instant will do: the point is that it never moves. */
+        const val FIXED_CLOCK_MS = 1_791_043_200_000L
+    }
+
     /** Renders [content]'s frames and returns the PNG of each sample point (frame index -> bytes). */
     private fun renderSamples(
         spec: PreviewLiveSpec?,
@@ -42,7 +47,12 @@ class LivePreviewRenderTest {
         val out = mutableMapOf<Int, ByteArray>()
         EventQueue.invokeAndWait {
             ImageComposeScene(width = 640, height = 360, density = Density(640f / PreviewGeometry.BASE_WIDTH)).use { scene ->
-                scene.setContent { XmbFrame(model, live = spec, onBootFinished = onBootFinished) }
+                // A pinned clock: two renders compared across compositions must not see the minute change.
+                scene.setContent {
+                    androidx.compose.runtime.CompositionLocalProvider(LocalPreviewClock provides { FIXED_CLOCK_MS }) {
+                        XmbFrame(model, live = spec, onBootFinished = onBootFinished)
+                    }
+                }
                 var t = 0L
                 for (i in 0 until frames) {
                     val image = scene.render(t)

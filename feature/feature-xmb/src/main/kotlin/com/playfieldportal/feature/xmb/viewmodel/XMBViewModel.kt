@@ -365,13 +365,6 @@ data class ColorSchemeOption(
     val isCustom: Boolean = false,
 )
 
-data class CustomColorPickerState(
-    val hue: Float,
-    val saturation: Float,
-    val brightness: Float,
-    val selectedChannel: Int = 0,
-)
-
 // ── Live "Adjust XMB Layout" editor ────────────────────────────────────────────
 // A full-screen editor rendered OVER the real XMB (settings closed): D-pad / shoulder buttons or
 // on-screen sliders drive the cross's scale + horizontal + vertical placement live. [draft] is the
@@ -383,50 +376,6 @@ data class XmbLayoutAdjustSession(
     val bucketKey: String,
     val slidersVisible: Boolean = false,
 )
-
-// ── Live "Customize XMB Icons" editor ─────────────────────────────────────────
-// A translucent editor rendered OVER the real XMB (settings closed), shaped after
-// XmbLayoutAdjustSession. There is deliberately NO draft/commit pair: picks apply to the
-// CustomIconStore immediately (the XMB behind updates as each lands — the whole point of a
-// live editor), and Reset / Reset All are the undo. [groups] is the editable tab order;
-// [groupIndex]/[slotIndex] place the gamepad cursor; [message] is the last import outcome.
-data class CustomIconSession(
-    val groups: List<com.playfieldportal.themekit.IconSlot.Group>,
-    val groupIndex: Int = 0,
-    val slotIndex: Int = 0,
-    val message: String? = null,
-    /** Bumped when the store's contents change, so the overlay re-reads the icons map. */
-    val revision: Int = 0,
-    /** The bar's user categories, snapshotted when the editor opens; appended to Category Bar. */
-    val userCategorySlots: List<UserCategoryIconSlot> = emptyList(),
-) {
-    /** The group the cursor is currently on. */
-    val group: com.playfieldportal.themekit.IconSlot.Group get() = groups[groupIndex]
-
-    /** The current group's slots; Category Bar also carries one per user category, after the built-ins. */
-    fun slots(): List<com.playfieldportal.themekit.IconSlot> {
-        val builtIns = CustomizableIcons.group(group)
-        if (group != com.playfieldportal.themekit.IconSlot.Group.CATEGORY_BAR) return builtIns
-        return builtIns + userCategorySlots.map {
-            com.playfieldportal.themekit.IconSlot(
-                key = it.key,
-                group = group,
-                displayName = it.displayName,
-                templateSizePx = USER_SLOT_TEMPLATE_PX,
-            )
-        }
-    }
-
-    /** The focused slot, or null when the group has no slots. */
-    val focusedSlot: com.playfieldportal.themekit.IconSlot?
-        get() = slots().getOrNull(slotIndex)
-
-    private companion object {
-        // Unused for user slots (no template export); matches the catbar slots' canvas.
-        const val USER_SLOT_TEMPLATE_PX = 256
-    }
-}
-
 
 // ── Installed-app picker ───────────────────────────────────────────────────────
 // A reusable multi-select picker over installed apps. Where the selection goes is
@@ -623,7 +572,7 @@ fun settingsSectionItems(section: SettingsSection): List<XMBItem> = when (sectio
         // not a library concern.
         XMBItem(id = "settings_notifications", title = "Notifications", subtitle = "Panel history & retention"),
         XMBItem(id = "settings_categories", title = "Categories", subtitle = "Manage XMB categories"),
-        XMBItem(id = "settings_themes",     title = "Themes",     subtitle = "XMB appearance & color scheme"),
+        XMBItem(id = "settings_themes",     title = "Themes",     subtitle = "XMB appearance, colors & icons"),
         XMBItem(id = "settings_controller", title = "Controller", subtitle = "Button mapping"),
     )
     SettingsSection.ACHIEVEMENTS -> listOf(
@@ -900,6 +849,8 @@ data class XMBUiState(
      * chime follows a slider that is being dragged, and so the overlay stays draw-only.
      */
     val bootAudioGain: Float = 1f,
+    /** The GameBoot level, for a custom clip's own track; the built-in sound gets it from its player. */
+    val gameBootAudioGain: Float = 1f,
     // The GameBoot presentation currently on screen, from the launch gate or from the settings
     // preview. Null the rest of the time.
     val activeGameBoot: com.playfieldportal.feature.launcher.GameBootRequest? = null,
@@ -1017,7 +968,7 @@ data class XMBUiState(
 
     // ── Color-scheme picker (Settings ▸ Themes ▸ Color Scheme) ─────────────
     val colorSchemePicker: ColorSchemePickerState? = null,
-    val customColorPicker: CustomColorPickerState? = null,
+    val customColorPicker: com.playfieldportal.core.ui.components.HsvPickerState? = null,
 
     // ── App rename dialog ─────────────────────────────────────────────────
     val renameAppTarget: String? = null,    // package name being renamed
@@ -6378,32 +6329,18 @@ class XMBViewModel @Inject constructor(
         }
 
         // ── Color-scheme picker captures ALL input when open (sits above Settings) ──
-        if (state.customColorPicker != null) {
-            // The cues sit here rather than in the handlers below because the shared
-            // HsvColorPickerDialog voices its own taps (the knob, Apply, Cancel and the scrim).
-            // Moving them into confirmCustomColor/cancelCustomColor would double every tap.
-            when (action) {
-                GamepadAction.NAVIGATE_UP -> {
-                    menuSound.play(MenuSound.SCROLL); moveCustomColorChannel(-1)
-                }
-                GamepadAction.NAVIGATE_DOWN -> {
-                    menuSound.play(MenuSound.SCROLL); moveCustomColorChannel(1)
-                }
-                // Channel steps wrap hue and clamp the other two, so they always change something.
-                GamepadAction.NAVIGATE_LEFT -> {
-                    menuSound.play(MenuSound.SCROLL); adjustCustomColor(-0.04f)
-                }
-                GamepadAction.NAVIGATE_RIGHT -> {
-                    menuSound.play(MenuSound.SCROLL); adjustCustomColor(0.04f)
-                }
-                GamepadAction.SELECT -> {
-                    menuSound.play(MenuSound.CONFIRM); confirmCustomColor()
-                }
-                GamepadAction.BACK, GamepadAction.OPEN_CONTEXT_MENU -> {
-                    menuSound.play(MenuSound.BACK); cancelCustomColor()
-                }
-                else -> Unit
-            }
+        state.customColorPicker?.let { picker ->
+            // The shared picker's own controller model moves the cursor and voices every press;
+            // the dialog voices taps. Options backs out like ○, as it always has here.
+            var closed = false
+            val next = customColorNav.handle(
+                state = picker,
+                action = if (action == GamepadAction.OPEN_CONTEXT_MENU) GamepadAction.BACK else action,
+                sounds = { menuSound.play(it) },
+                onApply = { closed = true; confirmCustomColor() },
+                onCancel = { closed = true; cancelCustomColor() },
+            )
+            if (!closed && next != picker) _uiState.update { it.copy(customColorPicker = next) }
             return
         }
         if (state.colorSchemePicker != null) {
@@ -6588,17 +6525,18 @@ class XMBViewModel @Inject constructor(
                 return
             }
             state.customIconSession != null -> {
-                // The icon editor owns the pad: LEFT/RIGHT (and UP/DOWN, mirrored) step the
-                // slot cursor through the group's list — the strip is horizontal, so left and
-                // right read naturally — while the L/R shoulders cycle the group tabs
-                // [Categories, Items, Status, Consoles]. SELECT opens the SAF picker (the
-                // overlay observes the forwarded action), OPTIONS resets the focused slot,
-                // BACK exits.
+                // The icon editor owns the pad: LEFT/RIGHT step the slot cursor through the tab's
+                // strip, while the L/R shoulders cycle the tabs [Crossbar, Items, Consoles,
+                // Physical Media]. UP/DOWN jump between XMB columns on the Items tab and mirror
+                // LEFT/RIGHT elsewhere. SELECT opens the SAF picker (the overlay observes the
+                // forwarded action), OPTIONS resets the focused slot, BACK exits.
                 when (action) {
-                    GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_UP -> onCustomIconSlotMove(-1)
-                    GamepadAction.NAVIGATE_RIGHT, GamepadAction.NAVIGATE_DOWN -> onCustomIconSlotMove(+1)
-                    GamepadAction.PREV_CATEGORY -> onCustomIconGroupMove(-1)
-                    GamepadAction.NEXT_CATEGORY -> onCustomIconGroupMove(+1)
+                    GamepadAction.NAVIGATE_LEFT -> onCustomIconSlotMove(-1)
+                    GamepadAction.NAVIGATE_RIGHT -> onCustomIconSlotMove(+1)
+                    GamepadAction.NAVIGATE_UP -> onCustomIconColumnMove(-1)
+                    GamepadAction.NAVIGATE_DOWN -> onCustomIconColumnMove(+1)
+                    GamepadAction.PREV_CATEGORY -> onCustomIconTabMove(-1)
+                    GamepadAction.NEXT_CATEGORY -> onCustomIconTabMove(+1)
                     GamepadAction.SELECT,
                     GamepadAction.OPEN_CONTEXT_MENU,
                     GamepadAction.BACK -> _uiState.update { it.copy(pendingCustomIconsAction = action) }
@@ -10627,6 +10565,8 @@ class XMBViewModel @Inject constructor(
     // scheme to DataStore so observeColorScheme repaints the wave/background. BACK
     // restores whatever scheme was active when the picker opened; SELECT commits.
 
+    /** The custom accent picker's cursor, on the navigation core. */
+    private val customColorNav = com.playfieldportal.core.ui.components.HsvPickerNav()
     private var colorSchemeOriginal: XmbColorScheme? = null
     // A custom-theme accent active when the picker opened — restored on cancel (previews
     // temporarily clear it so presets are actually visible).
@@ -10728,47 +10668,18 @@ class XMBViewModel @Inject constructor(
 
     private fun openCustomColorPicker() {
         val argb = _uiState.value.themeColors.accentColor.toArgb().toLong() and 0xFFFFFFFFL
-        val hsv = FloatArray(3)
-        android.graphics.Color.colorToHSV((argb and 0xFFFFFFFFL).toInt(), hsv)
-        _uiState.update { state ->
-            return@update state.copy(customColorPicker = CustomColorPickerState(hsv[0], hsv[1], hsv[2]))
-        }
+        _uiState.update { it.copy(customColorPicker = com.playfieldportal.core.ui.components.HsvPickerState.fromArgb(argb)) }
     }
 
-    fun updateCustomColor(channel: Int, fraction: Float) {
-        _uiState.update { state ->
-            val picker = state.customColorPicker ?: return@update state
-            val clamped = fraction.coerceIn(0f, 1f)
-            return@update state.copy(customColorPicker = picker.copy(
-                hue = if (channel == 0) clamped * 360f else picker.hue,
-                saturation = if (channel == 1) clamped else picker.saturation,
-                brightness = if (channel == 2) clamped else picker.brightness,
-                selectedChannel = channel,
-            ))
-        }
-    }
-
-    fun moveCustomColorChannel(delta: Int) {
-        _uiState.update { state ->
-            val picker = state.customColorPicker ?: return@update state
-            state.copy(customColorPicker = picker.copy(selectedChannel = (picker.selectedChannel + delta + 3) % 3))
-        }
-    }
-
-    fun adjustCustomColor(delta: Float) {
-        val picker = _uiState.value.customColorPicker ?: return
-        val value = when (picker.selectedChannel) {
-            0 -> ((picker.hue / 360f) + delta).mod(1f)
-            1 -> picker.saturation + delta
-            else -> picker.brightness + delta
-        }
-        updateCustomColor(picker.selectedChannel, value)
+    /** Touch and typing in the picker: a bar tapped or dragged, the Hex field tapped or typed into. */
+    fun updateCustomColorPicker(picker: com.playfieldportal.core.ui.components.HsvPickerState) {
+        _uiState.update { state -> if (state.customColorPicker == null) state else state.copy(customColorPicker = picker) }
     }
 
     fun confirmCustomColor() {
         val picker = _uiState.value.customColorPicker ?: return
         viewModelScope.launch {
-            context.pfpDataStore.edit { it[KEY_ACCENT_OVERRIDE] = android.graphics.Color.HSVToColor(floatArrayOf(picker.hue, picker.saturation, picker.brightness)).toLong() and 0xFFFFFFFFL }
+            context.pfpDataStore.edit { it[KEY_ACCENT_OVERRIDE] = picker.argb }
             _uiState.update { it.copy(customColorPicker = null, colorSchemePicker = null) }
         }
     }
@@ -10863,24 +10774,13 @@ class XMBViewModel @Inject constructor(
     // apply immediately through CustomIconStore — there is no draft to discard; Reset /
     // Reset All are the undo. The session carries only cursor + message state.
 
-    private val customIconGroups: List<com.playfieldportal.themekit.IconSlot.Group> =
-    listOf(
-        com.playfieldportal.themekit.IconSlot.Group.CATEGORY_BAR,
-        com.playfieldportal.themekit.IconSlot.Group.ITEMS,
-        com.playfieldportal.themekit.IconSlot.Group.STATUS,
-        com.playfieldportal.themekit.IconSlot.Group.CONSOLE,
-    )
-
     fun openCustomIcons() {
         _uiState.update {
             it.copy(
                 // Close any settings screen so the live XMB shows behind the editor.
                 activeSettingsScreen = null,
                 pendingSettingsAction = null,
-                customIconSession = CustomIconSession(
-                    groups = customIconGroups,
-                    userCategorySlots = userCategoryIconSlots(it.categories),
-                ),
+                customIconSession = customIconSessionFor(it.categories),
             )
         }
     }
@@ -10893,16 +10793,27 @@ class XMBViewModel @Inject constructor(
     // happened to ONE slot, so carrying it to the next one would attribute the outcome to a
     // slot it was never about.
 
-    /** Moves the group cursor (L/R); wraps so the ends loop. */
-    fun onCustomIconGroupMove(dir: Int) {
+    /** Moves the tab cursor (L1/R1); wraps so the ends loop. */
+    fun onCustomIconTabMove(dir: Int) {
         val session = _uiState.value.customIconSession ?: return
-        val next = (session.groupIndex + dir).mod(session.groups.size)
+        val next = (session.tabIndex + dir).mod(session.tabs.size)
         _uiState.update {
-            it.copy(customIconSession = session.copy(groupIndex = next, slotIndex = 0, message = null))
+            it.copy(customIconSession = session.copy(tabIndex = next, slotIndex = 0, message = null))
         }
     }
 
-    /** Moves the slot cursor within the current group (UP/DOWN); clamps at the ends. */
+    /** UP/DOWN: jumps between XMB columns on the Items tab; elsewhere steps like LEFT/RIGHT. */
+    fun onCustomIconColumnMove(dir: Int) {
+        val session = _uiState.value.customIconSession ?: return
+        if (session.tab != com.playfieldportal.themekit.IconEditorTab.ITEMS) {
+            onCustomIconSlotMove(dir)
+            return
+        }
+        val target = session.columnJump(dir) ?: return
+        _uiState.update { it.copy(customIconSession = session.copy(slotIndex = target, message = null)) }
+    }
+
+    /** Moves the slot cursor within the current tab (LEFT/RIGHT); clamps at the ends. */
     fun onCustomIconSlotMove(dir: Int) {
         val session = _uiState.value.customIconSession ?: return
         val count = session.slots().size
@@ -11216,6 +11127,22 @@ class XMBViewModel @Inject constructor(
      * same audio player, started at the same moment relative to the first frame. The preview and
      * the real presentation differ only in what is waiting on the other side.
      */
+    /**
+     * A boot or GameBoot clip would not play, so the built-in presentation stood in. Reported in the
+     * tray rather than failing silently (an H.264 High 4:4:4 clip, say); keyed per presentation, so a
+     * clip that fails on every launch stays one row.
+     */
+    fun onPresentationClipFailed(gameBoot: Boolean) {
+        val failure = com.playfieldportal.feature.xmb.ui.PresentationClipFailure.of(gameBoot)
+        backgroundTasks.report(
+            id = failure.id,
+            label = failure.label,
+            message = failure.message,
+            severity = com.playfieldportal.core.domain.model.NotificationSeverity.WARNING,
+            action = NotificationAction.OpenSettingsScreen("settings_display"),
+        )
+    }
+
     fun previewGameBoot() {
         viewModelScope.launch {
             // The preview plays regardless of the switch, so the user can audition the
@@ -11277,6 +11204,12 @@ class XMBViewModel @Inject constructor(
             audioLevels.gainFor(com.playfieldportal.core.domain.model.AudioChannel.BOOT)
                 .distinctUntilChanged()
                 .collect { gain -> _uiState.update { it.copy(bootAudioGain = gain) } }
+        }
+        // Same for a GameBoot clip that carries its own track.
+        viewModelScope.launch {
+            audioLevels.gainFor(com.playfieldportal.core.domain.model.AudioChannel.GAMEBOOT)
+                .distinctUntilChanged()
+                .collect { gain -> _uiState.update { it.copy(gameBootAudioGain = gain) } }
         }
     }
 

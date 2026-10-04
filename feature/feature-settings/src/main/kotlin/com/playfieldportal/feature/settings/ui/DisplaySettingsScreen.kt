@@ -30,7 +30,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,7 +44,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.playfieldportal.core.ui.components.HsvColorPickerDialog
 import com.playfieldportal.core.ui.components.hexOf
-import com.playfieldportal.core.ui.components.hsvToArgbLong
+import com.playfieldportal.core.ui.components.HsvPickerNav
+import com.playfieldportal.core.ui.components.HsvPickerState
 import com.playfieldportal.core.ui.motion.MotionWallpaperBackground
 import com.playfieldportal.core.ui.motion.MotionWallpaperPolicy
 import com.playfieldportal.core.domain.model.GamepadAction
@@ -57,13 +57,13 @@ import com.playfieldportal.core.ui.theme.composite
 import com.playfieldportal.core.ui.theme.solveScrimColor
 import com.playfieldportal.feature.settings.viewmodel.DisplaySettingsUiState
 import com.playfieldportal.feature.settings.viewmodel.DisplaySettingsViewModel
+import com.playfieldportal.feature.settings.viewmodel.UiMediaRowText
 
 @Composable
 fun DisplaySettingsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenXmbLayoutAdjust: () -> Unit = {},
-    onOpenCustomIcons: () -> Unit = {},
     onPreviewBootSequence: () -> Unit = {},
     onPreviewGameBoot: () -> Unit = {},
     viewModel: DisplaySettingsViewModel = hiltViewModel(),
@@ -72,13 +72,10 @@ fun DisplaySettingsScreen(
 
     // Font-colour picker state. Held here rather than in the ViewModel for the same reason the
     // Themes screen holds its icon picker locally: nothing is persisted until Apply.
-    var fontPickerOpen by remember { mutableStateOf(false) }
+    var fontPicker by remember { mutableStateOf<HsvPickerState?>(null) }
+    val fontPickerNav = remember { HsvPickerNav() }
     // One picker serves both rows; this says which colour it is editing.
     var pickingSubFont by remember { mutableStateOf(false) }
-    var pickerHue by remember { mutableFloatStateOf(0f) }
-    var pickerSat by remember { mutableFloatStateOf(0f) }
-    var pickerVal by remember { mutableFloatStateOf(1f) }
-    var pickerChannel by remember { mutableIntStateOf(0) }
     // Biblically Accurate PSP XMB confirmation.
     var pspConfirmOpen by remember { mutableStateOf(false) }
     // The "Hidden Items" manager moved to Settings ▸ Library ▸ Hidden Games
@@ -181,7 +178,7 @@ fun DisplaySettingsScreen(
     SettingsScaffold(
         title    = "Settings",
         subtitle = "Display",
-        modalOpen = modal.open,
+        modalOpen = modal.open || fontPicker != null,
         onBack   = onBack,
         modifier = modifier,
         // Empty, not SettingsDefaultHelperItems: SettingsHelperFooter already falls back with
@@ -193,6 +190,22 @@ fun DisplaySettingsScreen(
         onInterceptAction = { action ->
             // A modal is a hard input boundary: nothing behind it sees a press.
             if (modal.intercept(action)) return@SettingsScaffold true
+            // The font-colour picker is a modal too: its own controller model takes every press.
+            fontPicker?.let { open ->
+                var closed = false
+                val next = fontPickerNav.handle(
+                    state = open,
+                    action = action,
+                    sounds = menuSounds,
+                    onApply = { argb ->
+                        closed = true
+                        if (pickingSubFont) viewModel.setSubTextColor(argb) else viewModel.setTextColor(argb)
+                    },
+                    onCancel = { closed = true },
+                )
+                fontPicker = if (closed) null else next
+                return@SettingsScaffold true
+            }
             // Fullscreen wallpaper preview swallows Confirm/Back — either dismisses it, same
             // as tapping, and the focused row underneath can never be activated through it.
             if (state.wallpaperPreviewVisible) {
@@ -355,13 +368,8 @@ fun DisplaySettingsScreen(
                     ?.let { hexOf(Color(it and 0xFFFFFFFFL)) }
                     ?: "Theme Default",
                 onClick  = {
-                    val seed = state.textColorArgb ?: 0xFFFFFFFFL
-                    val hsv = FloatArray(3)
-                    android.graphics.Color.colorToHSV((seed and 0xFFFFFF).toInt(), hsv)
-                    pickerHue = hsv[0]; pickerSat = hsv[1]; pickerVal = hsv[2]
-                    pickerChannel = 0
                     pickingSubFont = false
-                    fontPickerOpen = true
+                    fontPicker = HsvPickerState.fromArgb(state.textColorArgb ?: 0xFFFFFFFFL)
                 },
             )
 
@@ -372,13 +380,8 @@ fun DisplaySettingsScreen(
                     ?.let { hexOf(Color(it and 0xFFFFFFFFL)) }
                     ?: "Same as Font Colour",
                 onClick  = {
-                    val seed = state.subTextColorArgb ?: state.textColorArgb ?: 0xFFFFFFFFL
-                    val hsv = FloatArray(3)
-                    android.graphics.Color.colorToHSV((seed and 0xFFFFFF).toInt(), hsv)
-                    pickerHue = hsv[0]; pickerSat = hsv[1]; pickerVal = hsv[2]
-                    pickerChannel = 0
                     pickingSubFont = true
-                    fontPickerOpen = true
+                    fontPicker = HsvPickerState.fromArgb(state.subTextColorArgb ?: state.textColorArgb ?: 0xFFFFFFFFL)
                 },
             )
 
@@ -446,12 +449,6 @@ fun DisplaySettingsScreen(
                 onClick  = { pspConfirmOpen = true },
             )
 
-            SettingsRow(
-                label    = "Customize XMB Icons",
-                sublabel = "Replace any icon with your own image or GIF — live over the XMB",
-                onClick  = onOpenCustomIcons,
-            )
-
             SettingsGroup("Boot Sequence")
 
             SettingsToggleRow(
@@ -478,7 +475,7 @@ fun DisplaySettingsScreen(
                 label    = "Boot Video",
                 focusKey = "display_${UiMediaSlot.BOOT_VIDEO.key}",
                 sublabel = "Play your own video instead of the PFP logo animation " +
-                    "(MP4 or WebM, up to 10 seconds)",
+                    UiMediaRowText.videoCap(UiMediaSlot.BOOT_VIDEO),
                 value    = state.bootVideoLabel,
                 isAssigned = state.bootVideoAssigned,
                 onPick   = { pickUiMedia(UiMediaSlot.BOOT_VIDEO) },
@@ -506,7 +503,7 @@ fun DisplaySettingsScreen(
                     label    = "GameBoot Video",
                     focusKey = "display_${UiMediaSlot.GAMEBOOT_VIDEO.key}",
                     sublabel = "Replace the built-in sequence with your own clip, which plays with " +
-                        "its own sound — even with Menu Sounds off (MP4 or WebM, up to 10 seconds)",
+                        "its own sound — even with Menu Sounds off " + UiMediaRowText.videoCap(UiMediaSlot.GAMEBOOT_VIDEO),
                     value    = state.gameBootVideoLabel,
                     isAssigned = state.gameBootVideoAssigned,
                     onPick   = { pickUiMedia(UiMediaSlot.GAMEBOOT_VIDEO) },
@@ -627,7 +624,7 @@ fun DisplaySettingsScreen(
         }
     }
 
-    if (fontPickerOpen) {
+    fontPicker?.let { open ->
         // The strip's two anchors are the real painted backdrop — the solved settings scrim over a
         // worst-case bright wallpaper — so the ratios shown are the ratios the user will get.
         val pfp = LocalPFPColors.current
@@ -637,27 +634,17 @@ fun DisplaySettingsScreen(
         }
         HsvColorPickerDialog(
             title           = if (pickingSubFont) "Sub Font Colour" else "Font Colour",
-            hue             = pickerHue,
-            saturation      = pickerSat,
-            brightness      = pickerVal,
-            selectedChannel = pickerChannel,
+            state           = open,
+            onStateChange   = { fontPicker = it },
             accent          = SettingsAccent,
             subtext         = SettingsSubtext,
             contrastAnchors = anchors,
-            onChannelFraction = { channel, fraction ->
-                pickerChannel = channel
-                when (channel) {
-                    0 -> pickerHue = (fraction * 360f).coerceIn(0f, 360f)
-                    1 -> pickerSat = fraction.coerceIn(0f, 1f)
-                    else -> pickerVal = fraction.coerceIn(0f, 1f)
-                }
-            },
             onConfirm = {
-                val argb = hsvToArgbLong(pickerHue, pickerSat, pickerVal)
-                if (pickingSubFont) viewModel.setSubTextColor(argb) else viewModel.setTextColor(argb)
-                fontPickerOpen = false
+                if (pickingSubFont) viewModel.setSubTextColor(open.argb) else viewModel.setTextColor(open.argb)
+                fontPicker = null
             },
-            onCancel = { fontPickerOpen = false },
+            onCancel = { fontPicker = null },
+            showHints = LocalSettingsShowControllerHint.current,
         )
     }
 

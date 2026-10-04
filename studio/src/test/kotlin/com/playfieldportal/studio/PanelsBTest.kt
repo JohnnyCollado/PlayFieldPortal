@@ -188,12 +188,19 @@ class PanelsBTest {
     }
 
     @Test
-    fun `other formats cannot play in the studio and say so`() {
-        for (ext in listOf("mp3", "ogg", "m4a")) {
-            val row = soundRow("sound_back", "Back / cancel", extension = ext, lengthMs = 400)
-            assertFalse(row.canPlay, ext)
-            assertEquals("Plays on the device", row.playHint, ext)
+    fun `every theme audio format plays in the studio`() {
+        for (ext in listOf("mp3", "ogg", "m4a", "MP3")) {
+            val row = soundRow("ambience_audio", "Ambience (loops)", extension = ext, lengthMs = 400)
+            assertTrue(row.canPlay, ext)
+            assertNull(row.playHint, ext)
         }
+    }
+
+    @Test
+    fun `a format no theme slot takes cannot play and says so`() {
+        val row = soundRow("sound_back", "Back / cancel", extension = "flac", lengthMs = 400)
+        assertFalse(row.canPlay)
+        assertEquals("Plays on the device", row.playHint)
     }
 
     @Test
@@ -235,7 +242,7 @@ class PanelsBTest {
         assertTrue(card.hasVideo)
         assertEquals("boot.mp4", card.fileName)
         assertEquals("boot.mp4 · 3.2 s · 1280×720 · 1.4 MB", card.infoLine)
-        assertEquals("1–8 s recommended, 10 s max, 25 MB max", card.limitsLine)
+        assertEquals("1–10 s recommended, 15 s max, 25 MB max", card.limitsLine)
         assertFalse(card.overCap)
     }
 
@@ -252,7 +259,9 @@ class PanelsBTest {
     fun `boot card leaves out what the probe could not read and flags an overlong clip`() {
         val card = bootCard("gameboot_video", "GameBoot", BootFileInfo("mp4", 2048L, null, null, null))
         assertEquals("gameboot.mp4 · 2 KB", card.infoLine)
-        assertTrue(bootCard("boot_video", "Boot", BootFileInfo("mp4", 10L, 12_000L, 640, 360)).overCap)
+        assertTrue(bootCard("boot_video", "Boot", BootFileInfo("mp4", 10L, 16_000L, 640, 360)).overCap)
+        assertFalse(bootCard("boot_video", "Boot", BootFileInfo("mp4", 10L, 12_000L, 640, 360)).overCap)
+        assertTrue(bootCard("gameboot_video", "GameBoot", BootFileInfo("mp4", 10L, 12_000L, 640, 360)).overCap)
     }
 
     // ── VM: re-framing an existing video, and picking the poster frame ───────

@@ -75,6 +75,14 @@ class LaunchDispatcherTest {
         val autoCoreMemory: AutoCoreMemory = mockk(relaxed = true)
         val gameRepository: com.playfieldportal.core.domain.repository.GameRepository = mockk(relaxed = true)
 
+        /** Who is holding ambience down right now (AmbienceController's suppressor set). */
+        val ambienceOwners = mutableSetOf<String>()
+        val ambience = com.playfieldportal.core.ui.sound.AmbienceSuppressor { owner, suppressed ->
+            if (suppressed) ambienceOwners += owner else ambienceOwners -= owner
+        }
+        val gameHoldsAmbience: Boolean
+            get() = com.playfieldportal.core.ui.sound.AmbienceController.OWNER_GAME in ambienceOwners
+
         val dispatcher = LaunchDispatcher(
             context = context,
             outcomeRecorder = recorder,
@@ -85,6 +93,7 @@ class LaunchDispatcherTest {
             autoCoreMemory = autoCoreMemory,
             handoffTracker = GameHandoffTracker({ now }, emptySet()),
             gameRepository = gameRepository,
+            ambience = ambience,
         )
     }
 
@@ -428,6 +437,56 @@ class LaunchDispatcherTest {
 
         assertTrue(result.isFailure)
         assertEquals("gone", result.exceptionOrNull()?.message)
+    }
+
+    // ── Ambience: silent from the moment a launch starts until PFP is back ──────────────────
+
+    @Test
+    fun `a launch silences ambience and keeps it down until the launcher is back`() = runTest {
+        val h = harness()
+        h.launchAccepted()
+        assertTrue(h.gameHoldsAmbience, "ambience stops the moment the game launches")
+        h.dispatcher.onHostStopped()
+        assertTrue(h.gameHoldsAmbience)
+        h.now = 60_000
+        h.dispatcher.onHostResumed()
+        advanceUntilIdle()
+        assertFalse(h.gameHoldsAmbience, "back in the launcher, ambience may play again")
+    }
+
+    @Test
+    fun `ambience is already down while GameBoot presents`() = runTest {
+        val h = harness(gameBootOn = true)
+        val launching = async { h.dispatcher.launchShortcut(game) { Result.success(Unit) } }
+        eventually("the GameBoot presentation is raised") { h.gameBootGate.active.value != null }
+        assertTrue(h.gameHoldsAmbience, "GameBoot never plays over the background music")
+        h.gameBootGate.onPresentationFinished()
+        eventually("the shortcut launch completes") { launching.isCompleted }
+    }
+
+    @Test
+    fun `a launch that never started gives ambience back`() = runTest {
+        val h = harness()
+        every { h.context.startActivity(any()) } throws android.content.ActivityNotFoundException("nope")
+        h.dispatcher.launch(game, resolved, h.intent)
+        assertFalse(h.gameHoldsAmbience)
+    }
+
+    @Test
+    fun `a failed shortcut gives ambience back`() = runTest {
+        val h = harness()
+        h.dispatcher.launchShortcut(game) { Result.failure(IllegalStateException("gone")) }
+        assertFalse(h.gameHoldsAmbience)
+    }
+
+    @Test
+    fun `a launch nothing covered gives ambience back when the watchdog settles it`() = runTest {
+        val h = harness()
+        h.launchAccepted()
+        h.now = LaunchDispatcher.STOP_WINDOW_MS + 1
+        advanceTimeBy(LaunchDispatcher.STOP_WINDOW_MS + 1)
+        advanceUntilIdle()
+        assertFalse(h.gameHoldsAmbience)
     }
 
     // ── Error codes (notification details plan §10) ─────────────────────────────────────────

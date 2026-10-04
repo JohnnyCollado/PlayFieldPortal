@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -22,19 +23,43 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.domain.model.ControllerIcon
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardBottomReserve
+import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
+import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
+import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
 import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.theme.contrastRatio
@@ -42,25 +67,20 @@ import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
 
 /**
- * The app's one HSV colour picker.
+ * The app's one HSV colour picker: Hue, Saturation and Brightness bars and a Hex field, the four
+ * stops [HsvPickerNav] moves between on the navigation core.
  *
- * There used to be two: the XMB's `CustomColorPickerOverlay` and Themes' private
- * `IconColorCustomPicker`. They were the same 440dp panel, the same `0xFF15151F` surface, the same
- * three channel bars and the same gamepad hint, drifting apart one small edit at a time. Callers
- * differ only in the title, the accent/subtext colours, and whether they want the contrast strip.
- *
- * Channel indices are the caller's contract with its own state: 0 = hue, 1 = saturation,
- * 2 = brightness. The dialog is stateless — it renders the values it is given and reports
- * fractions back — because both call sites already drive channel selection from the D-pad.
+ * Stateless. The host keeps an [HsvPickerState], passes every controller press through
+ * [HsvPickerNav.handle], and takes [onStateChange] for everything touch and typing do: a tap or a
+ * drag on a bar, a tap on the Hex field, each keystroke. ✕ on the Hex field (or a tap) raises the
+ * keyboard; six hex digits repaint the colour at once. While PFP's keyboard is up the shell routes
+ * every press to it, so the host sees none until it closes.
  */
 @Composable
 fun HsvColorPickerDialog(
     title: String,
-    hue: Float,
-    saturation: Float,
-    brightness: Float,
-    selectedChannel: Int,
-    onChannelFraction: (channel: Int, fraction: Float) -> Unit,
+    state: HsvPickerState,
+    onStateChange: (HsvPickerState) -> Unit,
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
     accent: Color = Color.White,
@@ -73,17 +93,45 @@ fun HsvColorPickerDialog(
     contrastAnchors: Pair<Color, Color>? = null,
     /** Ratio below which a reading is called out. 3:1 by decision — see the legibility plan. */
     contrastWarnBelow: Float = 3f,
+    showHints: Boolean = true,
 ) {
-    val preview = hsvColor(hue, saturation, brightness)
+    val preview = Color(state.argb)
     val menuSounds = LocalMenuSounds.current
+    val current by rememberUpdatedState(state)
+    val change by rememberUpdatedState(onStateChange)
     // Two ways out — the scrim and the Cancel label — so they share one lambda and cannot end up
     // sounding different. Dismissing is a level up, whichever one the finger lands on.
     val cancel: () -> Unit = { menuSounds.play(MenuSound.BACK); onCancel() }
+    val cursor = state.cursorVisible
+
+    val edit = rememberVirtualKeyboardEdit(
+        text = state.hexDigits,
+        onTextChange = { change(HsvPickerNav.typeHex(current, it)) },
+        placement = KeyboardPlacement.BOTTOM_CENTER,
+        maxLength = HEX_DIGITS,
+        onDone = { change(HsvPickerNav.endHexEntry(current)) },
+        onClose = { change(HsvPickerNav.endHexEntry(current)) },
+    )
+    val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    // The state is the truth: editing raises a keyboard, leaving it drops it. PFP's is opened first
+    // and given a frame, so the field's own keyboard request is already held when focus arrives.
+    LaunchedEffect(state.editingHex) {
+        if (state.editingHex) {
+            if (edit.start()) withFrameNanos { }
+            focusRequester.requestFocus()
+        } else {
+            edit.stop()
+            focusManager.clearFocus()
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xCC000000))
-            .clickable(onClick = cancel),
+            .clickable(onClick = cancel)
+            .padding(bottom = if (edit.isOpen) VirtualKeyboardBottomReserve else 0.dp),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -114,43 +162,88 @@ fun HsvColorPickerDialog(
                 ContrastStrip(preview, contrastAnchors.first, contrastAnchors.second, subtext, contrastWarnBelow)
             }
 
-            Spacer(Modifier.height(20.dp))
-            ChannelBar(
-                label = "Hue",
-                fraction = hue / 360f,
-                brush = rainbowBrush(),
-                selected = selectedChannel == 0,
-                accent = accent,
-                subtext = subtext,
-                onFraction = { onChannelFraction(0, it) },
+            val bars = listOf(
+                Triple(HsvPickerField.HUE, "Hue", state.hue / 360f),
+                Triple(HsvPickerField.SATURATION, "Saturation", state.saturation),
+                Triple(HsvPickerField.BRIGHTNESS, "Brightness", state.brightness),
             )
+            bars.forEach { (field, label, fraction) ->
+                Spacer(Modifier.height(if (field == HsvPickerField.HUE) 20.dp else 14.dp))
+                ChannelBar(
+                    label = label,
+                    fraction = fraction,
+                    brush = when (field) {
+                        HsvPickerField.HUE -> rainbowBrush()
+                        HsvPickerField.SATURATION -> Brush.horizontalGradient(
+                            listOf(hsvColor(state.hue, 0f, state.brightness), hsvColor(state.hue, 1f, state.brightness)),
+                        )
+                        else -> Brush.horizontalGradient(
+                            listOf(hsvColor(state.hue, state.saturation, 0f), hsvColor(state.hue, state.saturation, 1f)),
+                        )
+                    },
+                    selected = cursor && state.focus == field,
+                    accent = accent,
+                    subtext = subtext,
+                    onTap = { menuSounds.play(MenuSound.SCROLL); change(HsvPickerNav.touchBar(current, field, it)) },
+                    onDrag = { change(HsvPickerNav.touchBar(current, field, it)) },
+                )
+            }
+
             Spacer(Modifier.height(14.dp))
-            ChannelBar(
-                label = "Saturation",
-                fraction = saturation,
-                brush = Brush.horizontalGradient(
-                    listOf(hsvColor(hue, 0f, brightness), hsvColor(hue, 1f, brightness)),
-                ),
-                selected = selectedChannel == 1,
-                accent = accent,
-                subtext = subtext,
-                onFraction = { onChannelFraction(1, it) },
-            )
-            Spacer(Modifier.height(14.dp))
-            ChannelBar(
-                label = "Brightness",
-                fraction = brightness,
-                brush = Brush.horizontalGradient(
-                    listOf(hsvColor(hue, saturation, 0f), hsvColor(hue, saturation, 1f)),
-                ),
-                selected = selectedChannel == 2,
-                accent = accent,
-                subtext = subtext,
-                onFraction = { onChannelFraction(2, it) },
-            )
-            Spacer(Modifier.height(20.dp))
-            Text("◄ ► adjust    ▲ ▼ channel    Ⓐ apply    Ⓑ cancel", color = subtext, fontSize = 12.sp)
+            val hexActive = state.editingHex || (cursor && state.focus == HsvPickerField.HEX)
+            Text("Hex", color = if (hexActive) accent else subtext, fontSize = 12.sp)
+            Spacer(Modifier.height(6.dp))
+            VirtualKeyboardTextInput(edit) {
+                BasicTextField(
+                    value = edit.fieldValue,
+                    onValueChange = { edit.onFieldValueChange(it) },
+                    singleLine = true,
+                    textStyle = TextStyle(color = themedText(Color.White), fontSize = 16.sp, fontFamily = FontFamily.Monospace),
+                    cursorBrush = SolidColor(accent),
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Characters,
+                        keyboardType = KeyboardType.Ascii,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { change(HsvPickerNav.endHexEntry(current)) }),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .virtualKeyboardField(edit)
+                        .focusRequester(focusRequester)
+                        // A tap lands here before the host knows about it; tell it, so the cursor
+                        // follows and the field counts as being edited.
+                        .onFocusChanged { focus ->
+                            if (focus.isFocused && !current.editingHex) {
+                                change(HsvPickerNav.touch(current, HsvPickerField.HEX).copy(editingHex = true))
+                            }
+                        },
+                    decorationBox = { inner ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(40.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color.White.copy(alpha = 0.06f))
+                                .border(
+                                    width = if (hexActive) 2.dp else 1.dp,
+                                    color = if (hexActive) accent else Color(0x55FFFFFF),
+                                    shape = RoundedCornerShape(10.dp),
+                                )
+                                .padding(horizontal = 12.dp),
+                        ) {
+                            Text("#", color = subtext, fontSize = 16.sp, fontFamily = FontFamily.Monospace)
+                            Box(Modifier.weight(1f)) { inner() }
+                        }
+                    },
+                )
+            }
+
             Spacer(Modifier.height(16.dp))
+            if (showHints && !state.editingHex) {
+                ControllerHintBar(items = hintItems(state.focus), compact = true)
+                Spacer(Modifier.height(12.dp))
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(
                     "Apply",
@@ -172,6 +265,28 @@ fun HsvColorPickerDialog(
         }
     }
 }
+
+private const val HEX_DIGITS = 6
+
+private val MoveIcons = listOf(ControllerIcon.DPAD_UP, ControllerIcon.DPAD_DOWN)
+private val AdjustIcons = listOf(ControllerIcon.DPAD_LEFT, ControllerIcon.DPAD_RIGHT)
+
+/** Every button the focused stop answers to: ✕ applies on a bar and types on Hex. */
+private fun hintItems(focus: HsvPickerField): List<ControllerPromptItem> =
+    if (focus == HsvPickerField.HEX) {
+        listOf(
+            ControllerPromptItem.fixed(MoveIcons, "Move"),
+            ControllerPromptItem(GamepadAction.SELECT, "Type hex"),
+            ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+        )
+    } else {
+        listOf(
+            ControllerPromptItem.fixed(AdjustIcons, "Adjust"),
+            ControllerPromptItem.fixed(MoveIcons, "Move"),
+            ControllerPromptItem(GamepadAction.SELECT, "Apply"),
+            ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+        )
+    }
 
 /**
  * Sample text in the picked colour over the darkest and brightest places it will land, with the
@@ -221,11 +336,13 @@ private fun ChannelBar(
     selected: Boolean,
     accent: Color,
     subtext: Color,
-    onFraction: (Float) -> Unit,
+    onTap: (Float) -> Unit,
+    onDrag: (Float) -> Unit,
 ) {
-    // A tap lands the knob somewhere new, which is a move along the bar rather than a commit —
-    // the same reading the host gives LEFT/RIGHT on this channel.
-    val menuSounds = LocalMenuSounds.current
+    // A tap lands the knob somewhere new and ticks like a D-pad step; a drag follows the finger
+    // silently, the way the settings sliders do.
+    val tap by rememberUpdatedState(onTap)
+    val drag by rememberUpdatedState(onDrag)
     Text(label, color = if (selected) accent else subtext, fontSize = 12.sp)
     Spacer(Modifier.height(6.dp))
     BoxWithConstraints(
@@ -240,9 +357,12 @@ private fun ChannelBar(
                 shape = RoundedCornerShape(14.dp),
             )
             .pointerInput(Unit) {
-                detectTapGestures { pos ->
-                    menuSounds.play(MenuSound.SCROLL)
-                    onFraction((pos.x / size.width).coerceIn(0f, 1f))
+                detectTapGestures { pos -> tap((pos.x / size.width).coerceIn(0f, 1f)) }
+            }
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures { change, _ ->
+                    change.consume()
+                    drag((change.position.x / size.width).coerceIn(0f, 1f))
                 }
             },
     ) {
@@ -322,7 +442,7 @@ fun ColorSwatchRow(
 }
 
 @Composable
-fun ColorSwatch(
+private fun ColorSwatch(
     label: String,
     fill: Color?,
     brush: Brush?,
@@ -363,20 +483,10 @@ fun ColorSwatch(
 
 // ── Shared colour helpers ─────────────────────────────────────────────────────
 
-fun rainbowBrush(): Brush = Brush.horizontalGradient(
+private fun rainbowBrush(): Brush = Brush.horizontalGradient(
     listOf(Color.Red, Color.Yellow, Color.Green, Color.Cyan, Color.Blue, Color.Magenta, Color.Red),
 )
 
-fun hsvColor(hue: Float, saturation: Float, brightness: Float): Color =
-    Color(
-        android.graphics.Color.HSVToColor(
-            floatArrayOf(hue, saturation.coerceIn(0f, 1f), brightness.coerceIn(0f, 1f)),
-        ),
-    )
-
-fun hsvToArgbLong(hue: Float, saturation: Float, brightness: Float): Long =
-    android.graphics.Color
-        .HSVToColor(floatArrayOf(hue, saturation.coerceIn(0f, 1f), brightness.coerceIn(0f, 1f)))
-        .toLong() and 0xFFFFFFFFL
+private fun hsvColor(hue: Float, saturation: Float, brightness: Float): Color = Color(hsvToArgb(hue, saturation, brightness))
 
 fun hexOf(color: Color): String = String.format("#%06X", 0xFFFFFF and color.toArgb())

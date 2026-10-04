@@ -318,7 +318,6 @@ fun VideoDetailScreen(
                 selectedIndex = state.optionsIndex,
                 onRowActivated = { viewModel.activate(state.optionsActions[it]) },
                 onDismiss = viewModel::closeOptions,
-                panelAlpha = 0.88f,
             )
         }
 
@@ -330,7 +329,6 @@ fun VideoDetailScreen(
                 selectedIndex = state.playlistPickerIndex,
                 onRowActivated = viewModel::onPlaylistRowClick,
                 onDismiss = viewModel::closePlaylistPicker,
-                panelAlpha = 0.88f,
             )
         }
 

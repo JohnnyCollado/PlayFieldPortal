@@ -2,6 +2,7 @@ package com.playfieldportal.feature.xmb.ui
 
 import androidx.annotation.DrawableRes
 import com.playfieldportal.feature.xmb.R
+import com.playfieldportal.themekit.CustomizableIcons
 
 /**
  * Resolves a platform ID to the PNG filename (without extension) under
@@ -28,6 +29,7 @@ fun physicalMediaAssetName(platformId: String?): String? = when (platformId) {
     "vb"                             -> "virtualboy"
     "ws"                             -> "wonderswan"
     "wsc"                            -> "wonderswancolor"
+    "x360"                           -> "xbox360"
 
     // ── Digital-only — no physical media ──────────────────────────────────────
     // "windows" is NOT here: PC games ship on discs, so the card gets windows.png (the same
@@ -86,4 +88,35 @@ fun physicalMediaIconRes(platformId: String?): Int? = when (platformId) {
     "default"                       -> null
 
     else                            -> null
+}
+
+/** Platform aliases to the console id whose `physmedia_` slot themes their media art. */
+private val SLOT_ALIASES = mapOf(
+    "ps1" to "psx",
+    "fam" to "nes", "famicom" to "nes",
+    "sfc" to "snes",
+    "ds" to "nds",
+    "3ds" to "n3ds",
+    "nx" to "switch",
+    "gamecube" to "gc",
+    "md" to "megadrive", "genesis" to "megadrive",
+    "sms" to "mastersystem",
+    "dc" to "dreamcast",
+    "arcade" to "mame", "naomi" to "mame", "atomiswave" to "mame",
+    "pce" to "pcengine", "tgfx16" to "pcengine",
+    "lynx" to "atarilynx",
+    "vb" to "virtualboy",
+    "ws" to "wonderswan",
+    "wsc" to "wonderswancolor",
+    "ngpc" to "ngp",
+    "xbox360" to "x360",
+)
+
+/**
+ * The `physmedia_<id>` slot a user pick or the applied theme replaces [platformId]'s media art
+ * through, or null for a platform with no themeable media (digital-only or unknown).
+ */
+fun physicalMediaSlotKey(platformId: String?): String? {
+    val id = platformId ?: return null
+    return (CustomizableIcons.PHYSICAL_MEDIA_PREFIX + (SLOT_ALIASES[id] ?: id)).takeIf(CustomizableIcons::isValidKey)
 }

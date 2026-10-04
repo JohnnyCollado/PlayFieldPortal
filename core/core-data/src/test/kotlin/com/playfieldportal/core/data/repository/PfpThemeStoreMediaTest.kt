@@ -12,6 +12,7 @@ import com.playfieldportal.themekit.PfpThemeBundle
 import com.playfieldportal.themekit.PfpThemeCodec
 import com.playfieldportal.themekit.PfpThemeManifest
 import com.playfieldportal.themekit.ThemeMotion
+import com.playfieldportal.themekit.UiMediaLimits
 import com.playfieldportal.themekit.WavFixtures
 import java.io.ByteArrayInputStream
 import java.io.File
@@ -58,7 +59,10 @@ class PfpThemeStoreMediaTest {
     private fun video(width: Int = 1920, height: Int = 1080, durationMs: Long? = 5_000) =
         MediaFacts("video/mp4", width, height, durationMs)
 
-    private fun store(probe: MediaProbe) = PfpThemeStore(context, probe)
+    // Two overloads, not a default: a trailing probe lambda would otherwise land on `decode`.
+    private fun store(probe: MediaProbe) = PfpThemeStore(context, probe, decodeCheck = { null })
+
+    private fun store(probe: MediaProbe, decode: VideoDecodeCheck) = PfpThemeStore(context, probe, decode)
 
     @Test
     fun `a valid sound installs under theme-media and bumps the ui media stamp`() = runTest {
@@ -127,9 +131,53 @@ class PfpThemeStoreMediaTest {
         assertTrue(ok.apply(good.id))
         assertTrue(File(themeMedia, "boot_video.mp4").isFile)
 
-        val long = store { _, _ -> video(durationMs = 11_000) }
+        // 15 s is the boot cap (UiMediaLimits.BOOT_MAX_MS); a 13 s intro installs.
+        val intro = store { _, _ -> video(durationMs = 13_000) }
+        assertTrue(intro.apply(good.id))
+        assertTrue(File(themeMedia, "boot_video.mp4").isFile)
+
+        val long = store { _, _ -> video(durationMs = 16_000) }
         assertTrue(long.apply(good.id))
         assertFalse(File(themeMedia, "boot_video.mp4").exists())
+    }
+
+    @Test
+    fun `apply reports each dropped clip with the reason, and nothing when all install`() = runTest {
+        val media = mapOf("boot_video" to mp4(), "gameboot_video" to mp4())
+        // The boot clip fits its 15 s cap; the GameBoot one is over its 10 s cap.
+        val probe: MediaProbe = { file, _ ->
+            video(durationMs = if (file.name.startsWith("gameboot")) 12_000 else 13_000)
+        }
+        val s = store(probe)
+        val theme = requireNotNull(s.importBundle(register(bundle(media = media))))
+        val result = requireNotNull(s.applyDetailed(theme.id))
+        assertEquals(setOf("gameboot_video"), result.droppedMedia.keys)
+        assertEquals(UiMediaLimits.tooLong(UiMediaLimits.GAMEBOOT_CLIP), result.droppedMedia["gameboot_video"])
+        assertTrue(File(themeMedia, "boot_video.mp4").isFile)
+
+        val fine = store { _, _ -> video(durationMs = 5_000) }
+        assertEquals(emptyMap(), requireNotNull(fine.applyDetailed(theme.id)).droppedMedia)
+    }
+
+    @Test
+    fun `a clip this device cannot decode is dropped with the reason, and nothing else is asked`() = runTest {
+        val asked = mutableListOf<String>()
+        val s = store(probe = { file, _ -> if (file.name.startsWith("sound")) audio(100) else video(durationMs = 5_000) }) { file ->
+            asked += file.name
+            if (file.name.startsWith("gameboot")) "This device can't play this video (H.264 High 4:4:4)" else null
+        }
+        val media = mapOf("boot_video" to mp4(), "gameboot_video" to mp4(), "sound_scroll" to WavFixtures.sampleWav(1, 16, 1, 44_100, ByteArray(200)))
+        val theme = requireNotNull(s.importBundle(register(bundle(media = media))))
+        val result = requireNotNull(s.applyDetailed(theme.id))
+        assertEquals(mapOf("gameboot_video" to "This device can't play this video (H.264 High 4:4:4)"), result.droppedMedia)
+        assertTrue(File(themeMedia, "boot_video.mp4").isFile)
+        assertFalse(File(themeMedia, "gameboot_video.mp4").exists(), "an undecodable clip is never installed")
+        assertTrue(asked.none { it.startsWith("sound") }, "only video slots are checked against the decoders: $asked")
+    }
+
+    @Test
+    fun `applyDetailed is null when the theme cannot be applied`() = runTest {
+        assertEquals(null, store { _, _ -> video() }.applyDetailed("no_such_theme"))
     }
 
     @Test
@@ -204,7 +252,8 @@ class PfpThemeStoreMediaTest {
             dir,
         )
 
-        assertTrue(installed.isEmpty())
+        assertTrue(installed.installed.isEmpty())
+        assertEquals(setOf("sound_scroll"), installed.dropped.keys)
         assertFalse(probed)
         assertTrue(dir.listFiles().orEmpty().isEmpty())
     }
@@ -223,7 +272,7 @@ class PfpThemeStoreMediaTest {
 
         val installed = installer.installMedia(mapOf("sound_scroll" to ThemeMotion.ofFile(src, "wav")), dir)
 
-        assertEquals(setOf("sound_scroll"), installed)
+        assertEquals(setOf("sound_scroll"), installed.installed)
         assertEquals(1, probedFormatTag, "the gate sees the PCM conversion, not the float original")
         val pcm = WavFixtures.readPcm16(File(dir, "sound_scroll.wav"))
         assertEquals(1, pcm.formatTag)
@@ -308,7 +357,7 @@ class PfpThemeStoreMediaTest {
         val uri = Uri.parse("content://test/big.pfptheme")
         shadowOf(context.contentResolver).registerInputStream(uri, FileInputStream(bundleFile))
 
-        val result = PfpThemeStore(context) { _, _ -> video() }.importBundleDetailed(uri)
+        val result = PfpThemeStore(context, mediaProbe = { _, _ -> video() }).importBundleDetailed(uri)
 
         assertTrue(result is PfpThemeStore.ImportResult.Success, "was $result")
         bundleFile.delete(); motionFile.delete(); bootFile.delete()

@@ -27,7 +27,7 @@ class CustomizableIconsTest {
 
     @Test
     fun `console slots come after the theme slots`() {
-        val consoleSlots = CustomizableIcons.ALL.drop(IconSlots.ALL.size)
+        val consoleSlots = CustomizableIcons.ALL.drop(IconSlots.ALL.size).take(47)
         assertTrue(consoleSlots.isNotEmpty(), "no console slots registered")
         assertTrue(consoleSlots.all { it.group == IconSlot.Group.CONSOLE })
         assertTrue(consoleSlots.all { it.key.startsWith("sysicon_") })
@@ -38,7 +38,7 @@ class CustomizableIconsTest {
     fun `every console slot key derives from the platform ids then the extras`() {
         // A4 (Theme Studio restructure): the console group is the platform ids followed by
         // SYSICON_EXTRA_IDS. This assertion used to be platform ids only.
-        val consoleSlots = CustomizableIcons.ALL.drop(IconSlots.ALL.size)
+        val consoleSlots = CustomizableIcons.ALL.drop(IconSlots.ALL.size).take(47)
         assertEquals(SYSICON_PLATFORM_IDS + SYSICON_EXTRA_IDS, consoleSlots.map { it.key.removePrefix("sysicon_") })
     }
 
@@ -88,9 +88,43 @@ class CustomizableIconsTest {
     // -- TS-06: 29 new icons/ slots in 5 new groups (the plan's "36" miscounts; 52 + 29 + 47 = 128) --
 
     @Test
-    fun `registry totals 128 slots, 81 of them icons slots`() {
-        assertEquals(81, IconSlots.ALL.size)
-        assertEquals(128, CustomizableIcons.ALL.size)
+    fun `registry totals 171 slots, 82 of them icons slots`() {
+        assertEquals(82, IconSlots.ALL.size)
+        assertEquals(171, CustomizableIcons.ALL.size)
+    }
+
+    // -- Physical media: one slot per console that ships on a disc, cart or UMD --
+
+    @Test
+    fun `physical media slots come last, one per console with media`() {
+        val media = CustomizableIcons.ALL.drop(IconSlots.ALL.size + 47)
+        val noMedia = setOf("allgames", "android", "favorites", "desktop", "default")
+        val expectedIds = (SYSICON_PLATFORM_IDS + SYSICON_EXTRA_IDS).filter { it !in noMedia }
+        assertEquals(42, media.size)
+        assertEquals(expectedIds.map { "physmedia_$it" }, media.map { it.key })
+        assertTrue(media.all { it.group == IconSlot.Group.PHYSICAL_MEDIA })
+        assertTrue(media.all { it.templateSizePx == 256 })
+        assertEquals(expectedIds.map(::consoleDisplayName), media.map { it.displayName })
+        assertEquals(media, CustomizableIcons.group(IconSlot.Group.PHYSICAL_MEDIA))
+    }
+
+    @Test
+    fun `physical media keys are valid but never icons or sysicons keys`() {
+        assertTrue(CustomizableIcons.isValidKey("physmedia_psp"))
+        assertFalse(CustomizableIcons.isValidKey("physmedia_android"))
+        assertFalse(IconSlots.isValidKey("physmedia_psp"))
+        assertEquals("psp", CustomizableIcons.physicalMediaId("physmedia_psp"))
+        assertEquals(null, CustomizableIcons.physicalMediaId("sysicon_psp"))
+        assertEquals(null, CustomizableIcons.physicalMediaId("physmedia_android"))
+    }
+
+    @Test
+    fun `the UMD slot is an item, appended after every earlier key`() {
+        val umd = IconSlots.byKey("item_umd")!!
+        assertEquals(IconSlot.Group.ITEMS, umd.group)
+        assertEquals("UMD slot", umd.displayName)
+        assertEquals("item_umd", IconSlots.ALL.last().key)
+        assertTrue(CustomizableIcons.isValidKey("item_umd"))
     }
 
     @Test
@@ -111,7 +145,7 @@ class CustomizableIconsTest {
     fun `group counts follow the plan`() {
         fun n(g: IconSlot.Group) = CustomizableIcons.group(g).size
         assertEquals(10, n(IconSlot.Group.CATEGORY_BAR))
-        assertEquals(36, n(IconSlot.Group.ITEMS))
+        assertEquals(37, n(IconSlot.Group.ITEMS))
         assertEquals(10, n(IconSlot.Group.STATUS))
         assertEquals(4, n(IconSlot.Group.SHIBA))
         assertEquals(6, n(IconSlot.Group.MEDIA))
@@ -119,6 +153,7 @@ class CustomizableIconsTest {
         assertEquals(8, n(IconSlot.Group.NOTIFICATIONS))
         assertEquals(2, n(IconSlot.Group.MENUS))
         assertEquals(47, n(IconSlot.Group.CONSOLE))
+        assertEquals(42, n(IconSlot.Group.PHYSICAL_MEDIA))
     }
 
     @Test

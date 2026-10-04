@@ -3,12 +3,13 @@ package com.playfieldportal.studio.ui.sections
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -94,6 +95,7 @@ fun BootSection(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun BootPair(
     key: String,
@@ -107,30 +109,32 @@ private fun BootPair(
     val info = remember(file) { file?.let(::probeBootFile) }
     val card = bootCard(key, title, info)
     SectionHeading(title)
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        ChoiceCard(selected = !card.hasVideo, modifier = Modifier.weight(1f)) {
+    // Stacked, not side by side: the inspector is too narrow for two cards' buttons in one row.
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        ChoiceCard(selected = !card.hasVideo, modifier = Modifier.fillMaxWidth()) {
             Text("Built-in", fontSize = 13.sp)
             MutedText("The launcher's own $title sequence.", 11)
             if (card.hasVideo) OutlinedButton(onClick = { viewModel.clearMedia(key) }) { Text("Use built-in", fontSize = 12.sp) }
         }
-        ChoiceCard(selected = card.hasVideo, modifier = Modifier.weight(1f)) {
+        ChoiceCard(selected = card.hasVideo, modifier = Modifier.fillMaxWidth()) {
             Text("Video", fontSize = 13.sp)
             if (card.infoLine != null) MutedText(card.infoLine, 11) else MutedText("Your own MP4 (H.264).", 11)
             MutedText(card.limitsLine, 11)
             if (card.overCap) HintText("This clip is longer than the cap — the launcher will refuse it.")
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            // Wraps rather than squeezing a button to one letter per line.
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 OutlinedButton(onClick = {
                     FileDialogs.openFile(window, "Choose a $title video", setOf("mp4", "m4v"))?.let { picked ->
                         if (key == BOOT_KEY) viewModel.importBoot(picked) else viewModel.importGameBoot(picked)
                     }
                 }) { Text(if (card.hasVideo) "Replace…" else "Choose MP4…", fontSize = 12.sp) }
                 if (card.hasVideo) OutlinedButton(onClick = { viewModel.clearMedia(key) }) { Text("Reset", fontSize = 12.sp) }
-            }
-            if (card.hasVideo && file != null) {
-                OutlinedButton(
-                    onClick = { onPlayInPreview?.invoke(key, file) },
-                    enabled = onPlayInPreview != null,
-                ) { Text("Play in preview", fontSize = 12.sp) }
+                if (card.hasVideo && file != null) {
+                    OutlinedButton(
+                        onClick = { onPlayInPreview?.invoke(key, file) },
+                        enabled = onPlayInPreview != null,
+                    ) { Text("Play in preview", fontSize = 12.sp) }
+                }
             }
         }
     }

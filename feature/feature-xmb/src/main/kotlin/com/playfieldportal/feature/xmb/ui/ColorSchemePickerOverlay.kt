@@ -36,11 +36,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.components.HsvColorPickerDialog
+import com.playfieldportal.core.ui.components.HsvPickerState
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.xmb.viewmodel.ColorSchemeOption
 import com.playfieldportal.feature.xmb.viewmodel.ColorSchemePickerState
-import com.playfieldportal.feature.xmb.viewmodel.CustomColorPickerState
 
 private val PickerWidth = 320.dp
 
@@ -174,8 +174,8 @@ private fun ColorSchemeRow(
  */
 @Composable
 fun CustomColorPickerOverlay(
-    state: CustomColorPickerState,
-    onChannelFraction: (Int, Float) -> Unit,
+    state: HsvPickerState,
+    onStateChange: (HsvPickerState) -> Unit,
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
@@ -183,11 +183,8 @@ fun CustomColorPickerOverlay(
     Box(modifier = modifier) {
         HsvColorPickerDialog(
             title = "Custom Color",
-            hue = state.hue,
-            saturation = state.saturation,
-            brightness = state.brightness,
-            selectedChannel = state.selectedChannel,
-            onChannelFraction = onChannelFraction,
+            state = state,
+            onStateChange = onStateChange,
             onConfirm = onConfirm,
             onCancel = onCancel,
         )

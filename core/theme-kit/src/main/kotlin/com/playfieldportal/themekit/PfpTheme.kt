@@ -169,6 +169,12 @@ data class PfpThemeBundle(
      */
     val sysicons: Map<String, ThemeImage> = emptyMap(),
     /**
+     * Physical-media art: platform id → encoded image, stored as `mediaicons/<platformId>.<ext>`
+     * entries and gated by CustomizableIcons' `physmedia_` keys. Older builds keep these entries
+     * as passthrough, which is how the Theme Studio carried them before the launcher knew them.
+     */
+    val mediaicons: Map<String, ThemeImage> = emptyMap(),
+    /**
      * Motion wallpaper (v3), or null for none.
      *
      * A [ThemeMotion] rather than a [ThemeImage] on purpose — see that type for why. Note that a
@@ -182,8 +188,8 @@ data class PfpThemeBundle(
      */
     val manifestExtras: JsonObject = JsonObject(emptyMap()),
     /**
-     * Zip entries this build does not understand (including unregistered `icons/` and
-     * `sysicons/` names), streamed back out on write. Empty when read from a plain stream.
+     * Zip entries this build does not understand (including unregistered `icons/`,
+     * `sysicons/` and `mediaicons/` names), streamed back out on write. Empty when read from a plain stream.
      */
     val passthrough: List<PassthroughEntry> = emptyList(),
     /**
@@ -210,6 +216,8 @@ data class PfpThemeBundle(
             icons.all { (key, image) -> image == other.icons[key] } &&
             sysicons.keys == other.sysicons.keys &&
             sysicons.all { (key, image) -> image == other.sysicons[key] } &&
+            mediaicons.keys == other.mediaicons.keys &&
+            mediaicons.all { (key, image) -> image == other.mediaicons[key] } &&
             motion == other.motion &&
             media == other.media
 
@@ -217,6 +225,7 @@ data class PfpThemeBundle(
         var h = 31 * (31 * manifest.hashCode() + wallpaper.contentHashCode()) + preview.contentHashCode()
         for ((key, image) in icons) h = 31 * h + (key.hashCode() xor image.hashCode())
         for ((key, image) in sysicons) h = 31 * h + (key.hashCode() xor image.hashCode())
+        for ((key, image) in mediaicons) h = 31 * h + (key.hashCode() xor image.hashCode())
         motion?.let { h = 31 * h + it.hashCode() }
         h = 31 * h + manifestExtras.hashCode()
         h = 31 * h + passthrough.hashCode()

@@ -57,7 +57,8 @@ import com.playfieldportal.studio.preview.XmbPreviewModel
  * Theme inputs: wave colour + background anchors (the whole palette via detailPaletteFor), the
  * wallpaper / frozen wave behind the 0.88 page gradient, the detail_play / detail_favorite /
  * detail_artwork / detail_manual / detail_more and menu_back icon overrides, and the icon legibility
- * matte on the built-in action glyphs. Text colour and icon colour are not read by this page.
+ * matte on the built-in action glyphs, and the Main / Sub text colours through the palette
+ * ([DetailPreviewPalette]: primary and muted text). Icon colour is not read by this page.
  */
 
 // ── Sample (consistent with SampleContent's Game category and the Shiba hub) ──
@@ -369,7 +370,7 @@ private fun QuickAction(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(9.dp),
     ) {
-        DetailPreviewThemedGlyph(model, slotKey, icon, palette.textPrimary, Modifier.size(18.dp), overrideAlpha)
+        DetailPreviewThemedGlyph(model, slotKey, icon, palette.iconPrimary, Modifier.size(18.dp), overrideAlpha)
         Text(
             text = label,
             color = palette.textPrimary,
@@ -426,7 +427,7 @@ private fun ProgressRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = label.uppercase(),
-                    color = palette.textMuted.copy(alpha = 0.8f),
+                    color = palette.textMuted.dimmed(0.8f),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
@@ -459,7 +460,7 @@ private fun ProgressRow(
                 }
             }
             Spacer(Modifier.width(10.dp))
-            DetailPreviewChevronMark(color = palette.textMuted, size = 14.dp)
+            DetailPreviewChevronMark(color = palette.iconMuted, size = 14.dp)
         }
     }
 }
@@ -470,7 +471,7 @@ private fun TextRow(palette: DetailPreviewPalette, label: String, text: String, 
     RowShell(palette, focused) {
         Text(
             text = label.uppercase(),
-            color = palette.textMuted.copy(alpha = 0.8f),
+            color = palette.textMuted.dimmed(0.8f),
             fontSize = 10.sp,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
@@ -488,7 +489,7 @@ private fun TextRow(palette: DetailPreviewPalette, label: String, text: String, 
             Spacer(Modifier.size(6.dp))
             Text(
                 text = "Confirm to read more",
-                color = if (focused) palette.focus else palette.textMuted.copy(alpha = 0.7f),
+                color = if (focused) palette.focus else palette.textMuted.dimmed(0.7f),
                 fontSize = 11.sp,
                 maxLines = 1,
             )

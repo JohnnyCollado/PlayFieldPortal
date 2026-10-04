@@ -61,6 +61,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import com.playfieldportal.themekit.CustomizableIcons
 
 /**
  * The Studio's copy of the launcher's default icon set, keyed by
@@ -90,6 +91,8 @@ object StudioIconSet {
         "item_memcard_music" to "xmb/item_memcard.png",
         "item_memcard_video" to "xmb/item_memcard.png",
         "item_memcard_photos" to "xmb/item_memcard.png",
+        // The UMD slot (launcher: systems/physical-media/psp.png, UMD_SLOT_ART).
+        "item_umd" to "xmb/umd_psp.png",
         // Settings rows' wrench badge (launcher: sysicon_settings).
         "item_settings" to "xmb/item_settings.png",
         "status_battery_full" to "xmb/ic_status_battery_full.xml",
@@ -218,18 +221,33 @@ object StudioIconSet {
     }
 
     /**
-     * Built-in art the launcher draws as authored (untinted): only the Shiba Coin medallions. Console
+     * The launcher's physical-media art (feature-xmb assets/systems/physical-media) for a
+     * `physmedia_<id>` key, with PhysicalMediaIcons.kt's one alias that applies (x360 -> xbox360).
+     * Null for any other key.
+     */
+    internal fun physicalMediaResource(key: String): String? {
+        val id = when (val raw = CustomizableIcons.physicalMediaId(key) ?: return null) {
+            "x360" -> "xbox360"
+            else -> raw
+        }
+        return "xmb/physical-media/$id.png"
+    }
+
+    /**
+     * Built-in art the launcher draws as authored (untinted): the Shiba Coin medallions and the
+     * physical-media art (PhysicalMediaIcon draws the PNG with no colour filter). Console
      * art, the memory cards and All Tracked Games are white silhouettes that the launcher recolours
      * with the theme's icon colour (ConsoleIcon / BundledSilhouetteIcon → PortalIcon, SrcIn), so
      * they take the tint here too.
      */
-    fun isFullColour(key: String): Boolean = key.startsWith("shiba_coin_")
+    fun isFullColour(key: String): Boolean = key.startsWith("shiba_coin_") || CustomizableIcons.physicalMediaId(key) != null
 
     /** Default painter for a slot key; an unknown key gets a play arrow. */
     @Composable
     fun defaultPainter(key: String): Painter {
         RESOURCE_SLOTS[key]?.let { return resourcePainter(it) }
         consoleResource(key)?.let { return resourcePainter(it) }
+        physicalMediaResource(key)?.let { return resourcePainter(it) }
         return rememberVectorPainter(ITEM_VECTORS[key] ?: Icons.Filled.PlayArrow)
     }
 

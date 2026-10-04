@@ -17,9 +17,11 @@ import java.io.File
  * (plan A10), which is also why WebM cannot be authored: JCodec cannot demux it, so there is no
  * duration to validate.
  *
- * Cheapest check first: slot, file, extension, byte cap, and only then a header read. One step
- * goes beyond checking: a WAV that is not plain 8/16-bit PCM (float, 24/32-bit, extensible) is
- * converted to 16-bit PCM ([WavPcm16]) and the conversion is what gets checked and staged.
+ * Cheapest check first: slot, file, extension, byte cap, and only then a header read. Two steps
+ * go beyond checking, and in both the conversion is what gets checked and staged: a WAV that is not
+ * plain 8/16-bit PCM (float, 24/32-bit, extensible) becomes 16-bit PCM ([WavPcm16]), and a video
+ * Android cannot be relied on to decode (H.264 High 4:4:4 and the like) is re-encoded to H.264
+ * 4:2:0 ([AndroidVideo]).
  */
 object MediaGates {
 
@@ -35,12 +37,21 @@ object MediaGates {
          * the file to stage: the pick itself, or — for a WAV that is not plain 8/16-bit PCM — its
          * 16-bit PCM conversion ([WavPcm16]), a temporary file the caller deletes once staged.
          */
-        data class Accepted(val extension: String, val probe: UiMediaLimits.Probe, val source: File) : Outcome
+        data class Accepted(
+            val extension: String,
+            val probe: UiMediaLimits.Probe,
+            val source: File,
+            /** Set when [source] is a re-encode made for Android: why the pick needed one. */
+            val note: String? = null,
+        ) : Outcome
         data class Rejected(val message: String) : Outcome
     }
 
     /** Float audio is at most 4x the bytes of its 16-bit conversion (64-bit float -> 16-bit). */
     private const val MAX_CONVERSION_SHRINK = 4
+
+    /** How much an Android re-encode may shrink a clip and still be worth attempting. */
+    private const val MAX_VIDEO_SHRINK = 4
 
     /** The theme-side byte-cap rejection (A9) - audio only; video reuses [UiMediaLimits.tooLarge]. */
     fun tooLargeForTheme(slot: ThemeMediaSlots.Slot): String =
@@ -65,9 +76,18 @@ object MediaGates {
         if (mime == null) return Outcome.Rejected(unsupported)
 
         val converted = if (!video && extension == "wav") convertedWav(file, slot, workDir) else null
-        val outcome = checkContent(slot, converted ?: file, mime, unsupported)
-        if (outcome is Outcome.Rejected) converted?.delete()
-        return outcome
+        // A clip far past the cap is not worth re-encoding to find out it still does not fit.
+        if (video && file.length() > slot.maxBytes * MAX_VIDEO_SHRINK) return Outcome.Rejected(UiMediaLimits.tooLarge(slot.spec))
+        val playable = if (video) AndroidVideo.playable(file, workDir) else null
+        if (playable is AndroidVideo.Playable.Failed) return Outcome.Rejected(playable.message)
+        val reencoded = (playable as? AndroidVideo.Playable.Converted)
+        val outcome = checkContent(slot, converted ?: reencoded?.file ?: file, mime, unsupported)
+        if (outcome is Outcome.Rejected) {
+            converted?.delete()
+            reencoded?.file?.delete()
+            return outcome
+        }
+        return if (reencoded != null && outcome is Outcome.Accepted) outcome.copy(note = reencoded.reason) else outcome
     }
 
     /** [file]'s 16-bit PCM conversion when it needs one (and is small enough to be worth reading). */

@@ -29,7 +29,9 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -68,9 +70,11 @@ import com.playfieldportal.studio.preview.XmbPreviewModel
  *  - the backdrop behind the overlay: wallpaper + scrim, or the wave ([XmbBackdrop]);
  *  - the scaffold's scrim, solved from PFPColors.backgroundTop / backgroundBottom (solveScrimColor);
  *  - SettingsText = LocalPfpTextColors.primary = PFPColors.textPrimary ([XmbPreviewModel.textPrimary]),
- *    used by the screen subtitle, unfocused row labels and value text. Sublabels stay
- *    PfpPalette.Subtext (PFPTheme deliberately keeps secondary off the theme). The launcher renders
- *    the colour unclamped; the clamp only feeds DisplaySettingsViewModel's notice dialog;
+ *    used by the screen subtitle, unfocused row labels and value text. SettingsSubtext =
+ *    LocalPfpTextColors.secondary = subTextOr(PfpPalette.Subtext, weight 0xAA): #AAAAAA until the
+ *    theme sets a Sub (or Main) colour ([settingsSubtext]); the group band title is
+ *    themedText(White). The launcher renders the colours unclamped; the clamp only feeds
+ *    DisplaySettingsViewModel's notice dialog;
  *  - the row values a theme writes into Display's prefs on apply (PfpThemeStore.apply): wallpaper,
  *    wave style, icon legibility, solid unfocused icons, the font colour.
  * The cursor fill derives from PFPColors.accentColor, which stays white on every theme, and
@@ -80,7 +84,15 @@ import com.playfieldportal.studio.preview.XmbPreviewModel
 // ── Palette (core-ui PFPTheme.kt PfpPalette + SettingsScaffold.kt 214-239) ─────
 
 private val SettingsAccent = Color(0xFF4A90D9)   // PfpPalette.Accent
-private val SettingsSubtext = Color(0xFFAAAAAA)  // PfpPalette.Subtext (LocalPfpTextColors.secondary)
+private val SettingsSubtext = Color(0xFFAAAAAA)  // PfpPalette.Subtext — raw; text reads [settingsSubtext]
+
+/** The preview model for the Settings rows' text roles, provided by [SettingsScreenPreview]. */
+private val LocalSettingsModel = staticCompositionLocalOf<XmbPreviewModel?> { null }
+
+/** LocalPfpTextColors.secondary: the theme's Sub (else Main) colour at #AAAAAA's weight, else #AAAAAA. */
+@Composable
+private fun settingsSubtext(): Color =
+    LocalSettingsModel.current?.subTextOr(SettingsSubtext, 0xAA / 255f) ?: SettingsSubtext
 private val SettingsDivider = Color(0xFF2A2A2A)  // PfpPalette.Divider
 
 // SettingsTextShadow: black 0.75, (0, 2), blur 4.
@@ -131,6 +143,7 @@ fun SettingsScreenPreview(model: XmbPreviewModel) {
     val state = remember(model) { DisplayState.of(model) }
 
     MaterialTheme(colorScheme = PfpDarkColorScheme) {
+      CompositionLocalProvider(LocalSettingsModel provides model) {
         Box(Modifier.fillMaxSize()) {
             // XMBShell keeps XmbBackground composed under Settings and hides only the XMB foreground.
             XmbBackdrop(model)
@@ -176,6 +189,7 @@ fun SettingsScreenPreview(model: XmbPreviewModel) {
                 }
             }
         }
+      }
     }
 }
 
@@ -189,6 +203,8 @@ private data class DisplayState(
     val solidUnfocusedIcons: Boolean,
     /** KEY_TEXT_COLOR: a theme text colour lands in the user's Font Colour pref. */
     val fontColour: Color?,
+    /** KEY_SUB_TEXT_COLOR: a theme sub text colour lands in the user's Sub Font Colour pref. */
+    val subFontColour: Color?,
     val textLegibilityLabel: String,
 ) {
     companion object {
@@ -211,7 +227,8 @@ private data class DisplayState(
                 IconMatteStyle.CONTOUR_AUTO -> "Contour (Auto)"
             },
             solidUnfocusedIcons = model.legibility.solidUnfocusedIcons,
-            fontColour = model.textPrimary.takeIf { it != Color.White },
+            fontColour = model.textOverride,
+            subFontColour = model.subTextOverride,
             // TextLegibilityStyle labels. The preview model folds "shadow" into AUTO's floor, so
             // SHADOW reads as the default, Automatic.
             textLegibilityLabel = when (model.legibility.text) {
@@ -277,6 +294,15 @@ private fun ColumnScope.DisplayRows(state: DisplayState, text: Color, cursorFill
         state.fontColour?.let { String.format("#%06X", 0xFFFFFF and it.toArgb()) } ?: "Theme Default",
         text, cursorFill,
     )
+    ValueRow(
+        "Sub Font Colour",
+        "Colour for subtitles, sublabels and values. Follows Font Colour until set",
+        state.subFontColour?.let { String.format("#%06X", 0xFFFFFF and it.toArgb()) } ?: "Same as Font Colour",
+        text, cursorFill,
+    )
+    if (state.subFontColour != null) {
+        SettingsRow("Reset Sub Font Colour", "Go back to following Font Colour", text, cursorFill)
+    }
     if (state.fontColour != null) {
         SettingsRow("Reset Font Colour", "Go back to the colour the current theme supplies", text, cursorFill)
         ToggleRow(
@@ -298,7 +324,7 @@ private fun ColumnScope.DisplayRows(state: DisplayState, text: Color, cursorFill
         text = "Position the XMB live for this screen — scale it, and shift the crossbar " +
             "up/down and left/right — over the real interface. Each screen size (handheld, " +
             "foldable, tablet) keeps its own tuning.",
-        color = SettingsSubtext,
+        color = settingsSubtext(),
         fontSize = 12.sp,
         style = ShadowStyle,
         modifier = Modifier.padding(horizontal = 48.dp, vertical = 4.dp),
@@ -388,7 +414,7 @@ private fun SettingsHeader(title: String, subtitle: String, text: Color) {
     ) {
         Text(
             text = "◀",
-            color = SettingsSubtext,
+            color = settingsSubtext(),
             fontSize = 18.sp,
             style = ShadowStyle,
             modifier = Modifier.padding(end = 20.dp),
@@ -459,7 +485,8 @@ private fun SettingsGroup(title: String) {
             .background(Color.White.copy(alpha = 0.1f))
             .padding(start = 48.dp, top = 10.dp, bottom = 10.dp),
         text = title.uppercase(),
-        color = Color.White,
+        // SettingsScaffold: themedText(Color.White).
+        color = LocalSettingsModel.current?.textOr(Color.White) ?: Color.White,
         fontSize = 15.sp,
         fontWeight = FontWeight.Bold,
         letterSpacing = 1.8.sp,
@@ -501,7 +528,7 @@ private fun SettingsRow(
                 Spacer(Modifier.height(2.dp))
                 Text(
                     sublabel,
-                    color = SettingsSubtext.let { if (enabled) it else it.copy(alpha = it.alpha * DISABLED_ROW_ALPHA) },
+                    color = settingsSubtext().let { if (enabled) it else it.copy(alpha = it.alpha * DISABLED_ROW_ALPHA) },
                     fontSize = 12.sp,
                     style = ShadowStyle,
                 )
@@ -541,7 +568,7 @@ private fun ToggleRow(label: String, sublabel: String, checked: Boolean, text: C
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
                 checkedTrackColor = SettingsAccent,
-                uncheckedThumbColor = SettingsSubtext,
+                uncheckedThumbColor = settingsSubtext(),
                 uncheckedTrackColor = SettingsDivider,
             ),
         )
@@ -588,10 +615,10 @@ private fun SliderRow(label: String, sublabel: String, value: Float, valueText: 
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = label, color = text, fontSize = 15.sp, style = ShadowStyle)
                 Spacer(Modifier.height(2.dp))
-                Text(sublabel, color = SettingsSubtext, fontSize = 12.sp, style = ShadowStyle)
+                Text(sublabel, color = settingsSubtext(), fontSize = 12.sp, style = ShadowStyle)
             }
             Spacer(Modifier.width(16.dp))
-            Text(text = valueText, color = SettingsSubtext, fontSize = 13.sp, style = ShadowStyle)
+            Text(text = valueText, color = settingsSubtext(), fontSize = 13.sp, style = ShadowStyle)
         }
         Spacer(Modifier.height(8.dp))
         Slider(
@@ -600,7 +627,7 @@ private fun SliderRow(label: String, sublabel: String, value: Float, valueText: 
             valueRange = 1f..5f,
             steps = 7,
             colors = SliderDefaults.colors(
-                thumbColor = SettingsSubtext,
+                thumbColor = settingsSubtext(),
                 activeTrackColor = SettingsDivider,
                 inactiveTrackColor = SettingsDivider.copy(alpha = 0.4f),
             ),

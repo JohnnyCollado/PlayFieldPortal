@@ -1,29 +1,18 @@
 package com.playfieldportal.studio
 
-import com.playfieldportal.themekit.CustomizableIcons
+import com.playfieldportal.themekit.IconEditorLayout
 import com.playfieldportal.themekit.IconSlot
 
 /**
- * The icon slots a theme made in the Studio can replace: the crossbar, the XMB item glyphs and
- * the console art. Everything else in [CustomizableIcons] (Shiba Coins rows and medallions, the
+ * The icon slots a theme made in the Studio can replace: [IconEditorLayout]'s list, the one the
+ * launcher's Customize XMB Icons shows too (crossbar, the XMB item rows, console art and
+ * physical-media art, in XMB order). Everything else in the registry (the coin medallions, the
  * status strip, media controls, Game Detail, notifications, menus) keeps the launcher's own art —
  * the Studio still draws it in the preview, but never lists, imports or exports it.
  */
 object EditableSlots {
 
-    private val NOT_THEMEABLE_GROUPS = setOf(
-        IconSlot.Group.STATUS,
-        IconSlot.Group.SHIBA,
-        IconSlot.Group.MEDIA,
-        IconSlot.Group.GAME_DETAIL,
-        IconSlot.Group.NOTIFICATIONS,
-        IconSlot.Group.MENUS,
-    )
-
-    fun isEditable(slot: IconSlot): Boolean =
-        slot.group !in NOT_THEMEABLE_GROUPS && !slot.key.startsWith("item_shiba_")
-
-    val ALL: List<IconSlot> = CustomizableIcons.ALL.filter(::isEditable)
+    val ALL: List<IconSlot> = IconEditorLayout.ALL
 
     private val byKey: Map<String, IconSlot> = ALL.associateBy { it.key }
 
@@ -32,5 +21,9 @@ object EditableSlots {
 
     fun isEditable(key: String): Boolean = key in byKey
 
-    fun group(group: IconSlot.Group): List<IconSlot> = ALL.filter { it.group == group }
+    /**
+     * Icons an opened theme keeps on re-export: the editable ones plus [IconEditorLayout.HIDDEN_KEYS],
+     * which no editor lists but a theme that carries them still applies.
+     */
+    fun isKept(key: String): Boolean = isEditable(key) || key in IconEditorLayout.HIDDEN_KEYS
 }

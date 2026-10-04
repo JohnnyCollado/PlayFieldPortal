@@ -16,7 +16,7 @@ The palette derives from one accent colour, so the manifest stays small.
 | v1 | manifest, `wallpaper.png`, `preview.png`, accent / icon colour, wave style | wave-only themes carry no wallpaper |
 | v2 | `icons/<key>.png` custom icon slots, `layout` | |
 | v3 | icons widen to `png`/`gif`; `sysicons/<id>.<png\|gif>` console art; `motion.<mp4\|webm\|gif>`; `textColor` | streamed motion, bounded zip reader |
-| v4 | manifest: `author`, `description`, `updated`, `textColorExact`, `waveStyleV4`, `legibility`, `motionCrop`. Entries: `sounds/*`, `ambience.*`, `boot.*`, `gameboot.*`. 29 new `icons/` slots, 7 new `sysicons/` ids. Lossless passthrough of unknown manifest keys and unknown entries | all additive |
+| v4 | manifest: `author`, `description`, `updated`, `textColorExact`, `waveStyleV4`, `legibility`, `motionCrop`. Entries: `sounds/*`, `ambience.*`, `boot.*`, `gameboot.*`. 30 new `icons/` slots, 7 new `sysicons/` ids, `mediaicons/` physical-media art. Lossless passthrough of unknown manifest keys and unknown entries | all additive |
 
 **No reader gates on `schemaVersion`.** A missing field takes its default, an unknown field or entry
 is ignored by apply, and a newer bundle opens on an older build as the subset that build knows. The
@@ -83,8 +83,9 @@ mytheme.pfptheme
 ├── manifest.json                          required; written first (readManifest stops after it)
 ├── wallpaper.png                          optional; absent = live wave background
 ├── preview.png                            optional on read
-├── icons/<key>.<png|gif>                  81 keys in v4 (v3 had 52)
+├── icons/<key>.<png|gif>                  82 keys in v4 (v3 had 52)
 ├── sysicons/<id>.<png|gif>                47 ids in v4 (v3 had 40)
+├── mediaicons/<id>.<png|gif>              42 ids: physical-media art (Physical Media mode)
 ├── motion.<mp4|webm|gif>                  streamed, never held in memory
 ├── sounds/<sound_scroll|sound_back|sound_confirm|sound_error|sound_notification>.<mp3|wav|ogg|m4a>
 ├── ambience.<mp3|wav|ogg|m4a>
@@ -105,7 +106,7 @@ Keys are identical to the launcher's `UiMediaSlot` keys (pinned by `UiMediaSlotT
 | `sound_back`, `sound_confirm`, `sound_error` | `sounds/<key>` | mp3 wav ogg m4a | 8 MB | 1 s |
 | `sound_notification` | `sounds/sound_notification` | mp3 wav ogg m4a | 8 MB | 2 s |
 | `ambience_audio` | `ambience` | mp3 wav ogg m4a | 32 MB | 10 min |
-| `boot_video` | `boot` | mp4 webm | 25 MB | 10 s |
+| `boot_video` | `boot` | mp4 webm | 25 MB | 15 s |
 | `gameboot_video` | `gameboot` | mp4 webm | 25 MB | 10 s |
 
 Byte caps are enforced by the codec on read (`ThemeMediaSlots.Slot.maxBytes`). Duration caps come
@@ -122,19 +123,26 @@ as a verbatim prefix plus 47 console slots. Keys are zip entry names: **never re
 | Group | Slots | Bundle dir | Keys (those added in v4 marked) |
 |---|---|---|---|
 | CATEGORY_BAR | 10 | `icons/` | `catbar_*` |
-| ITEMS | 36 | `icons/` | `item_*` (includes `item_shiba_connect/track/untracked`) |
+| ITEMS | 37 | `icons/` | `item_*` (includes `item_shiba_connect/track/untracked` and `item_umd`) |
 | STATUS | 10 | `icons/` | 6 battery/bluetooth; v4: `status_notifications`, `status_controller`, `status_wifi`, `status_signal` |
 | SHIBA | 4 | `icons/` | v4: `shiba_coin_bronze`, `_silver`, `_gold`, `_platinum` |
 | MEDIA | 6 | `icons/` | v4: `media_play`, `media_pause`, `media_prev`, `media_next`, `media_back10`, `media_fwd10` |
 | GAME_DETAIL | 5 | `icons/` | v4: `detail_play`, `detail_favorite`, `detail_artwork`, `detail_manual`, `detail_more` |
 | NOTIFICATIONS | 8 | `icons/` | v4: `notif_album`, `notif_image`, `notif_tag`, `notif_coin`, `notif_blocked`, `notif_settings`, `notif_download`, `notif_feed` |
 | MENUS | 2 | `icons/` | v4: `menu_check`, `menu_back` |
-| **IconSlots total** | **81** | | 52 in v3, +29 in v4 |
+| **IconSlots total** | **82** | | 52 in v3, +30 in v4 |
 | CONSOLE | 47 | `sysicons/` | key `sysicon_<id>`, entry `sysicons/<id>`; 40 platform ids plus v4 extras `cps1`, `cps2`, `cps3`, `xbox`, `favorites`, `desktop`, `default` |
-| **CustomizableIcons total** | **128** | | |
+| PHYSICAL_MEDIA | 42 | `mediaicons/` | key `physmedia_<id>`, entry `mediaicons/<id>`; every console id except `allgames`, `android`, `favorites`, `desktop`, `default` |
+| **CustomizableIcons total** | **171** | | |
 
-SHIBA, MEDIA, GAME_DETAIL, NOTIFICATIONS and MENUS are theme-only groups: the on-device icon editor
-does not list them. Template sizes: catbar/items/new groups/console 256 px, status 128 px.
+STATUS, SHIBA, MEDIA, GAME_DETAIL, NOTIFICATIONS and MENUS are theme-only groups: neither the
+on-device icon editor nor the Theme Studio lists them. Both editors list the same slots in the same
+order (`IconEditorLayout`): Crossbar, Items (grouped by XMB column, with `sysicon_allgames` and
+`sysicon_favorites` in the Game column), Consoles, Physical Media. `catbar_favorites` is not listed;
+a theme that carries it still applies it.
+
+`mediaicons/` entries were written by the Theme Studio as passthrough before the launcher read them;
+any build that knows the folder reads those bundles as typed media icons. Template sizes: catbar/items/new groups/console 256 px, status 128 px.
 
 ## 5. Limits
 
@@ -161,7 +169,7 @@ rather than throwing. An over-cap icon or media entry is dropped and reported
   no `\`, at most one directory level. A passthrough name may not collide with a registered entry
   (including a media-slot stem with a refused extension), and a repeated name is dropped.
 - Anything else is dropped and reported (`HOSTILE_NAME`, `BAD_EXTENSION`, `DUPLICATE`,
-  `UNSUPPORTED_MEDIA`). This includes registered-looking `icons/` and `sysicons/` names that are not
+  `UNSUPPORTED_MEDIA`). This includes registered-looking `icons/`, `sysicons/` and `mediaicons/` names that are not
   registered slots: they are passthrough if safe, dropped otherwise.
 - Passthrough is never extracted to disk by the launcher. It is only re-written into a bundle.
 - Directory entries are skipped.

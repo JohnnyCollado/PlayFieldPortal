@@ -856,7 +856,7 @@ point.
 **Boot and GameBoot videos** (*Settings › Interface › Display*)
 
 - **Boot Sequence** — *Show Boot Sequence* (and *on Resume*), plus **Boot Video**: supply your own
-  video (up to 10 seconds) and it replaces the PFP logo animation, with its own audio. Press **✕**
+  video (up to 15 seconds) and it replaces the PFP logo animation, with its own audio. Press **✕**
   or **○** to skip it.
 - **GameBoot** — the short presentation that plays as a game launches. Built in, it is a
   five-second light sweep timed to its own sound; supply a **GameBoot Video** (up to 10 seconds) and

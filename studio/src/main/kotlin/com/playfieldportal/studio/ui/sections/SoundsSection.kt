@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.sp
 import com.playfieldportal.studio.StudioState
 import com.playfieldportal.studio.StudioViewModel
 import com.playfieldportal.studio.io.FileDialogs
-import com.playfieldportal.studio.io.WavPlayer
+import com.playfieldportal.studio.io.SoundPlayer
 import com.playfieldportal.themekit.MediaDurationProbe
 import com.playfieldportal.themekit.ThemeMediaSlots
 import com.playfieldportal.themekit.UiMediaLimits
@@ -47,8 +47,7 @@ val SOUND_ROWS: List<Pair<String, String>> = listOf(
     AMBIENCE_KEY to "Ambience (loops)",
 )
 
-/** Only WAV can be auditioned here (plan A10); every other format plays on the device. */
-private const val PLAYABLE_EXTENSION = "wav"
+/** Every format a theme sound slot takes can be auditioned here ([SoundPlayer] decodes through FFmpeg). */
 const val PLAYS_ON_DEVICE = "Plays on the device"
 
 /** What one sound row shows. [extension] null means the slot is empty and the built-in sound is used. */
@@ -73,7 +72,7 @@ fun soundRow(key: String, label: String, extension: String?, lengthMs: Long?): S
         return SoundRow(key, label, true, null, 0f, if (cap > 0) "Up to ${formatDuration(cap)}" else "", false, false, null)
     }
     val ext = extension.lowercase()
-    val playable = ext == PLAYABLE_EXTENSION
+    val playable = ext in ThemeMediaSlots.AUDIO_EXTENSIONS
     return SoundRow(
         key = key,
         label = label,
@@ -106,7 +105,7 @@ fun SoundsSection(state: StudioState, viewModel: StudioViewModel, window: Frame)
     var playing by remember { mutableStateOf<String?>(null) }
     var note by remember { mutableStateOf<String?>(null) }
     // Leaving the section (or closing the window) must not leave a looping ambience running.
-    DisposableEffect(Unit) { onDispose { WavPlayer.stop() } }
+    DisposableEffect(Unit) { onDispose { SoundPlayer.stop() } }
 
     SectionColumn {
         HeadingWithInfo("Menu sounds", "Volumes stay on the device: ${DeviceHints.SOUND}")
@@ -124,20 +123,20 @@ fun SoundsSection(state: StudioState, viewModel: StudioViewModel, window: Frame)
                 onPlay = {
                     if (file == null) return@SoundRowCard
                     note = null
-                    val started = WavPlayer.play(file, loop = key == AMBIENCE_KEY, onStopped = {
+                    val started = SoundPlayer.play(file, loop = key == AMBIENCE_KEY, onStopped = {
                         if (playing == key) playing = null
                     })
                     if (started) playing = key else note = "Couldn't play ${row.fileName} here — it will play on the device."
                 },
-                onStop = { WavPlayer.stop() },
+                onStop = { SoundPlayer.stop() },
                 onPick = {
                     FileDialogs.openFile(window, "Choose a sound for $label", ThemeMediaSlots.AUDIO_EXTENSIONS)?.let { picked ->
-                        WavPlayer.stop()
+                        SoundPlayer.stop()
                         if (key == AMBIENCE_KEY) viewModel.importAmbience(picked) else viewModel.importSound(key, picked)
                     }
                 },
                 onReset = {
-                    WavPlayer.stop()
+                    SoundPlayer.stop()
                     viewModel.clearMedia(key)
                 },
             )

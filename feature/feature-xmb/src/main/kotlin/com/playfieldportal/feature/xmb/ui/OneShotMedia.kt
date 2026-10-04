@@ -40,7 +40,8 @@ internal fun OneShotVideoLayer(
     onEnded: () -> Unit,
     onFailed: () -> Unit,
     modifier: Modifier = Modifier,
-    muted: Boolean = false,
+    /** 0..1 — see [presentationClipVolume]. Applied live, like [OneShotAudioLayer]'s. */
+    volume: Float = 1f,
 ) {
     val context = LocalContext.current
     val currentEnded by rememberUpdatedState(onEnded)
@@ -49,7 +50,6 @@ internal fun OneShotVideoLayer(
 
     val player = remember(path) {
         ExoPlayer.Builder(context).build().apply {
-            if (muted) volume = 0f
             setMediaItem(
                 MediaItem.Builder()
                     .setUri(path)
@@ -67,6 +67,8 @@ internal fun OneShotVideoLayer(
             prepare()
         }
     }
+
+    LaunchedEffect(player, volume) { player.volume = volume }
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {
@@ -160,6 +162,14 @@ internal fun OneShotAudioLayer(
         }
     }
 }
+
+/**
+ * A presentation clip's volume: silent under a separate sound (two sources at once is never what
+ * the user meant), otherwise its own track at the presentation's channel [gain] — the same Boot
+ * Sequence / GameBoot level the built-in chime follows.
+ */
+internal fun presentationClipVolume(separateAudio: Boolean, gain: Float): Float =
+    if (separateAudio) 0f else gain
 
 /** Fills the screen at the clip's own aspect, centered; the overflow is clipped by the overlay. */
 private fun applyFullscreenCenterCrop(view: TextureView, size: VideoSize?) {

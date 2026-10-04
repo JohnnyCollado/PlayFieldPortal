@@ -126,7 +126,7 @@ class CustomIconStore @Inject constructor(
             staged.delete()
         }
         cacheEvictor.evict(dest.absolutePath)
-        context.pfpDataStore.edit { prefs -> prefs[KEY_CUSTOM_ICONS_STAMP] = System.currentTimeMillis() }
+        context.pfpDataStore.edit { prefs -> prefs.bumpStamp(KEY_CUSTOM_ICONS_STAMP) }
         ImportResult(true)
     }
 
@@ -143,7 +143,7 @@ class CustomIconStore @Inject constructor(
         if (!isStorableKey(slotKey)) return@withContext false
         val removed = mimeForExtension.keys.any { ext -> File(dir, "$slotKey.$ext").delete() }
         if (removed) {
-            context.pfpDataStore.edit { prefs -> prefs[KEY_CUSTOM_ICONS_STAMP] = System.currentTimeMillis() }
+            context.pfpDataStore.edit { prefs -> prefs.bumpStamp(KEY_CUSTOM_ICONS_STAMP) }
         }
         removed
     }
@@ -173,7 +173,7 @@ class CustomIconStore @Inject constructor(
         }.isSuccess
         if (!moved) return@withContext false
         cacheEvictor.evict(dest.absolutePath)
-        context.pfpDataStore.edit { prefs -> prefs[KEY_CUSTOM_ICONS_STAMP] = System.currentTimeMillis() }
+        context.pfpDataStore.edit { prefs -> prefs.bumpStamp(KEY_CUSTOM_ICONS_STAMP) }
         true
     }
 
@@ -188,6 +188,9 @@ class CustomIconStore @Inject constructor(
             .distinctUntilChanged()
             .map { listStoredKeys() }
             .flowOn(Dispatchers.IO)
+
+    /** The slot keys with a user icon right now — [observeStoredKeys]'s current value, for one-off checks. */
+    suspend fun storedKeys(): Set<String> = withContext(Dispatchers.IO) { listStoredKeys() }
 
     private fun listStoredKeys(): Set<String> =
         dir.listFiles { f -> f.isFile }.orEmpty()
@@ -218,7 +221,7 @@ class CustomIconStore @Inject constructor(
             if ((owner == null || owner !in liveCategoryIds) && file.delete()) removedAny = true
         }
         if (removedAny) {
-            context.pfpDataStore.edit { prefs -> prefs[KEY_CUSTOM_ICONS_STAMP] = System.currentTimeMillis() }
+            context.pfpDataStore.edit { prefs -> prefs.bumpStamp(KEY_CUSTOM_ICONS_STAMP) }
         }
         removedAny
     }

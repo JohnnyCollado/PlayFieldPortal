@@ -22,6 +22,14 @@ private const val WHITE = 0xFFFFFFFF.toInt()
 fun ColorSection(state: StudioState, viewModel: StudioViewModel) {
     SectionColumn {
         SectionHeading("Accent color")
+        ChoiceRow("Auto (from the wallpaper)", state.accentAuto) { viewModel.setAccentAuto(true) }
+        ChoiceRow("Custom", !state.accentAuto) { viewModel.setAccentAuto(false) }
+        MutedText(
+            if (state.accentAuto) "Each new wallpaper or video sets the accent. Pick a color to keep your own."
+            else "Your accent stays when the wallpaper or video changes.",
+            11,
+        )
+        // Picking a swatch or typing a color makes the accent Custom.
         SwatchGrid(selected = state.accentArgb, onPick = viewModel::setAccent)
         ColorField(label = "Custom accent", argb = state.accentArgb, onChange = viewModel::setAccent)
 
@@ -47,8 +55,9 @@ fun ColorSection(state: StudioState, viewModel: StudioViewModel) {
 
         HorizontalDivider()
 
-        SectionHeading("Text color")
-        ChoiceRow("Auto (follows the theme)", state.textColor is TextColorChoice.Auto) {
+        SectionHeading("Main text color")
+        MutedText("Titles and labels: the crossbar, list rows and status strip, and every screen.", 11)
+        ChoiceRow("Auto (built-in colors)", state.textColor is TextColorChoice.Auto) {
             viewModel.setTextColor(TextColorChoice.Auto)
         }
         ChoiceRow("Custom", state.textColor is TextColorChoice.Custom) {
@@ -56,7 +65,7 @@ fun ColorSection(state: StudioState, viewModel: StudioViewModel) {
         }
         val textColor = state.textColor
         if (textColor is TextColorChoice.Custom) {
-            ColorField("Text color", textColor.argb) { viewModel.setTextColor(TextColorChoice.Custom(it)) }
+            ColorField("Main text color", textColor.argb) { viewModel.setTextColor(TextColorChoice.Custom(it)) }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Switch(
@@ -69,6 +78,21 @@ fun ColorSection(state: StudioState, viewModel: StudioViewModel) {
         // The preview renders the colour AS PICKED; the launcher's contrast engine (Android-side)
         // may lightness-clamp it unless "exact" is on.
         HintText("Off: the launcher may adjust the color for contrast. The preview shows it as picked.")
+
+        HorizontalDivider()
+
+        SectionHeading("Subtext color")
+        MutedText("Subtitles, sublabels and values.", 11)
+        ChoiceRow("Same as main text", state.subTextColor is TextColorChoice.Auto) {
+            viewModel.setSubTextColor(TextColorChoice.Auto)
+        }
+        ChoiceRow("Custom", state.subTextColor is TextColorChoice.Custom) {
+            viewModel.setSubTextColor(TextColorChoice.Custom((textColor as? TextColorChoice.Custom)?.argb ?: WHITE))
+        }
+        val subTextColor = state.subTextColor
+        if (subTextColor is TextColorChoice.Custom) {
+            ColorField("Subtext color", subTextColor.argb) { viewModel.setSubTextColor(TextColorChoice.Custom(it)) }
+        }
     }
 }
 

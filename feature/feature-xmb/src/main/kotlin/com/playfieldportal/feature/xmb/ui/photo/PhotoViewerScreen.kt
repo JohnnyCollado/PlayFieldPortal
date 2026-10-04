@@ -272,7 +272,6 @@ fun PhotoViewerScreen(
                 selectedIndex = state.optionsIndex,
                 onRowActivated = { viewModel.activate(state.optionsActions[it]) },
                 onDismiss = viewModel::closeOptions,
-                panelAlpha = 0.88f,
             )
         }
 

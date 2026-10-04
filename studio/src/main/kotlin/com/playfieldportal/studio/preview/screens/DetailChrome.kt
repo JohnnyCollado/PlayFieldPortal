@@ -82,8 +82,8 @@ import kotlin.math.sin
  * Theme inputs the detail pages read: PFPColors.waveColor (model.accent), the white accentColor,
  * backgroundTop/backgroundBottom (all through detailPaletteFor), the wallpaper / wave style behind the
  * page, icon overrides for the themeable slots, and the icon legibility matte on built-in vector
- * glyphs (ThemedGlyph -> VectorGlyphSurface). They never read PFPColors.textPrimary / textSecondary /
- * iconColor: their text is detailPaletteFor's ensureReadable(White, ...) pole.
+ * glyphs (ThemedGlyph -> VectorGlyphSurface). Their text is detailPaletteFor's ensureReadable(White,
+ * ...) pole, replaced by the theme's Main / Sub text colours when set; iconColor is never read.
  */
 
 // ── Text style ──────────────────────────────────────────────────────────────
@@ -115,9 +115,21 @@ internal data class DetailPreviewPalette(
     val rowEdge: Color,
     val track: Color,
     val focus: Color,
+    /** Text roles, themed: Main replaces primary, Sub (else Main) the muted text at 0.72. */
     val textPrimary: Color,
     val textMuted: Color,
+    /** DetailPalette.iconPrimary / iconMuted: the palette's own tones, never the font colours. */
+    val iconPrimary: Color,
+    val iconMuted: Color,
+    /** DetailPalette.unselectedLabel(): Main at 0.72 once set, else [iconMuted]. */
+    val unselectedLabel: Color,
 )
+
+/**
+ * core-ui Color.dimmed: this colour at [fraction] of its own alpha. A themed text role may itself be
+ * translucent (Sub at 0.72), so dimming must multiply its weight, never replace it as copy(alpha) does.
+ */
+internal fun Color.dimmed(fraction: Float): Color = copy(alpha = alpha * fraction)
 
 /** DetailPalette.MUTED_TEXT_CONTRAST: muted text keeps the App Drawer's own 3.0 floor. */
 private const val MUTED_TEXT_CONTRAST = 3.0
@@ -169,15 +181,19 @@ internal fun detailPreviewPaletteFor(model: XmbPreviewModel): DetailPreviewPalet
         rowEdge = edge.copy(alpha = 0.35f),
         track = edge.copy(alpha = 0.25f),
         focus = edge,
-        textPrimary = drawerTextPrimary,
-        textMuted = textMuted,
+        // detailPaletteFor: derived without the font colours, which then replace the text roles.
+        textPrimary = model.textOr(drawerTextPrimary, 1f),
+        textMuted = model.subTextOr(textMuted, 0.72f),
+        iconPrimary = drawerTextPrimary,
+        iconMuted = textMuted,
+        unselectedLabel = model.textOr(textMuted, 0.72f),
     )
 }
 
 /** The model's palette, recomputed only when one of its three inputs changes. */
 @Composable
 internal fun rememberDetailPreviewPalette(model: XmbPreviewModel): DetailPreviewPalette =
-    remember(model.accent, model.backgroundTop, model.backgroundBottom) { detailPreviewPaletteFor(model) }
+    remember(model.accent, model.backgroundTop, model.backgroundBottom, model.textOverride, model.subTextOverride) { detailPreviewPaletteFor(model) }
 
 // StorefrontColors.isVividHue
 private fun Color.isVividHue(): Boolean {
@@ -558,7 +574,7 @@ internal val ShibaPreviewFocusShape = RoundedCornerShape(4.dp)
 
 /** ShibaDetailParts.headerShade: the page darkened in place, so it follows the theme. */
 internal fun shibaPreviewHeaderShade(palette: DetailPreviewPalette): Color =
-    Color.Black.copy(alpha = if (palette.textPrimary.luminance() < 0.5f) 0.10f else 0.28f)
+    Color.Black.copy(alpha = if (palette.iconPrimary.luminance() < 0.5f) 0.10f else 0.28f)
 
 /** ShibaDetailParts.shibaFocus: drawn inside the element's own bounds. */
 internal fun Modifier.shibaPreviewFocus(focused: Boolean, palette: DetailPreviewPalette): Modifier =
@@ -655,7 +671,7 @@ internal fun ShibaPreviewSearchRow(
                     .shibaPreviewFocus(focused, palette)
                     .padding(horizontal = 12.dp),
             ) {
-                Icon(Icons.Filled.Search, contentDescription = null, tint = palette.textMuted, modifier = Modifier.size(20.dp))
+                Icon(Icons.Filled.Search, contentDescription = null, tint = palette.iconMuted, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(12.dp))
                 // BasicTextField's decorationBox: the placeholder over an empty field.
                 Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {

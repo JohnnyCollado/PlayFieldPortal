@@ -106,6 +106,9 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.input.pointer.isPrimaryPressed
+import androidx.compose.ui.input.pointer.isShiftPressed
 import kotlin.math.min
 
 /*
@@ -143,9 +146,11 @@ private val FocusRing = Color(0xFFE6E6EA)
 
 /**
  * The interactive preview: [XmbFrame] fit-scaled into the space it gets, with keyboard navigation
- * (arrows, Enter, Esc / Backspace, Tab / Y options, X Games filter) once focused. Right-click opens
- * the options too. Click to focus; Esc at the root, or a click elsewhere in the Studio, releases
- * focus. [nav] is hoisted so the icon picker can follow it. While [adjustOverlay] is open the keys
+ * (arrows, Enter, Esc / Backspace, Tab / Y options, X Games filter) once engaged. The first click
+ * only engages it (takes the keyboard) and never reaches a row; after that clicks, right-click
+ * (options), the mouse wheel (rows; Shift or sideways for categories) and click-and-drag swipes
+ * work like touch on the device ([PreviewPointer]). Cancel, Esc at the root, or a click elsewhere
+ * in the Studio releases it. [nav] is hoisted so the icon picker can follow it. While [adjustOverlay] is open the keys
  * drive it instead (arrows move, Q / E scale, R reset, S sliders, Enter save, Esc cancel).
  *
  * [live] makes the frame move like the device (animated wave, focused GIF icons, motion wallpaper,
@@ -167,7 +172,15 @@ fun XmbPreviewCanvas(
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     var focused by remember { mutableStateOf(false) }
+    val pointer = remember { PreviewPointer() }
+    // Mirrors pointer.engaged for composition (the Cancel button and the ring).
+    var engaged by remember { mutableStateOf(false) }
     val currentOnNav by rememberUpdatedState(onNav)
+    val release = {
+        pointer.release()
+        engaged = false
+        focusManager.clearFocus()
+    }
     // The overlay takes the keyboard the moment it opens, and the search field hands it back on close.
     LaunchedEffect(adjustOverlay != null) { if (adjustOverlay != null) runCatching { focusRequester.requestFocus() } }
     var wasSearching by remember { mutableStateOf(false) }
@@ -181,20 +194,51 @@ fun XmbPreviewCanvas(
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .size(DESIGN_WIDTH * scale, DESIGN_HEIGHT * scale)
-                .pointerInput(Unit) {
-                    // Initial pass: take focus on any press without consuming it for the rows.
+                .pointerInput(scale) {
+                    // Initial pass, so the preview sees every event before the rows do: the engaging
+                    // press, wheel steps and swipes are consumed here and never reach a row.
+                    val stepPx = TapTargetHeight.toPx() * scale
                     awaitPointerEventScope {
                         while (true) {
                             val event = awaitPointerEvent(PointerEventPass.Initial)
-                            if (event.type == PointerEventType.Press) {
-                                focusRequester.requestFocus()
-                                if (event.buttons.isSecondaryPressed) currentOnNav(PreviewNavAction.OpenOptions)
+                            val change = event.changes.firstOrNull() ?: continue
+                            when (event.type) {
+                                PointerEventType.Press -> {
+                                    pointer.dragStart()
+                                    val passes = pointer.press()
+                                    engaged = true
+                                    focusRequester.requestFocus()
+                                    if (!passes) {
+                                        event.changes.forEach { it.consume() }
+                                    } else if (event.buttons.isSecondaryPressed) {
+                                        currentOnNav(PreviewNavAction.OpenOptions)
+                                    }
+                                }
+                                PointerEventType.Move -> if (event.buttons.isPrimaryPressed) {
+                                    val moved = change.position - change.previousPosition
+                                    pointer.drag(moved.x, moved.y, stepPx).forEach(currentOnNav)
+                                    // A swipe is not a click: the row under it must not open on release.
+                                    if (pointer.dragged) event.changes.forEach { it.consume() }
+                                }
+                                PointerEventType.Release -> if (pointer.dragged) event.changes.forEach { it.consume() }
+                                PointerEventType.Scroll -> {
+                                    val delta = change.scrollDelta
+                                    pointer.wheel(delta.x, delta.y, event.keyboardModifiers.isShiftPressed).forEach(currentOnNav)
+                                    if (pointer.engaged) event.changes.forEach { it.consume() }
+                                }
                             }
                         }
                     }
                 }
                 .focusRequester(focusRequester)
-                .onFocusChanged { focused = it.hasFocus }
+                .onFocusChanged {
+                    focused = it.hasFocus
+                    // Focus went elsewhere in the Studio: the next click on the preview engages it again.
+                    if (!it.hasFocus && pointer.engaged) {
+                        pointer.release()
+                        engaged = false
+                    }
+                }
                 .onKeyEvent { event ->
                     if (event.type != KeyEventType.KeyDown || event.isCtrlPressed || event.isMetaPressed || event.isAltPressed) {
                         return@onKeyEvent false
@@ -221,7 +265,7 @@ fun XmbPreviewCanvas(
                     }
                     if (action == PreviewNavAction.Back && !PreviewNav.canGoBack(nav)) {
                         // Esc with nowhere to go back to hands the keyboard back to the Studio.
-                        if (event.key == Key.Escape) focusManager.clearFocus()
+                        if (event.key == Key.Escape) release()
                     } else {
                         onNav(action)
                     }
@@ -230,7 +274,7 @@ fun XmbPreviewCanvas(
                 .focusable()
                 .drawWithContent {
                     drawContent()
-                    if (focused) drawRect(FocusRing, style = Stroke(width = 3.dp.toPx()))
+                    if (focused && engaged) drawRect(FocusRing, style = Stroke(width = 3.dp.toPx()))
                 },
         ) {
             Box(
@@ -240,6 +284,10 @@ fun XmbPreviewCanvas(
                     .clipToBounds(),
             ) {
                 XmbFrame(model, nav, onNav, adjustOverlay, onAdjust, live, onBootFinished, screen)
+            }
+            if (engaged) {
+                // Studio chrome over the frame, unscaled: hands the keyboard and mouse back.
+                ReleaseButton(onClick = release, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp))
             }
         }
     }
@@ -540,6 +588,7 @@ private fun CategoryCell(
         modifier = Modifier
             .width(CategorySlotWidth)
             .height(CatBarHeight)
+            .focusProperties { canFocus = false }
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
             .padding(top = 4.dp),
     ) {
@@ -549,7 +598,8 @@ private fun CategoryCell(
         LegibleLabel(
             text = category.label,
             protection = model.legibility.text,
-            color = if (selected) Color.White else LabelInactive,
+            // XMBCategoryBar: themedText(if (isSelected) SelectedIcon else LabelInactive).
+            color = model.textOr(if (selected) Color.White else LabelInactive),
             fontSize = if (selected) 15.sp else 13.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             shadow = if (selected) SelectedLabelShadow else null,
@@ -688,6 +738,7 @@ private fun ItemRow(
             modifier = Modifier
                 .weight(1f, fill = false)
                 .height(TapTargetHeight)
+                .focusProperties { canFocus = false }
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
                 .padding(horizontal = 18.dp),
         ) {
@@ -699,7 +750,8 @@ private fun ItemRow(
                     LegibleLabel(
                         text = row.title,
                         protection = model.legibility.text,
-                        color = if (selected) Color.White else LabelInactive,
+                        // XMBItemList: themedText(if (isSelected) PrimaryText else InactiveText).
+                        color = model.textOr(if (selected) Color.White else LabelInactive),
                         fontSize = if (selected) spec.itemTextSelectedSp.sp else spec.itemTextSp.sp,
                         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                         shadow = if (selected) SelectedLabelShadow else null,
@@ -709,7 +761,8 @@ private fun ItemRow(
                         LegibleLabel(
                             text = row.subtitle,
                             protection = model.legibility.text,
-                            color = SecondaryText,
+                            // XMBItemList: themedSubText(SecondaryText).
+                            color = model.subTextOr(SecondaryText),
                             fontSize = if (selected) 12.sp else 11.sp,
                             shadow = SubtitleShadow,
                             overflow = TextOverflow.Ellipsis,
@@ -749,16 +802,12 @@ private fun LeadingIcon(model: XmbPreviewModel, row: SampleContent.Row, selected
         SampleContent.Leading.COVER -> Box(Modifier.width(spec.itemIconSlotDp.dp), contentAlignment = Alignment.Center) {
             FramedGlyph(model, checkNotNull(row.slotKey), Modifier.size(56.dp), glyph = 32.dp, selected)
         }
-        // The PSP's UMD, whatever the game's platform: a bundled silhouette in the icon colour. (On
-        // device a focused, read slot turns into the game's ICON0; the preview keeps the UMD.)
+        // The PSP's UMD, whatever the game's platform: the item_umd slot — the bundled silhouette in
+        // the icon colour, or the theme's art as authored. (On device a focused, read slot turns into
+        // the game's ICON0; the preview keeps the UMD.)
         SampleContent.Leading.UMD -> {
             Box(Modifier.width(spec.itemIconSlotDp.dp), contentAlignment = Alignment.Center) {
-                Image(
-                    painter = StudioIconSet.chromePainter("xmb/umd_psp.png"),
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(model.iconTint, BlendMode.SrcIn),
-                    modifier = Modifier.size(spec.itemIconDp.dp),
-                )
+                SlotIcon(model, "item_umd", Modifier.size(spec.itemIconDp.dp), focused = selected)
             }
         }
         // The Shiba Coins player card: "Lv N" in a ring, both in the icon colour.
@@ -808,7 +857,7 @@ private fun FramedGlyph(model: XmbPreviewModel, key: String, modifier: Modifier,
 }
 
 @Composable
-private fun GameLetterTile(title: String, accent: Color, modifier: Modifier) {
+internal fun GameLetterTile(title: String, accent: Color, modifier: Modifier) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
@@ -869,11 +918,33 @@ private fun BoxScope.NavMessage(nav: PreviewNavState) {
     )
 }
 
+/**
+ * The status strip's clock (epoch ms). The real time by default; renders that are compared pixel for
+ * pixel across compositions pin it, or a minute ticking over between them changes the time text.
+ */
+internal val LocalPreviewClock = androidx.compose.runtime.staticCompositionLocalOf<() -> Long> { { System.currentTimeMillis() } }
+
 // XmbStatusStrip.kt: palette, metrics and the sample device state the strip reads.
 private val StripPrimary = Color(0xFFEEEEEE)
 private val StripMuted = Color(0xAAEEEEEE)
 private val StripSep = Color(0x55FFFFFF)
 private val MeterInactive = Color(0x40EEEEEE)
+
+/**
+ * XmbStatusStrip's icon tints: the strip's greys, repainted by the theme's Main text colour at their
+ * own weight (themedText), so a muted icon stays muted and an unlit meter bar stays faint. The Sub
+ * colour never reaches them, and a theme's own status art still draws as authored.
+ */
+internal object StatusStripTints {
+    /** The built-in status glyphs (bell, controller, Bluetooth, battery): muted. */
+    fun icon(model: XmbPreviewModel): Color = model.textOr(StripMuted)
+
+    /** The date: the Main colour at full weight, matching the time, once set; else the strip's muted grey. */
+    fun date(model: XmbPreviewModel): Color = model.textOr(StripMuted, 1f)
+
+    /** A Wi-Fi / signal meter segment, lit or not. */
+    fun meter(model: XmbPreviewModel, lit: Boolean): Color = model.textOr(if (lit) StripPrimary else MeterInactive)
+}
 private val StripHeight = 28.dp
 private val StripSidePadding = 20.dp
 private val StripFontSize = 12.sp
@@ -887,8 +958,10 @@ private const val SampleBatteryPercent = 84
  */
 @Composable
 private fun BoxScope.StatusStrip(model: XmbPreviewModel, sortLabel: String?) {
-    val (date, time) = remember {
-        val now = java.util.Date()
+    // Read in composition (a CompositionLocal), formatted once per composition below.
+    val clock = LocalPreviewClock.current
+    val (date, time) = remember(clock) {
+        val now = java.util.Date(clock())
         java.text.SimpleDateFormat("MM/dd/yyyy").format(now) to java.text.SimpleDateFormat("h:mm a").format(now)
     }
     Row(
@@ -901,12 +974,13 @@ private fun BoxScope.StatusStrip(model: XmbPreviewModel, sortLabel: String?) {
             .padding(horizontal = StripSidePadding),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(date, color = StripMuted, fontSize = StripFontSize, fontWeight = FontWeight.Normal)
+            // XmbStatusStrip: the date, time and sort label are all main text (the date at its muted weight).
+            Text(date, color = StatusStripTints.date(model), fontSize = StripFontSize, fontWeight = FontWeight.Normal)
             StripSeparator()
-            Text(time, color = StripPrimary, fontSize = StripFontSize, fontWeight = FontWeight.Medium)
+            Text(time, color = model.textOr(StripPrimary), fontSize = StripFontSize, fontWeight = FontWeight.Medium)
             if (sortLabel != null) {
                 StripSeparator()
-                Text(sortLabel, color = StripPrimary, fontSize = StripFontSize, fontWeight = FontWeight.Medium, maxLines = 1)
+                Text(sortLabel, color = model.textOr(StripPrimary), fontSize = StripFontSize, fontWeight = FontWeight.Medium, maxLines = 1)
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
@@ -917,10 +991,10 @@ private fun BoxScope.StatusStrip(model: XmbPreviewModel, sortLabel: String?) {
             if (wifi != null) {
                 Image(bitmap = wifi, contentDescription = null, modifier = Modifier.size(width = 16.dp, height = 13.dp))
             } else {
-                WifiMeter(level = 4, Modifier.size(width = 16.dp, height = 13.dp))
+                WifiMeter(model, level = 4, Modifier.size(width = 16.dp, height = 13.dp))
             }
             StatusGlyph(model, batterySlotKey(SampleBatteryPercent), Modifier.size(width = 24.dp, height = 11.dp))
-            Text("$SampleBatteryPercent%", color = StripPrimary, fontSize = StripFontSize, fontWeight = FontWeight.Medium)
+            Text("$SampleBatteryPercent%", color = model.textOr(StripPrimary), fontSize = StripFontSize, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -938,7 +1012,7 @@ private fun StripSeparator() {
     Box(Modifier.width(1.dp).height(10.dp).background(StripSep))
 }
 
-/** XmbStatusStrip.StatusIcon: the built-in glyph in the strip's muted white, or the theme's art as authored. */
+/** XmbStatusStrip.StatusIcon: the built-in glyph in the strip's muted tint (Main colour once set), or the theme's art as authored. */
 @Composable
 private fun StatusGlyph(model: XmbPreviewModel, key: String, modifier: Modifier) {
     val override = model.iconOverrides[key]
@@ -948,7 +1022,7 @@ private fun StatusGlyph(model: XmbPreviewModel, key: String, modifier: Modifier)
         Image(
             painter = StudioIconSet.defaultPainter(key),
             contentDescription = null,
-            colorFilter = ColorFilter.tint(StripMuted),
+            colorFilter = ColorFilter.tint(StatusStripTints.icon(model)),
             modifier = modifier,
         )
     }
@@ -956,13 +1030,15 @@ private fun StatusGlyph(model: XmbPreviewModel, key: String, modifier: Modifier)
 
 /** XmbStatusStrip.WifiMeter: a base dot and three arcs, lit up to [level] (0..4). */
 @Composable
-private fun WifiMeter(level: Int, modifier: Modifier) {
+private fun WifiMeter(model: XmbPreviewModel, level: Int, modifier: Modifier) {
+    val lit = StatusStripTints.meter(model, lit = true)
+    val unlit = StatusStripTints.meter(model, lit = false)
     Canvas(modifier) {
         val cx = size.width / 2f
         val cy = size.height * 0.92f
         val maxR = size.height * 0.9f
         val stroke = size.height * 0.11f
-        fun color(threshold: Int) = if (level >= threshold) StripPrimary else MeterInactive
+        fun color(threshold: Int) = if (level >= threshold) lit else unlit
         drawCircle(color = color(1), radius = stroke * 1.1f, center = Offset(cx, cy))
         for (i in 1..3) {
             val r = maxR * i / 3f
@@ -1155,3 +1231,23 @@ private fun LegibleLabel(
     }
 }
 
+/**
+ * Releases the engaged preview: the keyboard and mouse go back to the Studio, and the next click
+ * on the preview engages it again. Never takes focus itself, so pressing it cannot strand the keys.
+ */
+@Composable
+private fun ReleaseButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .clip(RoundedCornerShape(50))
+            .background(Color(0xE0202024))
+            .border(1.dp, FocusRing.copy(alpha = 0.6f), RoundedCornerShape(50))
+            .focusProperties { canFocus = false }
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+    ) {
+        Text("Cancel", color = Color.White, fontSize = 12.sp)
+        Text("  Esc", color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp)
+    }
+}

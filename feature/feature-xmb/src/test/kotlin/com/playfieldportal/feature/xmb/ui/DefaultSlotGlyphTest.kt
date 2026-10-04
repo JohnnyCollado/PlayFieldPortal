@@ -132,6 +132,22 @@ class DefaultSlotGlyphTest {
     }
 
     @Test
+    fun `the UMD slot defaults to the PSP UMD art the row draws`() {
+        assertEquals(
+            SlotGlyphDefault.BundledAsset(UMD_SLOT_ART),
+            defaultGlyphFor(CustomizableIcons.byKey("item_umd")!!),
+        )
+    }
+
+    @Test
+    fun `physical media slots resolve to the platform's media art`() {
+        val slots = CustomizableIcons.group(IconSlot.Group.PHYSICAL_MEDIA)
+        assertEquals(42, slots.size)
+        assertEquals(SlotGlyphDefault.PhysicalMedia("psp"), defaultGlyphFor(CustomizableIcons.byKey("physmedia_psp")!!))
+        assertEquals(SlotGlyphDefault.PhysicalMedia("x360"), defaultGlyphFor(CustomizableIcons.byKey("physmedia_x360")!!))
+    }
+
+    @Test
     fun `item slots resolve to a Material vector`() {
         val slot = CustomizableIcons.byKey("item_missing")!!
         assertTrue(defaultGlyphFor(slot) is SlotGlyphDefault.Vector)

@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -72,6 +73,14 @@ class AudioSettingsViewModelTest {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val menuSound: MenuSoundPlayer = mockk(relaxed = true)
+
+    /** Who holds ambience down right now (AmbienceController's suppressor set). */
+    private val ambienceOwners = mutableSetOf<String>()
+    private val ambience = com.playfieldportal.core.ui.sound.AmbienceSuppressor { owner, suppressed ->
+        if (suppressed) ambienceOwners += owner else ambienceOwners -= owner
+    }
+    private val previewHoldsAmbience: Boolean
+        get() = com.playfieldportal.core.ui.sound.AmbienceController.OWNER_SOUND_PREVIEW in ambienceOwners
     private lateinit var store: UiMediaStore
     private lateinit var vm: AudioSettingsViewModel
 
@@ -90,6 +99,7 @@ class AudioSettingsViewModelTest {
             menuSound,
             AudioLevelStore(context),
             ControllerLayoutRepository(context, ControllerMappingRepository(context)),
+            ambience,
         )
     }
 
@@ -230,6 +240,25 @@ class AudioSettingsViewModelTest {
             advanceUntilIdle()
             verify(exactly = 0) { menuSound.play(any(), any()) }
         }
+
+    @Test fun `a previewed sound holds ambience down for as long as it can sound`() = runTest(dispatcher) {
+        vm.preview(UiMediaSlot.SOUND_CONFIRM)
+        assertTrue(previewHoldsAmbience, "the background music steps aside for the audition")
+        advanceTimeBy(UiMediaSlot.SOUND_CONFIRM.limits.hardMaxMs - 1)
+        assertTrue(previewHoldsAmbience)
+        advanceTimeBy(2)
+        assertFalse(previewHoldsAmbience, "the music comes back once the sound is over")
+    }
+
+    @Test fun `previewing again restarts the hold rather than ending it early`() = runTest(dispatcher) {
+        vm.preview(UiMediaSlot.SOUND_NOTIFICATION)
+        advanceTimeBy(UiMediaSlot.SOUND_NOTIFICATION.limits.hardMaxMs - 100)
+        vm.preview(UiMediaSlot.SOUND_SCROLL)
+        advanceTimeBy(200)
+        assertTrue(previewHoldsAmbience, "the second audition is still sounding")
+        advanceTimeBy(UiMediaSlot.SOUND_SCROLL.limits.hardMaxMs)
+        assertFalse(previewHoldsAmbience)
+    }
 
     @Test fun `previewing a slot this screen does not own is a no-op`() = runTest(dispatcher) {
         // A video slot has no MenuSound event. Before, the else-branch handed it to an ExoPlayer;

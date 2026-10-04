@@ -27,8 +27,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
@@ -318,7 +320,12 @@ object PreviewFlyout {
 private val PanelWidth = 300.dp
 
 // PspContextMenu TextDropShadow: black .75, (0, 2), blur 4.
-private val MenuTextShadow = Shadow(Color.Black.copy(alpha = 0.75f), Offset(0f, 2f), 4f)
+internal const val MENU_SHADOW_ALPHA = 0.75f
+private val MenuTextShadow = Shadow(Color.Black.copy(alpha = MENU_SHADOW_ALPHA), Offset(0f, 2f), 4f)
+
+/** PspContextMenu.menuTextShadowFor: the shadow dims with the fill, so a 45% header is not darker behind than in front. */
+internal fun menuTextShadowFor(fill: Color): Shadow =
+    MenuTextShadow.copy(color = MenuTextShadow.color.copy(alpha = MENU_SHADOW_ALPHA * fill.alpha))
 
 /**
  * PspContextMenuOverlay over the frame: light scrim (a click dismisses), then the right-edge panel
@@ -337,6 +344,7 @@ fun BoxScope.FlyoutPanel(model: XmbPreviewModel, nav: PreviewNavState, onNav: (P
         Modifier
             .fillMaxSize()
             .background(Color(0x40000000))
+            .focusProperties { canFocus = false }
             .clickable(interactionSource = none, indication = null) { onNav(PreviewNavAction.DismissFlyout) },
     )
     Column(
@@ -344,7 +352,8 @@ fun BoxScope.FlyoutPanel(model: XmbPreviewModel, nav: PreviewNavState, onNav: (P
             .align(Alignment.CenterEnd)
             .fillMaxHeight()
             .width(PanelWidth)
-            .background(model.menuPanelBackdrop)
+            .background(Brush.verticalGradient(optionsPanelBackdrop(model)))
+            .focusProperties { canFocus = false }
             .clickable(interactionSource = none, indication = null) {} // swallow clicks inside the panel
             .padding(start = 28.dp, end = 40.dp),
         verticalArrangement = Arrangement.Center,
@@ -353,15 +362,16 @@ fun BoxScope.FlyoutPanel(model: XmbPreviewModel, nav: PreviewNavState, onNav: (P
             text = PreviewFlyout.title(nav),
             fontSize = 19.sp,
             fontWeight = FontWeight.Light,
-            color = Color.White.copy(alpha = 0.92f),
-            style = TextStyle(shadow = MenuTextShadow),
+            // PspContextMenu: themedText(White @ 0.92).
+            color = model.textOr(Color.White.copy(alpha = 0.92f)),
+            style = TextStyle(shadow = menuTextShadowFor(model.textOr(Color.White.copy(alpha = 0.92f)))),
             maxLines = 2,
             modifier = Modifier.padding(bottom = 10.dp),
         )
         Box(Modifier.fillMaxWidth().padding(end = 8.dp).height(1.dp).background(Color.White.copy(alpha = 0.30f)))
         LazyColumn(state = listState, modifier = Modifier.padding(top = 10.dp)) {
             itemsIndexed(rows) { index, row ->
-                row.header?.let { FlyoutGroupHeader(it, first = index == 0) }
+                row.header?.let { FlyoutGroupHeader(model, it, first = index == 0) }
                 FlyoutRow(model, row, selected = index == flyout.cursor, onClick = { onNav(PreviewNavAction.ClickFlyoutRow(index)) })
             }
         }
@@ -373,28 +383,29 @@ private fun FlyoutRow(model: XmbPreviewModel, row: PreviewMenuRow, selected: Boo
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            // The cursor: a glow band that brightens toward the screen edge; no border, no box.
-            .background(
-                Brush.horizontalGradient(
-                    0f to Color.Transparent,
-                    1f to if (selected) model.menuCursorEdge.copy(alpha = 0.40f) else Color.Transparent,
-                ),
-            )
+            // The cursor: PspContextMenu's solid row fill, the Settings rows' menuCursorFill.
+            .background(if (selected) lerp(model.drillCursor, Color.White, 0.20f).copy(alpha = 0.34f) else Color.Transparent)
+            .focusProperties { canFocus = false }
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
             .padding(vertical = 12.dp),
     ) {
+        val labelColor = when {
+            row.destructive && selected -> Color(0xFFFF7070)
+            row.destructive -> Color(0xAAFF7070)
+            // PspContextMenu: the focused label is plain white on the cursor (as in Settings);
+            // the others are themedText at their own weight.
+            selected -> Color.White
+            else -> model.textOr(Color.White.copy(alpha = 0.62f))
+        }
+        // PspContextMenu: values and the submenu arrow are sub text, at one weight.
+        val subColor = model.subTextOr(Color.White.copy(alpha = if (selected) 0.85f else 0.55f))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = row.label,
                 fontSize = if (selected) 16.sp else 15.sp,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                color = when {
-                    row.destructive && selected -> Color(0xFFFF7070)
-                    row.destructive -> Color(0xAAFF7070)
-                    selected -> Color.White
-                    else -> Color.White.copy(alpha = 0.62f)
-                },
-                style = TextStyle(shadow = MenuTextShadow),
+                color = labelColor,
+                style = TextStyle(shadow = menuTextShadowFor(labelColor)),
                 // A value fills the row so it can sit on the far edge; otherwise the label hugs its
                 // text, which keeps a check mark right beside the words.
                 modifier = if (row.value != null) Modifier.weight(1f) else Modifier.weight(1f, fill = false),
@@ -405,8 +416,8 @@ private fun FlyoutRow(model: XmbPreviewModel, row: PreviewMenuRow, selected: Boo
                     text = row.value,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Normal,
-                    color = Color.White.copy(alpha = if (selected) 0.85f else 0.55f),
-                    style = TextStyle(shadow = MenuTextShadow),
+                    color = subColor,
+                    style = TextStyle(shadow = menuTextShadowFor(subColor)),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -420,8 +431,8 @@ private fun FlyoutRow(model: XmbPreviewModel, row: PreviewMenuRow, selected: Boo
                 Text(
                     text = "›",
                     fontSize = 17.sp,
-                    color = Color.White.copy(alpha = if (selected) 0.85f else 0.55f),
-                    style = TextStyle(shadow = MenuTextShadow),
+                    color = subColor,
+                    style = TextStyle(shadow = menuTextShadowFor(subColor)),
                 )
             }
         }
@@ -430,16 +441,17 @@ private fun FlyoutRow(model: XmbPreviewModel, row: PreviewMenuRow, selected: Boo
 
 /** PspContextMenuGroupHeader: a group's name, with a faint rule above every group but the first. */
 @Composable
-private fun FlyoutGroupHeader(label: String, first: Boolean) {
+private fun FlyoutGroupHeader(model: XmbPreviewModel, label: String, first: Boolean) {
     Column(Modifier.fillMaxWidth().padding(top = if (first) 0.dp else 8.dp)) {
         if (!first) {
             Box(Modifier.fillMaxWidth().padding(end = 8.dp).height(1.dp).background(Color.White.copy(alpha = 0.14f)))
         }
+        val headerColor = model.subTextOr(Color.White.copy(alpha = 0.45f))
         Text(
             text = label,
             fontSize = 11.sp,
-            color = Color.White.copy(alpha = 0.45f),
-            style = TextStyle(shadow = MenuTextShadow),
+            color = headerColor,
+            style = TextStyle(shadow = menuTextShadowFor(headerColor)),
             modifier = Modifier.padding(top = if (first) 0.dp else 8.dp),
         )
     }
@@ -467,3 +479,12 @@ private fun CheckMark(model: XmbPreviewModel) {
 }
 
 private const val MENU_CHECK_KEY = "menu_check"
+
+/**
+ * PspContextMenu's panel: the full-screen storefront backdrop (the drawer's deep-to-mid gradient),
+ * never the raw accent — a bright accent made the old panel lighter than the page behind it.
+ */
+internal fun optionsPanelBackdrop(model: XmbPreviewModel): List<Color> {
+    val sf = com.playfieldportal.studio.preview.screens.drawerPalette(model)
+    return listOf(sf.backgroundDeep, sf.backgroundMid)
+}

@@ -52,7 +52,8 @@ import kotlin.math.roundToInt
  *
  * Theme inputs: wave colour + background anchors (detailPaletteFor: page, accent, text, rows, ICON0
  * tile accent, level medallion), the wallpaper / frozen wave behind the page, the shiba_coin_* and
- * menu_back icon overrides. Coin art is drawn as authored (never tinted, no matte); text colour, icon
+ * menu_back icon overrides, and the Main / Sub text colours through the palette. Coin art is drawn as
+ * authored (never tinted, no matte); the level medallion's text is fixed, as on the device. Icon
  * colour and legibility are not read here.
  */
 

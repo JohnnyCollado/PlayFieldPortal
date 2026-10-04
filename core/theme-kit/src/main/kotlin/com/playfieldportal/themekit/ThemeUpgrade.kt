@@ -64,6 +64,7 @@ object ThemeUpgrade {
             if (bundle.preview != null) add("Preview image")
             if (bundle.icons.isNotEmpty()) add(count(bundle.icons.size, "custom icon"))
             if (bundle.sysicons.isNotEmpty()) add(count(bundle.sysicons.size, "console icon"))
+            if (bundle.mediaicons.isNotEmpty()) add(count(bundle.mediaicons.size, "physical media icon"))
             bundle.motion?.let { add("Motion wallpaper (${it.extension})") }
             val sounds = bundle.media.keys.count { ThemeMediaSlots.slot(it)?.kind == UiMediaLimits.Kind.SOUND }
             if (sounds > 0) add(count(sounds, "menu sound"))

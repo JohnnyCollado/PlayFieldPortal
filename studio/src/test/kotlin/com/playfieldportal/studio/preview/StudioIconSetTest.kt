@@ -21,9 +21,10 @@ class StudioIconSetTest {
 
     @Test
     fun `every non-console customizable slot has studio art`() {
+        // Console and physical-media art resolve by platform id (consoleResource / physicalMediaResource).
         val studioKeys = StudioIconSet.RESOURCE_SLOTS.keys + StudioIconSet.ITEM_VECTORS.keys
         val expected = CustomizableIcons.ALL
-            .filter { it.group != IconSlot.Group.CONSOLE }
+            .filter { it.group != IconSlot.Group.CONSOLE && it.group != IconSlot.Group.PHYSICAL_MEDIA }
             .map { it.key }
         assertEquals(
             expected.sorted(),
@@ -44,6 +45,12 @@ class StudioIconSetTest {
             StudioIconSet::class.java.classLoader.getResource(it) == null
         }
         assertTrue(missing.isEmpty(), "resource slots with no classpath file: $missing")
+    }
+
+    @Test
+    fun `the UMD slot previews the PSP UMD the preview row draws`() {
+        assertEquals("xmb/umd_psp.png", StudioIconSet.RESOURCE_SLOTS["item_umd"])
+        assertTrue(!StudioIconSet.isFullColour("item_umd"), "the UMD is a silhouette in the icon colour")
     }
 
     @Test

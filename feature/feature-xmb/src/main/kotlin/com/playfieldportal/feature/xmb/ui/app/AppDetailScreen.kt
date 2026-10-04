@@ -199,7 +199,6 @@ fun AppDetailScreen(
                 selectedIndex = state.optionsIndex,
                 onRowActivated = { viewModel.activateOption(options[it]) },
                 onDismiss = viewModel::closeMenus,
-                panelAlpha = 0.88f,
             )
         }
 

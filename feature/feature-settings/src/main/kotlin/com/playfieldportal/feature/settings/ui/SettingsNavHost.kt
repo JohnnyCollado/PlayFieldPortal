@@ -157,6 +157,7 @@ fun SettingsNavHost(
             "settings_themes"     -> ThemesSettingsScreen(
                 onBack = onBack,
                 onOpenColorSchemePicker = onOpenColorSchemePicker,
+                onOpenCustomIcons = onOpenCustomIcons,
                 modifier = modifier,
             )
             "settings_collections" -> CollectionsSettingsScreen(onBack = onBack, onOpenGameDetail = onOpenGameDetail, modifier = modifier)
@@ -164,7 +165,6 @@ fun SettingsNavHost(
             "settings_display"    -> DisplaySettingsScreen(
                 onBack = onBack,
                 onOpenXmbLayoutAdjust = onOpenXmbLayoutAdjust,
-                onOpenCustomIcons = onOpenCustomIcons,
                 onPreviewBootSequence = onPreviewBootSequence,
                 onPreviewGameBoot = onPreviewGameBoot,
                 modifier = modifier,

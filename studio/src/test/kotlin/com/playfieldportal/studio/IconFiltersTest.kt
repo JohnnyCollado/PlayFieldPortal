@@ -8,6 +8,9 @@ import com.playfieldportal.studio.preview.PreviewNavAction
 import com.playfieldportal.studio.preview.PreviewNavState
 import com.playfieldportal.studio.preview.SampleContent
 import com.playfieldportal.themekit.CustomizableIcons
+import com.playfieldportal.themekit.IconEditorLayout
+import com.playfieldportal.themekit.IconEditorTab
+import com.playfieldportal.themekit.IconSlot
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -25,17 +28,43 @@ class IconFiltersTest {
     fun `group counts cover the editable slots only`() {
         val counts = IconPicker.counts()
         assertEquals(
-            mapOf(PickerGroup.CROSSBAR to 9, PickerGroup.ITEMS to 34, PickerGroup.CONSOLES to 47),
+            mapOf(IconEditorTab.CROSSBAR to 9, IconEditorTab.ITEMS to 39, IconEditorTab.CONSOLES to 45, IconEditorTab.PHYSICAL_MEDIA to 42),
             counts,
         )
         assertEquals(EditableSlots.ALL.size, counts.values.sum())
     }
 
     @Test
+    fun `the picker lists the launcher editor's slots in XMB order`() {
+        // One list for both editors: Customize XMB Icons on the device shows exactly this.
+        assertEquals(IconEditorLayout.ALL, EditableSlots.ALL)
+        assertEquals(IconEditorLayout.ALL.map { it.key }, keys(PickerQuery()))
+        assertEquals(
+            IconEditorLayout.slots(IconEditorTab.ITEMS).map { it.key },
+            keys(PickerQuery(group = IconEditorTab.ITEMS)),
+        )
+    }
+
+    @Test
+    fun `All Games and Favorites are Game column items`() {
+        for (key in listOf("sysicon_allgames", "sysicon_favorites")) {
+            assertEquals(IconEditorTab.ITEMS, IconPicker.groupOf(CustomizableIcons.byKey(key)!!), key)
+        }
+    }
+
+    @Test
+    fun `the favorites category icon is not listed but survives a round trip`() {
+        assertFalse(EditableSlots.isEditable("catbar_favorites"))
+        assertTrue(EditableSlots.isKept("catbar_favorites"))
+        assertFalse(EditableSlots.isKept("status_wifi"))
+        assertTrue("catbar_favorites" !in keys(PickerQuery()))
+    }
+
+    @Test
     fun `the parts themes keep stock are not editable`() {
         // Status strip, Shiba Coins, media controls, Game Detail, notifications and menus keep the launcher's art.
         listOf(
-            "status_wifi", "status_battery_full", "item_shiba_track", "shiba_coin_gold",
+            "status_wifi", "status_battery_full", "shiba_coin_gold",
             "media_play", "detail_more", "notif_coin", "menu_check",
         ).forEach { key ->
             assertFalse(EditableSlots.isEditable(key), key)
@@ -45,8 +74,25 @@ class IconFiltersTest {
     }
 
     @Test
+    fun `the shiba coins hub rows are editable items`() {
+        for (key in listOf("item_shiba_connect", "item_shiba_track", "item_shiba_untracked")) {
+            assertTrue(EditableSlots.isEditable(key), key)
+            assertEquals(IconEditorTab.ITEMS, IconPicker.groupOf(CustomizableIcons.byKey(key)!!), key)
+        }
+        val shiba = IconPicker.onScreenKeys("catbar_achievements")
+        assertTrue(listOf("item_shiba_connect", "item_shiba_track", "item_shiba_untracked").all { it in shiba }, shiba.toString())
+    }
+
+    @Test
+    fun `the UMD slot is an editable item shown with the games`() {
+        assertTrue(EditableSlots.isEditable("item_umd"))
+        assertEquals(IconEditorTab.ITEMS, IconPicker.groupOf(CustomizableIcons.byKey("item_umd")!!))
+        assertTrue("item_umd" in IconPicker.onScreenKeys("catbar_games"))
+    }
+
+    @Test
     fun `every editable slot belongs to exactly one chip`() {
-        val seen = PickerGroup.entries.flatMap { keys(PickerQuery(group = it)) }
+        val seen = IconEditorTab.entries.flatMap { keys(PickerQuery(group = it)) }
         assertEquals(EditableSlots.ALL.map { it.key }.sorted(), seen.sorted())
     }
 
@@ -82,12 +128,12 @@ class IconFiltersTest {
     @Test
     fun `filters combine with AND`() {
         val custom = setOf("sysicon_cps1", "sysicon_psx", "catbar_games")
-        val query = PickerQuery(search = "cps", group = PickerGroup.CONSOLES, customizedOnly = true)
+        val query = PickerQuery(search = "cps", group = IconEditorTab.CONSOLES, customizedOnly = true)
         assertEquals(listOf("sysicon_cps1"), keys(query, customized = custom))
         val onScreen = setOf("catbar_games", "sysicon_psx")
         assertEquals(
             listOf("sysicon_psx"),
-            keys(PickerQuery(onScreen = true, customizedOnly = true, group = PickerGroup.CONSOLES), custom, onScreen),
+            keys(PickerQuery(onScreen = true, customizedOnly = true, group = IconEditorTab.CONSOLES), custom, onScreen),
         )
     }
 
@@ -97,10 +143,9 @@ class IconFiltersTest {
     fun `home shows the crossbar and the sample rows`() {
         val home = IconPicker.onScreenKeys()
         assertTrue(home.all(EditableSlots::isEditable))
-        // The nine seeded categories; Favorites is a custom-category icon, listed with the items.
+        // The nine seeded categories; the Favorites category icon is not listed.
         assertEquals(9, home.count { it.startsWith("catbar_") })
         assertTrue("catbar_favorites" !in home)
-        assertEquals(PickerGroup.ITEMS, IconPicker.groupOf(CustomizableIcons.byKey("catbar_favorites")!!))
         assertTrue(home.all { CustomizableIcons.isValidKey(it) })
         // With the preview's Home frame fed in, every themeable row on screen is listed.
         val frame = IconPicker.onScreenKeys(PreviewNav.categoryKey(PreviewNavState.HOME), PreviewNav.shownSlotKeys(PreviewNavState.HOME))
@@ -158,6 +203,36 @@ class IconFiltersTest {
         assertEquals(1f, catbar.first().alpha)
         assertTrue(IconPicker.previewSizes(CustomizableIcons.byKey("item_add")!!).any { it.label == "In list" })
         EditableSlots.ALL.forEach { assertTrue(IconPicker.previewSizes(it).isNotEmpty(), it.key) }
+    }
+
+    @Test
+    fun `physical media previews at the launcher's natural art height`() {
+        // GameIconView.NATURAL_ART_HEIGHT: Physical Media mode draws the media art 84 dp tall.
+        assertEquals(listOf(84), IconPicker.previewSizes(CustomizableIcons.byKey("physmedia_psx")!!).map { it.dp })
+    }
+
+    // ── Physical media ───────────────────────────────────────────────────────
+
+    @Test
+    fun `physical media has its own chip, apart from the console icons`() {
+        assertEquals(IconEditorTab.PHYSICAL_MEDIA, IconPicker.groupOf(CustomizableIcons.byKey("physmedia_ps3")!!))
+        assertEquals(IconEditorTab.CONSOLES, IconPicker.groupOf(CustomizableIcons.byKey("sysicon_ps3")!!))
+        val chip = keys(PickerQuery(group = IconEditorTab.PHYSICAL_MEDIA))
+        assertEquals(CustomizableIcons.group(IconSlot.Group.PHYSICAL_MEDIA).map { it.key }, chip)
+        assertEquals("Physical Media", IconEditorTab.PHYSICAL_MEDIA.label)
+    }
+
+    @Test
+    fun `searching a platform finds its console icon and its media`() {
+        val ps3 = keys(PickerQuery(search = "PS3"))
+        assertTrue("sysicon_ps3" in ps3 && "physmedia_ps3" in ps3, ps3.toString())
+        assertTrue("physmedia_psx" in keys(PickerQuery(search = "physical media")))
+    }
+
+    @Test
+    fun `physical media is never on screen - the preview draws no media art`() {
+        val frame = IconPicker.onScreenKeys(PreviewNav.categoryKey(PreviewNavState.HOME), PreviewNav.shownSlotKeys(PreviewNavState.HOME))
+        assertTrue(frame.none { it.startsWith("physmedia_") })
     }
 
     // ── Pack report ──────────────────────────────────────────────────────────

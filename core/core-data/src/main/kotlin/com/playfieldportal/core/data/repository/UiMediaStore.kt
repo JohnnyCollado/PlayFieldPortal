@@ -86,6 +86,16 @@ class UiMediaStore @Inject constructor(
     // ── Queries ──────────────────────────────────────────────────────────────
 
     /**
+     * The slots the applied theme supplies (the `theme-media/` tier). They play wherever the user
+     * has not assigned their own ([assignments] wins in [pathFor]); the settings rows show them as
+     * "From theme".
+     */
+    fun themeAssignments(): Set<UiMediaSlot> =
+        themeDir.listFiles { f -> f.isFile }.orEmpty()
+            .filter { it.extension.lowercase() in storedExtensions }
+            .mapNotNullTo(HashSet()) { UiMediaSlot.fromKey(it.nameWithoutExtension) }
+
+    /**
      * Every assigned slot → its file's absolute path. Cheap: one directory listing. Powers the
      * settings screens' value rows.
      */
@@ -172,7 +182,7 @@ class UiMediaStore @Inject constructor(
         // Recorded here rather than by the caller: a slot with a file but no name would render
         // "Custom sound" forever, and there is no second place that knows the source Uri.
         recordDisplayName(slot, uri)
-        context.pfpDataStore.edit { prefs -> prefs[KEY_UI_MEDIA_STAMP] = System.currentTimeMillis() }
+        context.pfpDataStore.edit { prefs -> prefs.bumpStamp(KEY_UI_MEDIA_STAMP) }
         ImportResult(true)
     }
 
@@ -189,7 +199,7 @@ class UiMediaStore @Inject constructor(
             context.pfpDataStore.edit { prefs ->
                 // The name goes with the file — a stale one would label the PFP default.
                 prefs.remove(displayNameKey(slot))
-                prefs[KEY_UI_MEDIA_STAMP] = System.currentTimeMillis()
+                prefs.bumpStamp(KEY_UI_MEDIA_STAMP)
             }
         }
         removed
@@ -246,7 +256,7 @@ class UiMediaStore @Inject constructor(
         }
 
         if (removedAny) {
-            context.pfpDataStore.edit { it[KEY_UI_MEDIA_STAMP] = System.currentTimeMillis() }
+            context.pfpDataStore.edit { it.bumpStamp(KEY_UI_MEDIA_STAMP) }
         }
         removedAny
     }

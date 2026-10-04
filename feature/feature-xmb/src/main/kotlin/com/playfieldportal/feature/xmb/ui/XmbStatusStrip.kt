@@ -56,7 +56,8 @@ import com.playfieldportal.core.ui.icons.CustomIcon
 import com.playfieldportal.core.ui.icons.CustomIconSurface
 import com.playfieldportal.core.ui.icons.LocalCustomIcons
 import com.playfieldportal.core.ui.icons.LocalXmbIconOverrides
-import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.core.ui.theme.LocalPFPColors
+import com.playfieldportal.core.ui.theme.textOr
 import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.xmb.R
 import kotlinx.coroutines.delay
@@ -66,8 +67,10 @@ import java.util.Locale
 
 // ── Status bar colours ────────────────────────────────────────────────────────
 
-// Text in the strip reads these through themedText / themedSubText, so the user's Main and Sub
-// font colours take over at the same weights (primary opaque, muted 0xAA); icon tints keep them.
+// Everything in the strip — the date, time, sort label and counts, the built-in icons and the
+// meters — follows the user's Main font colour: at the same weights (primary opaque, a muted icon
+// 0xAA, an unlit bar faint), except the date, which takes it at full weight to match the time. The Sub colour never reaches the strip;
+// a theme's own status art still draws as authored, and low battery stays red.
 private val StripPrimary = Color(0xFFEEEEEE)
 private val StripMuted   = Color(0xAAEEEEEE)
 private val StripSep     = Color(0x55FFFFFF)
@@ -266,7 +269,9 @@ fun XmbPspStatusStrip(
             verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text(dateString, color = themedSubText(StripMuted),   fontSize = StripFontSize, fontWeight = FontWeight.Normal)
+            // The date matches the time once a Main colour is set (full weight); left alone it keeps
+            // the strip's quieter built-in grey.
+            Text(dateString, color = LocalPFPColors.current.textOr(StripMuted, weight = 1f), fontSize = StripFontSize, fontWeight = FontWeight.Normal)
             StripSeparator()
             Text(timeString, color = themedText(StripPrimary), fontSize = StripFontSize, fontWeight = FontWeight.Medium)
             // Current sort mode — shown only on sortable lists. Touch: a tappable chip that cycles
@@ -315,7 +320,7 @@ fun XmbPspStatusStrip(
                     Icon(
                         imageVector        = Icons.Filled.SportsEsports,
                         contentDescription = "Controller connected",
-                        tint               = StripMuted,
+                        tint               = themedText(StripMuted),
                         modifier           = Modifier.size(15.dp),
                     )
                 }
@@ -358,7 +363,7 @@ fun XmbPspStatusStrip(
                     BatteryPowerState.UNPLUGGED -> "Battery"
                 },
                 modifier    = Modifier.size(width = 24.dp, height = 11.dp),
-                tint        = if (lowBattery) LowBatteryTint else StripMuted,
+                tint        = if (lowBattery) LowBatteryTint else themedText(StripMuted),
                 slotKey     = batterySlot,
             )
             // The bolt and the percentage sit tight together as one "⚡40%" readout, rather than
@@ -373,7 +378,7 @@ fun XmbPspStatusStrip(
                     Icon(
                         imageVector        = Icons.Filled.Bolt,
                         contentDescription = null,
-                        tint               = StripPrimary,
+                        tint               = themedText(StripPrimary),
                         modifier           = Modifier.size(11.dp),
                     )
                 }
@@ -416,7 +421,7 @@ private fun NotificationButton(
     // The count wins when both apply: "3 unread" is more actionable than "something is running",
     // and the running state is already spelled out by a live bar inside the panel.
     val active = unread > 0 || running
-    val tint = if (active) StripPrimary else StripMuted
+    val tint = themedText(if (active) StripPrimary else StripMuted)
     // Idle sits a step under the sort chip's 0x24 so a bell with nothing to say recedes without
     // losing its shape; active matches the chip exactly.
     val fill = if (active) PillFill else PillFillIdle
@@ -455,7 +460,7 @@ private fun NotificationButton(
                     Modifier
                         .size(5.dp)
                         .clip(CircleShape)
-                        .background(StripPrimary),
+                        .background(themedText(StripPrimary)),
                 )
             }
         }
@@ -473,8 +478,8 @@ private fun NotificationButton(
 // ── Signal-strength meters (theme-neutral white, level-aware) ──────────────────
 //
 // Both draw [level] (0..4) as filled vs dimmed segments so the strength reads at a glance. Drawn on
-// Canvas rather than shipping five drawables each, and tinted from the strip palette so they sit
-// with the rest of the bar.
+// Canvas rather than shipping five drawables each, and tinted from the strip palette (through the
+// Main text colour, like the icons) so they sit with the rest of the bar.
 
 private val MeterActive   = StripPrimary
 private val MeterInactive = Color(0x40EEEEEE)
@@ -482,6 +487,8 @@ private val MeterInactive = Color(0x40EEEEEE)
 // Four ascending vertical bars — the classic cellular meter.
 @Composable
 private fun SignalBars(level: Int, modifier: Modifier = Modifier) {
+    val active = themedText(MeterActive)
+    val inactive = themedText(MeterInactive)
     Canvas(modifier = modifier) {
         val bars = 4
         val gap = size.width * 0.14f
@@ -491,7 +498,7 @@ private fun SignalBars(level: Int, modifier: Modifier = Modifier) {
             val x = i * (barWidth + gap)
             val top = size.height - barHeight
             drawRect(
-                color = if (i < level) MeterActive else MeterInactive,
+                color = if (i < level) active else inactive,
                 topLeft = Offset(x, top),
                 size = Size(barWidth, barHeight),
             )
@@ -503,13 +510,15 @@ private fun SignalBars(level: Int, modifier: Modifier = Modifier) {
 // dot = 1, +arc = 2, ++arc = 3, +++arc = 4 (0 = all dimmed).
 @Composable
 private fun WifiMeter(level: Int, modifier: Modifier = Modifier) {
+    val active = themedText(MeterActive)
+    val inactive = themedText(MeterInactive)
     Canvas(modifier = modifier) {
         val cx = size.width / 2f
         val cy = size.height * 0.92f
         val maxR = size.height * 0.9f
         val stroke = size.height * 0.11f
 
-        fun color(threshold: Int) = if (level >= threshold) MeterActive else MeterInactive
+        fun color(threshold: Int) = if (level >= threshold) active else inactive
 
         // Base dot (level ≥ 1).
         drawCircle(color = color(1), radius = stroke * 1.1f, center = Offset(cx, cy))
@@ -570,7 +579,7 @@ private fun StatusIcon(
     @DrawableRes res: Int,
     description: String,
     modifier: Modifier = Modifier,
-    tint: Color = StripMuted,
+    tint: Color = themedText(StripMuted),
     // Themeable slot: a theme's custom status icon renders as-authored (untinted), like
     // every other icon slot. Null = not themeable (meters drawn on Canvas have no slot).
     slotKey: String? = null,

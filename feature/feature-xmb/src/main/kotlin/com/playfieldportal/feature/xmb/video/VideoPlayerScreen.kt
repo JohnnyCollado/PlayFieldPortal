@@ -73,6 +73,7 @@ import com.playfieldportal.core.ui.components.XmbKebabTouchButton
 import com.playfieldportal.core.ui.components.XmbMediaPillScrim
 import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import com.playfieldportal.core.ui.theme.deriveStorefrontColors
+import com.playfieldportal.feature.xmb.ui.HoldAmbience
 import com.playfieldportal.feature.xmb.ui.media.MediaScrubBar
 import com.playfieldportal.feature.xmb.ui.media.TransportAction
 import com.playfieldportal.feature.xmb.ui.media.TransportButton
@@ -101,16 +102,6 @@ private const val CONTROLS_TIMEOUT_MS = 3_500L
  * appear for a finger and get out of the way for a stick.
  */
 @UnstableApi
-/**
- * Hilt reach-through for a composable that has no constructor to inject into. Only the ambience
- * suppression needs it, so it stays file-private in spirit — one method, one caller.
- */
-@dagger.hilt.EntryPoint
-@dagger.hilt.InstallIn(dagger.hilt.components.SingletonComponent::class)
-interface VideoAmbienceEntryPoint {
-    fun ambienceController(): com.playfieldportal.core.ui.sound.AmbienceController
-}
-
 @Composable
 fun VideoPlayerScreen(
     videos: List<Video>,
@@ -206,21 +197,7 @@ fun VideoPlayerScreen(
     // from the volume model (it plays the user's own media at system volume), but that is a
     // separate question from whether it should talk over the launcher's background music — it
     // should not. Scoped to composition, so backing out restores ambience by construction.
-    DisposableEffect(Unit) {
-        val ambience = dagger.hilt.android.EntryPointAccessors
-            .fromApplication(context.applicationContext, VideoAmbienceEntryPoint::class.java)
-            .ambienceController()
-        ambience.setSuppressed(
-            com.playfieldportal.core.ui.sound.AmbienceController.OWNER_VIDEO,
-            suppressed = true,
-        )
-        onDispose {
-            ambience.setSuppressed(
-                com.playfieldportal.core.ui.sound.AmbienceController.OWNER_VIDEO,
-                suppressed = false,
-            )
-        }
-    }
+    HoldAmbience(com.playfieldportal.core.ui.sound.AmbienceController.OWNER_VIDEO)
 
     // Persist resume position on dispose (back-out or process teardown) and release the player.
     val currentRef by rememberUpdatedState(current)

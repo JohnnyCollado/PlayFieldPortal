@@ -195,6 +195,18 @@ class ThemeUpgradeTest {
     }
 
     @Test
+    fun `report counts physical media art`() {
+        val bundle = PfpThemeBundle(
+            manifest = PfpThemeManifest(name = "Discs", accentColor = "#000000"),
+            wallpaper = null,
+            preview = null,
+            mediaicons = mapOf("psp" to ThemeImage(byteArrayOf(1), "png"), "snes" to ThemeImage(byteArrayOf(2), "png")),
+        )
+        val r = ThemeUpgrade.report(bundle, ReadDiagnostics())
+        assertTrue(r.kept.anyContains("2 physical media icons"), r.kept.toString())
+    }
+
+    @Test
     fun `v4 report has nothing to add or repair`() {
         val r = report("v4")
         assertTrue(r.added.isEmpty(), r.added.toString())

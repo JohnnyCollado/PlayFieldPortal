@@ -7,6 +7,7 @@ import com.playfieldportal.studio.preview.screens.AppPickerScreenPreview
 import com.playfieldportal.studio.preview.screens.ArtworkStudioScreenPreview
 import com.playfieldportal.studio.preview.screens.GameAchievementsScreenPreview
 import com.playfieldportal.studio.preview.screens.GameDetailScreenPreview
+import com.playfieldportal.studio.preview.screens.GamePickerScreenPreview
 import com.playfieldportal.studio.preview.screens.SettingsScreenPreview
 
 /**
@@ -19,6 +20,7 @@ enum class PreviewScreen(val label: String) {
     APP_DRAWER("App Drawer"),
     SETTINGS("Settings"),
     APP_PICKER("App Picker"),
+    GAME_PICKER("Game Picker"),
     ARTWORK_STUDIO("Artwork Studio"),
     GAME_DETAIL("Game Detail Screen"),
     ACHIEVEMENTS("Achievement Screen"),
@@ -33,6 +35,7 @@ fun ScreenPreview(screen: PreviewScreen, model: XmbPreviewModel) {
         PreviewScreen.APP_DRAWER -> AppDrawerScreenPreview(model)
         PreviewScreen.SETTINGS -> SettingsScreenPreview(model)
         PreviewScreen.APP_PICKER -> AppPickerScreenPreview(model)
+        PreviewScreen.GAME_PICKER -> GamePickerScreenPreview(model)
         PreviewScreen.ARTWORK_STUDIO -> ArtworkStudioScreenPreview(model)
         PreviewScreen.GAME_DETAIL -> GameDetailScreenPreview(model)
         PreviewScreen.ACHIEVEMENTS -> AchievementsScreenPreview(model)

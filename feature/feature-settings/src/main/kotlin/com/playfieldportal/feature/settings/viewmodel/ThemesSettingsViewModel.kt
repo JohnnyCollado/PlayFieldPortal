@@ -9,21 +9,27 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.data.repository.CustomIconStore
+import com.playfieldportal.core.data.repository.GameBootPreferences
 import com.playfieldportal.core.data.repository.PfpThemeStore
 import com.playfieldportal.core.data.repository.PtfThemeImporter
+import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.PFPTheme
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -41,6 +47,11 @@ data class ThemesSettingsUiState(
     val savedThemes: List<PfpThemeStore.SavedTheme> = emptyList(),
     // Installed .xmbtheme themes from the ThemeRepository (built-in + user-installed).
     val installedThemes: List<PFPTheme> = emptyList(),
+    // Raised after an apply when the theme's media would not play as things stand (the user's own
+    // assignments outrank it, or GameBoot / the boot sequence is off). Null = nothing to ask.
+    val mediaPrompt: ThemeMediaPrompt? = null,
+    // Customize XMB Icons' value: the user's own picks, "None custom" / "N custom".
+    val customIconsValue: String = CustomIconsRowText.value(emptySet()),
 )
 
 @HiltViewModel
@@ -49,6 +60,9 @@ class ThemesSettingsViewModel @Inject constructor(
     private val ptfImporter: PtfThemeImporter,
     private val themeStore: PfpThemeStore,
     private val tasks: BackgroundTaskCenter,
+    private val uiMediaStore: UiMediaStore,
+    private val gameBootPreferences: GameBootPreferences,
+    private val customIconStore: CustomIconStore,
 ) : ViewModel() {
 
     private val _extra = MutableStateFlow(ThemesSettingsUiState())
@@ -56,9 +70,11 @@ class ThemesSettingsViewModel @Inject constructor(
     val uiState: StateFlow<ThemesSettingsUiState> = combine(
         context.pfpDataStore.data,
         themeStore.themes,
+        customIconStore.observeStoredKeys(),
         _extra,
-    ) { prefs, saved, extra ->
+    ) { prefs, saved, iconKeys, extra ->
         extra.copy(
+            customIconsValue   = CustomIconsRowText.value(iconKeys),
             activeThemeName    = prefs[PfpThemeStore.KEY_APPLIED_THEME_NAME] ?: "Default",
             accentOverrideArgb = prefs[KEY_ACCENT_OVERRIDE],
             iconColorArgb      = prefs[KEY_ICON_COLOR],
@@ -126,10 +142,15 @@ class ThemesSettingsViewModel @Inject constructor(
         viewModelScope.launch { context.pfpDataStore.edit { it.remove(KEY_ACCENT_OVERRIDE) } }
     }
 
-    /** Full reset of the applied theme: wallpaper, colors, icons, and layout back to stock. */
+    /**
+     * Full reset to stock: the applied theme (wallpaper, colours, legibility, layout, its icons
+     * and media) AND the user's own Customize Icons picks. Sounds and clips the user assigned
+     * themselves are not a theme concern and stay — Interface ▸ Sound owns their reset.
+     */
     fun resetTheme() {
         viewModelScope.launch {
             themeStore.resetApplied()
+            customIconStore.clearAll()
             Timber.i("Theme reset to default")
             reportTheme("Theme reset — back to the default look")
         }
@@ -143,7 +164,7 @@ class ThemesSettingsViewModel @Inject constructor(
             _extra.update { it.copy(isInstalling = true) }
             val saved = themeStore.createFromImage(uri)
             if (saved != null) {
-                themeStore.apply(saved.id)
+                applyAndReview(saved.id)
                 reportTheme(
                     "Created \"${saved.name}\"" +
                         if (saved.accentArgb != null) " — color derived from the photo" else "",
@@ -157,9 +178,57 @@ class ThemesSettingsViewModel @Inject constructor(
 
     fun applySavedTheme(id: String) {
         viewModelScope.launch {
-            val ok = themeStore.apply(id)
-            if (!ok) reportTheme("Could not apply the theme", NotificationSeverity.ERROR)
+            if (!applyAndReview(id)) reportTheme("Could not apply the theme", NotificationSeverity.ERROR)
         }
+    }
+
+    /**
+     * Applies theme [id], then makes sure none of it is lost without the user knowing: clips the
+     * install gate refused are reported in the tray with the reason, and when the theme's media or
+     * icons would not show as things stand (the user's own assignments outrank them, or GameBoot /
+     * the boot sequence is off) the [ThemeMediaPrompt] is raised. False when the theme did not apply.
+     */
+    private suspend fun applyAndReview(id: String): Boolean {
+        val result = themeStore.applyDetailed(id) ?: return false
+        UiMediaRowText.droppedReport(result.droppedMedia)?.let { body ->
+            tasks.report(
+                id = "themes_media_dropped",
+                label = "Themes",
+                message = body,
+                severity = NotificationSeverity.WARNING,
+                action = NotificationAction.OpenSettingsScreen("settings_themes"),
+            )
+        }
+        val prefs = context.pfpDataStore.data.first()
+        val prompt = withContext(Dispatchers.IO) {
+            ThemeMediaPrompt.of(
+                installed = result.installedMedia,
+                userAssigned = uiMediaStore.assignments().keys,
+                gameBootEnabled = GameBootPreferences.resolve(prefs),
+                bootEnabled = prefs[KEY_SHOW_BOOT] ?: true,
+                installedIcons = result.installedIcons,
+                userIcons = customIconStore.storedKeys(),
+            )
+        }
+        _extra.update { it.copy(mediaPrompt = prompt) }
+        return true
+    }
+
+    /** "Use Theme's" / "Turn On": clears the user's media and icons the theme replaces and switches on what it needs. */
+    fun confirmMediaPrompt() {
+        val prompt = _extra.value.mediaPrompt ?: return
+        _extra.update { it.copy(mediaPrompt = null) }
+        viewModelScope.launch {
+            prompt.replace.forEach { uiMediaStore.clear(it) }
+            prompt.replaceIcons.forEach { customIconStore.clear(it) }
+            if (prompt.turnOnGameBoot) gameBootPreferences.setGameBootEnabled(true)
+            if (prompt.turnOnBoot) context.pfpDataStore.edit { it[KEY_SHOW_BOOT] = true }
+        }
+    }
+
+    /** "Keep Mine" / "Not Now": nothing changes; the theme's media and icons stay behind the user's choices. */
+    fun dismissMediaPrompt() {
+        _extra.update { it.copy(mediaPrompt = null) }
     }
 
     /**
@@ -217,7 +286,7 @@ class ThemesSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _extra.update { it.copy(isInstalling = true) }
             val result = themeStore.importBundleDetailed(uri)
-            if (result is PfpThemeStore.ImportResult.Success) themeStore.apply(result.theme.id)
+            if (result is PfpThemeStore.ImportResult.Success) applyAndReview(result.theme.id)
             _extra.update { it.copy(isInstalling = false) }
             reportTheme(
                 messageFor(result),

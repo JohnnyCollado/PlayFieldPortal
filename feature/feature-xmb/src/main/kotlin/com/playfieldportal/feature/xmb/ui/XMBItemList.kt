@@ -207,6 +207,9 @@ internal const val MEMORY_CARD_DEFAULT_ART = "file:///android_asset/systems/phys
 // The UMD slot's unfocused icon: the PSP's physical media, for a game of any platform.
 internal const val UMD_SLOT_ART = "file:///android_asset/systems/physical-media/psp.png"
 
+/** The UMD slot's themeable art (theme-kit IconSlots key). */
+internal const val UMD_SLOT_KEY = "item_umd"
+
 // ── Drill flyout layout ──────────────────────────────────────────────────────
 // Left inset of the game-card column, measured from the flyout's left edge (which the caller has
 // already shifted under the caticon). Clears the icon-only memory-card column and the ◀ that trails
@@ -1383,17 +1386,28 @@ private fun XmbItemLeadingIcon(
             }
         }
         // The UMD slot, unfocused or still being read: the PSP's own physical media — the UMD —
-        // whatever platform the inserted game is from. Once read, it falls through to the game
+        // whatever platform the inserted game is from, unless the user or the theme replaced it
+        // (item_umd; two-tier like the memory cards). Once read, it falls through to the game
         // branch below and becomes the game's icon.
         item.type == XMBItemType.UMD_SLOT && !umdShowsGame -> {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.width(LEADING_ICON_SLOT),
             ) {
-                BundledSilhouetteIcon(
-                    assetUri = UMD_SLOT_ART,
-                    modifier = Modifier.size(LEADING_ICON_SIZE),
-                )
+                val umdOverride = com.playfieldportal.core.ui.icons.LocalCustomIcons.current[UMD_SLOT_KEY]
+                    ?: LocalXmbIconOverrides.current[UMD_SLOT_KEY]
+                if (umdOverride != null) {
+                    com.playfieldportal.core.ui.icons.CustomIconSurface(
+                        icon = umdOverride,
+                        contentDescription = null,
+                        modifier = Modifier.size(LEADING_ICON_SIZE),
+                    )
+                } else {
+                    BundledSilhouetteIcon(
+                        assetUri = UMD_SLOT_ART,
+                        modifier = Modifier.size(LEADING_ICON_SIZE),
+                    )
+                }
             }
         }
         // The UMD slot, focused and read: the game's ICON0 at the PSP's size, anchored the way the

@@ -42,10 +42,11 @@ private const val FADE_OUT_MS = 600
 
 /**
  * Hard cap on the WHOLE presentation, watchdog-enforced. The import gate already caps a boot clip
- * at [UiMediaLimits.BOOT_MAX_MS] (10 s) and the player clips to it again — this is the third and
- * last line: whatever the players are doing, boot ends and the launcher appears.
+ * at [UiMediaLimits.BOOT_MAX_MS] (15 s) and the player clips to it again — this is the third and
+ * last line: whatever the players are doing, boot ends and the launcher appears. Two seconds of
+ * slack over the clip cap, as before, for the player to start and the fade to finish.
  */
-private const val HARD_CAP_MS = 12_000L
+private const val HARD_CAP_MS = UiMediaLimits.BOOT_MAX_MS + 2_000L
 
 /**
  * The PSP-style startup presentation, optionally replaced by the user's own video and/or audio.
@@ -55,7 +56,7 @@ private const val HARD_CAP_MS = 12_000L
  * custom boot media is now a supported feature. The reversal is only safe because of the guard
  * rails that replaced the rule, and it is off again if any of them is removed:
  *
- *  1. The import gate caps a boot clip at 10 s and 25 MB, and rejects a file whose duration cannot
+ *  1. The import gate caps a boot clip at 15 s and 25 MB, and rejects a file whose duration cannot
  *     be read at all (a file we cannot time is a file we cannot bound).
  *  2. The media item is clipped to the same cap in the pipeline, so the decoder itself stops.
  *  3. [HARD_CAP_MS] is a watchdog that does not consult the players: on timeout the boot completes
@@ -82,7 +83,11 @@ fun BootSequenceOverlay(
     bootAudioPath: String? = null,
     /** Boot Sequence's level, resolved by XMBViewModel. 0 means the user muted this sound. */
     bootAudioGain: Float = 1f,
+    /** The clip would not play and the built-in animation took over: the shell reports it in the tray. */
+    onClipFailed: () -> Unit = {},
 ) {
+    // The presentation owns the room — its chime or the clip's own track, previews included.
+    HoldAmbience(com.playfieldportal.core.ui.sound.AmbienceController.OWNER_ONE_SHOT)
     val logoAlpha    = remember { Animatable(0f) }
     val logoScale    = remember { Animatable(0.92f) }
     val overlayAlpha = remember { Animatable(1f) }
@@ -133,12 +138,13 @@ fun BootSequenceOverlay(
                     clipEndMs = UiMediaLimits.BOOT_MAX_MS,
                     onEnded = { presentationDone = true },
                     onFailed = {
-                        // Fall back to the built-in animation rather than a black screen.
+                        // Fall back to the built-in animation rather than a black screen — and say so.
                         useLogoAnimation = true
+                        onClipFailed()
                     },
                     // A custom boot SOUND replaces the clip's own audio; without one the clip
                     // keeps its track. Two audio sources at once is never what the user meant.
-                    muted = bootAudioPath != null,
+                    volume = presentationClipVolume(separateAudio = bootAudioPath != null, gain = bootAudioGain),
                     modifier = Modifier.fillMaxSize(),
                 )
             }

@@ -754,7 +754,6 @@ private fun GameDetailOverlays(
                 selectedIndex = state.optionsIndex,
                 onRowActivated = { viewModel.onOptionRowTapped(state.visibleActions[it]) },
                 onDismiss = viewModel::closeOptions,
-                panelAlpha = 0.88f,
             )
         }
 
@@ -1249,6 +1248,8 @@ private fun EmulatorPickerPanel(
 @Composable
 private fun GameVideoOverlay(videoUri: String, onClose: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    // The snap plays with its sound, so the background music steps aside while it is up.
+    com.playfieldportal.feature.xmb.ui.HoldAmbience(com.playfieldportal.core.ui.sound.AmbienceController.OWNER_GAME_VIDEO)
     var videoSize by remember(videoUri) { mutableStateOf<androidx.media3.common.VideoSize?>(null) }
     val player = remember(videoUri) {
         androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
