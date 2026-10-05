@@ -95,6 +95,11 @@ assets/UI/*.zip
 assets/UI/ui samples/*.jpg
 assets/UI/ui samples/*.png
 assets/UI/ui samples/*.webp
+assets/UI/ui samples/*.md
+
+# Internal planning notes, design docs and reviews — kept local, never committed.
+docs/plans/
+docs/reports/
 .acside/
 /.run/
 skills-lock.json
