@@ -1700,6 +1700,18 @@ by **Mr. Goldberg**.
 If you are a rights holder and would like attribution changed or an asset removed, please open an
 issue and it will be addressed promptly.
 
+### Support the project
+
+Thank you all for your support. I created this as a love letter to the PSP and the amazing community
+that loves it as well, so this project will forever remain free. With that said, if you appreciate
+what I do and would like to show that appreciation in another way, you can
+[buy me a taco](https://www.buymeacoffee.com/johnnycolli). Of course, donations are always optional
+and never required. Love y'all, and Happy June 15th.
+
+[![Buy me a Taco](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20Taco&emoji=%F0%9F%8C%AE&slug=johnnycolli&button_colour=BD5FFF&font_colour=ffffff&font_family=Cookie&outline_colour=000000&coffee_colour=FFDD00)](https://www.buymeacoffee.com/johnnycolli)
+
+buymeacoffee.com/johnnycolli (also in *Settings › System › Credits*).
+
 ## 9. License
 
 See [LICENSE](LICENSE).

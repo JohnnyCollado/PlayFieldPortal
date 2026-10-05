@@ -56,6 +56,11 @@ All notable changes to Play Field Portal are documented here. This project follo
   to an image you pick (PNG, JPG, WEBP), to the launcher wallpaper (a motion wallpaper's still
   frame), or back to the device default. The photo viewer gains **Set as Lock Screen**, which asks
   first. Lock screen images are not backed up.
+- **Support the project, and clickable credits.** *Settings › System › Credits* has a new *Support
+  the Project* group with the Buy me a Taco link (buymeacoffee.com/johnnycolli), also added to the
+  README. Every web address on Credits is now a link: the controller cursor steps from link to link
+  (Down past the last one keeps scrolling to the end), and SELECT or a tap opens it in the browser.
+  With no browser installed, the tray says so and shows the address.
 - **Themes can carry a lock screen image.** The theme format moves to v5 with an optional
   `lockscreen.png`; Theme Studio adds it in the Background section and previews it on a new lock
   screen screen. Applying such a theme offers to set it afterwards (opt-in, focused on *Not Now*).

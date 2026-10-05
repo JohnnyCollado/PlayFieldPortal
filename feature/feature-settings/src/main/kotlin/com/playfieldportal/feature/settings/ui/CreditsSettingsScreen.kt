@@ -1,38 +1,56 @@
 package com.playfieldportal.feature.settings.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import com.playfieldportal.core.ui.sound.MenuSound
+import com.playfieldportal.core.ui.theme.menuCursorFill
+import com.playfieldportal.feature.settings.viewmodel.CreditsViewModel
 import kotlinx.coroutines.launch
 
 @Composable
 fun CreditsSettingsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    viewModel: CreditsViewModel = hiltViewModel(),
 ) {
-    // Pure info screen — no interactive rows for the scaffold's focus navigation to walk, so
-    // Up/Down scroll the column directly instead.
+    // Every link is a cursor stop: Up/Down walk the links through the scaffold, which scrolls the
+    // focused one into view and returns to the top from the first. Past the last link there is
+    // still text (Notes), so Down there scrolls the page instead of stopping.
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
     val stepPx = with(LocalDensity.current) { 120.dp.toPx() }
-    // Credits has no rows, so the scaffold's own move cue never fires here — the page itself is
-    // what moves, and it ticks for the same reason a row would.
     val menuSounds = LocalMenuSounds.current
+    var focusedLink by remember { mutableStateOf<String?>(null) }
+    val openLink: (String) -> Unit = { viewModel.open(creditUrl(it)) }
 
     SettingsScaffold(
         title = "Settings",
@@ -40,23 +58,31 @@ fun CreditsSettingsScreen(
         onBack = onBack,
         modifier = modifier,
         onInterceptAction = { action ->
-            when (action) {
-                GamepadAction.NAVIGATE_UP   -> {
-                    menuSounds.play(MenuSound.SCROLL)
-                    scope.launch { scrollState.animateScrollBy(-stepPx) }; true
-                }
-                GamepadAction.NAVIGATE_DOWN -> {
-                    menuSounds.play(MenuSound.SCROLL)
-                    scope.launch { scrollState.animateScrollBy(stepPx) }; true
-                }
-                else -> false
+            if (action == GamepadAction.NAVIGATE_DOWN &&
+                focusedLink == CreditsLinkTargets.last() &&
+                scrollState.value < scrollState.maxValue
+            ) {
+                menuSounds.play(MenuSound.SCROLL)
+                scope.launch { scrollState.animateScrollBy(stepPx) }
+                true
+            } else {
+                false
             }
         },
     ) {
-        // Credits has no focusable rows — it scrolls as a whole — so this registration is purely
-        // what lets the scaffold's header and footer drag it. The screen keeps owning the state
-        // itself because onInterceptAction above animates the same one for UP/DOWN.
+        // Registered so the scaffold scrolls this column to keep the focused link in view, and so
+        // its header and footer can drag it.
         LocalSettingsScrollStateRegistrar.current(scrollState)
+        val link: @Composable (label: String, value: String, address: String) -> Unit = { label, value, address ->
+            CreditLink(
+                label = label,
+                value = value,
+                onOpen = { openLink(address) },
+                onFocusedChanged = { focused ->
+                    if (focused) focusedLink = address else if (focusedLink == address) focusedLink = null
+                },
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -87,7 +113,7 @@ fun CreditsSettingsScreen(
                     "artwork that gives the launcher its identity."
             )
             CreditLine("Design", "johakovi")
-            CreditLine("Reddit", "u/silverloc96")
+            link("Reddit", "u/silverloc96", CreditLinks.JOHAKOVI_REDDIT)
 
             Spacer(Modifier.height(16.dp))
             SettingsGroup("System & Console Artwork")
@@ -103,7 +129,7 @@ fun CreditsSettingsScreen(
             )
             CreditLine("Project", "XMB Menu for ES-DE")
             CreditLine("Authors", "Anthony Caccese · InitialDin")
-            CreditLine("Source", "github.com/anthonycaccese/xmb-menu-es-de")
+            link("Source", "github.com/anthonycaccese/xmb-menu-es-de", CreditLinks.XMB_THEME)
 
             Spacer(Modifier.height(16.dp))
             SettingsGroup("Controller Button Icons")
@@ -118,14 +144,14 @@ fun CreditsSettingsScreen(
                     "names, and just the icons the launcher renders are bundled."
             )
             CreditLine("Author", "Zacksly")
-            CreditLine("Website", "zacksly.itch.io")
-            CreditLine("Support", "patreon.com/zacksly")
+            link("Website", "zacksly.itch.io", CreditLinks.ZACKSLY_SITE)
+            link("Support", "patreon.com/zacksly", CreditLinks.ZACKSLY_PATREON)
             CreditLine(
                 "Packs",
                 "PS5 Button Icons and Controls · Xbox Series Button Icons and Controls · " +
                     "Switch 2 Button Icons and Controls"
             )
-            CreditLine("License", "CC BY 3.0 — creativecommons.org/licenses/by/3.0")
+            link("License", "CC BY 3.0 — creativecommons.org/licenses/by/3.0", CreditLinks.CC_BY_3)
 
             Spacer(Modifier.height(16.dp))
             SettingsGroup("Menu Sounds")
@@ -141,12 +167,12 @@ fun CreditsSettingsScreen(
                     "thanks anyway. If you are one of these creators and would like the credit " +
                     "changed or an asset removed, please reach out."
             )
-            CreditLine("Source", "Pixabay — pixabay.com")
-            CreditLine("License", "Pixabay Content License — pixabay.com/service/license-summary")
-            CreditLine("Luca di Alessandro", "pixabay.com/users/lucadialessandro-25927643")
-            CreditLine("SoundReality", "pixabay.com/users/soundreality-31074404")
-            CreditLine("Musheran", "pixabay.com/users/musheran-40634446")
-            CreditLine("Universfield", "pixabay.com/users/universfield-28281460")
+            link("Source", "Pixabay — pixabay.com", CreditLinks.PIXABAY)
+            link("License", "Pixabay Content License — pixabay.com/service/license-summary", CreditLinks.PIXABAY_LICENSE)
+            link("Luca di Alessandro", "pixabay.com/users/lucadialessandro-25927643", CreditLinks.PIXABAY_LUCA)
+            link("SoundReality", "pixabay.com/users/soundreality-31074404", CreditLinks.PIXABAY_SOUNDREALITY)
+            link("Musheran", "pixabay.com/users/musheran-40634446", CreditLinks.PIXABAY_MUSHERAN)
+            link("Universfield", "pixabay.com/users/universfield-28281460", CreditLinks.PIXABAY_UNIVERSFIELD)
 
             Spacer(Modifier.height(16.dp))
             SettingsGroup("Game Artwork & Metadata")
@@ -156,8 +182,8 @@ fun CreditsSettingsScreen(
                     "video snaps and game metadata are fetched at your request from third-party " +
                     "providers and remain the property of their respective owners."
             )
-            CreditLine("Primary scraper", "ScreenScraper — screenscraper.fr, community-maintained game media database")
-            CreditLine("Artwork", "SteamGridDB — steamgriddb.com")
+            link("Primary scraper", "ScreenScraper — screenscraper.fr, community-maintained game media database", CreditLinks.SCREENSCRAPER)
+            link("Artwork", "SteamGridDB — steamgriddb.com", CreditLinks.STEAMGRIDDB)
             CreditLine("Metadata", "TheGamesDB · IGDB")
 
             Spacer(Modifier.height(16.dp))
@@ -167,8 +193,8 @@ fun CreditsSettingsScreen(
                 "Achievement data for the Shiba Coins system comes from the following services and " +
                     "projects, and remains the property of their respective owners."
             )
-            CreditLine("RetroAchievements", "retroachievements.org — community-made achievement sets and unlock data for retro games, via the official RetroAchievements Web API and api-kotlin client")
-            CreditLine("Steam", "Powered by Steam — achievement schemas and unlock data via the Steam Web API, using your own key. Steam and the Steam logo are trademarks of Valve Corporation. steampowered.com")
+            link("RetroAchievements", "retroachievements.org — community-made achievement sets and unlock data for retro games, via the official RetroAchievements Web API and api-kotlin client", CreditLinks.RETROACHIEVEMENTS)
+            link("Steam", "Powered by Steam — achievement schemas and unlock data via the Steam Web API, using your own key. Steam and the Steam logo are trademarks of Valve Corporation. steampowered.com", CreditLinks.STEAM)
 
             Spacer(Modifier.height(16.dp))
             SettingsGroup("Goldberg Steam Emulator (gbe_fork)")
@@ -185,9 +211,21 @@ fun CreditsSettingsScreen(
                     "are available at the links below."
             )
             CreditLine("Project", "gbe_fork — Detanup01 and contributors")
-            CreditLine("Source", "github.com/Detanup01/gbe_fork")
-            CreditLine("Original project", "Goldberg Emulator by Mr. Goldberg — gitlab.com/Mr_Goldberg/goldberg_emulator")
-            CreditLine("License", "LGPL-3.0 — gnu.org/licenses/lgpl-3.0.html")
+            link("Source", "github.com/Detanup01/gbe_fork", CreditLinks.GBE_FORK)
+            link("Original project", "Goldberg Emulator by Mr. Goldberg — gitlab.com/Mr_Goldberg/goldberg_emulator", CreditLinks.GOLDBERG)
+            link("License", "LGPL-3.0 — gnu.org/licenses/lgpl-3.0.html", CreditLinks.LGPL_3)
+
+            Spacer(Modifier.height(16.dp))
+            SettingsGroup("Support the Project")
+
+            CreditParagraph(
+                "Thank you all for your support. I created this as a love letter to the PSP and the " +
+                    "amazing community that loves it as well, so this project will forever remain " +
+                    "free. With that said, if you appreciate what I do and would like to show that " +
+                    "appreciation in another way, you can buy me a taco. Of course, donations are " +
+                    "always optional and never required. Love y'all, and Happy June 15th."
+            )
+            link("Buy me a Taco", "buymeacoffee.com/johnnycolli", CreditLinks.BUY_ME_A_TACO)
 
             Spacer(Modifier.height(16.dp))
             SettingsGroup("Notes")
@@ -213,8 +251,66 @@ private fun CreditParagraph(text: String) {
 
 @Composable
 private fun CreditLine(label: String, value: String) {
-    Column(modifier = Modifier.padding(vertical = 6.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
         Text(text = label.uppercase(), color = SettingsAccent, fontSize = 10.sp)
         Text(text = value, color = SettingsText, fontSize = 14.sp)
+    }
+}
+
+/**
+ * A [CreditLine] that opens a web address: a cursor stop in the scaffold's navigation, opened by
+ * SELECT or a tap. The address is underlined so a link reads as one before it has the cursor.
+ */
+@Composable
+private fun CreditLink(
+    label: String,
+    value: String,
+    onOpen: () -> Unit,
+    onFocusedChanged: (Boolean) -> Unit,
+) {
+    val menuSounds = LocalMenuSounds.current
+    val focusTracker = LocalSettingsFocusTracker.current
+    val touchInput = LocalSettingsTouchInput.current
+    val cursorVisible = LocalSettingsCursorVisible.current
+    val reportFocused = LocalSettingsReportFocused.current
+    var isFocused by remember { mutableStateOf(false) }
+    // One activation for the controller and the tap, carrying the same cue as a SettingsRow.
+    val activate = remember(onOpen, menuSounds) { { menuSounds.play(MenuSound.SELECT); onOpen() } }
+    val row = rememberControllerRowRegistration(
+        prefix = "credit",
+        focusKey = null,
+        claimInitialFocus = true,
+        selectable = true,
+        onSelect = activate,
+    )
+    val highlighted = isFocused && cursorVisible
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .focusRequester(row.focusRequester)
+            .then(row.positionReporting)
+            .pointerInput(row.rowKey, activate) {
+                detectTapGestures(onTap = { touchInput(); activate() })
+            }
+            .onFocusChanged { state ->
+                isFocused = state.isFocused
+                onFocusedChanged(state.isFocused)
+                if (state.isFocused) {
+                    focusTracker(activate)
+                    reportFocused(row.focusRequester)
+                }
+            }
+            .background(if (highlighted) menuCursorFill() else Color.Transparent)
+            .focusable()
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+    ) {
+        Text(text = label.uppercase(), color = SettingsAccent, fontSize = 10.sp)
+        Text(
+            text = value,
+            color = if (highlighted) Color.White else SettingsText,
+            fontSize = 14.sp,
+            textDecoration = TextDecoration.Underline,
+        )
     }
 }
