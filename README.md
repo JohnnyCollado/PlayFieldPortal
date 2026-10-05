@@ -11,15 +11,14 @@ Android home screen as a single front end for ROM emulation, Android games, PC-l
 </p>
 
 <p align="center">
-  <b>Version 1.3.0</b> (in development — last release 1.2.1) &nbsp;·&nbsp; Side-loaded APK (not on the Play Store) &nbsp;·&nbsp;
+  <b>Version 1.3.0</b> &nbsp;·&nbsp; Side-loaded APK (not on the Play Store) &nbsp;·&nbsp;
   <b>Full</b> &amp; <b>Lite</b> editions &nbsp;·&nbsp; Desktop <b>Theme Studio</b> companion
 </p>
 
 > **This is a living manual.** It describes the app as it is built from this repository today, and
 > it is updated in the same change as the feature it describes.
 >
-> **Last updated:** 2026-10-02 · **Describes:** 1.3.0 (`versionCode` 10, unreleased). Sections
-> marked *New in 1.3.0* are not in the 1.2.1 release. What changed and when is in
+> **Last updated:** 2026-10-04 · **Describes:** 1.3.0 (`versionCode` 11). What changed and when is in
 > **[CHANGELOG.md](CHANGELOG.md)**; how the code is put together is in
 > **[ARCHITECTURE.md](ARCHITECTURE.md)**. Building from source is covered in
 > **[For Developers](#for-developers)**, which also explains
@@ -77,7 +76,7 @@ the prose:
 | Photo section — albums and a fullscreen viewer | Push-to-talk with the floating Talk button overlay |
 
 *Screenshots predate 1.3.0; some Settings screens have since been reorganized (see
-[§4.24](#424-settings-reference)).*
+[§4.25](#425-settings-reference)).*
 
 ---
 
@@ -116,7 +115,8 @@ the prose:
    - [4.21 Shiba Coins (achievements)](#421-shiba-coins-achievements)
    - [4.22 Tracking local (Steam-emulated) PC games](#422-tracking-local-steam-emulated-pc-games)
    - [4.23 Tracking PS3 trophies (ARMSX3)](#423-tracking-ps3-trophies-armsx3)
-   - [4.24 Settings reference](#424-settings-reference)
+   - [4.24 Tracking Xbox 360 achievements](#424-tracking-xbox-360-achievements)
+   - [4.25 Settings reference](#425-settings-reference)
 5. [Permissions & privacy](#5-permissions--privacy)
 6. [Troubleshooting](#6-troubleshooting)
 7. [For Developers](#for-developers)
@@ -238,8 +238,8 @@ when they apply):
 6. **Online Services** — connect SteamGridDB and IGDB, plus the ScreenScraper *user* account
    (each optional; IGDB and ScreenScraper credentials are tested live).
 7. **Achievement Services** — RetroAchievements and Steam accounts.
-8. **Trophies** — the Vita3K data folder and/or the ARMSX3 PS3 folder, shown only when Vita3K or
-   ARMSX3 is installed.
+8. **Local Achievements** — the data folders of the emulators PFP reads achievements from (Vita3K,
+   the ARMSX3 PS3 folder, X360 Mobile, XenDroid), shown only when at least one of them is installed.
 9. **RetroArch** — shown only when RetroArch is installed.
 10. **Emulators** — shown only when a standalone emulator PFP knows is installed.
 11. **Windows Games** — shown only when a recognized PC launcher is installed.
@@ -388,7 +388,7 @@ plus one profile per installed **RetroArch** core. A selection of what is recogn
 | NES / SNES / Genesis / Saturn / PC Engine / Neo Geo / WonderSwan / Lynx / C64 | the `*.emu` family, Snes9x EX+, Yaba Sanshiro 2 |
 | Arcade | MAME4droid |
 | Dreamcast | Flycast, Redream |
-| Xbox / Xbox 360 | X1 BOX (xemu) / X360 Mobile, aX360e |
+| Xbox / Xbox 360 | X1 BOX (xemu) / X360 Mobile, aX360e, XenDroid |
 | Anything with libretro cores | RetroArch (one profile per installed core) |
 
 The full list is the file `feature/feature-launcher/src/main/assets/emulator_kb/emulators.json`.
@@ -427,8 +427,6 @@ cores are installed (**Re-scan Installed Cores** after downloading more; **Unlin
 back to offering all cores unverified).
 
 ### 4.4 Emulator knowledge (updates, import, export)
-
-*New in 1.3.0.*
 
 **Where:** *Settings › Emulators › Emulator knowledge* · **Network:** only *Check for updates* /
 *Automatic updates* (GitHub — see below), and **not available in this build** · **Default:**
@@ -696,7 +694,8 @@ screen (Android folder picker — no storage permission):
 - **Video** — scanned libraries with thumbnails, Recently Watched / Favorites / Playlists, and a
   built-in player or your chosen external app (**Default Video Player**).
 - **Photo** — scanned albums, a fullscreen viewer (zoom, pan, rotate, L1/R1 paging), and
-  **Set as Launcher Wallpaper** (EXIF-stripped; location data is never read). *Clear Thumbnail Cache*
+  **Set as Launcher Wallpaper** (EXIF-stripped; location data is never read), and **Set as Lock
+  Screen**, which asks first because it changes the device lock screen. *Clear Thumbnail Cache*
   lives in Photo settings.
 
 Each section shows a single "＋ Add" getting-started row until a root has been added and scanned.
@@ -752,18 +751,28 @@ gradient, cursor and icons all derive from it).
   its dominant hue.
 - **Import PSP Theme (.ptf)** — convert an official PSP theme you own (wallpaper + derived color).
   CXMB firmware files are safely declined. **Import Theme (.pfptheme)** installs a shared theme.
-- **My Themes** — your saved themes as cards: apply, **Share** (`.pfptheme`), or Remove.
-- **Reset to Default** — removes the applied wallpaper, theme colors and custom icons.
+- **My Themes** — your saved themes as cards: apply, **Share** (`.pfptheme`), or Remove. Applying
+  asks first (*Apply "…"?*) and lists what would change. When the theme carries sounds, videos or
+  icons you have already replaced with your own, you choose **Use the Theme's** (yours are removed
+  for those, and a switched-off Boot Sequence or GameBoot is turned on for the theme's video) or
+  **Keep Mine**; when the only question is a switched-off Boot Sequence or GameBoot, the choice is
+  **Turn On** or **Leave Off**. A theme with a lock screen image then offers **Set Lock Screen**
+  (focused on **Not Now** — it is opt-in).
+- **Reset to Default** — removes the applied wallpaper, theme colors, custom icons, the theme's
+  sounds and clips, and a lock screen image the theme set (one you picked yourself stays).
 - **Display** — *Choose Wallpaper*, *Wave Style*, *Background Motion*, icon and text legibility,
   *Font Colour*, *Item List Motion*, and the *Biblically Accurate PSP XMB* preset.
+- **Lock Screen** — *Settings › Interface › Display › Lock Screen* sets the **device** lock screen
+  (a still image): *Choose Lock Screen Image* (PNG, JPG, WEBP), *Use Launcher Wallpaper* (a motion
+  wallpaper's still frame), and *Reset Lock Screen* back to the device default. The image is
+  center-cropped to the screen. It is not included in backups.
 
 **Theme Studio** is a desktop companion (Windows / Linux / macOS) for authoring themes with a live
-crossbar preview, an icon editor, wallpaper crop presets, crossbar alignment assist, and batch
+crossbar preview, an icon editor, wallpaper crop presets, crossbar alignment assist, an optional
+lock screen image (Background section, with its own lock screen preview), and batch
 `.ptf → .pfptheme` conversion. See [7.9](#79-the-theme-studio-desktop-app).
 
 ### 4.14 Custom XMB icons
-
-*New in 1.3.0.*
 
 **Where:** *Settings › Interface › Display › Customize XMB Icons* · **Network:** None.
 
@@ -800,8 +809,6 @@ Your screen-layout adjustments are deliberately left out, since those are specif
 
 ### 4.15 Motion wallpapers
 
-*New in 1.3.0.*
-
 **Where:** *Settings › Interface › Display › Choose Wallpaper* · **Network:** None.
 
 The crossbar background can be a looping video or animated image instead of a still. Pick one the
@@ -825,8 +832,6 @@ Motion wallpapers can be authored into a shareable theme with the desktop **Them
 ride along inside the `.pfptheme` file.
 
 ### 4.16 Sound, ambience & boot videos
-
-*New in 1.3.0.*
 
 **Where:** *Settings › Interface › Sound* (volume, menu sounds, ambience) and
 *Settings › Interface › Display* (Boot Sequence, GameBoot) · **Network:** None.
@@ -872,8 +877,6 @@ focused row, bound to physical buttons so an X/Y swap cannot move them: the **no
 (X on Xbox/PlayStation, Y on Nintendo) plays a preview.
 
 ### 4.17 The notification panel
-
-*New in 1.3.0.*
 
 **Where:** press **Start** on the crossbar, or tap the bell in the status bar; settings in
 *Settings › Interface › Notifications* · **Network:** None.
@@ -952,9 +955,10 @@ provider.
 | **Steam** | Games on your own Steam account | SteamID64 (or profile name) + Steam Web API key |
 | **Local Steam** | Steam-emulated PC games run through Wine emulators | Steam Web API key (see [4.22](#422-tracking-local-steam-emulated-pc-games)) |
 | **PS3 (ARMSX3)** | Trophies of PS3 games run in ARMSX3 | A folder grant (see [4.23](#423-tracking-ps3-trophies-armsx3)) |
+| **Xbox 360** | Achievements of Xbox 360 games run in X360 Mobile or XenDroid | A folder grant (see [4.24](#424-tracking-xbox-360-achievements)) |
 
-Each achievement earns a **bronze, silver, gold or platinum** coin by rarity; coins feed an
-account-wide wallet with **levels and ranks** shown on the **Player Card**.
+Each achievement earns a **bronze, silver, gold or platinum** coin by rarity (Xbox 360 coins by
+gamerscore, since they have no rarity source); coins feed an account-wide wallet with **levels and ranks** shown on the **Player Card**.
 
 - **What gets tracked** — games on *this device* that are matched to a provider. PFP never
   imports your whole RetroAchievements history or probes every game in your Steam account. A
@@ -973,7 +977,7 @@ account-wide wallet with **levels and ranks** shown on the **Player Card**.
 - **Per-game coins screen** — from a game's Shiba Coins strip on Game Detail. Lists every
   achievement with its coin tier and unlock state; **X** cycles sorting, **Y** cycles the
   earned/unearned filter.
-- **Hidden coins** *(New in 1.3.0)* — Steam's Web API never returns the description of a hidden
+- **Hidden coins** — Steam's Web API never returns the description of a hidden
   achievement. For **Steam** and **Local Steam** games PFP fills it from **Steam Hunters**
   (steamhunters.com; no key, and only the game's Steam app id is sent), for hidden coins earned or
   not. An *earned* hidden coin Steam Hunters has no text for falls back to a Steam Community
@@ -1114,7 +1118,7 @@ Notes:
 ### 4.23 Tracking PS3 trophies (ARMSX3)
 
 **Where:** *Settings › Library › Library Manager › PS3 › PS3 Data Folder* (or the wizard's
-**Trophies** page) · **Network:** None · **Default:** off until you grant the folder.
+**Local Achievements** page) · **Network:** None · **Default:** off until you grant the folder.
 
 PFP can track real PS3 trophies for games you run in ARMSX3, read entirely from the emulator's own
 files. Fully offline: no account, no API key, nothing to connect. **PFP never writes anything into
@@ -1163,7 +1167,53 @@ folder the first time the game runs, so play it once and the unlocks appear on t
 | "Couldn't read this PS3 image" | An encrypted dump. It can't declare its trophy id. |
 | "This PS3 game declares no trophies" | The title genuinely ships without a trophy set. |
 
-### 4.24 Settings reference
+### 4.24 Tracking Xbox 360 achievements
+
+**Where:** *Settings › Library › Library Manager › Xbox 360 › X360 Mobile Data Folder* / *XenDroid
+Data Folder* (or the wizard's **Local Achievements** page) · **Network:** None · **Default:** off
+until you grant a folder.
+
+PFP reads Xbox 360 achievements for games you run in **X360 Mobile** or **XenDroid** straight from
+the profiles the emulator keeps (Xenia's GPD files). Fully offline: no account, no API key. Every
+read is read-only; nothing is written into the emulator's data folder or into a game file.
+
+Xbox 360 games scan as ordinary ROMs on the Xbox 360 card; achievements only need a folder grant.
+
+**Setting it up**
+
+1. *Settings › Library › Library Manager ›* select the **Xbox 360** card and set the data folder of
+   the emulator you play in. For X360 Mobile, pick **X360 Mobile** in the folder picker's side menu;
+   for XenDroid, pick `Android/data/xendroid.compose`. You can set both — an achievement earned in
+   either counts, at the earliest unlock time seen.
+2. Run *Auto-Match* — from *Settings › Achievements › Update Achievements › Auto-match games* for
+   the whole library, or from a single game's Shiba Coins page.
+
+**How a game finds its achievements**
+
+By its **title ID**, read from the game's own file the way the emulator does at boot: a `default.xex`,
+an STFS package (Games on Demand, XBLA), or a disc image. Only the headers are read — a few sectors of
+a multi-GB image. When the title ID can't be read, PFP falls back to matching the
+game's name against the titles your profiles have played.
+
+**What you see**
+
+- Achievement names, descriptions, secret flags and gamerscore from the profile. Icons appear for
+  achievements you have earned (the emulator stores only those).
+- Coin tiers come from gamerscore: **50G and up** is Gold, **25–49G** Silver, anything lower Bronze.
+  Xbox 360 has no platinum, so the 100% crown is the one PFP mints for a completed game.
+- No rarity percentages: there is no local rarity source.
+- Several profiles, or both emulators, merge into **one** list per game.
+
+**If nothing appears**
+
+| What you see | What it means |
+|---|---|
+| "no Xbox 360 data folder set" | Neither folder is granted, or the grant was revoked — set it again (step 1). |
+| "the Xbox 360 data folder has no emulator profile yet" | The emulator hasn't created a profile in that folder yet. |
+| "play … once in X360 Mobile or XenDroid" | The emulator writes a game's achievement file the first time it boots. Play it once. |
+| "Couldn't read this game's title ID…" | The title ID couldn't be read and no played title matched the game's name. |
+
+### 4.25 Settings reference
 
 The **Settings** category on the crossbar lists **Android Settings** (opens the device's own
 settings) followed by six sections. Each section opens a flyout of items; this table mirrors the
@@ -1182,7 +1232,7 @@ app exactly (source: `settingsSectionItems()` in
 | | RetroArch | Core detection and linking | [4.3](#43-emulators) |
 | | Per-System Defaults | Default emulator and core per console; clear per-game overrides | [4.3](#43-emulators) |
 | | Emulator knowledge | Status, updates, import/export of knowledge files, reset to built-in | [4.4](#44-emulator-knowledge-updates-import-export) |
-| **Interface** | Display | Wallpaper, wave, legibility, fonts, UMD Slot, Adjust XMB Layout, Customize XMB Icons, Boot Sequence, GameBoot, touch, Options Hint, performance | [4.13](#413-themes--personalization)–[4.16](#416-sound-ambience--boot-videos), [4.19](#419-adjusting-the-layout-for-your-screen) |
+| **Interface** | Display | Wallpaper, wave, legibility, fonts, Lock Screen, UMD Slot, Adjust XMB Layout, Customize XMB Icons, Boot Sequence, GameBoot, touch, Options Hint, performance | [4.13](#413-themes--personalization)–[4.16](#416-sound-ambience--boot-videos), [4.19](#419-adjusting-the-layout-for-your-screen) |
 | | Sound | Master volume, levels, menu sounds, ambience | [4.16](#416-sound-ambience--boot-videos) |
 | | Notifications | Record Notifications, Keep Entries For, Mark All Read, Clear All | [4.17](#417-the-notification-panel) |
 | | Categories | Create, rename, re-icon, move, hide, delete categories | [4.12](#412-categories) |
@@ -1266,7 +1316,7 @@ sanitized and require you to **confirm each one** before it appears.
 | "is not the expected build: its signing certificate does not match" | The installed emulator is not the build its knowledge entry was written for. Reinstall it from its official source. |
 | A custom emulator says custom commands are not supported | Edit it in *Settings › Emulators › Custom Emulators* and switch it to ACTION_VIEW or COMPONENT. |
 | New ROM file types aren't found after a knowledge import | Rescan — *Emulator knowledge* lists the consoles that gained file types. |
-| Disc/multi-file game not found | Open the game's console folder in a file manager and confirm the file is there; if the console uses a legacy raw-path library, re-grant its folder in *Settings › Library › Library Manager*. |
+| Disc/multi-file game not found | Open the game's console folder in a file manager and confirm the file is there (for a `.cue`, `.gdi`, `.m3u` and similar, its track files must sit beside it — PFP gives the emulator read access to that folder at launch); if the console uses a legacy raw-path library, re-grant its folder in *Settings › Library › Library Manager*. |
 | Artwork won't download | Add a SteamGridDB (or other) API key in *Settings › Library › Artwork* and check your connection. |
 | A hidden coin still says "Steam keeps this one's description secret" | Run *Update Installed Achievements*; if no source has the text, it stays that way. |
 | Interface too big/small or off-center | Tune it in *Settings › Interface › Display › Adjust XMB Layout*. |
@@ -1378,7 +1428,7 @@ This README is a living manual. To keep it trustworthy:
    [CHANGELOG.md](CHANGELOG.md). Architectural changes also update [ARCHITECTURE.md](ARCHITECTURE.md).
 2. **Use the app's own words.** Paths and labels are copied from the UI strings in code, written
    `Settings › Section › Item › Row`. Never describe a feature that is not in the code.
-3. **The Settings reference mirrors code.** [§4.24](#424-settings-reference) mirrors
+3. **The Settings reference mirrors code.** [§4.25](#425-settings-reference) mirrors
    `settingsSectionItems()` (and the `SettingsSection` enum) in
    `feature/feature-xmb/.../viewmodel/XMBViewModel.kt` exactly — sections, item titles and order.
    `SettingsHierarchyTest` pins that structure; when it changes, update the table.

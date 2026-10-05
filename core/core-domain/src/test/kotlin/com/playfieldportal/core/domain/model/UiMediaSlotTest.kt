@@ -8,7 +8,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Pins the sound roster (docs/plans/README.md (C10)): the SOUND-kind rows in the plan table's
+ * Pins the sound roster: the SOUND-kind rows in the plan table's
  * order, and the storage-key decisions that keep old installs and backups from breaking —
  * `sound_scroll` survives its rename to "Navigation" with no migration, while every retired
  * slot's key (the two merged menu sounds, the Launch Sound, and both presentations' audio)

@@ -12,7 +12,6 @@ import org.junit.rules.TemporaryFolder
 /**
  * Raw-path disc resolution: a .cue hides its .bin companions and a Dreamcast .gdi hides its track
  * files, so the ROM-root walk (and now the raw Memory Card scan) never makes companions game rows.
- * See docs/plans/README.md (C1).
  */
 class DiscImageResolverTest {
 

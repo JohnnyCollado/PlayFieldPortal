@@ -41,7 +41,7 @@ data class ThemesSettingsUiState(
     // Name of the theme applied through PfpThemeStore ("Default" = stock look).
     val activeThemeName: String = "Default",
     val isInstalling: Boolean = false,
-    // Custom-theme cascade state (docs/theme-format.md): the imported/custom accent
+    // Custom-theme cascade state (docs/dev/theme-format.md): the imported/custom accent
     // that supersedes the preset scheme, and the unified icon tint (null = default white).
     // Note: import/create/reset OUTCOMES no longer live here — they post to the notification tray.
     // isInstalling stays: the in-screen progress bar is kept, only the result row is gone.

@@ -11,7 +11,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Pins the bundled-default seam (docs/plans/README.md (C10)): every playable event falls back to
+ * Pins the bundled-default seam: every playable event falls back to
  * a bundled sample, Navigation's three events share one slot and one sample, each presentation's
  * baked-in sound resolves to a URI ExoPlayer can open, and the rule both presentations share —
  * a custom clip keeps its own audio track, and only the built-in one gets the bundled sound.

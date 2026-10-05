@@ -46,7 +46,7 @@ import javax.inject.Inject
 
 // ── Per-game achievements page ────────────────────────────────────────────────
 //
-// docs/plans/PFP_Achievements_Game_Page_Implementation_Plan.md: the page that opens when you
+// The page that opens when you
 // confirm a tracked game, rebuilt to match the Tracked/Untracked browser. The contract is the
 // library's: a pinned Search row at navigation position 0, stable-id focus so sorting, searching,
 // switching view and data refreshes keep the cursor on the same coin, L1/R1 across the All /

@@ -36,8 +36,8 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * The per-game coins page's controller contract
- * (docs/plans/PFP_Achievements_Game_Page_Implementation_Plan.md §4): Search is navigation position
+ * The per-game coins page's controller contract:
+ * Search is navigation position
  * 0, Square always reaches it, Triangle owns a modal Options menu, L/R cycle the three views, and
  * sorting, searching or a data refresh keeps the cursor on the same coin whenever it is still
  * listed.

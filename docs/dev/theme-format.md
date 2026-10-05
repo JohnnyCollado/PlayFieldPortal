@@ -208,6 +208,4 @@ rather than throwing. An over-cap icon or media entry is dropped and reported
 | **v5 Studio** | opens + upgrade banner | same | same | same | full, lossless | opens losslessly; banner says made by a newer version |
 
 "Applies" never requires an upgrade. Upgrading writes a v5 file that every column above still opens.
-Launcher apply of the v4 manifest fields and media entries lands with the Phase 2 tasks of
-`docs/plans/PFP_Theme_Studio_Restructure_Implementation_Plan.md`; the format, codec and upgrade
-semantics above are already in `core/theme-kit`.
+The format, codec and upgrade semantics above live in `core/theme-kit`.

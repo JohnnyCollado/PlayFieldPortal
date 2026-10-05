@@ -26,7 +26,7 @@ enum class UiMediaKind { SOUND, VIDEO, AUDIO_TRACK }
  * [limits] carries this slot's caps from the design doc's table — see [UiMediaLimits].
  *
  * The menu-sound roster is five rows: Navigation covers SCROLL, SELECT and SYSTEM_BROWSE (one
- * sample, three events — see [UiMediaSlot] docs in docs/plans/README.md (C10)), then Back,
+ * sample, three events), then Back,
  * Confirm, Error and Notification.
  *
  * **A presentation's sound is part of the presentation, not a slot.** Boot Sequence and GameBoot

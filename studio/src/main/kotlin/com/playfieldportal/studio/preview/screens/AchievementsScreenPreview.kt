@@ -40,8 +40,8 @@ import com.playfieldportal.core.ui.detail.DetailPalette
  * "The achievement screen": the Shiba Coins library in its Tracked Games view (feature-xmb
  * ui/detail/ShibaLibraryScreen.kt, TRACKED mode) — what "All Tracked Games" opens from the Shiba
  * Coins category (XMBViewModel ACH_ALL_ITEM_ID -> openShibaLibrary(TRACKED)). Its breadcrumb reads
- * "Achievements / Tracked Games" and it is the screen docs/plans/PFP_Achievements_Screen_Design.md
- * specifies; the player card's Player Status view is a recent-unlocks summary instead.
+ * "Achievements / Tracked Games" and it is the Shiba Library
+ * browser; the player card's Player Status view is a recent-unlocks summary instead.
  *
  * Shown as it opens: Search online pinned first, the five tracked games in Title A–Z order, the
  * cursor on the first game (ShibaLibraryViewModel focusFirstRow), the list at its top (the 1/3-line

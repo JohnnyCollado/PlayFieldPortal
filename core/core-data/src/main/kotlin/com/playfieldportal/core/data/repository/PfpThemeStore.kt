@@ -40,7 +40,7 @@ import timber.log.Timber
 
 /**
  * The user's saved-theme library. Each saved theme is a `.pfptheme` bundle
- * (docs/theme-format.md) under filesDir/pfpthemes/, with extracted sidecar
+ * (docs/dev/theme-format.md) under filesDir/pfpthemes/, with extracted sidecar
  * images ({id}.preview.jpg, {id}.wallpaper.jpg) for fast list thumbnails and applying —
  * the bundle itself stays intact for future export/sharing (Phase C).
  *

@@ -7,7 +7,6 @@ import org.junit.Test
 /**
  * The SAF-path companion suppressor: a .cue hides the .bin files it lists and a Dreamcast .gdi
  * hides its track files, so Memory Card SAF scans never make companion files game rows.
- * See docs/plans/README.md (C1).
  */
 class DiscCompanionSuppressorTest {
 

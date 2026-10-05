@@ -7,7 +7,7 @@ import kotlinx.serialization.json.JsonObject
 
 /**
  * `.pfptheme` manifest — the JSON descriptor inside the theme bundle
- * (see docs/theme-format.md).
+ * (see docs/dev/theme-format.md).
  *
  * Spiritually a modern descendant of Sony's `PSPTheme_default.txt` project file: a small
  * manifest naming the theme's parts, with the parts carried alongside. Because the entire

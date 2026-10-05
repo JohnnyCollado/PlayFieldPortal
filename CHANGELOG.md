@@ -5,6 +5,8 @@ All notable changes to Play Field Portal are documented here. This project follo
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-04
+
 ### Added
 - **Emulator knowledge base: emulator support is data now, with updates, import and export.** The
   hard-coded emulator catalog is replaced by a knowledge file that ships inside the app
@@ -38,6 +40,26 @@ All notable changes to Play Field Portal are documented here. This project follo
   redacted until you reveal them. Games synced earlier are filled on the next **manual** *Update
   Achievements*; automatic checks still skip unchanged games, so their request count stays flat.
 
+- **Xbox 360 achievements, a fifth Shiba Coins provider.** Set the Xbox 360 card's *X360 Mobile
+  Data Folder* and/or *XenDroid Data Folder* in *Library Manager* (or on the setup wizard's Local
+  Achievements page) and PFP reads achievements from the emulator's own Xenia profile GPDs — fully
+  offline, read-only, no account. A game links by the title ID read from its own `default.xex`,
+  STFS package (Games on Demand, XBLA) or disc image, headers only, with a name match against played
+  titles as the fallback. Profiles from both emulators merge into one list, earned anywhere counts,
+  and coin tiers come from gamerscore (50G+ Gold, 25–49G Silver, lower Bronze). The provider has its
+  own Shiba Coins tab and per-game Auto-Match.
+- **XenDroid** joins the emulator knowledge base, and **X360 Mobile** now launches through its
+  `x360mobile://launch` deep link (a new `dataUri` launch field with `{rom_file_uri}` /
+  `{rom_file_uri_encoded}` placeholders). Home-screen shortcuts from either emulator link to the
+  Xbox 360 card's existing game instead of creating a custom memory card.
+- **Lock screen images.** *Settings › Interface › Display › Lock Screen* sets the device lock screen
+  to an image you pick (PNG, JPG, WEBP), to the launcher wallpaper (a motion wallpaper's still
+  frame), or back to the device default. The photo viewer gains **Set as Lock Screen**, which asks
+  first. Lock screen images are not backed up.
+- **Themes can carry a lock screen image.** The theme format moves to v5 with an optional
+  `lockscreen.png`; Theme Studio adds it in the Background section and previews it on a new lock
+  screen screen. Applying such a theme offers to set it afterwards (opt-in, focused on *Not Now*).
+
 ### Changed
 - **D-pad LEFT no longer backs out of Settings screens.** This reverses part of C15 (below): LEFT
   on a Settings screen or a wizard page is a no-op again unless it steps into a row's inline
@@ -47,11 +69,36 @@ All notable changes to Play Field Portal are documented here. This project follo
   *Settings › System* (the section subtitle no longer mentions backup) and a stale notification can
   no longer open it, pending a rework of the backup format. The module and its route stay in the
   build. Emulator knowledge files are kept out of backups by design.
+- **Applying a saved theme asks first.** *My Themes* now shows what the theme would change: when it
+  carries sounds, videos or icons you replaced with your own, choose **Use the Theme's** or **Keep
+  Mine**; when its Boot or GameBoot video would not play because that feature is off, choose **Turn
+  On** or **Leave Off**. This replaces the media prompt that used to appear after applying.
+- **The setup wizard's Trophies page is now Local Achievements**, and also offers the X360 Mobile
+  and XenDroid data folders.
+- **Lower battery use.** The Discord pump adapts its cadence, the wave is capped at ~30 fps and
+  redraws on its own layer, motion wallpapers and ambience run only while the launcher is in front,
+  and idle hints, music ticks, status-bar listeners and video players pause while hidden.
+- **The notification tray** uses the storefront backdrop and the shared menu cursor instead of the
+  wave colour and a white tint.
+- **The UMD slot** shows the inserted game's title beside ICON0 when the game has no logo.
 
 ### Removed
 - **Custom-command emulator profiles.** A launch is always an Android intent now: the profile editor
   no longer offers *Custom command*, existing custom-command profiles are refused at launch with a
   message to switch them to ACTION_VIEW or COMPONENT, and knowledge files cannot carry one.
+
+### Fixed
+- **Multi-file disc games launch from SAF folders.** For a `.cue`, `.gdi`, `.m3u`, `.ccd`, `.mds` or
+  `.toc`, PFP now also gives the emulator read-only access to the configured ROM folder the sheet
+  is in, so emulators such as DuckStation can open the track files beside it.
+- **Reset to Default clears everything in one go.** It now removes a lock screen the theme set and
+  deletes theme sounds and clips before refreshing media, so a single reset is enough.
+- **Shortcut requests from other apps** are identified by a SHA-256 of the request instead of a hash
+  code, and *Add* files the request only if it is still exactly the one shown for review.
+- **Folders granted from an app's own documents provider** no longer show made-up `/storage` paths.
+- **Shiba Coins** shows the Player Card, not *Connect accounts*, when only emulator data folders are
+  linked.
+- A crash when media was reset while a screen was reading it.
 
 ### Added
 - **Notifications now explain themselves, list what happened, and can stop running work.** Two
@@ -62,8 +109,8 @@ All notable changes to Play Field Portal are documented here. This project follo
   work touched, failures first, filtered with L1/R1, with each item's reason, code and a jump to
   the card or game — Scan All, ROM Root, artwork and metadata passes, artwork import, export and
   move, achievement updates and restore. Confirm opens the sheet and marks the row read; the row's
-  destination moves into the sheet as the ✕ button, and △ copies the details. The 33 codes are in
-  `docs/plans/PFP_Notification_Error_Codes.md`.
+  destination moves into the sheet as the ✕ button, and △ copies the details. The 33 codes are
+  defined in `PfpErrorCode` and listed in `docs/dev/notification-error-codes.md`.
   Running work can be stopped from the panel: scans, artwork and metadata passes, relink, export,
   import, storefront sync and achievement updates focus in the RUNNING list, and ✕ asks before
   stopping (Keep Running is focused). A stopped task records what it finished as a quiet, already
@@ -1327,7 +1374,8 @@ security hardening. (`versionName 1.0.0-alpha.2` / `versionCode 2`.)
 - Initial alpha: XMB launcher shell, ROM library scanning, artwork scraping, emulator launch,
   gaming categories/collections, controller mapping, and touch controls.
 
-[Unreleased]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/1.2.0...HEAD
+[Unreleased]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/1.3.0...HEAD
+[1.3.0]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/1.2.1...1.3.0
 [1.2.0]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/1.0.3...1.1.0
 [1.0.0]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/v1.0.0-alpha.3...v1.0.0

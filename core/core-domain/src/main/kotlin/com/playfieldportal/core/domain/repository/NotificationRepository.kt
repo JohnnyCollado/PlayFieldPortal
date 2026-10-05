@@ -29,7 +29,7 @@ interface NotificationRepository {
      * creation time and its read state — the fourth consecutive failure of one Memory Card should
      * read as one fresh unread row, not a pile.
      *
-     * Retention runs here, on the write path, rather than on a timer: ADR-0002 rules out a
+     * Retention runs here, on the write path, rather than on a timer: PFP runs no
      * background watcher, and an insert is the only moment the history can grow.
      */
     suspend fun post(

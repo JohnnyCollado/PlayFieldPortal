@@ -82,7 +82,7 @@ compose.desktop {
             // leaves jdk.unsupported out unless asked.
             modules("jdk.unsupported")
             packageName = "PlayField Theme Studio"
-            packageVersion = "1.2.0"
+            packageVersion = "1.3.0"
             description = "Create, convert, and share PlayFieldPortal XMB themes"
 
             windows {

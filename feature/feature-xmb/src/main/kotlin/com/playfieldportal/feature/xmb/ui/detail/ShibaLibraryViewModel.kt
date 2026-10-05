@@ -32,7 +32,7 @@ import javax.inject.Inject
 
 // ── Achievements library (Tracked Games / Untracked Games) ────────────────────
 //
-// The PS3-trophy-inspired browser from docs/plans/PFP_Achievements_Screen_Design.md: a permanent
+// The PS3-trophy-inspired browser: a permanent
 // Search row at navigation position 0, one full-width row per game below it, a Triangle Options
 // menu (Sort and Provider lists, the Icon Display pattern), and L/R switching between the two
 // sibling views. Focus is held by a row's stable id, never by its list index, so sorting, filtering

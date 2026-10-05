@@ -78,7 +78,7 @@ import kotlin.math.roundToInt
 
 // ── A game's own achievements page ────────────────────────────────────────────
 //
-// docs/plans/PFP_Achievements_Game_Page_Implementation_Plan.md: the Tracked/Untracked browser's
+// The Tracked/Untracked browser's
 // shape applied to one game's coins — the App Drawer-derived background and palette, a two-line
 // header carrying completion and the per-tier tally, a pinned Search row whose right half holds the
 // All / Earned / Locked view tabs, full-width 64dp coin rows led by the Platinum Crown, and the

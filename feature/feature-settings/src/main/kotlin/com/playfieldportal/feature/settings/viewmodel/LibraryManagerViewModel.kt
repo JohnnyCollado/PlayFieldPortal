@@ -793,7 +793,7 @@ class LibraryManagerViewModel @Inject constructor(
     /**
      * Grants (and persists) the ARMSX3 PS3 data folder. Unlike Vita there is nothing to scan: PS3
      * games are ordinary ROMs that already scan into the library, so this grant only unlocks trophy
-     * reading (docs/plans/PFP_PS3_Trophy_Tracking_Implementation_Plan.md).
+     * reading.
      */
     fun setPs3DataFolder(uri: Uri?) {
         if (uri == null) return

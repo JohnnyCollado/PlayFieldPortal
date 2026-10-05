@@ -19,8 +19,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
-// See docs/adr/0001-library-scanner-owns-rom-survey.md.
-
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class ScannerIoDispatcher
@@ -205,7 +203,7 @@ class LibraryScanner @Inject constructor(
             )
         }
 
-        // Disc-set reconcile (docs/plans/README.md (C1)): the scanner only
+        // Disc-set reconcile: the scanner only
         // enriched the newly added rows against themselves, so a disc arriving into an
         // already-scanned .m3u set (or a new .m3u adopting existing discs) needs the union
         // re-derived. Deterministic and idempotent — only rows whose disc fields changed are

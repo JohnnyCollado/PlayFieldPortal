@@ -11437,7 +11437,7 @@ class XMBViewModel @Inject constructor(
         private val KEY_RESPECT_BATTERY   = booleanPreferencesKey("display_battery_saver")
         private val KEY_THERMAL_AWARE     = booleanPreferencesKey("display_thermal_aware")
         private val KEY_COLOR_SCHEME      = ThemePrefKeys.COLOR_SCHEME
-        // Custom-theme cascade (docs/theme-format.md): when set, this ARGB accent
+        // Custom-theme cascade (docs/dev/theme-format.md): when set, this ARGB accent
         // overrides the preset scheme — wave, gradient, and cursor all derive from it.
         private val KEY_ACCENT_OVERRIDE   = ThemePrefKeys.ACCENT_OVERRIDE
         // Idle context-menu hint: how long to wait before showing, and how often to recheck.

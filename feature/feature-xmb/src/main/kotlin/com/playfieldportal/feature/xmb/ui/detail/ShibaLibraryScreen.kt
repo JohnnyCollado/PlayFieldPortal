@@ -61,7 +61,7 @@ import kotlin.math.roundToInt
 
 // ── Achievements library screen ───────────────────────────────────────────────
 //
-// docs/plans/PFP_Achievements_Screen_Design.md: a console-native achievement browser built from the
+// A console-native achievement browser built from the
 // shared detail-page surfaces — the App Drawer-derived background and palette, the ◀ breadcrumb, and
 // the permanent helper footer. Below the header sit a pinned Search row (navigation position 0) and
 // a full-width list of quiet, separator-divided game rows. Tracked and Untracked share every

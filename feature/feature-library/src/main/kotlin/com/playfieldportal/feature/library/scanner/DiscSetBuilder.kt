@@ -6,8 +6,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Assigns multi-disc set identity to a batch of freshly scanned games (docs/plans/README.md (C1)
- * steps 1–3). Runs over the games of one scan pass, so a full first scan of a folder groups every
+ * Assigns multi-disc set identity to a batch of freshly scanned games.
+ * Runs over the games of one scan pass, so a full first scan of a folder groups every
  * disc together; games with no disc tag and no linking playlist keep a NULL [Game.discSetKey] and
  * are untouched.
  *

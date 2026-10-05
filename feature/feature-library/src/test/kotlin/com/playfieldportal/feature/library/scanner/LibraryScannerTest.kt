@@ -25,7 +25,7 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * Verification obligations from docs/adr/0001-library-scanner-owns-rom-survey.md.
+ * Verification obligations for [LibraryScanner]'s ROM survey.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class LibraryScannerTest {

@@ -2,7 +2,7 @@
 
 How Play Field Portal knows how to launch each emulator, and how to write your own file.
 
-**The example is the real thing.** [`emulator-kb/pfp-default-emulators.json`](emulator-kb/pfp-default-emulators.json)
+**The example is the real thing.** [`emulator-kb/pfp-default-emulators.json`](../emulator-kb/pfp-default-emulators.json)
 is the app's built-in knowledge base written out as a user file: every emulator the app ships with,
 exactly as the app reads it. Copy an entry from it as the starting point for your own. A test
 (`ExampleKnowledgeBaseTest`) keeps it identical to the built-in default and checks that it imports

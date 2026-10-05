@@ -7,7 +7,7 @@ import kotlin.test.assertTrue
 
 /**
  * The codes are a public contract: they appear in screenshots and logs, so the enum and the
- * approved registry (docs/plans/PFP_Notification_Error_Codes.md) must never drift apart.
+ * approved registry (docs/dev/notification-error-codes.md) must never drift apart.
  */
 class PfpErrorCodeTest {
 
@@ -29,8 +29,8 @@ class PfpErrorCodeTest {
     @Test
     fun `the enum matches the registry document when it can be found`() {
         val doc = listOf(
-            "../../docs/plans/PFP_Notification_Error_Codes.md",
-            "docs/plans/PFP_Notification_Error_Codes.md",
+            "../../docs/dev/notification-error-codes.md",
+            "docs/dev/notification-error-codes.md",
         ).map(::File).firstOrNull { it.isFile } ?: return
         val documented = Regex("""^\| ([A-Z]{2}-\d{4}) \|""", RegexOption.MULTILINE)
             .findAll(doc.readText()).map { it.groupValues[1] }.toSet()

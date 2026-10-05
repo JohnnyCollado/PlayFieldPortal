@@ -1,7 +1,7 @@
 package com.playfieldportal.core.domain.model
 
 /**
- * The approved error-code registry (docs/plans/PFP_Notification_Error_Codes.md).
+ * The approved error-code registry (docs/dev/notification-error-codes.md).
  *
  * Format `AA-BNNN`: AA is the area, B the kind of cause (1 setup, 2 files and storage, 3 network
  * and accounts, 4 another app, 9 unexpected). Codes are never reused or renumbered, and each one

@@ -318,8 +318,7 @@ class UiMediaStoreTest {
     /**
      * clearAll(SOUND) clears the menu-sound rows and nothing else. Neither presentation's clip is
      * touched, which now covers their audio too: Boot Sequence and GameBoot each carry their sound
-     * inside the clip, so a sound reset that reached them would silently strip a user's boot audio
-     * — the Phase 2c rule from docs/plans/README.md (C10).
+     * inside the clip, so a sound reset that reached them would silently strip a user's boot audio.
      */
     @Test
     fun `clearAll of SOUND clears the sound rows and never touches boot or gameboot media`() = runTest {

@@ -34,8 +34,8 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * The achievements library's controller contract (docs/plans/PFP_Achievements_Screen_Design.md
- * §5, §10–§12, §14): Search is navigation position 0, Square always reaches it, Triangle owns a
+ * The achievements library's controller contract:
+ * Search is navigation position 0, Square always reaches it, Triangle owns a
  * modal Options menu, L/R switch views, and sorting or filtering keeps the cursor on the same game.
  */
 @OptIn(ExperimentalCoroutinesApi::class)

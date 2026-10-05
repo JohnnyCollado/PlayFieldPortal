@@ -44,8 +44,8 @@ import javax.inject.Singleton
 /**
  * The single entry point for the coin system: offline-first reads straight from Room, plus the
  * link commands. Every refresh — whole-library, per-game, stale-on-open — is delegated to the
- * [AchievementSyncCoordinator], which scopes it to present, confirmed games
- * (docs/plans/PFP_Local_Achievements_Selective_Sync_Implementation_Plan.md). The wallet is
+ * [AchievementSyncCoordinator], which scopes it to present, confirmed games.
+ * The wallet is
  * derived reactively from the confirmed set summaries, so it updates itself whenever a sync lands.
  */
 @Singleton

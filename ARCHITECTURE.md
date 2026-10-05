@@ -29,7 +29,7 @@ selected category, and launches games through external emulator apps.
 |---|---|
 | **Launcher-first** | Replaces the Android home screen. Users should never need to leave PFP to play games. |
 | **Performance over polish** | The XMB wave is iconic but must never kill frame rate. Tiered degradation over dropped frames. |
-| **No background polling** | Nothing watches the filesystem. No `FileObserver`, no polling loop, no scanning service. Rescans are event-driven — see [ADR-0002](docs/adr/0002-rescan-triggers-without-a-filesystem-watcher.md). |
+| **No background polling** | Nothing watches the filesystem. No `FileObserver`, no polling loop, no scanning service. Rescans are event-driven. |
 | **Zero junk in release** | Debug tooling is compile-time excluded. The release APK contains no simulation code. |
 | **PSP soul, Android body** | The aesthetic is XMB but the interaction model is Android — back gestures, Intents, Compose. |
 | **Tested by default** | Every new module ships with unit tests. Pure-JVM tests (MockK + Turbine) for logic; integration tests for the database and migrations. |
@@ -90,8 +90,7 @@ app  ──▶ feature:*  ──▶ core:core-ui ──▶ core:core-data ──
 [`LibraryScanner`](feature/feature-library/src/main/kotlin/com/playfieldportal/feature/library/scanner/LibraryScanner.kt)
 is the single owner of ROM-survey policy: source resolution, one-upsert-per-path across multiple
 sources, optional Missing reconciliation, changed-only persistence, per-card single-flight, and IO
-execution. Both the settings interface and the trigger path delegate to it — see
-[ADR-0001](docs/adr/0001-library-scanner-owns-rom-survey.md).
+execution. Both the settings interface and the trigger path delegate to it.
 
 Scans start one of two ways:
 
@@ -103,8 +102,7 @@ Scans start one of two ways:
   is still picked up.
 
 Nothing watches the filesystem. Every scan traces back to a user action, a lifecycle event, or a
-system broadcast — the guards and the rejected alternatives are recorded in
-[ADR-0002](docs/adr/0002-rescan-triggers-without-a-filesystem-watcher.md).
+system broadcast.
 
 ## Game / emulator launching (`feature:feature-launcher`)
 
@@ -430,12 +428,8 @@ nothing is listening.
 
 ## Where decisions are recorded
 
-- **`docs/adr/`** — architecture decision records. Read these before proposing a change that
-  reverses one.
 - **`CONTEXT.md`** — the domain glossary. Terms defined there (Memory Card, ROM survey, icon slot,
   render tier, applied look, UI media slot) are used precisely in this document.
-- **`docs/plans/README.md`** — the plan index: what shipped, what did not, and why. Implemented
-  plans are deleted, so the index is the record.
 - **`CHANGELOG.md`** — user-facing history, with unreleased work kept separate.
 
 ## Build & run

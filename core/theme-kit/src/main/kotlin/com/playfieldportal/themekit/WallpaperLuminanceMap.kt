@@ -11,8 +11,7 @@ import kotlin.math.sqrt
  *
  * The XMB is the one surface in the app that genuinely draws text on raw wallpaper — everything
  * else (Settings, App Drawer, storefront, detail, music, context menus) paints a scrim of *known*
- * colors, so its effective background is a closed-form composite with no sampling needed. See
- * `docs/plans/text-legibility-font-color-plan.md`.
+ * colors, so its effective background is a closed-form composite with no sampling needed.
  *
  * Runtime sampling was rejected: `PixelCopy` needs a Window/SurfaceView and the wallpaper is a Coil
  * `AsyncImage`, while `GraphicsLayer.toImageBitmap()` would mean a GPU→CPU readback every frame in

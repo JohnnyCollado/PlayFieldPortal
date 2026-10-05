@@ -11,7 +11,7 @@ import androidx.compose.ui.graphics.lerp
  * so every rule here is pinned by plain JVM unit tests (`TextLegibilityTest`) rather than by
  * eyeballing a screenshot. It grew out of [deriveStorefrontColors]'s contrast floor and was
  * promoted here once the same math turned out to be needed by Settings, the XMB and the
- * font-color picker. See `docs/plans/text-legibility-font-color-plan.md`.
+ * font-color picker.
  *
  * Two facts drive everything below:
  *

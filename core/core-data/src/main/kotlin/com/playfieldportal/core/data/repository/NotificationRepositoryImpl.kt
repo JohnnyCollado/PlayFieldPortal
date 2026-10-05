@@ -76,7 +76,7 @@ class NotificationRepositoryImpl(
     override suspend fun clearRead() = dao.clearRead()
 
     /**
-     * Retention, run on the write path because ADR-0002 rules out a background watcher and an
+     * Retention, run on the write path because PFP runs no background watcher and an
      * insert is the only moment the history can grow.
      *
      * Neither knob is a user-facing guarantee — Clear All is. These just stop an unattended device

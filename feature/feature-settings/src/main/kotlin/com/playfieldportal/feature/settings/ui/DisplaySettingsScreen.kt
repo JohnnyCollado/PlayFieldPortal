@@ -82,7 +82,7 @@ fun DisplaySettingsScreen(
     // Biblically Accurate PSP XMB confirmation.
     var pspConfirmOpen by remember { mutableStateOf(false) }
     // The "Hidden Items" manager moved to Settings ▸ Library ▸ Hidden Games
-    // (settings_app_visibility) — see docs/plans/README.md (Settings hierarchy).
+    // (settings_app_visibility).
 
     // Which media row the cursor is on right now — the north/west face-button shortcuts act on
     // it. Every other row clears it (a media row clears itself when it loses focus; the toggles

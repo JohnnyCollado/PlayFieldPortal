@@ -41,7 +41,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 /**
- * The Interface ▸ Sound screen's contract (docs/plans/README.md (C10) Phase 2c): seven
+ * The Interface ▸ Sound screen's contract: seven
  * rows — the six menu sounds plus Boot Sound — with Boot Sound behaving like any other row
  * (label, Preview, Use Default, reset), while its Preview uses the dedicated boot player rather
  * than [MenuSound] (Display ▸ Boot Sequence remains the full-presentation preview).

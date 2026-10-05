@@ -32,8 +32,7 @@ import javax.inject.Inject
 
 // ── Search online ─────────────────────────────────────────────────────────────
 //
-// Plan Task 8 (docs/plans/PFP_Local_Achievements_Selective_Sync_Implementation_Plan.md): the
-// explicit provider search, reached from the Tracked/Untracked browser's pinned "Search online"
+// The explicit provider search, reached from the Tracked/Untracked browser's pinned "Search online"
 // row. It looks a game up on Steam or RetroAchievements and shows its achievements as a PREVIEW —
 // the game is not on this device, so nothing here is tracked, counted, queued or written. That
 // guarantee is structural: this view model's only data source is [AchievementPreviewRepository],

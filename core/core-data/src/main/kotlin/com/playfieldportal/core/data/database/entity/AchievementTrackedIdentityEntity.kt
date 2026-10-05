@@ -6,8 +6,8 @@ import kotlinx.serialization.Serializable
 
 /**
  * The confirmed-local-match ledger: one row per provider identity that was matched to a game
- * present on this device (docs/plans/PFP_Local_Achievements_Selective_Sync_Implementation_Plan.md
- * section 3). Keyed by (provider, provider_game_id) rather than a volatile game id, so removing and
+ * present on this device.
+ * Keyed by (provider, provider_game_id) rather than a volatile game id, so removing and
  * reinstalling a game — or holding two local copies of it — maps to one history entry.
  *
  * Only identities in this table count anywhere account-wide: the tracked list, the wallet and the

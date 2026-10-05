@@ -18,8 +18,6 @@ import kotlin.math.max
  * public signature means callers that only *write* the key need no theme-kit import at all.
  * Readers (the XMB) parse with [WallpaperLuminanceMap.fromJson], which is also where staleness is
  * detected.
- *
- * See `docs/plans/text-legibility-font-color-plan.md`.
  */
 object WallpaperLuminanceProbe {
 

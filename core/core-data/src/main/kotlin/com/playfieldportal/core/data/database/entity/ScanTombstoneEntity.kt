@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 
 /**
  * RETIRED. "Remove from Library" previously wrote one of these so a folder rescan would not
- * re-import the still-on-disk file. That behavior was removed (see ADR-0001): removal now just
+ * re-import the still-on-disk file. That behavior was removed: removal now just
  * deletes the row and the next scan re-discovers the file, so nothing reads or writes tombstones
  * anymore. The entity and its `scan_tombstones` table are kept only to hold the Room schema
  * version steady for existing installs; no migration drops the table yet.

@@ -13,7 +13,6 @@ import org.junit.Test
  * Set building over a scan pass: tagged discs group into one set with disc 1 primary, an .m3u
  * beside them takes over as primary, unreadable/unresolvable playlists create nothing, folders
  * keep same-named games apart, and tag-less games stay untouched.
- * See docs/plans/README.md (C1) (DiscSetBuilderTest).
  */
 class DiscSetBuilderTest {
 

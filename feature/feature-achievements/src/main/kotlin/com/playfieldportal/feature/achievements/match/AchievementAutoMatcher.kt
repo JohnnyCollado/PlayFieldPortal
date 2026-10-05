@@ -231,7 +231,7 @@ class AchievementAutoMatcher @Inject constructor(
      * PS3 games link by the NPWR id the game itself declares in `PS3_GAME/TROPDIR` — the same data
      * the emulator reads to register the set. The **first** id is the base set and becomes the
      * provider game id; the source merges any DLC subsets at fetch time, so nothing here has to
-     * store the list (docs/plans/PFP_PS3_Trophy_Tracking_Implementation_Plan.md section 5.1).
+     * store the list.
      *
      * A game whose declared set is not on disk yet is linked **anyway**, at 0%: the link is already
      * deterministic from the disc, and the emulator creates the folder the first time the game runs.

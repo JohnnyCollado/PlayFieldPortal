@@ -42,7 +42,7 @@ import kotlinx.serialization.json.jsonObject
  * know). The bundle holds every icon in one slot-keyed map; [IconFolder] is the one place that
  * maps a key to its folder — `icons/` gated by [IconSlots], `sysicons/` by [CustomizableIcons]'
  * console keys, `mediaicons/` by its physical-media keys. Media entries are gated by
- * [ThemeMediaSlots]. Format reference: docs/theme-format.md.
+ * [ThemeMediaSlots]. Format reference: docs/dev/theme-format.md.
  */
 object PfpThemeCodec {
 

@@ -36,7 +36,7 @@ data class TrackedEntryRow(
 /**
  * The selective achievement sync's own tables: the confirmed-local-match ledger, per-provider
  * scheduling state and the provider metadata cache — plus the one transaction that clears every
- * achievement record PFP stores (docs/plans/PFP_Local_Achievements_Selective_Sync_Implementation_Plan.md).
+ * achievement record PFP stores.
  */
 @Dao
 interface AchievementTrackingDao {
