@@ -1419,6 +1419,12 @@ keyAlias=…
 keyPassword=…
 ```
 
+**Upgrading an installed APK.** Android installs a new APK over an existing one only when it is
+signed with the **same key** and its `versionCode` (in `app/build.gradle.kts`) is **higher**. Raise
+`versionCode` for every release, including dev builds you hand to testers, and keep the release
+keystore backed up: an APK signed with a different key can't upgrade an existing install, so the old
+version would have to be uninstalled first, losing its data.
+
 ### 7.7 Keeping this manual current
 
 This README is a living manual. To keep it trustworthy:
@@ -1486,6 +1492,34 @@ APK into the gitignored `debug/` folder.
 # Package a native installer for the current OS (MSI / DMG / DEB)
 ./gradlew :studio:packageReleaseDistributionForCurrentOS
 ```
+
+#### Packaging the installers
+
+- **One OS per build.** jpackage only builds installers for the OS it runs on: the Windows `.exe`
+  and `.msi` must be built on Windows, the `.dmg` on macOS and the `.deb` on Linux. A Mac build
+  also matches the machine's chip, so Apple Silicon and Intel each need their own `.dmg`.
+- **What the installer bundles.** Every installer carries its own Java runtime and the FFmpeg
+  natives for its OS (picked by `javacppPlatform` in `studio/build.gradle.kts`), so users install
+  nothing else.
+- **Windows needs WiX Toolset v3** (not v4/v5 — JDK 17's jpackage only works with v3). Either
+  install it (`winget install --id WiXToolset.WiXToolset`, admin terminal) or extract
+  `wix314-binaries.zip` from the [WiX v3 releases](https://github.com/wixtoolset/wix3/releases) into
+  the gitignored `tools/wix3/`; `build-theme-studio-installer.bat` looks there first and needs no
+  PATH change. Run `build-theme-studio-installer.bat --msi` to build both the `.exe` and the `.msi`.
+- **macOS and Linux** need a machine (or a CI runner) on that OS. The installers there are not
+  signed or notarized, so macOS shows a Gatekeeper warning on first launch.
+
+#### Upgrading an existing install
+
+- **Windows:** the `upgradeUuid` in `studio/build.gradle.kts` is fixed and must never change. With
+  it, a newer installer replaces the installed version (and its Add/Remove Programs entry) instead
+  of installing a second copy. `packageVersion` must go up for every release (`MAJOR.MINOR.BUILD`).
+- **macOS:** a newer `.dmg` is installed by dragging the app over the old one. Before the first
+  public macOS release, set a fixed `bundleID` in the `macOS { }` block so every version is
+  recognised as the same app.
+- **Linux:** `dpkg`/`apt` upgrades a `.deb` in place when the package name stays the same and the
+  version goes up. Before the first public Linux release, pin `packageName` (and `debMaintainer`) in
+  a `linux { }` block so the package name never changes.
 
 ### 7.10 Module structure
 
