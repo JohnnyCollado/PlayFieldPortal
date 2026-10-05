@@ -1,6 +1,7 @@
 package com.playfieldportal.core.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,10 +21,13 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
@@ -45,6 +49,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -67,7 +72,7 @@ import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
 
 /**
- * The app's one HSV colour picker: Hue, Saturation and Brightness bars and a Hex field, the four
+ * The app's one HSV colour picker: a Hex field over Hue, Saturation and Brightness bars, the four
  * stops [HsvPickerNav] moves between on the navigation core.
  *
  * Stateless. The host keeps an [HsvPickerState], passes every controller press through
@@ -75,7 +80,13 @@ import com.playfieldportal.core.ui.theme.themedText
  * drag on a bar, a tap on the Hex field, each keystroke. ✕ on the Hex field (or a tap) raises the
  * keyboard; six hex digits repaint the colour at once. While PFP's keyboard is up the shell routes
  * every press to it, so the host sees none until it closes.
+ *
+ * The title and swatch stay pinned and the Hex field comes first under them, so neither keyboard
+ * covers what is being typed; everything under them scrolls inside whatever height the card
+ * is given, which with PFP's keyboard up is only what sits above [VirtualKeyboardBottomReserve].
+ * The focused stop is always brought into view, so the Hex field being typed is never under it.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HsvColorPickerDialog(
     title: String,
@@ -126,11 +137,28 @@ fun HsvColorPickerDialog(
         }
     }
 
+    // One requester per stop. Framed by geometry, as the settings rows are: the scroll parent brings
+    // the stop itself into view, whatever height the contrast strip or the keyboard leaves.
+    val stopInView = remember { HsvPickerField.entries.associateWith { BringIntoViewRequester() } }
+    LaunchedEffect(state.focus, state.editingHex, edit.isOpen, cursor) {
+        if (cursor || state.editingHex) {
+            // Wait out the relayout the keyboard reserve just caused, so the viewport is its new size.
+            withFrameNanos { }
+            stopInView.getValue(state.focus).bringIntoView()
+        }
+    }
+    val bodyScroll = rememberScrollState()
+    val currentCancel by rememberUpdatedState(cancel)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xCC000000))
-            .clickable(onClick = cancel)
+            .testTag(HsvPickerTags.SCRIM)
+            // Pointer input rather than clickable: a clickable merges its descendants' semantics.
+            .pointerInput(Unit) { detectTapGestures { currentCancel() } }
+            // No imePadding(): the window already pans for the system keyboard, and padding as
+            // well pushed the card off the top of the screen.
             .padding(bottom = if (edit.isOpen) VirtualKeyboardBottomReserve else 0.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -140,14 +168,17 @@ fun HsvColorPickerDialog(
                 .clip(RoundedCornerShape(16.dp))
                 .background(Color(0xFF15151F))
                 // Swallows taps so a click inside the panel does not reach the scrim's cancel.
-                .clickable(onClick = {})
-                .padding(24.dp),
+                .pointerInput(Unit) { detectTapGestures { } }
+                // 212dp is all an Odin 3 has above the keyboard; the tighter edge buys the Hex
+                // field its room under the pinned swatch.
+                .padding(horizontal = 24.dp, vertical = if (edit.isOpen) 16.dp else 24.dp),
         ) {
             Text(title, color = themedText(Color.White), fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
+                        .testTag(HsvPickerTags.SWATCH)
                         .size(56.dp)
                         .clip(CircleShape)
                         .background(preview)
@@ -157,113 +188,137 @@ fun HsvColorPickerDialog(
                 Text(hexOf(preview), color = subtext, fontSize = 14.sp, fontFamily = FontFamily.Monospace)
             }
 
-            if (contrastAnchors != null) {
+            // Shrinks to what the screen leaves rather than running off it, and scrolls within it.
+            Column(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .verticalScroll(bodyScroll),
+            ) {
                 Spacer(Modifier.height(16.dp))
-                ContrastStrip(preview, contrastAnchors.first, contrastAnchors.second, subtext, contrastWarnBelow)
-            }
-
-            val bars = listOf(
-                Triple(HsvPickerField.HUE, "Hue", state.hue / 360f),
-                Triple(HsvPickerField.SATURATION, "Saturation", state.saturation),
-                Triple(HsvPickerField.BRIGHTNESS, "Brightness", state.brightness),
-            )
-            bars.forEach { (field, label, fraction) ->
-                Spacer(Modifier.height(if (field == HsvPickerField.HUE) 20.dp else 14.dp))
-                ChannelBar(
-                    label = label,
-                    fraction = fraction,
-                    brush = when (field) {
-                        HsvPickerField.HUE -> rainbowBrush()
-                        HsvPickerField.SATURATION -> Brush.horizontalGradient(
-                            listOf(hsvColor(state.hue, 0f, state.brightness), hsvColor(state.hue, 1f, state.brightness)),
-                        )
-                        else -> Brush.horizontalGradient(
-                            listOf(hsvColor(state.hue, state.saturation, 0f), hsvColor(state.hue, state.saturation, 1f)),
-                        )
-                    },
-                    selected = cursor && state.focus == field,
-                    accent = accent,
-                    subtext = subtext,
-                    onTap = { menuSounds.play(MenuSound.SCROLL); change(HsvPickerNav.touchBar(current, field, it)) },
-                    onDrag = { change(HsvPickerNav.touchBar(current, field, it)) },
-                )
-            }
-
-            Spacer(Modifier.height(14.dp))
-            val hexActive = state.editingHex || (cursor && state.focus == HsvPickerField.HEX)
-            Text("Hex", color = if (hexActive) accent else subtext, fontSize = 12.sp)
-            Spacer(Modifier.height(6.dp))
-            VirtualKeyboardTextInput(edit) {
-                BasicTextField(
-                    value = edit.fieldValue,
-                    onValueChange = { edit.onFieldValueChange(it) },
-                    singleLine = true,
-                    textStyle = TextStyle(color = themedText(Color.White), fontSize = 16.sp, fontFamily = FontFamily.Monospace),
-                    cursorBrush = SolidColor(accent),
-                    keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.Characters,
-                        keyboardType = KeyboardType.Ascii,
-                        imeAction = ImeAction.Done,
-                    ),
-                    keyboardActions = KeyboardActions(onDone = { change(HsvPickerNav.endHexEntry(current)) }),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .virtualKeyboardField(edit)
-                        .focusRequester(focusRequester)
-                        // A tap lands here before the host knows about it; tell it, so the cursor
-                        // follows and the field counts as being edited.
-                        .onFocusChanged { focus ->
-                            if (focus.isFocused && !current.editingHex) {
-                                change(HsvPickerNav.touch(current, HsvPickerField.HEX).copy(editingHex = true))
-                            }
-                        },
-                    decorationBox = { inner ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
+                val hexActive = state.editingHex || (cursor && state.focus == HsvPickerField.HEX)
+                Column(Modifier.bringIntoViewRequester(stopInView.getValue(HsvPickerField.HEX))) {
+                    Text("Hex", color = if (hexActive) accent else subtext, fontSize = 12.sp)
+                    Spacer(Modifier.height(6.dp))
+                    VirtualKeyboardTextInput(edit) {
+                        BasicTextField(
+                            value = edit.fieldValue,
+                            onValueChange = { edit.onFieldValueChange(it) },
+                            singleLine = true,
+                            textStyle = TextStyle(color = themedText(Color.White), fontSize = 16.sp, fontFamily = FontFamily.Monospace),
+                            cursorBrush = SolidColor(accent),
+                            keyboardOptions = KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Characters,
+                                keyboardType = KeyboardType.Ascii,
+                                imeAction = ImeAction.Done,
+                            ),
+                            keyboardActions = KeyboardActions(onDone = { change(HsvPickerNav.endHexEntry(current)) }),
                             modifier = Modifier
+                                .testTag(HsvPickerTags.HEX_FIELD)
                                 .fillMaxWidth()
-                                .height(40.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(Color.White.copy(alpha = 0.06f))
-                                .border(
-                                    width = if (hexActive) 2.dp else 1.dp,
-                                    color = if (hexActive) accent else Color(0x55FFFFFF),
-                                    shape = RoundedCornerShape(10.dp),
-                                )
-                                .padding(horizontal = 12.dp),
-                        ) {
-                            Text("#", color = subtext, fontSize = 16.sp, fontFamily = FontFamily.Monospace)
-                            Box(Modifier.weight(1f)) { inner() }
-                        }
-                    },
-                )
-            }
+                                .virtualKeyboardField(edit)
+                                .focusRequester(focusRequester)
+                                // A tap lands here before the host knows about it; tell it, so the cursor
+                                // follows and the field counts as being edited.
+                                .onFocusChanged { focus ->
+                                    if (focus.isFocused && !current.editingHex) {
+                                        change(HsvPickerNav.touch(current, HsvPickerField.HEX).copy(editingHex = true))
+                                    }
+                                },
+                            decorationBox = { inner ->
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(40.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(Color.White.copy(alpha = 0.06f))
+                                        .border(
+                                            width = if (hexActive) 2.dp else 1.dp,
+                                            color = if (hexActive) accent else Color(0x55FFFFFF),
+                                            shape = RoundedCornerShape(10.dp),
+                                        )
+                                        .padding(horizontal = 12.dp),
+                                ) {
+                                    Text("#", color = subtext, fontSize = 16.sp, fontFamily = FontFamily.Monospace)
+                                    Box(Modifier.weight(1f)) { inner() }
+                                }
+                            },
+                        )
+                    }
+                }
 
-            Spacer(Modifier.height(16.dp))
-            if (showHints && !state.editingHex) {
-                ControllerHintBar(items = hintItems(state.focus), compact = true)
-                Spacer(Modifier.height(12.dp))
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(
-                    "Apply",
-                    color = accent,
-                    fontSize = 15.sp,
-                    modifier = Modifier
-                        .clickable { menuSounds.play(MenuSound.CONFIRM); onConfirm() }
-                        .padding(vertical = 6.dp, horizontal = 10.dp),
+                if (contrastAnchors != null) {
+                    Spacer(Modifier.height(16.dp))
+                    ContrastStrip(preview, contrastAnchors.first, contrastAnchors.second, subtext, contrastWarnBelow)
+                }
+
+                val bars = listOf(
+                    Triple(HsvPickerField.HUE, "Hue", state.hue / 360f),
+                    Triple(HsvPickerField.SATURATION, "Saturation", state.saturation),
+                    Triple(HsvPickerField.BRIGHTNESS, "Brightness", state.brightness),
                 )
-                Text(
-                    "Cancel",
-                    color = subtext,
-                    fontSize = 15.sp,
-                    modifier = Modifier
-                        .clickable(onClick = cancel)
-                        .padding(vertical = 6.dp, horizontal = 10.dp),
-                )
+                bars.forEach { (field, label, fraction) ->
+                    Spacer(Modifier.height(if (field == HsvPickerField.HUE) 20.dp else 14.dp))
+                    Column(
+                        Modifier
+                            .bringIntoViewRequester(stopInView.getValue(field))
+                            .then(if (field == HsvPickerField.HUE) Modifier.testTag(HsvPickerTags.HUE_BAR) else Modifier),
+                    ) {
+                        ChannelBar(
+                            label = label,
+                            fraction = fraction,
+                            brush = when (field) {
+                                HsvPickerField.HUE -> rainbowBrush()
+                                HsvPickerField.SATURATION -> Brush.horizontalGradient(
+                                    listOf(hsvColor(state.hue, 0f, state.brightness), hsvColor(state.hue, 1f, state.brightness)),
+                                )
+                                else -> Brush.horizontalGradient(
+                                    listOf(hsvColor(state.hue, state.saturation, 0f), hsvColor(state.hue, state.saturation, 1f)),
+                                )
+                            },
+                            selected = cursor && state.focus == field,
+                            accent = accent,
+                            subtext = subtext,
+                            onTap = { menuSounds.play(MenuSound.SCROLL); change(HsvPickerNav.touchBar(current, field, it)) },
+                            onDrag = { change(HsvPickerNav.touchBar(current, field, it)) },
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+                if (showHints && !state.editingHex) {
+                    ControllerHintBar(items = hintItems(state.focus), compact = true)
+                    Spacer(Modifier.height(12.dp))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text(
+                        "Apply",
+                        color = accent,
+                        fontSize = 15.sp,
+                        modifier = Modifier
+                            .clickable { menuSounds.play(MenuSound.CONFIRM); onConfirm() }
+                            .padding(vertical = 6.dp, horizontal = 10.dp),
+                    )
+                    Text(
+                        "Cancel",
+                        color = subtext,
+                        fontSize = 15.sp,
+                        modifier = Modifier
+                            .clickable(onClick = cancel)
+                            .padding(vertical = 6.dp, horizontal = 10.dp),
+                    )
+                }
             }
         }
     }
+}
+
+/** Test tags for the picker's scrim, swatch and Hex field. */
+object HsvPickerTags {
+    const val SCRIM = "hsv_picker_scrim"
+    const val SWATCH = "hsv_picker_swatch"
+    const val HEX_FIELD = "hsv_picker_hex_field"
+    const val HUE_BAR = "hsv_picker_hue_bar"
 }
 
 private const val HEX_DIGITS = 6

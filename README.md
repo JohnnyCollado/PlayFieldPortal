@@ -7,7 +7,7 @@ Android home screen as a single front end for ROM emulation, Android games, PC-l
 (Winlator), native apps, and your music, video and photo libraries.
 
 <p align="center">
-  <img src="docs/screenshots/theme-vaporwave-home.jpg" alt="Play Field Portal — a themed crossbar with game covers" width="720">
+  <img src="docs/screenshots/hero-ffvii-idle.webp" alt="Play Field Portal idling on All Games with the animated Final Fantasy VII theme" width="720">
 </p>
 
 <p align="center">
@@ -40,7 +40,8 @@ the prose:
 
 ## Screenshots
 
-*Captured on an AYN Thor. Game artwork and app icons shown belong to their respective owners.*
+*Captured on an AYN Thor and, for 1.3.0, an AYN Odin 3. Game artwork and app icons shown belong to their
+respective owners.*
 
 ### Themes
 
@@ -49,34 +50,55 @@ the prose:
 | <img src="docs/screenshots/theme-vaporwave-home.jpg" width="420"> | <img src="docs/screenshots/theme-color-scheme-picker.jpg" width="420"> |
 | A custom `.pfptheme` — wallpaper + one derived color, icons follow | Color Scheme picker, previewing live on the real crossbar |
 | <img src="docs/screenshots/theme-my-themes.jpg" width="420"> | <img src="docs/screenshots/theme-settings.jpg" width="420"> |
-| My Themes library — apply, Share, Remove | Theme install (`.ptf` / `.pfptheme`) and one-tap Reset to Default |
+| My Themes — theme cards with Share, Update and Delete | Themes — color scheme, icon color and Customize XMB Icons |
 
 ### Game library
 
 | | |
 |:---:|:---:|
 | <img src="docs/screenshots/game-drill-covers.jpg" width="420"> | <img src="docs/screenshots/game-detail.jpg" width="420"> |
-| Drilling into a Memory Card — covers, platform subtitles | Game detail — hero art and one-tap Play |
-| <img src="docs/screenshots/custom-category.jpg" width="420"> | <img src="docs/screenshots/memory-card-menu.jpg" width="420"> |
-| A custom gaming category with its own icon and wallpaper | Memory Card options (△) — scan, refresh, pin, hide |
+| Drilling into a Memory Card — the focused game's hero art and logo | Game Detail — hero banner, Launch, Artwork, Options |
+| <img src="docs/screenshots/custom-category.jpg" width="420"> | <img src="docs/screenshots/game-options-menu.jpg" width="420"> |
+| A custom category — a video snap plays over the game's background | Game options (△) — details, Shiba Coins, Insert as UMD, cards, arrange |
 | <img src="docs/screenshots/library-manager.jpg" width="420"> | <img src="docs/screenshots/winlator-pc-games.jpg" width="420"> |
 | Library Manager — ROM roots, per-console cards | PC-layer titles (Winlator) live next to console games |
-| <img src="docs/screenshots/artwork-manager.jpg" width="420"> | <img src="docs/screenshots/social-discord.jpg" width="420"> |
-| Artwork Manager — SteamGridDB / TheGamesDB / IGDB / local | Social — Discord friends, voice, and activity |
+| <img src="docs/screenshots/artwork-studio.jpg" width="420"> | <img src="docs/screenshots/social-discord.jpg" width="420"> |
+| Artwork Studio — every art type, from ScreenScraper, SteamGridDB, TheGamesDB, IGDB, Steam or a local file | Social — Discord friends, voice, and activity |
+
+### New in 1.3.0
+
+| | |
+|:---:|:---:|
+| <img src="docs/screenshots/launch-card.jpg" width="420"> | <img src="docs/screenshots/umd-slot.jpg" width="420"> |
+| The Launch Card — the game's title under the PFP logo as it starts | The UMD slot — one game inserted, like a disc in the drive |
+| <img src="docs/screenshots/theme-apply-confirmation.jpg" width="420"> | <img src="docs/screenshots/customize-xmb-icons.jpg" width="420"> |
+| Applying a theme asks first | Customize XMB Icons — crossbar, items, consoles, physical media |
+| <img src="docs/screenshots/shiba-player-status.jpg" width="420"> | <img src="docs/screenshots/shiba-tracked-games.jpg" width="420"> |
+| Shiba Coins Player Status — level, coins, rarest unlock | Tracked games across every provider |
+| <img src="docs/screenshots/shiba-ps3-trophies.jpg" width="420"> | <img src="docs/screenshots/shiba-xbox360-coins.jpg" width="420"> |
+| PS3 trophies read from ARMSX3, hidden coins included | Xbox 360 achievements from X360 Mobile and XenDroid |
+| <img src="docs/screenshots/notification-panel.jpg" width="420"> | <img src="docs/screenshots/emulator-knowledge.jpg" width="420"> |
+| The notification panel — running work and history | Emulator knowledge — import, export and reset |
+| <img src="docs/screenshots/add-games-picker.jpg" width="420"> | <img src="docs/screenshots/virtual-keyboard-search.jpg" width="420"> |
+| Add Games — pick covers shelf by shelf | The controller keyboard, searching the game list |
+| <img src="docs/screenshots/app-drawer.jpg" width="420"> | <img src="docs/screenshots/display-lock-screen.jpg" width="420"> |
+| The App Drawer — tabs for all apps, games, emulators, recently used | Display — wallpaper and the new Lock Screen image |
+| <img src="docs/screenshots/setup-wizard-local-achievements.jpg" width="420"> | <img src="docs/screenshots/credits-support.jpg" width="420"> |
+| Setup wizard — link your emulators' achievement data | Credits — Support the Project |
 
 ### Media & more
 
 | | |
 |:---:|:---:|
 | <img src="docs/screenshots/music-now-playing.jpg" width="420"> | <img src="docs/screenshots/music-player.jpg" width="420"> |
-| Music section — Now Playing surfaces on the crossbar | The in-app player (background service keeps it going) |
+| Music section — Now Playing surfaces on the crossbar | The player — Ripple visualizer, with Off / Portal / Ripple styles |
 | <img src="docs/screenshots/video-library.jpg" width="420"> | <img src="docs/screenshots/video-apps.jpg" width="420"> |
 | Video library — scanned files with thumbnails | Video Apps — your installed players, one row away |
 | <img src="docs/screenshots/photo-section.jpg" width="420"> | <img src="docs/screenshots/social-voice-ptt.jpg" width="420"> |
 | Photo section — albums and a fullscreen viewer | Push-to-talk with the floating Talk button overlay |
 
-*Screenshots predate 1.3.0; some Settings screens have since been reorganized (see
-[§4.25](#425-settings-reference)).*
+*The Video, Photo, Library Manager, Winlator and Social shots predate 1.3.0; the Settings reference is in
+[§4.25](#425-settings-reference).*
 
 ---
 

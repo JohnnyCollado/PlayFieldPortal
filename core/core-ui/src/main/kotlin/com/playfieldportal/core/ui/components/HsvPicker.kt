@@ -17,8 +17,8 @@ import kotlin.math.roundToInt
 // state and pass every press through [HsvPickerNav.handle]; the dialog reports touch through the
 // companion helpers. Pure, JVM-testable: no Android colour classes.
 
-/** The picker's four stops, top to bottom. */
-enum class HsvPickerField { HUE, SATURATION, BRIGHTNESS, HEX }
+/** The picker's four stops, top to bottom: Hex first, so it stays clear of any keyboard. */
+enum class HsvPickerField { HEX, HUE, SATURATION, BRIGHTNESS }
 
 data class HsvPickerState(
     /** 0..360. */

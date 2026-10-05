@@ -1,7 +1,5 @@
 package com.playfieldportal.feature.settings.ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
@@ -14,15 +12,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextDecoration
@@ -32,7 +23,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import com.playfieldportal.core.ui.sound.MenuSound
-import com.playfieldportal.core.ui.theme.menuCursorFill
 import com.playfieldportal.feature.settings.viewmodel.CreditsViewModel
 import kotlinx.coroutines.launch
 
@@ -42,15 +32,14 @@ fun CreditsSettingsScreen(
     modifier: Modifier = Modifier,
     viewModel: CreditsViewModel = hiltViewModel(),
 ) {
-    // Every link is a cursor stop: Up/Down walk the links through the scaffold, which scrolls the
-    // focused one into view and returns to the top from the first. Past the last link there is
-    // still text (Notes), so Down there scrolls the page instead of stopping.
+    // Pure info screen — no interactive rows for the scaffold's focus navigation to walk, so
+    // Up/Down scroll the column directly instead. Links are touch-only: a tap opens one.
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
     val stepPx = with(LocalDensity.current) { 120.dp.toPx() }
+    // Credits has no rows, so the scaffold's own move cue never fires here — the page itself is
+    // what moves, and it ticks for the same reason a row would.
     val menuSounds = LocalMenuSounds.current
-    var focusedLink by remember { mutableStateOf<String?>(null) }
-    val openLink: (String) -> Unit = { viewModel.open(creditUrl(it)) }
 
     SettingsScaffold(
         title = "Settings",
@@ -58,30 +47,25 @@ fun CreditsSettingsScreen(
         onBack = onBack,
         modifier = modifier,
         onInterceptAction = { action ->
-            if (action == GamepadAction.NAVIGATE_DOWN &&
-                focusedLink == CreditsLinkTargets.last() &&
-                scrollState.value < scrollState.maxValue
-            ) {
-                menuSounds.play(MenuSound.SCROLL)
-                scope.launch { scrollState.animateScrollBy(stepPx) }
-                true
-            } else {
-                false
+            when (action) {
+                GamepadAction.NAVIGATE_UP   -> {
+                    menuSounds.play(MenuSound.SCROLL)
+                    scope.launch { scrollState.animateScrollBy(-stepPx) }; true
+                }
+                GamepadAction.NAVIGATE_DOWN -> {
+                    menuSounds.play(MenuSound.SCROLL)
+                    scope.launch { scrollState.animateScrollBy(stepPx) }; true
+                }
+                else -> false
             }
         },
     ) {
-        // Registered so the scaffold scrolls this column to keep the focused link in view, and so
-        // its header and footer can drag it.
+        // Credits has no focusable rows — it scrolls as a whole — so this registration is purely
+        // what lets the scaffold's header and footer drag it. The screen keeps owning the state
+        // itself because onInterceptAction above animates the same one for UP/DOWN.
         LocalSettingsScrollStateRegistrar.current(scrollState)
         val link: @Composable (label: String, value: String, address: String) -> Unit = { label, value, address ->
-            CreditLink(
-                label = label,
-                value = value,
-                onOpen = { openLink(address) },
-                onFocusedChanged = { focused ->
-                    if (focused) focusedLink = address else if (focusedLink == address) focusedLink = null
-                },
-            )
+            CreditLink(label = label, value = value, onOpen = { viewModel.open(creditUrl(address)) })
         }
         Column(
             modifier = Modifier
@@ -251,66 +235,29 @@ private fun CreditParagraph(text: String) {
 
 @Composable
 private fun CreditLine(label: String, value: String) {
-    Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
+    Column(modifier = Modifier.padding(vertical = 6.dp)) {
         Text(text = label.uppercase(), color = SettingsAccent, fontSize = 10.sp)
         Text(text = value, color = SettingsText, fontSize = 14.sp)
     }
 }
 
 /**
- * A [CreditLine] that opens a web address: a cursor stop in the scaffold's navigation, opened by
- * SELECT or a tap. The address is underlined so a link reads as one before it has the cursor.
+ * A [CreditLine] whose address opens in the browser when tapped. Touch only: it is not a cursor
+ * stop, so the controller keeps scrolling the page. The address is underlined to read as a link.
  */
 @Composable
-private fun CreditLink(
-    label: String,
-    value: String,
-    onOpen: () -> Unit,
-    onFocusedChanged: (Boolean) -> Unit,
-) {
+private fun CreditLink(label: String, value: String, onOpen: () -> Unit) {
     val menuSounds = LocalMenuSounds.current
-    val focusTracker = LocalSettingsFocusTracker.current
     val touchInput = LocalSettingsTouchInput.current
-    val cursorVisible = LocalSettingsCursorVisible.current
-    val reportFocused = LocalSettingsReportFocused.current
-    var isFocused by remember { mutableStateOf(false) }
-    // One activation for the controller and the tap, carrying the same cue as a SettingsRow.
-    val activate = remember(onOpen, menuSounds) { { menuSounds.play(MenuSound.SELECT); onOpen() } }
-    val row = rememberControllerRowRegistration(
-        prefix = "credit",
-        focusKey = null,
-        claimInitialFocus = true,
-        selectable = true,
-        onSelect = activate,
-    )
-    val highlighted = isFocused && cursorVisible
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .focusRequester(row.focusRequester)
-            .then(row.positionReporting)
-            .pointerInput(row.rowKey, activate) {
-                detectTapGestures(onTap = { touchInput(); activate() })
+            .pointerInput(onOpen) {
+                detectTapGestures(onTap = { touchInput(); menuSounds.play(MenuSound.SELECT); onOpen() })
             }
-            .onFocusChanged { state ->
-                isFocused = state.isFocused
-                onFocusedChanged(state.isFocused)
-                if (state.isFocused) {
-                    focusTracker(activate)
-                    reportFocused(row.focusRequester)
-                }
-            }
-            .background(if (highlighted) menuCursorFill() else Color.Transparent)
-            .focusable()
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+            .padding(vertical = 6.dp),
     ) {
         Text(text = label.uppercase(), color = SettingsAccent, fontSize = 10.sp)
-        Text(
-            text = value,
-            color = if (highlighted) Color.White else SettingsText,
-            fontSize = 14.sp,
-            textDecoration = TextDecoration.Underline,
-        )
+        Text(text = value, color = SettingsText, fontSize = 14.sp, textDecoration = TextDecoration.Underline)
     }
 }

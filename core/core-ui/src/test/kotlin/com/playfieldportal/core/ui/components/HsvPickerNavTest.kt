@@ -43,31 +43,33 @@ class HsvPickerNavTest {
     // ── Navigation ───────────────────────────────────────────────────────────
 
     @Test
-    fun `the picker opens on hue and down walks the four stops without wrapping`() {
+    fun `the picker opens on hue and down walks the bars without wrapping`() {
         var s = blue()
         assertEquals(HsvPickerField.HUE, s.focus)
         s = press(s, GamepadAction.NAVIGATE_DOWN); assertEquals(HsvPickerField.SATURATION, s.focus)
         s = press(s, GamepadAction.NAVIGATE_DOWN); assertEquals(HsvPickerField.BRIGHTNESS, s.focus)
-        s = press(s, GamepadAction.NAVIGATE_DOWN); assertEquals(HsvPickerField.HEX, s.focus)
-        s = press(s, GamepadAction.NAVIGATE_DOWN); assertEquals(HsvPickerField.HEX, s.focus)
-        assertEquals(listOf(MenuSound.SCROLL, MenuSound.SCROLL, MenuSound.SCROLL), sounds)
+        s = press(s, GamepadAction.NAVIGATE_DOWN); assertEquals(HsvPickerField.BRIGHTNESS, s.focus)
+        assertEquals(listOf(MenuSound.SCROLL, MenuSound.SCROLL), sounds)
     }
 
     @Test
-    fun `up stops at hue`() {
-        val s = press(blue(), GamepadAction.NAVIGATE_UP)
-        assertEquals(HsvPickerField.HUE, s.focus)
-        assertTrue("no cue when nothing moved", sounds.isEmpty())
+    fun `hex sits above the bars - up from hue reaches it and stops there`() {
+        var s = press(blue(), GamepadAction.NAVIGATE_UP)
+        assertEquals(HsvPickerField.HEX, s.focus)
+        s = press(s, GamepadAction.NAVIGATE_UP)
+        assertEquals(HsvPickerField.HEX, s.focus)
+        assertEquals("one cue for the one move", listOf(MenuSound.SCROLL), sounds)
+        assertEquals(HsvPickerField.HUE, press(s, GamepadAction.NAVIGATE_DOWN).focus)
     }
 
     @Test
     fun `after touch the first d-pad press only brings the cursor back`() {
-        val touched = HsvPickerNav.touch(blue(), HsvPickerField.BRIGHTNESS)
+        val touched = HsvPickerNav.touch(blue(), HsvPickerField.SATURATION)
         assertFalse(touched.cursorVisible)
         val back = press(touched, GamepadAction.NAVIGATE_DOWN)
         assertTrue(back.cursorVisible)
-        assertEquals(HsvPickerField.BRIGHTNESS, back.focus)
-        assertEquals(HsvPickerField.HEX, press(back, GamepadAction.NAVIGATE_DOWN).focus)
+        assertEquals(HsvPickerField.SATURATION, back.focus)
+        assertEquals(HsvPickerField.BRIGHTNESS, press(back, GamepadAction.NAVIGATE_DOWN).focus)
     }
 
     // ── Adjusting ────────────────────────────────────────────────────────────

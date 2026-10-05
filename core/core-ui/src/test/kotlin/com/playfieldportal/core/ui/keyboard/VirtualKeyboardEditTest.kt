@@ -132,6 +132,30 @@ class VirtualKeyboardEditTest {
         assertEquals(0, closes)
     }
 
+    @Test fun `a tap on an idle field starts it on the system keyboard even after controller input`() {
+        // The shell last saw the controller (the user navigated there), then the finger tapped.
+        keyboard.inputSource = InputSource.CONTROLLER
+        show()
+
+        composeRule.onNodeWithTag("field").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.runOnIdle { assertFalse(edit.start()) }
+        assertNull(keyboard.session.value)
+        assertFalse(edit.holdsSystemKeyboard)
+    }
+
+    @Test fun `the tap is spent by one start, so a later controller start gets PFP's keyboard`() {
+        keyboard.inputSource = InputSource.CONTROLLER
+        show()
+        composeRule.onNodeWithTag("field").performClick()
+        composeRule.waitForIdle()
+        composeRule.runOnIdle { edit.start() }
+
+        composeRule.runOnIdle { assertTrue(edit.start()) }
+        assertNotNull(keyboard.session.value)
+    }
+
     @Test fun `closing PFP's keyboard keeps the system keyboard held while the field is still focused`() {
         show()
         composeRule.runOnIdle { edit.start(InputSource.CONTROLLER) }

@@ -43,6 +43,10 @@ class VirtualKeyboardEdit internal constructor(
     // then would let the field's own request raise the system keyboard, so the hold outlives the
     // session until the field loses focus or a tap hands over.
     private var holdAfterSession by mutableStateOf(false)
+    // A finger came down on the idle field. The host learns of it only through focus and then calls
+    // start() with no source, by when the shell may still believe the controller was last — so the
+    // tap is remembered here and spent by that start, which must leave the edit to the system one.
+    private var tappedIdleField = false
     internal var anchor: KeyboardAnchor? = null
     internal var handOverRequests by mutableStateOf(0)
 
@@ -63,10 +67,17 @@ class VirtualKeyboardEdit internal constructor(
     /**
      * Starts an edit from [source] (default: the last input the shell saw). Returns true when PFP's
      * keyboard took it — the caller then skips `keyboard.show()`; false means the system keyboard.
+     * With no [source], a tap on the field since the last start counts as touch.
      */
     fun start(source: InputSource? = null): Boolean {
+        val tapped = tappedIdleField
+        tappedIdleField = false
         val keyboard = controller ?: return false
-        val mode = if (source == null) keyboard.modeFor() else keyboard.modeFor(source)
+        val mode = when {
+            source != null -> keyboard.modeFor(source)
+            tapped -> keyboard.modeFor(InputSource.TOUCH)
+            else -> keyboard.modeFor()
+        }
         if (mode != TextInputMode.VIRTUAL) return false
         fieldValue = fieldValue.copy(selection = TextRange(text.length))
         holdAfterSession = false
@@ -104,6 +115,7 @@ class VirtualKeyboardEdit internal constructor(
     /** The field lost focus: nothing left to hold. */
     internal fun onFieldBlurred() {
         holdAfterSession = false
+        tappedIdleField = false
     }
 
     /** The field's own onValueChange — the system keyboard, a paste, a tap on the caret. */
@@ -122,7 +134,10 @@ class VirtualKeyboardEdit internal constructor(
     /** A tap: the system keyboard takes over, whether PFP's is open or has just closed. */
     internal fun handOver() {
         val open = token
-        if (open == null && !holdAfterSession) return
+        if (open == null && !holdAfterSession) {
+            tappedIdleField = true
+            return
+        }
         open?.let { controller?.handOverToSystemKeyboard(it) }
         token = null
         holdAfterSession = false
