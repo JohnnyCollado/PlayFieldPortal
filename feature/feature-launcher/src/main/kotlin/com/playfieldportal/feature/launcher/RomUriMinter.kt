@@ -4,9 +4,11 @@ import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
 import com.playfieldportal.core.data.database.dao.MemoryCardDao
+import com.playfieldportal.core.data.repository.RomRootRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import java.io.File
+import java.net.URLDecoder
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -37,6 +39,39 @@ object RomSourceAdmission {
 }
 
 /**
+ * Decides when a launch also needs read access to the ROM's whole SAF tree.
+ *
+ * A disc sheet (`.cue`, `.gdi`, `.m3u`, …) names sibling track files, and an emulator opens those
+ * through the same tree (DuckStation builds `…/document/<folder>%2F<track>.bin`). A one-document
+ * grant covers the sheet only, so the launch dies on the first track. The tree is granted only for
+ * those formats, and only when it is a tree the user configured — a Library ROM root or a Memory
+ * Card's own folder — never a tree an imported URI merely names. Android types stay out so the rule is unit-testable.
+ */
+object DiscFolderGrant {
+
+    /** Formats whose sheet references other files in its folder. */
+    private val MULTI_FILE_SHEETS = setOf("cue", "gdi", "m3u", "ccd", "mds", "toc")
+
+    private val TREE_DOCUMENT = Regex("^(content://[^/]+/tree/[^/]+)/document/([^/]+)$")
+
+    /**
+     * The tree to grant for [romUri], or null when it is not a multi-file sheet inside one of
+     * [configuredTrees] (the Library's ROM roots and the cards' own tree URIs).
+     */
+    fun treeFor(romUri: String, configuredTrees: List<String>): String? {
+        val match = TREE_DOCUMENT.matchEntire(romUri) ?: return null
+        val (tree, documentId) = match.destructured
+        // URLDecoder reads '+' as a space; a URI path keeps '+' literal, so protect it first.
+        val name = runCatching {
+            URLDecoder.decode(documentId.replace("+", "%2B"), Charsets.UTF_8.name())
+        }.getOrNull() ?: return null
+        val extension = name.substringAfterLast('/').substringAfterLast('.', "").lowercase()
+        if (extension !in MULTI_FILE_SHEETS) return null
+        return tree.takeIf { root -> configuredTrees.any { it.trimEnd('/') == root } }
+    }
+}
+
+/**
  * Mints the `content://` URI an emulator receives for a ROM.
  *
  * The FileProvider is configured with a `root-path` of `/storage/`, because `<external-path>` does
@@ -53,6 +88,7 @@ object RomSourceAdmission {
 class RomUriMinter @Inject constructor(
     @ApplicationContext private val context: Context,
     private val memoryCardDao: MemoryCardDao,
+    private val romRoots: RomRootRepository,
 ) {
 
     /**
@@ -72,6 +108,16 @@ class RomUriMinter @Inject constructor(
             FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", File(romPath))
         }.onFailure { Timber.w(it, "FileProvider refused a ROM path inside a configured source") }
             .getOrNull()
+    }
+
+    /**
+     * The SAF tree to grant (read, prefix) alongside [romUri] when it is a multi-file disc sheet
+     * inside a configured tree; null otherwise. See [DiscFolderGrant]. Most SAF games come from a
+     * Library ROM root (the card itself then keeps only a raw path), so the roots are admitted too.
+     */
+    suspend fun discFolderTree(romUri: Uri): Uri? {
+        val cardTrees = memoryCardDao.getAll().mapNotNull { it.treeUri?.takeIf { tree -> tree.isNotBlank() } }
+        return DiscFolderGrant.treeFor(romUri.toString(), romRoots.getAll() + cardTrees)?.let(Uri::parse)
     }
 
     /**

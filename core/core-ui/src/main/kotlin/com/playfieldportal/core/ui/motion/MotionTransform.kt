@@ -42,6 +42,32 @@ fun motionTransform(
     )
 }
 
+/** Where the video's view sits relative to the screen-sized area it fills; see [motionSurfaceRect]. */
+data class MotionSurfaceRect(val left: Float, val top: Float, val width: Float, val height: Float)
+
+/**
+ * The same placement as [motionTransform], expressed as a rectangle for a view that cannot take a
+ * transform matrix (a SurfaceView): the view is laid out at this size and offset, oversized past the
+ * screen edges, and the screen clips it. A frame pixel lands exactly where the matrix put it.
+ */
+fun motionSurfaceRect(
+    viewW: Float,
+    viewH: Float,
+    videoW: Float,
+    videoH: Float,
+    crop: MotionCrop?,
+): MotionSurfaceRect {
+    val t = motionTransform(viewW, viewH, videoW, videoH, crop)
+    val width = viewW * t.scaleX
+    val height = viewH * t.scaleY
+    return MotionSurfaceRect(
+        left = (viewW - width) / 2f + t.translateX,
+        top = (viewH - height) / 2f + t.translateY,
+        width = width,
+        height = height,
+    )
+}
+
 /** The crop only applies to MP4/WebM; GIF/animated-WebP and unknown extensions ignore it. */
 fun cropForMotionPath(path: String, crop: MotionCrop?): MotionCrop? =
     when (path.substringAfterLast('.', "").lowercase()) {

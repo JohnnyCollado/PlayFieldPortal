@@ -188,9 +188,10 @@ class UpgradeBatchTest {
     @Test
     fun `banner state follows the opened schema`() {
         val report = com.playfieldportal.themekit.UpgradeReport(emptyList(), emptyList(), emptyList(), emptyList())
-        val added = report.copy(added = listOf("Format version 4 (was 3)"))
+        val current = com.playfieldportal.themekit.PfpThemeManifest.SCHEMA_VERSION
+        val added = report.copy(added = listOf("Format version $current (was 3)"))
         assertEquals(UpgradeBanner.None, StudioState().upgradeBanner)
-        assertEquals(UpgradeBanner.None, StudioState(schemaVersion = 4, upgradeReport = report).upgradeBanner)
+        assertEquals(UpgradeBanner.None, StudioState(schemaVersion = current, upgradeReport = report).upgradeBanner)
         assertEquals(
             UpgradeBanner.Available(added),
             StudioState(schemaVersion = 3, upgradeReport = added).upgradeBanner,

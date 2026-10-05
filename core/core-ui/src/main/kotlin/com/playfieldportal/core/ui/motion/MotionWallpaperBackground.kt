@@ -1,7 +1,6 @@
 package com.playfieldportal.core.ui.motion
 
-import android.graphics.Matrix
-import android.view.TextureView
+import android.view.SurfaceView
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
@@ -11,12 +10,13 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.media3.common.C
@@ -30,10 +30,11 @@ import coil3.gif.repeatCount
 import coil3.request.ImageRequest
 import com.playfieldportal.themekit.MotionCrop
 import timber.log.Timber
+import kotlin.math.roundToInt
 
 /**
- * The motion-wallpaper layer: the poster still rendered underneath, with the looping video
- * (or animated GIF/WebP) composited above it once its first frame lands.
+ * The motion-wallpaper layer: the poster still, and the looping video (or animated GIF/WebP) that
+ * takes over from it once its first frame lands.
  *
  * Power discipline — this composable exists to implement one rule:
  *
@@ -54,9 +55,16 @@ import timber.log.Timber
  *    would also fight the music player.
  *  • Loops forever (REPEAT_MODE_ALL) — a background loops by definition, which is why the
  *    import gate caps duration at 60 s.
- *  • TextureView, not SurfaceView: the layer sits under the whole Compose tree and must
- *    composite with the fade-in (a SurfaceView behind the window needs a punched-through hole
- *    in an opaque window and breaks the crossfade).
+ *  • SurfaceView, not TextureView: decoded frames go straight to the system compositor instead
+ *    of being drawn through the app's RenderThread every frame — most of a video theme's
+ *    on-screen cost. The surface sits behind the window and shows through the hole the view
+ *    punches in it, so everything else draws over it as before. Two consequences:
+ *    - The poster is drawn ABOVE the video (it would be punched away beneath it, leaving black
+ *      until the first frame) and fades OUT when the first frame lands — the same crossfade,
+ *      run the other way.
+ *    - A SurfaceView takes no transform matrix, so the crop is applied by sizing and placing the
+ *      view itself ([motionSurfaceRect]) and letting the screen edges clip it. This relies on the
+ *      wallpaper filling the screen, which both callers do.
  *  • The app-in-front gate is [rememberAppInFront], folded into the decision upstream, so
  *    backgrounding the launcher (every game launch) lands in POSTER and releases the player.
  */
@@ -69,25 +77,35 @@ fun MotionWallpaperBackground(
     motionCrop: MotionCrop? = null,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        // Poster always composed underneath: shows until the first video frame lands, and is
-        // simply what remains whenever the decoder goes away (freeze, failure, backgrounding).
-        // The request pins repeatCount(1): for stills it is a no-op, and if a poster path ever
-        // pointed at an animated container the poster would hold its first frame rather than
-        // silently run a second CPU decoder behind the animation layer above.
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(posterPath)
-                .repeatCount(1)
-                .build(),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-        )
         when (formatOf(motionPath)) {
-            MotionFormat.ANIMATED_IMAGE -> AnimatedImageSurface(motionPath)
-            MotionFormat.VIDEO -> MotionVideoSurface(motionPath, decision, cropForMotionPath(motionPath, motionCrop))
+            MotionFormat.ANIMATED_IMAGE -> {
+                // Poster underneath: shows until the animation decodes, and remains if it fails.
+                Poster(posterPath, Modifier.fillMaxSize())
+                AnimatedImageSurface(motionPath)
+            }
+            // The video surface owns its poster: it has to sit ABOVE the video (see the KDoc).
+            MotionFormat.VIDEO ->
+                MotionVideoSurface(posterPath, motionPath, decision, cropForMotionPath(motionPath, motionCrop))
         }
     }
+}
+
+/**
+ * The poster still. The request pins repeatCount(1): for stills it is a no-op, and if a poster path
+ * ever pointed at an animated container the poster would hold its first frame rather than silently
+ * run a second CPU decoder alongside the motion layer.
+ */
+@Composable
+private fun Poster(posterPath: String, modifier: Modifier) {
+    AsyncImage(
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(posterPath)
+            .repeatCount(1)
+            .build(),
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        modifier = modifier,
+    )
 }
 
 /**
@@ -98,6 +116,7 @@ fun MotionWallpaperBackground(
  */
 @Composable
 private fun MotionVideoSurface(
+    posterPath: String,
     motionPath: String,
     decision: MotionWallpaperPolicy.Decision,
     crop: MotionCrop?,
@@ -144,33 +163,48 @@ private fun MotionVideoSurface(
         }
     }
 
-    // Fade the video in over the poster on the first frame — the same pattern Icon1VideoOverlay
-    // uses. When the decision returns to POSTER the player is released and the poster is what
-    // remains: a hard cut is CORRECT there (an overlay just opened or the device just started
+    // The poster fades OUT over the video on the first frame (it is drawn above the surface; see
+    // the KDoc). When the decision returns to POSTER the player is released and the caller shows
+    // the poster: a hard cut is CORRECT there (an overlay just opened or the device just started
     // conserving — an animated exit would be the one thing still animating).
-    val alpha by animateFloatAsState(
-        targetValue = if (firstFrameRendered) 1f else 0f,
+    val posterAlpha by animateFloatAsState(
+        targetValue = if (firstFrameRendered) 0f else 1f,
         animationSpec = tween(durationMillis = 400),
-        label = "motionWallpaperFade",
+        label = "motionWallpaperPosterFade",
     )
 
-    // The layout listener outlives a recomposition, so it reads the latest crop through state.
-    val currentCrop by rememberUpdatedState(crop)
     AndroidView(
-        factory = { ctx ->
-            TextureView(ctx).also { view ->
-                player.setVideoTextureView(view)
-                view.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ ->
-                    applyMotionTransform(v as TextureView, videoSize, currentCrop)
-                }
-            }
-        },
-        update = { view -> applyMotionTransform(view, videoSize, crop) },
-        modifier = Modifier
-            .fillMaxSize()
-            .graphicsLayer { this.alpha = alpha },
+        factory = { ctx -> SurfaceView(ctx).also(player::setVideoSurfaceView) },
+        onRelease = { view -> player.clearVideoSurfaceView(view) },
+        modifier = Modifier.motionSurfacePlacement(videoSize, crop),
     )
+    // Gone entirely once it has faded, so nothing is drawn over the video for the rest of its life.
+    if (posterAlpha > 0f) {
+        Poster(posterPath, Modifier.fillMaxSize().graphicsLayer { alpha = posterAlpha })
+    }
 }
+
+/**
+ * Lays the video's view out at [motionSurfaceRect] inside the screen-sized area: oversized and
+ * offset as the crop needs, with the screen edges doing the clipping. Until the video size is known
+ * the view simply fills the area (the poster covers it then anyway).
+ */
+private fun Modifier.motionSurfacePlacement(size: VideoSize?, crop: MotionCrop?): Modifier =
+    layout { measurable, constraints ->
+        val areaW = constraints.maxWidth
+        val areaH = constraints.maxHeight
+        val vw = size?.width ?: 0
+        val vh = size?.height ?: 0
+        val rect = if (vw > 0 && vh > 0 && areaW > 0 && areaH > 0) {
+            motionSurfaceRect(areaW.toFloat(), areaH.toFloat(), vw.toFloat(), vh.toFloat(), crop)
+        } else {
+            MotionSurfaceRect(0f, 0f, areaW.toFloat(), areaH.toFloat())
+        }
+        val placeable = measurable.measure(
+            Constraints.fixed(rect.width.roundToInt().coerceAtLeast(1), rect.height.roundToInt().coerceAtLeast(1)),
+        )
+        layout(areaW, areaH) { placeable.place(rect.left.roundToInt(), rect.top.roundToInt()) }
+    }
 
 /**
  * The GIF/animated-WebP surface: a second AsyncImage over the poster loads the animated file
@@ -211,24 +245,6 @@ private fun AnimatedImageSurface(motionPath: String) {
 }
 
 private const val TAG = "MotionWallpaper"
-
-// TextureView stretches the frame to its bounds; this rescales so the video fills the screen at its
-// own aspect — center-cropped like the ContentScale.Crop poster underneath it, or framed on the
-// theme's crop rect (the region the Studio baked into that poster), so the fade-in never visibly
-// distorts or shifts the picture the poster established. Math lives in [motionTransform].
-private fun applyMotionTransform(view: TextureView, size: VideoSize?, crop: MotionCrop?) {
-    val vw = size?.width?.toFloat() ?: return
-    val vh = size.height.toFloat()
-    if (vw <= 0f || vh <= 0f || view.width == 0 || view.height == 0) return
-    val viewW = view.width.toFloat()
-    val viewH = view.height.toFloat()
-    val t = motionTransform(viewW, viewH, vw, vh, crop)
-    val matrix = Matrix().apply {
-        setScale(t.scaleX, t.scaleY, viewW / 2f, viewH / 2f)
-        postTranslate(t.translateX, t.translateY)
-    }
-    view.setTransform(matrix)
-}
 
 /**
  * Folds "the launcher is in front" (ON_RESUME..ON_PAUSE) into the motion decision. The

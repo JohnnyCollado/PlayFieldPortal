@@ -120,7 +120,7 @@ Winlator / GameHub SHORTCUT profiles are not KB entries; they still load from
 **Knowledge layers.** [`EmulatorKnowledgeStore`](feature/feature-launcher/src/main/kotlin/com/playfieldportal/feature/launcher/kb/EmulatorKnowledgeStore.kt)
 owns three layers and publishes their merge (`EmulatorKbMerge`, pure, in `core-domain`):
 
-1. **Built-in** — `assets/emulator_kb/emulators.json` (84 emulators, `"version": 1`,
+1. **Built-in** — `assets/emulator_kb/emulators.json` (85 emulators, `"version": 1`,
    `"label": "built-in"`).
 2. **Official** — `filesDir/emulator_kb/official/emulators.json`, installed only by the updater and
    applied only when its version is greater than the built-in one.

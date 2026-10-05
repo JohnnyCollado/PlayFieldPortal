@@ -214,4 +214,11 @@ class MediaContextMenuItemsTest {
             m.items.filter { it.isDestructive }.forEach { assertTrue("${it.id} needs a confirm", confirmFor(m, it.id) != null) }
         }
     }
+
+    @Test
+    fun `a photo row can set the lock screen, right after the launcher wallpaper`() {
+        val ids = photoFileMenuItems(byTouch = false).map { it.id }
+        assertEquals(ids.indexOf("photo_set_wallpaper") + 1, ids.indexOf("photo_set_lockscreen"))
+        assertEquals("Set as Lock Screen", photoFileMenuItems(false).single { it.id == "photo_set_lockscreen" }.label)
+    }
 }

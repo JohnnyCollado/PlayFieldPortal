@@ -51,10 +51,17 @@ class ShortcutRequestResolver @Inject constructor(
         )
     }
 
-    /** The user chose Add: file the shortcut, then settle its row as read. */
-    suspend fun add(id: String) {
-        val request = store.get(id) ?: return
-        store.remove(id)
+    /**
+     * The user chose Add on [shown]: file the shortcut, then settle its row as read. Nothing is
+     * filed unless the queued request is still exactly [shown] — one replaced under the same id
+     * while the review was open stays queued and is asked about on its own.
+     */
+    suspend fun add(shown: PendingShortcutRequest) {
+        val request = store.take(shown) ?: run {
+            Timber.w("Shortcut request ${shown.id} changed or went away during review; not added")
+            return
+        }
+        val id = request.id
         val hostPackage = request.hostPackage
         // A confirmed shortcut from a verified PC launcher is a Windows game
         // (docs/windows-library-refactor-plan.md section 3); anything else keeps the app-style

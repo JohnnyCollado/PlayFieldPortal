@@ -196,10 +196,10 @@ class PfpThemeCodecV3Test {
     }
 
     @Test
-    fun `textColor round-trips and the writer stamps schema 4`() {
+    fun `textColor round-trips and the writer stamps the current schema`() {
         // textColor itself is additive; the version moved to 4 with the v4 manifest fields (TS-02).
         // Readers never gate on it, so older builds still apply the subset they understand.
-        assertEquals(4, PfpThemeManifest.SCHEMA_VERSION, "v4 manifest fields landed")
+        assertTrue(PfpThemeManifest.SCHEMA_VERSION >= 4, "v4 manifest fields landed")
 
         val written = PfpThemeCodec.write(
             PfpThemeBundle(
@@ -214,7 +214,7 @@ class PfpThemeCodecV3Test {
         )
         val decoded = assertNotNull(PfpThemeCodec.read(written))
         assertEquals("#FF8800", decoded.manifest.textColor)
-        assertEquals(4, decoded.manifest.schemaVersion)
+        assertEquals(PfpThemeManifest.SCHEMA_VERSION, decoded.manifest.schemaVersion)
     }
 
     @Test

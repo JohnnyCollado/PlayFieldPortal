@@ -78,6 +78,7 @@ fun PhotoViewerScreen(
     libraryId: String?,
     onBack: () -> Unit,
     openWallpaperPreview: Boolean = false,
+    openLockScreenConfirm: Boolean = false,
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
     // Touch header pills shown only when the last input was touch (AUTO), like the XMB App Drawer
@@ -90,8 +91,8 @@ fun PhotoViewerScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(photoId, libraryId, openWallpaperPreview) {
-        viewModel.load(photoId, libraryId, openWallpaperPreview)
+    LaunchedEffect(photoId, libraryId, openWallpaperPreview, openLockScreenConfirm) {
+        viewModel.load(photoId, libraryId, openWallpaperPreview, openLockScreenConfirm)
     }
     // Reset `closed` after handling it — the ViewModel is retained across open/close, so a stale
     // closed=true would otherwise instantly re-close the viewer the next time it's opened.
@@ -104,6 +105,8 @@ fun PhotoViewerScreen(
             onDismissInfo = viewModel::closeInfo,
             onConfirmRemove = viewModel::confirmRemove,
             onCancelRemove = viewModel::cancelRemove,
+            onConfirmLockScreen = viewModel::confirmLockScreen,
+            onCancelLockScreen = viewModel::cancelLockScreen,
         ),
         // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
         showHints = !showTouchControls,
@@ -363,6 +366,8 @@ internal fun photoViewerModalSpec(
     onDismissInfo: () -> Unit,
     onConfirmRemove: () -> Unit,
     onCancelRemove: () -> Unit,
+    onConfirmLockScreen: () -> Unit = {},
+    onCancelLockScreen: () -> Unit = {},
 ): PfpModalSpec? {
     val photo = state.photo ?: return null
     if (state.applyingWallpaper || state.wallpaperPreviewVisible) return null
@@ -375,6 +380,14 @@ internal fun photoViewerModalSpec(
             destructive = true,
             onConfirm = onConfirmRemove,
             onCancel = onCancelRemove,
+        )
+        state.confirmLockScreen -> PfpModalSpec.Confirm(
+            key = "lock:${photo.id}",
+            title = "Set as Lock Screen",
+            message = "\"${photo.displayName}\" becomes the device's lock screen image, cropped to fit the screen.",
+            confirmLabel = "Set",
+            onConfirm = onConfirmLockScreen,
+            onCancel = onCancelLockScreen,
         )
         state.infoVisible -> PfpModalSpec.Notice(
             key = "info:${photo.id}",

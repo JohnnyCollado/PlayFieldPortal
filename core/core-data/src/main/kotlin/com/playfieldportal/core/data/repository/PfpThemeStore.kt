@@ -143,6 +143,20 @@ class PfpThemeStore private constructor(
      */
     data class ApplyResult(val droppedMedia: Map<String, String>)
 
+    /**
+     * Which icon and UI-media slots saved theme [id] carries, read from the bundle's entry list
+     * without applying or inflating anything — what the "Apply this theme?" question needs. Null
+     * when the bundle cannot be read.
+     */
+    suspend fun contentsOf(id: String): PfpThemeCodec.Contents? = withContext(Dispatchers.IO) {
+        PfpThemeCodec.contents(File(dir, "$id.pfptheme"))
+    }
+
+    /** Saved theme [id]'s lock screen image (v5), or null when it has none or cannot be read. */
+    suspend fun lockScreenOf(id: String): ByteArray? = withContext(Dispatchers.IO) {
+        runCatching { PfpThemeCodec.read(File(dir, "$id.pfptheme"))?.lockScreen }.getOrNull()
+    }
+
     /** [apply], reporting the theme's media; null when the theme could not be applied. */
     suspend fun applyDetailed(id: String): ApplyResult? = withContext(Dispatchers.IO) {
         val wallpaperSidecar = File(dir, "$id.wallpaper.jpg")
@@ -237,6 +251,10 @@ class PfpThemeStore private constructor(
      * preset are untouched.
      */
     suspend fun resetApplied(): Unit = withContext(Dispatchers.IO) {
+        // Theme media goes BEFORE the stamp bump below, the order UiMediaStore.clear keeps: playback
+        // resolves by file existence, so a bump that lands first reloads the theme's sounds and only
+        // a second reset would clear them.
+        tiers.clearMedia(ThemeTiers.Tier.THEME)
         context.pfpDataStore.edit { prefs ->
             prefs.remove(ThemePrefKeys.CUSTOM_WALLPAPER)
             prefs.remove(ThemePrefKeys.MOTION_WALLPAPER)
@@ -251,9 +269,9 @@ class PfpThemeStore private constructor(
             // their ui_media_* prefs are untouched).
             prefs.bumpStamp(UiMediaStore.KEY_UI_MEDIA_STAMP)
         }
-        // Prefs are gone first, so nothing references these files when they're deleted.
+        // Icons and wallpapers are referenced by prefs, which are gone first, so nothing points at
+        // these files when they're deleted.
         tiers.clearIcons(ThemeTiers.Tier.THEME)
-        tiers.clearMedia(ThemeTiers.Tier.THEME)
         File(context.filesDir, "wallpaper").listFiles()?.forEach { it.delete() }
     }
 
@@ -607,6 +625,10 @@ class PfpThemeStore private constructor(
         val wallpaperPng = wallpaperBitmap?.let {
             ByteArrayOutputStream().also { out -> it.compress(Bitmap.CompressFormat.PNG, 100, out) }.toByteArray()
         }
+        // The device lock screen image PFP set (v5), so a saved look restores it when re-applied.
+        val lockScreenPng = prefs[ThemePrefKeys.LOCKSCREEN_IMAGE]
+            ?.let { runCatching { SafeMedia.decodeFileCapped(it, maxDimension = 4096, targetDimension = 2560) }.getOrNull() }
+            ?.let { ByteArrayOutputStream().also { out -> it.compress(Bitmap.CompressFormat.PNG, 100, out) }.toByteArray() }
         // Referenced, not loaded: the codec streams this file into the zip when it writes the
         // entry. readBytes() here was the export-side half of the same problem — it is how a
         // 50 MB motion wallpaper got into a bundle that the importer then could not open.
@@ -655,6 +677,7 @@ class PfpThemeStore private constructor(
                         icons = icons,
                         motion = motion,
                         media = media,
+                        lockScreen = lockScreenPng,
                     ),
                     out,
                 )

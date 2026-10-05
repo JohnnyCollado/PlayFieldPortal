@@ -53,13 +53,21 @@ class PlatformKnowledgeApplierTest {
         assertEquals("iso,cso,pbp,chd", cards.getById("psp")!!.supportedExtensions)
     }
 
-    @Test fun `a customized card is left alone while the platform still updates`() = runTest {
+    @Test fun `a customized card gains new KB extensions and keeps its own edits`() = runTest {
         seedPsx(cardExts = "iso,cso,pbp,7z")
 
         applier().apply(mapOf("psp" to listOf("chd")))
 
         assertEquals("iso,cso,pbp,chd", platforms.getById("psp")!!.romExtensions)
-        assertEquals("iso,cso,pbp,7z", cards.getById("psp")!!.supportedExtensions)
+        assertEquals("iso,cso,pbp,7z,chd", cards.getById("psp")!!.supportedExtensions)
+    }
+
+    @Test fun `an extension the user removed from a card is not brought back`() = runTest {
+        seedPsx(cardExts = "iso,cso")   // the user removed pbp
+
+        applier().apply(mapOf("psp" to listOf("pbp", "chd")))
+
+        assertEquals("iso,cso,chd", cards.getById("psp")!!.supportedExtensions)
     }
 
     @Test fun `a platform without a card still updates`() = runTest {

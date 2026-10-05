@@ -463,6 +463,8 @@ data class PhotoViewerRequest(
     val photoId: String,
     val libraryId: String?,
     val openWallpaperPreview: Boolean = false,
+    // Opens straight into the "Set as Lock Screen" confirm (the photo row's own menu entry).
+    val openLockScreenConfirm: Boolean = false,
 )
 
 sealed interface MusicNav {
@@ -3854,10 +3856,16 @@ class XMBViewModel @Inject constructor(
 
     // Opens the fullscreen viewer for a photo, scoped to the list it was opened from so L1/R1
     // pages through the same set the user was browsing.
-    private fun openPhotoViewer(photoId: String, wallpaperPreview: Boolean = false) {
+    private fun openPhotoViewer(photoId: String, wallpaperPreview: Boolean = false, lockScreenConfirm: Boolean = false) {
         val libraryId = (_uiState.value.photoNav as? PhotoNav.Library)?.id
         _uiState.update {
-            it.copy(activePhotoViewer = PhotoViewerRequest(photoId, libraryId, openWallpaperPreview = wallpaperPreview))
+            it.copy(
+                activePhotoViewer = PhotoViewerRequest(
+                    photoId, libraryId,
+                    openWallpaperPreview = wallpaperPreview,
+                    openLockScreenConfirm = lockScreenConfirm,
+                ),
+            )
         }
     }
 
@@ -3900,6 +3908,7 @@ class XMBViewModel @Inject constructor(
             "photo_open"          -> openPhotoViewer(photoId)
             // Opens the viewer with the wallpaper preview already up — apply/cancel from there.
             "photo_set_wallpaper" -> openPhotoViewer(photoId, wallpaperPreview = true)
+            "photo_set_lockscreen" -> openPhotoViewer(photoId, lockScreenConfirm = true)
         }
     }
 
@@ -8729,7 +8738,11 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    fun confirmShortcutReview(requestId: String) = resolveShortcutReview { shortcutRequests.add(requestId) }
+    /** Add applies to the request the modal showed, never to whatever the queue holds under its id now. */
+    fun confirmShortcutReview(requestId: String) {
+        val shown = _uiState.value.shortcutReview?.takeIf { it.id == requestId } ?: return
+        resolveShortcutReview { shortcutRequests.add(shown) }
+    }
 
     fun ignoreShortcutReview(requestId: String) = resolveShortcutReview { shortcutRequests.ignore(requestId) }
 

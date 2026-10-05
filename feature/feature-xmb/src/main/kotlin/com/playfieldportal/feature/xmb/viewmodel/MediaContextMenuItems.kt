@@ -64,11 +64,12 @@ internal fun videoLibraryMenuItems(byTouch: Boolean): List<XMBContextMenuItem> =
 
 /**
  * A photo row. Viewing options (zoom, rotate) live in the viewer's own menu; the list row opens
- * (touch only), sets the wallpaper, or removes.
+ * (touch only), sets the wallpaper or the device lock screen, or removes.
  */
 internal fun photoFileMenuItems(byTouch: Boolean): List<XMBContextMenuItem> = buildList {
     if (byTouch) add(XMBContextMenuItem("photo_open", "Open"))
     add(XMBContextMenuItem("photo_set_wallpaper", "Set as Launcher Wallpaper"))
+    add(XMBContextMenuItem("photo_set_lockscreen", "Set as Lock Screen"))
     add(XMBContextMenuItem("photo_remove", "Remove from Library", isDestructive = true))
 }
 

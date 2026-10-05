@@ -175,8 +175,11 @@ class BackupKeyCoverageTest {
         // wallpaper on the next cold start, which is both cheaper and correct — carrying it would
         // be dead weight that is discarded on arrival.
         val derivedCaches = listOf("display_wallpaper_luma")
+        // The device lock screen is system state, not a launcher setting: a restore cannot set it,
+        // so carrying the path would make Settings claim a lock screen image that is not there.
+        val deviceState = listOf("display_lockscreen_image", "display_lockscreen_source")
 
-        (migrationMarkers + danglingStamp + sessionState + derivedCaches).forEach { key ->
+        (migrationMarkers + danglingStamp + sessionState + derivedCaches + deviceState).forEach { key ->
             assertTrue(
                 "$key is carried by BackupManager — if that is now intended, move it out of this list",
                 key !in covered,

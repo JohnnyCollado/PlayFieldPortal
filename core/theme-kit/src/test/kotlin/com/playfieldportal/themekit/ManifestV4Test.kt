@@ -119,8 +119,9 @@ class ManifestV4Test {
     }
 
     @Test
-    fun `schema version is 4 and a fresh manifest carries no v4 extras`() {
-        assertEquals(4, PfpThemeManifest.SCHEMA_VERSION)
+    fun `schema version is at least 4 and a fresh manifest carries no v4 extras`() {
+        // v5 (the lock screen image) is additive on top of v4; LockScreenCodecTest pins the number.
+        assertTrue(PfpThemeManifest.SCHEMA_VERSION >= 4)
         assertEquals("reduced_static", PfpThemeManifest.WAVE_REDUCED_STATIC)
         val m = manifest()
         assertNull(m.author)
@@ -212,7 +213,7 @@ class ManifestV4Test {
     }
 
     @Test
-    fun `writing stamps schema 4 and derives the legacy wave from the exact one`() {
+    fun `writing stamps the current schema and derives the legacy wave from the exact one`() {
         val written = PfpThemeCodec.write(
             PfpThemeBundle(
                 manifest = manifest("animated", "reduced_static").copy(schemaVersion = 3),
@@ -221,7 +222,7 @@ class ManifestV4Test {
             ),
         )
         val m = assertNotNull(PfpThemeCodec.read(written)).manifest
-        assertEquals(4, m.schemaVersion)
+        assertEquals(PfpThemeManifest.SCHEMA_VERSION, m.schemaVersion)
         assertEquals("static", m.waveStyle)
         assertEquals("reduced_static", m.waveStyleV4)
     }

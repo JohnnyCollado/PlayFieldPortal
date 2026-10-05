@@ -8,6 +8,7 @@ import com.playfieldportal.studio.preview.screens.ArtworkStudioScreenPreview
 import com.playfieldportal.studio.preview.screens.GameAchievementsScreenPreview
 import com.playfieldportal.studio.preview.screens.GameDetailScreenPreview
 import com.playfieldportal.studio.preview.screens.GamePickerScreenPreview
+import com.playfieldportal.studio.preview.screens.LockScreenPreview
 import com.playfieldportal.studio.preview.screens.SettingsScreenPreview
 
 /**
@@ -25,6 +26,7 @@ enum class PreviewScreen(val label: String) {
     GAME_DETAIL("Game Detail Screen"),
     ACHIEVEMENTS("Achievement Screen"),
     GAME_ACHIEVEMENTS("Per-Game Achievement Screen"),
+    LOCK_SCREEN("Lock Screen"),
 }
 
 /** The opened [screen] at design size, filling the frame (XMB is drawn by XmbFrame itself). */
@@ -40,5 +42,6 @@ fun ScreenPreview(screen: PreviewScreen, model: XmbPreviewModel) {
         PreviewScreen.GAME_DETAIL -> GameDetailScreenPreview(model)
         PreviewScreen.ACHIEVEMENTS -> AchievementsScreenPreview(model)
         PreviewScreen.GAME_ACHIEVEMENTS -> GameAchievementsScreenPreview(model)
+        PreviewScreen.LOCK_SCREEN -> LockScreenPreview(model)
     }
 }

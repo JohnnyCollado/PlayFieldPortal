@@ -26,6 +26,12 @@ object ThemePrefKeys {
      */
     val MOTION_CROP = stringPreferencesKey("display_motion_crop")
 
+    /** The device lock screen image's absolute path (its own `lockscreen/` folder); absent = none set by PFP. */
+    val LOCKSCREEN_IMAGE = stringPreferencesKey("display_lockscreen_image")
+
+    /** Who set [LOCKSCREEN_IMAGE]: `user` or `theme`, so a theme reset undoes only a theme's. */
+    val LOCKSCREEN_SOURCE = stringPreferencesKey("display_lockscreen_source")
+
     // ── Colours ──────────────────────────────────────────────────────────────
 
     /** The preset colour scheme's name (Display ▸ Colour Scheme); a theme accent overrides it. */

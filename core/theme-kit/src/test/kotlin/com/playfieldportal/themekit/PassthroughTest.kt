@@ -172,7 +172,7 @@ class PassthroughTest {
     @Test
     fun `a passthrough name colliding with a registered entry is dropped`() {
         val bundle = bundleWithPassthrough(
-            "manifest.json", "wallpaper.png", "preview.png", "motion.mp4",
+            "manifest.json", "wallpaper.png", "preview.png", "lockscreen.png", "motion.mp4",
             "icons/catbar_games.png", "sysicons/psx.png", "extras/ok.bin",
         )
         val written = PfpThemeCodec.write(bundle)

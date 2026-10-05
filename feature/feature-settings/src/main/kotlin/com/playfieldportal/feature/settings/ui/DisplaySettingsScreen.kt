@@ -57,6 +57,7 @@ import com.playfieldportal.core.ui.theme.composite
 import com.playfieldportal.core.ui.theme.solveScrimColor
 import com.playfieldportal.feature.settings.viewmodel.DisplaySettingsUiState
 import com.playfieldportal.feature.settings.viewmodel.DisplaySettingsViewModel
+import com.playfieldportal.feature.settings.viewmodel.LockScreenViewModel
 import com.playfieldportal.feature.settings.viewmodel.UiMediaRowText
 
 @Composable
@@ -67,8 +68,10 @@ fun DisplaySettingsScreen(
     onPreviewBootSequence: () -> Unit = {},
     onPreviewGameBoot: () -> Unit = {},
     viewModel: DisplaySettingsViewModel = hiltViewModel(),
+    lockScreenViewModel: LockScreenViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    val lockState by lockScreenViewModel.uiState.collectAsState()
 
     // Font-colour picker state. Held here rather than in the ViewModel for the same reason the
     // Themes screen holds its icon picker locally: nothing is persisted until Apply.
@@ -101,6 +104,11 @@ fun DisplaySettingsScreen(
     val wallpaperPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri -> uri?.let { viewModel.onWallpaperPicked(it) } }
+
+    // The device lock screen takes a still only (see LockScreenImage).
+    val lockScreenPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let { lockScreenViewModel.onImagePicked(it) } }
 
     // ONE picker for every boot/GameBoot media row; the pending slot lives on the ViewModel.
     val uiMediaPicker = rememberLauncherForActivityResult(
@@ -295,6 +303,34 @@ fun DisplaySettingsScreen(
                         onClick  = { viewModel.clearWallpaper() },
                     )
                 }
+            }
+
+            // ── Lock screen image — the DEVICE lock screen, a still only ──────────
+            SettingsGroup("Lock Screen")
+            SettingsRow(
+                label    = "Choose Lock Screen Image",
+                sublabel = when {
+                    lockState.busy -> "Setting the lock screen…"
+                    lockState.fromTheme -> "Set by the applied theme — pick an image to use your own"
+                    lockState.isSet -> "Your image is on the lock screen"
+                    else -> "Pick an image (PNG, JPG, WEBP) for the device lock screen"
+                },
+                onClick  = if (lockState.busy) null else ({ lockScreenPicker.launch(arrayOf("image/png", "image/jpeg", "image/webp")) }),
+            )
+            if (lockState.hasLauncherWallpaper) {
+                SettingsRow(
+                    label    = "Use Launcher Wallpaper",
+                    sublabel = if (state.motionWallpaperPath != null) "Uses the motion wallpaper's still frame"
+                               else "Uses the wallpaper behind the XMB",
+                    onClick  = if (lockState.busy) null else ({ lockScreenViewModel.useLauncherWallpaper() }),
+                )
+            }
+            if (lockState.isSet) {
+                SettingsRow(
+                    label    = "Reset Lock Screen",
+                    sublabel = "Back to the device's default lock screen",
+                    onClick  = if (lockState.busy) null else ({ lockScreenViewModel.reset() }),
+                )
             }
 
             // ── Wave Style — only relevant when no wallpaper is set. When a MOTION wallpaper

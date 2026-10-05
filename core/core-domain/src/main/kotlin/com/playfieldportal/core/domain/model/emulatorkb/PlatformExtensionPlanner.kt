@@ -16,16 +16,19 @@ data class PlatformExtensionPlan(
 )
 
 /**
- * Pure planner for additive, user-edit-guarded extension updates. The target for a row is
- * `current ∪ kbList`; a row is written only while it is untouched, which follows `MIGRATION_48_49`'s
- * rule that a knowledge-base update must never overwrite an override.
+ * Pure planner for additive extension updates that never undo a user edit (`MIGRATION_48_49`'s rule
+ * that a knowledge-base update must never overwrite an override). It only ever ADDS tokens:
+ *  - an untouched row (still the seed default or the last KB-applied set) takes every KB token;
+ *  - an edited row takes only the tokens that are NEW since the last apply (`kbList − baseline`,
+ *    the baseline being the last-applied set, else the seed). A token the user removed was in that
+ *    baseline, so it is never brought back, and a token the user added is kept.
  */
 object PlatformExtensionPlanner {
 
     /**
-     * A row is untouched when its current set equals [lastApplied], [seedDefault], or its own target
-     * (idempotent). Tokens compare case-insensitively and ignore order; output is lowercase, in the
-     * row's order with new tokens appended.
+     * A row is untouched when its current set equals [lastApplied] or [seedDefault]. A row already
+     * holding everything it would gain is left alone (idempotent). Tokens compare case-insensitively
+     * and ignore order; output is lowercase, in the row's order with new tokens appended.
      */
     fun plan(
         seedDefault: List<String>,
@@ -38,14 +41,16 @@ object PlatformExtensionPlanner {
         val applied = lastApplied?.let(::normalize)
         val kb = normalize(kbList)
 
+        // What this KB brings that the last application did not: the only tokens an edited row gets.
+        val novel = kb - (applied ?: seed).toSet()
+
         val added = LinkedHashSet<String>()
         fun rewrite(current: List<String>): List<String>? {
             val row = normalize(current)
-            val target = (row + kb).distinct()
-            if (target.size == row.size) return null
             val untouched = row.toSet() == seed.toSet() ||
                 (applied != null && row.toSet() == applied.toSet())
-            if (!untouched) return null
+            val target = (row + if (untouched) kb else novel).distinct()
+            if (target.size == row.size) return null
             added += target - row.toSet()
             return target
         }

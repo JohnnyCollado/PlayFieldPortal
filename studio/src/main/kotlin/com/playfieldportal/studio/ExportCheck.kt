@@ -8,6 +8,7 @@ import com.playfieldportal.themekit.UpgradeReport
 /** Where the bytes of the bundle go - the "In this file" budget strip. */
 enum class BudgetKind(val label: String) {
     WALLPAPER("Wallpaper"),
+    LOCK_SCREEN("Lock screen"),
     PREVIEW("Preview"),
     ICONS("Icons"),
     MOTION("Motion"),
@@ -65,6 +66,7 @@ data class ExportCheck(
                 bytes[kind] = (bytes[kind] ?: 0L) + n
             }
             add(BudgetKind.WALLPAPER, (state.wallpaperPng?.size ?: 0).toLong())
+            add(BudgetKind.LOCK_SCREEN, (state.lockScreenPng?.size ?: 0).toLong())
             add(BudgetKind.PREVIEW, (state.previewPng?.size ?: 0).toLong())
             add(
                 BudgetKind.ICONS,

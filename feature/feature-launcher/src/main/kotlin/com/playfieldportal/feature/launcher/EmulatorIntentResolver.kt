@@ -271,7 +271,7 @@ class EmulatorIntentResolver(
                 clipData = ClipData.newUri(context.contentResolver, game.title, romUri)
                 context.grantUriPermission(profile.packageName, romUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-        }
+        }.also { if (romUri != null) grantDiscFolderIfNeeded(romUri, profile.packageName) }
     }
 
     // The URI handed to an ACTION_VIEW emulator. A SAF game uses its granted content:// document URI
@@ -307,11 +307,31 @@ class EmulatorIntentResolver(
         }
     }
 
-    private fun Intent.grantReadPermissionIfNeeded(uri: Uri, title: String, packageName: String) {
+    private suspend fun Intent.grantReadPermissionIfNeeded(uri: Uri, title: String, packageName: String) {
         if (uri.scheme != "content") return
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         clipData = ClipData.newUri(context.contentResolver, title, uri)
         context.grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        grantDiscFolderIfNeeded(uri, packageName)
+    }
+
+    /**
+     * A multi-file disc sheet (.cue and kin) also needs its tracks: read-only, prefix access to the
+     * configured ROM tree (Library ROM root or card folder), for the launched emulator only
+     * ([DiscFolderGrant]). Without it DuckStation opens the .cue and fails on the first .bin. A
+     * grant PFP does not hold itself is refused by the system; the launch then goes ahead with the
+     * one-document grant.
+     */
+    private suspend fun grantDiscFolderIfNeeded(romUri: Uri, packageName: String) {
+        val tree = romUriMinter.discFolderTree(romUri) ?: return
+        runCatching {
+            context.grantUriPermission(
+                packageName,
+                tree,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION,
+            )
+        }.onSuccess { Timber.d("Granted %s read access to the disc's ROM folder tree", packageName) }
+            .onFailure { Timber.w(it, "Could not grant the disc's ROM folder tree to %s", packageName) }
     }
 
     private fun resolveTemplate(

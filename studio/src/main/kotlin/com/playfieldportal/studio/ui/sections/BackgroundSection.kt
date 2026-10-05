@@ -71,6 +71,8 @@ private val FIT_CHOICES: List<Pair<WallpaperPreset, String>> = listOf(
 
 private val IMAGE_EXTENSIONS = setOf("png", "jpg", "jpeg", "bmp", "webp", "gif")
 private val VIDEO_EXTENSIONS = setOf("mp4", "m4v")
+// A still: animated containers are left out on purpose (the device lock screen cannot animate).
+private val LOCK_IMAGE_EXTENSIONS = setOf("png", "jpg", "jpeg", "bmp", "webp")
 
 @Composable
 fun BackgroundSection(state: StudioState, viewModel: StudioViewModel, window: Frame) {
@@ -88,6 +90,7 @@ fun BackgroundSection(state: StudioState, viewModel: StudioViewModel, window: Fr
 
     fun pickImage() = FileDialogs.openFile(window, "Import wallpaper", IMAGE_EXTENSIONS)?.let(viewModel::stageWallpaper)
     fun pickVideo() = FileDialogs.openFile(window, "Import video", VIDEO_EXTENSIONS)?.let(viewModel::importVideo)
+    fun pickLockScreen() = FileDialogs.openFile(window, "Lock screen image", LOCK_IMAGE_EXTENSIONS)?.let(viewModel::setLockScreenImage)
 
     SectionColumn {
         SectionHeading("Source")
@@ -150,6 +153,23 @@ fun BackgroundSection(state: StudioState, viewModel: StudioViewModel, window: Fr
             // Without the hint, authors read the frozen poster as the video being broken.
             HintText("The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, or a Static style).")
         }
+
+        HorizontalDivider()
+        SectionHeading("Lock screen")
+        MutedText(
+            if (state.lockScreenPng != null) "The theme offers this image for the device lock screen"
+            else "None — the theme leaves the device lock screen alone",
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            OutlinedButton(onClick = { pickLockScreen() }) { Text(if (state.lockScreenPng != null) "Replace…" else "Choose Image…") }
+            if (state.wallpaperPng != null) {
+                OutlinedButton(onClick = viewModel::useWallpaperForLockScreen) {
+                    Text(if (source == BackgroundSource.VIDEO) "Use Poster" else "Use Wallpaper")
+                }
+            }
+            if (state.lockScreenPng != null) OutlinedButton(onClick = viewModel::clearLockScreen) { Text("Clear") }
+        }
+        HintText("A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.")
     }
 }
 

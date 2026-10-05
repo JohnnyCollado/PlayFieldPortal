@@ -67,7 +67,7 @@ class InstallShortcutReceiver : BroadcastReceiver() {
 
         Timber.i("INSTALL_SHORTCUT requested: name=$name host=$hostPackage — awaiting user confirmation")
         val request = PendingShortcutRequest(
-            id = Integer.toHexString(intentUri.hashCode()),
+            id = PendingShortcutRequest.idFor(intentUri),
             name = name,
             intentUri = intentUri,
             hostPackage = hostPackage,

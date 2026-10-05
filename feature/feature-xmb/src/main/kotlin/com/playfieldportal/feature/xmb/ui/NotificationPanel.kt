@@ -41,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -53,6 +54,8 @@ import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.domain.model.BackgroundTaskInfo
 import com.playfieldportal.core.domain.model.NotificationDetail
+import com.playfieldportal.core.ui.theme.deriveStorefrontColors
+import com.playfieldportal.core.ui.theme.menuCursorFill
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.xmb.viewmodel.NotificationPanelState
@@ -68,6 +71,10 @@ import kotlinx.coroutines.delay
  * visible above it, which is the whole point of dropping from there. Drawn from [LocalPFPColors]
  * like the shared PSP context menu, never from a hardcoded black: the task tray this replaces was
  * pinned to `Color.Black.copy(alpha = 0.88f)` and read as off-theme against every colour scheme.
+ *
+ * The backdrop and the cursor are the context menu's too ([deriveStorefrontColors], [menuCursorFill]):
+ * a dark theme-derived panel with an accent-tinted cursor. The wave colour it used before is a
+ * light pastel under many schemes, and a white-tinted cursor and themed text vanished on it.
  */
 @Composable
 fun NotificationPanel(
@@ -81,7 +88,7 @@ fun NotificationPanel(
     /** Fades in the controller hint after the idle delay. See `shouldShowNotificationHint`. */
     showHint: Boolean = false,
 ) {
-    val colors = LocalPFPColors.current
+    val storefront = deriveStorefrontColors()
     val rows = remember(running, history) { buildNotificationRows(running, history) }
     val listState = rememberLazyListState()
 
@@ -114,7 +121,7 @@ fun NotificationPanel(
                 .fillMaxWidth()
                 .height(PanelHeight)
                 .clip(RoundedCornerShape(10.dp))
-                .background(colors.waveColor.copy(alpha = 0.82f))
+                .background(Brush.verticalGradient(listOf(storefront.backgroundDeep, storefront.backgroundMid)))
                 .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(10.dp))
                 .clickable(onClick = {}) // consume taps inside the panel so the scrim is not hit
                 .padding(horizontal = 20.dp, vertical = 14.dp),
@@ -224,7 +231,7 @@ private fun RunningRow(task: BackgroundTaskInfo, isSelected: Boolean, onTap: () 
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(6.dp))
-            .background(if (isSelected) Color.White.copy(alpha = 0.14f) else Color.Transparent)
+            .background(if (isSelected) menuCursorFill() else Color.Transparent)
             .then(if (task.stoppable && !stopping) Modifier.clickable(onClick = onTap) else Modifier)
             .padding(horizontal = 6.dp, vertical = 5.dp),
     ) {
@@ -330,7 +337,7 @@ private fun HistoryRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(6.dp))
-            .background(if (isSelected) Color.White.copy(alpha = 0.14f) else Color.Transparent)
+            .background(if (isSelected) menuCursorFill() else Color.Transparent)
             // Tap is the whole interaction. There is no held-row menu here: the row does one
             // thing, and this is it.
             .clickable(onClick = onTap)

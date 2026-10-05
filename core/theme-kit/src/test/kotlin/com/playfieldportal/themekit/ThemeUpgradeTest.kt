@@ -171,7 +171,7 @@ class ThemeUpgradeTest {
         assertTrue(r.kept.anyContains("Wallpaper"))
         assertTrue(r.kept.anyContains("Preview"))
         assertTrue(r.kept.anyContains("layout"))
-        assertTrue(r.added.anyContains("version 4"))
+        assertTrue(r.added.anyContains("version ${PfpThemeManifest.SCHEMA_VERSION}"))
         assertTrue(r.added.anyContains("wave"))
         assertTrue(r.repaired.isEmpty())
         assertTrue(r.cantRecover.isEmpty())
@@ -181,7 +181,7 @@ class ThemeUpgradeTest {
     fun `v2 report counts icons`() {
         val r = report("v2")
         assertTrue(r.kept.anyContains("2 custom icons"), r.kept.toString())
-        assertTrue(r.added.anyContains("version 4"))
+        assertTrue(r.added.anyContains("version ${PfpThemeManifest.SCHEMA_VERSION}"))
     }
 
     @Test
@@ -207,9 +207,10 @@ class ThemeUpgradeTest {
     }
 
     @Test
-    fun `v4 report has nothing to add or repair`() {
+    fun `v4 report adds only the format version`() {
+        // v5 is additive (the lock screen image); a v4 theme has every v4 field already.
         val r = report("v4")
-        assertTrue(r.added.isEmpty(), r.added.toString())
+        assertEquals(listOf("Format version ${PfpThemeManifest.SCHEMA_VERSION} (was 4)"), r.added)
         assertTrue(r.repaired.isEmpty(), r.repaired.toString())
         assertTrue(r.cantRecover.isEmpty())
         assertTrue(r.kept.isNotEmpty())
@@ -251,9 +252,9 @@ class ThemeUpgradeTest {
     // -- upgrade -------------------------------------------------------------------------
 
     @Test
-    fun `upgrade stamps v4 with legacy and exact wave and dates`() {
+    fun `upgrade stamps the current version with legacy and exact wave and dates`() {
         val up = ThemeUpgrade.upgrade(detailed(fx.v1()).bundle, today)
-        assertEquals(4, up.manifest.schemaVersion)
+        assertEquals(PfpThemeManifest.SCHEMA_VERSION, up.manifest.schemaVersion)
         assertEquals(PfpThemeManifest.WAVE_REDUCED, up.manifest.waveStyle)
         assertEquals(PfpThemeManifest.WAVE_REDUCED, up.manifest.waveStyleV4)
         assertEquals("2026-07-06", up.manifest.created, "created is preserved")
@@ -273,7 +274,7 @@ class ThemeUpgradeTest {
     @Test
     fun `upgrade keeps extras and passthrough`() {
         val up = ThemeUpgrade.upgrade(detailed(fx.future()).bundle, today)
-        assertEquals(4, up.manifest.schemaVersion)
+        assertEquals(PfpThemeManifest.SCHEMA_VERSION, up.manifest.schemaVersion)
         assertEquals("2031-01-01", up.manifest.created)
         val bytes = PfpThemeCodec.write(up)
         val names = ZipInputStream(ByteArrayInputStream(bytes)).use { z ->

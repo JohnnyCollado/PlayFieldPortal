@@ -194,9 +194,10 @@ class PanelsATest {
 
     @Test
     fun `format line says schema N to current`() {
-        assertEquals("Format: schema 2 → 4", exportFormatLine(2))
-        assertEquals("Format: schema 4 → 4", exportFormatLine(4))
-        assertEquals("Format: new theme → 4", exportFormatLine(null))
+        val current = com.playfieldportal.themekit.PfpThemeManifest.SCHEMA_VERSION
+        assertEquals("Format: schema 2 → $current", exportFormatLine(2))
+        assertEquals("Format: schema $current → $current", exportFormatLine(current))
+        assertEquals("Format: new theme → $current", exportFormatLine(null))
     }
 
     @Test

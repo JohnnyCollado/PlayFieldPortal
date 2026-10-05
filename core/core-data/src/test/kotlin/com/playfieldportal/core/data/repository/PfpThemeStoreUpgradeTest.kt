@@ -121,7 +121,9 @@ class PfpThemeStoreUpgradeTest {
 
     @Test
     fun `an already current theme is left byte for byte alone`() = runTest {
+        // The newest fixture is v4; one upgrade makes it current (v5), the state under test.
         val file = place("c", ThemeFixtures.v4())
+        assertTrue(store().upgradeInPlace("c"))
         val before = file.readBytes()
 
         assertTrue(store().upgradeInPlace("c"))

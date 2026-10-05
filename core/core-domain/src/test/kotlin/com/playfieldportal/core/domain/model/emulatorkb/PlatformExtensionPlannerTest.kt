@@ -27,16 +27,32 @@ class PlatformExtensionPlannerTest {
     }
 
     @Test
-    fun cardWhereUserRemovedZipIsLeftAlone() {
+    fun cardWhereUserRemovedZipGainsChdAndZipStaysRemoved() {
         val p = plan(cards = listOf(listOf("cue", "bin", "iso")))
-        assertEquals(listOf<List<String>?>(null), p.cards)
+        assertEquals(listOf(listOf("cue", "bin", "iso", "chd")), p.cards)
     }
 
     @Test
-    fun cardWhereUserAdded7zIsLeftAlone() {
+    fun aRemovalStaysRemovedEvenWhenTheKbStillListsIt() {
+        // The user dropped zip; the KB still lists zip, and adds chd. Only chd is new.
+        val p = plan(kbList = listOf("zip", "chd"), cards = listOf(listOf("cue", "bin", "iso")))
+        assertEquals(listOf(listOf("cue", "bin", "iso", "chd")), p.cards)
+        assertEquals(listOf("chd"), p.added)
+    }
+
+    @Test
+    fun cardWhereUserAdded7zGainsChdAndKeeps7z() {
         val p = plan(cards = listOf(seed + "7z"))
-        assertEquals(listOf<List<String>?>(null), p.cards)
+        assertEquals(listOf(seed + "7z" + "chd"), p.cards)
         assertEquals(listOf("cue", "bin", "iso", "zip", "chd"), p.platform)
+    }
+
+    @Test
+    fun anEditedCardOnlyGainsWhatIsNewSinceTheLastApply() {
+        // chd arrived in the last KB update; pbp arrives now. The user has since removed chd and iso.
+        val prev = listOf("cue", "bin", "iso", "zip", "chd")
+        val p = plan(lastApplied = prev, kbList = prev + "pbp", platform = prev, cards = listOf(listOf("cue", "bin", "zip")))
+        assertEquals(listOf(listOf("cue", "bin", "zip", "pbp")), p.cards)
     }
 
     @Test
@@ -82,11 +98,17 @@ class PlatformExtensionPlannerTest {
     }
 
     @Test
-    fun customizedPlatformIsLeftAloneButLastAppliedStillRecorded() {
+    fun customizedPlatformKeepsItsRemovalsAndGainsOnlyNewTokens() {
         val p = plan(platform = listOf("cue"), cards = listOf(listOf("cue")))
-        assertNull(p.platform)
-        assertEquals(listOf<List<String>?>(null), p.cards)
+        assertEquals(listOf("cue", "chd"), p.platform)
+        assertEquals(listOf(listOf("cue", "chd")), p.cards)
         assertEquals(listOf("cue", "bin", "iso", "zip", "chd"), p.lastApplied)
+    }
+
+    @Test
+    fun anEditedRowThatAlreadyHasTheNewTokenIsNotRewritten() {
+        val p = plan(cards = listOf(listOf("cue", "chd")))
+        assertEquals(listOf<List<String>?>(null), p.cards)
     }
 
     @Test

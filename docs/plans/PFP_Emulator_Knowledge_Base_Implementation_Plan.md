@@ -234,9 +234,11 @@ exist, opening a data channel would only add attack surface.
 - **AD-9 Platform info is additive and guarded.**
   - The KB `platforms` section can only **add** extensions to existing platforms. Removing one would
     drop games from the library on the next scan, and a data file must not be able to do that.
-  - Each platform's last KB-applied set is recorded. A card or platform row is updated only while
-    its current list still equals (as a set) the previous applied set, the seed default, or the new
-    set (idempotent). Otherwise the user customized it and it is left alone. This follows
+  - Each platform's last KB-applied set is recorded. A row whose list still equals (as a set) the
+    previous applied set or the seed default takes every KB extension. A row the user edited takes
+    only the extensions that are new since the last apply (the KB list minus that baseline): its
+    removals stay removed and its additions stay (changed 2026-10-04; before, edited rows took
+    nothing). A row already holding everything is left as is (idempotent). This follows
     `MIGRATION_48_49`'s rule that "a knowledge-base update must never overwrite an override", and it
     needs **no schema change**.
   - New extensions take effect on the next scan. The KB screen lists the consoles that gained file

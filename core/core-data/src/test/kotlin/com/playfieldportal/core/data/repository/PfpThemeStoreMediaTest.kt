@@ -19,9 +19,17 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.OutputStream
 import java.util.Random
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -297,6 +305,36 @@ class PfpThemeStoreMediaTest {
         val after = context.pfpDataStore.data.first()[UiMediaStore.KEY_UI_MEDIA_STAMP]
         assertNotNull(after)
         assertTrue(after > before)
+    }
+
+    @Test
+    fun `resetApplied removes theme-media before observers see the stamp bump`() = runTest {
+        // A sound player reloads on the stamp and resolves files by existence: a bump that lands
+        // while theme-media/ is still on disk reloads the theme's sounds, and only a second reset
+        // would clear them.
+        val store = store { _, _ -> audio(200) }
+        val saved = requireNotNull(store.importBundle(register(bundle(media = mapOf("sound_scroll" to wav())))))
+        assertTrue(store.apply(saved.id))
+        val before = requireNotNull(context.pfpDataStore.data.first()[UiMediaStore.KEY_UI_MEDIA_STAMP])
+        Thread.sleep(5)
+
+        val seenWithFiles = mutableListOf<Boolean>()
+        val watcher = CoroutineScope(Dispatchers.Unconfined).launch {
+            context.pfpDataStore.data
+                .map { it[UiMediaStore.KEY_UI_MEDIA_STAMP] }
+                .distinctUntilChanged()
+                .collect { stamp -> if (stamp != null && stamp > before) seenWithFiles += themeMedia.exists() }
+        }
+        try {
+            store.resetApplied()
+            withContext(Dispatchers.Default) {
+                withTimeout(5_000) { while (seenWithFiles.isEmpty()) delay(10) }
+            }
+        } finally {
+            watcher.cancel()
+        }
+
+        assertEquals(listOf(false), seenWithFiles.take(1))
     }
 
     @Test

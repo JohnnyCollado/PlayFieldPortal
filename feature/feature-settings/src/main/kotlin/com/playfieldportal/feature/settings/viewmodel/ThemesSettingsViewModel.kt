@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.CustomIconStore
 import com.playfieldportal.core.data.repository.GameBootPreferences
+import com.playfieldportal.core.data.repository.LockScreenImage
 import com.playfieldportal.core.data.repository.PfpThemeStore
 import com.playfieldportal.core.data.repository.PtfThemeImporter
 import com.playfieldportal.core.data.repository.ThemePrefKeys
@@ -19,6 +20,7 @@ import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.PFPTheme
+import com.playfieldportal.core.domain.model.UiMediaSlot
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -49,9 +51,11 @@ data class ThemesSettingsUiState(
     val savedThemes: List<PfpThemeStore.SavedTheme> = emptyList(),
     // Installed .xmbtheme themes from the ThemeRepository (built-in + user-installed).
     val installedThemes: List<PFPTheme> = emptyList(),
-    // Raised after an apply when the theme's media would not play as things stand (the user's own
-    // assignments outrank it, or GameBoot / the boot sequence is off). Null = nothing to ask.
-    val mediaPrompt: ThemeMediaPrompt? = null,
+    // Raised when a saved theme is picked (or imported): nothing is applied until it is answered.
+    // It also offers what applying would replace or switch on. Null = nothing to ask.
+    val applyConfirmation: ThemeApplyConfirmation? = null,
+    // After applying a theme that carries a lock screen image: offer it, opt-in. Null = not asking.
+    val lockScreenOffer: ThemeApplyConfirmation? = null,
     // Customize XMB Icons' value: the user's own picks, "None custom" / "N custom".
     val customIconsValue: String = CustomIconsRowText.value(emptySet()),
 )
@@ -66,6 +70,7 @@ class ThemesSettingsViewModel @Inject constructor(
     private val gameBootPreferences: GameBootPreferences,
     private val customIconStore: CustomIconStore,
     private val themeTiers: ThemeTiers,
+    private val lockScreen: LockScreenImage,
 ) : ViewModel() {
 
     private val _extra = MutableStateFlow(ThemesSettingsUiState())
@@ -154,6 +159,8 @@ class ThemesSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             themeStore.resetApplied()
             customIconStore.clearAll()
+            // A lock screen a theme set goes with the theme; one the user chose stays.
+            lockScreen.clearIfFromTheme()
             Timber.i("Theme reset to default")
             reportTheme("Theme reset — back to the default look")
         }
@@ -167,7 +174,7 @@ class ThemesSettingsViewModel @Inject constructor(
             _extra.update { it.copy(isInstalling = true) }
             val saved = themeStore.createFromImage(uri)
             if (saved != null) {
-                applyAndReview(saved.id)
+                applyAndReport(saved.id)
                 reportTheme(
                     "Created \"${saved.name}\"" +
                         if (saved.accentArgb != null) " — color derived from the photo" else "",
@@ -179,19 +186,90 @@ class ThemesSettingsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Picking a saved theme asks first ([ThemeApplyConfirmation]). What it would replace is read
+     * from the saved bundle's entry list and the user's own tiers, before anything changes.
+     */
     fun applySavedTheme(id: String) {
-        viewModelScope.launch {
-            if (!applyAndReview(id)) reportTheme("Could not apply the theme", NotificationSeverity.ERROR)
+        viewModelScope.launch { requestApply(id) }
+    }
+
+    private suspend fun requestApply(id: String) {
+        val theme = themeStore.themes.value.firstOrNull { it.id == id } ?: return
+        val prefs = context.pfpDataStore.data.first()
+        val confirmation = withContext(Dispatchers.IO) {
+            // An unreadable bundle still gets a plain question; applying it then reports the failure.
+            val contents = themeStore.contentsOf(id)
+            ThemeApplyConfirmation.of(
+                themeId = id,
+                themeName = theme.name,
+                themeMedia = contents?.mediaKeys.orEmpty().mapNotNullTo(HashSet()) { UiMediaSlot.fromKey(it) },
+                userMedia = themeTiers.mediaSlots(ThemeTiers.Tier.USER),
+                themeIcons = contents?.iconKeys.orEmpty(),
+                userIcons = themeTiers.iconKeys(ThemeTiers.Tier.USER),
+                gameBootEnabled = GameBootPreferences.resolve(prefs),
+                bootEnabled = prefs[KEY_SHOW_BOOT] ?: true,
+                themeHasLockScreen = contents?.hasLockScreen == true,
+            )
         }
+        _extra.update { it.copy(applyConfirmation = confirmation) }
     }
 
     /**
-     * Applies theme [id], then makes sure none of it is lost without the user knowing: clips the
-     * install gate refused are reported in the tray with the reason, and when the theme's media or
-     * icons would not show as things stand (the user's own assignments outrank them, or GameBoot /
-     * the boot sequence is off) the [ThemeMediaPrompt] is raised. False when the theme did not apply.
+     * "Apply": applies the theme, and with [ThemeApplyConfirmation.USE_THEMES] also clears the
+     * user's media and icons it replaces and switches on what it needs.
      */
-    private suspend fun applyAndReview(id: String): Boolean {
+    fun confirmApply(choice: Int) {
+        val confirmation = _extra.value.applyConfirmation ?: return
+        _extra.update { it.copy(applyConfirmation = null) }
+        viewModelScope.launch {
+            if (!applyAndReport(confirmation.themeId)) {
+                reportTheme("Could not apply the theme", NotificationSeverity.ERROR)
+                return@launch
+            }
+            if (confirmation.hasChoices && choice == ThemeApplyConfirmation.USE_THEMES) {
+                confirmation.replace.forEach { uiMediaStore.clear(it) }
+                confirmation.replaceIcons.forEach { customIconStore.clear(it) }
+                if (confirmation.turnOnGameBoot) gameBootPreferences.setGameBootEnabled(true)
+                if (confirmation.turnOnBoot) context.pfpDataStore.edit { it[KEY_SHOW_BOOT] = true }
+            }
+            if (confirmation.offersLockScreen) _extra.update { it.copy(lockScreenOffer = confirmation) }
+        }
+    }
+
+    /** "Set Lock Screen": the applied theme's lock screen image goes on the device lock screen. */
+    fun confirmLockScreenOffer() {
+        val offer = _extra.value.lockScreenOffer ?: return
+        _extra.update { it.copy(lockScreenOffer = null) }
+        viewModelScope.launch {
+            val bytes = themeStore.lockScreenOf(offer.themeId)
+            val result = if (bytes == null) {
+                LockScreenImage.Result.Failed("This theme's lock screen image could not be read")
+            } else {
+                lockScreen.set(bytes, LockScreenImage.Source.THEME)
+            }
+            when (result) {
+                LockScreenImage.Result.Set -> reportTheme("Lock screen set from \"${offer.themeName}\"")
+                is LockScreenImage.Result.Failed -> reportTheme(result.reason, NotificationSeverity.ERROR)
+            }
+        }
+    }
+
+    /** "Not Now": the device lock screen is left as it is. */
+    fun dismissLockScreenOffer() {
+        _extra.update { it.copy(lockScreenOffer = null) }
+    }
+
+    /** "Cancel": the theme is not applied and nothing changes. */
+    fun cancelApply() {
+        _extra.update { it.copy(applyConfirmation = null) }
+    }
+
+    /**
+     * Applies theme [id] and reports clips the install gate refused in the tray, with the reason.
+     * False when the theme did not apply.
+     */
+    private suspend fun applyAndReport(id: String): Boolean {
         val result = themeStore.applyDetailed(id) ?: return false
         UiMediaRowText.droppedReport(result.droppedMedia)?.let { body ->
             tasks.report(
@@ -202,37 +280,7 @@ class ThemesSettingsViewModel @Inject constructor(
                 action = NotificationAction.OpenSettingsScreen("settings_themes"),
             )
         }
-        val prefs = context.pfpDataStore.data.first()
-        // The theme is on disk now: ThemeTiers says what it supplies and what the user's own
-        // choices hide.
-        val prompt = withContext(Dispatchers.IO) {
-            ThemeMediaPrompt.of(
-                themeMedia = themeTiers.mediaSlots(ThemeTiers.Tier.THEME),
-                shadowedMedia = themeTiers.shadowedMedia(),
-                shadowedIcons = themeTiers.shadowedIcons(),
-                gameBootEnabled = GameBootPreferences.resolve(prefs),
-                bootEnabled = prefs[KEY_SHOW_BOOT] ?: true,
-            )
-        }
-        _extra.update { it.copy(mediaPrompt = prompt) }
         return true
-    }
-
-    /** "Use Theme's" / "Turn On": clears the user's media and icons the theme replaces and switches on what it needs. */
-    fun confirmMediaPrompt() {
-        val prompt = _extra.value.mediaPrompt ?: return
-        _extra.update { it.copy(mediaPrompt = null) }
-        viewModelScope.launch {
-            prompt.replace.forEach { uiMediaStore.clear(it) }
-            prompt.replaceIcons.forEach { customIconStore.clear(it) }
-            if (prompt.turnOnGameBoot) gameBootPreferences.setGameBootEnabled(true)
-            if (prompt.turnOnBoot) context.pfpDataStore.edit { it[KEY_SHOW_BOOT] = true }
-        }
-    }
-
-    /** "Keep Mine" / "Not Now": nothing changes; the theme's media and icons stay behind the user's choices. */
-    fun dismissMediaPrompt() {
-        _extra.update { it.copy(mediaPrompt = null) }
     }
 
     /**
@@ -285,12 +333,12 @@ class ThemesSettingsViewModel @Inject constructor(
         }
     }
 
-    /** Imports a shared `.pfptheme` bundle into the library and applies it. */
+    /** Imports a shared `.pfptheme` bundle into the library, then asks before applying it. */
     fun importPfpTheme(uri: Uri) {
         viewModelScope.launch {
             _extra.update { it.copy(isInstalling = true) }
             val result = themeStore.importBundleDetailed(uri)
-            if (result is PfpThemeStore.ImportResult.Success) applyAndReview(result.theme.id)
+            if (result is PfpThemeStore.ImportResult.Success) requestApply(result.theme.id)
             _extra.update { it.copy(isInstalling = false) }
             reportTheme(
                 messageFor(result),

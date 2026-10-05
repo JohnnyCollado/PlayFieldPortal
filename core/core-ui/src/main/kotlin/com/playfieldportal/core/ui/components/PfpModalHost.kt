@@ -63,6 +63,22 @@ sealed interface PfpModalSpec {
         val onCancel: () -> Unit,
     ) : PfpModalSpec
 
+    /**
+     * Title, message, a short list of [options] of which exactly one is selected (the first, when
+     * it opens), and Cancel / Confirm. [onConfirm] receives the selected option's index.
+     */
+    class Choice(
+        override val key: Any,
+        val title: String,
+        val message: String,
+        val options: List<PfpChoiceOption>,
+        val confirmLabel: String,
+        val cancelLabel: String = "Cancel",
+        val destructive: Boolean = false,
+        val onConfirm: (Int) -> Unit,
+        val onCancel: () -> Unit,
+    ) : PfpModalSpec
+
     /** Title, message and one button. */
     class Notice(
         override val key: Any,
@@ -171,10 +187,12 @@ fun rememberPfpModalHost(spec: PfpModalSpec?, showHints: Boolean = true): PfpMod
             when (spec) {
                 is PfpModalSpec.TextEntry -> PfpModalFocus.FIELD
                 is PfpModalSpec.Confirm -> PfpModalNav.initialConfirmFocus(spec.openOnCancel)
+                is PfpModalSpec.Choice -> PfpModalNav.initialConfirmFocus(spec.destructive)
                 else -> PfpModalFocus.CONFIRM
             },
         )
     }
+    var selected by remember(key) { mutableStateOf(0) }
     var text by remember(key) { mutableStateOf((spec as? PfpModalSpec.TextEntry)?.initial.orEmpty()) }
     val messageScroll = remember(key) { ScrollState(0) }
     // The detail sheets' own state: the diagnostic disclosure, the Results filter and list cursor,
@@ -219,6 +237,21 @@ fun rememberPfpModalHost(spec: PfpModalSpec?, showHints: Boolean = true): PfpMod
                         onCancel = spec.onCancel,
                     )
                 }
+                true
+            }
+            is PfpModalSpec.Choice -> {
+                // Up / down pick the option here, so a long message scrolls by touch only.
+                PfpModalNav.handleChoice(
+                    action = action,
+                    focus = focus,
+                    selected = selected,
+                    optionCount = spec.options.size,
+                    sounds = menuSounds,
+                    onFocusChange = { focus = it },
+                    onSelectedChange = { selected = it },
+                    onConfirm = { spec.onConfirm(selected) },
+                    onCancel = spec.onCancel,
+                )
                 true
             }
             is PfpModalSpec.Notice -> {
@@ -293,6 +326,21 @@ fun rememberPfpModalHost(spec: PfpModalSpec?, showHints: Boolean = true): PfpMod
                 destructive = spec.destructive,
                 onConfirm = spec.onConfirm,
                 onCancel = spec.onCancel,
+                showHints = showHints,
+                messageScroll = messageScroll,
+            )
+            is PfpModalSpec.Choice -> PfpChoiceModal(
+                title = spec.title,
+                message = spec.message,
+                options = spec.options,
+                selected = selected,
+                onSelectedChange = { selected = it },
+                confirmLabel = spec.confirmLabel,
+                focus = focus,
+                onConfirm = { spec.onConfirm(selected) },
+                onCancel = spec.onCancel,
+                cancelLabel = spec.cancelLabel,
+                destructive = spec.destructive,
                 showHints = showHints,
                 messageScroll = messageScroll,
             )

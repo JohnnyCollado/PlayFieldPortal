@@ -59,26 +59,37 @@ class ShortcutRequestResolverTest {
 
     @Test
     fun `add for an ordinary app files the shortcut under a collection named for the app`() = runTest {
-        coEvery { store.get("1a2b") } returns request
+        coEvery { store.take(request) } returns request
         every { importer.isPcLauncher("com.android.chrome") } returns false
         coEvery { games.getByIntentUri(any()) } returns null
         coEvery { games.upsert(any()) } returns 42L
         coEvery { collections.getAll() } returns emptyList()
         coEvery { collections.create("Chrome") } returns 7L
 
-        resolver.add("1a2b")
+        resolver.add(request)
 
         coVerify { collections.addGame(7L, 42L) }
-        coVerify { store.remove("1a2b") }
         verify { tasks.report("shortcut:1a2b", "Added shortcut: Gmail", any(), NotificationSeverity.SUCCESS, any(), any(), any(), true) }
     }
 
     @Test
     fun `a request that is already gone does nothing`() = runTest {
-        coEvery { store.get("1a2b") } returns null
-        resolver.add("1a2b")
+        coEvery { store.take(request) } returns null
+        resolver.add(request)
 
         coVerify(exactly = 0) { games.upsert(any()) }
         verify(exactly = 0) { tasks.report(any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `add files nothing when the queued request changed after it was shown`() = runTest {
+        // take() refuses: the entry under this id is no longer the request on screen.
+        coEvery { store.take(request) } returns null
+
+        resolver.add(request)
+
+        coVerify(exactly = 0) { games.upsert(any()) }
+        coVerify(exactly = 0) { importer.importLegacyShortcut(any(), any(), any()) }
+        coVerify(exactly = 0) { collections.addGame(any(), any()) }
     }
 }

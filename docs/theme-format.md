@@ -1,4 +1,4 @@
-# `.pfptheme` format reference (schema v4)
+# `.pfptheme` format reference (schema v5)
 
 The authoritative description of the theme bundle. Code of record: `core/theme-kit`
 (`PfpTheme.kt`, `ThemeManifestV4.kt`, `PfpThemeCodec.kt`, `PassthroughEntry.kt`, `ThemeUpgrade.kt`,
@@ -17,6 +17,7 @@ The palette derives from one accent colour, so the manifest stays small.
 | v2 | `icons/<key>.png` custom icon slots, `layout` | |
 | v3 | icons widen to `png`/`gif`; `sysicons/<id>.<png\|gif>` console art; `motion.<mp4\|webm\|gif>`; `textColor` | streamed motion, bounded zip reader |
 | v4 | manifest: `author`, `description`, `updated`, `textColorExact`, `waveStyleV4`, `legibility`, `motionCrop`. Entries: `sounds/*`, `ambience.*`, `boot.*`, `gameboot.*`. 30 new `icons/` slots, 7 new `sysicons/` ids, `mediaicons/` physical-media art. Lossless passthrough of unknown manifest keys and unknown entries | all additive |
+| v5 | `lockscreen.png`: a still for the device's lock screen | additive; set on the device only when the user opts in at apply time |
 
 **No reader gates on `schemaVersion`.** A missing field takes its default, an unknown field or entry
 is ignored by apply, and a newer bundle opens on an older build as the subset that build knows. The
@@ -27,7 +28,7 @@ version number is stamped on write and used only to label a file as "older" in t
 ```jsonc
 {
   "manifest": "pfptheme",                // required, must equal "pfptheme"
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "name": "Night Drive",                 // required
   "accentColor": "#3A6FD8",              // required, #RRGGBB
   "author": "Jane",                      // v4, optional
@@ -83,6 +84,7 @@ mytheme.pfptheme
 ├── manifest.json                          required; written first (readManifest stops after it)
 ├── wallpaper.png                          optional; absent = live wave background
 ├── preview.png                            optional on read
+├── lockscreen.png                         optional (v5); a still for the device lock screen, opt-in at apply
 ├── icons/<key>.<png|gif>                  82 keys in v4 (v3 had 52)
 ├── sysicons/<id>.<png|gif>                47 ids in v4 (v3 had 40)
 ├── mediaicons/<id>.<png|gif>              42 ids: physical-media art (Physical Media mode)
@@ -188,7 +190,7 @@ rather than throwing. An over-cap icon or media entry is dropped and reported
   Reading a plain `InputStream` leaves `motion`, `media` and `passthrough` empty.
 - `readManifest(file)` reads only `manifest.json` (written first), so listing a theme library is
   O(first entry).
-- `ThemeUpgrade.upgrade(bundle, today)` stamps v4, writes legacy + exact wave, repairs malformed
+- `ThemeUpgrade.upgrade(bundle, today)` stamps the current version (v5), writes legacy + exact wave, repairs malformed
   colours (accent resets to `#0055AA`, icon/text colour to `auto`), backfills `created`, sets
   `updated`, and carries extras and passthrough untouched. It is idempotent for a given date.
   `ThemeUpgrade.report` lists what is kept, added, repaired, and "can't recover" (already lost on
@@ -196,14 +198,16 @@ rather than throwing. An over-cap icon or media entry is dropped and reported
 
 ## 8. Compatibility matrix
 
-| Bundle \ Reader | v1 | v2 | v3 | v4 | Future (v5+) |
-|---|---|---|---|---|---|
-| **Pre-v4 launcher** | applies | applies | applies | applies the v3 subset: wallpaper, colours, legacy `waveStyle` (reduced+static falls back to static), layout, 52 icons, 40 sysicons, uncropped motion; ignores sounds, boot, legibility and new slots. Refuses files over 64 MB | applies known subset |
-| **v4 launcher** | applies; "older format" tag | same | same | full | applies known subset; unknown content kept on "Update theme file" |
-| **Pre-v4 Studio** | opens | opens | opens (drops sysicons) | opens the v3 subset; re-export loses v4 data | opens subset |
-| **v4 Studio** | opens + upgrade banner | same | same | full, lossless | opens losslessly; banner says made by a newer version |
+| Bundle \ Reader | v1 | v2 | v3 | v4 | v5 | Future (v6+) |
+|---|---|---|---|---|---|---|
+| **Pre-v4 launcher** | applies | applies | applies | applies the v3 subset: wallpaper, colours, legacy `waveStyle` (reduced+static falls back to static), layout, 52 icons, 40 sysicons, uncropped motion; ignores sounds, boot, legibility and new slots. Refuses files over 64 MB | as v4 | applies known subset |
+| **v4 launcher** | applies; "older format" tag | same | same | full | applies all but the lock screen image, which it keeps as an unknown entry | applies known subset; unknown content kept on "Update theme file" |
+| **v5 launcher** | applies; "older format" tag | same | same | same | full; the lock screen image is offered at apply | applies known subset |
+| **Pre-v4 Studio** | opens | opens | opens (drops sysicons) | opens the v3 subset; re-export loses v4 data | same as v4 | opens subset |
+| **v4 Studio** | opens + upgrade banner | same | same | full, lossless | opens losslessly (the lock screen image rides as an unknown entry); banner says made by a newer version | opens losslessly; banner says made by a newer version |
+| **v5 Studio** | opens + upgrade banner | same | same | same | full, lossless | opens losslessly; banner says made by a newer version |
 
-"Applies" never requires an upgrade. Upgrading writes a v4 file that every column above still opens.
+"Applies" never requires an upgrade. Upgrading writes a v5 file that every column above still opens.
 Launcher apply of the v4 manifest fields and media entries lands with the Phase 2 tasks of
 `docs/plans/PFP_Theme_Studio_Restructure_Implementation_Plan.md`; the format, codec and upgrade
 semantics above are already in `core/theme-kit`.

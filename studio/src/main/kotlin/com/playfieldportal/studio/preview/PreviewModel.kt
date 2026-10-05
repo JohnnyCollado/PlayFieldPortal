@@ -24,6 +24,8 @@ data class XmbPreviewModel(
     val backgroundTop: Color,
     val backgroundBottom: Color,
     val wallpaper: ImageBitmap?,
+    /** The theme's lock screen image (v5), for the Lock Screen preview; null for none. */
+    val lockScreen: ImageBitmap? = null,
     /** The exact wave style (any of `WaveStyles`); [WaveMotion.paramsFor] turns it into speed / amplitude / alpha / frozen. */
     val waveStyle: String,
     /** IconSlots key → custom bitmap; slots not present draw the built-in glyph. */
@@ -119,6 +121,7 @@ fun StudioState.toPreviewModel(adjust: XmbLayoutAdjust? = null): XmbPreviewModel
         backgroundTop = Color(top.toInt()),
         backgroundBottom = Color(bottom.toInt()),
         wallpaper = wallpaperBitmap,
+        lockScreen = lockScreenBitmap,
         waveStyle = waveStyle,
         // Every slot key — theme slots, console and physical-media art — in one map: the canvas looks each up by key.
         iconOverrides = iconBitmaps,

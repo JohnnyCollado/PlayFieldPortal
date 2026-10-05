@@ -124,6 +124,12 @@ data class StudioState(
     /** Wallpaper chosen but not yet cropped — drives the crop-preset dialog. */
     val pendingWallpaper: PendingWallpaper? = null,
     /**
+     * The device lock screen image (format v5) as PNG, or null for none. The launcher crops it to
+     * the device's own screen when the user opts in, so the Studio keeps it whole.
+     */
+    val lockScreenPng: ByteArray? = null,
+    val lockScreenBitmap: ImageBitmap? = null,
+    /**
      * Accepted motion video, held as a scratch temp file — never bytes (a 60 MB video on the
      * heap is exactly what [com.playfieldportal.themekit.ThemeMotion] exists to prevent), and
      * never the user's own path (they may move or delete it before export).
@@ -468,6 +474,8 @@ class StudioViewModel(private val scope: CoroutineScope) {
                 waveStyle = WaveStyles.resolveExact(manifest),
                 wallpaperPng = bundle.wallpaper,
                 wallpaperBitmap = bundle.wallpaper?.let(ImageCodecs::toImageBitmap),
+                lockScreenPng = bundle.lockScreen,
+                lockScreenBitmap = bundle.lockScreen?.let(ImageCodecs::toImageBitmap),
                 wallpaperFileName = manifest.source?.file,
                 // Keep ALL icon bytes even when a thumbnail fails to decode — a bad preview
                 // must not silently strip the icon from the theme on re-export. Each entry
@@ -754,6 +762,27 @@ class StudioViewModel(private val scope: CoroutineScope) {
         }
     }
 
+    /** Lock Screen ▸ Choose Image: any still, kept whole (the launcher crops to the device). */
+    fun setLockScreenImage(file: File) = runBusy {
+        val image = ImageCodecs.loadImage(file)
+        if (image == null) {
+            _state.update { it.copy(dialog = StudioDialog.Error("${file.name} is not a readable image")) }
+            return@runBusy
+        }
+        val png = ImageCodecs.toPngBytes(ImageCodecs.thumbnail(image, LOCK_SCREEN_MAX_EDGE))
+        edit { it.copy(lockScreenPng = png, lockScreenBitmap = ImageCodecs.toImageBitmap(png)) }
+    }
+
+    /** Lock Screen ▸ Use Wallpaper: the theme's still — for a video theme, its poster frame. */
+    fun useWallpaperForLockScreen() {
+        val png = _state.value.wallpaperPng ?: return
+        edit { it.copy(lockScreenPng = png, lockScreenBitmap = ImageCodecs.toImageBitmap(png)) }
+    }
+
+    fun clearLockScreen() {
+        edit { it.copy(lockScreenPng = null, lockScreenBitmap = null) }
+    }
+
     fun clearWallpaper() {
         // Motion rides with the still: a bundle with motion and no wallpaper is invalid
         // (motion's poster IS the still), so clearing the wallpaper clears the video too.
@@ -1001,6 +1030,7 @@ class StudioViewModel(private val scope: CoroutineScope) {
             manifestExtras = snapshot.manifestExtras,
             passthrough = snapshot.passthroughFiles.filterValues { it.isFile }
                 .map { (name, f) -> PassthroughEntry.ofFile(name, f) },
+            lockScreen = snapshot.lockScreenPng,
         )
         runCatching { file.outputStream().use { PfpThemeCodec.write(bundle, it) } }
             .onSuccess { _state.update { it.copy(statusMessage = "Exported ${file.name}") } }
@@ -1111,3 +1141,6 @@ class StudioViewModel(private val scope: CoroutineScope) {
 
     internal fun update(transform: (StudioState) -> StudioState) = _state.update(transform)
 }
+
+/** The lock screen image is kept up to this edge; the launcher crops it to the device. */
+private const val LOCK_SCREEN_MAX_EDGE = 2560

@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.ui.components.PfpChoiceOption
 import com.playfieldportal.core.ui.components.PfpModalSpec
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -67,6 +68,7 @@ import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import com.playfieldportal.core.ui.sound.MenuSound
+import com.playfieldportal.feature.settings.viewmodel.ThemeApplyConfirmation
 import com.playfieldportal.feature.settings.viewmodel.ThemesSettingsUiState
 import com.playfieldportal.feature.settings.viewmodel.ThemesSettingsViewModel
 
@@ -97,8 +99,10 @@ fun ThemesSettingsScreen(
         onClearAccentOverride = { viewModel.clearAccentOverride() },
         onResetTheme = { viewModel.resetTheme() },
         onSaveCurrentLook = { viewModel.saveCurrentLookAsTheme(it) },
-        onConfirmMediaPrompt = { viewModel.confirmMediaPrompt() },
-        onDismissMediaPrompt = { viewModel.dismissMediaPrompt() },
+        onConfirmApply = { viewModel.confirmApply(it) },
+        onCancelApply = { viewModel.cancelApply() },
+        onConfirmLockScreenOffer = { viewModel.confirmLockScreenOffer() },
+        onDismissLockScreenOffer = { viewModel.dismissLockScreenOffer() },
         modifier = modifier
     )
 }
@@ -121,8 +125,10 @@ private fun ThemesSettingsContent(
     onResetTheme: () -> Unit,
     onSaveCurrentLook: (String) -> Unit = {},
     onUpdateThemeFile: (String) -> Unit = {},
-    onConfirmMediaPrompt: () -> Unit = {},
-    onDismissMediaPrompt: () -> Unit = {},
+    onConfirmApply: (Int) -> Unit = {},
+    onCancelApply: () -> Unit = {},
+    onConfirmLockScreenOffer: () -> Unit = {},
+    onDismissLockScreenOffer: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val ptfPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { onImportPtfTheme(it) } }
@@ -172,18 +178,49 @@ private fun ThemesSettingsContent(
         },
     )
 
-    // After an apply: the theme's sounds / clips sit behind the user's own assignments, or need
-    // GameBoot / the boot sequence on. The view model decides; this only asks.
-    val mediaPromptModal = rememberSettingsModal(
-        state.mediaPrompt?.let { prompt ->
+    // Before an apply: "Apply this theme?", plus — when the theme would replace the user's own
+    // media or icons, or needs GameBoot / the boot sequence on — the choice of what else to change.
+    // The view model decides what to ask; this only asks.
+    val applyModal = rememberSettingsModal(
+        state.applyConfirmation?.let { confirm ->
+            if (confirm.hasChoices) {
+                PfpModalSpec.Choice(
+                    key = confirm,
+                    title = confirm.title,
+                    message = confirm.message,
+                    options = confirm.options.map { PfpChoiceOption(it) },
+                    confirmLabel = confirm.applyLabel,
+                    cancelLabel = confirm.cancelLabel,
+                    onConfirm = onConfirmApply,
+                    onCancel = onCancelApply,
+                )
+            } else {
+                PfpModalSpec.Confirm(
+                    key = confirm,
+                    title = confirm.title,
+                    message = confirm.message,
+                    confirmLabel = confirm.applyLabel,
+                    cancelLabel = confirm.cancelLabel,
+                    onConfirm = { onConfirmApply(ThemeApplyConfirmation.APPLY_ONLY) },
+                    onCancel = onCancelApply,
+                )
+            }
+        },
+    )
+
+    // After applying a theme with a lock screen image: opt-in, so it opens on Not Now.
+    val lockOfferModal = rememberSettingsModal(
+        state.lockScreenOffer?.let { offer ->
             PfpModalSpec.Confirm(
-                key = prompt,
-                title = prompt.title,
-                message = prompt.message,
-                confirmLabel = prompt.confirmLabel,
-                cancelLabel = prompt.cancelLabel,
-                onConfirm = onConfirmMediaPrompt,
-                onCancel = onDismissMediaPrompt,
+                key = "lock:${offer.themeId}",
+                title = "Set Lock Screen?",
+                message = "\"${offer.themeName}\" has a lock screen image. Use it as the device's lock screen? " +
+                    "Resetting the theme puts the lock screen back.",
+                confirmLabel = "Set Lock Screen",
+                cancelLabel = "Not Now",
+                openOnCancel = true,
+                onConfirm = onConfirmLockScreenOffer,
+                onCancel = onDismissLockScreenOffer,
             )
         },
     )
@@ -226,7 +263,7 @@ private fun ThemesSettingsContent(
             subtitle = "Themes",
             onBack   = onBack,
             modifier = Modifier.fillMaxSize(),
-            modalOpen = saveNameModal.open || renameModal.open || deleteModal.open || mediaPromptModal.open ||
+            modalOpen = saveNameModal.open || renameModal.open || deleteModal.open || applyModal.open || lockOfferModal.open ||
                 picker != null,
             onInterceptAction = { action ->
                 when {
@@ -234,7 +271,8 @@ private fun ThemesSettingsContent(
                     saveNameModal.intercept(action) -> true
                     renameModal.intercept(action) -> true
                     deleteModal.intercept(action) -> true
-                    mediaPromptModal.intercept(action) -> true
+                    applyModal.intercept(action) -> true
+                    lockOfferModal.intercept(action) -> true
                     picker != null -> {
                         val open = picker!!
                         var closed = false
@@ -419,7 +457,8 @@ private fun ThemesSettingsContent(
         saveNameModal.Content()
         renameModal.Content()
         deleteModal.Content()
-        mediaPromptModal.Content()
+        applyModal.Content()
+        lockOfferModal.Content()
     }
 }
 

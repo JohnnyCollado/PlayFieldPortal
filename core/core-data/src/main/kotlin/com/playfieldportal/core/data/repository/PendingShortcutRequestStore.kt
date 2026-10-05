@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
@@ -30,7 +31,18 @@ data class PendingShortcutRequest(
     val hostPackage: String? = null,
     val hostLabel: String,
     val requestedAt: Long,
-)
+) {
+    companion object {
+        /**
+         * The queue id for [intentUri]: its SHA-256, hex. A resend of the same shortcut lands on the
+         * same id; a DIFFERENT intent cannot, which `String.hashCode()` could not promise — a crafted
+         * collision could have replaced the request the user was reviewing.
+         */
+        fun idFor(intentUri: String): String =
+            MessageDigest.getInstance("SHA-256").digest(intentUri.toByteArray(Charsets.UTF_8))
+                .joinToString("") { "%02x".format(it) }
+    }
+}
 
 /** The queue's rules, apart from storage: oldest first, one entry per id, at most [MAX]. */
 object PendingShortcutQueue {
@@ -42,6 +54,18 @@ object PendingShortcutQueue {
 
     fun remove(queue: List<PendingShortcutRequest>, id: String): List<PendingShortcutRequest> =
         queue.filterNot { it.id == id }
+
+    /**
+     * Removes [shown] and returns it only when the queued entry under its id is still exactly the
+     * request the user saw; otherwise nothing is taken and a replacement stays queued for its own
+     * review. This is what binds Add to what was on screen.
+     */
+    fun take(
+        queue: List<PendingShortcutRequest>,
+        shown: PendingShortcutRequest,
+    ): Pair<List<PendingShortcutRequest>, PendingShortcutRequest?> =
+        if (queue.firstOrNull { it.id == shown.id } == shown) remove(queue, shown.id) to shown
+        else queue to null
 }
 
 @Singleton
@@ -61,6 +85,13 @@ class PendingShortcutRequestStore @Inject constructor(
     suspend fun enqueue(request: PendingShortcutRequest) = update { PendingShortcutQueue.enqueue(it, request) }
 
     suspend fun remove(id: String) = update { PendingShortcutQueue.remove(it, id) }
+
+    /** [PendingShortcutQueue.take] in one transaction: no enqueue can land between check and removal. */
+    suspend fun take(shown: PendingShortcutRequest): PendingShortcutRequest? {
+        var taken: PendingShortcutRequest? = null
+        update { queue -> PendingShortcutQueue.take(queue, shown).also { taken = it.second }.first }
+        return taken
+    }
 
     private suspend fun update(change: (List<PendingShortcutRequest>) -> List<PendingShortcutRequest>) {
         context.pfpDataStore.edit { prefs ->

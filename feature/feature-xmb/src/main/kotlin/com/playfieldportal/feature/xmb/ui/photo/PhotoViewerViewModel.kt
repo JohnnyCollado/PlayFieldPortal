@@ -67,6 +67,7 @@ enum class PhotoViewerAction(val label: String, val group: String) {
     ZOOM_OUT("Zoom Out", "View"),
     RESET_ZOOM("Reset Zoom", "View"),
     SET_WALLPAPER("Set as Launcher Wallpaper", "Manage"),
+    SET_LOCKSCREEN("Set as Lock Screen", "Manage"),
     INFO("View Information", "Manage"),
     LOCATION("Show File Location", "Manage"),
     REMOVE("Remove from Library", "Manage"),
@@ -87,6 +88,8 @@ data class PhotoViewerUiState(
     val rotationDegrees: Int = 0,
     val infoVisible: Boolean = false,
     val confirmRemove: Boolean = false,
+    // "Set as Lock Screen" asks first: it changes the DEVICE lock screen, outside the launcher.
+    val confirmLockScreen: Boolean = false,
     // Wallpaper flow: fullscreen preview first, then apply on confirm.
     val wallpaperPreviewVisible: Boolean = false,
     val applyingWallpaper: Boolean = false,
@@ -118,6 +121,7 @@ class PhotoViewerViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val photoRepository: PhotoRepository,
     private val menuSound: MenuSoundPlayer,
+    private val lockScreen: com.playfieldportal.core.data.repository.LockScreenImage,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PhotoViewerUiState())
@@ -128,7 +132,12 @@ class PhotoViewerViewModel @Inject constructor(
      * [openWallpaperPreview] the viewer opens straight into the wallpaper preview — used by the
      * list row's "Set as Launcher Wallpaper" — still requiring an explicit Apply.
      */
-    fun load(photoId: String, libraryId: String?, openWallpaperPreview: Boolean = false) {
+    fun load(
+        photoId: String,
+        libraryId: String?,
+        openWallpaperPreview: Boolean = false,
+        openLockScreenConfirm: Boolean = false,
+    ) {
         viewModelScope.launch {
             _uiState.update { PhotoViewerUiState(isLoading = true) }
             val photos = if (libraryId != null) {
@@ -143,6 +152,7 @@ class PhotoViewerViewModel @Inject constructor(
                     index = index,
                     isLoading = false,
                     wallpaperPreviewVisible = openWallpaperPreview && photos.isNotEmpty(),
+                    confirmLockScreen = openLockScreenConfirm && photos.isNotEmpty(),
                 )
             }
         }
@@ -165,6 +175,7 @@ class PhotoViewerViewModel @Inject constructor(
             // press that raced the modal onto the screen. A Confirm must never skip the removal
             // prompt's opening on Cancel, so only Back is read there.
             s.confirmRemove -> if (action == GamepadAction.BACK) cancelRemove()
+            s.confirmLockScreen -> if (action == GamepadAction.BACK) cancelLockScreen()
             s.infoVisible -> if (action == GamepadAction.SELECT || action == GamepadAction.BACK) closeInfo()
             // The shared PSP-panel rules: clamp, Triangle/Back close, cues. Every row commits.
             s.showOptions -> {
@@ -213,6 +224,7 @@ class PhotoViewerViewModel @Inject constructor(
         _uiState.update { it.copy(showOptions = false) }
         when (action) {
             PhotoViewerAction.SET_WALLPAPER -> _uiState.update { it.copy(wallpaperPreviewVisible = true) }
+            PhotoViewerAction.SET_LOCKSCREEN -> _uiState.update { it.copy(confirmLockScreen = true) }
             PhotoViewerAction.ROTATE_LEFT   -> _uiState.update { it.copy(rotationDegrees = (it.rotationDegrees + 270) % 360) }
             PhotoViewerAction.ROTATE_RIGHT  -> _uiState.update { it.copy(rotationDegrees = (it.rotationDegrees + 90) % 360) }
             PhotoViewerAction.ZOOM_IN       -> zoomBy(ZOOM_STEP)
@@ -460,8 +472,38 @@ class PhotoViewerViewModel @Inject constructor(
         }
     }
 
+    fun cancelLockScreen() = _uiState.update { it.copy(confirmLockScreen = false) }
+
+    /** Sets the shown photo as the device lock screen (cropped to the screen; see LockScreenImage). */
+    fun confirmLockScreen() {
+        val photo = _uiState.value.photo ?: return
+        _uiState.update { it.copy(confirmLockScreen = false) }
+        viewModelScope.launch {
+            val bytes = withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openInputStream(Uri.parse(photo.uri))?.use { input ->
+                        with(com.playfieldportal.core.data.repository.SafeMedia) { input.readCapped(LOCKSCREEN_MAX_BYTES) }
+                    }
+                }.getOrNull()
+            }
+            val result = if (bytes == null) {
+                com.playfieldportal.core.data.repository.LockScreenImage.Result.Failed("That photo could not be read")
+            } else {
+                lockScreen.set(bytes, com.playfieldportal.core.data.repository.LockScreenImage.Source.USER)
+            }
+            showMessage(
+                when (result) {
+                    com.playfieldportal.core.data.repository.LockScreenImage.Result.Set -> "Lock screen set"
+                    is com.playfieldportal.core.data.repository.LockScreenImage.Result.Failed -> result.reason
+                },
+            )
+        }
+    }
+
     private fun showMessage(msg: String) = _uiState.update { it.copy(actionMessage = msg) }
 }
+
+private const val LOCKSCREEN_MAX_BYTES = 32L * 1024 * 1024
 
 /**
  * Reads up to [WEBP_HEADER_BYTES] of the source document. Private to this file so the

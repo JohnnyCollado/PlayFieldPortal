@@ -50,6 +50,7 @@ object PfpThemeCodec {
     private const val ENTRY_MANIFEST = "manifest.json"
     private const val ENTRY_WALLPAPER = "wallpaper.png"
     private const val ENTRY_PREVIEW = "preview.png"
+    private const val ENTRY_LOCKSCREEN = "lockscreen.png"
     private const val MOTION_PREFIX = "motion."
 
     /**
@@ -120,6 +121,7 @@ object PfpThemeCodec {
             zip.closeEntry()
             bundle.wallpaper?.let { zip.writeEntry(ENTRY_WALLPAPER, it) }
             bundle.preview?.let { zip.writeEntry(ENTRY_PREVIEW, it) }
+            bundle.lockScreen?.let { zip.writeEntry(ENTRY_LOCKSCREEN, it) }
             // Folder by folder, sorted by entry name, for deterministic output (byte-identical
             // bundles for identical themes). Unknown keys and non-accepted extensions are silently
             // skipped rather than written.
@@ -244,6 +246,7 @@ object PfpThemeCodec {
         val unrecoverable = mutableListOf<String>()
         var wallpaper: ByteArray? = null
         var preview: ByteArray? = null
+        var lockScreen: ByteArray? = null
         val icons = mutableMapOf<String, ThemeImage>()
         var motionExtension: String? = null
         val media = mutableMapOf<String, ThemeMotion>()
@@ -264,6 +267,7 @@ object PfpThemeCodec {
                     }
                     entry.name == ENTRY_WALLPAPER -> wallpaper = entry.readBytes()
                     entry.name == ENTRY_PREVIEW -> preview = entry.readBytes()
+                    entry.name == ENTRY_LOCKSCREEN -> lockScreen = entry.readBytes()
                     iconEntry(entry.name) != null -> {
                         // Only registered keys with an accepted extension are accepted, in the
                         // folder their family travels in — an icon entry can never smuggle a path
@@ -345,6 +349,7 @@ object PfpThemeCodec {
             passthrough = passthrough,
             unrecoverableEntries = unrecoverable,
             media = media,
+            lockScreen = lockScreen,
         )
         return ReadResult(bundle, ReadDiagnostics(dropped, sanitizeRepairs(m, sanitized), undecodable))
     }
@@ -421,7 +426,7 @@ object PfpThemeCodec {
      * entry must never share one of these names (plan 5.5).
      */
     private fun isRegisteredName(name: String): Boolean = when {
-        name == ENTRY_MANIFEST || name == ENTRY_WALLPAPER || name == ENTRY_PREVIEW -> true
+        name == ENTRY_MANIFEST || name == ENTRY_WALLPAPER || name == ENTRY_PREVIEW || name == ENTRY_LOCKSCREEN -> true
         iconEntry(name) != null -> true
         name.startsWith(MOTION_PREFIX) -> name.removePrefix(MOTION_PREFIX).lowercase() in MOTION_EXTENSIONS
         // Any name a media slot claims, even with an extension it would refuse: the reader drops
@@ -470,6 +475,35 @@ object PfpThemeCodec {
      * every motion wallpaper in the library on every scan, and dropped any theme too big to
      * inflate, so a large theme imported successfully and then simply never appeared.
      */
+    /** The icon and UI-media slot keys a bundle carries, and whether it has a lock screen image; see [contents]. */
+    data class Contents(val iconKeys: Set<String>, val mediaKeys: Set<String>, val hasLockScreen: Boolean = false)
+
+    /**
+     * Which registered icon and media slots [file] carries, read from the zip's central directory
+     * alone — nothing is inflated, so a bundle with a large motion entry costs the same as any
+     * other. The same name rules as [read] decide what counts (registered key, accepted
+     * extension, safe name), so this is exactly what an apply would install before the media
+     * gate runs. Null when [file] is not a readable zip.
+     */
+    fun contents(file: File): Contents? = runCatching {
+        java.util.zip.ZipFile(file).use { zip ->
+            val icons = mutableSetOf<String>()
+            val media = mutableSetOf<String>()
+            var lockScreen = false
+            for ((index, entry) in zip.entries().asSequence().withIndex()) {
+                if (index >= BUNDLE_LIMITS.maxEntries) break
+                val name = entry.name
+                if (entry.isDirectory || !PassthroughNames.isSafe(name)) continue
+                if (name == ENTRY_LOCKSCREEN) lockScreen = true
+                iconEntry(name)?.let { (key, _) -> icons += key }
+                ThemeMediaSlots.claimedBy(name)
+                    ?.takeIf { it.accepts(name.substringAfterLast('.', "")) }
+                    ?.let { media += it.key }
+            }
+            Contents(icons, media, lockScreen)
+        }
+    }.getOrNull()
+
     fun readManifest(file: File): PfpThemeManifest? {
         var manifest: PfpThemeManifest? = null
         try {

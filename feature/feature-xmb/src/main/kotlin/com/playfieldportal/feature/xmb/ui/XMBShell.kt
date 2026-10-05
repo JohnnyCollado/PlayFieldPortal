@@ -1559,6 +1559,7 @@ fun XMBShell(
                     photoId = request.photoId,
                     libraryId = request.libraryId,
                     openWallpaperPreview = request.openWallpaperPreview,
+                    openLockScreenConfirm = request.openLockScreenConfirm,
                     onBack = onClosePhotoViewer,
                     pendingGamepadAction = uiState.pendingPhotoViewerAction,
                     onGamepadActionConsumed = onPhotoViewerActionConsumed,

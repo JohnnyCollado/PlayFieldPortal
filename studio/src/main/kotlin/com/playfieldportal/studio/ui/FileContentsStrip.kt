@@ -67,6 +67,7 @@ fun formatBytes(bytes: Long): String {
 // Neutral, accent-independent: the strip is chrome, so it must not recolor with the theme.
 private val SEGMENT_COLORS = mapOf(
     BudgetKind.WALLPAPER to Color(0xFF7C8FA6),
+    BudgetKind.LOCK_SCREEN to Color(0xFF6F8C9E),
     BudgetKind.PREVIEW to Color(0xFF8E9AAF),
     BudgetKind.ICONS to Color(0xFFA3B18A),
     BudgetKind.MOTION to Color(0xFFB08968),

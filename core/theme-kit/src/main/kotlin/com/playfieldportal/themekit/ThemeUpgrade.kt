@@ -62,6 +62,7 @@ object ThemeUpgrade {
         val kept = buildList {
             if (bundle.wallpaper != null) add("Wallpaper")
             if (bundle.preview != null) add("Preview image")
+            if (bundle.lockScreen != null) add("Lock screen image")
             val groups = bundle.icons.keys.groupingBy { CustomizableIcons.byKey(it)?.group }.eachCount()
             val consoles = groups[IconSlot.Group.CONSOLE] ?: 0
             val discs = groups[IconSlot.Group.PHYSICAL_MEDIA] ?: 0

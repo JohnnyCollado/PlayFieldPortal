@@ -30,7 +30,22 @@ class PhotoViewerModalSpecTest {
         onDismissInfo = { events += "close-info" },
         onConfirmRemove = { events += "remove" },
         onCancelRemove = { events += "cancel-remove" },
+        onConfirmLockScreen = { events += "lock" },
+        onCancelLockScreen = { events += "cancel-lock" },
     )
+
+    @Test
+    fun `setting the lock screen asks first and names the photo`() {
+        val spec = specFor(baseState.copy(confirmLockScreen = true)) as PfpModalSpec.Confirm
+
+        assertEquals("Set as Lock Screen", spec.title)
+        assertTrue(spec.message.contains("beach.jpg"))
+        assertEquals("Set", spec.confirmLabel)
+
+        spec.onCancel()
+        spec.onConfirm()
+        assertEquals(listOf("cancel-lock", "lock"), events)
+    }
 
     @Test
     fun `nothing is shown over the plain viewer`() {

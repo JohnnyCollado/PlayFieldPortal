@@ -87,7 +87,9 @@ class AudioSettingsViewModelTest {
         // Bounded on purpose. This runBlocking is the one unbounded, uncancellable wait in the
         // class, so a wedged DataStore actor used to stall the suite silently and forever rather
         // than failing. If it ever wedges again, one test fails loudly in five seconds.
-        runBlocking { withTimeout(5_000) { context.pfpDataStore.edit { it.clear() } } }
+        // A hang guard, not an assertion: the first DataStore open under Robolectric can take
+        // several seconds on a busy machine (a full parallel build), which used to fail setUp.
+        runBlocking { withTimeout(30_000) { context.pfpDataStore.edit { it.clear() } } }
         File(context.filesDir, UiMediaStore.UI_MEDIA_DIR).deleteRecursively()
         MediaDisplayNames.clearCache()
         store = UiMediaStore(context, ThemeTiers(context))
@@ -119,7 +121,7 @@ class AudioSettingsViewModelTest {
      */
     private fun kotlinx.coroutines.test.TestScope.eventually(
         what: String,
-        timeoutMs: Long = 5_000,
+        timeoutMs: Long = 15_000,
         condition: () -> Boolean,
     ) {
         val deadline = System.currentTimeMillis() + timeoutMs

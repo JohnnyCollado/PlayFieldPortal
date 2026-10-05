@@ -63,7 +63,9 @@ data class PfpThemeManifest(
         // wallpaper + colors subset, so a v3 bundle still opens everywhere older builds do.
         // v4 (additive): author/description/updated, textColorExact, subTextColor, waveStyleV4,
         // legibility and motionCrop manifest fields; same never-gate-on-version rule.
-        const val SCHEMA_VERSION = 4
+        // v5 (additive): an optional lockscreen.png — a still for the device's lock screen,
+        // applied only when the user opts in. Older readers keep it as an unknown entry.
+        const val SCHEMA_VERSION = 5
         const val ICON_COLOR_AUTO = "auto"
         const val WAVE_ANIMATED = "animated"
         const val WAVE_STATIC = "static"
@@ -196,6 +198,11 @@ data class PfpThemeBundle(
      * `reopenEntry`; compared by key and extension only.
      */
     val media: Map<String, ThemeMotion> = emptyMap(),
+    /**
+     * Encoded still for the device's lock screen (v5), or null for none. Never applied on its own:
+     * setting the system lock screen is something the user opts into when applying the theme.
+     */
+    val lockScreen: ByteArray? = null,
 ) {
     override fun equals(other: Any?): Boolean =
         other is PfpThemeBundle &&
@@ -206,7 +213,8 @@ data class PfpThemeBundle(
             preview.contentEquals(other.preview) &&
             icons == other.icons &&
             motion == other.motion &&
-            media == other.media
+            media == other.media &&
+            lockScreen.contentEquals(other.lockScreen)
 
     override fun hashCode(): Int {
         var h = 31 * (31 * manifest.hashCode() + wallpaper.contentHashCode()) + preview.contentHashCode()
@@ -215,6 +223,7 @@ data class PfpThemeBundle(
         h = 31 * h + manifestExtras.hashCode()
         h = 31 * h + passthrough.hashCode()
         h = 31 * h + media.hashCode()
+        h = 31 * h + lockScreen.contentHashCode()
         return h
     }
 }

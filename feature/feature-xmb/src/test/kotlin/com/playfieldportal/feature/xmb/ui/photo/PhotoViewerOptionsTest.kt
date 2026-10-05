@@ -35,7 +35,10 @@ class PhotoViewerOptionsTest {
     fun setUp() {
         Dispatchers.setMain(StandardTestDispatcher())
         menuSound = mockk(relaxed = true)
-        viewModel = PhotoViewerViewModel(mockk<Context>(relaxed = true), mockk<PhotoRepository>(relaxed = true), menuSound)
+        viewModel = PhotoViewerViewModel(
+            mockk<Context>(relaxed = true), mockk<PhotoRepository>(relaxed = true), menuSound,
+            mockk<com.playfieldportal.core.data.repository.LockScreenImage>(relaxed = true),
+        )
         viewModel.openOptions()
     }
 
@@ -61,6 +64,21 @@ class PhotoViewerOptionsTest {
 
         assertEquals(last, index)
         verify(exactly = last) { menuSound.play(MenuSound.SCROLL, any()) }
+    }
+
+    @Test
+    fun `Set as Lock Screen sits under Manage, after the launcher wallpaper, and asks first`() {
+        val actions = viewModel.uiState.value.optionsActions
+        assertEquals(
+            actions.indexOf(PhotoViewerAction.SET_WALLPAPER) + 1,
+            actions.indexOf(PhotoViewerAction.SET_LOCKSCREEN),
+        )
+        assertEquals("Manage", PhotoViewerAction.SET_LOCKSCREEN.group)
+
+        viewModel.activate(PhotoViewerAction.SET_LOCKSCREEN)
+
+        kotlin.test.assertTrue(viewModel.uiState.value.confirmLockScreen)
+        assertFalse(viewModel.uiState.value.showOptions)
     }
 
     @Test
@@ -95,7 +113,7 @@ class PhotoViewerOptionsTest {
         assertEquals(
             listOf(
                 "Rotate Left", "Rotate Right", "Zoom In",
-                "Set as Launcher Wallpaper", "View Information", "Show File Location", "Remove from Library",
+                "Set as Launcher Wallpaper", "Set as Lock Screen", "View Information", "Show File Location", "Remove from Library",
             ),
             labels(),
         )
@@ -108,7 +126,7 @@ class PhotoViewerOptionsTest {
         assertEquals(
             listOf(
                 "Rotate Left", "Rotate Right", "Zoom In", "Zoom Out", "Reset Zoom",
-                "Set as Launcher Wallpaper", "View Information", "Show File Location", "Remove from Library",
+                "Set as Launcher Wallpaper", "Set as Lock Screen", "View Information", "Show File Location", "Remove from Library",
             ),
             labels(),
         )

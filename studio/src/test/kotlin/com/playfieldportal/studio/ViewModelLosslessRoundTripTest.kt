@@ -115,7 +115,7 @@ class ViewModelLosslessRoundTripTest {
             for ((label, bytes) in fixtures) {
                 val (before, after, _) = roundTrip(dir, label, bytes)
                 assertSameBundle(label, before, after)
-                assertEquals(PfpThemeManifest.SCHEMA_VERSION, after.manifest.schemaVersion, "$label: written as v4")
+                assertEquals(PfpThemeManifest.SCHEMA_VERSION, after.manifest.schemaVersion, "$label: written as the current version")
             }
         } finally {
             dir.deleteRecursively()
@@ -247,7 +247,7 @@ class ViewModelLosslessRoundTripTest {
             val (_, _, vm) = roundTrip(dir, "v3", ThemeFixtures.v3())
             assertEquals(3, vm.state.value.schemaVersion)
             val report = assertNotNull(vm.state.value.upgradeReport)
-            assertTrue(report.added.any { it.startsWith("Format version 4") })
+            assertTrue(report.added.any { it.startsWith("Format version ${PfpThemeManifest.SCHEMA_VERSION}") })
         } finally {
             dir.deleteRecursively()
         }
