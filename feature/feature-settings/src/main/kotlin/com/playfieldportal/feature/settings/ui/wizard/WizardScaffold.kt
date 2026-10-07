@@ -34,8 +34,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPrompt
+import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
+import com.playfieldportal.feature.settings.ui.LocalSettingsCursorVisible
 import com.playfieldportal.feature.settings.ui.LocalSettingsScrollStateRegistrar
 import com.playfieldportal.feature.settings.ui.SettingsScaffold
 
@@ -110,7 +112,14 @@ fun WizardScaffold(
         // The wave reads through — the wizard sits on a light scrim, not the dark settings one.
         lightScrim = true,
         header = { WizardHeader(stepNumber, title) },
-        footer = { WizardFooter(backEnabled, showSkip = onSkip != null, confirmLabel = confirmLabel) },
+        footer = {
+            // A hidden controller cursor means touch is driving: tappable pills replace the glyphs.
+            if (LocalSettingsCursorVisible.current) {
+                WizardFooter(backEnabled, showSkip = onSkip != null, confirmLabel = confirmLabel)
+            } else {
+                WizardTouchFooter(backEnabled, onBack = onBack, onSkip = onSkip)
+            }
+        },
         contentKey = contentKey,
     ) {
         // The wizard owns the shared scrollable column (registered with the scaffold so
@@ -205,6 +214,30 @@ private fun WizardHeading(heading: String, hint: String?) {
                 textAlign = TextAlign.Center,
             )
         }
+    }
+}
+
+/**
+ * The footer for touch: Back and Skip as the XMB's header pills, in the same band as the controller
+ * prompts. There is no Enter pill — the rows themselves tap. Back on the first page stays visible
+ * but dimmed and inert, like its controller prompt.
+ */
+@Composable
+private fun WizardTouchFooter(backEnabled: Boolean, onBack: () -> Unit, onSkip: (() -> Unit)?) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.Black.copy(alpha = 0.22f))
+            .padding(vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        XmbHeaderPill(
+            label = "Back",
+            onClick = { if (backEnabled) onBack() },
+            modifier = Modifier.alpha(if (backEnabled) 1f else 0.4f),
+        )
+        if (onSkip != null) XmbHeaderPill(label = "Skip", onClick = onSkip)
     }
 }
 

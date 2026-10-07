@@ -195,7 +195,7 @@ class GamePickerViewModel @Inject constructor(
     /** The search field's text changed (keyboard or touch). The cursor is re-clamped to what is left. */
     fun onSearchChange(query: String) = _state.update { it.copy(query = query) }
 
-    /** Touch: the search affordance in the shelf heading. */
+    /** Touch: the header's Search pill opens it; the ◀ breadcrumb closes it through [back]. */
     fun onSearchToggle(active: Boolean) = _state.update { if (active) it.copy(searchActive = true) else it.closeSearch() }
 
     fun tapTile(index: Int) = transition { nav.tapTile(it, index) }

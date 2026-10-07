@@ -37,7 +37,6 @@ import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.PspContextMenuOverlay
 import com.playfieldportal.core.ui.components.PspMenuRow
-import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.achievement.BoneGlyph
 import com.playfieldportal.core.ui.detail.DetailContentPadding
 import com.playfieldportal.core.ui.detail.DetailPalette
@@ -95,7 +94,12 @@ fun PlayerStatusScreen(
             },
     ) {
         Column(Modifier.fillMaxSize()) {
-            PlayerStatusHeader(state, palette, viewModel::close)
+            PlayerStatusHeader(
+                state,
+                palette,
+                viewModel::close,
+                onOptions = viewModel::openOptions.takeIf { showTouchControls && state.options == null },
+            )
             state.message?.let { message ->
                 Text(
                     message,
@@ -132,9 +136,6 @@ fun PlayerStatusScreen(
             }
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 PfpDetailHelperFooter(items = playerStatusHelperItems(state), visible = !showTouchControls)
-                if (showTouchControls && state.options == null) {
-                    XmbHeaderPill(label = "Options", onClick = viewModel::openOptions)
-                }
             }
         }
         state.options?.let { menu ->
@@ -154,6 +155,8 @@ private fun PlayerStatusHeader(
     state: PlayerStatusUiState,
     palette: DetailPalette,
     onBack: () -> Unit,
+    // Touch mode's Options, at the header's right; null hides it (controller mode, menu open).
+    onOptions: (() -> Unit)? = null,
 ) {
     Column(Modifier.fillMaxWidth().background(headerShade(palette))) {
         PfpDetailBreadcrumb(

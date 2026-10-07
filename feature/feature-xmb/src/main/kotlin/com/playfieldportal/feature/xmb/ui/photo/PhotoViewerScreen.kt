@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -262,6 +261,7 @@ fun PhotoViewerScreen(
                 XmbKebabTouchButton(
                     onClick = viewModel::openOptions,
                     background = XmbMediaPillScrim,
+                    size = 36.dp,
                     modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
                 )
             }
@@ -291,26 +291,12 @@ fun PhotoViewerScreen(
                 Text("Set as launcher wallpaper?", color = themedText(TextPrimary), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 Text("It replaces the XMB wave background.", color = themedSubText(TextMuted), fontSize = 12.sp)
                 Spacer(Modifier.height(4.dp))
-                if (!showTouchControls) {
-                    ControllerPromptBar(
-                        items = listOf(
-                            ControllerPromptItem(GamepadAction.SELECT, "Apply"),
-                            ControllerPromptItem(GamepadAction.BACK, "Cancel"),
-                        ),
-                        labelColor = themedSubText(TextMuted),
-                        labelStyle = TextStyle(fontSize = 12.sp),
-                        glyphSize = 16.dp,
-                        arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
-                    )
-                }
-                Row(horizontalArrangement = Arrangement.Center) {
-                    TextButton(onClick = viewModel::confirmWallpaper, enabled = !state.applyingWallpaper) {
-                        Text(if (state.applyingWallpaper) "Applying…" else "Apply", color = menuCursorEdge())
-                    }
-                    TextButton(onClick = viewModel::cancelWallpaperPreview, enabled = !state.applyingWallpaper) {
-                        Text("Cancel", color = themedText(TextMuted))
-                    }
-                }
+                WallpaperPreviewActions(
+                    showTouchControls = showTouchControls,
+                    applying = state.applyingWallpaper,
+                    onApply = viewModel::confirmWallpaper,
+                    onCancel = viewModel::cancelWallpaperPreview,
+                )
             }
         }
 
@@ -351,6 +337,44 @@ fun PhotoViewerScreen(
 
         // Information and the removal prompt. Last, so it draws over everything else.
         modal.Content()
+    }
+}
+
+/**
+ * The wallpaper preview's Apply / Cancel: pills under touch, the pad prompts otherwise — one input
+ * family at a time. Both are inert while [applying], as the buttons they replace were.
+ */
+@Composable
+internal fun WallpaperPreviewActions(
+    showTouchControls: Boolean,
+    applying: Boolean,
+    onApply: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    if (showTouchControls) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)) {
+            XmbHeaderPill(
+                label = if (applying) "Applying…" else "Apply",
+                onClick = { if (!applying) onApply() },
+                background = XmbMediaPillScrim,
+            )
+            XmbHeaderPill(
+                label = "Cancel",
+                onClick = { if (!applying) onCancel() },
+                background = XmbMediaPillScrim,
+            )
+        }
+    } else {
+        ControllerPromptBar(
+            items = listOf(
+                ControllerPromptItem(GamepadAction.SELECT, "Apply"),
+                ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+            ),
+            labelColor = themedSubText(TextMuted),
+            labelStyle = TextStyle(fontSize = 12.sp),
+            glyphSize = 16.dp,
+            arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
+        )
     }
 }
 

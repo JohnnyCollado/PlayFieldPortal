@@ -48,7 +48,7 @@ app  ──▶ feature:*  ──▶ core:core-ui ──▶ core:core-data ──
 | --- | --- |
 | `app` | DI wiring, manifest, `PFPApplication`, `MainActivity` (HOME launcher), broadcast receivers |
 | `studio` | Theme Studio — Compose Multiplatform Desktop companion (Windows/Linux/macOS); must never grow an Android dependency |
-| `core:theme-kit` | Pure-JVM theme core shared with the Theme Studio: PTF/BMP/GIM/LZR parsers, `.pfptheme` codec, color cascade, icon-slot registry, XMB layout spec, and the shared limit objects (`UiMediaLimits`, `MotionLimits`, `IconGifSupport`) |
+| `core:theme-kit` | Pure-JVM theme core shared with the Theme Studio: PTF/BMP/GIM/LZR parsers, PTF icon-slot mapping and icon tint, `.pfptheme` codec, color cascade, icon-slot registry, XMB layout spec, and the shared limit objects (`UiMediaLimits`, `MotionLimits`, `IconGifSupport`) |
 | `core:core-archive` | Pure-JVM bounded ZIP ingestion (`BoundedZipReader`, `SafeArchivePath`) shared by theme parsing, backup restore, and the theme codec |
 | `core:core-common` | Cross-cutting utilities and extensions (incl. the shared Keystore AES-GCM helper) |
 | `core:core-domain` | Domain models, repository interfaces, use-case-level contracts (no Android deps where avoidable), `FeatureFlags`, and the pure emulator-knowledge logic in `model/emulatorkb/` (decoder, validator, layer merge, import plan, export, platform-extension planner) |
@@ -337,6 +337,28 @@ have all had their touch pass; remaining section screens should follow the same 
 about the *helper row* (which gestures a finger is told about, and which buttons a pad is); state a
 finger can act on is not part of the choice — the browser's now-playing strip is drawn in both input
 modes, because what it says is worth reading either way.
+
+**Helper buttons have one standard.** Every screen's header and footer follow it, so the same action
+looks and reads the same everywhere:
+
+- **Back is a `◀` breadcrumb**, far left of the header, a 48dp tap target, on every screen. It does
+  exactly what B does — one level at a time (menu, then search, then a drilled level, then the
+  screen) — so no screen adds a Back or Cancel pill beside it.
+- **Touch pills** show only in touch mode, at the header's right, in this order: **Search**, then the
+  confirm action (**✓ Done**), then **Options** — always the drawn `⋮` kebab, the pills' height,
+  never a text "Options" pill, a gear or an icon. A pill is `XmbHeaderPill`'s shape (8dp corners,
+  ~30–36dp tall); storefront screens use its colour variant `StorefrontTouchPill`.
+- **The controller footer** is one size — 12sp labels, 16dp glyphs, 18dp centred spacing — and one
+  order: Navigate, the select verb (Open / Toggle), Search, Options, Done, and **Back last**. The pill
+  bar (`ControllerHintBar`) stays for footers drawn over content (Settings, modals), in the same order.
+- **The touch footer** (`TouchPromptBar`) names only gestures the screen actually answers. Options
+  reached by the header's kebab is not repeated there.
+- **Words:** Back leaves a screen. Cancel is only for throwing away unsaved changes (a modal, an
+  editor). Done confirms; "Add N" stays where the count helps. Sort is `⇅`.
+- The setup wizard keeps its PSP-styled footer; it follows the order and words, not the size.
+- Full-screen media (players, Photo Viewer, Video Detail) have no header to hold a breadcrumb, so in
+  touch mode Back is a `◀ Back` pill top-left and Options the `⋮` top-right, both on
+  `XmbMediaPillScrim` so they read over any image.
 
 Options menus follow one set of rules. Every per-item menu draws through `PspContextMenuOverlay`
 (rows are `PspMenuRow`; `opensMenu` draws the `›`), and `PspMenuNav` in `core-ui` owns movement

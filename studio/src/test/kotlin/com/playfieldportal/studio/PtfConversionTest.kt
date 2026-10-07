@@ -2,7 +2,9 @@ package com.playfieldportal.studio
 
 import com.playfieldportal.studio.io.ConvertOutcome
 import com.playfieldportal.studio.io.PtfConversion
+import com.playfieldportal.themekit.PfpThemeManifest
 import com.playfieldportal.themekit.PfpThemeSource
+import com.playfieldportal.themekit.PtfIcons
 import com.playfieldportal.themekit.TestFixtures
 import java.time.LocalDate
 import javax.imageio.ImageIO
@@ -41,6 +43,49 @@ class PtfConversionTest {
         val image = assertNotNull(ImageIO.read(png.inputStream()))
         assertEquals(64, image.width)
         assertEquals(36, image.height)
+    }
+
+    private val orange = 0xFFE07020.toInt()
+
+    /** A theme carrying solid orange icons in groups 2, 3 and 4 over the red wallpaper. */
+    private fun iconPtf(): ByteArray {
+        fun icon(w: Int, h: Int) = TestFixtures.buildGim(w, h, swizzle = true) { _, _ -> orange }
+        return TestFixtures.buildPtfGroups(
+            name = "Icons",
+            firmware = "6.20",
+            groups = mapOf(
+                2 to (0..7).map { TestFixtures.gimRecord(it, icon(64, 48)) },
+                3 to (0..9).map { TestFixtures.gimRecord(it, icon(48, 48)) },
+                4 to (0..3).map { TestFixtures.gimRecord(it, icon(32, 32)) },
+            ),
+            wallpaperBmp = TestFixtures.buildBmp(64, 36) { _, _ -> 0xFFE01030.toInt() },
+        )
+    }
+
+    @Test
+    fun `carries the direct-fit icons as square PNGs`() {
+        val bundle = assertIs<ConvertOutcome.Converted>(PtfConversion.convert(iconPtf(), "icons.ptf")).bundle
+        assertEquals(PtfIcons.DIRECT.values.flatten().toSet(), bundle.icons.keys)
+        val music = assertNotNull(bundle.icons["catbar_music"])
+        assertEquals("png", music.extension)
+        val image = assertNotNull(ImageIO.read(music.bytes.inputStream()))
+        assertEquals(64, image.width)
+        assertEquals(64, image.height)
+        assertEquals(0, image.getRGB(32, 0) ushr 24, "the padding is transparent")
+    }
+
+    @Test
+    fun `a strong vivid icon tint becomes the icon colour and the accent`() {
+        val manifest = assertIs<ConvertOutcome.Converted>(PtfConversion.convert(iconPtf(), "icons.ptf")).bundle.manifest
+        assertEquals("#E07020", manifest.iconColor)
+        assertEquals("#E07020", manifest.accentColor)
+    }
+
+    @Test
+    fun `a wallpaper-only ptf carries no icons and keeps the automatic icon colour`() {
+        val bundle = assertIs<ConvertOutcome.Converted>(PtfConversion.convert(buildPtf(), "neon.ptf")).bundle
+        assertTrue(bundle.icons.isEmpty())
+        assertEquals(PfpThemeManifest.ICON_COLOR_AUTO, bundle.manifest.iconColor)
     }
 
     @Test

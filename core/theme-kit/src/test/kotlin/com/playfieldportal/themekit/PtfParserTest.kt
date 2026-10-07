@@ -131,4 +131,27 @@ class PtfParserTest {
         assertNotNull(theme.wallpaper)
         assertEquals(PtfParser.WallpaperStatus.DECODED, theme.wallpaperStatus)
     }
+
+    @Test
+    fun `a missing group leaves a gap in the slot table, not the end of it`() {
+        // Real themes without a wallpaper (fw 3.70 "Carbon Fiber", 5.00 "iPhone-Black") store a
+        // zero for group 1 and carry on with groups 2 and 3 after it.
+        val gim = TestFixtures.buildGim(8, 8) { _, _ -> 0xFFFF0000.toInt() }
+        val ptf = TestFixtures.buildPtfGroups(
+            "Gap", "3.70",
+            mapOf(2 to listOf(TestFixtures.gimRecord(1, gim)), 3 to listOf(TestFixtures.gimRecord(2, gim))),
+        )
+        val theme = assertNotNull(PtfParser.parse(ptf))
+        assertEquals(listOf(2, 3), theme.slots.map { it.id })
+        assertEquals(PtfParser.WallpaperStatus.MISSING, theme.wallpaperStatus)
+    }
+
+    @Test
+    fun `the slot table is eight entries, so what follows it is never read as a pointer`() {
+        val gim = TestFixtures.buildGim(8, 8) { _, _ -> 0xFFFF0000.toInt() }
+        val ptf = TestFixtures.buildPtfGroups("Eight", "5.00", mapOf(2 to listOf(TestFixtures.gimRecord(1, gim))))
+        // A plausible pointer just past the table, aimed at group 2's own descriptor.
+        ptf[0x120] = 0x40; ptf[0x121] = 0x01
+        assertEquals(listOf(2), assertNotNull(PtfParser.parse(ptf)).slots.map { it.id })
+    }
 }

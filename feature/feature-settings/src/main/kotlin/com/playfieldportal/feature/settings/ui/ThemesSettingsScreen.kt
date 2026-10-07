@@ -418,7 +418,7 @@ private fun ThemesSettingsContent(
                 )
                 SettingsRow(
                     label    = "Import PSP Theme (.ptf)",
-                    sublabel = "Uses the theme's wallpaper and color — icons stay ours",
+                    sublabel = "Uses the theme's wallpaper, color and matching icons",
                     onClick  = if (state.isInstalling) null else ({ ptfPicker.launch(arrayOf("*/*")) }),
                 )
                 SettingsRow(

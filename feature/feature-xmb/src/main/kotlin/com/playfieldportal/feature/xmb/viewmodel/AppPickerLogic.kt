@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.core.domain.model.TouchGesture
+import com.playfieldportal.core.ui.components.TouchPromptItem
 import com.playfieldportal.core.ui.sound.MenuSound
 
 // ── Installed-app picker: pure logic ──────────────────────────────────────────
@@ -86,3 +88,17 @@ internal fun removalQuestion(target: AppPickerTarget, count: Int): String {
     val place = if (target is AppPickerTarget.CardApps) "card" else "library"
     return "Remove $count app(s) from this $place?"
 }
+
+// ── Touch mode ────────────────────────────────────────────────────────────────
+//
+// One input family on screen at a time (ARCHITECTURE.md ▸ Conventions). A finger cannot press HOME,
+// so in touch mode Search and ✓ Done become header pills (the ◀ breadcrumb backs out) and the footer names the tap
+// the grid binds.
+
+/** The touch footer. Empty while the removal panel is up — its Cancel / Remove buttons say it all. */
+internal fun appPickerTouchPrompts(confirmingRemovals: Boolean): List<TouchPromptItem> =
+    if (confirmingRemovals) emptyList() else listOf(TouchPromptItem(TouchGesture.TAP, "Toggle"))
+
+/** Whether the header carries the Search / Done pills: touch mode, and no modal over the grid. */
+internal fun showAppPickerTouchPills(state: AppPickerState, showTouchControls: Boolean): Boolean =
+    showTouchControls && !state.confirmingRemovals

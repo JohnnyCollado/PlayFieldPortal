@@ -98,6 +98,7 @@ fun MusicSettingsContent(
         ) {
             RootAccessSection(
                 groupTitle  = "Root Folders",
+                rootKind    = "Music",
                 roots       = state.roots,
                 addLabel    = "Add Music Root",
                 addSublabel = "Grant a root folder (e.g. /Music) — add several to span locations",

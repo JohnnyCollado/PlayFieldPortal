@@ -252,13 +252,13 @@ fun MusicBrowserScreen(
                     state.sortPillLabel?.let { label ->
                         XmbHeaderPill(
                             label = label,
-                            leadingGlyph = "⇵",
+                            leadingGlyph = "⇅",
                             onClick = onSortTapped,
                         )
                         Spacer(Modifier.width(10.dp))
                     }
                     // Options is the vertical kebab app-wide — see ARCHITECTURE.md ▸ Conventions.
-                    XmbKebabTouchButton(onClick = onOptionsTapped, size = 40.dp)
+                    XmbKebabTouchButton(onClick = onOptionsTapped, size = 36.dp)
                 }
             }
 
@@ -332,9 +332,9 @@ fun MusicBrowserScreen(
                         TouchPromptItem(TouchGesture.LONG_PRESS, "Options"),
                     ),
                     labelColor = SecondaryText.dimmed(0.7f),
-                    labelStyle = TextStyle(fontSize = 11.sp),
-                    glyphSize = 18.dp,
-                    arrangement = Arrangement.spacedBy(18.dp),
+                    labelStyle = TextStyle(fontSize = 12.sp),
+                    glyphSize = 16.dp,
+                    arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
                 )
             } else {
                 ControllerPromptBar(
@@ -351,9 +351,9 @@ fun MusicBrowserScreen(
                         ControllerPromptItem(GamepadAction.BACK, "Back"),
                     ),
                     labelColor = SecondaryText.dimmed(0.7f),
-                    labelStyle = TextStyle(fontSize = 11.sp),
+                    labelStyle = TextStyle(fontSize = 12.sp),
                     glyphSize = 16.dp,
-                    arrangement = Arrangement.spacedBy(18.dp),
+                    arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
                     // Idles in and blinks out like the crossbar pill (see shouldShowMediaHint), and
                     // gives way to PFP's keyboard, which brings its own prompts while it is up.
                     modifier = Modifier.alpha(

@@ -84,6 +84,7 @@ import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPrompt
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.components.PfpModalSpec
 import com.playfieldportal.core.ui.components.rememberPfpModalHost
 import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
@@ -790,21 +791,7 @@ internal fun ArtworkStudioContent(
                                         color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 12.sp,
                                     )
                                     Spacer(Modifier.height(8.dp))
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(Color.White.copy(alpha = 0.1f))
-                                            .clickable(onClick = actions::clearFilters)
-                                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                                    ) {
-                                        ControllerPrompt(
-                                            action = GamepadAction.SELECT,
-                                            label = "Clear Filters",
-                                            glyphSize = 14.dp,
-                                            labelColor = themedText(Color.White),
-                                        )
-                                    }
+                                    StudioClearFiltersButton(showTouchControls, actions::clearFilters)
                                 }
                             }
                             state.results.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -1631,6 +1618,30 @@ private fun StudioInfoRow(label: String, value: String) {
     Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
         Text(label, color = themedSubText(Color.White.copy(alpha = 0.5f)), fontSize = 12.sp, modifier = Modifier.width(130.dp))
         Text(value, color = themedText(Color.White.copy(alpha = 0.9f)), fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/** The filtered-to-nothing state's way out: a pill under touch, the Confirm prompt under a controller. */
+@Composable
+internal fun StudioClearFiltersButton(showTouchControls: Boolean, onClick: () -> Unit) {
+    if (showTouchControls) {
+        XmbHeaderPill(label = "Clear Filters", onClick = onClick)
+    } else {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.White.copy(alpha = 0.1f))
+                .clickable(onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+        ) {
+            ControllerPrompt(
+                action = GamepadAction.SELECT,
+                label = "Clear Filters",
+                glyphSize = 14.dp,
+                labelColor = themedText(Color.White),
+            )
+        }
     }
 }
 

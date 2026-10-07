@@ -60,7 +60,6 @@ import com.playfieldportal.core.ui.components.PfpCheckMark
 import com.playfieldportal.core.ui.components.PfpModalSpec
 import com.playfieldportal.core.ui.components.PspContextMenuOverlay
 import com.playfieldportal.core.ui.components.PspMenuRow
-import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.components.rememberPfpModalHost
 import com.playfieldportal.core.ui.detail.unselectedLabel
 import com.playfieldportal.core.ui.theme.menuCursorEdge
@@ -184,7 +183,13 @@ fun ShibaCoinsScreen(
             },
     ) {
         Column(Modifier.fillMaxSize()) {
-            ShibaCoinsHeader(state, palette, onBack = viewModel::close, onSelectSource = viewModel::selectSource)
+            ShibaCoinsHeader(
+                state,
+                palette,
+                onBack = viewModel::close,
+                onSelectSource = viewModel::selectSource,
+                onOptions = viewModel::openOptions.takeIf { showTouchControls && state.options == null },
+            )
 
             SearchRow(
                 query = state.query,
@@ -251,11 +256,8 @@ fun ShibaCoinsScreen(
 
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 PfpDetailHelperFooter(items = shibaCoinsHelperItems(state), visible = !showTouchControls)
-                // Touch mode: the hints fade and the controller-only action becomes a pill in the
-                // same reserved band (the tabs, rows and ◀ are tappable already).
-                if (showTouchControls && state.options == null) {
-                    XmbHeaderPill(label = "Options", onClick = viewModel::openOptions)
-                }
+                // Touch mode: the hints fade; Options is the header's ⋮ (the tabs, rows and ◀ are
+                // tappable already).
             }
         }
 
@@ -328,6 +330,8 @@ private fun ShibaCoinsHeader(
     palette: DetailPalette,
     onBack: () -> Unit,
     onSelectSource: (AchievementProvider) -> Unit,
+    // Touch mode's Options, at the header's right; null hides it (controller mode, menu open).
+    onOptions: (() -> Unit)? = null,
 ) {
     Column(Modifier.fillMaxWidth().background(headerShade(palette))) {
         Row(
@@ -366,6 +370,10 @@ private fun ShibaCoinsHeader(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            if (onOptions != null) {
+                Spacer(Modifier.width(12.dp))
+                DetailOptionsKebab(onClick = onOptions)
+            }
         }
         // A game with two sets (Steam and Local Steam): one chip each, the shown one filled. L1/R1
         // move between them; a tap picks one.

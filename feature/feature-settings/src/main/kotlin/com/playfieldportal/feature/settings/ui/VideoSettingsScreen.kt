@@ -97,6 +97,7 @@ fun VideoSettingsContent(
         ) {
             RootAccessSection(
                 groupTitle  = "Root Folders",
+                rootKind    = "Video",
                 roots       = state.roots,
                 addLabel    = "Add Video Root",
                 addSublabel = "Grant a root folder (e.g. /Movies) — add several to span locations",

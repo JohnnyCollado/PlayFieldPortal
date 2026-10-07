@@ -771,7 +771,7 @@ gradient, cursor and icons all derive from it).
   tinted.
 - **New Theme from Photo** — any picture becomes the wallpaper; the theme color is auto-derived from
   its dominant hue.
-- **Import PSP Theme (.ptf)** — convert an official PSP theme you own (wallpaper + derived color).
+- **Import PSP Theme (.ptf)** — convert an official PSP theme you own: its wallpaper, the icons that match ours (categories, memory cards, UMD, camera, settings), and a tint and accent matched to its art. You confirm before it applies.
   CXMB firmware files are safely declined. **Import Theme (.pfptheme)** installs a shared theme.
 - **My Themes** — your saved themes as cards: apply, **Share** (`.pfptheme`), or Remove. Applying
   asks first (*Apply "…"?*) and lists what would change. When the theme carries sounds, videos or

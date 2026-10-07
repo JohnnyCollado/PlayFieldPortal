@@ -234,6 +234,25 @@ class SearchOnlineViewModelTest {
     }
 
     @Test
+    fun `the header back arrow steps out one level exactly as Back does`() {
+        coEvery { previews.open(resonance) } returns ProviderSyncResult.Success(resonance.providerGameId, emptyList())
+        search()
+        press(GamepadAction.SELECT)
+        scheduler.advanceUntilIdle()
+
+        viewModel.back()
+        scheduler.advanceUntilIdle()
+
+        assertFalse(state.inPreview)
+        assertFalse("the arrow leaves the preview before it leaves the page", state.closed)
+
+        viewModel.back()
+        scheduler.advanceUntilIdle()
+
+        assertTrue(state.closed)
+    }
+
+    @Test
     fun `leaving the page discards an open preview with it`() {
         coEvery { previews.open(resonance) } returns ProviderSyncResult.Success(resonance.providerGameId, emptyList())
         search()

@@ -41,10 +41,13 @@ object Gim {
     fun decode(bytes: ByteArray): BmpImage? {
         if (!isGim(bytes) || bytes.size < 32) return null
 
+        // Find the first image and palette blocks before decoding: real theme GIMs store the
+        // palette either before or after the image it colours.
         val cursor = bytes.cursor()
-        var palette: IntArray? = null
+        var paletteChunk: Pair<Int, Int>? = null
+        var imageChunk: Pair<Int, Int>? = null
         var offset = 16
-        while (cursor.holds(offset, 16)) {
+        while (cursor.holds(offset, 16) && (imageChunk == null || paletteChunk == null)) {
             val id = cursor.u16At(offset) ?: return null
             val size = cursor.i32At(offset + 4) ?: return null
             when (id) {
@@ -52,18 +55,21 @@ object Gim {
                     offset += 16 // containers: descend into children
                     continue
                 }
-                CHUNK_PALETTE -> palette = decodePalette(bytes, offset, size) ?: return null
-                CHUNK_IMAGE -> return decodeImage(bytes, offset, size, palette)
+                CHUNK_PALETTE -> if (paletteChunk == null) paletteChunk = offset to size
+                CHUNK_IMAGE -> if (imageChunk == null) imageChunk = offset to size
             }
             // A malformed chunk would loop forever (size < 16) or wrap the offset into a negative
             // index (size near Int.MAX_VALUE). Advancing in Long and re-checking the bound covers
             // both; the old `offset += size` silently overflowed on the second.
-            if (size < 16) return null
+            // Either way the walk ends: with the blocks found so far, or with no image at all.
+            if (size < 16) break
             val next = offset.toLong() + size
-            if (next > bytes.size) return null
+            if (next > bytes.size) break
             offset = next.toInt()
         }
-        return null // no image block
+        val (imageAt, imageSize) = imageChunk ?: return null // no image block
+        val palette = paletteChunk?.let { (at, size) -> decodePalette(bytes, at, size) ?: return null }
+        return decodeImage(bytes, imageAt, imageSize, palette)
     }
 
     // Block data header (at chunk + 16): u16 headerSize, u16 reserved, u16 format,

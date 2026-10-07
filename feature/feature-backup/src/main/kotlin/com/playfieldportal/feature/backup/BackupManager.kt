@@ -673,6 +673,8 @@ open class BackupManager @Inject constructor(
             stringPreferencesKey("controller_display_type"),
             // Interface / touch
             stringPreferencesKey("interface_touch_nav_button"),
+            // Display ▸ Screen Orientation (Landscape / Follow Device)
+            stringPreferencesKey("display_screen_orientation"),
             stringPreferencesKey("interface_touch_sensitivity"),
             // Default players
             stringPreferencesKey("music_default_player_package"),

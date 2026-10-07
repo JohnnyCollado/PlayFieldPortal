@@ -14,6 +14,7 @@ import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.ControllerLayoutRepository
 import com.playfieldportal.core.data.repository.GameBootPreferences
+import com.playfieldportal.core.data.repository.ScreenOrientationPreferences
 import com.playfieldportal.core.data.repository.ThemePrefKeys
 import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe
@@ -22,6 +23,7 @@ import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe.setWallpa
 import com.playfieldportal.core.domain.model.UiMediaKind
 import com.playfieldportal.core.domain.model.UiMediaSlot
 import com.playfieldportal.core.domain.model.IconLegibilityStyle
+import com.playfieldportal.core.domain.model.ScreenOrientationMode
 import com.playfieldportal.core.domain.model.TextLegibilityStyle
 import com.playfieldportal.core.domain.model.XmbColorScheme
 import com.playfieldportal.core.domain.model.lightBackgroundAnchors
@@ -61,6 +63,8 @@ internal val KEY_SHOW_BOOT        = booleanPreferencesKey("display_show_boot")
 private val KEY_BOOT_ON_RESUME     = booleanPreferencesKey("display_boot_on_resume")
 private val KEY_THERMAL_AWARE      = booleanPreferencesKey("display_thermal_aware")
 private val KEY_RESPECT_BATTERY    = booleanPreferencesKey("display_battery_saver")
+// MainActivity applies this one to the window — see ScreenOrientationPreferences.
+private val KEY_SCREEN_ORIENTATION = ScreenOrientationPreferences.KEY_MODE
 // Shared with Initial Setup's Hints & Touch page (and read by the XMB) — see InterfaceHintPrefs.
 private val KEY_TOUCH_NAV_BUTTON   = InterfaceHintPrefs.KEY_TOUCH_NAV_BUTTON
 private val KEY_CONTEXT_MENU_HINT  = InterfaceHintPrefs.KEY_CONTEXT_MENU_HINT
@@ -118,6 +122,11 @@ private val TOUCH_NAV_BUTTON_LABELS = mapOf(
     TouchNavButtonMode.ALWAYS_HIDE to "Always Hide",
 )
 
+private val SCREEN_ORIENTATION_LABELS = mapOf(
+    ScreenOrientationMode.LANDSCAPE     to "Landscape",
+    ScreenOrientationMode.FOLLOW_DEVICE to "Follow Device",
+)
+
 private val TOUCH_SENSITIVITY_LABELS = mapOf(
     TouchSensitivity.LOW    to "Low",
     TouchSensitivity.NORMAL to "Normal",
@@ -149,6 +158,7 @@ data class DisplaySettingsUiState(
     val thermalThrottleAware: Boolean = true,
     val respectBatterySaver: Boolean = true,
     val touchNavButtonMode: TouchNavButtonMode = TouchNavButtonMode.AUTO,
+    val screenOrientation: ScreenOrientationMode = ScreenOrientationMode.LANDSCAPE,
     // Icon legibility treatment for XMB silhouette glyphs (None / Offset Shadow / Contour…).
     val iconLegibility: IconLegibilityStyle = IconLegibilityStyle.DEFAULT,
     // Draw unselected XMB icons at full opacity (selection reads by size and label).
@@ -267,6 +277,7 @@ class DisplaySettingsViewModel @Inject constructor(
             thermalThrottleAware = prefs[KEY_THERMAL_AWARE]   ?: true,
             respectBatterySaver  = prefs[KEY_RESPECT_BATTERY] ?: true,
             touchNavButtonMode   = TouchNavButtonMode.fromName(prefs[KEY_TOUCH_NAV_BUTTON]),
+            screenOrientation    = ScreenOrientationMode.fromName(prefs[KEY_SCREEN_ORIENTATION]),
             iconLegibility       = IconLegibilityStyle.fromName(prefs[KEY_ICON_LEGIBILITY]),
             solidUnfocusedIcons  = prefs[KEY_SOLID_UNFOCUSED_ICONS] ?: false,
             textShadow           = prefs[KEY_TEXT_SHADOW] ?: true,
@@ -517,6 +528,14 @@ class DisplaySettingsViewModel @Inject constructor(
 
     fun touchNavButtonLabel(): String =
         TOUCH_NAV_BUTTON_LABELS[uiState.value.touchNavButtonMode] ?: uiState.value.touchNavButtonMode.name
+
+    fun cycleScreenOrientation() {
+        val next = uiState.value.screenOrientation.next()
+        save { it[KEY_SCREEN_ORIENTATION] = next.name }
+    }
+
+    fun screenOrientationLabel(): String =
+        SCREEN_ORIENTATION_LABELS[uiState.value.screenOrientation] ?: uiState.value.screenOrientation.name
 
     fun cycleTouchSensitivity() {
         val levels = TouchSensitivity.entries

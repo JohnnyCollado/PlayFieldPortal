@@ -39,13 +39,15 @@ object TestFixtures {
      * Minimal GIM container: root/picture chunks, an optional RGBA8888 palette, and one
      * image block. [argbAt] supplies pixels; [indexed] stores them as index8 through a
      * palette built from the distinct colors, otherwise as direct RGBA8888. [swizzle]
-     * stores pixel data in the PSP's 16-byte x 8-row block order.
+     * stores pixel data in the PSP's 16-byte x 8-row block order. [paletteAfterImage] writes the
+     * palette block after the image block, as some real theme GIMs do.
      */
     fun buildGim(
         width: Int,
         height: Int,
         indexed: Boolean = true,
         swizzle: Boolean = false,
+        paletteAfterImage: Boolean = false,
         argbAt: (x: Int, y: Int) -> Int,
     ): ByteArray {
         val pixels = IntArray(width * height) { argbAt(it % width, it / width) }
@@ -99,8 +101,9 @@ object TestFixtures {
         "MIG.00.1PSP".toByteArray(Charsets.US_ASCII).copyInto(out)
         out.putU16(16, 0x02); out.putU32(20, total - 16)          // root
         out.putU16(32, 0x03); out.putU32(36, total - 32)          // picture
-        paletteChunk.copyInto(out, 48)
-        imageChunk.copyInto(out, 48 + paletteChunk.size)
+        val (first, second) = if (paletteAfterImage) imageChunk to paletteChunk else paletteChunk to imageChunk
+        first.copyInto(out, 48)
+        second.copyInto(out, 48 + first.size)
         return out
     }
 
@@ -181,6 +184,68 @@ object TestFixtures {
         file.putU32(dataOffset + 12, wallpaperBmp.size)
 
         compressed.copyInto(file, dataOffset + headerSize)
+        return file
+    }
+
+    /** One record in a PTF group's chain: [data] is already compressed with [method] (1 LZR, 2 zlib). */
+    class PtfRecord(val index: Int, val type: Int, val method: Int, val data: ByteArray, val uncompressedSize: Int)
+
+    /** An icon record (resource type 5) holding [gim], compressed with [compressionMethod]. */
+    fun gimRecord(index: Int, gim: ByteArray, compressionMethod: Int = 2): PtfRecord = PtfRecord(
+        index = index,
+        type = 5,
+        method = compressionMethod,
+        data = if (compressionMethod == 1) lzrStored(gim) else zlib(gim),
+        uncompressedSize = gim.size,
+    )
+
+    /** A record whose zlib stream inflates to [payload] that is not an image. */
+    fun opaqueRecord(index: Int, payload: ByteArray): PtfRecord =
+        PtfRecord(index, type = 5, method = 2, data = zlib(payload), uncompressedSize = payload.size)
+
+    /**
+     * Official PTF with several groups, laid out as real themes are: the 8-entry pointer table at
+     * 0x100 is positional (entry N addresses group N's descriptor, zero when the theme has no
+     * group N), each descriptor is `id | record count | size | first record offset`, and each
+     * group's records follow back to back. Group 1 is the wallpaper; 2, 3 and 4 hold the
+     * category, first-level and second-level icons.
+     */
+    fun buildPtfGroups(
+        name: String,
+        firmware: String,
+        groups: Map<Int, List<PtfRecord>>,
+        wallpaperBmp: ByteArray? = null,
+    ): ByteArray {
+        val all = buildMap {
+            wallpaperBmp?.let { put(1, listOf(PtfRecord(0, 4, 2, zlib(it), it.size))) }
+            putAll(groups)
+        }.toSortedMap()
+        check(all.keys.all { it in 0..7 }) { "the slot table has 8 positional entries" }
+        val chains = all.mapValues { (_, records) ->
+            records.fold(ByteArray(0)) { acc, r ->
+                val header = ByteArray(32)
+                header.putU32(0, r.index); header.putU16(4, r.type); header.putU16(6, r.method)
+                header.putU32(8, r.data.size); header.putU32(12, r.uncompressedSize)
+                acc + header + r.data
+            }
+        }
+
+        val descriptorBase = 0x140
+        var dataOffset = 0x200
+        val file = ByteArray(dataOffset + chains.values.sumOf { it.size })
+        file[1] = 'P'.code.toByte(); file[2] = 'T'.code.toByte(); file[3] = 'F'.code.toByte()
+        name.toByteArray(Charsets.ISO_8859_1).copyInto(file, 0x08, 0, minOf(name.length, 16))
+        firmware.toByteArray(Charsets.ISO_8859_1).copyInto(file, 0xB8, 0, minOf(firmware.length, 8))
+        chains.entries.forEachIndexed { i, (groupId, chain) ->
+            val descriptor = descriptorBase + i * 16
+            file.putU32(0x100 + groupId * 4, descriptor)
+            file.putU16(descriptor, groupId)
+            file.putU16(descriptor + 2, all.getValue(groupId).size)
+            file.putU32(descriptor + 4, chain.size)
+            file.putU32(descriptor + 8, dataOffset)
+            chain.copyInto(file, dataOffset)
+            dataOffset += chain.size
+        }
         return file
     }
 

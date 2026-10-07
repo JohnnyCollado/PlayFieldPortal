@@ -327,6 +327,7 @@ fun XMBShellContainer(
         onAppPickerDismiss = viewModel::closeAppPicker,
         onGamePickerConfirm = viewModel::confirmGamePicker,
         onGamePickerDismiss = viewModel::closeGamePicker,
+        onGamePickerTouchInput = viewModel::markTouchInput,
         onGamePickerActionConsumed = viewModel::consumeGamePickerAction,
         onMoveRowBy = viewModel::onMoveRowBy,
         onPlaceMovingRow = viewModel::placeMovingRow,
@@ -581,6 +582,7 @@ fun XMBShell(
     onAppPickerDismiss: () -> Unit = {},
     onGamePickerConfirm: (Set<Long>, Set<Long>) -> Unit = { _, _ -> },
     onGamePickerDismiss: () -> Unit = {},
+    onGamePickerTouchInput: () -> Unit = {},
     onGamePickerActionConsumed: () -> Unit = {},
     // Touch's way to drive a Move in progress and multi-select; a controller uses the D-pad.
     onMoveRowBy: (Int) -> Unit = {},
@@ -1322,6 +1324,8 @@ fun XMBShell(
                     onStateChange = onCustomColorUpdate,
                     onConfirm = onCustomColorConfirm,
                     onCancel = onCustomColorCancel,
+                    // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
+                    showHints = !uiState.resolvedShowTouchButton,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -1338,6 +1342,8 @@ fun XMBShell(
                     onSave = onXmbLayoutSave,
                     onCancel = onXmbLayoutCancel,
                     modifier = Modifier.fillMaxSize(),
+                    showTouchControls = uiState.resolvedShowTouchButton,
+                    onTouchInput = onTouchInput,
                 )
             }
 
@@ -1358,6 +1364,8 @@ fun XMBShell(
                     forwardedAction = uiState.pendingCustomIconsAction,
                     onActionConsumed = onCustomIconsActionConsumed,
                     modifier = Modifier.fillMaxSize(),
+                    showTouchControls = uiState.resolvedShowTouchButton,
+                    onTouchInput = onTouchInput,
                 )
             }
 
@@ -1410,6 +1418,7 @@ fun XMBShell(
                     onApply = onAppPickerApply,
                     onConfirmRemoval = onAppPickerConfirmRemoval,
                     onCancelRemoval = onAppPickerCancelRemoval,
+                    showTouchControls = uiState.resolvedShowTouchButton,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -1427,6 +1436,8 @@ fun XMBShell(
                     onCancel = onGamePickerDismiss,
                     pendingGamepadAction = uiState.pendingGamePickerAction,
                     onGamepadActionConsumed = onGamePickerActionConsumed,
+                    showTouchControls = uiState.resolvedShowTouchButton,
+                    onTouchInput = onGamePickerTouchInput,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -1448,6 +1459,8 @@ fun XMBShell(
                     onCancel = onGamePickerDismiss,
                     pendingGamepadAction = uiState.pendingGamePickerAction,
                     onGamepadActionConsumed = onGamePickerActionConsumed,
+                    showTouchControls = uiState.resolvedShowTouchButton,
+                    onTouchInput = onGamePickerTouchInput,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

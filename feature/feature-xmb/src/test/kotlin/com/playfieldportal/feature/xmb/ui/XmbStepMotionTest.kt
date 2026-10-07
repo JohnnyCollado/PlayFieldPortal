@@ -324,6 +324,91 @@ class XmbStepMotionTest {
         assertEquals(0f, transitBandAlpha(-1.5f), 0f)
     }
 
+    // --- A step back that hands nothing off (held reversal, multi-row jump) ---
+
+    @Test
+    fun `a risen row left alone when the column turns back never completes - so it must be handed back`() {
+        // ▼ 0→1 hands row 0 up; ▲ 1→0 within the hold gap hands nothing off, so the column returns to
+        // 0 while the old crossing keeps row 0 at the previous slot: it never completes.
+        val c = handOffFor(0, 1, now, null, fromD = 0f)!!
+        val later = now + XmbHandOff.CROSS_MS * 10
+        assertEquals(-1f, crossingD(c, later, columnD = 0f), 0f)
+        assertFalse(crossingDone(c, later, columnD = 0f))
+    }
+
+    @Test
+    fun `handing a risen row back brings it down to the focus slot with the column`() {
+        val risen = handOffFor(0, 1, now, null, fromD = 0f)!!
+        val back = handBack(risen, target = 0, nowMs = now + 50, fromD = -1f)
+        assertFalse(back.down)
+        assertEquals(-1f, crossingD(back, back.startMs, columnD = -0.5f), 0f)
+        val landed = back.startMs + XmbHandOff.CROSS_MS
+        assertEquals(0f, crossingD(back, landed, columnD = 0f), 0f)
+        assertTrue(crossingDone(back, landed, columnD = 0f))
+    }
+
+    @Test
+    fun `handing a dropped row back lifts it to where the column puts it`() {
+        // ▲ 4→3 drops row 3 in; a quick ▼ 3→4 must lift it to the previous slot, not hold it in focus.
+        val dropped = handOffFor(4, 3, now, null, fromD = -1f)!!
+        val back = handBack(dropped, target = 4, nowMs = now + 50, fromD = -0.5f)
+        assertTrue(back.down)
+        val landed = back.startMs + XmbHandOff.CROSS_MS
+        assertEquals(-1f, crossingD(back, landed, columnD = -1f), 0f)
+        assertTrue(crossingDone(back, landed, columnD = -1f))
+    }
+
+    @Test
+    fun `a jump back past a risen row hands it back only across the bar, then it rides the column`() {
+        // ▼ 2→3 hands row 2 up; a two-row glide back to 1. Row 2 drops to the focus slot and no
+        // further: running on to its resting d = 1 in 80ms would draw it below row 3, which the
+        // column is still carrying through the focus slot.
+        val risen = handOffFor(2, 3, now, null, fromD = 0f)!!
+        val back = handBack(risen, target = 1, nowMs = now + 50, fromD = -1f)
+        assertEquals(0f, back.toD, 0f)
+        val landed = back.startMs + XmbHandOff.CROSS_MS
+        assertEquals("waits at the slot for the column", 0f, crossingD(back, landed, columnD = -0.4f), 0f)
+        assertFalse(crossingDone(back, landed, columnD = -0.4f))
+        assertEquals("then rides it", 0.6f, crossingD(back, landed + 50, columnD = 0.6f), 1e-6f)
+        assertTrue(crossingDone(back, landed + 50, columnD = 0.6f))
+    }
+
+    @Test
+    fun `a jump forward past a dropped row lifts it only to the previous slot`() {
+        val dropped = handOffFor(4, 3, now, null, fromD = -1f)!!
+        val back = handBack(dropped, target = 6, nowMs = now + 50, fromD = -0.5f)
+        assertEquals(-1f, back.toD, 0f)
+    }
+
+    // --- Which crossings a step that hands nothing off turns around ---
+
+    @Test
+    fun `a step with no hand-off turns back only the crossings running the other way`() {
+        val risen = handOffFor(0, 1, now, null, fromD = 0f)!! // ▼, row 0
+        val dropped = handOffFor(6, 5, now, null, fromD = -1f)!! // ▲, row 5
+        val out = handBackReversed(listOf(risen, dropped), down = false, target = 0, nowMs = now + 50) { -1f }
+        assertFalse("the ▼ crossing turns into a drop", out[0].down)
+        assertEquals(0, out[0].row)
+        assertEquals(now + 50, out[0].startMs)
+        assertEquals("the ▲ crossing runs with the step and is left alone", dropped, out[1])
+    }
+
+    @Test
+    fun `a turned-back crossing starts from where its row is drawn now`() {
+        val risen = handOffFor(0, 1, now, null, fromD = 0f)!!
+        val out = handBackReversed(listOf(risen), down = false, target = 0, nowMs = now + 50) { row ->
+            assertEquals(0, row)
+            -0.7f
+        }
+        assertEquals(-0.7f, out.single().fromD, 0f)
+    }
+
+    @Test
+    fun `a step with no hand-off the same way leaves every crossing as it was`() {
+        val risen = handOffFor(0, 1, now, null, fromD = 0f)!!
+        assertEquals(listOf(risen), handBackReversed(listOf(risen), down = true, target = 2, nowMs = now + 50) { -1f })
+    }
+
     // --- The item list's glide: constant speed, faster than the bar's spring ---
 
     @Test

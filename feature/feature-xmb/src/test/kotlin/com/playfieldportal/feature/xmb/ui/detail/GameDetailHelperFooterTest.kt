@@ -87,7 +87,7 @@ class GameDetailHelperFooterTest {
     fun `the manual viewer documents its own paging`() {
         val state = baseState.copy(manualViewerUri = "/tmp/manual.pdf", manualPageCount = 4)
 
-        assertEquals(listOf("Scroll", "Prev page", "Next page", "Close"), labels(state))
+        assertEquals(listOf("Scroll", "Prev / Next", "Close"), labels(state))
     }
 
     @Test

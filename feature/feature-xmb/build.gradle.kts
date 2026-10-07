@@ -21,6 +21,14 @@ android {
     }
 }
 
+// Robolectric fetches its Android image over HTTPS (XmbDeviceFormatScreenshotTest asks for SDK 32,
+// which may not be cached yet). Same Windows trust-store workaround as feature-settings.
+tasks.withType<Test>().configureEach {
+    if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
+        systemProperty("javax.net.ssl.trustStoreType", "Windows-ROOT")
+    }
+}
+
 dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.bundles.compose)

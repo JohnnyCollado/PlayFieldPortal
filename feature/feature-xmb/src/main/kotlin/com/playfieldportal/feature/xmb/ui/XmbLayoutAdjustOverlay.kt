@@ -2,6 +2,8 @@ package com.playfieldportal.feature.xmb.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,10 +21,14 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,9 +45,10 @@ import kotlin.math.roundToInt
 
 /**
  * Live "Adjust XMB Layout" editor chrome, drawn OVER the real XMB (which reflects [draft] in real
- * time). Two control paths, per the design: D-pad / shoulder buttons drive it on a controller (the
- * hints line), and the touch controls here work with no controller — a Sliders toggle reveals a
- * three-axis panel, plus Reset / Cancel / Save.
+ * time). Two control paths, one on screen at a time ([showTouchControls]): D-pad / shoulder
+ * buttons drive it on a controller (the hints line), and the touch controls here work with no
+ * controller — a Sliders toggle reveals a three-axis panel, plus Reset / Cancel / Save. Any finger
+ * on the editor reports [onTouchInput], so AUTO touch mode brings the buttons up.
  */
 @Composable
 fun XmbLayoutAdjustOverlay(
@@ -55,8 +62,19 @@ fun XmbLayoutAdjustOverlay(
     onSave: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
+    showTouchControls: Boolean = false,
+    onTouchInput: () -> Unit = {},
 ) {
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+    val currentOnTouchInput by rememberUpdatedState(onTouchInput)
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            // requireUnconsumed = false: the scrim and the buttons consume their own taps.
+            .pointerInput(Unit) {
+                awaitEachGesture { awaitFirstDown(requireUnconsumed = false); currentOnTouchInput() }
+            },
+        contentAlignment = Alignment.BottomCenter,
+    ) {
         // Consuming scrim: keeps the editor modal so taps above the panel never fall through to
         // the XMB rows behind it (the cross stays fully visible, only faintly dimmed).
         Box(
@@ -91,7 +109,7 @@ fun XmbLayoutAdjustOverlay(
                 fontSize = 13.sp,
             )
             // Controller hints (the other half of "both" control modes).
-            ControllerPromptBar(
+            if (!showTouchControls) ControllerPromptBar(
                 items = listOf(
                     // The whole D-pad moves the bar; four direction glyphs in a row would
                     // read as four separate prompts.
@@ -109,6 +127,7 @@ fun XmbLayoutAdjustOverlay(
                 labelStyle = TextStyle(fontSize = 11.sp),
                 glyphSize = 15.dp,
                 arrangement = Arrangement.spacedBy(14.dp),
+                modifier = Modifier.testTag(XmbLayoutAdjustTags.PROMPTS),
             )
 
             if (slidersVisible) {
@@ -117,8 +136,8 @@ fun XmbLayoutAdjustOverlay(
                 AxisSlider("Vertical", draft.barTopFraction, XmbLayoutAdjust.TOP_MIN, XmbLayoutAdjust.TOP_MAX, onVertical)
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
+            if (showTouchControls) Row(
+                modifier = Modifier.fillMaxWidth().testTag(XmbLayoutAdjustTags.TOUCH_BUTTONS),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 OutlinedButton(onClick = onToggleSliders) {
@@ -134,6 +153,12 @@ fun XmbLayoutAdjustOverlay(
             }
         }
     }
+}
+
+/** Test tags: one input family's controls at a time. */
+internal object XmbLayoutAdjustTags {
+    const val PROMPTS = "xmbLayoutAdjust:prompts"
+    const val TOUCH_BUTTONS = "xmbLayoutAdjust:touchButtons"
 }
 
 @Composable

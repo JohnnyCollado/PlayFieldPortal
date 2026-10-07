@@ -168,8 +168,14 @@ fun ShibaLibraryScreen(
                 // The design's darker header band: the page darkened in place, so it follows the theme.
                 modifier = Modifier.background(headerShade(palette)),
                 trailing = {
-                    Box(Modifier.height(SummaryHeight), contentAlignment = Alignment.CenterEnd) {
-                        if (state.mode == ShibaLibraryMode.TRACKED) LibrarySummaryBlock(state.summary, palette)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.height(SummaryHeight), contentAlignment = Alignment.CenterEnd) {
+                            if (state.mode == ShibaLibraryMode.TRACKED) LibrarySummaryBlock(state.summary, palette)
+                        }
+                        if (showTouchControls && state.options == null) {
+                            Spacer(Modifier.width(12.dp))
+                            DetailOptionsKebab(onClick = viewModel::openOptions)
+                        }
                     }
                 },
             )
@@ -216,11 +222,10 @@ fun ShibaLibraryScreen(
 
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 PfpDetailHelperFooter(items = shibaLibraryHelperItems(state), visible = !showTouchControls)
-                // Touch mode: the footer hints fade, and the controller-only actions become pills in
-                // the same reserved band (rows, Search and the breadcrumb are tappable already).
+                // Touch mode: the footer hints fade; Options is the header's ⋮, and the view switch
+                // becomes a pill in the same reserved band (rows, Search and ◀ are tappable already).
                 if (showTouchControls && state.options == null) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        XmbHeaderPill(label = "Options", onClick = viewModel::openOptions)
                         XmbHeaderPill(
                             label = ShibaLibraryMode.entries.first { it != state.mode }.viewTitle,
                             onClick = { viewModel.switchSibling(1) },

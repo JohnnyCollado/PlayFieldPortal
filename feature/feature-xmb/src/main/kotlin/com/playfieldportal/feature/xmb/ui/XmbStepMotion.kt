@@ -199,6 +199,37 @@ fun handOffFor(fromIndex: Int, toIndex: Int, nowMs: Long, lastStepMs: Long?, fro
     }
 }
 
+/**
+ * Turns crossing [c] around for a step the other way that hands nothing off (a held reversal, a
+ * multi-row jump): its row travels from [fromD], where it is drawn now, back across the bar toward
+ * where the column rests it at [target] — but no further than the bar's far slot (`-1..0`). Past
+ * that the column carries it, as it does every other row; running on alone would overtake the rows
+ * the column is still bringing through the focus slot. Left as it was, a crossing whose column
+ * turns back never completes, stranding its row across the bar.
+ */
+fun handBack(c: Crossing, target: Int, nowMs: Long, fromD: Float): Crossing = Crossing(
+    row = c.row,
+    down = !c.down,
+    fromD = fromD,
+    toD = (c.row - target).toFloat().coerceIn(-1f, 0f),
+    startMs = nowMs,
+)
+
+/**
+ * The crossings after a step to [target] that hands nothing off: those running against the step
+ * ([down] is a ▼ step) are turned back with [handBack] from [drawnD] (`row -> index - position`
+ * where that row draws now); the rest carry on as they were.
+ */
+fun handBackReversed(
+    crossings: List<Crossing>,
+    down: Boolean,
+    target: Int,
+    nowMs: Long,
+    drawnD: (row: Int) -> Float,
+): List<Crossing> = crossings.map { c ->
+    if (c.down == down) c else handBack(c, target, nowMs, fromD = drawnD(c.row))
+}
+
 /** When the column starts toward the new selection: after the lag on a ▼ hand-off, else now. */
 fun columnStartMs(step: Crossing?, nowMs: Long): Long =
     if (step?.down == true) nowMs + XmbHandOff.COLUMN_LAG_MS else nowMs

@@ -5,7 +5,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,6 +20,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -47,12 +47,10 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -66,6 +64,7 @@ import com.playfieldportal.core.domain.model.ControllerIcon
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.components.TouchPromptBar
 import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
 import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
 import com.playfieldportal.core.ui.keyboard.isVirtualKeyboardOverlayOpen
@@ -75,11 +74,17 @@ import com.playfieldportal.core.ui.theme.StorefrontColors
 import com.playfieldportal.core.ui.theme.deriveStorefrontColors
 import com.playfieldportal.core.ui.theme.dimmed
 import com.playfieldportal.core.ui.theme.unselectedLabel
+import com.playfieldportal.feature.xmb.ui.PickerBreadcrumb
+import com.playfieldportal.feature.xmb.ui.PickerHeaderTags
+import com.playfieldportal.feature.xmb.ui.StorefrontSearchPill
+import com.playfieldportal.feature.xmb.ui.StorefrontTouchPill
 import com.playfieldportal.feature.xmb.viewmodel.AppPickerEntry
 import com.playfieldportal.feature.xmb.viewmodel.AppPickerState
 import com.playfieldportal.feature.xmb.viewmodel.PICKER_GRID_COLUMNS
+import com.playfieldportal.feature.xmb.viewmodel.appPickerTouchPrompts
 import com.playfieldportal.feature.xmb.viewmodel.pendingRemovals
 import com.playfieldportal.feature.xmb.viewmodel.removalQuestion
+import com.playfieldportal.feature.xmb.viewmodel.showAppPickerTouchPills
 import com.playfieldportal.feature.xmb.viewmodel.visibleApps
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -89,8 +94,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 // Video / Music / Photo "Add Apps" flows. Reads as a simplified App Drawer: same storefront
 // theming (deriveStorefrontColors — never LocalPFPColors.accentColor, which presets resolve
 // to white), a header with back + live selection count, an inline search, a controller-first
-// tile grid, and a permanent controller prompt footer row below the grid (always visible, so
-// grid geometry never depends on it).
+// tile grid, and a permanent prompt footer row below the grid (always visible, so grid geometry
+// never depends on it). One input family at a time (ARCHITECTURE.md ▸ Conventions): in touch mode
+// the header carries Search and ✓ Done pills beside the ◀ breadcrumb and the footer names the tap; otherwise
+// controller prompts.
 //
 // Stateless: driven entirely by [AppPickerState] plus callbacks, so the XMB shell wires it
 // exactly like every other overlay. Focus and selection are independent layers — the check
@@ -109,6 +116,7 @@ fun AppPickerScreen(
     onConfirmRemoval: () -> Unit,
     onCancelRemoval: () -> Unit,
     modifier: Modifier = Modifier,
+    showTouchControls: Boolean = false,
 ) {
     val sf = deriveStorefrontColors()
     val visible = state.visibleApps()
@@ -117,7 +125,7 @@ fun AppPickerScreen(
         modifier = modifier
             .fillMaxSize()
             // No whole-background dismiss tap: with a grid and a search field it is an easy
-            // accidental cancel. Back and the header's ‹ are the exits.
+            // accidental cancel. Back and the header's ◀ are the exits.
             .background(Brush.verticalGradient(listOf(sf.backgroundDeep, sf.backgroundMid))),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -127,6 +135,8 @@ fun AppPickerScreen(
                 onSearchToggle = onSearchToggle,
                 onSearchChange = onSearchChange,
                 onSearchDone = onSearchDone,
+                showTouchPills = showAppPickerTouchPills(state, showTouchControls),
+                onApply = onApply,
                 colors = sf,
             )
             Box(Modifier.fillMaxWidth().height(1.dp).background(sf.chromeDivider))
@@ -156,10 +166,11 @@ fun AppPickerScreen(
                 }
             }
 
-            // ── Permanent footer: controller prompt bar (never fades) ──────
+            // ── Permanent footer: prompt bar (never fades) ─────────────────
             Box(Modifier.fillMaxWidth().height(1.dp).background(sf.chromeDivider))
             AppPickerFooter(
                 confirmingRemovals = state.confirmingRemovals,
+                showTouchControls = showTouchControls,
                 colors = sf,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -184,7 +195,7 @@ fun AppPickerScreen(
     }
 }
 
-// ── Header: ‹ + title on the left, selection count + search on the right ──────
+// ── Header: ◀ + title on the left; count, search field and touch pills on the right ──
 
 private val HEADER_HEIGHT = 56.dp
 
@@ -195,6 +206,8 @@ private fun AppPickerHeader(
     onSearchToggle: (Boolean) -> Unit,
     onSearchChange: (String) -> Unit,
     onSearchDone: () -> Unit,
+    showTouchPills: Boolean,
+    onApply: () -> Unit,
     colors: StorefrontColors,
 ) {
     val searchFocus = remember { FocusRequester() }
@@ -238,14 +251,8 @@ private fun AppPickerHeader(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.weight(1f),
         ) {
-            Text(
-                text = "\u2039",
-                color = colors.textSecondary,
-                fontSize = 18.sp,
-                modifier = Modifier
-                    .clickable { onBack() }
-                    .padding(end = 8.dp),
-            )
+            // B's twin: closes an open search, then the removal check, then the picker.
+            PickerBreadcrumb(onClick = onBack, color = colors.textSecondary)
             Text(
                 text = state.title,
                 color = colors.textPrimary,
@@ -295,41 +302,16 @@ private fun AppPickerHeader(
             }
         }
 
-        Spacer(Modifier.width(16.dp))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.clickable { onSearchToggle(!state.searchActive) },
-        ) {
-            // Hand-drawn magnifier — no icon vector.
-            Canvas(modifier = Modifier.size(18.dp)) {
-                val strokeW = 1.8f.dp.toPx()
-                val cx = size.width * 0.42f
-                val cy = size.height * 0.42f
-                val r = size.width * 0.30f
-                drawCircle(
-                    color = colors.iconSecondary,
-                    radius = r,
-                    center = Offset(cx, cy),
-                    style = Stroke(strokeW),
-                )
-                drawLine(
-                    color = colors.iconSecondary,
-                    start = Offset(cx + r * 0.70f, cy + r * 0.70f),
-                    end = Offset(
-                        cx + r * 0.70f + size.width * 0.22f,
-                        cy + r * 0.70f + size.height * 0.22f,
-                    ),
-                    strokeWidth = strokeW,
-                    cap = StrokeCap.Round,
-                )
+        // Touch mode only (the pad has X and START in the footer): Search, then ✓ Done. An open
+        // search steps its pill aside — the field takes the taps and ◀ closes it. A finger cannot
+        // press HOME: Done takes the same two-pass path (removals still confirm).
+        if (showTouchPills) {
+            if (!state.searchActive) {
+                Spacer(Modifier.width(16.dp))
+                StorefrontSearchPill(onClick = { onSearchToggle(true) }, colors = colors)
             }
-            Spacer(Modifier.width(5.dp))
-            Text(
-                if (state.searchActive) "Clear" else "Search",
-                color = colors.textSecondary,
-                fontSize = 13.sp,
-            )
+            Spacer(Modifier.width(10.dp))
+            StorefrontTouchPill("Done", "✓", onApply, colors, Modifier.testTag(PickerHeaderTags.DONE))
         }
     }
 }
@@ -516,14 +498,30 @@ private fun AppPickerTile(
     }
 }
 
-// ── Footer: controller prompt bar (glyphs resolve from LocalControllerPromptStyle) ──
+// ── Footer: touch or controller prompt bar (glyphs resolve from LocalControllerPromptStyle) ──
 
 @Composable
 private fun AppPickerFooter(
     confirmingRemovals: Boolean,
+    showTouchControls: Boolean,
     colors: StorefrontColors,
     modifier: Modifier = Modifier,
 ) {
+    if (showTouchControls) {
+        TouchPromptBar(
+            items = appPickerTouchPrompts(confirmingRemovals),
+            labelColor = colors.textSecondary,
+            labelStyle = TextStyle(fontSize = 12.sp),
+            glyphSize = 16.dp,
+            arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
+            // Held at one glyph's height so the grid behind the removal panel does not grow when
+            // the bar empties for it.
+            modifier = modifier
+                .heightIn(min = 16.dp)
+                .alpha(if (isVirtualKeyboardOverlayOpen()) 0f else 1f),
+        )
+        return
+    }
     // While the removal-confirmation modal is up the prompt describes the modal's controls —
     // the grid behind the scrim is inert.
     val items = if (confirmingRemovals) {
@@ -537,7 +535,7 @@ private fun AppPickerFooter(
             ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Navigate"),
             ControllerPromptItem(GamepadAction.SELECT, "Toggle"),
             ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"),
-            ControllerPromptItem(GamepadAction.HOME, "Apply"),
+            ControllerPromptItem(GamepadAction.HOME, "Done"),
             ControllerPromptItem(GamepadAction.BACK, "Cancel"),
         )
     }

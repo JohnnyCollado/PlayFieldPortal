@@ -5,6 +5,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,20 +28,23 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.CompositionLocalProvider
 import com.playfieldportal.core.domain.model.ControllerIcon
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPromptBar
@@ -58,7 +63,9 @@ import com.playfieldportal.themekit.IconSlot
 /**
  * Live "Customize XMB Icons" editor, drawn OVER the real XMB (which keeps rendering — and
  * animating — behind it). Shape-for-shape the Adjust XMB Layout chrome: a light consuming
- * scrim, a bottom-anchored panel, D-pad control plus touch buttons.
+ * scrim, a bottom-anchored panel, D-pad control or touch buttons — one family on screen at a time
+ * ([showTouchControls]), each reaching every command ([customIconsPadCommand]). Any finger on the
+ * editor reports [onTouchInput], so AUTO touch mode brings the buttons up.
  *
  * Edits apply IMMEDIATELY through the VM into CustomIconStore — there is deliberately no
  * Save/Cancel pair. Unlike layout adjust there is no coherent draft to discard (each pick is
@@ -83,6 +90,8 @@ fun CustomIconsOverlay(
     forwardedAction: GamepadAction? = null,
     onActionConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
+    showTouchControls: Boolean = false,
+    onTouchInput: () -> Unit = {},
 ) {
     // SAF pick for the focused slot. OpenDocument returns a content URI we copy from
     // immediately — no persistence grant needed. Both control paths funnel here: the touch
@@ -92,16 +101,20 @@ fun CustomIconsOverlay(
     }
     val launchPicker = { picker.launch(PICK_MIME) }
 
-    // Forwarded pad actions: SELECT = Pick, OPTIONS = Reset focused, BACK = Done.
+    // Forwarded pad actions, one per touch button (see customIconsPadCommand).
     LaunchedEffect(forwardedAction) {
-        when (forwardedAction) {
-            GamepadAction.SELECT -> launchPicker()
-            GamepadAction.OPEN_CONTEXT_MENU -> session.focusedSlot?.let { onResetSlot(it.key) }
-            GamepadAction.BACK -> onDone()
-            else -> Unit
+        when (forwardedAction?.let(::customIconsPadCommand)) {
+            CustomIconsCommand.PICK -> launchPicker()
+            CustomIconsCommand.RESET_SLOT -> session.focusedSlot?.let { onResetSlot(it.key) }
+            // The touch button greys out with nothing to reset; the pad just does nothing.
+            CustomIconsCommand.RESET_ALL -> if (icons.userKeys.isNotEmpty()) onResetAll()
+            CustomIconsCommand.SAVE_AS_THEME -> onSaveAsTheme()
+            CustomIconsCommand.DONE -> onDone()
+            null -> Unit
         }
         if (forwardedAction != null) onActionConsumed()
     }
+    val currentOnTouchInput by rememberUpdatedState(onTouchInput)
 
     val slots = remember(session.tabIndex, session.barKeys, session.userCategorySlots) { session.slots() }
     // The Items tab's XMB columns, each captioned over its run of the strip.
@@ -116,7 +129,15 @@ fun CustomIconsOverlay(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            // requireUnconsumed = false: the scrim, strip and buttons consume their own taps.
+            .pointerInput(Unit) {
+                awaitEachGesture { awaitFirstDown(requireUnconsumed = false); currentOnTouchInput() }
+            },
+        contentAlignment = Alignment.BottomCenter,
+    ) {
         // Consuming scrim: keeps the editor modal so taps above the panel never fall through
         // to the XMB rows behind it (the columns stay fully visible, only faintly dimmed).
         Box(
@@ -255,7 +276,7 @@ fun CustomIconsOverlay(
             }
 
             // Controller hints.
-            ControllerPromptBar(
+            if (!showTouchControls) ControllerPromptBar(
                 items = listOfNotNull(
                     if (runs.isEmpty()) {
                         ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Move")
@@ -271,6 +292,8 @@ fun CustomIconsOverlay(
                     ),
                     ControllerPromptItem(GamepadAction.SELECT, "Pick"),
                     ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Reset"),
+                    ControllerPromptItem(GamepadAction.CHANGE_SORT, "Reset All"),
+                    ControllerPromptItem(GamepadAction.HOME, "Save as Theme"),
                     ControllerPromptItem(GamepadAction.BACK, "Done"),
                 ),
                 labelColor = themedSubText(Color(0x99B9C6DC)),
@@ -281,7 +304,7 @@ fun CustomIconsOverlay(
 
             // Touch controls. Select launches the SAF picker for the focused slot; SELECT on
             // the pad is forwarded by the VM to the overlay's action consumer, which calls it.
-            Row(
+            if (showTouchControls) Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
@@ -305,6 +328,23 @@ fun CustomIconsOverlay(
             }
         }
     }
+}
+
+/** What a forwarded pad press does in the editor: one command per touch button. */
+internal enum class CustomIconsCommand { PICK, RESET_SLOT, RESET_ALL, SAVE_AS_THEME, DONE }
+
+/**
+ * The command a pad [action] runs, or null for the presses the view model handles itself (slot
+ * cursor and tabs). SELECT picks, △ resets the focused slot, □ resets all, START saves the set as a
+ * theme, ○ is done — so a pad reaches every touch button, and touch mode can hide the prompts.
+ */
+internal fun customIconsPadCommand(action: GamepadAction): CustomIconsCommand? = when (action) {
+    GamepadAction.SELECT -> CustomIconsCommand.PICK
+    GamepadAction.OPEN_CONTEXT_MENU -> CustomIconsCommand.RESET_SLOT
+    GamepadAction.CHANGE_SORT -> CustomIconsCommand.RESET_ALL
+    GamepadAction.HOME -> CustomIconsCommand.SAVE_AS_THEME
+    GamepadAction.BACK -> CustomIconsCommand.DONE
+    else -> null
 }
 
 /** The Items tab's column caption line: the label's line box and the row it sits in, as one number. */

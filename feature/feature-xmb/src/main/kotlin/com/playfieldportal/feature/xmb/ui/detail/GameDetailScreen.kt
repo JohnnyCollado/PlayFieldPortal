@@ -1006,8 +1006,7 @@ internal fun gameDetailHelperItems(state: GameDetailUiState): List<ControllerPro
     state.manualViewerUri != null ->
         listOf(
             ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Scroll"),
-            ControllerPromptItem(GamepadAction.PREV_CATEGORY, "Prev page"),
-            ControllerPromptItem(GamepadAction.NEXT_CATEGORY, "Next page"),
+            ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Prev / Next"),
             ControllerPromptItem(GamepadAction.BACK, "Close"),
         )
     // The title confirm owns the overlay while it is up, so it owns the hints too.

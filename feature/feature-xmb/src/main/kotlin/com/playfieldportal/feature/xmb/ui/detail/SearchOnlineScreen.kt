@@ -140,7 +140,7 @@ fun SearchOnlineScreen(
                 state = state,
                 palette = palette,
                 showTouchControls = showTouchControls,
-                onBack = viewModel::close,
+                onBack = viewModel::back,
                 onProviderClick = viewModel::openOptions,
             )
 
@@ -214,7 +214,9 @@ fun SearchOnlineScreen(
                 if (showTouchControls && state.options == null) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         if (state.inPreview) {
-                            XmbHeaderPill(label = "Close preview", onClick = viewModel::closePreview)
+                            // ◀ closes the preview as B does, so no Close pill; the Options menu's
+                            // only entry on a preview has no Triangle on touch.
+                            XmbHeaderPill(label = "Refresh Preview", onClick = viewModel::refreshPreview)
                         } else {
                             SearchProvider.entries.forEach { provider ->
                                 XmbHeaderPill(
@@ -311,8 +313,8 @@ private fun SearchOnlineHeader(
                     )
                 }
             } else if (showTouchControls) {
-                // Touch has no Triangle, so the provider is also the button that changes it.
-                XmbHeaderPill(label = state.provider.label, onClick = onProviderClick)
+                // Touch has no Triangle: the ⋮ kebab opens Options, where the provider is chosen.
+                DetailOptionsKebab(onClick = onProviderClick)
             }
         }
         Row(

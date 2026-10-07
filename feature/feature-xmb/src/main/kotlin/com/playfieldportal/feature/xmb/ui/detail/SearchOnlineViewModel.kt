@@ -304,7 +304,7 @@ fun searchOnlineHelperItems(state: SearchOnlineUiState): List<ControllerPromptIt
         add(ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"))
         add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
         add(ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Change View"))
-        add(ControllerPromptItem(GamepadAction.BACK, "Close preview"))
+        add(ControllerPromptItem(GamepadAction.BACK, "Close Preview"))
     }
     else -> listOf(
         ControllerPromptItem(GamepadAction.SELECT, if (state.searchFocused) "Type" else "Preview"),
@@ -336,6 +336,10 @@ class SearchOnlineViewModel @Inject constructor(
         closePreview()
         _state.update { it.copy(closed = true) }
     }
+
+    /** One level up, for Back and the header ◀ alike: leave the preview first, else the page. */
+    fun back() = if (_state.value.inPreview) closePreview() else close()
+
     fun onClosedHandled() = _state.update { it.copy(closed = false) }
     fun onCredentialsHandled() = _state.update { it.copy(openCredentials = false) }
 
@@ -364,7 +368,7 @@ class SearchOnlineViewModel @Inject constructor(
             GamepadAction.CHANGE_SORT -> if (_state.value.searchFocused) startSearchEdit() else focusSearch()
             GamepadAction.OPEN_CONTEXT_MENU -> openOptions()
             // Back leaves the preview first: the page itself only closes from the result list.
-            GamepadAction.BACK -> if (_state.value.inPreview) closePreview() else close()
+            GamepadAction.BACK -> back()
             GamepadAction.HOME, GamepadAction.SHIFT, GamepadAction.CAPS_LOCK -> Unit
         }
     }

@@ -91,4 +91,16 @@ class GimTest {
         }
         error("chunk $id not found")
     }
+
+    @Test
+    fun `a palette stored after the image block still decodes`() {
+        // Real theme GIMs (6.20 "Neon Star") put the palette block after the image block.
+        val pink = 0xFFFF72B1.toInt()
+        val gim = TestFixtures.buildGim(16, 8, swizzle = true, paletteAfterImage = true) { x, _ ->
+            if (x < 8) pink else 0x00000000
+        }
+        val image = assertNotNull(Gim.decode(gim))
+        assertEquals(pink, image[0, 0])
+        assertEquals(0, image[12, 4])
+    }
 }

@@ -30,10 +30,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.components.ControllerPrompt
+import com.playfieldportal.core.ui.components.ControllerPromptBar
+import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
@@ -123,9 +128,15 @@ internal fun StudioAssetManagerPanel(
                     XmbHeaderPill(label = "Make First", onClick = { if (!busy) onMakePrimary() })
                 }
             } else {
-                Text(
-                    "Ⓛ Ⓡ  MOVE      Ⓐ  MAKE FIRST",
-                    color = themedSubText(Color.White.copy(alpha = 0.7f)), fontSize = 12.sp,
+                ControllerPromptBar(
+                    items = listOf(
+                        ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Move"),
+                        ControllerPromptItem(GamepadAction.SELECT, "Make First"),
+                    ),
+                    glyphSize = 16.dp,
+                    labelColor = themedSubText(Color.White.copy(alpha = 0.7f)),
+                    labelStyle = TextStyle(fontSize = 12.sp),
+                    arrangement = Arrangement.spacedBy(20.dp),
                 )
             }
             Spacer(Modifier.height(10.dp))
@@ -135,14 +146,23 @@ internal fun StudioAssetManagerPanel(
                 color = themedSubText(Color.White.copy(alpha = 0.45f)), fontSize = 10.sp, lineHeight = 13.sp,
             )
             Spacer(Modifier.height(12.dp))
-            Text(
-                "Ⓑ  CLOSE", color = themedText(Color.White.copy(alpha = 0.7f)), fontSize = 13.sp,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color.White.copy(alpha = 0.08f))
-                    .clickable(onClick = onClose)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-            )
+            if (showTouchControls) {
+                XmbHeaderPill(label = "Close", onClick = onClose)
+            } else {
+                // The backdrop and this prompt stay tappable; B closes.
+                ControllerPrompt(
+                    action = GamepadAction.BACK,
+                    label = "Close",
+                    glyphSize = 16.dp,
+                    labelColor = themedText(Color.White.copy(alpha = 0.7f)),
+                    labelStyle = TextStyle(fontSize = 13.sp),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.White.copy(alpha = 0.08f))
+                        .clickable(onClick = onClose)
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
         }
     }
 }

@@ -19,6 +19,8 @@ import com.playfieldportal.feature.settings.viewmodel.RootFolderRow
 @Composable
 fun RootAccessSection(
     groupTitle: String,
+    // What the roots hold, for the empty and fallback rows: "ROM", "Music", "Photo", "Video".
+    rootKind: String,
     roots: List<RootFolderRow>,
     addLabel: String,
     addSublabel: String,
@@ -33,7 +35,7 @@ fun RootAccessSection(
 
     if (roots.isEmpty()) {
         SettingsRow(
-            label = "No ROM roots configured",
+            label = "No $rootKind roots configured",
             sublabel = "Add a folder below to start managing your library",
         )
     } else {
@@ -43,7 +45,7 @@ fun RootAccessSection(
                 sublabel = when {
                     !root.linked -> "Access lost — use Edit to re-grant access"
                     root.consoles != null -> "Consoles: ${root.consoles}"
-                    else -> "ROM root"
+                    else -> "$rootKind root"
                 },
                 onEdit = { onRelinkRoot(root) },
                 onRemove = { onRemoveRoot(root) },

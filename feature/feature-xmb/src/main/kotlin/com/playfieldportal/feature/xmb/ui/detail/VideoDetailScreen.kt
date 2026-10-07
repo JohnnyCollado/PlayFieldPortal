@@ -69,6 +69,7 @@ import com.playfieldportal.core.ui.components.PspMenuRow
 import com.playfieldportal.core.ui.components.rememberPfpModalHost
 import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.components.XmbKebabTouchButton
+import com.playfieldportal.core.ui.components.XmbMediaPillScrim
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.themedSubText
@@ -266,10 +267,13 @@ fun VideoDetailScreen(
                 label = "Back",
                 leadingGlyph = "◀",
                 onClick = { if (state.showOptions) viewModel.closeOptions() else onBack() },
+                background = XmbMediaPillScrim,
                 modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
             )
             XmbKebabTouchButton(
                 onClick = viewModel::openOptions,
+                background = XmbMediaPillScrim,
+                size = 36.dp,
                 modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
             )
         }

@@ -3,10 +3,12 @@ package com.playfieldportal.core.data.repository
 import android.content.Context
 import android.net.Uri
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.longPreferencesKey
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.themekit.AccentDeriver
+import com.playfieldportal.themekit.PtfIconTint
+import com.playfieldportal.themekit.PtfIcons
 import com.playfieldportal.themekit.PtfParser
+import com.playfieldportal.themekit.PtfUnpacker
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -15,14 +17,14 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 /**
- * Converts a user-picked official PSP theme (`.ptf`) into this launcher's theme values:
- * wallpaper + derived accent color (docs/ptf-import-plan.md). Icons stay ours.
+ * Converts a user-picked official PSP theme (`.ptf`) into a library theme: the packed wallpaper,
+ * the icons that have an exact counterpart here ([PtfIcons.DIRECT]), a tint that matches the
+ * built-in icons it leaves to the theme's art, and an accent for menus and the wave.
  *
- * The converted theme is saved into the [PfpThemeStore] library (so it can be re-applied
- * or removed later) and applied immediately.
+ * The theme is saved, not applied: the caller routes it through the apply confirmation so a
+ * user's own custom icons are never replaced without asking.
  *
- * Personal-use conversion: reads the user's own file via SAF, extracts only the wallpaper
- * and a color derived from it. Nothing is redistributed.
+ * Personal-use conversion: reads the user's own file via SAF. Nothing is redistributed.
  */
 @Singleton
 class PtfThemeImporter @Inject constructor(
@@ -31,8 +33,17 @@ class PtfThemeImporter @Inject constructor(
 ) {
 
     sealed interface Result {
-        /** Imported, saved to the library, and applied. */
-        data class Success(val themeName: String, val accentArgb: Long?) : Result
+        /**
+         * Imported and saved to the library as [themeId]. [iconCount] is how many icon slots the
+         * theme fills; [tintScore] (0–100) is how well one tint matches its icons, null without icons.
+         */
+        data class Success(
+            val themeId: String,
+            val themeName: String,
+            val accentArgb: Long?,
+            val iconCount: Int,
+            val tintScore: Int?,
+        ) : Result
 
         /** The file is a CXMB `.ctf` — a full flash0 replacement we deliberately don't support. */
         data object CxmbNotSupported : Result
@@ -68,7 +79,15 @@ class PtfThemeImporter @Inject constructor(
             },
         )
 
-        val accent = AccentDeriver.deriveAccent(wallpaper)?.toUInt()?.toLong()
+        // Icons are best-effort: a theme whose icon records will not unpack still imports with
+        // its wallpaper, exactly as before icons were carried.
+        val icons = runCatching { PtfUnpacker.unpack(bytes)?.let(PtfIcons::extract) }
+            .onFailure { Timber.w(it, "PTF icon unpack threw; importing the wallpaper only") }
+            .getOrNull()
+            .orEmpty()
+        val tint = PtfIconTint.derive(PtfIcons.tintSources(icons))
+        val accent = PtfIconTint.chooseAccent(tint, AccentDeriver.deriveAccent(wallpaper))
+            ?.toUInt()?.toLong()
         val name = theme.name.ifBlank { "Imported PSP theme" }
 
         val saved = store.createFromPtf(
@@ -77,12 +96,17 @@ class PtfThemeImporter @Inject constructor(
             accentArgb = accent,
             sourceFile = uri.lastPathSegment,
             firmware = theme.firmware.ifBlank { null },
+            icons = icons,
+            iconColorArgb = PtfIconTint.iconColorFor(tint),
         ) ?: return@withContext Result.Failed("Could not save the theme")
 
-        if (!store.apply(saved.id)) {
-            Timber.w("PTF import: saved but apply failed for %s", saved.id)
-        }
-        Result.Success(themeName = name, accentArgb = accent)
+        Result.Success(
+            themeId = saved.id,
+            themeName = name,
+            accentArgb = accent,
+            iconCount = icons.size,
+            tintScore = tint?.score,
+        )
     }
 
     /** Removes the imported accent so the preset color scheme applies again. */

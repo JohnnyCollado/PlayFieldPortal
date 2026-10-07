@@ -1,9 +1,11 @@
 package com.playfieldportal.launcher
 
 import android.annotation.SuppressLint
+import android.content.ComponentName
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
+import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
 import androidx.activity.ComponentActivity
@@ -12,20 +14,36 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
+import com.playfieldportal.core.domain.model.ScreenOrientationMode
+import com.playfieldportal.core.ui.orientation.RotatePromptKey
+import com.playfieldportal.core.ui.orientation.RotateToLandscapeScreen
+import com.playfieldportal.core.ui.orientation.requestedOrientationFor
+import com.playfieldportal.core.ui.orientation.rotatePromptKey
+import com.playfieldportal.core.ui.orientation.showRotatePrompt
 import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import com.playfieldportal.core.ui.sound.MenuSoundSink
 import com.playfieldportal.core.ui.theme.PFPTheme
 import com.playfieldportal.feature.library.scanner.LibraryRescanCoordinator
 import com.playfieldportal.feature.settings.media.MediaRescanCoordinator
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
@@ -76,6 +94,11 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var iconDisplayPreferences: com.playfieldportal.core.data.repository.IconDisplayPreferences
 
+    // Display ▸ Screen Orientation (issue #21): Landscape locks the window; Follow Device lets it
+    // turn portrait, where a rotate prompt covers the UI.
+    @Inject
+    lateinit var screenOrientationPreferences: com.playfieldportal.core.data.repository.ScreenOrientationPreferences
+
     // Same activity-scoped instance the shell's hiltViewModel() resolves — used to report when
     // the notification-permission dialog is out of the way so the boot sequence can start.
     private val xmbViewModel: XMBViewModel by viewModels()
@@ -83,6 +106,17 @@ class MainActivity : ComponentActivity() {
     // True once the launcher has actually been stopped, so onResume can tell "back from a game"
     // apart from the cold start's own first onResume.
     private var wasStopped = false
+
+    // The splash holds until the saved orientation is applied, so Follow Device never flashes a
+    // landscape frame when PFP starts in portrait.
+    private var orientationResolved = false
+
+    // The saved mode, from the same collector that releases the splash: the composition reads this
+    // rather than collecting again, so the first frame already knows whether the rotate prompt is up.
+    private var orientationMode by mutableStateOf(ScreenOrientationMode.LANDSCAPE)
+
+    // Mirrors the composition's rotate-prompt state for key dispatch, which runs outside it.
+    private var rotatePromptShowing = false
 
     // Runtime-registered so it actually fires on Android 8+ (manifest receivers are blocked for
     // this implicit broadcast). Lives for the activity's lifetime.
@@ -97,8 +131,18 @@ class MainActivity : ComponentActivity() {
     private val usbDisconnectReceiver = UsbDisconnectReceiver()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        installSplashScreen().setKeepOnScreenCondition { !orientationResolved }
         super.onCreate(savedInstanceState)
+
+        // The manifest's sensorLandscape is the cold-start default; the saved mode replaces it,
+        // and a change made in Settings applies live.
+        lifecycleScope.launch {
+            screenOrientationPreferences.modeFlow.collect { mode ->
+                requestedOrientation = requestedOrientationFor(mode)
+                orientationMode = mode
+                orientationResolved = true
+            }
+        }
 
         enableEdgeToEdge()
         hideSystemBars()
@@ -165,10 +209,26 @@ class MainActivity : ComponentActivity() {
                 val lifecycleState by lifecycle.currentStateFlow.collectAsState()
                 // RESUMED, not STARTED: a dialog-style app over the launcher leaves it visible but
                 // paused, and nothing should animate behind it either.
-                val appVisible = lifecycleState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)
-                androidx.compose.runtime.SideEffect {
+                val rotatePrompt = showRotatePrompt(orientationMode, LocalConfiguration.current.orientation)
+                // Only the one flag, so the root does not recompose on every XMB state change.
+                val touchFamily by remember {
+                    xmbViewModel.uiState.map { it.resolvedShowTouchButton }.distinctUntilChanged()
+                }.collectAsState(initial = false)
+                // Covered by the rotate prompt counts as not visible: nothing animates under it.
+                val appVisible = lifecycleState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) &&
+                    !rotatePrompt
+                SideEffect {
+                    rotatePromptShowing = rotatePrompt
                     com.playfieldportal.core.ui.motion.MotionGate.Shared
                         .update(imageMotion, focused = true, allowed = appVisible)
+                }
+                // Ambience yields to the prompt through its own hold, independent of the
+                // lifecycle calls that also drive it.
+                if (rotatePrompt) {
+                    DisposableEffect(Unit) {
+                        val hold = ambienceController.hold("rotate-prompt")
+                        onDispose { hold.release() }
+                    }
                 }
                 CompositionLocalProvider(
                     LocalMenuSounds provides menuSounds,
@@ -178,10 +238,21 @@ class MainActivity : ComponentActivity() {
                     // Controller prompts are ambient: every footer resolves its glyphs from the
                     // live bindings supplied here, so none of them can contradict the pad.
                     ProvideControllerPrompts {
-                        // AppXmbHost is defined per build variant: the debug source set wraps the shell so
-                        // long-pressing Settings opens DebugMenuScreen; the release source set calls
-                        // XMBShellContainer directly, keeping debug code out of the APK.
-                        AppXmbHost()
+                        Box(Modifier.fillMaxSize()) {
+                            // AppXmbHost is defined per build variant: the debug source set wraps the shell so
+                            // long-pressing Settings opens DebugMenuScreen; the release source set calls
+                            // XMBShellContainer directly, keeping debug code out of the APK.
+                            AppXmbHost()
+                            // Drawn over the UI rather than instead of it, so everything underneath
+                            // keeps its state and rotating back lands exactly where it was.
+                            if (rotatePrompt) {
+                                RotateToLandscapeScreen(
+                                    onSwitchLauncher = ::openLauncherChooser,
+                                    showControllerGlyph = !touchFamily,
+                                    onTouchInput = xmbViewModel::markTouchInput,
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -248,6 +319,16 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
     }
 
+    // The rotate prompt's button: the system chooser over every home app except PFP, so a phone
+    // held upright can leave for the everyday launcher without a controller.
+    private fun openLauncherChooser() {
+        val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        val chooser = Intent.createChooser(home, "Switch launcher")
+            .putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, arrayOf(ComponentName(this, MainActivity::class.java)))
+        runCatching { startActivity(chooser) }
+            .onFailure { Timber.w(it, "Could not open the launcher chooser") }
+    }
+
     private fun hideSystemBars() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, window.decorView).apply {
@@ -261,12 +342,32 @@ class MainActivity : ComponentActivity() {
 
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        // The rotate prompt is a hard input boundary: Confirm presses its button, every other
+        // bound button is swallowed, unbound system keys (volume) reach the system and any other
+        // key is dropped. A bound button still hands the prompt's glyphs to the controller.
+        if (rotatePromptShowing) {
+            val key = rotatePromptKey(gamepadInputHandler.currentMappings.actionFor(event.keyCode), event.isSystem)
+            if (key.isControllerInput && event.action == KeyEvent.ACTION_DOWN) xmbViewModel.markControllerInput()
+            when (key) {
+                RotatePromptKey.PASS -> return super.dispatchKeyEvent(event)
+                RotatePromptKey.SWALLOW, RotatePromptKey.IGNORE -> return true
+                RotatePromptKey.SWITCH_LAUNCHER -> {
+                    // On release, so the key-up does not land in the launcher that opens.
+                    if (event.action == KeyEvent.ACTION_UP) openLauncherChooser()
+                    return true
+                }
+            }
+        }
         // Let the gamepad handler process it first; fall back to normal dispatch
         if (gamepadInputHandler.onKeyEvent(event)) return true
         return super.dispatchKeyEvent(event)
     }
 
     override fun onGenericMotionEvent(event: MotionEvent): Boolean {
+        // Sticks and HATs drive nothing while the rotate prompt covers the UI.
+        if (rotatePromptShowing && (event.source and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
+            return true
+        }
         if (gamepadInputHandler.onMotionEvent(event)) return true
         return super.onGenericMotionEvent(event)
     }

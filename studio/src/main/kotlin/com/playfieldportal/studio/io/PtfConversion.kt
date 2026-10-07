@@ -1,10 +1,15 @@
 package com.playfieldportal.studio.io
 
 import com.playfieldportal.themekit.AccentDeriver
+import com.playfieldportal.themekit.BmpImage
 import com.playfieldportal.themekit.PfpThemeBundle
 import com.playfieldportal.themekit.PfpThemeManifest
 import com.playfieldportal.themekit.PfpThemeSource
+import com.playfieldportal.themekit.PtfIconTint
+import com.playfieldportal.themekit.PtfIcons
 import com.playfieldportal.themekit.PtfParser
+import com.playfieldportal.themekit.PtfUnpacker
+import com.playfieldportal.themekit.ThemeImage
 import java.time.LocalDate
 
 /** Result of converting one `.ptf` file. */
@@ -20,8 +25,9 @@ sealed interface ConvertOutcome {
 
 /**
  * The PTF → `.pfptheme` pipeline shared by Open and Batch Convert: parse the official
- * theme, extract the wallpaper, derive the accent from its dominant hue (the PSP stores
- * no usable color of its own), and wrap it all in a bundle with provenance.
+ * theme, extract the wallpaper and the icons that have an exact counterpart here
+ * ([PtfIcons]), pick an icon tint and accent that match the theme's art ([PtfIconTint]),
+ * and wrap it all in a bundle with provenance. Same rules as the launcher's import.
  */
 object PtfConversion {
 
@@ -43,7 +49,15 @@ object PtfConversion {
             ?: return ConvertOutcome.Failed("Corrupt or truncated PTF")
 
         val wallpaperPng = ptf.wallpaper?.let { ImageCodecs.toPngBytes(ImageCodecs.bmpToBufferedImage(it)) }
-        val accent = ptf.wallpaper?.let { AccentDeriver.deriveAccent(it) } ?: DEFAULT_ACCENT
+        // Icons are best-effort: a theme whose icon records will not unpack converts as before.
+        val icons = runCatching { PtfUnpacker.unpack(ptfBytes)?.let(PtfIcons::extract) }.getOrNull().orEmpty()
+        val tint = PtfIconTint.derive(PtfIcons.tintSources(icons))
+        val accent = PtfIconTint.chooseAccent(tint, ptf.wallpaper?.let { AccentDeriver.deriveAccent(it) })
+            ?: DEFAULT_ACCENT
+        val encoded = HashMap<BmpImage, ThemeImage>()
+        val iconEntries = icons.mapValues { (_, image) ->
+            encoded.getOrPut(image) { ThemeImage(ImageCodecs.toPngBytes(ImageCodecs.bmpToBufferedImage(image)), "png") }
+        }
         val warning = when (ptf.wallpaperStatus) {
             PtfParser.WallpaperStatus.DECODED -> null
             PtfParser.WallpaperStatus.MISSING -> "This theme contains no wallpaper image."
@@ -58,6 +72,7 @@ object PtfConversion {
         val manifest = PfpThemeManifest(
             name = ptf.name.ifBlank { sourceFileName.substringBeforeLast('.') },
             accentColor = toHexRgb(accent),
+            iconColor = PtfIconTint.iconColorFor(tint)?.let(::toHexRgb) ?: PfpThemeManifest.ICON_COLOR_AUTO,
             source = PfpThemeSource(
                 type = PfpThemeSource.TYPE_PTF_IMPORT,
                 file = sourceFileName,
@@ -66,7 +81,7 @@ object PtfConversion {
             created = today.toString(),
         )
         return ConvertOutcome.Converted(
-            PfpThemeBundle(manifest = manifest, wallpaper = wallpaperPng, preview = previewPng),
+            PfpThemeBundle(manifest = manifest, wallpaper = wallpaperPng, preview = previewPng, icons = iconEntries),
             warning = warning,
         )
     }

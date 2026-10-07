@@ -6,6 +6,8 @@ import com.playfieldportal.core.domain.model.GameContentType
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.IconDisplayMode
 import com.playfieldportal.core.domain.model.MemoryCard
+import com.playfieldportal.core.domain.model.TouchGesture
+import com.playfieldportal.core.ui.components.TouchPromptItem
 import com.playfieldportal.core.ui.sound.MenuSound
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -485,5 +487,36 @@ class GamePickerLogicTest {
         assertEquals(listOf(2L), (s.currentShelf() as GameShelf).games.map { it.id })
         assertEquals(0, s.press(GamepadAction.NAVIGATE_RIGHT).focusedIndex())
         assertTrue(2L in s.activate().selectedGameIds)
+    }
+
+    // ── Touch mode (issue #20): Search / Options / Done are header pills, the footer names the tap ──
+
+    @Test
+    fun `touch prompts name the tap the shelves and tiles bind`() {
+        assertEquals(listOf(TouchPromptItem(TouchGesture.TAP, "Open / Toggle")), gamePickerTouchPrompts())
+    }
+
+    @Test
+    fun `header pills show only in touch mode with the Options menu closed`() {
+        assertEquals(
+            listOf(GamePickerPill.SEARCH, GamePickerPill.DONE, GamePickerPill.OPTIONS),
+            gamePickerTouchPills(state(), showTouchControls = true),
+        )
+        assertTrue(gamePickerTouchPills(state(), showTouchControls = false).isEmpty())
+        assertTrue(gamePickerTouchPills(state().openMenu(), showTouchControls = true).isEmpty())
+    }
+
+    @Test
+    fun `a finger can open search - the pad's X has a pill`() {
+        assertTrue(GamePickerPill.SEARCH in gamePickerTouchPills(state(), showTouchControls = true))
+    }
+
+    @Test
+    fun `with search open the Search pill steps aside - the breadcrumb closes it, as B does`() {
+        val searching = state().pressSearch()
+        assertEquals(
+            listOf(GamePickerPill.DONE, GamePickerPill.OPTIONS),
+            gamePickerTouchPills(searching, showTouchControls = true),
+        )
     }
 }

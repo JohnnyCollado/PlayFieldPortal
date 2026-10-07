@@ -62,6 +62,7 @@ import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 import com.playfieldportal.feature.xmb.ui.buildNotificationRows
 import com.playfieldportal.feature.xmb.ui.clampCursor
+import com.playfieldportal.feature.xmb.ui.customIconsPadCommand
 import com.playfieldportal.feature.xmb.ui.firstSelectableIndex
 import com.playfieldportal.feature.xmb.ui.moveCursor
 import com.playfieldportal.feature.xmb.ui.notificationAt
@@ -6400,8 +6401,9 @@ class XMBViewModel @Inject constructor(
                 // The icon editor owns the pad: LEFT/RIGHT step the slot cursor through the tab's
                 // strip, while the L/R shoulders cycle the tabs [Crossbar, Items, Consoles,
                 // Physical Media]. UP/DOWN jump between XMB columns on the Items tab and mirror
-                // LEFT/RIGHT elsewhere. SELECT opens the SAF picker (the overlay observes the
-                // forwarded action), OPTIONS resets the focused slot, BACK exits.
+                // LEFT/RIGHT elsewhere. Every other command is forwarded to the overlay (SELECT
+                // opens the SAF picker, OPTIONS resets the focused slot, □ resets all, START saves
+                // as a theme, BACK exits — see customIconsPadCommand).
                 when (action) {
                     GamepadAction.NAVIGATE_LEFT -> onCustomIconSlotMove(-1)
                     GamepadAction.NAVIGATE_RIGHT -> onCustomIconSlotMove(+1)
@@ -6409,10 +6411,9 @@ class XMBViewModel @Inject constructor(
                     GamepadAction.NAVIGATE_DOWN -> onCustomIconColumnMove(+1)
                     GamepadAction.PREV_CATEGORY -> onCustomIconTabMove(-1)
                     GamepadAction.NEXT_CATEGORY -> onCustomIconTabMove(+1)
-                    GamepadAction.SELECT,
-                    GamepadAction.OPEN_CONTEXT_MENU,
-                    GamepadAction.BACK -> _uiState.update { it.copy(pendingCustomIconsAction = action) }
-                    else -> Unit
+                    else -> if (customIconsPadCommand(action) != null) {
+                        _uiState.update { it.copy(pendingCustomIconsAction = action) }
+                    }
                 }
                 return
             }
@@ -8960,7 +8961,9 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    private fun markControllerInput() {
+    /** Marks the last input source as the controller. Public so the activity can report a pad press
+     *  it handles itself (the rotate prompt), which never reaches the gamepad dispatch. */
+    fun markControllerInput() {
         lastInteractionMs = SystemClock.elapsedRealtime()
         mirrorInputSource(virtualKeyboard, touch = false)
         _uiState.update {

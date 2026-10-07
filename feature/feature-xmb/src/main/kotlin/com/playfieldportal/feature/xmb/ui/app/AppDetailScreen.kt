@@ -58,7 +58,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
@@ -275,7 +275,8 @@ fun AppDetailScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     PfpDetailQuickAction(
                         label     = "Options",
-                        icon      = Icons.Filled.Settings,
+                        // The app-wide Options glyph, as Game Detail's (ARCHITECTURE.md ▸ Conventions).
+                        icon      = Icons.Filled.MoreVert,
                         focused   = state.mainFocus == 1,
                         available = true,
                         onClick   = viewModel::openOptions,

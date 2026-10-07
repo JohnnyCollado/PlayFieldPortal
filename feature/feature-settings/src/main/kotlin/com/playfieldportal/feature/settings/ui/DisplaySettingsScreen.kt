@@ -553,8 +553,10 @@ fun DisplaySettingsScreen(
 
             SettingsValueRow(
                 label    = "Screen Orientation",
-                sublabel = "PFP is designed for landscape use",
-                value    = "Landscape (fixed)",
+                sublabel = "Landscape — PFP stays landscape  |  Follow Device — rotates with the phone; " +
+                    "portrait shows a rotate prompt (for Tasker / launcher switching)",
+                value    = viewModel.screenOrientationLabel(),
+                onClick  = { viewModel.cycleScreenOrientation() },
             )
 
             // (The old "Icon Style" option lived here — replaced by Artwork ▸ Game Icon

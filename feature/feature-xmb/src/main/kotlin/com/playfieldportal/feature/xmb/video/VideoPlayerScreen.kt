@@ -328,13 +328,7 @@ fun VideoPlayerScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(errorMessage!!, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(8.dp))
-                    ControllerPrompt(
-                        actions = listOf(GamepadAction.SELECT, GamepadAction.BACK),
-                        label = "Go back",
-                        labelColor = Color(0xFFB0B0B0),
-                        labelStyle = TextStyle(fontSize = 13.sp),
-                        glyphSize = 18.dp,
-                    )
+                    VideoErrorBackPrompt(showTouchControls = showTouchControls, onBack = onExit)
                 }
             }
         }
@@ -379,6 +373,22 @@ private val OPTION_TITLES = mapOf(
     VideoOptionGroup.AUDIO to "Audio Track",
     VideoOptionGroup.SCREEN_MODE to "Screen Mode",
 )
+
+/** The error state's way out: the Back pill the controls overlay uses under touch, else the pad prompt. */
+@Composable
+internal fun VideoErrorBackPrompt(showTouchControls: Boolean, onBack: () -> Unit) {
+    if (showTouchControls) {
+        XmbHeaderPill(label = "Back", leadingGlyph = "◀", onClick = onBack, background = XmbMediaPillScrim)
+    } else {
+        ControllerPrompt(
+            actions = listOf(GamepadAction.SELECT, GamepadAction.BACK),
+            label = "Go back",
+            labelColor = Color(0xFFB0B0B0),
+            labelStyle = TextStyle(fontSize = 13.sp),
+            glyphSize = 18.dp,
+        )
+    }
+}
 
 @Composable
 private fun ControlsOverlay(
@@ -425,7 +435,7 @@ private fun ControlsOverlay(
                 XmbKebabTouchButton(
                     onClick = onOptions,
                     background = XmbMediaPillScrim,
-                    size = 40.dp,
+                    size = 36.dp,
                     modifier = Modifier.align(Alignment.CenterEnd),
                 )
             }
@@ -522,29 +532,11 @@ private fun ControlsOverlay(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     ControllerPromptBar(
-                        items = listOfNotNull(
-                            ControllerPromptItem(
-                                GamepadAction.SELECT,
-                                if (isPlaying) "Pause" else "Play",
-                            ),
-                            ControllerPromptItem(
-                                listOf(GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT),
-                                "Seek",
-                            ),
-                            if (hasPrev || hasNext) {
-                                ControllerPromptItem(
-                                    listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY),
-                                    "Prev / Next",
-                                )
-                            } else {
-                                null
-                            },
-                            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
-                        ),
+                        items = videoPlayerPromptItems(isPlaying, hasPrevNext = hasPrev || hasNext),
                         labelColor = Color(0xFFCCCCCC),
                         labelStyle = TextStyle(fontSize = 12.sp),
                         glyphSize = 16.dp,
-                        arrangement = Arrangement.spacedBy(16.dp),
+                        arrangement = Arrangement.spacedBy(18.dp),
                         // Idles in and blinks out like the crossbar pill (see shouldShowMediaHint).
                         modifier = Modifier.alpha(com.playfieldportal.core.ui.components.idleHintAlpha(com.playfieldportal.feature.xmb.ui.LocalMediaHintVisible.current)),
                     )
@@ -588,3 +580,20 @@ private fun selectTrack(player: Player, trackType: Int, allowOff: Boolean, choic
     }
     player.trackSelectionParameters = params.build()
 }
+
+/**
+ * The player's controller footer: the ladder it shares with the music player (A play/pause, ◀/▶
+ * seek, L1/R1 prev/next, Y options, B back), Back last as on every screen (ARCHITECTURE.md ▸
+ * Conventions). Prev / Next is named only when there is a library to move through.
+ */
+internal fun videoPlayerPromptItems(isPlaying: Boolean, hasPrevNext: Boolean): List<ControllerPromptItem> = listOfNotNull(
+    ControllerPromptItem(GamepadAction.SELECT, if (isPlaying) "Pause" else "Play"),
+    ControllerPromptItem(listOf(GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT), "Seek"),
+    if (hasPrevNext) {
+        ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Prev / Next")
+    } else {
+        null
+    },
+    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
+    ControllerPromptItem(GamepadAction.BACK, "Back"),
+)

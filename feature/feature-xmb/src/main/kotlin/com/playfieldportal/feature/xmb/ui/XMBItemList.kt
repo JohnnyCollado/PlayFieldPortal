@@ -741,8 +741,9 @@ private class ItemListPosition(initial: Int, private val constantSpeed: Boolean 
         focusFromMs = now
         val m = motion
         if (m !is StepMotion.Glide || prev == null || style != XmbListMotion.REWIND) {
-            // A snap or a long jump starts over; Glide never hands off.
-            if (m !is StepMotion.Glide) crossings.clear()
+            // A snap or a long jump starts over; Glide never hands off, and a crossing left over
+            // from Rewind (the setting changed mid-crossing) could never complete under it.
+            if (m !is StepMotion.Glide || style != XmbListMotion.REWIND) crossings.clear()
             lastStepMs = null
         } else if (prev.target != m.target) {
             val row = if (m.target > prev.target) prev.target else m.target
@@ -752,6 +753,14 @@ private class ItemListPosition(initial: Int, private val constantSpeed: Boolean 
                 // from where that row is drawn now.
                 crossings.removeAll { it.row == row || it.down != step.down }
                 crossings += step
+            } else {
+                // No hand-off this time, but a row still crossing the other way must turn back with
+                // the column, or it never completes and stays stranded across the bar.
+                val turned = handBackReversed(crossings.toList(), down = m.target > prev.target, m.target, now) { row ->
+                    row - positionFor(row)
+                }
+                crossings.clear()
+                crossings += turned
             }
             columnDelayMs = columnStartMs(step, now) - now
             focusFromMs = focusStartMs(step, now)

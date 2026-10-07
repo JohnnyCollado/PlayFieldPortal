@@ -5,8 +5,10 @@ import com.playfieldportal.core.domain.model.GameCollection
 import com.playfieldportal.core.domain.model.GameContentType
 import com.playfieldportal.core.domain.model.IconDisplayMode
 import com.playfieldportal.core.domain.model.MemoryCard
+import com.playfieldportal.core.domain.model.TouchGesture
 import com.playfieldportal.core.navigation.packFlowRows
 import com.playfieldportal.core.ui.components.PspMenuRow
+import com.playfieldportal.core.ui.components.TouchPromptItem
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.feature.artwork.store.ArtworkDimensions
 
@@ -349,3 +351,25 @@ internal fun GamePickerState.pressSearch(): GamePickerState = when {
 }
 
 internal fun GamePickerState.closeSearch(): GamePickerState = copy(searchActive = false, query = "")
+
+// ── Touch mode ────────────────────────────────────────────────────────────────
+//
+// One input family on screen at a time (ARCHITECTURE.md ▸ Conventions). A finger cannot press X,
+// Y or HOME, so in touch mode Search, Done and Options become header pills (the ◀ breadcrumb
+// backs out, as B does) and the footer names the tap: a shelf tap opens it, a tile tap toggles it.
+
+internal fun gamePickerTouchPrompts(): List<TouchPromptItem> =
+    listOf(TouchPromptItem(TouchGesture.TAP, "Open / Toggle"))
+
+/** A touch-mode header pill, in header order. */
+internal enum class GamePickerPill { SEARCH, DONE, OPTIONS }
+
+/**
+ * The header's touch pills: none outside touch mode or while the Options menu is over the screen.
+ * Search steps aside once open — the field takes the taps and the ◀ breadcrumb closes it.
+ */
+internal fun gamePickerTouchPills(state: GamePickerState, showTouchControls: Boolean): List<GamePickerPill> = when {
+    !showTouchControls || state.menu != null -> emptyList()
+    state.searchActive -> listOf(GamePickerPill.DONE, GamePickerPill.OPTIONS)
+    else -> listOf(GamePickerPill.SEARCH, GamePickerPill.DONE, GamePickerPill.OPTIONS)
+}

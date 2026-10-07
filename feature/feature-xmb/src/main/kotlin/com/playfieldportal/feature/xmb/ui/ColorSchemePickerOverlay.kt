@@ -179,6 +179,8 @@ fun CustomColorPickerOverlay(
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
+    // The pad's glyph hints; off in touch mode, as the Settings callers of the dialog do.
+    showHints: Boolean = true,
 ) {
     Box(modifier = modifier) {
         HsvColorPickerDialog(
@@ -187,6 +189,7 @@ fun CustomColorPickerOverlay(
             onStateChange = onStateChange,
             onConfirm = onConfirm,
             onCancel = onCancel,
+            showHints = showHints,
         )
     }
 }

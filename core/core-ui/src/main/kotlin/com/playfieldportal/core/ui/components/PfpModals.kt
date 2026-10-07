@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -27,6 +27,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -479,9 +481,29 @@ fun PfpTextEntryModal(
         showHints = showHints && !fieldFocused,
         modifier = modifier,
         keyboardReserve = if (edit.isOpen) VirtualKeyboardBottomReserve else 0.dp,
+        allowCompact = true,
     ) { cancel ->
+        // On a short screen under the system keyboard the buttons move up beside the field. The
+        // field keeps one place in the tree either way: re-creating it would drop its focus, close
+        // the keyboard and flip the layout straight back.
+        val compact = LocalModalCompact.current
+        val buttons: @Composable (Modifier) -> Unit = { rowModifier ->
+            ModalButtonRow(
+                cancelLabel = cancelLabel,
+                confirmLabel = confirmLabel,
+                focus = focus,
+                confirmEnabled = confirmEnabled,
+                destructive = false,
+                accent = accent,
+                onConfirm = onConfirm,
+                onCancel = cancel,
+                modifier = rowModifier,
+            )
+        }
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(label, color = themedSubText(ModalSubtext), fontSize = 13.sp)
+            if (!compact) Text(label, color = themedSubText(ModalSubtext), fontSize = 13.sp)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Box(Modifier.weight(1f)) {
             VirtualKeyboardTextInput(edit) {
             BasicTextField(
                 value = edit.fieldValue,
@@ -495,7 +517,8 @@ fun PfpTextEntryModal(
                     )
                 },
                 singleLine = !multiline,
-                maxLines = if (multiline) MULTILINE_MAX_LINES else 1,
+                // A description scrolls inside two lines when the strip has no room to grow.
+                maxLines = if (!multiline) 1 else if (compact) COMPACT_MULTILINE_MAX_LINES else MULTILINE_MAX_LINES,
                 textStyle = TextStyle(color = themedText(Color.White), fontSize = 16.sp),
                 cursorBrush = SolidColor(accent),
                 keyboardOptions = KeyboardOptions(
@@ -540,6 +563,9 @@ fun PfpTextEntryModal(
                 },
             )
             }
+            }
+            if (compact) buttons(Modifier)
+            }
             if (error != null || maxLength != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     Box(Modifier.weight(1f)) {
@@ -563,16 +589,7 @@ fun PfpTextEntryModal(
                 }
             }
         }
-        ModalButtonRow(
-            cancelLabel = cancelLabel,
-            confirmLabel = confirmLabel,
-            focus = focus,
-            confirmEnabled = confirmEnabled,
-            destructive = false,
-            accent = accent,
-            onConfirm = onConfirm,
-            onCancel = cancel,
-        )
+        if (!compact) buttons(Modifier.fillMaxWidth())
     }
 }
 
@@ -586,29 +603,38 @@ private fun PfpModalScaffold(
     showHints: Boolean,
     modifier: Modifier = Modifier,
     hintItems: List<ControllerPromptItem> = ChoiceHintItems,
-    // Room kept at the bottom for PFP's keyboard, which — unlike the system one — imePadding()
-    // cannot see.
+    // Room kept at the bottom for PFP's keyboard, which — unlike the system one — has no IME inset.
     keyboardReserve: Dp = 0.dp,
+    // The text-entry modal: below CompactImeThreshold over the system keyboard, the card becomes one
+    // wide strip resting on the keyboard (see LocalModalCompact).
+    allowCompact: Boolean = false,
     content: @Composable ColumnScope.(cancel: () -> Unit) -> Unit,
 ) {
     val menuSounds = LocalMenuSounds.current
     val cancel: () -> Unit = { menuSounds.play(MenuSound.BACK); onCancel() }
     val currentCancel by rememberUpdatedState(cancel)
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(ModalScrim)
             .testTag(PfpModalTags.SCRIM)
             // Pointer input rather than clickable: a clickable merges its descendants' semantics, which
             // would fold the whole modal into one node for accessibility and for tests.
-            .pointerInput(Unit) { detectTapGestures { currentCancel() } }
-            // Centres the card in what the keyboard leaves, so the field is never under it.
-            .imePadding()
-            .padding(bottom = keyboardReserve),
-        contentAlignment = Alignment.Center,
+            .pointerInput(Unit) { detectTapGestures { currentCancel() } },
     ) {
+        // PFP draws edge-to-edge, so the system keyboard overlays the window rather than resizing
+        // it; the card is placed in what the keyboard leaves, so the field is never under it.
+        val systemKeyboard = systemKeyboardHeight()
+        val compact = allowCompact &&
+            useCompactImeLayout(systemKeyboard > 0.dp, maxHeight - systemKeyboard - keyboardReserve)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = systemKeyboard + keyboardReserve),
+            contentAlignment = if (compact) Alignment.BottomCenter else Alignment.Center,
+        ) {
         Column(
-            modifier = Modifier.padding(vertical = 12.dp),
+            modifier = Modifier.padding(vertical = if (compact) 8.dp else 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -618,32 +644,45 @@ private fun PfpModalScaffold(
                     // Shrinks to the screen rather than running off it; a long message then scrolls
                     // inside the card (see ModalMessage) while the title and buttons stay put.
                     .weight(1f, fill = false)
-                    .width(ModalCardWidth)
+                    .then(
+                        if (compact) Modifier.fillMaxWidth(COMPACT_CARD_WIDTH_FRACTION).widthIn(max = CompactCardMaxWidth)
+                        else Modifier.width(ModalCardWidth),
+                    )
                     .clip(RoundedCornerShape(16.dp))
                     .background(ModalSurface)
                     // Swallows taps so a click inside the card does not reach the scrim's cancel.
                     .pointerInput(Unit) { detectTapGestures { } }
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                    .then(if (compact) Modifier.padding(horizontal = 20.dp, vertical = 12.dp) else Modifier.padding(24.dp)),
+                verticalArrangement = Arrangement.spacedBy(if (compact) 8.dp else 14.dp),
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
                         title,
                         color = themedText(Color.White.copy(alpha = 0.92f)),
-                        fontSize = 19.sp,
+                        fontSize = if (compact) 15.sp else 19.sp,
                         fontWeight = FontWeight.Light,
-                        maxLines = 2,
+                        maxLines = if (compact) 1 else 2,
                     )
-                    Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.30f)))
+                    if (!compact) {
+                        Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.30f)))
+                    }
                 }
-                content(cancel)
+                CompositionLocalProvider(LocalModalCompact provides compact) { content(cancel) }
             }
-            if (showHints) {
+            if (showHints && !compact) {
                 ControllerHintBar(items = hintItems, modifier = Modifier.testTag(PfpModalTags.HINTS))
             }
         }
+        }
     }
 }
+
+/** True inside a modal laid out as its one-strip system-keyboard form. */
+private val LocalModalCompact = compositionLocalOf { false }
+
+private const val COMPACT_CARD_WIDTH_FRACTION = 0.94f
+private val CompactCardMaxWidth = 820.dp
+private const val COMPACT_MULTILINE_MAX_LINES = 2
 
 // The body text of a confirm or notice. It takes what height the card has left and scrolls within
 // it, so a four-paragraph warning fits a 468dp-tall screen without pushing the buttons off it.
@@ -670,10 +709,12 @@ private fun ModalButtonRow(
     accent: Color,
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
+    // Full width under the content; wrapped beside the field in the compact strip.
+    modifier: Modifier = Modifier.fillMaxWidth(),
 ) {
     val menuSounds = LocalMenuSounds.current
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
     ) {
         ModalButton(

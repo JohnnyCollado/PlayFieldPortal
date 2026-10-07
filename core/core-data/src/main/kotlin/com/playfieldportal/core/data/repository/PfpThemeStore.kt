@@ -119,18 +119,36 @@ class PfpThemeStore private constructor(
         ).also { if (scaled !== bitmap) bitmap.recycle() }
     }
 
-    /** PTF import lands in the library too, so converted PSP themes are switchable later. */
-    suspend fun createFromPtf(name: String, wallpaper: BmpImage, accentArgb: Long?, sourceFile: String?, firmware: String?): SavedTheme? =
-        withContext(Dispatchers.IO) {
-            val bitmap = Bitmap.createBitmap(wallpaper.width, wallpaper.height, Bitmap.Config.ARGB_8888)
-            bitmap.setPixels(wallpaper.argb, 0, wallpaper.width, 0, 0, wallpaper.width, wallpaper.height)
-            save(
-                name = name,
-                wallpaper = bitmap,
-                accentArgb = accentArgb,
-                source = PfpThemeSource(type = PfpThemeSource.TYPE_PTF_IMPORT, file = sourceFile, firmware = firmware),
-            )
+    /**
+     * PTF import lands in the library too, so converted PSP themes are switchable later. [icons]
+     * are the theme's direct-fit icons by slot key (a source shared by several keys is encoded
+     * once); [iconColorArgb] is the tint for the built-in icons it leaves, or null for automatic.
+     */
+    suspend fun createFromPtf(
+        name: String,
+        wallpaper: BmpImage,
+        accentArgb: Long?,
+        sourceFile: String?,
+        firmware: String?,
+        icons: Map<String, BmpImage> = emptyMap(),
+        iconColorArgb: Int? = null,
+    ): SavedTheme? = withContext(Dispatchers.IO) {
+        val encoded = HashMap<BmpImage, ThemeImage>()
+        val iconEntries = icons.mapValues { (_, image) ->
+            encoded.getOrPut(image) {
+                val bitmap = image.toBitmap()
+                ThemeImage(bitmap.toPngBytes(), "png").also { bitmap.recycle() }
+            }
         }
+        save(
+            name = name,
+            wallpaper = wallpaper.toBitmap(),
+            accentArgb = accentArgb,
+            source = PfpThemeSource(type = PfpThemeSource.TYPE_PTF_IMPORT, file = sourceFile, firmware = firmware),
+            icons = iconEntries,
+            iconColor = iconColorArgb?.let { "#%06X".format(it and 0xFFFFFF) } ?: PfpThemeManifest.ICON_COLOR_AUTO,
+        )
+    }
 
     /** Applies a saved theme: wallpaper + wave style + accent + custom icons through the standard cascade prefs. */
     suspend fun apply(id: String): Boolean = applyDetailed(id) != null
@@ -715,7 +733,14 @@ class PfpThemeStore private constructor(
         return "pfp_$candidate"
     }
 
-    private fun save(name: String, wallpaper: Bitmap, accentArgb: Long?, source: PfpThemeSource): SavedTheme? {
+    private fun save(
+        name: String,
+        wallpaper: Bitmap,
+        accentArgb: Long?,
+        source: PfpThemeSource,
+        icons: Map<String, ThemeImage> = emptyMap(),
+        iconColor: String = PfpThemeManifest.ICON_COLOR_AUTO,
+    ): SavedTheme? {
         return runCatching {
             dir.mkdirs()
             val id = newThemeId()
@@ -723,11 +748,11 @@ class PfpThemeStore private constructor(
             val manifest = PfpThemeManifest(
                 name = name,
                 accentColor = accentArgb?.let { "#%06X".format(it and 0xFFFFFF) } ?: "",
+                iconColor = iconColor,
                 source = source,
                 created = LocalDate.now().toString(),
             )
-            val wallpaperPng = ByteArrayOutputStream()
-                .also { wallpaper.compress(Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
+            val wallpaperPng = wallpaper.toPngBytes()
             // Placeholder thumbnail from the wallpaper — Phase C's preview gate replaces this
             // with a real rendered-XMB frame at export time.
             val preview = downscale(wallpaper, maxEdge = 480)
@@ -735,7 +760,7 @@ class PfpThemeStore private constructor(
                 .also { preview.compress(Bitmap.CompressFormat.PNG, 90, it) }.toByteArray()
 
             FileOutputStream(File(dir, "$id.pfptheme")).use { out ->
-                PfpThemeCodec.write(PfpThemeBundle(manifest, wallpaperPng, previewBytes), out)
+                PfpThemeCodec.write(PfpThemeBundle(manifest, wallpaperPng, previewBytes, icons = icons), out)
             }
             FileOutputStream(File(dir, "$id.wallpaper.jpg")).use { wallpaper.compress(Bitmap.CompressFormat.JPEG, 92, it) }
             FileOutputStream(File(dir, "$id.preview.jpg")).use { preview.compress(Bitmap.CompressFormat.JPEG, 88, it) }
@@ -782,6 +807,12 @@ class PfpThemeStore private constructor(
         val scale = maxEdge.toFloat() / edge
         return Bitmap.createScaledBitmap(src, (src.width * scale).toInt().coerceAtLeast(1), (src.height * scale).toInt().coerceAtLeast(1), true)
     }
+
+    private fun BmpImage.toBitmap(): Bitmap =
+        Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { it.setPixels(argb, 0, width, 0, 0, width, height) }
+
+    private fun Bitmap.toPngBytes(): ByteArray =
+        ByteArrayOutputStream().also { compress(Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
 
     private fun Bitmap.toBmpImage(): BmpImage {
         val px = IntArray(width * height)

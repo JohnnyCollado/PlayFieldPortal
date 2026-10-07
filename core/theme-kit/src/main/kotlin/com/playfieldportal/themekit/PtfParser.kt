@@ -14,14 +14,15 @@ import java.util.zip.Inflater
  * 0x000  magic "\0PTF"
  * 0x008  display name (16 bytes, NUL-padded; longer titles are truncated by the format)
  * 0x0B8  target firmware string, e.g. "5.00" (8 bytes)
- * 0x100  resource table: up to [MAX_SLOTS] uint32-LE pointers, zero-terminated
+ * 0x100  resource table: [TABLE_ENTRIES] uint32-LE pointers, positional (entry N = group N, 0 = absent)
  *        each pointer -> descriptor [ id:u16 | subtype:u16 | size:u32 | dataOffset:u32 ]
  * ```
  *
- * Slot IDs: 0 = icon atlas + preview, 1 = wallpaper (-> 24-bit BMP), 2/3 = wave
- * graphics (-> GIM), 4 = color/config. Only the wallpaper is extracted here — the
- * import pipeline needs wallpaper + name + firmware; GIM icon decoding is out of scope
- * (we render our own icons; see docs/ptf-import-plan.md).
+ * Slot IDs (Sony's Custom Theme Converter manifest numbers them the same way): 0 = preview
+ * icon, preview image and the colour preset, 1 = wallpaper (-> 24-bit BMP), 2 = category
+ * icons, 3 = first-level item icons, 4 = second-level item icons (all GIM; in groups 3 and 4
+ * even indices are the normal icon, odd ones the focused variant). Only the wallpaper is
+ * extracted here; [PtfUnpacker] walks every record and [PtfIcons] maps the icons to our slots.
  *
  * Every slot payload starts with a 32-byte header (verified across official themes
  * spanning firmware 3.70–5.00):
@@ -48,7 +49,8 @@ object PtfParser {
     private const val FIRMWARE_OFFSET = 0xB8
     private const val FIRMWARE_LENGTH = 8
     private const val TABLE_OFFSET = 0x100
-    private const val MAX_SLOTS = 16
+    // 0x100..0x11F: the first group descriptor of every real theme starts at 0x120.
+    private const val TABLE_ENTRIES = 8
 
     // id:u16 | subtype:u16 | size:u32 | dataOffset:u32
     private const val DESCRIPTOR_SIZE = 12
@@ -103,20 +105,23 @@ object PtfParser {
         val firmware = cursor.asciiAt(FIRMWARE_OFFSET, FIRMWARE_LENGTH)
 
         val slots = buildList {
-            for (i in 0 until MAX_SLOTS) {
+            for (i in 0 until TABLE_ENTRIES) {
+                // The table is positional: a theme without group N stores zero in entry N and
+                // carries on (a theme with no wallpaper still has its icon groups after the gap),
+                // so an empty entry is skipped, never the end of the table.
                 // pointerAt refuses a pointer that is zero, negative once truncated, or that does
                 // not address a whole 12-byte descriptor. The old code compared `ptr + 12` against
                 // the size with ptr already collapsed to a signed Int, so 0xFFFFFFFF became -1 and
                 // sailed through into an out-of-bounds read.
-                val ptr = cursor.pointerAt(TABLE_OFFSET + i * 4, needs = DESCRIPTOR_SIZE) ?: break
+                val ptr = cursor.pointerAt(TABLE_OFFSET + i * 4, needs = DESCRIPTOR_SIZE) ?: continue
                 add(
                     Slot(
-                        id = cursor.u16At(ptr) ?: break,
-                        subtype = cursor.u16At(ptr + 2) ?: break,
+                        id = cursor.u16At(ptr) ?: continue,
+                        subtype = cursor.u16At(ptr + 2) ?: continue,
                         // Sizes and offsets are u32 on disk but only ever addressable as Int here;
                         // anything that does not fit is malformed, not merely large.
-                        size = cursor.u32At(ptr + 4)?.toIntOrNullExact() ?: break,
-                        dataOffset = cursor.u32At(ptr + 8)?.toIntOrNullExact() ?: break,
+                        size = cursor.u32At(ptr + 4)?.toIntOrNullExact() ?: continue,
+                        dataOffset = cursor.u32At(ptr + 8)?.toIntOrNullExact() ?: continue,
                     ),
                 )
             }

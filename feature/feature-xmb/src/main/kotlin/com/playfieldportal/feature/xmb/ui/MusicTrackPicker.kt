@@ -31,14 +31,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -75,7 +76,7 @@ private val CoverPlaceholder = Color(0xFF1B1B27)
  * InstalledAppPicker).
  *
  * The two input families get different affordances for the same two actions. A pad commits with
- * the index-0 Confirm row (or HOME) and cancels with B; a finger gets Add and Cancel pills in the
+ * the index-0 Confirm row (or HOME) and cancels with B; a finger gets the ◀ breadcrumb and an Add pill in the
  * header, because reaching that Confirm row on touch means scrolling back over every scanned song.
  * There is deliberately no tap-outside-to-dismiss: on a list this size the only "outside" is the
  * margin, and a stray tap there would throw away a selection built one song at a time.
@@ -148,6 +149,8 @@ fun MusicTrackPicker(
     ) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 28.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                // Back is the ◀ breadcrumb in both input modes (ARCHITECTURE.md ▸ Conventions).
+                PickerBreadcrumb(onClick = onDismiss, color = PickerSubtext)
                 Text(
                     "Add to ${state.playlistName}",
                     color = PickerText,
@@ -156,9 +159,12 @@ fun MusicTrackPicker(
                     modifier = Modifier.weight(1f),
                 )
                 if (showTouchControls) {
-                    XmbHeaderPill(label = addLabel, leadingGlyph = "✓", onClick = onConfirm)
-                    Spacer(Modifier.width(10.dp))
-                    XmbHeaderPill(label = "Cancel", leadingGlyph = "◀", onClick = onDismiss)
+                    XmbHeaderPill(
+                        label = addLabel,
+                        leadingGlyph = "✓",
+                        onClick = onConfirm,
+                        modifier = Modifier.testTag(PickerHeaderTags.DONE),
+                    )
                 }
             }
 
@@ -174,7 +180,7 @@ fun MusicTrackPicker(
                         items = listOf(TouchPromptItem(TouchGesture.TAP, "Toggle")),
                         labelColor = PickerSubtext,
                         labelStyle = TextStyle(fontSize = 12.sp),
-                        glyphSize = 18.dp,
+                        glyphSize = 16.dp,
                         arrangement = Arrangement.spacedBy(18.dp),
                     )
                 } else {

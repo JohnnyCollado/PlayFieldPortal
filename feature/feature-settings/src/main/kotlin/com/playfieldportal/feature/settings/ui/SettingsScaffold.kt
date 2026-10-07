@@ -1577,7 +1577,10 @@ fun SettingsTextFieldRow(
                 )
             }
         }
-        if (!helper.isNullOrBlank() || helperPrompt != null) {
+        // The prompt is a controller glyph; a hidden cursor means touch is driving, where the
+        // field itself taps to edit and the glyph would be a stray controller cue.
+        val showPrompt = helperPrompt != null && LocalSettingsCursorVisible.current
+        if (!helper.isNullOrBlank() || showPrompt) {
             Spacer(Modifier.height(4.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -1591,7 +1594,7 @@ fun SettingsTextFieldRow(
                         style = TextStyle(shadow = SettingsTextShadow),
                     )
                 }
-                if (helperPrompt != null) {
+                if (helperPrompt != null && showPrompt) {
                     ControllerPromptBar(
                         items = listOf(helperPrompt),
                         labelColor = SettingsSubtext.dimmed(0.6f),

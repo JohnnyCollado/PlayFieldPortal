@@ -97,6 +97,7 @@ fun PhotoSettingsContent(
         ) {
             RootAccessSection(
                 groupTitle  = "Root Folders",
+                rootKind    = "Photo",
                 roots       = state.roots,
                 addLabel    = "Add Photo Root",
                 addSublabel = "Grant a root folder (e.g. /Pictures) — add several to span locations",

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
@@ -56,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.ControllerIcon
@@ -150,42 +152,59 @@ fun HsvColorPickerDialog(
     val bodyScroll = rememberScrollState()
     val currentCancel by rememberUpdatedState(cancel)
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xCC000000))
             .testTag(HsvPickerTags.SCRIM)
             // Pointer input rather than clickable: a clickable merges its descendants' semantics.
-            .pointerInput(Unit) { detectTapGestures { currentCancel() } }
-            // No imePadding(): the window already pans for the system keyboard, and padding as
-            // well pushed the card off the top of the screen.
-            .padding(bottom = if (edit.isOpen) VirtualKeyboardBottomReserve else 0.dp),
-        contentAlignment = Alignment.Center,
+            .pointerInput(Unit) { detectTapGestures { currentCancel() } },
+    ) {
+        // PFP draws edge-to-edge, so the system keyboard overlays the window: the picker always
+        // lays out in the room above it (as PfpModalScaffold does). Where that room is too small
+        // for the card (a phone in landscape) the picker becomes one strip resting on the
+        // keyboard: swatch, Hex field, Apply and Cancel — the sliders return once it closes.
+        val systemKeyboard = systemKeyboardHeight()
+        val pfpReserve = if (edit.isOpen) VirtualKeyboardBottomReserve else 0.dp
+        val compact = useCompactImeLayout(systemKeyboard > 0.dp, maxHeight - systemKeyboard - pfpReserve)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = pfpReserve + systemKeyboard),
+        contentAlignment = if (compact) Alignment.BottomCenter else Alignment.Center,
     ) {
         Column(
             modifier = Modifier
-                .width(440.dp)
+                .then(
+                    if (compact) Modifier.fillMaxWidth(COMPACT_WIDTH_FRACTION).widthIn(max = CompactMaxWidth)
+                    else Modifier.width(440.dp),
+                )
+                .padding(vertical = if (compact) 8.dp else 0.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(Color(0xFF15151F))
                 // Swallows taps so a click inside the panel does not reach the scrim's cancel.
                 .pointerInput(Unit) { detectTapGestures { } }
                 // 212dp is all an Odin 3 has above the keyboard; the tighter edge buys the Hex
                 // field its room under the pinned swatch.
-                .padding(horizontal = 24.dp, vertical = if (edit.isOpen) 16.dp else 24.dp),
+                .padding(
+                    horizontal = if (compact) 20.dp else 24.dp,
+                    vertical = if (compact) 12.dp else if (edit.isOpen) 16.dp else 24.dp,
+                ),
         ) {
-            Text(title, color = themedText(Color.White), fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(16.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .testTag(HsvPickerTags.SWATCH)
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .background(preview)
-                        .border(1.dp, Color(0x66FFFFFF), CircleShape),
-                )
-                Spacer(Modifier.width(16.dp))
-                Text(hexOf(preview), color = subtext, fontSize = 14.sp, fontFamily = FontFamily.Monospace)
+            Text(
+                title,
+                color = themedText(Color.White),
+                fontSize = if (compact) 15.sp else 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+            )
+            if (!compact) {
+                Spacer(Modifier.height(16.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Swatch(preview, 56.dp)
+                    Spacer(Modifier.width(16.dp))
+                    Text(hexOf(preview), color = subtext, fontSize = 14.sp, fontFamily = FontFamily.Monospace)
+                }
             }
 
             // Shrinks to what the screen leaves rather than running off it, and scrolls within it.
@@ -194,11 +213,21 @@ fun HsvColorPickerDialog(
                     .weight(1f, fill = false)
                     .verticalScroll(bodyScroll),
             ) {
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(if (compact) 8.dp else 16.dp))
                 val hexActive = state.editingHex || (cursor && state.focus == HsvPickerField.HEX)
                 Column(Modifier.bringIntoViewRequester(stopInView.getValue(HsvPickerField.HEX))) {
-                    Text("Hex", color = if (hexActive) accent else subtext, fontSize = 12.sp)
-                    Spacer(Modifier.height(6.dp))
+                    if (!compact) {
+                        Text("Hex", color = if (hexActive) accent else subtext, fontSize = 12.sp)
+                        Spacer(Modifier.height(6.dp))
+                    }
+                    // The field keeps one place in the tree in both layouts: re-creating it would
+                    // drop its focus, close the keyboard and flip the layout straight back.
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (compact) {
+                        Swatch(preview, 32.dp)
+                        Spacer(Modifier.width(12.dp))
+                    }
+                    Box(Modifier.weight(1f)) {
                     VirtualKeyboardTextInput(edit) {
                         BasicTextField(
                             value = edit.fieldValue,
@@ -245,7 +274,15 @@ fun HsvColorPickerDialog(
                             },
                         )
                     }
+                    }
+                    if (compact) {
+                        Spacer(Modifier.width(12.dp))
+                        PickerActions(accent, subtext, onApply = { menuSounds.play(MenuSound.CONFIRM); onConfirm() }, onCancel = cancel)
+                    }
+                    }
                 }
+
+                if (!compact) {
 
                 if (contrastAnchors != null) {
                     Spacer(Modifier.height(16.dp))
@@ -290,26 +327,51 @@ fun HsvColorPickerDialog(
                     ControllerHintBar(items = hintItems(state.focus), compact = true)
                     Spacer(Modifier.height(12.dp))
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text(
-                        "Apply",
-                        color = accent,
-                        fontSize = 15.sp,
-                        modifier = Modifier
-                            .clickable { menuSounds.play(MenuSound.CONFIRM); onConfirm() }
-                            .padding(vertical = 6.dp, horizontal = 10.dp),
-                    )
-                    Text(
-                        "Cancel",
-                        color = subtext,
-                        fontSize = 15.sp,
-                        modifier = Modifier
-                            .clickable(onClick = cancel)
-                            .padding(vertical = 6.dp, horizontal = 10.dp),
-                    )
+                PickerActions(accent, subtext, onApply = { menuSounds.play(MenuSound.CONFIRM); onConfirm() }, onCancel = cancel)
                 }
             }
         }
+    }
+    }
+}
+
+private const val COMPACT_WIDTH_FRACTION = 0.94f
+private val CompactMaxWidth = 820.dp
+
+@Composable
+private fun Swatch(color: Color, size: Dp) {
+    Box(
+        modifier = Modifier
+            .testTag(HsvPickerTags.SWATCH)
+            .size(size)
+            .clip(CircleShape)
+            .background(color)
+            .border(1.dp, Color(0x66FFFFFF), CircleShape),
+    )
+}
+
+/** Apply and Cancel — under the sliders, or beside the Hex field in the compact strip. */
+@Composable
+private fun PickerActions(accent: Color, subtext: Color, onApply: () -> Unit, onCancel: () -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text(
+            "Apply",
+            color = accent,
+            fontSize = 15.sp,
+            modifier = Modifier
+                .testTag(HsvPickerTags.APPLY)
+                .clickable(onClick = onApply)
+                .padding(vertical = 6.dp, horizontal = 10.dp),
+        )
+        Text(
+            "Cancel",
+            color = subtext,
+            fontSize = 15.sp,
+            modifier = Modifier
+                .testTag(HsvPickerTags.CANCEL)
+                .clickable(onClick = onCancel)
+                .padding(vertical = 6.dp, horizontal = 10.dp),
+        )
     }
 }
 
@@ -319,6 +381,8 @@ object HsvPickerTags {
     const val SWATCH = "hsv_picker_swatch"
     const val HEX_FIELD = "hsv_picker_hex_field"
     const val HUE_BAR = "hsv_picker_hue_bar"
+    const val APPLY = "hsv_picker_apply"
+    const val CANCEL = "hsv_picker_cancel"
 }
 
 private const val HEX_DIGITS = 6

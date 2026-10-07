@@ -104,19 +104,16 @@ class ThemesSettingsViewModel @Inject constructor(
 
     // ── Custom theme cascade ─────────────────────────────────────────────────
 
-    /** Imports a user-picked official PSP theme (.ptf): wallpaper + derived accent. */
+    /**
+     * Imports a user-picked official PSP theme (.ptf) into the library — wallpaper, matching
+     * icons, icon tint and accent — then asks before applying it, like a `.pfptheme` import.
+     */
     fun importPtfTheme(uri: Uri) {
         viewModelScope.launch {
             _extra.update { it.copy(isInstalling = true) }
             val result = ptfImporter.import(uri)
-            val message = when (result) {
-                is PtfThemeImporter.Result.Success ->
-                    "Imported \"${result.themeName}\" — wallpaper applied" +
-                        if (result.accentArgb != null) " with its color" else ""
-                PtfThemeImporter.Result.CxmbNotSupported ->
-                    "CXMB (.ctf) themes aren't supported — only official .ptf themes"
-                is PtfThemeImporter.Result.Failed -> result.reason
-            }
+            if (result is PtfThemeImporter.Result.Success) requestApply(result.themeId)
+            val message = PtfImportMessage.of(result)
             Timber.i("PTF import: %s", message)
             _extra.update { it.copy(isInstalling = false) }
             reportTheme(

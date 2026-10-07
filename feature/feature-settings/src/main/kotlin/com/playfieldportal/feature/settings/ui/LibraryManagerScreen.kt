@@ -232,8 +232,9 @@ private fun LibraryManagerContent(
             canConfirm = picker.canConfirm,
             focusFill = com.playfieldportal.core.ui.theme.menuCursorFill(),
             focusEdge = com.playfieldportal.core.ui.theme.menuCursorEdge(),
-            // Settings is a controller-first surface; the panel's own touch row is for the XMB.
-            showTouchControls = false,
+            // The panel sits above the scaffold, so it reads the host's input mode directly: touch
+            // gets the Install / All-None / Skip pills, the controller gets the button hint line.
+            showTouchControls = LocalSettingsLastInputWasTouch.current,
             onRowClick = onConvertToggle,
             onSelectAllNone = onConvertSelectAllNone,
             onConfirm = onConvertConfirm,
@@ -284,6 +285,7 @@ private fun LibraryListContent(
             // ── ROM Root Access ─────────────────────────────────────────────────
             RootAccessSection(
                 groupTitle  = "ROM Root Access",
+                rootKind    = "ROM",
                 roots       = state.romRoots,
                 addLabel    = "Add ROM Root",
                 addSublabel = "Grant a root folder (e.g. /Roms) — or a second location like an SD card",

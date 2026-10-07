@@ -51,6 +51,12 @@ class BackupKeyCoverageTest {
     }
 
     @Test
+    fun `the screen orientation choice is backed up`() {
+        // Issue #21: a Tasker setup restored onto a new device must keep Follow Device.
+        assertCovered("display_screen_orientation")
+    }
+
+    @Test
     fun `the motion wallpaper crop travels with the motion wallpaper`() {
         assertCovered("display_motion_wallpaper", "display_motion_crop")
     }

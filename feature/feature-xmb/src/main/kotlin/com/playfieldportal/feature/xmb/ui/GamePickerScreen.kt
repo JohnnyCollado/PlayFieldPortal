@@ -10,6 +10,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -65,7 +67,9 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -88,6 +92,7 @@ import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.components.PfpCheckBadge
 import com.playfieldportal.core.ui.components.PspContextMenuOverlay
+import com.playfieldportal.core.ui.components.TouchPromptBar
 import com.playfieldportal.core.ui.icons.GameIconStyle
 import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
 import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
@@ -105,7 +110,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 //
 // A vertical shelf list beside free-flowing rows of art at XMB size, in the App Picker's language: the same
 // storefront theming (deriveStorefrontColors — never LocalPFPColors.accentColor, which presets
-// resolve to white), the same alpha-only focus chrome and check badge, and a prompt footer.
+// resolve to white), the same alpha-only focus chrome and check badge, and a prompt footer —
+// controller prompts, or in touch mode Search / Options / Done header pills over a tap prompt
+// (one input family at a time, ARCHITECTURE.md ▸ Conventions).
 // Every tile is drawn in ONE icon display mode (the picker's view, X to change), whatever each
 // game or console uses in the XMB, so a shelf reads as one consistent library standing on a thin
 // ledge per row. Rules and navigation live in GamePickerLogic; this file only draws state.
@@ -125,6 +132,10 @@ fun GamePickerScreen(
     movableCollectionIds: Set<Long> = emptySet(),
     // Display ▸ Text Shadow: the Launcher's drop shadow behind every label, as the XMB draws it.
     textShadow: Boolean = true,
+    // resolvedShowTouchButton: which input family the header and footer speak.
+    showTouchControls: Boolean = false,
+    // Any finger on the picker — its taps run in this ViewModel, so the shell never sees them.
+    onTouchInput: () -> Unit = {},
     viewModel: GamePickerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -147,12 +158,15 @@ fun GamePickerScreen(
         viewModel.clearSelection()
         onCancel()
     }
+    // B and the header's ◀ climb one level the same way: menu, then search, then grid → shelf
+    // list; only from the list does the picker close.
+    val backOrCancel: () -> Unit = { if (!viewModel.back()) cancelAndClear() }
 
     LaunchedEffect(pendingGamepadAction) {
         when (pendingGamepadAction) {
             null -> return@LaunchedEffect
             // B climbs one level (grid → shelf list) and closes from the list.
-            GamepadAction.BACK -> if (!viewModel.back()) cancelAndClear()
+            GamepadAction.BACK -> backOrCancel()
             GamepadAction.HOME -> confirmAndClear()
             else -> viewModel.onAction(pendingGamepadAction)
         }
@@ -162,14 +176,31 @@ fun GamePickerScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            // No whole-background dismiss tap: B and the header's ‹ are the exits.
-            .background(Brush.verticalGradient(listOf(sf.backgroundDeep, sf.backgroundMid))),
+            // No whole-background dismiss tap: B and the header's ◀ are the exits.
+            .background(Brush.verticalGradient(listOf(sf.backgroundDeep, sf.backgroundMid)))
+            // Any pointer down hands the shell to touch (MusicTrackPicker's detector), or AUTO
+            // touch mode never flips back after a pad press. requireUnconsumed = false so a
+            // tile's own tap still reports.
+            .pointerInput(Unit) {
+                awaitEachGesture { awaitFirstDown(requireUnconsumed = false); onTouchInput() }
+            },
     ) {
         // Every label reads like the Launcher's: the XMB's directional drop shadow, when the user
         // keeps Text Shadow on and the storefront text is light (a dark-on-light theme gets none).
         ProvideTextStyle(LocalTextStyle.current.merge(TextStyle(shadow = pickerTextShadow(sf, textShadow)))) {
         Column(Modifier.fillMaxSize()) {
-            PickerHeader(state, categoryTitle, onBack = cancelAndClear, colors = sf)
+            PickerHeader(
+                state,
+                categoryTitle,
+                onBack = backOrCancel,
+                touchPills = gamePickerTouchPills(state, showTouchControls),
+                onSearch = { viewModel.onSearchToggle(true) },
+                onSearchChange = viewModel::onSearchChange,
+                onSearchToggle = viewModel::onSearchToggle,
+                onOptions = { viewModel.onAction(GamepadAction.OPEN_CONTEXT_MENU) },
+                onDone = confirmAndClear,
+                colors = sf,
+            )
             Box(Modifier.fillMaxWidth().height(1.dp).background(sf.chromeDivider))
 
             Row(Modifier.weight(1f).fillMaxWidth()) {
@@ -188,8 +219,6 @@ fun GamePickerScreen(
                                 ShelfPane(
                                     state = state,
                                     shelf = shelf,
-                                    onSearchChange = viewModel::onSearchChange,
-                                    onSearchToggle = viewModel::onSearchToggle,
                                     onTileTapped = viewModel::tapTile,
                                     onTouchBrowse = viewModel::touchBrowse,
                                     onMeasured = viewModel::onShelfMeasured,
@@ -205,6 +234,7 @@ fun GamePickerScreen(
             Box(Modifier.fillMaxWidth().height(1.dp).background(sf.chromeDivider))
             PickerFooter(
                 state,
+                showTouchControls,
                 sf,
                 // PFP's keyboard brings its own prompts; the picker's step aside while it is up.
                 Modifier.fillMaxWidth().padding(vertical = 12.dp).alpha(if (isVirtualKeyboardOverlayOpen()) 0f else 1f),
@@ -229,13 +259,19 @@ fun GamePickerScreen(
 private fun pickerTextShadow(colors: StorefrontColors, enabled: Boolean): Shadow? =
     if (enabled && colors.textPrimary.luminance() > 0.5f) XmbTextShadow else null
 
-// ── Header: ‹ title on the left, what Done will do on the right ───────────────
+// ── Header: ◀ title on the left, what Done will do on the right ───────────────
 
 @Composable
 private fun PickerHeader(
     state: GamePickerState,
     categoryTitle: String,
     onBack: () -> Unit,
+    touchPills: List<GamePickerPill>,
+    onSearch: () -> Unit,
+    onSearchChange: (String) -> Unit,
+    onSearchToggle: (Boolean) -> Unit,
+    onOptions: () -> Unit,
+    onDone: () -> Unit,
     colors: StorefrontColors,
 ) {
     Row(
@@ -246,7 +282,7 @@ private fun PickerHeader(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.weight(1f).clickable(onClick = onBack),
         ) {
-            Text("‹", color = colors.textSecondary, fontSize = 18.sp, modifier = Modifier.padding(end = 8.dp))
+            PickerBreadcrumb(onClick = onBack, color = colors.textSecondary)
             Text(
                 text = buildAnnotatedString {
                     append("Add Games")
@@ -268,6 +304,18 @@ private fun PickerHeader(
             color = colors.textSecondary,
             fontSize = 13.sp,
         )
+        // In the header, as the App Picker's: the system keyboard covers everything below it.
+        ShelfSearchField(state, onSearchChange, onSearchToggle, colors)
+        // A finger cannot press X, Y or HOME; the ◀ breadcrumb already stands in for B.
+        touchPills.forEachIndexed { i, pill ->
+            Spacer(Modifier.width(if (i == 0) 16.dp else 10.dp))
+            when (pill) {
+                GamePickerPill.SEARCH -> StorefrontSearchPill(onSearch, colors)
+                GamePickerPill.DONE ->
+                    StorefrontTouchPill("Done", "✓", onDone, colors, Modifier.testTag(PickerHeaderTags.DONE))
+                GamePickerPill.OPTIONS -> StorefrontKebabPill(onOptions, colors)
+            }
+        }
     }
 }
 
@@ -396,8 +444,6 @@ private val COLUMN_SPACING = PICKER_TILE_SPACING_DP.dp
 private fun ShelfPane(
     state: GamePickerState,
     shelf: PickerShelf,
-    onSearchChange: (String) -> Unit,
-    onSearchToggle: (Boolean) -> Unit,
     onTileTapped: (Int) -> Unit,
     onTouchBrowse: (Int) -> Unit,
     onMeasured: (Float) -> Unit,
@@ -406,7 +452,6 @@ private fun ShelfPane(
 ) {
     Column(modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            ShelfSearchField(state, onSearchChange, onSearchToggle, colors)
             Text(shelf.title, color = colors.textPrimary, fontSize = 17.sp, fontWeight = FontWeight.Medium)
             Spacer(Modifier.width(12.dp))
             Text(
@@ -709,7 +754,7 @@ internal fun Game.toPickerItem(accentArgb: Long): XMBItem = XMBItem(
 // ── X: search the shelf on screen ─────────────────────────────────────────────
 
 /**
- * The shelf's search field, on the shared text-field structure: PFP's virtual keyboard when the
+ * The shelf's search field, in the header above the system keyboard, on the shared text-field structure: PFP's virtual keyboard when the
  * controller opened it (the system keyboard for touch), Done keeps the query, BACK closes the search.
  * The same two-frame focus idiom as the App Picker's search.
  */
@@ -762,7 +807,7 @@ private fun ShelfSearchField(
                     }
                 },
                 modifier = Modifier
-                    .padding(end = 12.dp)
+                    .padding(start = 16.dp)
                     .width(220.dp)
                     .virtualKeyboardField(searchEdit)
                     .focusRequester(searchFocus)
@@ -777,7 +822,23 @@ private fun ShelfSearchField(
 // ── Footer: the prompts for the level the cursor is on ───────────────────────
 
 @Composable
-private fun PickerFooter(state: GamePickerState, colors: StorefrontColors, modifier: Modifier = Modifier) {
+private fun PickerFooter(
+    state: GamePickerState,
+    showTouchControls: Boolean,
+    colors: StorefrontColors,
+    modifier: Modifier = Modifier,
+) {
+    if (showTouchControls) {
+        TouchPromptBar(
+            items = gamePickerTouchPrompts(),
+            labelColor = colors.textSecondary,
+            labelStyle = LocalTextStyle.current.merge(TextStyle(fontSize = 12.sp)),
+            glyphSize = 16.dp,
+            arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
+            modifier = modifier,
+        )
+        return
+    }
     // B names what it will do: close a search first, then climb, then cancel.
     val back = when {
         state.searchActive -> "Close Search"
@@ -788,16 +849,16 @@ private fun PickerFooter(state: GamePickerState, colors: StorefrontColors, modif
         PickerZone.RAIL -> listOf(
             ControllerPromptItem.fixed(listOf(ControllerIcon.DPAD_UP, ControllerIcon.DPAD_DOWN), "Shelf"),
             ControllerPromptItem(GamepadAction.SELECT, "Open"),
-            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
             ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"),
+            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
             ControllerPromptItem(GamepadAction.HOME, "Done"),
             ControllerPromptItem(GamepadAction.BACK, back),
         )
         PickerZone.GRID -> listOf(
             ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Navigate"),
             ControllerPromptItem(GamepadAction.SELECT, "Toggle"),
-            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
             ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"),
+            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
             ControllerPromptItem(GamepadAction.HOME, "Done"),
             ControllerPromptItem(GamepadAction.BACK, back),
         )
