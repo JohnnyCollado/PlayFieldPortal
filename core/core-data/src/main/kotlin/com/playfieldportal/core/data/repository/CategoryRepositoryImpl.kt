@@ -1,7 +1,6 @@
 package com.playfieldportal.core.data.repository
 
 import com.playfieldportal.core.data.database.dao.CategoryDao
-import com.playfieldportal.core.data.database.entity.CategoryItemEntity
 import com.playfieldportal.core.data.database.entity.toDomain
 import com.playfieldportal.core.data.database.entity.toEntity
 import com.playfieldportal.core.domain.model.BuiltInCategory
@@ -133,15 +132,6 @@ class CategoryRepositoryImpl @Inject constructor(
         ordered.forEachIndexed { index, id -> categoryDao.updatePosition(id, index) }
     }
 
-    suspend fun addItemToCategory(categoryId: String, itemId: String, itemType: String, order: Int = 0) =
-        categoryDao.addItem(CategoryItemEntity(categoryId, itemId, itemType, order))
-
-    suspend fun removeItemFromCategory(categoryId: String, itemId: String) =
-        categoryDao.removeItem(categoryId, itemId)
-
-    fun observeCategoryItems(categoryId: String) =
-        categoryDao.observeItemsForCategory(categoryId)
-
     // Seeds built-in categories on first launch — idempotent (INSERT OR IGNORE).
     suspend fun seedBuiltInCategories() {
         categoryDao.insertAll(builtInCategories().map { it.toEntity() })
@@ -200,8 +190,6 @@ class CategoryRepositoryImpl @Inject constructor(
 
         // Built-in categories the user may hide/reorder but never delete.
         val PROTECTED_BUILTINS = setOf(
-            BuiltInCategory.FAVORITES,
-            BuiltInCategory.RECENTLY_PLAYED,
             BuiltInCategory.GAMES,
             BuiltInCategory.ANDROID,
             BuiltInCategory.APP_DRAWER,

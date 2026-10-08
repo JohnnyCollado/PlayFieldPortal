@@ -54,22 +54,6 @@ interface ArtworkRecordDao {
     """)
     suspend fun findNameCollisions(platformId: String, type: String, portableName: String, gameId: Long): List<ArtworkRecordEntity>
 
-    // ── Duplicate detection (C16 task 5.3 groundwork) ─────────────────────────
-    // Same asset already applied to this game, by the three identities an asset can carry:
-    // the provider's own id for it, the URL it came from, and the bytes themselves.
-
-    @Query("""
-        SELECT * FROM artwork_records
-        WHERE game_id = :gameId AND artwork_type = :type AND provider_asset_id = :providerAssetId
-    """)
-    suspend fun findByProviderAssetId(gameId: Long, type: String, providerAssetId: String): List<ArtworkRecordEntity>
-
-    @Query("SELECT * FROM artwork_records WHERE game_id = :gameId AND artwork_type = :type AND origin_url = :originUrl")
-    suspend fun findByOriginUrl(gameId: Long, type: String, originUrl: String): List<ArtworkRecordEntity>
-
-    @Query("SELECT * FROM artwork_records WHERE game_id = :gameId AND artwork_type = :type AND checksum = :checksum")
-    suspend fun findByChecksum(gameId: Long, type: String, checksum: String): List<ArtworkRecordEntity>
-
     @Query("SELECT * FROM artwork_records")
     suspend fun getAll(): List<ArtworkRecordEntity>
 

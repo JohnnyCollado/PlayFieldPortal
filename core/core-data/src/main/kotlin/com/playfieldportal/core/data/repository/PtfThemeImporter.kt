@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.datastore.preferences.core.edit
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.themekit.AccentDeriver
+import com.playfieldportal.themekit.BmpImage
 import com.playfieldportal.themekit.PtfIconTint
 import com.playfieldportal.themekit.PtfIcons
 import com.playfieldportal.themekit.PtfParser
@@ -81,10 +82,12 @@ class PtfThemeImporter @Inject constructor(
 
         // Icons are best-effort: a theme whose icon records will not unpack still imports with
         // its wallpaper, exactly as before icons were carried.
-        val icons = runCatching { PtfUnpacker.unpack(bytes)?.let(PtfIcons::extract) }
+        val (icons, extras) = runCatching {
+            PtfUnpacker.unpack(bytes)?.let { PtfIcons.extract(it) to PtfIcons.extractExtras(it) }
+        }
             .onFailure { Timber.w(it, "PTF icon unpack threw; importing the wallpaper only") }
             .getOrNull()
-            .orEmpty()
+            ?: (emptyMap<String, BmpImage>() to emptyMap<PtfIcons.SlotRef, BmpImage>())
         val tint = PtfIconTint.derive(PtfIcons.tintSources(icons))
         val accent = PtfIconTint.chooseAccent(tint, AccentDeriver.deriveAccent(wallpaper))
             ?.toUInt()?.toLong()
@@ -98,6 +101,7 @@ class PtfThemeImporter @Inject constructor(
             firmware = theme.firmware.ifBlank { null },
             icons = icons,
             iconColorArgb = PtfIconTint.iconColorFor(tint),
+            ptfIcons = extras,
         ) ?: return@withContext Result.Failed("Could not save the theme")
 
         Result.Success(

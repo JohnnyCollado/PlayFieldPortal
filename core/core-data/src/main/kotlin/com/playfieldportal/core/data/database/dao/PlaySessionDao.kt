@@ -54,13 +54,4 @@ interface PlaySessionDao {
 
     @Query("DELETE FROM play_sessions WHERE game_id = :gameId")
     suspend fun deleteForGame(gameId: Long)
-
-    // Prune oldest sessions when library exceeds the user's configured cap
-    @Query("""
-        DELETE FROM play_sessions
-        WHERE id NOT IN (
-            SELECT id FROM play_sessions ORDER BY launched_at DESC LIMIT :keepCount
-        )
-    """)
-    suspend fun pruneOldSessions(keepCount: Int)
 }

@@ -3,6 +3,7 @@ package com.playfieldportal.feature.artwork
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.feature.artwork.api.IgdbApi
+import com.playfieldportal.feature.artwork.api.folderStatusOf
 import com.playfieldportal.feature.artwork.api.ScrapeOptions
 import com.playfieldportal.feature.artwork.api.ScreenScraperApi
 import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
@@ -43,6 +44,7 @@ class MetadataRepositoryTitleTest {
         ssMediaCacheDao = mockk(relaxed = true),
         scrapePreferences = mockk(relaxed = true),
         storefrontResolver = mockk(relaxed = true),
+        folderStatus = folderStatusOf(),
     )
 
     /** A game TheGamesDB knows as "Crash Bandicoot"; nothing has named it yet. */

@@ -105,7 +105,6 @@ import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.playfieldportal.core.domain.model.XmbListMotion
 import com.playfieldportal.core.ui.achievement.BoneGlyph
 import com.playfieldportal.core.ui.components.ControllerPromptGlyphs
-import com.playfieldportal.core.ui.icons.GameIconStyle
 import com.playfieldportal.core.ui.icons.LocalXmbIcons
 import com.playfieldportal.core.ui.icons.OverrideGlyphSurface
 import com.playfieldportal.core.ui.icons.PortalIcon
@@ -259,7 +258,6 @@ fun XmbDrillFlyout(
     // Tap on a LEFT-column memory card. The caller decides what it means (tapping the active card
     // backs out of the drill); taps on other cards are delivered too so it can ignore them.
     onSiblingTap: (Int) -> Unit = {},
-    iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
     // Snap-rule inputs for the game column (see XMBItemList): a sort or search bump, and which game
     // list is on screen, so those snap to the restored cursor instead of gliding there.
     scrollToTopToken: Int = 0,
@@ -284,7 +282,6 @@ fun XmbDrillFlyout(
             selectedIndex = siblingIndex,
             onItemSelected = onSiblingTap,
             onItemLongPress = {},
-            iconStyle = iconStyle,
             barTopY = barTopY,
             belowTopY = belowTopY,
             showLabels = false,
@@ -301,7 +298,6 @@ fun XmbDrillFlyout(
         XmbGameColumn(
             items = items,
             selectedIndex = selectedIndex,
-            iconStyle = iconStyle,
             belowTopY = belowTopY,
             onItemSelected = onItemSelected,
             onItemLongPress = onItemLongPress,
@@ -322,7 +318,6 @@ fun XmbDrillFlyout(
 private fun XmbGameColumn(
     items: List<XMBItem>,
     selectedIndex: Int,
-    iconStyle: GameIconStyle,
     belowTopY: Dp,
     onItemSelected: (Int) -> Unit,
     onItemLongPress: (Int) -> Unit,
@@ -371,7 +366,6 @@ private fun XmbGameColumn(
                     item = item,
                     isSelected = i == selectedIndex,
                     showText = true,   // every game card keeps its [Title] / {Platform (Emulator)} label
-                    iconStyle = iconStyle,
                     onClick = { onItemSelected(i) },
                     onLongPress = { onItemLongPress(i) },
                     showIcon = true,
@@ -385,53 +379,6 @@ private fun XmbGameColumn(
                         .testTag("xmbRow:${item.id}"),
                 )
             }
-        }
-    }
-}
-
-// One sibling icon — plain glyph (no tile/shadow), dimmed when not the active sibling. Video
-// sections use vector glyphs (folder / library / movie); everything else uses console art.
-// solidUnfocusedIcons = the Display ▸ Appearance toggle: full-opacity unselected glyphs.
-@Composable
-private fun SiblingIcon(item: XMBItem, selected: Boolean, solidUnfocusedIcons: Boolean = false) {
-    val chip = if (selected) 56.dp else 40.dp
-    val videoGlyph = when (item.type) {
-        // Missing takes the vector path rather than console art: there is no sysicon for it, and
-        // the console fallback is the blank sysicon_default. Same "?" glyph the Untracked row in
-        // the Shiba hub uses — both mean "we know about this entry but can't account for it".
-        XMBItemType.MISSING         -> Icons.AutoMirrored.Filled.HelpOutline
-        XMBItemType.VIDEO_FOLDER    -> Icons.Filled.Folder
-        XMBItemType.VIDEO_LIBRARY   -> Icons.Filled.VideoLibrary
-        XMBItemType.VIDEO_APPS        -> Icons.Filled.Movie
-        XMBItemType.VIDEO_RECENT      -> Icons.Filled.History
-        XMBItemType.VIDEO_FAVORITES   -> Icons.Filled.Star
-        XMBItemType.VIDEO_COLLECTIONS -> Icons.Filled.Bookmarks
-        XMBItemType.PHOTO_FOLDER    -> Icons.Filled.Folder
-        XMBItemType.PHOTO_ALBUMS    -> Icons.Filled.PhotoLibrary
-        XMBItemType.PHOTO_APPS      -> Icons.Filled.Collections
-        // The video "Playlists" section row (PLAYLIST type with no playlistId) uses a playlist glyph.
-        XMBItemType.PLAYLIST        -> Icons.AutoMirrored.Filled.QueueMusic
-        else                        -> null
-    }
-    Box(
-        modifier = Modifier.fillMaxWidth().padding(end = 16.dp),
-        contentAlignment = Alignment.CenterEnd,
-    ) {
-        if (videoGlyph != null) {
-            ThemedGlyph(
-                slotKey = itemSlotKeyFor(item.type) ?: "",
-                defaultVector = videoGlyph,
-                contentDescription = item.title,
-                tint = LocalPFPColors.current.iconColor,
-                // Layer alpha (not tint alpha) so custom untinted icons dim identically.
-                modifier = Modifier.size(chip).alpha(if (selected || solidUnfocusedIcons) 1f else 0.5f),
-            )
-        } else {
-            com.playfieldportal.core.ui.icons.ConsoleIcon(
-                platformId = consoleIconKeyFor(item),
-                contentDescription = item.title,
-                modifier = Modifier.size(chip).alpha(if (selected || solidUnfocusedIcons) 1f else 0.5f),
-            )
         }
     }
 }
@@ -487,15 +434,6 @@ internal fun itemSlotKeyFor(type: XMBItemType): String? = when (type) {
     else -> null
 }
 
-// Maps a memory-card-style item to its sysicon key (mirrors XmbItemLeadingIcon's mapping).
-private fun consoleIconKeyFor(item: XMBItem): String? = when (item.type) {
-    XMBItemType.ALL_GAMES   -> "allgames"
-    XMBItemType.CATEGORY_CARD -> "allgames"
-    XMBItemType.FAVORITES   -> "favorites"
-    XMBItemType.MEMORY_CARD -> item.platformId
-    else                    -> null   // collections / unknown fall back to sysicon_default
-}
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun XMBItemList(
@@ -503,7 +441,6 @@ fun XMBItemList(
     selectedIndex: Int,
     onItemSelected: (Int) -> Unit,
     onItemLongPress: (Int) -> Unit,
-    iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
     // Increments when the list must snap to the top regardless of cursor position (e.g. a sort
     // cycle). Without it the reorder would glide the old position to the new one.
     scrollToTopToken: Int = 0,
@@ -621,7 +558,6 @@ fun XMBItemList(
                     // rest dimmed) — labels show unless the caller asks for an icon-only column
                     // (the drill flyout's memory-card cross).
                     showText = showLabels,
-                    iconStyle = iconStyle,
                     onClick = { onItemSelected(i) },
                     onLongPress = { onItemLongPress(i) },
                     showIcon = showIcons,
@@ -809,7 +745,6 @@ private fun XmbVerticalListRow(
     // Like the real XMB first-level column, rows are icon-only unless flagged: the caller shows text
     // only for the active row and the one directly below it (the "up next" preview).
     showText: Boolean,
-    iconStyle: GameIconStyle,
     onClick: () -> Unit,
     onLongPress: () -> Unit,
     // When false, the leading game/console icon is omitted — the row is text-only.
@@ -913,7 +848,6 @@ private fun XmbVerticalListRow(
                 ) {
                 XmbItemLeadingIcon(
                     item = item,
-                    iconStyle = iconStyle,
                     isSelected = isSelected,
                     umdShowsGame = umdShowsGame,
                 )
@@ -1089,7 +1023,6 @@ private fun Modifier.arrangeDecoration(
 @Composable
 private fun XmbItemLeadingIcon(
     item: XMBItem,
-    iconStyle: GameIconStyle,
     isSelected: Boolean,
     // A focused UMD slot whose read has finished — see rememberUmdRead.
     umdShowsGame: Boolean = false,
@@ -1430,7 +1363,6 @@ private fun XmbItemLeadingIcon(
             ) {
                 GameIcon(
                     item = item,
-                    iconStyle = iconStyle,
                     modifier = Modifier
                         .requiredSize(width = UMD_ICON_WIDTH, height = UMD_ICON_HEIGHT)
                         // Divided back out of the row's selected scale, which grows the icon about
@@ -1539,7 +1471,6 @@ private fun XmbItemLeadingIcon(
             // Full 144:80 landscape tile (ratio 1.8) — the authentic PSP ICON0 rectangle.
             GameIcon(
                 item = item,
-                iconStyle = iconStyle,
                 modifier = Modifier.size(width = GAME_ICON_WIDTH, height = GAME_ICON_HEIGHT),
             )
             Spacer(modifier = Modifier.width(ARTWORK_TEXT_GAP))
@@ -1550,7 +1481,6 @@ private fun XmbItemLeadingIcon(
             // content_type ANDROID_APP, so artwork never makes them appear in All Games.
             GameIcon(
                 item = item,
-                iconStyle = iconStyle,
                 modifier = Modifier.size(width = GAME_ICON_WIDTH, height = GAME_ICON_HEIGHT),
             )
             Spacer(modifier = Modifier.width(ARTWORK_TEXT_GAP))

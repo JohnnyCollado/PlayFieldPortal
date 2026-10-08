@@ -26,10 +26,11 @@ class GoldenPtfIconsTest {
         return file.readBytes()
     }
 
-    private val allKeys = PtfIcons.DIRECT.values.flatten().size
+    // Counted in PTF records, not slot keys: one record fills every slot that shares its art.
+    private val allKeys = PtfIcons.DIRECT.size
     private val categoryKeys = 6
 
-    /** File → (direct-fit keys it should yield, whether its wallpaper decodes). */
+    /** File → (direct-fit records it should yield, whether its wallpaper decodes). */
     private val expected = mapOf(
         "樂克樂克™ 主題 2(PSP®專用) (NPHW00012).PTF" to (allKeys to true),
         "Test.ptf" to (categoryKeys to true),
@@ -55,7 +56,7 @@ class GoldenPtfIconsTest {
             if (!file.isFile) continue
             val bytes = file.readBytes()
             val icons = PtfIcons.extract(assertNotNull(PtfUnpacker.unpack(bytes), name))
-            assertEquals(want.first, icons.size, "$name: direct-fit keys")
+            assertEquals(want.first, PtfIcons.tintSources(icons).size, "$name: direct-fit records")
             icons.values.forEach { assertEquals(it.width, it.height, "$name: icons are padded square") }
             assertEquals(want.second, PtfParser.parse(bytes)?.wallpaper != null, "$name: wallpaper decodes")
         }
@@ -88,5 +89,19 @@ class GoldenPtfIconsTest {
     @Test
     fun `cxmb ctf is still recognised and refused`() {
         assertEquals(PtfParser.Kind.CXMB, PtfParser.detect(golden("PS4_Theme_for_PSP_6_61.ctf")))
+    }
+
+    @Test
+    fun `every theme in the set yields at most 64 extras, none overlapping direct`() {
+        assumeTrue("ptf-test-set missing: $setDir — skipping", setDir.isDirectory)
+        for (name in expected.keys) {
+            val file = File(setDir, name)
+            if (!file.isFile) continue
+            val extras = PtfIcons.extractExtras(assertNotNull(PtfUnpacker.unpack(file.readBytes()), name))
+            assertTrue(extras.size <= PtfIcons.MAX_EXTRAS, "$name: ${extras.size} extras")
+            assertTrue(extras.keys.none { it in PtfIcons.DIRECT.keys }, "$name: overlaps DIRECT")
+            assertTrue(extras.keys.all(PtfIcons::isBody), "$name: only body records")
+            extras.values.forEach { assertEquals(it.width, it.height, "$name: extras are padded square") }
+        }
     }
 }

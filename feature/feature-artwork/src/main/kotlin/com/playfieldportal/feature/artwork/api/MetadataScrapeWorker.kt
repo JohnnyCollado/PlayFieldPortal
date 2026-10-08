@@ -76,6 +76,16 @@ class MetadataScrapeWorker @AssistedInject constructor(
         return try {
             val result = if (mode == MODE_ALL) artworkRepository.reScrapeAllGames(onProgress)
             else artworkRepository.scrapeMissingOnly(onProgress)
+            // A paused pass is one outcome, not N failures: say what to do and where (AD-4).
+            if (result.paused) {
+                tasks.fail(
+                    TASK_ID, ARTWORK_PAUSED_MESSAGE,
+                    NotificationAction.OpenSettingsScreen("settings_artwork_import"),
+                    detail = NotificationDetail.notes(PfpErrorCode.AR_1001, summary = ARTWORK_PAUSED_MESSAGE),
+                    title = if (mode == MODE_ALL) "Artwork re-scrape paused" else "Artwork scrape paused",
+                )
+                return Result.failure(workDataOf(KEY_ERROR to ARTWORK_PAUSED_MESSAGE))
+            }
             tasks.complete(
                 TASK_ID,
                 "${result.succeeded} succeeded, ${result.failed} failed of ${result.total}",

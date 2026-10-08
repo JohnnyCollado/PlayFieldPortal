@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxScope
@@ -324,6 +323,3 @@ internal fun Modifier.detailFocusRing(
         color = if (focused) edge else DetailRowEdge,
         shape = shape,
     )
-
-/** Arrangement for the footer's own prompt rows (helpers keep call sites terse). */
-internal val DetailHelperArrangement: Arrangement.Horizontal = Arrangement.spacedBy(16.dp)

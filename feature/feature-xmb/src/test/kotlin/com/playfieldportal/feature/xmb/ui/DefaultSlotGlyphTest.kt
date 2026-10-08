@@ -5,6 +5,7 @@ import com.playfieldportal.core.domain.model.NotificationKind
 import com.playfieldportal.feature.xmb.ui.detail.shibaCoinRes
 import com.playfieldportal.themekit.CustomizableIcons
 import com.playfieldportal.themekit.IconSlot
+import com.playfieldportal.themekit.SharedIconArt
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -34,12 +35,23 @@ class DefaultSlotGlyphTest {
     @Test
     fun `crossbar slots resolve to the catalog drawable`() {
         val slots = CustomizableIcons.ALL.filter { it.group == IconSlot.Group.CATEGORY_BAR }
-        assertEquals(10, slots.size)
+        assertEquals(9, slots.size)
         for (slot in slots) {
             assertTrue(
                 "${slot.key} should resolve to a drawable",
                 defaultGlyphFor(slot) is SlotGlyphDefault.Drawable,
             )
+        }
+    }
+
+    @Test
+    fun `every item slot sharing the memory-card art previews the memory card`() {
+        // sysicon_allgames is console art: its default is the same picture through systemIconRes.
+        val items = SharedIconArt.MEMORY_CARD.mapNotNull { CustomizableIcons.byKey(it) }
+            .filter { it.group != IconSlot.Group.CONSOLE }
+        assertEquals(5, items.size)
+        for (slot in items) {
+            assertEquals(slot.key, SlotGlyphDefault.BundledAsset(MEMORY_CARD_DEFAULT_ART), defaultGlyphFor(slot))
         }
     }
 

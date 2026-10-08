@@ -26,6 +26,6 @@ class CustomIconsRowTextTest {
     @Test
     fun `stored keys the editor does not list are not counted`() {
         // A pick left behind on a slot that follows the theme's colours now, and the hidden category icon.
-        assertEquals("None custom", CustomIconsRowText.value(setOf("status_wifi", "catbar_favorites")))
+        assertEquals("None custom", CustomIconsRowText.value(setOf("status_wifi", "shiba_coin_gold")))
     }
 }

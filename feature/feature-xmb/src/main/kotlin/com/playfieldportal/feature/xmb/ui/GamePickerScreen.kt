@@ -93,7 +93,6 @@ import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.components.PfpCheckBadge
 import com.playfieldportal.core.ui.components.PspContextMenuOverlay
 import com.playfieldportal.core.ui.components.TouchPromptBar
-import com.playfieldportal.core.ui.icons.GameIconStyle
 import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
 import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
 import com.playfieldportal.core.ui.keyboard.isVirtualKeyboardOverlayOpen
@@ -696,7 +695,6 @@ private fun GameArt(game: Game, view: IconDisplayMode, colors: StorefrontColors)
     val artModifier = Modifier.size(width = pickerArtWidthDp(game.platformId, view).dp, height = artHeight)
     GameIcon(
         item = item,
-        iconStyle = GameIconStyle.PSP_RECTANGLE,
         naturalArtHeight = ART_HEIGHT,
         modifier = artModifier,
     )

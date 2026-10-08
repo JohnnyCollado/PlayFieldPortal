@@ -19,13 +19,3 @@ data class PFPTheme(
     val packagePath: String? = null,    // path to .xmbtheme file
     val isBuiltIn: Boolean = false,
 )
-
-// Sound events themes can provide
-enum class ThemeSoundEvent {
-    NAVIGATE_HORIZONTAL,
-    NAVIGATE_VERTICAL,
-    SELECT,
-    BACK,
-    CATEGORY_CHANGE,
-    BOOT,
-}

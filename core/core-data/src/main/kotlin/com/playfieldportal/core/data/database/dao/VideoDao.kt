@@ -54,9 +54,6 @@ interface VideoDao {
     @Query("SELECT * FROM videos WHERE id = :id")
     suspend fun getById(id: String): VideoEntity?
 
-    @Query("SELECT COUNT(*) FROM videos WHERE library_id = :libraryId")
-    suspend fun countForLibrary(libraryId: String): Int
-
     // How many rows still reference a cached thumbnail (generated or custom) — 0 means its file
     // can be deleted.
     @Query("SELECT COUNT(*) FROM videos WHERE thumbnail_uri = :uri OR custom_thumbnail_uri = :uri")

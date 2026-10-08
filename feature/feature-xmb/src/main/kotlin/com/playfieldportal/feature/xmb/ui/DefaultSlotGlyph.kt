@@ -59,6 +59,7 @@ import com.playfieldportal.core.ui.icons.systemIconRes
 import com.playfieldportal.feature.xmb.ui.detail.shibaCoinRes
 import com.playfieldportal.themekit.CustomizableIcons
 import com.playfieldportal.themekit.IconSlot
+import com.playfieldportal.themekit.SharedIconArt
 
 /**
  * What a themeable slot draws when neither a user pick nor the applied theme replaces it —
@@ -112,12 +113,10 @@ internal fun defaultGlyphFor(slot: IconSlot): SlotGlyphDefault {
     XmbStatusIcons.forSlotKey(slot.key)?.let { return SlotGlyphDefault.Drawable(it) }
     shibaTierFor(slot.key)?.let { return SlotGlyphDefault.Drawable(shibaCoinRes(it)) }
     notificationKindFor(slot.key)?.let { return SlotGlyphDefault.Vector(notificationGlyph(it)) }
+    // The default memory-card art, shared with All Games (console art, handled above) and the
+    // "All Tracked Games" row, which draws MEMORY_CARD_DEFAULT_ART directly.
+    if (slot.key in SharedIconArt.MEMORY_CARD) return SlotGlyphDefault.BundledAsset(MEMORY_CARD_DEFAULT_ART)
     return when (slot.key) {
-        // The default memory-card art. "All Tracked Games" reads as a card too (its row draws
-        // MEMORY_CARD_DEFAULT_ART directly), so it previews as one.
-        "item_memcard_games", "item_memcard_music", "item_memcard_video", "item_memcard_photos",
-        "item_shiba_track",
-        -> SlotGlyphDefault.BundledAsset(MEMORY_CARD_DEFAULT_ART)
         // The UMD slot's unfocused art: the PSP's UMD.
         "item_umd" -> SlotGlyphDefault.BundledAsset(UMD_SLOT_ART)
         // The Settings rows' wrench badge is console art, not a Material glyph.

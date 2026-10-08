@@ -16,6 +16,7 @@ import com.playfieldportal.themekit.PfpThemeBundle
 import com.playfieldportal.themekit.PfpThemeCodec
 import com.playfieldportal.themekit.PfpThemeManifest
 import com.playfieldportal.themekit.PfpThemeSource
+import com.playfieldportal.themekit.PtfIcons
 import com.playfieldportal.themekit.ThemeImage
 import com.playfieldportal.themekit.ThemeMediaSlots
 import com.playfieldportal.themekit.ThemeMotion
@@ -123,6 +124,7 @@ class PfpThemeStore private constructor(
      * PTF import lands in the library too, so converted PSP themes are switchable later. [icons]
      * are the theme's direct-fit icons by slot key (a source shared by several keys is encoded
      * once); [iconColorArgb] is the tint for the built-in icons it leaves, or null for automatic.
+     * [ptfIcons] are the other body images ([PtfIcons.extractExtras]), kept for the icon picker.
      */
     suspend fun createFromPtf(
         name: String,
@@ -132,20 +134,24 @@ class PfpThemeStore private constructor(
         firmware: String?,
         icons: Map<String, BmpImage> = emptyMap(),
         iconColorArgb: Int? = null,
+        ptfIcons: Map<PtfIcons.SlotRef, BmpImage> = emptyMap(),
     ): SavedTheme? = withContext(Dispatchers.IO) {
         val encoded = HashMap<BmpImage, ThemeImage>()
-        val iconEntries = icons.mapValues { (_, image) ->
+        val encode = { image: BmpImage ->
             encoded.getOrPut(image) {
                 val bitmap = image.toBitmap()
                 ThemeImage(bitmap.toPngBytes(), "png").also { bitmap.recycle() }
             }
         }
+        val iconEntries = icons.mapValues { (_, image) -> encode(image) }
+        val ptfEntries = ptfIcons.mapValues { (_, image) -> encode(image) }
         save(
             name = name,
             wallpaper = wallpaper.toBitmap(),
             accentArgb = accentArgb,
             source = PfpThemeSource(type = PfpThemeSource.TYPE_PTF_IMPORT, file = sourceFile, firmware = firmware),
             icons = iconEntries,
+            ptfIcons = ptfEntries,
             iconColor = iconColorArgb?.let { "#%06X".format(it and 0xFFFFFF) } ?: PfpThemeManifest.ICON_COLOR_AUTO,
         )
     }
@@ -205,6 +211,15 @@ class PfpThemeStore private constructor(
                 file.writeBytes(image.bytes)
                 // Same path as the last theme's icon under this key: Coil must not serve that one.
                 cacheEvictor.evict(file.absolutePath)
+            }
+        }
+        // The theme's extra PSP body images (the icon picker's "More from this PSP theme"). Inside
+        // the icon dir, so the clearIcons above and in reset/preset already wipe them. Never
+        // rendered by the XMB, so no cache eviction and no stamp.
+        if (bundle.ptfIcons.isNotEmpty()) {
+            val ptfDir = File(iconsDir, ThemeTiers.PTF_ICONS_SUBDIR).apply { mkdirs() }
+            for ((ref, image) in bundle.ptfIcons) {
+                File(ptfDir, "${PtfIcons.fileStem(ref)}.png").writeBytes(image.bytes)
             }
         }
 
@@ -739,6 +754,7 @@ class PfpThemeStore private constructor(
         accentArgb: Long?,
         source: PfpThemeSource,
         icons: Map<String, ThemeImage> = emptyMap(),
+        ptfIcons: Map<PtfIcons.SlotRef, ThemeImage> = emptyMap(),
         iconColor: String = PfpThemeManifest.ICON_COLOR_AUTO,
     ): SavedTheme? {
         return runCatching {
@@ -760,7 +776,7 @@ class PfpThemeStore private constructor(
                 .also { preview.compress(Bitmap.CompressFormat.PNG, 90, it) }.toByteArray()
 
             FileOutputStream(File(dir, "$id.pfptheme")).use { out ->
-                PfpThemeCodec.write(PfpThemeBundle(manifest, wallpaperPng, previewBytes, icons = icons), out)
+                PfpThemeCodec.write(PfpThemeBundle(manifest, wallpaperPng, previewBytes, icons = icons, ptfIcons = ptfIcons), out)
             }
             FileOutputStream(File(dir, "$id.wallpaper.jpg")).use { wallpaper.compress(Bitmap.CompressFormat.JPEG, 92, it) }
             FileOutputStream(File(dir, "$id.preview.jpg")).use { preview.compress(Bitmap.CompressFormat.JPEG, 88, it) }

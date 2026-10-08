@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.playfieldportal.feature.artwork.api.ArtworkFolderPickerUris
 import com.playfieldportal.feature.settings.viewmodel.ArtworkImportUiState
 import com.playfieldportal.feature.settings.viewmodel.ArtworkImportViewModel
 import java.util.Locale
@@ -42,6 +43,8 @@ fun ArtworkImportScreen(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? -> uri?.let { viewModel.onFolderPicked(it) } }
 
+    val unavailable = state.folderLinked && !state.grantAlive
+
     val exportPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? -> uri?.let { viewModel.startExport(it) } }
@@ -63,23 +66,20 @@ fun ArtworkImportScreen(
             SettingsGroup("Artwork Folder")
 
             SettingsRow(
-                label    = "Folder",
+                label    = if (state.folderLinked) "Change artwork folder" else "Choose artwork folder",
                 sublabel = when {
                     !state.folderLinked -> "Not set — tap to choose where PFP keeps artwork"
-                    !state.grantAlive   -> "${state.folderDisplay}  —  access lost, tap to re-link"
-                    else                -> "${state.folderDisplay}  (tap to change)"
+                    unavailable         -> "Unavailable. Relink to resume new artwork"
+                    else                -> state.folderDisplay
                 },
-                onClick  = { folderPicker.launch(null) },
+                labelTrailing = if (unavailable) ({ KnowledgeBadge("Unavailable", WarningAmber) }) else null,
+                // A dead folder reopens the picker on itself; every other pick starts at the device root.
+                onClick  = {
+                    val start = state.folderTreeUri?.takeIf { unavailable }
+                        ?.let { ArtworkFolderPickerUris.forRelink(Uri.parse(it)) }
+                    folderPicker.launch(start ?: ArtworkFolderPickerUris.deviceRoot())
+                },
             )
-
-            if (state.folderLinked) {
-                SettingsRow(
-                    label    = if (state.confirmForget) "Tap again to confirm" else "Forget Folder",
-                    sublabel = "Releases PFP's access. Nothing on disk is deleted — the artwork " +
-                        "stays yours in the folder.",
-                    onClick  = { viewModel.forgetFolder() },
-                )
-            }
 
             // ── Import sources ────────────────────────────────────────────────
             if (state.folderLinked && state.grantAlive) {

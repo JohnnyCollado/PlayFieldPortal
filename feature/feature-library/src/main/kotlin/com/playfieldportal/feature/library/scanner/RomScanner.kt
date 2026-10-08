@@ -675,9 +675,6 @@ class RomScanner @Inject constructor(
         }
     }.getOrNull()
 
-    suspend fun findMissingRoms(knownPaths: List<String>): List<String> =
-        knownPaths.filter { path -> !File(path).exists() }
-
     private fun String.sanitizeRomName(): String = cleanRomTitle(this)
 }
 

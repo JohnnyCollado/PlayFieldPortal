@@ -11,6 +11,8 @@ import com.playfieldportal.themekit.CustomizableIcons
 import com.playfieldportal.themekit.IconEditorLayout
 import com.playfieldportal.themekit.IconEditorTab
 import com.playfieldportal.themekit.IconSlot
+import com.playfieldportal.themekit.PtfIcons
+import com.playfieldportal.themekit.ThemeIconChoices
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -53,11 +55,10 @@ class IconFiltersTest {
     }
 
     @Test
-    fun `the favorites category icon is not listed but survives a round trip`() {
+    fun `favorites is not a crossbar icon`() {
         assertFalse(EditableSlots.isEditable("catbar_favorites"))
-        assertTrue(EditableSlots.isKept("catbar_favorites"))
-        assertFalse(EditableSlots.isKept("status_wifi"))
         assertTrue("catbar_favorites" !in keys(PickerQuery()))
+        assertTrue(EditableSlots.isEditable("sysicon_favorites"))
     }
 
     @Test
@@ -143,7 +144,7 @@ class IconFiltersTest {
     fun `home shows the crossbar and the sample rows`() {
         val home = IconPicker.onScreenKeys()
         assertTrue(home.all(EditableSlots::isEditable))
-        // The nine seeded categories; the Favorites category icon is not listed.
+        // The nine seeded categories; Favorites is a Game column item, not a category.
         assertEquals(9, home.count { it.startsWith("catbar_") })
         assertTrue("catbar_favorites" !in home)
         assertTrue(home.all { CustomizableIcons.isValidKey(it) })
@@ -262,5 +263,35 @@ class IconFiltersTest {
             val png = com.playfieldportal.studio.preview.PreviewRenderer.rasterizeDefaultIcon(key, 64)
             assertTrue(png.size > 8 && png[1] == 'P'.code.toByte(), key)
         }
+    }
+
+    // ── From theme… ──────────────────────────────────────────────────────────
+
+    @Test
+    fun `from theme is unavailable until the open theme holds an icon`() {
+        assertFalse(IconPicker.fromThemeAvailable(StudioState()))
+        assertTrue(IconPicker.fromThemeAvailable(StudioState(iconOverrides = mapOf("catbar_games" to byteArrayOf(1)))))
+        assertTrue(IconPicker.fromThemeAvailable(StudioState(ptfIcons = mapOf(PtfIcons.SlotRef(2, 5) to byteArrayOf(1)))))
+    }
+
+    @Test
+    fun `from theme dialog title names the theme and the slot`() {
+        val slot = CustomizableIcons.byKey("catbar_games")!!
+        assertEquals("Aurora · icon for ${slot.displayName}", IconPicker.fromThemeTitle("Aurora", slot))
+    }
+
+    @Test
+    fun `from theme sections list slot icons then PSP extras, collapsing identical art`() {
+        val same = byteArrayOf(1, 2, 3)
+        val state = StudioState(
+            iconOverrides = mapOf("catbar_games" to same.copyOf(), "item_playlist" to same.copyOf(), "catbar_music" to byteArrayOf(9)),
+            ptfIcons = mapOf(PtfIcons.SlotRef(2, 5) to byteArrayOf(4), PtfIcons.SlotRef(2, 99) to byteArrayOf(5)),
+        )
+        val sections = IconPicker.fromThemeSections(state)
+        assertEquals(listOf(ThemeIconChoices.THEME_ICONS_TITLE, ThemeIconChoices.PTF_ICONS_TITLE), sections.map { it.title })
+        // Three slots, two distinct images: equal bytes (not equal arrays) collapse into one tile.
+        assertEquals(2, sections[0].choices.size)
+        assertEquals(listOf("TV", "Icon 1"), sections[1].choices.map { it.label })
+        assertTrue(IconPicker.fromThemeSections(StudioState()).isEmpty())
     }
 }

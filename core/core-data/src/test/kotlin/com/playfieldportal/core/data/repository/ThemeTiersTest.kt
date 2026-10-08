@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.data.repository.ThemeTiers.Tier
 import com.playfieldportal.core.domain.model.UiMediaSlot
 import com.playfieldportal.core.ui.icons.CustomIcon
+import com.playfieldportal.themekit.PtfIcons
 import java.io.ByteArrayOutputStream
 import java.io.File
 import kotlinx.coroutines.test.runTest
@@ -112,6 +113,67 @@ class ThemeTiersTest {
         assertTrue(tiers.clearIcons(Tier.THEME))
         assertFalse(tiers.clearIcons(Tier.THEME), "nothing left to clear")
         assertEquals(setOf("catbar_games"), tiers.iconKeys(Tier.USER))
+    }
+
+    @Test
+    fun `ptfIconFiles parses body names and ignores everything else`() {
+        val dir = File(tiers.iconDir(Tier.THEME), ThemeTiers.PTF_ICONS_SUBDIR).apply { mkdirs() }
+        val good = File(dir, "2_5.png").apply { writeBytes(png()) }
+        val goodItem = File(dir, "3_44.png").apply { writeBytes(png()) }
+        for (bad in listOf("3_9.png", "x.png", "2_5.gif", "2_5.png.tmp", "3_044.png")) File(dir, bad).writeBytes(png())
+
+        assertEquals(
+            mapOf(PtfIcons.SlotRef(2, 5) to good, PtfIcons.SlotRef(3, 44) to goodItem),
+            tiers.ptfIconFiles(),
+        )
+    }
+
+    @Test
+    fun `ptfIconFiles come back in group then index order, not file-name order`() {
+        val dir = File(tiers.iconDir(Tier.THEME), ThemeTiers.PTF_ICONS_SUBDIR).apply { mkdirs() }
+        // By file name "2_10" sorts before "2_5"; the grid wants 2_5 first.
+        for (name in listOf("3_8", "2_10", "2_5", "4_0")) File(dir, "$name.png").writeBytes(png())
+
+        assertEquals(
+            listOf(PtfIcons.SlotRef(2, 5), PtfIcons.SlotRef(2, 10), PtfIcons.SlotRef(3, 8), PtfIcons.SlotRef(4, 0)),
+            tiers.ptfIconFiles().keys.toList(),
+        )
+    }
+
+    @Test
+    fun `ptfIconFiles is empty without the subdirectory`() {
+        assertTrue(tiers.ptfIconFiles().isEmpty())
+    }
+
+    @Test
+    fun `the ptficons subdirectory never leaks into the icon keys or loads`() = runTest {
+        icon(Tier.THEME, "catbar_games", "png")
+        val dir = File(tiers.iconDir(Tier.THEME), ThemeTiers.PTF_ICONS_SUBDIR).apply { mkdirs() }
+        File(dir, "2_5.png").writeBytes(png())
+
+        assertEquals(setOf("catbar_games"), tiers.iconKeys(Tier.THEME))
+        assertEquals(setOf("catbar_games"), tiers.loadIcons(Tier.THEME).keys)
+    }
+
+    @Test
+    fun `loadPtfIcons decodes extras as stills`() = runTest {
+        val dir = File(tiers.iconDir(Tier.THEME), ThemeTiers.PTF_ICONS_SUBDIR).apply { mkdirs() }
+        File(dir, "2_5.png").writeBytes(png())
+
+        val loaded = tiers.loadPtfIcons()
+        assertEquals(setOf(PtfIcons.SlotRef(2, 5)), loaded.keys)
+        assertIs<CustomIcon.Still>(loaded.getValue(PtfIcons.SlotRef(2, 5)))
+    }
+
+    @Test
+    fun `clearing the theme icons removes the ptficons subdirectory`() {
+        val dir = File(tiers.iconDir(Tier.THEME), ThemeTiers.PTF_ICONS_SUBDIR).apply { mkdirs() }
+        File(dir, "2_5.png").writeBytes(png())
+
+        tiers.clearIcons(Tier.THEME)
+
+        assertFalse(dir.exists())
+        assertTrue(tiers.ptfIconFiles().isEmpty())
     }
 
     // ── media ────────────────────────────────────────────────────────────────

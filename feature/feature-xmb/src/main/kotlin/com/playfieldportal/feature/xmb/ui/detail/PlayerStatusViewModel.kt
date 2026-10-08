@@ -118,10 +118,8 @@ data class PlayerStatusUiState(
     val closed: Boolean = false,
     val openCoins: ShibaCoinsTarget? = null,
 ) {
-    val xpToNext: Int get() = (xpForNextLevel - xpIntoLevel).coerceAtLeast(0)
     val levelFraction: Float
         get() = if (xpForNextLevel <= 0) 0f else (xpIntoLevel.toFloat() / xpForNextLevel).coerceIn(0f, 1f)
-    val recentFocused: Boolean get() = !onRarest && focusedId != null
     val rarestFocused: Boolean get() = onRarest
     val focusedRecent: RecentRow? get() = recent.firstOrNull { it.id == focusedId }
     val optionRows: List<PlayerStatusOptionRow> get() = playerStatusOptionRows(this)
@@ -370,11 +368,6 @@ class PlayerStatusViewModel @Inject constructor(
             }
         }
     }
-}
-
-private fun sortComparatorFor(sort: PlayerStatusSort): Comparator<RecentRow> = when (sort) {
-    PlayerStatusSort.NEWEST -> compareByDescending { it.earnedAt }
-    PlayerStatusSort.RAREST -> compareBy<RecentRow> { it.tier.ordinal }.thenBy { it.earnedAt }
 }
 
 private fun RecentCoin.toRow(providerByGame: Map<Long, AchievementProvider>) = RecentRow(

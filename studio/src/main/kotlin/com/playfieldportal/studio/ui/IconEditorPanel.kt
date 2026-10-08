@@ -92,6 +92,7 @@ fun IconEditorPanel(
     var customizedOnly by rememberSaveable { mutableStateOf(false) }
     var selectedKey by rememberSaveable { mutableStateOf<String?>(null) }
     var report by remember { mutableStateOf<IconPackReport?>(null) }
+    var fromThemeFor by remember { mutableStateOf<IconSlot?>(null) }
 
     val customized = state.iconOverrides.keys
     val query = PickerQuery(search, group, onScreen, customizedOnly)
@@ -181,7 +182,8 @@ fun IconEditorPanel(
             SlotCard(
                 slot = selected,
                 state = state,
-                onReplace = { replace(selected) },
+                onLocalFile = { replace(selected) },
+                onFromTheme = { fromThemeFor = selected },
                 onReset = { viewModel.clearIconOverride(selected.key) },
                 onExportTemplate = { exportTemplate(selected) },
             )
@@ -226,6 +228,17 @@ fun IconEditorPanel(
     }
 
     report?.let { done -> PackReportDialog(done) { report = null } }
+    fromThemeFor?.let { slot ->
+        ThemeIconPickerDialog(
+            slot = slot,
+            state = state,
+            onPick = { source ->
+                fromThemeFor = null
+                viewModel.setIconFromTheme(slot.key, source)
+            },
+            onDismiss = { fromThemeFor = null },
+        )
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)

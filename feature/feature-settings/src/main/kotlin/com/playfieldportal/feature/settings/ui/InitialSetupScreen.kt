@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -23,6 +24,7 @@ import com.playfieldportal.core.domain.model.XYLayout
 import com.playfieldportal.core.domain.model.displayLabel
 import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpScreenPreview
+import com.playfieldportal.feature.settings.ui.wizard.WizardAmber
 import com.playfieldportal.feature.settings.ui.wizard.WizardCheckboxRow
 import com.playfieldportal.feature.settings.ui.wizard.WizardInfoText
 import com.playfieldportal.feature.settings.ui.wizard.WizardRootRow
@@ -59,8 +61,9 @@ private enum class AddSlot { ROM, MUSIC, VIDEO, PHOTO }
  * Local Achievements* → RetroArch* → Emulators* → Windows Games* → Hints & Touch → Home App* → Finish
  * (* only when it applies). Channels the mockup's PSP skin via [WizardScaffold] — strongly
  * controller driven (Back steps out, Confirm activates the focused row, RB skips the page), touch
- * everywhere (rows, fields tap to edit). Everything is optional and written through the same
- * stores as Settings, so this is a guided front door, not a second configuration system.
+ * everywhere (rows, fields tap to edit). Everything is written through the same
+ * stores as Settings, so this is a guided front door, not a second configuration system. Every page
+ * can be skipped except Artwork, which needs a ready folder first.
  */
 @Composable
 fun InitialSetupScreen(
@@ -172,7 +175,10 @@ fun InitialSetupScreen(
         onDismissMessage = viewModel::dismissMessage,
         heading = headingFor(step),
         hint = hintFor(step),
-        onSkip = if (step == SetupStep.FINISH) null else viewModel::skipStep,
+        // Finish has nowhere to skip to; Artwork is required, so it has no Skip until its folder is
+        // ready (a re-run with a healthy folder may skip it).
+        onSkip = if (step == SetupStep.FINISH || (step == SetupStep.ARTWORK && !state.artworkReady)) null
+                 else viewModel::skipStep,
         confirmLabel = if (step == SetupStep.EMULATORS) "Change" else "Enter",
         contentKey = step,
         modifier = modifier,
@@ -260,9 +266,7 @@ fun InitialSetupScreen(
             )
             SetupStep.ARTWORK -> ArtworkPage(
                 state = state,
-                onPickFolder = { artworkPicker.launch(null) },
-                onForget = viewModel::forgetArtworkFolder,
-                onRemove = viewModel::forgetArtworkFolder,
+                onPickFolder = { artworkPicker.launch(viewModel.artworkPickerStart()) },
                 onImportNow = viewModel::importArtworkNow,
                 onContinue = { viewModel.nextStep() },
                 nextLabel = nextLabel,
@@ -388,13 +392,13 @@ private fun headingFor(step: SetupStep): String = when (step) {
 }
 
 private fun hintFor(step: SetupStep): String? = when (step) {
-    SetupStep.WELCOME   -> "A few short steps to point the launcher at your stuff — every step is optional and can be changed later in Settings."
+    SetupStep.WELCOME   -> "Most steps are optional. You'll need to pick an artwork folder."
     SetupStep.CONTROLLER -> "Sets the button icons and which button confirms, so every prompt from here on matches your pad."
     SetupStep.ROM_ROOTS -> "Add one or more root folders — each console's games live in a subfolder under them."
     SetupStep.MUSIC     -> "Add several roots to span internal storage and an SD card."
     SetupStep.VIDEO     -> "Add several roots to span internal storage and an SD card."
     SetupStep.PHOTO     -> "Add several roots to span internal storage and an SD card."
-    SetupStep.ARTWORK   -> "One folder hosts the artwork library — you can import into it right after."
+    SetupStep.ARTWORK   -> "Required. Your art lives here, outside the app, so it survives a reinstall."
     SetupStep.SERVICES  -> "All optional and free. SteamGridDB, TheGamesDB, IGDB, and ScreenScraper fetch game artwork and metadata."
     SetupStep.ACHIEVEMENTS -> "RetroAchievements and Steam track achievements as Shiba Coins."
     SetupStep.LOCAL_ACHIEVEMENTS -> "Trophies and achievements your emulators save on this device. One grant per emulator links every title."
@@ -407,9 +411,15 @@ private fun hintFor(step: SetupStep): String? = when (step) {
 }
 
 @Composable
-private fun WizardContinueRow(label: String, onClick: () -> Unit) {
+private fun WizardContinueRow(label: String, onClick: (() -> Unit)?) {
     Spacer(Modifier.height(4.dp))
-    WizardRow(label = "Continue", sublabel = "Next: $label", onClick = onClick)
+    // A null onClick is the inert form: no activation for pad or touch, dimmed, saying why.
+    WizardRow(
+        label = "Continue",
+        sublabel = if (onClick != null) "Next: $label" else "Choose a folder first",
+        modifier = if (onClick != null) Modifier else Modifier.alpha(0.45f),
+        onClick = onClick,
+    )
 }
 
 @Composable
@@ -510,8 +520,6 @@ private fun MediaRootsPage(
 private fun ArtworkPage(
     state: InitialSetupUiState,
     onPickFolder: () -> Unit,
-    onForget: () -> Unit,
-    onRemove: () -> Unit,
     onImportNow: () -> Unit,
     onContinue: () -> Unit,
     nextLabel: String,
@@ -523,41 +531,38 @@ private fun ArtworkPage(
                 "automatically — games get art as they're added."
         )
     } else {
+        // Edit only: the artwork folder is required, so there is no unlink.
         WizardRootRow(
             name = folder,
-            sublabel = "Artwork library — use ✎ to pick a different folder",
+            sublabel = if (state.artworkUnavailable) "Unavailable. Relink to resume new artwork"
+                       else "Artwork library — use ✎ to pick a different folder",
+            sublabelColor = if (state.artworkUnavailable) WizardAmber else null,
             onEdit = onPickFolder,
-            onRemove = onRemove,
         )
     }
-    WizardRow(
-        label = if (folder == null) "Choose Artwork Folder" else "Change Artwork Folder",
-        sublabel = if (folder == null) "One folder hosts the artwork library"
-                   else "Pick a different folder — files are never deleted",
-        onClick = onPickFolder,
-    )
-    if (state.artworkSources.isNotEmpty()) {
+    if (folder == null) {
+        WizardRow(
+            label = "Choose artwork folder",
+            sublabel = "One folder hosts the artwork library",
+            onClick = onPickFolder,
+        )
+    }
+    // The import offer needs a reachable folder.
+    if (state.artworkReady && state.artworkSources.isNotEmpty()) {
         WizardRow(
             label = "Import artwork now?",
             sublabel = "Copy ${state.sizeLabelForSources()} from the folder's import/ into the library",
             focusKey = "artwork_import_now",
             onClick = onImportNow,
         )
-    } else if (folder != null) {
+    } else if (state.artworkReady) {
         WizardRow(
             label = "Artwork import",
             sublabel = "Nothing to import yet — add a launcher's media folder under import/",
             onClick = onImportNow,
         )
     }
-    if (folder != null) {
-        WizardRow(
-            label = "Release artwork folder",
-            sublabel = "Unlink it without touching any files",
-            onClick = onForget,
-        )
-    }
-    WizardContinueRow(nextLabel, onContinue)
+    WizardContinueRow(nextLabel, if (state.artworkReady) onContinue else null)
 }
 
 private fun InitialSetupUiState.sizeLabelForSources(): String {
@@ -1111,7 +1116,7 @@ private fun WelcomePagePreview() {
     WizardPagePreview(
         stepNumber = 1,
         heading = "Welcome to Play Field Portal.",
-        hint = "A few short steps to point the launcher at your stuff — every step is optional and can be changed later in Settings.",
+        hint = "Most steps are optional. You'll need to pick an artwork folder.",
     ) {
         WelcomePage(onStart = {}, onSkip = {})
     }
@@ -1219,16 +1224,33 @@ private fun ArtworkPagePreview() {
     WizardPagePreview(
         stepNumber = 6,
         heading = "Choose your artwork folder.",
-        hint = "One folder hosts the artwork library — you can import into it right after.",
+        hint = "Required. Your art lives here, outside the app, so it survives a reinstall.",
     ) {
         ArtworkPage(
             state = InitialSetupUiState(
                 artworkFolderName = "ArtworkLibrary",
+                artworkReady = true,
                 artworkSources = listOf(ArtworkSourceUi("gpSP (PSP Game Boy Advance)", 3)),
             ),
             onPickFolder = {},
-            onForget = {},
-            onRemove = {},
+            onImportNow = {},
+            onContinue = {},
+            nextLabel = "Online Services",
+        )
+    }
+}
+
+@CombinedPreviews
+@Composable
+private fun ArtworkPageNotLinkedPreview() {
+    WizardPagePreview(
+        stepNumber = 6,
+        heading = "Choose your artwork folder.",
+        hint = "Required. Your art lives here, outside the app, so it survives a reinstall.",
+    ) {
+        ArtworkPage(
+            state = InitialSetupUiState(),
+            onPickFolder = {},
             onImportNow = {},
             onContinue = {},
             nextLabel = "Online Services",

@@ -19,7 +19,6 @@ import com.playfieldportal.core.data.repository.ThemeTiers
 import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.NotificationSeverity
-import com.playfieldportal.core.domain.model.PFPTheme
 import com.playfieldportal.core.domain.model.UiMediaSlot
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -49,8 +48,6 @@ data class ThemesSettingsUiState(
     val iconColorArgb: Long? = null,
     // The user's saved .pfptheme library (imports + Quick Create).
     val savedThemes: List<PfpThemeStore.SavedTheme> = emptyList(),
-    // Installed .xmbtheme themes from the ThemeRepository (built-in + user-installed).
-    val installedThemes: List<PFPTheme> = emptyList(),
     // Raised when a saved theme is picked (or imported): nothing is applied until it is answered.
     // It also offers what applying would replace or switch on. Null = nothing to ask.
     val applyConfirmation: ThemeApplyConfirmation? = null,
@@ -129,15 +126,6 @@ class ThemesSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             context.pfpDataStore.edit { prefs ->
                 if (argb != null) prefs[KEY_ICON_COLOR] = argb else prefs.remove(KEY_ICON_COLOR)
-            }
-        }
-    }
-
-    /** Sets a custom accent color override; null clears it and returns to the preset scheme. */
-    fun setAccentColor(argb: Long?) {
-        viewModelScope.launch {
-            context.pfpDataStore.edit { prefs ->
-                if (argb != null) prefs[KEY_ACCENT_OVERRIDE] = argb else prefs.remove(KEY_ACCENT_OVERRIDE)
             }
         }
     }

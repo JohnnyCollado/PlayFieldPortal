@@ -23,7 +23,3 @@ fun MatchReport.summaryLine(): String = "Matched $matched · Unmatched ${unmatch
 fun MatchReport.detailLine(): String? =
     if (unmatched.isEmpty()) null
     else "See each game's reason in the Shiba Library's Untracked view"
-
-/** Summary plus detail on one line, for a notification title that has no room for two. */
-fun MatchReport.notificationLine(): String =
-    detailLine()?.let { "${summaryLine()} — $it" } ?: summaryLine()

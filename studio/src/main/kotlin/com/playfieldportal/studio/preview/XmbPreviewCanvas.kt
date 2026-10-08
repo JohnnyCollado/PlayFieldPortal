@@ -1103,14 +1103,6 @@ private fun HintPrompt(glyph: String, label: String) {
  * icon-legibility style set, a matte copy sits behind the glyph (IconMatteSurface), one draw node.
  * A GIF override animates only while [focused] in a live preview; otherwise it is its frame 1.
  */
-/**
- * A themeable slot exactly as the launcher draws it (override as authored, else the built-in glyph in
- * the icon colour, with the theme's icon matte). For the opened screens to share.
- */
-@Composable
-fun PreviewSlotIcon(model: XmbPreviewModel, key: String, modifier: Modifier, focused: Boolean = false) =
-    SlotIcon(model, key, modifier, focused)
-
 @Composable
 private fun SlotIcon(model: XmbPreviewModel, key: String, modifier: Modifier, focused: Boolean = false) {
     val override = model.iconOverrides[key]

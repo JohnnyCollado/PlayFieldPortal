@@ -45,9 +45,6 @@ interface ListStateDao {
     @Query("DELETE FROM list_items WHERE item_key = :itemKey")
     suspend fun deleteItemEverywhere(itemKey: String)
 
-    @Query("DELETE FROM list_items")
-    suspend fun clearItems()
-
     /** Makes [orderedKeys] the list's whole Custom order. Pins are kept, on or off the order. */
     @Transaction
     suspend fun replaceOrder(listKey: String, orderedKeys: List<String>) {
@@ -73,26 +70,17 @@ interface ListStateDao {
     @Query("SELECT * FROM list_settings")
     fun observeSettings(): Flow<List<ListSettingEntity>>
 
-    @Query("SELECT * FROM list_settings")
-    suspend fun getAllSettings(): List<ListSettingEntity>
-
     @Query("SELECT * FROM list_settings WHERE list_key = :listKey")
     suspend fun getSetting(listKey: String): ListSettingEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSetting(setting: ListSettingEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertSettings(settings: List<ListSettingEntity>)
-
     @Query("DELETE FROM list_settings WHERE list_key = :listKey")
     suspend fun deleteSetting(listKey: String)
 
     @Query("DELETE FROM list_settings WHERE list_key IN (:listKeys)")
     suspend fun deleteSettingsOfLists(listKeys: List<String>)
-
-    @Query("DELETE FROM list_settings")
-    suspend fun clearSettings()
 
     /** Forgets everything stored for [listKeys] — their order, pins and sort override. */
     @Transaction

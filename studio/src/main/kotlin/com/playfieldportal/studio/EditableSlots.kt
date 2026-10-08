@@ -20,10 +20,4 @@ object EditableSlots {
     fun byKey(key: String): IconSlot? = byKey[key]
 
     fun isEditable(key: String): Boolean = key in byKey
-
-    /**
-     * Icons an opened theme keeps on re-export: the editable ones plus [IconEditorLayout.HIDDEN_KEYS],
-     * which no editor lists but a theme that carries them still applies.
-     */
-    fun isKept(key: String): Boolean = isEditable(key) || key in IconEditorLayout.HIDDEN_KEYS
 }

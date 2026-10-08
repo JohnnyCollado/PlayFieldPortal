@@ -16,6 +16,7 @@ import com.playfieldportal.studio.ui.sections.motionControlLabel
 import com.playfieldportal.studio.ui.sections.posterLabel
 import com.playfieldportal.studio.ui.sections.soundRow
 import com.playfieldportal.themekit.PfpThemeManifest
+import com.playfieldportal.themekit.PtfIcons
 import com.playfieldportal.themekit.WaveStyles
 import java.io.File
 import kotlin.io.path.createTempDirectory
@@ -343,5 +344,26 @@ class PanelsBTest {
         vm.pickPosterFrame(100L)
         vm.awaitIdle()
         assertNull(vm.state.value.pendingWallpaper)
+    }
+
+    // ── Icon editor: From theme… ─────────────────────────────────────────────
+
+    @Test
+    fun `choosing a From theme tile sets the selected slot, and a PSP tile is offered too`() = runBlocking {
+        val vm = StudioViewModel(CoroutineScope(Dispatchers.Default))
+        val png = java.io.ByteArrayOutputStream().also {
+            javax.imageio.ImageIO.write(java.awt.image.BufferedImage(8, 8, java.awt.image.BufferedImage.TYPE_INT_ARGB), "png", it)
+        }.toByteArray()
+        vm.update { it.copy(name = "Aurora", ptfIcons = mapOf(PtfIcons.SlotRef(2, 5) to png)) }
+        assertTrue(IconPicker.fromThemeAvailable(vm.state.value))
+
+        val section = IconPicker.fromThemeSections(vm.state.value).single()
+        assertEquals("More from this PSP theme", section.title)
+        vm.setIconFromTheme("catbar_games", section.choices.single().source)
+        vm.awaitIdle()
+
+        assertTrue("catbar_games" in vm.state.value.iconOverrides)
+        // The slot is now a theme icon too, so the dialog offers it as a "Theme icons" tile.
+        assertEquals(listOf("Theme icons", "More from this PSP theme"), IconPicker.fromThemeSections(vm.state.value).map { it.title })
     }
 }

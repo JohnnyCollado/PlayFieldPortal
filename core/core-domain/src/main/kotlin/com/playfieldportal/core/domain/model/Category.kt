@@ -33,8 +33,6 @@ data class FilterRules(
 
 // Built-in category IDs — never change these
 object BuiltInCategory {
-    const val FAVORITES        = "favorites"
-    const val RECENTLY_PLAYED  = "recently_played"
     const val GAMES            = "games"
     const val MUSIC            = "music"
     const val VIDEO            = "videos"

@@ -88,6 +88,11 @@ enum class PfpErrorCode(
     ),
 
     // ── AR: Artwork and Metadata ─────────────────────────────────────────────────────────────
+    AR_1001(
+        "AR-1001", "Artwork folder unavailable",
+        "PFP can't reach the artwork folder, so new artwork is paused.",
+        "Relink the folder in Settings › Artwork.",
+    ),
     AR_2001(
         "AR-2001", "The artwork file couldn't be saved",
         "Storage was full, or the artwork folder couldn't be written to.",

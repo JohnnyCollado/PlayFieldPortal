@@ -100,12 +100,6 @@ class PlatformExtensionMap @Inject constructor() {
         "d81"   to "c64",
     )
 
-    // Extensions that are ambiguous across platforms — platform is determined by:
-    //   1. Folder name hint  (PlatformFolderHintResolver)
-    //   2. Disc resolver     (DiscImageResolver — for .cue/.bin groups)
-    //   3. Default fallback  (listed in folderSensitiveDefaults below)
-    val contextDependentExtensions = setOf("bin", "cue", "img", "chd", "mds", "m3u", "ccd")
-
     // These extensions are common enough to scan but need a folder hint to pick the right platform.
     // Default is used when no folder hint is found.
     val folderSensitiveExtensions = mapOf(
@@ -126,13 +120,7 @@ class PlatformExtensionMap @Inject constructor() {
     fun isDefinitive(extension: String): Boolean =
         extension.lowercase() in definitiveExtensions
 
-    fun isContextDependent(extension: String): Boolean =
-        extension.lowercase() in contextDependentExtensions
-
     // Playlists are context-dependent because their platform comes from the containing system
     // folder, but unlike cue/bin/track companions they are launchable scan entries.
     fun isPlaylist(extension: String): Boolean = extension.equals("m3u", ignoreCase = true)
-
-    fun isKnownExtension(extension: String): Boolean =
-        isDefinitive(extension) || isContextDependent(extension) || isFolderSensitive(extension)
 }

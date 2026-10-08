@@ -84,6 +84,22 @@ class CustomIconStoreTest {
     }
 
     @Test
+    fun `a theme-tier file can be copied to the user tier through a file uri`() = runTest {
+        // The grid pick (D6/D10): the source is a file we enumerated in theme-icons/, passed to the
+        // ordinary import as file://, so the whole gate runs unchanged.
+        val source = File(File(context.filesDir, PfpThemeStore.THEME_ICONS_DIR).apply { mkdirs() }, "catbar_games.png")
+            .apply { writeBytes(pngBytes()) }
+
+        val result = store.import("catbar_music", Uri.fromFile(source), "image/png")
+
+        assertTrue(result.ok, result.message ?: "import rejected")
+        assertTrue(iconFile("catbar_music", "png").isFile, "landed in custom-icons/ under the focused slot")
+        assertTrue(source.isFile, "the theme-tier source is left alone")
+        assertNotNull(stampPref())
+        assertEquals(setOf("catbar_music"), loadPicks().keys)
+    }
+
+    @Test
     fun `imported stills load as CustomIcon Still`() = runTest {
         store.import("catbar_games", register(pngBytes()), "image/png")
 

@@ -46,8 +46,6 @@ class PttOverlayManager @Inject constructor(
     /** Whether the "Draw over other apps" permission is granted. */
     fun canDraw(): Boolean = Settings.canDrawOverlays(context)
 
-    val isShowing: Boolean get() = view != null
-
     /** Show the talk button (expanded). No-op without permission or if already shown. */
     fun show() {
         if (view != null || !canDraw()) return

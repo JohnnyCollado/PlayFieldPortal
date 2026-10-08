@@ -91,33 +91,6 @@ object ImageCodecs {
         }.getOrNull()
 
     /**
-     * Center-crops [src] to the target aspect ratio, then bilinear-scales to exactly
-     * [targetW]×[targetH] — the wallpaper preset pipeline.
-     */
-    fun centerCropScale(src: BufferedImage, targetW: Int, targetH: Int): BufferedImage {
-        val targetAspect = targetW.toFloat() / targetH
-        val srcAspect = src.width.toFloat() / src.height
-        val (cropW, cropH) = if (srcAspect > targetAspect) {
-            // Source is wider: crop the sides.
-            (src.height * targetAspect).toInt().coerceAtLeast(1) to src.height
-        } else {
-            src.width to (src.width / targetAspect).toInt().coerceAtLeast(1)
-        }
-        val x = (src.width - cropW) / 2
-        val y = (src.height - cropH) / 2
-        val cropped = src.getSubimage(x, y, cropW, cropH)
-        return BufferedImage(targetW, targetH, BufferedImage.TYPE_INT_ARGB).also {
-            val g = it.createGraphics()
-            g.setRenderingHint(
-                java.awt.RenderingHints.KEY_INTERPOLATION,
-                java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR,
-            )
-            g.drawImage(cropped, 0, 0, targetW, targetH, null)
-            g.dispose()
-        }
-    }
-
-    /**
      * Bakes [frame] into pixels: cuts its rect out of [src], then bilinear-scales to the frame's
      * output size (exact for presets, the cut size for ORIGINAL). Serves the still wallpaper and
      * a video's poster alike, so both show the region `motionCrop` describes.

@@ -19,28 +19,12 @@ class ArtworkScrapePreferences @Inject constructor(
     val preferSteamGridDbHeroesFlow: Flow<Boolean> =
         context.pfpDataStore.data.map { it[KEY_PREFER_SGDB_HEROES] ?: false }
 
-    val downloadClearLogosFlow: Flow<Boolean> =
-        context.pfpDataStore.data.map { it[KEY_DOWNLOAD_CLEAR_LOGOS] ?: true }
-
-    val downloadHeroesFlow: Flow<Boolean> =
-        context.pfpDataStore.data.map { it[KEY_DOWNLOAD_HEROES] ?: true }
-
-    // Manuals default ON (small PDFs relative to the cap; surfaced on Game Detail later).
-    val downloadManualsFlow: Flow<Boolean> =
-        context.pfpDataStore.data.map { it[KEY_DOWNLOAD_MANUALS] ?: true }
-
-    val downloadVideoSnapsFlow: Flow<Boolean> =
-        context.pfpDataStore.data.map { it[KEY_DOWNLOAD_VIDEO_SNAPS] ?: false }
-
     /**
      * Preferred artwork region (C22 task T6), as a ScreenScraper region code — `us`, `eu`, `jp`,
      * `wor`. Null means "no preference", which leaves the walk at its `wor → us → eu → jp`
      * default: exactly the order that shipped before this preference existed, so an untouched
      * install picks the same art it always did.
      */
-    val artworkRegionFlow: Flow<String?> =
-        context.pfpDataStore.data.map { it[KEY_ARTWORK_REGION] }
-
     suspend fun getArtworkRegion(): String? = context.pfpDataStore.data.first()[KEY_ARTWORK_REGION]
 
     suspend fun setArtworkRegion(region: String?) =
@@ -55,6 +39,7 @@ class ArtworkScrapePreferences @Inject constructor(
             preferSteamGridDbHeroes = prefs[KEY_PREFER_SGDB_HEROES]  ?: false,
             downloadClearLogos      = prefs[KEY_DOWNLOAD_CLEAR_LOGOS] ?: true,
             downloadHeroes          = prefs[KEY_DOWNLOAD_HEROES]      ?: true,
+            // Manuals default ON (small PDFs relative to the cap; surfaced on Game Detail later).
             downloadManuals         = prefs[KEY_DOWNLOAD_MANUALS]     ?: true,
             downloadVideoSnaps      = prefs[KEY_DOWNLOAD_VIDEO_SNAPS] ?: false,
         )

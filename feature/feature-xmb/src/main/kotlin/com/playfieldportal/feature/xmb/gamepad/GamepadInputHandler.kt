@@ -208,9 +208,6 @@ class GamepadInputHandler @Inject constructor(
         return motionAction != null
     }
 
-    // Used to inject actions from the ViewModel for button remapping preview
-    fun emitAction(action: GamepadAction) = emit(action)
-
     /**
      * [physical] marks an emission caused by the user actually pressing something, which is the
      * only kind that may stamp the duplicate-suppression window.

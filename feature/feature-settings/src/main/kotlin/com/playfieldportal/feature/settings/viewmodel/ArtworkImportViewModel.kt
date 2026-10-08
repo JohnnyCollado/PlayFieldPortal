@@ -9,7 +9,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.playfieldportal.core.data.datastore.pfpDataStore
-import com.playfieldportal.core.data.repository.RomRootRepository
+import com.playfieldportal.feature.artwork.api.ArtworkFolderState
 import com.playfieldportal.feature.artwork.api.ArtworkImportManager
 import com.playfieldportal.feature.artwork.api.ArtworkRelinkWorker
 import com.playfieldportal.feature.artwork.importer.ArtworkImportWorker
@@ -23,7 +23,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.text.SimpleDateFormat
@@ -40,9 +39,10 @@ data class ArtworkImportUiState(
     val orphanCount: Int = 0,
     // Folder link
     val folderDisplay: String? = null,
+    // The stored tree URI string; the picker for an Unavailable folder opens on it.
+    val folderTreeUri: String? = null,
     val folderLinked: Boolean = false,
     val grantAlive: Boolean = true,
-    val confirmForget: Boolean = false,
     // Detected sources under import/
     val scanning: Boolean = false,
     val sources: List<SourceUi> = emptyList(),
@@ -92,16 +92,34 @@ class ArtworkImportViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            // distinctUntilChanged is load-bearing: the underlying DataStore flow emits on EVERY
-            // preference write, and each emission here triggers a SAF rescan of the import tree.
-            importManager.folderTreeUri.distinctUntilChanged().collect { uri ->
-                val alive = uri != null && importManager.hasLiveGrant()
-                _uiState.value = _uiState.value.copy(
-                    folderDisplay = uri?.let { RomRootRepository.displayNameOfTree(it) },
-                    folderLinked = uri != null,
-                    grantAlive = alive,
-                )
-                if (uri != null && alive) rescan()
+            // A StateFlow only emits on change, which matters: a Ready emission triggers a SAF
+            // rescan of the import tree.
+            importManager.folderState.collect { folder ->
+                when (folder) {
+                    // Not probed yet: keep what is shown rather than flash "not set".
+                    ArtworkFolderState.Unknown -> Unit
+                    is ArtworkFolderState.NotLinked -> _uiState.value = _uiState.value.copy(
+                        folderDisplay = null,
+                        folderTreeUri = null,
+                        folderLinked = false,
+                        grantAlive = true,
+                    )
+                    is ArtworkFolderState.Unavailable -> _uiState.value = _uiState.value.copy(
+                        folderDisplay = folder.name,
+                        folderTreeUri = folder.treeUri,
+                        folderLinked = true,
+                        grantAlive = false,
+                    )
+                    is ArtworkFolderState.Ready -> {
+                        _uiState.value = _uiState.value.copy(
+                            folderDisplay = folder.name,
+                            folderTreeUri = folder.treeUri,
+                            folderLinked = true,
+                            grantAlive = true,
+                        )
+                        rescan()
+                    }
+                }
             }
         }
         viewModelScope.launch {
@@ -136,12 +154,16 @@ class ArtworkImportViewModel @Inject constructor(
 
     fun onFolderPicked(uri: Uri) {
         viewModelScope.launch {
-            val result = importManager.linkFolder(uri)
-            if (result == null) {
-                _uiState.value = _uiState.value.copy(
-                    error = "Could not set up the artwork library in that folder — it may be read-only.",
-                )
-                return@launch
+            val result = when (val link = importManager.linkFolder(uri)) {
+                is ArtworkImportManager.LinkResult.Linked -> link
+                // The shell's "another artwork library" prompt takes over from here.
+                ArtworkImportManager.LinkResult.ForeignLibrary -> return@launch
+                ArtworkImportManager.LinkResult.Failed -> {
+                    _uiState.value = _uiState.value.copy(
+                        error = "Could not set up the artwork library in that folder — it may be read-only.",
+                    )
+                    return@launch
+                }
             }
             // Zero-copy adoption: any ES-DE-shaped media already in the folder (a PFP library
             // OR a plain downloaded_media tree) is linked to games right now — nothing copied.
@@ -165,22 +187,6 @@ class ArtworkImportViewModel @Inject constructor(
                 plan = null,
             )
         }
-    }
-
-    fun forgetFolder() {
-        val state = _uiState.value
-        if (!state.confirmForget) {
-            _uiState.value = state.copy(confirmForget = true)
-            return
-        }
-        viewModelScope.launch {
-            importManager.forgetFolder()
-            _uiState.value = ArtworkImportUiState(reports = _uiState.value.reports)
-        }
-    }
-
-    fun dismissForgetConfirm() {
-        _uiState.value = _uiState.value.copy(confirmForget = false)
     }
 
     // ── Sources & preview ─────────────────────────────────────────────────────

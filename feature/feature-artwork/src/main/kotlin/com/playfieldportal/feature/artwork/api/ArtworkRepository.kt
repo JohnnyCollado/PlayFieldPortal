@@ -29,6 +29,8 @@ data class ArtworkFetchResult(
     // Another surface is already fetching this game; nothing was scraped by this call.
     val alreadyRunning: Boolean = false,
     val errorMessage: String? = null,
+    // The artwork folder is not Ready: nothing was scraped, or the scrape stopped short (AD-4).
+    val paused: Boolean = false,
 )
 
 // Real, file-aware artwork status for the whole library.
@@ -50,6 +52,8 @@ data class ScrapeProgress(
     val scrapeAsset: String = "",    // e.g. "Box Art", "Hero", "Logo"
     /** Set on the tick emitted right after a game settles: what happened to it, for a Results list. */
     val finished: GameScrapeOutcome? = null,
+    /** The pass stopped because the artwork folder is not Ready; games after [current] were not touched. */
+    val paused: Boolean = false,
 )
 
 /** One game's result in a scrape pass. [message] is the provider's or the exception's words. */
@@ -69,30 +73,11 @@ class ArtworkRepository @Inject constructor(
     private val artworkStore: ArtworkStore,
     private val internalStore: com.playfieldportal.feature.artwork.store.InternalArtworkStore,
     private val ssMediaCacheDao: com.playfieldportal.core.data.database.dao.SsMediaCacheDao,
+    private val folderStatus: ArtworkFolderStatus,
 ) {
-    // Fetch artwork + metadata for all games that don't have any artwork yet.
-    suspend fun fetchMissingArtwork(
-        onProgress: (current: Int, total: Int, title: String) -> Unit,
-    ): List<ArtworkFetchResult> = withContext(Dispatchers.IO) {
-        val games = gameDao.getGamesWithoutArtwork()
-        Timber.i("Metadata fetch started — ${games.size} games need artwork")
-        val results = mutableListOf<ArtworkFetchResult>()
-
-        metadataRepository.fetchMissingMetadata { current, total ->
-            val title = games.getOrNull(current - 1)?.title ?: ""
-            onProgress(current, total, title)
-        }
-
-        // Build results list from what we now have in the DB
-        games.forEach { game ->
-            val updated = gameDao.getById(game.id)
-            val success = updated?.artworkUri != null
-            results += ArtworkFetchResult(game.id, game.title, success,
-                errorMessage = if (!success) "No artwork found" else null)
-        }
-
-        Timber.i("Metadata fetch complete — ${results.count { it.success }} succeeded")
-        results
+    private companion object {
+        // What a pass returns when the folder is not Ready before it starts: nothing was touched.
+        val PAUSED_NOTHING_DONE = ScrapeProgress(0, 0, 0, 0, "", paused = true)
     }
 
     // Games with a single-game fetch in flight. Game Detail and the XMB game menu can both ask for
@@ -112,6 +97,7 @@ class ArtworkRepository @Inject constructor(
     ): ArtworkFetchResult {
         val before = gameDao.getById(gameId)
             ?: return ArtworkFetchResult(gameId, "", false, errorMessage = "Game not found")
+        if (!folderReadyForScrape()) return ArtworkFetchResult(gameId, before.title, false, paused = true)
         if (!refetching.add(gameId)) {
             return ArtworkFetchResult(gameId, before.title, false, alreadyRunning = true)
         }
@@ -128,8 +114,9 @@ class ArtworkRepository @Inject constructor(
             val after = gameDao.getById(gameId)
             evictFromImageCache((artRefsOf(before) + artRefsOf(after)).toSet())
             return ArtworkFetchResult(
-                gameId, before.title, result.success,
+                gameId, before.title, result.success && !result.paused,
                 errorMessage = result.message.takeIf { !result.success },
+                paused = result.paused,
             )
         } finally {
             refetching.remove(gameId)
@@ -359,6 +346,8 @@ class ArtworkRepository @Inject constructor(
     // Re-scrape every game: clears existing artwork first, then fetches fresh art for all.
     suspend fun reScrapeAllGames(onProgress: (ScrapeProgress) -> Unit): ScrapeProgress =
         withContext(Dispatchers.IO) {
+            // Before the wipe: a paused re-scrape must leave every game's art exactly as it was.
+            if (!folderReadyForScrape()) return@withContext PAUSED_NOTHING_DONE
             clearAllArtwork()
             // Re-scrape-all exists to pick up upstream changes — bypass the SS URL cache.
             fetchForGames(gameDao.getAll().map { it.id to Triple(it.title, it.platformId, it.romPath) }, onProgress, bypassSsCache = true)
@@ -370,6 +359,7 @@ class ArtworkRepository @Inject constructor(
     // that exists is re-downloaded or overwritten).
     suspend fun scrapeMissingOnly(onProgress: (ScrapeProgress) -> Unit): ScrapeProgress =
         withContext(Dispatchers.IO) {
+            if (!folderReadyForScrape()) return@withContext PAUSED_NOTHING_DONE
             val targets = gameDao.getAll().filter { needsArtwork(it) }
             // Only games whose BACKGROUND ref is itself stale get the slate cleared before the
             // re-fetch (clearArtworkForGame also nulls hero/logo/icon). Games pulled in only for
@@ -384,6 +374,7 @@ class ArtworkRepository @Inject constructor(
     // gaps filled in place without re-downloading anything valid.
     suspend fun scrapeMissingForPlatform(platformId: String, onProgress: (ScrapeProgress) -> Unit): ScrapeProgress =
         withContext(Dispatchers.IO) {
+            if (!folderReadyForScrape()) return@withContext PAUSED_NOTHING_DONE
             val targets = gameDao.getAll().filter { it.platformId == platformId && needsArtwork(it) }
             targets.filter { !it.artworkUri.isNullOrBlank() && !isValidArtworkRef(it.artworkUri) }
                 .forEach { gameDao.clearArtworkForGame(it.id) }
@@ -407,6 +398,14 @@ class ArtworkRepository @Inject constructor(
             fetchForGames(games.map { it.id to Triple(it.title, it.platformId, it.romPath) }, onProgress, metadataOnly = true)
         }
 
+    // Probes the folder before an artwork scrape starts. Not Ready reports SCRAPE so the shell can
+    // ask for the folder; the caller then returns without a network call or a cleared column (AD-4).
+    private suspend fun folderReadyForScrape(): Boolean {
+        if (folderStatus.refresh() is ArtworkFolderState.Ready) return true
+        folderStatus.reportBlocked(FolderNeedTrigger.SCRAPE)
+        return false
+    }
+
     // Shared scrape loop with rich progress and per-game error isolation.
     private suspend fun fetchForGames(
         games: List<Pair<Long, Triple<String, String, String?>>>,
@@ -418,9 +417,16 @@ class ArtworkRepository @Inject constructor(
         val options = scrapePreferences.getOptions().copy(bypassSsCache = bypassSsCache, metadataOnly = metadataOnly)
         var ok = 0
         var fail = 0
-        games.forEachIndexed { index, (id, info) ->
+        var paused = false
+        for ((index, game) in games.withIndex()) {
+            val (id, info) = game
             // A stop from the notification panel lands here, between games, not mid-write.
             currentCoroutineContext().ensureActive()
+            // The store already reported the loss that flipped the state; stop before the next game.
+            if (!metadataOnly && folderStatus.state.value !is ArtworkFolderState.Ready) {
+                paused = true
+                break
+            }
             val (title, platformId, romPath) = info
             onProgress(ScrapeProgress(index + 1, games.size, ok, fail, title))
             var error: Throwable? = null
@@ -440,7 +446,7 @@ class ArtworkRepository @Inject constructor(
                 if (it is kotlinx.coroutines.CancellationException) throw it
                 error = it
             }.getOrNull()
-            val success = result?.success == true
+            val success = result?.success == true && !result.paused
             if (success) ok++ else fail++
             onProgress(
                 ScrapeProgress(
@@ -448,9 +454,13 @@ class ArtworkRepository @Inject constructor(
                     finished = GameScrapeOutcome(id, title, success, result?.message ?: error?.message),
                 )
             )
+            if (result?.paused == true) {
+                paused = true
+                break
+            }
             if (index < games.size - 1) delay(500)
         }
-        return ScrapeProgress(games.size, games.size, ok, fail, "")
-            .also { Timber.i("Scrape complete: ${it.succeeded} ok, ${it.failed} failed of ${it.total}") }
+        return ScrapeProgress(if (paused) ok + fail else games.size, games.size, ok, fail, "", paused = paused)
+            .also { Timber.i("Scrape complete: ${it.succeeded} ok, ${it.failed} failed of ${it.total}, paused=$paused") }
     }
 }

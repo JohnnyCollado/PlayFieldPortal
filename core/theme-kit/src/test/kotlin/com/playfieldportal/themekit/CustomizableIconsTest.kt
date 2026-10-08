@@ -88,9 +88,10 @@ class CustomizableIconsTest {
     // -- TS-06: 29 new icons/ slots in 5 new groups (the plan's "36" miscounts; 52 + 29 + 47 = 128) --
 
     @Test
-    fun `registry totals 171 slots, 82 of them icons slots`() {
-        assertEquals(82, IconSlots.ALL.size)
-        assertEquals(171, CustomizableIcons.ALL.size)
+    fun `registry totals 170 slots, 81 of them icons slots`() {
+        // 171 / 82 until catbar_favorites retired onto sysicon_favorites (IconSlots.RETIRED).
+        assertEquals(81, IconSlots.ALL.size)
+        assertEquals(170, CustomizableIcons.ALL.size)
     }
 
     // -- Physical media: one slot per console that ships on a disc, cart or UMD --
@@ -128,23 +129,23 @@ class CustomizableIconsTest {
     }
 
     @Test
-    fun `the original 52 slots keep key, order and group`() {
-        val original = IconSlots.ALL.take(52)
-        assertEquals(V3EraReader.ICON_KEYS, original.map { it.key }.toSet())
+    fun `the original 52 slots keep key, order and group, less the retired ones`() {
+        val original = IconSlots.ALL.take(V3_ERA_SLOTS)
+        assertEquals(V3EraReader.ICON_KEYS - IconSlots.RETIRED.keys, original.map { it.key }.toSet())
         // A3: existing groups are contiguous runs in this order; none of it may shift.
         assertEquals(
-            List(10) { IconSlot.Group.CATEGORY_BAR } + List(36) { IconSlot.Group.ITEMS } + List(6) { IconSlot.Group.STATUS },
+            List(9) { IconSlot.Group.CATEGORY_BAR } + List(36) { IconSlot.Group.ITEMS } + List(6) { IconSlot.Group.STATUS },
             original.map { it.group },
         )
         assertEquals("catbar_games", original.first().key)
-        assertEquals("item_shiba_untracked", original[45].key)
+        assertEquals("item_shiba_untracked", original[44].key)
         assertEquals("status_bluetooth", original.last().key)
     }
 
     @Test
     fun `group counts follow the plan`() {
         fun n(g: IconSlot.Group) = CustomizableIcons.group(g).size
-        assertEquals(10, n(IconSlot.Group.CATEGORY_BAR))
+        assertEquals(9, n(IconSlot.Group.CATEGORY_BAR))
         assertEquals(37, n(IconSlot.Group.ITEMS))
         assertEquals(10, n(IconSlot.Group.STATUS))
         assertEquals(4, n(IconSlot.Group.SHIBA))
@@ -187,7 +188,7 @@ class CustomizableIconsTest {
 
     @Test
     fun `new slots use 128 px templates for status and 256 for the rest`() {
-        for (slot in IconSlots.ALL.drop(52)) {
+        for (slot in IconSlots.ALL.drop(V3_ERA_SLOTS)) {
             val expected = if (slot.group == IconSlot.Group.STATUS) 128 else 256
             assertEquals(expected, slot.templateSizePx, slot.key)
         }
@@ -195,7 +196,7 @@ class CustomizableIconsTest {
 
     @Test
     fun `the codec's icons gate accepts every new slot`() {
-        for (slot in IconSlots.ALL.drop(52)) assertTrue(IconSlots.isValidKey(slot.key), slot.key)
+        for (slot in IconSlots.ALL.drop(V3_ERA_SLOTS)) assertTrue(IconSlots.isValidKey(slot.key), slot.key)
     }
 
     // The per-category image family lives in core-ui (theme-kit can't see it), so this guards the
@@ -205,5 +206,10 @@ class CustomizableIconsTest {
         assertTrue(CustomizableIcons.ALL.none { it.key.startsWith("usercat_") })
         assertFalse(IconSlots.isValidKey("usercat_custom_x_1"))
         assertFalse(CustomizableIcons.isValidKey("usercat_custom_x_1"))
+    }
+
+    private companion object {
+        /** The v3-era slots still registered: the original 52 less catbar_favorites. */
+        const val V3_ERA_SLOTS = 51
     }
 }

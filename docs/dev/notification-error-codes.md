@@ -71,6 +71,7 @@ Example: `LN-4003`.
 
 | Code | Meaning | Scope |
 |---|---|---|
+| AR-1001 | Artwork folder unavailable, so new artwork is paused | |
 | AR-2001 | Couldn't save the artwork file | |
 | AR-2002 | Export or migration copy failed | Item |
 | AR-2003 | Import found an unknown system folder | Item |

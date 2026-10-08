@@ -183,11 +183,6 @@ interface AchievementTrackingDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertMetadata(entity: AchievementMetadataCacheEntity)
 
-    // ── Backup ──────────────────────────────────────────────────────────────────
-
-    @Query("SELECT * FROM achievement_provider_sync_state")
-    suspend fun getAllProviderStates(): List<AchievementProviderSyncStateEntity>
-
     // ── Clear all tracked achievements ──────────────────────────────────────────
 
     @Query("DELETE FROM account_achievements") suspend fun deleteAllCoins()

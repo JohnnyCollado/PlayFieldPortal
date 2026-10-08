@@ -22,6 +22,10 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
+// Listings counted from a platform dir down to the deepest media dir: platform, {mediaDir}, then
+// one nested level ("pfp/icon0") — three directories, whose files all get counted.
+private const val MAX_MEDIA_DEPTH = 3
+
 /**
  * The SAF layer of the user-owned artwork library — all reads/writes of the picked tree go
  * through here, always via `DocumentsContract` against document ids resolved *inside* the
@@ -137,6 +141,37 @@ class PortableArtworkLibrary @Inject constructor(
         }
 
     // ── Import drop zone ──────────────────────────────────────────────────────
+
+    /**
+     * True when the tree's root document still resolves — one provider query, no listing. A deleted
+     * or unmounted folder with a leftover grant fails here.
+     */
+    suspend fun isRootReachable(treeUri: Uri): Boolean = withContext(Dispatchers.IO) {
+        runCatching {
+            val rootUri = DocumentsContract.buildDocumentUriUsingTree(
+                treeUri, DocumentsContract.getTreeDocumentId(treeUri),
+            )
+            resolver.query(rootUri, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID), null, null, null)
+                ?.use { it.moveToFirst() } == true
+        }.getOrDefault(false)
+    }
+
+    /**
+     * How many artwork files the library holds: every file under `Artwork/{platform}/{mediaDir}`
+     * (media dirs may nest, e.g. `pfp/icon0`). The same listing a relink walks.
+     */
+    suspend fun countLibraryFiles(treeUri: Uri): Int = withContext(Dispatchers.IO) {
+        platformDirs(treeUri).sumOf { countFiles(treeUri, it.documentId, MAX_MEDIA_DEPTH) }
+    }
+
+    private fun countFiles(treeUri: Uri, dirDocId: String, depth: Int): Int =
+        listChildren(treeUri, dirDocId).sumOf { child ->
+            when {
+                !child.isDirectory -> 1
+                depth > 0 -> countFiles(treeUri, child.documentId, depth - 1)
+                else -> 0
+            }
+        }
 
     /** The children of `import/` — each directory is a candidate import source. */
     suspend fun listImportSources(treeUri: Uri): List<SafChild> = withContext(Dispatchers.IO) {

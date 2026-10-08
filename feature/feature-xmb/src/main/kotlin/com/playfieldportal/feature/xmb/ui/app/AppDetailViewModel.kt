@@ -498,8 +498,6 @@ class AppDetailViewModel @Inject constructor(
 
     // ── Add-to-collection picker ──────────────────────────────────────────────
 
-    fun onCollectionsClicked() = openCollectionPicker()
-
     private fun openCollectionPicker() {
         val gameId = _uiState.value.game?.id ?: return
         viewModelScope.launch {

@@ -4,10 +4,12 @@ import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.feature.artwork.MetadataFetchResult
 import com.playfieldportal.feature.artwork.MetadataRepository
+import com.playfieldportal.feature.artwork.store.ArtworkStore
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
@@ -26,15 +28,19 @@ class ArtworkRepositoryRefetchTest {
     private val gameDao = mockk<GameDao>()
     private val metadataRepository = mockk<MetadataRepository>()
     private val imageCache = mockk<ArtworkImageCache>(relaxed = true)
+    private val artworkStore = mockk<ArtworkStore>(relaxed = true)
+    private val folder = MutableStateFlow<ArtworkFolderState>(readyFolder)
+    private val folderStatus = folderStatusOf(folder)
 
     private val repo = ArtworkRepository(
         imageCache = imageCache,
         gameDao = gameDao,
         metadataRepository = metadataRepository,
         scrapePreferences = mockk(relaxed = true),
-        artworkStore = mockk(relaxed = true),
+        artworkStore = artworkStore,
         internalStore = mockk(relaxed = true),
         ssMediaCacheDao = mockk(relaxed = true),
+        folderStatus = folderStatus,
     )
 
     private fun entity(id: Long = 1L, artworkUri: String? = null, heroUri: String? = null) = GameEntity(
@@ -171,5 +177,59 @@ class ArtworkRepositoryRefetchTest {
 
         assertTrue(retry.success)
         assertFalse(retry.alreadyRunning)
+    }
+
+    // -- Paused: the artwork folder is not Ready (AD-4) --------------------------
+
+    @Test
+    fun `a paused folder refuses Fetch Artwork before any scrape`() = runTest {
+        folder.value = unavailableFolder
+        coEvery { gameDao.getById(1L) } returns entity()
+
+        val result = repo.refetchArtworkForGame(1L)
+
+        assertTrue(result.paused)
+        assertFalse(result.success)
+        coVerify(exactly = 0) { metadataRepository.fetchForGame(any(), any(), any(), any(), any(), any()) }
+        verify { folderStatus.reportBlocked(FolderNeedTrigger.SCRAPE) }
+    }
+
+    @Test
+    fun `Fetch Artwork surfaces a pause that happened mid-scrape`() = runTest {
+        coEvery { gameDao.getById(1L) } returns entity()
+        coEvery { metadataRepository.fetchForGame(any(), any(), any(), any(), any(), any()) } returns
+            MetadataFetchResult(success = true, source = "thegamesdb", message = "ok", paused = true)
+
+        val result = repo.refetchArtworkForGame(1L)
+
+        assertTrue(result.paused)
+        assertFalse(result.success)
+    }
+
+    @Test
+    fun `Re-scrape All while paused clears nothing and scrapes nothing`() = runTest {
+        folder.value = ArtworkFolderState.NotLinked(0)
+
+        val result = repo.reScrapeAllGames { }
+
+        assertTrue(result.paused)
+        coVerify(exactly = 0) { gameDao.clearAllArtwork() }
+        coVerify(exactly = 0) { gameDao.clearAllArtworkRefs() }
+        coVerify(exactly = 0) { artworkStore.deleteAll() }
+        coVerify(exactly = 0) { metadataRepository.fetchForGame(any(), any(), any(), any(), any(), any()) }
+        verify { folderStatus.reportBlocked(FolderNeedTrigger.SCRAPE) }
+    }
+
+    @Test
+    fun `Scrape Missing while paused touches no game`() = runTest {
+        folder.value = unavailableFolder
+
+        val all = repo.scrapeMissingOnly { }
+        val one = repo.scrapeMissingForPlatform("psx") { }
+
+        assertTrue(all.paused)
+        assertTrue(one.paused)
+        coVerify(exactly = 0) { gameDao.clearArtworkForGame(any()) }
+        coVerify(exactly = 0) { metadataRepository.fetchForGame(any(), any(), any(), any(), any(), any()) }
     }
 }

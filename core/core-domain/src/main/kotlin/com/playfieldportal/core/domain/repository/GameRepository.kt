@@ -45,6 +45,13 @@ interface GameRepository {
     suspend fun getByIntentUri(intentUri: String): Game?
     suspend fun upsert(game: Game): Long
     suspend fun delete(id: Long)
+    /**
+     * Folds the row [loserId] into [survivorId] and deletes it: the survivor keeps the loser's
+     * favorite, play time, note and art where it has none of its own, and every session,
+     * collection, achievement and storefront link moves over first. Nothing happens when either
+     * row is gone.
+     */
+    suspend fun mergeInto(survivorId: Long, loserId: Long)
     suspend fun setFavorite(id: Long, isFavorite: Boolean)
     suspend fun updateFavoriteSortOrder(id: Long, order: Int)
     suspend fun updateNote(id: Long, note: String?)

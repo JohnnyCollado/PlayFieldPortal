@@ -50,10 +50,4 @@ class ListStateRepository @Inject constructor(
         else listStateDao.upsertSetting(ListSettingEntity(listKey, mode.name))
         Timber.i("List sort: list=$listKey mode=${mode?.name ?: "global"}")
     }
-
-    /** Forgets everything stored for lists whose owner (a category, a custom card) is gone. */
-    suspend fun forgetLists(listKeys: List<String>) = listStateDao.deleteLists(listKeys)
-
-    /** Removes an item that no longer exists from every list's order. */
-    suspend fun forgetItem(itemKey: String) = listStateDao.deleteItemEverywhere(itemKey)
 }

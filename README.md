@@ -256,7 +256,10 @@ when they apply):
 3. **ROM folders** — grant one or more root folders; consoles live in subfolders under them.
    Picking a root starts the same auto-detect scan Library Manager runs (see [§4.2](#42-setting-up-a-console-memory-card)).
 4. **Music / Video / Photo** — one optional root per media section (multi-root supported).
-5. **Artwork** — the artwork library folder, with an embedded import offer.
+5. **Artwork** — the artwork library folder, with an embedded import offer. **Required:** you can't
+   skip or continue until a folder is ready (Continue shows "Choose a folder first"). The picker
+   opens at device storage, so make or pick a folder there. Re-running the wizard with a healthy
+   folder lets you skip.
 6. **Online Services** — connect SteamGridDB and IGDB, plus the ScreenScraper *user* account
    (each optional; IGDB and ScreenScraper credentials are tested live).
 7. **Achievement Services** — RetroAchievements and Steam accounts.
@@ -269,7 +272,8 @@ when they apply):
 13. **Home App** — shown only when PFP is not already the default launcher.
 14. **Finish** — a summary of what was set.
 
-Every page can be skipped, and everything it configures is the same setting you can reach later in
+Every page except Artwork can be skipped (the Welcome page's **Skip Setup** still leaves the wizard;
+its hint reads "Most steps are optional. You'll need to pick an artwork folder."), and everything it configures is the same setting you can reach later in
 Settings — the wizard is just a shortcut. Run it again any time from
 **Settings › System › Setup Wizard**.
 
@@ -606,10 +610,34 @@ Box art, hero banners, logos, screenshots and icons are fetched **on request**. 
   behind it. Crops bake into the displayed file while the untouched original is kept for lossless
   re-crops.
 
-**Portable artwork library** — in *Settings › Library › Artwork › Artwork Folder & Import* you can
-point PFP at a folder it keeps in an **ES-DE-compatible** layout, so your art is user-owned and
-readable by other frontends with no export step. The same screen imports ES-DE `downloaded_media`
-(and `gamelist.xml` metadata), relinks moved files, and exports for ES-DE.
+**Portable artwork library** — in *Settings › Library › Artwork › Artwork Folder & Import* you point
+PFP at a folder it keeps in an **ES-DE-compatible** layout, so your art is user-owned and readable
+by other frontends with no export step. The same screen imports ES-DE `downloaded_media` (and
+`gamelist.xml` metadata), relinks moved files, and exports for ES-DE.
+
+The folder is **required**. New artwork, whether scraped or a pick of your own, is only ever saved
+to it; internal storage is never a silent fallback. Art already in internal storage keeps showing,
+and PFP moves it into the folder in the background after you link one (every successful link starts
+that move automatically). The row reads **Choose artwork folder**, or **Change artwork folder** once
+one is linked. There is no way to unlink it, only to change it.
+
+- **Artwork folder unavailable** — if PFP loses access to the folder (permission revoked, folder
+  deleted, storage missing), new artwork pauses. Existing art still shows, and scrapes stop before
+  touching anything (**Re-Scrape All Games** no longer clears art first). The Artwork Folder & Import
+  row shows an amber **Unavailable** badge ("Unavailable. Relink to resume new artwork"), the
+  notification tray reports "Artwork paused. Relink your artwork folder to save new art." (code
+  AR-1001), and an **Artwork folder unavailable** prompt appears at launch and whenever a scrape or
+  art pick needs the folder. **Relink folder** reopens the picker on the old folder; **Not now**
+  waits until the next scrape or pick. Relink refuses to run while the folder can't be reached, which
+  protects your records.
+- **Move your artwork to a folder you own** — shown on older installs that still hold internal art
+  and have no folder. **Choose artwork folder** links one and starts the move; **Later** asks again
+  only when new art is about to be saved.
+- **Choose an artwork folder** — the same prompt for a library with no folder and no internal art,
+  with the same **Choose artwork folder** / **Later** choices.
+- **This folder holds another artwork library** — if the folder you pick carries a PFP manifest from
+  a different library, PFP asks first. **Use this library** links it and relinks your games to its
+  art; **Choose another folder** goes back to the picker. Re-linking your own library is silent.
 
 #### Folder layout
 
@@ -771,7 +799,7 @@ gradient, cursor and icons all derive from it).
   tinted.
 - **New Theme from Photo** — any picture becomes the wallpaper; the theme color is auto-derived from
   its dominant hue.
-- **Import PSP Theme (.ptf)** — convert an official PSP theme you own: its wallpaper, the icons that match ours (categories, memory cards, UMD, camera, settings), and a tint and accent matched to its art. You confirm before it applies.
+- **Import PSP Theme (.ptf)** — convert an official PSP theme you own: its wallpaper, the icons that match ours (categories, memory cards, UMD, camera, settings), and a tint and accent matched to its art. You confirm before it applies. Every other icon image in the PSP theme is kept too, so you can pick any of them in Customize XMB Icons (themes imported before this keep only their mapped icons until re-imported).
   CXMB firmware files are safely declined. **Import Theme (.pfptheme)** installs a shared theme.
 - **My Themes** — your saved themes as cards: apply, **Share** (`.pfptheme`), or Remove. Applying
   asks first (*Apply "…"?*) and lists what would change. When the theme carries sounds, videos or
@@ -790,7 +818,8 @@ gradient, cursor and icons all derive from it).
   center-cropped to the screen. It is not included in backups.
 
 **Theme Studio** is a desktop companion (Windows / Linux / macOS) for authoring themes with a live
-crossbar preview, an icon editor, wallpaper crop presets, crossbar alignment assist, an optional
+crossbar preview, an icon editor (each slot takes a **Local file…** or a pick **From theme…** — the open
+theme's own icons and, for a converted PSP theme, every other PSP icon), wallpaper crop presets, crossbar alignment assist, an optional
 lock screen image (Background section, with its own lock screen preview), and batch
 `.ptf → .pfptheme` conversion. See [7.9](#79-the-theme-studio-desktop-app).
 
@@ -806,6 +835,11 @@ The editor runs *live over your real crossbar*, so you are always looking at the
 rather than a preview pane:
 
 - Move with the D-pad to the icon you want to change, press **✕** to pick an image.
+- When the applied theme has icons of its own, Pick first asks where the icon comes from:
+  **From the applied theme** opens a grid of that theme's icons (and, for a theme imported from a
+  PSP `.ptf`, every other image the PSP theme holds, under *More from this PSP theme*), and
+  **From your device** opens the file picker. With no theme icons, Pick goes straight to the file
+  picker. A theme icon you pick is copied in like any other, so △ still undoes it.
 - **△** clears the selected slot back to whatever the theme (or the built-in art) provides.
 - Changes apply instantly. Back out when you are happy.
 
@@ -1247,7 +1281,7 @@ app exactly (source: `settingsSectionItems()` in
 | **Library** | Library Manager | ROM roots, consoles (Memory Cards), Add Console, Set Up ROM Folders (ES-DE), Scan All / Re-Scan All, per-console extensions and data folders | [4.2](#42-setting-up-a-console-memory-card) |
 | | Windows Games | The Windows card: Import PC Games, exported games, Local Windows batch match, PC launchers | [4.22](#422-tracking-local-steam-emulated-pc-games) |
 | | Custom Memory Cards | Create, rename, reorder, delete custom cards | [4.5](#45-favorites--custom-memory-cards) |
-| | Artwork | Scraping sources and keys, scrape all/missing, art preferences, Game Icon Display, Animated Icons, Artwork Folder & Import | [4.7](#47-artwork--the-artwork-studio) |
+| | Artwork | Scraping sources and keys, scrape all/missing, art preferences, Game Icon Display, Animated Icons, Artwork Folder & Import (required; choose or change the folder) | [4.7](#47-artwork--the-artwork-studio) |
 | | Hidden Games | Everything you hid, by location, with unhide | [4.6](#46-game--app-options-) |
 | **Emulators** | Installed | Detected emulator profiles (opens the Emulators screen) | [4.3](#43-emulators) |
 | | Custom Emulators | Custom profiles and Add Custom Emulator | [4.3](#43-emulators) |
@@ -1300,7 +1334,7 @@ telemetry, and no account. Everything is HTTPS.
 Artwork and image URLs returned by those services are then downloaded from the hosts they name.
 
 **What PFP stores, and how**
-- **On-device only.** Your library, settings and artwork live in app storage, and Android cloud
+- **On-device only.** Your library and settings live in app storage, your artwork in the folder you choose, and Android cloud
   backup is disabled (`allowBackup=false`), so nothing is uploaded or transferred automatically.
   PFP's own Backup & Restore is temporarily unavailable ([§4.20](#420-backup--restore-temporarily-unavailable)).
 - **API keys are encrypted at rest** (artwork keys, the RetroAchievements and Steam Web API keys)
@@ -1339,6 +1373,7 @@ sanitized and require you to **confirm each one** before it appears.
 | A custom emulator says custom commands are not supported | Edit it in *Settings › Emulators › Custom Emulators* and switch it to ACTION_VIEW or COMPONENT. |
 | New ROM file types aren't found after a knowledge import | Rescan — *Emulator knowledge* lists the consoles that gained file types. |
 | Disc/multi-file game not found | Open the game's console folder in a file manager and confirm the file is there (for a `.cue`, `.gdi`, `.m3u` and similar, its track files must sit beside it — PFP gives the emulator read access to that folder at launch); if the console uses a legacy raw-path library, re-grant its folder in *Settings › Library › Library Manager*. |
+| New artwork is paused ("Artwork paused. Relink your artwork folder to save new art.", AR-1001) | PFP can't reach your artwork folder (permission lost or folder deleted). Choose **Relink folder** in the prompt, or *Settings › Library › Artwork › Artwork Folder & Import › Change artwork folder*. Existing art keeps showing meanwhile. |
 | Artwork won't download | Add a SteamGridDB (or other) API key in *Settings › Library › Artwork* and check your connection. |
 | A hidden coin still says "Steam keeps this one's description secret" | Run *Update Installed Achievements*; if no source has the text, it stays that way. |
 | Interface too big/small or off-center | Tune it in *Settings › Interface › Display › Adjust XMB Layout*. |

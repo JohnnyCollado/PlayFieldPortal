@@ -372,8 +372,8 @@ object SampleContent {
             "sysicon_psp", "PlayStation Portable Memory Card", "PlayStation Portable", 0xFF003791,
             listOf("Neon Drift", "Pocket Legends"),
         ),
-        // The Windows card is titled "Windows Games" and only shows while it has games.
-        Console("sysicon_windows", "Windows Games", "Windows", 0xFF0078D4, listOf("Desktop Dungeon")),
+        // The Windows card only shows while it has games.
+        Console("sysicon_windows", "Windows Memory Card", "Windows", 0xFF0078D4, listOf("Desktop Dungeon")),
     )
 
     // Subtitle: platformEmulatorLabel, which is the platform alone until an emulator is known.
@@ -396,7 +396,10 @@ object SampleContent {
         // customCardSubtitle: "Custom · N Games" ("Custom · Pinned · N Games" once pinned).
         val coop = gamesNamed("Portal Quest", "Shiba Run")
         add(Row("item_memcard_games", "Co-op Night", "Custom · ${count(coop.size)}", coop, menu = RowKind.CUSTOM_CARD))
-        consoles.forEach { c -> add(Row(c.key, c.card, count(c.titles.size), c.titles.map { game(c, it) }, menu = RowKind.CONSOLE)) }
+        // memoryCardRowTitle / memoryCardRowSubtitle: the console as the title, "Memory Card · N Games" under it.
+        consoles.forEach { c ->
+            add(Row(c.key, c.card.removeSuffix(" Memory Card"), "Memory Card · ${count(c.titles.size)}", c.titles.map { game(c, it) }, menu = RowKind.CONSOLE))
+        }
     }
 
     // ── Network / App Store: auto-classified installed apps, then Add Apps ───

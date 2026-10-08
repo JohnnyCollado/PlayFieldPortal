@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.common.security.SecretProtection
 import com.playfieldportal.feature.artwork.MetadataApiKeyProvider
+import com.playfieldportal.feature.artwork.api.ArtworkFolderState
+import com.playfieldportal.feature.artwork.api.ArtworkImportManager
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.feature.artwork.api.ArtworkScrapePreferences
 import com.playfieldportal.feature.artwork.api.ArtworkStatus
@@ -76,9 +78,10 @@ data class ArtworkSettingsUiState(
     // Preferred artwork region, as a ScreenScraper code (C22 task T6). Null = no preference,
     // which leaves the walk at the order that shipped before this setting existed.
     val artworkRegion: String? = null,
-    // Portable artwork folder is configured but its access grant died (SD removed, permission
-    // revoked) — surfaces a warning on the Artwork Folder & Import row.
-    val artworkFolderGrantDead: Boolean = false,
+    // The artwork folder is set but not reachable (grant revoked, SD removed, folder deleted) —
+    // new artwork is paused. Follows ArtworkImportManager.folderState live; drives the amber
+    // badge on the Artwork Folder & Import row.
+    val artworkFolderUnavailable: Boolean = false,
     // Debug builds only: load every artwork and achievement credential from one .properties file.
     val debugCredentialsAvailable: Boolean = com.playfieldportal.feature.settings.BuildConfig.DEBUG,
     val debugCredentialsStatus: String? = null,
@@ -93,7 +96,7 @@ class ArtworkSettingsViewModel @Inject constructor(
     private val scrapePreferences: ArtworkScrapePreferences,
     private val igdbApi: IgdbApi,
     private val screenScraperApi: ScreenScraperApi,
-    private val artworkFolderRepository: com.playfieldportal.core.data.repository.ArtworkFolderRepository,
+    private val importManager: ArtworkImportManager,
     private val iconDisplayPreferences: com.playfieldportal.core.data.repository.IconDisplayPreferences,
     private val cropPreviewPreferences: com.playfieldportal.core.data.repository.CropPreviewPreferences,
     private val debugCredentialsLoader: com.playfieldportal.feature.settings.debug.DebugCredentialsLoader,
@@ -129,12 +132,12 @@ class ArtworkSettingsViewModel @Inject constructor(
                 _extra.update { it.copy(cropPreviewEnabled = enabled) }
             }
         }
-        // Startup grant check (§17): a configured folder whose grant died gets a visible
-        // warning instead of silently broken artwork.
+        // A set folder that is not reachable gets a visible warning instead of silently paused
+        // artwork. Live, so relinking (here or from the shell prompt) clears it without reopening.
         viewModelScope.launch {
-            val configured = artworkFolderRepository.getTreeUri() != null
-            val dead = configured && !artworkFolderRepository.hasLiveGrant()
-            _extra.update { it.copy(artworkFolderGrantDead = dead) }
+            importManager.folderState.collect { folder ->
+                _extra.update { it.copy(artworkFolderUnavailable = folder is ArtworkFolderState.Unavailable) }
+            }
         }
         // Scrapes run as WorkManager jobs (survive leaving this screen, show a notification,
         // cancellable) — this observer is the single source of the in-app progress state, so

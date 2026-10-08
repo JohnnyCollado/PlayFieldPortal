@@ -141,7 +141,14 @@ object PreviewFlyout {
                         row("Fetch Artwork"),
                     )
                     if (row.subtitle == "Windows") group("PC", row("Install Goldberg Achievements"), row("Export Game"))
-                    val manage = mutableListOf(row("Manage Custom Cards"), row("Show File Location"), row("Hide from ${parent?.title ?: "All Games"}"))
+                    // The launcher names the card by its stored name ("PSP Memory Card"), not the row's
+                    // console-only title.
+                    val hideFrom = when {
+                        parent == null -> "All Games"
+                        parent.menu == RowKind.CONSOLE -> "${parent.title} Memory Card"
+                        else -> parent.title
+                    }
+                    val manage = mutableListOf(row("Manage Custom Cards"), row("Show File Location"), row("Hide from $hideFrom"))
                     if (!inCard) manage += row("Remove from Library", destructive = true)
                     group("Manage", *manage.toTypedArray())
                 }

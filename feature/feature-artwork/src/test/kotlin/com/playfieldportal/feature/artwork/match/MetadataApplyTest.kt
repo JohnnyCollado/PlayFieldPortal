@@ -177,6 +177,8 @@ class MetadataApplyTest {
         artworkStore = mockk(relaxed = true),
         internalStore = mockk(relaxed = true),
         ssMediaCacheDao = mockk(relaxed = true),
+        // These suites write metadata only; no scrape runs, so the folder is never consulted.
+        folderStatus = mockk(relaxed = true),
     )
 
     private fun givenStoredGame(description: String? = "My own notes", developer: String? = null) {

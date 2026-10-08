@@ -110,17 +110,14 @@ data class Game(
      */
     private val overrides: MetadataOverrides by lazy { MetadataOverrides.parse(userMetadataOverrides) }
 
-    // The nine effective metadata values, generalising [displayTitle]: what the user typed where
+    // The six effective metadata values, generalising [displayTitle]: what the user typed where
     // they typed something, the scraped value otherwise. Every surface that shows metadata reads
     // these, never the raw columns — that is what makes an override survive a re-scrape.
     val displayDescription: String? get() = overrides.string(MetadataOverrideKeys.DESCRIPTION) ?: description
     val displayDeveloper: String? get() = overrides.string(MetadataOverrideKeys.DEVELOPER) ?: developer
     val displayPublisher: String? get() = overrides.string(MetadataOverrideKeys.PUBLISHER) ?: publisher
     val displayReleaseYear: Int? get() = overrides.int(MetadataOverrideKeys.RELEASE_YEAR) ?: releaseYear
-    val displayReleaseDate: String? get() = overrides.string(MetadataOverrideKeys.RELEASE_DATE) ?: releaseDate
     val displayGenre: String? get() = overrides.string(MetadataOverrideKeys.GENRE) ?: genre
-    val displayAgeRating: String? get() = overrides.string(MetadataOverrideKeys.AGE_RATING) ?: ageRating
-    val displayFranchise: String? get() = overrides.string(MetadataOverrideKeys.FRANCHISE) ?: franchise
     val displayCommunityRating: Float?
         get() = overrides.float(MetadataOverrideKeys.COMMUNITY_RATING) ?: communityRating
 }

@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import com.playfieldportal.feature.artwork.api.ArtworkFolderState
 import com.playfieldportal.feature.artwork.api.ArtworkStatus
 import com.playfieldportal.feature.artwork.api.ScrapeOptions
 import com.playfieldportal.feature.settings.debug.DebugCredentialsLoader
@@ -10,6 +11,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -60,7 +62,9 @@ class ArtworkSettingsDebugCredentialsTest {
             },
             igdbApi = mockk(relaxed = true),
             screenScraperApi = mockk(relaxed = true) { every { isEnabledFlow } returns flowOf(false) },
-            artworkFolderRepository = mockk(relaxed = true) { coEvery { getTreeUri() } returns null },
+            importManager = mockk(relaxed = true) {
+                every { folderState } returns MutableStateFlow(ArtworkFolderState.NotLinked(0))
+            },
             iconDisplayPreferences = mockk(relaxed = true) {
                 every { modeFlow } returns flowOf(com.playfieldportal.core.domain.model.IconDisplayMode.DEFAULT)
                 every { animatedIconsFlow } returns flowOf(true)

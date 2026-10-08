@@ -31,7 +31,6 @@ import javax.inject.Singleton
 data class PcScanReport(
     val setup: WindowsSetupState?,
     val exportsAdded: Int,
-    val exportsSkipped: Int,
     val pinsReconciled: Int,
     val message: String,
     /** `.pfpgame` entries that created a game (C18). */
@@ -84,7 +83,7 @@ class PcGameScanner @Inject constructor(
         val setup = runCatching { windowsLibrarySetup.ensure() }.getOrNull()
         if (overrideFolder == null && setup is WindowsSetupState.NoRomRoot) {
             return PcScanReport(
-                setup, 0, 0, 0,
+                setup, 0, 0,
                 message = "Add a ROM Root first — PFP creates <root>/windows/import for exported games.",
             )
         }
@@ -182,7 +181,7 @@ class PcGameScanner @Inject constructor(
                 "restoreSkipped=${restore.skipped} untrusted=${restore.untrusted} claims=${restore.claims.size}",
         )
         return PcScanReport(
-            setup, added, skipped, pins, message,
+            setup, added, pins, message,
             restoredCreated = restore.created,
             restoredMatched = restore.matched,
             restoreSkipped = restore.skipped,

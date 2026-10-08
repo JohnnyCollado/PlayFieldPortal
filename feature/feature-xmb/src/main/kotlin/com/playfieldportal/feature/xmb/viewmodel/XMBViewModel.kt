@@ -51,7 +51,6 @@ import com.playfieldportal.core.domain.model.XmbColorScheme
 import com.playfieldportal.core.domain.model.displayLabel
 import com.playfieldportal.core.domain.model.resolve
 import com.playfieldportal.core.domain.repository.GameRepository
-import com.playfieldportal.core.ui.icons.GameIconStyle
 import com.playfieldportal.core.domain.model.BackgroundTaskInfo
 import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.DetailAction
@@ -82,6 +81,14 @@ import com.playfieldportal.feature.appbar.LauncherShortcutRepository
 import com.playfieldportal.feature.launcher.LaunchDispatchResult
 import com.playfieldportal.feature.launcher.LaunchRecoveryAction
 import com.playfieldportal.feature.launcher.ResolvedLaunch
+import com.playfieldportal.feature.artwork.api.ARTWORK_PAUSED_MESSAGE
+import com.playfieldportal.feature.artwork.api.ArtworkFolderPickerUris
+import com.playfieldportal.feature.artwork.api.ArtworkFolderPrompt
+import com.playfieldportal.feature.artwork.api.ArtworkFolderPrompts
+import com.playfieldportal.feature.artwork.api.ArtworkFolderState
+import com.playfieldportal.feature.artwork.api.ArtworkFolderStatus
+import com.playfieldportal.feature.artwork.api.ArtworkImportManager
+import com.playfieldportal.feature.artwork.api.ArtworkRelinkWorker
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.feature.artwork.api.ScrapeProgress
 import com.playfieldportal.feature.artwork.api.relinkAll
@@ -972,6 +979,11 @@ data class XMBUiState(
     // Raised by the pin workflow when a PC shortcut arrived before setup was complete
     // (docs/windows-library-refactor-plan.md section 3); consumed on first XMB open.
     val showWindowsSetupPrompt: Boolean = false,
+    // The required artwork folder: which of the four prompts is up (null = none), drawn by the
+    // shell's shared Confirm modal. The pick request is the picker's start Uri, set for one
+    // composition (the shell owns the launcher) and cleared as it opens.
+    val artworkFolderPrompt: ArtworkFolderPrompt? = null,
+    val artworkFolderPickRequest: android.net.Uri? = null,
     // PFP's virtual keyboard is open (VirtualKeyboardController owns the session; mirrored here
     // so the blocking-overlay guard sees it).
     val virtualKeyboardOpen: Boolean = false,
@@ -1006,7 +1018,6 @@ data class XMBUiState(
     val unreadNotifications: Int = 0,
 
     // ── Misc ──────────────────────────────────────────────────────────────
-    val iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
     // Global icon display mode (Custom ICON0 / Box Art / Physical Media / 3D Box) — the default
     // every console follows until it is given an override of its own. Per-game overrides ride on
     // each XMBItem; resolution happens at render via [resolveIconDisplay].
@@ -1032,7 +1043,6 @@ data class XMBUiState(
         com.playfieldportal.core.domain.model.UmdSlotMode.DEFAULT,
     // The focused game's ICON1 video snap — set only after the linger + battery gates pass.
     val focusedGameVideo: com.playfieldportal.feature.xmb.ui.FocusedGameVideo? = null,
-    val librarySetupComplete: Boolean = false,
     val themeColors: PFPColors = DefaultPFPColors,
     // Both icon tiers — the user's picks (custom-icons/) over the applied theme's (theme-icons/).
     // Provided as LocalXmbIcons; render sites ask it rather than restating the precedence.
@@ -1160,6 +1170,7 @@ data class XMBUiState(
             pendingConfirm != null ||
             launchRecovery != null ||
             showWindowsSetupPrompt ||
+            artworkFolderPrompt != null ||
             virtualKeyboardOpen ||
             shortcutReview != null ||
             // A move in progress owns the D-pad: nothing else may act on the list under it.
@@ -1805,6 +1816,9 @@ class XMBViewModel @Inject constructor(
     private val listStateRepository: com.playfieldportal.core.data.repository.ListStateRepository,
     private val sortPreferences: com.playfieldportal.core.data.repository.SortPreferences,
     private val umdSlotRepository: com.playfieldportal.core.data.repository.UmdSlotRepository,
+    // The required artwork folder: its observable state and link flow, and the prompt deferral.
+    private val artworkImportManager: ArtworkImportManager,
+    private val artworkFolderStatus: ArtworkFolderStatus,
 ) : ViewModel() {
 
     // Drives the "convert detected games?" multi-select picker after a Windows-card scan; the same
@@ -1834,9 +1848,6 @@ class XMBViewModel @Inject constructor(
      */
     fun onConvertGamepadAction(action: GamepadAction): Boolean =
         convertPickerController.onGamepadAction(action)
-
-    /** True while the convert panel owns the screen. */
-    val convertPanelOpen: Boolean get() = convertPickerController.picker.value != null
 
     /**
      * Batch Match Local Games from the Windows card's context menu.
@@ -2061,7 +2072,6 @@ class XMBViewModel @Inject constructor(
         observeBackgroundSettings()
         observeTouchNavButtonMode()
         observeWallpaper()
-        observeLibrarySetupState()
         checkInitialSetup()
         logStartupSequence()
         observeThemeLook()
@@ -2082,6 +2092,7 @@ class XMBViewModel @Inject constructor(
         observeEmulatorProfiles()
         collectGamepadActions()
         consumeWindowsSetupPrompt()
+        observeArtworkFolder()
         observeVirtualKeyboard()
         observeLaunchRecoveryRequests()
         observeSetupState()
@@ -2168,6 +2179,138 @@ class XMBViewModel @Inject constructor(
     }
 
     fun dismissWindowsSetupPrompt() = _uiState.update { it.copy(showWindowsSetupPrompt = false) }
+
+    // ── Required artwork folder prompts ───────────────────────────────────────
+    //
+    // Three sources raise a prompt: launch (once per process, honours the deferral), a refused
+    // write (folderNeeded: always), and a picked folder holding another install's library
+    // (pendingForeignLibrary, from this shell's picker or from Settings / the wizard, which
+    // return silently on it). The shell's modal draws over Settings and takes the pad first.
+    private fun observeArtworkFolder() {
+        viewModelScope.launch {
+            // Once, when the XMB is actually in view: after the boot sequence, after the first-run
+            // check, and not while the wizard (whose Artwork page asks for the folder) is open.
+            _uiState.first {
+                it.initialSetupDecided && !it.showBootSequence &&
+                    it.activeSettingsScreen != INITIAL_SETUP_FIRST_RUN_SCREEN_ID
+            }
+            val state = artworkImportManager.folderState.first { it !is ArtworkFolderState.Unknown }
+            ArtworkFolderPrompts.onLaunch(
+                state = state,
+                deferred = artworkFolderStatus.isDeferred(),
+                pending = artworkImportManager.pendingForeignLibrary.value,
+            )?.let { prompt -> _uiState.update { it.copy(artworkFolderPrompt = prompt) } }
+        }
+        viewModelScope.launch {
+            artworkFolderStatus.folderNeeded.collect {
+                if (artworkImportManager.folderState.value is ArtworkFolderState.Unknown) {
+                    artworkFolderStatus.refresh()
+                }
+                ArtworkFolderPrompts.onNeed(
+                    state = artworkImportManager.folderState.value,
+                    pending = artworkImportManager.pendingForeignLibrary.value,
+                )?.let { prompt -> _uiState.update { it.copy(artworkFolderPrompt = prompt) } }
+            }
+        }
+        viewModelScope.launch {
+            artworkImportManager.pendingForeignLibrary.collect { pending ->
+                _uiState.update { s ->
+                    when {
+                        pending != null -> s.copy(
+                            artworkFolderPrompt = ArtworkFolderPrompt.ForeignLibrary(pending.name, pending.fileCount),
+                        )
+                        s.artworkFolderPrompt is ArtworkFolderPrompt.ForeignLibrary -> s.copy(artworkFolderPrompt = null)
+                        else -> s
+                    }
+                }
+            }
+        }
+        viewModelScope.launch {
+            // A folder linked from Settings or the wizard answers the other three prompts.
+            artworkImportManager.folderState.collect { state ->
+                if (state is ArtworkFolderState.Ready) {
+                    _uiState.update { s ->
+                        if (s.artworkFolderPrompt == null || s.artworkFolderPrompt is ArtworkFolderPrompt.ForeignLibrary) s
+                        else s.copy(artworkFolderPrompt = null)
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * The prompt's confirm: Relink / Choose open the picker (the prompt closes first), Use this
+     * library adopts the pending folder (which relinks and moves internal art itself).
+     */
+    fun confirmArtworkFolderPrompt() {
+        val prompt = _uiState.value.artworkFolderPrompt ?: return
+        _uiState.update { it.copy(artworkFolderPrompt = null) }
+        when (prompt) {
+            is ArtworkFolderPrompt.Unavailable -> {
+                val stored = (artworkImportManager.folderState.value as? ArtworkFolderState.Unavailable)?.treeUri
+                requestArtworkFolderPick(
+                    stored?.let { ArtworkFolderPickerUris.forRelink(android.net.Uri.parse(it)) }
+                        ?: ArtworkFolderPickerUris.deviceRoot(),
+                )
+            }
+            is ArtworkFolderPrompt.MoveArtwork,
+            ArtworkFolderPrompt.ChooseFolder -> requestArtworkFolderPick(ArtworkFolderPickerUris.deviceRoot())
+            is ArtworkFolderPrompt.ForeignLibrary -> viewModelScope.launch {
+                if (artworkImportManager.adoptPendingLibrary() is ArtworkImportManager.LinkResult.Failed) {
+                    reportArtworkLinkFailed()
+                }
+            }
+        }
+    }
+
+    /**
+     * The prompt's cancel: Not now / Later defer it until a scrape or pick needs the folder;
+     * Choose another folder drops the pending library and opens the picker at the device root.
+     */
+    fun cancelArtworkFolderPrompt() {
+        val prompt = _uiState.value.artworkFolderPrompt ?: return
+        _uiState.update { it.copy(artworkFolderPrompt = null) }
+        viewModelScope.launch {
+            when (prompt) {
+                is ArtworkFolderPrompt.ForeignLibrary -> {
+                    artworkImportManager.declinePendingLibrary()
+                    requestArtworkFolderPick(ArtworkFolderPickerUris.deviceRoot())
+                }
+                else -> artworkFolderStatus.defer()
+            }
+        }
+    }
+
+    private fun requestArtworkFolderPick(startAt: android.net.Uri) =
+        _uiState.update { it.copy(artworkFolderPickRequest = startAt) }
+
+    /** The shell opened the picker for [XMBUiState.artworkFolderPickRequest]. */
+    fun onArtworkFolderPickLaunched() = _uiState.update { it.copy(artworkFolderPickRequest = null) }
+
+    /**
+     * The picker's result. A cancel (null) changes nothing and asks nothing. A folder holding
+     * another library raises its prompt through [ArtworkImportManager.pendingForeignLibrary].
+     */
+    fun onArtworkFolderPicked(uri: android.net.Uri?) {
+        if (uri == null) return
+        viewModelScope.launch {
+            when (artworkImportManager.linkFolder(uri)) {
+                is ArtworkImportManager.LinkResult.Linked -> ArtworkRelinkWorker.enqueue(context)
+                ArtworkImportManager.LinkResult.ForeignLibrary -> Unit
+                ArtworkImportManager.LinkResult.Failed -> reportArtworkLinkFailed()
+            }
+        }
+    }
+
+    private fun reportArtworkLinkFailed() {
+        backgroundTasks.report(
+            id = "artwork_folder_link",
+            label = "Artwork folder",
+            message = "Couldn't set up that folder. Pick a folder PFP can write to.",
+            severity = com.playfieldportal.core.domain.model.NotificationSeverity.ERROR,
+            kind = com.playfieldportal.core.domain.model.NotificationKind.ARTWORK,
+        )
+    }
 
     // Keeps the emulator package → name map current so game subtitles can show "Platform (Emulator)".
     // Reloads the on-screen items once names arrive so already-listed games pick up their emulator.
@@ -2594,15 +2737,6 @@ class XMBViewModel @Inject constructor(
 
         currentItemsJob = viewModelScope.launch {
             when (category.id) {
-                BuiltInCategory.FAVORITES -> {
-                    var keepCursor = keepCursorOnRow
-                    gameRepository.observeFavorites().collect { games ->
-                        publishGames(keepCursor) {
-                            gameRowsOrEmpty(games.notHiddenAt(HideLocationType.FAVORITES))
-                        }
-                        keepCursor = true
-                    }
-                }
                 BuiltInCategory.ANDROID -> {
                     _uiState.update { it.copy(currentItems = ANDROID_ITEMS) }
                 }
@@ -3034,7 +3168,6 @@ class XMBViewModel @Inject constructor(
     // (keyed off the scan completing, not the track count), then drops away.
     private fun musicRootItems(): List<XMBItem> {
         val folders = _uiState.value.musicFolders
-        val totalTracks = folders.sumOf { it.trackCount }
         val hasScannedFolder = folders.any { it.lastScannedAt != null }
         return buildList {
             // Now Playing — only when a track is loaded; clicking returns to the active song.
@@ -3212,7 +3345,7 @@ class XMBViewModel @Inject constructor(
                 val name = s.collections.firstOrNull { it.id == s.selectedCollectionId }?.name ?: "Custom Card"
                 Triple(HideLocationType.COLLECTION, s.selectedCollectionId.toString(), name)
             }
-            s.selectedPlatformId == FAVORITES_PLATFORM_ID || cat?.id == BuiltInCategory.FAVORITES ->
+            s.selectedPlatformId == FAVORITES_PLATFORM_ID ->
                 Triple(HideLocationType.FAVORITES, "", "Favorites")
             // No per-location hide in the Missing bucket. It is the only place "Remove permanently"
             // is offered, so hiding a row here would strand the entry: invisible everywhere (it is
@@ -3264,7 +3397,6 @@ class XMBViewModel @Inject constructor(
     // scanned (keyed off the scan completing, not the video count), then drops away.
     private fun videoRootItems(): List<XMBItem> {
         val libraries = _uiState.value.videoLibraries
-        val totalVideos = libraries.sumOf { it.videoCount }
         val hasScannedLibrary = libraries.any { it.lastScannedAt != null }
         return buildList {
             // The three curated views collapse into one "Collections" entry (drills into
@@ -3681,7 +3813,6 @@ class XMBViewModel @Inject constructor(
     // from Settings → Photo).
     private fun photoRootItems(): List<XMBItem> {
         val libraries = _uiState.value.photoLibraries
-        val totalPhotos = libraries.sumOf { it.photoCount }
         val hasScannedLibrary = libraries.any { it.lastScannedAt != null }
         return buildList {
             if (cameraAvailable) {
@@ -5561,8 +5692,8 @@ class XMBViewModel @Inject constructor(
                 val count = _uiState.value.platformGameCounts[card.platformId] ?: card.gameCount
                 XMBItem(
                     id          = "card_${card.platformId}",
-                    title       = if (card.platformId == WINDOWS_PLATFORM_ID) "Windows Games" else card.displayName,
-                    subtitle    = "$count ${if (count == 1) "Game" else "Games"}",
+                    title       = memoryCardRowTitle(card),
+                    subtitle    = memoryCardRowSubtitle(count, card.pinned),
                     platformId  = card.platformId,
                     accentColor = platformCache[card.platformId]?.accentColor,
                     pinned      = card.pinned,
@@ -6234,7 +6365,8 @@ class XMBViewModel @Inject constructor(
         if (state.renameAppTarget != null ||
             state.collectionNameDialog != null ||
             state.playlistNameDialog != null ||
-            state.saveThemeNameDialog != null
+            state.saveThemeNameDialog != null ||
+            state.customIconSession?.sourceChooser != null
         ) {
             forwardToShellModal(action)
             return
@@ -6267,6 +6399,12 @@ class XMBViewModel @Inject constructor(
                 GamepadAction.BACK   -> onLaunchRecoveryAction(LaunchRecoveryAction.DISMISS)
                 else                 -> Unit
             }
+            return
+        }
+        // Required artwork folder prompts — forwarded to the shared confirm modal. Ahead of the
+        // Windows prompt and the shortcut review, the order shellModalSpec draws them in.
+        if (state.artworkFolderPrompt != null) {
+            forwardToShellModal(action)
             return
         }
         // Windows Library setup prompt — opens on Set Up, so A sets up (Library Manager) and B
@@ -6398,6 +6536,20 @@ class XMBViewModel @Inject constructor(
                 return
             }
             state.customIconSession != null -> {
+                // The theme icon grid, when up, owns the pad over the editor: D-pad moves the tile
+                // cursor, A uses the tile, B closes the grid. Everything else is swallowed.
+                state.customIconSession.themeGrid?.let { grid ->
+                    when (action) {
+                        GamepadAction.NAVIGATE_UP,
+                        GamepadAction.NAVIGATE_DOWN,
+                        GamepadAction.NAVIGATE_LEFT,
+                        GamepadAction.NAVIGATE_RIGHT -> onThemeIconGridMove(action)
+                        GamepadAction.SELECT -> onThemeIconChosen(grid.cursor)
+                        GamepadAction.BACK -> closeThemeIconGrid()
+                        else -> Unit
+                    }
+                    return
+                }
                 // The icon editor owns the pad: LEFT/RIGHT step the slot cursor through the tab's
                 // strip, while the L/R shoulders cycle the tabs [Crossbar, Items, Consoles,
                 // Physical Media]. UP/DOWN jump between XMB columns on the Items tab and mirror
@@ -8452,6 +8604,15 @@ class XMBViewModel @Inject constructor(
                 if (platformId == null) artworkRepository.scrapeMissingOnly(onProgress)
                 else artworkRepository.scrapeMissingForPlatform(platformId, onProgress)
             }.onSuccess { result ->
+                if (result.paused) {
+                    backgroundTasks.fail(
+                        taskId, ARTWORK_PAUSED_MESSAGE, NotificationAction.OpenSettingsScreen("settings_artwork_import"),
+                        detail = NotificationDetail.notes(PfpErrorCode.AR_1001, summary = ARTWORK_PAUSED_MESSAGE),
+                        title = "Artwork fetch paused: ${jobScopeName(platformId)}",
+                    )
+                    loadItemsForCategory(currentCategory())
+                    return@onSuccess
+                }
                 backgroundTasks.complete(
                     taskId,
                     if (result.total == 0) "No games are missing artwork"
@@ -8593,12 +8754,6 @@ class XMBViewModel @Inject constructor(
         message: String? = null,
         action: NotificationAction = NotificationAction.None,
     ) = backgroundTasks.complete(id, message, action)
-
-    private fun failBackgroundTask(
-        id: String,
-        message: String,
-        action: NotificationAction = NotificationAction.None,
-    ) = backgroundTasks.fail(id, message, action)
 
     // ── Notification panel ──────────────────────────────────────────────
 
@@ -9960,10 +10115,6 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    // A custom category's Memory Card, Favorites or Missing: container rows with no record.
-    private fun XMBItem.isRootRow(): Boolean =
-        type == XMBItemType.CATEGORY_CARD || type == XMBItemType.FAVORITES || type == XMBItemType.MISSING
-
     private fun openPlatformFolder(platformId: String) {
         val gamesCategoryIndex = _uiState.value.categories.indexOfFirst { it.id == BuiltInCategory.GAMES }
         navigateRememberingCursor {
@@ -10713,6 +10864,140 @@ class XMBViewModel @Inject constructor(
     }
 
     /**
+     * Opens the grid of the applied theme's icons for [slotKey]: its slot icons plus, for a
+     * PSP-derived theme, the extra decoded bodies. Reads the theme tier on disk, which is exactly
+     * what is applied. Does nothing when the theme offers no icon.
+     */
+    fun openThemeIconGrid(slotKey: String) {
+        val session = _uiState.value.customIconSession ?: return
+        val slotName = session.slots().firstOrNull { it.key == slotKey }?.displayName ?: return
+        viewModelScope.launch {
+            val tier = com.playfieldportal.core.data.repository.ThemeTiers.Tier.THEME
+            val built = withContext(Dispatchers.IO) {
+                val slotFiles = themeTiers.iconKeys(tier).mapNotNull { key -> themeTiers.iconFile(tier, key)?.let { key to it } }.toMap()
+                val slotIcons = themeTiers.loadIcons(tier).mapNotNull { (key, icon) -> slotFiles[key]?.let { key to (it to icon) } }.toMap()
+                val ptfFiles = themeTiers.ptfIconFiles()
+                val ptfIcons = themeTiers.loadPtfIcons().mapNotNull { (ref, icon) -> ptfFiles[ref]?.let { ref to (it to icon) } }.toMap()
+                val themeName = context.pfpDataStore.data.first()[ThemePrefKeys.APPLIED_THEME_NAME]?.takeIf { it.isNotBlank() }
+                themeIconGridFor(
+                    slotKey = slotKey,
+                    slotName = slotName,
+                    themeName = themeName ?: "Current theme",
+                    slotIcons = slotIcons,
+                    ptfIcons = ptfIcons,
+                    // Identical images (a PTF's Memory Stick art fills several slots) share one tile.
+                    artKey = { file -> java.math.BigInteger(1, java.security.MessageDigest.getInstance("SHA-256").digest(file.readBytes())) },
+                )
+            }
+            // No tile decoded: Pick must still do something, so it falls back to the file picker.
+            val grid = built?.takeIf { themeGridRoute(it) == CustomIconPickRoute.GRID }
+            _uiState.update {
+                val s = it.customIconSession ?: return@update it
+                if (grid != null) it.copy(customIconSession = s.copy(themeGrid = grid, message = null))
+                else it.copy(customIconSession = s.copy(filePickRequest = slotKey, message = null))
+            }
+        }
+    }
+
+    /**
+     * Pick on [slotKey] (touch button or pad SELECT). A theme with icons of its own gets the source
+     * chooser; otherwise the file picker opens as it always did.
+     */
+    fun onPickRequested(slotKey: String) {
+        val session = _uiState.value.customIconSession ?: return
+        val slotName = session.slots().firstOrNull { it.key == slotKey }?.displayName ?: return
+        viewModelScope.launch {
+            val tier = com.playfieldportal.core.data.repository.ThemeTiers.Tier.THEME
+            val (slotIcons, ptfIcons) = withContext(Dispatchers.IO) {
+                themeTiers.iconKeys(tier).size to themeTiers.ptfIconFiles().size
+            }
+            val chooser = if (customIconPickRoute(slotIcons, ptfIcons) == CustomIconPickRoute.CHOOSER) {
+                val themeName = context.pfpDataStore.data.first()[ThemePrefKeys.APPLIED_THEME_NAME]?.takeIf { it.isNotBlank() }
+                sourceChooserFor(slotKey, slotName, themeName ?: "Current theme", slotIcons + ptfIcons)
+            } else {
+                null
+            }
+            _uiState.update {
+                val s = it.customIconSession ?: return@update it
+                if (chooser != null) it.copy(customIconSession = s.copy(sourceChooser = chooser))
+                else it.copy(customIconSession = s.copy(filePickRequest = slotKey))
+            }
+        }
+    }
+
+    /** The chooser's "From the applied theme": closes it and opens the grid. */
+    fun onPickFromTheme() {
+        val chooser = _uiState.value.customIconSession?.sourceChooser ?: return
+        dismissSourceChooser()
+        openThemeIconGrid(chooser.slotKey)
+    }
+
+    /** The chooser's "From your device": closes it and asks the overlay for the file picker. */
+    fun onPickFromDevice() {
+        val chooser = _uiState.value.customIconSession?.sourceChooser ?: return
+        _uiState.update {
+            val s = it.customIconSession ?: return@update it
+            it.copy(customIconSession = s.copy(sourceChooser = null, filePickRequest = chooser.slotKey))
+        }
+    }
+
+    /** Cancel on the chooser: back to the editor, slot unchanged. */
+    fun dismissSourceChooser() {
+        _uiState.update {
+            val s = it.customIconSession ?: return@update it
+            it.copy(customIconSession = s.copy(sourceChooser = null))
+        }
+    }
+
+    /** The overlay opened the file picker for [CustomIconSession.filePickRequest]. */
+    fun onFilePickLaunched() {
+        _uiState.update {
+            val s = it.customIconSession ?: return@update it
+            it.copy(customIconSession = s.copy(filePickRequest = null))
+        }
+    }
+
+    /** D-pad over the grid: moves the tile cursor (clamped, no wrap). */
+    fun onThemeIconGridMove(action: GamepadAction) {
+        _uiState.update {
+            val s = it.customIconSession ?: return@update it
+            val grid = s.themeGrid ?: return@update it
+            val next = ThemeIconGridNav.move(grid.sectionSizes, THEME_ICON_GRID_COLUMNS, grid.cursor, action)
+            if (next == grid.cursor) it else it.copy(customIconSession = s.copy(themeGrid = grid.copy(cursor = next)))
+        }
+    }
+
+    /**
+     * Uses grid tile [index] for the slot the grid was opened for: the theme file is copied into the
+     * user tier through the same import a file pick runs, so Reset / Reset All undo it. The grid
+     * closes at once, so a second press has nothing to choose.
+     */
+    fun onThemeIconChosen(index: Int) {
+        val grid = _uiState.value.customIconSession?.themeGrid ?: return
+        val file = grid.files.getOrNull(index) ?: return
+        _uiState.update {
+            val s = it.customIconSession ?: return@update it
+            it.copy(customIconSession = s.copy(themeGrid = null))
+        }
+        viewModelScope.launch {
+            val result = customIconStore.import(grid.slotKey, android.net.Uri.fromFile(file), themeIconMime(file))
+            menuSound.play(if (result.ok) MenuSound.CONFIRM else MenuSound.ERROR)
+            _uiState.update {
+                val s = it.customIconSession ?: return@update it
+                it.copy(customIconSession = s.copy(message = result.message, revision = s.revision + 1))
+            }
+        }
+    }
+
+    /** B / Cancel on the grid: back to the editor with the slot unchanged. */
+    fun closeThemeIconGrid() {
+        _uiState.update {
+            val s = it.customIconSession ?: return@update it
+            it.copy(customIconSession = s.copy(themeGrid = null))
+        }
+    }
+
+    /**
      * Per-slot Reset: the user's pick goes; the built-in returns immediately UNLESS the
      * applied theme supplies this slot, in which case the theme's icon surfaces instead.
      *
@@ -11231,17 +11516,6 @@ class XMBViewModel @Inject constructor(
                     showNotificationHint = false,
                     showMediaHint = false,
                 )
-            }
-        }
-    }
-
-    // ── Library setup state ───────────────────────────────────────────────────
-
-    private fun observeLibrarySetupState() {
-        viewModelScope.launch {
-            context.pfpDataStore.data.collect { prefs ->
-                val complete = prefs[KEY_SETUP_COMPLETE] ?: false
-                _uiState.update { it.copy(librarySetupComplete = complete) }
             }
         }
     }

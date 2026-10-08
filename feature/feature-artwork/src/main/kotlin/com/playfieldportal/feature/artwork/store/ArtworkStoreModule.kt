@@ -9,8 +9,8 @@ import dagger.hilt.components.SingletonComponent
 @InstallIn(SingletonComponent::class)
 abstract class ArtworkStoreModule {
 
-    // Routes to the user's portable media library when a folder is linked; falls back to
-    // internal app storage otherwise. Callers never know the difference.
+    // Writes only to the user's linked artwork folder; when it is not ready a write returns null and
+    // reports on ArtworkFolderStatus. Internal storage is a read/migration source, never a fallback.
     @Binds
     abstract fun bindArtworkStore(impl: RoutingArtworkStore): ArtworkStore
 }

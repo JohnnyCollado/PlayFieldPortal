@@ -95,7 +95,8 @@ class DiscSetBuilder @Inject constructor() {
      *
      * [sheetReader] exists for the stored rows only: a scan never emits a sheet's companion files,
      * but a library scanned before that suppression existed still holds a row per `.bin`. Those
-     * rows are not discs, so they are taken out of the set here (see [companionPaths]).
+     * rows are not discs, so they are taken out of the set here (see [companionSheets]);
+     * [staleCompanions] lets the caller merge them into their sheets.
      */
     fun reconcile(
         games: List<Game>,
@@ -113,6 +114,20 @@ class DiscSetBuilder @Inject constructor() {
                     before.region != after.region
             }
             .map { it.second }
+    }
+
+    /**
+     * The stored rows that are a sheet's companion files (a `.bin` its `.cue` lists, a `.gdi`'s
+     * tracks), each paired with that sheet's row. A library scanned before companion suppression
+     * still holds these rows; the scan never reports their paths again, so the caller folds each
+     * into its sheet rather than letting it be flagged missing. Unsaved rows (id 0) are skipped:
+     * a scan never emits a companion, and there is nothing stored to merge.
+     */
+    fun staleCompanions(games: List<Game>, sheetReader: SheetReader): List<Pair<Game, Game>> {
+        val candidates = games.filter { it.id != 0L }.mapNotNull { it.candidate() }
+        return companionSheets(candidates, sheetReader).mapNotNull { (path, sheet) ->
+            candidates.firstOrNull { it.game.romPath == path }?.let { it.game to sheet.game }
+        }
     }
 
     private fun derive(
@@ -151,7 +166,7 @@ class DiscSetBuilder @Inject constructor() {
         // its own set. The split only fires when EVERY member carries a known region — an unknown
         // (unreadable, or a compressed container like .chd) disc keeps the group merged rather
         // than breaking a set on a detection gap.
-        val companions = companionPaths(candidates, sheetReader)
+        val companions = companionSheets(candidates, sheetReader).keys
         val tagged = ArrayList<Triple<Candidate, DiscTag, String>>()
         for (c in candidates) {
             if (c.game.romPath!! in companions) continue
@@ -262,9 +277,10 @@ class DiscSetBuilder @Inject constructor() {
     // The rows that are a sheet's companion files — a `.bin` a sibling `.cue` lists, a track file a
     // `.gdi` references. Content-based and same-folder only, exactly like the scan-time suppression
     // (DiscCompanionSuppressor / DiscImageResolver), so a sheet-less `.bin` dump stays a real disc.
-    // A sheet is only read when its folder holds a row that could be its companion.
-    private fun companionPaths(candidates: List<Candidate>, sheetReader: SheetReader): Set<String> {
-        val companions = HashSet<String>()
+    // A sheet is only read when its folder holds a row that could be its companion. Keyed by the
+    // companion's path, valued with the sheet that lists it.
+    private fun companionSheets(candidates: List<Candidate>, sheetReader: SheetReader): Map<String, Candidate> {
+        val companions = LinkedHashMap<String, Candidate>()
         for ((_, inFolder) in candidates.groupBy { it.folder }) {
             val sheets = inFolder.filter { it.ext in SHEET_EXTENSIONS }
             if (sheets.isEmpty() || sheets.size == inFolder.size) continue
@@ -273,7 +289,7 @@ class DiscSetBuilder @Inject constructor() {
                 val lines = sheetReader.read(sheet.game) ?: continue
                 val referenced = if (sheet.ext == "cue") cueSheetReferences(lines) else gdiSheetTrackNames(lines)
                 for (name in referenced) {
-                    byBasename[name]?.takeIf { it !== sheet }?.let { companions.add(it.game.romPath!!) }
+                    byBasename[name]?.takeIf { it !== sheet }?.let { companions[it.game.romPath!!] = sheet }
                 }
             }
         }

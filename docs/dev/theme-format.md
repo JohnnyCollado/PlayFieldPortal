@@ -85,9 +85,10 @@ mytheme.pfptheme
 ├── wallpaper.png                          optional; absent = live wave background
 ├── preview.png                            optional on read
 ├── lockscreen.png                         optional (v5); a still for the device lock screen, opt-in at apply
-├── icons/<key>.<png|gif>                  82 keys in v4 (v3 had 52)
+├── icons/<key>.<png|gif>                  81 keys in v4 (v3 had 52)
 ├── sysicons/<id>.<png|gif>                47 ids in v4 (v3 had 40)
 ├── mediaicons/<id>.<png|gif>              42 ids: physical-media art (Physical Media mode)
+├── ptficons/<group>_<index>.png           optional (v5, additive); extra PSP theme body images, at most 64
 ├── motion.<mp4|webm|gif>                  streamed, never held in memory
 ├── sounds/<sound_scroll|sound_back|sound_confirm|sound_error|sound_notification>.<mp3|wav|ogg|m4a>
 ├── ambience.<mp3|wav|ogg|m4a>
@@ -124,7 +125,7 @@ as a verbatim prefix plus 47 console slots. Keys are zip entry names: **never re
 
 | Group | Slots | Bundle dir | Keys (those added in v4 marked) |
 |---|---|---|---|
-| CATEGORY_BAR | 10 | `icons/` | `catbar_*` |
+| CATEGORY_BAR | 9 | `icons/` | `catbar_*` (`catbar_favorites` retired, see below) |
 | ITEMS | 37 | `icons/` | `item_*` (includes `item_shiba_connect/track/untracked` and `item_umd`) |
 | STATUS | 10 | `icons/` | 6 battery/bluetooth; v4: `status_notifications`, `status_controller`, `status_wifi`, `status_signal` |
 | SHIBA | 4 | `icons/` | v4: `shiba_coin_bronze`, `_silver`, `_gold`, `_platinum` |
@@ -132,16 +133,28 @@ as a verbatim prefix plus 47 console slots. Keys are zip entry names: **never re
 | GAME_DETAIL | 5 | `icons/` | v4: `detail_play`, `detail_favorite`, `detail_artwork`, `detail_manual`, `detail_more` |
 | NOTIFICATIONS | 8 | `icons/` | v4: `notif_album`, `notif_image`, `notif_tag`, `notif_coin`, `notif_blocked`, `notif_settings`, `notif_download`, `notif_feed` |
 | MENUS | 2 | `icons/` | v4: `menu_check`, `menu_back` |
-| **IconSlots total** | **82** | | 52 in v3, +30 in v4 |
+| **IconSlots total** | **81** | | 52 in v3, +30 in v4, −1 retired |
 | CONSOLE | 47 | `sysicons/` | key `sysicon_<id>`, entry `sysicons/<id>`; 40 platform ids plus v4 extras `cps1`, `cps2`, `cps3`, `xbox`, `favorites`, `desktop`, `default` |
 | PHYSICAL_MEDIA | 42 | `mediaicons/` | key `physmedia_<id>`, entry `mediaicons/<id>`; every console id except `allgames`, `android`, `favorites`, `desktop`, `default` |
-| **CustomizableIcons total** | **171** | | |
+| **CustomizableIcons total** | **170** | | |
 
 STATUS, SHIBA, MEDIA, GAME_DETAIL, NOTIFICATIONS and MENUS are theme-only groups: neither the
 on-device icon editor nor the Theme Studio lists them. Both editors list the same slots in the same
 order (`IconEditorLayout`): Crossbar, Items (grouped by XMB column, with `sysicon_allgames` and
-`sysicon_favorites` in the Game column), Consoles, Physical Media. `catbar_favorites` is not listed;
-a theme that carries it still applies it.
+`sysicon_favorites` in the Game column), Consoles, Physical Media.
+
+**Retired keys** (`IconSlots.RETIRED`). Favorites is not a crossbar category: it is the Game column's
+Favorites card, `sysicon_favorites`. The old `catbar_favorites` slot is retired. The reader moves an
+older bundle's `icons/catbar_favorites.*` onto `sysicon_favorites` (the bundle's own
+`sysicons/favorites.*` wins when both are present), and the writer never emits it.
+
+**Shared art** (`SharedIconArt`). Slots whose built-in art is one picture are grouped once, and a
+job that sets a whole family fans out over the group: a PTF import fills every slot in it, and both
+editors take each slot's default art from it. The groups are the memory card (`item_memcard_games`,
+`_music`, `_video`, `_photos`, `sysicon_allgames`, `item_shiba_track`) and the Game glyph
+(`catbar_games`, `sysicon_default`). The slots stay separate keys, so a user or a theme can still
+give each one its own art. The Studio's `StudioIconSetSharedArtTest` fails when two slots ship
+byte-identical art without being grouped.
 
 In code, `PfpThemeBundle.icons` holds every family in one map keyed by slot key; only the codec maps
 a key to its folder (`sysicon_<id>` ↔ `sysicons/<id>`, `physmedia_<id>` ↔ `mediaicons/<id>`, the rest
@@ -158,7 +171,8 @@ any build that knows the folder reads those bundles as typed media icons. Templa
 | Entries per bundle | 256 | `PfpThemeCodec.BUNDLE_LIMITS` |
 | Any single entry | 64 MB | `BUNDLE_LIMITS.maxEntryBytes` |
 | Whole bundle | 256 MB | `BUNDLE_LIMITS.maxTotalBytes` |
-| Icon / sysicon | 8 MB | `PfpThemeCodec.MAX_ICON_BYTES` |
+| Icon / sysicon / ptficon | 8 MB | `PfpThemeCodec.MAX_ICON_BYTES` |
+| `ptficons/` entries | 64 | `PfpThemeCodec.MAX_PTF_ICONS` |
 | Motion | 1920x1080, 60 s, 60 MB | `MotionLimits` |
 | Menu sound / ambience / boot / GameBoot | see section 3 | `UiMediaLimits`, `ThemeMediaSlots` |
 | Description | 500 chars | read-side sanitizer |
@@ -166,6 +180,12 @@ any build that knows the folder reads those bundles as typed media icons. Templa
 A bundle that trips the entry, entry-size or total caps is "not a `.pfptheme`": `read` returns null
 rather than throwing. An over-cap icon or media entry is dropped and reported
 (`DropReason.OVER_CAP`) and the rest of the bundle still reads.
+
+**Entry-count arithmetic for `ptficons/`.** The worst case with every other family full is 4 fixed
+entries (manifest, wallpaper, preview, lock screen) + 170 icon entries (every `CustomizableIcons` slot)
++ 1 motion + 8 media = 183. Adding the 64-entry `ptficons/` cap gives 247, inside the 256-entry cap
+with room for passthrough. On write the lowest 64 by (group, index) are kept; on read the first 64
+in zip order are kept and the rest are dropped as `OVER_CAP`.
 
 ## 6. Path safety
 
@@ -178,6 +198,10 @@ rather than throwing. An over-cap icon or media entry is dropped and reported
 - Anything else is dropped and reported (`HOSTILE_NAME`, `BAD_EXTENSION`, `DUPLICATE`,
   `UNSUPPORTED_MEDIA`). This includes registered-looking `icons/`, `sysicons/` and `mediaicons/` names that are not
   registered slots: they are passthrough if safe, dropped otherwise.
+- `ptficons/<group>_<index>.png` is typed only when the name is canonical (no leading zeros, lowercase
+  `.png`), the index is 0..255, and the record is a body image (`PtfIcons.isBody`): any group-2 record,
+  or an even record of groups 3 and 4. Any other `ptficons/` name is not claimed: it is passthrough if
+  safe, dropped otherwise. The separator is an underscore because `PassthroughNames.isSafe` rejects `-`.
 - Passthrough is never extracted to disk by the launcher. It is only re-written into a bundle.
 - Directory entries are skipped.
 
@@ -206,6 +230,9 @@ rather than throwing. An over-cap icon or media entry is dropped and reported
 | **Pre-v4 Studio** | opens | opens | opens (drops sysicons) | opens the v3 subset; re-export loses v4 data | same as v4 | opens subset |
 | **v4 Studio** | opens + upgrade banner | same | same | full, lossless | opens losslessly (the lock screen image rides as an unknown entry); banner says made by a newer version | opens losslessly; banner says made by a newer version |
 | **v5 Studio** | opens + upgrade banner | same | same | same | full, lossless | opens losslessly; banner says made by a newer version |
+
+`ptficons/` is an additive v5 entry family with no `schemaVersion` bump. A reader that predates it
+keeps the entries as safe passthrough (lossless on re-write) and never applies them.
 
 "Applies" never requires an upgrade. Upgrading writes a v5 file that every column above still opens.
 The format, codec and upgrade semantics above live in `core/theme-kit`.

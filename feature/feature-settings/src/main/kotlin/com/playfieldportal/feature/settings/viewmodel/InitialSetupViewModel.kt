@@ -27,6 +27,8 @@ import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 import com.playfieldportal.feature.achievements.provider.steam.SteamRemoteDataSource
 import com.playfieldportal.feature.artwork.MetadataApiKeyProvider
+import com.playfieldportal.feature.artwork.api.ArtworkFolderPickerUris
+import com.playfieldportal.feature.artwork.api.ArtworkFolderState
 import com.playfieldportal.feature.artwork.api.ArtworkImportManager
 import com.playfieldportal.feature.artwork.api.IgdbApi
 import com.playfieldportal.feature.artwork.api.ScreenScraperApi
@@ -62,6 +64,10 @@ data class InitialSetupUiState(
     val photoRoots: List<RootFolderRow> = emptyList(),
     // Artwork is a SINGLE folder; sources under its import/ folder license the quick-import row.
     val artworkFolderName: String? = null,
+    // The artwork folder is required: only Ready lets the Artwork page be passed. Unavailable (the
+    // folder is set but unreachable) still shows its row, but counts as not linked.
+    val artworkReady: Boolean = false,
+    val artworkUnavailable: Boolean = false,
     val artworkSources: List<ArtworkSourceUi> = emptyList(),
     // Services — connected state plus the public identity to show for it.
     val hasSgdb: Boolean = false,
@@ -129,6 +135,8 @@ private data class RootLists(
     val video: List<RootFolderRow>,
     val photo: List<RootFolderRow>,
     val artwork: String?,   // artwork folder display name
+    val artworkReady: Boolean,
+    val artworkUnavailable: Boolean,
     val vita: String?,      // Vita3K ux0 folder display name
     val ps3: String?,       // ARMSX3 PS3 data folder display name
     val x360Mobile: String?, // X360 Mobile data folder display name
@@ -166,7 +174,8 @@ private val KEY_INITIAL_SETUP_SEEN = booleanPreferencesKey("initial_setup_seen")
  * ROM Root Access and the Music/Video/Photo screens, artwork is one folder with an embedded
  * quick-import offer, and services mirror Settings ▸ Artwork/Shiba. Pure glue — every value is
  * stored through the same repository/provider the corresponding settings screen uses, so
- * anything configured here shows up there and vice versa. Everything is optional.
+ * anything configured here shows up there and vice versa. Every page is optional except Artwork,
+ * which needs a ready folder before it can be passed.
  */
 @HiltViewModel
 class InitialSetupViewModel @Inject constructor(
@@ -237,7 +246,7 @@ class InitialSetupViewModel @Inject constructor(
             mediaRootRepository.roots(MediaRootKind.MUSIC),
             mediaRootRepository.roots(MediaRootKind.VIDEO),
             mediaRootRepository.roots(MediaRootKind.PHOTO),
-            artworkImportManager.folderTreeUri,
+            artworkImportManager.folderState,
         ) { rom, music, video, photo, artwork ->
             val persisted = SafGrants.persistedReadUris(context.contentResolver)
             RootLists(
@@ -245,7 +254,13 @@ class InitialSetupViewModel @Inject constructor(
                 music   = music.toRows(persisted),
                 video   = video.toRows(persisted),
                 photo   = photo.toRows(persisted),
-                artwork = artwork?.let(::rootDisplayName),
+                artwork = when (artwork) {
+                    is ArtworkFolderState.Ready -> artwork.name
+                    is ArtworkFolderState.Unavailable -> artwork.name
+                    ArtworkFolderState.Unknown, is ArtworkFolderState.NotLinked -> null
+                },
+                artworkReady = artwork is ArtworkFolderState.Ready,
+                artworkUnavailable = artwork is ArtworkFolderState.Unavailable,
                 vita    = null,
                 ps3     = null,
                 x360Mobile = null,
@@ -302,6 +317,8 @@ class InitialSetupViewModel @Inject constructor(
             videoRoots     = roots.video,
             photoRoots     = roots.photo,
             artworkFolderName = roots.artwork,
+            artworkReady      = roots.artworkReady,
+            artworkUnavailable = roots.artworkUnavailable,
             vitaFolderName    = roots.vita,
             ps3FolderName     = roots.ps3,
             x360MobileFolderName = roots.x360Mobile,
@@ -337,7 +354,13 @@ class InitialSetupViewModel @Inject constructor(
     /** The steps in play — the optional pages only when their app is installed. */
     private fun reachableSteps(): List<SetupStep> = scratch.value.steps
 
+    // The artwork folder is required: the Artwork page is passed only with a Ready folder. Read
+    // from the manager, not the collected UI state, so the gate holds with no collector attached.
+    private fun artworkGateClosed(): Boolean =
+        scratch.value.step == SetupStep.ARTWORK && artworkImportManager.folderState.value !is ArtworkFolderState.Ready
+
     fun nextStep() {
+        if (artworkGateClosed()) return
         val order = reachableSteps()
         val next = order.getOrNull(order.indexOf(scratch.value.step) + 1)
         scratch.update {
@@ -347,7 +370,8 @@ class InitialSetupViewModel @Inject constructor(
 
     /**
      * RB: on to the next page without changing anything on this one. Finish has nowhere to skip
-     * to — it shows no Skip prompt either.
+     * to — it shows no Skip prompt either — and Artwork cannot be skipped until its folder is Ready
+     * (a re-run with a healthy folder may skip it).
      */
     fun skipStep() {
         if (scratch.value.step != SetupStep.FINISH) nextStep()
@@ -447,15 +471,30 @@ class InitialSetupViewModel @Inject constructor(
 
     // ── Artwork (single folder) ────────────────────────────────────────────────
 
+    /**
+     * Where the artwork picker opens: on the stored folder when there is one (a relink or a change),
+     * otherwise at the device storage root.
+     */
+    fun artworkPickerStart(): Uri =
+        when (val state = artworkImportManager.folderState.value) {
+            is ArtworkFolderState.Ready -> ArtworkFolderPickerUris.forRelink(Uri.parse(state.treeUri))
+            is ArtworkFolderState.Unavailable -> ArtworkFolderPickerUris.forRelink(Uri.parse(state.treeUri))
+            ArtworkFolderState.Unknown, is ArtworkFolderState.NotLinked -> ArtworkFolderPickerUris.deviceRoot()
+        }
+
     /** Links [uri] as the artwork folder and offers a quick-import when import/ holds sources. */
     fun onArtworkFolderPicked(uri: Uri) {
         viewModelScope.launch {
-            val result = artworkImportManager.linkFolder(uri)
-            if (result == null) {
-                scratch.update {
-                    it.copy(message = "Could not set up an artwork library in that folder. Pick a writable folder.")
+            val result = when (val link = artworkImportManager.linkFolder(uri)) {
+                is ArtworkImportManager.LinkResult.Linked -> link
+                // The shell's "another artwork library" prompt takes over from here.
+                ArtworkImportManager.LinkResult.ForeignLibrary -> return@launch
+                ArtworkImportManager.LinkResult.Failed -> {
+                    scratch.update {
+                        it.copy(message = "Could not set up an artwork library in that folder. Pick a writable folder.")
+                    }
+                    return@launch
                 }
-                return@launch
             }
             // Zero-copy adoption of anything already in the folder (same pass Settings ▸ Artwork
             // Import runs on pick), then scan for importable sources.
@@ -479,16 +518,6 @@ class InitialSetupViewModel @Inject constructor(
                     }
                 },
             )
-        }
-    }
-
-    /** Releases the link (files are never touched) and clears the import offer. */
-    fun forgetArtworkFolder() {
-        viewModelScope.launch {
-            artworkImportManager.forgetFolder()
-            detectedArtworkSources = emptyList()
-            scratch.update { it.copy(artworkSources = emptyList()) }
-            announce("setup_artwork_link", "Artwork folder released — files on disk were not touched.")
         }
     }
 
@@ -675,8 +704,6 @@ class InitialSetupViewModel @Inject constructor(
         }
     }
 
-    fun dismissIgdbStatus() = scratch.update { it.copy(igdbStatus = null) }
-
     /** Same live check as Settings ▸ Artwork (shared via [ServiceConnectors]). */
     fun testSsCredentials(username: String, password: String) {
         viewModelScope.launch {
@@ -685,8 +712,6 @@ class InitialSetupViewModel @Inject constructor(
             scratch.update { it.copy(ssStatus = status) }
         }
     }
-
-    fun dismissSsStatus() = scratch.update { it.copy(ssStatus = null) }
 
     // ── Optional XMB auto-fit (Finish page) ──────────────────────────────────
 

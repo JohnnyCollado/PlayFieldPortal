@@ -99,6 +99,13 @@ class BackupKeyCoverageTest {
     }
 
     @Test
+    fun `artwork folder and library identity are backed up`() {
+        // The tree URI is inert without a live grant but pre-points the relink picker; the UUID is
+        // what lets a restored install recognise its own library (or a foreign one) on relink.
+        assertCovered("artwork_folder_tree_uri", "artwork_library_uuid")
+    }
+
+    @Test
     fun `discord presence and voice preferences are backed up`() {
         assertCovered(
             "discord_generic_activity",
@@ -184,8 +191,14 @@ class BackupKeyCoverageTest {
         // The device lock screen is system state, not a launcher setting: a restore cannot set it,
         // so carrying the path would make Settings claim a lock screen image that is not there.
         val deviceState = listOf("display_lockscreen_image", "display_lockscreen_source")
+        // Retired: a linked folder IS the storage mode now. A restore that re-carried the key would
+        // resurrect a setting nothing reads.
+        val retired = listOf("artwork_storage_mode")
+        // The "Not now" / "Later" artwork-folder prompt deferral is device/session state, cleared
+        // once the folder is ready again, so it must not follow a backup to another device.
+        val promptDeferral = listOf("artwork_folder_prompt_deferred")
 
-        (migrationMarkers + danglingStamp + sessionState + derivedCaches + deviceState).forEach { key ->
+        (migrationMarkers + danglingStamp + sessionState + derivedCaches + deviceState + retired + promptDeferral).forEach { key ->
             assertTrue(
                 "$key is carried by BackupManager — if that is now intended, move it out of this list",
                 key !in covered,

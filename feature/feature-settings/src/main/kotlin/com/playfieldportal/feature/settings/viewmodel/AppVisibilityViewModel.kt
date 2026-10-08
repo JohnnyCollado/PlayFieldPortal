@@ -36,9 +36,7 @@ data class HiddenItemGroup(
 data class AppVisibilityUiState(
     val loading: Boolean = true,
     val groups: List<HiddenItemGroup> = emptyList(),
-) {
-    val totalHidden: Int get() = groups.size
-}
+)
 
 @HiltViewModel
 class AppVisibilityViewModel @Inject constructor(

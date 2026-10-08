@@ -18,7 +18,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import com.playfieldportal.core.domain.model.NotificationKind
 import com.playfieldportal.core.domain.model.NotificationSeverity
-import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.core.ui.icons.CustomIconSurface
 import com.playfieldportal.core.ui.icons.LocalXmbIcons
 
@@ -71,9 +70,6 @@ internal fun NotificationKindIcon(kind: NotificationKind, tint: Color, size: Dp,
         Icon(imageVector = notificationGlyph(kind), contentDescription = null, tint = tint, modifier = modifier.size(size))
     }
 }
-
-/** A running task borrows the glyph of the history row it will become. */
-internal fun taskGlyph(kind: TaskKind): ImageVector = notificationGlyph(kind.notificationKind)
 
 /** The ring and tint that carry severity. Values from the plan's §5 table. */
 internal fun severityColor(severity: NotificationSeverity): Color = when (severity) {

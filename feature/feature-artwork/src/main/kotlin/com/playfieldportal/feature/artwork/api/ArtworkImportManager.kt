@@ -10,7 +10,7 @@ import com.playfieldportal.core.data.database.entity.ArtworkImportReportEntity
 import com.playfieldportal.core.data.database.entity.ArtworkOrphanFileEntity
 import com.playfieldportal.core.data.database.entity.ArtworkRecordEntity
 import com.playfieldportal.core.data.repository.ArtworkFolderRepository
-import com.playfieldportal.core.data.repository.ArtworkStorageMode
+import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.core.data.saf.SafChild
 import com.playfieldportal.feature.artwork.importer.ArtworkImportMatcher
 import com.playfieldportal.feature.artwork.importer.ArtworkImportPlanner
@@ -33,6 +33,7 @@ import com.playfieldportal.feature.artwork.store.ArtworkStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -66,6 +67,7 @@ class ArtworkImportManager @Inject constructor(
     private val internalStore: com.playfieldportal.feature.artwork.store.InternalArtworkStore,
     private val identityRecorder: ArtworkIdentityRecorder,
     private val orphanFileDao: ArtworkOrphanFileDao,
+    private val status: ArtworkFolderStatus,
 ) {
 
     // One relink at a time. A user can now start one from All Games while the automated trigger
@@ -73,40 +75,106 @@ class ArtworkImportManager @Inject constructor(
     // identity index, and the loser would write rows built from a half-stale snapshot.
     private val relinkMutex = Mutex()
 
-    data class LinkResult(
-        val manifest: ArtworkLibraryManifest,
-        // True when the picked folder already held a PFP library (re-link, not a fresh library).
-        val existingLibrary: Boolean,
-    )
+    sealed interface LinkResult {
+        /** The folder is now the artwork folder. [existingLibrary]: it already held a PFP library. */
+        data class Linked(val existingLibrary: Boolean) : LinkResult
+
+        /**
+         * The folder holds another install's library. Nothing was linked; the pick waits in
+         * [pendingForeignLibrary] for [adoptPendingLibrary] or [declinePendingLibrary].
+         */
+        data object ForeignLibrary : LinkResult
+
+        /** The folder could not be set up (unwritable, or nothing pending to adopt). */
+        data object Failed : LinkResult
+    }
 
     data class ReportRow(val entity: ArtworkImportReportEntity, val summary: ImportSummary?)
 
-    val folderTreeUri: Flow<String?> get() = folderRepository.treeUri
+    /** Where the required artwork folder stands; the single source for every settings surface. */
+    val folderState: StateFlow<ArtworkFolderState> get() = status.state
+
+    /** A picked folder that holds another install's library, awaiting adopt or decline. */
+    val pendingForeignLibrary: StateFlow<ForeignLibrary?> get() = status.pendingForeignLibrary
 
     val reports: Flow<List<ReportRow>> = reportDao.observeAll().map { rows ->
         rows.map { ReportRow(it, ImportSummary.parse(it.summaryJson)) }
     }
 
-    suspend fun hasLiveGrant(): Boolean = folderRepository.hasLiveGrant()
-
     /**
-     * Links [treeUri] as the artwork folder: persists the grant, reads or creates the library
-     * manifest (creating `games/` + `import/`), and records mode + UUID. Null when the tree is
-     * unwritable.
+     * Links [treeUri] as the artwork folder: persists the grant and reads or creates the library
+     * manifest. A folder whose manifest UUID differs from the stored one is not linked: it
+     * becomes [LinkResult.ForeignLibrary] and waits for [adoptPendingLibrary] /
+     * [declinePendingLibrary]. A successful link refreshes [folderState] (so paused writes resume)
+     * and starts moving any internal artwork into the folder.
      */
-    suspend fun linkFolder(treeUri: Uri): LinkResult? {
+    suspend fun linkFolder(treeUri: Uri): LinkResult {
         folderRepository.persist(treeUri)
         val existing = library.readManifest(treeUri)
+        val outcome = LibraryLinkDecision.decide(folderRepository.getLibraryUuid(), existing?.libraryUuid)
+        if (outcome == LibraryLinkDecision.Outcome.FOREIGN) {
+            status.setPendingForeignLibrary(
+                ForeignLibrary(
+                    pickedTree = treeUri.toString(),
+                    name = RomRootRepository.displayNameOfTree(treeUri.toString()),
+                    fileCount = library.countLibraryFiles(treeUri),
+                ),
+            )
+            return LinkResult.ForeignLibrary
+        }
         val manifest = existing ?: library.ensureLibrary(treeUri, appVersion()) ?: run {
             Timber.w("Could not initialize artwork library at $treeUri")
-            return null
+            return LinkResult.Failed
         }
+        completeLink(treeUri, manifest)
+        return LinkResult.Linked(existingLibrary = existing != null)
+    }
+
+    /**
+     * The user chose "Use this library": links the pending folder, relinks the games to its art
+     * and moves internal art in. [LinkResult.Failed] when nothing is pending or the folder no
+     * longer holds a manifest.
+     */
+    suspend fun adoptPendingLibrary(): LinkResult {
+        val pending = status.pendingForeignLibrary.value ?: return LinkResult.Failed
+        val treeUri = Uri.parse(pending.pickedTree)
+        val manifest = library.readManifest(treeUri)
+        if (manifest == null) {
+            status.setPendingForeignLibrary(null)
+            return LinkResult.Failed
+        }
+        completeLink(treeUri, manifest)
+        ArtworkRelinkWorker.enqueue(context)
+        return LinkResult.Linked(existingLibrary = true)
+    }
+
+    /**
+     * The user chose "Choose another folder": drops the pending pick and releases its grant, unless
+     * it is the folder already linked (that grant is still in use).
+     */
+    suspend fun declinePendingLibrary() {
+        val pending = status.pendingForeignLibrary.value ?: return
+        if (pending.pickedTree != folderRepository.getTreeUri()) {
+            runCatching {
+                context.contentResolver.releasePersistableUriPermission(
+                    Uri.parse(pending.pickedTree),
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                        android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+            }.onFailure { Timber.w(it, "Could not release declined artwork folder grant") }
+        }
+        status.setPendingForeignLibrary(null)
+    }
+
+    // Shared tail of every successful link: store it, resume writes, then move internal art in.
+    private suspend fun completeLink(treeUri: Uri, manifest: ArtworkLibraryManifest) {
         folderRepository.setTreeUri(treeUri.toString())
-        folderRepository.setStorageMode(ArtworkStorageMode.PORTABLE)
         folderRepository.setLibraryUuid(manifest.libraryUuid)
         library.clearDirCache()
         markLibraryFolders()
-        return LinkResult(manifest, existingLibrary = existing != null)
+        status.setPendingForeignLibrary(null)
+        status.refresh()
+        if (internalStore.footprint().first > 0) startInternalMigration()
     }
 
     /**
@@ -119,9 +187,6 @@ class ArtworkImportManager @Inject constructor(
         val marked = library.markArtworkFolders(tree)
         if (marked > 0) Timber.i("Artwork library: marked $marked folder(s) .nomedia")
     }
-
-    /** Releases the grant and clears the stored folder. Files on disk are never touched. */
-    suspend fun forgetFolder() = folderRepository.forget()
 
     suspend fun detectSources(): List<DetectedImportSource> {
         val tree = linkedTree() ?: return emptyList()
@@ -382,7 +447,9 @@ class ArtworkImportManager @Inject constructor(
         progress: RelinkProgress?,
     ): RelinkResult? {
         val tree = linkedTree() ?: return null
-        if (!folderRepository.hasLiveGrant()) return null
+        // A deleted folder can keep a listed grant; walking its empty tree would let the FullLibrary
+        // missing sweep drop every record.
+        if (status.refresh() !is ArtworkFolderState.Ready) return null
         // Icons must be out of covers/ BEFORE the walk: covers/ maps to BOX_ART now, so a
         // stale grid left behind would be linked as box art and the missing sweep would drop
         // its ICON record. Idempotent and cheap when there's nothing to move.

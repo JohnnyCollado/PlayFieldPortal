@@ -100,4 +100,51 @@ class DiscSetReconcilerTest {
         }
         assertFalse(newDisc.discSetKey.isNullOrBlank())
     }
+
+    // ── Stale companion rows ──────────────────────────────────────────────────────────────────
+    // A library scanned before companion suppression still holds a row for each .bin a .cue lists.
+    // The scan never reports those paths, so left alone the row is flagged missing and shows in
+    // Missing under the game's title. It is merged into its sheet instead: the sheet keeps the
+    // row's favorite, play time and links, and the companion row goes.
+
+    @Test
+    fun `a stored bin companion is merged into the cue that lists it and never rewritten`() = runTest {
+        val cuePath = "/roms/psx/Parasite Eve II (Disc 2)/Parasite Eve II (Disc 2).cue"
+        val bin = Game(
+            id = 7L, title = "Parasite Eve II", platformId = "psx",
+            romPath = "/roms/psx/Parasite Eve II (Disc 2)/Parasite Eve II (Disc 2).bin", isFavorite = true,
+        )
+        // Stored already correct as its set's disc, so the merge is the only change to count.
+        val cue = builder.assign(
+            listOf(Game(id = 8L, title = "Parasite Eve II", platformId = "psx", romPath = cuePath)),
+            m3uReader = { null },
+        ).single()
+        val reader = mockk<DiscSheetReader> {
+            every { read(any()) } answers {
+                if (firstArg<Game>().romPath == cuePath) listOf("FILE \"Parasite Eve II (Disc 2).bin\" BINARY") else null
+            }
+        }
+        val reconciler = DiscSetReconciler(builder, m3uReader, regionReader, reader, gameRepository)
+        coEvery { gameRepository.getByPlatform("psx") } returns listOf(bin, cue)
+        // After the merge the stored cue carries the bin's favorite.
+        coEvery { gameRepository.getById(8L) } returns cue.copy(isFavorite = true)
+
+        val corrected = reconciler.reconcilePlatform("psx", existingRows = listOf(bin, cue), newRows = emptyList())
+
+        coVerify(exactly = 1) { gameRepository.mergeInto(survivorId = 8L, loserId = 7L) }
+        coVerify(exactly = 0) { gameRepository.upsert(match { it.id == 7L }) }
+        // Any rewrite of the cue must carry the merged favorite, never the stale copy.
+        coVerify(exactly = 0) { gameRepository.upsert(match { it.id == 8L && !it.isFavorite }) }
+        assertEquals(1, corrected)
+    }
+
+    @Test
+    fun `a sheet-less bin is a game of its own and is never merged`() = runTest {
+        val bin = Game(id = 3L, title = "Sonic", platformId = "psx", romPath = "/roms/psx/Sonic.bin")
+        coEvery { gameRepository.getByPlatform("psx") } returns listOf(bin)
+
+        reconciler.reconcilePlatform("psx", existingRows = listOf(bin), newRows = emptyList())
+
+        coVerify(exactly = 0) { gameRepository.mergeInto(any(), any()) }
+    }
 }

@@ -33,18 +33,9 @@ class NavigationContext(
     var editHandler: EditModeHandler? = null
         private set
 
-    var isReady: Boolean
-        get() = ready
-        private set(value) { ready = value }
-
     fun markReady() {
         ready = true
     }
-
-    /** Current ordered node list (registration order — geometry sorting happens at query time). */
-    fun nodesInRegistrationOrder(): List<NavigationNode> = nodes
-
-    fun geometryFor(key: String): Float? = geometry[key]
 
     /** Full key → Y geometry map currently known (used by the engine's touch re-anchor). */
     fun allGeometry(): Map<String, Float> = geometry
@@ -55,8 +46,6 @@ class NavigationContext(
     }
 
     fun hasGeometry(): Boolean = geometry.isNotEmpty()
-
-    fun focusedNode(): NavigationNode? = focusedKey?.let { findNode(it) }
 
     fun editHandlerFor(key: String): EditModeHandler? {
         if (editHandler != null) return null
@@ -265,9 +254,5 @@ class NavigationContext(
         }
         if (!node.focusable || !node.selectable || !node.enabled) return false
         return node.onSelect?.invoke() != null
-    }
-
-    internal fun setFocusedKeyForTest(key: String?) {
-        focusedKey = key
     }
 }

@@ -25,7 +25,7 @@ data class IconColumnRun(
  * and their physical media.
  *
  * Not listed: the status strip, Shiba Coin medallions, media controls, Game Detail, notifications
- * and menus (they follow the theme's colours) and [HIDDEN_KEYS]. Those slots stay in
+ * and menus (they follow the theme's colours). Those slots stay in
  * [CustomizableIcons], so a theme that carries them still applies them.
  */
 object IconEditorLayout {
@@ -35,12 +35,6 @@ object IconEditorLayout {
         "catbar_settings", "catbar_photos", "catbar_music", "catbar_video", "catbar_games",
         "catbar_network", "catbar_appstore", "catbar_social", "catbar_achievements",
     )
-
-    /**
-     * The Favorites category icon: the XMB seeds no Favorites category, and the Game column's
-     * Favorites card is `sysicon_favorites`, which the Game run lists instead.
-     */
-    val HIDDEN_KEYS: Set<String> = setOf("catbar_favorites")
 
     private class Run(val label: String, val columnKeys: List<String>, val keys: List<String>)
 
@@ -77,7 +71,7 @@ object IconEditorLayout {
 
     private fun slot(key: String): IconSlot = requireNotNull(CustomizableIcons.byKey(key)) { "unregistered slot $key" }
 
-    /** Crossbar slots in [barOrder] (crossbar slot keys; unknown and hidden keys are skipped), then the rest in default order. */
+    /** Crossbar slots in [barOrder] (crossbar slot keys; unknown keys are skipped), then the rest in default order. */
     fun crossbar(barOrder: List<String> = DEFAULT_BAR_ORDER): List<IconSlot> {
         val live = barOrder.filter { it in DEFAULT_BAR_ORDER }.distinct()
         return (live + DEFAULT_BAR_ORDER.filter { it !in live }).map(::slot)

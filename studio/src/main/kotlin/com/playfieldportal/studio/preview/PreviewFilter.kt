@@ -47,9 +47,7 @@ enum class GameSort(val label: String) {
     DATE_ADDED("Date Added"),
 }
 
-data class GamesFilter(val term: String = "", val sort: GameSort = GameSort.TITLE) {
-    val hasTerm: Boolean get() = term.isNotBlank()
-}
+data class GamesFilter(val term: String = "", val sort: GameSort = GameSort.TITLE)
 
 object PreviewFilter {
 

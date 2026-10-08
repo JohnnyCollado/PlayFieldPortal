@@ -6,6 +6,7 @@ import com.playfieldportal.core.data.database.seeder.DatabaseInitializer
 import com.playfieldportal.core.data.database.seeder.StartupDataPrep
 import com.playfieldportal.feature.appbar.InstalledAppReconciler
 import com.playfieldportal.feature.appbar.InstalledPackageMonitor
+import com.playfieldportal.feature.artwork.api.ArtworkFolderStatus
 import com.playfieldportal.feature.artwork.api.ArtworkImageCache
 import com.playfieldportal.feature.artwork.api.ArtworkImportManager
 import com.playfieldportal.feature.launcher.kb.EmulatorKbUpdater
@@ -35,6 +36,7 @@ class PFPApplication : Application(), Configuration.Provider {
     @Inject lateinit var installedPackageMonitor: InstalledPackageMonitor
     @Inject lateinit var installedAppReconciler: InstalledAppReconciler
     @Inject lateinit var artworkImportManager: ArtworkImportManager
+    @Inject lateinit var artworkFolderStatus: ArtworkFolderStatus
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -61,6 +63,7 @@ class PFPApplication : Application(), Configuration.Provider {
     // write has passed through since the marker was introduced.
     private fun initArtworkLibrary() {
         appScope.launch {
+            artworkFolderStatus.refresh()
             runCatching { artworkImportManager.markLibraryFolders() }
                 .onFailure { Timber.w(it, "Marking artwork folders .nomedia failed") }
         }

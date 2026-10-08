@@ -8,8 +8,9 @@ import kotlin.test.assertTrue
 /**
  * Selective sync, Task 3/5: PFP remembers which game it handed off, and reports a RETURN only for a
  * confirmed hand-off — the game's activity covered the launcher (onStop) and PFP came back
- * (onResume). Every other resume (cold start, a rejected launch, an unrelated activity, a second
- * rapid resume) reports nothing, so a local achievement check never runs without a real session.
+ * (onResume). Every other resume (cold start, a launch that never took the foreground, an
+ * unrelated activity, a second rapid resume) reports nothing, so a local achievement check never
+ * runs without a real session.
  * Both the LaunchDispatcher path and the direct Windows-shortcut path feed [GameHandoffTracker].
  */
 class GameHandoffTrackerTest {
@@ -71,16 +72,6 @@ class GameHandoffTrackerTest {
         tracker.onDispatched(game)
         now = GameHandoffTracker.HANDOFF_WINDOW_MS + 1
         tracker.onHostStopped()                 // e.g. the user opened Android settings later
-        tracker.onHostResumed()
-
-        assertTrue(returned.isEmpty())
-    }
-
-    @Test
-    fun `a rejected dispatch is forgotten`() {
-        tracker.onDispatched(game)
-        tracker.onDispatchRejected()
-        tracker.onHostStopped()
         tracker.onHostResumed()
 
         assertTrue(returned.isEmpty())

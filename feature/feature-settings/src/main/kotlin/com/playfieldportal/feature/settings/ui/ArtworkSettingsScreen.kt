@@ -13,7 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -115,10 +114,11 @@ fun ArtworkSettingsScreen(
             SettingsGroup("Artwork Library")
 
             SettingsRow(
-                label    = if (state.artworkFolderGrantDead) "Artwork Folder & Import  ⚠" else "Artwork Folder & Import",
-                sublabel = if (state.artworkFolderGrantDead)
-                    "Access to your artwork folder was lost — open to re-link it"
+                label    = "Artwork Folder & Import",
+                sublabel = if (state.artworkFolderUnavailable)
+                    "Unavailable. Relink to resume new artwork"
                 else "Choose where artwork is stored and import existing artwork from ES-DE",
+                labelTrailing = if (state.artworkFolderUnavailable) ({ KnowledgeBadge("Unavailable", WarningAmber) }) else null,
                 onClick  = { showImport = true },
             )
 
@@ -511,15 +511,6 @@ fun ArtworkSettingsScreen(
 
 private fun formatSnapDelay(seconds: Float): String =
     if (seconds % 1f == 0f) "${seconds.toInt()}s" else "${seconds}s"
-
-@Composable
-private fun credentialFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor   = SettingsAccent,
-    unfocusedBorderColor = SettingsDivider,
-    focusedTextColor     = SettingsText,
-    unfocusedTextColor   = SettingsText,
-    cursorColor          = SettingsAccent,
-)
 
 /** The menu label for a stored ScreenScraper region code. */
 private fun regionLabel(region: String?): String =

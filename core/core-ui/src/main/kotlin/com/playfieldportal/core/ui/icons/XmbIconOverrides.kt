@@ -59,7 +59,6 @@ private val CATBAR_SLOT_KEYS: Map<String, String> = mapOf(
     "ic_network" to "catbar_network",
     "ic_appstore" to "catbar_appstore",
     "ic_social" to "catbar_social",
-    "ic_favorites" to "catbar_favorites",
     "ic_achievements" to "catbar_achievements",
 )
 

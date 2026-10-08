@@ -27,6 +27,7 @@ import kotlinx.serialization.json.jsonObject
  * ├── icons/<key>.<png|gif>                (v2 as png-only; v3 widens to gif; v4: 82 keys)
  * ├── sysicons/<platformId>.<png|gif>      (v3; console art; v4: 47 ids)
  * ├── mediaicons/<platformId>.<png|gif>    (v4; physical-media art; 42 ids)
+ * ├── ptficons/<group>_<index>.png         (v5; extra PTF body images, at most 64)
  * ├── motion.<mp4|webm|gif>                (v3; motion wallpaper)
  * ├── sounds/<sound_key>.<mp3|wav|ogg|m4a> (v4; five menu sounds, streamed)
  * ├── ambience.<mp3|wav|ogg|m4a>           (v4; streamed)
@@ -84,6 +85,31 @@ object PfpThemeCodec {
         return (key to ext).takeIf { ext in ICON_EXTENSIONS && folder.holds(key) }
     }
 
+    /**
+     * The slot key and extension an older bundle's retired `icons/` entry now fills ([IconSlots.RETIRED]),
+     * or null when [name] is not one.
+     */
+    private fun retiredIconEntry(name: String): Pair<String, String>? {
+        val file = name.takeIf { it.startsWith(IconFolder.ICONS.prefix) }?.removePrefix(IconFolder.ICONS.prefix) ?: return null
+        val ext = file.substringAfterLast('.', "").lowercase()
+        val key = IconSlots.RETIRED[file.substringBeforeLast('.')] ?: return null
+        return (key to ext).takeIf { ext in ICON_EXTENSIONS }
+    }
+
+    /**
+     * The record a `ptficons/<group>_<index>.png` entry holds, or null when [name] is not exactly
+     * the canonical name of a body record ([PtfIcons.isBody]) with an index in 0..255.
+     */
+    private fun ptfIconEntry(name: String): PtfIcons.SlotRef? {
+        val stem = name.takeIf { it.startsWith(PTF_ICONS_PREFIX) && it.endsWith(PTF_ICON_EXTENSION) }
+            ?.removePrefix(PTF_ICONS_PREFIX)?.removeSuffix(PTF_ICON_EXTENSION) ?: return null
+        return PtfIcons.refForStem(stem)
+    }
+
+    /** [ref]'s entry name; the inverse of [ptfIconEntry]. */
+    private fun ptfIconName(ref: PtfIcons.SlotRef): String =
+        "$PTF_ICONS_PREFIX${PtfIcons.fileStem(ref)}$PTF_ICON_EXTENSION"
+
     /** [key]'s entry name for [image], or null when the key or the extension is not accepted. */
     private fun iconEntryName(key: String, image: ThemeImage): String? {
         val folder = IconFolder.of(key) ?: return null
@@ -106,6 +132,15 @@ object PfpThemeCodec {
     // Icons are small glyphs (256px templates); a tighter cap than the shared per-entry one, since
     // a bundle may carry dozens of them. 8 MB matches CustomIconLimits.MAX_BYTES app-side.
     const val MAX_ICON_BYTES = 8 * 1024 * 1024
+
+    /**
+     * Most `ptficons/` entries a bundle carries. A bundle with every other family full (4 fixed
+     * entries, 170 icons, motion, 8 media) is 183, so 64 extras keep it at 247 of the 256 allowed.
+     */
+    const val MAX_PTF_ICONS = 64
+
+    private const val PTF_ICONS_PREFIX = "ptficons/"
+    private const val PTF_ICON_EXTENSION = ".png"
 
     // Lenient on unknown keys so newer bundles (higher schemaVersion additions) still open.
     private val json = Json {
@@ -132,6 +167,17 @@ object PfpThemeCodec {
                     .sortedBy { it.first }
                     .forEach { (name, image) -> zip.writeEntry(name, image.bytes) }
             }
+            // The extra PTF bodies: png only, body records only, the lowest MAX_PTF_ICONS by
+            // (group, index), written in entry-name order.
+            bundle.ptfIcons.entries
+                .filter { (ref, image) ->
+                    image.extension.equals("png", ignoreCase = true) && ptfIconEntry(ptfIconName(ref)) == ref
+                }
+                .sortedWith(compareBy({ it.key.group }, { it.key.index }))
+                .take(MAX_PTF_ICONS)
+                .map { (ref, image) -> ptfIconName(ref) to image.bytes }
+                .sortedBy { it.first }
+                .forEach { (name, bytes) -> zip.writeEntry(name, bytes) }
             // Streamed, never held: copyTo pulls from the motion's own source (a file on disk,
             // usually) straight into the zip.
             bundle.motion?.let { motion ->
@@ -248,6 +294,8 @@ object PfpThemeCodec {
         var preview: ByteArray? = null
         var lockScreen: ByteArray? = null
         val icons = mutableMapOf<String, ThemeImage>()
+        val retiredIcons = mutableMapOf<String, ThemeImage>()
+        val ptfIcons = mutableMapOf<PtfIcons.SlotRef, ThemeImage>()
         var motionExtension: String? = null
         val media = mutableMapOf<String, ThemeMotion>()
         val seenMedia = mutableSetOf<String>()
@@ -275,6 +323,25 @@ object PfpThemeCodec {
                         val (key, ext) = iconEntry(entry.name)!!
                         val bytes = entry.readBytes()
                         if (bytes.size <= MAX_ICON_BYTES) icons[key] = ThemeImage(bytes, ext)
+                        else dropped += DroppedEntry(entry.name, DropReason.OVER_CAP)
+                    }
+                    ptfIconEntry(entry.name) != null -> {
+                        val ref = ptfIconEntry(entry.name)!!
+                        if (ref !in ptfIcons && ptfIcons.size >= MAX_PTF_ICONS) {
+                            entry.copyTo(OutputStream.nullOutputStream())
+                            dropped += DroppedEntry(entry.name, DropReason.OVER_CAP)
+                        } else {
+                            val bytes = entry.readBytes()
+                            if (bytes.size <= MAX_ICON_BYTES) ptfIcons[ref] = ThemeImage(bytes, "png")
+                            else dropped += DroppedEntry(entry.name, DropReason.OVER_CAP)
+                        }
+                    }
+                    retiredIconEntry(entry.name) != null -> {
+                        // Held aside and merged after the loop: the bundle's own art for the new
+                        // slot wins, whichever entry comes first.
+                        val (key, ext) = retiredIconEntry(entry.name)!!
+                        val bytes = entry.readBytes()
+                        if (bytes.size <= MAX_ICON_BYTES) retiredIcons[key] = ThemeImage(bytes, ext)
                         else dropped += DroppedEntry(entry.name, DropReason.OVER_CAP)
                     }
                     entry.name.startsWith(MOTION_PREFIX) && isRegisteredName(entry.name) -> {
@@ -336,6 +403,8 @@ object PfpThemeCodec {
             return null
         }
 
+        retiredIcons.forEach { (key, image) -> icons.putIfAbsent(key, image) }
+
         val m = manifest ?: return null
         if (m.manifest != PfpThemeManifest.MANIFEST_TYPE) return null
         val sanitized = m.sanitized()
@@ -350,6 +419,7 @@ object PfpThemeCodec {
             unrecoverableEntries = unrecoverable,
             media = media,
             lockScreen = lockScreen,
+            ptfIcons = ptfIcons,
         )
         return ReadResult(bundle, ReadDiagnostics(dropped, sanitizeRepairs(m, sanitized), undecodable))
     }
@@ -427,7 +497,7 @@ object PfpThemeCodec {
      */
     private fun isRegisteredName(name: String): Boolean = when {
         name == ENTRY_MANIFEST || name == ENTRY_WALLPAPER || name == ENTRY_PREVIEW || name == ENTRY_LOCKSCREEN -> true
-        iconEntry(name) != null -> true
+        iconEntry(name) != null || retiredIconEntry(name) != null || ptfIconEntry(name) != null -> true
         name.startsWith(MOTION_PREFIX) -> name.removePrefix(MOTION_PREFIX).lowercase() in MOTION_EXTENSIONS
         // Any name a media slot claims, even with an extension it would refuse: the reader drops
         // those, so a passthrough entry must not smuggle one back in.
@@ -495,7 +565,7 @@ object PfpThemeCodec {
                 val name = entry.name
                 if (entry.isDirectory || !PassthroughNames.isSafe(name)) continue
                 if (name == ENTRY_LOCKSCREEN) lockScreen = true
-                iconEntry(name)?.let { (key, _) -> icons += key }
+                (iconEntry(name) ?: retiredIconEntry(name))?.let { (key, _) -> icons += key }
                 ThemeMediaSlots.claimedBy(name)
                     ?.takeIf { it.accepts(name.substringAfterLast('.', "")) }
                     ?.let { media += it.key }

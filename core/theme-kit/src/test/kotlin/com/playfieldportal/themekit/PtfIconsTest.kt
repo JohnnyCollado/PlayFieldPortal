@@ -31,12 +31,13 @@ class PtfIconsTest {
     @Test
     fun `direct map covers exactly the agreed slots, all valid keys`() {
         val keys = PtfIcons.DIRECT.values.flatten()
-        keys.forEach { assertTrue(IconSlots.isValidKey(it), "$it must be a registered icon slot") }
+        keys.forEach { assertTrue(CustomizableIcons.isValidKey(it), "$it must be a registered icon slot") }
         assertEquals(
             setOf(
                 "catbar_settings", "catbar_photos", "catbar_music", "catbar_video", "catbar_games",
-                "catbar_network", "item_memcard_games", "item_memcard_music", "item_memcard_video",
-                "item_memcard_photos", "item_umd", "item_camera", "item_settings",
+                "sysicon_default", "catbar_network", "item_memcard_games", "item_memcard_music",
+                "item_memcard_video", "item_memcard_photos", "sysicon_allgames", "item_shiba_track",
+                "item_umd", "item_camera", "item_settings",
             ),
             keys.toSet(),
         )
@@ -56,12 +57,18 @@ class PtfIconsTest {
     }
 
     @Test
-    fun `memory stick fans out to all four memory-card keys sharing one image`() {
+    fun `memory stick fans out to every slot drawing the memory-card art, sharing one image`() {
         val icons = extract(fullTheme())
         val source = assertNotNull(icons["item_memcard_games"])
-        listOf("item_memcard_music", "item_memcard_video", "item_memcard_photos")
-            .forEach { assertSame(source, icons[it]) }
+        SharedIconArt.MEMORY_CARD.forEach { assertSame(source, icons[it], it) }
+        assertSame(source, icons["sysicon_allgames"], "All Games draws the memory-card art")
         assertEquals(10, PtfIcons.tintSources(icons).size, "fan-out must not add weight to the tint")
+    }
+
+    @Test
+    fun `the game category fans out to the generic console art it shares`() {
+        val icons = extract(fullTheme())
+        SharedIconArt.GAMES.forEach { assertSame(icons["catbar_games"], icons[it], it) }
     }
 
     @Test
@@ -85,13 +92,16 @@ class PtfIconsTest {
     }
 
     @Test
-    fun `a categories-only theme yields just the six category keys`() {
+    fun `a categories-only theme yields just the six category keys and what they share`() {
         val ptf = TestFixtures.buildPtfGroups(
             "Cats", "3.70",
             mapOf(2 to (1..7).map { gimRecord(it, solid(48, 48, red)) }),
         )
         assertEquals(
-            setOf("catbar_settings", "catbar_photos", "catbar_music", "catbar_video", "catbar_games", "catbar_network"),
+            setOf(
+                "catbar_settings", "catbar_photos", "catbar_music", "catbar_video", "catbar_games",
+                "sysicon_default", "catbar_network",
+            ),
             extract(ptf).keys,
         )
     }
@@ -117,5 +127,112 @@ class PtfIconsTest {
     fun `wallpaper-only themes yield no icons`() {
         val bmp = TestFixtures.buildBmp(8, 4) { _, _ -> red }
         assertTrue(extract(TestFixtures.buildPtf("Wp", "5.00", bmp)).isEmpty())
+    }
+
+    private fun extras(ptf: ByteArray) = PtfIcons.extractExtras(assertNotNull(PtfUnpacker.unpack(ptf)))
+
+    @Test
+    fun `extras hold every non-direct category and the even non-direct item records`() {
+        val got = extras(fullTheme()).keys
+        assertEquals(
+            setOf(
+                PtfIcons.SlotRef(2, 0), PtfIcons.SlotRef(2, 5),
+                PtfIcons.SlotRef(3, 0), PtfIcons.SlotRef(3, 8),
+                PtfIcons.SlotRef(4, 0),
+            ),
+            got,
+        )
+    }
+
+    @Test
+    fun `extras never include an odd 3 or 4 record or a direct ref`() {
+        val got = extras(fullTheme()).keys
+        assertTrue(got.none { it.group != 2 && it.index % 2 == 1 })
+        assertTrue(got.none { it in PtfIcons.DIRECT.keys })
+        // Group 2 odd indices are real categories, so a non-direct odd one would be kept.
+        val cats = TestFixtures.buildPtfGroups("Odd", "5.00", mapOf(2 to listOf(gimRecord(9, solid(48, 48, red)))))
+        assertEquals(setOf(PtfIcons.SlotRef(2, 9)), extras(cats).keys)
+    }
+
+    @Test
+    fun `extras are padded square`() {
+        val tv = assertNotNull(extras(fullTheme())[PtfIcons.SlotRef(2, 5)])
+        assertEquals(64, tv.width); assertEquals(64, tv.height)
+        assertEquals(clear, tv[32, 7]); assertEquals(red, tv[32, 8])
+    }
+
+    @Test
+    fun `an undecodable extra is skipped and the rest remain`() {
+        val ptf = TestFixtures.buildPtfGroups(
+            "Broken", "5.00",
+            mapOf(2 to listOf(
+                TestFixtures.opaqueRecord(5, ByteArray(64) { 7 }),
+                gimRecord(8, solid(48, 48, red)),
+            )),
+        )
+        assertEquals(setOf(PtfIcons.SlotRef(2, 8)), extras(ptf).keys)
+    }
+
+    @Test
+    fun `groups outside 2 to 4 are never extras`() {
+        val ptf = TestFixtures.buildPtfGroups(
+            "Other", "5.00",
+            mapOf(
+                0 to listOf(gimRecord(0, solid(48, 48, red))),
+                5 to listOf(gimRecord(0, solid(48, 48, red))),
+                2 to listOf(gimRecord(0, solid(48, 48, red))),
+            ),
+        )
+        assertEquals(setOf(PtfIcons.SlotRef(2, 0)), extras(ptf).keys)
+    }
+
+    @Test
+    fun `more than 64 bodies keep exactly the lowest 64 refs`() {
+        val ptf = TestFixtures.buildPtfGroups(
+            "Big", "5.00",
+            mapOf(
+                2 to (0..39).map { gimRecord(it, solid(16, 16, red)) },
+                3 to (0..99 step 2).map { gimRecord(it, solid(16, 16, red)) },
+            ),
+        )
+        val got = extras(ptf).keys
+        assertEquals(PtfIcons.MAX_EXTRAS, got.size)
+        val all = (0..39).map { PtfIcons.SlotRef(2, it) } + (0..99 step 2).map { PtfIcons.SlotRef(3, it) }
+        val want = all.filter { it !in PtfIcons.DIRECT.keys }.sortedWith(compareBy({ it.group }, { it.index })).take(64)
+        assertEquals(want.toSet(), got)
+        assertEquals(want, extras(ptf).keys.toList(), "iteration order is (group, index)")
+    }
+
+    @Test
+    fun `isBody follows the group rules`() {
+        assertTrue(PtfIcons.isBody(PtfIcons.SlotRef(2, 0)))
+        assertTrue(PtfIcons.isBody(PtfIcons.SlotRef(2, 7)))
+        assertTrue(PtfIcons.isBody(PtfIcons.SlotRef(3, 8)))
+        assertTrue(!PtfIcons.isBody(PtfIcons.SlotRef(3, 9)))
+        assertTrue(PtfIcons.isBody(PtfIcons.SlotRef(4, 0)))
+        assertTrue(!PtfIcons.isBody(PtfIcons.SlotRef(4, 1)))
+        assertTrue(!PtfIcons.isBody(PtfIcons.SlotRef(1, 0)))
+        assertTrue(!PtfIcons.isBody(PtfIcons.SlotRef(5, 0)))
+    }
+
+    @Test
+    fun `labels name the documented PSP records only`() {
+        assertEquals("TV", PtfIcons.labelFor(PtfIcons.SlotRef(2, 5)))
+        assertEquals("Extras", PtfIcons.labelFor(PtfIcons.SlotRef(2, 8)))
+        assertEquals("Internet search", PtfIcons.labelFor(PtfIcons.SlotRef(3, 50)))
+        assertEquals("Default category", PtfIcons.labelFor(PtfIcons.SlotRef(2, 0)))
+        assertEquals("Default sub-item", PtfIcons.labelFor(PtfIcons.SlotRef(4, 0)))
+        assertEquals(null, PtfIcons.labelFor(PtfIcons.SlotRef(3, 30)))
+    }
+
+    @Test
+    fun `a stem round-trips only for canonical body refs`() {
+        val ref = PtfIcons.SlotRef(3, 44)
+        assertEquals("3_44", PtfIcons.fileStem(ref))
+        assertEquals(ref, PtfIcons.refForStem("3_44"))
+        assertEquals(PtfIcons.SlotRef(2, 7), PtfIcons.refForStem("2_7"))
+        for (bad in listOf("3_9", "x", "3-44", "3_044", "03_44", "2_256", "2_-1", "1_0", "5_0", "3_", "_3", "")) {
+            assertEquals(null, PtfIcons.refForStem(bad), "'$bad' is not a body stem")
+        }
     }
 }

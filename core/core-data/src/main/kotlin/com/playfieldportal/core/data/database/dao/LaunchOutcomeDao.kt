@@ -25,11 +25,4 @@ interface LaunchOutcomeDao {
             "ORDER BY launched_at_ms DESC LIMIT :limit"
     )
     suspend fun recentForPlatform(platformId: String, limit: Int): List<LaunchOutcomeEntity>
-
-    /** Most recent failed outcomes for one game, newest first — "failed N of the last M times". */
-    @Query(
-        "SELECT * FROM launch_outcomes WHERE game_id = :gameId AND outcome != 'SUCCEEDED' " +
-            "ORDER BY launched_at_ms DESC LIMIT :limit"
-    )
-    suspend fun recentFailuresForGame(gameId: Long, limit: Int): List<LaunchOutcomeEntity>
 }

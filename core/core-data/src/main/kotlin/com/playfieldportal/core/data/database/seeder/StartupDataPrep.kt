@@ -46,6 +46,8 @@ class StartupDataPrep @Inject constructor(
             if (!alreadyPrepped) {
                 normalizeGameArtwork()
                 normalizeWallpaper()
+                // Retired key: a linked artwork folder is the storage mode now.
+                context.pfpDataStore.edit { it.remove(KEY_RETIRED_ARTWORK_STORAGE_MODE) }
             }
             // Deliberately OUTSIDE the version gate. The wallpaper luminance survey is a derived
             // cache, not a one-shot migration: a backup restore re-homes the wallpaper path
@@ -133,6 +135,7 @@ class StartupDataPrep @Inject constructor(
     private companion object {
         val KEY_DATA_PREP_VERSION = intPreferencesKey("data_prep_version")
         val KEY_CUSTOM_WALLPAPER  = ThemePrefKeys.CUSTOM_WALLPAPER
+        val KEY_RETIRED_ARTWORK_STORAGE_MODE = stringPreferencesKey("artwork_storage_mode")
         const val FILES_MARKER = "/files/"
     }
 }

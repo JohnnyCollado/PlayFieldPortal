@@ -7,7 +7,10 @@ import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.entity.ArtworkRecordEntity
 import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.core.data.repository.ArtworkFolderRepository
+import com.playfieldportal.feature.artwork.api.ArtworkFolderState
+import com.playfieldportal.feature.artwork.api.ArtworkFolderStatus
 import com.playfieldportal.feature.artwork.api.ArtworkImageCache
+import com.playfieldportal.feature.artwork.api.FolderNeedTrigger
 import com.playfieldportal.feature.artwork.portable.ArtworkIdentityIndex
 import com.playfieldportal.feature.artwork.portable.ArtworkIdentityRecorder
 import com.playfieldportal.feature.artwork.portable.ArtworkPathResolver
@@ -22,9 +25,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * The app-wide [ArtworkStore]: routes every save into the user's portable media library when a
- * folder is linked, and falls back to [InternalArtworkStore] otherwise — callers (scraper,
- * detail-screen pickers) are unchanged either way.
+ * The app-wide [ArtworkStore]: writes every save into the user's portable media library. The folder
+ * is required, so there is no internal fallback: while [ArtworkFolderStatus] is not `Ready` a write
+ * returns null, stores nothing, and reports through [ArtworkFolderStatus.reportBlocked] ("paused" is
+ * told from "failed" by reading the status). [InternalArtworkStore] stays only as the read and
+ * migration source for art stored before the folder was required.
  *
  * Conflict policy (spec §22) is enforced here for the portable side:
  *  • auto-scrapes ([saveFromUrl]) never overwrite an existing valid library asset — existing
@@ -48,10 +53,11 @@ class RoutingArtworkStore @Inject constructor(
     private val httpClient: HttpClient,
     private val imageCache: ArtworkImageCache,
     private val identityRecorder: ArtworkIdentityRecorder,
+    private val folderStatus: ArtworkFolderStatus,
 ) : ArtworkStore {
 
     override suspend fun saveFromUrl(gameId: Long, kind: ArtworkKind, url: String, sortOrder: Int): String? {
-        val target = portableTarget(gameId) ?: return internal.saveFromUrl(gameId, kind, url, sortOrder)
+        val target = portableTarget(gameId, FolderNeedTrigger.SCRAPE) ?: return null
         val (tree, game) = target
 
         // Existing portable artwork outranks a new auto-scrape (§22) — including locked and
@@ -64,18 +70,21 @@ class RoutingArtworkStore @Inject constructor(
         val tmp = ArtworkTempIO.downloadToTemp(httpClient, context.cacheDir, kind, url) ?: return null
         return persistPortable(
             tree, game, kind, tmp, source = SOURCE_SCRAPE, userAssigned = false, sortOrder = sortOrder,
+            trigger = FolderNeedTrigger.SCRAPE,
         )
     }
 
     override suspend fun saveVersionedFromUrl(gameId: Long, kind: ArtworkKind, url: String): String? {
-        val target = portableTarget(gameId) ?: return internal.saveVersionedFromUrl(gameId, kind, url)
+        val target = portableTarget(gameId, FolderNeedTrigger.PICK) ?: return null
         val (tree, game) = target
         val tmp = ArtworkTempIO.downloadToTemp(httpClient, context.cacheDir, kind, url) ?: return null
-        return persistPortable(tree, game, kind, tmp, source = SOURCE_USER, userAssigned = true)
+        return persistPortable(
+            tree, game, kind, tmp, source = SOURCE_USER, userAssigned = true, trigger = FolderNeedTrigger.PICK,
+        )
     }
 
     override suspend fun saveVersionedFromUri(gameId: Long, kind: ArtworkKind, uri: Uri): String? {
-        val target = portableTarget(gameId) ?: return internal.saveVersionedFromUri(gameId, kind, uri)
+        val target = portableTarget(gameId, FolderNeedTrigger.PICK) ?: return null
         val (tree, game) = target
         val tmp = withContext(Dispatchers.IO) {
             runCatching {
@@ -84,7 +93,9 @@ class RoutingArtworkStore @Inject constructor(
                 }
             }.onFailure { Timber.e(it, "Failed to read picked artwork $uri") }.getOrNull()
         } ?: return null
-        return persistPortable(tree, game, kind, tmp, source = SOURCE_USER, userAssigned = true)
+        return persistPortable(
+            tree, game, kind, tmp, source = SOURCE_USER, userAssigned = true, trigger = FolderNeedTrigger.PICK,
+        )
     }
 
     override suspend fun saveFromFile(
@@ -93,10 +104,11 @@ class RoutingArtworkStore @Inject constructor(
         tempFile: java.io.File,
         sortOrder: Int,
     ): String? {
-        val target = portableTarget(gameId) ?: return internal.saveFromFile(gameId, kind, tempFile, sortOrder)
+        val target = portableTarget(gameId, FolderNeedTrigger.SCRAPE) ?: run { tempFile.delete(); return null }
         val (tree, game) = target
         return persistPortable(
             tree, game, kind, tempFile, source = SOURCE_SCRAPE, userAssigned = false, sortOrder = sortOrder,
+            trigger = FolderNeedTrigger.SCRAPE,
         )
     }
 
@@ -128,7 +140,8 @@ class RoutingArtworkStore @Inject constructor(
     /**
      * Portable write for the internal-migration worker (M-F2): same naming/record/Coil-bust
      * discipline as a scrape, with caller-supplied provenance. Consumes [tempFile] either way.
-     * Null when no folder is linked or the grant is dead.
+     * Null when no folder is ready. Never reports [folderStatus]: the migration worker has its own
+     * outcome and the shell must not prompt for a move that is already waiting on the folder.
      */
     suspend fun saveTempPortable(
         gameId: Long,
@@ -138,14 +151,13 @@ class RoutingArtworkStore @Inject constructor(
         userAssigned: Boolean,
         sortOrder: Int = 0,
     ): String? {
-        val (tree, game) = portableTarget(gameId) ?: run { tempFile.delete(); return null }
+        val (tree, game) = portableTarget(gameId, trigger = null) ?: run { tempFile.delete(); return null }
         return persistPortable(tree, game, kind, tempFile, source, userAssigned, sortOrder = sortOrder)
     }
 
     // ── Studio pass 2 ───────────────────────────────────────────────────────────
     // Record-driven operations. They work against the portable library's artwork_records; when
-    // no folder is linked there is no record, so info/restore/reset/crop return null (the Studio
-    // offers only Apply + Clear in that mode). Clear itself always works.
+    // the folder is not ready the writes are paused (null + a report) and clear still works.
 
     /** Everything the Studio's file-info panel and actions menu need, or null (no record). */
     suspend fun studioInfo(gameId: Long, kind: ArtworkKind, sortOrder: Int = 0): StudioArtworkInfo? {
@@ -208,13 +220,13 @@ class RoutingArtworkStore @Inject constructor(
         sortOrder: Int = 0,
         providerAssetId: String? = null,
     ): String? {
-        val target = portableTarget(gameId) ?: return internal.saveVersionedFromUrl(gameId, kind, url)
+        val target = portableTarget(gameId, FolderNeedTrigger.PICK) ?: return null
         val (tree, game) = target
         val tmp = ArtworkTempIO.downloadToTemp(httpClient, context.cacheDir, kind, url) ?: return null
         return persistPortable(
             tree, game, kind, tmp, source = SOURCE_USER, userAssigned = true,
             originUrl = url, provider = provider, backupPrevious = true,
-            sortOrder = sortOrder, providerAssetId = providerAssetId,
+            sortOrder = sortOrder, providerAssetId = providerAssetId, trigger = FolderNeedTrigger.PICK,
         )
     }
 
@@ -237,14 +249,14 @@ class RoutingArtworkStore @Inject constructor(
         provider: String?,
         providerAssetId: String? = null,
     ): String? {
-        val target = portableTarget(gameId) ?: return internal.saveVersionedFromUrl(gameId, kind, url)
+        val target = portableTarget(gameId, FolderNeedTrigger.PICK) ?: return null
         val (tree, game) = target
         val tmp = ArtworkTempIO.downloadToTemp(httpClient, context.cacheDir, kind, url) ?: return null
         val sortOrder = nextSortOrder(gameId, kind)
         return persistPortable(
             tree, game, kind, tmp, source = SOURCE_USER, userAssigned = true,
             originUrl = url, provider = provider, backupPrevious = true,
-            sortOrder = sortOrder, providerAssetId = providerAssetId,
+            sortOrder = sortOrder, providerAssetId = providerAssetId, trigger = FolderNeedTrigger.PICK,
         )
     }
 
@@ -254,7 +266,7 @@ class RoutingArtworkStore @Inject constructor(
      */
     suspend fun deleteAssetAt(gameId: Long, kind: ArtworkKind, sortOrder: Int): Boolean {
         val rec = artworkRecordDao.getAt(gameId, kind.name, sortOrder) ?: return false
-        val target = portableTarget(gameId)
+        val target = portableTarget(gameId, trigger = null)
         if (target != null) {
             runCatching { library.deleteUri(Uri.parse(rec.documentUri)) }
             rec.prevDocumentUri?.let { runCatching { library.deleteUri(Uri.parse(it)) } }
@@ -298,11 +310,12 @@ class RoutingArtworkStore @Inject constructor(
         gameId: Long, kind: ArtworkKind, tempFile: java.io.File, provider: String?, originUrl: String?,
         sortOrder: Int = 0,
     ): String? {
-        val target = portableTarget(gameId) ?: return internal.saveFromFile(gameId, kind, tempFile, sortOrder)
+        val target = portableTarget(gameId, FolderNeedTrigger.PICK) ?: run { tempFile.delete(); return null }
         val (tree, game) = target
         return persistPortable(
             tree, game, kind, tempFile, source = SOURCE_USER, userAssigned = true,
             originUrl = originUrl, provider = provider, backupPrevious = true, sortOrder = sortOrder,
+            trigger = FolderNeedTrigger.PICK,
         )
     }
 
@@ -311,29 +324,24 @@ class RoutingArtworkStore @Inject constructor(
      * files onto a multi-asset slot. Single-art kinds land at position 0, a plain apply.
      *
      * The caller copies the picked document to [tempFile] first, so nothing slow runs between
-     * [nextSortOrder] deciding the position and [persistPortable] taking it. Without a portable
-     * library there are no records to number from, so the internal store's own count decides.
+     * [nextSortOrder] deciding the position and [persistPortable] taking it. Without a ready folder
+     * the write is paused ([tempFile] is consumed, null is returned).
      */
     suspend fun studioAppendFromFile(
         gameId: Long, kind: ArtworkKind, tempFile: java.io.File, provider: String?,
     ): String? {
-        val target = portableTarget(gameId) ?: return internal.saveFromFile(
-            gameId, kind, tempFile,
-            sortOrder = if (ArtworkFileNaming.supportsMultiple(kind)) {
-                internal.findAll(gameId, kind).size.coerceAtMost(ArtworkFileNaming.MAX_SORT_ORDER)
-            } else 0,
-        )
+        val target = portableTarget(gameId, FolderNeedTrigger.PICK) ?: run { tempFile.delete(); return null }
         val (tree, game) = target
         return persistPortable(
             tree, game, kind, tempFile, source = SOURCE_USER, userAssigned = true,
             originUrl = null, provider = provider, backupPrevious = true,
-            sortOrder = nextSortOrder(gameId, kind),
+            sortOrder = nextSortOrder(gameId, kind), trigger = FolderNeedTrigger.PICK,
         )
     }
 
     /** Brings the one backed-up previous version back, swapping it with the current (toggle-able). */
     suspend fun restorePrevious(gameId: Long, kind: ArtworkKind, sortOrder: Int = 0): String? {
-        val (tree, game) = portableTarget(gameId) ?: return null
+        val (tree, game) = portableTarget(gameId, FolderNeedTrigger.PICK) ?: return null
         val rec = artworkRecordDao.getAt(gameId, kind.name, sortOrder) ?: return null
         val prevUri = rec.prevDocumentUri?.let { Uri.parse(it) } ?: return null
         if (!internal.isValidRef(rec.prevDocumentUri)) return null
@@ -377,19 +385,19 @@ class RoutingArtworkStore @Inject constructor(
     suspend fun resetToScrapedDefault(gameId: Long, kind: ArtworkKind, sortOrder: Int = 0): String? {
         val rec = artworkRecordDao.getAt(gameId, kind.name, sortOrder) ?: return null
         val url = rec.originUrl ?: return null
-        val (tree, game) = portableTarget(gameId) ?: return null
+        val (tree, game) = portableTarget(gameId, FolderNeedTrigger.SCRAPE) ?: return null
         val tmp = ArtworkTempIO.downloadToTemp(httpClient, context.cacheDir, kind, url) ?: return null
         // source=scrape, unpinned: a reset returns the slot to scraper control.
         return persistPortable(
             tree, game, kind, tmp, source = SOURCE_SCRAPE, userAssigned = false,
             originUrl = url, provider = rec.provider, backupPrevious = true, sortOrder = sortOrder,
-            providerAssetId = rec.providerAssetId,
+            providerAssetId = rec.providerAssetId, trigger = FolderNeedTrigger.SCRAPE,
         )
     }
 
     /** Deletes the current file, its backup and original, and the record. Returns true if anything went. */
     suspend fun clearArtwork(gameId: Long, kind: ArtworkKind): Boolean {
-        val target = portableTarget(gameId)
+        val target = portableTarget(gameId, trigger = null)
         if (target == null) {
             internal.deleteKind(gameId, kind)
             return true
@@ -419,7 +427,7 @@ class RoutingArtworkStore @Inject constructor(
         ArtworkTempIO.downloadToTemp(httpClient, context.cacheDir, kind, url)
 
     suspend fun originalToTemp(gameId: Long, kind: ArtworkKind, sortOrder: Int = 0): java.io.File? {
-        val (tree, game) = portableTarget(gameId) ?: return null
+        val (tree, game) = portableTarget(gameId, trigger = null) ?: return null
         val rec = artworkRecordDao.getAt(gameId, kind.name, sortOrder) ?: return null
         val src = if (rec.hasOriginal) {
             library.findInPath(tree, ArtworkPathResolver.originalsDirSegments(game.platformId, kind), rec.portableName)?.uri
@@ -454,7 +462,7 @@ class RoutingArtworkStore @Inject constructor(
         candidateProvider: String? = null,
         candidateAssetId: String? = null,
     ): String? {
-        val target = portableTarget(gameId) ?: run { bakedTempFile.delete(); return null }
+        val target = portableTarget(gameId, FolderNeedTrigger.PICK) ?: run { bakedTempFile.delete(); return null }
         val (tree, game) = target
         val rec = artworkRecordDao.getAt(gameId, kind.name, sortOrder)
         // Stash the pre-crop current as the untouched original — only the FIRST time, so repeated
@@ -476,6 +484,7 @@ class RoutingArtworkStore @Inject constructor(
             backupPrevious = true,
             cropRect = cropRect, hasOriginal = true, sortOrder = sortOrder,
             providerAssetId = rec?.providerAssetId ?: candidateAssetId,
+            trigger = FolderNeedTrigger.PICK,
         )
     }
 
@@ -495,7 +504,7 @@ class RoutingArtworkStore @Inject constructor(
         candidateProvider: String? = null,
         candidateAssetId: String? = null,
     ): String? {
-        val target = portableTarget(gameId) ?: run { originalTempFile.delete(); return null }
+        val target = portableTarget(gameId, FolderNeedTrigger.PICK) ?: run { originalTempFile.delete(); return null }
         val (tree, game) = target
         val rec = artworkRecordDao.getAt(gameId, kind.name, sortOrder)
         return persistPortable(
@@ -506,16 +515,35 @@ class RoutingArtworkStore @Inject constructor(
             backupPrevious = true,
             cropRect = cropRect, cropAtDraw = true, sortOrder = sortOrder,
             providerAssetId = rec?.providerAssetId ?: candidateAssetId,
+            trigger = FolderNeedTrigger.PICK,
         )
     }
 
     // ── Internals ─────────────────────────────────────────────────────────────
 
-    private suspend fun portableTarget(gameId: Long): Pair<Uri, GameEntity>? {
-        val treeUri = folderRepository.getTreeUri() ?: return null
-        if (!folderRepository.hasLiveGrant()) return null
+    /**
+     * The folder tree and the game to write for, or null when the write must pause: the status is
+     * not `Ready`, or the grant died since the last probe (re-probed, so the status catches up).
+     * A non-null [trigger] reports the pause on [ArtworkFolderStatus.folderNeeded].
+     */
+    private suspend fun portableTarget(gameId: Long, trigger: FolderNeedTrigger?): Pair<Uri, GameEntity>? {
+        // Unknown means "not probed yet" (a launch-time scrape can beat PFPApplication's refresh),
+        // not "no folder": probe now rather than pause and prompt on a folder that is fine.
+        val state = folderStatus.state.value.let { if (it == ArtworkFolderState.Unknown) folderStatus.refresh() else it }
+        val ready = state as? ArtworkFolderState.Ready
+        if (ready == null || !folderRepository.hasLiveGrant()) {
+            if (ready != null) folderStatus.refresh()
+            trigger?.let(folderStatus::reportBlocked)
+            return null
+        }
         val game = gameDao.getById(gameId) ?: return null
-        return Uri.parse(treeUri) to game
+        return Uri.parse(ready.treeUri) to game
+    }
+
+    /** A portable write returned null: re-probe, and report when the folder turns out to be gone. */
+    private suspend fun portableWriteFailed(trigger: FolderNeedTrigger?): String? {
+        if (folderStatus.refresh() !is ArtworkFolderState.Ready) trigger?.let(folderStatus::reportBlocked)
+        return null
     }
 
     private suspend fun persistPortable(
@@ -535,6 +563,8 @@ class RoutingArtworkStore @Inject constructor(
         cropAtDraw: Boolean = false,
         sortOrder: Int = 0,
         providerAssetId: String? = null,
+        // Who to report to when the folder is gone mid-write; null for the migration path.
+        trigger: FolderNeedTrigger? = null,
     ): String? {
         val existing = artworkRecordDao.getAt(game.id, kind.name, sortOrder)
         val romFileName = game.romPath?.replace('\\', '/')?.substringAfterLast('/')
@@ -585,7 +615,8 @@ class RoutingArtworkStore @Inject constructor(
             }
         }
 
-        val saved = library.saveFromFile(tree, game.platformId, kind, portableName, tempFile) ?: return null
+        val saved = library.saveFromFile(tree, game.platformId, kind, portableName, tempFile)
+            ?: return portableWriteFailed(trigger)
         // Durable identity for this file (task D.2): who owns it, stated as ids rather than as the
         // name it happens to carry. Buffered only — the index is one document at the library root,
         // so it is written at an operation boundary, never once per file. See ArtworkIdentityRecorder.

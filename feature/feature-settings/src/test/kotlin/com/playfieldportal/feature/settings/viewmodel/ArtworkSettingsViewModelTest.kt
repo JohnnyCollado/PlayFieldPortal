@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.settings.viewmodel
 
 import com.playfieldportal.feature.artwork.MetadataApiKeyProvider
+import com.playfieldportal.feature.artwork.api.ArtworkFolderState
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.feature.artwork.api.ArtworkScrapePreferences
 import com.playfieldportal.feature.artwork.api.ArtworkStatus
@@ -15,6 +16,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -46,6 +48,7 @@ class ArtworkSettingsViewModelTest {
     private lateinit var cropPreviewPreferences: com.playfieldportal.core.data.repository.CropPreviewPreferences
     private lateinit var debugCredentialsLoader: com.playfieldportal.feature.settings.debug.DebugCredentialsLoader
     private lateinit var viewModel: ArtworkSettingsViewModel
+    private val folderStateFlow = MutableStateFlow<ArtworkFolderState>(ArtworkFolderState.NotLinked(0))
 
     @Before
     fun setUp() {
@@ -96,9 +99,8 @@ class ArtworkSettingsViewModelTest {
         scrapePreferences   = scrapePreferences,
         igdbApi             = igdbApi,
         screenScraperApi    = screenScraperApi,
-        // No folder configured in tests → the grant-dead banner check is a no-op.
-        artworkFolderRepository = mockk(relaxed = true) {
-            coEvery { getTreeUri() } returns null
+        importManager = mockk(relaxed = true) {
+            every { folderState } returns folderStateFlow
         },
         iconDisplayPreferences = iconDisplayPreferences,
         cropPreviewPreferences = cropPreviewPreferences,
@@ -373,6 +375,51 @@ class ArtworkSettingsViewModelTest {
         viewModel.dismissCredentialStatus()
         advanceUntilIdle()
         assertNull(viewModel.uiState.value.igdbCredentialStatus)
+    }
+
+    // ── Artwork folder state ──────────────────────────────────────────────────
+
+    @Test
+    fun `an Unavailable folder marks the artwork folder unavailable`() = runTest(testDispatcher) {
+        folderStateFlow.value = ArtworkFolderState.Unavailable("content://tree/primary%3AArt", "Art")
+        viewModel = activeViewModel()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.artworkFolderUnavailable)
+    }
+
+    @Test
+    fun `a Ready folder is not unavailable`() = runTest(testDispatcher) {
+        folderStateFlow.value = ArtworkFolderState.Ready("content://tree/primary%3AArt", "Art")
+        viewModel = activeViewModel()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.artworkFolderUnavailable)
+    }
+
+    @Test
+    fun `a NotLinked folder is not unavailable`() = runTest(testDispatcher) {
+        viewModel = activeViewModel()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.artworkFolderUnavailable)
+    }
+
+    @Test
+    fun `the unavailable flag follows the folder state live`() = runTest(testDispatcher) {
+        val tree = "content://tree/primary%3AArt"
+        folderStateFlow.value = ArtworkFolderState.Ready(tree, "Art")
+        viewModel = activeViewModel()
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.artworkFolderUnavailable)
+
+        folderStateFlow.value = ArtworkFolderState.Unavailable(tree, "Art")
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.artworkFolderUnavailable)
+
+        folderStateFlow.value = ArtworkFolderState.Ready(tree, "Art")
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.artworkFolderUnavailable)
     }
 
     // ── Debug credentials file (debug builds only) ────────────────────────────

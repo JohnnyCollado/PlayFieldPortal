@@ -36,6 +36,4 @@ class SgdbApiKeyProvider @Inject constructor(
     suspend fun clearKey() {
         context.pfpDataStore.edit { it.remove(KEY_SGDB_API_KEY) }
     }
-
-    suspend fun hasKey(): Boolean = !getKey().isNullOrBlank()
 }

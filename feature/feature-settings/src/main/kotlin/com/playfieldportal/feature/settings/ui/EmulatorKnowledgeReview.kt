@@ -20,7 +20,8 @@ import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.components.PfpCheckbox
 import com.playfieldportal.feature.settings.viewmodel.KbImportReview
 
-private val WarningAmber = Color(0xFFB7791F)
+/** The warning badge colour Settings uses for "needs attention" states. */
+internal val WarningAmber = Color(0xFFB7791F)
 
 /** Same ink as the wizard's checkbox rows. */
 private val CheckboxMark = Color(0xFF06224B)

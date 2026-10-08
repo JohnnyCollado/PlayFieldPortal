@@ -95,6 +95,23 @@ class GameArtworkFetchRunnerTest {
     }
 
     @Test
+    fun `a paused fetch fails once in the tray with AR-1001 and never completes`() = runTest {
+        coEvery { artworkRepository.refetchArtworkForGame(1L, any()) } returns
+            ArtworkFetchResult(1L, "crash", success = false, paused = true)
+
+        val changed = runner.run(1L)
+
+        assertFalse(changed)
+        verify(exactly = 1) {
+            tasks.fail(taskId, "Artwork paused. Relink your artwork folder to save new art.",
+                NotificationAction.OpenSettingsScreen("settings_artwork_import"),
+                match { (it as com.playfieldportal.core.domain.model.NotificationDetail.Notes).code == "AR-1001" },
+                "Artwork paused for Crash Bandicoot")
+        }
+        verify(exactly = 0) { tasks.complete(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `a fetch that throws fails in the tray`() = runTest {
         coEvery { artworkRepository.refetchArtworkForGame(1L, any()) } throws IllegalStateException("boom")
 

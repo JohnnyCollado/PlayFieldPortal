@@ -8,6 +8,7 @@ import com.playfieldportal.feature.artwork.api.classifyScrapeFailure
 import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
+import com.playfieldportal.feature.artwork.api.ARTWORK_PAUSED_MESSAGE
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import kotlinx.coroutines.CancellationException
 import timber.log.Timber
@@ -61,7 +62,12 @@ class GameArtworkFetchRunner @Inject constructor(
         when {
             // Game Detail is fetching this game already and reports its own result.
             result.alreadyRunning -> backgroundTasks.cancel(taskId)
-            result.success        -> backgroundTasks.complete(
+            result.paused         -> backgroundTasks.fail(
+                taskId, ARTWORK_PAUSED_MESSAGE, NotificationAction.OpenSettingsScreen("settings_artwork_import"),
+                NotificationDetail.notes(PfpErrorCode.AR_1001, summary = ARTWORK_PAUSED_MESSAGE),
+                "Artwork paused for ${game.displayTitle}",
+            )
+            result.success       -> backgroundTasks.complete(
                 taskId, null, action, null, "Artwork updated for ${game.displayTitle}",
             )
             else                  -> backgroundTasks.fail(

@@ -48,14 +48,11 @@ class IconEditorLayoutTest {
     }
 
     @Test
-    fun `the favorites category icon is never listed`() {
-        assertTrue("catbar_favorites" in IconEditorLayout.HIDDEN_KEYS)
+    fun `favorites is a Game column item, never a crossbar icon`() {
         val withFavorites = IconEditorLayout.crossbar(listOf("catbar_favorites", "catbar_games"))
         assertTrue("catbar_favorites" !in keys(withFavorites))
-        assertTrue(IconEditorLayout.ALL.none { it.key == "catbar_favorites" })
         assertNull(IconEditorLayout.tabOf("catbar_favorites"))
-        // Still a registry slot: a theme that carries it keeps applying it.
-        assertTrue(CustomizableIcons.isValidKey("catbar_favorites"))
+        assertEquals(IconEditorTab.ITEMS, IconEditorLayout.tabOf("sysicon_favorites"))
     }
 
     // ── Items ────────────────────────────────────────────────────────────────
@@ -165,7 +162,7 @@ class IconEditorLayoutTest {
             IconSlot.Group.GAME_DETAIL, IconSlot.Group.NOTIFICATIONS, IconSlot.Group.MENUS,
         )
         val expected = CustomizableIcons.ALL
-            .filter { it.group !in notEditable && it.key !in IconEditorLayout.HIDDEN_KEYS }
+            .filter { it.group !in notEditable }
             .map { it.key }
             .sorted()
         val listed = keys(IconEditorLayout.ALL)

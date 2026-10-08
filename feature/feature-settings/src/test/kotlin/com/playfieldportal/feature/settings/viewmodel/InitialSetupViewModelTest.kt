@@ -15,6 +15,7 @@ import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.core.data.repository.Vita3KLibrary
 import com.playfieldportal.feature.achievements.provider.steam.SteamRemoteDataSource
 import com.playfieldportal.feature.artwork.MetadataApiKeyProvider
+import com.playfieldportal.feature.artwork.api.ArtworkFolderState
 import com.playfieldportal.feature.artwork.api.ArtworkImportManager
 import com.playfieldportal.feature.artwork.api.IgdbApi
 import com.playfieldportal.feature.artwork.api.ScreenScraperApi
@@ -29,6 +30,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -45,6 +47,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+
+private val READY = ArtworkFolderState.Ready("content://tree/primary%3AArtwork", "Artwork")
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class InitialSetupViewModelTest {
@@ -70,6 +74,9 @@ class InitialSetupViewModelTest {
     private val ps3DataLibrary = mockk<Ps3DataLibrary>(relaxed = true)
     private val environment = mockk<SetupEnvironment>(relaxed = true)
     private val xbox360DataLibrary = mockk<Xbox360DataLibrary>(relaxed = true)
+    // Ready by default so the navigation tests walk straight through the required Artwork page;
+    // the gating tests below set the state they need.
+    private val folderState = MutableStateFlow<ArtworkFolderState>(READY)
     private lateinit var vm: InitialSetupViewModel
 
     private fun buildVm() = InitialSetupViewModel(
@@ -90,7 +97,7 @@ class InitialSetupViewModelTest {
         every { context.packageManager } returns packageManager
         every { romRoots.roots } returns flowOf(emptyList())
         every { mediaRoots.roots(any()) } returns flowOf(emptyList())
-        every { artworkImport.folderTreeUri } returns flowOf(null)
+        every { artworkImport.folderState } returns folderState
         every { vita3KLibrary.ux0TreeUriFlow } returns flowOf(null)
         every { ps3DataLibrary.dataTreeUriFlow } returns flowOf(null)
         every { xbox360DataLibrary.treeUriFlow(any()) } returns flowOf(null)
@@ -208,6 +215,99 @@ class InitialSetupViewModelTest {
         job.cancel()
     }
 
+    // ── Required Artwork step ───────────────────────────────────────────────────
+
+    private fun TestScope.goToArtwork() {
+        repeat(6) { vm.nextStep() }
+        advanceUntilIdle()
+        assertEquals(SetupStep.ARTWORK, vm.uiState.value.step)
+    }
+
+    @Test fun `artwork page cannot be skipped or passed while no folder is linked`() =
+        runTest(dispatcher) {
+            val job = collectState()
+            advanceUntilIdle()
+            goToArtwork()
+
+            folderState.value = ArtworkFolderState.NotLinked(0)
+            advanceUntilIdle()
+            vm.skipStep()
+            vm.nextStep()
+            advanceUntilIdle()
+
+            assertEquals(SetupStep.ARTWORK, vm.uiState.value.step)
+            assertFalse(vm.uiState.value.artworkReady)
+            job.cancel()
+        }
+
+    @Test fun `artwork page stays put while the folder is unavailable or unknown`() =
+        runTest(dispatcher) {
+            val job = collectState()
+            advanceUntilIdle()
+            goToArtwork()
+
+            listOf(
+                ArtworkFolderState.Unavailable("content://tree/primary%3AArtwork", "Artwork"),
+                ArtworkFolderState.Unknown,
+            ).forEach { state ->
+                folderState.value = state
+                advanceUntilIdle()
+                vm.skipStep()
+                vm.nextStep()
+                advanceUntilIdle()
+                assertEquals("stuck on $state", SetupStep.ARTWORK, vm.uiState.value.step)
+                assertFalse(vm.uiState.value.artworkReady)
+            }
+            job.cancel()
+        }
+
+    @Test fun `unavailable folder keeps its name for the row but is not ready`() = runTest(dispatcher) {
+        folderState.value = ArtworkFolderState.Unavailable("content://tree/primary%3AArtwork", "Artwork")
+        val job = collectState()
+        advanceUntilIdle()
+
+        assertEquals("Artwork", vm.uiState.value.artworkFolderName)
+        assertTrue(vm.uiState.value.artworkUnavailable)
+        assertFalse(vm.uiState.value.artworkReady)
+        job.cancel()
+    }
+
+    @Test fun `ready folder lets Continue advance past the artwork page`() = runTest(dispatcher) {
+        val job = collectState()
+        advanceUntilIdle()
+        goToArtwork()
+        assertTrue(vm.uiState.value.artworkReady)
+
+        vm.nextStep()
+        advanceUntilIdle()
+        assertEquals(SetupStep.SERVICES, vm.uiState.value.step)
+        job.cancel()
+    }
+
+    @Test fun `ready folder lets Skip pass the artwork page on a re-run`() = runTest(dispatcher) {
+        val job = collectState()
+        advanceUntilIdle()
+        goToArtwork()
+
+        vm.skipStep()
+        advanceUntilIdle()
+        assertEquals(SetupStep.SERVICES, vm.uiState.value.step)
+        job.cancel()
+    }
+
+    @Test fun `back from the artwork page always goes to the previous page`() = runTest(dispatcher) {
+        val job = collectState()
+        advanceUntilIdle()
+        goToArtwork()
+        folderState.value = ArtworkFolderState.NotLinked(0)
+        advanceUntilIdle()
+
+        assertTrue(vm.previousStep())
+        advanceUntilIdle()
+        assertEquals(SetupStep.PHOTO, vm.uiState.value.step)
+        job.cancel()
+    }
+
     @Test fun `skip does nothing on Finish`() = runTest(dispatcher) {
         val job = collectState()
         advanceUntilIdle()
@@ -287,16 +387,16 @@ class InitialSetupViewModelTest {
             val source = mockk<DetectedImportSource>()
             every { source.label } returns "16-bit Collection"
             every { source.systems } returns emptyList()
-            coEvery { artworkImport.folderTreeUri } returns flowOf("content://tree/primary%3AArtwork")
-            coEvery { artworkImport.linkFolder(uri) } returns ArtworkImportManager.LinkResult(
-                manifest = mockk(), existingLibrary = false,
-            )
+            folderState.value = ArtworkFolderState.NotLinked(0)
+            // The real manager flips folderState to Ready as part of linking.
+            coEvery { artworkImport.linkFolder(uri) } coAnswers {
+                folderState.value = READY
+                ArtworkImportManager.LinkResult.Linked(existingLibrary = false)
+            }
             coEvery { artworkImport.detectSources() } returns listOf(source)
-            // Rebuild a fresh VM so its rootLists combine subscribes to the re-stubbed folder flow
-            // (the setUp VM is already collecting the old null folderTreeUri).
-            vm = buildVm()
             val job = collectState()
             advanceUntilIdle()
+            assertNull(vm.uiState.value.artworkFolderName)
 
             vm.onArtworkFolderPicked(uri)
             advanceUntilIdle()
@@ -310,13 +410,29 @@ class InitialSetupViewModelTest {
 
     @Test fun `artwork folder link failure surfaces a message`() = runTest(dispatcher) {
         val uri = mockk<Uri>()
-        coEvery { artworkImport.linkFolder(uri) } returns null
+        coEvery { artworkImport.linkFolder(uri) } returns ArtworkImportManager.LinkResult.Failed
         val job = collectState()
 
         vm.onArtworkFolderPicked(uri)
         advanceUntilIdle()
 
         assertNotNull(vm.uiState.value.message)
+        job.cancel()
+    }
+
+    @Test fun `artwork folder link to a foreign library does nothing more`() = runTest(dispatcher) {
+        val uri = mockk<Uri>()
+        coEvery { artworkImport.linkFolder(uri) } returns ArtworkImportManager.LinkResult.ForeignLibrary
+        val job = collectState()
+
+        vm.onArtworkFolderPicked(uri)
+        advanceUntilIdle()
+
+        // The shell prompt takes over: no scan, no import offer, no tray entry, no message.
+        coVerify(exactly = 0) { artworkImport.relinkLibrary(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { artworkImport.detectSources() }
+        io.mockk.verify(exactly = 0) { tasks.report(id = "setup_artwork_link", label = any(), message = any(), severity = any(), kind = any(), action = any()) }
+        assertNull(vm.uiState.value.message)
         job.cancel()
     }
 
@@ -328,9 +444,7 @@ class InitialSetupViewModelTest {
         every { source.systems } returns emptyList()
         every { plan.itemCount } returns 3
         every { plan.sourceLabel } returns "Xbox Library"
-        coEvery { artworkImport.linkFolder(uri) } returns ArtworkImportManager.LinkResult(
-            manifest = mockk(), existingLibrary = false,
-        )
+        coEvery { artworkImport.linkFolder(uri) } returns ArtworkImportManager.LinkResult.Linked(existingLibrary = false)
         coEvery { artworkImport.detectSources() } returns listOf(source)
         coEvery { artworkImport.buildPlan(source) } returns plan
         val job = collectState()

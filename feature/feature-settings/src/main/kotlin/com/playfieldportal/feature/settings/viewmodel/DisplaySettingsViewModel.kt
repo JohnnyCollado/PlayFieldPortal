@@ -141,12 +141,10 @@ private val WAVE_STYLE_LABELS = mapOf(
 )
 
 /**
- * The four transient facts that ride together through the nested [combine] — [combine] takes at
+ * The transient facts that ride together through the nested [combine] — [combine] takes at
  * most five typed sources, and the outer one is already full of DataStore and import state.
  */
 private data class Transient(
-    val bootPreviewVisible: Boolean,
-    val gameBootPreviewVisible: Boolean,
     val textContrastNotice: String?,
     val xyLayout: XYLayout,
 )
@@ -200,13 +198,11 @@ data class DisplaySettingsUiState(
     // the seventh row of Interface ▸ Sound, which owns every sound in the app.
     val bootVideoLabel: String = PFP_DEFAULT_LABEL,
     val bootVideoAssigned: Boolean = false,
-    val bootPreviewVisible: Boolean = false,
     // ── GameBoot (Display ▸ GameBoot) ────────────────────────────────────────
     // One switch and one replaceable asset: on/off, plus the user's own clip when they have one.
     val gameBootEnabled: Boolean = true,
     val gameBootVideoLabel: String = PFP_DEFAULT_LABEL,
     val gameBootVideoAssigned: Boolean = false,
-    val gameBootPreviewVisible: Boolean = false,
     /**
      * Which physical face button does what on a focused media row — the north/west shortcuts are
      * bound to positions, so they need the user's X/Y layout to resolve. See MediaRowShortcuts.
@@ -230,8 +226,6 @@ class DisplaySettingsViewModel @Inject constructor(
     private val _wallpaperMessage  = MutableStateFlow<String?>(null)
     private val _wallpaperImporting = MutableStateFlow(false)
     private val _wallpaperPreviewVisible = MutableStateFlow(false)
-    private val _bootPreviewVisible = MutableStateFlow(false)
-    private val _gameBootPreviewVisible = MutableStateFlow(false)
     /**
      * Transient font-colour notice, on the same channel idiom as [_wallpaperMessage]: raised by a
      * pick that had to be adjusted, cleared by Dismiss or by "Don't warn again".
@@ -246,16 +240,13 @@ class DisplaySettingsViewModel @Inject constructor(
         _wallpaperMessage,
         _wallpaperImporting,
         _wallpaperPreviewVisible,
-        // combine tops out at five typed sources, so everything transient rides together — the
-        // same nesting the two boot previews already used, now carrying the controller layout as
-        // well (it maps over the same DataStore, so this costs no extra read).
+        // combine tops out at five typed sources, so everything transient rides together (the
+        // controller layout maps over the same DataStore, so this costs no extra read).
         combine(
-            _bootPreviewVisible,
-            _gameBootPreviewVisible,
             _textContrastNotice,
             controllerLayout.prefs,
-        ) { boot, gameBoot, notice, layout ->
-            Transient(boot, gameBoot, notice, layout.xyLayout)
+        ) { notice, layout ->
+            Transient(notice, layout.xyLayout)
         },
     ) { prefs, msg, importing, previewVisible, transient ->
         // Every UI-media fact below comes from the same DataStore emission plus one directory
@@ -300,13 +291,11 @@ class DisplaySettingsViewModel @Inject constructor(
             wallpaperPreviewVisible = previewVisible,
             bootVideoLabel       = label(UiMediaSlot.BOOT_VIDEO),
             bootVideoAssigned    = UiMediaSlot.BOOT_VIDEO in assigned,
-            bootPreviewVisible   = transient.bootPreviewVisible,
             // Same read-time migration the gate uses, so the row can never disagree with what
             // will actually play at launch.
             gameBootEnabled      = GameBootPreferences.resolve(prefs),
             gameBootVideoLabel   = label(UiMediaSlot.GAMEBOOT_VIDEO),
             gameBootVideoAssigned = UiMediaSlot.GAMEBOOT_VIDEO in assigned,
-            gameBootPreviewVisible = transient.gameBootPreviewVisible,
             xyLayout             = transient.xyLayout,
             // Re-derived on every DataStore emission, so a save from the Adjust XMB Layout editor
             // (a reset to default included) re-enables the row the moment it lands.
@@ -354,11 +343,6 @@ class DisplaySettingsViewModel @Inject constructor(
     fun setGameBootEnabled(enabled: Boolean) = viewModelScope.launch {
         gameBootPreferences.setGameBootEnabled(enabled)
     }
-
-    fun showBootPreview() { _bootPreviewVisible.value = true }
-    fun hideBootPreview() { _bootPreviewVisible.value = false }
-    fun showGameBootPreview() { _gameBootPreviewVisible.value = true }
-    fun hideGameBootPreview() { _gameBootPreviewVisible.value = false }
 
     /** MIME arrays for the two pickers, straight off the import gate so they cannot disagree. */
     fun uiMediaPickerMime(slot: UiMediaSlot): Array<String> =

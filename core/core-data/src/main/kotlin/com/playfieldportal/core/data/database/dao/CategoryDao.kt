@@ -55,9 +55,6 @@ interface CategoryDao {
     // ── Category Items (junction table) ────────────────────────────────
 
     @Query("SELECT * FROM category_items WHERE category_id = :categoryId ORDER BY pinned DESC, sort_order ASC")
-    fun observeItemsForCategory(categoryId: String): Flow<List<CategoryItemEntity>>
-
-    @Query("SELECT * FROM category_items WHERE category_id = :categoryId ORDER BY pinned DESC, sort_order ASC")
     suspend fun getItemsForCategory(categoryId: String): List<CategoryItemEntity>
 
     // All app-assignment rows, streamed — drives the App categories' membership.
@@ -81,10 +78,4 @@ interface CategoryDao {
 
     @Query("DELETE FROM category_items WHERE category_id = :categoryId AND item_id = :itemId")
     suspend fun removeItem(categoryId: String, itemId: String)
-
-    @Query("DELETE FROM category_items WHERE category_id = :categoryId")
-    suspend fun clearCategory(categoryId: String)
-
-    @Query("UPDATE category_items SET sort_order = :order WHERE category_id = :categoryId AND item_id = :itemId")
-    suspend fun updateItemOrder(categoryId: String, itemId: String, order: Int)
 }

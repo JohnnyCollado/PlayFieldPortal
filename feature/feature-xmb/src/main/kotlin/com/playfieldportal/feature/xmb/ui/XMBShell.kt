@@ -75,6 +75,7 @@ import com.playfieldportal.core.domain.model.NotificationDetail
 import com.playfieldportal.core.domain.model.NotificationKind
 import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.toNotificationAction
+import com.playfieldportal.core.ui.components.PfpChoiceOption
 import com.playfieldportal.core.ui.components.PfpModalSpec
 import com.playfieldportal.core.ui.components.XmbTouchButton
 import com.playfieldportal.core.ui.components.rememberPfpModalHost
@@ -85,6 +86,7 @@ import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.PFPTheme
 import com.playfieldportal.feature.appbar.AppDrawerScreen
 import com.playfieldportal.feature.appbar.AppFilter
+import com.playfieldportal.feature.artwork.api.ArtworkFolderPrompt
 import com.playfieldportal.feature.settings.ui.SettingsNavHost
 import com.playfieldportal.feature.social.ui.QrLoginScreen
 import com.playfieldportal.feature.xmb.preview.PreviewData
@@ -236,6 +238,15 @@ fun XMBShellContainer(
         onCustomIconsSlotFocused = viewModel::onCustomIconSlotFocused,
         onCustomIconTabMove = viewModel::onCustomIconTabMove,
         onCustomIconPicked = viewModel::onIconPicked,
+        onCustomIconPickRequested = viewModel::onPickRequested,
+        onCustomIconFilePickLaunched = viewModel::onFilePickLaunched,
+        sourceChooserCallbacks = SourceChooserCallbacks(
+            onTheme = viewModel::onPickFromTheme,
+            onDevice = viewModel::onPickFromDevice,
+            onCancel = viewModel::dismissSourceChooser,
+        ),
+        onThemeIconChosen = viewModel::onThemeIconChosen,
+        onCloseThemeIconGrid = viewModel::closeThemeIconGrid,
         onCustomResetSlot = viewModel::onResetSlot,
         onCustomResetAll = viewModel::onResetAll,
         onSaveAsThemeRequested = viewModel::requestSaveCurrentLookAsTheme,
@@ -364,6 +375,10 @@ fun XMBShellContainer(
         ),
         onWindowsSetupConfirm = viewModel::confirmWindowsSetupPrompt,
         onWindowsSetupDismiss = viewModel::dismissWindowsSetupPrompt,
+        artworkFolderCallbacks = ArtworkFolderCallbacks(
+            onConfirm = viewModel::confirmArtworkFolderPrompt,
+            onCancel = viewModel::cancelArtworkFolderPrompt,
+        ),
         onLaunchRecoveryAction = viewModel::onLaunchRecoveryAction,
         onMusicPlayPause = viewModel::musicPlayPause,
         onMusicPrev = viewModel::musicPrev,
@@ -390,6 +405,19 @@ fun XMBShellContainer(
         if (uiState.requestLocalSteamFolderPick) {
             viewModel.onBatchMatchPickLaunched()
             batchMatchPicker.launch(null)
+        }
+    }
+
+    // The artwork folder: one shell-owned picker serves Relink, Choose and Choose another folder.
+    // It opens at the Uri the ViewModel asked for. A cancel returns null and changes nothing.
+    val artworkFolderPicker = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree()
+    ) { uri -> viewModel.onArtworkFolderPicked(uri) }
+
+    androidx.compose.runtime.LaunchedEffect(uiState.artworkFolderPickRequest) {
+        uiState.artworkFolderPickRequest?.let { start ->
+            viewModel.onArtworkFolderPickLaunched()
+            artworkFolderPicker.launch(start)
         }
     }
 
@@ -478,6 +506,11 @@ fun XMBShell(
     onCustomIconsSlotFocused: (Int) -> Unit = {},
     onCustomIconTabMove: (Int) -> Unit = {},
     onCustomIconPicked: (String, android.net.Uri) -> Unit = { _, _ -> },
+    onCustomIconPickRequested: (String) -> Unit = {},
+    onCustomIconFilePickLaunched: () -> Unit = {},
+    sourceChooserCallbacks: SourceChooserCallbacks = SourceChooserCallbacks(),
+    onThemeIconChosen: (Int) -> Unit = {},
+    onCloseThemeIconGrid: () -> Unit = {},
     onCustomResetSlot: (String) -> Unit = {},
     onCustomResetAll: () -> Unit = {},
     onSaveAsThemeRequested: () -> Unit = {},
@@ -597,6 +630,7 @@ fun XMBShell(
     onDismissInfoDialog: () -> Unit = {},
     onWindowsSetupConfirm: () -> Unit = {},
     onWindowsSetupDismiss: () -> Unit = {},
+    artworkFolderCallbacks: ArtworkFolderCallbacks = ArtworkFolderCallbacks(),
     onLaunchRecoveryAction: (com.playfieldportal.feature.launcher.LaunchRecoveryAction) -> Unit = {},
     onNotificationsTapped: () -> Unit = {},
     onNotificationRowTapped: (Int) -> Unit = {},
@@ -957,7 +991,6 @@ fun XMBShell(
                             // Tapping the active memory card under the caticon backs out of the
                             // drill; taps on the other (dimmed) cards are ignored.
                             onSiblingTap = { i -> if (i == uiState.drillSiblingIndex) onTouchBack() },
-                            iconStyle = uiState.iconStyle,
                             scrollToTopToken = uiState.scrollToTopToken,
                             columnKey = uiState.viewCursorKey(),
                             barTopY = barTop,
@@ -993,7 +1026,6 @@ fun XMBShell(
                                 selectedIndex = itemSelectedIndex,
                                 onItemSelected = onItemTap,
                                 onItemLongPress = onItemLongPress,
-                                iconStyle = uiState.iconStyle,
                                 scrollToTopToken = uiState.scrollToTopToken,
                                 columnKey = uiState.viewCursorKey(),
                                 landingToken = uiState.landingToken,
@@ -1356,6 +1388,8 @@ fun XMBShell(
                     icons = uiState.xmbIcons,
                     onSlotFocused = onCustomIconsSlotFocused,
                     onIconPicked = onCustomIconPicked,
+                    onPickRequested = onCustomIconPickRequested,
+                    onFilePickLaunched = onCustomIconFilePickLaunched,
                     onResetSlot = onCustomResetSlot,
                     onResetAll = onCustomResetAll,
                     onSaveAsTheme = onSaveAsThemeRequested,
@@ -1367,6 +1401,18 @@ fun XMBShell(
                     showTouchControls = uiState.resolvedShowTouchButton,
                     onTouchInput = onTouchInput,
                 )
+                // The applied theme's icons, over the editor: chosen with the pad (the VM routes it)
+                // or by touch.
+                session.themeGrid?.let { grid ->
+                    ThemeIconGridOverlay(
+                        grid = grid,
+                        onChoose = onThemeIconChosen,
+                        onBack = onCloseThemeIconGrid,
+                        modifier = Modifier.fillMaxSize(),
+                        showTouchControls = uiState.resolvedShowTouchButton,
+                        onTouchInput = onTouchInput,
+                    )
+                }
             }
 
             // The Games search field, on the empty right half beside the column it filters. Above
@@ -1628,9 +1674,11 @@ fun XMBShell(
                     onDismissInfoDialog = onDismissInfoDialog,
                     onWindowsSetupConfirm = onWindowsSetupConfirm,
                     onWindowsSetupDismiss = onWindowsSetupDismiss,
+                    artworkFolderCallbacks = artworkFolderCallbacks,
                     notificationCallbacks = notificationCallbacks,
                     playlistImportCallbacks = playlistImportCallbacks,
                     confirmCallbacks = confirmCallbacks,
+                    sourceChooserCallbacks = sourceChooserCallbacks,
                 ),
                 // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
                 showHints = !uiState.resolvedShowTouchButton,
@@ -1672,6 +1720,8 @@ internal fun shellModalSpec(
     notificationCallbacks: NotificationModalCallbacks = NotificationModalCallbacks(),
     playlistImportCallbacks: PlaylistImportCallbacks = PlaylistImportCallbacks(),
     confirmCallbacks: XmbConfirmCallbacks = XmbConfirmCallbacks(),
+    artworkFolderCallbacks: ArtworkFolderCallbacks = ArtworkFolderCallbacks(),
+    sourceChooserCallbacks: SourceChooserCallbacks = SourceChooserCallbacks(),
 ): PfpModalSpec? {
     // A menu's confirm first of all: it is raised from a menu opened over everything else, including
     // the notification panel (Clear All), and the view model forwards its presses before the panel's.
@@ -1684,6 +1734,7 @@ internal fun shellModalSpec(
     val playlist = uiState.playlistNameDialog
     val saveTheme = uiState.saveThemeNameDialog
     val info = uiState.infoDialog
+    val sourceChooser = uiState.customIconSession?.sourceChooser
     return when {
         renameApp != null -> PfpModalSpec.TextEntry(
             key = "rename_app:$renameApp",
@@ -1724,6 +1775,19 @@ internal fun shellModalSpec(
             onConfirm = onConfirmSaveAsTheme,
             onCancel = onDismissSaveAsTheme,
         )
+        // Pick in the icon editor: the applied theme's icons, or an image from the device.
+        sourceChooser != null -> PfpModalSpec.Choice(
+            key = sourceChooser,
+            title = sourceChooser.title,
+            message = sourceChooser.message,
+            options = listOf(
+                PfpChoiceOption("From the applied theme", sourceChooser.themeDetail),
+                PfpChoiceOption("From your device", "PNG or GIF"),
+            ),
+            confirmLabel = "Continue",
+            onConfirm = { index -> if (index == 0) sourceChooserCallbacks.onTheme() else sourceChooserCallbacks.onDevice() },
+            onCancel = sourceChooserCallbacks.onCancel,
+        )
         info != null -> PfpModalSpec.Notice(
             key = info,
             title = info.title,
@@ -1733,6 +1797,10 @@ internal fun shellModalSpec(
         )
         uiState.playlistImportQueue != null ->
             playlistImportSpec(uiState.playlistImportQueue, playlistImportCallbacks)
+        // The required artwork folder: unavailable, move, choose, or another install's library.
+        // Ahead of the shortcut review and the Windows prompt, in the order the view model
+        // forwards presses (XMBViewModel.dispatchGamepadAction).
+        uiState.artworkFolderPrompt != null -> artworkFolderSpec(uiState.artworkFolderPrompt, artworkFolderCallbacks)
         // A legacy INSTALL_SHORTCUT request: the Add / Ignore that used to be asked in the shade.
         // Opens on Ignore, so a stray double press never adds a shortcut another app asked for.
         uiState.shortcutReview != null -> {
@@ -1765,6 +1833,71 @@ internal fun shellModalSpec(
         )
         else -> null
     }
+}
+
+/** What the icon editor's Pick source chooser calls back into the view model. */
+data class SourceChooserCallbacks(
+    val onTheme: () -> Unit = {},
+    val onDevice: () -> Unit = {},
+    val onCancel: () -> Unit = {},
+)
+
+/** What the artwork folder prompt's two buttons call back into the view model. */
+data class ArtworkFolderCallbacks(
+    val onConfirm: () -> Unit = {},
+    val onCancel: () -> Unit = {},
+)
+
+/** An artwork folder prompt as the shared Confirm modal, in the approved copy. */
+private fun artworkFolderSpec(prompt: ArtworkFolderPrompt, callbacks: ArtworkFolderCallbacks): PfpModalSpec {
+    val confirmLabel: String
+    val cancelLabel: String
+    val title: String
+    val message: String
+    when (prompt) {
+        is ArtworkFolderPrompt.Unavailable -> {
+            title = "Artwork folder unavailable"
+            message = "PFP can't reach ${prompt.name}. New artwork is paused until you relink it. " +
+                "Art you already have still shows."
+            confirmLabel = "Relink folder"
+            cancelLabel = "Not now"
+        }
+        is ArtworkFolderPrompt.MoveArtwork -> {
+            title = "Move your artwork to a folder you own"
+            message = if (prompt.internalFiles == 1) {
+                "1 image is stored inside the app and would be lost if you uninstall. " +
+                    "Pick a folder and PFP moves it there."
+            } else {
+                "${prompt.internalFiles} images are stored inside the app and would be lost if " +
+                    "you uninstall. Pick a folder and PFP moves them there."
+            }
+            confirmLabel = "Choose artwork folder"
+            cancelLabel = "Later"
+        }
+        ArtworkFolderPrompt.ChooseFolder -> {
+            title = "Choose an artwork folder"
+            message = "New artwork is saved to a folder you own. Pick one and PFP saves art there."
+            confirmLabel = "Choose artwork folder"
+            cancelLabel = "Later"
+        }
+        is ArtworkFolderPrompt.ForeignLibrary -> {
+            title = "This folder holds another artwork library"
+            val files = if (prompt.fileCount == 1) "1 file" else "${prompt.fileCount} files"
+            message = "${prompt.name} was set up by a different install ($files). " +
+                "Use it and PFP relinks your games to its art, or pick another folder."
+            confirmLabel = "Use this library"
+            cancelLabel = "Choose another folder"
+        }
+    }
+    return PfpModalSpec.Confirm(
+        key = "artwork_folder:${prompt::class.simpleName}",
+        title = title,
+        message = message,
+        confirmLabel = confirmLabel,
+        cancelLabel = cancelLabel,
+        onConfirm = callbacks.onConfirm,
+        onCancel = callbacks.onCancel,
+    )
 }
 
 /** What the notification panel's sheets and Stop confirm call back into the view model. */

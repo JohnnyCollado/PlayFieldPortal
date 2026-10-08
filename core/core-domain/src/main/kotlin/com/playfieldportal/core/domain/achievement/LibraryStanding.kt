@@ -18,8 +18,6 @@ data class GameStanding(
      */
     val isInstalled: Boolean = true,
 ) {
-    val inLibrary: Boolean get() = libraryGameId != null
-
     /** Coin-weighted completion, 0f..1f (Platinum excluded, per [GameCoins.progress]). */
     val progress: Float get() = coins.progress
 

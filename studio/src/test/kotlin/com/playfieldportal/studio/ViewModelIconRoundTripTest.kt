@@ -1,12 +1,15 @@
 package com.playfieldportal.studio
 
 import com.playfieldportal.themekit.PfpThemeCodec
+import com.playfieldportal.themekit.PtfIcons
+import com.playfieldportal.themekit.ThemeIconChoices
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.File
 import javax.imageio.ImageIO
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.CoroutineScope
@@ -73,6 +76,64 @@ class ViewModelIconRoundTripTest {
         } finally {
             file.delete()
         }
+    }
+
+    private fun centre(png: ByteArray): Int {
+        val img = assertNotNull(ImageIO.read(png.inputStream()))
+        return img.getRGB(img.width / 2, img.height / 2)
+    }
+
+    @Test
+    fun `setIconFromTheme sets the slot from a PSP extra through the gate and undo restores it`() = runBlocking {
+        val vm = StudioViewModel(CoroutineScope(Dispatchers.Default))
+        val ref = PtfIcons.SlotRef(2, 5)
+        vm.update { it.copy(ptfIcons = mapOf(ref to pngBytes(512))) }
+
+        vm.setIconFromTheme("catbar_games", ThemeIconChoices.Source.Ptf(ref))
+        vm.awaitIdle()
+
+        val s = vm.state.value
+        assertEquals(null, s.dialog)
+        val stored = assertNotNull(s.iconOverrides["catbar_games"])
+        val size = assertNotNull(EditableSlots.byKey("catbar_games")).templateSizePx
+        assertEquals(size, assertNotNull(ImageIO.read(stored.inputStream())).width, "oversize art is downscaled to the slot's template")
+        assertEquals(0xFFAA3366.toInt(), centre(stored))
+        assertEquals("png", s.iconExtensions["catbar_games"])
+        assertTrue("catbar_games" in s.iconBitmaps)
+
+        vm.undo()
+        assertTrue("catbar_games" !in vm.state.value.iconOverrides, "one undo reverts the whole pick")
+        assertTrue("catbar_games" !in vm.state.value.iconBitmaps)
+    }
+
+    @Test
+    fun `setIconFromTheme copies another slot's art`() = runBlocking {
+        val vm = StudioViewModel(CoroutineScope(Dispatchers.Default))
+        vm.update { it.copy(iconOverrides = mapOf("item_playlist" to pngBytes(64)), iconExtensions = mapOf("item_playlist" to "png")) }
+
+        vm.setIconFromTheme("catbar_games", ThemeIconChoices.Source.Slot("item_playlist"))
+        vm.awaitIdle()
+
+        assertEquals(null, vm.state.value.dialog)
+        assertEquals(0xFFAA3366.toInt(), centre(assertNotNull(vm.state.value.iconOverrides["catbar_games"])))
+        assertTrue("item_playlist" in vm.state.value.iconOverrides, "the source slot is untouched")
+    }
+
+    @Test
+    fun `setIconFromTheme with a missing source or unreadable art raises the error dialog`() = runBlocking {
+        val vm = StudioViewModel(CoroutineScope(Dispatchers.Default))
+        vm.update { it.copy(ptfIcons = mapOf(PtfIcons.SlotRef(2, 5) to byteArrayOf(1, 2, 3))) }
+
+        vm.setIconFromTheme("catbar_games", ThemeIconChoices.Source.Ptf(PtfIcons.SlotRef(2, 5)))
+        vm.awaitIdle()
+        assertIs<StudioDialog.Error>(vm.state.value.dialog)
+        assertTrue(vm.state.value.iconOverrides.isEmpty())
+
+        vm.update { it.copy(dialog = null) }
+        vm.setIconFromTheme("catbar_games", ThemeIconChoices.Source.Slot("item_playlist"))
+        vm.awaitIdle()
+        assertIs<StudioDialog.Error>(vm.state.value.dialog)
+        assertTrue(vm.state.value.iconOverrides.isEmpty())
     }
 
     @Test

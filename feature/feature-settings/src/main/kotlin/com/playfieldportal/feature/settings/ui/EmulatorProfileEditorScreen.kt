@@ -25,11 +25,9 @@ import com.playfieldportal.core.domain.model.IntentType
 import com.playfieldportal.feature.settings.viewmodel.EmulatorTemplate
 import com.playfieldportal.feature.settings.viewmodel.ProfileEditorState
 
-private val EditorText     = Color(0xFFFFFFFF)
 private val EditorSubtext  = Color(0xFF888888)
 private val EditorAccent   = Color(0xFF4A90D9)
 private val EditorError    = Color(0xFFE57373)
-private val EditorBorder   = Color(0xFF444444)
 
 @Composable
 fun EmulatorProfileEditorScreen(

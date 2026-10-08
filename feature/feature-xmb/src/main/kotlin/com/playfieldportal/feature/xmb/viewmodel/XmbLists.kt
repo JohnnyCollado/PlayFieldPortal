@@ -6,7 +6,9 @@ import com.playfieldportal.core.domain.model.ListArrangement
 import com.playfieldportal.core.domain.model.ListKeys
 import com.playfieldportal.core.domain.model.ListSortMode
 import com.playfieldportal.core.domain.model.ListState
+import com.playfieldportal.core.domain.model.MemoryCard
 import com.playfieldportal.feature.appbar.CategorizedApp
+import com.playfieldportal.feature.xmb.ui.shelfTitle
 
 // ── How the XMB arranges a list ───────────────────────────────────────────────
 //
@@ -112,8 +114,7 @@ internal fun canonicalXmbCategories(categories: List<Category>, fallback: List<C
 // Categories with their own dedicated layout — these never render custom memory cards and are
 // not arrangeable at their root (media/system sections own their layouts).
 internal val NON_COLLECTION_CATEGORY_IDS = setOf(
-    BuiltInCategory.FAVORITES, BuiltInCategory.RECENTLY_PLAYED, BuiltInCategory.MUSIC,
-    BuiltInCategory.VIDEO, BuiltInCategory.PHOTO, BuiltInCategory.ANDROID,
+    BuiltInCategory.MUSIC, BuiltInCategory.VIDEO, BuiltInCategory.PHOTO, BuiltInCategory.ANDROID,
     BuiltInCategory.APP_DRAWER, BuiltInCategory.SETTINGS, BuiltInCategory.ACHIEVEMENTS,
     BuiltInCategory.SOCIAL,
 )
@@ -614,4 +615,17 @@ internal fun XMBUiState.landedFrom(before: XMBUiState): XMBUiState {
         landingPending = false,
         landingToken = landingToken + 1,
     )
+}
+
+/**
+ * A console Memory Card row's title: the console, as the game picker's shelves show it. A default
+ * "{console} Memory Card" name drops the ending, which moves to [memoryCardRowSubtitle]; a name the
+ * user typed is kept as written.
+ */
+internal fun memoryCardRowTitle(card: MemoryCard): String = shelfTitle(card)
+
+/** "Memory Card · 24 Games", the console-card twin of a custom card's "Custom · 12 Games". */
+internal fun memoryCardRowSubtitle(count: Int, pinned: Boolean): String {
+    val games = "$count ${if (count == 1) "Game" else "Games"}"
+    return if (pinned) "Memory Card · Pinned · $games" else "Memory Card · $games"
 }

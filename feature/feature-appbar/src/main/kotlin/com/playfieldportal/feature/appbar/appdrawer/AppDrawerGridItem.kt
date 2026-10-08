@@ -38,8 +38,6 @@ import com.playfieldportal.feature.appbar.InstalledApp
 // cross-fades in/out over 120ms and occupies the same box either way, so tile geometry never
 // shifts when the cursor moves.
 
-private val ARTWORK_SIZE = 72.dp
-
 // ── Adaptive row sizing ───────────────────────────────────────────────────────
 //
 // The drawer guarantees three full rows are visible with nothing clipped: on a short viewport the

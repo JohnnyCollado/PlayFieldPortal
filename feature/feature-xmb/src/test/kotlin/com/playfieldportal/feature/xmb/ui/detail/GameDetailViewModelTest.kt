@@ -1198,6 +1198,20 @@ class GameDetailViewModelTest {
     }
 
     @Test
+    fun `fetchArtwork shows the paused line when the artwork folder is unavailable`() = runTest {
+        coEvery { artworkRepository.refetchArtworkForGame(1L, any()) } returns
+            ArtworkFetchResult(1L, "Crash Bandicoot", success = false, paused = true)
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.fetchArtwork()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("Artwork paused. Relink your artwork folder to save new art.",
+            viewModel.uiState.value.artworkMessage)
+    }
+
+    @Test
     fun `fetchArtwork says so when the XMB menu is already fetching this game`() = runTest {
         coEvery { artworkRepository.refetchArtworkForGame(1L, any()) } returns
             ArtworkFetchResult(1L, "Crash Bandicoot", success = false, alreadyRunning = true)

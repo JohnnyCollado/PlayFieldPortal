@@ -64,9 +64,6 @@ data class GameCoins(
     /** Weighted value of coins earned so far (individual coins only). */
     val earnedCoinValue: Int get() = earned.coinValue
 
-    /** Weighted value of all individual coins available. */
-    val totalCoinValue: Int get() = total.coinValue
-
     /**
      * Completion as a plain count ratio (earned coins / total coins), 0f..1f. Deliberately NOT
      * coin-weighted: weighting by tier value would make a game with a few Golds look more complete

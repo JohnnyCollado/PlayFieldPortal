@@ -75,6 +75,17 @@ class PtfConversionTest {
     }
 
     @Test
+    fun `keeps the other body images as square PNG extras and leaves out the focus variants`() {
+        val bundle = assertIs<ConvertOutcome.Converted>(PtfConversion.convert(iconPtf(), "icons.ptf")).bundle
+        val tv = assertNotNull(bundle.ptfIcons[PtfIcons.SlotRef(2, 5)])
+        assertEquals("png", tv.extension)
+        val image = assertNotNull(ImageIO.read(tv.bytes.inputStream()))
+        assertEquals(64, image.width)
+        assertEquals(64, image.height)
+        assertTrue(PtfIcons.SlotRef(3, 9) !in bundle.ptfIcons, "an odd item index is a focus variant")
+    }
+
+    @Test
     fun `a strong vivid icon tint becomes the icon colour and the accent`() {
         val manifest = assertIs<ConvertOutcome.Converted>(PtfConversion.convert(iconPtf(), "icons.ptf")).bundle.manifest
         assertEquals("#E07020", manifest.iconColor)

@@ -532,6 +532,36 @@ class DiscSetBuilderTest {
     }
 
     @Test
+    fun `staleCompanions pairs each stored bin with the cue that lists it`() {
+        val bin1 = setGame("/roms/psx/PE2 (USA) (Disc 1)/PE2 (USA) (Disc 1).bin", "k", 1, true).copy(id = 11)
+        val cue1 = setGame("/roms/psx/PE2 (USA) (Disc 1)/PE2 (USA) (Disc 1).cue", "k", 1, false).copy(id = 12)
+        val loneBin = game("/roms/psx/Final Fantasy VII (Disc 1).bin").copy(id = 13)
+
+        val pairs = builder.staleCompanions(
+            listOf(bin1, cue1, loneBin),
+            sheets(cue1.romPath!! to listOf("FILE \"PE2 (USA) (Disc 1).bin\" BINARY")),
+        )
+
+        // The listed .bin is a companion of its .cue; a sheet-less .bin is a real game.
+        assertEquals(listOf(bin1 to cue1), pairs)
+    }
+
+    @Test
+    fun `staleCompanions ignores rows that were never stored`() {
+        // Only stored rows can be stale; a scan never emits a companion, and an unsaved row has
+        // nothing to merge.
+        val bin = game("/roms/psx/Game.bin")
+        val cue = game("/roms/psx/Game.cue").copy(id = 5)
+
+        val pairs = builder.staleCompanions(
+            listOf(bin, cue),
+            sheets(cue.romPath!! to listOf("FILE \"Game.bin\" BINARY")),
+        )
+
+        assertTrue(pairs.isEmpty())
+    }
+
+    @Test
     fun `reconcile drops disc-tagged track files listed by a cue`() {
         // A multi-track dump: the track files carry the disc tag too, so they would join the set.
         val key = "psx\u0001/roms/psx\u0001Game"

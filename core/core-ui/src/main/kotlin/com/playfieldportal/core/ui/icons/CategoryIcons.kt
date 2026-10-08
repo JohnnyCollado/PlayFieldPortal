@@ -12,8 +12,8 @@ data class CategoryIcon(
     @DrawableRes val resId: Int,
 )
 
-/** Every icon a user can pick for a category, in picker order: the XMB column glyphs and the
- *  Favorites glyph first, then every bundled console icon. Single source of truth — the Settings
+/** Every icon a user can pick for a category, in picker order: the XMB column glyphs first, then
+ *  the Favorites star and every bundled console icon. Single source of truth — the Settings
  *  picker and the XMB bar both resolve icons through [categoryIconFor]. */
 val CATEGORY_ICON_CATALOG: List<CategoryIcon> = listOf(
     // ── XMB column glyphs ────────────────────────────────────────────────────────
@@ -26,8 +26,10 @@ val CATEGORY_ICON_CATALOG: List<CategoryIcon> = listOf(
     CategoryIcon("ic_appstore",  "App Store", R.drawable.catbar_appstore),
     CategoryIcon("ic_social",    "Social",    R.drawable.catbar_social),
     CategoryIcon("ic_achievements", "Shiba Coins", R.drawable.catbar_achievements),
-    CategoryIcon("ic_favorites", "Favorites", R.drawable.catbar_favorites),
     // ── Console icons (sysicon_* art, also used for memory-card media) ────────────
+    // Favorites is the Game column's Favorites card, not a column: its art is sysicon_favorites,
+    // so a category that picks it follows that card's theme and user icon.
+    CategoryIcon("ic_favorites",      "Favorites",            R.drawable.sysicon_favorites),
     CategoryIcon("ic_nes",            "NES",                  R.drawable.sysicon_nes),
     CategoryIcon("ic_snes",           "Super NES",            R.drawable.sysicon_snes),
     CategoryIcon("ic_n64",            "Nintendo 64",          R.drawable.sysicon_n64),

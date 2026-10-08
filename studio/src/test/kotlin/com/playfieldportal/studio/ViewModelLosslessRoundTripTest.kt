@@ -3,7 +3,9 @@ package com.playfieldportal.studio
 import com.playfieldportal.themekit.PfpThemeBundle
 import com.playfieldportal.themekit.PfpThemeCodec
 import com.playfieldportal.themekit.PfpThemeManifest
+import com.playfieldportal.themekit.PtfIcons
 import com.playfieldportal.themekit.ThemeFixtures
+import com.playfieldportal.themekit.ThemeImage
 import com.playfieldportal.themekit.ThemeLegibility
 import com.playfieldportal.themekit.ThemeMotion
 import com.playfieldportal.themekit.MotionCrop
@@ -64,7 +66,8 @@ class ViewModelLosslessRoundTripTest {
         assertContentEquals(a.wallpaper, b.wallpaper, "$label: wallpaper")
         assertContentEquals(a.preview, b.preview, "$label: preview")
         // Icons for parts themes no longer customize (the status strip, menus...) are left out on open.
-        assertEquals(a.icons.filterKeys(EditableSlots::isKept), b.icons, "$label: icons")
+        assertEquals(a.icons.filterKeys(EditableSlots::isEditable), b.icons, "$label: icons")
+        assertEquals(a.ptfIcons, b.ptfIcons, "$label: PSP extras")
         assertEquals(a.consoleArt, b.consoleArt, "$label: sysicons")
         assertEquals(a.mediaArt, b.mediaArt, "$label: mediaicons")
         assertEquals(a.motion, b.motion, "$label: motion")
@@ -161,6 +164,30 @@ class ViewModelLosslessRoundTripTest {
         try {
             val (_, after, _) = roundTrip(dir, "parameters", PfpThemeCodec.write(PfpThemeBundle(full, wallpaper = null, preview = null)))
             assertEquals(values, com.playfieldportal.themekit.ThemeParameterFields.valuesOf(after.manifest))
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `PSP body extras survive open and export`() = runBlocking {
+        val dir = createTempDirectory("studio-lossless-ptficons").toFile()
+        try {
+            val png = pngFile(dir, "extra.png").readBytes()
+            val refs = listOf(PtfIcons.SlotRef(2, 5), PtfIcons.SlotRef(3, 8), PtfIcons.SlotRef(4, 0))
+            val original = PfpThemeCodec.write(
+                PfpThemeBundle(
+                    manifest = PfpThemeManifest(name = "Extras", accentColor = "#0055AA"),
+                    wallpaper = null,
+                    preview = null,
+                    ptfIcons = refs.associateWith { ThemeImage(png, "png") },
+                ),
+            )
+            val (before, after, vm) = roundTrip(dir, "extras", original)
+            assertEquals(refs.toSet(), before.ptfIcons.keys, "fixture must carry the extras")
+            assertEquals(refs.toSet(), vm.state.value.ptfIcons.keys)
+            assertEquals(before.ptfIcons, after.ptfIcons)
+            assertTrue(after.passthrough.isEmpty(), "extras are typed, never passthrough")
         } finally {
             dir.deleteRecursively()
         }

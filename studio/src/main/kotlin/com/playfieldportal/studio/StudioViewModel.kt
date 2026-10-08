@@ -22,7 +22,9 @@ import com.playfieldportal.themekit.PfpThemeBundle
 import com.playfieldportal.themekit.PfpThemeCodec
 import com.playfieldportal.themekit.PfpThemeManifest
 import com.playfieldportal.themekit.PfpThemeSource
+import com.playfieldportal.themekit.PtfIcons
 import com.playfieldportal.themekit.ReadDiagnostics
+import com.playfieldportal.themekit.ThemeIconChoices
 import com.playfieldportal.themekit.ThemeImage
 import com.playfieldportal.themekit.ThemeLegibility
 import com.playfieldportal.themekit.ThemeMediaSlots
@@ -152,6 +154,11 @@ data class StudioState(
     val iconExtensions: Map<String, String> = emptyMap(),
     /** ... and the decoded bitmaps the preview/editor draw. Kept in lockstep with [iconOverrides]. */
     val iconBitmaps: Map<String, ImageBitmap> = emptyMap(),
+    /**
+     * The other PSP body images a converted `.ptf` carried (PNG), kept so any of them can become
+     * a slot's icon. Never edited, only carried through open and export.
+     */
+    val ptfIcons: Map<PtfIcons.SlotRef, ByteArray> = emptyMap(),
     /** Manifest keys this build has no typed field for, merged back on export. */
     val manifestExtras: JsonObject = JsonObject(emptyMap()),
     /**
@@ -363,7 +370,6 @@ class StudioViewModel(private val scope: CoroutineScope) {
         l?.takeUnless { it.text == null && it.icon == null && it.solidUnfocusedIcons == null }
 
     fun dismissDialog() = _state.update { it.copy(dialog = null) }
-    fun clearStatus() = _state.update { it.copy(statusMessage = null) }
 
     // ── Open / import ────────────────────────────────────────────────────────
 
@@ -413,7 +419,7 @@ class StudioViewModel(private val scope: CoroutineScope) {
         val manifest = bundle.manifest
         // Icons for parts a Studio theme no longer replaces (status strip, Shiba Coins, menus...)
         // are left out: they would not be editable, and re-exporting them would keep them alive.
-        val (icons, notThemeable) = bundle.icons.entries.partition { (key, _) -> EditableSlots.isKept(key) }
+        val (icons, notThemeable) = bundle.icons.entries.partition { (key, _) -> EditableSlots.isEditable(key) }
             .let { (kept, dropped) -> kept.associate { it.toPair() } to dropped.map { it.key } }
         val iconBitmaps = icons.mapNotNull { (key, png) ->
             ImageCodecs.toImageBitmap(png.bytes)?.let { key to it }
@@ -484,6 +490,7 @@ class StudioViewModel(private val scope: CoroutineScope) {
                 iconOverrides = icons.mapValues { (_, image) -> image.bytes },
                 iconExtensions = icons.mapValues { (_, image) -> image.extension.lowercase() },
                 iconBitmaps = iconBitmaps,
+                ptfIcons = bundle.ptfIcons.mapValues { (_, image) -> image.bytes },
                 manifestExtras = bundle.manifestExtras,
                 passthroughFiles = passthroughFiles,
                 mediaFiles = mediaFiles,
@@ -828,6 +835,26 @@ class StudioViewModel(private val scope: CoroutineScope) {
         }
     }
 
+    /**
+     * Sets [slotKey] from another icon of the open theme: a sibling slot's art ([ThemeIconChoices.Source.Slot])
+     * or a kept PSP body image ([ThemeIconChoices.Source.Ptf]). Same gate and one undoable edit
+     * as a local file; a source that is gone or unreadable raises the Error dialog.
+     */
+    fun setIconFromTheme(slotKey: String, source: ThemeIconChoices.Source) = runBusy {
+        val slot = EditableSlots.byKey(slotKey) ?: return@runBusy
+        val current = _state.value
+        val (bytes, label) = when (source) {
+            is ThemeIconChoices.Source.Slot ->
+                current.iconOverrides[source.key] to (EditableSlots.byKey(source.key)?.displayName ?: source.key)
+            is ThemeIconChoices.Source.Ptf ->
+                current.ptfIcons[source.ref] to (PtfIcons.labelFor(source.ref) ?: "That theme icon")
+        }
+        when (val gate = gateIcon(slot, bytes, label)) {
+            is IconGate.Ok -> edit { it.withIcon(slotKey, gate.bytes, gate.extension, gate.bitmap) }
+            is IconGate.Reject -> _state.update { it.copy(dialog = StudioDialog.Error(gate.reason)) }
+        }
+    }
+
     /** Outcome of the icon gate: art ready to store, or the reason it was refused. */
     private sealed interface IconGate {
         class Ok(val bytes: ByteArray, val extension: String, val bitmap: ImageBitmap) : IconGate
@@ -1024,6 +1051,7 @@ class StudioViewModel(private val scope: CoroutineScope) {
             icons = snapshot.iconOverrides.mapValues { (key, png) ->
                 ThemeImage(png, snapshot.iconExtensions[key] ?: "png")
             },
+            ptfIcons = snapshot.ptfIcons.mapValues { (_, png) -> ThemeImage(png, "png") },
             motion = motion,
             media = snapshot.mediaFiles.filterValues { it.isFile }
                 .mapValues { (_, f) -> ThemeMotion.ofFile(f, f.extension.lowercase()) },

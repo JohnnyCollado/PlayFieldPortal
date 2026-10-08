@@ -5,6 +5,8 @@ import com.playfieldportal.themekit.IconEditorLayout
 import com.playfieldportal.themekit.IconEditorTab
 import com.playfieldportal.themekit.IconGifSupport
 import com.playfieldportal.themekit.IconSlot
+import com.playfieldportal.themekit.ThemeIconChoices
+import java.security.MessageDigest
 
 /** What the search box and the chips/toggles currently ask for. All set criteria must hold. */
 data class PickerQuery(
@@ -123,6 +125,25 @@ object IconPicker {
         // GameIconView.NATURAL_ART_HEIGHT: Physical Media mode draws the art 84 dp tall, focused or not.
         IconEditorTab.PHYSICAL_MEDIA -> listOf(PreviewSize("In list", 84))
     }
+
+    // ── From theme… ──────────────────────────────────────────────────────────
+
+    /** "From theme…" needs something to pick: a slot icon or a kept PSP image in the open theme. */
+    fun fromThemeAvailable(state: StudioState): Boolean = state.iconOverrides.isNotEmpty() || state.ptfIcons.isNotEmpty()
+
+    /** The dialog title: the open theme and the slot being set. */
+    fun fromThemeTitle(themeName: String, slot: IconSlot): String = "$themeName · icon for ${slot.displayName}"
+
+    /**
+     * The dialog's sections for the open theme. Slot art that is byte-identical collapses to one
+     * tile; the comparison is a SHA-256 of the bytes, so distinct art is never hidden by a collision.
+     */
+    fun fromThemeSections(state: StudioState): List<ThemeIconChoices.Section> =
+        ThemeIconChoices.sections(
+            slotKeys = state.iconOverrides.keys,
+            ptfRefs = state.ptfIcons.keys,
+            artKey = { key -> state.iconOverrides[key]?.let { bytes -> MessageDigest.getInstance("SHA-256").digest(bytes).toList() } },
+        )
 
     // ── Pack report ──────────────────────────────────────────────────────────
 

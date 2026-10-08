@@ -7,6 +7,7 @@ import com.playfieldportal.core.ui.icons.CustomIcon
 import com.playfieldportal.core.ui.icons.GifFrameProbe
 import com.playfieldportal.core.ui.icons.UserCategoryIconKeys
 import com.playfieldportal.themekit.CustomizableIcons
+import com.playfieldportal.themekit.PtfIcons
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
@@ -86,7 +87,34 @@ class ThemeTiers internal constructor(private val filesDir: File) {
         }.toMap()
     }
 
-    /** Empties [tier]'s icons. True when there was anything to remove. */
+    /**
+     * The extra PSP body images the applied theme carries, by record: `theme-icons/ptficons/<group>_<index>.png`
+     * (written by a theme apply, wiped with the theme tier's icons). Names outside the canonical
+     * body format, and other extensions, are ignored. Ordered by group, then index.
+     */
+    fun ptfIconFiles(): Map<PtfIcons.SlotRef, File> {
+        val dir = File(iconDir(Tier.THEME), PTF_ICONS_SUBDIR)
+        // Numeric (group, index) order: by file name "2_10" would sort before "2_5".
+        return dir.listFiles { f -> f.isFile }.orEmpty()
+            .filter { it.extension == PTF_ICON_EXTENSION }
+            .mapNotNull { file -> PtfIcons.refForStem(file.nameWithoutExtension)?.let { it to file } }
+            .sortedWith(compareBy({ it.first.group }, { it.first.index }))
+            .toMap()
+    }
+
+    /** [ptfIconFiles] decoded on IO with the same bounded decode as [loadIcons]; always stills. */
+    suspend fun loadPtfIcons(): Map<PtfIcons.SlotRef, CustomIcon> = withContext(Dispatchers.IO) {
+        ptfIconFiles().mapNotNull { (ref, file) ->
+            val bitmap = SafeMedia.decodeFileCapped(
+                file.absolutePath,
+                maxDimension = ICON_DECODE_MAX_DIMENSION,
+                targetDimension = ICON_DECODE_TARGET_DIMENSION,
+            ) ?: return@mapNotNull null
+            ref to CustomIcon.Still(bitmap.asImageBitmap())
+        }.toMap()
+    }
+
+    /** Empties [tier]'s icons (and, for the theme tier, its `ptficons/` extras). True when there was anything to remove. */
     fun clearIcons(tier: Tier): Boolean {
         val dir = iconDir(tier)
         val had = dir.listFiles { f -> f.isFile }.orEmpty().isNotEmpty()
@@ -136,6 +164,10 @@ class ThemeTiers internal constructor(private val filesDir: File) {
     }
 
     companion object {
+        /** Folder inside the theme icon dir holding the theme's extra PSP body images. */
+        const val PTF_ICONS_SUBDIR = "ptficons"
+        private const val PTF_ICON_EXTENSION = "png"
+
         /**
          * Icon files either tier stores. The user tier writes the extension of the picked file's
          * validated MIME; a theme writes png and gif.

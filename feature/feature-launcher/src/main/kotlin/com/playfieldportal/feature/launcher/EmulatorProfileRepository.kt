@@ -115,10 +115,6 @@ class EmulatorProfileRepository @Inject constructor(
         } catch (_: Exception) { -1L }
     }
 
-    // Saves a user-created profile.
-    suspend fun saveCustomProfile(profile: EmulatorProfile) =
-        savePersistedProfile(profile.copy(isCustom = true))
-
     // Saves any profile that should be persisted locally (custom or auto-generated).
     // Marks auto-generated edits with userModified when the caller is the settings editor.
     suspend fun savePersistedProfile(profile: EmulatorProfile) = withContext(io) {

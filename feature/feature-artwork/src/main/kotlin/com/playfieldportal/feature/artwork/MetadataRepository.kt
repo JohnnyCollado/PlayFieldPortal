@@ -7,6 +7,8 @@ import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.dao.SsMediaCacheDao
 import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.core.data.database.entity.SsMediaCacheEntity
+import com.playfieldportal.feature.artwork.api.ArtworkFolderState
+import com.playfieldportal.feature.artwork.api.ArtworkFolderStatus
 import com.playfieldportal.feature.artwork.api.ArtworkScrapePreferences
 import com.playfieldportal.feature.artwork.api.SsMediaSelection
 import com.playfieldportal.feature.artwork.api.IgdbApi
@@ -26,7 +28,6 @@ import com.playfieldportal.feature.artwork.store.ArtworkTempIO
 import com.playfieldportal.feature.artwork.video.VideoSnapTranscoder
 import io.ktor.client.HttpClient
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.delay
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -36,6 +37,11 @@ data class MetadataFetchResult(
     val source: String,   // "screenscraper" | "thegamesdb" | "steamgriddb" | "igdb" | "none"
     val message: String,
     val scrapedTitle: String? = null,
+    /**
+     * The artwork folder was not Ready after the asset phase: the text metadata was written, but no
+     * artwork column was (AD-5).
+     */
+    val paused: Boolean = false,
 )
 
 /**
@@ -104,6 +110,7 @@ class MetadataRepository @Inject constructor(
     private val ssMediaCacheDao: SsMediaCacheDao,
     private val scrapePreferences: ArtworkScrapePreferences,
     private val storefrontResolver: StorefrontMetadataResolver,
+    private val folderStatus: ArtworkFolderStatus,
 ) {
     // Batch guards, set from ScreenScraper's typed failures: 430 (daily quota) and credential
     // failures stop SS for the rest of the run; 431 stops only hash-less lookups (each miss digs
@@ -454,6 +461,11 @@ class MetadataRepository @Inject constructor(
 
         }   // end !options.metadataOnly
 
+        // The asset phase may have lost the folder (the store refreshes the state when a write fails).
+        // A remote URL stored in its place would read as a valid ref and hide the game from Scrape
+        // Missing once the folder is back, so the artwork columns stay out of this write (AD-5).
+        val paused = !options.metadataOnly && !isFolderReady()
+
         // Scraped title: ScreenScraper's canonical name, TheGamesDB fallback. Deliberately NOT
         // written through updateMetadata below — see the fill-only write after it.
         val newScrapedTitle = ssInfo?.title ?: tgdbInfo?.title
@@ -468,12 +480,12 @@ class MetadataRepository @Inject constructor(
             releaseYear  = ssInfo?.releaseYear ?: tgdbInfo?.releaseYear,
             genre        = ssInfo?.genre,
             // Metadata-only runs pass null artwork columns — COALESCE leaves them untouched.
-            artworkUri   = if (options.metadataOnly) null else backgroundPath ?: finalHeroUrl ?: finalBoxArtUrl,
-            heroUri      = if (options.metadataOnly) null else heroPath ?: finalHeroUrl,
-            logoUri      = if (options.metadataOnly) null else logoPath ?: finalLogoUrl,
-            boxArtUri    = boxArtPath,
-            physicalMediaUri = physicalMediaPath,
-            box3dUri     = box3dPath,
+            artworkUri   = if (options.metadataOnly || paused) null else backgroundPath ?: finalHeroUrl ?: finalBoxArtUrl,
+            heroUri      = if (options.metadataOnly || paused) null else heroPath ?: finalHeroUrl,
+            logoUri      = if (options.metadataOnly || paused) null else logoPath ?: finalLogoUrl,
+            boxArtUri    = if (paused) null else boxArtPath,
+            physicalMediaUri = if (paused) null else physicalMediaPath,
+            box3dUri     = if (paused) null else box3dPath,
             players      = ssInfo?.players,
             ageRating    = ssInfo?.ageRating,
             franchise    = ssInfo?.franchise,
@@ -502,7 +514,7 @@ class MetadataRepository @Inject constructor(
 
         // Dead cached URL(s): SS occasionally moves media. Refresh the cache once from a live
         // jeuInfos and retry exactly the failed kinds with fresh URLs — one extra call total.
-        if (usedSsCache && failedSsKinds.isNotEmpty() && cachedSsId != null) {
+        if (!paused && usedSsCache && failedSsKinds.isNotEmpty() && cachedSsId != null) {
             Timber.w("SS cached URLs failed for $failedSsKinds — refreshing cache, retrying once")
             ssMediaCacheDao.delete(cachedSsId)
             val fresh = screenScraper.fetchGameInfo(platformId, rom = null, ssGameId = cachedSsId).info
@@ -540,25 +552,17 @@ class MetadataRepository @Inject constructor(
         }
 
         prewarm(backgroundPath, heroPath, logoPath)
-        if (!options.metadataOnly) fetchHorizontalIcon(gameId, bestTitle, sgdbGameId)
+        if (!options.metadataOnly && !paused) fetchHorizontalIcon(gameId, bestTitle, sgdbGameId)
 
         Timber.i("Metadata from $src: '$bestTitle' (scrapedTitle='$newScrapedTitle')")
-        return MetadataFetchResult(true, src, "Found via $src", scrapedTitle = newScrapedTitle)
+        return MetadataFetchResult(true, src, "Found via $src", scrapedTitle = newScrapedTitle, paused = paused)
     }
 
-    suspend fun fetchMissingMetadata(onProgress: (current: Int, total: Int) -> Unit) {
-        resetSsBatchGuards()
-        val games = gameDao.getGamesWithoutArtwork()
-        games.forEachIndexed { index, game ->
-            onProgress(index + 1, games.size)
-            fetchForGame(
-                gameId     = game.id,
-                title      = game.title,
-                platformId = game.platformId,
-                romPath    = game.romPath,
-            )
-            if (index < games.size - 1) delay(500)
-        }
+    // The state is only Unknown before the first probe; the store resolves it on its first write, so
+    // this probes only when no write ran (a game with nothing to download).
+    private suspend fun isFolderReady(): Boolean {
+        val state = folderStatus.state.value.let { if (it is ArtworkFolderState.Unknown) folderStatus.refresh() else it }
+        return state is ArtworkFolderState.Ready
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────

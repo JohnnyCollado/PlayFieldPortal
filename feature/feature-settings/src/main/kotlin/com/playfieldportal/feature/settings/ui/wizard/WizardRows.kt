@@ -102,6 +102,8 @@ fun WizardRow(
     // Root rows: while an inline action holds focus, the row-level cursor fill is suppressed so
     // the action's own background is the sole highlight (same rule as the settings DirectoryRow).
     hideRowHighlightOnActionFocus: Boolean = false,
+    // Tints the sublabel (the amber "Unavailable" notice); null keeps the standard subtext colour.
+    sublabelColor: Color? = null,
     onClick: (() -> Unit)? = null,
 ) {
     val focusTracker = LocalSettingsFocusTracker.current
@@ -173,7 +175,7 @@ fun WizardRow(
             )
             if (!sublabel.isNullOrBlank()) {
                 Spacer(Modifier.height(2.dp))
-                Text(text = sublabel, color = SettingsSubtext, fontSize = 12.sp)
+                Text(text = sublabel, color = sublabelColor ?: SettingsSubtext, fontSize = 12.sp)
             }
         }
         if (trailing != null) {
@@ -234,7 +236,8 @@ fun WizardValueRow(
 
 /**
  * One managed root folder, mirroring Library Manager's directory row: non-selectable body with
- * Edit (re-link/re-point) and Remove as inline controller actions reached via LEFT/RIGHT.
+ * Edit (re-link/re-point) and Remove as inline controller actions reached via LEFT/RIGHT. A null
+ * [onRemove] drops the Remove action (the required artwork folder can be changed, never unlinked).
  */
 @Composable
 fun WizardRootRow(
@@ -242,14 +245,16 @@ fun WizardRootRow(
     sublabel: String?,
     modifier: Modifier = Modifier,
     onEdit: () -> Unit,
-    onRemove: () -> Unit,
+    onRemove: (() -> Unit)? = null,
+    sublabelColor: Color? = null,
 ) {
     WizardRow(
         label = name,
         sublabel = sublabel,
+        sublabelColor = sublabelColor,
         modifier = modifier,
         hideRowHighlightOnActionFocus = true,
-        actions = listOf(
+        actions = listOfNotNull(
             SettingsRowAction(
                 SettingsLabels.EDIT_FOLDER, onEdit,
                 actionFocusBackgroundColor = lerp(SettingsAccent, Color.Black, 0.50f),
@@ -263,18 +268,20 @@ fun WizardRootRow(
                         .padding(4.dp),
                 )
             },
-            SettingsRowAction(
-                SettingsLabels.REMOVE_FOLDER, onRemove,
-                actionFocusBackgroundColor = lerp(Color(0xFFE55353), Color.Black, 0.50f),
-            ) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = SettingsLabels.REMOVE_FOLDER,
-                    tint = Color(0xFFE55353),
-                    modifier = Modifier
-                        .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
-                        .padding(4.dp),
-                )
+            onRemove?.let { remove ->
+                SettingsRowAction(
+                    SettingsLabels.REMOVE_FOLDER, remove,
+                    actionFocusBackgroundColor = lerp(Color(0xFFE55353), Color.Black, 0.50f),
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = SettingsLabels.REMOVE_FOLDER,
+                        tint = Color(0xFFE55353),
+                        modifier = Modifier
+                            .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
+                            .padding(4.dp),
+                    )
+                }
             },
         ),
     )

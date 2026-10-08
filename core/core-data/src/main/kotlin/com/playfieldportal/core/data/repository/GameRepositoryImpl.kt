@@ -6,6 +6,7 @@ import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.entity.PlaySessionEntity
 import com.playfieldportal.core.data.database.entity.toDomain
 import com.playfieldportal.core.data.database.entity.toEntity
+import com.playfieldportal.core.data.database.seeder.mergedSurvivor
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.PlaySession
 import com.playfieldportal.core.domain.model.RecentPlatform
@@ -96,6 +97,14 @@ class GameRepositoryImpl @Inject constructor(
             gameDao.clearOtherDiscPrimaries(discSetKey, game.id)
         }
         return gameDao.upsert(game.toEntity())
+    }
+
+    override suspend fun mergeInto(survivorId: Long, loserId: Long) {
+        if (survivorId == loserId) return
+        val survivor = gameDao.getById(survivorId) ?: return
+        val loser = gameDao.getById(loserId) ?: return
+        gameDao.mergeRows(mergedSurvivor(survivor, loser), loserId)
+        Timber.i("Game merged: id=$loserId into id=$survivorId")
     }
 
     override suspend fun delete(id: Long) {

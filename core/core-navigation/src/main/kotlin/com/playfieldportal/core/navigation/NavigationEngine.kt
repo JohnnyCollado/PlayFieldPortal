@@ -253,23 +253,11 @@ class NavigationEngine(
 
     // ── Test seams ───────────────────────────────────────────────────────────────
 
-    /** Direct access for tests: the active context's focused key. */
-    internal fun activeContextForTest(): NavigationContext = active
-
     /**
      * Test/adapter convenience: Confirm on the focused node without the dispatch gating
      * (readiness/locks). Returns whether anything consumed it.
      */
     fun confirmDirect(): Boolean = active.confirm()
-
-    /**
-     * Raw, un-gated directional movement on the active context (adapter entry point).
-     * Does NOT apply readiness or recovery-lock gating — unlike [dispatch], which is the
-     * input-pipeline entry. Used by UI adapters that compose their own gating/top-boundary
-     * behavior on top of the engine.
-     */
-    fun moveActive(direction: NavigationDirection): String? =
-        dispatchDirection(active, direction)
 
     /** Un-gated vertical movement by an explicit step delta (adapter entry point). */
     fun moveVerticalActive(delta: Int): String? = active.moveVertical(delta)

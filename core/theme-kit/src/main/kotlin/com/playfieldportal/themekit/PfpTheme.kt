@@ -203,6 +203,13 @@ data class PfpThemeBundle(
      * setting the system lock screen is something the user opts into when applying the theme.
      */
     val lockScreen: ByteArray? = null,
+    /**
+     * The extra PSP body images a PTF import keeps beyond the slots it maps ([PtfIcons.extractExtras]),
+     * keyed by record. They travel as `ptficons/<group>_<index>.png`; the launcher extracts them at
+     * apply so a slot can borrow one, and nothing renders them directly. Additive: older readers
+     * keep the entries as passthrough.
+     */
+    val ptfIcons: Map<PtfIcons.SlotRef, ThemeImage> = emptyMap(),
 ) {
     override fun equals(other: Any?): Boolean =
         other is PfpThemeBundle &&
@@ -214,7 +221,8 @@ data class PfpThemeBundle(
             icons == other.icons &&
             motion == other.motion &&
             media == other.media &&
-            lockScreen.contentEquals(other.lockScreen)
+            lockScreen.contentEquals(other.lockScreen) &&
+            ptfIcons == other.ptfIcons
 
     override fun hashCode(): Int {
         var h = 31 * (31 * manifest.hashCode() + wallpaper.contentHashCode()) + preview.contentHashCode()
@@ -224,6 +232,7 @@ data class PfpThemeBundle(
         h = 31 * h + passthrough.hashCode()
         h = 31 * h + media.hashCode()
         h = 31 * h + lockScreen.contentHashCode()
+        h = 31 * h + ptfIcons.hashCode()
         return h
     }
 }

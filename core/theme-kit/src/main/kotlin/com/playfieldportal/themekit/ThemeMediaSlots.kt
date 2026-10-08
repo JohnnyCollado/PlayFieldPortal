@@ -88,8 +88,4 @@ object ThemeMediaSlots {
      */
     fun claimedBy(entryName: String): Slot? =
         byStem[entryName.substringBeforeLast('.', "")]
-
-    /** The slot for [entryName] only when its extension is also accepted. */
-    fun slotForEntry(entryName: String): Slot? =
-        claimedBy(entryName)?.takeIf { it.accepts(entryName.substringAfterLast('.')) }
 }

@@ -10,7 +10,9 @@ import com.playfieldportal.core.domain.model.PfpNotification
 import com.playfieldportal.core.domain.model.ResultItem
 import com.playfieldportal.core.domain.model.ResultOutcome
 import com.playfieldportal.core.ui.components.PfpModalSpec
+import com.playfieldportal.feature.artwork.api.ArtworkFolderPrompt
 import com.playfieldportal.feature.xmb.viewmodel.CollectionNameDialogState
+import com.playfieldportal.feature.xmb.viewmodel.CustomIconSession
 import com.playfieldportal.feature.xmb.viewmodel.InfoDialogState
 import com.playfieldportal.feature.xmb.viewmodel.NotificationPanelState
 import com.playfieldportal.feature.xmb.viewmodel.StopConfirmState
@@ -20,6 +22,7 @@ import com.playfieldportal.feature.xmb.viewmodel.PlaylistImportReport
 import com.playfieldportal.feature.xmb.viewmodel.PlaylistNameDialogState
 import com.playfieldportal.feature.xmb.viewmodel.XMBUiState
 import com.playfieldportal.feature.xmb.viewmodel.XmbConfirm
+import com.playfieldportal.feature.xmb.viewmodel.sourceChooserFor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -392,5 +395,244 @@ class ShellModalSpecTest {
         )
 
         assertTrue(specFor(both) is PfpModalSpec.TextEntry)
+    }
+
+    // ── Artwork folder prompts ────────────────────────────────────────────────
+
+    private val artworkCalls = mutableListOf<String>()
+    private val artworkCallbacks = ArtworkFolderCallbacks(
+        onConfirm = { artworkCalls += "confirm" },
+        onCancel = { artworkCalls += "cancel" },
+    )
+
+    private fun specWithArtwork(state: XMBUiState): PfpModalSpec? = shellModalSpec(
+        uiState = state,
+        onConfirmAppRename = {}, onCancelAppRename = {},
+        onConfirmCollectionName = {}, onCancelCollectionName = {},
+        onConfirmPlaylistName = {}, onCancelPlaylistName = {},
+        onConfirmSaveAsTheme = {}, onDismissSaveAsTheme = {},
+        onDismissInfoDialog = {},
+        onWindowsSetupConfirm = {}, onWindowsSetupDismiss = {},
+        notificationCallbacks = notificationCallbacks,
+        confirmCallbacks = menuConfirmCallbacks,
+        artworkFolderCallbacks = artworkCallbacks,
+    )
+
+    private fun artworkConfirm(prompt: ArtworkFolderPrompt): PfpModalSpec.Confirm =
+        specWithArtwork(XMBUiState(artworkFolderPrompt = prompt)) as PfpModalSpec.Confirm
+
+    @Test
+    fun `no artwork prompt means no artwork modal`() {
+        assertNull(specWithArtwork(XMBUiState(artworkFolderPrompt = null)))
+    }
+
+    @Test
+    fun `the unavailable prompt names the folder and offers Relink folder or Not now`() {
+        val spec = artworkConfirm(ArtworkFolderPrompt.Unavailable("Artwork"))
+
+        assertEquals("Artwork folder unavailable", spec.title)
+        assertEquals(
+            "PFP can't reach Artwork. New artwork is paused until you relink it. " +
+                "Art you already have still shows.",
+            spec.message,
+        )
+        assertEquals("Relink folder", spec.confirmLabel)
+        assertEquals("Not now", spec.cancelLabel)
+        assertFalse(spec.destructive)
+        spec.onConfirm()
+        spec.onCancel()
+        assertEquals(listOf("confirm", "cancel"), artworkCalls)
+    }
+
+    @Test
+    fun `the move prompt carries the image count`() {
+        val spec = artworkConfirm(ArtworkFolderPrompt.MoveArtwork(42))
+
+        assertEquals("Move your artwork to a folder you own", spec.title)
+        assertEquals(
+            "42 images are stored inside the app and would be lost if you uninstall. " +
+                "Pick a folder and PFP moves them there.",
+            spec.message,
+        )
+        assertEquals("Choose artwork folder", spec.confirmLabel)
+        assertEquals("Later", spec.cancelLabel)
+    }
+
+    @Test
+    fun `a single stored image or library file reads in the singular`() {
+        assertEquals(
+            "1 image is stored inside the app and would be lost if you uninstall. " +
+                "Pick a folder and PFP moves it there.",
+            artworkConfirm(ArtworkFolderPrompt.MoveArtwork(1)).message,
+        )
+        assertEquals(
+            "Roms Art was set up by a different install (1 file). Use it and PFP relinks " +
+                "your games to its art, or pick another folder.",
+            artworkConfirm(ArtworkFolderPrompt.ForeignLibrary("Roms Art", 1)).message,
+        )
+    }
+
+    @Test
+    fun `the choose prompt asks for a folder when nothing is linked or stored`() {
+        val spec = artworkConfirm(ArtworkFolderPrompt.ChooseFolder)
+
+        assertEquals("Choose an artwork folder", spec.title)
+        assertEquals(
+            "New artwork is saved to a folder you own. Pick one and PFP saves art there.",
+            spec.message,
+        )
+        assertEquals("Choose artwork folder", spec.confirmLabel)
+        assertEquals("Later", spec.cancelLabel)
+    }
+
+    @Test
+    fun `the foreign library prompt names the folder and its file count`() {
+        val spec = artworkConfirm(ArtworkFolderPrompt.ForeignLibrary("Roms Art", 1200))
+
+        assertEquals("This folder holds another artwork library", spec.title)
+        assertEquals(
+            "Roms Art was set up by a different install (1200 files). Use it and PFP relinks " +
+                "your games to its art, or pick another folder.",
+            spec.message,
+        )
+        assertEquals("Use this library", spec.confirmLabel)
+        assertEquals("Choose another folder", spec.cancelLabel)
+    }
+
+    @Test
+    fun `each artwork prompt is its own modal so the host resets between them`() {
+        val keys = listOf(
+            ArtworkFolderPrompt.Unavailable("A"),
+            ArtworkFolderPrompt.MoveArtwork(1),
+            ArtworkFolderPrompt.ChooseFolder,
+            ArtworkFolderPrompt.ForeignLibrary("A", 1),
+        ).map { artworkConfirm(it).key }
+
+        assertEquals(keys.size, keys.toSet().size)
+    }
+
+    @Test
+    fun `a menu confirm and a notification layer win over the artwork prompt`() {
+        val prompt = ArtworkFolderPrompt.ChooseFolder
+        val confirm = specWithArtwork(
+            XMBUiState(
+                artworkFolderPrompt = prompt,
+                pendingConfirm = XmbConfirm.DeleteCard(collectionId = 3, title = "RPGs"),
+            ),
+        ) as PfpModalSpec.Confirm
+        assertEquals("Delete Custom Card", confirm.confirmLabel)
+
+        val row = notification(5, NotificationDetail.Results(items = emptyList()))
+        val sheet = specWithArtwork(
+            XMBUiState(
+                artworkFolderPrompt = prompt,
+                notifications = listOf(row),
+                notificationPanel = NotificationPanelState(cursor = 1, sheetNotificationId = 5),
+            ),
+        )
+        assertTrue(sheet is PfpModalSpec.Results)
+    }
+
+    @Test
+    fun `the artwork prompt precedes a shortcut review and the windows prompt`() {
+        val request = com.playfieldportal.core.data.repository.PendingShortcutRequest(
+            id = "1a2b", name = "Gmail", intentUri = "intent:x", hostLabel = "Chrome", requestedAt = 0,
+        )
+        val spec = specWithArtwork(
+            XMBUiState(
+                artworkFolderPrompt = ArtworkFolderPrompt.ChooseFolder,
+                shortcutReview = request,
+                showWindowsSetupPrompt = true,
+            ),
+        ) as PfpModalSpec.Confirm
+
+        assertEquals("Choose an artwork folder", spec.title)
+    }
+
+    @Test
+    fun `an artwork prompt blocks the crossbar like every other overlay`() {
+        val idle = XMBUiState(showBootSequence = false)
+        assertFalse(idle.hasBlockingOverlay)
+        assertTrue(idle.copy(artworkFolderPrompt = ArtworkFolderPrompt.ChooseFolder).hasBlockingOverlay)
+    }
+
+    // ── The icon editor's Pick source chooser ─────────────────────────────────
+
+    private val chooserCalls = mutableListOf<String>()
+    private val chooserCallbacks = SourceChooserCallbacks(
+        onTheme = { chooserCalls += "theme" },
+        onDevice = { chooserCalls += "device" },
+        onCancel = { chooserCalls += "cancel" },
+    )
+
+    private fun specWithChooser(state: XMBUiState): PfpModalSpec? = shellModalSpec(
+        uiState = state,
+        onConfirmAppRename = {}, onCancelAppRename = {},
+        onConfirmCollectionName = {}, onCancelCollectionName = {},
+        onConfirmPlaylistName = {}, onCancelPlaylistName = {},
+        onConfirmSaveAsTheme = {}, onDismissSaveAsTheme = {},
+        onDismissInfoDialog = {},
+        onWindowsSetupConfirm = {}, onWindowsSetupDismiss = {},
+        notificationCallbacks = notificationCallbacks,
+        sourceChooserCallbacks = chooserCallbacks,
+    )
+
+    private fun chooserState(count: Int = 3, extra: XMBUiState.() -> XMBUiState = { this }) = XMBUiState(
+        customIconSession = CustomIconSession(
+            sourceChooser = sourceChooserFor("catbar_music", "Music", "ModNation Racers", count),
+        ),
+    ).extra()
+
+    @Test
+    fun `the pick chooser is a choice with the approved copy`() {
+        val spec = specWithChooser(chooserState()) as PfpModalSpec.Choice
+
+        assertEquals("Pick an icon for Music", spec.title)
+        assertEquals("Use one from the applied theme, or an image on your device.", spec.message)
+        assertEquals(listOf("From the applied theme", "From your device"), spec.options.map { it.label })
+        assertEquals(listOf("ModNation Racers · 3 icons", "PNG or GIF"), spec.options.map { it.detail })
+        assertEquals("Continue", spec.confirmLabel)
+    }
+
+    @Test
+    fun `one theme icon reads in the singular`() {
+        val spec = specWithChooser(chooserState(count = 1)) as PfpModalSpec.Choice
+
+        assertEquals("ModNation Racers · 1 icon", spec.options[0].detail)
+    }
+
+    @Test
+    fun `confirm routes each option and cancel closes the chooser`() {
+        val spec = specWithChooser(chooserState()) as PfpModalSpec.Choice
+
+        spec.onConfirm(0)
+        spec.onConfirm(1)
+        spec.onCancel()
+
+        assertEquals(listOf("theme", "device", "cancel"), chooserCalls)
+    }
+
+    @Test
+    fun `no chooser in the session means no modal`() {
+        assertNull(specWithChooser(XMBUiState(customIconSession = CustomIconSession())))
+    }
+
+    @Test
+    fun `the chooser follows a menu confirm, a notification layer and a name entry`() {
+        val row = notification(5, NotificationDetail.Results(items = emptyList()))
+        val confirm = specWithChooser(
+            chooserState { copy(pendingConfirm = XmbConfirm.DeleteCard(collectionId = 3, title = "RPGs")) },
+        )
+        assertTrue(confirm is PfpModalSpec.Confirm)
+
+        val sheet = specWithChooser(
+            chooserState {
+                copy(notifications = listOf(row), notificationPanel = NotificationPanelState(cursor = 1, sheetNotificationId = 5))
+            },
+        )
+        assertTrue(sheet is PfpModalSpec.Results)
+
+        val name = specWithChooser(chooserState { copy(renameAppTarget = "com.example.app") })
+        assertTrue(name is PfpModalSpec.TextEntry)
     }
 }

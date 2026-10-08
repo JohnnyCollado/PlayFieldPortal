@@ -168,22 +168,6 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE launch_intent_uri = :intentUri LIMIT 1")
     suspend fun getByIntentUri(intentUri: String): GameEntity?
 
-    @Query("SELECT * FROM games WHERE last_played_at IS NOT NULL  AND is_missing = 0 ORDER BY last_played_at DESC LIMIT :limit")
-    fun observeRecentlyPlayed(limit: Int): Flow<List<GameEntity>>
-
-    // Used by recently played per-platform drill-down
-    @Query(
-        """
-        SELECT * FROM games
-        WHERE platform_id = :platformId
-          AND last_played_at IS NOT NULL  
-          AND is_missing = 0
-        ORDER BY last_played_at DESC
-        LIMIT :limit
-        """
-    )
-    fun observeRecentByPlatform(platformId: String, limit: Int): Flow<List<GameEntity>>
-
     /**
      * Insert [game], or update the game it already is — in place, keeping its id.
      *
@@ -209,6 +193,59 @@ interface GameDao {
         return target
     }
 
+    /**
+     * Writes [survivor] (already folded with the loser's user data), moves everything that points
+     * at [loserId] onto it, then deletes the loser. One transaction, and the re-pointing comes
+     * first: deleting a games row cascades to its sessions, collections and achievement links.
+     *
+     * Tables keyed by the game (a collection membership, a provider link, an art slot) use
+     * UPDATE OR IGNORE: where the survivor already holds that key, its own row wins and the loser's
+     * duplicate goes with the delete.
+     */
+    @Transaction
+    suspend fun mergeRows(survivor: GameEntity, loserId: Long) {
+        update(survivor)
+        val to = survivor.id
+        movePlaySessions(loserId, to)
+        moveCollectionMemberships(loserId, to)
+        moveProviderLinks(loserId, to)
+        moveAchievementMatchNote(loserId, to)
+        moveStorefrontIdentities(loserId, to)
+        moveLaunchOutcomes(loserId, to)
+        moveUmdSlots(loserId, to)
+        moveArtworkRecords(loserId, to)
+        // artwork_records has no foreign key, so the loser's duplicates would outlive it.
+        deleteArtworkRecordsOf(loserId)
+        deleteById(loserId)
+    }
+
+    @Query("UPDATE play_sessions SET game_id = :to WHERE game_id = :from")
+    suspend fun movePlaySessions(from: Long, to: Long)
+
+    @Query("UPDATE OR IGNORE collection_games SET game_id = :to WHERE game_id = :from")
+    suspend fun moveCollectionMemberships(from: Long, to: Long)
+
+    @Query("UPDATE OR IGNORE provider_game_links SET game_id = :to WHERE game_id = :from")
+    suspend fun moveProviderLinks(from: Long, to: Long)
+
+    @Query("UPDATE OR IGNORE achievement_match_notes SET game_id = :to WHERE game_id = :from")
+    suspend fun moveAchievementMatchNote(from: Long, to: Long)
+
+    @Query("UPDATE OR IGNORE game_storefront_identities SET game_id = :to WHERE game_id = :from")
+    suspend fun moveStorefrontIdentities(from: Long, to: Long)
+
+    @Query("UPDATE launch_outcomes SET game_id = :to WHERE game_id = :from")
+    suspend fun moveLaunchOutcomes(from: Long, to: Long)
+
+    @Query("UPDATE umd_slots SET game_id = :to WHERE game_id = :from")
+    suspend fun moveUmdSlots(from: Long, to: Long)
+
+    @Query("UPDATE OR IGNORE artwork_records SET game_id = :to WHERE game_id = :from")
+    suspend fun moveArtworkRecords(from: Long, to: Long)
+
+    @Query("DELETE FROM artwork_records WHERE game_id = :gameId")
+    suspend fun deleteArtworkRecordsOf(gameId: Long)
+
     /** A row that is not in the table yet. Only [upsert] calls this. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertReplacing(game: GameEntity): Long
@@ -224,9 +261,6 @@ interface GameDao {
 
     @Query("DELETE FROM games WHERE platform_id = :platformId")
     suspend fun deleteByPlatform(platformId: String)
-
-    @Query("SELECT COUNT(*) FROM games WHERE platform_id = :platformId AND is_missing = 0")
-    suspend fun countByPlatform(platformId: String): Int
 
     // Real games only — what a Memory Card actually displays (standard app rows are excluded).
     // Counts one row per multi-disc set (the primary) — a Memory Card's game count never
@@ -266,9 +300,6 @@ interface GameDao {
 
     @Query("UPDATE games SET logo_uri = :logoUri WHERE id = :id")
     suspend fun updateLogo(id: Long, logoUri: String?)
-
-    @Query("UPDATE games SET hero_uri = :heroUri, logo_uri = :logoUri WHERE id = :id")
-    suspend fun updateHeroAndLogo(id: Long, heroUri: String?, logoUri: String?)
 
     @Query(
         """
@@ -383,9 +414,6 @@ interface GameDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAllReplace(games: List<GameEntity>)
-
-    @Query("SELECT * FROM games WHERE artwork_uri IS NULL AND rom_path IS NOT NULL")
-    suspend fun getGamesWithoutArtwork(): List<GameEntity>
 
     // Updates only non-null fields — COALESCE keeps existing value when new value is null.
     // scraped_title is updated when a metadata source returns a title.

@@ -10,7 +10,8 @@ package com.playfieldportal.themekit
  * [CustomizableIcons], as is physical-media art (`physmedia_*`, under `mediaicons/`).
  *
  * Keys are also the bundle entry names (`icons/<key>.png` inside a `.pfptheme`), so they are
- * forever-stable: never rename one, only add.
+ * forever-stable: never rename one, only add. A key that turns out to name the wrong thing is
+ * retired through [IconSlots.RETIRED], which keeps older bundles' art on the slot that now draws it.
  */
 data class IconSlot(
     val key: String,
@@ -61,7 +62,6 @@ object IconSlots {
         catbar("catbar_network", "Network"),
         catbar("catbar_appstore", "App Store"),
         catbar("catbar_social", "Social"),
-        catbar("catbar_favorites", "Favorites"),
         catbar("catbar_achievements", "Shiba Coins"),
 
         // ── First-level item glyphs (one key per semantic slot, not per shape:
@@ -156,6 +156,15 @@ object IconSlots {
         // Appended (keys only ever add); focused, it still turns into the game's ICON0.
         item("item_umd", "UMD slot"),
     )
+
+    /**
+     * Keys older bundles may carry that are no longer slots, mapped to the slot that now draws
+     * their art. Read-only: the codec moves such an entry onto its new key and never writes it back.
+     *
+     * `catbar_favorites`: Favorites is not a crossbar category. It is the Game column's Favorites
+     * card, `sysicon_favorites`, which drew the same picture.
+     */
+    val RETIRED: Map<String, String> = mapOf("catbar_favorites" to "sysicon_favorites")
 
     private val byKey: Map<String, IconSlot> = ALL.associateBy { it.key }
 

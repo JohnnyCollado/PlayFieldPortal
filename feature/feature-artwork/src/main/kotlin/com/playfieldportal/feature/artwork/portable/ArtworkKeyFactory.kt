@@ -31,15 +31,4 @@ object ArtworkKeyFactory {
         game.isManualEntry -> "manual/${ArtworkNaming.slug(game.title)}"
         else -> null
     }
-
-    /** The `games/{platformId}/{slug}` relative folder path for a ROM-game key, or null. */
-    fun folderPathFor(key: String): String? {
-        val parts = key.split('/')
-        return when {
-            parts.size == 3 && parts[0] == "rom" -> "games/${parts[1]}/${parts[2]}"
-            parts.size >= 2 && parts[0] == "app" -> "apps/${parts.drop(1).joinToString("-")}"
-            parts.size == 2 && parts[0] == "manual" -> "manual/${parts[1]}"
-            else -> null
-        }
-    }
 }

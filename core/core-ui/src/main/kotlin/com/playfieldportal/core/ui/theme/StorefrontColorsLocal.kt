@@ -2,13 +2,10 @@ package com.playfieldportal.core.ui.theme
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 // The storefront palette's composition side: the palette itself and its derivation live in
 // theme-render (StorefrontColors.kt), shared with the Theme Studio's preview.
-
-val LocalStorefrontColors = staticCompositionLocalOf { DefaultStorefrontColors }
 
 /**
  * An unselected primary label (a tile name, a menu option): [StorefrontColors.textSecondary] by

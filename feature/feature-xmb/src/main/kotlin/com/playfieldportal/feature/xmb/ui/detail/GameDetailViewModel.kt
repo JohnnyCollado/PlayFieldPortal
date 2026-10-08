@@ -17,6 +17,7 @@ import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.navigation.NavigationLogger
 import com.playfieldportal.core.navigation.NavigationNode
+import com.playfieldportal.feature.artwork.api.ARTWORK_PAUSED_MESSAGE
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.feature.artwork.match.MatchConfidence
 import com.playfieldportal.feature.artwork.match.MatchProvider
@@ -877,14 +878,6 @@ class GameDetailViewModel @Inject constructor(
         publishNav()
     }
 
-    /**
-     * The page is animating the cursor into view. Repeated directional input during the alignment is
-     * dropped rather than queued, so a held direction cannot outrun the scroll.
-     */
-    fun onScrollAlignmentChanged(aligning: Boolean) {
-        if (aligning) nav.beginRecoveryLock() else nav.endRecoveryLock()
-    }
-
     // ── Shiba Coins strip ─────────────────────────────────────────────────
 
     // Which loadGame owns the page, and the coin stream that belongs to it.
@@ -1263,19 +1256,11 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
-    fun onOptionClicked(action: DetailAction) {
-        _uiState.update { it.copy(optionsIndex = it.visibleActions.indexOf(action).coerceAtLeast(0)) }
-        activateAction(action)
-    }
-
     /** Tap on an Options row: focus first, then activate — one path for touch and controller. */
     fun onOptionRowTapped(action: DetailAction) {
         if (!nav.touch(GameDetailKeys.option(action.name))) activateAction(action)
         finishInput()
     }
-
-    fun onPlayClicked()    { Timber.d("Play clicked"); launch() }
-    fun onOptionsClicked() = openOptions()
 
     fun activateAction(action: DetailAction) {
         // A row that opens a sub-panel keeps the menu up; every other row is an answer and closes it.
@@ -1322,11 +1307,6 @@ class GameDetailViewModel @Inject constructor(
             showActionMessage(report?.message ?: "Export failed — see the log.")
         }
     }
-
-    // Opens the scraped PDF manual (ScreenScraper, stored as artwork/{gameId}/manual.pdf) in the
-    // user's PDF viewer. Goes through the existing launch-intent channel; deliberately NOT
-    // sendLaunchIntent — reading a manual is not "playing", so Discord presence stays untouched.
-    fun onManualClicked() = openManual()
 
     /**
      * Plays the game's video snap. Honors Settings ▸ Video's default player: a pinned external
@@ -1393,6 +1373,9 @@ class GameDetailViewModel @Inject constructor(
         _uiState.update { it.copy(imageViewerUri = null) }
     }
 
+    // Opens the scraped PDF manual (ScreenScraper, stored as artwork/{gameId}/manual.pdf) in the
+    // user's PDF viewer. Goes through the existing launch-intent channel; deliberately NOT
+    // sendLaunchIntent — reading a manual is not "playing", so Discord presence stays untouched.
     private fun openManual() {
         val game = _uiState.value.game ?: return
         viewModelScope.launch {
@@ -1473,8 +1456,6 @@ class GameDetailViewModel @Inject constructor(
             else -> Unit
         }
     }
-
-    fun dismissActionMessage() = _uiState.update { it.copy(actionMessage = null) }
 
     // ── Remove ────────────────────────────────────────────────────────────
 
@@ -1948,6 +1929,7 @@ class GameDetailViewModel @Inject constructor(
                     isFetchingArtwork = false,
                     artworkMessage    = when {
                         result.success        -> "Artwork updated"
+                        result.paused         -> ARTWORK_PAUSED_MESSAGE
                         result.alreadyRunning -> "Already fetching artwork for this game"
                         else                  -> result.errorMessage ?: "Artwork fetch failed"
                     },

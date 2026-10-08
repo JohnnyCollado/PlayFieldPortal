@@ -8,6 +8,7 @@ import com.playfieldportal.feature.artwork.api.ScrapeOptions
 import com.playfieldportal.feature.artwork.api.ScreenScraperApi
 import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
 import com.playfieldportal.feature.artwork.api.SteamGridDbApi
+import com.playfieldportal.feature.artwork.api.folderStatusOf
 import com.playfieldportal.feature.artwork.match.MatchProvider
 import com.playfieldportal.feature.artwork.match.MetadataApply
 import com.playfieldportal.feature.artwork.match.MetadataPreset
@@ -62,6 +63,7 @@ class MetadataRepositoryCandidatesTest {
         // C23 T6: relaxed, so these cases keep pinning the four providers they were written for.
         // The storefront resolver's own order of operations is pinned by its own suite.
         storefrontResolver = storefrontResolver,
+        folderStatus = folderStatusOf(),
     )
 
     // ── Storefront presets: one per linked store ─────────────────────────────

@@ -50,13 +50,18 @@ object PtfConversion {
 
         val wallpaperPng = ptf.wallpaper?.let { ImageCodecs.toPngBytes(ImageCodecs.bmpToBufferedImage(it)) }
         // Icons are best-effort: a theme whose icon records will not unpack converts as before.
-        val icons = runCatching { PtfUnpacker.unpack(ptfBytes)?.let(PtfIcons::extract) }.getOrNull().orEmpty()
+        val dump = runCatching { PtfUnpacker.unpack(ptfBytes) }.getOrNull()
+        val icons = runCatching { dump?.let(PtfIcons::extract) }.getOrNull().orEmpty()
+        val extras = runCatching { dump?.let(PtfIcons::extractExtras) }.getOrNull().orEmpty()
         val tint = PtfIconTint.derive(PtfIcons.tintSources(icons))
         val accent = PtfIconTint.chooseAccent(tint, ptf.wallpaper?.let { AccentDeriver.deriveAccent(it) })
             ?: DEFAULT_ACCENT
         val encoded = HashMap<BmpImage, ThemeImage>()
         val iconEntries = icons.mapValues { (_, image) ->
             encoded.getOrPut(image) { ThemeImage(ImageCodecs.toPngBytes(ImageCodecs.bmpToBufferedImage(image)), "png") }
+        }
+        val extraEntries = extras.mapValues { (_, image) ->
+            ThemeImage(ImageCodecs.toPngBytes(ImageCodecs.bmpToBufferedImage(image)), "png")
         }
         val warning = when (ptf.wallpaperStatus) {
             PtfParser.WallpaperStatus.DECODED -> null
@@ -81,7 +86,7 @@ object PtfConversion {
             created = today.toString(),
         )
         return ConvertOutcome.Converted(
-            PfpThemeBundle(manifest = manifest, wallpaper = wallpaperPng, preview = previewPng, icons = iconEntries),
+            PfpThemeBundle(manifest = manifest, wallpaper = wallpaperPng, preview = previewPng, icons = iconEntries, ptfIcons = extraEntries),
             warning = warning,
         )
     }

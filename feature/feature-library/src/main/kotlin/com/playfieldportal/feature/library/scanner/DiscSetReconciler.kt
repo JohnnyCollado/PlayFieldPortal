@@ -31,13 +31,15 @@ class DiscSetReconciler @Inject constructor(
 ) {
 
     /**
-     * @return the number of rows whose disc fields were corrected. A completed scan may re-derive
+     * @return the number of rows whose disc fields were corrected, plus stale companion rows merged
+     * into their sheets. A completed scan may re-derive
      * existing rows even when [newRows] is empty, because a playlist can disappear or change.
      */
     suspend fun reconcilePlatform(platformId: String, existingRows: List<Game>, newRows: List<Game>): Int {
-        var corrected = 0
+        val (rows, merged) = mergeStaleCompanions(platformId, withStoredDiscFields(platformId, existingRows) + newRows)
+        var corrected = merged
         discSetBuilder.reconcile(
-            games = withStoredDiscFields(platformId, existingRows) + newRows,
+            games = rows,
             regionReader = discRegionReader::read,
             sheetReader = discSheetReader::read,
             m3uReader = m3uPlaylistReader::read,
@@ -52,6 +54,39 @@ class DiscSetReconciler @Inject constructor(
             }
         }
         return corrected
+    }
+
+    /**
+     * Folds every stored companion row (a `.bin` its `.cue` lists, left over from a library scanned
+     * before companion suppression) into its sheet, and returns [rows] without the merged rows plus
+     * how many were merged. The scan never reports a companion's path, so a companion left in place
+     * is flagged missing and shows in Missing under the game's title; a sheet-less `.bin` is a real
+     * game and never matches here.
+     *
+     * Each sheet row is re-read after its merge: it now carries the companion's favorite and play
+     * time, and the copy in [rows] would write the old values back if the set derivation then
+     * rewrites it. The caller's missing flags stay, as in [withStoredDiscFields]. A failed merge is
+     * non-fatal and leaves both rows as they were; the next scan tries again.
+     */
+    private suspend fun mergeStaleCompanions(platformId: String, rows: List<Game>): Pair<List<Game>, Int> {
+        val pairs = discSetBuilder.staleCompanions(rows, discSheetReader::read)
+        if (pairs.isEmpty()) return rows to 0
+        val mergedPaths = HashSet<String>()
+        val refreshedSheets = HashMap<String, Game>()
+        for ((companion, sheet) in pairs) {
+            try {
+                gameRepository.mergeInto(survivorId = sheet.id, loserId = companion.id)
+                companion.romPath?.let(mergedPaths::add)
+                val stored = gameRepository.getById(sheet.id) ?: continue
+                sheet.romPath?.let { refreshedSheets[it] = stored.copy(isMissing = sheet.isMissing, lastSeenAt = sheet.lastSeenAt) }
+            } catch (ce: CancellationException) {
+                throw ce
+            } catch (e: Exception) {
+                Timber.e(e, "Library scan — could not merge companion ${companion.romPath} on $platformId")
+            }
+        }
+        val kept = rows.filterNot { it.romPath in mergedPaths }.map { row -> row.romPath?.let(refreshedSheets::get) ?: row }
+        return kept to mergedPaths.size
     }
 
     /**

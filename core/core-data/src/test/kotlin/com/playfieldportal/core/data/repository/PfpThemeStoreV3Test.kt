@@ -7,10 +7,12 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.themekit.BmpImage
 import com.playfieldportal.themekit.PfpThemeBundle
 import com.playfieldportal.themekit.PfpThemeCodec
 import com.playfieldportal.themekit.PfpThemeManifest
 import com.playfieldportal.themekit.PfpThemeSource
+import com.playfieldportal.themekit.PtfIcons
 import com.playfieldportal.themekit.ThemeImage
 import com.playfieldportal.themekit.ThemeMotion
 import com.playfieldportal.themekit.XmbLayoutSpec
@@ -314,6 +316,74 @@ class PfpThemeStoreV3Test {
             setOf(File(iconsDir, "catbar_games.gif").absolutePath, File(iconsDir, "sysicon_psx.png").absolutePath),
             evicted.toSet(),
         )
+    }
+
+    // ── ptficons/: extra PTF bodies extracted beside the theme icons ──────────
+
+    private fun ptfBundleBytes(vararg refs: PtfIcons.SlotRef): ByteArray = PfpThemeCodec.write(
+        PfpThemeBundle(
+            manifest = PfpThemeManifest(name = "Ptf Theme", accentColor = "#FF0000"),
+            wallpaper = null,
+            preview = null,
+            ptfIcons = refs.associateWith { ThemeImage(pngBytes(), "png") },
+        ),
+    )
+
+    private fun ptfIconDir() = File(File(context.filesDir, PfpThemeStore.THEME_ICONS_DIR), ThemeTiers.PTF_ICONS_SUBDIR)
+
+    @Test
+    fun `applying a bundle with extras writes them under the theme tier`() = runTest {
+        val store = PfpThemeStore(context, PERMISSIVE_PROBE)
+        val saved = requireNotNull(store.importBundle(register(ptfBundleBytes(PtfIcons.SlotRef(2, 5), PtfIcons.SlotRef(3, 8)))))
+
+        assertTrue(store.apply(saved.id))
+
+        assertEquals(setOf("2_5.png", "3_8.png"), ptfIconDir().listFiles()?.map { it.name }?.toSet())
+        assertEquals(setOf(PtfIcons.SlotRef(2, 5), PtfIcons.SlotRef(3, 8)), ThemeTiers(context.filesDir).ptfIconFiles().keys)
+        assertTrue(ThemeTiers(context.filesDir).iconKeys(ThemeTiers.Tier.THEME).isEmpty(), "extras are not slot icons")
+        assertNull(context.pfpDataStore.data.first()[ThemePrefKeys.THEME_ICONS_STAMP], "extras are never rendered, so no stamp")
+    }
+
+    @Test
+    fun `applying a bundle without extras leaves none from the previous theme`() = runTest {
+        val store = PfpThemeStore(context, PERMISSIVE_PROBE)
+        val withExtras = requireNotNull(store.importBundle(register(ptfBundleBytes(PtfIcons.SlotRef(2, 5)))))
+        val without = requireNotNull(store.importBundle(register(v3BundleBytes())))
+        assertTrue(store.apply(withExtras.id))
+        assertTrue(ptfIconDir().isDirectory)
+
+        assertTrue(store.apply(without.id))
+
+        assertTrue(ThemeTiers(context.filesDir).ptfIconFiles().isEmpty())
+    }
+
+    @Test
+    fun `reset and a colour preset leave no extras`() = runTest {
+        val store = PfpThemeStore(context, PERMISSIVE_PROBE)
+        val saved = requireNotNull(store.importBundle(register(ptfBundleBytes(PtfIcons.SlotRef(2, 5)))))
+
+        assertTrue(store.apply(saved.id))
+        store.resetApplied()
+        assertTrue(ThemeTiers(context.filesDir).ptfIconFiles().isEmpty(), "resetApplied")
+
+        assertTrue(store.apply(saved.id))
+        assertTrue(ThemeTiers(context.filesDir).ptfIconFiles().isNotEmpty())
+        store.clearThemeLook()
+        assertTrue(ThemeTiers(context.filesDir).ptfIconFiles().isEmpty(), "clearThemeLook")
+    }
+
+    @Test
+    fun `createFromPtf saves the extras into the bundle`() = runTest {
+        val store = PfpThemeStore(context, PERMISSIVE_PROBE)
+        val wallpaper = BmpImage(2, 2, IntArray(4) { 0xFF2050D0.toInt() })
+        val extra = BmpImage(2, 2, IntArray(4) { 0xFFE07020.toInt() })
+
+        val saved = requireNotNull(
+            store.createFromPtf("P", wallpaper, null, null, null, ptfIcons = mapOf(PtfIcons.SlotRef(2, 5) to extra)),
+        )
+
+        val bundle = requireNotNull(PfpThemeCodec.read(File(File(context.filesDir, "pfpthemes"), "${saved.id}.pfptheme")))
+        assertEquals(setOf(PtfIcons.SlotRef(2, 5)), bundle.ptfIcons.keys)
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

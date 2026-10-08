@@ -34,21 +34,6 @@ object PreviewData {
         XMBItem("10", "Jak and Daxter",            subtitle = "PS2"),
     )
 
-    val gbaGames = listOf(
-        XMBItem("20", "Pokémon FireRed",           subtitle = "GBA · 47h played"),
-        XMBItem("21", "The Legend of Zelda: Minish Cap", subtitle = "GBA"),
-        XMBItem("22", "Metroid Fusion",            subtitle = "GBA"),
-        XMBItem("23", "Castlevania: Aria of Sorrow", subtitle = "GBA"),
-        XMBItem("24", "Fire Emblem",               subtitle = "GBA · 31h played"),
-        XMBItem("25", "Golden Sun",                subtitle = "GBA"),
-    )
-
-    val favoriteItems = listOf(
-        XMBItem("1",  "Shadow of the Colossus",  subtitle = "PS2 · Favorite"),
-        XMBItem("20", "Pokémon FireRed",          subtitle = "GBA · Favorite"),
-        XMBItem("7",  "Metal Gear Solid 3",       subtitle = "PS2 · Favorite"),
-    )
-
     val emptyItems = emptyList<XMBItem>()
 
     val platformFolders = listOf(

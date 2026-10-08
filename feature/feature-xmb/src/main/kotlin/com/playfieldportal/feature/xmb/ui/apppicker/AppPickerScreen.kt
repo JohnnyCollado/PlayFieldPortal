@@ -388,7 +388,6 @@ private fun AppPickerGrid(
 
 // ── Tile: focus chrome (drawer-faithful) + independent selection check badge ──
 
-private val ARTWORK_SIZE = 72.dp
 private val TILE_BORDER = 1.dp
 // Chrome room around the artwork: outer border + 2dp gap + inner hairline on each side.
 private val FRAME_ROOM = 8.dp

@@ -23,9 +23,6 @@ value class ByteCursor(private val bytes: ByteArray) {
     fun holds(offset: Int, length: Int): Boolean =
         offset >= 0 && length >= 0 && offset.toLong() + length <= bytes.size
 
-    fun u8At(offset: Int): Int? =
-        if (holds(offset, 1)) bytes[offset].toInt() and 0xFF else null
-
     fun u16At(offset: Int): Int? {
         if (!holds(offset, 2)) return null
         return (bytes[offset].toInt() and 0xFF) or ((bytes[offset + 1].toInt() and 0xFF) shl 8)
@@ -57,12 +54,6 @@ value class ByteCursor(private val bytes: ByteArray) {
         val raw = u32At(offset) ?: return null
         if (raw <= 0 || raw + needs > bytes.size) return null
         return raw.toInt()
-    }
-
-    /** A copy of [length] bytes at [offset], or null if that range is not fully present. */
-    fun sliceAt(offset: Int, length: Int): ByteArray? {
-        if (!holds(offset, length)) return null
-        return bytes.copyOfRange(offset, offset + length)
     }
 
     /** NUL-terminated ASCII, clamped to what is actually present. Empty rather than null. */

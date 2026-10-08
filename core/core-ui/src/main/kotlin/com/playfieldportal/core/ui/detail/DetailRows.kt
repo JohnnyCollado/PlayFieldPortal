@@ -13,14 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.semantics.Role
@@ -71,75 +69,6 @@ private fun RowShell(
             .padding(horizontal = 16.dp, vertical = 13.dp),
     ) {
         content()
-    }
-}
-
-/** A label/value row: the labelled information band the design calls for. */
-@Composable
-fun PfpDetailInfoRow(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-    secondary: String? = null,
-    icon: ImageVector? = null,
-    focused: Boolean = false,
-    disclosure: Boolean = false,
-    footnote: String? = null,
-    onClick: (() -> Unit)? = null,
-) {
-    RowShell(focused = focused, modifier = modifier, onClick = onClick) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (icon != null) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = DetailIconMuted,
-                    modifier = Modifier.size(17.dp),
-                )
-                Spacer(Modifier.width(12.dp))
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = label.uppercase(),
-                    color = DetailTextMuted.dimmed(0.8f),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                )
-                Spacer(Modifier.size(2.dp))
-                Text(
-                    text = value,
-                    color = DetailTextPrimary,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (secondary != null) {
-                    Text(
-                        text = secondary,
-                        color = DetailTextMuted,
-                        fontSize = 11.sp,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                if (footnote != null) {
-                    Spacer(Modifier.size(3.dp))
-                    Text(
-                        text = footnote,
-                        color = if (focused) DetailFocusEdge else DetailTextMuted.dimmed(0.85f),
-                        fontSize = 11.sp,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-            if (disclosure) {
-                Spacer(Modifier.width(10.dp))
-                PfpChevronMark(color = DetailIconMuted, size = 14.dp)
-            }
-        }
     }
 }
 

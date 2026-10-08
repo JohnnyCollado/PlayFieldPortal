@@ -90,26 +90,6 @@ fun XmbBackTouchButton(
     }
 }
 
-/** Single-glyph button in the shared themed frame. */
-@Composable
-fun XmbGlyphTouchButton(
-    glyph: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    size: Dp = 52.dp,
-    background: Color = Color.Transparent,
-) {
-    XmbTouchButton(onClick = onClick, modifier = modifier, size = size, background = background) {
-        Text(
-            text = glyph,
-            color = Color.White,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            style = TextStyle(shadow = XmbGlyphShadow),
-        )
-    }
-}
-
 /**
  * Options button — the vertical kebab ("three dots") in the shared themed frame.
  *

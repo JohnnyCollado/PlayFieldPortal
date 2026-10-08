@@ -63,6 +63,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import com.playfieldportal.themekit.CustomizableIcons
 import com.playfieldportal.themekit.PhysicalMediaIds
+import com.playfieldportal.themekit.SharedIconArt
 
 /**
  * The Studio's copy of the launcher's default icon set, keyed by
@@ -82,16 +83,7 @@ object StudioIconSet {
         "catbar_network" to "xmb/catbar_network.png",
         "catbar_appstore" to "xmb/catbar_appstore.png",
         "catbar_social" to "xmb/catbar_social.xml",
-        "catbar_favorites" to "xmb/catbar_favorites.png",
         "catbar_achievements" to "xmb/catbar_achievements.png",   // the Shiba Coin
-        // "All Tracked Games" reads as a memory card in the XMB (MEMORY_CARD_DEFAULT_ART).
-        "item_shiba_track" to "xmb/item_memcard.png",
-        // Default memory-card art (launcher: systems/physical-media/_default.png) — one
-        // asset, four semantic slots so themes can diverge per category.
-        "item_memcard_games" to "xmb/item_memcard.png",
-        "item_memcard_music" to "xmb/item_memcard.png",
-        "item_memcard_video" to "xmb/item_memcard.png",
-        "item_memcard_photos" to "xmb/item_memcard.png",
         // The UMD slot (launcher: systems/physical-media/psp.png, UMD_SLOT_ART).
         "item_umd" to "xmb/umd_psp.png",
         // Settings rows' wrench badge (launcher: sysicon_settings).
@@ -107,7 +99,13 @@ object StudioIconSet {
         "shiba_coin_silver" to "xmb/shiba_coin_silver.webp",
         "shiba_coin_gold" to "xmb/shiba_coin_gold.webp",
         "shiba_coin_platinum" to "xmb/shiba_coin_platinum.webp",
-    )
+    ) +
+        // Default memory-card art (launcher: systems/physical-media/_default.png): one asset for
+        // every item slot that shares it, "All Tracked Games" included. sysicon_allgames draws the
+        // same picture through consoleResource.
+        SharedIconArt.MEMORY_CARD
+            .filter { !it.startsWith(CustomizableIcons.SYSICON_PREFIX) }
+            .associateWith { "xmb/item_memcard.png" }
 
     /**
      * Material glyphs for the item slots — keep in lockstep with the launcher's

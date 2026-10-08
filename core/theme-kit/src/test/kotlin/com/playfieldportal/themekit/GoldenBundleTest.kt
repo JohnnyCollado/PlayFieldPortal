@@ -36,9 +36,15 @@ class GoldenBundleTest {
     fun `frozen reader key lists match the 52 and 40 of the v3 era`() {
         assertEquals(52, V3EraReader.ICON_KEYS.size)
         assertEquals(40, V3EraReader.SYSICON_IDS.size)
-        // TS-06 relaxed the icons tripwire: production grew to 81 slots, but the frozen v3 keys
-        // must all still be present (never renamed or dropped, A3).
-        assertTrue(IconSlots.ALL.map { it.key }.toSet().containsAll(V3EraReader.ICON_KEYS))
+        // TS-06 relaxed the icons tripwire: production grew past 52 slots, but every frozen v3 key
+        // must still be a slot (never renamed or dropped, A3) or be retired onto one that is, so
+        // an old bundle's art still lands (IconSlots.RETIRED).
+        val live = IconSlots.ALL.map { it.key }.toSet()
+        assertTrue(live.containsAll(V3EraReader.ICON_KEYS - IconSlots.RETIRED.keys))
+        V3EraReader.ICON_KEYS.filter { it !in live }.forEach { key ->
+            val target = assertNotNull(IconSlots.RETIRED[key], "$key was dropped without retiring it")
+            assertTrue(CustomizableIcons.isValidKey(target), "$key retires onto $target, which is not a slot")
+        }
         assertEquals(V3EraReader.SYSICON_IDS, SYSICON_PLATFORM_IDS.toSet())
     }
 

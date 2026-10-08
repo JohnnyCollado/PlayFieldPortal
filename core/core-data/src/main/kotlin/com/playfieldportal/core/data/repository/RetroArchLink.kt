@@ -135,7 +135,6 @@ class RetroArchLink @Inject constructor(
     }
 
     companion object {
-        const val RETROARCH_DOCUMENTS_AUTHORITY = "com.retroarch.documents"
         private val KEY = stringPreferencesKey("retroarch_documents_tree_uri")
         private val KEY_CACHED_CORES = stringSetPreferencesKey("retroarch_cached_core_files")
     }

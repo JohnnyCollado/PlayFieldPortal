@@ -177,8 +177,6 @@ internal val LocalSettingsRowActions =
 internal val LocalSettingsScrollStateRegistrar =
     compositionLocalOf<(ScrollState) -> Unit> { {} }
 
-internal val LocalSettingsScrollToTop =
-    compositionLocalOf<() -> Unit> { {} }
 internal val LocalSettingsReportFocused =
     compositionLocalOf<(FocusRequester) -> Unit> { {} }
 
@@ -213,7 +211,6 @@ private fun reseedFocus(
 
 // Sourced from the shared palette so the settings rows and the Material dialogs (PFPTheme's
 // dark scheme) can never drift apart on a rebrand.
-val SettingsBg = Color(0xE6000000)
 val SettingsAccent = com.playfieldportal.core.ui.theme.PfpPalette.Accent
 
 // The two text roles are composable GETTERS, not constants: they read the resolved palette out of
@@ -238,7 +235,6 @@ val SettingsTextShadow = Shadow(
     blurRadius = 4f,
 )
 val SettingsDivider = com.playfieldportal.core.ui.theme.PfpPalette.Divider
-val SettingsSelectedBg = com.playfieldportal.core.ui.theme.PfpPalette.Accent.copy(alpha = 0.14f)
 
 /**
  * Margin kept between a focused row and either edge of the content viewport, and — the same value

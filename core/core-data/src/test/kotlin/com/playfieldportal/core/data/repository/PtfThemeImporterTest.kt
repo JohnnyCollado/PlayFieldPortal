@@ -160,6 +160,37 @@ class PtfThemeImporterTest {
     }
 
     @Test
+    fun `body images the direct map leaves are kept as ptf icons`() = runTest {
+        val bytes = TestFixtures.buildPtfGroups(
+            name = "Extras",
+            firmware = "6.20",
+            groups = mapOf(
+                2 to listOf(gimRecord(5, gim(orange)), gimRecord(6, gim(orange))),
+                3 to listOf(gimRecord(8, gim(orange)), gimRecord(9, gim(orange))),
+            ),
+            wallpaperBmp = TestFixtures.buildBmp(48, 27) { _, _ -> wallpaperBlue },
+        )
+        val result = assertIs<PtfThemeImporter.Result.Success>(importer.import(register(bytes)))
+        val kept = bundleOf(result.themeId).ptfIcons
+        assertEquals(setOf(PtfIcons.SlotRef(2, 5), PtfIcons.SlotRef(3, 8)), kept.keys, "TV and Game sharing; not the odd 3/9, not DIRECT 2/6")
+        kept.values.forEach { assertEquals("png", it.extension) }
+        assertEquals(PtfIcons.DIRECT.getValue(PtfIcons.SlotRef(2, 6)).size, result.iconCount, "iconCount still counts only the slots filled")
+    }
+
+    @Test
+    fun `a corrupt icon group still imports the wallpaper with no extras`() = runTest {
+        val bytes = TestFixtures.buildPtfGroups(
+            name = "Broken",
+            firmware = "5.00",
+            groups = mapOf(2 to listOf(TestFixtures.opaqueRecord(5, ByteArray(40) { 3 }))),
+            wallpaperBmp = TestFixtures.buildBmp(48, 27) { _, _ -> wallpaperBlue },
+        )
+        val result = assertIs<PtfThemeImporter.Result.Success>(importer.import(register(bytes)))
+        assertTrue(bundleOf(result.themeId).ptfIcons.isEmpty())
+        assertNotNull(bundleOf(result.themeId).wallpaper)
+    }
+
+    @Test
     fun `cxmb and garbage are still refused`() = runTest {
         val bmp = TestFixtures.buildBmp(8, 4) { _, _ -> wallpaperBlue }
         val cxmb = TestFixtures.buildPtf("C", "6.60", bmp) + "/vsh/resource/x".toByteArray()

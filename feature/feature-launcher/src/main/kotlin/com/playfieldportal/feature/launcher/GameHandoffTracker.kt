@@ -43,12 +43,6 @@ class GameHandoffTracker @Inject constructor(
         covered = false
     }
 
-    /** The launch never happened (startActivity or the shortcut launch failed). */
-    fun onDispatchRejected() {
-        pending = null
-        covered = false
-    }
-
     /** MainActivity stopped: the dispatched game covered the launcher, if it did so promptly. */
     fun onHostStopped() {
         if (pending == null) return

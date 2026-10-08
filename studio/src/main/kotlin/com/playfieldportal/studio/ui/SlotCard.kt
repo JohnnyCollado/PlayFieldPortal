@@ -104,13 +104,14 @@ internal fun decodeGifFrames(bytes: ByteArray, max: Int = 12): List<ImageBitmap>
 
 /**
  * The selected slot: name and status, key · group · template size, real-size renderings over the
- * current wallpaper, the frame strip for an animated GIF, and Replace / Reset / Export template.
+ * current wallpaper, the frame strip for an animated GIF, and Local file / From theme / Reset / Export template.
  */
 @Composable
 fun SlotCard(
     slot: IconSlot,
     state: StudioState,
-    onReplace: () -> Unit,
+    onLocalFile: () -> Unit,
+    onFromTheme: () -> Unit,
     onReset: () -> Unit,
     onExportTemplate: () -> Unit,
 ) {
@@ -173,7 +174,10 @@ fun SlotCard(
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(onClick = onReplace) { Text("Replace…", fontSize = 12.sp) }
+                OutlinedButton(onClick = onLocalFile) { Text("Local file…", fontSize = 12.sp) }
+                OutlinedButton(onClick = onFromTheme, enabled = IconPicker.fromThemeAvailable(state)) {
+                    Text("From theme…", fontSize = 12.sp)
+                }
                 if (card.isCustom) TextButton(onClick = onReset) { Text("Reset", fontSize = 12.sp) }
                 TextButton(onClick = onExportTemplate) { Text("Export template", fontSize = 12.sp) }
             }

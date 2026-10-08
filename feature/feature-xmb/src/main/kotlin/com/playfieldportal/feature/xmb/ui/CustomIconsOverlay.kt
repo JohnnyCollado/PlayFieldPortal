@@ -82,6 +82,8 @@ fun CustomIconsOverlay(
     icons: com.playfieldportal.core.ui.icons.XmbIcons,
     onSlotFocused: (Int) -> Unit,
     onIconPicked: (String, android.net.Uri) -> Unit,
+    onPickRequested: (String) -> Unit,
+    onFilePickLaunched: () -> Unit,
     onResetSlot: (String) -> Unit,
     onResetAll: () -> Unit,
     onSaveAsTheme: () -> Unit,
@@ -94,17 +96,25 @@ fun CustomIconsOverlay(
     onTouchInput: () -> Unit = {},
 ) {
     // SAF pick for the focused slot. OpenDocument returns a content URI we copy from
-    // immediately — no persistence grant needed. Both control paths funnel here: the touch
-    // Pick button and the pad's SELECT (via [forwardedAction], forwarded by the VM).
+    // immediately — no persistence grant needed. The VM decides the source (Pick asks it first:
+    // the touch button and the pad's SELECT both go through [onPickRequested]); this only
+    // launches the system picker when the VM raises [CustomIconSession.filePickRequest].
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         session.focusedSlot?.let { slot -> uri?.let { onIconPicked(slot.key, it) } }
     }
-    val launchPicker = { picker.launch(PICK_MIME) }
+    val currentOnFilePickLaunched by rememberUpdatedState(onFilePickLaunched)
+    LaunchedEffect(session.filePickRequest) {
+        if (session.filePickRequest != null) {
+            picker.launch(PICK_MIME)
+            currentOnFilePickLaunched()
+        }
+    }
+    val requestPick = { session.focusedSlot?.let { onPickRequested(it.key) }; Unit }
 
     // Forwarded pad actions, one per touch button (see customIconsPadCommand).
     LaunchedEffect(forwardedAction) {
         when (forwardedAction?.let(::customIconsPadCommand)) {
-            CustomIconsCommand.PICK -> launchPicker()
+            CustomIconsCommand.PICK -> requestPick()
             CustomIconsCommand.RESET_SLOT -> session.focusedSlot?.let { onResetSlot(it.key) }
             // The touch button greys out with nothing to reset; the pad just does nothing.
             CustomIconsCommand.RESET_ALL -> if (icons.userKeys.isNotEmpty()) onResetAll()
@@ -309,7 +319,7 @@ fun CustomIconsOverlay(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Button(
-                    onClick = launchPicker,
+                    onClick = requestPick,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3A82F6)),
                 ) { Text("Pick") }
                 // Reset clears the USER tier only, so it can act only on a slot the user has

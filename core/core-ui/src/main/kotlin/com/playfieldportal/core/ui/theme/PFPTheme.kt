@@ -92,8 +92,3 @@ fun PFPTheme(
         MaterialTheme(colorScheme = PfpDarkColorScheme, content = content)
     }
 }
-
-object PFPThemeTokens {
-    val colors: PFPColors
-        @Composable get() = LocalPFPColors.current
-}

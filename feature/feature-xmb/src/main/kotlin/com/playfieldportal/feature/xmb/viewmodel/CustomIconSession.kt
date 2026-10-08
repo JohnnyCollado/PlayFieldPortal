@@ -25,6 +25,15 @@ data class CustomIconSession(
     val barKeys: List<String> = IconEditorLayout.DEFAULT_BAR_ORDER,
     /** The bar's user categories, snapshotted when the editor opens; listed where they sit on the bar. */
     val userCategorySlots: List<UserCategoryIconSlot> = emptyList(),
+    /** The applied theme's icons grid while it is open over the editor; closing the editor closes it. */
+    val themeGrid: ThemeIconGridState? = null,
+    /** Pick's "theme or device" question while it is up (a shell modal); null otherwise. */
+    val sourceChooser: SourceChooserState? = null,
+    /**
+     * One-shot: the slot key the overlay should open the system file picker for. The VM decides
+     * the source; the launcher itself has to live in the overlay, which clears this once launched.
+     */
+    val filePickRequest: String? = null,
 ) {
     val tabs: List<IconEditorTab> get() = IconEditorTab.entries
 

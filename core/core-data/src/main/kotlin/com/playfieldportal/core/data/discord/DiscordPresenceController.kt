@@ -8,9 +8,7 @@ import com.playfieldportal.core.data.network.NetworkMonitor
 import com.playfieldportal.core.domain.discord.DiscordSanitize
 import com.playfieldportal.core.domain.discord.DiscordSessionActivator
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -39,9 +37,6 @@ class DiscordPresenceController @Inject constructor(
      * and cleared when PFP returns to the foreground.
      */
     @Volatile private var currentGame: String? = null
-
-    fun observeShareEnabled(): Flow<Boolean> = context.pfpDataStore.data.map { it[shareKey] ?: false }
-    fun observeGenericMode(): Flow<Boolean> = context.pfpDataStore.data.map { it[genericKey] ?: false }
 
     suspend fun isShareEnabled(): Boolean = context.pfpDataStore.data.first()[shareKey] ?: false
     suspend fun isGenericMode(): Boolean = context.pfpDataStore.data.first()[genericKey] ?: false
