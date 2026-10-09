@@ -45,7 +45,10 @@ class GoldenBundleTest {
             val target = assertNotNull(IconSlots.RETIRED[key], "$key was dropped without retiring it")
             assertTrue(CustomizableIcons.isValidKey(target), "$key retires onto $target, which is not a slot")
         }
-        assertEquals(V3EraReader.SYSICON_IDS, SYSICON_PLATFORM_IDS.toSet())
+        // Console ids retire the same way: a dropped id's sysicons/ art lands on its new slot.
+        val retiredConsoles = V3EraReader.SYSICON_IDS.filter { "sysicon_$it" in IconSlots.RETIRED }.toSet()
+        assertEquals(setOf("allgames"), retiredConsoles)
+        assertEquals(V3EraReader.SYSICON_IDS - retiredConsoles, SYSICON_PLATFORM_IDS.toSet())
     }
 
     @Test

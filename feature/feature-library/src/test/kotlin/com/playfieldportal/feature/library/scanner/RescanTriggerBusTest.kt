@@ -60,6 +60,26 @@ class RescanTriggerBusTest {
     }
 
     @Test
+    fun `a mount during an in-flight scan runs one follow-up scan`() = runTest {
+        // Boot: the resume scan starts while the SD card is still mounting. The mount's scan must
+        // not be dropped on the busy mutex, or the card's games stay flagged missing.
+        val scanner = mockk<LibraryScanner>(relaxed = true)
+        coEvery { scanner.scanAllEnabled(true) } coAnswers {
+            delay(10_000)
+            listOf(outcome)
+        }
+        val bus = RescanTriggerBus(scanner, discoveryScanner, this)
+
+        bus.submit(RescanTrigger.AppResumed)
+        advanceTimeBy(1_000)
+        bus.submit(RescanTrigger.MediaMounted)
+        bus.submit(RescanTrigger.UsbDisconnected)
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) { scanner.scanAllEnabled(true) }
+    }
+
+    @Test
     fun `unplug edge is not swallowed by resume throttle`() = runTest {
         val scanner = mockk<LibraryScanner>(relaxed = true)
         coEvery { scanner.scanAllEnabled(true) } returns listOf(outcome)

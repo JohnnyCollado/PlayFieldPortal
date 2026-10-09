@@ -54,7 +54,7 @@ object IconEditorLayout {
         ),
         Run(
             "Game", listOf("catbar_games"),
-            listOf("item_umd", "sysicon_allgames", "sysicon_favorites", "item_missing", "item_memcard_games"),
+            listOf("item_umd", "sysicon_favorites", "item_missing", "item_memcard_games"),
         ),
         // Installed apps draw their own icons; Add Apps is the one row these columns theme.
         Run("Network · App Store", listOf("catbar_network", "catbar_appstore"), listOf("item_add")),

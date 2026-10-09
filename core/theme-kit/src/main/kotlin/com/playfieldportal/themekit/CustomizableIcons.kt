@@ -13,7 +13,6 @@ package com.playfieldportal.themekit
  * [SYSICON_EXTRA_IDS] instead.
  */
 val SYSICON_PLATFORM_IDS: List<String> = listOf(
-    "allgames",
     "android",
     "atari2600",
     "atari5200",
@@ -76,7 +75,6 @@ val SYSICON_EXTRA_IDS: List<String> = listOf(
  * (`n3ds`, `segacd`) — editors must never show them verbatim.
  */
 fun consoleDisplayName(platformId: String): String = when (platformId) {
-    "allgames" -> "All Games"
     "android" -> "Android"
     "dreamcast" -> "Dreamcast"
     "saturn" -> "Saturn"
@@ -127,7 +125,7 @@ fun consoleDisplayName(platformId: String): String = when (platformId) {
 }
 
 /** Console ids with no physical media: the storefront/UI buckets and the generic fallback. */
-private val NO_PHYSICAL_MEDIA_IDS = setOf("allgames", "android", "favorites", "desktop", "default")
+private val NO_PHYSICAL_MEDIA_IDS = setOf("android", "favorites", "desktop", "default")
 
 /**
  * The superset registry the icon customizer edits and the v3 codec gates on: every theme

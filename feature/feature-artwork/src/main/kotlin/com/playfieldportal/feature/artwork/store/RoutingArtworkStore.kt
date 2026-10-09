@@ -527,9 +527,10 @@ class RoutingArtworkStore @Inject constructor(
      * A non-null [trigger] reports the pause on [ArtworkFolderStatus.folderNeeded].
      */
     private suspend fun portableTarget(gameId: Long, trigger: FolderNeedTrigger?): Pair<Uri, GameEntity>? {
-        // Unknown means "not probed yet" (a launch-time scrape can beat PFPApplication's refresh),
-        // not "no folder": probe now rather than pause and prompt on a folder that is fine.
-        val state = folderStatus.state.value.let { if (it == ArtworkFolderState.Unknown) folderStatus.refresh() else it }
+        // Anything but Ready is re-probed before pausing: Unknown means "not probed yet" (a
+        // launch-time scrape can beat PFPApplication's refresh), and a launch-time Unavailable may
+        // only mean the SD card had not mounted yet. Neither should pause a folder that is fine now.
+        val state = folderStatus.state.value.let { if (it !is ArtworkFolderState.Ready) folderStatus.refresh() else it }
         val ready = state as? ArtworkFolderState.Ready
         if (ready == null || !folderRepository.hasLiveGrant()) {
             if (ready != null) folderStatus.refresh()

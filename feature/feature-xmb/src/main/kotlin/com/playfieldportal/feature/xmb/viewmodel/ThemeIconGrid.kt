@@ -90,6 +90,29 @@ object ThemeIconGridNav {
         }
     }
 
+    /** The lazy grid item that draws [tile]: each section's title is an item of its own, ahead of its tiles. */
+    fun lazyIndexOf(sectionSizes: List<Int>, tile: Int): Int {
+        var start = 0
+        for ((section, size) in sectionSizes.withIndex()) {
+            if (tile < start + size) return tile + section + 1
+            start += size
+        }
+        return tile + sectionSizes.size
+    }
+
+    /** The tile lazy grid item [lazyIndex] draws, or null for a section title or past the end. */
+    fun tileAt(sectionSizes: List<Int>, lazyIndex: Int): Int? {
+        var item = 0
+        var start = 0
+        for (size in sectionSizes) {
+            if (lazyIndex == item) return null
+            if (lazyIndex <= item + size) return start + (lazyIndex - item - 1)
+            item += size + 1
+            start += size
+        }
+        return null
+    }
+
     private fun vertical(sectionSizes: List<Int>, columns: Int, at: Int, dir: Int): Int {
         // Each visual row as (first flat index, length).
         val rows = buildList {

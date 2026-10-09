@@ -5,7 +5,9 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
 import com.playfieldportal.core.data.repository.RomRootRepository
+import com.playfieldportal.core.data.saf.SafChild
 import com.playfieldportal.core.data.saf.querySafChildren
+import com.playfieldportal.core.data.saf.querySafChildrenOrNull
 import com.playfieldportal.core.domain.model.Game
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -453,38 +455,17 @@ class RomScanner @Inject constructor(
         // Phase 1 — collect every file child (name / raw path / document uri). Directory
         // traversal only: companion suppression (a .cue hiding its .bin rows) must see the whole
         // folder before any game row is created, so files are processed in phase 2.
-        val visited = HashSet<String>()
         val rootDocId = startDocId ?: DocumentsContract.getTreeDocumentId(tree)
-        visited.add(rootDocId)
-        val stack = ArrayDeque<String>().apply { addLast(rootDocId) }
-        val fileChildren = mutableListOf<SafFileChild>()
+        val walk = walkRomTree(rootDocId, recursive, allowed) { context.contentResolver.querySafChildrenOrNull(tree, it) }
+        if (!walk.complete) Timber.w("Memory Card SAF scan — some folders could not be listed; missing flags left untouched")
+        // Derive the raw path from the document id (pure string math, no file access) so it stays
+        // the stable dedupe key and the {rom_path} value.
+        fun SafChild.toFileChild() =
+            SafFileChild(name, safDocumentIdToRawPath(documentId, uri.authority) ?: uri.toString(), uri.toString())
+        val fileChildren = walk.files.map { it.toFileChild() }
         // Directory games (a PS3 .ps3dir JB folder). Kept apart from [fileChildren] so they take no
         // part in companion suppression, which is a statement about files inside a folder.
-        val folderGameChildren = mutableListOf<SafFileChild>()
-        while (stack.isNotEmpty()) {
-            coroutineContext.ensureActive()
-            val dirDocId = stack.removeLast()
-            for (child in context.contentResolver.querySafChildren(tree, dirDocId)) {
-                coroutineContext.ensureActive()
-                if (child.isDirectory) {
-                    // The folder IS the game: record it and never descend — its contents are that
-                    // game's parts. Checked before [recursive], which governs looking inside
-                    // ordinary folders only.
-                    if (DirectoryGameExtensions.isGameFolder(child.name, allowed)) {
-                        val dirPath = safDocumentIdToRawPath(child.documentId, child.uri.authority) ?: child.uri.toString()
-                        folderGameChildren.add(SafFileChild(child.name, dirPath, child.uri.toString()))
-                        continue
-                    }
-                    if (recursive && visited.add(child.documentId)) stack.addLast(child.documentId)
-                    continue
-                }
-                if (child.name.startsWith(".")) continue
-                // Derive the raw path from the document id (pure string math, no file access) so it
-                // stays the stable dedupe key and the {rom_path} value.
-                val rawPath = safDocumentIdToRawPath(child.documentId, child.uri.authority) ?: child.uri.toString()
-                fileChildren.add(SafFileChild(child.name, rawPath, child.uri.toString()))
-            }
-        }
+        val folderGameChildren = walk.folderGames.map { it.toFileChild() }
 
         // Phase 2 — companion suppression over SAF: a .cue-listed .bin or a Dreamcast .gdi track
         // file is part of a disc, never a game row on its own (same policy as the raw paths, whose
@@ -547,7 +528,8 @@ class RomScanner @Inject constructor(
             ScanResult.Complete(
                 discSetBuilder.assign(newGames, discRegionReader::read, m3uPlaylistReader::read),
                 alreadyInLibrary, emptyList(), emptyList(),
-                presentRomPaths = presentPaths,
+                // A walk that could not list every folder cannot say what is gone.
+                presentRomPaths = presentPaths.takeIf { walk.complete },
             )
         )
 
@@ -686,6 +668,47 @@ class RomScanner @Inject constructor(
 // invented /storage path (null keeps the shared-storage reading).
 fun safDocumentIdToRawPath(documentId: String, authority: String? = null): String? =
     RomRootRepository.rawPathOfDocument(authority, documentId)
+
+/** What [walkRomTree] reached. [complete] is false when any folder's listing could not be read. */
+internal class RomTreeWalk(val files: List<SafChild>, val folderGames: List<SafChild>, val complete: Boolean)
+
+/**
+ * The directory half of [RomScanner.scanTree]: an iterative DFS from [rootDocId] collecting
+ * non-hidden files and directory games (never descended into: their contents are that game's
+ * parts). [list] returns null for an unreadable folder; the walk carries on and reports itself
+ * incomplete, so the caller never mistakes a folder it could not read for one that is empty.
+ */
+internal suspend fun walkRomTree(
+    rootDocId: String,
+    recursive: Boolean,
+    allowed: Set<String>,
+    list: (String) -> List<SafChild>?,
+): RomTreeWalk {
+    val files = mutableListOf<SafChild>()
+    val folderGames = mutableListOf<SafChild>()
+    var complete = true
+    val visited = hashSetOf(rootDocId)
+    val stack = ArrayDeque<String>().apply { addLast(rootDocId) }
+    while (stack.isNotEmpty()) {
+        coroutineContext.ensureActive()
+        val children = list(stack.removeLast())
+        if (children == null) {
+            complete = false
+            continue
+        }
+        for (child in children) {
+            coroutineContext.ensureActive()
+            if (child.isDirectory) {
+                // Checked before [recursive], which governs looking inside ordinary folders only.
+                if (DirectoryGameExtensions.isGameFolder(child.name, allowed)) folderGames.add(child)
+                else if (recursive && visited.add(child.documentId)) stack.addLast(child.documentId)
+                continue
+            }
+            if (!child.name.startsWith(".")) files.add(child)
+        }
+    }
+    return RomTreeWalk(files, folderGames, complete)
+}
 
 // ── ROM title cleaning ──────────────────────────────────────────────────────────
 //

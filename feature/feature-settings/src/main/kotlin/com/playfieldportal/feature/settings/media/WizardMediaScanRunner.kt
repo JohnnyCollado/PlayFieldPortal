@@ -3,7 +3,9 @@ package com.playfieldportal.feature.settings.media
 import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
+import com.playfieldportal.core.data.repository.FolderAccess
 import com.playfieldportal.core.data.repository.MediaRootKind
+import com.playfieldportal.core.data.repository.SafFolderAccess
 import com.playfieldportal.core.data.repository.MediaRootRepository
 import com.playfieldportal.core.domain.model.MusicFolder
 import com.playfieldportal.core.domain.model.PhotoLibrary
@@ -28,6 +30,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -70,6 +73,7 @@ class WizardMediaScanRunner @Inject constructor(
     // The shared sink, replacing a privately built BackgroundTaskNotifier: media scans reached the
     // Android shade and the in-app notification panel never heard about them.
     private val tasks: BackgroundTaskCenter,
+    private val folderAccess: SafFolderAccess,
 ) {
 
     /**
@@ -90,6 +94,37 @@ class WizardMediaScanRunner @Inject constructor(
     // cost the SUM of all three kinds, and a user-initiated scan of one kind queued behind the
     // other two while its in-flight entry made it look already started.
     private val scanMutexes = MediaRootKind.entries.associateWith { Mutex() }
+
+    // Quiet retries per kind for folders whose storage was not ready (see [readyToScan]).
+    private val notReadyRetries = ConcurrentHashMap<MediaRootKind, Int>()
+
+    /**
+     * Whether [treeUri] should be scanned now, or the pass should stop at this folder. A folder whose
+     * grant is held but which cannot be read yet (an SD card still mounting after a reboot) is,
+     * on an automatic pass, skipped without a word while the kind is retried a few times on its
+     * own; once those retries run out it is scanned anyway, so a folder that is really gone is
+     * still reported. A scan the user asked for ([force]) is never silent: it reports
+     * [NOT_READY_MESSAGE] on [taskId] instead. "Permission lost" stays for a grant that is gone.
+     */
+    private suspend fun readyToScan(kind: MediaRootKind, treeUri: String, force: Boolean, taskId: String, name: String): Boolean {
+        val access = folderAccess.of(treeUri)
+        if (access != FolderAccess.NOT_READY) return true
+        if (force) {
+            tasks.fail(taskId, NOT_READY_MESSAGE, title = "$name scan failed")
+            return false
+        }
+        val attempt = notReadyRetries.merge(kind, 1, Int::plus) ?: 1
+        if (attempt > NOT_READY_RETRIES) {
+            Timber.w("Media %s root still not ready after %d retries, scanning anyway: %s", kind.name, NOT_READY_RETRIES, treeUri)
+            return true
+        }
+        Timber.i("Media %s root not ready, retrying quietly (%d/%d): %s", kind.name, attempt, NOT_READY_RETRIES, treeUri)
+        scope.launch {
+            delay(NOT_READY_RETRY_MS)
+            kickoff(kind, force = false)
+        }
+        return false
+    }
 
     /**
      * Starts (or restarts after completion) the scan for [kind]'s current roots. Defaults to a
@@ -175,6 +210,7 @@ class WizardMediaScanRunner @Inject constructor(
         onProgress: (String) -> Unit = {},
     ): String {
         val roots = mediaRootRepository.getAll(kind)
+        val retriesBefore = notReadyRetries[kind]
         var total = 0
         var failure: String? = null
         when (kind) {
@@ -203,6 +239,8 @@ class WizardMediaScanRunner @Inject constructor(
                 }
             }
         }
+        // A pass that skipped nothing ends the quiet retries, so the next boot gets a fresh set.
+        if (notReadyRetries[kind] == retriesBefore) notReadyRetries.remove(kind)
         return failure ?: "Found " + total + " " + kind.noun(total) + " across " + roots.size + " root(s)."
     }
 
@@ -262,6 +300,9 @@ class WizardMediaScanRunner @Inject constructor(
     ): Outcome {
         val taskId = "music_scan_" + target.id
         val report = progressFor(force)
+        if (!readyToScan(MediaRootKind.MUSIC, target.treeUri, force, taskId, target.displayName)) {
+            return Outcome(target.trackCount, NOT_READY_MESSAGE.takeIf { force })
+        }
         var outcome = Outcome(target.trackCount, null)
         return stoppable(taskId, target.displayName, report, fallback = { outcome }) {
         val existing = musicRepository.getTracksForFolder(target.id)
@@ -315,6 +356,9 @@ class WizardMediaScanRunner @Inject constructor(
     ): Outcome {
         val taskId = "photo_scan_" + target.id
         val report = progressFor(force)
+        if (!readyToScan(MediaRootKind.PHOTO, target.treeUri, force, taskId, target.displayName)) {
+            return Outcome(target.photoCount, NOT_READY_MESSAGE.takeIf { force })
+        }
         var outcome = Outcome(target.photoCount, null)
         return stoppable(taskId, target.displayName, report, fallback = { outcome }) {
         photoScanner.scan(
@@ -367,6 +411,9 @@ class WizardMediaScanRunner @Inject constructor(
     ): Outcome {
         val taskId = "video_scan_" + target.id
         val report = progressFor(force)
+        if (!readyToScan(MediaRootKind.VIDEO, target.treeUri, force, taskId, target.displayName)) {
+            return Outcome(target.videoCount, NOT_READY_MESSAGE.takeIf { force })
+        }
         var outcome = Outcome(target.videoCount, null)
         return stoppable(taskId, target.displayName, report, fallback = { outcome }) {
         videoScanner.scan(
@@ -461,4 +508,11 @@ class WizardMediaScanRunner @Inject constructor(
             ?.takeIf { it.isNotBlank() }
             ?: Uri.parse(treeUri).lastPathSegment?.substringAfterLast('/')?.substringAfterLast(':')
             ?: fallback
+
+    companion object {
+        /** Quiet retries for a folder whose storage is not ready, about a minute in all. */
+        const val NOT_READY_RETRIES = 6
+        const val NOT_READY_RETRY_MS = 10_000L
+        const val NOT_READY_MESSAGE = "This folder's storage isn't ready yet. Try again in a moment."
+    }
 }

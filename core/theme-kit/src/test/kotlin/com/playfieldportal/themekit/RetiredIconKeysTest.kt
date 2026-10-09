@@ -73,6 +73,37 @@ class RetiredIconKeysTest {
         }
     }
 
+    // ── sysicon_allgames: All Games draws the Games memory card ──────────────────
+
+    @Test
+    fun `sysicon_allgames is no longer a slot and retires onto item_memcard_games`() {
+        assertFalse(CustomizableIcons.isValidKey("sysicon_allgames"))
+        assertFalse("allgames" in SYSICON_PLATFORM_IDS)
+        assertEquals("item_memcard_games", IconSlots.RETIRED["sysicon_allgames"])
+    }
+
+    @Test
+    fun `an old bundle's All Games console icon is read as the Games memory card`() {
+        val bundle = assertNotNull(
+            PfpThemeCodec.read(ThemeFixtures.zip("manifest.json" to manifest, "sysicons/allgames.png" to legacyArt)),
+        )
+        assertContentEquals(legacyArt, assertNotNull(bundle.icons["item_memcard_games"]).bytes)
+        assertFalse("sysicon_allgames" in bundle.icons)
+        assertTrue(bundle.passthrough.none { it.name == "sysicons/allgames.png" }, "migrated, not passed through")
+    }
+
+    @Test
+    fun `the bundle's own Games memory card wins over the retired All Games icon`() {
+        val orders = listOf(
+            listOf("sysicons/allgames.png" to legacyArt, "icons/item_memcard_games.png" to currentArt),
+            listOf("icons/item_memcard_games.png" to currentArt, "sysicons/allgames.png" to legacyArt),
+        )
+        for (entries in orders) {
+            val bundle = assertNotNull(PfpThemeCodec.read(ThemeFixtures.zip("manifest.json" to manifest, *entries.toTypedArray())))
+            assertContentEquals(currentArt, assertNotNull(bundle.icons["item_memcard_games"]).bytes)
+        }
+    }
+
     private fun entryNames(zip: ByteArray): List<String> = buildList {
         ZipInputStream(zip.inputStream()).use { z ->
             while (true) {

@@ -25,8 +25,12 @@ sealed interface ArtworkFolderState {
     /** The folder is set, its grant is live and its root resolves: new artwork can be written. */
     data class Ready(val treeUri: String, val name: String) : ArtworkFolderState
 
-    /** The folder is set but its grant is gone or its root is unreachable: new writes pause. */
-    data class Unavailable(val treeUri: String, val name: String) : ArtworkFolderState
+    /**
+     * The folder is set but its grant is gone or its root is unreachable: new writes pause.
+     * [grantLive]: the grant survives and only the storage is unreachable (an SD card still
+     * mounting after a reboot). Relinking cannot fix that, so it raises no relink prompt on its own.
+     */
+    data class Unavailable(val treeUri: String, val name: String, val grantLive: Boolean = false) : ArtworkFolderState
 
     /** No folder is set. [internalFiles] is the artwork still stored inside the app. */
     data class NotLinked(val internalFiles: Int) : ArtworkFolderState
@@ -86,10 +90,17 @@ class ArtworkFolderStatus @Inject constructor(
                 ArtworkFolderState.NotLinked(internalStore.footprint().first)
             } else {
                 val name = RomRootRepository.displayNameOfTree(tree)
-                if (repository.hasLiveGrant() && library.isRootReachable(Uri.parse(tree))) {
-                    ArtworkFolderState.Ready(tree, name)
-                } else {
-                    ArtworkFolderState.Unavailable(tree, name)
+                val grantLive = repository.hasLiveGrant()
+                when {
+                    !grantLive -> {
+                        Timber.w("Artwork folder unavailable: no live grant for $tree")
+                        ArtworkFolderState.Unavailable(tree, name)
+                    }
+                    !library.isRootReachable(Uri.parse(tree)) -> {
+                        Timber.w("Artwork folder unavailable: grant live but root unreachable for $tree")
+                        ArtworkFolderState.Unavailable(tree, name, grantLive = true)
+                    }
+                    else -> ArtworkFolderState.Ready(tree, name)
                 }
             }
         } catch (e: CancellationException) {

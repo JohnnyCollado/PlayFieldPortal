@@ -46,9 +46,7 @@ class DefaultSlotGlyphTest {
 
     @Test
     fun `every item slot sharing the memory-card art previews the memory card`() {
-        // sysicon_allgames is console art: its default is the same picture through systemIconRes.
         val items = SharedIconArt.MEMORY_CARD.mapNotNull { CustomizableIcons.byKey(it) }
-            .filter { it.group != IconSlot.Group.CONSOLE }
         assertEquals(5, items.size)
         for (slot in items) {
             assertEquals(slot.key, SlotGlyphDefault.BundledAsset(MEMORY_CARD_DEFAULT_ART), defaultGlyphFor(slot))

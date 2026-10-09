@@ -12,12 +12,12 @@ package com.playfieldportal.themekit
 object SharedIconArt {
 
     /**
-     * The default memory card: the media library cards, a games collection with no picked icon,
-     * All Games (console art, the same picture) and the Shiba Coins hub's All Tracked Games row.
+     * The default memory card: the media library cards, the Games memory card (All Games and a
+     * games collection with no picked icon) and the Shiba Coins hub's All Tracked Games row.
      */
     val MEMORY_CARD: List<String> = listOf(
         "item_memcard_games", "item_memcard_music", "item_memcard_video", "item_memcard_photos",
-        "sysicon_allgames", "item_shiba_track",
+        "item_shiba_track",
     )
 
     /** The Game column glyph, which is also the generic art for a console with none of its own. */

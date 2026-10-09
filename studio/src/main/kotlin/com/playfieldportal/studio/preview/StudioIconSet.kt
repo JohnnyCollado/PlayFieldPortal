@@ -101,11 +101,8 @@ object StudioIconSet {
         "shiba_coin_platinum" to "xmb/shiba_coin_platinum.webp",
     ) +
         // Default memory-card art (launcher: systems/physical-media/_default.png): one asset for
-        // every item slot that shares it, "All Tracked Games" included. sysicon_allgames draws the
-        // same picture through consoleResource.
-        SharedIconArt.MEMORY_CARD
-            .filter { !it.startsWith(CustomizableIcons.SYSICON_PREFIX) }
-            .associateWith { "xmb/item_memcard.png" }
+        // every item slot that shares it, All Games and "All Tracked Games" included.
+        SharedIconArt.MEMORY_CARD.associateWith { "xmb/item_memcard.png" }
 
     /**
      * Material glyphs for the item slots — keep in lockstep with the launcher's

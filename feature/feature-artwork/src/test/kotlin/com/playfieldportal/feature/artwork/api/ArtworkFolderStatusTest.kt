@@ -55,9 +55,19 @@ class ArtworkFolderStatusTest {
     }
 
     @Test
-    fun `live grant with a failing root probe is unavailable`() = runTest {
+    fun `live grant with a failing root probe is unavailable with the grant still live`() = runTest {
+        // The storage is not mounted yet (right after a reboot): relinking would not help.
         linked(liveGrant = true, rootReachable = false)
-        assertEquals(ArtworkFolderState.Unavailable(tree, name), status().refresh())
+        assertEquals(ArtworkFolderState.Unavailable(tree, name, grantLive = true), status().refresh())
+    }
+
+    @Test
+    fun `a root that becomes reachable turns ready on the next probe`() = runTest {
+        linked(liveGrant = true, rootReachable = false)
+        val s = status()
+        s.refresh()
+        coEvery { library.isRootReachable(Uri.parse(tree)) } returns true
+        assertEquals(ArtworkFolderState.Ready(tree, name), s.refresh())
     }
 
     @Test

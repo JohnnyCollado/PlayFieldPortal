@@ -2202,13 +2202,14 @@ class XMBViewModel @Inject constructor(
             )?.let { prompt -> _uiState.update { it.copy(artworkFolderPrompt = prompt) } }
         }
         viewModelScope.launch {
-            artworkFolderStatus.folderNeeded.collect {
+            artworkFolderStatus.folderNeeded.collect { need ->
                 if (artworkImportManager.folderState.value is ArtworkFolderState.Unknown) {
                     artworkFolderStatus.refresh()
                 }
                 ArtworkFolderPrompts.onNeed(
                     state = artworkImportManager.folderState.value,
                     pending = artworkImportManager.pendingForeignLibrary.value,
+                    trigger = need.trigger,
                 )?.let { prompt -> _uiState.update { it.copy(artworkFolderPrompt = prompt) } }
             }
         }
@@ -10964,6 +10965,16 @@ class XMBViewModel @Inject constructor(
             val grid = s.themeGrid ?: return@update it
             val next = ThemeIconGridNav.move(grid.sectionSizes, THEME_ICON_GRID_COLUMNS, grid.cursor, action)
             if (next == grid.cursor) it else it.copy(customIconSession = s.copy(themeGrid = grid.copy(cursor = next)))
+        }
+    }
+
+    /** A finger scroll settled: park the hidden cursor on [index] so the pad resumes from there. */
+    fun onThemeIconGridTouchBrowse(index: Int) {
+        _uiState.update {
+            val s = it.customIconSession ?: return@update it
+            val grid = s.themeGrid ?: return@update it
+            val parked = index.coerceIn(0, (grid.files.size - 1).coerceAtLeast(0))
+            if (parked == grid.cursor) it else it.copy(customIconSession = s.copy(themeGrid = grid.copy(cursor = parked)))
         }
     }
 

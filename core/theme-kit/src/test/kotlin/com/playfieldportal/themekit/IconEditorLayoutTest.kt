@@ -91,16 +91,16 @@ class IconEditorLayoutTest {
     }
 
     @Test
-    fun `the game run holds the UMD slot, All Games and Favorites`() {
+    fun `the game run holds the UMD slot, Favorites and the Games memory card`() {
+        // All Games draws the Games memory card (item_memcard_games), like Music, Video and Photo.
         val game = IconEditorLayout.itemRuns().single { it.label == "Game" }
         assertEquals(
-            listOf("item_umd", "sysicon_allgames", "sysicon_favorites", "item_missing", "item_memcard_games"),
+            listOf("item_umd", "sysicon_favorites", "item_missing", "item_memcard_games"),
             keys(game.slots),
         )
-        assertEquals("All Games", game.slots[1].displayName)
-        assertEquals("Favorites", game.slots[2].displayName)
-        assertEquals(IconEditorTab.ITEMS, IconEditorLayout.tabOf("sysicon_allgames"))
+        assertEquals("Favorites", game.slots[1].displayName)
         assertEquals(IconEditorTab.ITEMS, IconEditorLayout.tabOf("sysicon_favorites"))
+        assertEquals(null, IconEditorLayout.tabOf("sysicon_allgames"))
     }
 
     @Test
@@ -125,9 +125,9 @@ class IconEditorLayoutTest {
     // ── Consoles and physical media ──────────────────────────────────────────
 
     @Test
-    fun `consoles are the console cards in registry order without All Games and Favorites`() {
+    fun `consoles are the console cards in registry order without Favorites`() {
         val consoles = keys(IconEditorLayout.slots(IconEditorTab.CONSOLES))
-        val expected = keys(CustomizableIcons.group(IconSlot.Group.CONSOLE)) - setOf("sysicon_allgames", "sysicon_favorites")
+        val expected = keys(CustomizableIcons.group(IconSlot.Group.CONSOLE)) - setOf("sysicon_favorites")
         assertEquals(expected, consoles)
         assertEquals("sysicon_android", consoles.first())
     }
@@ -146,13 +146,13 @@ class IconEditorLayoutTest {
         assertEquals(
             mapOf(
                 IconEditorTab.CROSSBAR to 9,
-                IconEditorTab.ITEMS to 39,
+                IconEditorTab.ITEMS to 38,
                 IconEditorTab.CONSOLES to 45,
                 IconEditorTab.PHYSICAL_MEDIA to 42,
             ),
             IconEditorTab.entries.associateWith { IconEditorLayout.slots(it).size },
         )
-        assertEquals(135, IconEditorLayout.ALL.size)
+        assertEquals(134, IconEditorLayout.ALL.size)
     }
 
     @Test

@@ -24,7 +24,7 @@ class PreviewModelConsoleTest {
     fun `sample game cards use console keys and their games draw letter tiles`() {
         val root = SampleContent.rootRows(SampleContent.SELECTED_CATEGORY)
         assertEquals(
-            listOf(null, "sysicon_allgames", "sysicon_favorites", "item_memcard_games", "sysicon_ps3", "sysicon_psp", "sysicon_windows"),
+            listOf(null, "item_memcard_games", "sysicon_favorites", "item_memcard_games", "sysicon_ps3", "sysicon_psp", "sysicon_windows"),
             root.map { it.slotKey },
         )
         val games = root.flatMap { it.children }

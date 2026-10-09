@@ -134,24 +134,29 @@ as a verbatim prefix plus 47 console slots. Keys are zip entry names: **never re
 | NOTIFICATIONS | 8 | `icons/` | v4: `notif_album`, `notif_image`, `notif_tag`, `notif_coin`, `notif_blocked`, `notif_settings`, `notif_download`, `notif_feed` |
 | MENUS | 2 | `icons/` | v4: `menu_check`, `menu_back` |
 | **IconSlots total** | **81** | | 52 in v3, +30 in v4, −1 retired |
-| CONSOLE | 47 | `sysicons/` | key `sysicon_<id>`, entry `sysicons/<id>`; 40 platform ids plus v4 extras `cps1`, `cps2`, `cps3`, `xbox`, `favorites`, `desktop`, `default` |
-| PHYSICAL_MEDIA | 42 | `mediaicons/` | key `physmedia_<id>`, entry `mediaicons/<id>`; every console id except `allgames`, `android`, `favorites`, `desktop`, `default` |
-| **CustomizableIcons total** | **170** | | |
+| CONSOLE | 46 | `sysicons/` | key `sysicon_<id>`, entry `sysicons/<id>`; 39 platform ids (`allgames` retired, see below) plus v4 extras `cps1`, `cps2`, `cps3`, `xbox`, `favorites`, `desktop`, `default` |
+| PHYSICAL_MEDIA | 42 | `mediaicons/` | key `physmedia_<id>`, entry `mediaicons/<id>`; every console id except `android`, `favorites`, `desktop`, `default` |
+| **CustomizableIcons total** | **169** | | |
 
 STATUS, SHIBA, MEDIA, GAME_DETAIL, NOTIFICATIONS and MENUS are theme-only groups: neither the
 on-device icon editor nor the Theme Studio lists them. Both editors list the same slots in the same
-order (`IconEditorLayout`): Crossbar, Items (grouped by XMB column, with `sysicon_allgames` and
-`sysicon_favorites` in the Game column), Consoles, Physical Media.
+order (`IconEditorLayout`): Crossbar, Items (grouped by XMB column, with `sysicon_favorites` and
+`item_memcard_games` in the Game column), Consoles, Physical Media.
 
 **Retired keys** (`IconSlots.RETIRED`). Favorites is not a crossbar category: it is the Game column's
 Favorites card, `sysicon_favorites`. The old `catbar_favorites` slot is retired. The reader moves an
 older bundle's `icons/catbar_favorites.*` onto `sysicon_favorites` (the bundle's own
-`sysicons/favorites.*` wins when both are present), and the writer never emits it.
+`sysicons/favorites.*` wins when both are present), and the writer never emits it. Likewise All Games
+is the Game column's memory card, the twin of the Music / Video / Photo cards, so it draws
+`item_memcard_games`. The old `sysicon_allgames` console slot is retired: the reader moves an older
+bundle's `sysicons/allgames.*` onto `item_memcard_games` (the bundle's own `icons/item_memcard_games.*`
+wins), and the launcher moves any `sysicon_allgames` file already stored on the device (a user pick,
+an applied theme, a restored backup) the same way (`ThemeTiers.migrateRetiredIcons`).
 
 **Shared art** (`SharedIconArt`). Slots whose built-in art is one picture are grouped once, and a
 job that sets a whole family fans out over the group: a PTF import fills every slot in it, and both
 editors take each slot's default art from it. The groups are the memory card (`item_memcard_games`,
-`_music`, `_video`, `_photos`, `sysicon_allgames`, `item_shiba_track`) and the Game glyph
+`_music`, `_video`, `_photos`, `item_shiba_track`) and the Game glyph
 (`catbar_games`, `sysicon_default`). The slots stay separate keys, so a user or a theme can still
 give each one its own art. The Studio's `StudioIconSetSharedArtTest` fails when two slots ship
 byte-identical art without being grouped.

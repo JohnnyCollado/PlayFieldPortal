@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,8 +28,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,7 +61,9 @@ import com.playfieldportal.core.ui.theme.LocalPfpTextColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.menuCursorFill
 import com.playfieldportal.feature.xmb.viewmodel.THEME_ICON_GRID_COLUMNS
+import com.playfieldportal.feature.xmb.viewmodel.ThemeIconGridNav
 import com.playfieldportal.feature.xmb.viewmodel.ThemeIconGridState
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * The applied theme's icons as a grid, drawn over the Customize XMB Icons editor, for choosing one
@@ -64,6 +71,11 @@ import com.playfieldportal.feature.xmb.viewmodel.ThemeIconGridState
  * the editor's own strip. The view model owns the cursor ([ThemeIconGridState.cursor]); one input
  * family is on screen at a time ([showTouchControls]): the pad's footer with the focused tile
  * ringed, or the Cancel pill, a touch prompt and tappable tiles. Any finger reports [onTouchInput].
+ *
+ * The pad cursor is kept on screen even when its tile is not composed yet (a lazy grid only holds
+ * the rows in view): the grid scrolls to it first, then the tile frames itself exactly. A finger
+ * scroll reports the tile nearest the middle through [onTouchBrowse] once it settles, so the pad
+ * picks up where the finger left off.
  */
 @Composable
 fun ThemeIconGridOverlay(
@@ -73,10 +85,46 @@ fun ThemeIconGridOverlay(
     modifier: Modifier = Modifier,
     showTouchControls: Boolean = false,
     onTouchInput: () -> Unit = {},
+    onTouchBrowse: (Int) -> Unit = {},
 ) {
     val currentOnTouchInput by rememberUpdatedState(onTouchInput)
+    val currentOnTouchBrowse by rememberUpdatedState(onTouchBrowse)
+    val currentSections by rememberUpdatedState(grid.sectionSizes)
     val pfpColors = LocalPFPColors.current
     val textColors = LocalPfpTextColors.current
+    val gridState = rememberLazyGridState()
+
+    LaunchedEffect(grid.cursor, showTouchControls) {
+        if (showTouchControls || grid.icons.isEmpty()) return@LaunchedEffect
+        val cursor = grid.cursor.coerceIn(0, grid.icons.lastIndex)
+        val tile = ThemeIconGridNav.lazyIndexOf(grid.sectionSizes, cursor)
+        val visible = gridState.layoutInfo.visibleItemsInfo.map { it.index }
+        // Only an off-screen tile scrolls here (the app drawer's lazy-grid rule); a tile in view
+        // frames itself through IconTile's requester. The top row also brings the first title back.
+        when {
+            cursor < THEME_ICON_GRID_COLUMNS && 0 !in visible -> gridState.animateScrollToItem(0)
+            tile !in visible -> gridState.animateScrollToItem(tile)
+        }
+    }
+
+    var fingerScrolled by remember { mutableStateOf(false) }
+    LaunchedEffect(gridState) {
+        gridState.interactionSource.interactions.collect { if (it is DragInteraction.Start) fingerScrolled = true }
+    }
+    LaunchedEffect(gridState) {
+        snapshotFlow { gridState.isScrollInProgress }
+            .distinctUntilChanged()
+            .collect { scrolling ->
+                if (scrolling || !fingerScrolled) return@collect
+                fingerScrolled = false
+                val info = gridState.layoutInfo
+                val center = (info.viewportStartOffset + info.viewportEndOffset) / 2
+                info.visibleItemsInfo
+                    .mapNotNull { item -> ThemeIconGridNav.tileAt(currentSections, item.index)?.let { it to item } }
+                    .minByOrNull { (_, item) -> kotlin.math.abs(item.offset.y + item.size.height / 2 - center) }
+                    ?.let { (tile, _) -> currentOnTouchBrowse(tile) }
+            }
+    }
 
     Box(
         modifier = modifier
@@ -121,10 +169,11 @@ fun ThemeIconGridOverlay(
             }
 
             LazyVerticalGrid(
+                state = gridState,
                 columns = GridCells.Fixed(THEME_ICON_GRID_COLUMNS),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.weight(1f).fillMaxWidth().padding(top = 12.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth().padding(top = 12.dp).testTag(ThemeIconGridTags.GRID),
             ) {
                 var flat = 0
                 for (section in grid.sections) {
@@ -221,6 +270,7 @@ private fun IconTile(
 
 /** Test tags for the grid's input-family split and its tiles. */
 object ThemeIconGridTags {
+    const val GRID = "themeIconGrid:grid"
     const val CANCEL = "themeIconGrid:cancel"
     const val PROMPTS = "themeIconGrid:prompts"
     const val TOUCH_PROMPTS = "themeIconGrid:touchPrompts"

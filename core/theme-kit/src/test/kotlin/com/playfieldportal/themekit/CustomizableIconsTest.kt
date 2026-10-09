@@ -27,7 +27,7 @@ class CustomizableIconsTest {
 
     @Test
     fun `console slots come after the theme slots`() {
-        val consoleSlots = CustomizableIcons.ALL.drop(IconSlots.ALL.size).take(47)
+        val consoleSlots = CustomizableIcons.ALL.drop(IconSlots.ALL.size).take(46)
         assertTrue(consoleSlots.isNotEmpty(), "no console slots registered")
         assertTrue(consoleSlots.all { it.group == IconSlot.Group.CONSOLE })
         assertTrue(consoleSlots.all { it.key.startsWith("sysicon_") })
@@ -38,14 +38,15 @@ class CustomizableIconsTest {
     fun `every console slot key derives from the platform ids then the extras`() {
         // A4 (Theme Studio restructure): the console group is the platform ids followed by
         // SYSICON_EXTRA_IDS. This assertion used to be platform ids only.
-        val consoleSlots = CustomizableIcons.ALL.drop(IconSlots.ALL.size).take(47)
+        val consoleSlots = CustomizableIcons.ALL.drop(IconSlots.ALL.size).take(46)
         assertEquals(SYSICON_PLATFORM_IDS + SYSICON_EXTRA_IDS, consoleSlots.map { it.key.removePrefix("sysicon_") })
     }
 
     @Test
-    fun `console group has 47 slots and the platform list stays at 40`() {
-        assertEquals(47, CustomizableIcons.group(IconSlot.Group.CONSOLE).size)
-        assertEquals(40, SYSICON_PLATFORM_IDS.size)
+    fun `console group has 46 slots and the platform list stays at 39`() {
+        // 47 / 40 until sysicon_allgames retired onto item_memcard_games (IconSlots.RETIRED).
+        assertEquals(46, CustomizableIcons.group(IconSlot.Group.CONSOLE).size)
+        assertEquals(39, SYSICON_PLATFORM_IDS.size)
         assertEquals(
             listOf("cps1", "cps2", "cps3", "xbox", "favorites", "desktop", "default"),
             SYSICON_EXTRA_IDS,
@@ -88,18 +89,19 @@ class CustomizableIconsTest {
     // -- TS-06: 29 new icons/ slots in 5 new groups (the plan's "36" miscounts; 52 + 29 + 47 = 128) --
 
     @Test
-    fun `registry totals 170 slots, 81 of them icons slots`() {
-        // 171 / 82 until catbar_favorites retired onto sysicon_favorites (IconSlots.RETIRED).
+    fun `registry totals 169 slots, 81 of them icons slots`() {
+        // 171 / 82 until catbar_favorites retired onto sysicon_favorites, then 170 until
+        // sysicon_allgames retired onto item_memcard_games (IconSlots.RETIRED).
         assertEquals(81, IconSlots.ALL.size)
-        assertEquals(170, CustomizableIcons.ALL.size)
+        assertEquals(169, CustomizableIcons.ALL.size)
     }
 
     // -- Physical media: one slot per console that ships on a disc, cart or UMD --
 
     @Test
     fun `physical media slots come last, one per console with media`() {
-        val media = CustomizableIcons.ALL.drop(IconSlots.ALL.size + 47)
-        val noMedia = setOf("allgames", "android", "favorites", "desktop", "default")
+        val media = CustomizableIcons.ALL.drop(IconSlots.ALL.size + 46)
+        val noMedia = setOf("android", "favorites", "desktop", "default")
         val expectedIds = (SYSICON_PLATFORM_IDS + SYSICON_EXTRA_IDS).filter { it !in noMedia }
         assertEquals(42, media.size)
         assertEquals(expectedIds.map { "physmedia_$it" }, media.map { it.key })
@@ -153,7 +155,7 @@ class CustomizableIconsTest {
         assertEquals(5, n(IconSlot.Group.GAME_DETAIL))
         assertEquals(8, n(IconSlot.Group.NOTIFICATIONS))
         assertEquals(2, n(IconSlot.Group.MENUS))
-        assertEquals(47, n(IconSlot.Group.CONSOLE))
+        assertEquals(46, n(IconSlot.Group.CONSOLE))
         assertEquals(42, n(IconSlot.Group.PHYSICAL_MEDIA))
     }
 

@@ -36,7 +36,7 @@ class PtfIconsTest {
             setOf(
                 "catbar_settings", "catbar_photos", "catbar_music", "catbar_video", "catbar_games",
                 "sysicon_default", "catbar_network", "item_memcard_games", "item_memcard_music",
-                "item_memcard_video", "item_memcard_photos", "sysicon_allgames", "item_shiba_track",
+                "item_memcard_video", "item_memcard_photos", "item_shiba_track",
                 "item_umd", "item_camera", "item_settings",
             ),
             keys.toSet(),
@@ -61,7 +61,6 @@ class PtfIconsTest {
         val icons = extract(fullTheme())
         val source = assertNotNull(icons["item_memcard_games"])
         SharedIconArt.MEMORY_CARD.forEach { assertSame(source, icons[it], it) }
-        assertSame(source, icons["sysicon_allgames"], "All Games draws the memory-card art")
         assertEquals(10, PtfIcons.tintSources(icons).size, "fan-out must not add weight to the tint")
     }
 

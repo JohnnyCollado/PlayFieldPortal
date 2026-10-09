@@ -215,6 +215,36 @@ class ThemeTiersTest {
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
+    // ── retired icon keys ───────────────────────────────────────────────────────
+
+    @Test
+    fun `a stored All Games console icon moves onto the Games memory card in both tiers`() {
+        // sysicon_allgames retired onto item_memcard_games: a pick or an applied theme's file
+        // under the old key would otherwise sit there, unread.
+        for (tier in Tier.entries) {
+            val old = icon(tier, "sysicon_allgames", "png")
+            val bytes = old.readBytes()
+            assertTrue(tiers.migrateRetiredIcons())
+            assertFalse(old.exists())
+            assertTrue(bytes.contentEquals(assertNotNull(tiers.iconFile(tier, "item_memcard_games")).readBytes()))
+        }
+    }
+
+    @Test
+    fun `an existing Games memory card icon wins and the retired file is dropped`() {
+        val current = icon(Tier.USER, "item_memcard_games", "gif")
+        val old = icon(Tier.USER, "sysicon_allgames", "png")
+        assertTrue(tiers.migrateRetiredIcons())
+        assertFalse(old.exists())
+        assertEquals(current, tiers.iconFile(Tier.USER, "item_memcard_games"))
+    }
+
+    @Test
+    fun `nothing to migrate reports false`() {
+        icon(Tier.THEME, "catbar_games", "png")
+        assertFalse(tiers.migrateRetiredIcons())
+    }
+
     private fun icon(tier: Tier, key: String, ext: String): File =
         File(tiers.iconDir(tier).apply { mkdirs() }, "$key.$ext").apply { writeBytes(png()) }
 

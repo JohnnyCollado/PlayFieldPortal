@@ -16,18 +16,24 @@ object ArtworkFolderPrompts {
         pending?.let { return it.toPrompt() }
         if (deferred) return null
         return when (state) {
-            is ArtworkFolderState.Unavailable -> ArtworkFolderPrompt.Unavailable(state.name)
+            is ArtworkFolderState.Unavailable ->
+                if (state.grantLive) null else ArtworkFolderPrompt.Unavailable(state.name)
             is ArtworkFolderState.NotLinked ->
                 if (state.internalFiles > 0) ArtworkFolderPrompt.MoveArtwork(state.internalFiles) else null
             is ArtworkFolderState.Ready, ArtworkFolderState.Unknown -> null
         }
     }
 
-    /** When a scrape or pick needs the folder: ignores the deferral. */
-    fun onNeed(state: ArtworkFolderState, pending: ForeignLibrary?): ArtworkFolderPrompt? {
+    /**
+     * When a scrape or pick needs the folder: ignores the deferral. Storage that is only unreachable
+     * (live grant) stays silent for scrapes, which resume once it mounts; a user's pick still hears why.
+     */
+    fun onNeed(state: ArtworkFolderState, pending: ForeignLibrary?, trigger: FolderNeedTrigger): ArtworkFolderPrompt? {
         pending?.let { return it.toPrompt() }
         return when (state) {
-            is ArtworkFolderState.Unavailable -> ArtworkFolderPrompt.Unavailable(state.name)
+            is ArtworkFolderState.Unavailable ->
+                if (state.grantLive && trigger == FolderNeedTrigger.SCRAPE) null
+                else ArtworkFolderPrompt.Unavailable(state.name)
             is ArtworkFolderState.NotLinked ->
                 if (state.internalFiles > 0) ArtworkFolderPrompt.MoveArtwork(state.internalFiles)
                 else ArtworkFolderPrompt.ChooseFolder

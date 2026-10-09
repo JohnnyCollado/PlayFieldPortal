@@ -1,11 +1,17 @@
 package com.playfieldportal.feature.xmb.ui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import com.playfieldportal.core.ui.icons.CustomIcon
 import com.playfieldportal.core.ui.preview.PfpScreenPreview
 import com.playfieldportal.feature.xmb.viewmodel.ThemeIconGridState
@@ -55,16 +61,28 @@ class ThemeIconGridInputFamilyTest {
 
     private var chosen: Int? = null
     private var touches = 0
+    private var browsed: Int? = null
 
-    private fun show(touch: Boolean) {
+    // A real theme's worth of tiles: far more rows than the 400dp-tall screen shows.
+    private val tall: ThemeIconGridState = themeIconGridFor(
+        slotKey = "catbar_music",
+        slotName = "Music",
+        themeName = "Ocean",
+        slotIcons = mapOf("catbar_settings" to slotEntry("catbar_settings.png")),
+        ptfIcons = (0 until 40).associate { i -> PtfIcons.SlotRef(3, 100 + i * 2) to slotEntry("3_${100 + i * 2}.png") },
+        artKey = { it.name },
+    )!!
+
+    private fun show(touch: Boolean, state: ThemeIconGridState = grid) {
         composeRule.setContent {
             PfpScreenPreview {
                 ThemeIconGridOverlay(
-                    grid = grid,
+                    grid = state,
                     onChoose = { chosen = it },
                     onBack = {},
                     showTouchControls = touch,
                     onTouchInput = { touches++ },
+                    onTouchBrowse = { browsed = it },
                 )
             }
         }
@@ -102,6 +120,37 @@ class ThemeIconGridInputFamilyTest {
         composeRule.waitForIdle()
         assertEquals(2, chosen)
         assertTrue("touches = $touches", touches >= 1)
+    }
+
+    @Test
+    fun `the pad cursor on a tile below the screen scrolls it into view`() {
+        val last = tall.files.lastIndex
+        show(touch = false, state = tall.copy(cursor = last))
+        composeRule.onNodeWithTag(ThemeIconGridTags.tile(last)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `the pad cursor moving back to the top scrolls the first tile into view`() {
+        var state by mutableStateOf(tall.copy(cursor = tall.files.lastIndex))
+        composeRule.setContent {
+            PfpScreenPreview {
+                ThemeIconGridOverlay(grid = state, onChoose = {}, onBack = {})
+            }
+        }
+        composeRule.waitForIdle()
+        state = state.copy(cursor = 0)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(ThemeIconGridTags.tile(0)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `a finger scroll parks the cursor on a tile it left on screen`() {
+        show(touch = true, state = tall)
+        composeRule.onNodeWithTag(ThemeIconGridTags.GRID).performTouchInput { swipeUp() }
+        composeRule.waitForIdle()
+        val parked = browsed
+        assertTrue("browsed = $parked", parked != null && parked > 0)
+        composeRule.onNodeWithTag(ThemeIconGridTags.tile(parked!!)).assertIsDisplayed()
     }
 
     @Test

@@ -117,6 +117,26 @@ class RoutingArtworkStorePausedTest {
     }
 
     @Test
+    fun `a write while unavailable re-probes and proceeds once the folder is back`() = runTest {
+        // Boot: the first probe ran before the SD card mounted. A cached Unavailable must not
+        // pause every later write; the store probes again and finds the folder.
+        coEvery { repo.getTreeUri() } returns tree
+        coEvery { repo.hasLiveGrant() } returns true
+        coEvery { library.isRootReachable(Uri.parse(tree)) } returns false
+        assertTrue(status.refresh() is ArtworkFolderState.Unavailable)
+
+        coEvery { repo.isPromptDeferred() } returns false
+        coEvery { library.isRootReachable(Uri.parse(tree)) } returns true
+        coEvery { gameDao.getById(1L) } returns null
+        status.folderNeeded.test {
+            assertNull(store.saveFromUrl(1L, ArtworkKind.HERO, "https://x/y.png", 0))
+            expectNoEvents()
+        }
+        assertTrue(status.state.value is ArtworkFolderState.Ready)
+        coVerify { gameDao.getById(1L) }
+    }
+
+    @Test
     fun `scrape writes pause with a SCRAPE report when not linked`() = runTest {
         notLinked()
         assertPaused(FolderNeedTrigger.SCRAPE) { store.saveFromUrl(1L, ArtworkKind.HERO, "https://x/y.png", 0) }

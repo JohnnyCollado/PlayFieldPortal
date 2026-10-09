@@ -23,7 +23,23 @@ class ArtworkFolderPromptsTest {
         assertNull(ArtworkFolderPrompts.onLaunch(unavailable, deferred = true, pending = null))
         assertEquals(
             ArtworkFolderPrompt.Unavailable("/storage/art"),
-            ArtworkFolderPrompts.onNeed(unavailable, pending = null),
+            ArtworkFolderPrompts.onNeed(unavailable, pending = null, trigger = FolderNeedTrigger.SCRAPE),
+        )
+    }
+
+    @Test
+    fun `storage not reachable yet with a live grant never asks for a relink on launch or scrape`() {
+        val mounting = ArtworkFolderState.Unavailable("content://tree/a", "/storage/art", grantLive = true)
+        assertNull(ArtworkFolderPrompts.onLaunch(mounting, deferred = false, pending = null))
+        assertNull(ArtworkFolderPrompts.onNeed(mounting, pending = null, trigger = FolderNeedTrigger.SCRAPE))
+    }
+
+    @Test
+    fun `storage not reachable yet still answers a user pick`() {
+        val mounting = ArtworkFolderState.Unavailable("content://tree/a", "/storage/art", grantLive = true)
+        assertEquals(
+            ArtworkFolderPrompt.Unavailable("/storage/art"),
+            ArtworkFolderPrompts.onNeed(mounting, pending = null, trigger = FolderNeedTrigger.PICK),
         )
     }
 
@@ -31,7 +47,7 @@ class ArtworkFolderPromptsTest {
     fun `not linked with no internal art is silent on launch and asks to choose on need`() {
         val state = ArtworkFolderState.NotLinked(internalFiles = 0)
         assertNull(ArtworkFolderPrompts.onLaunch(state, deferred = false, pending = null))
-        assertEquals(ArtworkFolderPrompt.ChooseFolder, ArtworkFolderPrompts.onNeed(state, pending = null))
+        assertEquals(ArtworkFolderPrompt.ChooseFolder, ArtworkFolderPrompts.onNeed(state, pending = null, trigger = FolderNeedTrigger.SCRAPE))
     }
 
     @Test
@@ -41,21 +57,21 @@ class ArtworkFolderPromptsTest {
             ArtworkFolderPrompt.MoveArtwork(12),
             ArtworkFolderPrompts.onLaunch(state, deferred = false, pending = null),
         )
-        assertEquals(ArtworkFolderPrompt.MoveArtwork(12), ArtworkFolderPrompts.onNeed(state, pending = null))
+        assertEquals(ArtworkFolderPrompt.MoveArtwork(12), ArtworkFolderPrompts.onNeed(state, pending = null, trigger = FolderNeedTrigger.SCRAPE))
     }
 
     @Test
     fun `deferred suppresses the move offer on launch only`() {
         val state = ArtworkFolderState.NotLinked(internalFiles = 12)
         assertNull(ArtworkFolderPrompts.onLaunch(state, deferred = true, pending = null))
-        assertEquals(ArtworkFolderPrompt.MoveArtwork(12), ArtworkFolderPrompts.onNeed(state, pending = null))
+        assertEquals(ArtworkFolderPrompt.MoveArtwork(12), ArtworkFolderPrompts.onNeed(state, pending = null, trigger = FolderNeedTrigger.SCRAPE))
     }
 
     @Test
     fun `ready and unknown never prompt`() {
         for (state in listOf(ready, ArtworkFolderState.Unknown)) {
             assertNull(ArtworkFolderPrompts.onLaunch(state, deferred = false, pending = null))
-            assertNull(ArtworkFolderPrompts.onNeed(state, pending = null))
+            assertNull(ArtworkFolderPrompts.onNeed(state, pending = null, trigger = FolderNeedTrigger.SCRAPE))
         }
     }
 
@@ -64,7 +80,7 @@ class ArtworkFolderPromptsTest {
         val expected = ArtworkFolderPrompt.ForeignLibrary("Other", 7)
         for (state in listOf(ready, unavailable, ArtworkFolderState.Unknown, ArtworkFolderState.NotLinked(3))) {
             assertEquals(expected, ArtworkFolderPrompts.onLaunch(state, deferred = true, pending = foreign))
-            assertEquals(expected, ArtworkFolderPrompts.onNeed(state, pending = foreign))
+            assertEquals(expected, ArtworkFolderPrompts.onNeed(state, pending = foreign, trigger = FolderNeedTrigger.SCRAPE))
         }
     }
 }

@@ -3,12 +3,16 @@ package com.playfieldportal.launcher.receiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.playfieldportal.feature.artwork.api.ArtworkFolderStatus
 import com.playfieldportal.feature.library.scanner.LibraryRescanCoordinator
+import com.playfieldportal.feature.library.scanner.RescanApplicationScope
 import com.playfieldportal.feature.settings.media.MediaRescanCoordinator
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /**
@@ -34,6 +38,8 @@ class MediaMountReceiver : BroadcastReceiver() {
     interface Deps {
         fun libraryRescanCoordinator(): LibraryRescanCoordinator
         fun mediaRescanCoordinator(): MediaRescanCoordinator
+        fun artworkFolderStatus(): ArtworkFolderStatus
+        @RescanApplicationScope fun rescanScope(): CoroutineScope
     }
 
     // Deliberately NOT goAsync(): a broadcast's pending result must be finished within ~10s, but a
@@ -50,5 +56,8 @@ class MediaMountReceiver : BroadcastReceiver() {
             .fromApplication(context.applicationContext, Deps::class.java)
         deps.libraryRescanCoordinator().onMediaMounted()
         deps.mediaRescanCoordinator().onMediaMounted()
+        // The artwork folder may live on the volume that just mounted: re-probe so a boot-time
+        // Unavailable turns Ready without a relink.
+        deps.rescanScope().launch { deps.artworkFolderStatus().refresh() }
     }
 }

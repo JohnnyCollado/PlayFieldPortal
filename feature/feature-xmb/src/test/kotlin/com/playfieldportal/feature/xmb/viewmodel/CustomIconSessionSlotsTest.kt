@@ -101,16 +101,16 @@ class CustomIconSessionSlotsTest {
 
     @Test
     fun `down jumps to the next column's first slot`() {
-        val s = session(IconEditorTab.ITEMS, slotIndex = 2) // inside Game (5 slots)
-        assertEquals(5, s.columnJump(+1)) // Settings starts at 5
-        assertEquals(6, s.copy(slotIndex = 5).columnJump(+1)) // Music after one Settings slot
+        val s = session(IconEditorTab.ITEMS, slotIndex = 2) // inside Game (4 slots)
+        assertEquals(4, s.columnJump(+1)) // Settings starts at 4
+        assertEquals(5, s.copy(slotIndex = 4).columnJump(+1)) // Music after one Settings slot
     }
 
     @Test
     fun `up goes to the start of this column, then the previous one`() {
         val s = session(IconEditorTab.ITEMS)
-        assertEquals(6, s.copy(slotIndex = 8).columnJump(-1)) // mid-Music back to Music's start
-        assertEquals(5, s.copy(slotIndex = 6).columnJump(-1)) // Music's start back to Settings
+        assertEquals(5, s.copy(slotIndex = 7).columnJump(-1)) // mid-Music back to Music's start
+        assertEquals(4, s.copy(slotIndex = 5).columnJump(-1)) // Music's start back to Settings
     }
 
     @Test
@@ -131,13 +131,13 @@ class CustomIconSessionSlotsTest {
     fun `focusedSlot follows the tab and index`() {
         val focused = session(IconEditorTab.ITEMS, slotIndex = 1).focusedSlot
         assertNotNull(focused)
-        assertEquals("sysicon_allgames", focused!!.key)
+        assertEquals("sysicon_favorites", focused!!.key)
         assertNull(session(IconEditorTab.ITEMS, slotIndex = 999).focusedSlot)
     }
 
     @Test
     fun `runIndexOf names the focused slot's column`() {
-        val s = session(IconEditorTab.ITEMS, slotIndex = 5)
+        val s = session(IconEditorTab.ITEMS, slotIndex = 4)
         assertEquals(1, s.focusedRunIndex)
         assertEquals(-1, session(IconEditorTab.CROSSBAR).focusedRunIndex)
     }

@@ -388,16 +388,32 @@ private fun XmbGameColumn(
 // Kept in lockstep with the Theme Studio's StudioIconSet.ITEM_VECTORS defaults.
 /**
  * Theme slot for rows that show the default memory-card art — the Music/Videos/Photos
- * library cards and Games-side collections. Null for per-console cards (console identity
- * stays uniform across themes) and anything with real user artwork.
+ * library cards, and the Games memory card: All Games, a custom category's own card (its All
+ * Games) and Games-side collections. Null for per-console cards (console identity stays uniform
+ * across themes) and anything with real user artwork.
  */
 internal fun memoryCardSlotKeyFor(item: XMBItem): String? = when {
-    item.type == XMBItemType.COLLECTION -> "item_memcard_games"
+    item.type == XMBItemType.COLLECTION ||
+        item.type == XMBItemType.ALL_GAMES ||
+        item.type == XMBItemType.CATEGORY_CARD -> "item_memcard_games"
     item.type != XMBItemType.MEMORY_CARD -> null
     item.id == "all_music" -> "item_memcard_music"
     item.id == "all_videos" -> "item_memcard_video"
     item.id == "all_photos" -> "item_memcard_photos"
     else -> null
+}
+
+/**
+ * The art a memory-card row draws when no slot override applies: its explicit art (the media
+ * cards), else the default memory card for the Games memory card (All Games, a category's own
+ * card, a collection with no picked icon). Null for rows drawing console art or a picked glyph.
+ */
+internal fun memoryCardArtFor(item: XMBItem): String? = item.coverUri ?: MEMORY_CARD_DEFAULT_ART.takeIf {
+    when (item.type) {
+        XMBItemType.ALL_GAMES, XMBItemType.CATEGORY_CARD -> true
+        XMBItemType.COLLECTION -> item.iconKey == null
+        else -> false
+    }
 }
 
 internal fun itemSlotKeyFor(type: XMBItemType): String? = when (type) {
@@ -1387,10 +1403,9 @@ private fun XmbItemLeadingIcon(
                 // A collection with a user-picked icon renders that catalog glyph; otherwise it uses
                 // the physical-media memory-card art (_default.png) and reads as a memory card.
                 val collectionIconKey = item.iconKey?.takeIf { item.type == XMBItemType.COLLECTION }
-                // Explicit art (the "Music" card) loads directly; collections without a picked icon
-                // fall back to the memory-card art instead of the blank sysicon_default.
-                val memoryCardArt = item.coverUri
-                    ?: MEMORY_CARD_DEFAULT_ART.takeIf { item.type == XMBItemType.COLLECTION && collectionIconKey == null }
+                // Explicit art (the "Music" card) loads directly; the Games memory card (All Games,
+                // a category's card, a collection without a picked icon) draws the memory-card art.
+                val memoryCardArt = memoryCardArtFor(item)
                 // Themes can replace the DEFAULT memory-card art per category — never a
                 // user-picked collection glyph or real cover artwork. Two-tier: user pick,
                 // then the applied theme's icon.
@@ -1438,14 +1453,10 @@ private fun XmbItemLeadingIcon(
                         )
                     }
                 } else {
-                    // Memory-card rows show their matching console icon. All Games gets the generic
-                    // cartridge art (sysicon_allgames) and Favorites the star (sysicon_favorites),
-                    // both to stand apart from the Game controller.
+                    // Console memory-card rows show their matching console icon, and Favorites the
+                    // star (sysicon_favorites) to stand apart from the Game controller.
                     val iconKey = when (item.type) {
                         XMBItemType.MEMORY_CARD -> item.platformId
-                        XMBItemType.ALL_GAMES   -> "allgames"
-                        // A category's own Memory Card is its All Games: the same glyph.
-                        XMBItemType.CATEGORY_CARD -> "allgames"
                         XMBItemType.FAVORITES   -> "favorites"
                         else                    -> null
                     }

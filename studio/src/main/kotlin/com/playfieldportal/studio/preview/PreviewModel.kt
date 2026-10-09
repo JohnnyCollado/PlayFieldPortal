@@ -390,7 +390,7 @@ object SampleContent {
         // The last-played game sits in the UMD slot, above the default card (XmbLists.withUmdAboveDefault).
         val played = consoles.first()
         add(Row(null, "Shiba Run", played.platform, leading = Leading.UMD, menu = RowKind.UMD))
-        add(Row("sysicon_allgames", "All Games", "Total Games ${allGames.size}", allGames, menu = RowKind.ALL_GAMES, lands = true))
+        add(Row("item_memcard_games", "All Games", "Total Games ${allGames.size}", allGames, menu = RowKind.ALL_GAMES, lands = true))
         val favorites = gamesNamed("Crossbar Racing", "Neon Drift")
         add(Row("sysicon_favorites", "Favorites", count(favorites.size), favorites, menu = RowKind.FAVORITES))
         // customCardSubtitle: "Custom · N Games" ("Custom · Pinned · N Games" once pinned).

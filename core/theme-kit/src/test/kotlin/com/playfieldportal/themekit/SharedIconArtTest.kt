@@ -16,7 +16,7 @@ class SharedIconArtTest {
         assertEquals(
             setOf(
                 "item_memcard_games", "item_memcard_music", "item_memcard_video", "item_memcard_photos",
-                "sysicon_allgames", "item_shiba_track",
+                "item_shiba_track",
             ),
             SharedIconArt.MEMORY_CARD.toSet(),
         )
@@ -37,7 +37,7 @@ class SharedIconArtTest {
 
     @Test
     fun `groupOf gives the whole group, or just the key when it shares nothing`() {
-        assertEquals(SharedIconArt.MEMORY_CARD, SharedIconArt.groupOf("sysicon_allgames"))
+        assertEquals(SharedIconArt.MEMORY_CARD, SharedIconArt.groupOf("item_memcard_games"))
         assertEquals(SharedIconArt.GAMES, SharedIconArt.groupOf("catbar_games"))
         assertEquals(listOf("item_umd"), SharedIconArt.groupOf("item_umd"))
     }

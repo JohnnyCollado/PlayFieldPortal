@@ -16,7 +16,6 @@ import com.playfieldportal.core.ui.R
  */
 @DrawableRes
 fun systemIconRes(platformId: String?): Int = when (platformId?.lowercase()) {
-    "allgames" -> R.drawable.sysicon_allgames
     "android" -> R.drawable.sysicon_android
     "atari2600" -> R.drawable.sysicon_atari2600
     "atari5200" -> R.drawable.sysicon_atari5200

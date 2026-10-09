@@ -9,6 +9,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import timber.log.Timber
+import java.util.concurrent.atomic.AtomicBoolean
 
 /** Wall-clock seam so the resume-throttle boundary is drivable from tests (A3). */
 fun interface RescanClock {
@@ -28,6 +29,7 @@ class RescanTriggerBus @Inject constructor(
     private val clock: RescanClock = RescanClock { System.currentTimeMillis() },
 ) {
     private val scanMutex = Mutex()
+    private val followUpRequested = AtomicBoolean(false)
     private var lastResumeRunAt = Long.MIN_VALUE
     private var mountJob: Job? = null
 
@@ -37,20 +39,40 @@ class RescanTriggerBus @Inject constructor(
                 if (lastResumeRunAt != Long.MIN_VALUE &&
                     clock.now() - lastResumeRunAt < RESUME_THROTTLE_MS
                 ) return
-                scope.launch { scanNow("resume") }
+                scope.launch { scanNow("resume", followUpIfBusy = false) }
             }
             RescanTrigger.MediaMounted, RescanTrigger.UsbDisconnected -> {
                 mountJob?.cancel()
                 mountJob = scope.launch {
                     delay(MOUNT_DEBOUNCE_MS)
-                    scanNow("mount/unplug")
+                    scanNow("mount/unplug", followUpIfBusy = true)
                 }
             }
         }
     }
 
-    private suspend fun scanNow(source: String) {
-        if (!scanMutex.tryLock()) return
+    // A mount that lands while a scan runs (at boot the resume scan races the SD card) is not
+    // dropped: the running scan may have walked the card before it was readable, so one more pass
+    // runs as soon as it finishes. A busy resume needs no follow-up — the running scan covers it.
+    private suspend fun scanNow(source: String, followUpIfBusy: Boolean) {
+        var current = source
+        while (true) {
+            if (!scanMutex.tryLock()) {
+                if (followUpIfBusy) followUpRequested.set(true)
+                return
+            }
+            try {
+                followUpRequested.set(false)
+                scanOnce(current)
+            } finally {
+                scanMutex.unlock()
+            }
+            if (!followUpRequested.getAndSet(false)) return
+            current = "mount/unplug follow-up"
+        }
+    }
+
+    private suspend fun scanOnce(source: String) {
         try {
             if (source == "resume") lastResumeRunAt = clock.now()
             // Discovery first: a ROM dropped into a folder for a console with no Memory Card yet
@@ -75,8 +97,6 @@ class RescanTriggerBus @Inject constructor(
             }
         } catch (error: Throwable) {
             Timber.e(error, "Library Rescan — failed ($source)")
-        } finally {
-            scanMutex.unlock()
         }
     }
 

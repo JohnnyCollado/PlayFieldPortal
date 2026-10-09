@@ -558,10 +558,10 @@ class MetadataRepository @Inject constructor(
         return MetadataFetchResult(true, src, "Found via $src", scrapedTitle = newScrapedTitle, paused = paused)
     }
 
-    // The state is only Unknown before the first probe; the store resolves it on its first write, so
-    // this probes only when no write ran (a game with nothing to download).
+    // The store re-probes a non-Ready folder on every write, so this probes only when no write ran
+    // (a game with nothing to download) — Unknown before the first probe, or storage not mounted yet.
     private suspend fun isFolderReady(): Boolean {
-        val state = folderStatus.state.value.let { if (it is ArtworkFolderState.Unknown) folderStatus.refresh() else it }
+        val state = folderStatus.state.value.let { if (it !is ArtworkFolderState.Ready) folderStatus.refresh() else it }
         return state is ArtworkFolderState.Ready
     }
 

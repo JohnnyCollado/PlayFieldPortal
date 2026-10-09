@@ -2,7 +2,9 @@ package com.playfieldportal.feature.settings.media
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.playfieldportal.core.data.repository.FolderAccess
 import com.playfieldportal.core.data.repository.MediaRootKind
+import com.playfieldportal.core.data.repository.SafFolderAccess
 import com.playfieldportal.core.data.repository.MediaRootRepository
 import com.playfieldportal.core.domain.model.MusicFolder
 import com.playfieldportal.core.domain.model.PhotoLibrary
@@ -58,6 +60,8 @@ class WizardMediaScanRunnerTest {
     private val musicScanner = mockk<MusicScanner>(relaxed = true)
     private val photoScanner = mockk<PhotoScanner>(relaxed = true)
     private val videoScanner = mockk<VideoScanner>(relaxed = true)
+    private val folderAccess = mockk<SafFolderAccess>()
+    private var access = FolderAccess.READABLE
 
     private lateinit var runner: WizardMediaScanRunner
 
@@ -100,6 +104,8 @@ class WizardMediaScanRunnerTest {
         every { videoScanner.scan(any(), any(), any(), any()) } returns
             timedScan(MediaRootKind.VIDEO, VideoScanResult.Complete("video-1", emptyList(), SIGNATURE))
 
+        coEvery { folderAccess.of(any()) } answers { access }
+
         runner = WizardMediaScanRunner(
             context = context,
             mediaRootRepository = mediaRoots,
@@ -111,6 +117,7 @@ class WizardMediaScanRunnerTest {
             videoScanner = videoScanner,
             scope = scope,
             tasks = taskCenter,
+            folderAccess = folderAccess,
         )
     }
 
@@ -170,6 +177,60 @@ class WizardMediaScanRunnerTest {
         advanceUntilIdle()
 
         coVerify(exactly = 2) { videoScanner.scan(any(), any(), any(), any()) }
+    }
+
+    // ── Storage not ready vs permission lost ─────────────────────────────────────
+
+    // Boot: the SD card has not mounted yet but the grant is held. Nothing is scanned, nothing is
+    // reported, and the pass quietly retries until the folder can be read.
+    @Test fun `a folder whose storage is not ready is skipped silently and retried`() = scope.runTest {
+        access = FolderAccess.NOT_READY
+        runner.kickoffAll()
+        scheduler.advanceTimeBy(1)
+        scheduler.runCurrent()
+        coVerify(exactly = 0) { videoScanner.scan(any(), any(), any(), any()) }
+        io.mockk.verify(exactly = 0) { taskCenter.fail(any(), any(), any(), any(), any()) }
+
+        access = FolderAccess.READABLE
+        advanceUntilIdle()
+        coVerify(exactly = 1) { videoScanner.scan(any(), any(), any(), any()) }
+        coVerify(exactly = 1) { musicScanner.scan(any(), any(), any(), any()) }
+        io.mockk.verify(exactly = 0) { taskCenter.fail(any(), any(), any(), any(), any()) }
+    }
+
+    // Out of quiet retries, the folder is scanned anyway: one that is really gone (deleted, or its
+    // card removed for good) must still reach the scanner and be reported, not stay hidden.
+    @Test fun `once the quiet retries run out the scan runs and can report`() = scope.runTest {
+        access = FolderAccess.NOT_READY
+        runner.kickoff(MediaRootKind.VIDEO, force = false)
+        advanceUntilIdle()
+        coVerify(exactly = WizardMediaScanRunner.NOT_READY_RETRIES + 1) { folderAccess.of(root(MediaRootKind.VIDEO)) }
+        coVerify(exactly = 1) { videoScanner.scan(any(), any(), any(), any()) }
+    }
+
+    // A scan the user asked for is never silent: storage that is not ready says so.
+    @Test fun `a forced scan of a folder that is not ready reports it instead of skipping silently`() = scope.runTest {
+        access = FolderAccess.NOT_READY
+        val message = runner.scanAllRoots(MediaRootKind.VIDEO, force = true)
+        coVerify(exactly = 0) { videoScanner.scan(any(), any(), any(), any()) }
+        io.mockk.verify(exactly = 1) { taskCenter.fail("video_scan_video-1", any(), any(), any(), any()) }
+        assertEquals(WizardMediaScanRunner.NOT_READY_MESSAGE, message)
+    }
+
+    // Automatic and forced scans of a ready folder are untouched: they still scan and still report.
+    @Test fun `a forced scan of a ready folder still announces itself and scans`() = scope.runTest {
+        runner.scanAllRoots(MediaRootKind.VIDEO, force = true)
+        coVerify(exactly = 1) { videoScanner.scan(any(), any(), any(), any()) }
+        coVerify(exactly = 1) { taskCenter.startStoppable("video_scan_video-1", any(), any(), any(), any(), any()) }
+    }
+
+    // A grant that is really gone still reaches the scanner, whose "Permission lost" failure is
+    // the one thing the user has to act on.
+    @Test fun `a folder with no grant still runs the scan that reports it`() = scope.runTest {
+        access = FolderAccess.NO_GRANT
+        runner.kickoff(MediaRootKind.VIDEO, force = false)
+        advanceUntilIdle()
+        coVerify(exactly = 1) { videoScanner.scan(any(), any(), any(), any()) }
     }
 
     private fun root(kind: MediaRootKind) = "content://tree/primary%3A${kind.name}"

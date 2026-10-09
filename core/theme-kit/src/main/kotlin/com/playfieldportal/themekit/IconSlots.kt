@@ -163,8 +163,15 @@ object IconSlots {
      *
      * `catbar_favorites`: Favorites is not a crossbar category. It is the Game column's Favorites
      * card, `sysicon_favorites`, which drew the same picture.
+     *
+     * `sysicon_allgames` (travelling as `sysicons/allgames.*`): All Games is the Game column's
+     * memory card, the twin of the Music / Video / Photo cards, so it draws `item_memcard_games`,
+     * which was the same picture.
      */
-    val RETIRED: Map<String, String> = mapOf("catbar_favorites" to "sysicon_favorites")
+    val RETIRED: Map<String, String> = mapOf(
+        "catbar_favorites" to "sysicon_favorites",
+        "sysicon_allgames" to "item_memcard_games",
+    )
 
     private val byKey: Map<String, IconSlot> = ALL.associateBy { it.key }
 

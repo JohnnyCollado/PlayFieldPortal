@@ -7,6 +7,7 @@ import com.playfieldportal.core.ui.icons.CustomIcon
 import com.playfieldportal.core.ui.icons.GifFrameProbe
 import com.playfieldportal.core.ui.icons.UserCategoryIconKeys
 import com.playfieldportal.themekit.CustomizableIcons
+import com.playfieldportal.themekit.IconSlots
 import com.playfieldportal.themekit.PtfIcons
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
@@ -122,9 +123,32 @@ class ThemeTiers internal constructor(private val filesDir: File) {
         return had
     }
 
-    private fun iconFiles(tier: Tier): List<File> =
-        iconDir(tier).listFiles { f -> f.isFile }.orEmpty()
+    /**
+     * Moves icons stored under a retired key ([IconSlots.RETIRED]) onto the slot that now draws
+     * them, in both tiers; an icon already on the new slot wins and the old file is dropped. A
+     * user pick, an applied theme or a restored backup can all leave one behind. True when any
+     * file moved or was dropped.
+     */
+    fun migrateRetiredIcons(): Boolean = Tier.entries.map { migrateRetiredIcons(it) }.any { it }
+
+    private fun migrateRetiredIcons(tier: Tier): Boolean {
+        val dir = iconDir(tier)
+        var changed = false
+        for ((old, new) in IconSlots.RETIRED) {
+            for (file in ICON_EXTENSIONS.map { File(dir, "$old.$it") }.filter { it.isFile }) {
+                if (iconFile(tier, new) == null) file.renameTo(File(dir, "$new.${file.extension}")) else file.delete()
+                changed = true
+            }
+        }
+        return changed
+    }
+
+    // Retired keys are migrated first, so whatever lists the tier sees their art on its new slot.
+    private fun iconFiles(tier: Tier): List<File> {
+        migrateRetiredIcons(tier)
+        return iconDir(tier).listFiles { f -> f.isFile }.orEmpty()
             .filter { it.extension.lowercase() in ICON_EXTENSIONS && isIconKey(it.nameWithoutExtension) }
+    }
 
     // ── Media ────────────────────────────────────────────────────────────────
 

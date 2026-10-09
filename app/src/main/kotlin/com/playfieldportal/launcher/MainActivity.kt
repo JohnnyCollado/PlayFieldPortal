@@ -70,6 +70,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var mediaRescanCoordinator: MediaRescanCoordinator
 
+    @Inject
+    lateinit var artworkFolderStatus: com.playfieldportal.feature.artwork.api.ArtworkFolderStatus
+
     // Owns the user's ui-media assignments; a cold start prunes anything left by slots the
     // current build no longer has (removed sound slots, crashed-import staging files).
     @Inject
@@ -286,6 +289,13 @@ class MainActivity : ComponentActivity() {
                 libraryRescanCoordinator.onResume()
                 mediaRescanCoordinator.onResume()
             }.onFailure { Timber.e(it, "Resume-triggered library rescan failed") }
+        }
+        // An artwork folder that was unreachable (an SD card still mounting at boot) turns Ready
+        // here, which clears its prompt and lets paused scrapes write again.
+        lifecycleScope.launch {
+            if (artworkFolderStatus.state.value !is com.playfieldportal.feature.artwork.api.ArtworkFolderState.Ready) {
+                artworkFolderStatus.refresh()
+            }
         }
     }
 

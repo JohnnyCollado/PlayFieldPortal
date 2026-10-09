@@ -101,7 +101,15 @@ fun isSafeSiblingName(name: String): Boolean =
 // buildChildDocumentsUriUsingTree, so every returned uri stays scoped to the tree permission the
 // user granted — a scan can never read outside the folder they picked. Malformed provider rows
 // (null id/name) are skipped and a failing provider yields an empty list instead of a crash.
-fun ContentResolver.querySafChildren(treeUri: Uri, parentDocumentId: String): List<SafChild> {
+fun ContentResolver.querySafChildren(treeUri: Uri, parentDocumentId: String): List<SafChild> =
+    querySafChildrenOrNull(treeUri, parentDocumentId) ?: emptyList()
+
+/**
+ * [querySafChildren] for callers that must tell an unreadable folder from an empty one: null when
+ * the provider threw or returned no cursor. A volume still mounting after a reboot answers this
+ * way, and reading it as "no files" is what flags a whole folder's games missing.
+ */
+fun ContentResolver.querySafChildrenOrNull(treeUri: Uri, parentDocumentId: String): List<SafChild>? {
     val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, parentDocumentId)
     val projection = arrayOf(
         DocumentsContract.Document.COLUMN_DOCUMENT_ID,
@@ -110,9 +118,13 @@ fun ContentResolver.querySafChildren(treeUri: Uri, parentDocumentId: String): Li
         DocumentsContract.Document.COLUMN_LAST_MODIFIED,
         DocumentsContract.Document.COLUMN_SIZE,
     )
-    val out = mutableListOf<SafChild>()
-    runCatching {
-        query(childrenUri, projection, null, null, null)?.use { c ->
+    return runCatching {
+        val out = mutableListOf<SafChild>()
+        val cursor = query(childrenUri, projection, null, null, null) ?: run {
+            Timber.w("No listing for children of $parentDocumentId")
+            return null
+        }
+        cursor.use { c ->
             while (c.moveToNext()) {
                 val docId = c.getString(0) ?: continue
                 val name = c.getString(1) ?: continue
@@ -130,6 +142,6 @@ fun ContentResolver.querySafChildren(treeUri: Uri, parentDocumentId: String): Li
                 )
             }
         }
-    }.onFailure { Timber.w(it, "Could not list children of $parentDocumentId") }
-    return out
+        out
+    }.onFailure { Timber.w(it, "Could not list children of $parentDocumentId") }.getOrNull()
 }

@@ -97,4 +97,27 @@ class ThemeIconGridNavTest {
         assertEquals("image/gif", themeIconMime(java.io.File("a.GIF")))
         assertEquals("image/jpeg", themeIconMime(java.io.File("a.jpg")))
     }
+
+    // ── Tile ↔ lazy item (each section's title is an item of its own) ────────────
+
+    @Test
+    fun `a tile's lazy item counts the section titles above it`() {
+        assertEquals(1, ThemeIconGridNav.lazyIndexOf(sizes, 0))   // after "Theme icons"
+        assertEquals(14, ThemeIconGridNav.lazyIndexOf(sizes, 13))
+        assertEquals(16, ThemeIconGridNav.lazyIndexOf(sizes, 14)) // after the second title
+        assertEquals(19, ThemeIconGridNav.lazyIndexOf(sizes, 17))
+    }
+
+    @Test
+    fun `a lazy item maps back to its tile, and a section title to none`() {
+        assertEquals(null, ThemeIconGridNav.tileAt(sizes, 0))
+        assertEquals(0, ThemeIconGridNav.tileAt(sizes, 1))
+        assertEquals(13, ThemeIconGridNav.tileAt(sizes, 14))
+        assertEquals(null, ThemeIconGridNav.tileAt(sizes, 15))
+        assertEquals(14, ThemeIconGridNav.tileAt(sizes, 16))
+        assertEquals(null, ThemeIconGridNav.tileAt(sizes, 20))
+        for (tile in 0 until sizes.sum()) {
+            assertEquals(tile, ThemeIconGridNav.tileAt(sizes, ThemeIconGridNav.lazyIndexOf(sizes, tile)))
+        }
+    }
 }

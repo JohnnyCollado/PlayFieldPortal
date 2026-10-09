@@ -247,6 +247,7 @@ fun XMBShellContainer(
         ),
         onThemeIconChosen = viewModel::onThemeIconChosen,
         onCloseThemeIconGrid = viewModel::closeThemeIconGrid,
+        onThemeIconGridTouchBrowse = viewModel::onThemeIconGridTouchBrowse,
         onCustomResetSlot = viewModel::onResetSlot,
         onCustomResetAll = viewModel::onResetAll,
         onSaveAsThemeRequested = viewModel::requestSaveCurrentLookAsTheme,
@@ -511,6 +512,7 @@ fun XMBShell(
     sourceChooserCallbacks: SourceChooserCallbacks = SourceChooserCallbacks(),
     onThemeIconChosen: (Int) -> Unit = {},
     onCloseThemeIconGrid: () -> Unit = {},
+    onThemeIconGridTouchBrowse: (Int) -> Unit = {},
     onCustomResetSlot: (String) -> Unit = {},
     onCustomResetAll: () -> Unit = {},
     onSaveAsThemeRequested: () -> Unit = {},
@@ -1411,6 +1413,7 @@ fun XMBShell(
                         modifier = Modifier.fillMaxSize(),
                         showTouchControls = uiState.resolvedShowTouchButton,
                         onTouchInput = onTouchInput,
+                        onTouchBrowse = onThemeIconGridTouchBrowse,
                     )
                 }
             }

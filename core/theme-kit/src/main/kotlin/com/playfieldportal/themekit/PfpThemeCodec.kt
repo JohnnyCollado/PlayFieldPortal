@@ -86,13 +86,14 @@ object PfpThemeCodec {
     }
 
     /**
-     * The slot key and extension an older bundle's retired `icons/` entry now fills ([IconSlots.RETIRED]),
-     * or null when [name] is not one.
+     * The slot key and extension an older bundle's retired `icons/` or `sysicons/` entry now fills
+     * ([IconSlots.RETIRED]), or null when [name] is not one.
      */
     private fun retiredIconEntry(name: String): Pair<String, String>? {
-        val file = name.takeIf { it.startsWith(IconFolder.ICONS.prefix) }?.removePrefix(IconFolder.ICONS.prefix) ?: return null
+        val folder = listOf(IconFolder.ICONS, IconFolder.SYSICONS).firstOrNull { name.startsWith(it.prefix) } ?: return null
+        val file = name.removePrefix(folder.prefix)
         val ext = file.substringAfterLast('.', "").lowercase()
-        val key = IconSlots.RETIRED[file.substringBeforeLast('.')] ?: return null
+        val key = IconSlots.RETIRED[folder.keyPrefix + file.substringBeforeLast('.')] ?: return null
         return (key to ext).takeIf { ext in ICON_EXTENSIONS }
     }
 
