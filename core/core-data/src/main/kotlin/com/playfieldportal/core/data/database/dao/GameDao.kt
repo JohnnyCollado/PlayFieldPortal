@@ -331,6 +331,12 @@ interface GameDao {
     )
     suspend fun setPreferredEmulator(id: Long, emulatorPackage: String?)
 
+    @Query("UPDATE games SET pc_launcher_package = :launcherPackage WHERE id = :id")
+    suspend fun setPcLauncherPackage(id: Long, launcherPackage: String?)
+
+    @Query("UPDATE games SET windows_label = :label WHERE id = :id")
+    suspend fun setWindowsLabel(id: Long, label: String?)
+
     /** Moves every game override from the retired profile id [old] to [new]; returns the rows changed. */
     @Query("UPDATE games SET emulator_package = :new WHERE emulator_package = :old")
     suspend fun renameEmulatorRef(old: String, new: String): Int

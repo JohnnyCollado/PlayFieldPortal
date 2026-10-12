@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameContentType
 import com.playfieldportal.core.domain.model.GameRegion
+import com.playfieldportal.core.domain.model.WindowsGameLabel
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -212,6 +213,15 @@ data class GameEntity(
     @ColumnInfo(name = "storefront_game_id")
     val storefrontGameId: String? = null,
 
+    // Launch With (v56): the PC launcher the user chose for this Windows game; null = the one it
+    // was imported from (package_name).
+    @ColumnInfo(name = "pc_launcher_package")
+    val pcLauncherPackage: String? = null,
+
+    // Windows game label (v57), enum name; null = Auto (PFP's own guess).
+    @ColumnInfo(name = "windows_label")
+    val windowsLabel: String? = null,
+
     @ColumnInfo(name = "is_missing")
     val isMissing: Boolean = false,
 
@@ -271,6 +281,8 @@ fun GameEntity.toDomain() = Game(
     launchToken = launchToken,
     storefront = storefront,
     storefrontGameId = storefrontGameId,
+    pcLauncherPackage = pcLauncherPackage,
+    windowsLabel = WindowsGameLabel.fromName(windowsLabel),
     isMissing = isMissing,
     lastSeenAt = lastSeenAt,
 )
@@ -327,6 +339,8 @@ fun Game.toEntity() = GameEntity(
     launchToken = launchToken,
     storefront = storefront,
     storefrontGameId = storefrontGameId,
+    pcLauncherPackage = pcLauncherPackage,
+    windowsLabel = windowsLabel?.name,
     isMissing   = isMissing,
     lastSeenAt  = lastSeenAt,
 )

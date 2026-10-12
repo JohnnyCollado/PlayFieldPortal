@@ -58,6 +58,7 @@ class GameDetailViewModelTest {
     private lateinit var menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer
     private lateinit var pcGameExporter: com.playfieldportal.feature.settings.pc.PcGameExporter
     private lateinit var storefrontMatches: com.playfieldportal.feature.artwork.match.StorefrontMatchRepository
+    private lateinit var pcLaunchRouter: com.playfieldportal.feature.launcher.PcLaunchRouter
     private lateinit var achievementRepository: com.playfieldportal.feature.achievements.AchievementController
     private lateinit var viewModel: GameDetailViewModel
 
@@ -125,6 +126,9 @@ class GameDetailViewModelTest {
 
         achievementRepository = mockk(relaxed = true)
         storefrontMatches = mockk(relaxed = true)
+        // No Launch With choice: every game launches through its own handle.
+        pcLaunchRouter = mockk(relaxed = true)
+        coEvery { pcLaunchRouter.chosenLaunchIntent(any()) } returns null
         // Explicit, for the same reason launchDispatcher is: Lookup is a sealed interface and a
         // relaxed mock cannot invent one. These tests never open the picker, so the honest default
         // is the branch that says there is nothing to look up.
@@ -151,6 +155,7 @@ class GameDetailViewModelTest {
             launchDispatcher  = launchDispatcher,
             pcGameExporter    = pcGameExporter,
             storefrontMatches = storefrontMatches,
+            pcLaunchRouter = pcLaunchRouter,
         )
     }
 
@@ -845,6 +850,25 @@ class GameDetailViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         coVerify(exactly = 1) { launchDispatcher.launch(any(), any(), fakeIntent) }
+    }
+
+    @Test
+    fun `a Windows game runs with the launcher chosen under Launch With, not its own shortcut`() = runTest {
+        val pinned = Game(
+            id = 1L, title = "Hellraiser", platformId = "windows", packageName = "com.winlator.banner",
+            shortcutId = "4727de93", pcLauncherPackage = "app.gamenative",
+        )
+        val chosen = fakeLaunchIntent()
+        coEvery { gameRepository.getById(1L) } returns pinned
+        coEvery { pcLaunchRouter.chosenLaunchIntent(pinned) } returns chosen
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.launch()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { launchDispatcher.launch(any(), any(), chosen) }
+        coVerify(exactly = 0) { launchDispatcher.launchShortcut(any(), any()) }
     }
 
     @Test

@@ -7,8 +7,8 @@ import android.provider.DocumentsContract
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.domain.achievement.AchievementProvider
-import com.playfieldportal.core.domain.achievement.LocalCopyOwnership
 import com.playfieldportal.feature.achievements.AchievementController
+import com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate
 import com.playfieldportal.feature.artwork.match.StorefrontMatchResult
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -39,6 +39,7 @@ class LocalSteamFolderLinker @Inject constructor(
     private val ownership: LocalSteamOwnership,
     private val games: GameDao,
     private val credentials: AchievementCredentialsProvider,
+    private val gate: WindowsSteamGate,
 ) {
 
     /** What linking one picked folder produced. */
@@ -110,8 +111,8 @@ class LocalSteamFolderLinker @Inject constructor(
      */
     suspend fun linkRegistered(gameId: Long, folder: LocalSteamGame): LinkOutcome {
         achievements.linkManually(gameId, AchievementProvider.LOCAL_STEAM, folder.appId)
-        val owned = ownership.classify(gameId, folder.appId)
-        if (owned == LocalCopyOwnership.OWNED) {
+        ownership.classify(gameId, folder.appId)
+        if (gate.steamVerdictFor(gameId, folder.appId) == WindowsSteamGate.Verdict.OWNED) {
             achievements.linkManually(gameId, AchievementProvider.STEAM, folder.appId)
         }
         Timber.i("LOCAL_STEAM linked game $gameId to ${folder.appId} from the registry (${folder.folderName})")
@@ -249,9 +250,10 @@ class LocalSteamFolderLinker @Inject constructor(
 
         discovery.register(folder, source)
         achievements.linkManually(gameId, AchievementProvider.LOCAL_STEAM, folder.appId)
-        val owned = ownership.classify(gameId, folder.appId)
+        // Classified for the ownership badge the link stores; the Steam link follows the seam.
+        ownership.classify(gameId, folder.appId)
         // An owned copy played offline holds BOTH sets — appid equality beats any title ladder.
-        if (owned == LocalCopyOwnership.OWNED) {
+        if (gate.steamVerdictFor(gameId, folder.appId) == WindowsSteamGate.Verdict.OWNED) {
             achievements.linkManually(gameId, AchievementProvider.STEAM, folder.appId)
         }
         Timber.i("LOCAL_STEAM linked game $gameId to ${folder.appId} via ${anchor.folderName} ($source)")

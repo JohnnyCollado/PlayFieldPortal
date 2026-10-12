@@ -94,6 +94,24 @@ class UnknownLauncherRulesTest {
         )
     }
 
+    // ── Shortcut routing follows the same choice ──────────────────────────────
+
+    @Test
+    fun `no choice routes by verification alone`() {
+        assertEquals(true, PcLauncherCatalog.routesAsPcLauncher(choice = null, verified = true))
+        assertEquals(false, PcLauncherCatalog.routesAsPcLauncher(choice = null, verified = false))
+    }
+
+    @Test
+    fun `a launcher choice routes an unverified app's shortcuts to Windows Games`() {
+        assertEquals(true, PcLauncherCatalog.routesAsPcLauncher(choice = LauncherChoice.WINLATOR, verified = false))
+    }
+
+    @Test
+    fun `Not a launcher keeps even a verified app's shortcuts out of Windows Games`() {
+        assertEquals(false, PcLauncherCatalog.routesAsPcLauncher(choice = LauncherChoice.NOT_A_LAUNCHER, verified = true))
+    }
+
     // ── Cycle order ───────────────────────────────────────────────────────────
 
     @Test

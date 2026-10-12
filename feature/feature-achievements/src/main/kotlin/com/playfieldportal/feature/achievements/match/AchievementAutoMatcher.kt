@@ -5,6 +5,7 @@ import com.playfieldportal.core.data.database.dao.ProviderGameLinkDao
 import com.playfieldportal.core.data.database.entity.AchievementMatchNoteEntity
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.model.Game
+import com.playfieldportal.core.domain.model.WindowsGameLabel
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.provider.ps3.Ps3TropDirReader
@@ -331,13 +332,26 @@ class AchievementAutoMatcher @Inject constructor(
     // emu-marked game folder mapping to this game by normalized title links LOCAL_STEAM with the
     // folder's own appid — no guessing — and gets its ownership classified. No folder means the
     // STEAM ladder decides, and it links only a game in the user's Steam library.
+    //
+    // The user's label comes first: Steam skips the folder step (the seam answers OWNED); Local and
+    // Non-Steam never reach the ladder, and a Non-Steam game's folder is still linked.
     private suspend fun matchWindows(game: Game): Outcome {
-        emuFolders().firstOrNull { folder ->
-            steamTitleCandidates(game).any { normalizePc(it) == normalizePc(folder.folderName) }
-        }?.let { folder ->
-            repository.linkManually(game.id, AchievementProvider.LOCAL_STEAM, folder.appId)
-            localSteamOwnership.classify(game.id, folder.appId)
-            return Outcome.Matched
+        if (game.windowsLabel != WindowsGameLabel.STEAM) {
+            emuFolders().firstOrNull { folder ->
+                steamTitleCandidates(game).any { normalizePc(it) == normalizePc(folder.folderName) }
+            }?.let { folder ->
+                repository.linkManually(game.id, AchievementProvider.LOCAL_STEAM, folder.appId)
+                localSteamOwnership.classify(game.id, folder.appId)
+                return Outcome.Matched
+            }
+        }
+        when (game.windowsLabel) {
+            WindowsGameLabel.LOCAL -> return Outcome.Unmatched(
+                "Labelled Local — pick its folder in Windows ▸ Game List",
+                ownReason = true,
+            )
+            WindowsGameLabel.NON_STEAM -> return Outcome.Unmatched(NON_STEAM_REASON, ownReason = true)
+            WindowsGameLabel.STEAM, null -> Unit
         }
         val steam = matchSteam(game, ownershipChecked = true)
         if (steam is Outcome.Unmatched && !steam.ownReason) {
@@ -367,7 +381,7 @@ class AchievementAutoMatcher @Inject constructor(
         val found = SteamShortcut.appIdFrom(game)
             ?: game.steamGridDbId?.let { steamGridDb.getSteamAppId(it) }
         if (found != null) {
-            if (ownershipChecked) steamRefusal(found)?.let { return it }
+            if (ownershipChecked) steamRefusal(game.id, found)?.let { return it }
             repository.linkManually(game.id, AchievementProvider.STEAM, found)
             return Outcome.Matched
         }
@@ -376,7 +390,7 @@ class AchievementAutoMatcher @Inject constructor(
         for (title in steamTitleCandidates(game)) {
             if (ownershipChecked) {
                 val appId = steamNames.resolveAppId(title) ?: continue
-                steamRefusal(appId)?.let { return it }
+                steamRefusal(game.id, appId)?.let { return it }
             }
             if (repository.resolveSteamLink(game.id, title) != null) return Outcome.Matched
         }
@@ -384,7 +398,7 @@ class AchievementAutoMatcher @Inject constructor(
     }
 
     /** Why [appId] may not be linked to Steam without asking, or null when the user owns it. */
-    private suspend fun steamRefusal(appId: String): Outcome.Unmatched? = when (steamGate.verdict(appId)) {
+    private suspend fun steamRefusal(gameId: Long, appId: String): Outcome.Unmatched? = when (steamGate.steamVerdictFor(gameId, appId)) {
         WindowsSteamGate.Verdict.OWNED -> null
         WindowsSteamGate.Verdict.LOCAL -> Outcome.Unmatched(
             "Not in your Steam library — open its achievements to pick the game's folder",
@@ -394,6 +408,7 @@ class AchievementAutoMatcher @Inject constructor(
             "Couldn't check your Steam library — open its achievements and say whether it's a legit Steam copy",
             ownReason = true,
         )
+        WindowsSteamGate.Verdict.NOT_STEAM -> Outcome.Unmatched(NON_STEAM_REASON, ownReason = true)
     }
 
     // Full title first (most complete), then any scraped title, then the display override.
@@ -521,5 +536,6 @@ class AchievementAutoMatcher @Inject constructor(
     private companion object {
         const val PS3_PLATFORM_ID = "ps3"
         const val X360_PLATFORM_ID = "x360"
+        const val NON_STEAM_REASON = "Labelled Non-Steam — Steam achievements are not used for it"
     }
 }

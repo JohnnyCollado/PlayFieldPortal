@@ -1,10 +1,10 @@
 package com.playfieldportal.feature.achievements.provider.localsteam
 
 import com.playfieldportal.core.domain.achievement.AchievementProvider
-import com.playfieldportal.core.domain.achievement.LocalCopyOwnership
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.provider.steam.SteamAppListResolver
+import com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -40,6 +40,7 @@ class LocalSteamGameImporter @Inject constructor(
     private val achievements: AchievementController,
     private val ownership: LocalSteamOwnership,
     private val steamNames: SteamAppListResolver,
+    private val gate: WindowsSteamGate,
 ) {
     /** Links every folder in [folders] that maps onto a library game. */
     suspend fun reconcile(folders: List<LocalSteamGame>): EmuGameImportResult {
@@ -64,9 +65,10 @@ class LocalSteamGameImporter @Inject constructor(
                 ?: continue   // tracked, library-less — Shiba Coins picks it up on sync
             achievements.linkManually(match.id, AchievementProvider.LOCAL_STEAM, folder.appId)
             linkedIds += match.id
-            val owned = ownership.classify(match.id, folder.appId)
+            // Classified for the ownership badge the link stores; the Steam link follows the seam.
+            ownership.classify(match.id, folder.appId)
             // An owned copy played offline holds BOTH sets — appid equality beats any title ladder.
-            if (owned == LocalCopyOwnership.OWNED) {
+            if (gate.steamVerdictFor(match.id, folder.appId) == WindowsSteamGate.Verdict.OWNED) {
                 achievements.linkManually(match.id, AchievementProvider.STEAM, folder.appId)
             }
         }

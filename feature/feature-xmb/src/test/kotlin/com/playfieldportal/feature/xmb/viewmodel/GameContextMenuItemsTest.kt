@@ -82,6 +82,7 @@ class GameContextMenuItemsTest {
         item: XMBItem = game,
         emulatorLabel: String = "Default",
         iconDisplayLabel: String? = null,
+        launcherLabel: String? = null,
     ) = gameContextMenuItems(
         item = item,
         discCount = 0,
@@ -96,6 +97,7 @@ class GameContextMenuItemsTest {
         canSelectMultiple = canSelectMultiple,
         emulatorLabel = emulatorLabel,
         iconDisplayLabel = iconDisplayLabel,
+        launcherLabel = launcherLabel,
     )
 
     @Test
@@ -209,6 +211,7 @@ class GameContextMenuItemsTest {
         listOf("pin_top", "move_row", "move_category", "remove_category").forEach { assertEquals(it, "Arrange", g[it]) }
         listOf("icon_display", "fetch_artwork").forEach { assertEquals(it, "Customize", g[it]) }
         listOf("install_goldberg", "export_game").forEach { assertEquals(it, "PC", g[it]) }
+        assertEquals("PC", menu(item = pcGame, launcherLabel = "GameNative").groups()["launch_with"])
         // Manage Custom Cards stays on the game row, under Manage (Resolved Decision Q2).
         listOf("manage_collections", "file_location").forEach { assertEquals(it, "Manage", g[it]) }
     }
@@ -258,6 +261,21 @@ class GameContextMenuItemsTest {
         assertEquals("Default", default.value)
         assertTrue(default.opensMenu)
         assertEquals("Dolphin", menu(emulatorLabel = "Dolphin").single { it.id == "change_emulator" }.value)
+    }
+
+    @Test
+    fun `a PC game with a launcher leads its PC group with Launch With, showing the launcher`() {
+        val pc = menu(item = pcGame, launcherLabel = "Bannerlator").dropWhile { it.header != "PC" }
+        assertEquals("launch_with", pc.first().id)
+        assertEquals("Launch With", pc.first().label)
+        assertEquals("Bannerlator", pc.first().value)
+        assertTrue(pc.first().opensMenu)
+    }
+
+    @Test
+    fun `without a launcher there is no Launch With row`() {
+        assertFalse(menu(item = pcGame).any { it.id == "launch_with" })
+        assertFalse(menu().any { it.id == "launch_with" })
     }
 
     @Test

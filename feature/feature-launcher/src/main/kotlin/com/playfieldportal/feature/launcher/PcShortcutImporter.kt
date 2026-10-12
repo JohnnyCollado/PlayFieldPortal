@@ -6,6 +6,7 @@ import android.content.pm.LauncherApps
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
+import com.playfieldportal.core.data.repository.CollectionRepository
 import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.data.repository.WindowsLibrarySetup
 import com.playfieldportal.core.data.repository.WindowsSetupState
@@ -58,10 +59,15 @@ class PcShortcutImporter @Inject constructor(
     private val windowsLibrary: WindowsLibrarySetup,
     private val achievementLinker: PcGameAchievementLinker,
     private val ledger: PcShortcutLedger,
+    private val launcherChoices: LauncherChoiceRepository,
+    private val collectionRepository: CollectionRepository,
 ) {
-    /** The routing gate: true when [hostPackage] is a fingerprint-verified PC launcher. */
-    fun isPcLauncher(hostPackage: String?): Boolean =
-        PcLauncherCatalog.isVerifiedPcLauncher(hostPackage, context.packageManager)
+    /**
+     * The routing gate: true when [hostPackage] is a fingerprint-verified PC launcher, or a fork
+     * the user named under Unknown Windows Emulators. "Not a launcher" closes it either way.
+     */
+    suspend fun isPcLauncher(hostPackage: String?): Boolean =
+        PcLauncherCatalog.isPcShortcutHost(hostPackage, context.packageManager, launcherChoices.snapshot())
 
     /**
      * Imports every shortcut currently pinned to PFP from verified PC launchers — the reconcile
@@ -79,7 +85,8 @@ class PcShortcutImporter @Inject constructor(
         val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as? LauncherApps
             ?: return 0
         val hosts = hostPackage?.let { listOf(it) }
-            ?: PcLauncherCatalog.entries.flatMap { it.packageNames }.distinct()
+            ?: (PcLauncherCatalog.entries.flatMap { it.packageNames } +
+                launcherChoices.snapshot().chosenLauncherPackages()).distinct()
         // Pins recorded under ANOTHER launcher (a previous install, a different default) are
         // invisible to plain FLAG_MATCH_PINNED — the API-30+ any-launcher flag recovers them.
         val pinFlags = LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED or
@@ -135,8 +142,8 @@ class PcShortcutImporter @Inject constructor(
                 shortcuts: MutableList<android.content.pm.ShortcutInfo>,
                 user: android.os.UserHandle,
             ) {
-                if (!isPcLauncher(packageName)) return
                 scope.launch {
+                    if (!isPcLauncher(packageName)) return@launch
                     runCatching { reconcilePinnedShortcuts(packageName) }
                         .onFailure { Timber.e(it, "Pin reconcile failed for $packageName") }
                 }
@@ -169,6 +176,7 @@ class PcShortcutImporter @Inject constructor(
         changedAt: Long = System.currentTimeMillis(),
     ): PcShortcutImportResult {
         val existing = gameRepository.getLauncherShortcut(hostPackage, shortcutId)
+            ?.also { adoptIntoWindows(it, hostPackage, PINNED_HOST_FALLBACK_LABEL) }
             ?: titleMatch(label)?.let { match ->
                 // The shortcut is the launch handle the folder-imported row was missing.
                 if (match.shortcutId == null && match.launchIntentUri == null) {
@@ -204,6 +212,7 @@ class PcShortcutImporter @Inject constructor(
         intentUri: String,
     ): PcShortcutImportResult {
         val existing = gameRepository.getByIntentUri(intentUri)
+            ?.also { adoptIntoWindows(it, hostPackage, LEGACY_HOST_FALLBACK_LABEL) }
             ?: titleMatch(label)?.let { match ->
                 if (match.shortcutId == null && match.launchIntentUri == null) {
                     gameRepository.upsert(match.copy(packageName = hostPackage, launchIntentUri = intentUri))
@@ -241,6 +250,29 @@ class PcShortcutImporter @Inject constructor(
         return PcShortcutImportResult(gameId, added, setup)
     }
 
+    /**
+     * A shortcut filed before its host was trusted (a fork missing from the catalog, or one the
+     * user named later) sits on the Android side as an app entry in a card named after the host.
+     * Its launch handle is already right, so the row itself moves to Windows Games; it leaves only
+     * that auto-filed card — dropped once empty — and keeps any card the user put it in.
+     */
+    private suspend fun adoptIntoWindows(game: Game, hostPackage: String, fallbackLabel: String) {
+        if (game.platformId == WINDOWS_PLATFORM_ID) return
+        gameRepository.upsert(game.copy(platformId = WINDOWS_PLATFORM_ID, contentType = GameContentType.GAME))
+        val hostLabel = runCatching {
+            val pm = context.packageManager
+            pm.getApplicationLabel(pm.getApplicationInfo(hostPackage, 0)).toString()
+        }.getOrNull() ?: fallbackLabel
+        val memberOf = collectionRepository.getCollectionIdsForGame(game.id).toSet()
+        collectionRepository.getAll()
+            .filter { it.name == hostLabel && it.id in memberOf }
+            .forEach { card ->
+                collectionRepository.removeGame(card.id, game.id)
+                if (collectionRepository.addedAtByGame(card.id).isEmpty()) collectionRepository.delete(card.id)
+            }
+        Timber.i("Moved \"${game.title}\" from the $hostLabel card to Windows Games")
+    }
+
     private suspend fun titleMatch(label: String): Game? {
         val key = normalizeTitle(label)
         return gameRepository.getByPlatform(WINDOWS_PLATFORM_ID)
@@ -249,6 +281,11 @@ class PcShortcutImporter @Inject constructor(
 
     private companion object {
         const val WINDOWS_PLATFORM_ID = "windows"
+
+        // The card names PinShortcutActivity / InstallShortcutReceiver fall back to when the
+        // host's label is unreadable — the auto-filed card to look for in that case.
+        const val PINNED_HOST_FALLBACK_LABEL = "Shortcuts"
+        const val LEGACY_HOST_FALLBACK_LABEL = "Another app"
 
         // GameNative encodes the store appid in its shortcut ids: game_<appid>.
         val GAME_NATIVE_ID = Regex("""game_(\d{1,12})""")

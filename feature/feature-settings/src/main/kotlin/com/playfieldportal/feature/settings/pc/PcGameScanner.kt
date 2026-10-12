@@ -20,6 +20,7 @@ import com.playfieldportal.feature.launcher.PcLauncherAdapters
 import com.playfieldportal.feature.launcher.PcLauncherCatalog
 import com.playfieldportal.feature.launcher.PcLauncherType
 import com.playfieldportal.feature.launcher.PcShortcutImporter
+import com.playfieldportal.feature.launcher.WinlatorDesktop
 import com.playfieldportal.feature.library.scanner.PcExportFile
 import com.playfieldportal.feature.library.scanner.RomScanner
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -118,6 +119,7 @@ class PcGameScanner @Inject constructor(
                 if (launch == null) { skipped++; return@forEach }
                 val intentUri = launch.intent.toUri(Intent.URI_INTENT_SCHEME)
                 val existing = gameRepository.getByIntentUri(intentUri)
+                    ?: file.rawPath?.takeIf { file.extension == "desktop" }?.let { findDesktopGame(it, launch) }
                     ?: findWindowsGame(launch.packageName, file.title)
                 if (existing == null) {
                     gameRepository.upsert(
@@ -356,7 +358,8 @@ class PcGameScanner @Inject constructor(
     private data class InstalledLaunchers(
         val gameNative: String?,
         val gameHub: String?,
-        val winlator: String?,
+        /** Every installed Winlator fork, in catalog order: a .desktop goes to the one that wrote it. */
+        val winlators: List<String>,
     )
 
     private fun installedLaunchers(pm: PackageManager): InstalledLaunchers {
@@ -366,9 +369,8 @@ class PcGameScanner @Inject constructor(
             // Fingerprint-verified family lookup — covers every side-by-side spoof variant without
             // mistaking the genuine AnTuTu/PUBG/Genshin apps for a launcher.
             gameHub = PcLauncherCatalog.installedGameHubFamilyPackages(pm).firstOrNull(),
-            winlator = installed(
-                *PcLauncherCatalog.entries.first { it.type == PcLauncherType.WINLATOR }.packageNames.toTypedArray(),
-            ),
+            winlators = PcLauncherCatalog.entries.first { it.type == PcLauncherType.WINLATOR }.packageNames
+                .filter { runCatching { pm.getApplicationInfo(it, 0) }.isSuccess },
         )
     }
 
@@ -387,7 +389,8 @@ class PcGameScanner @Inject constructor(
 
     // Chooses the launcher + builds the launch intent for one export file. Prefers GameNative (it
     // handles every store); a .steam file falls back to a GameHub-family launcher; a .desktop file
-    // uses Winlator's package launch + a shortcut_path extra.
+    // opens in the Winlator fork whose private paths it names (every fork exports into the same
+    // shared folder), else the first installed one.
     private fun buildPcLaunch(
         file: PcExportFile,
         pm: PackageManager,
@@ -395,16 +398,19 @@ class PcGameScanner @Inject constructor(
     ): PcLaunch? {
         val gameNativePkg = launchers.gameNative
         val gameHubPkg = launchers.gameHub
-        val winlatorPkg = launchers.winlator
         if (file.extension == "desktop") {
             val path = file.rawPath ?: return null
-            val pkg  = winlatorPkg ?: return null
-            val intent = pm.getLaunchIntentForPackage(pkg)?.apply {
-                putExtra("shortcut_path", path)
-                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            } ?: return null
-            // A .desktop shortcut is a path into a Wine prefix — it names no storefront.
-            return PcLaunch(intent, PcLauncherCatalog.displayName(pkg, pm), pkg)
+            val pkg = file.desktopText?.let { WinlatorDesktop.ownerPackage(it, launchers.winlators) }
+                ?: launchers.winlators.firstOrNull()
+                ?: return null
+            val intent = WinlatorDesktop.launchIntent(pkg, path, pm) ?: return null
+            // The fork records the game's Steam appid in the file (Bannerlator does): kept as its
+            // identity, so it matches by id and Launch With can offer the id-based launchers.
+            val steamAppId = file.desktopText?.let(WinlatorDesktop::steamAppId)
+            return PcLaunch(
+                intent, PcLauncherCatalog.displayName(pkg, pm), pkg,
+                storefront = steamAppId?.let { "STEAM" }, storefrontGameId = steamAppId,
+            )
         }
 
         val id = file.idContent?.trim()?.takeIf { it.toIntOrNull()?.let { n -> n > 0 } == true } ?: return null
@@ -426,6 +432,25 @@ class PcGameScanner @Inject constructor(
             return PcLaunch(intent, name, gameHubPkg, storefront = "STEAM", storefrontGameId = storefrontId)
         }
         return null
+    }
+
+    /**
+     * The game a .desktop export already made, found by the file it opens — whichever fork it was
+     * routed to. One routed to the wrong fork (before PFP read the file's owner) moves to [launch]'s;
+     * a Launch With choice stays as it is, on top.
+     */
+    private suspend fun findDesktopGame(path: String, launch: PcLaunch): Game? {
+        val game = gameRepository.getByPlatform(WINDOWS_PLATFORM_ID)
+            .firstOrNull { WinlatorDesktop.shortcutPathOf(it.launchIntentUri) == path }
+            ?: return null
+        if (game.packageName == launch.packageName) return game
+        val moved = game.copy(
+            packageName = launch.packageName,
+            launchIntentUri = launch.intent.toUri(Intent.URI_INTENT_SCHEME),
+        )
+        gameRepository.upsert(moved)
+        Timber.i("\"${game.title}\" now opens in ${launch.launcherName}, the app that exported it")
+        return moved
     }
 
     // Title-level dedupe within the Windows card: the same game can arrive with different launch

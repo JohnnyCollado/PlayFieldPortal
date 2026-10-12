@@ -10,6 +10,7 @@ import com.playfieldportal.core.data.database.seeder.mergedSurvivor
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.PlaySession
 import com.playfieldportal.core.domain.model.RecentPlatform
+import com.playfieldportal.core.domain.model.WindowsGameLabel
 import com.playfieldportal.core.domain.repository.GameRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -138,6 +139,12 @@ class GameRepositoryImpl @Inject constructor(
 
     override suspend fun clearPreferredEmulatorForPlatform(platformId: String) =
         gameDao.clearPreferredEmulatorForPlatform(platformId)
+
+    override suspend fun setPcLauncherPackage(id: Long, launcherPackage: String?) =
+        gameDao.setPcLauncherPackage(id, launcherPackage)
+
+    override suspend fun setWindowsLabel(id: Long, label: WindowsGameLabel?) =
+        gameDao.setWindowsLabel(id, label?.name)
 
     override suspend fun setPreferredDisc(id: Long, discId: Long) =
         gameDao.setPreferredDisc(id, discId)

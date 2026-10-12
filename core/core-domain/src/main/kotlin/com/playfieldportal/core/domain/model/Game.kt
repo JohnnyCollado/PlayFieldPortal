@@ -96,6 +96,11 @@ data class Game(
     // an app id only identifies a game within its own store.
     val storefront: String? = null,
     val storefrontGameId: String? = null,
+    // Windows games: the installed PC launcher the user chose under Launch With. Null runs the
+    // game with the launcher it was imported from ([packageName]).
+    val pcLauncherPackage: String? = null,
+    // Windows games: the user's label overriding PFP's Steam-ownership guess. Null = Auto.
+    val windowsLabel: WindowsGameLabel? = null,
 
     val isMissing: Boolean = false,
 

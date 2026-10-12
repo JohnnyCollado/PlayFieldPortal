@@ -3,6 +3,7 @@ package com.playfieldportal.core.domain.repository
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.PlaySession
 import com.playfieldportal.core.domain.model.RecentPlatform
+import com.playfieldportal.core.domain.model.WindowsGameLabel
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -62,6 +63,10 @@ interface GameRepository {
     suspend fun setPreferredEmulator(id: Long, profileIdOrPackage: String?)
     /** Bulk-clears every per-game emulator override on a platform (real game rows only). */
     suspend fun clearPreferredEmulatorForPlatform(platformId: String)
+    /** Launch With: the PC launcher a Windows game runs with; null returns it to its own. */
+    suspend fun setPcLauncherPackage(id: Long, launcherPackage: String?)
+    /** Windows games: the user's label overriding the ownership guess; null returns it to Auto. */
+    suspend fun setWindowsLabel(id: Long, label: WindowsGameLabel?)
     /** Selects the disc used when the logical multi-disc game is launched. */
     suspend fun setPreferredDisc(id: Long, discId: Long)
     suspend fun recordPlaySession(session: PlaySession)

@@ -66,6 +66,8 @@ data class PcExportFile(
     val idContent: String?,  // trimmed file contents (the app id); null for .desktop
     val rawPath: String?,    // derived filesystem path (used for a Winlator .desktop shortcut_path)
     val uri: String,
+    // A .desktop file's text: its private paths name the Winlator fork that wrote it.
+    val desktopText: String? = null,
 )
 
 private val PC_EXPORT_EXTENSIONS = setOf("steam", "epic", "gog", "amazon", "pcgame", "desktop", "pfpgame")
@@ -80,6 +82,8 @@ private const val MAX_PFP_EXPORT_BYTES = 256L * 1024
 // StorefrontIdentity.isPlausibleAppId caps a real id at 12 digits. 256 bytes leaves generous room
 // for surrounding whitespace/newlines while staying far below anything a provider could misreport.
 private const val MAX_LAUNCHER_EXPORT_BYTES = 256L
+// A Winlator .desktop is a few KB of settings; anything far bigger is not one.
+private const val MAX_DESKTOP_EXPORT_BYTES = 64L * 1024
 
 // A file child collected during the scanTree walk — name, stable raw path (dedupe/display key)
 // and the SAF document URI (content access + launch handle).
@@ -621,13 +625,19 @@ class RomScanner @Inject constructor(
                         }
                         text?.trim()
                     }
+                    val desktopText = if (ext != "desktop") null else {
+                        readBoundedText(child.uri, MAX_DESKTOP_EXPORT_BYTES).also { text ->
+                            if (text == null) Timber.w("Oversized or unreadable .desktop, routing without it: ${child.name}")
+                        }
+                    }
                     out.add(
                         PcExportFile(
-                            title      = title,
-                            extension  = ext,
-                            idContent  = idContent,
-                            rawPath    = safDocumentIdToRawPath(child.documentId, child.uri.authority),
-                            uri        = child.uri.toString(),
+                            title       = title,
+                            extension   = ext,
+                            idContent   = idContent,
+                            rawPath     = safDocumentIdToRawPath(child.documentId, child.uri.authority),
+                            uri         = child.uri.toString(),
+                            desktopText = desktopText,
                         )
                     )
                 }

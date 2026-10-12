@@ -126,7 +126,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         com.playfieldportal.core.data.database.entity.UmdSlotEntity::class,
         com.playfieldportal.core.data.database.entity.AppUsageEntity::class,
     ],
-    version = 55,
+    version = 57,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -1680,6 +1680,27 @@ abstract class PFPDatabase : RoomDatabase() {
                     "UPDATE platforms SET preferred_emulator_package = 'emu.x360mobile.com' " +
                         "WHERE id = 'x360' AND preferred_emulator_package = 'emu.x360.mobile'"
                 )
+            }
+        }
+
+        /**
+         * v56 — Launch With: a Windows game remembers the installed PC launcher the user chose to
+         * run it with. Null (every existing row) keeps launching through the launcher it was
+         * imported from.
+         */
+        val MIGRATION_55_56 = object : Migration(55, 56) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN pc_launcher_package TEXT")
+            }
+        }
+
+        /**
+         * v57 — Windows game label: the user's Steam / Non-Steam / Local override of PFP's
+         * ownership guess. Null (every existing row) is Auto, so nothing changes until labelled.
+         */
+        val MIGRATION_56_57 = object : Migration(56, 57) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN windows_label TEXT")
             }
         }
     }

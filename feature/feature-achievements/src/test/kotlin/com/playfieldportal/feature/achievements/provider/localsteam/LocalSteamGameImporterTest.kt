@@ -6,6 +6,7 @@ import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.provider.steam.SteamAppListResolver
+import com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -27,7 +28,8 @@ class LocalSteamGameImporterTest {
     private val achievements = mockk<AchievementController>(relaxed = true)
     private val ownership = mockk<LocalSteamOwnership>(relaxed = true)
     private val steamNames = mockk<SteamAppListResolver>(relaxed = true)
-    private val importer = LocalSteamGameImporter(gameRepository, achievements, ownership, steamNames)
+    private val gate = mockk<WindowsSteamGate>()
+    private val importer = LocalSteamGameImporter(gameRepository, achievements, ownership, steamNames, gate)
 
     private val marvel = LocalSteamGame(
         folderName = "MARVEL Cosmic Invasion",
@@ -42,6 +44,7 @@ class LocalSteamGameImporterTest {
     )
 
     private fun quiet() {
+        coEvery { gate.steamVerdictFor(any(), any()) } returns WindowsSteamGate.Verdict.UNKNOWN
         coEvery { ownership.classify(any(), any()) } returns null
         coEvery { steamNames.officialNameOf(any()) } returns null
     }
@@ -75,6 +78,7 @@ class LocalSteamGameImporterTest {
     @Test
     fun `the steam-name bridge maps a renamed folder onto its shortcut-imported game`() = runTest {
         coEvery { ownership.classify(any(), any()) } returns null
+        coEvery { gate.steamVerdictFor(any(), any()) } returns WindowsSteamGate.Verdict.UNKNOWN
         val folder = LocalSteamGame(
             folderName = "FINAL FANTASY FFX-FFX-2 HD Remaster",
             folderDocId = "408C-3861:Games/FINAL FANTASY FFX-FFX-2 HD Remaster",
@@ -98,11 +102,41 @@ class LocalSteamGameImporterTest {
         coEvery { gameRepository.getByPlatform("windows") } returns
             listOf(pinnedGame(7L, "MARVEL Cosmic Invasion"))
         coEvery { ownership.classify(7L, "2753970") } returns LocalCopyOwnership.OWNED
+        coEvery { gate.steamVerdictFor(7L, "2753970") } returns WindowsSteamGate.Verdict.OWNED
 
         importer.reconcile(listOf(marvel))
 
         coVerify { achievements.linkManually(7L, AchievementProvider.LOCAL_STEAM, "2753970") }
         coVerify { achievements.linkManually(7L, AchievementProvider.STEAM, "2753970") }
+    }
+
+    @Test
+    fun `a Non-Steam labelled owned copy is linked from its folder but gets no Steam link`() = runTest {
+        coEvery { steamNames.officialNameOf(any()) } returns null
+        coEvery { gameRepository.getByPlatform("windows") } returns
+            listOf(pinnedGame(7L, "MARVEL Cosmic Invasion"))
+        coEvery { ownership.classify(7L, "2753970") } returns LocalCopyOwnership.OWNED
+        coEvery { gate.steamVerdictFor(7L, "2753970") } returns WindowsSteamGate.Verdict.NOT_STEAM
+
+        val result = importer.reconcile(listOf(marvel))
+
+        assertEquals(listOf(7L), result.linkedGameIds)
+        coVerify { achievements.linkManually(7L, AchievementProvider.LOCAL_STEAM, "2753970") }
+        coVerify(exactly = 0) { achievements.linkManually(7L, AchievementProvider.STEAM, any()) }
+    }
+
+    @Test
+    fun `a Local-labelled owned copy gets no Steam link`() = runTest {
+        coEvery { steamNames.officialNameOf(any()) } returns null
+        coEvery { gameRepository.getByPlatform("windows") } returns
+            listOf(pinnedGame(7L, "MARVEL Cosmic Invasion"))
+        coEvery { ownership.classify(7L, "2753970") } returns LocalCopyOwnership.OWNED
+        coEvery { gate.steamVerdictFor(7L, "2753970") } returns WindowsSteamGate.Verdict.LOCAL
+
+        importer.reconcile(listOf(marvel))
+
+        coVerify { achievements.linkManually(7L, AchievementProvider.LOCAL_STEAM, "2753970") }
+        coVerify(exactly = 0) { achievements.linkManually(7L, AchievementProvider.STEAM, any()) }
     }
 
     @Test

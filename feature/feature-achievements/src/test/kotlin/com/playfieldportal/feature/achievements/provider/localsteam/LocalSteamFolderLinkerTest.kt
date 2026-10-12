@@ -9,6 +9,7 @@ import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.LocalCopyOwnership
 import com.playfieldportal.feature.achievements.AchievementController
+import com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -43,9 +44,10 @@ class LocalSteamFolderLinkerTest {
     private val ownership = mockk<LocalSteamOwnership>(relaxed = true)
     private val games = mockk<GameDao>(relaxed = true)
     private val credentials = mockk<AchievementCredentialsProvider>()
+    private val gate = mockk<WindowsSteamGate>()
 
     private val linker = LocalSteamFolderLinker(
-        context, discovery, identity, generator, achievements, ownership, games, credentials,
+        context, discovery, identity, generator, achievements, ownership, games, credentials, gate,
     )
 
     // A tree uri whose tree document id is the game folder — which is what OpenDocumentTree on a
@@ -87,6 +89,7 @@ class LocalSteamFolderLinkerTest {
         coEvery { games.getById(7L) } returns game
         coEvery { discovery.anchor(any(), any()) } returns anchor
         coEvery { credentials.goldbergInstallerEnabled() } returns true
+        coEvery { gate.steamVerdictFor(any(), any()) } returns WindowsSteamGate.Verdict.LOCAL
     }
 
     @Test
@@ -111,11 +114,65 @@ class LocalSteamFolderLinkerTest {
             LocalSteamIdentityResolver.Outcome.Resolved("620", AppIdSource.MARKER, written = false)
         coEvery { discovery.inspect(any(), any()) } returns folder()
         coEvery { ownership.classify(7L, "620") } returns LocalCopyOwnership.OWNED
+        coEvery { gate.steamVerdictFor(7L, "620") } returns WindowsSteamGate.Verdict.OWNED
 
         linker.link(7L, treeUri)
 
         coVerify { achievements.linkManually(7L, AchievementProvider.LOCAL_STEAM, "620") }
         coVerify { achievements.linkManually(7L, AchievementProvider.STEAM, "620") }
+    }
+
+    @Test
+    fun `a Local-labelled owned copy gets no Steam link from its folder`() = runTest {
+        coEvery { identity.identify(anchor, game) } returns
+            LocalSteamIdentityResolver.Outcome.Resolved("620", AppIdSource.MARKER, written = false)
+        coEvery { discovery.inspect(any(), any()) } returns folder()
+        coEvery { ownership.classify(7L, "620") } returns LocalCopyOwnership.OWNED
+        coEvery { gate.steamVerdictFor(7L, "620") } returns WindowsSteamGate.Verdict.LOCAL
+
+        linker.link(7L, treeUri)
+
+        coVerify { achievements.linkManually(7L, AchievementProvider.LOCAL_STEAM, "620") }
+        coVerify(exactly = 0) { achievements.linkManually(7L, AchievementProvider.STEAM, any()) }
+    }
+
+    @Test
+    fun `a Steam-labelled copy gets the Steam link even when the owned list lacks it`() = runTest {
+        coEvery { identity.identify(anchor, game) } returns
+            LocalSteamIdentityResolver.Outcome.Resolved("620", AppIdSource.MARKER, written = false)
+        coEvery { discovery.inspect(any(), any()) } returns folder()
+        coEvery { ownership.classify(7L, "620") } returns LocalCopyOwnership.NOT_IN_LIBRARY
+        coEvery { gate.steamVerdictFor(7L, "620") } returns WindowsSteamGate.Verdict.OWNED
+
+        linker.link(7L, treeUri)
+
+        coVerify { achievements.linkManually(7L, AchievementProvider.STEAM, "620") }
+    }
+
+    @Test
+    fun `the ownership badge is still classified`() = runTest {
+        coEvery { identity.identify(anchor, game) } returns
+            LocalSteamIdentityResolver.Outcome.Resolved("620", AppIdSource.MARKER, written = false)
+        coEvery { discovery.inspect(any(), any()) } returns folder()
+        coEvery { ownership.classify(7L, "620") } returns LocalCopyOwnership.OWNED
+        coEvery { gate.steamVerdictFor(7L, "620") } returns WindowsSteamGate.Verdict.LOCAL
+
+        linker.link(7L, treeUri)
+        linker.linkRegistered(7L, folder())
+
+        // Classify stores the badge on the LOCAL_STEAM link, label or not, on both paths.
+        coVerify(exactly = 2) { ownership.classify(7L, "620") }
+    }
+
+    @Test
+    fun `a registry link follows the same Steam rule`() = runTest {
+        coEvery { ownership.classify(7L, "620") } returns LocalCopyOwnership.OWNED
+        coEvery { gate.steamVerdictFor(7L, "620") } returns WindowsSteamGate.Verdict.NOT_STEAM
+
+        linker.linkRegistered(7L, folder())
+
+        coVerify { achievements.linkManually(7L, AchievementProvider.LOCAL_STEAM, "620") }
+        coVerify(exactly = 0) { achievements.linkManually(7L, AchievementProvider.STEAM, any()) }
     }
 
     @Test

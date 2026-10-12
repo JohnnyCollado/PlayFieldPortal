@@ -18,7 +18,8 @@ import com.playfieldportal.core.domain.model.Category
  *
  * [emulatorLabel] is the per-game emulator override's name, or "Default" while the game follows
  * its platform; [iconDisplayLabel] is the icon mode in force for the game (its own override, else
- * what it inherits), or null where it is not known yet.
+ * what it inherits), or null where it is not known yet. [launcherLabel] is the PC launcher a
+ * Windows game runs with (Launch With), or null where the game has none to choose from.
  *
  * Six groups, in the order the approved mockup draws them: Play, Library, Arrange, Customize, PC,
  * Manage. An empty group draws nothing, header included. Ids are the handlers' keys and do not
@@ -38,6 +39,7 @@ internal fun gameContextMenuItems(
     canSelectMultiple: Boolean = false,
     emulatorLabel: String = "Default",
     iconDisplayLabel: String? = null,
+    launcherLabel: String? = null,
 ): List<XMBContextMenuItem> = buildList {
     group("Play") {
         // The explicit path to the edit surface, essential when direct launch makes confirm skip
@@ -111,6 +113,8 @@ internal fun gameContextMenuItems(
     // demand — gated per-game at dispatch on the installer toggle being on.
     if (item.platformId == XMBViewModel.WINDOWS_PLATFORM_ID) {
         group("PC") {
+            // Which installed PC launcher runs the game; its own unless the user picked another.
+            launcherLabel?.let { add(XMBContextMenuItem("launch_with", "Launch With", value = it, opensMenu = true)) }
             add(XMBContextMenuItem("install_goldberg", "Install Goldberg Achievements"))
             // Writes this game's .pfpgame file so a fresh install can bring it back with its
             // artwork (C18 task X.7). Offered on every PC game; the exporter explains a refusal.

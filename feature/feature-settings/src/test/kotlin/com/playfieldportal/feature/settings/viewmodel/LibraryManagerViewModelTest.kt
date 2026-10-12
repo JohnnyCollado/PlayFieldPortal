@@ -275,6 +275,56 @@ class LibraryManagerViewModelTest {
     }
 
     @Test
+    fun `Game List opens from the Windows card and back returns to it with focus on its row`() = runTest(dispatcher) {
+        val job = collectState()
+
+        vm.openCardDetail("windows")
+        advanceUntilIdle()
+        vm.openWindowsGameList()
+        advanceUntilIdle()
+        assertEquals(LibraryStep.GAME_LIST, vm.uiState.value.step)
+        assertEquals("windows", vm.uiState.value.detailPlatformId)
+
+        assertTrue(vm.onBack())
+        advanceUntilIdle()
+        assertEquals(LibraryStep.CARD_DETAIL, vm.uiState.value.step)
+        assertEquals("windows", vm.uiState.value.detailPlatformId)
+        assertEquals(WINDOWS_GAME_LIST_FOCUS_KEY, vm.uiState.value.returnFocusKey)
+
+        // The next Back is the ordinary card-to-list step.
+        assertTrue(vm.onBack())
+        advanceUntilIdle()
+        assertEquals(LibraryStep.LIST, vm.uiState.value.step)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `Game List from the XMB Windows Games returns to the card, then closes`() = runTest(dispatcher) {
+        val job = collectState()
+
+        vm.openWindowsGamesRoot()
+        vm.openWindowsGameList()
+        advanceUntilIdle()
+        assertEquals(LibraryStep.GAME_LIST, vm.uiState.value.step)
+        assertTrue(vm.uiState.value.windowsGamesOpenedFromXmb)
+
+        assertTrue(vm.onBack())
+        advanceUntilIdle()
+        assertEquals(LibraryStep.CARD_DETAIL, vm.uiState.value.step)
+        assertEquals(WINDOWS_GAME_LIST_FOCUS_KEY, vm.uiState.value.returnFocusKey)
+        assertTrue(vm.uiState.value.windowsGamesOpenedFromXmb)
+
+        // The following Back closes the standalone screen and resets the shared state.
+        assertFalse(vm.onBack())
+        advanceUntilIdle()
+        assertEquals(LibraryStep.LIST, vm.uiState.value.step)
+        assertFalse(vm.uiState.value.windowsGamesOpenedFromXmb)
+
+        job.cancel()
+    }
+
+    @Test
     fun `closing Windows Games opened from XMB resets the shared state`() = runTest(dispatcher) {
         val job = collectState()
 

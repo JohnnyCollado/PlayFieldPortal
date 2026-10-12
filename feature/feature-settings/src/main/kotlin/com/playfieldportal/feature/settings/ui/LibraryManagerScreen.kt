@@ -18,7 +18,10 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -55,6 +58,7 @@ import com.playfieldportal.feature.settings.viewmodel.PcGameRow
 import com.playfieldportal.feature.settings.viewmodel.PcLauncherRow
 import com.playfieldportal.feature.settings.viewmodel.PlatformOption
 import com.playfieldportal.feature.settings.viewmodel.RootFolderRow
+import com.playfieldportal.feature.settings.viewmodel.WINDOWS_GAME_LIST_FOCUS_KEY
 
 @Composable
 fun LibraryManagerScreen(
@@ -119,6 +123,7 @@ fun LibraryManagerScreen(
         onRemoveCard = { viewModel.removeCard(it) },
         onSetEmulatorForDetail = { viewModel.setEmulatorForDetail(it) },
         onOpenImportPcGames = { viewModel.openImportPcGames() },
+        onOpenWindowsGameList = { viewModel.openWindowsGameList() },
         onSetVita3KFolder = { viewModel.setVita3KFolder(it) },
         onSetPs3DataFolder = { viewModel.setPs3DataFolder(it) },
         onSetXbox360DataFolder = { emulator, uri -> viewModel.setXbox360DataFolder(emulator, uri) },
@@ -184,6 +189,7 @@ private fun LibraryManagerContent(
     onSetXbox360DataFolder: (Xbox360Emulator, Uri) -> Unit,
     onScanVitaGames: () -> Unit,
     onRemoveApp: (Long) -> Unit,
+    onOpenWindowsGameList: () -> Unit,
     onRefreshHomeStatus: () -> Unit,
     onScanPcGamesFolder: (Uri) -> Unit,
     onExportManualPcGames: () -> Unit,
@@ -212,7 +218,8 @@ private fun LibraryManagerContent(
         LibraryStep.PICK_PLATFORM -> PickPlatformContent(state, onBack = handleBack, onPlatformChosen = onPlatformChosen, modifier = modifier)
         LibraryStep.PICK_EMULATOR -> PickEmulatorContent(state, onBack = handleBack, onEmulatorChosen = onEmulatorChosen, modifier = modifier)
         LibraryStep.SCAN_PROMPT   -> ScanPromptContent(state, onBack = handleBack, onConfirmAddConsole = onConfirmAddConsole, modifier = modifier)
-        LibraryStep.CARD_DETAIL   -> CardDetailContent(state, onBack = handleBack, onAddAndroidApps = onAddAndroidApps, onLoadEmulatorOptions = onLoadEmulatorOptions, onRemoveExtension = onRemoveExtension, onAddExtension = onAddExtension, onScanConsole = onScanConsole, onBeginRename = onBeginRename, onCancelRename = onCancelRename, onConfirmRename = onConfirmRename, onToggleEnabled = onToggleEnabled, onTogglePinned = onTogglePinned, onMoveCard = onMoveCard, onRemoveCard = onRemoveCard, onSetEmulatorForDetail = onSetEmulatorForDetail, onOpenImportPcGames = onOpenImportPcGames, onSetVita3KFolder = onSetVita3KFolder, onSetPs3DataFolder = onSetPs3DataFolder, onSetXbox360DataFolder = onSetXbox360DataFolder, onScanVitaGames = onScanVitaGames, onRemoveApp = onRemoveApp, modifier = modifier)
+        LibraryStep.CARD_DETAIL   -> CardDetailContent(state, onBack = handleBack, onAddAndroidApps = onAddAndroidApps, onLoadEmulatorOptions = onLoadEmulatorOptions, onRemoveExtension = onRemoveExtension, onAddExtension = onAddExtension, onScanConsole = onScanConsole, onBeginRename = onBeginRename, onCancelRename = onCancelRename, onConfirmRename = onConfirmRename, onToggleEnabled = onToggleEnabled, onTogglePinned = onTogglePinned, onMoveCard = onMoveCard, onRemoveCard = onRemoveCard, onSetEmulatorForDetail = onSetEmulatorForDetail, onOpenImportPcGames = onOpenImportPcGames, onOpenWindowsGameList = onOpenWindowsGameList, onSetVita3KFolder = onSetVita3KFolder, onSetPs3DataFolder = onSetPs3DataFolder, onSetXbox360DataFolder = onSetXbox360DataFolder, onScanVitaGames = onScanVitaGames, onRemoveApp = onRemoveApp, modifier = modifier)
+        LibraryStep.GAME_LIST     -> WindowsGameListScreen(onBack = handleBack, modifier = modifier)
         LibraryStep.IMPORT_PC     -> ImportPcGamesContent(state, onBack = handleBack, onRefreshHomeStatus = onRefreshHomeStatus, onScanPcGamesFolder = onScanPcGamesFolder, onExportManualPcGames = onExportManualPcGames, onImportPcGame = onImportPcGame, onImportAllPcGames = onImportAllPcGames, onTestLaunchPcGame = onTestLaunchPcGame, onAddPcGameById = onAddPcGameById, onDismissMessage = onDismissMessage, convertPickerOpen = convertPicker != null, onConvertGamepadAction = onConvertGamepadAction, onBatchMatchLocalGames = onBatchMatchLocalGames, onForgetLocalSteamFolder = onForgetLocalSteamFolder, onSetGoldbergInstaller = onSetGoldbergInstaller, onCycleUnknownLauncher = onCycleUnknownLauncher, onShowHiddenUnknownLaunchers = onShowHiddenUnknownLaunchers, homeRoleIntentProvider = homeRoleIntentProvider, modifier = modifier)
     }
 
@@ -476,6 +483,7 @@ private fun CardDetailContent(
     onRemoveCard: (String) -> Unit,
     onSetEmulatorForDetail: (EmulatorOption) -> Unit,
     onOpenImportPcGames: () -> Unit,
+    onOpenWindowsGameList: () -> Unit,
     onSetVita3KFolder: (Uri) -> Unit,
     onSetPs3DataFolder: (Uri) -> Unit,
     onSetXbox360DataFolder: (Xbox360Emulator, Uri) -> Unit,
@@ -551,6 +559,8 @@ private fun CardDetailContent(
         subtitle = card.displayName,
         onBack = onBack,
         modifier = Modifier.fillMaxSize(),
+        // Scoped to the Game List's own key so other card details keep first-row focus.
+        restoreFocusKey = state.returnFocusKey?.takeIf { it == WINDOWS_GAME_LIST_FOCUS_KEY },
         modalOpen = modal.open,
         onInterceptAction = { modal.intercept(it) || itemMenu.intercept(it) },
     ) {
@@ -572,6 +582,19 @@ private fun CardDetailContent(
                 SettingsValueRow(label = "Games", value = card.gameCount.toString())
 
                 SettingsGroup("Actions")
+                SettingsRow(
+                    label    = "Game List",
+                    sublabel = "Label each Windows game Steam, Non-Steam or Local, and link Local folders",
+                    focusKey = WINDOWS_GAME_LIST_FOCUS_KEY,
+                    trailing = {
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = SettingsText,
+                        )
+                    },
+                    onClick  = onOpenWindowsGameList,
+                )
                 SettingsRow(
                     label    = "Import PC Games",
                     sublabel = "Exported games, Add by ID, and launcher status",
@@ -1120,6 +1143,7 @@ fun LibraryManagerScreenPreview() {
             onRemoveCard = {},
             onSetEmulatorForDetail = {},
             onOpenImportPcGames = {},
+            onOpenWindowsGameList = {},
             onSetVita3KFolder = {},
             onSetPs3DataFolder = {},
             onSetXbox360DataFolder = { _, _ -> },

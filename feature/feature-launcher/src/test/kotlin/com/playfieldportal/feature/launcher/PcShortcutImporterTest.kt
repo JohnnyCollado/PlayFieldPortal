@@ -3,12 +3,14 @@ package com.playfieldportal.feature.launcher
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import com.playfieldportal.core.data.repository.CollectionRepository
 import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.data.repository.WindowsLibrarySetup
 import com.playfieldportal.core.data.repository.WindowsSetupState
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameContentType
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.domain.model.GameCollection
 import com.playfieldportal.core.domain.repository.GameRepository
 import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ApplicationProvider
@@ -37,6 +39,7 @@ class PcShortcutImporterTest {
     private val memoryCards = mockk<MemoryCardRepository>(relaxed = true)
     private val windowsLibrary = mockk<WindowsLibrarySetup>(relaxed = true)
     private val linker = mockk<PcGameAchievementLinker>(relaxed = true)
+    private val collections = mockk<CollectionRepository>(relaxed = true)
 
     // The ledger is real: it is DataStore-backed and what the reconcile sweep reads.
     private val appContext = ApplicationProvider.getApplicationContext<Context>()
@@ -47,8 +50,11 @@ class PcShortcutImporterTest {
         runBlocking { appContext.pfpDataStore.edit { it.clear() } }
     }
 
-    private fun importer() = PcShortcutImporter(
-        mockk<Context>(relaxed = true), gameRepository, memoryCards, windowsLibrary, linker, ledger,
+    // Choices are real for the same reason: DataStore-backed, cleared with the ledger.
+    private val choices = LauncherChoiceRepository(appContext)
+
+    private fun importer(context: Context = mockk(relaxed = true)) = PcShortcutImporter(
+        context, gameRepository, memoryCards, windowsLibrary, linker, ledger, choices, collections,
     )
 
     private fun ready() {
@@ -156,6 +162,91 @@ class PcShortcutImporterTest {
 
         // Pressing "Add to Desktop" again updates the pin in place — a newer publish stamp.
         assertFalse(ledger.isHandled("com.winlator", "shortcut-1", changedAt = 2_000L))
+    }
+
+    // ── Routing ───────────────────────────────────────────────────────────────
+
+    @Test
+    fun `a fork the user named a launcher routes its shortcuts to Windows Games`() = runTest {
+        // Not installed under Robolectric, so it has no signer: the choice is keyed on null.
+        val fork = "com.example.winlatorfork"
+        assertFalse(importer(appContext).isPcLauncher(fork))
+
+        choices.set(fork, signerSha256 = null, choice = LauncherChoice.WINLATOR)
+
+        assertTrue(importer(appContext).isPcLauncher(fork))
+    }
+
+    @Test
+    fun `Not a launcher keeps a catalog package's shortcuts out of Windows Games`() = runTest {
+        assertTrue(importer(appContext).isPcLauncher("com.winlator.banner"))
+
+        choices.set("com.winlator.banner", signerSha256 = null, choice = LauncherChoice.NOT_A_LAUNCHER)
+
+        assertFalse(importer(appContext).isPcLauncher("com.winlator.banner"))
+    }
+
+    // ── Rows filed before the host was trusted ────────────────────────────────
+
+    private fun androidShortcutRow(id: Long, title: String) = Game(
+        id = id, title = title, platformId = "android", packageName = "com.winlator.banner",
+        shortcutId = "4727de93", isManualEntry = true, contentType = GameContentType.ANDROID_APP,
+    )
+
+    @Test
+    fun `a pin filed as an app in its host's collection moves to Windows Games`() = runTest {
+        ready()
+        coEvery { gameRepository.getLauncherShortcut("com.winlator.banner", "4727de93") } returns
+            androidShortcutRow(11L, "Hellraiser")
+        coEvery { collections.getAll() } returns listOf(
+            GameCollection(id = 3L, name = "Shortcuts"), GameCollection(id = 4L, name = "Favourites"),
+        )
+        coEvery { collections.getCollectionIdsForGame(11L) } returns listOf(3L, 4L)
+        coEvery { collections.addedAtByGame(3L) } returns emptyMap()
+        val updated = slot<Game>()
+        coEvery { gameRepository.upsert(capture(updated)) } returns 11L
+
+        // Uninstalled under Robolectric, so the host's collection carries the "Shortcuts" fallback.
+        val result = importer(appContext).importPinnedShortcut("com.winlator.banner", "4727de93", "Hellraiser")
+
+        assertEquals(11L, result.gameId)
+        assertFalse(result.added)
+        assertEquals("windows", updated.captured.platformId)
+        assertEquals(GameContentType.GAME, updated.captured.contentType)
+        assertEquals("4727de93", updated.captured.shortcutId)
+        // Only the auto-filed host collection lets go; a card the user chose keeps the game.
+        coVerify { collections.removeGame(3L, 11L) }
+        coVerify(exactly = 0) { collections.removeGame(4L, any()) }
+        // The host collection held nothing else, so it goes with it.
+        coVerify { collections.delete(3L) }
+    }
+
+    @Test
+    fun `a host collection with other entries is kept`() = runTest {
+        ready()
+        coEvery { gameRepository.getLauncherShortcut("com.winlator.banner", "4727de93") } returns
+            androidShortcutRow(11L, "Hellraiser")
+        coEvery { collections.getAll() } returns listOf(GameCollection(id = 3L, name = "Shortcuts"))
+        coEvery { collections.getCollectionIdsForGame(11L) } returns listOf(3L)
+        coEvery { collections.addedAtByGame(3L) } returns mapOf(12L to 0L)
+        coEvery { gameRepository.upsert(any()) } returns 11L
+
+        importer(appContext).importPinnedShortcut("com.winlator.banner", "4727de93", "Hellraiser")
+
+        coVerify { collections.removeGame(3L, 11L) }
+        coVerify(exactly = 0) { collections.delete(any()) }
+    }
+
+    @Test
+    fun `a pin already on Windows Games touches no collection`() = runTest {
+        ready()
+        coEvery { gameRepository.getLauncherShortcut("com.winlator", "shortcut-1") } returns
+            windowsGame(7L, "Some Game").copy(packageName = "com.winlator", shortcutId = "shortcut-1")
+
+        importer().importPinnedShortcut("com.winlator", "shortcut-1", "Some Game")
+
+        coVerify(exactly = 0) { gameRepository.upsert(any()) }
+        coVerify(exactly = 0) { collections.removeGame(any(), any()) }
     }
 
     // ── Legacy captures ───────────────────────────────────────────────────────

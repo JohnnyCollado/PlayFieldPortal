@@ -105,4 +105,10 @@ interface AchievementController {
 
     /** Removes a game's provider link so it can be re-matched. */
     suspend fun unlink(gameId: Long)
+
+    /** Removes one provider's link from a game, leaving its other links in place. */
+    suspend fun unlinkProvider(gameId: Long, provider: AchievementProvider)
+
+    /** Every game's link to [provider], for screens that list games by what they are linked to. */
+    suspend fun linksByProvider(provider: AchievementProvider): List<ProviderGameLinkEntity>
 }

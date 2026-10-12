@@ -460,6 +460,8 @@ class GameDetailViewModel @Inject constructor(
     private val launchDispatcher: com.playfieldportal.feature.launcher.LaunchDispatcher,
     private val pcGameExporter: com.playfieldportal.feature.settings.pc.PcGameExporter,
     private val storefrontMatches: StorefrontMatchRepository,
+    // Launch With: the PC launcher the user chose for a Windows game — shared with the XMB.
+    private val pcLaunchRouter: com.playfieldportal.feature.launcher.PcLaunchRouter,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
@@ -1525,6 +1527,12 @@ class GameDetailViewModel @Inject constructor(
             Timber.d(
                 "Launch requested: gameId=${game.id}, title=${game.title}, platform=${game.platformId}, rom=${game.romPath ?: game.packageName.orEmpty()}"
             )
+
+            // Launch With: the PC launcher the user chose, while it can still open the game.
+            pcLaunchRouter.chosenLaunchIntent(game)?.let { intent ->
+                dispatchLaunch(intent, game, null)
+                return@launch
+            }
 
             // Harvested launcher shortcut (Windows Games card) — startShortcut is an API call,
             // not an intent, so the dispatcher runs it through its own shortcut path (GameBoot

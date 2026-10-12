@@ -113,8 +113,12 @@ object PcLauncherCatalog {
         PcLauncherDef(
             PcLauncherType.WINLATOR, "Winlator",
             // com.winlator.vanilla is labelled "Winlator Ludashi" on device; the Obtainium pack
-            // publishes the same project as com.winlator.ludashi.
-            listOf("com.winlator", "com.winlator.cmod", "com.winlator.ludashi", "com.winlator.vanilla"),
+            // publishes the same project as com.winlator.ludashi. com.winlator.banner is
+            // The412Banner's Bannerlator fork.
+            listOf(
+                "com.winlator", "com.winlator.cmod", "com.winlator.ludashi", "com.winlator.vanilla",
+                "com.winlator.banner",
+            ),
         ),
         PcLauncherDef(PcLauncherType.GAMENATIVE,   "GameNative",   listOf("app.gamenative")),
     )
@@ -328,6 +332,19 @@ object PcLauncherCatalog {
         val pkg = packageName ?: return false
         if (forPackage(pkg) == null) return false
         return if (pkg in GAMEHUB_FAMILY_PACKAGES) gameHubGeneration(pkg, pm) != null else true
+    }
+
+    /**
+     * The shortcut-routing verdict: the user's word on [choice] outranks verification, exactly as
+     * [resolveWithChoice] does for identity — a named fork routes, "Not a launcher" never does.
+     */
+    internal fun routesAsPcLauncher(choice: LauncherChoice?, verified: Boolean): Boolean =
+        choice?.let { it.type != null } ?: verified
+
+    /** [isVerifiedPcLauncher] with the user's Unknown Windows Emulators choice on top. */
+    fun isPcShortcutHost(packageName: String?, pm: PackageManager, choices: LauncherChoices): Boolean {
+        val pkg = packageName ?: return false
+        return routesAsPcLauncher(choices.choiceFor(pkg, signerSha256(pkg, pm)), isVerifiedPcLauncher(pkg, pm))
     }
 
     /** Every installed GameHub-family package whose components confirm a launcher (variants can

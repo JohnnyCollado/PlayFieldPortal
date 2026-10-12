@@ -53,4 +53,7 @@ interface ProviderGameLinkDao {
 
     @Query("DELETE FROM provider_game_links WHERE game_id = :gameId")
     suspend fun deleteForGame(gameId: Long)
+
+    @Query("DELETE FROM provider_game_links WHERE game_id = :gameId AND provider = :provider")
+    suspend fun deleteForGameAndProvider(gameId: Long, provider: String)
 }

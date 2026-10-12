@@ -194,6 +194,52 @@ class AchievementRepositoryTest {
     }
 
     @Test
+    fun `unlinkProvider removes only that provider's link`() = runTest {
+        coEvery { trackingDao.linkPresenceForGame(1L) } returns listOf(
+            LinkPresenceRow(1L, "STEAM", "440", "TF2", isMissing = false),
+            LinkPresenceRow(1L, "LOCAL_STEAM", "440", "TF2", isMissing = false),
+        )
+        coEvery { linkDao.linkExistsFor(any(), any()) } returns false
+
+        repo.unlinkProvider(1L, AchievementProvider.STEAM)
+
+        coVerify { linkDao.deleteForGameAndProvider(1L, "STEAM") }
+        coVerify(exactly = 0) { linkDao.deleteForGameAndProvider(1L, "LOCAL_STEAM") }
+        coVerify(exactly = 0) { linkDao.deleteForGame(any()) }
+    }
+
+    @Test
+    fun `unlinkProvider drops the identity unless another link still points at it`() = runTest {
+        coEvery { trackingDao.linkPresenceForGame(1L) } returns listOf(
+            LinkPresenceRow(1L, "STEAM", "440", "TF2", isMissing = false),
+            LinkPresenceRow(1L, "LOCAL_STEAM", "440", "TF2", isMissing = false),
+        )
+        // Another game still links to the same Steam identity.
+        coEvery { linkDao.linkExistsFor("STEAM", "440") } returns true
+
+        repo.unlinkProvider(1L, AchievementProvider.STEAM)
+        coVerify(exactly = 0) { trackingDao.deleteIdentity(any(), any()) }
+
+        coEvery { linkDao.linkExistsFor("STEAM", "440") } returns false
+
+        repo.unlinkProvider(1L, AchievementProvider.STEAM)
+        coVerify { trackingDao.deleteIdentity("STEAM", "440") }
+        coVerify(exactly = 0) { trackingDao.deleteIdentity("LOCAL_STEAM", any()) }
+    }
+
+    @Test
+    fun `unlinkProvider leaves cached sets alone`() = runTest {
+        coEvery { trackingDao.linkPresenceForGame(1L) } returns listOf(
+            LinkPresenceRow(1L, "STEAM", "440", "TF2", isMissing = false),
+        )
+        coEvery { linkDao.linkExistsFor("STEAM", "440") } returns false
+
+        repo.unlinkProvider(1L, AchievementProvider.STEAM)
+
+        coVerify(exactly = 0) { setDao.deleteSet(any(), any()) }
+    }
+
+    @Test
     fun `every refresh goes through the selective coordinator`() = runTest {
         coEvery { coordinator.refreshGame(1L) } returns ProviderSyncResult.NotLinked
 

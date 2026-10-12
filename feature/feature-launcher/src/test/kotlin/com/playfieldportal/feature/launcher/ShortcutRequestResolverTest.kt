@@ -10,7 +10,6 @@ import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
@@ -60,7 +59,7 @@ class ShortcutRequestResolverTest {
     @Test
     fun `add for an ordinary app files the shortcut under a collection named for the app`() = runTest {
         coEvery { store.take(request) } returns request
-        every { importer.isPcLauncher("com.android.chrome") } returns false
+        coEvery { importer.isPcLauncher("com.android.chrome") } returns false
         coEvery { games.getByIntentUri(any()) } returns null
         coEvery { games.upsert(any()) } returns 42L
         coEvery { collections.getAll() } returns emptyList()

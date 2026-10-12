@@ -21,7 +21,7 @@ class SteamPcGameLinkerTest {
 
     @Test
     fun `an owned game links Steam`() = runTest {
-        coEvery { gate.verdict("220") } returns WindowsSteamGate.Verdict.OWNED
+        coEvery { gate.steamVerdictFor(1L, "220") } returns WindowsSteamGate.Verdict.OWNED
 
         linker.linkSteam(1L, "220")
 
@@ -30,7 +30,7 @@ class SteamPcGameLinkerTest {
 
     @Test
     fun `a game not in the Steam library is not linked`() = runTest {
-        coEvery { gate.verdict("1984270") } returns WindowsSteamGate.Verdict.LOCAL
+        coEvery { gate.steamVerdictFor(1L, "1984270") } returns WindowsSteamGate.Verdict.LOCAL
 
         linker.linkSteam(1L, "1984270")
 
@@ -39,7 +39,17 @@ class SteamPcGameLinkerTest {
 
     @Test
     fun `a game whose ownership is unknown is not linked`() = runTest {
-        coEvery { gate.verdict("220") } returns WindowsSteamGate.Verdict.UNKNOWN
+        coEvery { gate.steamVerdictFor(1L, "220") } returns WindowsSteamGate.Verdict.UNKNOWN
+
+        linker.linkSteam(1L, "220")
+
+        coVerify(exactly = 0) { achievements.linkManually(any(), any(), any()) }
+    }
+
+    @Test
+    fun `a re-imported game labelled Local is not linked to Steam`() = runTest {
+        // The seam answers LOCAL for the label whatever the owned list says.
+        coEvery { gate.steamVerdictFor(1L, "220") } returns WindowsSteamGate.Verdict.LOCAL
 
         linker.linkSteam(1L, "220")
 

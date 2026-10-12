@@ -3,8 +3,10 @@ package com.playfieldportal.feature.achievements.match
 import com.playfieldportal.core.data.database.dao.ProviderGameLinkDao
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.model.Game
+import com.playfieldportal.core.domain.model.WindowsGameLabel
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.achievements.AchievementController
+import com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate.Verdict
 import com.playfieldportal.feature.achievements.provider.retro.RaHashResolver
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -40,7 +42,7 @@ class AchievementAutoMatcherTest {
 
     // Owned unless a test says otherwise: most cases here are about HOW an id is found.
     private val steamGate = mockk<com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate> {
-        coEvery { verdict(any()) } returns
+        coEvery { steamVerdictFor(any(), any()) } returns
             com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate.Verdict.OWNED
     }
 
@@ -248,7 +250,7 @@ class AchievementAutoMatcherTest {
     @Test
     fun `a game not in the Steam library is not linked to Steam, and says why`() = runTest {
         stubGames(digimon)
-        coEvery { steamGate.verdict("1984270") } returns
+        coEvery { steamGate.steamVerdictFor(1, "1984270") } returns
             com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate.Verdict.LOCAL
 
         val report = matcher.matchUnlinked()
@@ -263,7 +265,7 @@ class AchievementAutoMatcherTest {
         val g = game(1, "windows", title = "Half-Life 2")
         stubGames(g)
         coEvery { steamNames.resolveAppId("Half-Life 2") } returns "220"
-        coEvery { steamGate.verdict("220") } returns
+        coEvery { steamGate.steamVerdictFor(1, "220") } returns
             com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate.Verdict.LOCAL
 
         val report = matcher.matchUnlinked()
@@ -275,7 +277,7 @@ class AchievementAutoMatcherTest {
     @Test
     fun `a game whose ownership can't be told is left for the user to answer`() = runTest {
         stubGames(digimon)
-        coEvery { steamGate.verdict("1984270") } returns
+        coEvery { steamGate.steamVerdictFor(1, "1984270") } returns
             com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate.Verdict.UNKNOWN
 
         val report = matcher.matchUnlinked()
@@ -288,10 +290,96 @@ class AchievementAutoMatcherTest {
     @Test
     fun `answering that the copy is a legit Steam one is trusted`() = runTest {
         coEvery { gameRepository.getById(1) } returns digimon
-        coEvery { steamGate.verdict(any()) } returns
+        coEvery { steamGate.steamVerdictFor(any(), any()) } returns
             com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate.Verdict.LOCAL
 
         assertTrue(matcher.matchSingleAsSteam(1))
+        coVerify { repository.linkManually(1, AchievementProvider.STEAM, "1984270") }
+    }
+
+    // ── Windows game labels ───────────────────────────────────────────────────
+
+    private fun labelEmuFolder(name: String, appId: String) =
+        com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamGame(
+            folderName = name, folderDocId = "primary:Roms/windows/$name", appId = appId, achievementsUri = null,
+        )
+
+    @Test
+    fun `a Local-labelled game never links Steam in the batch run`() = runTest {
+        val g = digimon.copy(windowsLabel = WindowsGameLabel.LOCAL)
+        stubGames(g)
+        coEvery { steamGate.steamVerdictFor(1, "1984270") } returns Verdict.LOCAL
+
+        val report = matcher.matchUnlinked()
+
+        assertEquals(0, report.matched)
+        coVerify(exactly = 0) { repository.linkManually(any(), AchievementProvider.STEAM, any()) }
+        coVerify(exactly = 0) { repository.resolveSteamLink(any(), any()) }
+    }
+
+    @Test
+    fun `a Local-labelled game with no folder says to pick one in Game List`() = runTest {
+        stubGames(game(1, "windows", title = "Half-Life 2").copy(windowsLabel = WindowsGameLabel.LOCAL))
+
+        val report = matcher.matchUnlinked()
+
+        assertEquals(0, report.matched)
+        assertEquals(
+            "Labelled Local — pick its folder in Windows ▸ Game List",
+            report.unmatched.single().reason,
+        )
+    }
+
+    @Test
+    fun `a Non-Steam labelled game with no folder is left unmatched with its own reason`() = runTest {
+        stubGames(digimon.copy(windowsLabel = WindowsGameLabel.NON_STEAM))
+        coEvery { steamGate.steamVerdictFor(1, "1984270") } returns Verdict.NOT_STEAM
+
+        val report = matcher.matchUnlinked()
+
+        assertEquals(0, report.matched)
+        assertEquals(
+            "Labelled Non-Steam — Steam achievements are not used for it",
+            report.unmatched.single().reason,
+        )
+        coVerify(exactly = 0) { repository.linkManually(any(), AchievementProvider.STEAM, any()) }
+    }
+
+    @Test
+    fun `a Non-Steam labelled game still links its emu folder but never Steam`() = runTest {
+        stubGames(game(1, "windows", title = "MARVEL Cosmic Invasion").copy(windowsLabel = WindowsGameLabel.NON_STEAM))
+        coEvery { localSteamDiscovery.scan() } returns listOf(labelEmuFolder("MARVELCosmicInvasion", "2753970"))
+
+        val report = matcher.matchUnlinked()
+
+        assertEquals(1, report.matched)
+        coVerify { repository.linkManually(1, AchievementProvider.LOCAL_STEAM, "2753970") }
+        coVerify(exactly = 0) { repository.linkManually(any(), AchievementProvider.STEAM, any()) }
+    }
+
+    @Test
+    fun `a Steam-labelled game links Steam even when the owned list lacks it`() = runTest {
+        stubGames(digimon.copy(windowsLabel = WindowsGameLabel.STEAM))
+        // The label answers OWNED through the seam although the owned list would say otherwise.
+        coEvery { steamGate.verdict(any()) } returns Verdict.LOCAL
+        coEvery { steamGate.steamVerdictFor(1, "1984270") } returns Verdict.OWNED
+
+        val report = matcher.matchUnlinked()
+
+        assertEquals(1, report.matched)
+        coVerify { repository.linkManually(1, AchievementProvider.STEAM, "1984270") }
+    }
+
+    @Test
+    fun `a Steam-labelled game skips the emu-folder step`() = runTest {
+        stubGames(digimon.copy(windowsLabel = WindowsGameLabel.STEAM))
+        coEvery { localSteamDiscovery.scan() } returns listOf(labelEmuFolder("DigimonStoryTimeStranger", "1984270"))
+
+        val report = matcher.matchUnlinked()
+
+        assertEquals(1, report.matched)
+        coVerify(exactly = 0) { localSteamDiscovery.scan() }
+        coVerify(exactly = 0) { repository.linkManually(any(), AchievementProvider.LOCAL_STEAM, any()) }
         coVerify { repository.linkManually(1, AchievementProvider.STEAM, "1984270") }
     }
 

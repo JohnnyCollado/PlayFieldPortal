@@ -219,6 +219,20 @@ class AchievementRepository @Inject constructor(
         }
     }
 
+    /** [unlink] for a single [provider]'s link; the game's other links, and every cached set, stay. */
+    override suspend fun unlinkProvider(gameId: Long, provider: AchievementProvider) {
+        val removed = trackingDao.linkPresenceForGame(gameId).filter { it.provider == provider.name }
+        linkDao.deleteForGameAndProvider(gameId, provider.name)
+        removed.forEach { link ->
+            if (!linkDao.linkExistsFor(link.provider, link.providerGameId)) {
+                trackingDao.deleteIdentity(link.provider, link.providerGameId)
+            }
+        }
+    }
+
+    override suspend fun linksByProvider(provider: AchievementProvider): List<ProviderGameLinkEntity> =
+        linkDao.getByProvider(provider.name)
+
     /** Explicit refresh from the game's stored link; [ProviderSyncResult.NotLinked] if it has none. */
     override suspend fun syncGameById(gameId: Long): ProviderSyncResult = coordinator.refreshGame(gameId)
 

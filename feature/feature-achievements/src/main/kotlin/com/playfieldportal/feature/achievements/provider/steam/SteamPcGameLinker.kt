@@ -26,7 +26,7 @@ class SteamPcGameLinker @Inject constructor(
     private val gate: WindowsSteamGate,
 ) : PcGameAchievementLinker {
     override suspend fun linkSteam(gameId: Long, appId: String) {
-        val verdict = gate.verdict(appId)
+        val verdict = gate.steamVerdictFor(gameId, appId)
         if (verdict != WindowsSteamGate.Verdict.OWNED) {
             Timber.i("STEAM not linked for game $gameId (appid $appId): $verdict")
             return

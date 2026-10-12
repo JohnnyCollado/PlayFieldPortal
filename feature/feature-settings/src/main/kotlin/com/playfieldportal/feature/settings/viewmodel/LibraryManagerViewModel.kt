@@ -64,10 +64,13 @@ private const val PSVITA_PLATFORM_ID = "psvita"
 private const val INVALID_GAME_ID_MESSAGE =
     "Enter a valid game ID — a number, or a local_… ID copied from the game's page in the launcher."
 
-enum class LibraryStep { LIST, PICK_PLATFORM, PICK_EMULATOR, SCAN_PROMPT, CARD_DETAIL, IMPORT_PC }
+enum class LibraryStep { LIST, PICK_PLATFORM, PICK_EMULATOR, SCAN_PROMPT, CARD_DETAIL, IMPORT_PC, GAME_LIST }
 
 // Focus key for the "Import PC Games" row so focus returns to it from the import section.
 const val IMPORT_PC_FOCUS_KEY = "import_pc_games"
+
+// Focus key for the Windows card's "Game List" row, restored when Back leaves the Game List.
+const val WINDOWS_GAME_LIST_FOCUS_KEY = "windows_game_list"
 
 // One supported PC launcher with its install state, for the Import PC Games section.
 // packageName is the actually-installed package (a launcher may have several); canAddById is true
@@ -433,11 +436,28 @@ class LibraryManagerViewModel @Inject constructor(
         }
     }
 
+    /** Opens Windows ▸ Game List from the Windows card detail. */
+    fun openWindowsGameList() {
+        _scratch.update { it.copy(step = LibraryStep.GAME_LIST, returnFocusKey = null) }
+    }
+
     // Returns true if the back press was consumed internally (sub-screen → list).
     fun onBack(): Boolean {
         val current = _scratch.value
         val step = current.step
         if (step == LibraryStep.LIST) return false
+        // Game List returns to the Windows card with the cursor on its own row. The XMB-opened flag
+        // is left alone, so the next Back still closes the standalone screen.
+        if (step == LibraryStep.GAME_LIST) {
+            _scratch.update {
+                it.copy(
+                    step = LibraryStep.CARD_DETAIL,
+                    detailPlatformId = WINDOWS_PLATFORM_ID,
+                    returnFocusKey = WINDOWS_GAME_LIST_FOCUS_KEY,
+                )
+            }
+            return true
+        }
         // Windows Games is a standalone settings screen. Its Import screen must return to the
         // Windows Memory Card detail, not the Library root; the following Back then returns to
         // the Settings ▸ Library flyout with Windows Games selected.

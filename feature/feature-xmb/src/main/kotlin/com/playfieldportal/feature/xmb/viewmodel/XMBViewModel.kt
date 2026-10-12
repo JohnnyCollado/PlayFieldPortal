@@ -1757,6 +1757,8 @@ class XMBViewModel @Inject constructor(
     // Which emulator launches a game — shared with Game Detail, so a console default decides both.
     private val gameLaunchLadder: com.playfieldportal.feature.launcher.GameLaunchLadder,
     private val intentResolver: com.playfieldportal.feature.launcher.EmulatorIntentResolver,
+    // Launch With: which installed PC launcher a Windows game runs with — shared with Game Detail.
+    private val pcLaunchRouter: com.playfieldportal.feature.launcher.PcLaunchRouter,
     private val videoRepository: com.playfieldportal.core.domain.repository.VideoRepository,
     private val photoRepository: com.playfieldportal.core.domain.repository.PhotoRepository,
     private val photoScanner: com.playfieldportal.feature.library.scanner.PhotoScanner,
@@ -7178,7 +7180,10 @@ class XMBViewModel @Inject constructor(
                     .getOrDefault(emptyList())
                     .firstOrNull { it.id == override }?.name ?: override
             } ?: "Default"
-            openGameContextMenuCore(item, discCount, emulatorLabel, game?.iconDisplayMode)
+            // Launch With names the launcher a Windows game runs with; no row without one.
+            val launcherLabel = game?.takeIf { it.platformId == WINDOWS_PLATFORM_ID }
+                ?.let { pcLaunchRouter.currentLabel(it) }
+            openGameContextMenuCore(item, discCount, emulatorLabel, game?.iconDisplayMode, launcherLabel)
         }
     }
 
@@ -7187,6 +7192,7 @@ class XMBViewModel @Inject constructor(
         discCount: Int,
         emulatorLabel: String = "Default",
         iconDisplayOverride: String? = null,
+        launcherLabel: String? = null,
     ) {
         val currentCat = currentCategory()
         val inGamingCategory = currentCat?.isGamingCategory == true
@@ -7225,6 +7231,7 @@ class XMBViewModel @Inject constructor(
             umd             = umd,
             canSelectMultiple = inGamesList && !state.markMode,
             emulatorLabel   = emulatorLabel,
+            launcherLabel   = launcherLabel,
             iconDisplayLabel = iconMode.label,
         )
 
@@ -7659,7 +7666,15 @@ class XMBViewModel @Inject constructor(
                 "library_manager"  -> _uiState.update { it.copy(activeSettingsScreen = "settings_library") }
                 "hide"             -> hideCard(menu.platformId)
             }
-            menu.gameId != null -> if (itemId.startsWith("emu_pick_")) {
+            menu.gameId != null -> if (itemId.startsWith(LAUNCH_WITH_PREFIX)) {
+                // Launcher chosen from Launch With; the game's own launcher clears the choice.
+                val gid = menu.gameId
+                val choice = itemId.removePrefix(LAUNCH_WITH_PREFIX)
+                appAction {
+                    val own = gameRepository.getById(gid)?.packageName
+                    gameRepository.setPcLauncherPackage(gid, choice.takeIf { it != own })
+                }
+            } else if (itemId.startsWith("emu_pick_")) {
                 // Emulator chosen from the Change Emulator submenu ("default" clears the override).
                 val gid = menu.gameId
                 val choice = itemId.removePrefix("emu_pick_")
@@ -7736,6 +7751,7 @@ class XMBViewModel @Inject constructor(
                 }
                 "file_location"          -> showGameFileLocation(menu.gameId)
                 "change_emulator"        -> openEmulatorPickerMenu(menu.gameId, parent = menu)
+                "launch_with"            -> openLaunchWithMenu(menu.gameId, parent = menu)
                 "icon_display"           -> openIconDisplayPickerMenu(menu.gameId, parent = menu)
                 "fetch_artwork"          -> fetchArtworkFromMenu(menu.gameId)
                 "hide_here"              -> currentHideLocation()?.let { (type, id, label) ->
@@ -7850,6 +7866,30 @@ class XMBViewModel @Inject constructor(
             }
             _uiState.update { it.copy(activeContextMenu = XMBContextMenu(
                 title  = "Choose Emulator",
+                items  = items,
+                gameId = gameId,
+                parent = parent,
+            ))}
+        }
+    }
+
+    // Second-level menu: every installed PC launcher that can open this Windows game, its own
+    // first. A launcher that can't address the game (no store id it takes) is not offered.
+    private fun openLaunchWithMenu(gameId: Long, parent: XMBContextMenu? = null) {
+        viewModelScope.launch {
+            val game = gameRepository.getById(gameId) ?: return@launch
+            val current = game.pcLauncherPackage ?: game.packageName
+            val items = pcLaunchRouter.options(game).map { option ->
+                XMBContextMenuItem(
+                    id      = LAUNCH_WITH_PREFIX + option.packageName,
+                    label   = option.label,
+                    value   = if (option.isOriginal) "Imported from" else null,
+                    checked = option.packageName == current,
+                )
+            }
+            if (items.isEmpty()) return@launch
+            _uiState.update { it.copy(activeContextMenu = XMBContextMenu(
+                title  = "Launch With",
                 items  = items,
                 gameId = gameId,
                 parent = parent,
@@ -10277,6 +10317,11 @@ class XMBViewModel @Inject constructor(
     }
 
     private suspend fun launchResolvedGame(game: Game) {
+        // Launch With: the PC launcher the user chose, while it can still open the game.
+        pcLaunchRouter.chosenLaunchIntent(game)?.let { intent ->
+            launchIntentFromXmb(intent, game, null)
+            return
+        }
         val shortcutId = game.shortcutId
         val packageName = game.packageName
         if (shortcutId != null && packageName != null) {
@@ -11827,6 +11872,8 @@ class XMBViewModel @Inject constructor(
         private const val APP_SHORTCUT_PLATFORM_ID = "app_shortcut"
         // Virtual card holding PC-launcher game imports (harvest / folder scan / add-by-ID).
         internal const val WINDOWS_PLATFORM_ID = "windows"
+        // Launch With submenu row ids: this prefix + the launcher package.
+        private const val LAUNCH_WITH_PREFIX = "launch_with_pkg_"
 
         // One step of the music player's seek, on the D-pad and on the touch transport alike.
         // The same 10s the video player takes.

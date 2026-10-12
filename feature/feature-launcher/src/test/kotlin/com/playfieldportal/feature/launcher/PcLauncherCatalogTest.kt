@@ -110,6 +110,13 @@ class PcLauncherCatalogTest {
         assertFalse(PcLauncherCatalog.isGameHubFamilyPackage("com.winlator.vanilla"))
     }
 
+    @Test
+    fun `Bannerlator is claimed by the Winlator launcher`() {
+        // Device evidence 2026-10-11: The412Banner's Winlator fork installs as com.winlator.banner.
+        assertEquals(PcLauncherType.WINLATOR, PcLauncherCatalog.forPackage("com.winlator.banner")?.type)
+        assertFalse(PcLauncherCatalog.isGameHubFamilyPackage("com.winlator.banner"))
+    }
+
     // ── resolveIdentity (plan section 5) ──────────────────────────────────────
 
     private val gamesir = PcLauncherCatalog.GAMESIR_SIGNER_SHA256
