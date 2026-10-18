@@ -340,6 +340,10 @@ class RomScanner @Inject constructor(
         // Collect the folder's files once, then suppress disc companions: a .bin listed in a
         // sibling .cue (or a Dreamcast .gdi track file) is part of a disc, never a game row on its
         // own — the same suppression the ROM-root walk gets from DiscImageResolver.
+        //
+        // `allowed` is passed in so only a sheet this card can scan may suppress: the replacement
+        // row for a suppressed companion is the sheet itself, and a card whose extensions omit
+        // .cue (the PS2 default) would otherwise drop cue+bin discs out of the library entirely.
         val allFiles: List<File> = if (recursive) {
             root.walkTopDown()
                 .onEnter { dir ->
@@ -358,7 +362,7 @@ class RomScanner @Inject constructor(
             }
             children.filter { it.isFile && !it.name.startsWith(".") }
         }
-        val suppressedPaths = discImageResolver.resolveFiles(allFiles).suppressedPaths
+        val suppressedPaths = discImageResolver.resolveFiles(allFiles, scannableSheets = allowed).suppressedPaths
 
         // Directory games join AFTER suppression: companion suppression is a statement about files
         // inside one folder, and a folder game is not one of them.
@@ -474,9 +478,12 @@ class RomScanner @Inject constructor(
         // Phase 2 — companion suppression over SAF: a .cue-listed .bin or a Dreamcast .gdi track
         // file is part of a disc, never a game row on its own (same policy as the raw paths, whose
         // counterpart lives in DiscImageResolver). Sheets are read through their document URIs.
+        // `allowed` gates which sheets may suppress, so a card that cannot scan .cue keeps its
+        // .bin rows instead of losing the disc (see the raw-path scan above).
         val uriByPath = fileChildren.associate { it.rawPath to it.uri }
         val suppressedPaths = discCompanionSuppressor.suppressedFiles(
             fileChildren.map { ScannedDiscFile(it.rawPath, it.name) },
+            scannableSheets = allowed,
         ) { file ->
             val uri = uriByPath[file.rawPath] ?: return@suppressedFiles null
             runCatching {

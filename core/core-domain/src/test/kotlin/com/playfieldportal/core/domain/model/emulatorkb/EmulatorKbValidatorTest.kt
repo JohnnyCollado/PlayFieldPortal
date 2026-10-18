@@ -123,6 +123,28 @@ class EmulatorKbValidatorTest {
             "data URI",
         )
 
+    // -- Handover mode ----------------------------------------------------------
+
+    @Test
+    fun `a launch may ask for a SAF uri or a filesystem path, never both`() =
+        assertRefused(
+            emu(launch = launch().copy(useSafUri = true, filesystemPathOnly = true)),
+            "SAF URI and a filesystem path",
+        )
+
+    @Test
+    fun `a filesystem-path launch is admitted`() =
+        assertAdmitted(emu(launch = launch().copy(filesystemPathOnly = true)))
+
+    @Test
+    fun `a filesystem-path launch with no activity is refused`() =
+        // The path travels scheme-less and matches no filter, so a pinned activity is the only
+        // way such a launch can start.
+        assertRefused(
+            emu(launch = launch(activityClass = null).copy(filesystemPathOnly = true)),
+            "no activity class",
+        )
+
     // -- Accepted ---------------------------------------------------------------
 
     @Test

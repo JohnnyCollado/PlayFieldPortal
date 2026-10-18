@@ -54,6 +54,9 @@ data class EmulatorKbLaunch(
     val attachRomData: Boolean = false,
     val mimeType: String? = null,
     val useSafUri: Boolean = false,
+    // Hand over the game's real filesystem path rather than a SAF document URI — for emulators
+    // whose core opens the file itself and cannot read a document id. Never with [useSafUri].
+    val filesystemPathOnly: Boolean = false,
     // A template for the intent data, replacing the ROM URI (e.g. X360 Mobile's
     // "x360mobile://launch?uri={rom_file_uri_encoded}" deep link). Null keeps the default data.
     val dataUri: String? = null,

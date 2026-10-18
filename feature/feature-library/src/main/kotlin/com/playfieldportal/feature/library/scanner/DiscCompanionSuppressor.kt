@@ -19,6 +19,11 @@ data class ScannedDiscFile(
  * Suppression is authoritative-content based: a sheet that can't be read suppresses nothing, and
  * only same-folder siblings are suppressed (a cue never hides a same-named file in another
  * folder). Under-suppressing is safe — the file just stays a row, as it does today.
+ *
+ * A sheet must also be one the scan can turn into a row: hiding a .bin for a .cue the card cannot
+ * scan leaves the disc with no row at all (issue #22). Callers that know their scannable
+ * extensions pass them; the no-set overload keeps the "any sheet may suppress" reading for a walk
+ * that filters candidates some other way.
  */
 @Singleton
 class DiscCompanionSuppressor @Inject constructor() {
@@ -28,11 +33,20 @@ class DiscCompanionSuppressor @Inject constructor() {
         fun read(file: ScannedDiscFile): List<String>?
     }
 
+    /** Any sheet may suppress — see the class KDoc for when that is the right reading. */
+    fun suppressedFiles(files: List<ScannedDiscFile>, reader: SheetReader): Set<String> =
+        suppressedFiles(files, scannableSheets = null, reader = reader)
+
     /**
      * Returns the [ScannedDiscFile.rawPath]s that are companions of a sibling sheet. Files outside
-     * the sheet's folder are never suppressed.
+     * the sheet's folder are never suppressed, and neither is anything for a sheet whose extension
+     * is not in [scannableSheets] (null = every sheet counts).
      */
-    fun suppressedFiles(files: List<ScannedDiscFile>, reader: SheetReader): Set<String> {
+    fun suppressedFiles(
+        files: List<ScannedDiscFile>,
+        scannableSheets: Set<String>?,
+        reader: SheetReader,
+    ): Set<String> {
         val suppressed = mutableSetOf<String>()
         // Folder = the raw path's parent directory, accepting both / and \ separators so the
         // same logic holds for Android (/storage/...) and desktop/Windows-style paths.
@@ -42,6 +56,7 @@ class DiscCompanionSuppressor @Inject constructor() {
             val byName = folderFiles.associateBy { it.name.lowercase() }
             for (sheet in folderFiles) {
                 val ext = sheet.name.substringAfterLast('.', "").lowercase()
+                if (scannableSheets != null && ext !in scannableSheets) continue
                 val referenced = when (ext) {
                     "cue" -> reader.read(sheet)?.let(::cueSheetReferences)
                     "gdi" -> reader.read(sheet)?.let(::gdiSheetTrackNames)

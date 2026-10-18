@@ -16,6 +16,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -49,7 +50,12 @@ class EmulatorIntentResolverTest {
             .addActivityIfNotPresent(ComponentName(packageName, activityClass))
     }
 
-    private fun registerViewActivity(packageName: String, activityClass: String) {
+    private fun registerViewActivity(
+        packageName: String,
+        activityClass: String,
+        // ARMSX's manifest filter declares content and file; most others declare content only.
+        schemes: List<String> = listOf("content"),
+    ) {
         val component = ComponentName(packageName, activityClass)
         val shadowPm = shadowOf(context.packageManager)
         shadowPm.addActivityIfNotPresent(component)
@@ -57,7 +63,7 @@ class EmulatorIntentResolverTest {
             component,
             IntentFilter(Intent.ACTION_VIEW).apply {
                 addCategory(Intent.CATEGORY_DEFAULT)
-                addDataScheme("content")
+                schemes.forEach { addDataScheme(it) }
                 addDataType("application/octet-stream")
             },
         )
@@ -332,5 +338,56 @@ class EmulatorIntentResolverTest {
         )
         assertTrue(intent.getBooleanExtra("x360mobile_frontend", false))
         assertTrue(intent.hasFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+    }
+
+    // ── filesystemPathOnly (ARMSX2 passes the document id to PCSX2) ──────────
+
+    private val cuePath = "/storage/emulated/0/PFP/Roms/ps2/half life/Half-Life (USA).cue"
+
+    private fun armsx2Profile() = EmulatorProfile(
+        id = "armsx2",
+        name = "ARMSX2",
+        packageName = "com.armsx2",
+        activityClass = "com.armsx2.MainActivity",
+        intentType = IntentType.ACTION_VIEW,
+        supportedPlatformIds = listOf("ps2"),
+        filesystemPathOnly = true,
+    )
+
+    @Test
+    fun `a filesystem-path-only profile gets the game's real path, not its document uri`() {
+        installPackage("com.armsx2")
+        registerViewActivity("com.armsx2", "com.armsx2.MainActivity", schemes = listOf("content", "file"))
+        val game = Game(
+            title = "Half-Life (USA)",
+            platformId = "ps2",
+            romPath = cuePath,
+            romUri = romUri,
+        )
+
+        val intent = runBlocking { resolver.resolve(game, armsx2Profile()).getOrThrow() }
+
+        // The real path, delivered WITHOUT a file:// scheme: the platform refuses a file:// uri as
+        // intent data (FileUriExposedException), and ARMSX2's core opens the bare path it is given.
+        // The document id it got before is what PCSX2 could not identify as an image.
+        assertEquals(cuePath, intent.dataString)
+        assertNull(intent.data?.scheme)
+        assertEquals("com.armsx2.MainActivity", intent.component?.className)
+        assertNull(intent.clipData, "a file path is not a URI grant to hand to another app")
+        assertFalse(intent.hasFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
+    }
+
+    @Test
+    fun `a filesystem-path-only profile falls back to the document uri when the scan recorded no path`() {
+        installPackage("com.armsx2")
+        registerViewActivity("com.armsx2", "com.armsx2.MainActivity", schemes = listOf("content", "file"))
+        // A card on a provider with opaque ids (Xbox 360 Mobile) records its document uri as the
+        // raw path — there is no real path to hand over, so the granted handle is all there is.
+        val game = Game(title = "Half-Life (USA)", platformId = "ps2", romPath = romUri, romUri = romUri)
+
+        val intent = runBlocking { resolver.resolve(game, armsx2Profile()).getOrThrow() }
+
+        assertEquals(romUri, intent.dataString)
+        assertTrue(intent.hasFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
     }
 }

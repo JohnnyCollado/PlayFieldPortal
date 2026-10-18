@@ -92,6 +92,7 @@ class AppLaunchInspector @Inject constructor(
                     intentCategory       = launch.category,
                     mimeType             = launch.mimeType,
                     useSafUri            = launch.useSafUri,
+                    filesystemPathOnly   = launch.filesystemPathOnly,
                     useFileUri           = !launch.useSafUri,
                     isCustom             = true,
                 ),

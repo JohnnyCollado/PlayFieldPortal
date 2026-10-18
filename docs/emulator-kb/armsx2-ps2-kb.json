@@ -1,0 +1,25 @@
+{
+  "format": "pfp-emulator-kb",
+  "schemaVersion": 1,
+  "version": 0,
+  "label": "ARMSX2 2.8.4 - open the game by its real file path",
+  "minAppVersion": 0,
+  "emulators": [
+    {
+      "id": "armsx2",
+      "name": "ARMSX2",
+      "packageNames": [
+        "com.armsx2"
+      ],
+      "platformIds": [
+        "ps2"
+      ],
+      "launch": {
+        "intentType": "ACTION_VIEW",
+        "activityClass": "com.armsx2.MainActivity",
+        "filesystemPathOnly": true
+      }
+    }
+  ],
+  "platforms": []
+}

@@ -131,6 +131,41 @@ class DiscCompanionSuppressorTest {
         assertEquals(setOf("D:\\Roms\\psx\\Game (Track 1).bin"), suppressed)
     }
 
+    // ── Only a sheet the card can scan may suppress ───────────────────────
+
+    @Test
+    fun `a sheet outside the scannable extensions suppresses nothing`() {
+        // A card that cannot scan .cue (PS2 shipped iso,bin,chd until v58; a trimmed list can look
+        // the same): the .cue is not a row, so it must not take the .bin down with it (issue #22).
+        val files = listOf(
+            file("/roms/ps2/Dragon Quest VIII.cue"),
+            file("/roms/ps2/Dragon Quest VIII.bin"),
+        )
+        val sheets = mapOf("Dragon Quest VIII.cue" to listOf("FILE \"Dragon Quest VIII.bin\" BINARY"))
+
+        assertTrue(
+            suppressor.suppressedFiles(files, scannableSheets = setOf("iso", "bin", "chd"), reader = reader(sheets)).isEmpty(),
+        )
+        // Where the card does scan the sheet, the same pair suppresses as before.
+        assertEquals(
+            setOf("/roms/ps2/Dragon Quest VIII.bin"),
+            suppressor.suppressedFiles(files, scannableSheets = setOf("cue", "bin"), reader = reader(sheets)),
+        )
+    }
+
+    @Test
+    fun `a gdi outside the scannable extensions suppresses nothing`() {
+        val files = listOf(
+            file("/roms/dreamcast/Crazy Taxi.gdi"),
+            file("/roms/dreamcast/track01.bin"),
+        )
+        val sheets = mapOf("Crazy Taxi.gdi" to listOf("1 0 4 2352 \"track01.bin\" 0"))
+
+        assertTrue(
+            suppressor.suppressedFiles(files, scannableSheets = setOf("bin"), reader = reader(sheets)).isEmpty(),
+        )
+    }
+
     @Test
     fun `companions in a different folder are not suppressed`() {
         val files = listOf(

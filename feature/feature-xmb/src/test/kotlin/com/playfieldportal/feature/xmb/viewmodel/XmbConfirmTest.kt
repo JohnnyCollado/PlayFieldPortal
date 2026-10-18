@@ -168,7 +168,7 @@ class XmbConfirmTest {
         val rom = XMBItem(id = "g1", title = "Crisis Core", gameId = 1L, platformId = "psp")
         val android = XMBItem(
             id = "a1", title = "Genshin", gameId = 2L, platformId = "android",
-            packageName = "com.example.genshin", isAndroidApp = true,
+            packageName = "com.example.genshin", isAndroidApp = true, isRealGame = true,
         )
 
         val romConfirms = assertEveryDestructiveRowConfirms(

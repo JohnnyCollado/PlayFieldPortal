@@ -114,11 +114,19 @@ class EmulatorIntentResolver(
             )
         }
 
-        // A COMPONENT launch targets a pinned activity by class name. If the emulator update
+        // A COMPONENT launch targets a pinned activity by class name, and so does a filesystem-path
+        // handover (its scheme-less uri can never resolve against a filter). If the emulator update
         // dropped or renamed that activity, startActivity would throw ActivityNotFoundException
         // at hand-off — catch it here so the failure names the repair instead.
-        if (profile.intentType == IntentType.COMPONENT) {
-            val activityClass = profile.activityClass ?: error("Activity class required for COMPONENT intent - profile: ${profile.name}")
+        if (profile.intentType == IntentType.COMPONENT || profile.filesystemPathOnly) {
+            val activityClass = profile.activityClass ?: error(
+                if (profile.filesystemPathOnly) {
+                    "${profile.name} has no launch activity recorded, so it cannot be handed a file " +
+                        "path. Import its knowledge entry again, or re-detect the emulator."
+                } else {
+                    "Activity class required for COMPONENT intent - profile: ${profile.name}"
+                }
+            )
             try {
                 context.packageManager.getActivityInfo(
                     ComponentName(profile.packageName, activityClass),
@@ -187,6 +195,25 @@ class EmulatorIntentResolver(
         val activityClass = profile.activityClass
         val mime = profile.mimeType ?: "application/octet-stream"
 
+        // A filesystem-path handover is a scheme-less URI, which no intent filter can match — an
+        // emulator reached this way must pin its activity (the validator requires it), and the
+        // preflight has already proved that activity exists.
+        if (profile.filesystemPathOnly && activityClass != null) {
+            val pinned = Intent(Intent.ACTION_VIEW).apply {
+                data = uri
+                component = ComponentName(profile.packageName, activityClass)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                applyProfileFlags(profile)
+            }
+            Timber.d(
+                "Filesystem-path view intent pinned to ${profile.packageName}/$activityClass (no filter match required)"
+            )
+            // Only a grantable content:// handle needs the read grant; a raw path has nothing to
+            // grant, and clipData would re-expose it as a uri.
+            pinned.grantReadPermissionIfNeeded(uri, game.title, profile.packageName)
+            return pinned
+        }
+
         fun build(withType: Boolean, withComponent: Boolean): Intent =
             Intent(Intent.ACTION_VIEW).apply {
                 // Android matching rule: if the intent sets a MIME type, the target's intent
@@ -234,9 +261,9 @@ class EmulatorIntentResolver(
             profile.intentExtras.values.any { it.contains(LaunchTemplate.ROM_URI) } ||
             profile.intentArrayExtras.values.any { values -> values.any { it.contains(LaunchTemplate.ROM_URI) } }
         val romUri: Uri? = if (needsRomUri) {
-            // SAF game → the granted content URI; legacy game → a FileProvider URI from its raw path.
-            game.romUri?.takeIf { it.isNotBlank() }?.let { runCatching { Uri.parse(it) }.getOrNull() }
-                ?: romUriMinter.mint(game.romPath ?: error("ROM path required for ${profile.name}"))
+            // SAF game → the granted content URI; legacy game → a FileProvider URI from its raw path;
+            // a filesystem-path-only profile → the raw path itself (see [romLaunchUri]).
+            romLaunchUri(game, profile)
         } else null
 
         if (profile.dataUri?.contains("{rom_file_uri") == true && game.romPath == null) {
@@ -277,8 +304,27 @@ class EmulatorIntentResolver(
     // The URI handed to an ACTION_VIEW emulator. A SAF game uses its granted content:// document URI
     // directly (no FileProvider, no raw-file access by PFP). A legacy raw-path game keeps the prior
     // behaviour: file:// on very old APIs when explicitly requested, else a FileProvider content URI.
+    //
+    // A profile flagged [EmulatorProfile.filesystemPathOnly] is the exception: its core opens the
+    // file itself and cannot resolve a document id (ARMSX2 passes the id to PCSX2, which then reports
+    // "Unable to identify the ISO image type"). It gets the game's real path — but only when the scan
+    // derived one; a card on a provider with opaque ids has nothing else to offer.
+    //
+    // The path travels as a SCHEME-LESS uri, never file://: since Android 7 the platform throws
+    // FileUriExposedException when a file:// uri leaves the process as intent data, with no policy
+    // of our own required. A path with no scheme is ignored by that rule, and it is also exactly
+    // what the emulator opens (probed against ARMSX2 2.8.4 for both a .iso and a .cue).
     private suspend fun romLaunchUri(game: Game, profile: EmulatorProfile): Uri {
-        game.romUri?.takeIf { it.isNotBlank() }?.let { return Uri.parse(it) }
+        val safUri = game.romUri?.takeIf { it.isNotBlank() }
+            ?.let { runCatching { Uri.parse(it) }.getOrNull() }
+
+        if (profile.filesystemPathOnly) {
+            LaunchUris.realPathOrNull(game.romPath)?.let { path -> return Uri.parse(path) }
+            Timber.d(
+                "Profile ${profile.id} needs a filesystem path, but ${game.title} has none; using its document URI"
+            )
+        }
+        if (safUri != null) return safUri
 
         val romPath = game.romPath ?: error("ROM path is required to launch ${game.title}")
         if (profile.useFileUri && !profile.useSafUri && Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {

@@ -29,6 +29,10 @@ data class EmulatorProfile(
     val mimeType: String? = null,
     val useFileUri: Boolean = true,
     val useSafUri: Boolean = false,
+    // The emulator opens the ROM with its own core and cannot resolve a storage-picker document:
+    // ARMSX2 hands the document id to its PCSX2 core, which then cannot identify the image. A game
+    // scanned through SAF is handed its real file path instead, when the scan could derive one.
+    val filesystemPathOnly: Boolean = false,
     val customCommand: String? = null,                       // overrides all if set
     val minVersionCode: Int? = null,
     val notes: String? = null,
@@ -91,4 +95,12 @@ object LaunchUris {
     /** Encodes [value] for use as one query parameter value (everything but unreserved is escaped). */
     fun queryEncode(value: String): String =
         java.net.URLEncoder.encode(value, "UTF-8").replace("+", "%20")
+
+    /**
+     * [romPath] as a real filesystem path, or null when it is absent or is only a document URI.
+     *
+     * A card on a provider with opaque ids (Xbox 360 Mobile) records its document URI as the raw
+     * path, so the leading '/' is what separates a path an emulator can open itself from one it cannot.
+     */
+    fun realPathOrNull(romPath: String?): String? = romPath?.takeIf { it.startsWith("/") }
 }

@@ -470,6 +470,7 @@ class EmulatorsSettingsViewModel @Inject constructor(
             intentExtras         = extras,
             intentArrayExtras    = existing?.intentArrayExtras.orEmpty(),
             attachRomData        = existing?.attachRomData ?: false,
+            filesystemPathOnly   = existing?.filesystemPathOnly ?: false,
             dataUri              = existing?.dataUri,
             knowledgeId          = existing?.knowledgeId,
             signerSha256         = existing?.signerSha256.orEmpty(),
@@ -486,6 +487,7 @@ class EmulatorsSettingsViewModel @Inject constructor(
 
     private fun buildPreview(profile: EmulatorProfile, game: Game): IntentPreview {
         val uriMode = when {
+            profile.filesystemPathOnly -> "raw path (the emulator opens the file itself)"
             profile.useSafUri  -> "content:// (FileProvider, read granted)"
             profile.useFileUri -> "file:// (content:// on API 24+)"
             else               -> "content://"

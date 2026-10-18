@@ -46,7 +46,7 @@ class GameContextMenuItemsTest {
     fun `a package-backed Android game offers Fetch Artwork too`() {
         val item = XMBItem(
             id = "a1", title = "Genshin", gameId = 2L, platformId = "android",
-            packageName = "com.example.genshin", isAndroidApp = true,
+            packageName = "com.example.genshin", isAndroidApp = true, isRealGame = true,
         )
         assertTrue(items(item).any { it.id == "fetch_artwork" })
     }
@@ -108,6 +108,40 @@ class GameContextMenuItemsTest {
     }
 
     // ── Pin to Top and Move ──────────────────────────────────────────────────
+
+    // ── Unmarked apps (the app_shortcut sentinel) ────────────────────────────
+
+    /** A standard app demoted by "Unmark as Game": still a games-table row, still in a card. */
+    private val demotedApp = XMBItem(
+        id = "a1", title = "Adventure Quest", gameId = 4L, platformId = "app_shortcut",
+        packageName = "com.example.adventurequest", isAndroidApp = true, isRealGame = false,
+    )
+
+    @Test
+    fun `an unmarked app row in a custom card can be marked as a game again`() {
+        val rows = menu(inCollection = true, item = demotedApp)
+        assertEquals("Mark as Game", rows.single { it.id == "mark_game" }.label)
+        assertFalse(rows.any { it.id == "unmark_game" })
+    }
+
+    @Test
+    fun `an unmarked app row keeps Remove from Library outside a card`() {
+        val ids = menu(item = demotedApp).map { it.id }
+        assertTrue(ids.contains("mark_game"))
+        assertEquals("remove_game", ids.last())
+        assertFalse(ids.contains("remove_app"))
+    }
+
+    @Test
+    fun `an unmarked app row is not offered Shiba Coins`() {
+        assertFalse(menu(item = demotedApp).any { it.id == "view_shiba_coins" })
+    }
+
+    @Test
+    fun `an Android game in a custom card is not offered Mark as Game`() {
+        val androidGame = demotedApp.copy(platformId = "android", isRealGame = true)
+        assertFalse(menu(inCollection = true, item = androidGame).any { it.id == "mark_game" })
+    }
 
     @Test
     fun `a game in a list offers Pin to Top with its state`() {

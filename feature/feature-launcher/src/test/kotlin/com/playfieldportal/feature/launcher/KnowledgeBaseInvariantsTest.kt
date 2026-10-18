@@ -159,27 +159,40 @@ class KnowledgeBaseInvariantsTest {
     }
 
     @Test
-    fun `ARMSX family boots via ACTION_VIEW content uri into the manifest activity`() {
+    fun `ARMSX family boots via ACTION_VIEW into the manifest activity`() {
         // Pinned against the shipped manifests (ARMSX1 0.1.3, ARMSX2, ARMSX3 0.9.7.3): the
         // exported activity has a scheme-only VIEW filter (content/file, no MIME) and no
         // extras. All three share the com.armsx2.* frontend classes despite their packages.
+        //
+        // ARMSX2 is the one that must NOT be handed a content:// uri: on device it passes the
+        // document id itself to PCSX2, which answers "Unable to identify the ISO image type" and
+        // fails the VM init (10-18 logcat). Given its bare file path it opens the sheet and
+        // resolves the track file it names.
         val expected = mapOf(
-            "com.nanodata.armsx" to ("com.armsx2.Main" to "psx"),
-            "com.armsx2"         to ("com.armsx2.MainActivity" to "ps2"),
-            "com.armsx3"         to ("com.armsx2.Main" to "ps3"),
+            "com.nanodata.armsx" to Triple("com.armsx2.Main", "psx", Handover.SAF_URI),
+            "com.armsx2"         to Triple("com.armsx2.MainActivity", "ps2", Handover.FILESYSTEM_PATH),
+            "com.armsx3"         to Triple("com.armsx2.Main", "ps3", Handover.SAF_URI),
         )
         for ((pkg, recipe) in expected) {
-            val (activity, platform) = recipe
+            val (activity, platform, handover) = recipe
             val entry = entry(pkg)
             assertTrue("No KB entry for $pkg", entry != null)
             val launch = entry!!.launch
             assertEquals("$pkg: expected ACTION_VIEW", IntentType.ACTION_VIEW, launch.intentType)
             assertEquals("$pkg: activity", activity, launch.activityClass)
-            assertTrue("$pkg: must hand over a content:// uri", launch.useSafUri)
+            when (handover) {
+                Handover.SAF_URI -> assertTrue("$pkg: must hand over a content:// uri", launch.useSafUri)
+                Handover.FILESYSTEM_PATH -> assertTrue(
+                    "$pkg: must be handed its real file path",
+                    launch.filesystemPathOnly && !launch.useSafUri,
+                )
+            }
             assertEquals("$pkg: filter declares no MIME type", null, launch.mimeType)
             assertTrue("$pkg: missing platform $platform", platform in entry.platformIds)
         }
     }
+
+    private enum class Handover { SAF_URI, FILESYSTEM_PATH }
 
     @Test
     fun `X1 BOX boots via ACTION_VIEW into its exported LauncherActivity`() {

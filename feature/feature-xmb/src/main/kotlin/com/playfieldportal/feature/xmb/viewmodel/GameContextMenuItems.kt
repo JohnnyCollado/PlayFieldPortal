@@ -50,8 +50,10 @@ internal fun gameContextMenuItems(
         // disc when direct launch skips Game Detail's picker. It only records the choice; the
         // launch stays an explicit confirm on the row.
         if (discCount > 1) add(XMBContextMenuItem("choose_disc", "Choose Disc", opensMenu = true))
-        // Android games can never have achievements — no Shiba Coins entry for them.
-        if (item.platformId != XMBViewModel.ANDROID_PLATFORM_ID) {
+        // Android games can never have achievements — no Shiba Coins entry for them. Neither for
+        // an app_shortcut row (an app demoted by "Unmark as Game"): it is a games-table entry but
+        // still an app, so isRealGame is what separates them from a package-backed PC game.
+        if (item.isRealGame && item.platformId != XMBViewModel.ANDROID_PLATFORM_ID) {
             add(XMBContextMenuItem("view_shiba_coins", "View Shiba Coins"))
         }
         // Emulator choice only applies to ROM-backed games; package-backed gaming apps
@@ -136,6 +138,13 @@ internal fun gameContextMenuItems(
             // last visible trace, so removing it ends the line rather than dropping it from one
             // view. Everything else is recoverable by putting the file back.
             add(XMBContextMenuItem("remove_missing", "Remove permanently", isDestructive = true))
+        } else if (item.isAndroidApp && !item.isRealGame) {
+            // An app-style row — a standard app, or one demoted by "Unmark as Game" onto the
+            // app_shortcut sentinel — is not a game, so offer the way in. It has to be here and
+            // not only in the app lists: a demoted row keeps its card memberships, so a custom
+            // card is where it is most often seen.
+            add(XMBContextMenuItem("mark_game", "Mark as Game"))
+            if (!inCollection) add(XMBContextMenuItem("remove_game", "Remove from Library", isDestructive = true))
         } else if (item.platformId == XMBViewModel.ANDROID_PLATFORM_ID && item.packageName != null && !inCollection) {
             add(XMBContextMenuItem("unmark_game", "Unmark as Game"))
             add(XMBContextMenuItem("remove_app", "Remove from Library", isDestructive = true))

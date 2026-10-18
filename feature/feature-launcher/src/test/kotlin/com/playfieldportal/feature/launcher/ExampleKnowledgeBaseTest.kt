@@ -52,6 +52,24 @@ class ExampleKnowledgeBaseTest {
     }
 
     @Test
+    fun `every knowledge file saved in the docs folder is importable`() {
+        val dir = File("../../docs/emulator-kb")
+        val files = dir.listFiles { f -> f.isFile && f.extension == "json" }.orEmpty()
+        assertTrue("no knowledge files in ${dir.absolutePath}", files.isNotEmpty())
+        for (file in files) {
+            val document = decode(file.readText())
+            val validated = EmulatorKbValidator.validate(document, knownPlatformIds, "com.playfieldportal.launcher.lite")
+            assertEquals(
+                "${file.name}: refused entries",
+                emptyList<String>(),
+                validated.refusedEmulators.map { "${it.id}: ${it.reason}" } +
+                    validated.refusedPlatforms.map { "${it.id}: ${it.reason}" },
+            )
+            assertTrue("${file.name}: carries no emulators", validated.emulators.isNotEmpty())
+        }
+    }
+
+    @Test
     fun `the example is labelled as a user file`() {
         val example = decode(exampleFile.readText())
         // User files and exports use version 0; only the built-in and official layers count up.

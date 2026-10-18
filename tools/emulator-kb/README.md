@@ -16,7 +16,7 @@ The private key must never enter the repo, a log, a chat or an upload. `.gitigno
 ## How the app uses these files
 
 - The **built-in** knowledge ships inside the APK at
-  `feature/feature-launcher/src/main/assets/emulator_kb/emulators.json`, with `"version": 1` and
+  `feature/feature-launcher/src/main/assets/emulator_kb/emulators.json`, with `"version": 2` and
   `"label": "built-in"`. It is the single source of the emulator entries.
 - An **official** file is downloaded from the rolling release `emulator-kb` on the public repo
   `JohnnyCollado/PlayFieldPortal`:
@@ -55,7 +55,7 @@ the private key.
 1. **Edit the entries** in `feature/feature-launcher/src/main/assets/emulator_kb/emulators.json`,
    the single source.
 2. **Set the release version and label** on the file you will publish:
-   - `version` must be **greater than the built-in version** (1, unless a later app release raised
+   - `version` must be **greater than the built-in version** (2, unless a later app release raised
      it) **and greater than every version previously published**, otherwise devices refuse it as a
      rollback. Use `YYYYMMDDnn` (for example `2026100201`), which always increases.
    - `label` is what the status line shows (*Official v2026.10.02 · verified*), so use the date in

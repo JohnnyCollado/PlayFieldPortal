@@ -1,9 +1,9 @@
 {
   "format": "pfp-emulator-kb",
   "schemaVersion": 1,
-  "version": 1,
+  "version": 2,
   "label": "built-in",
-  "minAppVersion": 0,
+  "minAppVersion": 13,
   "emulators": [
     {
       "id": "duckstation",
@@ -167,7 +167,7 @@
       ],
       "launch": {
         "activityClass": "com.armsx2.MainActivity",
-        "useSafUri": true
+        "filesystemPathOnly": true
       }
     },
     {

@@ -167,7 +167,7 @@
       ],
       "launch": {
         "activityClass": "com.armsx2.MainActivity",
-        "useSafUri": true
+        "filesystemPathOnly": true
       }
     },
     {

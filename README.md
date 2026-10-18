@@ -1636,7 +1636,7 @@ built-in emulator knowledge is guarded by `BuiltInKnowledgeBaseTest` and
 ### 7.12 Emulator knowledge releases
 
 The built-in knowledge file is
-`feature/feature-launcher/src/main/assets/emulator_kb/emulators.json` (`"version": 1`,
+`feature/feature-launcher/src/main/assets/emulator_kb/emulators.json` (`"version": 2`,
 `"label": "built-in"`). Signed official updates are published to the rolling GitHub release
 `emulator-kb`; the app accepts them only when its `KbSignatureVerifier.PINNED_KEYS` holds the
 release key, which is **empty in this build**. The key ceremony and the per-release steps are in

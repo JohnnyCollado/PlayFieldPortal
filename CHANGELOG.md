@@ -5,6 +5,24 @@ All notable changes to Play Field Portal are documented here. This project follo
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-10-18
+
+### Fixed
+- **ARMSX2 boots the game it was handed.** Its core opens the ROM file itself and could not resolve
+  the `content://` document id PFP passed it, so it answered *Unable to identify the ISO image type*
+  and dropped back to its own menu. A launch now carries the game's real path, delivered scheme-less
+  so Android's file-URI rule (`FileUriExposedException`, enforced since Android 7) leaves it alone,
+  and the built-in knowledge base records ARMSX2 that way — `filesystemPathOnly`, pinned to its
+  launch activity (`com.armsx2.MainActivity`). A knowledge entry that asks for a path without naming
+  an activity is now refused at import, and the launch preflight proves that activity still exists.
+  The default knowledge file ships as `"version": 2` with `"minAppVersion": 13`, so a published
+  copy of this recipe can never reach a build that does not understand it.
+- **The Themes screen keeps the controller cursor on screen.** Its saved-theme strip and the icon
+  color swatches are wider than the screen, and the cursor moves over them as an index the settings
+  scaffold cannot see — so the highlight walked past the edge while the strip stayed put. Both
+  strips now scroll to the card or swatch under the cursor, as the app drawer and the icon overlays
+  already did.
+
 ## [1.3.0] - 2026-10-04
 
 ### Added
@@ -1379,7 +1397,8 @@ security hardening. (`versionName 1.0.0-alpha.2` / `versionCode 2`.)
 - Initial alpha: XMB launcher shell, ROM library scanning, artwork scraping, emulator launch,
   gaming categories/collections, controller mapping, and touch controls.
 
-[Unreleased]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/1.3.0...HEAD
+[Unreleased]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/1.3.2...HEAD
+[1.3.2]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/1.3.0...1.3.2
 [1.3.0]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/1.2.1...1.3.0
 [1.2.0]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/1.0.3...1.1.0

@@ -37,7 +37,12 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "PS2",
                 iconRes       = "ic_platform_ps2",
                 accentColor   = 0xFF00439CL,
-                romExtensions = "iso,bin,chd",
+                // .cue is the SHEET of a cue+bin dump, and disc-image resolution treats it as
+                // the game while the .bin it lists is its companion (DiscImageResolver). Leaving
+                // it out here made a PS2 cue+bin pair suppress its own .bin with no row to
+                // replace it — the disc vanished from the card (issue #22). Every other CD-based
+                // platform already lists cue (psx, saturn, segacd, pcengine).
+                romExtensions = "iso,bin,chd,cue",
             ),
             PlatformEntity(
                 id            = "psp",

@@ -126,7 +126,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         com.playfieldportal.core.data.database.entity.UmdSlotEntity::class,
         com.playfieldportal.core.data.database.entity.AppUsageEntity::class,
     ],
-    version = 57,
+    version = 58,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -1701,6 +1701,42 @@ abstract class PFPDatabase : RoomDatabase() {
         val MIGRATION_56_57 = object : Migration(56, 57) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE games ADD COLUMN windows_label TEXT")
+            }
+        }
+
+        /**
+         * v58 — PS2 learns .cue, the one disc platform whose seeded list omitted it.
+         *
+         * Disc-image resolution treats a .cue as the game and the .bin it lists as its companion,
+         * so a PS2 card that scanned .bin but not .cue suppressed its own .bin rows and replaced
+         * them with nothing: a cue+bin dump disappeared from the card entirely (issue #22), and a
+         * stored .bin row was flagged missing by the first scan. Scanning the sheet replaces that
+         * pair with ONE row launched from the sheet, the way PS1 discs already work, and the
+         * disc-set reconcile then folds a stored .bin row into it (keeping its art and play time).
+         *
+         * Both tables, for the v49 reason: `memory_cards` COPIES the platform's list when a card is
+         * created and the scanner PREFERS that copy, so fixing `platforms` alone would leave anyone
+         * who already made a PS2 card exactly as broken as before.
+         *
+         * Guarded on the value still being the old seed ("iso,bin,chd"), like v49: a list the user
+         * trimmed or typed is an override a knowledge-base update must never overwrite, and it is
+         * already covered by the scanner's rule that only a scannable sheet may suppress (see
+         * DiscImageResolver / DiscCompanionSuppressor) — the .bin simply stays a row there.
+         */
+        val MIGRATION_57_58 = object : Migration(57, 58) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    UPDATE platforms SET rom_extensions = 'iso,bin,chd,cue'
+                    WHERE id = 'ps2' AND rom_extensions = 'iso,bin,chd'
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    UPDATE memory_cards SET supported_extensions = 'iso,bin,chd,cue'
+                    WHERE platform_id = 'ps2' AND supported_extensions = 'iso,bin,chd'
+                    """.trimIndent()
+                )
             }
         }
     }

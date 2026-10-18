@@ -70,6 +70,41 @@ class DiscImageResolverTest {
         assertTrue(other.absolutePath !in result.suppressedPaths)
     }
 
+    // ── Only a sheet the scan can turn into a row may suppress ─────────────
+
+    @Test
+    fun `a cue outside the scannable extensions suppresses nothing`() {
+        // A card that cannot scan .cue (PS2 shipped iso,bin,chd until v58, and a trimmed list can
+        // look the same): the .cue is never a game row, so the .bin it lists must stay one
+        // (issue #22).
+        val dir = tmp.newFolder()
+        val cue = File(dir, "Dragon Quest VIII.cue").apply {
+            writeText("FILE \"Dragon Quest VIII.bin\" BINARY")
+        }
+        val bin = File(dir, "Dragon Quest VIII.bin").apply { writeText("x") }
+
+        val unscannable = resolver.resolveFiles(listOf(cue, bin), scannableSheets = setOf("iso", "bin", "chd"))
+        val scannable = resolver.resolveFiles(listOf(cue, bin), scannableSheets = setOf("cue", "bin"))
+
+        assertTrue(bin.absolutePath !in unscannable.suppressedPaths)
+        // The sheet is not a row, so the bin is not a companion either: it resolves as a disc of
+        // its own (a bin with no usable sheet is an orphan, exactly like a sheet-less dump).
+        assertEquals(bin.absolutePath, unscannable.resolvedDiscs.single().launchFile.absolutePath)
+        assertEquals(setOf(bin.absolutePath), scannable.suppressedPaths)
+        assertEquals(cue.absolutePath, scannable.resolvedDiscs.single().launchFile.absolutePath)
+    }
+
+    @Test
+    fun `a gdi outside the scannable extensions suppresses nothing`() {
+        val dir = tmp.newFolder()
+        val gdi = File(dir, "Crazy Taxi.gdi").apply { writeText("1 0 4 2352 \"track01.bin\" 0") }
+        val track = File(dir, "track01.bin").apply { writeText("x") }
+
+        val result = resolver.resolveFiles(listOf(gdi, track), scannableSheets = setOf("bin"))
+
+        assertTrue(result.suppressedPaths.isEmpty())
+    }
+
     @Test
     fun `an unreadable gdi suppresses nothing`() {
         val dir = tmp.newFolder()

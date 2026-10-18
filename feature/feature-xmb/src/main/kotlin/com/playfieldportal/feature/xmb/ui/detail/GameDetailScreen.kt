@@ -3,6 +3,7 @@ package com.playfieldportal.feature.xmb.ui.detail
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.artwork.match.MetadataField
+import com.playfieldportal.core.data.database.entity.PlatformEntity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -481,7 +482,7 @@ private fun GameDetailContent(
         scrollState = pageScrollState,
         header = {
             PfpDetailBreadcrumb(
-                title = state.platform?.name ?: game.platformId.uppercase(),
+                title = game.platformLabel(state.platform),
                 subtitle = game.kindLabel(),
                 // Through the ViewModel, not straight to the host: tapping the arrow is the same
                 // "leave this page" as pressing B, so it has to sound the same.
@@ -513,7 +514,7 @@ private fun GameDetailContent(
         PfpDetailHeroBanner(
             artworkUri = game.heroUri ?: game.artworkUri,
             title = game.displayTitle,
-            platform = state.platform?.name ?: game.platformId.uppercase(),
+            platform = game.platformLabel(state.platform),
             facts = listOfNotNull(
                 game.lastPlayedAt?.let { "Last played ${relativeDays(it)}" },
                 game.totalPlayTimeMillis.takeIf { it > 0 }?.let { "Play time ${formatPlayTime(it)}" },
@@ -1092,6 +1093,15 @@ private fun Modifier.detailNode(
 ): Modifier = this
     .bringIntoViewRequester(requesterFor.getOrPut(key) { BringIntoViewRequester() })
     .onGloballyPositioned { coordinates -> nodeY[key] = coordinates.positionInRoot().y }
+
+// The console to name, or the entry's fallback when it has no console row of its own. app_shortcut
+// is an internal sentinel (an app-style row that is not a game), so its raw id must never be
+// printed as if it were a console — these rows are reached from a card like any other game.
+private fun Game.platformLabel(platform: PlatformEntity?): String = when {
+    platform != null             -> platform.name
+    platformId == "app_shortcut" -> "App"
+    else                         -> platformId.uppercase()
+}
 
 // What this library entry actually is — shown in the hero facts so all three entry kinds share one
 // screen without losing their identity.

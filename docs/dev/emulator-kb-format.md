@@ -8,6 +8,12 @@ exactly as the app reads it. Copy an entry from it as the starting point for you
 (`ExampleKnowledgeBaseTest`) keeps it identical to the built-in default and checks that it imports
 with zero refusals.
 
+Every other `.json` saved in [`emulator-kb/`](../emulator-kb/) is a ready-made file you can import, and
+the same test decodes and validates each one, so a file added there cannot rot.
+[`armsx2-ps2-kb.json`](../emulator-kb/armsx2-ps2-kb.json) is the ARMSX2 override that hands the game's
+real file path to the emulator: ARMSX2 passes a storage-picker document id straight to its PCSX2
+core, which then cannot identify the image (`filesystemPathOnly`, §4).
+
 Code of record: `core/core-domain/.../model/emulatorkb/` (`EmulatorKbDocument.kt`,
 `EmulatorKbDecoder.kt`, `EmulatorKbValidator.kt`) and `EmulatorProfile.kt` (`LaunchTemplate`). Where
 this document and the code disagree, the code wins and this document is the bug.
@@ -73,10 +79,21 @@ imports.
 | `attachRomData` | `COMPONENT` only: also pass the game's `content://` URI as the intent data. |
 | `mimeType` | `ACTION_VIEW` MIME type (default `application/octet-stream`). |
 | `useSafUri` | `ACTION_VIEW`: hand over the game's storage-picker URI rather than a file path. |
+| `filesystemPathOnly` | Hand over the game's real file path rather than its storage-picker URI — for an emulator whose own core opens the file and cannot resolve a document id (ARMSX2). Requires `activityClass`; never with `useSafUri`. Falls back to the picker URI for a game whose scan recorded no real path. |
 | `dataUri` | `COMPONENT` only: a deep link as the intent data, holding exactly one game placeholder (§4.2). |
 
 Every `COMPONENT` launch has to deliver the game somehow: a `{rom_…}` extra, `attachRomData`, a
 `dataUri`, or `{title_id}` for emulators that boot an installed title.
+
+`filesystemPathOnly` is a statement about the emulator's core, not a preference: a `content://`
+document URI stays the default because it is the one handle PFP is guaranteed to be able to grant,
+and most emulators resolve it correctly. ARMSX2 is the known exception — it passes the document id
+itself to PCSX2, which then reports "Unable to identify the ISO image type".
+
+The path travels as a **scheme-less** URI (`/storage/emulated/0/Roms/ps2/Game.cue`), not `file://`:
+since Android 7 the platform throws `FileUriExposedException` for a `file://` URI leaving the app as
+intent data, whatever the app's own StrictMode policy says. Because a scheme-less URI matches no
+intent filter, `activityClass` is mandatory and PFP starts the activity directly.
 
 ### 4.1 Placeholders
 

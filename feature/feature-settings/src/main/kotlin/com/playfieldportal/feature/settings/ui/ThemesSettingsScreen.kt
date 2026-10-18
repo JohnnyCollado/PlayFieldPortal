@@ -9,17 +9,20 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,6 +31,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
@@ -577,14 +581,29 @@ private fun FocusableStrip(
 
 
 @Composable
-private fun SavedThemeCardRow(themes: List<PfpThemeStore.SavedTheme>, focusedIndex: Int? = null, onApply: (String) -> Unit, onDelete: (String) -> Unit, onShare: (String) -> Unit, onUpdate: (String) -> Unit) {
+internal fun SavedThemeCardRow(themes: List<PfpThemeStore.SavedTheme>, focusedIndex: Int? = null, onApply: (String) -> Unit, onDelete: (String) -> Unit, onShare: (String) -> Unit, onUpdate: (String) -> Unit) {
     // Hand-rolled tap targets rather than settings rows, so they carry their own cues. Applying a
     // theme repaints the whole launcher and Delete Theme asks to delete a saved one: both are commits, not
     // descents, so they take the confirm cue. Share hands off to another app, which is an ordinary
     // activation.
     val menuSounds = LocalMenuSounds.current
-    Row(horizontalArrangement = Arrangement.spacedBy(18.dp), modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 48.dp, vertical = 10.dp)) {
-        themes.forEachIndexed { index, theme ->
+    // The strip is wider than the screen, and the controller moves a cursor the scaffold cannot
+    // see: the scaffold addresses this strip, the strip addresses one card by index. A strip that
+    // only *draws* that index leaves the highlighted card off-screen as soon as the run of cards
+    // passes the edge, so it scrolls itself to the card the cursor is on — the rule the app drawer
+    // and the icon overlays already follow.
+    val stripState = rememberLazyListState()
+    LaunchedEffect(focusedIndex) {
+        val index = focusedIndex ?: return@LaunchedEffect
+        if (index in themes.indices) stripState.animateScrollToItem(index)
+    }
+    LazyRow(
+        state                = stripState,
+        horizontalArrangement = Arrangement.spacedBy(18.dp),
+        contentPadding       = PaddingValues(horizontal = 48.dp, vertical = 10.dp),
+        modifier             = Modifier.fillMaxWidth(),
+    ) {
+        itemsIndexed(themes) { index, theme ->
             val cardFocused = focusedIndex == index
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(modifier = Modifier.size(width = 168.dp, height = 96.dp).clip(RoundedCornerShape(10.dp)).background(Color(theme.accentArgb?.let { it and 0xFFFFFFFFL } ?: 0xFF20304AL)).border(width = if (cardFocused) 3.dp else 1.dp, color = if (cardFocused) SettingsAccent else Color(0x55FFFFFF), shape = RoundedCornerShape(10.dp)).clickable { menuSounds.play(MenuSound.CONFIRM); onApply(theme.id) }) {

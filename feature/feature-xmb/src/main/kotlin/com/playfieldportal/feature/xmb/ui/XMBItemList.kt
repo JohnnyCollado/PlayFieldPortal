@@ -211,6 +211,12 @@ internal const val UMD_SLOT_KEY = "item_umd"
  * overlay to wait for. Games with a logo never show text — the logo overlay IS the identity.
  * Non-game rows keep their labels as always; a textOnly row (e.g. Untracked) always labels.
  *
+ * A game row is any row backed by a games-table entry ([XMBItem.gameId]), not only a
+ * `contentType GAME` one: an app demoted by "Unmark as Game" keeps its row (and its art) as an
+ * app_shortcut, and still renders among games — in a custom card, Favorites or a category — so it
+ * must follow the same icon-first rule. Installed-app rows with no library row (gameId null) are
+ * not game rows and keep their labels.
+ *
  * The UMD slot is named while it is the UMD glyph. Once the read turns it into the inserted game's
  * ICON0 it follows the game rule: bare when the game has a logo, titled beside ICON0 when it has
  * none — the same as a hot list row.
@@ -219,7 +225,7 @@ internal fun xmbRowShowsTitle(item: XMBItem, isSelected: Boolean, umdShowsGame: 
     item.type == XMBItemType.UMD_SLOT -> !umdShowsGame || item.logoUri == null
     // A row being moved always says so, logo or not.
     moving -> true
-    else -> item.textOnly || !item.isRealGame || (isSelected && item.logoUri == null)
+    else -> item.textOnly || item.gameId == null || (isSelected && item.logoUri == null)
 }
 
 // ── Drill flyout layout ──────────────────────────────────────────────────────

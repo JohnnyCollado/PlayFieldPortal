@@ -1,6 +1,7 @@
 package com.playfieldportal.core.domain.model
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
@@ -22,6 +23,15 @@ class LaunchUrisTest {
     @Test
     fun `characters that would break a uri are escaped`() {
         assertEquals("file:///roms/100%25%20%23hash%3F.iso", LaunchUris.fileUriOf("/roms/100% #hash?.iso"))
+    }
+
+    @Test
+    fun `only a real path counts as one an emulator can open itself`() {
+        assertEquals(doa4, LaunchUris.realPathOrNull(doa4))
+        assertNull(LaunchUris.realPathOrNull(null))
+        assertNull(LaunchUris.realPathOrNull(""))
+        // A card on a provider with opaque ids records its document uri as the raw path.
+        assertNull(LaunchUris.realPathOrNull("content://emu.x360mobile.com.documents/document/v%3Aroot%2Fgame.iso"))
     }
 
     @Test

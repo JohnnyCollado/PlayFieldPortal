@@ -179,6 +179,12 @@ object EmulatorKbValidator {
         l.flags.firstOrNull { it !in EmulatorProfileAdmission.ALLOWED_INTENT_FLAGS }
             ?.let { return "requests unsupported intent flag '$it'" }
         l.mimeType?.takeIf { !MIME_TYPE.matches(it) }?.let { return "has an invalid MIME type" }
+        if (l.useSafUri && l.filesystemPathOnly) return "asks for a SAF URI and a filesystem path at once"
+        // The path travels as a scheme-less uri, which no intent filter can match; without a pinned
+        // activity such a launch can never resolve.
+        if (l.filesystemPathOnly && l.activityClass.isNullOrBlank()) {
+            return "asks for a filesystem path with no activity class"
+        }
         l.dataUri?.let { uri -> dataUriRefusal(uri, l.intentType)?.let { return it } }
         return extrasRefusal(l)
     }

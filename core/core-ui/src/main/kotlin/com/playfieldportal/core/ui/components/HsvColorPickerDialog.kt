@@ -7,11 +7,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +22,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
@@ -528,14 +531,22 @@ fun ColorSwatchRow(
 ) {
     val presetArgbs = PfpColorChoices.map { it.second }
     val customActive = selectedArgb != null && selectedArgb !in presetArgbs
-    Row(
+    // The strip runs past the screen, while the controller moves an INDEX over it (the caller
+    // paints the highlight from [focusedIndex]; the scaffold only ever sees the whole strip). Draw
+    // that index without following it and the highlighted swatch leaves the screen, so the strip
+    // scrolls to the swatch the cursor is on.
+    val swatchState = rememberLazyListState()
+    LaunchedEffect(focusedIndex) {
+        val index = focusedIndex ?: return@LaunchedEffect
+        if (index in 0..PfpColorChoices.size) swatchState.animateScrollToItem(index)
+    }
+    LazyRow(
+        state                = swatchState,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 48.dp, vertical = 10.dp),
+        contentPadding       = PaddingValues(horizontal = 48.dp, vertical = 10.dp),
+        modifier             = modifier.fillMaxWidth(),
     ) {
-        PfpColorChoices.forEachIndexed { index, (label, argb) ->
+        itemsIndexed(PfpColorChoices) { index, (label, argb) ->
             ColorSwatch(
                 label = label,
                 fill = Color(argb ?: 0xFFFFFFFFL),
@@ -547,16 +558,18 @@ fun ColorSwatchRow(
                 onClick = { onSelectPreset(argb) },
             )
         }
-        ColorSwatch(
-            label = "Custom",
-            fill = selectedArgb?.takeIf { customActive }?.let { Color(it and 0xFFFFFFFFL) },
-            brush = if (customActive) null else rainbowBrush(),
-            selected = customActive,
-            focused = focusedIndex == PfpColorChoices.size,
-            accent = accent,
-            subtext = subtext,
-            onClick = onSelectCustom,
-        )
+        item {
+            ColorSwatch(
+                label = "Custom",
+                fill = selectedArgb?.takeIf { customActive }?.let { Color(it and 0xFFFFFFFFL) },
+                brush = if (customActive) null else rainbowBrush(),
+                selected = customActive,
+                focused = focusedIndex == PfpColorChoices.size,
+                accent = accent,
+                subtext = subtext,
+                onClick = onSelectCustom,
+            )
+        }
     }
 }
 

@@ -45,6 +45,15 @@ class EmulatorKnowledgeStoreTest {
     private fun decode(text: String): EmulatorKbDocument =
         (EmulatorKbDecoder.decode(text) as EmulatorKbDecode.Decoded).document
 
+    /**
+     * A version an official file must carry to outrank the built-in layer
+     * ([EmulatorKbMerge][com.playfieldportal.core.domain.model.emulatorkb.EmulatorKbMerge] applies it
+     * only above the built-in version). Derived from the shipped file rather than hardcoded: raising
+     * the built-in version is a content decision, not a reason for a fixture to stop overriding.
+     */
+    private fun officialVersion(above: Long = 1): Long =
+        runBlocking { newStore().builtInVersion() } + above
+
     private fun installOfficial(store: EmulatorKnowledgeStore, text: String): Boolean =
         runBlocking { store.installOfficial(text.toByteArray(), decode(text)) }
 
@@ -69,7 +78,7 @@ class EmulatorKnowledgeStoreTest {
     fun `a valid official file overrides the built-in layer`() = runBlocking {
         val store = newStore()
         val builtIn = store.current().emulators.first().emulator
-        val text = kbText(2, emulatorJson(builtIn.id, "com.example.official", "Official Name"))
+        val text = kbText(officialVersion(), emulatorJson(builtIn.id, "com.example.official", "Official Name"))
         assertTrue(installOfficial(store, text))
 
         val entry = store.current().emulators.single { it.emulator.id == builtIn.id }
@@ -84,7 +93,7 @@ class EmulatorKnowledgeStoreTest {
     @Test
     fun `an official file with a refused entry is not installed`() = runBlocking {
         val store = newStore()
-        val text = kbText(2, emulatorJson("badone", "com.google.android.evil"))
+        val text = kbText(officialVersion(), emulatorJson("badone", "com.google.android.evil"))
         assertFalse(installOfficial(store, text))
         assertFalse(officialFile.exists())
         assertFalse(store.current().officialApplied)
@@ -92,11 +101,11 @@ class EmulatorKnowledgeStoreTest {
 
     @Test
     fun `a tampered official file is ignored`() = runBlocking {
-        installOfficial(newStore(), kbText(2, emulatorJson("goodone", "com.example.good")))
+        installOfficial(newStore(), kbText(officialVersion(), emulatorJson("goodone", "com.example.good")))
         assertTrue(officialFile.exists())
         // Tampered on disk: now carries a package the validator refuses.
         officialFile.writeText(
-            kbText(2, emulatorJson("goodone", "com.example.good"), emulatorJson("evil", "android.system")),
+            kbText(officialVersion(), emulatorJson("goodone", "com.example.good"), emulatorJson("evil", "android.system")),
         )
 
         val effective = newStore().current()
@@ -187,7 +196,7 @@ class EmulatorKnowledgeStoreTest {
     @Test
     fun `reset deletes the official file and every user file`() = runBlocking {
         val store = newStore()
-        installOfficial(store, kbText(2, emulatorJson("goodone", "com.example.good")))
+        installOfficial(store, kbText(officialVersion(), emulatorJson("goodone", "com.example.good")))
         val id = store.addUserFile("mine", decode(kbText(0, emulatorJson("mine", "com.example.mine"))))
 
         store.resetToBuiltIn()
@@ -201,7 +210,7 @@ class EmulatorKnowledgeStoreTest {
 
     @Test
     fun `a crash mid-write leaves the previous official file intact`() = runBlocking {
-        installOfficial(newStore(), kbText(2, emulatorJson("goodone", "com.example.good", "Good")))
+        installOfficial(newStore(), kbText(officialVersion(), emulatorJson("goodone", "com.example.good", "Good")))
         // The crash: a half-written temp file next to the real one.
         val temp = File(officialFile.parentFile, "emulators.json.tmp")
         temp.writeText("{\"format\":\"pfp-emu")
@@ -209,7 +218,12 @@ class EmulatorKnowledgeStoreTest {
         val store = newStore()
         assertTrue(store.current().emulators.any { it.emulator.id == "goodone" })
         // The next write recovers over the stale temp file.
-        assertTrue(installOfficial(store, kbText(3, emulatorJson("goodone", "com.example.good", "Better"))))
+        assertTrue(
+            installOfficial(
+                store,
+                kbText(officialVersion(2), emulatorJson("goodone", "com.example.good", "Better")),
+            ),
+        )
         assertEquals("Better", newStore().current().emulators.single { it.emulator.id == "goodone" }.emulator.name)
         assertFalse(temp.exists())
     }

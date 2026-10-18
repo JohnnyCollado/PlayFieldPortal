@@ -34,7 +34,17 @@ class DiscImageResolver @Inject constructor(
         return resolveFiles(allFiles)
     }
 
-    fun resolveFiles(files: List<File>): FolderResolution {
+    /**
+     * @param scannableSheets the extensions the caller can actually turn into game rows
+     *   (lowercase, no leading dots), or null when every sheet may count. A sheet outside that set
+     *   is not a row, so it must not hide its companions either: suppressing them would leave the
+     *   disc with no row at all — the .bin a PS2 card can launch, hidden by a .cue the same card
+     *   cannot scan (issue #22).
+     */
+    fun resolveFiles(
+        files: List<File>,
+        scannableSheets: Set<String>? = null,
+    ): FolderResolution {
         val resolvedDiscs      = mutableListOf<ResolvedDisc>()
         val suppressedPaths    = mutableSetOf<String>()
         val requiresAssignment = mutableListOf<File>()
@@ -42,7 +52,7 @@ class DiscImageResolver @Inject constructor(
         val byDir = files.groupBy { it.parentFile?.absolutePath ?: "" }
 
         for ((_, siblings) in byDir) {
-            val cueFiles = siblings.filter { it.extension.lowercase() == "cue" }
+            val cueFiles = siblings.filter { it.extension.lowercase() == "cue" && it.isScannableSheet(scannableSheets) }
             val binFiles = siblings.filter { it.extension.lowercase() == "bin" }
             val chdFiles = siblings.filter { it.extension.lowercase() == "chd" }
             val imgFiles = siblings.filter { it.extension.lowercase() == "img" }
@@ -73,7 +83,7 @@ class DiscImageResolver @Inject constructor(
             // A .gdi references trackNN.bin/.raw files that are parts of one disc, never games in
             // their own right. Suppressed by content (the sheet's track list), so a user-edited
             // extension list that includes bin/raw still produces one row per .gdi.
-            for (gdiFile in siblings.filter { it.extension.lowercase() == "gdi" }) {
+            for (gdiFile in siblings.filter { it.extension.lowercase() == "gdi" && it.isScannableSheet(scannableSheets) }) {
                 val trackNames = gdiSheetTrackNames(readLinesOrEmpty(gdiFile))
                 val trackFiles = siblings.filter { it.name.lowercase() in trackNames }
                 trackFiles.forEach { suppressedPaths.add(it.absolutePath) }
@@ -174,4 +184,8 @@ class DiscImageResolver @Inject constructor(
         Timber.w(e, "Could not read sheet: ${file.name}")
         emptyList()
     }
+
+    /** True when [scannableSheets] is null (any sheet counts) or names this file's extension. */
+    private fun File.isScannableSheet(scannableSheets: Set<String>?): Boolean =
+        scannableSheets == null || extension.lowercase() in scannableSheets
 }

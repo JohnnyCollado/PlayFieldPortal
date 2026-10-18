@@ -175,6 +175,9 @@ class EmulatorKbImportPlan private constructor(val items: List<ImportItem>) {
             field("Flags", a.launch.flags, b.launch.flags, ::list)
             field("MIME type", a.launch.mimeType, b.launch.mimeType)
             field("URI mode", a.launch.useSafUri, b.launch.useSafUri) { if (it) "SAF URI" else "File path" }
+            field("Filesystem path", a.launch.filesystemPathOnly, b.launch.filesystemPathOnly) {
+                if (it) "required" else "not required"
+            }
             field("Attach ROM data", a.launch.attachRomData, b.launch.attachRomData)
             field("Data URI", a.launch.dataUri, b.launch.dataUri)
             field("Per-package launch", a.launchByPackage, b.launchByPackage) { m ->
@@ -202,6 +205,7 @@ class EmulatorKbImportPlan private constructor(val items: List<ImportItem>) {
             "flags ${list(l.flags)}",
             "MIME ${l.mimeType ?: NONE}",
             if (l.useSafUri) "SAF URI" else "file path",
+            if (l.filesystemPathOnly) "filesystem path only" else "default handle",
             "attach ROM data ${l.attachRomData}",
             "data URI ${l.dataUri ?: NONE}",
         ).joinToString(", ")

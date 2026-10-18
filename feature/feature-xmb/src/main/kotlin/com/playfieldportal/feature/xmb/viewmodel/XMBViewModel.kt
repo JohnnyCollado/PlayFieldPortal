@@ -2333,7 +2333,10 @@ class XMBViewModel @Inject constructor(
 
     // "Platform (Emulator)" for a game's subtitle: the platform's display name, plus the emulator's
     // friendly name in parens when one is resolvable (the game's override, else the platform default).
-    private fun platformEmulatorLabel(g: Game): String {
+    private fun platformEmulatorLabel(g: Game): String? {
+        // app_shortcut is an internal sentinel, not a console. An app demoted by "Unmark as
+        // Game" has no platform to name, and the raw id must never surface in a row's subtitle.
+        if (g.platformId == APP_SHORTCUT_PLATFORM_ID) return null
         val platform = platformCache[g.platformId]?.name ?: g.platformId
         val emulatorPkg = g.emulatorPackage ?: platformCache[g.platformId]?.preferredEmulatorPackage
         val emulator = emulatorPkg?.let { emulatorNameByPackage[it] }
@@ -7313,7 +7316,15 @@ class XMBViewModel @Inject constructor(
         // Favorite is the app's launch-shortcut row's state, and a system app is not uninstallable:
         // both are read before the menu is published, so it never changes under the cursor.
         viewModelScope.launch {
-            val isFavorite = gameRepository.getAppEntry(pkg)?.isFavorite == true
+            val entry = gameRepository.getAppEntry(pkg)
+            val isFavorite = entry?.isFavorite == true
+            // An app can be marked as a game and still be listed in an app category (the two are
+            // independent), so the row's state follows the app's own games-table entry — the same
+            // test the App Drawer makes. Left out, the menu offered a no-op "Mark as Game" on a
+            // row that was already one.
+            val isGame = entry != null &&
+                entry.platformId == ANDROID_PLATFORM_ID &&
+                entry.contentType == GameContentType.GAME
             val isSystemApp = appCategoryRepository.allInstalledApps().firstOrNull { it.packageName == pkg }?.isSystemApp == true
             val items = appMenuItems(AppMenuContext(
                 byTouch      = byTouch,
@@ -7323,6 +7334,7 @@ class XMBViewModel @Inject constructor(
                 pinned       = item.pinned,
                 canMove      = canMove,
                 isSystemApp  = isSystemApp,
+                isGame       = isGame,
             )).map { XMBContextMenuItem(it.id, it.label, it.isDestructive, value = it.value, header = it.header, opensMenu = it.opensMenu, silent = it.silent) }
             _uiState.update { it.copy(
                 activeContextMenu = XMBContextMenu(
@@ -7757,6 +7769,22 @@ class XMBViewModel @Inject constructor(
                 "hide_here"              -> currentHideLocation()?.let { (type, id, label) ->
                     persistHide(HiddenPlacement.gameKey(menu.gameId), menu.title, type, id, label)
                 }
+                // The way back from "Unmark as Game": the demoted row is still a games-table
+                // entry, and this is the only menu it can be reached from once it lives in a
+                // custom card (or Favorites), so promote it in place rather than by package.
+                "mark_game"              -> {
+                    val gid = menu.gameId
+                    appAction {
+                        gameRepository.getById(gid)?.let { g ->
+                            gameRepository.upsert(g.copy(
+                                platformId  = ANDROID_PLATFORM_ID,
+                                contentType = GameContentType.GAME,
+                            ))
+                        }
+                        memoryCardRepository.recountGames(ANDROID_PLATFORM_ID)
+                        loadItemsForCategory(currentCategory())
+                    }
+                }
                 // Demote an Android-card game to a standard app: the row survives as a decoration
                 // shortcut (art/favorites/collections intact) but leaves the card and All Games.
                 "unmark_game"            -> {
@@ -7800,6 +7828,19 @@ class XMBViewModel @Inject constructor(
                             gameRepository.upsert(existing.copy(
                                 platformId  = ANDROID_PLATFORM_ID,
                                 contentType = GameContentType.GAME,
+                            ))
+                        }
+                        memoryCardRepository.recountGames(ANDROID_PLATFORM_ID)
+                    }
+                    // The other half of the same row: demote the app's own entry back to the
+                    // decoration shortcut so it leaves the card and All Games, keeping its art,
+                    // favorites and card memberships for a later re-mark.
+                    AppMenuIds.UNMARK_GAME -> appAction {
+                        val existing = gameRepository.getAppEntry(pkg)
+                        if (existing != null) {
+                            gameRepository.upsert(existing.copy(
+                                platformId  = APP_SHORTCUT_PLATFORM_ID,
+                                contentType = GameContentType.ANDROID_APP,
                             ))
                         }
                         memoryCardRepository.recountGames(ANDROID_PLATFORM_ID)

@@ -80,4 +80,33 @@ class UmdSlotReadTest {
         assertFalse(xmbRowShowsTitle(withLogo.copy(logoUri = null), isSelected = false, umdShowsGame = false, moving = false))
         assertTrue(xmbRowShowsTitle(withLogo, isSelected = false, umdShowsGame = false, moving = true))
     }
+
+    // ── Unmarked apps (the app_shortcut sentinel) ─────────────────────────────
+
+    /** An app demoted by "Unmark as Game" — an ANDROID_APP row still rendered among games. */
+    private val demotedApp = XMBItem(
+        "a", "Adventure Quest", logoUri = "logo.png", gameId = 12L,
+        packageName = "com.example.adventurequest", isAndroidApp = true, isRealGame = false,
+    )
+
+    @Test
+    fun `an unmarked app row with a logo is bare, like any game row`() {
+        assertFalse(xmbRowShowsTitle(demotedApp, isSelected = true, umdShowsGame = false, moving = false))
+    }
+
+    @Test
+    fun `an unmarked app row with no logo is titled only while selected`() {
+        val logoless = demotedApp.copy(logoUri = null)
+        assertTrue(xmbRowShowsTitle(logoless, isSelected = true, umdShowsGame = false, moving = false))
+        assertFalse(xmbRowShowsTitle(logoless, isSelected = false, umdShowsGame = false, moving = false))
+    }
+
+    @Test
+    fun `an installed app with no library row keeps its label`() {
+        val installed = XMBItem(
+            "a", "Chrome", logoUri = "logo.png",
+            packageName = "com.android.chrome", isAndroidApp = true,
+        )
+        assertTrue(xmbRowShowsTitle(installed, isSelected = true, umdShowsGame = false, moving = false))
+    }
 }
