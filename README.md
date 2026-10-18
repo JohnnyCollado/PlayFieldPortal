@@ -11,14 +11,14 @@ Android home screen as a single front end for ROM emulation, Android games, PC-l
 </p>
 
 <p align="center">
-  <b>Version 1.3.0</b> &nbsp;·&nbsp; Side-loaded APK (not on the Play Store) &nbsp;·&nbsp;
+  <b>Version 1.3.2</b> &nbsp;·&nbsp; Side-loaded APK (not on the Play Store) &nbsp;·&nbsp;
   <b>Full</b> &amp; <b>Lite</b> editions &nbsp;·&nbsp; Desktop <b>Theme Studio</b> companion
 </p>
 
 > **This is a living manual.** It describes the app as it is built from this repository today, and
 > it is updated in the same change as the feature it describes.
 >
-> **Last updated:** 2026-10-04 · **Describes:** 1.3.0 (`versionCode` 11). What changed and when is in
+> **Last updated:** 2026-10-18 · **Describes:** 1.3.2 (`versionCode` 13). What changed and when is in
 > **[CHANGELOG.md](CHANGELOG.md)**; how the code is put together is in
 > **[ARCHITECTURE.md](ARCHITECTURE.md)**. Building from source is covered in
 > **[For Developers](#for-developers)**, which also explains
