@@ -549,13 +549,19 @@ class RomScanner @Inject constructor(
     // Immediate child directory names of a granted tree — the ES-DE system folders directly under
     // the ROM root (e.g. "gba", "snes", "psx"). One ContentResolver query; files are ignored.
     // Drives the single-scan autoload: each name is mapped to a platform by PlatformFolderHintResolver.
-    suspend fun listSubfolderNames(treeUri: String): List<String> = withContext(Dispatchers.IO) {
-        val tree = runCatching { Uri.parse(treeUri) }.getOrNull() ?: return@withContext emptyList()
+    suspend fun listSubfolderNames(treeUri: String): List<String> = listSubfolderNamesOrNull(treeUri).orEmpty()
+
+    /**
+     * [listSubfolderNames] for callers that must tell an unreadable root from an empty one: null
+     * when the tree link is invalid or the provider could not list it (see querySafChildrenOrNull).
+     */
+    suspend fun listSubfolderNamesOrNull(treeUri: String): List<String>? = withContext(Dispatchers.IO) {
+        val tree = runCatching { Uri.parse(treeUri) }.getOrNull() ?: return@withContext null
         val rootDocId = runCatching { DocumentsContract.getTreeDocumentId(tree) }.getOrNull()
-            ?: return@withContext emptyList()
-        context.contentResolver.querySafChildren(tree, rootDocId)
-            .filter { it.isDirectory }
-            .map { it.name }
+            ?: return@withContext null
+        context.contentResolver.querySafChildrenOrNull(tree, rootDocId)
+            ?.filter { it.isDirectory }
+            ?.map { it.name }
     }
 
     // Creates any missing subfolders (by name) directly under a granted tree via SAF — the ES-DE

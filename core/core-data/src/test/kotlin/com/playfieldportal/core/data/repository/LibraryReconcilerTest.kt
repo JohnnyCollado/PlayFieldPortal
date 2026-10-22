@@ -218,6 +218,70 @@ class LibraryReconcilerTest {
         }
     }
 
+    // ── A folder that listed empty, nothing vanishes (reports/2026-10-22-parasite-eve-missing.md) ──
+    // The storage provider answers an unreadable folder with an empty listing, not an error, so a
+    // one-folder-per-disc game can look deleted while every other game in the console is seen.
+
+    private val disc1 = game(10L, "/roms/psx/Parasite Eve II (USA) (Disc 1)/Parasite Eve II (USA) (Disc 1).cue")
+    private val disc2 = game(11L, "/roms/psx/Parasite Eve II (Disc 2)/Parasite Eve II (Disc 2).cue")
+
+    @Test
+    fun `a game folder that listed empty is not flagged missing while the rest of the console was seen`() = runTest {
+        val result = reconciler.reconcile(
+            dbGames = listOf(crash, disc1, disc2),
+            present = setOf("/roms/psx/crash.bin", disc2.romPath!!),
+            scanErrored = false,
+            now = 3_000L,
+        )
+
+        assertEquals(0, result.markedMissing)
+        coVerify(exactly = 0) { gameRepository.markMissing(any()) }
+        // The withheld row is left exactly as it was: not marked seen either.
+        coVerify(exactly = 1) { gameRepository.markSeen(listOf("/roms/psx/crash.bin", disc2.romPath!!), 3_000L) }
+    }
+
+    @Test
+    fun `a gone file is still flagged missing when its folder was seen holding other games`() = runTest {
+        val tomba = game(12L, "/roms/psx/Collection/tomba.cue")
+        val ape = game(13L, "/roms/psx/Collection/ape escape.cue")
+
+        val result = reconciler.reconcile(
+            dbGames = listOf(tomba, ape),
+            present = setOf("/roms/psx/Collection/ape escape.cue"),
+            scanErrored = false,
+        )
+
+        assertEquals(1, result.markedMissing)
+        coVerify(exactly = 1) { gameRepository.markMissing(listOf("/roms/psx/Collection/tomba.cue")) }
+    }
+
+    @Test
+    fun `an already missing game in a folder that listed empty stays missing`() = runTest {
+        val gone = disc1.copy(isMissing = true)
+
+        reconciler.reconcile(
+            dbGames = listOf(crash, gone),
+            present = setOf("/roms/psx/crash.bin"),
+            scanErrored = false,
+        )
+
+        coVerify(exactly = 0) { gameRepository.markSeen(match { gone.romPath in it }, any()) }
+    }
+
+    @Test
+    fun `surveyed flags leave a game in a folder that listed empty as stored`() {
+        val returned = disc2.copy(isMissing = true)
+
+        val flagged = LibraryReconciler.withSurveyedFlags(
+            dbGames = listOf(crash, disc1, returned),
+            present = setOf("/roms/psx/crash.bin", disc2.romPath!!),
+            scanErrored = false,
+        )
+
+        assertFalse(flagged.single { it.id == disc1.id }.isMissing)
+        assertFalse(flagged.single { it.id == disc2.id }.isMissing)
+    }
+
     // ── Surveyed flags, before they are stored ──────────────────────────────
     // The disc-set derivation needs to know which discs this scan found gone before reconcile
     // writes it. It must see exactly the flags reconcile is about to write — and none at all

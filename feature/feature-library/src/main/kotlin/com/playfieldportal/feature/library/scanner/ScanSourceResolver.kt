@@ -6,6 +6,8 @@ import com.playfieldportal.core.domain.model.MemoryCard
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import timber.log.Timber
 
 /**
  * Resolves WHERE a memory card's ROMs live and builds the lazy scan-flow factories for them.
@@ -34,13 +36,18 @@ class ScanSourceResolver @Inject constructor(
         }
 
         // 2. Root-managed: every ROM root subfolder that maps to this platform (internal + SD).
-        val targets = rootScanTargets(card.platformId)
-        if (targets.isNotEmpty()) {
-            return targets.map { (rootUri, childDocId) ->
+        val (targets, anyRootUnreadable) = rootScanTargets(card.platformId)
+        if (targets.isNotEmpty() || anyRootUnreadable) {
+            val sources = targets.map { (rootUri, childDocId) ->
                 { existing: Set<String> ->
                     romScanner.scanTree(rootUri, exts, card.platformId, rec, existing, startDocId = childDocId)
                 }
             }
+            // A root that could not be listed may hold this console's folder too. Its games were
+            // never looked at, so the survey must not say they are gone: a null present-set makes
+            // LibraryReconciler touch nothing. Nor does it fall back to the raw directory below,
+            // which would scan around a root that is only slow to come up.
+            return if (anyRootUnreadable) sources + UNSURVEYED_SOURCE else sources
         }
 
         // 3. Legacy raw path.
@@ -51,17 +58,32 @@ class ScanSourceResolver @Inject constructor(
         return emptyList()
     }
 
-    // (rootUri, childDocId) for every ROM root that has a subfolder mapping to [platformId]. Uses
-    // the real (case-correct) folder name from the provider, so it works regardless of casing.
-    private suspend fun rootScanTargets(platformId: String): List<Pair<String, String>> {
+    // (rootUri, childDocId) for every ROM root that has a subfolder mapping to [platformId], plus
+    // whether any root could not be listed. Uses the real (case-correct) folder name from the
+    // provider, so it works regardless of casing.
+    private suspend fun rootScanTargets(platformId: String): Pair<List<Pair<String, String>>, Boolean> {
         val out = mutableListOf<Pair<String, String>>()
+        var anyUnreadable = false
         for (rootUri in romRootRepository.getAll()) {
-            for (name in romScanner.listSubfolderNames(rootUri)) {
+            val names = romScanner.listSubfolderNamesOrNull(rootUri)
+            if (names == null) {
+                Timber.w("ROM root could not be listed; $platformId missing flags left untouched: $rootUri")
+                anyUnreadable = true
+                continue
+            }
+            for (name in names) {
                 if (folderHintResolver.detectFromFolderName(name) == platformId) {
                     RomRootRepository.childDocIdOf(rootUri, name)?.let { out.add(rootUri to it) }
                 }
             }
         }
-        return out
+        return out to anyUnreadable
+    }
+
+    private companion object {
+        // Contributes no games and an unknown present-set (see ScanResult.Complete.presentRomPaths).
+        val UNSURVEYED_SOURCE: (Set<String>) -> Flow<ScanResult> = {
+            flowOf(ScanResult.Complete(emptyList(), 0, emptyList(), emptyList(), presentRomPaths = null))
+        }
     }
 }
