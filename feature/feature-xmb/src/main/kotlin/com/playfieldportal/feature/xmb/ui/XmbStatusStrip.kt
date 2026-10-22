@@ -59,6 +59,7 @@ import com.playfieldportal.core.ui.theme.textOr
 import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.xmb.R
 import kotlinx.coroutines.delay
+import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -149,6 +150,31 @@ internal fun batteryPowerStateOf(status: Int, plugged: Int): BatteryPowerState =
     else -> BatteryPowerState.UNPLUGGED
 }
 
+/**
+ * The battery percentage, or null when nothing trustworthy is available — never a made-up 0.
+ *
+ * [level] and [scale] are ACTION_BATTERY_CHANGED's EXTRA_LEVEL / EXTRA_SCALE (-1 when missing);
+ * [capacity] is BatteryManager's BATTERY_PROPERTY_CAPACITY (MIN_VALUE, or 0 on pre-P targets,
+ * when unsupported). The broadcast is read first, with a missing scale taken as 100 the way the
+ * system status bar does. Capacity backs it up when the broadcast yields nothing, an impossible
+ * value, or a 0 the capacity contradicts (a level and scale in different units round to 0).
+ */
+internal fun batteryPercentOf(level: Int, scale: Int, capacity: Int): Int? {
+    val fromBroadcast = if (level >= 0) level * 100 / (if (scale > 0) scale else 100) else null
+    val fromCapacity  = capacity.takeIf { it in 1..100 }
+    return when {
+        fromBroadcast != null && fromBroadcast in 1..100 -> fromBroadcast
+        fromCapacity != null                             -> fromCapacity
+        fromBroadcast == 0                               -> 0
+        else                                             -> null
+    }
+}
+
+private fun batteryCapacity(context: Context): Int =
+    context.getSystemService(BatteryManager::class.java)
+        ?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+        ?: Int.MIN_VALUE
+
 // ── PSP-style full-width status strip ────────────────────────────────────────
 //
 // Layout:  DATE  ┊  TIME  ┊  SORT        [🔔] [Ctrl] [BT] [WiFi] [Signal] [Bat] [⚡]%
@@ -181,30 +207,45 @@ fun XmbPspStatusStrip(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    var batteryLevel   by remember { mutableIntStateOf(0) }
+    // Null until a trustworthy reading exists: the strip hides the number rather than claim 0%.
+    // Seeded from BatteryManager so the first frame is right even before any broadcast lands.
+    var batteryLevel   by remember { mutableStateOf(batteryPercentOf(-1, -1, batteryCapacity(context))) }
     var power          by remember { mutableStateOf(BatteryPowerState.UNPLUGGED) }
     var dateString     by remember { mutableStateOf(currentDateString()) }
     var timeString     by remember { mutableStateOf(currentTimeString()) }
 
     LifecycleStartEffect(Unit) {
+        // The raw readings last logged, so the diagnostic below fires on a change, not per broadcast.
+        var loggedReading: Triple<Int, Int, Int>? = null
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(ctx: Context, intent: Intent) {
-                val level  = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
-                val scale  = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
-                val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
-                batteryLevel = if (level >= 0 && scale > 0) (level * 100 / scale) else 0
+                val level    = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+                val scale    = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+                val status   = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+                val capacity = batteryCapacity(ctx)
+                val percent  = batteryPercentOf(level, scale, capacity)
+                // Only a broadcast the plain level/scale reading can't use is worth a file-log line
+                // (INFO is the file tree's floor): it is the evidence a device-specific report needs.
+                val reading = Triple(level, scale, capacity)
+                if ((scale <= 0 || percent != level * 100 / scale) && reading != loggedReading) {
+                    loggedReading = reading
+                    Timber.i("Battery: level=$level scale=$scale capacity=$capacity -> ${percent ?: "unknown"}%")
+                }
+                batteryLevel = percent
                 power        = batteryPowerStateOf(
                     status  = status,
                     plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0),
                 )
             }
         }
+        // ACTION_BATTERY_CHANGED is sticky: registering hands back the latest one, applied now so
+        // the readout never waits on the next change to show the current level.
         ContextCompat.registerReceiver(
             context,
             receiver,
             IntentFilter(Intent.ACTION_BATTERY_CHANGED),
             ContextCompat.RECEIVER_NOT_EXPORTED,
-        )
+        )?.let { receiver.onReceive(context, it) }
         onStopOrDispose { context.unregisterReceiver(receiver) }
     }
 
@@ -337,10 +378,13 @@ fun XmbPspStatusStrip(
                     SignalBars(level, Modifier.size(width = 14.dp, height = 13.dp))
                 }
             }
-            // Low-battery red is a warning to plug in, so any time on power clears it.
-            val lowBattery = batteryLevel <= 20 && power == BatteryPowerState.UNPLUGGED
-            val batterySlot = if (power == BatteryPowerState.CHARGING) chargingFrameSlotKey(batteryLevel) else
-                XmbStatusIcons.batterySlotKey(batteryLevel, charging = false)
+            // Low-battery red is a warning to plug in, so any time on power clears it. An unknown
+            // level is never a warning: it draws the full icon with no number beside it.
+            val level = batteryLevel
+            val lowBattery = level != null && level <= 20 && power == BatteryPowerState.UNPLUGGED
+            val iconLevel = level ?: 100
+            val batterySlot = if (power == BatteryPowerState.CHARGING) chargingFrameSlotKey(iconLevel) else
+                XmbStatusIcons.batterySlotKey(iconLevel, charging = false)
             StatusIcon(
                 res         = requireNotNull(XmbStatusIcons.forSlotKey(batterySlot)) {
                     "$batterySlot is not a status-strip slot"
@@ -370,12 +414,14 @@ fun XmbPspStatusStrip(
                         modifier           = Modifier.size(11.dp),
                     )
                 }
-                Text(
-                    text       = "$batteryLevel%",
-                    color      = if (lowBattery) LowBatteryTint else themedText(StripPrimary),
-                    fontSize   = StripFontSize,
-                    fontWeight = FontWeight.Medium,
-                )
+                if (level != null) {
+                    Text(
+                        text       = "$level%",
+                        color      = if (lowBattery) LowBatteryTint else themedText(StripPrimary),
+                        fontSize   = StripFontSize,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
             }
         }
     }
