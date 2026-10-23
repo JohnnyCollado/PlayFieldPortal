@@ -88,6 +88,9 @@ class BackupListStateTest {
     private inner class Manager : BackupManager(
         context, gameDao, categoryDao, playSessionDao, backupDao, backupFolderRepository,
         mockk(relaxed = true), mockk(relaxed = true), backfiller,
+        object : com.playfieldportal.core.data.database.DatabaseTransactions {
+            override suspend fun <T> run(block: suspend () -> T): T = block()
+        },
     ) {
         var lastExported: File? = null
         override suspend fun exportToBackupFolder(treeUri: String, source: File, name: String): Uri {

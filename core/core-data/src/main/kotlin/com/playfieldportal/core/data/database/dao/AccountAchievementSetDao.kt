@@ -89,7 +89,7 @@ interface AccountAchievementSetDao {
     // (MIN picks the surviving library game deterministically).
     @Query(
         "SELECT s.provider AS provider, s.provider_game_id AS provider_game_id, " +
-            "MIN(l.game_id) AS library_game_id, COALESCE(g.title, s.title) AS title, s.icon_url AS icon_url, " +
+            "MIN(l.game_id) AS library_game_id, COALESCE(g.user_title_override, g.scraped_title, g.title, s.title) AS title, s.icon_url AS icon_url, " +
             "s.bronze_total AS bronze_total, s.silver_total AS silver_total, s.gold_total AS gold_total, " +
             "s.bronze_earned AS bronze_earned, s.silver_earned AS silver_earned, s.gold_earned AS gold_earned, " +
             "s.mastered AS mastered, t.is_present AS is_present, s.last_synced_at AS last_synced_at " +

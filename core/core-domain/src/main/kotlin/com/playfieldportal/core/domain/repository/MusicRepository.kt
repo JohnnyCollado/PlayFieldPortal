@@ -13,7 +13,6 @@ interface MusicRepository {
 
     // ── Folders ───────────────────────────────────────────────────────────────
     fun observeFolders(): Flow<List<MusicFolder>>
-    fun observeEnabledFolders(): Flow<List<MusicFolder>>
     suspend fun getFolders(): List<MusicFolder>
     suspend fun getFolder(id: String): MusicFolder?
     suspend fun addFolder(displayName: String, treeUri: String): MusicFolder
@@ -46,7 +45,6 @@ interface MusicRepository {
     // ── Default player (DataStore-backed) ───────────────────────────────────────
     /** Package name of the chosen external player, or null for the system default chooser. */
     fun observeDefaultPlayerPackage(): Flow<String?>
-    suspend fun getDefaultPlayerPackage(): String?
     suspend fun setDefaultPlayerPackage(packageName: String?)
 
     // ── Now-Playing visualizer (DataStore-backed) ───────────────────────────────

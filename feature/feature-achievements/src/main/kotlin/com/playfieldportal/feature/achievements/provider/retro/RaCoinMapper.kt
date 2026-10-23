@@ -38,7 +38,10 @@ internal object RaCoinMapper {
                 globalRarity = percent,
                 iconUrl = a.badgeName.takeIf { it.isNotBlank() }?.let { "$BADGE_BASE/$it.png" },
                 isHidden = false, // RA has no hidden-until-earned coins
-                isEarned = earnedAt != null,
+                // Earned is the presence of either unlock date, like earnedHardcore below. The
+                // parsed time is only for display; a date in a format we cannot read must not
+                // un-earn the coin (survey L11).
+                isEarned = a.dateEarned != null || a.dateEarnedHardcore != null,
                 // Only a hardcore unlock counts toward the Platinum crown.
                 earnedHardcore = a.dateEarnedHardcore != null,
                 earnedAt = earnedAt,

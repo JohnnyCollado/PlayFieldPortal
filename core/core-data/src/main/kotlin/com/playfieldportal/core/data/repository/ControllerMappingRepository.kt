@@ -1,5 +1,6 @@
 package com.playfieldportal.core.data.repository
 
+import com.playfieldportal.core.domain.model.withCurrentSelectBinding
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -30,6 +31,8 @@ class ControllerMappingRepository @Inject constructor(
             val raw = prefs[KEY_MAPPINGS]
             if (raw != null) {
                 runCatching { json.decodeFromString<GamepadMappings>(raw) }
+                    // A table saved before Select opened the category menu still says Select sorts.
+                    .map { it.withCurrentSelectBinding() }
                     .getOrElse {
                         Timber.w("Failed to parse controller mappings, using defaults")
                         GamepadMappings()

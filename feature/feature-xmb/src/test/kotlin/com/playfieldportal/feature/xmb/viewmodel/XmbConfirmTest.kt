@@ -78,6 +78,33 @@ class XmbConfirmTest {
         assertTrue(copy.destructive)
     }
 
+    // Survey U27/U28 (docs/audits/codebase-survey-2026-10-22.md): app rows and the Android card
+    // were told about files and scans they do not have.
+    @Test
+    fun `removing an app row says the app stays installed and mentions no file or scan`() {
+        val copy = xmbConfirmCopy(XmbConfirm.RemoveAppRow(gameId = 7, title = "Chrome"))
+
+        assertTrue(copy.message.contains("stays installed"))
+        assertFalse(copy.message.contains("file"))
+        assertFalse(copy.message.contains("scan"))
+        assertEquals("Remove", copy.confirmLabel)
+    }
+
+    @Test
+    fun `removing the Android card says its apps stay installed, not that ROM files stay`() {
+        val copy = xmbConfirmCopy(XmbConfirm.RemoveCard(platformId = "android", title = "Android"))
+
+        assertTrue(copy.message.contains("apps stay installed"))
+        assertFalse(copy.message.contains("ROM"))
+        assertFalse(copy.message.contains("scan"))
+    }
+
+    @Test
+    fun `the app row's Remove from Library confirms as an app row`() {
+        val menu = XMBContextMenu(title = "Chrome", items = emptyList(), gameId = 4L)
+        assertEquals(XmbConfirm.RemoveAppRow(4L, "Chrome"), confirmFor(menu, "remove_app_row"))
+    }
+
     @Test
     fun `removing a console card says its games leave but the ROM files stay on disk`() {
         val copy = xmbConfirmCopy(XmbConfirm.RemoveCard(platformId = "psp", title = "PSP"))

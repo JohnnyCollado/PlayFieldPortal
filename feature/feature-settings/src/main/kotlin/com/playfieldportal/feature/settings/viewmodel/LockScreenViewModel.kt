@@ -74,11 +74,17 @@ class LockScreenViewModel @Inject constructor(
     }
 
     fun reset() {
+        // One reset at a time, like every other action here (survey L25).
+        if (busy.value) return
         viewModelScope.launch {
             busy.value = true
-            lockScreen.clear()
+            val reset = lockScreen.clear()
             busy.value = false
-            report("Lock screen reset to the device default", NotificationSeverity.SUCCESS)
+            if (reset) {
+                report("Lock screen reset to the device default", NotificationSeverity.SUCCESS)
+            } else {
+                report("The device didn't reset the lock screen. It still shows the current image.", NotificationSeverity.ERROR)
+            }
         }
     }
 

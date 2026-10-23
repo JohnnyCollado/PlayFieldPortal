@@ -21,6 +21,8 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -106,24 +108,23 @@ class DisplaySettingsViewModelFontColorTest {
         assertNull("white already passes on the solved scrim", vm.uiState.first().textContrastNotice)
     }
 
+    // Survey L18/U2 (docs/audits/codebase-survey-2026-10-22.md): nothing clamps the colour — it is
+    // drawn exactly as picked — so the notice warns about low contrast instead of claiming an
+    // adjustment, and there is no "Use my exact colour" switch left to offer.
     @Test
-    fun `exact suppresses the adjustment notice and persists`() = runTest(dispatcher) {
-        vm.setTextColorExact(true)
-        eventually("exact persisted") {
-            context.pfpDataStore.data.first()[KEY_EXACT] == true
-        }
-        eventually("exact surfaced") { vm.uiState.first().textColorExact }
-
+    fun `the notice warns about low contrast and never claims an adjustment`() = runTest(dispatcher) {
         vm.setTextColor(failingColor)
-        eventually("colour surfaced") { vm.uiState.first().textColorArgb == failingColor }
-        assertNull(
-            "exact means the colour is rendered as picked, so there is no adjustment to report",
-            vm.uiState.first().textContrastNotice,
-        )
+        eventually("notice raised") { vm.uiState.first().textContrastNotice != null }
+
+        val notice = vm.uiState.first().textContrastNotice!!
+        assertTrue(notice, notice.contains("4.5:1"))
+        assertTrue(notice, notice.contains("hard to read"))
+        assertFalse(notice, notice.contains("Adjusted", ignoreCase = true))
+        assertFalse(notice, notice.contains("plate", ignoreCase = true))
     }
 
     @Test
-    fun `suppressed stops the notice while adjustment continues`() = runTest(dispatcher) {
+    fun `suppressed stops the notice`() = runTest(dispatcher) {
         vm.suppressTextContrastNotice()
         eventually("suppression persisted") {
             context.pfpDataStore.data.first()[KEY_NOTICE_SUPPRESSED] == true
@@ -132,8 +133,6 @@ class DisplaySettingsViewModelFontColorTest {
         vm.setTextColor(failingColor)
         eventually("colour surfaced") { vm.uiState.first().textColorArgb == failingColor }
         assertNull(vm.uiState.first().textContrastNotice)
-        // The distinction that matters: the clamp is NOT switched off, only the telling.
-        assertEquals(false, vm.uiState.first().textColorExact)
     }
 
     @Test
@@ -170,7 +169,6 @@ class DisplaySettingsViewModelFontColorTest {
         // Mirrored by their string contract, like the sibling tests — these keys are private to
         // the ViewModel, and the string is the part that must not drift.
         val KEY_TEXT_COLOR = ThemePrefKeys.TEXT_COLOR
-        val KEY_EXACT = ThemePrefKeys.TEXT_COLOR_EXACT
         val KEY_LEGIBILITY = ThemePrefKeys.TEXT_LEGIBILITY
         val KEY_NOTICE_SUPPRESSED = booleanPreferencesKey("display_text_contrast_notice_suppressed")
     }

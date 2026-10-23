@@ -100,7 +100,7 @@ fun StorefrontRematchPanel(
         ) {
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
-                    "Rematch Storefront Metadata",
+                    "Store Match",
                     color = themedText(TextPrimary),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,

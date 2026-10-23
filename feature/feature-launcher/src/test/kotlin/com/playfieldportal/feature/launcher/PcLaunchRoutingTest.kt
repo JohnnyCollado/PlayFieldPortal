@@ -76,4 +76,28 @@ class PcLaunchRoutingTest {
         val opts = options("com.winlator.cmod", listOf(steam), sharedDesktop = true).map { it.packageName }
         assertEquals(listOf("com.winlator.cmod", "app.gamenative", "banner.hub", "com.winlator.banner"), opts)
     }
+
+    // ── Launch With's value (survey U15/U29, docs/audits/codebase-survey-2026-10-22.md) ──────
+    // It named the chosen launcher even when the launch fell back to the game's own, and it was
+    // shown with nothing else to choose.
+
+    private val own = PcLaunchOption("app.gamenative", "GameNative", isOriginal = true)
+    private val other = PcLaunchOption("banner.hub", "BannerHub", isOriginal = false)
+
+    @Test
+    fun `the label names the chosen launcher while it can still open the game`() {
+        assertEquals("BannerHub", PcLaunchRouting.launchWithLabel("banner.hub", listOf(own, other)))
+    }
+
+    @Test
+    fun `a chosen launcher that can no longer open the game reads as the game's own`() {
+        assertEquals("GameNative", PcLaunchRouting.launchWithLabel("com.uninstalled", listOf(own, other)))
+        assertEquals("GameNative", PcLaunchRouting.launchWithLabel(null, listOf(own, other)))
+    }
+
+    @Test
+    fun `with nothing else to choose there is no Launch With row`() {
+        assertNull(PcLaunchRouting.launchWithLabel(null, listOf(own)))
+        assertNull(PcLaunchRouting.launchWithLabel(null, emptyList()))
+    }
 }

@@ -52,6 +52,22 @@ class CategoryMenuItemsTest {
         assertEquals("Off", rows(visible = false).first { it.id == CATEGORY_MENU_VISIBLE_ID }.value)
     }
 
+    // Survey L29 (docs/audits/codebase-survey-2026-10-22.md): a custom memory card could only be
+    // made from an item's Add to Card submenu. A column that shows cards now offers it directly.
+    @Test
+    fun `a column that shows cards offers New Custom Card before Manage Categories`() {
+        val labels = categoryMenuItems("network", "Network", visible = true, showsCards = true).map { it.label }
+        assertEquals(
+            listOf("Rename Category", "Change Icon", "Show on Bar", "Move", "New Custom Card", "Manage Categories"),
+            labels,
+        )
+    }
+
+    @Test
+    fun `a column without cards has no New Custom Card`() {
+        assertFalse(rows().any { it.id == CATEGORY_MENU_NEW_CARD_ID })
+    }
+
     @Test
     fun `no row is destructive`() {
         assertTrue(rows().none { it.isDestructive })

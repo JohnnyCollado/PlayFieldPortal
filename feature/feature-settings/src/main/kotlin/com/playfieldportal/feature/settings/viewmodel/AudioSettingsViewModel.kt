@@ -160,8 +160,17 @@ class AudioSettingsViewModel @Inject constructor(
         pendingSlot = null
         viewModelScope.launch {
             _importing.value = true
-            val result = store.import(slot, uri)
-            _importing.value = false
+            // An import that throws must still clear the busy state and say so (survey L27).
+            val result = try {
+                store.import(slot, uri)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                timber.log.Timber.w(e, "Sound import failed for ${slot.key}")
+                UiMediaStore.ImportResult(false, "That sound couldn't be imported. Try another file.")
+            } finally {
+                _importing.value = false
+            }
             if (result.ok) {
                 // The player reloads on the stamp anyway; this just removes the race between the
                 // user pressing Preview and the DataStore emission arriving.

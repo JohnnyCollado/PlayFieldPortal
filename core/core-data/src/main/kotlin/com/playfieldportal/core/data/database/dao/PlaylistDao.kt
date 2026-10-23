@@ -23,7 +23,9 @@ interface PlaylistDao {
     @Query(
         """
         SELECT p.*, (
-            SELECT COUNT(*) FROM playlist_tracks pt WHERE pt.playlist_id = p.id
+            SELECT COUNT(*) FROM playlist_tracks pt
+            INNER JOIN music_tracks t ON t.id = pt.track_id
+            WHERE pt.playlist_id = p.id
         ) AS track_count
         FROM playlists p
         ORDER BY p.sort_order ASC, p.created_at ASC
@@ -66,6 +68,14 @@ interface PlaylistDao {
 
     @Query("DELETE FROM playlists WHERE id = :id")
     suspend fun delete(id: Long)
+
+    /**
+     * Drops playlist rows whose track no longer exists. Counts already ignore them (the count
+     * joins music_tracks, like the contents); this removes them when the user removes a folder,
+     * the one time those tracks are gone on purpose (survey L10).
+     */
+    @Query("DELETE FROM playlist_tracks WHERE track_id NOT IN (SELECT id FROM music_tracks)")
+    suspend fun deleteOrphanedTracks()
 
     // Re-adding an existing membership is a no-op (composite PK + IGNORE).
     @Insert(onConflict = OnConflictStrategy.IGNORE)

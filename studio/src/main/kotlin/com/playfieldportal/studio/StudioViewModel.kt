@@ -807,9 +807,6 @@ class StudioViewModel(private val scope: CoroutineScope) {
         }
     }
 
-    /** Sets or clears the video's playback crop on its own (undoable); [crop] is normalized 0..1. */
-    fun setMotionCrop(crop: MotionCrop?) = edit("motionCrop") { it.copy(motionCrop = crop) }
-
     // ── Icon slots ───────────────────────────────────────────────────────────
 
     /**

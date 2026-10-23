@@ -105,16 +105,6 @@ class EmulatorProfileRepository @Inject constructor(
             .stabilizeCore(autoCoreMemory.rememberedProfileId(platformId))
     }
 
-    fun getInstalledVersionCode(packageName: String): Long {
-        return try {
-            val info = context.packageManager.getPackageInfo(packageName, 0)
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
-                info.longVersionCode
-            else
-                @Suppress("DEPRECATION") info.versionCode.toLong()
-        } catch (_: Exception) { -1L }
-    }
-
     // Saves any profile that should be persisted locally (custom or auto-generated).
     // Marks auto-generated edits with userModified when the caller is the settings editor.
     suspend fun savePersistedProfile(profile: EmulatorProfile) = withContext(io) {

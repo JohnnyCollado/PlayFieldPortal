@@ -24,12 +24,15 @@ object MediaDisplayNames {
      * cached in memory: the same URI is often queried for several slots in one import session,
      * and each query is a binder round-trip into a provider we do not control.
      */
-    private val cache = HashMap<String, String?>()
+    // Concurrent: imports call this from several IO threads at once, and a plain HashMap written
+    // from two threads can corrupt itself (survey L22). The holder lets "no name" be cached too,
+    // which a ConcurrentHashMap value cannot be on its own.
+    private class Cached(val name: String?)
+    private val cache = java.util.concurrent.ConcurrentHashMap<String, Cached>()
 
     fun queryDisplayName(context: Context, uri: Uri): String? {
         val key = uri.toString()
-        cache[key]?.let { return it }
-        if (cache.containsKey(key)) return cache[key]   // null is a cached answer too
+        cache[key]?.let { return it.name }   // null is a cached answer too
 
         val queried = runCatching {
             context.contentResolver.query(
@@ -49,7 +52,7 @@ object MediaDisplayNames {
             ?.takeIf { it.isNotEmpty() }
             ?.let { if (it.length > MAX_LENGTH) it.take(MAX_LENGTH) + "…" else it }
 
-        cache[key] = queried
+        cache[key] = Cached(queried)
         return queried
     }
 

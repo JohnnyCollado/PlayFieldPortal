@@ -90,6 +90,23 @@ fun panelConfirm(rows: List<NotificationRow>, cursor: Int): PanelConfirm {
 /** What the cursor is on, for the hint pill: Open on history, Stop on a running row. */
 enum class PanelSelection { NONE, HISTORY, RUNNING }
 
+/**
+ * The panel's prompt bar: the row action under the cursor, Options only while there is history
+ * for its menu to act on (with none, the press did nothing — survey U30), and Close.
+ */
+internal fun notificationPanelPrompts(
+    selection: PanelSelection,
+    hasHistory: Boolean,
+): List<com.playfieldportal.core.ui.components.ControllerPromptItem> = buildList {
+    when (selection) {
+        PanelSelection.HISTORY -> add(com.playfieldportal.core.ui.components.ControllerPromptItem(com.playfieldportal.core.domain.model.GamepadAction.SELECT, "Open"))
+        PanelSelection.RUNNING -> add(com.playfieldportal.core.ui.components.ControllerPromptItem(com.playfieldportal.core.domain.model.GamepadAction.SELECT, "Stop"))
+        PanelSelection.NONE -> Unit
+    }
+    if (hasHistory) add(com.playfieldportal.core.ui.components.ControllerPromptItem(com.playfieldportal.core.domain.model.GamepadAction.OPEN_CONTEXT_MENU, "Options"))
+    add(com.playfieldportal.core.ui.components.ControllerPromptItem(com.playfieldportal.core.domain.model.GamepadAction.BACK, "Close"))
+}
+
 fun panelSelection(rows: List<NotificationRow>, cursor: Int): PanelSelection = when {
     rows.runningAt(cursor) != null -> PanelSelection.RUNNING
     rows.notificationAt(cursor) != null -> PanelSelection.HISTORY

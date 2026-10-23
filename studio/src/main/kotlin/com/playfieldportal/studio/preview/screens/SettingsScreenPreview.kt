@@ -1,5 +1,6 @@
 package com.playfieldportal.studio.preview.screens
 
+import com.playfieldportal.themekit.UiMediaLimits
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -341,7 +342,7 @@ private fun ColumnScope.DisplayRows(state: DisplayState, text: Color, cursorFill
     ToggleRow("Show Boot Sequence on Resume", "Also play when returning from a game", checked = false, text = text, cursorFill = cursorFill)
     MediaRow(
         "Boot Video",
-        "Play your own video instead of the PFP logo animation (MP4 or WebM, up to 10 seconds)",
+        "Play your own video instead of the PFP logo animation (MP4 or WebM, up to ${UiMediaLimits.BOOT_CLIP.hardMaxMs / 1000} seconds)",
         text, cursorFill,
     )
 
@@ -356,7 +357,7 @@ private fun ColumnScope.DisplayRows(state: DisplayState, text: Color, cursorFill
     MediaRow(
         "GameBoot Video",
         "Replace the built-in sequence with your own clip, which plays with " +
-            "its own sound — even with Menu Sounds off (MP4 or WebM, up to 10 seconds)",
+            "its own sound, at the GameBoot level in Sound ▸ Levels (MP4 or WebM, up to ${UiMediaLimits.GAMEBOOT_CLIP.hardMaxMs / 1000} seconds)",
         text, cursorFill,
     )
 
@@ -389,7 +390,7 @@ private fun ColumnScope.DisplayRows(state: DisplayState, text: Color, cursorFill
     SettingsGroup("Performance")
     ToggleRow(
         "Thermal Throttle Awareness",
-        "Automatically reduce background quality when device runs hot",
+        "Freeze the background (wave or motion wallpaper) while the device reports it is running hot",
         checked = true, text = text, cursorFill = cursorFill,
     )
     ToggleRow(

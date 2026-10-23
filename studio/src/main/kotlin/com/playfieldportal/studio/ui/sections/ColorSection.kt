@@ -75,9 +75,9 @@ fun ColorSection(state: StudioState, viewModel: StudioViewModel) {
             )
             Text("Use my exact color", fontSize = 13.sp)
         }
-        // The preview renders the colour AS PICKED; the launcher's contrast engine (Android-side)
-        // may lightness-clamp it unless "exact" is on.
-        HintText("Off: the launcher may adjust the color for contrast. The preview shows it as picked.")
+        // The launcher draws the colour exactly as picked today; this flag is stored in the theme
+        // for a later contrast engine (survey L18, docs/audits/codebase-survey-2026-10-22.md).
+        HintText("Saved in the theme for a later update. The launcher currently shows the color exactly as picked.")
 
         HorizontalDivider()
 

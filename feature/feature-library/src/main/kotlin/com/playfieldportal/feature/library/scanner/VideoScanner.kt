@@ -101,6 +101,12 @@ class VideoScanner @Inject constructor(
         // Phase 1: enumerate, cursor-only. Cheap enough to run just to answer "did anything
         // change?" — which is exactly what the signature comparison below does.
         val walk = context.walkSafTree(treeUri, library.scanRecursively)
+        // Part of the tree could not be listed: replacing the library from this walk would drop
+        // everything in the unread folders (survey L17). Nothing is changed; the next scan retries.
+        if (walk.incomplete) {
+            send(VideoScanResult.Error(library.id, "Part of the folder couldn't be read, so nothing was changed. Try again in a moment."))
+            return@channelFlow
+        }
         if (!deep && knownSignature != null && walk.signature == knownSignature) {
             Timber.i("Video scan skipped — tree unchanged: \"${library.displayName}\" (${walk.signature})")
             send(VideoScanResult.Unchanged(library.id))

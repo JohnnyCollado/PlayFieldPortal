@@ -105,4 +105,16 @@ class SetupStepsTest {
     @Test fun `Controller is the second page so later pages show the right glyphs`() {
         assertEquals(CONTROLLER, setupSteps(SetupAvailability())[1])
     }
+
+    // Survey U11 (docs/audits/codebase-survey-2026-10-22.md): on Welcome the footer's Skip only
+    // moved to the next page — the same as Get Started — beside a "Skip Setup" row that really
+    // leaves. Welcome offers no footer Skip; Finish and an unready Artwork page never did.
+    @Test
+    fun `the footer Skip is offered on every page but Welcome, Finish and an unready Artwork`() {
+        assertEquals(false, wizardOffersSkip(WELCOME, artworkReady = true))
+        assertEquals(false, wizardOffersSkip(FINISH, artworkReady = true))
+        assertEquals(false, wizardOffersSkip(ARTWORK, artworkReady = false))
+        assertEquals(true, wizardOffersSkip(ARTWORK, artworkReady = true))
+        assertEquals(true, wizardOffersSkip(CONTROLLER, artworkReady = false))
+    }
 }

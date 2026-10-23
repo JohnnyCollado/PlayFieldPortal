@@ -108,8 +108,9 @@ internal fun allGamesMenuItems(
 internal fun scanAllSummary(added: Int, cards: Int, failed: Int): String {
     val found = when (added) {
         0 -> "No new games found"
-        else -> "$added new ${if (added == 1) "game" else "games"} across " +
-            "$cards ${if (cards == 1) "Memory Card" else "Memory Cards"}"
+        // [cards] is every card scanned, not the ones that found games (survey U25).
+        else -> "$added new ${if (added == 1) "game" else "games"} · " +
+            "$cards ${if (cards == 1) "Memory Card" else "Memory Cards"} scanned"
     }
     if (failed == 0) return found
     return "$found · $failed ${if (failed == 1) "card" else "cards"} could not be scanned"

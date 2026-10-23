@@ -299,6 +299,8 @@ data class CollectionNameDialogState(
     val editTitleGameId: Long? = null,
     // When set, confirming saves this game's note (blank clears it).
     val editNoteGameId: Long? = null,
+    // The category a new card is created in; null = the current column's home.
+    val homeCategoryId: String? = null,
 )
 
 // A simple read-only message dialog (e.g. "View File Location"). Dismissed with A/B or tap.
@@ -547,7 +549,7 @@ fun settingsSectionItems(section: SettingsSection): List<XMBItem> = when (sectio
         // Phase 3 of the seven-sounds plan: renamed Audio → Sound (it owns the boot sound now).
         // The id deliberately stays settings_audio — the route, SETTINGS_SCREEN_ROUTES, the row
         // focus keys (audio_<slot>) and SettingsHierarchyTest all key off it.
-        XMBItem(id = "settings_audio",      title = "Sound",      subtitle = "Menu & boot sounds"),
+        XMBItem(id = "settings_audio",      title = "Sound",      subtitle = "Menu sounds, levels & ambience"),
         // Sits with Display and Sound: the panel is part of how the launcher presents itself,
         // not a library concern.
         XMBItem(id = "settings_notifications", title = "Notifications", subtitle = "Panel history & retention"),
@@ -569,7 +571,7 @@ fun settingsSectionItems(section: SettingsSection): List<XMBItem> = when (sectio
     )
     SettingsSection.SYSTEM -> listOfNotNull(
         XMBItem(id = "settings_about",  title = "About",            subtitle = "Play Field Portal"),
-        XMBItem(id = "settings_logs",   title = "Logs",             subtitle = "Debug & error log viewer"),
+        XMBItem(id = "settings_logs",   title = "Logs",             subtitle = "Open or share session logs"),
         // Parked until the backup rework; the route stays registered.
         XMBItem(id = "settings_backup", title = "Backup & Restore", subtitle = "Export & import")
             .takeIf { FeatureFlags.BACKUP_RESTORE },
@@ -933,6 +935,9 @@ data class XMBUiState(
 
     // ── Discord QR login overlay ──────────────────────────────────────────
     val activeDiscordLogin: Boolean = false,
+    // Controller Confirm presses while the QR overlay is up; the overlay reads each one as Try
+    // again or Copy code, the same as its tap targets (survey P1).
+    val discordLoginConfirms: Int = 0,
     // ── Discord Social drill: Root (account) → Account (hub) → Friends ─────
     val socialNav: SocialNav = SocialNav.Root,
     val socialAccountAvatarUrl: String? = null,   // cached so the drill sibling column can render it
@@ -6138,9 +6143,22 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    private fun dispatchGamepadAction(action: GamepadAction) {
+    private fun dispatchGamepadAction(pressed: GamepadAction) {
         markControllerInput()
         val state = _uiState.value
+        // Select opens the current category's menu on the bare XMB — the long-press menu a pad had
+        // no way to reach. Anywhere else it keeps the meaning it had before: sort.
+        val action = if (pressed == GamepadAction.CATEGORY_MENU) {
+            val menu = selectButtonCategoryMenu(state)
+            if (menu != null) {
+                menuSound.play(MenuSound.SELECT)
+                _uiState.update { it.copy(activeContextMenu = menu) }
+                return
+            }
+            GamepadAction.CHANGE_SORT
+        } else {
+            pressed
+        }
 
         // ── The virtual keyboard captures ALL input while open ─────────────────
         //
@@ -6398,13 +6416,10 @@ class XMBViewModel @Inject constructor(
             forwardToShellModal(action)
             return
         }
-        // Launch recovery sheet (B1) — A confirms the highlighted action, B dismisses.
+        // Launch recovery (B1) — the shared Choice modal: the D-pad picks a repair, A runs it,
+        // B dismisses (survey P2).
         if (state.launchRecovery != null) {
-            when (action) {
-                GamepadAction.SELECT -> onLaunchRecoveryAction(LaunchRecoveryAction.RETRY)
-                GamepadAction.BACK   -> onLaunchRecoveryAction(LaunchRecoveryAction.DISMISS)
-                else                 -> Unit
-            }
+            forwardToShellModal(action)
             return
         }
         // Required artwork folder prompts — forwarded to the shared confirm modal. Ahead of the
@@ -6537,8 +6552,13 @@ class XMBViewModel @Inject constructor(
                 return
             }
             state.activeDiscordLogin -> {
-                // Back cancels the QR overlay; its own Compose UI handles taps/buttons.
-                if (action == GamepadAction.BACK) onDiscordLoginClosed()
+                // Back cancels the QR overlay (closing it stops the login poll); Confirm is handed
+                // to the overlay so Try again and Copy code work from a pad, not only by touch.
+                when (discordLoginInput(action)) {
+                    DiscordLoginInput.CLOSE -> onDiscordLoginClosed()
+                    DiscordLoginInput.CONFIRM -> _uiState.update { it.copy(discordLoginConfirms = it.discordLoginConfirms + 1) }
+                    DiscordLoginInput.IGNORE -> Unit
+                }
                 return
             }
             state.customIconSession != null -> {
@@ -6650,7 +6670,7 @@ class XMBViewModel @Inject constructor(
             )
             // START is handled above, before the overlay ladder, so it can mean the same thing
             // whether or not the panel is already open. Unreachable here.
-            GamepadAction.HOME, GamepadAction.SHIFT, GamepadAction.CAPS_LOCK -> Unit
+            GamepadAction.HOME, GamepadAction.SHIFT, GamepadAction.CAPS_LOCK, GamepadAction.CATEGORY_MENU -> Unit
             // Cycle the sort order of the current list (PSP-style). Whichever face button
             // the user's X/Y layout assigns to sort dispatches this.
             GamepadAction.CHANGE_SORT -> cycleSort()
@@ -6900,6 +6920,11 @@ class XMBViewModel @Inject constructor(
                 closeContextMenu()
                 // The bar's collector drops the icon once the store says so.
                 appAction { categoryRepository.setVisible(categoryId, false) }
+            }
+            // A card made straight from the column's own menu lives in that column (survey L29).
+            CATEGORY_MENU_NEW_CARD_ID -> {
+                closeContextMenu()
+                promptCreateCollection(homeCategoryId = categoryId)
             }
         }
     }
@@ -7185,7 +7210,7 @@ class XMBViewModel @Inject constructor(
             } ?: "Default"
             // Launch With names the launcher a Windows game runs with; no row without one.
             val launcherLabel = game?.takeIf { it.platformId == WINDOWS_PLATFORM_ID }
-                ?.let { pcLaunchRouter.currentLabel(it) }
+                ?.let { pcLaunchRouter.launchWithLabel(it) }
             openGameContextMenuCore(item, discCount, emulatorLabel, game?.iconDisplayMode, launcherLabel)
         }
     }
@@ -7258,7 +7283,7 @@ class XMBViewModel @Inject constructor(
     private fun openCollectionPicker(gameId: Long, selectIndex: Int = 0, parent: XMBContextMenu? = null) {
         viewModelScope.launch {
             val memberOf = collectionRepository.getCollectionIdsForGame(gameId).toSet()
-            val items = addToCardRows(memberOf)
+            val items = addToCardRows(memberOf, itemIsApp = isAppEntry(gameId))
             _uiState.update { it.copy(
                 activeContextMenu = XMBContextMenu(
                     title            = "Add to Card",
@@ -7274,23 +7299,29 @@ class XMBViewModel @Inject constructor(
 
     // The Add to Card rows for the column being browsed: its own custom memory cards first. Cards
     // of the other kind (game cards from an app column, and the reverse) are never offered.
-    private suspend fun addToCardRows(memberOf: Set<Long>): List<XMBContextMenuItem> {
+    private suspend fun addToCardRows(memberOf: Set<Long>, itemIsApp: Boolean = false): List<XMBContextMenuItem> {
         val state = _uiState.value
         val current = currentCategory()
         val gamingByCategory = state.categories.associate { it.id to it.isGamingCategory }
-        val wantGaming = current?.takeIf { categoryShowsCollections(it) }?.isGamingCategory ?: true
+        // From a column without cards (the Android column), an app lists app cards and its new
+        // card goes to App Store, not Main Game (survey L30).
+        val wantGaming = wantsGamingCards(current, itemIsApp)
         val collections = collectionRepository.getAll()
             .filter { (gamingByCategory[it.categoryId] ?: (it.categoryId == BuiltInCategory.GAMES)) == wantGaming }
             .map { Triple(it.id, it.name, it.categoryId) }
         return addToCardMenuItems(
             collections = collections,
-            currentCategoryId = collectionHomeCategoryId(),
+            currentCategoryId = newCardHome(current, itemIsApp),
             categoryNames = state.categories.associate { it.id to it.name },
             memberOf = memberOf,
         )
     }
 
     // "Add N Games to Card" for the games marked in multi-select: picking a card adds them all.
+    /** True when [gameId] is an app's library row rather than a game; decides which kind of card it gets. */
+    private suspend fun isAppEntry(gameId: Long): Boolean =
+        gameRepository.getById(gameId)?.let { it.contentType != GameContentType.GAME } ?: false
+
     private fun openMarkedCollectionPicker() {
         val marked = _uiState.value.markedGameIds
         if (marked.isEmpty()) return
@@ -7489,7 +7520,12 @@ class XMBViewModel @Inject constructor(
             when {
                 itemId == "col_new" -> {
                     closeContextMenu()
-                    promptCreateCollection(forGameId = gameId)
+                    viewModelScope.launch {
+                        promptCreateCollection(
+                            forGameId = gameId,
+                            homeCategoryId = newCardHome(currentCategory(), isAppEntry(gameId)),
+                        )
+                    }
                 }
                 itemId.startsWith("col_") -> {
                     val collectionId = itemId.removePrefix("col_").toLongOrNull() ?: return
@@ -7992,12 +8028,17 @@ class XMBViewModel @Inject constructor(
 
     // ── Create-collection dialog ───────────────────────────────────────────────
 
-    private fun promptCreateCollection(forGameId: Long? = null, forGameIds: Set<Long> = emptySet()) {
+    private fun promptCreateCollection(
+        forGameId: Long? = null,
+        forGameIds: Set<Long> = emptySet(),
+        homeCategoryId: String? = null,
+    ) {
         _uiState.update { it.copy(
             collectionNameDialog = CollectionNameDialogState(
                 title = "New Custom Memory Card",
                 forGameId = forGameId,
                 forGameIds = forGameIds,
+                homeCategoryId = homeCategoryId,
             )
         )}
     }
@@ -8037,9 +8078,10 @@ class XMBViewModel @Inject constructor(
             if (renameId != null) {
                 collectionRepository.rename(renameId, name)
             } else {
-                // A collection created from a collection-rendering category (gaming, Network,
-                // App Store, custom) is homed there; other contexts default to Main Game.
-                val id = collectionRepository.create(name, collectionHomeCategoryId())
+                // The dialog's own home when the opener chose one (an app from the Android column
+                // goes to App Store; a category's menu uses that category). Otherwise a
+                // collection-rendering category is the home and other contexts use Main Game.
+                val id = collectionRepository.create(name, dialog.homeCategoryId ?: collectionHomeCategoryId())
                 dialog.forGameId?.let { collectionRepository.addGame(id, it) }
                 dialog.forGameIds.forEach { collectionRepository.addGame(id, it) }
                 if (dialog.forGameIds.isNotEmpty()) exitMarkMode()
@@ -8100,9 +8142,11 @@ class XMBViewModel @Inject constructor(
                 it.copy(infoDialog = InfoDialogState(title = game.displayTitle, message = message))
             }
             if (!achievementCredentials.goldbergInstallerEnabled()) {
+                // Nothing about the game is checked on this path, so the message says only what
+                // is known: the installer is off (survey U14).
                 info(
-                    "No proper achievements.json for this game. Turn on \"Install Goldberg & " +
-                        "Convert Games\" in Achievement settings to generate one.",
+                    "Installing Goldberg achievements is turned off. Turn on \"Install Goldberg & " +
+                        "Convert Games\" in Settings ▸ Achievements ▸ Local Windows, then try again.",
                 )
                 return@launch
             }
@@ -9923,7 +9967,7 @@ class XMBViewModel @Inject constructor(
         when (item.type) {
             XMBItemType.SOCIAL_ADD -> {
                 menuSound.play(MenuSound.SELECT)
-                _uiState.update { it.copy(activeDiscordLogin = true) }
+                _uiState.update { it.copy(activeDiscordLogin = true, discordLoginConfirms = 0) }
             }
             XMBItemType.SOCIAL_SIGNOUT -> {
                 menuSound.play(MenuSound.SELECT)
@@ -9965,7 +10009,7 @@ class XMBViewModel @Inject constructor(
 
     /** Called by the shell when the QR login overlay closes (connected or cancelled). */
     fun onDiscordLoginClosed() {
-        _uiState.update { it.copy(activeDiscordLogin = false) }
+        _uiState.update { it.copy(activeDiscordLogin = false, discordLoginConfirms = 0) }
         // Broadcast the opt-in presence if the user just connected and has sharing on (no-op otherwise).
         viewModelScope.launch { discordPresence.refresh() }
         loadItemsForCategory(currentCategory())
@@ -11173,11 +11217,14 @@ class XMBViewModel @Inject constructor(
         _uiState.update { it.copy(pendingConfirm = null) }
         when (confirm) {
             is XmbConfirm.RemoveGame -> appAction { removeGameFromLibrary(confirm.gameId) }
+            is XmbConfirm.RemoveAppRow -> appAction { removeGameFromLibrary(confirm.gameId) }
             // Reuses the standard removal: deletes the row, recounts the card; the file is
             // untouched and a later scan re-discovers it.
             is XmbConfirm.RemoveMissing -> appAction { removeGameFromLibrary(confirm.gameId) }
             is XmbConfirm.DeleteCard -> appAction {
                 collectionRepository.delete(confirm.collectionId)
+                // The card's own image goes with it.
+                com.playfieldportal.core.ui.icons.UserCardIconKeys.keyFor(confirm.collectionId)?.let { customIconStore.clear(it) }
                 if (_uiState.value.selectedCollectionId == confirm.collectionId) closePlatformFolder()
             }
             is XmbConfirm.RemoveFromCategory -> appAction {
@@ -12030,7 +12077,7 @@ internal fun forwardsToSettings(action: GamepadAction): Boolean = when (action) 
     GamepadAction.NEXT_CATEGORY,
     GamepadAction.SELECT -> true
     // HOME is the shell's; Shift and Caps belong to the virtual keyboard, which takes them first.
-    GamepadAction.HOME, GamepadAction.SHIFT, GamepadAction.CAPS_LOCK -> false
+    GamepadAction.HOME, GamepadAction.SHIFT, GamepadAction.CAPS_LOCK, GamepadAction.CATEGORY_MENU -> false
 }
 
 /** True when the open virtual keyboard took [action] — every press, while one is open. */

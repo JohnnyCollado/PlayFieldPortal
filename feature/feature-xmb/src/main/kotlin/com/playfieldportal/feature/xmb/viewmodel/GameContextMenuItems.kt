@@ -144,7 +144,7 @@ internal fun gameContextMenuItems(
             // not only in the app lists: a demoted row keeps its card memberships, so a custom
             // card is where it is most often seen.
             add(XMBContextMenuItem("mark_game", "Mark as Game"))
-            if (!inCollection) add(XMBContextMenuItem("remove_game", "Remove from Library", isDestructive = true))
+            if (!inCollection) add(XMBContextMenuItem("remove_app_row", "Remove from Library", isDestructive = true))
         } else if (item.platformId == XMBViewModel.ANDROID_PLATFORM_ID && item.packageName != null && !inCollection) {
             add(XMBContextMenuItem("unmark_game", "Unmark as Game"))
             add(XMBContextMenuItem("remove_app", "Remove from Library", isDestructive = true))

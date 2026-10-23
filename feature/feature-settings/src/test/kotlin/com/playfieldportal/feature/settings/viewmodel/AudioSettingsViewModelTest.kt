@@ -25,6 +25,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -328,5 +329,24 @@ class AudioSettingsViewModelTest {
         vm.confirmReset()
         advanceUntilIdle()
         verify { menuSound.play(MenuSound.CONFIRM) }
+    }
+
+    // Survey L27 (docs/audits/codebase-survey-2026-10-22.md): an import that threw left the
+    // progress state on for good — the busy indicator never cleared.
+    @Test fun `an import that throws clears the busy state and says it failed`() = runTest(dispatcher) {
+        val throwing = io.mockk.spyk(store)
+        io.mockk.coEvery { throwing.import(any(), any()) } throws java.io.IOException("provider went away")
+        val vm2 = AudioSettingsViewModel(
+            context, throwing, menuSound, AudioLevelStore(context),
+            ControllerLayoutRepository(context, ControllerMappingRepository(context)), ambience,
+        )
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm2.uiState.collect {} }
+
+        vm2.onPickerLaunchedFor(com.playfieldportal.core.domain.model.UiMediaSlot.SOUND_CONFIRM)
+        vm2.onSoundPicked(android.net.Uri.parse("content://media/sound.ogg"))
+        advanceUntilIdle()
+
+        val state = vm2.uiState.first { !it.importing && it.message != null }
+        assertEquals(false, state.importing)
     }
 }

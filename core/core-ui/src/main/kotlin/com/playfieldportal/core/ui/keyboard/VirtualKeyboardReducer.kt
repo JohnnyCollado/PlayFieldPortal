@@ -70,6 +70,8 @@ object VirtualKeyboardReducer {
         GamepadAction.NAVIGATE_RIGHT -> move(state, NavigationDirection.RIGHT)
         GamepadAction.SELECT         -> press(state)
         GamepadAction.CHANGE_SORT    -> edit(state, state.buffer.backspace())
+        // Select's own action: on the keyboard it keeps the backspace it had as a sort key.
+        GamepadAction.CATEGORY_MENU  -> edit(state, state.buffer.backspace())
         GamepadAction.OPEN_CONTEXT_MENU -> edit(state, state.buffer.insert(" "))
         GamepadAction.PREV_CATEGORY  -> caret(state, state.buffer.caretLeft())
         GamepadAction.NEXT_CATEGORY  -> caret(state, state.buffer.caretRight())

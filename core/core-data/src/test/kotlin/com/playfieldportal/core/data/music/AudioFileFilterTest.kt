@@ -58,4 +58,13 @@ class AudioFileFilterTest {
         assertFalse(AudioFileFilter.isPlaylist("song.mp3"))
         assertFalse(AudioFileFilter.isPlaylist("song"))
     }
+
+    // Survey L20 (docs/audits/codebase-survey-2026-10-22.md): some providers report audio as
+    // application/octet-stream; that says nothing, so the extension decides, as the video filter does.
+    @Test
+    fun `an octet-stream type falls back to the extension`() {
+        assertTrue(AudioFileFilter.isAudio("song.flac", "application/octet-stream"))
+        assertTrue(AudioFileFilter.isAudio("song.opus", "application/octet-stream"))
+        assertFalse(AudioFileFilter.isAudio("readme.txt", "application/octet-stream"))
+    }
 }

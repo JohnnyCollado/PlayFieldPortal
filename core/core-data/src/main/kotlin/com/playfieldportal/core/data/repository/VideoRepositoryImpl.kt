@@ -37,9 +37,6 @@ class VideoRepositoryImpl @Inject constructor(
     override fun observeLibraries(): Flow<List<VideoLibrary>> =
         libraryDao.observeAll().map { list -> list.map { it.toDomain() } }
 
-    override fun observeEnabledLibraries(): Flow<List<VideoLibrary>> =
-        libraryDao.observeEnabled().map { list -> list.map { it.toDomain() } }
-
     override suspend fun getLibraries(): List<VideoLibrary> =
         libraryDao.getAll().map { it.toDomain() }
 
@@ -72,9 +69,6 @@ class VideoRepositoryImpl @Inject constructor(
     override suspend fun setLibraryEnabled(id: String, enabled: Boolean) =
         libraryDao.setEnabled(id, enabled, System.currentTimeMillis())
 
-    override suspend fun setLibraryArtwork(id: String, artworkUri: String?) =
-        libraryDao.setArtwork(id, artworkUri, System.currentTimeMillis())
-
     override suspend fun removeLibrary(id: String) {
         // Capture thumbnail uris (generated + custom) before the rows go, so their cached files
         // can be forgotten too.
@@ -83,6 +77,8 @@ class VideoRepositoryImpl @Inject constructor(
         // identical whether or not foreign keys are enforced on the connection.
         videoDao.deleteForLibrary(id)
         libraryDao.delete(id)
+        // The library's videos are gone on purpose, so their playlist rows go too (survey L10).
+        playlistDao.deleteOrphanedItems()
         deleteOrphanedThumbnails(thumbs) { videoDao.countReferencingThumbnail(it) > 0 }
         Timber.i("Video library removed: $id")
     }

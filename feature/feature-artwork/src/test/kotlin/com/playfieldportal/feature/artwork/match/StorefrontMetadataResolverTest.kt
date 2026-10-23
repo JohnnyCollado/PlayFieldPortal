@@ -29,8 +29,6 @@ class StorefrontMetadataResolverTest {
 
         override suspend fun forGame(gameId: Long) = rows.values.filter { it.gameId == gameId }
         override suspend fun get(gameId: Long, store: String) = rows[gameId to store]
-        override suspend fun byStoreId(store: String, storeId: String) =
-            rows.values.filter { it.store == store && it.storeId == storeId }
         override suspend fun upsert(identity: GameStorefrontIdentityEntity) {
             rows[identity.gameId to identity.store] = identity
         }

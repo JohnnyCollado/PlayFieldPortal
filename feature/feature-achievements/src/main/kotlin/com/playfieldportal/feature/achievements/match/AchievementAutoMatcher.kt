@@ -143,55 +143,6 @@ class AchievementAutoMatcher @Inject constructor(
         }
     }
 
-    /** Outcome of the explicit per-game Local Steam match, so the UI can say what to fix. */
-    sealed interface LocalSteamMatchResult {
-        data object Matched : LocalSteamMatchResult
-        /** No emu-marked folders at all — the kit isn't set up (or tracking is off). */
-        data object NoEmuFolders : LocalSteamMatchResult
-        /** Folders exist but none maps to this game's name — a rename fixes it. */
-        data class NoNameMatch(val folderNames: List<String>) : LocalSteamMatchResult
-    }
-
-    /**
-     * Single-game Auto-Match for a non-Steam copy: emu-marked game folders only, linking
-     * LOCAL_STEAM from the matching folder's own appid. Because this is an explicit action on
-     * ONE game, the ladder is wider than the bulk reconcile's exact-name rule: the folder
-     * appid's official Steam name, then a containment match when it singles out exactly one
-     * folder (e.g. "Resonance of Fate" against "RESONANCE OF FATE 4K_HD EDITION").
-     */
-    suspend fun matchSingleAsLocalSteam(gameId: Long): LocalSteamMatchResult {
-        val game = gameRepository.getById(gameId) ?: return LocalSteamMatchResult.NoEmuFolders
-        emuFolderCache = null   // fresh discovery — the singleton outlives folder changes
-        val folders = emuFolders()
-        if (folders.isEmpty()) return LocalSteamMatchResult.NoEmuFolders
-        val titles = steamTitleCandidates(game).map { normalizePc(it) }.filter { it.isNotEmpty() }
-
-        // 1 — exact normalized name equality (the bulk reconcile's rule).
-        var folder = folders.firstOrNull { normalizePc(it.folderName) in titles }
-
-        // 2 — Steam-name bridge: the folder's own appid resolved to its official store name.
-        if (folder == null) {
-            folder = folders.firstOrNull { f ->
-                steamNames.officialNameOf(f.appId)?.let { normalizePc(it) in titles } == true
-            }
-        }
-
-        // 3 — containment, only when it singles out exactly one folder. The bulk pass must
-        // never guess, but a unique superset/subset name on a user-picked game is unambiguous.
-        if (folder == null) {
-            folder = folders.filter { f ->
-                val name = normalizePc(f.folderName)
-                // Empty normalized names (symbol-only folders) would contain-match every title.
-                name.isNotEmpty() && titles.any { name.contains(it) || it.contains(name) }
-            }.singleOrNull()
-        }
-
-        if (folder == null) return LocalSteamMatchResult.NoNameMatch(folders.map { it.folderName })
-        repository.linkManually(game.id, AchievementProvider.LOCAL_STEAM, folder.appId)
-        localSteamOwnership.classify(game.id, folder.appId)
-        return LocalSteamMatchResult.Matched
-    }
-
     private suspend fun matchOne(game: Game): Outcome {
         if (game.platformId == "windows") return matchWindows(game)
         // PS3 games link from the trophy set id the disc itself declares, never from a hash: RA

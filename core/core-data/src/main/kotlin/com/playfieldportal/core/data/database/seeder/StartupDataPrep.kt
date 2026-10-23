@@ -42,22 +42,21 @@ class StartupDataPrep @Inject constructor(
         val prefs = context.pfpDataStore.data.first()
         val alreadyPrepped = prefs[KEY_DATA_PREP_VERSION] == currentVersionCode
 
-        runCatching {
-            if (!alreadyPrepped) {
-                normalizeGameArtwork()
-                normalizeWallpaper()
-                // Retired key: a linked artwork folder is the storage mode now.
-                context.pfpDataStore.edit { it.remove(KEY_RETIRED_ARTWORK_STORAGE_MODE) }
-            }
-            // Deliberately OUTSIDE the version gate. The wallpaper luminance survey is a derived
-            // cache, not a one-shot migration: a backup restore re-homes the wallpaper path
-            // (BackupManager.remapWallpaper) while data_prep_version is NOT restored, so the
-            // marker still matches this install and gating on it would skip the one event most
-            // likely to have invalidated the survey.
-            healWallpaperLuma()
-        }.onFailure { Timber.e(it, "Startup data prep failed") }
+        val prepped = alreadyPrepped || runOneShotStep("Startup data prep") {
+            normalizeGameArtwork()
+            normalizeWallpaper()
+            // Retired key: a linked artwork folder is the storage mode now.
+            context.pfpDataStore.edit { it.remove(KEY_RETIRED_ARTWORK_STORAGE_MODE) }
+        }
+        // Deliberately OUTSIDE the version gate, and its own step so its failure never blocks the
+        // marker. The wallpaper luminance survey is a derived cache, not a one-shot migration: a
+        // backup restore re-homes the wallpaper path (BackupManager.remapWallpaper) while
+        // data_prep_version is NOT restored, so the marker still matches this install and gating
+        // on it would skip the one event most likely to have invalidated the survey.
+        runOneShotStep("Wallpaper luminance survey") { healWallpaperLuma() }
 
-        if (alreadyPrepped) return
+        // Only a finished pass is marked, so a failed one runs again next launch (survey L2).
+        if (alreadyPrepped || !prepped) return
         context.pfpDataStore.edit { it[KEY_DATA_PREP_VERSION] = currentVersionCode }
         Timber.i("Startup data prep complete for versionCode=$currentVersionCode")
     }
@@ -121,21 +120,30 @@ class StartupDataPrep @Inject constructor(
         context.pfpDataStore.edit { it.setWallpaperLuma(fresh) }
     }
 
-    // Returns the usable value for an internal-storage path: repointed onto filesDir, or null when
-    // the file is absent. Non-filesDir values (content URIs, shared-storage paths) pass through, and
-    // a value already pointing at an existing file is returned unchanged.
-    private fun resolve(path: String?, filesDirPath: String): String? {
-        if (path.isNullOrEmpty()) return path
-        val idx = path.indexOf(FILES_MARKER)
-        if (idx < 0) return path   // not an internal-storage path — leave it alone
-        val remapped = filesDirPath.trimEnd('/') + "/" + path.substring(idx + FILES_MARKER.length)
-        return if (File(remapped).exists()) remapped else null
-    }
+    private fun resolve(path: String?, filesDirPath: String): String? =
+        rehomeInternalPath(path, filesDirPath) { File(it).exists() }
 
     private companion object {
         val KEY_DATA_PREP_VERSION = intPreferencesKey("data_prep_version")
         val KEY_CUSTOM_WALLPAPER  = ThemePrefKeys.CUSTOM_WALLPAPER
         val KEY_RETIRED_ARTWORK_STORAGE_MODE = stringPreferencesKey("artwork_storage_mode")
-        const val FILES_MARKER = "/files/"
     }
 }
+
+/**
+ * The usable value for a stored path: an app-private path (`/data/user/<n>/<pkg>/files/…` or
+ * `/data/data/<pkg>/files/…`) is repointed onto [filesDirPath], or null when that file is absent;
+ * everything else (content URIs, shared storage) passes through untouched. Only app-private roots
+ * are rewritten, because a shared-storage path that happens to contain "/files/" is not ours to
+ * move (survey L21, docs/audits/codebase-survey-2026-10-22.md).
+ */
+internal fun rehomeInternalPath(path: String?, filesDirPath: String, exists: (String) -> Boolean): String? {
+    if (path.isNullOrEmpty()) return path
+    if (!APP_PRIVATE_FILES.containsMatchIn(path)) return path
+    val idx = path.indexOf(FILES_MARKER)
+    val remapped = filesDirPath.trimEnd('/') + "/" + path.substring(idx + FILES_MARKER.length)
+    return if (exists(remapped)) remapped else null
+}
+
+private const val FILES_MARKER = "/files/"
+private val APP_PRIVATE_FILES = Regex("""^(file://)?/data/(user/\d+|data)/[^/]+/files/""")

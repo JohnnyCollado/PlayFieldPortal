@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.settings.ui
 
+import androidx.compose.ui.platform.testTag
+import androidx.compose.foundation.combinedClickable
 import com.playfieldportal.core.ui.components.PfpChoiceOption
 import com.playfieldportal.core.ui.components.PfpModalSpec
 import android.net.Uri
@@ -402,6 +404,7 @@ private fun ThemesSettingsContent(
                             onDelete     = { id -> pendingDelete = state.savedThemes.firstOrNull { it.id == id } },
                             onShare      = onShareSavedTheme,
                             onUpdate     = onUpdateThemeFile,
+                            onOpenMenu   = { id -> state.savedThemes.firstOrNull { it.id == id }?.let { openMenuForSavedTheme(it) } },
                         )
                     }
                 }
@@ -581,7 +584,17 @@ private fun FocusableStrip(
 
 
 @Composable
-internal fun SavedThemeCardRow(themes: List<PfpThemeStore.SavedTheme>, focusedIndex: Int? = null, onApply: (String) -> Unit, onDelete: (String) -> Unit, onShare: (String) -> Unit, onUpdate: (String) -> Unit) {
+internal fun SavedThemeCardRow(
+    themes: List<PfpThemeStore.SavedTheme>,
+    focusedIndex: Int? = null,
+    onApply: (String) -> Unit,
+    onDelete: (String) -> Unit,
+    onShare: (String) -> Unit,
+    onUpdate: (String) -> Unit,
+    // A long press opens the card's menu (Rename Theme and the rest), the touch twin of Triangle;
+    // that menu was pad-only before (survey P5).
+    onOpenMenu: (String) -> Unit = {},
+) {
     // Hand-rolled tap targets rather than settings rows, so they carry their own cues. Applying a
     // theme repaints the whole launcher and Delete Theme asks to delete a saved one: both are commits, not
     // descents, so they take the confirm cue. Share hands off to another app, which is an ordinary
@@ -606,7 +619,7 @@ internal fun SavedThemeCardRow(themes: List<PfpThemeStore.SavedTheme>, focusedIn
         itemsIndexed(themes) { index, theme ->
             val cardFocused = focusedIndex == index
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(modifier = Modifier.size(width = 168.dp, height = 96.dp).clip(RoundedCornerShape(10.dp)).background(Color(theme.accentArgb?.let { it and 0xFFFFFFFFL } ?: 0xFF20304AL)).border(width = if (cardFocused) 3.dp else 1.dp, color = if (cardFocused) SettingsAccent else Color(0x55FFFFFF), shape = RoundedCornerShape(10.dp)).clickable { menuSounds.play(MenuSound.CONFIRM); onApply(theme.id) }) {
+                Box(modifier = Modifier.size(width = 168.dp, height = 96.dp).clip(RoundedCornerShape(10.dp)).background(Color(theme.accentArgb?.let { it and 0xFFFFFFFFL } ?: 0xFF20304AL)).border(width = if (cardFocused) 3.dp else 1.dp, color = if (cardFocused) SettingsAccent else Color(0x55FFFFFF), shape = RoundedCornerShape(10.dp)).testTag("saved_theme_card_${theme.id}").combinedClickable(onLongClick = { menuSounds.play(MenuSound.SELECT); onOpenMenu(theme.id) }) { menuSounds.play(MenuSound.CONFIRM); onApply(theme.id) }) {
                     theme.previewPath?.let { path -> AsyncImage(model = path, contentDescription = theme.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
                     theme.accentArgb?.let { accent -> Box(modifier = Modifier.padding(6.dp).size(14.dp).clip(CircleShape).background(Color(accent and 0xFFFFFFFFL)).border(1.dp, Color(0x88FFFFFF), CircleShape).align(Alignment.TopEnd)) }
                     if (theme.isOlderFormat) {

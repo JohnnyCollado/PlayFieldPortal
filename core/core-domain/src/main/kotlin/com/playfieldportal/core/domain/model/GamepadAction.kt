@@ -37,6 +37,13 @@ enum class GamepadAction {
     SHIFT,
     /** Caps Lock on PFP's virtual keyboard (R3 by default). */
     CAPS_LOCK,
+    /**
+     * The focused category's menu (Rename, Change Icon, Show on Bar, Move, New Custom Card…) —
+     * what a long-press on a category icon opens, which a pad could not otherwise reach. Select
+     * by default; anywhere the category menu cannot open, it acts as [CHANGE_SORT], the role
+     * Select had before.
+     */
+    CATEGORY_MENU,
 }
 
 /** True for the four directional navigation actions (D-pad / stick movement). */

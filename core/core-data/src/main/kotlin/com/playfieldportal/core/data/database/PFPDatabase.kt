@@ -18,7 +18,6 @@ import com.playfieldportal.core.data.database.dao.CollectionDao
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.dao.GameStorefrontIdentityDao
 import com.playfieldportal.core.data.database.dao.LaunchOutcomeDao
-import com.playfieldportal.core.data.database.dao.LibrarySourceDao
 import com.playfieldportal.core.data.database.dao.LocalSteamFolderDao
 import com.playfieldportal.core.data.database.dao.MemoryCardDao
 import com.playfieldportal.core.data.database.dao.MusicFolderDao
@@ -29,11 +28,9 @@ import com.playfieldportal.core.data.database.dao.PlaySessionDao
 import com.playfieldportal.core.data.database.dao.ProviderGameLinkDao
 import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.dao.ThemeDao
-import com.playfieldportal.core.data.database.dao.UnmatchedRomDao
 import com.playfieldportal.core.data.database.dao.HiddenPlacementDao
 import com.playfieldportal.core.data.database.dao.PhotoDao
 import com.playfieldportal.core.data.database.dao.PhotoLibraryDao
-import com.playfieldportal.core.data.database.dao.ScanTombstoneDao
 import com.playfieldportal.core.data.database.dao.SteamOwnedGamesDao
 import com.playfieldportal.core.data.database.dao.SsMediaCacheDao
 import com.playfieldportal.core.data.database.dao.VideoDao
@@ -137,8 +134,6 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun platformDao(): PlatformDao
     abstract fun categoryDao(): CategoryDao
     abstract fun playSessionDao(): PlaySessionDao
-    abstract fun librarySourceDao(): LibrarySourceDao
-    abstract fun unmatchedRomDao(): UnmatchedRomDao
     abstract fun themeDao(): ThemeDao
     abstract fun memoryCardDao(): MemoryCardDao
     abstract fun appOverrideDao(): AppOverrideDao
@@ -152,7 +147,6 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun hiddenPlacementDao(): HiddenPlacementDao
     abstract fun photoLibraryDao(): PhotoLibraryDao
     abstract fun photoDao(): PhotoDao
-    abstract fun scanTombstoneDao(): ScanTombstoneDao
     abstract fun backupDao(): BackupDao
     abstract fun artworkRecordDao(): ArtworkRecordDao
     abstract fun artworkImportReportDao(): ArtworkImportReportDao

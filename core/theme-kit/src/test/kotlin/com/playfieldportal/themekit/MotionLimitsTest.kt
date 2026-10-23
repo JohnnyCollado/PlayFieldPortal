@@ -35,10 +35,10 @@ class MotionLimitsTest {
     @Test
     fun `unsupported mime names the accepted formats`() {
         val error = MotionLimits.validate(ok.copy(mime = "video/x-msvideo"))
-        assertEquals("Unsupported format — use MP4, WebM, or GIF", error)
+        assertEquals("Unsupported format — use MP4, WebM, GIF or WebP", error)
         // Static-image-only formats are rejected too — a still belongs to the plain wallpaper path.
         assertEquals(
-            "Unsupported format — use MP4, WebM, or GIF",
+            "Unsupported format — use MP4, WebM, GIF or WebP",
             MotionLimits.validate(ok.copy(mime = "image/png")),
         )
     }
@@ -46,7 +46,7 @@ class MotionLimitsTest {
     @Test
     fun `missing mime is rejected`() {
         val error = MotionLimits.validate(ok.copy(mime = null))
-        assertEquals("Unsupported format — use MP4, WebM, or GIF", error)
+        assertEquals("Unsupported format — use MP4, WebM, GIF or WebP", error)
     }
 
     @Test

@@ -182,6 +182,11 @@ class SteamRemoteDataSource @Inject constructor(
         }
         if (player.code() == 401) return SteamPlayerResult.MissingCredentials
         if (stats == null) return SteamPlayerResult.Failed("Steam returned ${player.code()}")
+        // Any other error body is a failed read, not "nothing earned": treating it as Success
+        // wrote an empty map over every stored unlock (survey L5). A failure keeps what is stored.
+        if (!stats.success) {
+            return SteamPlayerResult.Failed(stats.error ?: "Steam returned ${player.code()} without stats")
+        }
         return SteamPlayerResult.Success(stats.achievements.associateBy { it.apiname })
     }
 

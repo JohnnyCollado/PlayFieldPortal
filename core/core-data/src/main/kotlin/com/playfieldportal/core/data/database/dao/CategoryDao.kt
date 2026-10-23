@@ -35,6 +35,13 @@ interface CategoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(category: CategoryEntity)
 
+    /**
+     * A brand-new row. ABORT, never REPLACE: a REPLACE on a colliding id deletes the existing
+     * category and cascades away its items (survey L4, docs/audits/codebase-survey-2026-10-22.md).
+     */
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertNew(category: CategoryEntity)
+
     @Update
     suspend fun update(category: CategoryEntity)
 

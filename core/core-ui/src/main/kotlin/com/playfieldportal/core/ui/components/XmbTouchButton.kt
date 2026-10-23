@@ -70,26 +70,6 @@ fun XmbTouchButton(
     )
 }
 
-/** Back button — "◀" glyph in the shared themed frame. */
-@Composable
-fun XmbBackTouchButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    size: Dp = 52.dp,
-) {
-    XmbTouchButton(onClick = onClick, modifier = modifier, size = size) {
-        if (!MenuGlyphOverride(MENU_BACK_KEY, 24.dp, "Back")) {
-            Text(
-                text = "◀",
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                style = TextStyle(shadow = XmbGlyphShadow),
-            )
-        }
-    }
-}
-
 /**
  * Options button — the vertical kebab ("three dots") in the shared themed frame.
  *
@@ -170,37 +150,6 @@ fun XmbHeaderPill(
     }
 }
 
-/**
- * Wide pill variant for header rows (Back / Sort / Options labels). Same transparent-plus-ring
- * treatment as [XmbTouchButton] but sized to its label.
- */
-@Composable
-fun XmbTouchPill(
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    leadingGlyph: String? = null,
-) {
-    val accent = LocalPFPColors.current.accentColor
-    Box(
-        modifier = modifier
-            .height(40.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .border(1.5.dp, accent.copy(alpha = 0.7f), RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = if (leadingGlyph != null) "$leadingGlyph  $label" else label,
-            color = Color.White,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            style = TextStyle(shadow = XmbGlyphShadow),
-        )
-    }
-}
-
 // ── Previews ──────────────────────────────────────────────────────────────────
 
 @CombinedPreviews
@@ -211,8 +160,6 @@ fun XmbTouchButtonPreview() {
             XmbTouchButton(onClick = {}) {
                 Text("A", color = Color.White)
             }
-            Spacer(Modifier.width(12.dp))
-            XmbBackTouchButton(onClick = {})
             Spacer(Modifier.width(12.dp))
             XmbKebabTouchButton(onClick = {})
         }
@@ -227,8 +174,6 @@ fun XmbPillPreview() {
             XmbHeaderPill(label = "Options", onClick = {}, leadingGlyph = "⋮")
             Spacer(Modifier.height(12.dp))
             XmbHeaderPill(label = "Back", onClick = {}, leadingGlyph = "◀", focused = true)
-            Spacer(Modifier.height(12.dp))
-            XmbTouchPill(label = "Sort by Name", onClick = {}, leadingGlyph = "⇵")
         }
     }
 }

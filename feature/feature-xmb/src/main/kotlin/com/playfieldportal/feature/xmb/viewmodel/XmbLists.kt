@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.core.data.repository.CategoryRepositoryImpl
+import com.playfieldportal.core.domain.model.showsCustomCards
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.ListArrangement
@@ -111,20 +113,24 @@ internal fun canonicalXmbCategories(categories: List<Category>, fallback: List<C
     return (builtIns + customCategories).sortedBy { it.position }
 }
 
-// Categories with their own dedicated layout — these never render custom memory cards and are
-// not arrangeable at their root (media/system sections own their layouts).
-internal val NON_COLLECTION_CATEGORY_IDS = setOf(
-    BuiltInCategory.MUSIC, BuiltInCategory.VIDEO, BuiltInCategory.PHOTO, BuiltInCategory.ANDROID,
-    BuiltInCategory.APP_DRAWER, BuiltInCategory.SETTINGS, BuiltInCategory.ACHIEVEMENTS,
-    BuiltInCategory.SOCIAL,
-)
+/** True for categories that render custom memory cards; the rule lives with [Category] so
+ *  Settings offers the same places (see [showsCustomCards]). */
+internal fun categoryShowsCollections(category: Category?): Boolean =
+    category?.showsCustomCards() == true
 
-/** True for categories that render custom memory cards: gaming categories, and the generic app
- *  categories (Network / App Store / custom non-gaming). */
-internal fun categoryShowsCollections(category: Category?): Boolean {
-    if (category == null) return false
-    return category.isGamingCategory || category.id !in NON_COLLECTION_CATEGORY_IDS
-}
+/**
+ * The category a card made from Add to Card ▸ "New Custom Card Here…" belongs to. A column that
+ * shows cards is the home, whatever the item. From one that does not (the Android column, media),
+ * an app's card goes to App Store and a game's to Main Game — before, both went to Main Game, so an
+ * app ended up on a game card (survey L30, docs/audits/codebase-survey-2026-10-22.md).
+ */
+internal fun newCardHome(current: Category?, itemIsApp: Boolean): String =
+    current?.takeIf { it.showsCustomCards() }?.id
+        ?: if (itemIsApp) CategoryRepositoryImpl.collectionHomeFor(isGamingCategory = false) else BuiltInCategory.GAMES
+
+/** Whether Add to Card lists game cards (true) or app cards (false); see [newCardHome]. */
+internal fun wantsGamingCards(current: Category?, itemIsApp: Boolean): Boolean =
+    current?.takeIf { it.showsCustomCards() }?.isGamingCategory ?: !itemIsApp
 
 /** The stored list the screen is showing, or null when what is on screen cannot be arranged. */
 internal fun XMBUiState.currentListKey(): String? {

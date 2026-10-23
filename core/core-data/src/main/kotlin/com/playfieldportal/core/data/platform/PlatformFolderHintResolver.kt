@@ -276,6 +276,10 @@ class PlatformFolderHintResolver @Inject constructor() {
         "scummvm"                   to "scummvm",
     )
 
+    private companion object {
+        const val PSP_GAME_FOLDER = "game"
+    }
+
     // Walk path segments from deepest to shallowest and return the first match.
     // Returns null if no folder name maps to a known platform.
     fun detectFromPath(filePath: String): String? {
@@ -287,7 +291,10 @@ class PlatformFolderHintResolver @Inject constructor() {
             .filter { it.isNotEmpty() }
             .reversed()    // deepest first
 
-        for (segment in segments) {
+        for ((index, segment) in segments.withIndex()) {
+            // "game" is PPSSPP's /PSP/GAME/ and means PSP only directly under a PSP folder;
+            // anywhere else it is just a folder name, so keep looking up (survey L24).
+            if (segment == PSP_GAME_FOLDER && segments.getOrNull(index + 1) != "psp") continue
             hints[segment]?.let { return it }
         }
         return null

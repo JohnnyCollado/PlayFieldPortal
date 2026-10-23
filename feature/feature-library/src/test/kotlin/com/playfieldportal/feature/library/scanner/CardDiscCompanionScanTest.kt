@@ -1,6 +1,5 @@
 package com.playfieldportal.feature.library.scanner
 
-import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
 import io.mockk.every
 import io.mockk.mockk
 import java.io.File
@@ -31,9 +30,7 @@ class CardDiscCompanionScanTest {
 
     private val scanner = RomScanner(
         context = mockk(relaxed = true),
-        platformExtensionMap = mockk(relaxed = true),
-        discImageResolver = DiscImageResolver(PlatformFolderHintResolver()),
-        folderHintResolver = PlatformFolderHintResolver(),
+        discImageResolver = DiscImageResolver(),
         arcadeRomsets = arcadeRomsets,
         discSetBuilder = DiscSetBuilder(),
         discCompanionSuppressor = DiscCompanionSuppressor(),

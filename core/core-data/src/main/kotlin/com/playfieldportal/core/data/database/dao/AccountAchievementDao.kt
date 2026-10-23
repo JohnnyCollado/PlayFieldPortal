@@ -83,7 +83,7 @@ interface AccountAchievementDao {
     // provider reported no rarity are stored with a negative sentinel and excluded — unknown
     // rarity can't rank. GROUP BY collapses multi-link duplicates.
     @Query(
-        "SELECT MIN(l.game_id) AS library_game_id, COALESCE(g.title, s.title) AS game_title, " +
+        "SELECT MIN(l.game_id) AS library_game_id, COALESCE(g.user_title_override, g.scraped_title, g.title, s.title) AS game_title, " +
             "a.title AS title, a.tier AS tier, " +
             "a.global_rarity AS global_rarity, a.icon_url AS icon_url " +
             "FROM account_achievements a " +
@@ -102,7 +102,7 @@ interface AccountAchievementDao {
     // recorded unlock time qualify — an imported unlock with no timestamp can't rank by recency.
     // GROUP BY collapses multi-link duplicates.
     @Query(
-        "SELECT MIN(l.game_id) AS library_game_id, COALESCE(g.title, s.title) AS game_title, " +
+        "SELECT MIN(l.game_id) AS library_game_id, COALESCE(g.user_title_override, g.scraped_title, g.title, s.title) AS game_title, " +
             "a.title AS title, a.tier AS tier, a.icon_url AS icon_url, MAX(a.earned_at) AS earned_at, " +
             "MAX(a.global_rarity) AS global_rarity " +
             "FROM account_achievements a " +

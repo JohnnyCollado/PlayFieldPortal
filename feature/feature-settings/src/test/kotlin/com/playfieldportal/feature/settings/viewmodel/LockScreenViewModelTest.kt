@@ -107,9 +107,19 @@ class LockScreenViewModelTest {
 
     @Test
     fun `reset clears it`() {
+        coEvery { lockScreen.clear() } returns true
         vm().reset()
 
         awaitReport(NotificationSeverity.SUCCESS)
         coVerify { lockScreen.clear() }
+    }
+
+    // Survey L25: a failed reset said "reset to the device default".
+    @Test
+    fun `a reset the device refuses is reported as an error`() {
+        coEvery { lockScreen.clear() } returns false
+        vm().reset()
+
+        awaitReport(NotificationSeverity.ERROR)
     }
 }

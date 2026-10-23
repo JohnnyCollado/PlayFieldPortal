@@ -80,20 +80,7 @@ fun AchievementsSettingsScreen(
                 },
                 onCancel = { showLocalSteamWarning = false },
             )
-            showGoldbergWarning -> PfpModalSpec.Confirm(
-                key = "goldberg_warning",
-                title = "Back up your save files first",
-                message = "Before you convert any game, open your Windows emulator and back up the " +
-                    "save files for any Steam-emulated games you already set up.\n\n" +
-                    "Converting rewrites each game's emulator config and replaces its Steam " +
-                    "files so unlocks can be recorded. A game you set up and played before " +
-                    "this feature could otherwise lose access to its existing saves.\n\n" +
-                    "This also uses your own Steam Web API key to read achievement data — " +
-                    "use it at your own risk. Leave this off if you'd rather not accept " +
-                    "these risks.\n\n" +
-                    "Back up first, then turn this on and scan your games.",
-                confirmLabel = "I've backed up — enable",
-                openOnCancel = true,
+            showGoldbergWarning -> goldbergWarningSpec(
                 onConfirm = {
                     viewModel.setGoldbergInstaller(true)
                     showGoldbergWarning = false
@@ -323,3 +310,25 @@ fun AchievementsSettingsScreen(
 
     modal.Content()
 }
+
+/**
+ * The save-backup warning that turning on the Goldberg installer always shows first — here and in
+ * Library Manager, which calls itself the same switch (survey U32). Opens on Cancel.
+ */
+internal fun goldbergWarningSpec(onConfirm: () -> Unit, onCancel: () -> Unit): PfpModalSpec.Confirm = PfpModalSpec.Confirm(
+    key = "goldberg_warning",
+    title = "Back up your save files first",
+    message = "Before you convert any game, open your Windows emulator and back up the " +
+            "save files for any Steam-emulated games you already set up.\n\n" +
+            "Converting rewrites each game's emulator config and replaces its Steam " +
+            "files so unlocks can be recorded. A game you set up and played before " +
+            "this feature could otherwise lose access to its existing saves.\n\n" +
+            "This also uses your own Steam Web API key to read achievement data — " +
+            "use it at your own risk. Leave this off if you'd rather not accept " +
+            "these risks.\n\n" +
+            "Back up first, then turn this on and scan your games.",
+    confirmLabel = "I've backed up — enable",
+    openOnCancel = true,
+    onConfirm = onConfirm,
+    onCancel = onCancel,
+)

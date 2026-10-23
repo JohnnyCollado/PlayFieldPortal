@@ -4,7 +4,11 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performTouchInput
+import org.junit.Assert.assertEquals
 import com.playfieldportal.core.data.repository.PfpThemeStore
 import org.junit.Rule
 import org.junit.Test
@@ -39,8 +43,11 @@ class ThemesSavedThemeStripTest {
             onDelete = {},
             onShare = {},
             onUpdate = {},
+            onOpenMenu = { menus += it },
         )
     }
+
+    private val menus = mutableListOf<String>()
 
     @Test
     fun `the last card is off-screen until the cursor reaches it`() {
@@ -70,5 +77,16 @@ class ThemesSavedThemeStripTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText("Theme 0").assertIsDisplayed()
+    }
+
+    // Survey P5 (docs/audits/codebase-survey-2026-10-22.md): the saved theme's menu (Rename Theme)
+    // opened only on Triangle, so a touch-only user could not rename a saved theme.
+    @Test
+    fun `a long press on a card opens its menu`() {
+        showStrip()
+
+        composeRule.onNodeWithTag("saved_theme_card_t0").performTouchInput { longClick() }
+
+        assertEquals(listOf("t0"), menus)
     }
 }

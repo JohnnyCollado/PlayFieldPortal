@@ -64,8 +64,9 @@ sealed interface PfpModalSpec {
     ) : PfpModalSpec
 
     /**
-     * Title, message, a short list of [options] of which exactly one is selected (the first, when
-     * it opens), and Cancel / Confirm. [onConfirm] receives the selected option's index.
+     * Title, message, a short list of [options] of which exactly one is selected ([initialSelected]
+     * when it opens, so a picker can open on the current choice), and Cancel / Confirm.
+     * [onConfirm] receives the selected option's index.
      */
     class Choice(
         override val key: Any,
@@ -75,6 +76,7 @@ sealed interface PfpModalSpec {
         val confirmLabel: String,
         val cancelLabel: String = "Cancel",
         val destructive: Boolean = false,
+        val initialSelected: Int = 0,
         val onConfirm: (Int) -> Unit,
         val onCancel: () -> Unit,
     ) : PfpModalSpec
@@ -192,7 +194,11 @@ fun rememberPfpModalHost(spec: PfpModalSpec?, showHints: Boolean = true): PfpMod
             },
         )
     }
-    var selected by remember(key) { mutableStateOf(0) }
+    var selected by remember(key) {
+        mutableStateOf(
+            (spec as? PfpModalSpec.Choice)?.let { it.initialSelected.coerceIn(0, (it.options.size - 1).coerceAtLeast(0)) } ?: 0,
+        )
+    }
     var text by remember(key) { mutableStateOf((spec as? PfpModalSpec.TextEntry)?.initial.orEmpty()) }
     val messageScroll = remember(key) { ScrollState(0) }
     // The detail sheets' own state: the diagnostic disclosure, the Results filter and list cursor,

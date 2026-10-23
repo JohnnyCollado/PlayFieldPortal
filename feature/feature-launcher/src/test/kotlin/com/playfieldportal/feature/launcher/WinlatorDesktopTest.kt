@@ -90,6 +90,17 @@ class WinlatorDesktopTest {
         assertEquals(false, WinlatorDesktop.isShared("/data/user/0/com.winlator.banner/files/imagefs/Game.desktop"))
     }
 
+    // Survey L12 (docs/audits/codebase-survey-2026-10-22.md): an app's own external folder
+    // (Android/data, Android/obb) is private to that app on Android 11+, so another Winlator fork
+    // cannot read a shortcut stored there and must not be offered for it.
+    @Test
+    fun `an app-specific external folder is not shared storage`() {
+        assertEquals(false, WinlatorDesktop.isShared("/storage/emulated/0/Android/data/com.winlator.banner/files/Game.desktop"))
+        assertEquals(false, WinlatorDesktop.isShared("/storage/1A2B-3C4D/Android/obb/com.winlator/Game.desktop"))
+        assertEquals(false, WinlatorDesktop.isShared("/storage/emulated/0/android/DATA/com.winlator/Game.desktop"))
+        assertEquals(true, WinlatorDesktop.isShared("/storage/emulated/0/Games/Android data notes/Game.desktop"))
+    }
+
     @Test
     fun `the export's Steam appid is read from its extra data`() {
         assertEquals("2658450", WinlatorDesktop.steamAppId(bannerlatorExport))

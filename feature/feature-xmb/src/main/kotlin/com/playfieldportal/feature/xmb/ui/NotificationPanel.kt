@@ -60,6 +60,7 @@ import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.xmb.viewmodel.NotificationPanelState
 import com.playfieldportal.feature.xmb.viewmodel.PanelSelection
+import com.playfieldportal.feature.xmb.viewmodel.notificationPanelPrompts
 import com.playfieldportal.feature.xmb.viewmodel.panelSelection
 import kotlinx.coroutines.delay
 
@@ -189,7 +190,7 @@ fun NotificationPanel(
                 // beside it — this pill always takes the lower slot.
                 .padding(bottom = HintPillBottomPadding, end = HintPillEndPadding),
         ) {
-            NotificationPanelHint(selection = panelSelection(rows, state.cursor))
+            NotificationPanelHint(selection = panelSelection(rows, state.cursor), hasHistory = history.isNotEmpty())
         }
     }
 }
@@ -398,20 +399,12 @@ private fun HistoryRow(
  *
  * Open is conditional on there being a history row under the cursor — a pill promising an action
  * that does nothing is worse than a smaller pill, and with only running work on screen the cursor
- * has nowhere to be. Options (the list menu) and Close are always true.
+ * has nowhere to be. Options (the list menu) only while there is history for it to act on;
+ * Close always (see notificationPanelPrompts).
  */
 @Composable
-private fun NotificationPanelHint(selection: PanelSelection) {
-    val items = buildList {
-        when (selection) {
-            PanelSelection.HISTORY -> add(ControllerPromptItem(GamepadAction.SELECT, "Open"))
-            PanelSelection.RUNNING -> add(ControllerPromptItem(GamepadAction.SELECT, "Stop"))
-            PanelSelection.NONE -> Unit
-        }
-        add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
-        add(ControllerPromptItem(GamepadAction.BACK, "Close"))
-    }
-    ControllerHintBar(items = items, arrangement = Arrangement.spacedBy(12.dp))
+private fun NotificationPanelHint(selection: PanelSelection, hasHistory: Boolean) {
+    ControllerHintBar(items = notificationPanelPrompts(selection, hasHistory), arrangement = Arrangement.spacedBy(12.dp))
 }
 
 /** The circular-ring look of the icon set at list scale: a thin ring around a single-weight glyph. */

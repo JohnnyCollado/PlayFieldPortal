@@ -45,6 +45,15 @@ class BackupManagerTest {
     private lateinit var backupFolderRepository: BackupFolderRepository
     private lateinit var exportDir: File
 
+    // Runs the block directly and records whether a DAO call happened inside it.
+    private val recordingTransactions = object : com.playfieldportal.core.data.database.DatabaseTransactions {
+        var inside = false
+        override suspend fun <T> run(block: suspend () -> T): T {
+            inside = true
+            try { return block() } finally { inside = false }
+        }
+    }
+
     @Before
     fun setUp() {
         context        = mockk(relaxed = true)
@@ -82,6 +91,7 @@ class BackupManagerTest {
             // Added to BackupManager's constructor after this test was written; relaxed mocks
             // because none of them participates in the export paths exercised here.
             mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
+            recordingTransactions,
         ) {
         var lastExported: File? = null
         override suspend fun exportToBackupFolder(treeUri: String, source: File, name: String): Uri {
@@ -335,5 +345,48 @@ class BackupManagerTest {
             }
         }
         return entries
+    }
+
+    // ── Survey: latent backup items (docs/audits/codebase-survey-2026-10-22.md) ──────────
+
+    @Test
+    fun `a backup with more than 512 files restores`() = runTest {
+        // The old restore read with the generic 512-entry default; a library's art passes that.
+        val filesDir = tempFolder.newFolder("filesDir_big")
+        every { context.filesDir } returns filesDir
+        repeat(600) { i -> File(filesDir, "artwork/$i").apply { mkdirs() }.resolve("hero.png").writeBytes(byteArrayOf(1, 2, 3)) }
+        coEvery { gameDao.getAll() } returns emptyList()
+        coEvery { categoryDao.getAll() } returns emptyList()
+        coEvery { categoryDao.getAllItems() } returns emptyList()
+        coEvery { playSessionDao.getAll() } returns emptyList()
+
+        val mgr = ExportingBackupManager()
+        assertTrue(mgr.createBackup(1, "0.1", 5_000_000L) is BackupResult.Success)
+        val contentResolver = mockk<ContentResolver>()
+        every { context.contentResolver } returns contentResolver
+        every { contentResolver.openInputStream(any()) } returns mgr.lastExported!!.inputStream()
+
+        val result = mgr.restoreBackup(Uri.fromFile(mgr.lastExported!!))
+
+        assertTrue("Expected Success, got $result", result is RestoreResult.Success)
+    }
+
+    @Test
+    fun `the restore's database writes run inside one transaction`() = runTest {
+        coEvery { gameDao.getAll() } returns listOf(fakeGame())
+        coEvery { categoryDao.getAll() } returns emptyList()
+        coEvery { categoryDao.getAllItems() } returns emptyList()
+        coEvery { playSessionDao.getAll() } returns emptyList()
+        val mgr = ExportingBackupManager()
+        mgr.createBackup(1, "0.1", 6_000_000L)
+        val contentResolver = mockk<ContentResolver>()
+        every { context.contentResolver } returns contentResolver
+        every { contentResolver.openInputStream(any()) } returns mgr.lastExported!!.inputStream()
+        var deletedInside: Boolean? = null
+        coEvery { gameDao.deleteAll() } answers { deletedInside = recordingTransactions.inside }
+
+        mgr.restoreBackup(Uri.fromFile(mgr.lastExported!!))
+
+        assertEquals(true, deletedInside)
     }
 }

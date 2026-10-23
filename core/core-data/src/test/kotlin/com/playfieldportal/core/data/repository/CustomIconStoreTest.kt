@@ -239,6 +239,19 @@ class CustomIconStoreTest {
         assertTrue(iconDir().listFiles().isNullOrEmpty())
     }
 
+    // The icon editor's Reset All covers what the editor lists; a custom memory card's own image
+    // is set from the card's settings and must survive it.
+    @Test
+    fun `clearAll keeps custom card images`() = runTest {
+        store.import("catbar_games", register(pngBytes()), "image/png")
+        store.import("usercard_3", register(pngBytes()), "image/png")
+
+        assertTrue(store.clearAll())
+
+        assertFalse(iconFile("catbar_games", "png").exists())
+        assertTrue(iconFile("usercard_3", "png").isFile)
+    }
+
     @Test
     fun `clearAll reports false when nothing was stored`() = runTest {
         assertFalse(store.clearAll(), "no picks stored — nothing was cleared")
@@ -325,6 +338,23 @@ class CustomIconStoreTest {
         runBlocking { context.pfpDataStore.edit { it.clear() } }
         assertFalse(store.pruneUserCategoryIcons(emptySet()), "nothing left to remove")
         assertNull(stampPref(), "no bump without a removal")
+    }
+
+    // ── pruneUserCardIcons ───────────────────────────────────────────────────
+    // A custom memory card's own image (usercard_<id>) is stored like a category's and swept the
+    // same way once its card is gone.
+
+    @Test
+    fun `a card image is storable and swept when its card is gone`() = runTest {
+        assertTrue(store.import("usercard_3", register(pngBytes()), "image/png").ok)
+        assertTrue(store.import("usercard_9", register(pngBytes()), "image/gif").ok)
+        store.import("usercat_custom_keep_1", register(pngBytes()), "image/png")
+
+        assertTrue(store.pruneUserCardIcons(setOf(3L)))
+
+        assertTrue(iconFile("usercard_3", "png").isFile)
+        assertFalse(iconFile("usercard_9", "gif").exists())
+        assertTrue(iconFile("usercat_custom_keep_1", "png").isFile, "category images are not this sweep's")
     }
 
     // ── observeStoredKeys ─────────────────────────────────────────────────────

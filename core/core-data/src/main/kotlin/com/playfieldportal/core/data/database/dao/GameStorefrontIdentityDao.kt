@@ -24,13 +24,6 @@ interface GameStorefrontIdentityDao {
     @Query("SELECT * FROM game_storefront_identities WHERE game_id = :gameId AND store = :store")
     suspend fun get(gameId: Long, store: String): GameStorefrontIdentityEntity?
 
-    /**
-     * Every game already linked to this (store, id). Used to notice that two library rows resolved
-     * to the same store entry — a duplicate import, not a reason to refuse the link.
-     */
-    @Query("SELECT * FROM game_storefront_identities WHERE store = :store AND store_id = :storeId")
-    suspend fun byStoreId(store: String, storeId: String): List<GameStorefrontIdentityEntity>
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(identity: GameStorefrontIdentityEntity)
 

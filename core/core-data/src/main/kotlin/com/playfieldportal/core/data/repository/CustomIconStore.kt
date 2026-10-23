@@ -217,15 +217,42 @@ class CustomIconStore @Inject constructor(
     }
 
     /**
-     * Clears every user pick and the stamp. The directory itself is removed.
+     * Sweeps every `usercard_*` file whose custom memory card no longer exists — the card
+     * counterpart of [pruneUserCategoryIcons], with the same startup-only rule and stamp contract.
+     */
+    suspend fun pruneUserCardIcons(liveCollectionIds: Set<Long>): Boolean = withContext(Dispatchers.IO) {
+        var removedAny = false
+        for (file in dir.listFiles { f -> f.isFile }.orEmpty()) {
+            val name = file.nameWithoutExtension
+            if (!name.startsWith(com.playfieldportal.core.ui.icons.UserCardIconKeys.PREFIX)) continue
+            val owner = com.playfieldportal.core.ui.icons.UserCardIconKeys.collectionIdFor(name)
+            if ((owner == null || owner !in liveCollectionIds) && file.delete()) removedAny = true
+        }
+        if (removedAny) {
+            context.pfpDataStore.edit { prefs -> prefs.bumpStamp(KEY_CUSTOM_ICONS_STAMP) }
+        }
+        removedAny
+    }
+
+    /**
+     * Clears every user pick except custom memory card images (see the body), and the stamp.
      *
      * Returns whether there was anything to clear, for the same reason [clear] does — with no
      * picks stored this is a no-op, and the user deserves to be told that rather than left
      * pressing a button that appears dead.
      */
     suspend fun clearAll(): Boolean = withContext(Dispatchers.IO) {
-        context.pfpDataStore.edit { prefs -> prefs.remove(KEY_CUSTOM_ICONS_STAMP) }
-        tiers.clearIcons(ThemeTiers.Tier.USER)
+        // A custom memory card's own image is set from the card, not the icon editor whose Reset All
+        // this is, so it stays. Everything else in the user tier goes.
+        val keep = dir.listFiles { f -> f.isFile }.orEmpty()
+            .filter { com.playfieldportal.core.ui.icons.UserCardIconKeys.isValidKey(it.nameWithoutExtension) }
+        if (keep.isEmpty()) {
+            context.pfpDataStore.edit { prefs -> prefs.remove(KEY_CUSTOM_ICONS_STAMP) }
+            return@withContext tiers.clearIcons(ThemeTiers.Tier.USER)
+        }
+        val removed = dir.listFiles { f -> f.isFile }.orEmpty().filter { it !in keep }.count { it.delete() } > 0
+        if (removed) context.pfpDataStore.edit { prefs -> prefs.bumpStamp(KEY_CUSTOM_ICONS_STAMP) }
+        removed
     }
 
     /**

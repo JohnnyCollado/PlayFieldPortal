@@ -17,6 +17,7 @@ import com.playfieldportal.core.ui.sound.MenuSoundPlayer
 import com.playfieldportal.core.ui.sound.MenuSoundSink
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -144,8 +145,12 @@ class VideoDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(VideoDetailUiState())
     val uiState: StateFlow<VideoDetailUiState> = _uiState.asStateFlow()
 
+    // Reused across opens: only the newest load may write (survey L13).
+    private var loadJob: Job? = null
+
     fun loadVideo(id: String) {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             _uiState.update { VideoDetailUiState(isLoading = true) }
             val video = videoRepository.getVideo(id)
             val siblings = video?.let { videoRepository.getVideosForLibrary(it.libraryId) }

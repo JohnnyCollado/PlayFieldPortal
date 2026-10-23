@@ -76,10 +76,6 @@ class GamepadInputHandler @Inject constructor(
     // Scope for repeat jobs — set by XMBViewModel on init so repeats survive config changes
     var scope: CoroutineScope? = null
 
-    // When true (settings overlay active), only BACK is intercepted here; everything else
-    // falls through to super.dispatchKeyEvent() so Compose handles D-pad focus traversal.
-    var bypassToComposeFocus: Boolean = false
-
     // Repeat job for held directional input
     private var repeatJob: Job? = null
     private var lastStickAction: GamepadAction? = null
@@ -138,9 +134,6 @@ class GamepadInputHandler @Inject constructor(
         // for built-in controller buttons even when they're physically a gamepad.
         val action = currentMappings.actionFor(event.keyCode) ?: return false
         registry.markActive(event.deviceId)
-
-        // Settings overlay: only BACK is ours — let Compose handle D-pad/select natively
-        if (bypassToComposeFocus && action != GamepadAction.BACK) return false
 
         return when (event.action) {
             KeyEvent.ACTION_DOWN -> {

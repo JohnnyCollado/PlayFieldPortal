@@ -212,7 +212,7 @@ fun XmbPspStatusStrip(
     var batteryLevel   by remember { mutableStateOf(batteryPercentOf(-1, -1, batteryCapacity(context))) }
     var power          by remember { mutableStateOf(BatteryPowerState.UNPLUGGED) }
     var dateString     by remember { mutableStateOf(currentDateString()) }
-    var timeString     by remember { mutableStateOf(currentTimeString()) }
+    var timeString     by remember { mutableStateOf(currentTimeString(context)) }
 
     LifecycleStartEffect(Unit) {
         // The raw readings last logged, so the diagnostic below fires on a change, not per broadcast.
@@ -264,11 +264,11 @@ fun XmbPspStatusStrip(
     // up to a minute stale and then waits for the next tick.
     LifecycleStartEffect(Unit) {
         dateString = currentDateString()
-        timeString = currentTimeString()
+        timeString = currentTimeString(context)
         val clockReceiver = object : BroadcastReceiver() {
             override fun onReceive(ctx: Context, intent: Intent) {
                 dateString = currentDateString()
-                timeString = currentTimeString()
+                timeString = currentTimeString(context)
             }
         }
         ContextCompat.registerReceiver(
@@ -672,8 +672,19 @@ private val LowBatteryTint = Color(0xFFFF6B6B)
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-private fun currentTimeString(): String =
-    SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
+/** The time pattern for the device's 12/24-hour setting (survey U16). */
+internal fun statusTimePattern(is24Hour: Boolean): String = if (is24Hour) "HH:mm" else "h:mm a"
 
-private fun currentDateString(): String =
-    SimpleDateFormat("MM/dd/yyyy", Locale.getDefault()).format(Date())
+/** Month, day and four-digit year; Android orders them for the locale (US 10/23/2026, DE 23.10.2026). */
+internal const val STATUS_DATE_SKELETON = "MMddyyyy"
+
+private fun currentTimeString(context: Context): String = SimpleDateFormat(
+    statusTimePattern(android.text.format.DateFormat.is24HourFormat(context)),
+    Locale.getDefault(),
+).format(Date())
+
+private fun currentDateString(): String {
+    val locale = Locale.getDefault()
+    val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, STATUS_DATE_SKELETON)
+    return SimpleDateFormat(pattern, locale).format(Date())
+}

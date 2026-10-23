@@ -139,9 +139,22 @@ class ShibaCoinsHelperFooterTest {
         val state = ShibaCoinsUiState(
             rows = listOf(CoinListItem.LinkPanel),
             focusedRowId = LINK_ROW_ID,
-            provider = AchievementProvider.LOCAL_STEAM,
+            provider = AchievementProvider.VITA_TROPHY,
         )
 
         assertEquals(listOf("Options", "Back"), labels(state))
+    }
+
+    // Survey P3 (docs/audits/codebase-survey-2026-10-22.md): the Local Steam panel draws a focused
+    // "Pick Game Folder" button, so Confirm must press it and the footer must say so.
+    @Test
+    fun `an unlinked Local Steam game offers Pick Game Folder on Confirm`() {
+        val state = ShibaCoinsUiState(
+            rows = listOf(CoinListItem.LinkPanel),
+            focusedRowId = LINK_ROW_ID,
+            provider = AchievementProvider.LOCAL_STEAM,
+        )
+
+        assertEquals(listOf("Pick Game Folder", "Options", "Back"), labels(state))
     }
 }

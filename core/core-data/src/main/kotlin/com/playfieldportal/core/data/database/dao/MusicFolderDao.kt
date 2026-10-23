@@ -13,9 +13,6 @@ interface MusicFolderDao {
     @Query("SELECT * FROM music_folders ORDER BY display_name COLLATE NOCASE ASC")
     fun observeAll(): Flow<List<MusicFolderEntity>>
 
-    @Query("SELECT * FROM music_folders WHERE enabled = 1 ORDER BY display_name COLLATE NOCASE ASC")
-    fun observeEnabled(): Flow<List<MusicFolderEntity>>
-
     @Query("SELECT * FROM music_folders ORDER BY display_name COLLATE NOCASE ASC")
     suspend fun getAll(): List<MusicFolderEntity>
 

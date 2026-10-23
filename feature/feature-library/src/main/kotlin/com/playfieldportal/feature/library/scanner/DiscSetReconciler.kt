@@ -98,10 +98,11 @@ class DiscSetReconciler @Inject constructor(
      * the stored values, so handing it the pre-scan copy made a just-demoted primary look correct
      * — it was skipped, the newcomer was demoted too, and the set was left with no primary at all.
      *
-     * Only the disc fields are refreshed. Everything else stays the caller's, because the caller
-     * may have deliberately adjusted it (the missing flags this scan's survey implies). Matched by
-     * ROM path, which is the scanner's own identity for a row; a row the table no longer has keeps
-     * what it came with. A failed read is non-fatal, like a failed upsert here.
+     * The stored row is the base, so anything that changed in the table while the scan ran (a
+     * favorite, artwork, play time) is kept; a rewrite built on the pre-scan copy reverted those
+     * (survey L16). Only the missing flags this scan's survey implies come from the caller. Matched
+     * by ROM path, which is the scanner's own identity for a row; a row the table no longer has
+     * keeps what it came with. A failed read is non-fatal, like a failed upsert here.
      */
     private suspend fun withStoredDiscFields(platformId: String, existingRows: List<Game>): List<Game> {
         if (existingRows.isEmpty()) return existingRows
@@ -117,12 +118,7 @@ class DiscSetReconciler @Inject constructor(
 
         return existingRows.map { row ->
             val now = row.romPath?.let(storedByPath::get) ?: return@map row
-            row.copy(
-                discSetKey = now.discSetKey,
-                discNumber = now.discNumber,
-                isDiscPrimary = now.isDiscPrimary,
-                isDiscPreferred = now.isDiscPreferred,
-            )
+            now.copy(isMissing = row.isMissing, lastSeenAt = row.lastSeenAt)
         }
     }
 }

@@ -13,9 +13,6 @@ interface VideoLibraryDao {
     @Query("SELECT * FROM video_libraries ORDER BY display_name COLLATE NOCASE ASC")
     fun observeAll(): Flow<List<VideoLibraryEntity>>
 
-    @Query("SELECT * FROM video_libraries WHERE enabled = 1 ORDER BY display_name COLLATE NOCASE ASC")
-    fun observeEnabled(): Flow<List<VideoLibraryEntity>>
-
     @Query("SELECT * FROM video_libraries ORDER BY display_name COLLATE NOCASE ASC")
     suspend fun getAll(): List<VideoLibraryEntity>
 
@@ -34,9 +31,6 @@ interface VideoLibraryDao {
     @Query("UPDATE video_libraries SET display_name = :name, updated_at = :now WHERE id = :id")
     suspend fun setDisplayName(id: String, name: String, now: Long)
 
-
-    @Query("UPDATE video_libraries SET artwork_uri = :uri, updated_at = :now WHERE id = :id")
-    suspend fun setArtwork(id: String, uri: String?, now: Long)
 
     @Query(
         "UPDATE video_libraries SET video_count = :count, last_scanned_at = :scannedAt, " +

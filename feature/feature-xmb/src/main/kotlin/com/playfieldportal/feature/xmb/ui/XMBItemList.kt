@@ -1425,7 +1425,16 @@ private fun XmbItemLeadingIcon(
                 } else {
                     null
                 }
-                if (memcardOverride != null) {
+                // The card's own image (yours, or a theme icon copied in) comes first; it plays when
+                // the row is focused, like any custom icon.
+                val ownIcon = cardOwnIcon(item, LocalXmbIcons.current)
+                if (ownIcon != null) {
+                    com.playfieldportal.core.ui.icons.CustomIconSurface(
+                        icon = ownIcon,
+                        contentDescription = null,
+                        modifier = Modifier.size(LEADING_ICON_SIZE),
+                    )
+                } else if (memcardOverride != null) {
                     // Custom icons render as authored (untinted), like every slot — but the
                     // configured icon-legibility matte still draws behind the still frame.
                     com.playfieldportal.core.ui.icons.CustomIconSurface(
@@ -1647,3 +1656,10 @@ private fun AppListIcon(
 
 // The rounded square every installed app's icon is clipped to; the Move outline follows it.
 private val APP_ICON_CORNER = 6.dp
+
+/** A custom memory card row's own image (usercard_<id>), or null for any other row or a card without one. */
+internal fun cardOwnIcon(item: XMBItem, icons: com.playfieldportal.core.ui.icons.XmbIcons): com.playfieldportal.core.ui.icons.CustomIcon? {
+    if (item.type != XMBItemType.COLLECTION) return null
+    val key = item.collectionId?.let(com.playfieldportal.core.ui.icons.UserCardIconKeys::keyFor) ?: return null
+    return icons[key]
+}

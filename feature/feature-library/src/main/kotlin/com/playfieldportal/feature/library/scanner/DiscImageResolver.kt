@@ -1,38 +1,24 @@
 package com.playfieldportal.feature.library.scanner
 
-import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
 import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// Resolves disc-based game formats where multiple files represent one game.
+// Finds the files that are parts of a multi-file disc rather than games of their own: the .bin
+// tracks a .cue lists and the track files a Dreamcast .gdi lists. The scanner skips these so one
+// disc is one row.
 //
-// .cue + .bin(s) → disc game; folder hint picks platform (psx/saturn/pcengine),
-//                  falls back to "psx" since .cue is most common for PS1
-// .bin alone      → folder hint picks platform, falls back to "megadrive"
-// .chd / .img     → flagged for caller to resolve via folder hint or user input
+// It used to also build a list of resolved discs (with a platform guessed per folder) and a list
+// of .chd/.img files needing assignment. Only the old folder-list scan read those, and that scan
+// had no callers, so both went with it — along with its bug of dropping a stand-alone .bin that
+// merely sat next to an unrelated .cue (survey, docs/audits/codebase-survey-2026-10-22.md).
 @Singleton
-class DiscImageResolver @Inject constructor(
-    private val folderHintResolver: PlatformFolderHintResolver,
-) {
-
-    data class ResolvedDisc(
-        val launchFile: File,
-        val platformId: String,
-        val suppressedFiles: Set<File>, // companion files that must not be counted separately
-    )
+class DiscImageResolver @Inject constructor() {
 
     data class FolderResolution(
-        val resolvedDiscs: List<ResolvedDisc>,
         val suppressedPaths: Set<String>,       // absolute paths — scanner skips these
-        val requiresUserAssignment: List<File>, // .chd/.img with no context
     )
-
-    fun resolveFolder(folder: File): FolderResolution {
-        val allFiles = folder.walkTopDown().filter { it.isFile }.toList()
-        return resolveFiles(allFiles)
-    }
 
     /**
      * @param scannableSheets the extensions the caller can actually turn into game rows
@@ -45,38 +31,16 @@ class DiscImageResolver @Inject constructor(
         files: List<File>,
         scannableSheets: Set<String>? = null,
     ): FolderResolution {
-        val resolvedDiscs      = mutableListOf<ResolvedDisc>()
-        val suppressedPaths    = mutableSetOf<String>()
-        val requiresAssignment = mutableListOf<File>()
+        val suppressedPaths = mutableSetOf<String>()
 
-        val byDir = files.groupBy { it.parentFile?.absolutePath ?: "" }
-
-        for ((_, siblings) in byDir) {
-            val cueFiles = siblings.filter { it.extension.lowercase() == "cue" && it.isScannableSheet(scannableSheets) }
+        for ((_, siblings) in files.groupBy { it.parentFile?.absolutePath ?: "" }) {
             val binFiles = siblings.filter { it.extension.lowercase() == "bin" }
-            val chdFiles = siblings.filter { it.extension.lowercase() == "chd" }
-            val imgFiles = siblings.filter { it.extension.lowercase() == "img" }
 
-            // ── .cue + .bin → disc game; platform from folder hint ────────
-            for (cueFile in cueFiles) {
+            // ── .cue + .bin → the bins the sheet lists are parts, not games ──
+            for (cueFile in siblings.filter { it.extension.lowercase() == "cue" && it.isScannableSheet(scannableSheets) }) {
                 val companionBins = findCompanionBins(cueFile, binFiles)
-                val platformId = folderHintResolver.detectFromPath(cueFile.absolutePath) ?: "psx"
-
-                resolvedDiscs.add(
-                    ResolvedDisc(
-                        launchFile = cueFile,
-                        platformId = platformId,
-                        suppressedFiles = companionBins.toSet(),
-                    )
-                )
-
-                // All companion .bin files are suppressed — they are not games
                 companionBins.forEach { suppressedPaths.add(it.absolutePath) }
-
-                Timber.d(
-                    "Disc resolved: ${cueFile.name} (PS1) — " +
-                    "suppressed ${companionBins.size} companion .bin file(s)"
-                )
+                Timber.d("Disc ${cueFile.name}: suppressed ${companionBins.size} companion .bin file(s)")
             }
 
             // ── Dreamcast .gdi → referenced track files suppressed ────────
@@ -91,53 +55,9 @@ class DiscImageResolver @Inject constructor(
                     Timber.d("GDI tracks suppressed for ${gdiFile.name}: ${trackFiles.size}")
                 }
             }
-
-            // ── Orphan .bin (no sibling .cue) → Mega Drive ──────────────
-            val claimedBins = resolvedDiscs
-                .flatMap { it.suppressedFiles }
-                .map { it.absolutePath }
-                .toSet()
-
-            for (binFile in binFiles) {
-                if (binFile.absolutePath in claimedBins) continue // already handled above
-
-                val hasCueSibling = cueFiles.any { cue ->
-                    cue.parentFile?.absolutePath == binFile.parentFile?.absolutePath
-                }
-
-                if (!hasCueSibling) {
-                    val platformId = folderHintResolver.detectFromPath(binFile.absolutePath) ?: "megadrive"
-                    resolvedDiscs.add(
-                        ResolvedDisc(
-                            launchFile = binFile,
-                            platformId = platformId,
-                            suppressedFiles = emptySet(),
-                        )
-                    )
-                    Timber.d("Orphan .bin resolved as $platformId: ${binFile.name}")
-                }
-            }
-
-            // ── .chd → platform unknown, needs user assignment ────────────
-            // .chd is a compressed disc format used by PS1, PS2, Saturn, GC, Wii
-            // We cannot reliably detect platform without reading the disc header
-            for (chdFile in chdFiles) {
-                requiresAssignment.add(chdFile)
-                Timber.d(".chd flagged for user platform assignment: ${chdFile.name}")
-            }
-
-            // ── .img alone → platform unknown ────────────────────────────
-            for (imgFile in imgFiles) {
-                requiresAssignment.add(imgFile)
-                Timber.d(".img flagged for user platform assignment: ${imgFile.name}")
-            }
         }
 
-        return FolderResolution(
-            resolvedDiscs = resolvedDiscs,
-            suppressedPaths = suppressedPaths,
-            requiresUserAssignment = requiresAssignment,
-        )
+        return FolderResolution(suppressedPaths = suppressedPaths)
     }
 
     /**

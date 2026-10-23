@@ -47,6 +47,22 @@ class RaCoinMapperTest {
         assertNull(b.earnedAt)
     }
 
+    // Survey L11 (docs/audits/codebase-survey-2026-10-22.md): earned state came from the PARSED
+    // date, so an unlock whose date RA sends in another format read as unearned while
+    // earnedHardcore (presence-based) stayed true — an impossible "hardcore but not earned" coin.
+    @Test
+    fun `an unlock with an unparseable date is still earned`() {
+        val odd = achievement(
+            id = "30", points = 10, numAwarded = 1, badgeName = "1",
+            dateEarnedHardcore = "2024-01-02T03:04:05Z",
+        )
+        val game = response(casualPlayers = 10, achievements = linkedMapOf("30" to odd))
+
+        val coin = (RaCoinMapper.map(game, "1") as ProviderSyncResult.Success).coins.single()
+        assertTrue(coin.isEarned)
+        assertTrue(coin.earnedHardcore)
+    }
+
     @Test
     fun `softcore-only unlock earns the coin but not the crown`() {
         val soft = achievement(

@@ -41,9 +41,6 @@ interface MusicTrackDao {
     @Query("SELECT * FROM music_tracks WHERE id = :id")
     suspend fun getById(id: String): MusicTrackEntity?
 
-    @Query("SELECT COUNT(*) FROM music_tracks WHERE folder_id = :folderId")
-    suspend fun countForFolder(folderId: String): Int
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(tracks: List<MusicTrackEntity>)
 

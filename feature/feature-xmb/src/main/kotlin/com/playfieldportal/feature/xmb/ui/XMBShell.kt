@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui
 
+import android.animation.ValueAnimator
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -29,11 +30,9 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -761,10 +760,14 @@ fun XMBShell(
             // screen, which froze the sequence on every real launch while the settings preview —
             // reached from a screen that is not in `waveCovered` — animated normally.
             //
-            // The honest input is the motion BUDGET: the user's chosen style, frozen only when
-            // the device is conserving power. Same value feeds the launch and the preview, so the
-            // two can never diverge again.
-            val gameBootWaveStyle = if (powerThrottled) uiState.waveStyle.frozen else uiState.waveStyle
+            // Nor does it read the user's wave style: that setting is hidden while a still
+            // wallpaper is set, so following it could drop the glare for good. Only the device's
+            // own budget counts — power saving and Android's animation switch. Same value feeds
+            // the launch and the preview, so the two can never diverge again.
+            val gameBootGlareOn = gameBootGlare(
+                powerThrottled = powerThrottled,
+                systemAnimationsOn = ValueAnimator.areAnimatorsEnabled(),
+            )
             XmbBackground(
                 waveStyle           = effectiveWaveStyle,
                 customWallpaperPath = uiState.customWallpaperPath,
@@ -1241,6 +1244,7 @@ fun XMBShell(
                     QrLoginScreen(
                         onConnected = onDiscordLoginClosed,
                         onCancel = onDiscordLoginClosed,
+                        confirmPresses = uiState.discordLoginConfirms,
                     )
                 }
             }
@@ -1431,16 +1435,8 @@ fun XMBShell(
             }
 
 
-            // Launch recovery sheet (B1): raised by the shared LaunchDispatcher when a game-path
-            // launch failed or the emulator never reached the foreground. Offers a retry, a
-            // different emulator, the per-system defaults screen, and a copyable diagnostic —
-            // a repair surface instead of a dead end.
-            uiState.launchRecovery?.let { recovery ->
-                LaunchRecoverySheet(
-                    recovery = recovery,
-                    onAction = onLaunchRecoveryAction,
-                )
-            }
+            // Launch recovery (B1) is drawn by the shell's shared modal host below, as a Choice
+            // (see launchRecoverySpec), so the pad can pick every repair a tap can.
 
             uiState.musicTrackPicker?.let { picker ->
                 MusicTrackPicker(
@@ -1646,11 +1642,10 @@ fun XMBShell(
                     videoPath = request.videoPath,
                     audioPath = request.audioPath,
                     audioGain = uiState.gameBootAudioGain,
-                    // The motion budget, NOT effectiveWaveStyle — see gameBootWaveStyle above.
-                    // A frozen or reduced style draws one still frame instead of the sweeps
-                    // (GameBoot runs on every launch, unlike the once-per-start boot sequence),
-                    // still at full length, so the launch waits for the whole presentation.
-                    waveStyle = gameBootWaveStyle,
+                    // The device's motion budget, NOT the wave style — see gameBootGlareOn above.
+                    // Without the glare it still runs at full length, so the launch waits for the
+                    // whole presentation.
+                    glare = gameBootGlareOn,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -1682,6 +1677,7 @@ fun XMBShell(
                     playlistImportCallbacks = playlistImportCallbacks,
                     confirmCallbacks = confirmCallbacks,
                     sourceChooserCallbacks = sourceChooserCallbacks,
+                    launchRecoveryCallbacks = LaunchRecoveryCallbacks(onAction = onLaunchRecoveryAction),
                 ),
                 // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
                 showHints = !uiState.resolvedShowTouchButton,
@@ -1725,6 +1721,7 @@ internal fun shellModalSpec(
     confirmCallbacks: XmbConfirmCallbacks = XmbConfirmCallbacks(),
     artworkFolderCallbacks: ArtworkFolderCallbacks = ArtworkFolderCallbacks(),
     sourceChooserCallbacks: SourceChooserCallbacks = SourceChooserCallbacks(),
+    launchRecoveryCallbacks: LaunchRecoveryCallbacks = LaunchRecoveryCallbacks(),
 ): PfpModalSpec? {
     // A menu's confirm first of all: it is raised from a menu opened over everything else, including
     // the notification panel (Clear All), and the view model forwards its presses before the panel's.
@@ -1800,6 +1797,9 @@ internal fun shellModalSpec(
         )
         uiState.playlistImportQueue != null ->
             playlistImportSpec(uiState.playlistImportQueue, playlistImportCallbacks)
+        // A failed launch's repair choices, after the playlist import and before the artwork
+        // folder prompt — the order the view model forwards presses in.
+        uiState.launchRecovery != null -> launchRecoverySpec(uiState.launchRecovery, launchRecoveryCallbacks)
         // The required artwork folder: unavailable, move, choose, or another install's library.
         // Ahead of the shortcut review and the Windows prompt, in the order the view model
         // forwards presses (XMBViewModel.dispatchGamepadAction).
@@ -1836,6 +1836,41 @@ internal fun shellModalSpec(
         )
         else -> null
     }
+}
+
+/** What the launch recovery choice calls back into the view model. */
+data class LaunchRecoveryCallbacks(
+    val onAction: (com.playfieldportal.feature.launcher.LaunchRecoveryAction) -> Unit = {},
+)
+
+/**
+ * A failed launch as the shared Choice modal: Retry, Change Emulator, the per-system default (only
+ * when an emulator was resolved) and Copy diagnostics, with Dismiss as its cancel. It used to be a
+ * Material dialog in its own window, where three of those were touch-only (survey P2,
+ * docs/audits/codebase-survey-2026-10-22.md); the shared modal is driven by pad and touch alike.
+ */
+internal fun launchRecoverySpec(
+    recovery: com.playfieldportal.feature.launcher.LaunchRecoveryRequest,
+    callbacks: LaunchRecoveryCallbacks,
+): PfpModalSpec {
+    val actions = buildList {
+        add(com.playfieldportal.feature.launcher.LaunchRecoveryAction.RETRY to PfpChoiceOption("Retry"))
+        add(com.playfieldportal.feature.launcher.LaunchRecoveryAction.CHANGE_EMULATOR to PfpChoiceOption("Change Emulator"))
+        if (recovery.resolved != null) {
+            add(com.playfieldportal.feature.launcher.LaunchRecoveryAction.PER_SYSTEM_DEFAULTS to PfpChoiceOption("Change per-system default"))
+        }
+        add(com.playfieldportal.feature.launcher.LaunchRecoveryAction.COPY_DIAGNOSTIC to PfpChoiceOption("Copy diagnostics"))
+    }
+    return PfpModalSpec.Choice(
+        key = "launch_recovery:${recovery.gameId}",
+        title = "Couldn't launch ${recovery.gameTitle}",
+        message = listOfNotNull(recovery.message, recovery.historyLine).joinToString("\n\n"),
+        options = actions.map { it.second },
+        confirmLabel = "Select",
+        cancelLabel = "Dismiss",
+        onConfirm = { index -> actions.getOrNull(index)?.let { callbacks.onAction(it.first) } },
+        onCancel = { callbacks.onAction(com.playfieldportal.feature.launcher.LaunchRecoveryAction.DISMISS) },
+    )
 }
 
 /** What the icon editor's Pick source chooser calls back into the view model. */
@@ -2063,50 +2098,6 @@ private fun AppDrawerButton(
     }
 }
 
-
-@Composable
-private fun LaunchRecoverySheet(
-    recovery: com.playfieldportal.feature.launcher.LaunchRecoveryRequest,
-    onAction: (com.playfieldportal.feature.launcher.LaunchRecoveryAction) -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = { onAction(com.playfieldportal.feature.launcher.LaunchRecoveryAction.DISMISS) },
-        title = { Text("Couldn't launch ${recovery.gameTitle}") },
-        text = {
-            Column {
-                Text(recovery.message)
-                recovery.historyLine?.let {
-                    Spacer(Modifier.height(8.dp))
-                    Text(it, style = MaterialTheme.typography.bodySmall)
-                }
-                if (recovery.resolved != null) {
-                    Spacer(Modifier.height(8.dp))
-                    TextButton(
-                        onClick = { onAction(com.playfieldportal.feature.launcher.LaunchRecoveryAction.PER_SYSTEM_DEFAULTS) },
-                    ) { Text("Change per-system default") }
-                }
-                TextButton(
-                    onClick = { onAction(com.playfieldportal.feature.launcher.LaunchRecoveryAction.COPY_DIAGNOSTIC) },
-                ) { Text("Copy diagnostics") }
-            }
-        },
-        confirmButton = {
-            Row {
-                TextButton(
-                    onClick = { onAction(com.playfieldportal.feature.launcher.LaunchRecoveryAction.CHANGE_EMULATOR) },
-                ) { Text("Change Emulator") }
-                TextButton(
-                    onClick = { onAction(com.playfieldportal.feature.launcher.LaunchRecoveryAction.RETRY) },
-                ) { Text("Retry") }
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = { onAction(com.playfieldportal.feature.launcher.LaunchRecoveryAction.DISMISS) },
-            ) { Text("Dismiss") }
-        },
-    )
-}
 
 @OptIn(UnstableApi::class)
 @DevicePreviews

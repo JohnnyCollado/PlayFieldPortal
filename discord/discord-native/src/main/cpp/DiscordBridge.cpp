@@ -59,8 +59,6 @@ int64_t nowMs() {
 // Call by value; we move it in. Reset on leave.
 std::optional<discordpp::Call> gCall;
 std::atomic<uint64_t> gLobbyId{0};
-// Mirrors discordpp::Call::Status (0 = Disconnected). Read by nativeGetVoice* without locking.
-std::atomic<int> gCallStatus{0};
 // User ids currently producing sound. Written by the SDK speaking callback and read by the
 // participants query — both run on the pump thread, so no lock is needed.
 std::set<uint64_t> gSpeaking;
@@ -181,16 +179,11 @@ void enterLobby(const std::string& secret, std::function<void(uint64_t)> onDone)
         discordpp::Call call = gClient->StartCall(lobbyId);
         if (!call) call = gClient->GetCall(lobbyId);
         if (call) {
-            call.SetStatusChangedCallback(
-                [](discordpp::Call::Status status, discordpp::Call::Error /*e*/, int32_t /*d*/) {
-                    gCallStatus.store(static_cast<int>(status));
-                });
             call.SetSpeakingStatusChangedCallback([](uint64_t userId, bool isPlayingSound) {
                 if (isPlayingSound) gSpeaking.insert(userId);
                 else gSpeaking.erase(userId);
             });
             gCall = std::move(call);
-            gCallStatus.store(static_cast<int>(gCall->GetStatus()));
         }
         if (onDone) onDone(lobbyId);
     });
@@ -445,7 +438,6 @@ Java_com_playfieldportal_discord_DiscordNativeBridge_nativeLeaveVoice(
         const uint64_t lobby = gLobbyId.load();
         if (lobby) gClient->LeaveLobby(lobby, [](discordpp::ClientResult /*r*/) {});
         gLobbyId.store(0);
-        gCallStatus.store(0);
         gSpeaking.clear();
         // Drop the party from presence (keeps any game activity).
         gInLobby = false;
@@ -549,13 +541,6 @@ Java_com_playfieldportal_discord_DiscordNativeBridge_nativeSetPttReleaseDelay(
     if (!gClient) return;
     const uint32_t d = static_cast<uint32_t>(ms < 0 ? 0 : ms);
     post([d]() { if (gCall) gCall->SetPTTReleaseDelay(d); });
-}
-
-// Current call status ordinal (mirrors discordpp::Call::Status; 0 = Disconnected).
-JNIEXPORT jint JNICALL
-Java_com_playfieldportal_discord_DiscordNativeBridge_nativeGetCallStatus(
-    JNIEnv* /*env*/, jobject /*thiz*/) {
-    return gCallStatus.load();
 }
 
 // Snapshot of the active call as JSON: { lobbyId, status, selfMute, participants:[{id, displayName,
@@ -744,7 +729,6 @@ Java_com_playfieldportal_discord_DiscordNativeBridge_nativeShutdown(
     if (gPumpThread.joinable()) gPumpThread.join();
     gCall.reset();
     gLobbyId.store(0);
-    gCallStatus.store(0);
     gSpeaking.clear();
     gInLobby = false;
     gLobbySecret.clear();

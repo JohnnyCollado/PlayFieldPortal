@@ -27,7 +27,8 @@ object AudioFileFilter {
     fun isAudio(fileName: String, mimeType: String?): Boolean {
         val ext = fileName.substringAfterLast('.', "").lowercase()
         if (ext in PLAYLIST_EXTENSIONS) return false
-        if (mimeType != null) return mimeType.startsWith("audio/")
+        // octet-stream says nothing about the content, so the extension decides (survey L20).
+        if (mimeType != null && mimeType != "application/octet-stream") return mimeType.startsWith("audio/")
         return ext in AUDIO_EXTENSIONS
     }
 

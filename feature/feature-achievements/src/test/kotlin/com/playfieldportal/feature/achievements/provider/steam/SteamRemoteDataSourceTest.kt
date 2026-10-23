@@ -60,6 +60,21 @@ class SteamRemoteDataSourceTest {
         assertEquals(ProviderSyncResult.ProfileNotPublic, dataSource.fetch("440"))
     }
 
+    // Survey L5 (docs/audits/codebase-survey-2026-10-22.md): a `success:false` body that is not the
+    // "not public" error used to fall through to Success(empty), which the writer stored as
+    // "nothing earned" — wiping every unlock until the next good fetch.
+    @Test
+    fun `a success false player body other than not public is a failure, never zero unlocks`() = runTest {
+        creds()
+        coEvery { webApi.getSchemaForGame(any(), "440") } returns schemaResponse("a1")
+        coEvery { webApi.getGlobalAchievementPercentages("440") } returns Response.success(SteamGlobalResponse())
+        coEvery { webApi.getPlayerAchievements(any(), any(), "440") } returns Response.success(
+            SteamPlayerResponse(SteamPlayerStats(success = false, error = "Internal error")),
+        )
+
+        assertTrue(dataSource.fetch("440") is ProviderSyncResult.Failed)
+    }
+
     @Test
     fun `a successful fetch maps schema, rarity, and earned state to coins`() = runTest {
         creds()

@@ -820,7 +820,7 @@ class LibraryManagerViewModel @Inject constructor(
         viewModelScope.launch {
             ps3DataLibrary.setDataFolder(uri)   // persists the SAF read grant
             _scratch.update {
-                it.copy(message = "PS3 data folder set. Run Auto-Match in Settings ▸ Shiba Coins to link PS3 trophies.")
+                it.copy(message = "PS3 data folder set. Run Auto-Match in Settings ▸ Achievements ▸ Update Achievements to link PS3 trophies.")
             }
         }
     }
@@ -836,7 +836,7 @@ class LibraryManagerViewModel @Inject constructor(
             xbox360DataLibrary.setFolder(emulator, uri)   // persists the SAF read grant
             _scratch.update {
                 it.copy(
-                    message = "${emulator.label} data folder set. Run Auto-Match in Settings ▸ Shiba Coins " +
+                    message = "${emulator.label} data folder set. Run Auto-Match in Settings ▸ Achievements ▸ Update Achievements " +
                         "to link Xbox 360 achievements.",
                 )
             }
@@ -1339,6 +1339,7 @@ class LibraryManagerViewModel @Inject constructor(
         if (rows.isEmpty()) return
         viewModelScope.launch {
             var added = 0
+            var failed = 0
             rows.forEach { row ->
                 runCatching {
                     val game = gameRepository.getById(row.gameId) ?: error("Game not found")
@@ -1349,13 +1350,19 @@ class LibraryManagerViewModel @Inject constructor(
                         )
                     )
                     added++
-                }.onFailure { Timber.e(it, "PC game import failed for ${row.gameId}") }
+                }.onFailure {
+                    if (it is kotlinx.coroutines.CancellationException) throw it
+                    failed++
+                    Timber.e(it, "PC game import failed for ${row.gameId}")
+                }
             }
             if (added > 0) ensureWindowsCard()
+            // Failures are counted and reported, never shown as a success (survey L26).
+            val (message, severity) = pcImportAllSummary(added, failed)
             tasks.report(
                 "lm_pc_import_all", "Windows Games",
-                "Imported $added PC game(s) into Windows Games.",
-                NotificationSeverity.SUCCESS,
+                message,
+                severity,
                 action = NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID),
             )
         }
@@ -1391,7 +1398,7 @@ class LibraryManagerViewModel @Inject constructor(
                 label = "ROM Root ready",
                 message = "${result.created} folder(s) created" +
                     (if (result.existing > 0) ", ${result.existing} already there" else "") +
-                    ". Copy your games into the matching folders; the root will be scanned automatically when you add or replace it.",
+                    ". Copy your games into the matching folders, then choose Scan ROM Roots.",
                 severity = NotificationSeverity.SUCCESS,
             )
         }
@@ -1423,4 +1430,14 @@ class LibraryManagerViewModel @Inject constructor(
         }
     }
 
+}
+
+/** Import All's tray line and severity: a success, a warning naming the failures, or an error. */
+internal fun pcImportAllSummary(added: Int, failed: Int): Pair<String, NotificationSeverity> {
+    fun games(n: Int) = if (n == 1) "1 PC game" else "$n PC games"
+    return when {
+        failed == 0 -> "Imported ${games(added)} into Windows Games." to NotificationSeverity.SUCCESS
+        added == 0 -> "None of the ${games(failed)} could be imported." to NotificationSeverity.ERROR
+        else -> "Imported ${games(added)} into Windows Games. $failed couldn't be imported." to NotificationSeverity.WARNING
+    }
 }

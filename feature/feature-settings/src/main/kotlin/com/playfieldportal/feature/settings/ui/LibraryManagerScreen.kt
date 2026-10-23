@@ -5,7 +5,6 @@ import com.playfieldportal.core.ui.components.PfpModalSpec
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,11 +19,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -302,6 +298,12 @@ private fun LibraryListContent(
                     relinkRootPicker.launch(onBeginRelink(it)) 
                 },
                 onRemoveRoot = { onRemoveRomRoot(it) },
+                // The scan the ES-DE setup tells the user to run once their games are copied in.
+                // The row was wired but never drawn, so nothing could pick those games up short
+                // of re-adding the root (survey U13).
+                autoDetectLabel = if (state.romRoots.isNotEmpty()) "Scan ROM Roots" else null,
+                autoDetectSublabel = "Find the console folders in your ROM roots and add their games",
+                onAutoDetect = onScanRomRoot,
             )
 
             SettingsGroup("Consoles")
@@ -348,14 +350,14 @@ private fun LibraryListContent(
             var confirmRescanAll by remember { mutableStateOf(false) }
             if (!confirmRescanAll) {
                 SettingsRow(
-                    label    = "Re-Scan All (Remove Missing)",
-                    sublabel = "Also removes games whose ROM file no longer exists",
+                    label    = "Re-Scan All (Mark Missing)",
+                    sublabel = "Also marks games whose ROM file is gone as missing. They stay in your library",
                     onClick  = if (anyScannable) ({ confirmRescanAll = true }) else null,
                 )
             } else {
                 SettingsRow(
-                    label    = "Confirm: Re-Scan and Remove Missing Games?",
-                    sublabel = "Removes library entries whose ROM file is gone. This can take a while with a large library",
+                    label    = "Confirm: Re-Scan and Mark Missing Games?",
+                    sublabel = "Marks games whose ROM file is gone as missing; favorites, play time and artwork are kept. This can take a while with a large library",
                     onClick  = {
                         confirmRescanAll = false
                         onScanAllConsoles(true)
@@ -730,7 +732,7 @@ private fun CardDetailContent(
                 if (state.ps3FolderLabel == null) {
                     Hint(
                         "Grant the ARMSX3 PS3 folder (the one holding config/dev_hdd0), then run " +
-                            "Auto-Match in Settings ▸ Shiba Coins. Trophy ids come from each game's " +
+                            "Auto-Match in Settings ▸ Achievements ▸ Update Achievements. Trophy ids come from each game's " +
                             "own disc, so a game can link before you have ever booted it.",
                     )
                 }
@@ -759,7 +761,7 @@ private fun CardDetailContent(
                 if (state.x360MobileFolderLabel == null && state.xenDroidFolderLabel == null) {
                     Hint(
                         "Grant the data folder of the emulator you play in, then run Auto-Match in " +
-                            "Settings ▸ Shiba Coins. Title IDs come from each game's own file, so a " +
+                            "Settings ▸ Achievements ▸ Update Achievements. Title IDs come from each game's own file, so a " +
                             "game can link before you have ever booted it.",
                     )
                 }
@@ -853,12 +855,36 @@ private fun ImportPcGamesContent(
         ActivityResultContracts.StartActivityForResult()
     ) { onRefreshHomeStatus() }
 
+    addTarget?.let { launcher ->
+        AddPcGameStep(
+            launcher = launcher,
+            onTest = { id, source -> onTestLaunchPcGame(launcher, id, source) },
+            onAdd = { id, title, source -> onAddPcGameById(launcher, id, title, source); addTarget = null },
+            onBack = { addTarget = null },
+            modifier = modifier,
+        )
+        return
+    }
+
+    // Turning the Goldberg installer on asks for a save backup first, as it does in
+    // Achievements ▸ Local Windows — this row is the same switch (survey U32).
+    var showGoldbergWarning by remember { mutableStateOf(false) }
+    val goldbergModal = rememberSettingsModal(
+        if (!showGoldbergWarning) null else goldbergWarningSpec(
+            onConfirm = { onSetGoldbergInstaller(true); showGoldbergWarning = false },
+            onCancel = { showGoldbergWarning = false },
+        ),
+    )
+
     SettingsScaffold(
         title = "Library",
         subtitle = "Import PC Games",
         onBack = onBack,
+        modalOpen = goldbergModal.open,
         // The convert panel is modal: it takes Up/Down/Select before the rows behind it see them.
-        onInterceptAction = { action -> convertPickerOpen && onConvertGamepadAction(action) },
+        onInterceptAction = { action ->
+            goldbergModal.intercept(action) || (convertPickerOpen && onConvertGamepadAction(action))
+        },
         modifier = modifier,
     ) {
         // Registered like the list screens: the scaffold needs a scroll owner here for its
@@ -925,8 +951,10 @@ private fun ImportPcGamesContent(
                 label    = "Goldberg Installer",
                 value    = if (state.goldbergInstallerEnabled) "On" else "Off",
                 sublabel = "Lets PFP write an achievement list into a game folder and swap in the " +
-                    "bundled Steam emulator. The same switch as Settings ▸ Shiba Coins",
-                onClick  = { onSetGoldbergInstaller(!state.goldbergInstallerEnabled) },
+                    "bundled Steam emulator. The same switch as Settings ▸ Achievements ▸ Local Windows",
+                onClick  = {
+                    if (state.goldbergInstallerEnabled) onSetGoldbergInstaller(false) else showGoldbergWarning = true
+                },
             )
             Hint(
                 "Back up the save files of any game you already played before converting it — the " +
@@ -999,72 +1027,98 @@ private fun ImportPcGamesContent(
                 }
                 SettingsRow(
                     label    = "Import All",
-                    sublabel = "Add every found game to a custom memory card named after its launcher",
+                    sublabel = "Move every found game into the Windows Games Memory Card",
                     onClick  = onImportAllPcGames,
                 )
             }
         }
     }
-
-    addTarget?.let { launcher ->
-        AddPcGameDialog(
-            launcher = launcher,
-            onTest   = { id, source -> onTestLaunchPcGame(launcher, id, source) },
-            onAdd    = { id, title, source -> onAddPcGameById(launcher, id, title, source); addTarget = null },
-            onDismiss = { addTarget = null },
-        )
-    }
+    goldbergModal.Content()
 }
 
+/** The next of a launcher's [sources] after [current], wrapping; null when it has none. */
+internal fun nextPcSource(sources: List<String>, current: String?): String? {
+    if (sources.isEmpty()) return null
+    val at = sources.indexOf(current)
+    return sources[(at + 1) % sources.size]
+}
+
+internal fun canAddPcGame(id: String, title: String): Boolean = id.isNotBlank() && title.isNotBlank()
+
+internal fun canTestPcGame(id: String): Boolean = id.isNotBlank()
+
+/**
+ * Add a game to a PC launcher by its ID, as a settings step: Game ID and Game name open the shared
+ * text entry, Source cycles, and Test Launch / Add Game are rows. It was a Material dialog whose
+ * text fields and Source chips a pad could not reach (survey P6).
+ */
 @Composable
-private fun AddPcGameDialog(
+private fun AddPcGameStep(
     launcher: PcLauncherRow,
     onTest: (id: String, source: String?) -> Unit,
     onAdd: (id: String, title: String, source: String?) -> Unit,
-    onDismiss: () -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier,
 ) {
     val adapter = PcLauncherAdapters.forType(launcher.type)
+    val sources = adapter?.sources.orEmpty()
     var id by remember { mutableStateOf("") }
     var title by remember { mutableStateOf("") }
-    var source by remember { mutableStateOf(adapter?.sources?.firstOrNull()) }
+    var source by remember { mutableStateOf(sources.firstOrNull()) }
+    // Which field the shared text entry is editing, or null.
+    var editing by remember { mutableStateOf<String?>(null) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add ${launcher.name} game") },
-        text = {
-            Column {
-                adapter?.idPrompt?.let { Text(it, color = SettingsSubtext, fontSize = 12.sp) }
-                OutlinedTextField(value = id, onValueChange = { id = it }, label = { Text("Game ID") }, singleLine = true)
-                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Game name") }, singleLine = true)
-                if (adapter != null && adapter.sources.isNotEmpty()) {
-                    Text("Source", color = SettingsSubtext, fontSize = 12.sp)
-                    Row {
-                        adapter.sources.forEach { s ->
-                            Text(
-                                text = s,
-                                color = if (s == source) SettingsAccent else SettingsSubtext,
-                                modifier = Modifier
-                                    .clickable { source = s }
-                                    .padding(horizontal = 10.dp, vertical = 6.dp),
-                            )
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onAdd(id, title, source) },
-                enabled = id.isNotBlank() && title.isNotBlank(),
-            ) { Text("Add") }
-        },
-        dismissButton = {
-            Row {
-                TextButton(onClick = { onTest(id, source) }) { Text("Test Launch") }
-                TextButton(onClick = onDismiss) { Text("Cancel") }
-            }
+    val modal = rememberSettingsModal(
+        when (editing) {
+            "id" -> PfpModalSpec.TextEntry(
+                key = "pc_add_id", title = "Game ID", initial = id, label = "Game ID",
+                onConfirm = { id = it; editing = null }, onCancel = { editing = null },
+            )
+            "title" -> PfpModalSpec.TextEntry(
+                key = "pc_add_title", title = "Game name", initial = title, label = "Game name",
+                onConfirm = { title = it; editing = null }, onCancel = { editing = null },
+            )
+            else -> null
         },
     )
+
+    SettingsScaffold(
+        title = "Library",
+        subtitle = "Add ${launcher.name} Game",
+        onBack = onBack,
+        modalOpen = modal.open,
+        onInterceptAction = modal.intercept,
+        modifier = modifier,
+    ) {
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
+        Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
+            adapter?.idPrompt?.let { Hint(it) }
+            SettingsGroup("Game")
+            SettingsValueRow(label = "Game ID", value = id.ifBlank { "Not set" }, onClick = { editing = "id" })
+            SettingsValueRow(label = "Game name", value = title.ifBlank { "Not set" }, onClick = { editing = "title" })
+            if (sources.isNotEmpty()) {
+                SettingsValueRow(
+                    label = "Source",
+                    value = source.orEmpty(),
+                    sublabel = "Press to switch store",
+                    onClick = { source = nextPcSource(sources, source) },
+                )
+            }
+            SettingsGroup("Add")
+            SettingsRow(
+                label = "Test Launch",
+                sublabel = "Open the game in ${launcher.name} to check the ID",
+                onClick = if (canTestPcGame(id)) ({ onTest(id.trim(), source) }) else null,
+            )
+            SettingsRow(
+                label = "Add Game",
+                sublabel = if (canAddPcGame(id, title)) "Add it to your Windows library" else "Set a Game ID and a name first",
+                onClick = if (canAddPcGame(id, title)) ({ onAdd(id.trim(), title.trim(), source) }) else null,
+            )
+        }
+    }
+    modal.Content()
 }
 
 /**

@@ -3,7 +3,6 @@ package com.playfieldportal.feature.library.scanner
 import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
-import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
 import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.core.data.saf.SafChild
 import com.playfieldportal.core.data.saf.querySafChildren
@@ -52,8 +51,6 @@ data class UnmatchedRom(
     val detectedPlatformId: String?,    // null = truly unknown
 )
 
-enum class ScanType { NEW_FILES_ONLY, FULL_RESCAN }
-
 // Outcome of creating the ES-DE folder structure under a picked root.
 data class FolderSetupResult(val created: Int, val existing: Int, val total: Int)
 
@@ -96,210 +93,13 @@ private data class SafFileChild(
 @Singleton
 class RomScanner @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val platformExtensionMap: PlatformExtensionMap,
     private val discImageResolver: DiscImageResolver,
-    private val folderHintResolver: PlatformFolderHintResolver,
     private val arcadeRomsets: ArcadeRomsetCatalog,
     private val discSetBuilder: DiscSetBuilder,
     private val discCompanionSuppressor: DiscCompanionSuppressor,
     private val m3uPlaylistReader: M3uPlaylistReader,
     private val discRegionReader: DiscRegionReader,
 ) {
-    private val defaultFolders = listOf(
-        "/storage/emulated/0/ROMs",
-        "/storage/emulated/0/Games",
-        "/storage/emulated/0/RetroArch/roms",
-        "/storage/emulated/0/PPSSPP/PSP/GAME",
-        "/sdcard/ROMs",
-    )
-
-    // Scan is ALWAYS user-initiated — never called automatically
-    fun scan(
-        folders: List<String>,
-        scanType: ScanType,
-        existingRomPaths: Set<String>,
-    ): Flow<ScanResult> = flow {
-        Timber.i("ROM scan started — type=$scanType, folders=${folders.size}")
-
-        val newGames               = mutableListOf<Game>()
-        val unmatched              = mutableListOf<UnmatchedRom>()
-        val requiresUserAssignment = mutableListOf<UnmatchedRom>()
-        var alreadyInLibrary       = 0
-        var filesScanned           = 0
-        val presentRomPaths        = mutableSetOf<String>()
-
-        val foldersToScan = folders.ifEmpty { defaultFolders }
-
-        for (folderPath in foldersToScan) {
-            val folder = File(folderPath)
-            if (!folder.exists() || !folder.isDirectory) {
-                Timber.w("Scan folder not found: $folderPath")
-                continue
-            }
-
-            // ── Phase 1: Resolve disc images before touching anything else ──
-            // This produces the authoritative launch file for every disc-based game
-            // and the full set of companion files that must be suppressed.
-            val discResolution = discImageResolver.resolveFolder(folder)
-
-            // Add resolved disc games (.cue → PS1, orphan .bin → Mega Drive). Keep their launch
-            // paths separate so phase 2 does not add the same sheet a second time.
-            val resolvedLaunchPaths = discResolution.resolvedDiscs
-                .mapTo(mutableSetOf()) { it.launchFile.absolutePath }
-            for (disc in discResolution.resolvedDiscs) {
-                presentRomPaths += disc.launchFile.absolutePath
-                if (scanType == ScanType.NEW_FILES_ONLY &&
-                    disc.launchFile.absolutePath in existingRomPaths) {
-                    alreadyInLibrary++
-                    continue
-                }
-                newGames.add(
-                    Game(
-                        title      = disc.launchFile.nameWithoutExtension.sanitizeRomName(),
-                        platformId = disc.platformId,
-                        romPath    = disc.launchFile.absolutePath,
-                    )
-                )
-                Timber.d("Disc game added: ${disc.launchFile.name} → platform=${disc.platformId}")
-            }
-
-            // .chd / .img: try folder hint first, fall back to user assignment
-            for (ambiguousFile in discResolution.requiresUserAssignment) {
-                val hint = folderHintResolver.detectFromPath(ambiguousFile.absolutePath)
-                if (hint != null) {
-                    presentRomPaths += ambiguousFile.absolutePath
-                    if (scanType == ScanType.NEW_FILES_ONLY &&
-                        ambiguousFile.absolutePath in existingRomPaths) {
-                        alreadyInLibrary++
-                        continue
-                    }
-                    newGames.add(
-                        Game(
-                            title      = ambiguousFile.nameWithoutExtension.sanitizeRomName(),
-                            platformId = hint,
-                            romPath    = ambiguousFile.absolutePath,
-                        )
-                    )
-                    Timber.d("Folder-hinted ambiguous disc: ${ambiguousFile.name} → $hint")
-                } else {
-                    requiresUserAssignment.add(
-                        UnmatchedRom(
-                            filePath           = ambiguousFile.absolutePath,
-                            fileName           = ambiguousFile.name,
-                            detectedPlatformId = null,
-                        )
-                    )
-                }
-            }
-
-            // ── Phase 2: Scan definitive + folder-sensitive extension files ──
-            val allFiles = folder.walkTopDown()
-                .filter { it.isFile &&
-                    (platformExtensionMap.isDefinitive(it.extension) ||
-                     platformExtensionMap.isFolderSensitive(it.extension) ||
-                     platformExtensionMap.isPlaylist(it.extension)) }
-                .toList()
-
-            for (file in allFiles) {
-                filesScanned++
-
-                // Resolved sheets were emitted in phase 1; companion files (and any resolved
-                // launch path already handled there) must not become duplicate game rows.
-                if (file.absolutePath in discResolution.suppressedPaths ||
-                    file.absolutePath in resolvedLaunchPaths
-                ) continue
-                presentRomPaths += file.absolutePath
-
-                if (scanType == ScanType.NEW_FILES_ONLY &&
-                    file.absolutePath in existingRomPaths) {
-                    alreadyInLibrary++
-                    continue
-                }
-
-                emit(ScanResult.Progress(
-                    ScanProgress(
-                        currentFolder  = folderPath,
-                        filesScanned   = filesScanned,
-                        filesFound     = newGames.size,
-                        totalEstimated = allFiles.size,
-                    )
-                ))
-
-                // For folder-sensitive extensions (.iso), let parent folder name win;
-                // fall back to the extension's default platform.
-                val platformId = if (platformExtensionMap.isFolderSensitive(file.extension) ||
-                    platformExtensionMap.isPlaylist(file.extension)
-                ) {
-                    val hint = folderHintResolver.detectFromPath(file.absolutePath)
-                    if (hint != null) {
-                        Timber.d("Folder-hinted: ${file.name} → $hint")
-                        hint
-                    } else {
-                        platformExtensionMap.folderSensitiveDefault(file.extension)
-                    }
-                } else {
-                    platformExtensionMap.detectPlatform(file.extension)
-                }
-
-                // Arcade validation: a .zip/.7z is only a game if it's a recognised romset, and its
-                // romset name routes it to the exact CPS system (splitting CPS out of generic MAME).
-                when (val decision = arcadeRomsets.decide(
-                    file.nameWithoutExtension, file.extension.lowercase(), platformId,
-                )) {
-                    is ArcadeRomsetCatalog.Decision.Route -> {
-                        newGames.add(Game(
-                            title      = decision.title,
-                            platformId = decision.platformId,
-                            romPath    = file.absolutePath,
-                        ))
-                        continue
-                    }
-                    ArcadeRomsetCatalog.Decision.Skip -> {
-                        Timber.d("Skipped non-romset in CPS folder: ${file.name}")
-                        continue
-                    }
-                    ArcadeRomsetCatalog.Decision.UseDefault -> Unit  // fall through to normal handling
-                }
-
-                if (platformId != null) {
-                    newGames.add(
-                        Game(
-                            title      = file.nameWithoutExtension.sanitizeRomName(),
-                            platformId = platformId,
-                            romPath    = file.absolutePath,
-                        )
-                    )
-                } else {
-                    unmatched.add(
-                        UnmatchedRom(
-                            filePath           = file.absolutePath,
-                            fileName           = file.name,
-                            detectedPlatformId = null,
-                        )
-                    )
-                }
-            }
-        }
-
-        Timber.i(
-            "ROM scan complete — " +
-            "new=${newGames.size}, " +
-            "unmatched=${unmatched.size}, " +
-            "needsAssignment=${requiresUserAssignment.size}, " +
-            "existing=$alreadyInLibrary"
-        )
-
-        emit(
-            ScanResult.Complete(
-                discSetBuilder.assign(newGames, discRegionReader::read, m3uPlaylistReader::read),
-                alreadyInLibrary,
-                unmatched,
-                requiresUserAssignment,
-                presentRomPaths = presentRomPaths,
-            )
-        )
-
-    }.flowOn(Dispatchers.IO)
 
     // ── Per-Memory-Card scan ──────────────────────────────────────────────────
     //
@@ -549,13 +349,21 @@ class RomScanner @Inject constructor(
     // Immediate child directory names of a granted tree — the ES-DE system folders directly under
     // the ROM root (e.g. "gba", "snes", "psx"). One ContentResolver query; files are ignored.
     // Drives the single-scan autoload: each name is mapped to a platform by PlatformFolderHintResolver.
-    suspend fun listSubfolderNames(treeUri: String): List<String> = withContext(Dispatchers.IO) {
-        val tree = runCatching { Uri.parse(treeUri) }.getOrNull() ?: return@withContext emptyList()
+    suspend fun listSubfolderNames(treeUri: String): List<String> =
+        listSubfolderNamesOrNull(treeUri) ?: emptyList()
+
+    /**
+     * [listSubfolderNames] for callers that must tell an unreadable root from an empty one: null
+     * when the tree cannot be parsed or the provider cannot list it — a volume still mounting
+     * after a reboot answers this way. A scan must not read that as "no games here" (survey L1).
+     */
+    suspend fun listSubfolderNamesOrNull(treeUri: String): List<String>? = withContext(Dispatchers.IO) {
+        val tree = runCatching { Uri.parse(treeUri) }.getOrNull() ?: return@withContext null
         val rootDocId = runCatching { DocumentsContract.getTreeDocumentId(tree) }.getOrNull()
-            ?: return@withContext emptyList()
-        context.contentResolver.querySafChildren(tree, rootDocId)
-            .filter { it.isDirectory }
-            .map { it.name }
+            ?: return@withContext null
+        context.contentResolver.querySafChildrenOrNull(tree, rootDocId)
+            ?.filter { it.isDirectory }
+            ?.map { it.name }
     }
 
     // Creates any missing subfolders (by name) directly under a granted tree via SAF — the ES-DE
@@ -674,7 +482,6 @@ class RomScanner @Inject constructor(
         }
     }.getOrNull()
 
-    private fun String.sanitizeRomName(): String = cleanRomTitle(this)
 }
 
 // Converts a SAF externalstorage document id ("primary:ROMs/game.iso", "1A2B-3C4D:Games/game.iso")
