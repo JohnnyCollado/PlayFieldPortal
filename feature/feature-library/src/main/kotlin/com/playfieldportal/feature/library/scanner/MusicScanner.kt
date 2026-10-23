@@ -94,6 +94,12 @@ class MusicScanner @Inject constructor(
         // Phase 1: enumerate, cursor-only. Music folders are always recursive — `music_folders`
         // has no scan_recursively column, unlike photo and video libraries.
         val walk = context.walkSafTree(treeUri, recursive = true)
+        // Part of the tree could not be listed: replacing the library from this walk would drop
+        // everything in the unread folders (survey L17). Nothing is changed; the next scan retries.
+        if (walk.incomplete) {
+            send(MusicScanResult.Error(folder.id, "Part of the folder couldn't be read, so nothing was changed. Try again in a moment."))
+            return@channelFlow
+        }
         if (!deep && knownSignature != null && walk.signature == knownSignature) {
             Timber.i("Music scan skipped — tree unchanged: \"${folder.displayName}\" (${walk.signature})")
             send(MusicScanResult.Unchanged(folder.id))

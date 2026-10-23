@@ -1060,19 +1060,10 @@ class GameDetailViewModelTest {
     }
 
     @Test
-    fun `onLaunchFailed sets launchError in state`() = runTest {
-        viewModel.onLaunchFailed("Emulator not found. Is it installed?")
-
-        viewModel.uiState.test {
-            val state = awaitItem()
-            assertEquals("Emulator not found. Is it installed?", state.launchError)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
     fun `dismissLaunchError clears launchError`() = runTest {
-        viewModel.onLaunchFailed("some error")
+        // Play before the page has loaded is a real launch error ("Game is still loading").
+        viewModel.launch()
+        assertEquals("Game is still loading", viewModel.uiState.value.launchError)
         viewModel.dismissLaunchError()
 
         viewModel.uiState.test {
@@ -1085,9 +1076,12 @@ class GameDetailViewModelTest {
 
     @Test
     fun `requestLaunchHelp raises the recovery sheet through the dispatcher`() = runTest {
+        // A game whose file the last scan could not find: Play refuses with a launch error.
+        coEvery { gameRepository.getById(1L) } returns fakeGame.copy(isMissing = true)
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
-        viewModel.onLaunchFailed("Emulator not found. Is it installed?")
+        viewModel.launch()
+        val error = viewModel.uiState.value.launchError!!
 
         viewModel.requestLaunchHelp()
         testDispatcher.scheduler.advanceUntilIdle()
@@ -1096,7 +1090,7 @@ class GameDetailViewModelTest {
             launchDispatcher.requestRecovery(
                 match { it.id == 1L },
                 any(),
-                eq("Emulator not found. Is it installed?"),
+                eq(error),
             )
         }
     }
@@ -1268,23 +1262,6 @@ class GameDetailViewModelTest {
         assertEquals("Fetch Artwork", DetailAction.FETCH_ARTWORK.label)
         assertEquals("Fetch Artwork", DetailAction.FETCH_ARTWORK.dynamicLabel(refreshing = false))
         assertEquals("Fetching Artwork…", DetailAction.FETCH_ARTWORK.dynamicLabel(refreshing = true))
-    }
-
-    @Test
-    fun `dismissArtworkMessage clears artworkMessage`() = runTest {
-        coEvery { artworkRepository.refetchArtworkForGame(1L, any()) } returns
-            ArtworkFetchResult(1L, "Crash", success = true)
-
-        viewModel.loadGame(1L)
-        testDispatcher.scheduler.advanceUntilIdle()
-        viewModel.fetchArtwork()
-        testDispatcher.scheduler.advanceUntilIdle()
-        viewModel.dismissArtworkMessage()
-
-        viewModel.uiState.test {
-            assertNull(awaitItem().artworkMessage)
-            cancelAndIgnoreRemainingEvents()
-        }
     }
 
     // ── Metadata presets — Current vs Incoming (C16 task 3.2) ─────────────

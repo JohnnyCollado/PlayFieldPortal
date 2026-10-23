@@ -68,6 +68,10 @@ class DiscSetBuilder @Inject constructor() {
         val basename: String, // lowercase raw filename
     )
 
+    // True when this candidate sits in [folder] or anywhere below it.
+    private fun Candidate.isInsideFolder(folder: String): Boolean =
+        folder.isNotEmpty() && (this.folder == folder || this.folder.startsWith("$folder/") || this.folder.startsWith("$folder\\"))
+
     private data class Assignment(
         val key: String,
         val discNumber: Int?,   // null only for the set's .m3u primary
@@ -197,8 +201,10 @@ class DiscSetBuilder @Inject constructor() {
             val resolved = mutableListOf<Candidate>()
             for (entry in entries) {
                 val name = playlistEntryName(entry) ?: continue
-                val match = (byFolderBasename[m3u.folder to name] ?: byBasename[name])
-                    ?.firstOrNull { it !== m3u }
+                // Its own folder first, then only its own subfolders: a library-wide fallback let a
+                // playlist adopt a same-named disc from an unrelated dump (survey L15).
+                val match = byFolderBasename[m3u.folder to name]?.firstOrNull { it !== m3u }
+                    ?: byBasename[name]?.firstOrNull { it !== m3u && it.isInsideFolder(m3u.folder) }
                 if (match != null) resolved.add(match)
             }
             if (resolved.isEmpty()) continue

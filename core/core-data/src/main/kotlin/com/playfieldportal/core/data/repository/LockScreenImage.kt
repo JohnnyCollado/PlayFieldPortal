@@ -100,13 +100,21 @@ class LockScreenImage(
     }
 
     /** Puts the system lock screen back to its default and forgets the image. */
-    suspend fun clear(): Unit = withContext(Dispatchers.IO) {
-        runCatching { system.clearLock() }.onFailure { Timber.w(it, "Couldn't reset the lock screen") }
+    /**
+     * Resets the lock screen to the device default. True when the system accepted it; on a refusal
+     * nothing is forgotten, so the state keeps describing what the device still shows (survey L25).
+     */
+    suspend fun clear(): Boolean = withContext(Dispatchers.IO) {
+        val reset = runCatching { system.clearLock() }
+            .onFailure { Timber.w(it, "Couldn't reset the lock screen") }
+            .getOrDefault(false)
+        if (!reset) return@withContext false
         File(context.filesDir, DIR).listFiles()?.forEach { it.delete() }
         context.pfpDataStore.edit {
             it.remove(ThemePrefKeys.LOCKSCREEN_IMAGE)
             it.remove(ThemePrefKeys.LOCKSCREEN_SOURCE)
         }
+        true
     }
 
     /** A theme reset: undo the lock screen only when a theme set it, never the user's own. */

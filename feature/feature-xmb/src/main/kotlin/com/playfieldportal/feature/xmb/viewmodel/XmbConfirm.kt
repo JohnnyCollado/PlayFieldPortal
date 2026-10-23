@@ -25,6 +25,9 @@ sealed interface XmbConfirm {
         val cardNames: List<String>,
     ) : XmbConfirm
 
+    /** Take an app-style row (a standard app, or one unmarked as a game) out of the library. */
+    data class RemoveAppRow(val gameId: Long, val title: String) : XmbConfirm
+
     /** Take an Android-library game out of the library (the app stays installed). */
     data class RemoveAndroidGame(val gameId: Long, val title: String) : XmbConfirm
 
@@ -92,10 +95,22 @@ fun xmbConfirmCopy(confirm: XmbConfirm): XmbConfirmCopy = when (confirm) {
         confirmLabel = "Remove",
         destructive = true,
     )
+    // The Android card holds installed apps — no ROM files, no scan (survey U27).
     is XmbConfirm.RemoveCard -> XmbConfirmCopy(
         title = "Remove \"${confirm.title}\" card?",
-        message = "Its games leave your library too. ROM files stay on disk, and a scan can bring them back.",
+        message = if (confirm.platformId == XMBViewModel.ANDROID_PLATFORM_ID) {
+            "Its games leave your library too. The apps stay installed, and Find Games can add them back."
+        } else {
+            "Its games leave your library too. ROM files stay on disk, and a scan can bring them back."
+        },
         confirmLabel = "Remove Card",
+        destructive = true,
+    )
+    // An app row has no file and no scan to bring it back (survey U28).
+    is XmbConfirm.RemoveAppRow -> XmbConfirmCopy(
+        title = "Remove \"${confirm.title}\" from Library?",
+        message = "The app stays installed and stays in its app categories.",
+        confirmLabel = "Remove",
         destructive = true,
     )
     is XmbConfirm.RemoveTrack -> removeFromLibraryCopy(confirm.title, "a music folder")
@@ -161,6 +176,7 @@ internal fun confirmFor(menu: XMBContextMenu, itemId: String): XmbConfirm? = whe
         "remove_game" -> XmbConfirm.RemoveGame(menu.gameId, menu.title)
         "remove_missing" -> XmbConfirm.RemoveMissing(menu.gameId, menu.title)
         "remove_app" -> XmbConfirm.RemoveAndroidGame(menu.gameId, menu.title)
+        "remove_app_row" -> XmbConfirm.RemoveAppRow(menu.gameId, menu.title)
         else -> null
     }
     else -> null

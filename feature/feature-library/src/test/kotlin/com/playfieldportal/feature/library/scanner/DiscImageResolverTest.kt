@@ -1,7 +1,5 @@
 package com.playfieldportal.feature.library.scanner
 
-import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
-import io.mockk.mockk
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -18,7 +16,7 @@ class DiscImageResolverTest {
     @get:Rule
     val tmp = TemporaryFolder()
 
-    private val resolver = DiscImageResolver(mockk<PlatformFolderHintResolver>(relaxed = true))
+    private val resolver = DiscImageResolver()
 
     @Test
     fun `cue companion bins are suppressed`() {
@@ -31,7 +29,6 @@ class DiscImageResolverTest {
         val result = resolver.resolveFiles(listOf(cue, bin))
 
         assertEquals(setOf(bin.absolutePath), result.suppressedPaths)
-        assertEquals(cue.absolutePath, result.resolvedDiscs.single().launchFile.absolutePath)
     }
 
     @Test
@@ -86,12 +83,9 @@ class DiscImageResolverTest {
         val unscannable = resolver.resolveFiles(listOf(cue, bin), scannableSheets = setOf("iso", "bin", "chd"))
         val scannable = resolver.resolveFiles(listOf(cue, bin), scannableSheets = setOf("cue", "bin"))
 
+        // The sheet is not a row, so the bin is not a companion either: it stays a game.
         assertTrue(bin.absolutePath !in unscannable.suppressedPaths)
-        // The sheet is not a row, so the bin is not a companion either: it resolves as a disc of
-        // its own (a bin with no usable sheet is an orphan, exactly like a sheet-less dump).
-        assertEquals(bin.absolutePath, unscannable.resolvedDiscs.single().launchFile.absolutePath)
         assertEquals(setOf(bin.absolutePath), scannable.suppressedPaths)
-        assertEquals(cue.absolutePath, scannable.resolvedDiscs.single().launchFile.absolutePath)
     }
 
     @Test

@@ -83,6 +83,9 @@ open class BackupManager @Inject constructor(
     private val tasks: com.playfieldportal.core.ui.notification.BackgroundTaskCenter,
     // Brings an archive made before per-list state (v54) onto the current model after restore.
     private val listStateBackfiller: com.playfieldportal.core.data.database.ListStateBackfiller,
+    // The restore's database writes run as one transaction, so a failure part-way leaves the
+    // library as it was instead of half-wiped (survey, latent backup items).
+    private val transactions: com.playfieldportal.core.data.database.DatabaseTransactions,
 ) {
     private val json = Json { prettyPrint = false; ignoreUnknownKeys = true }
 
@@ -121,6 +124,8 @@ open class BackupManager @Inject constructor(
         val fileName = "pfp_backup_${createdAt}${BACKUP_FILE_EXTENSION}"
         val tempFile = File(context.cacheDir, fileName)
 
+        // What restore will have to read back, counted as it is written (see BackupLimits).
+        entryCount = 0; totalBytes = 0L; largestEntry = 0L
         ZipOutputStream(tempFile.outputStream().buffered()).use { zip ->
             zip.writeJson(BackupEntry.MANIFEST,       json.encodeToString(BackupManifest.serializer(), manifest))
             zip.writeJson(BackupEntry.GAMES,          json.encodeToString(listSerializer<GameEntity>(), games))
@@ -173,10 +178,16 @@ open class BackupManager @Inject constructor(
             BUNDLED_FILE_ROOTS.forEach { root -> zip.bundleTree(filesDir, root) }
         }
 
+        // Never hand the user a backup that restore would refuse.
+        if (!BackupLimits.fits(entryCount, totalBytes, largestEntry)) {
+            tempFile.delete()
+            error(BackupLimits.TOO_LARGE_MESSAGE)
+        }
+
         val exported = exportToBackupFolder(backupFolder, tempFile, fileName)
         tempFile.delete()
         if (exported == null) {
-            error("Could not write to the backup folder. Re-link it under Settings → Folder Access.")
+            error("Could not write to the backup folder. Choose the backup folder again in Settings ▸ System ▸ Backup & Restore.")
         }
         fileName
     }.fold(
@@ -190,6 +201,8 @@ open class BackupManager @Inject constructor(
             BackupResult.Success(it)
         },
         onFailure = {
+            // A cancelled backup is not a failed one: let the cancellation through (survey).
+            if (it is kotlinx.coroutines.CancellationException) throw it
             tasks.report(
                 id = BACKUP_TASK_ID,
                 label = "Backup failed",
@@ -223,6 +236,8 @@ open class BackupManager @Inject constructor(
                 source       = it,
                 staging      = staging,
                 bundledRoots = BUNDLED_FILE_ROOTS,
+                // The limits the backup was made under, not the generic archive defaults.
+                limits       = BackupLimits.ZIP,
                 selfPackage  = context.packageName,
             )
         }
@@ -292,9 +307,7 @@ open class BackupManager @Inject constructor(
             json.decodeFromString(SettingsSnapshot.serializer(), it)
         }
 
-        // ── Commit bundled files (only when the backup actually carried some) ─
         val filesDirPath = filesDir.absolutePath
-        bundle.commitFiles(filesDir)
 
         // ── Rewrite internal-storage paths onto THIS package's filesDir ──
         val remappedGames = games.map { g ->
@@ -307,6 +320,9 @@ open class BackupManager @Inject constructor(
         }
 
         // ── Apply to the database ────────────────────────────────────────
+        // One transaction: a failure anywhere below rolls every table back, so the library is
+        // never left half-wiped. Files are committed only once the database part has landed.
+        transactions.run {
         // Games / sessions: full replace.
         gameDao.deleteAll()
         playSessionDao.deleteAll()
@@ -398,6 +414,10 @@ open class BackupManager @Inject constructor(
         // Themes: upsert user + built-in rows, then re-assert the single active one.
         backupDao.insertThemes(themes)
         themes.firstOrNull { it.isActive }?.let { backupDao.setActiveTheme(it.id) }
+        }
+
+        // ── Commit bundled files (only when the backup actually carried some) ─
+        bundle.commitFiles(filesDir)
 
         // Settings last, with the wallpaper path remapped onto this filesDir.
         if (settings != null) restoreSettingsSnapshot(settings.remapWallpaper(filesDirPath))
@@ -434,6 +454,9 @@ open class BackupManager @Inject constructor(
             RestoreResult.Success(refusals)
         },
         onFailure = {
+            // A restore that stopped before committing its files leaves nothing staged behind.
+            runCatching { File(context.filesDir, RESTORE_STAGING_DIR).deleteRecursively() }
+            if (it is kotlinx.coroutines.CancellationException) throw it
             tasks.report(
                 id = RESTORE_TASK_ID,
                 label = "Restore failed",
@@ -498,21 +521,35 @@ open class BackupManager @Inject constructor(
         return out.sortedByDescending { it.lastModified }
     }
 
+    // The archive being built, measured as it is written (reset per backup; one backup at a time).
+    private var entryCount = 0
+    private var totalBytes = 0L
+    private var largestEntry = 0L
+
+    private fun count(bytes: Long) {
+        entryCount++
+        totalBytes += bytes
+        if (bytes > largestEntry) largestEntry = bytes
+    }
+
     private fun ZipOutputStream.bundleTree(filesDir: File, root: String) {
         val dir = File(filesDir, root)
         if (!dir.exists()) return
         dir.walkTopDown().filter { it.isFile }.forEach { f ->
             val entryName = BACKUP_FILES_PREFIX + f.relativeTo(filesDir).invariantSeparatorsPath
             putNextEntry(ZipEntry(entryName))
-            f.inputStream().use { it.copyTo(this) }
+            val copied = f.inputStream().use { it.copyTo(this) }
             closeEntry()
+            count(copied)
         }
     }
 
     private fun ZipOutputStream.writeJson(name: String, content: String) {
         putNextEntry(ZipEntry(name))
-        write(content.toByteArray(Charsets.UTF_8))
+        val bytes = content.toByteArray(Charsets.UTF_8)
+        write(bytes)
         closeEntry()
+        count(bytes.size.toLong())
     }
 
     private inline fun <reified T> Map<String, String>.decodeList(name: String): List<T> =
@@ -562,8 +599,31 @@ open class BackupManager @Inject constructor(
     }
 
     protected open suspend fun restoreSettingsSnapshot(snapshot: SettingsSnapshot) {
-        context.pfpDataStore.edit { prefs ->
-            prefs.clear()
+        context.pfpDataStore.edit { prefs -> applySettingsSnapshot(prefs, snapshot) }
+    }
+
+    // Inline reified helper for list serializers — avoids allocating KType reflectively
+    private inline fun <reified T> listSerializer() =
+        kotlinx.serialization.builtins.ListSerializer(
+            kotlinx.serialization.serializer<T>()
+        )
+
+    companion object {
+        /**
+         * Writes [snapshot] over the backed-up keys only. Every key the backup does not carry —
+         * one-time migration flags, device-only state — is left alone; prefs.clear() erased them,
+         * so finished migrations ran again after a restore (survey, latent backup items). A
+         * backed-up key the snapshot lacks goes back to its default.
+         */
+        internal fun applySettingsSnapshot(
+            prefs: androidx.datastore.preferences.core.MutablePreferences,
+            snapshot: SettingsSnapshot,
+        ) {
+            BACKED_UP_STRING_KEYS.forEach { prefs.remove(it) }
+            BACKED_UP_BOOLEAN_KEYS.forEach { prefs.remove(it) }
+            BACKED_UP_FLOAT_KEYS.forEach { prefs.remove(it) }
+            BACKED_UP_LONG_KEYS.forEach { prefs.remove(it) }
+            BACKED_UP_INT_KEYS.forEach { prefs.remove(it) }
 
             BACKED_UP_STRING_KEYS.forEach { key ->
                 snapshot.entries[key.name]?.let { value ->
@@ -593,15 +653,7 @@ open class BackupManager @Inject constructor(
                 snapshot.entries[key.name]?.toIntOrNull()?.let { prefs[key] = it }
             }
         }
-    }
 
-    // Inline reified helper for list serializers — avoids allocating KType reflectively
-    private inline fun <reified T> listSerializer() =
-        kotlinx.serialization.builtins.ListSerializer(
-            kotlinx.serialization.serializer<T>()
-        )
-
-    companion object {
         // Stable tray ids so a repeated backup/restore replaces its row rather than stacking.
         private const val BACKUP_TASK_ID = "backup_create"
         private const val RESTORE_TASK_ID = "backup_restore"
@@ -695,7 +747,7 @@ open class BackupManager @Inject constructor(
             stringPreferencesKey("video_root_tree_uris"),
             stringPreferencesKey("photo_root_tree_uris"),
             // Where backups are saved (SAF folder). Inert without a live grant; carried so a
-            // restore can pre-point the Folder Access picker at it.
+            // restore can pre-point the folder picker at it.
             stringPreferencesKey("backup_folder_tree_uri"),
             // Portable artwork library (SAF folder + library UUID). The tree URI is inert
             // without a live grant; carrying it lets a restore pre-point the re-link picker.
@@ -774,7 +826,9 @@ open class BackupManager @Inject constructor(
             // re-open the wizard on top of the restored configuration.
             booleanPreferencesKey("initial_setup_seen"),
             // Seed flag — kept so a restore over a fresh install doesn't re-seed on top of the
-            // restored data.            booleanPreferencesKey("db_seeded_v1"),
+            // restored data. (It used to sit at the end of this comment line, so it was never in
+            // the list — survey, latent backup items.)
+            booleanPreferencesKey("db_seeded_v1"),
         )
 
         private val BACKED_UP_FLOAT_KEYS = listOf(

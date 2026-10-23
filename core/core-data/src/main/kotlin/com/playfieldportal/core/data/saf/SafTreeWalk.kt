@@ -21,12 +21,18 @@ data class SafFile(
 data class SafTreeWalk(
     val files: List<SafFile>,
     val signature: String,
+    /**
+     * True when at least one folder could not be listed (the provider threw or returned no
+     * cursor — a card still mounting answers this way). [files] is then only part of the tree, and
+     * a caller must not replace its library from it (survey L17).
+     */
+    val incomplete: Boolean = false,
 )
 
 /**
  * Enumerates every file under [treeUri], cursor-only.
  *
- * This is the cheap half of a library scan: one [querySafChildren] cursor per directory, which
+ * This is the cheap half of a library scan: one [querySafChildrenOrNull] cursor per directory, which
  * returns name/MIME/mtime/size for every entry in a single IPC round-trip. Nothing here opens a
  * file, decodes an image or touches MediaMetadataRetriever — that is the caller's probe phase,
  * and it is where all the real cost lives.
@@ -51,6 +57,7 @@ suspend fun Context.walkSafTree(treeUri: Uri, recursive: Boolean): SafTreeWalk {
     val files = mutableListOf<SafFile>()
     val visitedDirs = HashSet<String>()
     val seenFiles = HashSet<String>()
+    var incomplete = false
 
     val rootDocId = safScanStartDocId(this, treeUri)
     visitedDirs.add(rootDocId)
@@ -60,7 +67,11 @@ suspend fun Context.walkSafTree(treeUri: Uri, recursive: Boolean): SafTreeWalk {
     while (stack.isNotEmpty()) {
         coroutineContext.ensureActive()
         val (dirDocId, relPath) = stack.removeLast()
-        val children = contentResolver.querySafChildren(treeUri, dirDocId)
+        val children = contentResolver.querySafChildrenOrNull(treeUri, dirDocId)
+        if (children == null) {
+            incomplete = true
+            continue
+        }
         if (children.hasNoMediaMarker()) continue
         for (child in children) {
             coroutineContext.ensureActive()
@@ -76,7 +87,7 @@ suspend fun Context.walkSafTree(treeUri: Uri, recursive: Boolean): SafTreeWalk {
             }
         }
     }
-    return SafTreeWalk(files, safTreeSignature(files))
+    return SafTreeWalk(files, safTreeSignature(files), incomplete)
 }
 
 /**

@@ -61,8 +61,8 @@ val DEFAULT_BINDINGS = listOf(
     // The virtual keyboard's own buttons, after the Steam Deck: L2 Shift, R3 Caps Lock.
     GamepadBinding(KeyEvent.KEYCODE_BUTTON_L2,     GamepadAction.SHIFT),
     GamepadBinding(KeyEvent.KEYCODE_BUTTON_THUMBR, GamepadAction.CAPS_LOCK),
-    // The task tray was removed; Select keeps its repurposed sort role.
-    GamepadBinding(KeyEvent.KEYCODE_BUTTON_SELECT, GamepadAction.CHANGE_SORT),
+    // Select opens the focused category's menu (it used to duplicate X's sort; X still sorts).
+    GamepadBinding(KeyEvent.KEYCODE_BUTTON_SELECT, GamepadAction.CATEGORY_MENU),
     GamepadBinding(KeyEvent.KEYCODE_ENTER,         GamepadAction.SELECT),
     GamepadBinding(KeyEvent.KEYCODE_BACK,          GamepadAction.BACK),
     GamepadBinding(KeyEvent.KEYCODE_DPAD_CENTER,   GamepadAction.SELECT),
@@ -127,6 +127,18 @@ fun GamepadAction.displayLabel(): String = when (this) {
     GamepadAction.HOME              -> "Start (Notifications / Confirm in pickers)"
     GamepadAction.SHIFT             -> "Shift (Keyboard)"
     GamepadAction.CAPS_LOCK         -> "Caps Lock (Keyboard)"
+    GamepadAction.CATEGORY_MENU     -> "Category Menu"
+}
+
+/**
+ * [this] with Select bound as it is by default now. A table saved before Select opened the
+ * category menu still says Select sorts; every saved table is built from [DEFAULT_BINDINGS]
+ * (see [gamepadMappingsFor]), so bringing that one binding forward changes nothing a user chose.
+ */
+fun GamepadMappings.withCurrentSelectBinding(): GamepadMappings {
+    val current = DEFAULT_BINDINGS.first { it.keyCode == KeyEvent.KEYCODE_BUTTON_SELECT }
+    if (bindings.none { it.keyCode == current.keyCode && it.action == GamepadAction.CHANGE_SORT }) return this
+    return copy(bindings = bindings.map { if (it.keyCode == current.keyCode) current else it })
 }
 
 fun Int.keycodeDisplayName(): String = when (this) {

@@ -387,7 +387,7 @@ class ShibaLibraryViewModel @Inject constructor(
             GamepadAction.CHANGE_SORT -> if (s.searchFocused) startSearchEdit() else focusSearch()
             GamepadAction.OPEN_CONTEXT_MENU -> openOptions()
             GamepadAction.BACK -> close()
-            GamepadAction.HOME, GamepadAction.SHIFT, GamepadAction.CAPS_LOCK -> Unit
+            GamepadAction.HOME, GamepadAction.SHIFT, GamepadAction.CAPS_LOCK, GamepadAction.CATEGORY_MENU -> Unit
         }
     }
 

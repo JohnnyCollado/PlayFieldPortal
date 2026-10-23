@@ -224,4 +224,14 @@ class ContextMenuPredicateTest {
         assertNull(categoryLongPressMenu(state.copy(activeSettingsScreen = "settings_display"), index = 0))
         assertNull(categoryLongPressMenu(state.copy(categoryMoveSession = CategoryMoveSession(state.categories, 0)), index = 0))
     }
+
+    // The pad's Select button reaches the category menu a long-press opens (it had no pad path).
+    @Test
+    fun `Select opens the current category's menu on the bare XMB, and nothing over anything else`() {
+        val item = XMBItem(id = "g1", title = "G", gameId = 1L)
+        val state = state(BuiltInCategory.GAMES, item).copy(showBootSequence = false)
+        assertEquals(BuiltInCategory.GAMES, selectButtonCategoryMenu(state)?.categoryMenuId)
+        assertNull(selectButtonCategoryMenu(state.copy(activeSettingsScreen = "settings_display")))
+        assertNull(selectButtonCategoryMenu(state.copy(markMode = true)))
+    }
 }

@@ -76,6 +76,28 @@ class DiscSetReconcilerTest {
         }
     }
 
+    // Survey L16 (docs/audits/codebase-survey-2026-10-22.md): the rewrite used the row read before
+    // the (possibly long) scan, so a favorite or artwork set mid-scan was written back to its old
+    // value. The stored row is the base; only the scan's own missing flags come from the caller.
+    @Test
+    fun `a rewrite keeps what changed in the table during the scan`() = runTest {
+        val storedBefore = scannedAlone(1, id = 1L)
+        val newDisc = scannedAlone(2)
+        coEvery { gameRepository.getByPlatform("psx") } returns listOf(
+            // Favorited and given art while the scan walked the folders.
+            storedBefore.copy(isDiscPrimary = false, isFavorite = true, artworkUri = "/art/pe2.png"),
+            newDisc.copy(id = 2L),
+        )
+
+        reconciler.reconcilePlatform("psx", existingRows = listOf(storedBefore.copy(isMissing = false)), newRows = listOf(newDisc))
+
+        coVerify(exactly = 1) {
+            gameRepository.upsert(match {
+                it.romPath == storedBefore.romPath && it.isFavorite && it.artworkUri == "/art/pe2.png" && it.isDiscPrimary
+            })
+        }
+    }
+
     @Test
     fun `a set the scan did not disturb is left alone`() = runTest {
         val both = builder.assign(listOf(disc(1, id = 1L), disc(2, id = 2L)), m3uReader = { null })

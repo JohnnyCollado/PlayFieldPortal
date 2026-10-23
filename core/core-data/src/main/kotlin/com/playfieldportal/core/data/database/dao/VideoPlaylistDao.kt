@@ -23,7 +23,9 @@ interface VideoPlaylistDao {
     @Query(
         """
         SELECT p.*, (
-            SELECT COUNT(*) FROM video_playlist_items pi WHERE pi.playlist_id = p.id
+            SELECT COUNT(*) FROM video_playlist_items pi
+            INNER JOIN videos v ON v.id = pi.video_id
+            WHERE pi.playlist_id = p.id
         ) AS video_count
         FROM video_playlists p
         ORDER BY p.sort_order ASC, p.created_at ASC
@@ -66,6 +68,10 @@ interface VideoPlaylistDao {
 
     @Query("DELETE FROM video_playlists WHERE id = :id")
     suspend fun delete(id: Long)
+
+    /** Drops playlist rows whose video no longer exists; see PlaylistDao.deleteOrphanedTracks. */
+    @Query("DELETE FROM video_playlist_items WHERE video_id NOT IN (SELECT id FROM videos)")
+    suspend fun deleteOrphanedItems()
 
     // Re-adding an existing membership is a no-op (composite PK + IGNORE).
     @Insert(onConflict = OnConflictStrategy.IGNORE)

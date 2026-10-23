@@ -14,13 +14,11 @@ interface VideoRepository {
 
     // ── Libraries ───────────────────────────────────────────────────────────────
     fun observeLibraries(): Flow<List<VideoLibrary>>
-    fun observeEnabledLibraries(): Flow<List<VideoLibrary>>
     suspend fun getLibraries(): List<VideoLibrary>
     suspend fun getLibrary(id: String): VideoLibrary?
     suspend fun addLibrary(displayName: String, treeUri: String, scanRecursively: Boolean = true): VideoLibrary
     suspend fun renameLibrary(id: String, displayName: String)
     suspend fun setLibraryEnabled(id: String, enabled: Boolean)
-    suspend fun setLibraryArtwork(id: String, artworkUri: String?)
     /** Removes the library and all of its videos. */
     suspend fun removeLibrary(id: String)
 

@@ -16,7 +16,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import com.playfieldportal.core.ui.wave.WaveStyle
 import com.playfieldportal.themekit.UiMediaLimits
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.flow.first
@@ -46,8 +45,8 @@ private const val TITLE_FADE_MS = 500
  * design's "mute must not silence GameBoot" rule satisfied structurally rather than by a check.
  *
  * GameBoot is ONE thing with one switch. With no custom video, [GameBootSequence] draws the
- * built-in white-field title card and its chromatic light sweeps (motion-budget aware via
- * [waveStyle]) against the bundled launch sound; assign a video and it replaces the whole
+ * built-in white-field title card and its chromatic light sweeps (dropped when [glare] is false)
+ * against the bundled launch sound; assign a video and it replaces the whole
  * presentation, sound included. The gate has already decided which of the two is playing by the
  * time this composes, so there is no fallback branch here.
  */
@@ -60,7 +59,8 @@ fun GameBootOverlay(
     audioPath: String? = null,
     /** The GameBoot channel's gain, for a clip's own track (the built-in sound is set by its player). */
     audioGain: Float = 1f,
-    waveStyle: WaveStyle = WaveStyle.ANIMATED,
+    /** Draw the light sweeps — see [gameBootGlare]. */
+    glare: Boolean = true,
     /** The clip would not play and the built-in sequence took over: the shell reports it in the tray. */
     onClipFailed: () -> Unit = {},
 ) {
@@ -118,7 +118,7 @@ fun GameBootOverlay(
             // the full length, whatever the motion budget does to the drawing.
             GameBootSequence(
                 gameTitle = gameTitle,
-                waveStyle = waveStyle,
+                glare = glare,
                 onFinished = { presentationDone = true },
                 modifier = Modifier.fillMaxSize(),
             )

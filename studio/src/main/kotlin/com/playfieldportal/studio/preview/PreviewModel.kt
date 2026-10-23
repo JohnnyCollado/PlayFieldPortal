@@ -254,7 +254,7 @@ object SampleContent {
         section(
             "Interface", "Categories, themes, display & controller",
             "Display" to "Wave, wallpaper, boot & icons",
-            "Sound" to "Menu & boot sounds",
+            "Sound" to "Menu sounds, levels & ambience",
             "Notifications" to "Panel history & retention",
             "Categories" to "Manage XMB categories",
             "Themes" to "XMB appearance, colors & icons",
@@ -276,7 +276,7 @@ object SampleContent {
         section(
             "System", "About, logs, setup & credits",
             "About" to "Play Field Portal",
-            "Logs" to "Debug & error log viewer",
+            "Logs" to "Open or share session logs",
             "Setup Wizard" to "Guided folder & account setup",
             "Credits" to "Artwork & attributions",
         ),

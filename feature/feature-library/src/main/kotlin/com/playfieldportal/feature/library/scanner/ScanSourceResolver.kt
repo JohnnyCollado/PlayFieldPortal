@@ -82,8 +82,15 @@ class ScanSourceResolver @Inject constructor(
 
     private companion object {
         // Contributes no games and an unknown present-set (see ScanResult.Complete.presentRomPaths).
+        // The error line tells a manual scan why nothing was marked missing (survey L1).
         val UNSURVEYED_SOURCE: (Set<String>) -> Flow<ScanResult> = {
-            flowOf(ScanResult.Complete(emptyList(), 0, emptyList(), emptyList(), presentRomPaths = null))
+            flowOf(
+                ScanResult.Complete(emptyList(), 0, emptyList(), emptyList(), presentRomPaths = null),
+                ScanResult.Error(UNREADABLE_ROOT_MESSAGE),
+            )
         }
+
+        const val UNREADABLE_ROOT_MESSAGE =
+            "A ROM folder could not be read. If it is on an SD card, check that the card is inserted."
     }
 }

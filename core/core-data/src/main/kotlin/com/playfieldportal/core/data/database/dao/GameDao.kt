@@ -301,16 +301,6 @@ interface GameDao {
     @Query("UPDATE games SET logo_uri = :logoUri WHERE id = :id")
     suspend fun updateLogo(id: Long, logoUri: String?)
 
-    @Query(
-        """
-        UPDATE games
-        SET total_play_time_millis = total_play_time_millis + :durationMillis,
-            last_played_at = :playedAt
-        WHERE id = :id
-    """
-    )
-    suspend fun addPlayTime(id: Long, durationMillis: Long, playedAt: Long)
-
     // Stamps a launch. No play time is known at dispatch, so only the recency moves. Every disc
     // of the launched game's set is stamped: lists show a set as its primary disc, which is not
     // always the disc that was booted.
@@ -349,10 +339,6 @@ interface GameDao {
             "WHERE platform_id = :platformId AND content_type = 'GAME' AND emulator_package IS NOT NULL"
     )
     suspend fun clearPreferredEmulatorForPlatform(platformId: String)
-
-    // For missing ROM check — returns all games that have a rom_path
-    @Query("SELECT id, rom_path FROM games WHERE rom_path IS NOT NULL")
-    suspend fun getAllRomPaths(): List<RomPathProjection>
 
     // ── Missing-ROM tracking ──────────────────────────────────────────────────
     // A missing game keeps all its state (favorite, play stats, artwork) and is only hidden
@@ -635,7 +621,3 @@ interface GameDao {
     suspend fun deleteAll()
 }
 
-data class RomPathProjection(
-    val id: Long,
-    val rom_path: String,
-)

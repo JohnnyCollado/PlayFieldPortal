@@ -1671,10 +1671,6 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
-    fun onLaunchFailed(message: String) {
-        _uiState.update { it.copy(actionMessage = null, launchError = message) }
-    }
-
     /** "Get help" on the Game Detail launch-error line: opens the shell's recovery sheet. */
     fun requestLaunchHelp() {
         val game = _uiState.value.game ?: return
@@ -1946,7 +1942,6 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
-    fun dismissArtworkMessage() = _uiState.update { it.copy(artworkMessage = null) }
     fun dismissLaunchError()    = _uiState.update { it.copy(launchError = null) }
 
     // ── Metadata presets — Current vs Incoming (C16 task 3.2) ─────────────

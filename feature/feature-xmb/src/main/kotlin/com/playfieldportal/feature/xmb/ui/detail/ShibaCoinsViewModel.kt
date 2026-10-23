@@ -346,6 +346,10 @@ fun shibaCoinsHelperItems(state: ShibaCoinsUiState): List<ControllerPromptItem> 
     // The link panel is the whole page: there is nothing to search and no view to change.
     state.focused is CoinListItem.LinkPanel -> buildList {
         if (state.canAutoMatch) add(ControllerPromptItem(GamepadAction.SELECT, "Auto-Match"))
+        // The Local Steam panel's own button, pressed by Confirm (survey P3).
+        if (state.provider == AchievementProvider.LOCAL_STEAM) {
+            add(ControllerPromptItem(GamepadAction.SELECT, "Pick Game Folder"))
+        }
         add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
         add(ControllerPromptItem(GamepadAction.BACK, "Back"))
     }
@@ -656,7 +660,7 @@ class ShibaCoinsViewModel @Inject constructor(
             GamepadAction.CHANGE_SORT -> if (s.searchFocused) startSearchEdit() else focusSearch()
             GamepadAction.OPEN_CONTEXT_MENU -> openOptions()
             GamepadAction.BACK -> close()
-            GamepadAction.HOME, GamepadAction.SHIFT, GamepadAction.CAPS_LOCK -> Unit
+            GamepadAction.HOME, GamepadAction.SHIFT, GamepadAction.CAPS_LOCK, GamepadAction.CATEGORY_MENU -> Unit
         }
     }
 
@@ -825,9 +829,11 @@ class ShibaCoinsViewModel @Inject constructor(
         when (_state.value.provider) {
             AchievementProvider.STEAM -> startAutoMatch()
             AchievementProvider.RETRO_ACHIEVEMENTS -> autoMatchRaByHash()
-            // Local Steam links from the game folder and PS Vita from the Vita3K scan — the panel
-            // says so, and there is nothing Confirm can do here.
-            AchievementProvider.LOCAL_STEAM, AchievementProvider.VITA_TROPHY -> Unit
+            // Local Steam's panel shows a Pick Game Folder button; Confirm presses it, so a pad can
+            // link the game just as a tap can (survey P3).
+            AchievementProvider.LOCAL_STEAM -> if (!_state.value.isMatching) chooseAutoMatch(legit = false)
+            // PS Vita links from the Vita3K scan; the panel says so and has no button.
+            AchievementProvider.VITA_TROPHY -> Unit
             // PS3 links from the disc's own TROPDIR, so Confirm can do the whole job here.
             AchievementProvider.PS3_TROPHY -> autoMatchPs3()
             // Xbox 360 links from the title ID in the game's own file, the same one-step way.
@@ -1346,7 +1352,7 @@ class ShibaCoinsViewModel @Inject constructor(
         ProviderSyncResult.NotLinked ->
             if (_state.value.installed) "Link this game to a provider id first"
             else "This game isn't installed — its saved achievements are shown"
-        ProviderSyncResult.MissingCredentials -> "Add your key in Settings ▸ Shiba Coins"
+        ProviderSyncResult.MissingCredentials -> "Add your key in Settings ▸ Achievements ▸ Provider Credentials"
         ProviderSyncResult.ProfileNotPublic -> "Your Steam profile's Game Details are private"
         ProviderSyncResult.NotFound -> "No achievements found for this game"
         is ProviderSyncResult.Failed -> "Sync failed: ${result.reason}"

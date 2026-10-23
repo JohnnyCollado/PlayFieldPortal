@@ -38,6 +38,7 @@ import com.playfieldportal.feature.settings.viewmodel.ControllerSettingsViewMode
 import com.playfieldportal.feature.settings.viewmodel.InitialSetupUiState
 import com.playfieldportal.feature.settings.viewmodel.InitialSetupViewModel
 import com.playfieldportal.feature.settings.viewmodel.InterfaceHints
+import com.playfieldportal.feature.settings.viewmodel.wizardOffersSkip
 import com.playfieldportal.feature.settings.viewmodel.RootFolderRow
 import com.playfieldportal.feature.settings.viewmodel.SetupAvailability
 import com.playfieldportal.feature.settings.viewmodel.SetupEmulatorRow
@@ -175,10 +176,7 @@ fun InitialSetupScreen(
         onDismissMessage = viewModel::dismissMessage,
         heading = headingFor(step),
         hint = hintFor(step),
-        // Finish has nowhere to skip to; Artwork is required, so it has no Skip until its folder is
-        // ready (a re-run with a healthy folder may skip it).
-        onSkip = if (step == SetupStep.FINISH || (step == SetupStep.ARTWORK && !state.artworkReady)) null
-                 else viewModel::skipStep,
+        onSkip = if (wizardOffersSkip(step, state.artworkReady)) viewModel::skipStep else null,
         confirmLabel = if (step == SetupStep.EMULATORS) "Change" else "Enter",
         contentKey = step,
         modifier = modifier,
@@ -341,8 +339,10 @@ fun InitialSetupScreen(
                 pages = pages,
                 controller = controller.layoutPrefs,
                 onToggleAutoFit = viewModel::toggleAutoFitXmbLayout,
-                onOpenLibraryManager = onOpenLibraryManager,
-                onGoToLibrary = onGoToLibrary,
+                // Every way out of Finish saves its choices, Auto-fit included; leaving by one of
+                // these two rows used to drop a ticked Auto-fit (survey U12).
+                onOpenLibraryManager = { viewModel.finishSetup(); onOpenLibraryManager() },
+                onGoToLibrary = { viewModel.finishSetup(); onGoToLibrary() },
                 onFinish = {
                     viewModel.finishSetup()
                     onBack()
@@ -436,7 +436,7 @@ private fun WelcomePage(onStart: () -> Unit, onSkip: () -> Unit) {
     )
     WizardRow(
         label = "Skip Setup",
-        sublabel = "Go straight to the launcher — run Initial Setup from Settings anytime",
+        sublabel = "Go straight to the launcher — run the Setup Wizard from Settings ▸ System anytime",
         onClick = onSkip,
     )
 }

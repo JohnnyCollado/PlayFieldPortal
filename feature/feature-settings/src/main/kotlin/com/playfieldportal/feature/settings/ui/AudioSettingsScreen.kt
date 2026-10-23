@@ -132,8 +132,9 @@ fun AudioSettingsScreen(
             state.confirmResetVisible -> PfpModalSpec.Confirm(
                 key = "reset_sound",
                 title = "Reset Sound to Defaults?",
-                message = "Every menu and boot sound returns to the bundled PFP sample and Menu Sounds " +
-                    "is turned back on. Your Boot Video and GameBoot media are not affected.",
+                // Matches confirmReset: menu sounds cleared, every level back to full (survey U5).
+                message = "Every menu sound returns to the bundled PFP sample, and every level — master " +
+                    "included — returns to full. Your ambience track, Boot Video and GameBoot media are not affected.",
                 confirmLabel = "Reset",
                 onConfirm = viewModel::confirmReset,
                 onCancel = viewModel::dismissReset,

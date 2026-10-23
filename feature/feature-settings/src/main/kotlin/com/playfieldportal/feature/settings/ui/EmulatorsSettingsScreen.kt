@@ -30,6 +30,14 @@ import com.playfieldportal.feature.settings.viewmodel.TestLaunchState
 
 enum class EmulatorSettingsSection { INSTALLED, CUSTOM, RETROARCH }
 
+/**
+ * Whether the Maintenance group (Reset Emulator Configuration) is drawn. Every Emulators row in the
+ * settings tree opens a section, so showing it only with no section left the reset unreachable
+ * (survey U33); it lives with the detected profiles under Installed.
+ */
+internal fun showsEmulatorMaintenance(section: EmulatorSettingsSection?): Boolean =
+    section == null || section == EmulatorSettingsSection.INSTALLED
+
 private val AutoBadgeColor    = Color(0xFF4A9EFF)
 private val UnavailableColor  = Color(0xFFFF6B6B)
 private val ModifiedBadgeColor = Color(0xFF45C46A)
@@ -247,9 +255,9 @@ fun EmulatorsSettingsScreen(
 
             }
 
-            if (section == null) SettingsGroup("Maintenance")
+            if (showsEmulatorMaintenance(section)) SettingsGroup("Maintenance")
 
-            if (section == null) SettingsRow(
+            if (showsEmulatorMaintenance(section)) SettingsRow(
                 label    = "Reset Emulator Configuration",
                 sublabel = "Clear launch settings and restore defaults. Your games, artwork, and saves are not affected.",
                 focusKey = "reset_emulator_config",

@@ -71,6 +71,24 @@ class MusicRepositoryImplTest {
         assertEquals(2, repo.observeTracksByFolder(b.id).first().size)
     }
 
+    // Survey L10 (docs/audits/codebase-survey-2026-10-22.md): a removed folder's tracks stayed in
+    // playlists as dead rows, so the playlist read "N tracks" and opened empty.
+    @Test
+    fun `removing a folder drops its tracks from playlists`() = runTest {
+        val a = repo.addFolder("A", "content://tree/a")
+        val b = repo.addFolder("B", "content://tree/b")
+        repo.replaceTracksForFolder(a.id, listOf(track("a1", a.id)), 1L)
+        repo.replaceTracksForFolder(b.id, listOf(track("b1", b.id)), 1L)
+        val mix = repo.createPlaylist("Mix")
+        repo.addTrackToPlaylist(mix, "a1")
+        repo.addTrackToPlaylist(mix, "b1")
+
+        repo.removeFolder(a.id)
+
+        assertEquals(1, playlistDao.memberCount())
+        assertEquals(1, repo.observePlaylists().first().single().trackCount)
+    }
+
     @Test
     fun `addFolder then setEnabled and rename are reflected`() = runTest {
         val f = repo.addFolder("Original", "content://tree/x")
@@ -128,7 +146,6 @@ class MusicRepositoryImplTest {
 private class FakeMusicFolderDao : MusicFolderDao {
     private val map = linkedMapOf<String, MusicFolderEntity>()
     override fun observeAll(): Flow<List<MusicFolderEntity>> = flowOf(map.values.toList())
-    override fun observeEnabled(): Flow<List<MusicFolderEntity>> = flowOf(map.values.filter { it.enabled })
     override suspend fun getAll() = map.values.toList()
     override suspend fun getById(id: String) = map[id]
     override suspend fun upsert(folder: MusicFolderEntity) { map[folder.id] = folder }
@@ -160,7 +177,6 @@ private class FakeMusicTrackDao : MusicTrackDao {
         flowOf(byFolder[folderId]?.toList().orEmpty())
     override suspend fun getByFolder(folderId: String) = byFolder[folderId]?.toList().orEmpty()
     override suspend fun getById(id: String) = byFolder.values.flatten().firstOrNull { it.id == id }
-    override suspend fun countForFolder(folderId: String) = byFolder[folderId]?.size ?: 0
     override suspend fun insertAll(tracks: List<MusicTrackEntity>) {
         tracks.forEach { byFolder.getOrPut(it.folderId) { mutableListOf() }.add(it) }
     }
@@ -176,7 +192,11 @@ private class FakePlaylistDao(private val trackDao: FakeMusicTrackDao) : Playlis
     override fun observeAllWithCounts(): Flow<List<PlaylistWithCount>> = flowOf(
         playlists.values
             .sortedWith(compareBy({ it.sortOrder }, { it.createdAt }))
-            .map { p -> PlaylistWithCount(p, members.count { it.playlistId == p.id }) }
+            // Mirrors the count's INNER JOIN on music_tracks: rows for gone tracks are not counted.
+            .map { p ->
+                val live = trackDao.snapshot().mapTo(HashSet()) { it.id }
+                PlaylistWithCount(p, members.count { it.playlistId == p.id && it.trackId in live })
+            }
     )
 
     override suspend fun getById(id: Long) = playlists[id]
@@ -219,6 +239,11 @@ private class FakePlaylistDao(private val trackDao: FakeMusicTrackDao) : Playlis
     override suspend fun removeTrack(playlistId: Long, trackId: String) {
         members.removeAll { it.playlistId == playlistId && it.trackId == trackId }
     }
+    override suspend fun deleteOrphanedTracks() {
+        val live = trackDao.snapshot().mapTo(HashSet()) { it.id }
+        members.removeAll { it.trackId !in live }
+    }
+    fun memberCount() = members.size
     override suspend fun touch(id: Long, updatedAt: Long) {
         playlists[id]?.let { playlists[id] = it.copy(updatedAt = updatedAt) }
     }

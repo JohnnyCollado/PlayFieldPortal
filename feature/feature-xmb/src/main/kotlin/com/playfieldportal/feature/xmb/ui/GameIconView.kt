@@ -433,20 +433,23 @@ fun AndroidAppIcon(
     }
 
     // Center a fixed square inside whatever box we're given, so a wide game-icon container
-    // never stretches the app squircle.
+    // never stretches the icon. The app's own launcher icon is drawn as it is everywhere else —
+    // whole, with no plate behind it — until the user gives the app custom artwork (that row takes
+    // the PspIcon0Icon branch instead). Only the letter fallback gets a plate, so it reads.
+    val plate = appIconPlate(hasLauncherIcon = imageBitmap != null)
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
     Box(
         modifier = Modifier
             .size(52.dp)
-            .clip(SquircleShape)
-            .background(Color(0xFF1A1A20)),
+            .clip(if (plate != null) SquircleShape else RoundedCornerShape(6.dp))
+            .then(if (plate != null) Modifier.background(plate) else Modifier),
         contentAlignment = Alignment.Center,
     ) {
         if (imageBitmap != null) {
             Image(
                 painter            = BitmapPainter(imageBitmap),
                 contentDescription = null,
-                contentScale       = ContentScale.Crop,
+                contentScale       = ContentScale.Fit,
                 modifier           = Modifier.fillMaxSize(),
             )
         } else {
@@ -461,3 +464,6 @@ fun AndroidAppIcon(
     }
     }
 }
+
+/** The plate behind an app icon in a game-style row: none for a real launcher icon, dark for the letter fallback. */
+internal fun appIconPlate(hasLauncherIcon: Boolean): Color? = if (hasLauncherIcon) null else Color(0xFF1A1A20)

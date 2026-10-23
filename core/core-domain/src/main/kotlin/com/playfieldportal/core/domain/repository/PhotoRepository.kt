@@ -18,17 +18,12 @@ interface PhotoRepository {
     /** Adds an Album. Recursive by default; "Include Subfolders" can limit it per Album. */
     suspend fun addLibrary(displayName: String, treeUri: String, scanRecursively: Boolean = true): PhotoLibrary
     suspend fun renameLibrary(id: String, displayName: String)
-    /** Per Album: when disabled, scans read only the picked folder's own photos. */
-    suspend fun setLibraryScanRecursively(id: String, scanRecursively: Boolean)
-    /** Points the library at a different folder; the next scan replaces its photos. */
-    suspend fun setLibraryTreeUri(id: String, treeUri: String)
     /** Removes the library and all of its photo rows. Never touches the files on disk. */
     suspend fun removeLibrary(id: String)
 
     // ── Photos ────────────────────────────────────────────────────────────────
     fun observeAllPhotos(): Flow<List<Photo>>
     fun observePhotosByLibrary(libraryId: String): Flow<List<Photo>>
-    suspend fun getPhoto(id: String): Photo?
     suspend fun getPhotosForLibrary(libraryId: String): List<Photo>
     /** Atomically replaces the photos of one library only; other libraries are untouched. */
     suspend fun replacePhotosForLibrary(

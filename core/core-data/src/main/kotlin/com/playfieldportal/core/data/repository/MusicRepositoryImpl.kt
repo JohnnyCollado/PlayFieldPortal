@@ -39,9 +39,6 @@ class MusicRepositoryImpl @Inject constructor(
     override fun observeFolders(): Flow<List<MusicFolder>> =
         folderDao.observeAll().map { list -> list.map { it.toDomain() } }
 
-    override fun observeEnabledFolders(): Flow<List<MusicFolder>> =
-        folderDao.observeEnabled().map { list -> list.map { it.toDomain() } }
-
     override suspend fun getFolders(): List<MusicFolder> =
         folderDao.getAll().map { it.toDomain() }
 
@@ -74,6 +71,8 @@ class MusicRepositoryImpl @Inject constructor(
         // identical whether or not foreign keys are enforced on the connection.
         trackDao.deleteForFolder(id)
         folderDao.delete(id)
+        // The folder's tracks are gone on purpose, so their playlist rows go too (survey L10).
+        playlistDao.deleteOrphanedTracks()
         Timber.i("Music folder removed: $id")
     }
 
@@ -102,9 +101,6 @@ class MusicRepositoryImpl @Inject constructor(
 
     override fun observeDefaultPlayerPackage(): Flow<String?> =
         context.pfpDataStore.data.map { it[KEY_DEFAULT_PLAYER] }
-
-    override suspend fun getDefaultPlayerPackage(): String? =
-        context.pfpDataStore.data.first()[KEY_DEFAULT_PLAYER]
 
     override suspend fun setDefaultPlayerPackage(packageName: String?) {
         context.pfpDataStore.edit { prefs ->

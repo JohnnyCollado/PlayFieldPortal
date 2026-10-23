@@ -34,7 +34,6 @@ import com.playfieldportal.core.domain.model.XYLayout
 import com.playfieldportal.core.domain.model.XmbListMotion
 import com.playfieldportal.core.domain.model.UmdSlotMode
 import com.playfieldportal.core.ui.theme.TextContrastRole
-import com.playfieldportal.core.ui.theme.clampLightnessForContrast
 import com.playfieldportal.core.ui.theme.composite
 import com.playfieldportal.core.ui.theme.solveScrimColor
 import com.playfieldportal.core.ui.wave.WaveStyle
@@ -86,9 +85,6 @@ private val KEY_UMD_SLOT_MODE = stringPreferencesKey("display_umd_slot_mode")
 private val KEY_TEXT_COLOR = ThemePrefKeys.TEXT_COLOR
 // Display ▸ Sub Font Colour, same contract. Absent = sub text follows the font colour.
 private val KEY_SUB_TEXT_COLOR = ThemePrefKeys.SUB_TEXT_COLOR
-// "Use my exact colour": skip the lightness clamp. Protection still applies — a plate can rescue
-// a colour without repainting it, which is the whole reason the two are separate settings.
-private val KEY_TEXT_COLOR_EXACT = ThemePrefKeys.TEXT_COLOR_EXACT
 // The text-protection request (AUTO by default). Shown and saved here, carried by themes and
 // backup; the launcher's own renderers do not read it yet.
 private val KEY_TEXT_LEGIBILITY = ThemePrefKeys.TEXT_LEGIBILITY
@@ -115,6 +111,17 @@ private val SUPPORTED_WALLPAPER_MIME = setOf("image/png", "image/jpeg", "image/w
 
 /** Mimes routed to the motion (looping) path rather than the plain still path. */
 private val MOTION_WALLPAPER_MIME = MotionLimits.SUPPORTED_MIME
+
+/**
+ * Whether a picked file is a motion wallpaper: video, GIF, or a WebP whose header says it is
+ * animated. A still WebP takes the still path — sending every WebP to the motion path announced a
+ * plain photo as "Motion wallpaper applied" (survey U17). [header] is the file's first bytes.
+ */
+internal fun isMotionWallpaper(mime: String?, header: ByteArray): Boolean = when {
+    mime == null || mime !in MOTION_WALLPAPER_MIME -> false
+    mime == "image/webp" -> com.playfieldportal.feature.artwork.store.ImageFormat.isAnimated(header)
+    else -> true
+}
 
 private val TOUCH_NAV_BUTTON_LABELS = mapOf(
     TouchNavButtonMode.AUTO        to "Auto",
@@ -175,7 +182,6 @@ data class DisplaySettingsUiState(
     /** User-picked sub text colour, or null to follow [textColorArgb]. */
     val subTextColorArgb: Long? = null,
     /** Render the pick verbatim, skipping the lightness clamp (protection still applies). */
-    val textColorExact: Boolean = false,
     val textLegibility: TextLegibilityStyle = TextLegibilityStyle.DEFAULT,
     val textContrastNoticeSuppressed: Boolean = false,
     /** Transient "we adjusted your colour" notice; null when there is nothing to say. */
@@ -276,7 +282,6 @@ class DisplaySettingsViewModel @Inject constructor(
             umdSlotMode          = UmdSlotMode.fromName(prefs[KEY_UMD_SLOT_MODE]),
             textColorArgb        = prefs[KEY_TEXT_COLOR],
             subTextColorArgb     = prefs[KEY_SUB_TEXT_COLOR],
-            textColorExact       = prefs[KEY_TEXT_COLOR_EXACT] ?: false,
             textLegibility       = TextLegibilityStyle.fromName(prefs[KEY_TEXT_LEGIBILITY]),
             textContrastNoticeSuppressed = prefs[KEY_TEXT_NOTICE_SUPPRESSED] ?: false,
             textContrastNotice   = transient.textContrastNotice,
@@ -412,14 +417,6 @@ class DisplaySettingsViewModel @Inject constructor(
     }
 
     /** Render the pick verbatim. Protection (shadow/plate) still applies — the dialog says so. */
-    fun setTextColorExact(v: Boolean) {
-        viewModelScope.launch {
-            context.pfpDataStore.edit { it[KEY_TEXT_COLOR_EXACT] = v }
-            // The standing notice described a clamp that no longer happens.
-            if (v) _textContrastNotice.value = null
-        }
-    }
-
     fun cycleTextLegibility() {
         val styles = TextLegibilityStyle.entries
         val next = styles[(styles.indexOf(uiState.value.textLegibility) + 1) % styles.size]
@@ -438,27 +435,23 @@ class DisplaySettingsViewModel @Inject constructor(
     }
 
     /**
-     * The notice text for [argb], or null when there is nothing to say — no pick, "use my exact
-     * colour", the notice suppressed, or the colour simply passes.
+     * The notice text for [argb], or null when there is nothing to say — no pick, the notice
+     * suppressed, or the colour simply passes.
      */
     private suspend fun noticeFor(argb: Long?): String? {
         if (argb == null) return null
         val prefs = context.pfpDataStore.data.first()
-        if (prefs[KEY_TEXT_COLOR_EXACT] == true) return null
         if (prefs[KEY_TEXT_NOTICE_SUPPRESSED] == true) return null
 
         val picked = androidx.compose.ui.graphics.Color(argb and 0xFFFFFFFFL)
         val worst = settingsBackdropAnchors(prefs)
-            .minByOrNull { clampLightnessForContrast(picked, it).achievedRatio } ?: return null
-        val resolved = clampLightnessForContrast(picked, worst, TextContrastRole.BODY.threshold)
-
-        return when {
-            !resolved.adjusted && resolved.meetsTarget -> null
-            resolved.adjusted -> "Adjusted for readability — the colour you picked reads at " +
-                String.format("%.1f:1", contrastOf(picked, worst)) + " here, below the 4.5:1 bar."
-            else -> "That colour can't reach 4.5:1 on this background, so text will get a " +
-                "contrast plate behind it."
-        }
+            .minByOrNull { contrastOf(picked, it) } ?: return null
+        val ratio = contrastOf(picked, worst)
+        // The colour is drawn exactly as picked — nothing lightens it or puts a plate behind it —
+        // so this warns rather than claiming an adjustment (survey L18).
+        if (ratio >= TextContrastRole.BODY.threshold) return null
+        return "This colour reads at " + String.format(java.util.Locale.US, "%.1f:1", ratio) +
+            " against this background, below the 4.5:1 readability guide. Text in it may be hard to read."
     }
 
     /**
@@ -541,8 +534,9 @@ class DisplaySettingsViewModel @Inject constructor(
             }
             _wallpaperImporting.value = true
             try {
-                if (mime in MOTION_WALLPAPER_MIME) {
-                    importMotionWallpaper(uri, mime!!)
+                val header = if (mime == "image/webp") readWallpaperHeader(uri) else ByteArray(0)
+                if (mime != null && isMotionWallpaper(mime, header)) {
+                    importMotionWallpaper(uri, mime)
                 } else {
                     importStillWallpaper(uri)
                 }
@@ -550,6 +544,17 @@ class DisplaySettingsViewModel @Inject constructor(
                 _wallpaperImporting.value = false
             }
         }
+    }
+
+    /** The first bytes of [uri] — enough for the WebP animation flag — or empty when unreadable. */
+    private suspend fun readWallpaperHeader(uri: Uri): ByteArray = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                val buffer = ByteArray(32)
+                val read = input.read(buffer)
+                if (read <= 0) ByteArray(0) else buffer.copyOf(read)
+            }
+        }.getOrNull() ?: ByteArray(0)
     }
 
     /**

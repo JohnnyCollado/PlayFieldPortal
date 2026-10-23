@@ -11,14 +11,14 @@ Android home screen as a single front end for ROM emulation, Android games, PC-l
 </p>
 
 <p align="center">
-  <b>Version 1.3.2</b> &nbsp;·&nbsp; Side-loaded APK (not on the Play Store) &nbsp;·&nbsp;
+  <b>Version 1.3.3</b> &nbsp;·&nbsp; Side-loaded APK (not on the Play Store) &nbsp;·&nbsp;
   <b>Full</b> &amp; <b>Lite</b> editions &nbsp;·&nbsp; Desktop <b>Theme Studio</b> companion
 </p>
 
 > **This is a living manual.** It describes the app as it is built from this repository today, and
 > it is updated in the same change as the feature it describes.
 >
-> **Last updated:** 2026-10-18 · **Describes:** 1.3.2 (`versionCode` 13). What changed and when is in
+> **Last updated:** 2026-10-23 · **Describes:** 1.3.3 (`versionCode` 14). What changed and when is in
 > **[CHANGELOG.md](CHANGELOG.md)**; how the code is put together is in
 > **[ARCHITECTURE.md](ARCHITECTURE.md)**. Building from source is covered in
 > **[For Developers](#for-developers)**, which also explains
@@ -293,6 +293,8 @@ PFP is built for a controller but works fully with touch.
 | Select / launch / open | **A / ✕** | Tap |
 | Back / close / exit a folder | **B / ◯** (and D-Pad ◀ in XMB folders and flyouts — see below) | On-screen Back / left-edge swipe / swipe left in a folder or flyout |
 | Options (context) menu | **Y / △** (or long-press) | Long-press |
+| Category menu (on the category bar) | **Select** | Long-press the category icon |
+| Change sort order | **X / □** (and **Select** inside lists) | △ › *Sort* |
 | Switch App-Drawer tabs | **L1 / R1** | Tap a tab |
 | Notification panel | **Start** on the crossbar | The bell in the status bar |
 | Confirm in pickers | **Start** | Confirm button |
@@ -516,16 +518,27 @@ Your own edits to an emulator's profile always win over all three.
 
 ### 4.5 Favorites & Custom Memory Cards
 
-**Where:** a game's **△** menu, and *Settings › Library › Custom Memory Cards* ·
-**Network:** None.
+**Where:** a game's or app's **△** menu, a category's menu, and
+*Settings › Library › Custom Memory Cards* · **Network:** None.
 
 - **Favorites** — mark any game from its **△** options (*Favorite*, shown On / Off). A **Favorites** folder
   appears under All Games and hides automatically when empty.
 - **Custom Memory Cards** — cards you make yourself (e.g. "RPGs", "Currently Playing"), formerly
   called Collections. A game can live on several at once. Create one from
-  *Settings › Library › Custom Memory Cards › New Custom Memory Card* or a game's
-  **△ › Add to Card ›**; toggle membership with a ✓. The picker lists the cards of the category
+  *Settings › Library › Custom Memory Cards › New Custom Memory Card*, a game's
+  **△ › Add to Card ›**, or a category's menu (long-press its icon, or **Select**) ›
+  **New Custom Card**; toggle membership with a ✓. The picker lists the cards of the category
   you are in first. Deleting a custom card never removes its games.
+- **Cards for apps** — a card can live in Network, App Store or any custom app category as well as
+  in Game. The category picker marks each one "Game card" or "App card"; an app card holds apps and
+  counts them as apps. An app's **△ › Add to Card ›** lists app cards only.
+- **Card icon** — *Settings › Library › Custom Memory Cards › (a card) › Change Icon* has three
+  groups. **From Your Device** takes a PNG, JPG, WEBP, BMP, HEIC or GIF (an animated GIF plays while
+  the cursor is on the card), with **Replace Image…** and **Remove Image** once one is set.
+  **From the Applied Theme** lists the theme's icons with a preview; the one you pick is copied to
+  the card, so it stays when you change themes. **Built-in** is the shared icon set; picking one
+  removes your own image. Deleting the card deletes its image, and *Customize XMB Icons › Reset
+  All* leaves card images alone.
 - **Several games at once** — in any game list choose **△ › Select Multiple**, mark games with
   **A / ✕**, then press **Y / △** to add them all to one card.
 
@@ -718,7 +731,8 @@ one shared player, skipped under Battery Saver, low battery, or thermal pressure
 ### 4.9 Android apps & non-gaming categories
 
 - **Add apps** to a section (App Store / Video / Music / Network / custom) via its **Add Apps** row.
-- **App artwork** — apps show their launcher icon by default; give one custom art via
+- **App artwork** — apps show their launcher icon by default (on a custom card too, with no tile
+  behind it); give one custom art via
   **△ › Edit App Details › Icon** and it renders as a landscape tile. Apps stay tagged as apps, so
   they never appear in All Games.
 - **Android games** — open the Android library card and choose **Find Games**; these are addable to
@@ -921,7 +935,9 @@ point.
   or **○** to skip it.
 - **GameBoot** — the short presentation that plays as a game launches. Built in, it is a
   five-second light sweep timed to its own sound; supply a **GameBoot Video** (up to 10 seconds) and
-  it replaces the whole thing, its own audio included. Switching GameBoot off gives a silent
+  it replaces the whole thing, its own audio included. The light sweep is skipped (the five seconds
+  still play) only while battery saver is on or the device is running hot (when *Battery Saver
+  Mode* / *Thermal Throttle Awareness* are on), or while Android's *Remove animations* is on — not by the Wave Style or Background Motion setting. Switching GameBoot off gives a silent
   launch. If the presentation has not finished in time the game launches anyway — GameBoot can
   never hold your game hostage.
 

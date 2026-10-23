@@ -202,7 +202,7 @@ private fun folderAction(row: WindowsGameRow, onClick: () -> Unit): SettingsRowA
 }
 
 // A picked folder that carries no achievement list: link as is, or write the emulator kit first.
-private fun kitChoiceSpec(
+internal fun kitChoiceSpec(
     choice: KitChoice,
     onLinkOnly: () -> Unit,
     onInstallKitAndLink: () -> Unit,
@@ -215,8 +215,14 @@ private fun kitChoiceSpec(
     return PfpModalSpec.Choice(
         key = choice,
         title = "No achievement list in \"${choice.folderName}\"",
-        message = "This folder has no emulator achievement data yet. Link it as is, or install the " +
-            "emulator kit into it first.",
+        // Only offer the kit when its option is there (survey U34).
+        message = if (choice.installerEnabled) {
+            "This folder has no emulator achievement data yet. Link it as is, or install the " +
+                "emulator kit into it first."
+        } else {
+            "This folder has no emulator achievement data yet. Link it as is, or turn on Install " +
+                "Goldberg & Convert Games in Settings ▸ Achievements ▸ Local Windows to install the kit."
+        },
         options = options,
         confirmLabel = "Link",
         onConfirm = { index -> if (index == 1) onInstallKitAndLink() else onLinkOnly() },

@@ -26,6 +26,7 @@ import com.playfieldportal.core.ui.sound.MenuSoundSink
 import com.playfieldportal.themekit.MotionLimits
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -125,6 +126,8 @@ class PhotoViewerViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PhotoViewerUiState())
+    // Reused across opens: only the newest load may write (survey L13).
+    private var loadJob: Job? = null
     val uiState: StateFlow<PhotoViewerUiState> = _uiState.asStateFlow()
 
     /**
@@ -138,7 +141,8 @@ class PhotoViewerViewModel @Inject constructor(
         openWallpaperPreview: Boolean = false,
         openLockScreenConfirm: Boolean = false,
     ) {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             _uiState.update { PhotoViewerUiState(isLoading = true) }
             val photos = if (libraryId != null) {
                 photoRepository.getPhotosForLibrary(libraryId)

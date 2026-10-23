@@ -29,11 +29,8 @@ object MotionLimits {
 
     const val MAX_BYTES = 60L * 1024 * 1024
 
-    /** Advisory only — accepted; playback is simply slowed under REDUCED (no frame-rate knob). */
-    const val ADVISORY_MAX_FPS = 30
-
     /** Rejection strings, surfaced verbatim through the wallpaper importer's message channel. */
-    const val MSG_UNSUPPORTED_FORMAT = "Unsupported format — use MP4, WebM, or GIF"
+    const val MSG_UNSUPPORTED_FORMAT = "Unsupported format — use MP4, WebM, GIF or WebP"
     const val MSG_TOO_LARGE_RESOLUTION = "Video is too large — 1080p or smaller"
     const val MSG_TOO_LONG = "Clip is too long — 60 seconds or less"
     const val MSG_TOO_LARGE_BYTES = "File is too large — under 60 MB"

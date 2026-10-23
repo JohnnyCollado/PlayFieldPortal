@@ -597,7 +597,10 @@ data class ArtworkStudioUiState(
                 add(StudioAction.CROP_BEFORE_APPLY)
             }
             if (info?.hasPrevious == true) add(StudioAction.RESTORE_PREVIOUS)
-            if (info?.originUrl != null) add(StudioAction.RESET_DEFAULT)
+            // Only for scraper-owned art: after a user pick the recorded origin IS the pick, so a
+            // reset would just download it again and hand the slot back to the scraper (survey U9).
+            // Restore Previous is the way back from a pick.
+            if (info?.originUrl != null && !info.userAssigned) add(StudioAction.RESET_DEFAULT)
             if (hasCurrent) add(StudioAction.CLEAR)
             if (hasCurrent) add(StudioAction.FILE_INFO)
             // SteamGridDB's Mature filter is one of its filter rows now, above these actions.
@@ -3486,7 +3489,7 @@ class ArtworkStudioViewModel @Inject constructor(
             // SteamGridDB's mature filter, which it used to toggle, is in the Triangle menu.
             GamepadAction.HOME -> applyChanges()
             // The virtual keyboard's own buttons mean nothing here.
-            GamepadAction.SHIFT, GamepadAction.CAPS_LOCK -> Unit
+            GamepadAction.SHIFT, GamepadAction.CAPS_LOCK, GamepadAction.CATEGORY_MENU -> Unit
             // Y / Triangle opens the per-slot options menu (crop, restore, reset, clear, info) —
             // XMB-style context menu, available at every level.
             GamepadAction.OPEN_CONTEXT_MENU -> openActions()

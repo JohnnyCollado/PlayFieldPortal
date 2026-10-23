@@ -3718,4 +3718,26 @@ class ArtworkStudioViewModelTest {
         assertTrue(shape.checked)
         assertFalse(studioCropRow(CropOption.SHAPE_PLATFORM_DEFAULT, true, CropShapeChoice.ORIGINAL_IMAGE).checked)
     }
+
+    // ── Reset to Scraped Default (survey U9, docs/audits/codebase-survey-2026-10-22.md) ──────
+    // After a Studio pick the record's origin is the user's own pick, so "reset" only downloaded
+    // that again and relabelled it as the scraper's. It is offered only for scraper-owned art.
+
+    private fun info(userAssigned: Boolean) = com.playfieldportal.feature.artwork.store.StudioArtworkInfo(
+        provider = "steamgriddb", originUrl = "https://cdn.example/hero.png", relativePath = "hero.png",
+        sizeBytes = 10, width = 1, height = 1, source = if (userAssigned) "user" else "scrape",
+        userAssigned = userAssigned, hasPrevious = false, hasOriginal = false, cropRect = null, updatedAt = 0,
+    )
+
+    @Test
+    fun `scraper-owned art offers Reset to Scraped Default`() {
+        val state = ArtworkStudioUiState(info = info(userAssigned = false))
+        assertTrue(StudioAction.RESET_DEFAULT in state.availableActions)
+    }
+
+    @Test
+    fun `art the user picked does not offer a reset that would only restore their own pick`() {
+        val state = ArtworkStudioUiState(info = info(userAssigned = true))
+        assertFalse(StudioAction.RESET_DEFAULT in state.availableActions)
+    }
 }

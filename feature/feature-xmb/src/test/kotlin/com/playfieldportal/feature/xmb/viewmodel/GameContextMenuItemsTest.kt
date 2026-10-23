@@ -128,7 +128,8 @@ class GameContextMenuItemsTest {
     fun `an unmarked app row keeps Remove from Library outside a card`() {
         val ids = menu(item = demotedApp).map { it.id }
         assertTrue(ids.contains("mark_game"))
-        assertEquals("remove_game", ids.last())
+        // Its own id, so its confirm can say the app stays installed (survey U28).
+        assertEquals("remove_app_row", ids.last())
         assertFalse(ids.contains("remove_app"))
     }
 

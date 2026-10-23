@@ -635,4 +635,63 @@ class ShellModalSpecTest {
         val name = specWithChooser(chooserState { copy(renameAppTarget = "com.example.app") })
         assertTrue(name is PfpModalSpec.TextEntry)
     }
+
+    // ── Launch recovery (survey P2, docs/audits/codebase-survey-2026-10-22.md) ──────────────
+    // It was a Material dialog in its own window: Change Emulator, Change per-system default and
+    // Copy diagnostics were touch-only. As a shared Choice, a pad picks any option like a tap.
+
+    private fun recovery(resolved: com.playfieldportal.feature.launcher.ResolvedLaunch?) =
+        com.playfieldportal.feature.launcher.LaunchRecoveryRequest(
+            gameId = 7L, gameTitle = "Crisis Core", platformId = "psp", resolved = resolved,
+            message = "PPSSPP never opened.", historyLine = "2 of the last 3 launches failed.",
+            diagnostic = "diag",
+        )
+
+    private fun recoverySpec(
+        state: XMBUiState,
+        actions: MutableList<com.playfieldportal.feature.launcher.LaunchRecoveryAction>,
+    ) = shellModalSpec(
+        uiState = state,
+        onConfirmAppRename = {}, onCancelAppRename = {},
+        onConfirmCollectionName = {}, onCancelCollectionName = {},
+        onConfirmPlaylistName = {}, onCancelPlaylistName = {},
+        onConfirmSaveAsTheme = {}, onDismissSaveAsTheme = {},
+        onDismissInfoDialog = {}, onWindowsSetupConfirm = {}, onWindowsSetupDismiss = {},
+        launchRecoveryCallbacks = LaunchRecoveryCallbacks(onAction = { actions += it }),
+    )
+
+    @Test
+    fun `a failed launch offers every repair as a choice a pad can pick`() {
+        val actions = mutableListOf<com.playfieldportal.feature.launcher.LaunchRecoveryAction>()
+        val spec = recoverySpec(
+            XMBUiState(launchRecovery = recovery(io.mockk.mockk(relaxed = true))), actions,
+        ) as PfpModalSpec.Choice
+
+        assertEquals("Couldn't launch Crisis Core", spec.title)
+        assertTrue(spec.message.contains("PPSSPP never opened."))
+        assertTrue(spec.message.contains("2 of the last 3 launches failed."))
+        assertEquals(
+            listOf("Retry", "Change Emulator", "Change per-system default", "Copy diagnostics"),
+            spec.options.map { it.label },
+        )
+        assertEquals("Dismiss", spec.cancelLabel)
+
+        spec.onConfirm(2)
+        spec.onCancel()
+        assertEquals(
+            listOf(
+                com.playfieldportal.feature.launcher.LaunchRecoveryAction.PER_SYSTEM_DEFAULTS,
+                com.playfieldportal.feature.launcher.LaunchRecoveryAction.DISMISS,
+            ),
+            actions,
+        )
+    }
+
+    @Test
+    fun `a launch with no emulator ladder has no per-system default to change`() {
+        val spec = recoverySpec(XMBUiState(launchRecovery = recovery(resolved = null)), mutableListOf())
+            as PfpModalSpec.Choice
+
+        assertEquals(listOf("Retry", "Change Emulator", "Copy diagnostics"), spec.options.map { it.label })
+    }
 }

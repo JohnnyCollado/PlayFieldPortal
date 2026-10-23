@@ -28,12 +28,6 @@ interface PhotoLibraryDao {
     @Query("UPDATE photo_libraries SET display_name = :name, updated_at = :now WHERE id = :id")
     suspend fun setDisplayName(id: String, name: String, now: Long)
 
-    @Query("UPDATE photo_libraries SET tree_uri = :treeUri, updated_at = :now WHERE id = :id")
-    suspend fun setTreeUri(id: String, treeUri: String, now: Long)
-
-    @Query("UPDATE photo_libraries SET scan_recursively = :recursive, updated_at = :now WHERE id = :id")
-    suspend fun setScanRecursively(id: String, recursive: Boolean, now: Long)
-
     @Query(
         "UPDATE photo_libraries SET photo_count = :count, last_scanned_at = :scannedAt, " +
             "scan_signature = :signature, updated_at = :scannedAt WHERE id = :id"

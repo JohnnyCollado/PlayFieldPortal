@@ -280,7 +280,7 @@ private fun CategoryListContent(
 // ── PICK ICON ─────────────────────────────────────────────────────────────────────
 
 // The Customize XMB Icons overlay's accepted set: the import gate's stills plus GIF.
-private val DEVICE_IMAGE_MIME = arrayOf(
+internal val DEVICE_IMAGE_MIME = arrayOf(
     "image/png",
     "image/jpeg",
     "image/webp",

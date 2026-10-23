@@ -81,6 +81,8 @@ class CategoryRepositoryImpl @Inject constructor(
      */
     suspend fun pruneOrphanCategoryIcons() {
         customIconStore.pruneUserCategoryIcons(categoryDao.getAll().map { it.id }.toSet())
+        // Custom memory cards' own images, swept by the same startup rule.
+        customIconStore.pruneUserCardIcons(collectionRepository.getAll().map { it.id }.toSet())
     }
 
     fun isProtected(id: String): Boolean = id in PROTECTED_BUILTINS
@@ -103,12 +105,19 @@ class CategoryRepositoryImpl @Inject constructor(
 
     // Creates a user category appended after the existing ones. Returns its generated id.
     suspend fun createCustomCategory(name: String, iconKey: String, isGamingCategory: Boolean = false): String {
-        val maxPosition = categoryDao.getAll().maxOfOrNull { it.position } ?: -1
-        val id = "custom_" + name.trim().lowercase()
+        val existing = categoryDao.getAll()
+        val maxPosition = existing.maxOfOrNull { it.position } ?: -1
+        val slug = "custom_" + name.trim().lowercase()
             .replace(Regex("[^a-z0-9]+"), "_")
             .trim('_')
-            .ifBlank { System.currentTimeMillis().toString() } + "_" + (maxPosition + 1)
-        upsert(
+            .ifBlank { System.currentTimeMillis().toString() }
+        // The position suffix alone can repeat once a reorder compacts positions and a delete
+        // lowers the max, so step past any id already in use (survey L4).
+        val taken = existing.mapTo(HashSet()) { it.id }
+        val id = generateSequence(maxPosition + 1) { it + 1 }
+            .map { "${slug}_$it" }
+            .first { it !in taken }
+        categoryDao.insertNew(
             Category(
                 id                 = id,
                 name               = name.trim(),
@@ -116,7 +125,7 @@ class CategoryRepositoryImpl @Inject constructor(
                 type               = CategoryType.MANUAL,
                 position           = maxPosition + 1,
                 isGamingCategory   = isGamingCategory,
-            )
+            ).toEntity()
         )
         Timber.i("Custom category created: $id ($name, isGaming=$isGamingCategory)")
         return id

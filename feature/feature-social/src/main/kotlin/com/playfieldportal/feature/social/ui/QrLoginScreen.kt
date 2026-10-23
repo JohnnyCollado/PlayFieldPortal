@@ -20,6 +20,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -57,12 +58,27 @@ fun QrLoginScreen(
     onConnected: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
+    // Bumped by the host on each controller Confirm. The pad's mapped keys never reach Compose
+    // focus, so this is how Try again and Copy are reached without a touch screen (survey P1).
+    confirmPresses: Int = 0,
     viewModel: QrLoginViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
+    // One login per opening: start when the overlay appears, stop polling when it goes, however it
+    // closes (Back, Cancel, or a successful sign-in).
+    DisposableEffect(viewModel) {
+        viewModel.start()
+        onDispose { viewModel.cancel() }
+    }
+
     LaunchedEffect(state) {
         if (state is DeviceLoginState.Success) onConnected()
+    }
+
+    // Confirm on an error screen is its Try again button.
+    LaunchedEffect(confirmPresses) {
+        if (confirmPresses > 0 && state.isRetryable()) viewModel.start()
     }
 
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -72,6 +88,7 @@ fun QrLoginScreen(
             is DeviceLoginState.AwaitingApproval -> QrPrompt(
                 challenge = s.challenge,
                 onCancel = { viewModel.cancel(); onCancel() },
+                confirmPresses = confirmPresses,
             )
 
             is DeviceLoginState.Success -> Status("Connected", showSpinner = false)
@@ -89,7 +106,7 @@ fun QrLoginScreen(
 }
 
 @Composable
-private fun QrPrompt(challenge: DeviceAuthChallenge, onCancel: () -> Unit) {
+private fun QrPrompt(challenge: DeviceAuthChallenge, onCancel: () -> Unit, confirmPresses: Int) {
     // White QR on transparent so it reads on the dark XMB background.
     val qr = remember(challenge.verificationUriComplete) {
         QrEncoder.encode(challenge.verificationUriComplete, sizePx = 512).asImageBitmap()
@@ -120,6 +137,12 @@ private fun QrPrompt(challenge: DeviceAuthChallenge, onCancel: () -> Unit) {
             clipboard.setClipEntry(ClipData.newPlainText("Discord login code", challenge.userCode).toClipEntry())
         }
         copied = true
+    }
+    // Confirm while the QR shows copies the code, like tapping it. Keyed on the challenge too, so
+    // a press made before this code appeared does not copy it.
+    val pressesAtStart = remember(challenge) { confirmPresses }
+    LaunchedEffect(confirmPresses) {
+        if (confirmPresses > pressesAtStart) onCopy()
     }
 
     // Landscape handhelds are short: a stacked column pushes the code + instructions off-screen
@@ -241,3 +264,7 @@ private fun Retry(message: String, onRetry: () -> Unit, onCancel: () -> Unit) {
         Button(onClick = onCancel) { Text("Cancel") }
     }
 }
+
+/** The states whose screen is a Try again prompt. */
+internal fun DeviceLoginState.isRetryable(): Boolean =
+    this == DeviceLoginState.Expired || this == DeviceLoginState.Denied || this is DeviceLoginState.Error

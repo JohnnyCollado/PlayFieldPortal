@@ -24,6 +24,7 @@ import com.playfieldportal.feature.xmb.ui.detail.ArtPickerItem
 import com.playfieldportal.feature.xmb.ui.detail.ArtworkType
 import com.playfieldportal.feature.xmb.ui.detail.displayLabel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -126,15 +127,21 @@ class AppDetailViewModel @Inject constructor(
     private var collectionCategoryId: String = "games"
 
     fun prepareForOpen() {
+        loadJob?.cancel()
         _uiState.value = AppDetailUiState()
     }
+
+    // This view model is activity-scoped and reused for every open, so only the newest load may
+    // write: a slower load for the app just closed used to land last and show it (survey L13).
+    private var loadJob: Job? = null
 
     fun setCollectionCategory(categoryId: String) {
         collectionCategoryId = categoryId
     }
 
     fun loadApp(gameId: Long) {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val game = gameRepository.getById(gameId)
             _uiState.update { it.copy(game = game, isLoading = false) }

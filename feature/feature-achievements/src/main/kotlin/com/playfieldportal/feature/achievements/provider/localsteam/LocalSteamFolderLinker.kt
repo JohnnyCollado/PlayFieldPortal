@@ -198,7 +198,7 @@ class LocalSteamFolderLinker @Inject constructor(
         when (val result = generator.generate(folder)) {
             LocalSteamSchemaGenerator.Result.Written -> Unit
             LocalSteamSchemaGenerator.Result.NoKey -> return LinkOutcome.Failed(
-                "Add your Steam Web API key in Settings ▸ Shiba Coins — the achievement list comes from it."
+                "Add your Steam Web API key in Settings ▸ Achievements ▸ Provider Credentials — the achievement list comes from it."
             )
             LocalSteamSchemaGenerator.Result.NoAchievements -> return LinkOutcome.NoEmuData(
                 "Steam lists no achievements for app id $appId, so there is nothing to track."

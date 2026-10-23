@@ -271,10 +271,7 @@ class DiscordVoiceController @Inject constructor(
     private fun gameVolumeFraction(b: Int): Float =
         if (b <= 50) 1f else 1f - ((b - 50) / 50f) * 0.8f
 
-    private fun nextStep(current: Int, steps: List<Int>): Int {
-        val idx = steps.indexOfFirst { it >= current }.let { if (it < 0) steps.lastIndex else it }
-        return steps[(idx + 1) % steps.size]
-    }
+    private fun nextStep(current: Int, steps: List<Int>): Int = nextVoiceStep(current, steps)
 
     companion object {
         const val DEFAULT_ROOM = "party"
@@ -288,3 +285,11 @@ class DiscordVoiceController @Inject constructor(
         private const val PTT_RELEASE_MS = 250
     }
 }
+
+/**
+ * The step after [current]: the first one strictly above it, wrapping to the first step. An
+ * off-grid value (30) moves to the next step up (50); "at or above, then one more" skipped it
+ * (survey L19).
+ */
+internal fun nextVoiceStep(current: Int, steps: List<Int>): Int =
+    steps.firstOrNull { it > current } ?: steps.first()

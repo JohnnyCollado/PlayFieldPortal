@@ -26,11 +26,11 @@ class QrLoginViewModel @Inject constructor(
 
     private var loginJob: Job? = null
 
-    init {
-        start()
-    }
+    // No start() in init: this view model is activity-scoped and outlives the overlay, so the
+    // screen starts a login each time it opens and cancels it when it closes. Starting once in
+    // init made a reopen show the previous Success or a dead QR (survey L7).
 
-    /** (Re)start the login flow — used on first open and on retry after Expired/Error. */
+    /** (Re)start the login flow — on every open of the overlay, and on retry after Expired/Error. */
     fun start() {
         loginJob?.cancel()
         _state.value = DeviceLoginState.Requesting
@@ -39,8 +39,11 @@ class QrLoginViewModel @Inject constructor(
         }
     }
 
+    /** Stops polling and forgets the result, so the next open never sees this one's state. */
     fun cancel() {
         loginJob?.cancel()
+        loginJob = null
+        _state.value = DeviceLoginState.Requesting
     }
 
     override fun onCleared() {

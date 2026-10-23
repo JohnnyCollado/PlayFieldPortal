@@ -65,6 +65,26 @@ class VideoDetailViewModelTest {
     @After
     fun tearDown() { Dispatchers.resetMain() }
 
+    // Survey L13 (docs/audits/codebase-survey-2026-10-22.md): the view model is reused across
+    // opens and its load had no guard, so a slow load for the page just closed could land after
+    // the next page's load and show the wrong video.
+    @Test
+    fun `a slower load for the previous video never replaces the newer one`() = runTest {
+        val older = kotlinx.coroutines.CompletableDeferred<Video?>()
+        val other = video.copy(id = "v2", displayName = "beach.mp4")
+        coEvery { videoRepository.getVideo("v1") } coAnswers { older.await() }
+        coEvery { videoRepository.getVideo("v2") } returns other
+
+        viewModel.loadVideo("v1")
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.loadVideo("v2")
+        testDispatcher.scheduler.advanceUntilIdle()
+        older.complete(video)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("v2", viewModel.uiState.value.video?.id)
+    }
+
     @Test
     fun `saveTitle writes the typed title and closes the modal`() = runTest {
         viewModel.startEditTitle()

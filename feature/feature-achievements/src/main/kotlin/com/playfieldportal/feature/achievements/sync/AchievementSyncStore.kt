@@ -33,9 +33,13 @@ class AchievementSyncStore @Inject constructor(
     suspend fun recordUnchanged(identity: AchievementIdentity, now: Long, snapshot: String?) =
         dao.recordCheck(identity.provider.name, identity.providerGameId, now, snapshot)
 
-    /** A check that found no achievement set: checked, nothing to store. */
+    /**
+     * A check that found no achievement set. That is a complete answer, so it stamps the detail
+     * time too: "is new" and the staleness gate both key on it, and without it a game with no set
+     * was re-fetched on every run and every page open (survey L8).
+     */
     suspend fun recordNoSet(identity: AchievementIdentity, now: Long) =
-        dao.recordCheck(identity.provider.name, identity.providerGameId, now, null)
+        dao.recordDetail(identity.provider.name, identity.providerGameId, now, null)
 
     suspend fun recordDetail(identity: AchievementIdentity, now: Long, snapshot: String?) =
         dao.recordDetail(identity.provider.name, identity.providerGameId, now, snapshot)

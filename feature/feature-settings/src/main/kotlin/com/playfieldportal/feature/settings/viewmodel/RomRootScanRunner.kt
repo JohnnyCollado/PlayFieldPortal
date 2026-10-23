@@ -79,7 +79,7 @@ class RomRootScanRunner @Inject constructor(
             return RomRootScanReport(
                 scannedFolders = 0, systemsWithGames = 0, newCards = 0,
                 totalAdded = 0, skipped = 0, rootsCount = 0,
-                message = "Add a ROM Root first in Settings → Folder Access.",
+                message = "Add a ROM Root first in Settings ▸ Library ▸ Library Manager.",
             )
         }
 

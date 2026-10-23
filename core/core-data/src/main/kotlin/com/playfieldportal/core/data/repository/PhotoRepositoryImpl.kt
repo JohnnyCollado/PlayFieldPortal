@@ -52,12 +52,6 @@ class PhotoRepositoryImpl @Inject constructor(
     override suspend fun renameLibrary(id: String, displayName: String) =
         libraryDao.setDisplayName(id, displayName, System.currentTimeMillis())
 
-    override suspend fun setLibraryTreeUri(id: String, treeUri: String) =
-        libraryDao.setTreeUri(id, treeUri, System.currentTimeMillis())
-
-    override suspend fun setLibraryScanRecursively(id: String, scanRecursively: Boolean) =
-        libraryDao.setScanRecursively(id, scanRecursively, System.currentTimeMillis())
-
     override suspend fun removeLibrary(id: String) {
         // Capture thumbnail uris before the rows go, so their cached files can be forgotten too.
         val thumbs = photoDao.getForLibrary(id).mapNotNull { it.thumbnailUri }
@@ -74,9 +68,6 @@ class PhotoRepositoryImpl @Inject constructor(
 
     override fun observePhotosByLibrary(libraryId: String): Flow<List<Photo>> =
         photoDao.observeByLibrary(libraryId).map { list -> list.map { it.toDomain() } }
-
-    override suspend fun getPhoto(id: String): Photo? =
-        photoDao.getById(id)?.toDomain()
 
     override suspend fun getPhotosForLibrary(libraryId: String): List<Photo> =
         photoDao.getForLibrary(libraryId).map { it.toDomain() }

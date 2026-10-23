@@ -245,25 +245,4 @@ class CropFrameTest {
         }
     }
 
-    @Test
-    fun `setMotionCrop is an undoable edit and a mismatched frame is rejected`() = runBlocking {
-        val vm = StudioViewModel(CoroutineScope(Dispatchers.Default))
-        val crop = MotionCrop(0.1f, 0.2f, 0.5f, 0.5f)
-        vm.setMotionCrop(crop)
-        assertEquals(crop, vm.state.value.motionCrop)
-        vm.undo()
-        assertNull(vm.state.value.motionCrop)
-
-        val dir = createTempDirectory("studio-crop-mismatch").toFile()
-        try {
-            vm.stageWallpaper(writePng(dir, "wall.png", gradient(400, 300)))
-            vm.awaitIdle()
-            vm.confirmWallpaperCrop(CropFrame.centered(10, 10, WallpaperPreset.HD))
-            vm.awaitIdle()
-            assertTrue(vm.state.value.dialog is StudioDialog.Error)
-            assertNull(vm.state.value.wallpaperPng)
-        } finally {
-            dir.deleteRecursively()
-        }
-    }
 }

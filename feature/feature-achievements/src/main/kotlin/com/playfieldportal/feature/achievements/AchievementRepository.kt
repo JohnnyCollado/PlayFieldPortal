@@ -124,13 +124,6 @@ class AchievementRepository @Inject constructor(
     override fun observeRecentCoins(limit: Int): Flow<List<RecentCoin>> =
         coinDao.observeRecentEarned(limit).map { rows -> rows.mapNotNull { it.toRecentCoin() } }
 
-    /** Explicit per-game refresh of [gameId]'s provider identity (the page's Refresh). */
-    override suspend fun syncGame(
-        gameId: Long,
-        provider: AchievementProvider,
-        providerGameId: String,
-    ): ProviderSyncResult = coordinator.refreshGame(gameId)
-
     /**
      * Explicit refresh of a provider-keyed entry (a Local Steam folder with no library game).
      * Only a present, confirmed entry refreshes; a removed game keeps its cached coins.

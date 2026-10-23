@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.ui.components.PfpChoiceOption
 import com.playfieldportal.core.ui.components.PfpModalSpec
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,10 +22,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -160,6 +159,7 @@ fun DisplaySettingsScreen(
     val menuSounds = LocalMenuSounds.current
 
     val wallpaperMessage = state.wallpaperMessage
+    val contrastNotice = state.textContrastNotice
     val modal = rememberSettingsModal(
         when {
             pspConfirmOpen -> PfpModalSpec.Confirm(
@@ -178,6 +178,20 @@ fun DisplaySettingsScreen(
                 title = "Wallpaper",
                 message = wallpaperMessage,
                 onDismiss = { viewModel.dismissWallpaperMessage() },
+            )
+            // Low-contrast font colour: a warning, as the shared Choice so a pad can answer it
+            // (survey L18, P6). It was a Material dialog with no controller routing.
+            contrastNotice != null -> PfpModalSpec.Choice(
+                key = "text_contrast:$contrastNotice",
+                title = "Font colour may be hard to read",
+                message = contrastNotice,
+                options = listOf(PfpChoiceOption("OK"), PfpChoiceOption("Don't warn me again")),
+                confirmLabel = "Select",
+                cancelLabel = "Close",
+                onConfirm = { index ->
+                    if (index == 1) viewModel.suppressTextContrastNotice() else viewModel.dismissTextContrastNotice()
+                },
+                onCancel = { viewModel.dismissTextContrastNotice() },
             )
             else -> null
         },
@@ -290,13 +304,14 @@ fun DisplaySettingsScreen(
                     onClick  = ::launchWallpaperPicker,
                 )
 
-                SettingsRow(
-                    label    = "Preview Wallpaper",
-                    sublabel = "See the selected wallpaper full-screen",
-                    onClick  = { viewModel.showWallpaperPreview() },
-                )
-
+                // Both rows act on a picked wallpaper, so both wait for one; with none, Preview
+                // only said "No wallpaper selected yet" (survey U31).
                 if (state.customWallpaperPath != null) {
+                    SettingsRow(
+                        label    = "Preview Wallpaper",
+                        sublabel = "See the selected wallpaper full-screen",
+                        onClick  = { viewModel.showWallpaperPreview() },
+                    )
                     SettingsRow(
                         label    = "Reset Wallpaper",
                         sublabel = "Remove custom wallpaper and restore the default background",
@@ -348,7 +363,8 @@ fun DisplaySettingsScreen(
             } else if (state.motionWallpaperPath != null) {
                 SettingsValueRow(
                     label    = "Background Motion",
-                    sublabel = "Animated   |   Reduced (slower, calmer)   |   Static (still image)",
+                    // The row cycles all four wave styles (survey U24).
+                    sublabel = "Animated   |   Reduced (slower, calmer)   |   Static (still image)   |   Reduced + Static",
                     value    = state.waveStyleLabel,
                     onClick  = { viewModel.cycleWaveStyle() },
                 )
@@ -435,20 +451,14 @@ fun DisplaySettingsScreen(
                     sublabel = "Go back to the colour the current theme supplies",
                     onClick  = { viewModel.setTextColor(null) },
                 )
-
-                SettingsToggleRow(
-                    label    = "Use My Exact Colour",
-                    sublabel = "Render the colour exactly as picked. Legibility protection still " +
-                        "applies — text may get a shadow or a plate behind it",
-                    checked  = state.textColorExact,
-                    onToggle = { viewModel.setTextColorExact(it) },
-                )
             }
 
+            // Honest copy: the choice is stored and travels with themes and backups, but no
+            // renderer reads it yet (survey U2, docs/audits/codebase-survey-2026-10-22.md).
             SettingsValueRow(
                 label    = "Text Legibility",
-                sublabel = "How text separates from what is behind it.  " +
-                    "Automatic  |  None  |  Drop Shadow  |  Outline  |  Contrast Plate",
+                sublabel = "Not applied yet — saved with your themes and backups for a later update.  " +
+                    "None  |  Drop Shadow  |  Outline  |  Contrast Plate  |  Automatic",
                 value    = state.textLegibility.label,
                 onClick  = { viewModel.cycleTextLegibility() },
             )
@@ -539,7 +549,7 @@ fun DisplaySettingsScreen(
                     label    = "GameBoot Video",
                     focusKey = "display_${UiMediaSlot.GAMEBOOT_VIDEO.key}",
                     sublabel = "Replace the built-in sequence with your own clip, which plays with " +
-                        "its own sound — even with Menu Sounds off " + UiMediaRowText.videoCap(UiMediaSlot.GAMEBOOT_VIDEO),
+                        "its own sound, at the GameBoot level in Sound ▸ Levels " + UiMediaRowText.videoCap(UiMediaSlot.GAMEBOOT_VIDEO),
                     value    = state.gameBootVideoLabel,
                     isAssigned = state.gameBootVideoAssigned,
                     onPick   = { pickUiMedia(UiMediaSlot.GAMEBOOT_VIDEO) },
@@ -601,7 +611,7 @@ fun DisplaySettingsScreen(
 
             SettingsToggleRow(
                 label    = "Thermal Throttle Awareness",
-                sublabel = "Automatically reduce background quality when device runs hot",
+                sublabel = "Freeze the background (wave or motion wallpaper) while the device reports it is running hot",
                 checked  = state.thermalThrottleAware,
                 onToggle = { viewModel.setThermalThrottleAware(it) },
             )
@@ -690,29 +700,6 @@ fun DisplaySettingsScreen(
     }
 
     modal.Content()
-
-    // Three actions, matching the decision: transient dismiss, a permanent opt-out of the clamp,
-    // and a permanent opt-out of the notice (adjustment carries on).
-    if (state.textContrastNotice != null) {
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissTextContrastNotice() },
-            title = { Text("Font colour adjusted") },
-            text = { Text(state.textContrastNotice!!) },
-            confirmButton = {
-                TextButton(onClick = { viewModel.dismissTextContrastNotice() }) { Text("OK") }
-            },
-            dismissButton = {
-                Row {
-                    TextButton(onClick = { viewModel.setTextColorExact(true) }) {
-                        Text("Use my exact colour")
-                    }
-                    TextButton(onClick = { viewModel.suppressTextContrastNotice() }) {
-                        Text("Don't warn again")
-                    }
-                }
-            },
-        )
-    }
 
 }
 

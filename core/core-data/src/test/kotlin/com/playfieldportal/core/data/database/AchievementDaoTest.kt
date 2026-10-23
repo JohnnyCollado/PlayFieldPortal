@@ -247,6 +247,24 @@ class AchievementDaoTest {
         assertEquals(15 + 5 * 15, sets.observeWalletCoins().first())
     }
 
+    // Survey L9 (docs/audits/codebase-survey-2026-10-22.md): the hub lists named games with
+    // COALESCE(g.title, s.title), so a game the user renamed kept its raw scan name there while
+    // every other achievement surface showed the rename.
+    @Test
+    fun `hub lists show the user's rename of a library game`() = runTest {
+        val gameId = seedGame()
+        db.gameDao().updateUserTitleOverride(gameId, "Chrono Trigger (Retranslated)")
+        seedLink(gameId, "RETRO_ACHIEVEMENTS", "319")
+        confirm("RETRO_ACHIEVEMENTS", "319")
+        sets.upsert(set("RETRO_ACHIEVEMENTS", "319", bronzeEarned = 1, bronzeTotal = 1))
+        coins.upsertAll(listOf(coin("RETRO_ACHIEVEMENTS", "319", "a1", earned = true).copy(earnedAt = 5L)))
+
+        val renamed = "Chrono Trigger (Retranslated)"
+        assertEquals(renamed, sets.observeAccountSets().first().single().title)
+        assertEquals(renamed, coins.observeRarestEarned(10).first().single().gameTitle)
+        assertEquals(renamed, coins.observeRecentEarned(10).first().single().gameTitle)
+    }
+
     @Test
     fun `hasBlankHiddenDescription finds only a hidden coin with no text, within its own set`() = runTest {
         fun hidden(gameId: String, id: String, description: String, isHidden: Boolean = true) =

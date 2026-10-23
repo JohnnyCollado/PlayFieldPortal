@@ -49,6 +49,17 @@ object PcLaunchRouting {
                 .filter { it.packageName != ownPackage && canOpen(it.type, ids, sharedDesktop) }
                 .map { PcLaunchOption(it.packageName, it.label, isOriginal = false) }
 
+    /**
+     * Launch With's value: the launcher the game will actually open in, or null when [options]
+     * offers no real choice (the row is then left out). A chosen launcher that is not among the
+     * options — uninstalled, or unable to address the game — falls back to the game's own, as
+     * [PcLaunchRouter.chosenLaunchIntent] does (survey U15/U29).
+     */
+    fun launchWithLabel(chosenPackage: String?, options: List<PcLaunchOption>): String? {
+        if (options.size < 2) return null
+        return (options.firstOrNull { it.packageName == chosenPackage } ?: options.firstOrNull { it.isOriginal })?.label
+    }
+
     private fun canOpen(type: PcLauncherType, ids: List<PcStoreId>, sharedDesktop: Boolean): Boolean =
         storeIdFor(type, ids) != null || (sharedDesktop && type == PcLauncherType.WINLATOR)
 
@@ -75,9 +86,9 @@ class PcLaunchRouter @Inject constructor(
         )
     }
 
-    /** The name Launch With shows for the launcher [game] runs with now. */
-    fun currentLabel(game: Game): String? =
-        (game.pcLauncherPackage ?: game.packageName)?.let { PcLauncherCatalog.displayName(it, context.packageManager) }
+    /** Launch With's value for [game]: the launcher it will open in, or null when there is no choice to make. */
+    suspend fun launchWithLabel(game: Game): String? =
+        PcLaunchRouting.launchWithLabel(game.pcLauncherPackage, options(game))
 
     /**
      * The intent that opens [game] in the launcher the user chose, or null to launch it through its

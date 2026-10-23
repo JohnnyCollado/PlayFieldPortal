@@ -21,14 +21,18 @@ class XmbIcons(
 ) {
     /** The icon that draws for [key], or null for the built-in art. */
     operator fun get(key: String): CustomIcon? =
-        user[key] ?: theme[key]?.takeUnless { UserCategoryIconKeys.isValidKey(key) }
+        user[key] ?: theme[key]?.takeUnless { isUserOnlyKey(key) }
 
     /** Which tier supplies [key]'s icon, or null when neither does. */
     fun tierOf(key: String): IconTier? = when {
         key in user -> IconTier.USER
-        key in theme && !UserCategoryIconKeys.isValidKey(key) -> IconTier.THEME
+        key in theme && !isUserOnlyKey(key) -> IconTier.THEME
         else -> null
     }
+
+    // A category's or a card's own image is the user's alone; a theme never supplies one.
+    private fun isUserOnlyKey(key: String): Boolean =
+        UserCategoryIconKeys.isValidKey(key) || UserCardIconKeys.isValidKey(key)
 
     /** The keys the user has set (the icon editor's Reset / Reset All work on these). */
     val userKeys: Set<String> get() = user.keys

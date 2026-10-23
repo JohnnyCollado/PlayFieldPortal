@@ -82,4 +82,14 @@ class PlatformFolderHintResolverTest {
         assertNull(resolver.detectFromFolderName("bios"))
         assertNull(resolver.detectFromFolderName(""))
     }
+
+    // Survey L24 (docs/audits/codebase-survey-2026-10-22.md): "game" (PPSSPP's /PSP/GAME/) won as
+    // the deepest segment, so /roms/ps2/game/x.iso was read as PSP.
+    @Test
+    fun `a game folder means PSP only under a PSP folder`() {
+        val resolver = PlatformFolderHintResolver()
+        assertEquals("psp", resolver.detectFromPath("/storage/emulated/0/PSP/GAME/Crisis Core.iso"))
+        assertEquals("ps2", resolver.detectFromPath("/roms/ps2/game/Okami.iso"))
+        assertEquals(null, resolver.detectFromPath("/storage/emulated/0/game/thing.iso"))
+    }
 }

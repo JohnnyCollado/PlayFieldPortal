@@ -279,11 +279,6 @@ class StudioResultCache(private val maxEntries: Int = MAX_ENTRIES) {
 
     fun contains(key: StudioRequestKey): Boolean = synchronized(entries) { entries.containsKey(key) }
 
-    /** Drops every entry for [source] — used when its credentials or filters change underneath it. */
-    fun evictSource(source: StudioSource) = synchronized(entries) {
-        entries.keys.filter { it.source == source }.forEach { entries.remove(it) }
-    }
-
     fun clear() = synchronized(entries) { entries.clear() }
 
     val size: Int get() = synchronized(entries) { entries.size }

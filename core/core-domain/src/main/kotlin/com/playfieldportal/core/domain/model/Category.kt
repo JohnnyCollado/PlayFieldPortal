@@ -43,3 +43,21 @@ object BuiltInCategory {
     const val SOCIAL           = "social"
     const val ACHIEVEMENTS     = "achievements"
 }
+
+// Media, system and the Android column own their layouts and never list custom memory cards.
+private val NON_CARD_CATEGORY_IDS = setOf(
+    BuiltInCategory.MUSIC, BuiltInCategory.VIDEO, BuiltInCategory.PHOTO, BuiltInCategory.ANDROID,
+    BuiltInCategory.APP_DRAWER, BuiltInCategory.SETTINGS, BuiltInCategory.ACHIEVEMENTS,
+    BuiltInCategory.SOCIAL,
+)
+
+/**
+ * True for categories that hold custom memory cards: every gaming category, plus the generic app
+ * categories (Network, App Store, custom non-gaming). One rule for the XMB and Settings, so both
+ * offer the same places to put a card (survey L28, docs/audits/codebase-survey-2026-10-22.md).
+ */
+fun Category.showsCustomCards(): Boolean = isGamingCategory || id !in NON_CARD_CATEGORY_IDS
+
+/** The categories a new custom card can go in: gaming ones first, then app ones, each in [categories]' order. */
+fun cardCategories(categories: List<Category>): List<Category> =
+    categories.filter { it.showsCustomCards() }.sortedByDescending { it.isGamingCategory }

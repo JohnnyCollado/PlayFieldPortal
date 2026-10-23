@@ -154,6 +154,40 @@ class SearchOnlineViewModelTest {
         assertTrue(state.openCredentials)
     }
 
+    // Survey P4 (docs/audits/codebase-survey-2026-10-22.md): the error's "Try again" / "Open
+    // Settings" button was tap-only. The Options menu now offers the same action to a pad.
+    @Test
+    fun `an offline error offers Try again in Options, and picking it searches again`() {
+        coEvery { previews.searchSteam(any()) } returns emptyList()
+        every { network.isOnline() } returns false
+        search()
+
+        press(GamepadAction.OPEN_CONTEXT_MENU)
+        val index = state.optionRows.indexOfFirst { it.label == "Try again" }
+        assertTrue("Options must offer the error's Try again", index >= 0)
+
+        every { network.isOnline() } returns true
+        coEvery { previews.searchSteam(any()) } returns listOf(resonance)
+        viewModel.onOptionActivated(index)
+        scheduler.advanceUntilIdle()
+
+        assertEquals(1, state.rows.count { it is SearchOnlineRow.Result })
+    }
+
+    @Test
+    fun `a not-connected error offers Open Settings in Options`() {
+        coEvery { previews.searchRetroAchievements(any(), any()) } returns PreviewSearch.Unavailable
+        coEvery { credentials.raApiKey() } returns null
+        viewModel.setProvider(SearchProvider.RETRO_ACHIEVEMENTS)
+        search()
+
+        press(GamepadAction.OPEN_CONTEXT_MENU)
+        val index = state.optionRows.indexOfFirst { it.label == "Open Settings" }
+        viewModel.onOptionActivated(index)
+
+        assertTrue(state.openCredentials)
+    }
+
     @Test
     fun `an unreadable catalog with credentials and a connection is a failure, not an empty catalog`() {
         coEvery { previews.searchRetroAchievements(any(), any()) } returns PreviewSearch.Unavailable

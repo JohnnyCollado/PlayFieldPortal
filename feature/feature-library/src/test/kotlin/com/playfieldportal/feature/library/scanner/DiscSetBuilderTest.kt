@@ -109,6 +109,41 @@ class DiscSetBuilderTest {
     }
 
     @Test
+    // Survey L15 (docs/audits/codebase-survey-2026-10-22.md): a playlist entry that is not in the
+    // playlist's folder fell back to any same-named file in the whole library, so the USA playlist
+    // pulled in the EU dump's disc. The fallback now only reaches the playlist's own subfolders.
+    fun `a playlist never adopts a same-named disc from an unrelated folder`() {
+        val games = listOf(
+            game("/roms/psx/USA/Final Fantasy VII (Disc 1).cue"),
+            game("/roms/psx/USA/Final Fantasy VII.m3u"),
+            game("/roms/psx/EU/Final Fantasy VII (Disc 2).cue"),
+        )
+
+        val assigned = builder.assign(games) {
+            m3u(listOf("Final Fantasy VII (Disc 1).cue", "Final Fantasy VII (Disc 2).cue")).read(it)
+        }
+
+        val eu = assigned.single { it.romPath == "/roms/psx/EU/Final Fantasy VII (Disc 2).cue" }
+        val usaKey = assigned.single { it.romPath == "/roms/psx/USA/Final Fantasy VII.m3u" }.discSetKey
+        kotlin.test.assertNotEquals(usaKey, eu.discSetKey)
+    }
+
+    @Test
+    fun `a playlist still finds a disc kept in its own subfolder`() {
+        val games = listOf(
+            game("/roms/psx/FF7/Final Fantasy VII.m3u"),
+            game("/roms/psx/FF7/discs/Final Fantasy VII (Disc 1).cue"),
+            game("/roms/psx/FF7/discs/Final Fantasy VII (Disc 2).cue"),
+        )
+
+        val assigned = builder.assign(games) {
+            m3u(listOf("discs/Final Fantasy VII (Disc 1).cue", "discs/Final Fantasy VII (Disc 2).cue")).read(it)
+        }
+
+        assertEquals(2, assigned.count { it.discSetKey != null && !it.isDiscPrimary })
+    }
+
+    @Test
     fun `two same-named games in different folders do not merge`() {
         val games = listOf(
             game("/roms/psx/NA/Final Fantasy VII (Disc 1).cue"),

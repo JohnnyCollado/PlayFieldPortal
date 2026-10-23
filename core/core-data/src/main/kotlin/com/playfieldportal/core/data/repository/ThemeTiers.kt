@@ -206,8 +206,10 @@ class ThemeTiers internal constructor(private val filesDir: File) {
         private const val ICON_DECODE_MAX_DIMENSION = 8192
         private const val ICON_DECODE_TARGET_DIMENSION = 512
 
-        /** A key either tier may store an icon under: a themeable slot, or a user category image. */
+        /** A key either tier may store an icon under: a themeable slot, or a user category or card image. */
         fun isIconKey(key: String): Boolean =
-            CustomizableIcons.isValidKey(key) || UserCategoryIconKeys.isValidKey(key)
+            CustomizableIcons.isValidKey(key) ||
+                UserCategoryIconKeys.isValidKey(key) ||
+                com.playfieldportal.core.ui.icons.UserCardIconKeys.isValidKey(key)
     }
 }

@@ -51,6 +51,8 @@ class MusicPlayerController @Inject constructor(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var player: MediaPlayer? = null
+    // Seam for tests; production always builds a fresh platform player.
+    internal var playerFactory: () -> MediaPlayer = { MediaPlayer() }
     private var queue: List<MusicTrack> = emptyList()
     private var queueName: String? = null
     private var index = 0
@@ -121,7 +123,8 @@ class MusicPlayerController @Inject constructor(
     private fun playCurrent() {
         val track = queue.getOrNull(index) ?: return stop()
         releasePlayer()
-        player = MediaPlayer().apply {
+        var loaded = true
+        player = playerFactory().apply {
             setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -143,7 +146,7 @@ class MusicPlayerController @Inject constructor(
                 prepareAsync()
             }.onFailure {
                 Timber.w(it, "Failed to load ${track.displayTitle}; skipping")
-                next()
+                loaded = false
             }
         }
         // Reflect the track immediately (duration fills in once prepared).
@@ -151,6 +154,14 @@ class MusicPlayerController @Inject constructor(
             track = track, isPlaying = false, positionMs = 0, durationMs = 0,
             index = index, queueSize = queue.size, isPrepared = false, queueName = queueName,
         )
+        // Skip only once the failed player is the stored one, so releasing it here and letting
+        // next() store the following track's player leaves exactly one live player. Skipping
+        // from inside the apply block let the outer assignment overwrite the working player with
+        // the dead one (survey L6, docs/audits/codebase-survey-2026-10-22.md).
+        if (!loaded) {
+            releasePlayer()
+            next()
+        }
     }
 
     private fun startTicker() {

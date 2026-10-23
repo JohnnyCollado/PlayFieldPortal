@@ -102,8 +102,13 @@ class AppDrawerViewModel @Inject constructor(
         }
     }
 
+    // One sweep at a time: init, package changes and every ON_RESUME all reload, and an older
+    // sweep finishing last used to bring back an app that had just been uninstalled (survey L14).
+    private var loadJob: kotlinx.coroutines.Job? = null
+
     private fun loadApps() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val hasUsageAccess = appRepository.hasUsageAccess()
             val apps = appRepository.getInstalledApps()
@@ -127,10 +132,6 @@ class AppDrawerViewModel @Inject constructor(
     fun setSearchQuery(query: String) {
         _uiState.update { it.copy(searchQuery = query, selectedIndex = 0) }
         applyFilter()
-    }
-
-    fun onAppSelected(index: Int) {
-        _uiState.update { it.copy(selectedIndex = index) }
     }
 
     /** Touch tap on a grid tile: moves the (hidden) cursor there and enters touch mode. */
@@ -368,7 +369,7 @@ class AppDrawerViewModel @Inject constructor(
             }
 
         // Compute per-filter counts (unfiltered by search query) for the category rail.
-        val counts = AppFilter.values().associateWith { filter ->
+        val counts = AppFilter.entries.associateWith { filter ->
             state.allApps.count { app ->
                 when (filter) {
                     AppFilter.ALL       -> true
@@ -379,6 +380,14 @@ class AppDrawerViewModel @Inject constructor(
             }
         }
 
-        _uiState.update { it.copy(visibleApps = filtered, filterCounts = counts) }
+        // A shorter list (an uninstall, a reload) must not leave the cursor past the end, where no
+        // tile shows it (survey L14).
+        _uiState.update {
+            it.copy(
+                visibleApps = filtered,
+                filterCounts = counts,
+                selectedIndex = it.selectedIndex.coerceIn(0, (filtered.size - 1).coerceAtLeast(0)),
+            )
+        }
     }
 }

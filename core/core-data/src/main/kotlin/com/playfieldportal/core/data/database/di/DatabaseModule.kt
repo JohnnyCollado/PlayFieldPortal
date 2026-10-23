@@ -15,7 +15,6 @@ import com.playfieldportal.core.data.database.dao.CollectionDao
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.dao.GameStorefrontIdentityDao
 import com.playfieldportal.core.data.database.dao.LaunchOutcomeDao
-import com.playfieldportal.core.data.database.dao.LibrarySourceDao
 import com.playfieldportal.core.data.database.dao.MemoryCardDao
 import com.playfieldportal.core.data.database.dao.MusicFolderDao
 import com.playfieldportal.core.data.database.dao.MusicTrackDao
@@ -24,11 +23,9 @@ import com.playfieldportal.core.data.database.dao.PlaylistDao
 import com.playfieldportal.core.data.database.dao.PlaySessionDao
 import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.dao.ThemeDao
-import com.playfieldportal.core.data.database.dao.UnmatchedRomDao
 import com.playfieldportal.core.data.database.dao.HiddenPlacementDao
 import com.playfieldportal.core.data.database.dao.PhotoDao
 import com.playfieldportal.core.data.database.dao.PhotoLibraryDao
-import com.playfieldportal.core.data.database.dao.ScanTombstoneDao
 import com.playfieldportal.core.data.database.dao.VideoDao
 import com.playfieldportal.core.data.database.dao.VideoLibraryDao
 import com.playfieldportal.core.data.database.dao.VideoPlaylistDao
@@ -133,6 +130,8 @@ object DatabaseModule {
         .build()
 
     @Provides fun provideGameDao(db: PFPDatabase): GameDao = db.gameDao()
+    @Provides fun provideDatabaseTransactions(db: PFPDatabase): com.playfieldportal.core.data.database.DatabaseTransactions =
+        com.playfieldportal.core.data.database.RoomDatabaseTransactions(db)
     @Provides fun provideLocalSteamFolderDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.LocalSteamFolderDao = db.localSteamFolderDao()
     @Provides fun provideLaunchOutcomeDao(db: PFPDatabase): LaunchOutcomeDao = db.launchOutcomeDao()
     @Provides fun provideSsMediaCacheDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.SsMediaCacheDao = db.ssMediaCacheDao()
@@ -145,8 +144,6 @@ object DatabaseModule {
     @Provides fun providePlatformDao(db: PFPDatabase): PlatformDao = db.platformDao()
     @Provides fun provideCategoryDao(db: PFPDatabase): CategoryDao = db.categoryDao()
     @Provides fun providePlaySessionDao(db: PFPDatabase): PlaySessionDao = db.playSessionDao()
-    @Provides fun provideLibrarySourceDao(db: PFPDatabase): LibrarySourceDao = db.librarySourceDao()
-    @Provides fun provideUnmatchedRomDao(db: PFPDatabase): UnmatchedRomDao = db.unmatchedRomDao()
     @Provides fun provideThemeDao(db: PFPDatabase): ThemeDao = db.themeDao()
     @Provides fun provideMemoryCardDao(db: PFPDatabase): MemoryCardDao = db.memoryCardDao()
     @Provides fun provideAppOverrideDao(db: PFPDatabase): AppOverrideDao = db.appOverrideDao()
@@ -160,7 +157,6 @@ object DatabaseModule {
     @Provides fun provideHiddenPlacementDao(db: PFPDatabase): HiddenPlacementDao = db.hiddenPlacementDao()
     @Provides fun providePhotoLibraryDao(db: PFPDatabase): PhotoLibraryDao = db.photoLibraryDao()
     @Provides fun providePhotoDao(db: PFPDatabase): PhotoDao = db.photoDao()
-    @Provides fun provideScanTombstoneDao(db: PFPDatabase): ScanTombstoneDao = db.scanTombstoneDao()
     @Provides fun provideBackupDao(db: PFPDatabase): BackupDao = db.backupDao()
     @Provides fun provideArtworkRecordDao(db: PFPDatabase): ArtworkRecordDao = db.artworkRecordDao()
     @Provides fun provideArtworkImportReportDao(db: PFPDatabase): ArtworkImportReportDao = db.artworkImportReportDao()

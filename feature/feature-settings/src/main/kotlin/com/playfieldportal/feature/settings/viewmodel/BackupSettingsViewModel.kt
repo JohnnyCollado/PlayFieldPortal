@@ -16,6 +16,7 @@ import com.playfieldportal.feature.backup.BackupWorker
 import com.playfieldportal.feature.backup.RestoreWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -76,26 +77,21 @@ class BackupSettingsViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isWorking = true, workingMessage = "Creating backup…", errorMessage = null) }
-            workManager.getWorkInfoByIdFlow(request.id).collect { info ->
-                when (info?.state) {
-                    WorkInfo.State.SUCCEEDED -> {
-                        val path = info.outputData.getString(BackupWorker.KEY_OUTPUT_PATH)
-                        Timber.i("Backup succeeded: $path")
-                        _uiState.update { it.copy(isWorking = false, workingMessage = "") }
-                        refreshBackupList()
-                        return@collect
-                    }
-                    WorkInfo.State.FAILED -> {
-                        val err = info.outputData.getString(BackupWorker.KEY_ERROR) ?: "Unknown error"
-                        _uiState.update { it.copy(isWorking = false, workingMessage = "", errorMessage = err) }
-                        return@collect
-                    }
-                    WorkInfo.State.CANCELLED -> {
-                        _uiState.update { it.copy(isWorking = false, workingMessage = "") }
-                        return@collect
-                    }
-                    else -> { /* ENQUEUED / RUNNING — keep showing progress */ }
+            // Stops at the first finished state: `return@collect` only skipped one emission, so the
+            // watcher outlived its job and a later re-emission could undo the result shown.
+            val info = workManager.getWorkInfoByIdFlow(request.id).firstOrNull { it?.state?.isFinished == true }
+            when (info?.state) {
+                WorkInfo.State.SUCCEEDED -> {
+                    val path = info.outputData.getString(BackupWorker.KEY_OUTPUT_PATH)
+                    Timber.i("Backup succeeded: $path")
+                    _uiState.update { it.copy(isWorking = false, workingMessage = "") }
+                    refreshBackupList()
                 }
+                WorkInfo.State.FAILED -> {
+                    val err = info.outputData.getString(BackupWorker.KEY_ERROR) ?: "Unknown error"
+                    _uiState.update { it.copy(isWorking = false, workingMessage = "", errorMessage = err) }
+                }
+                else -> _uiState.update { it.copy(isWorking = false, workingMessage = "") }
             }
         }
     }
@@ -110,31 +106,20 @@ class BackupSettingsViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isWorking = true, workingMessage = "Restoring backup…", errorMessage = null) }
-            workManager.getWorkInfoByIdFlow(request.id).collect { info ->
-                when (info?.state) {
-                    WorkInfo.State.SUCCEEDED -> {
-                        Timber.i("Restore succeeded")
-                        _uiState.update { it.copy(isWorking = false, workingMessage = "") }
-                        return@collect
-                    }
-                    WorkInfo.State.FAILED -> {
-                        val err = info.outputData.getString(RestoreWorker.KEY_ERROR) ?: "Unknown error"
-                        _uiState.update { it.copy(isWorking = false, workingMessage = "", errorMessage = err) }
-                        return@collect
-                    }
-                    WorkInfo.State.CANCELLED -> {
-                        _uiState.update { it.copy(isWorking = false, workingMessage = "") }
-                        return@collect
-                    }
-                    else -> {}
+            // Stops at the first finished state (see backupNow).
+            val info = workManager.getWorkInfoByIdFlow(request.id).firstOrNull { it?.state?.isFinished == true }
+            when (info?.state) {
+                WorkInfo.State.SUCCEEDED -> {
+                    Timber.i("Restore succeeded")
+                    _uiState.update { it.copy(isWorking = false, workingMessage = "") }
                 }
+                WorkInfo.State.FAILED -> {
+                    val err = info.outputData.getString(RestoreWorker.KEY_ERROR) ?: "Unknown error"
+                    _uiState.update { it.copy(isWorking = false, workingMessage = "", errorMessage = err) }
+                }
+                else -> _uiState.update { it.copy(isWorking = false, workingMessage = "") }
             }
         }
-    }
-
-    // Kept for legacy composable call sites that haven't wired SAF yet
-    fun restoreFromFile() {
-        Timber.d("restoreFromFile — SAF picker launched by composable")
     }
 
     /** Deletes a saved backup's document from the backup folder, then refreshes the list. */

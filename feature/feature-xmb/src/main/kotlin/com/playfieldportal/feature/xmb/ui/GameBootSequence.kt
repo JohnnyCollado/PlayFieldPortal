@@ -29,7 +29,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.theme.InterFamily
-import com.playfieldportal.core.ui.wave.WaveStyle
 import com.playfieldportal.themekit.UiMediaLimits
 import kotlin.math.PI
 import kotlin.math.sin
@@ -139,10 +138,11 @@ internal data class Sweep(val startMs: Int, val endMs: Int, val intensity: Float
  * emulator takes the screen while the sound is still playing. Frame deltas are wall-clock, so
  * five seconds is five seconds and the light stays locked to the sample it was measured from.
  *
- * **Motion budget: less motion, not less time.** [BootSequenceOverlay] hardcodes
- * `WaveStyle.ANIMATED` because it runs once per app start. GameBoot runs on EVERY launch, so it
- * honors the user's wave style instead — a deliberate deviation from BootSequenceOverlay's stance.
- * A frozen or reduced style drops all three blooms and leaves the two crossfades, so the screen
+ * **Motion budget: less motion, not less time.** [glare] is [gameBootGlare]: off only while the
+ * device is saving power or Android's animations are off. It deliberately does NOT follow the
+ * background's Wave Style / Background Motion setting — that row is hidden while a still wallpaper
+ * is set, so following it let a still-wallpaper user lose the glare with no way to get it back.
+ * With [glare] off, all three blooms are dropped and the two crossfades stay, so the screen
  * still comes up out of black and still sinks back into it, over the same five seconds.
  * Shortening it instead would end the visual while the sound was still going and hand the screen
  * to the emulator mid-presentation, which is the one thing this sequence must not do.
@@ -150,11 +150,10 @@ internal data class Sweep(val startMs: Int, val endMs: Int, val intensity: Float
 @Composable
 fun GameBootSequence(
     gameTitle: String,
-    waveStyle: WaveStyle,
+    glare: Boolean,
     onFinished: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val reduced = !waveStyle.animated || waveStyle.reduced
     var ms by remember { mutableFloatStateOf(0f) }
     val currentOnFinished by rememberUpdatedState(onFinished)
     // Measuring inside the draw phase would normally be wasteful, but the style and constraints
@@ -182,7 +181,7 @@ fun GameBootSequence(
         drawPfpMark()
         drawGameTitle(textMeasurer, gameTitle)
 
-        if (!reduced) SWEEPS.forEach { drawSweep(it, ms) }
+        if (glare) SWEEPS.forEach { drawSweep(it, ms) }
 
         // The curtain the screen comes up through, and the one it goes back down behind. Drawn
         // last, over everything: the mark and title resolve out of the black rather than being
@@ -193,6 +192,14 @@ fun GameBootSequence(
         if (sink > 0f) drawRect(Color.Black.copy(alpha = sink))
     }
 }
+
+/**
+ * Whether GameBoot draws its light sweeps: yes, unless the device is conserving power (battery
+ * saver or a thermal limit, [powerThrottled]) or the user has turned Android's animations off
+ * ([systemAnimationsOn] false, e.g. Accessibility ▸ Remove animations).
+ */
+internal fun gameBootGlare(powerThrottled: Boolean, systemAnimationsOn: Boolean): Boolean =
+    !powerThrottled && systemAnimationsOn
 
 /** The black-to-white rise, 0 while the screen is still black and 1 once the field is fully up. */
 internal fun rampAt(ms: Float): Float =

@@ -82,4 +82,29 @@ class PlaylistDaoImportTest {
         assertEquals(1, dao.maxPosition(id))
         assertTrue(dao.observeAllWithCounts().first().single().track_count == 2)
     }
+
+    // Survey L10 (docs/audits/codebase-survey-2026-10-22.md): the count counted every
+    // playlist_tracks row while the contents inner-join music_tracks, so a playlist whose folder
+    // was removed read "3 tracks" and opened empty.
+    @Test
+    fun `the count only counts tracks that still exist`() = runTest {
+        tracks("a", "b", "c")
+        val id = dao.insertWithTracks("Mix", listOf("a", "b", "c"), now = 5L)
+
+        db.musicTrackDao().deleteForFolder("f")
+
+        assertEquals(0, dao.observeAllWithCounts().first().single().track_count)
+        assertEquals(emptyList<String>(), dao.observeTracks(id).first().map { it.id })
+    }
+
+    @Test
+    fun `orphaned rows are pruned when asked`() = runTest {
+        tracks("a", "b")
+        val id = dao.insertWithTracks("Mix", listOf("a", "b"), now = 5L)
+        db.musicTrackDao().deleteForFolder("f")
+
+        dao.deleteOrphanedTracks()
+
+        assertEquals(-1, dao.maxPosition(id))
+    }
 }

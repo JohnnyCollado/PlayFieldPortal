@@ -629,7 +629,7 @@ class InitialSetupViewModel @Inject constructor(
             ps3DataLibrary.setDataFolder(uri)
             announce(
                 "setup_ps3",
-                "PS3 data folder set. Run Auto-Match in Settings ▸ Shiba Coins to link PS3 trophies.",
+                "PS3 data folder set. Run Auto-Match in Settings ▸ Achievements ▸ Update Achievements to link PS3 trophies.",
             )
         }
     }
@@ -650,7 +650,7 @@ class InitialSetupViewModel @Inject constructor(
             xbox360DataLibrary.setFolder(emulator, uri)
             announce(
                 "setup_x360_${emulator.name.lowercase()}",
-                "${emulator.label} data folder set. Run Auto-Match in Settings ▸ Shiba Coins to link " +
+                "${emulator.label} data folder set. Run Auto-Match in Settings ▸ Achievements ▸ Update Achievements to link " +
                     "Xbox 360 achievements.",
             )
         }

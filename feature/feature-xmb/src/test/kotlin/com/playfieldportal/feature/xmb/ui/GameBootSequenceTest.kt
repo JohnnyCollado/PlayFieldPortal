@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.xmb.ui
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -207,5 +208,25 @@ class GameBootSequenceTest {
             ms += 1f
         }
         return best
+    }
+
+    // --- When the glare is drawn ------------------------------------------------------------
+    // The light used to follow the background's Wave Style / Background Motion setting, which is
+    // hidden while a still wallpaper is set, so a still-wallpaper user could lose the glare with no
+    // way to get it back. It now follows only the device: power saving and Android's animations.
+
+    @Test
+    fun `the glare plays on an ordinary launch`() {
+        assertTrue(gameBootGlare(powerThrottled = false, systemAnimationsOn = true))
+    }
+
+    @Test
+    fun `battery saver or a thermal limit drops the glare`() {
+        assertFalse(gameBootGlare(powerThrottled = true, systemAnimationsOn = true))
+    }
+
+    @Test
+    fun `Android's Remove animations drops the glare`() {
+        assertFalse(gameBootGlare(powerThrottled = false, systemAnimationsOn = false))
     }
 }

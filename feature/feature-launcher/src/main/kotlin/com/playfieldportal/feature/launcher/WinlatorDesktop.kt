@@ -39,7 +39,12 @@ object WinlatorDesktop {
             ?.takeIf { it.length <= MAX_APP_ID_LENGTH && it.trimStart('0').isNotEmpty() }
 
     /** True when [shortcutPath] is on shared storage, where any fork can read it. */
-    fun isShared(shortcutPath: String): Boolean = !shortcutPath.startsWith("/data/")
+    fun isShared(shortcutPath: String): Boolean =
+        !shortcutPath.startsWith("/data/") && !APP_SPECIFIC_EXTERNAL.containsMatchIn(shortcutPath)
+
+    // An app's own external folders are private to it on Android 11+, so another fork cannot read
+    // a shortcut stored there (survey L12, docs/audits/codebase-survey-2026-10-22.md).
+    private val APP_SPECIFIC_EXTERNAL = Regex("/Android/(data|obb)/", RegexOption.IGNORE_CASE)
 
     /** The `.desktop` path a stored launch intent opens, or null when it is not a desktop launch. */
     fun shortcutPathOf(intentUri: String?): String? = intentUri

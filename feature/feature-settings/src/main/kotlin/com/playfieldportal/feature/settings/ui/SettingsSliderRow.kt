@@ -126,7 +126,9 @@ fun SettingsSliderRow(
             .onFocusChanged { state ->
                 isFocused = state.isFocused
                 if (state.isFocused) {
-                    focusTracker(enterAdjustment)
+                    // A disabled slider registers no SELECT fallback, so a pad cannot adjust a
+                    // value the row shows as unavailable (survey P7).
+                    focusTracker(if (enabled) enterAdjustment else null)
                     reportFocused(row.focusRequester)
                 }
             }

@@ -39,7 +39,8 @@ class LockScreenImageTest {
         override val screenWidth = 1920
         override val screenHeight = 1080
         override fun setLock(bitmap: Bitmap): Boolean = accept.also { if (it) set += bitmap }
-        override fun clearLock(): Boolean { cleared++; return true }
+        var clearWorks = true
+        override fun clearLock(): Boolean { cleared++; return clearWorks }
     }
 
     private val system = FakeSystem()
@@ -94,11 +95,23 @@ class LockScreenImageTest {
         assertEquals(1, File(context.filesDir, LockScreenImage.DIR).listFiles()!!.size)
     }
 
+    // Survey L25 (docs/audits/codebase-survey-2026-10-22.md): a failed system reset was swallowed,
+    // the image forgotten anyway, and the tray said "reset" while the device kept PFP's image.
+    @Test
+    fun `a reset the system refuses keeps the image and reports failure`() = runTest {
+        lock.set(png(800, 600), LockScreenImage.Source.USER)
+        system.clearWorks = false
+
+        assertEquals(false, lock.clear())
+
+        assertTrue(lock.state.first().path != null)
+    }
+
     @Test
     fun `reset clears the system lock screen and forgets the image`() = runTest {
         lock.set(png(800, 600), LockScreenImage.Source.USER)
 
-        lock.clear()
+        assertTrue(lock.clear())
 
         assertEquals(1, system.cleared)
         assertNull(lock.state.first().path)

@@ -129,9 +129,11 @@ class MemoryCardContextMenuItemsTest {
     // -- Scan All Cards summary ------------------------------------------------
 
     @Test
-    fun `the scan summary says what was found and across how many cards`() {
-        assertEquals("3 new games across 5 Memory Cards", scanAllSummary(added = 3, cards = 5, failed = 0))
-        assertEquals("1 new game across 1 Memory Card", scanAllSummary(added = 1, cards = 1, failed = 0))
+    // Survey U25 (docs/audits/codebase-survey-2026-10-22.md): "across 5 Memory Cards" read as five
+    // cards having new games, when 5 was every card scanned. The count now says what it counts.
+    fun `the scan summary says what was found and how many cards were scanned`() {
+        assertEquals("3 new games · 5 Memory Cards scanned", scanAllSummary(added = 3, cards = 5, failed = 0))
+        assertEquals("1 new game · 1 Memory Card scanned", scanAllSummary(added = 1, cards = 1, failed = 0))
         assertEquals("No new games found", scanAllSummary(added = 0, cards = 5, failed = 0))
     }
 
@@ -142,7 +144,7 @@ class MemoryCardContextMenuItemsTest {
             scanAllSummary(added = 0, cards = 5, failed = 2),
         )
         assertEquals(
-            "3 new games across 5 Memory Cards · 1 card could not be scanned",
+            "3 new games · 5 Memory Cards scanned · 1 card could not be scanned",
             scanAllSummary(added = 3, cards = 5, failed = 1),
         )
     }

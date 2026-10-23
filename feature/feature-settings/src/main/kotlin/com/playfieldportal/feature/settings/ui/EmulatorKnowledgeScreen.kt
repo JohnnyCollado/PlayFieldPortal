@@ -292,8 +292,8 @@ internal fun EmulatorKnowledgeContent(
                     }
                 }
                 SettingsRow(
-                    label = "Export your files",
-                    sublabel = "Share them as one .json",
+                    label = "Export your emulators",
+                    sublabel = "Share your custom and edited emulators as one .json",
                     focusKey = "knowledge_export",
                     onClick = onExport,
                 )

@@ -9,10 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -82,11 +79,27 @@ fun VideoSettingsContent(
     onDismissMessage: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // The default-player picker, as the shared Choice modal so a pad can drive it (survey P6).
+    val playerModal = rememberSettingsModal(
+        if (!state.showPlayerPicker) null else playerPickerSpec(
+            title = "Default Video Player",
+            options = listOf(
+                PlayerOption("builtin", "Play Field Portal"),
+                PlayerOption("ask", "System Default"),
+            ) + state.availablePlayers.map { PlayerOption(it.packageName, it.label) },
+            current = state.defaultPlayer ?: "builtin",
+            emptyNote = if (state.availablePlayers.isEmpty()) "No external video players found on this device." else null,
+            onChoose = onChoosePlayer,
+            onClose = onDismissPlayerPicker,
+        ),
+    )
     SettingsScaffold(
         title    = "Settings",
         subtitle = "Video",
         onBack   = onBack,
         modifier = modifier,
+        modalOpen = playerModal.open,
+        onInterceptAction = playerModal.intercept,
     ) {
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
@@ -137,53 +150,7 @@ fun VideoSettingsContent(
         }
     }
 
-    // ── Default player picker: Play Field Portal / System Default / an installed app ──
-    if (state.showPlayerPicker) {
-        AlertDialog(
-            onDismissRequest = onDismissPlayerPicker,
-            title = { Text("Default Video Player") },
-            text = {
-                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    PlayerChoiceRow(
-                        label = "Play Field Portal",
-                        selected = state.defaultPlayer == null || state.defaultPlayer == "builtin",
-                        onClick = { onChoosePlayer("builtin") },
-                    )
-                    PlayerChoiceRow(
-                        label = "System Default",
-                        selected = state.defaultPlayer == "ask",
-                        onClick = { onChoosePlayer("ask") },
-                    )
-                    state.availablePlayers.forEach { player ->
-                        PlayerChoiceRow(
-                            label = player.label,
-                            selected = state.defaultPlayer == player.packageName,
-                            onClick = { onChoosePlayer(player.packageName) },
-                        )
-                    }
-                    if (state.availablePlayers.isEmpty()) {
-                        Text(
-                            "No external video players found on this device.",
-                            color = SettingsSubtext,
-                            modifier = Modifier.padding(vertical = 8.dp),
-                        )
-                    }
-                }
-            },
-            confirmButton = {},
-            dismissButton = { TextButton(onClick = onDismissPlayerPicker) { Text("Close") } },
-        )
-    }
-}
-
-@Composable
-private fun PlayerChoiceRow(label: String, selected: Boolean, onClick: () -> Unit) {
-    TextButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = (if (selected) "● " else "○ ") + label,
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
+    playerModal.Content()
 }
 
 @CombinedPreviews

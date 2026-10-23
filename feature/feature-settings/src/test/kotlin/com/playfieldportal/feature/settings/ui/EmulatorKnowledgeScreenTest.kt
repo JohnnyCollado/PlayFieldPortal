@@ -134,7 +134,7 @@ class EmulatorKnowledgeScreenTest {
             "Automatic updates",
             "Import a knowledge file",
             "my-emulators.json",
-            "Export your files",
+            "Export your emulators",
             "Reset to built-in",
         ).forEach { row ->
             press(GamepadAction.NAVIGATE_DOWN)
@@ -460,7 +460,7 @@ class EmulatorKnowledgeScreenTest {
     fun `the export row opens the picker`() {
         showScreen(EmulatorKnowledgeUiState())
         repeat(3) { press(GamepadAction.NAVIGATE_DOWN) }
-        assertFocusedRow("Export your files")
+        assertFocusedRow("Export your emulators")
         press(GamepadAction.SELECT)
         assertEquals(1, exportOpens)
     }

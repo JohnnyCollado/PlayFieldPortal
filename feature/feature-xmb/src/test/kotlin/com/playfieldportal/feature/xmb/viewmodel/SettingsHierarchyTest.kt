@@ -166,12 +166,19 @@ class SettingsHierarchyTest {
         assertTrue("settings_audio route missing", SETTINGS_SCREEN_ROUTES.contains("settings_audio"))
     }
 
-    @Test fun `the Interface audio row is titled Sound with a menu-and-boot subtitle`() {
-        // Phase 3 of the seven-sound work: the screen is renamed Audio → Sound and now owns the
-        // boot sound too. The route id deliberately stays settings_audio — renaming it would
-        // break cursor restore and every focus key under it.
+    @Test fun `the Interface audio row is titled Sound and names what the screen holds`() {
+        // The route id deliberately stays settings_audio — renaming it would break cursor restore
+        // and every focus key under it. There is no assignable boot sound (survey U26), so the
+        // subtitle names menu sounds, levels and ambience.
         val row = settingsSectionItems(SettingsSection.INTERFACE).first { it.id == "settings_audio" }
         assertEquals("Sound", row.title)
-        assertEquals("Menu & boot sounds", row.subtitle)
+        assertEquals("Menu sounds, levels & ambience", row.subtitle)
+    }
+
+    // Survey U7 (docs/audits/codebase-survey-2026-10-22.md): there is no in-app viewer; the screen
+    // opens or shares the saved log files.
+    @Test fun `the Logs row says it opens or shares logs`() {
+        val row = settingsSectionItems(SettingsSection.SYSTEM).first { it.id == "settings_logs" }
+        assertEquals("Open or share session logs", row.subtitle)
     }
 }

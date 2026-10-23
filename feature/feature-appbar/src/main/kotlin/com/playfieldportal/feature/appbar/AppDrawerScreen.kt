@@ -162,11 +162,11 @@ fun AppDrawerScreen(
         }
     }
 
-    val appliedInitial = remember { mutableStateOf(false) }
-    if (!appliedInitial.value) {
+    // Once per opening, as an effect rather than during composition: setFilter can play a sound,
+    // and composition may run and be thrown away (survey L14).
+    LaunchedEffect(Unit) {
         viewModel.setFilter(initialFilter)
         viewModel.setSearchQuery("")
-        appliedInitial.value = true
     }
 
     DisposableEffect(lifecycleOwner) {

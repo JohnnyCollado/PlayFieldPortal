@@ -184,18 +184,6 @@ class AppDrawerViewModelTest {
     // ── Selection ─────────────────────────────────────────────────────────
 
     @Test
-    fun `onAppSelected updates selectedIndex in state`() = runTest {
-        testDispatcher.scheduler.advanceUntilIdle()
-        viewModel.onAppSelected(3)
-        testDispatcher.scheduler.advanceUntilIdle()
-        viewModel.uiState.test {
-            val state = awaitItem()
-            assertEquals(3, state.selectedIndex)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
     fun `openUsageAccessSettings delegates to repository`() = runTest {
         viewModel.openUsageAccessSettings()
         verify { repository.openUsageAccessSettings() }
@@ -662,6 +650,37 @@ class AppDrawerViewModelTest {
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private val fakeDrawable: Drawable = mockk(relaxed = true)
+
+    // ── Reloads (survey L14, docs/audits/codebase-survey-2026-10-22.md) ───────────
+
+    @Test
+    fun `the cursor is clamped when a reload shortens the list`() = runTest {
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.onAppTapped(fakeApps().lastIndex)
+        coEvery { repository.getInstalledApps() } returns fakeApps().take(2)
+
+        viewModel.refresh()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.selectedIndex)
+    }
+
+    @Test
+    fun `an older reload that finishes last does not bring back an uninstalled app`() = runTest {
+        testDispatcher.scheduler.advanceUntilIdle()
+        val slowOld = CompletableDeferred<List<InstalledApp>>()
+        val withoutBrowser = fakeApps().filter { it.label != "Browser" }
+        coEvery { repository.getInstalledApps() } coAnswers { slowOld.await() } andThen withoutBrowser
+
+        viewModel.refresh()                 // the older sweep, still waiting on the package manager
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.refresh()                 // the newer sweep, after the uninstall
+        testDispatcher.scheduler.advanceUntilIdle()
+        slowOld.complete(fakeApps())        // the older sweep returns last, with the app still in it
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(withoutBrowser.map { it.label }, viewModel.uiState.value.allApps.map { it.label })
+    }
 
     private fun fakeApps() = listOf(
         InstalledApp(packageName = "org.ppsspp.ppsspp",           label = "PPSSPP",    icon = fakeDrawable, isEmulator = true,  isGame = false),

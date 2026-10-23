@@ -5,7 +5,6 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.playfieldportal.core.domain.model.PlaySession
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -40,20 +39,4 @@ data class PlaySessionEntity(
 
     @ColumnInfo(name = "duration_millis")
     val durationMillis: Long = 0,
-)
-
-fun PlaySessionEntity.toDomain() = PlaySession(
-    id              = id,
-    gameId          = gameId,
-    platformId      = platformId,
-    launchedAt      = launchedAt,
-    durationMillis  = durationMillis,
-)
-
-fun PlaySession.toEntity() = PlaySessionEntity(
-    id              = id,
-    gameId          = gameId,
-    platformId      = platformId,
-    launchedAt      = launchedAt,
-    durationMillis  = durationMillis,
 )

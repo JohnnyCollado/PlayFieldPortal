@@ -10,6 +10,17 @@ enum class SetupStep {
     LOCAL_ACHIEVEMENTS, RETROARCH, EMULATORS, WINDOWS, HINTS, HOME_APP, FINISH,
 }
 
+/**
+ * Whether [step]'s footer offers Skip. Welcome has its own "Skip Setup" row, and a footer Skip
+ * there only did what Get Started does (survey U11); Finish has nowhere to skip to; Artwork is
+ * required, so it has no Skip until its folder is ready (a re-run with a healthy folder may skip).
+ */
+fun wizardOffersSkip(step: SetupStep, artworkReady: Boolean): Boolean = when (step) {
+    SetupStep.WELCOME, SetupStep.FINISH -> false
+    SetupStep.ARTWORK -> artworkReady
+    else -> true
+}
+
 /** What is installed and set on the device when the wizard opens — decides the optional pages. */
 data class SetupAvailability(
     val retroArch: Boolean = false,

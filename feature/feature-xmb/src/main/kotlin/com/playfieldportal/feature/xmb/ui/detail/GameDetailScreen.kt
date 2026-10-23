@@ -1006,8 +1006,9 @@ internal fun gameDetailHelperItems(state: GameDetailUiState): List<ControllerPro
         )
     state.manualViewerUri != null ->
         listOf(
-            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Scroll"),
-            ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Prev / Next"),
+            // Left/Right page and Up/Down scroll — what handleManualViewerInput does (survey U4).
+            ControllerPromptItem(listOf(GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT), "Page"),
+            ControllerPromptItem.fixed(listOf(ControllerIcon.DPAD_UP, ControllerIcon.DPAD_DOWN), "Scroll"),
             ControllerPromptItem(GamepadAction.BACK, "Close"),
         )
     // The title confirm owns the overlay while it is up, so it owns the hints too.

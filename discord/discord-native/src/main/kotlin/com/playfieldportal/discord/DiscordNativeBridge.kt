@@ -177,9 +177,6 @@ object DiscordNativeBridge {
         if (clientStarted.get()) nativeSetPttReleaseDelay(ms)
     }
 
-    /** Current call status ordinal (mirrors `discordpp::Call::Status`; 0 = Disconnected). */
-    fun callStatus(): Int = if (clientStarted.get()) nativeGetCallStatus() else 0
-
     /** Active call as a JSON object (lobbyId/status/selfMute/participants), or "{}". Off the main thread. */
     fun voiceJson(): String = if (clientStarted.get()) nativeGetVoiceJson() else "{}"
 
@@ -215,7 +212,6 @@ object DiscordNativeBridge {
     private external fun nativeSetAudioMode(mode: Int)
     private external fun nativeSetPttActive(active: Boolean)
     private external fun nativeSetPttReleaseDelay(ms: Int)
-    private external fun nativeGetCallStatus(): Int
     private external fun nativeGetVoiceJson(): String
     private external fun nativeShutdown()
 }

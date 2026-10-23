@@ -86,12 +86,14 @@ class LibraryConsolidation @Inject constructor(
         val prefs = context.pfpDataStore.data.first()
         if (prefs[KEY_LIBRARY_CONSOLIDATED_V22] == true) return
 
-        runCatching {
+        val finished = runOneShotStep("Library consolidation (v22)") {
             rehomeSpoofPackageEntries()
             mergeDuplicateWindowsGames()
             ensureWindowsCard()
             removeMigratedLauncherCollections()
-        }.onFailure { Timber.e(it, "Library consolidation failed") }
+        }
+        // Every step is idempotent, so a pass that threw is simply retried next launch.
+        if (!finished) return
 
         context.pfpDataStore.edit { it[KEY_LIBRARY_CONSOLIDATED_V22] = true }
         Timber.i("Library consolidation (v22) complete")
@@ -151,33 +153,16 @@ class LibraryConsolidation @Inject constructor(
             var current = survivor
             for (loser in rows) {
                 if (loser.id == survivor.id) continue
-                current = mergeInto(current, loser)
-                gameDao.deleteById(loser.id)
+                current = mergedSurvivor(current, loser)
+                // mergeRows re-points everything that references the loser (play sessions,
+                // collections, achievement links, storefront ids, launch outcomes, UMD slots,
+                // artwork records) before deleting it, in one transaction. A bare deleteById
+                // cascade-deleted all of that (survey L3).
+                gameDao.mergeRows(current, loser.id)
                 merged++
             }
         }
         if (merged > 0) Timber.i("Merged $merged duplicate Windows game row(s)")
-    }
-
-    /**
-     * Moves everything worth keeping from [loser] onto [survivor] before the loser is deleted, and
-     * returns the survivor as it now stands — which is what the next loser must be merged onto.
-     */
-    private suspend fun mergeInto(survivor: GameEntity, loser: GameEntity): GameEntity {
-        val enriched = mergedSurvivor(survivor, loser)
-        if (enriched != survivor) gameDao.update(enriched)
-
-        // Collection memberships follow the survivor (composite-PK IGNORE makes re-adds no-ops).
-        for (collectionId in collectionDao.getCollectionIdsForGame(loser.id)) {
-            collectionDao.addGame(
-                com.playfieldportal.core.data.database.entity.CollectionGameEntity(
-                    collectionId = collectionId,
-                    gameId       = survivor.id,
-                    addedAt      = System.currentTimeMillis(),
-                )
-            )
-        }
-        return enriched
     }
 
     // ── 3. Windows Memory Card ────────────────────────────────────────────────

@@ -99,6 +99,26 @@ class ScanSourceResolverTest {
     }
 
     @Test
+    fun `an unreadable root tells the scan why nothing was marked missing`() = runTest {
+        coEvery { romRootRepository.getAll() } returns listOf(sdRoot)
+        coEvery { romScanner.listSubfolderNamesOrNull(sdRoot) } returns null
+
+        val errors = resolver().sourcesFor(card).flatMap { it(emptySet()).toList() }
+            .filterIsInstance<ScanResult.Error>()
+
+        assertEquals(1, errors.size)
+        assertTrue(errors.single().message.contains("could not be read"))
+    }
+
+    @Test
+    fun `readable roots with no matching folder leave no unknown survey behind`() = runTest {
+        coEvery { romRootRepository.getAll() } returns listOf(internalRoot)
+        coEvery { romScanner.listSubfolderNamesOrNull(internalRoot) } returns listOf("gba")
+
+        assertTrue(null !in presentSets(card))
+    }
+
+    @Test
     fun `a card with no ROM roots still falls back to its raw directory`() = runTest {
         coEvery { romRootRepository.getAll() } returns emptyList()
 

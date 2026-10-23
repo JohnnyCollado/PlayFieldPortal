@@ -167,4 +167,31 @@ class BackupSettingsViewModelTest {
         spec.onConfirm()
         assertEquals(1 to 1, deleted to cancelled)
     }
+
+    // Survey, latent backup items (docs/audits/codebase-survey-2026-10-22.md): `return@collect`
+    // does not stop collecting, so the work-status watcher outlived its job and a later
+    // re-emission could raise an error after the user had seen a success.
+    private fun workInfo(state: androidx.work.WorkInfo.State, error: String? = null) =
+        mockk<androidx.work.WorkInfo>(relaxed = true) {
+            every { this@mockk.state } returns state
+            every { outputData } returns androidx.work.workDataOf(com.playfieldportal.feature.backup.BackupWorker.KEY_ERROR to error)
+        }
+
+    @Test
+    fun `the restore watcher stops at the first finished state`() = runTest(dispatcher) {
+        every { workManager.getWorkInfoByIdFlow(any()) } returns flowOf(
+            workInfo(androidx.work.WorkInfo.State.RUNNING),
+            workInfo(androidx.work.WorkInfo.State.SUCCEEDED),
+            workInfo(androidx.work.WorkInfo.State.FAILED, error = "late re-emission"),
+        )
+        every { workManager.enqueue(any<androidx.work.WorkRequest>()) } returns mockk(relaxed = true)
+        val vm = vm()
+        advanceUntilIdle()
+
+        vm.restoreFromUri(info.uri)
+        advanceUntilIdle()
+
+        assertEquals(null, vm.uiState.value.errorMessage)
+        assertEquals(false, vm.uiState.value.isWorking)
+    }
 }

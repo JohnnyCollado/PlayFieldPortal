@@ -81,19 +81,6 @@ class NavigationEngine(
         ready = true
     }
 
-    /**
-     * Recovery for screens that never signal readiness (spec §13): force-ready with a warning.
-     * The user is not punished for a missed integration signal.
-     */
-    fun recoverReadiness() {
-        if (ready) return
-        logger.warn(
-            "NavigationEngine: screen '${active.id}' never reported readiness — " +
-                "forcing recovery so navigation is not permanently broken."
-        )
-        markReady()
-    }
-
     // ── Node registry ────────────────────────────────────────────────────────────
 
     fun replaceNodes(nodes: List<NavigationNode>, geometry: Map<String, Float> = emptyMap()) {

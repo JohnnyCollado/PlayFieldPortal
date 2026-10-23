@@ -127,6 +127,8 @@ sealed interface SearchOption {
     data class Provider(val provider: SearchProvider) : SearchOption
     data class Console(val console: RaConsoleOption) : SearchOption
     data object RefreshPreview : SearchOption
+    /** The error state's own action, so a pad can reach it as well as a tap (survey P4). */
+    data class Recover(val recovery: SearchRecovery) : SearchOption
 }
 
 /** A row of the Options menu: its label, action, and whether it is the active choice. */
@@ -276,6 +278,8 @@ fun searchOptionRows(state: SearchOnlineUiState): List<SearchOptionRow> = when (
                 ),
             )
         }
+        // The error's button ("Try again" / "Open Settings") is tap-only on the page itself.
+        state.recovery?.let { add(SearchOptionRow(it.label, SearchOption.Recover(it))) }
     }
     SearchOptionGroup.PROVIDER -> SearchProvider.entries.map {
         SearchOptionRow(it.label, SearchOption.Provider(it), checked = it == state.provider)
@@ -369,7 +373,7 @@ class SearchOnlineViewModel @Inject constructor(
             GamepadAction.OPEN_CONTEXT_MENU -> openOptions()
             // Back leaves the preview first: the page itself only closes from the result list.
             GamepadAction.BACK -> back()
-            GamepadAction.HOME, GamepadAction.SHIFT, GamepadAction.CAPS_LOCK -> Unit
+            GamepadAction.HOME, GamepadAction.SHIFT, GamepadAction.CAPS_LOCK, GamepadAction.CATEGORY_MENU -> Unit
         }
     }
 
@@ -601,6 +605,10 @@ class SearchOnlineViewModel @Inject constructor(
             is SearchOption.Provider -> setProvider(option.provider)
             is SearchOption.Console -> setConsole(option.console)
             SearchOption.RefreshPreview -> refreshPreview()
+            is SearchOption.Recover -> when (option.recovery) {
+                SearchRecovery.RETRY -> retrySearch()
+                SearchRecovery.OPEN_SETTINGS -> requestCredentials()
+            }
         }
         closeOptions()
     }

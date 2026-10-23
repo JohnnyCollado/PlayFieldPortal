@@ -291,19 +291,6 @@ class GamepadInputHandlerTest {
         }
     }
 
-    // ── Settings handoff ──────────────────────────────────────────────────
-
-    @Test
-    fun `bypassToComposeFocus lets non-BACK fall through but keeps BACK`() = runTest {
-        handler.bypassToComposeFocus = true
-        handler.actions.test {
-            assertFalse(handler.onKeyEvent(keyEvent(KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.ACTION_DOWN)))
-            assertTrue(handler.onKeyEvent(keyEvent(KeyEvent.KEYCODE_BUTTON_B, KeyEvent.ACTION_DOWN)))
-            assertEquals(GamepadAction.BACK, awaitItem())
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
     // ── Capture mode ──────────────────────────────────────────────────────
 
     @Test

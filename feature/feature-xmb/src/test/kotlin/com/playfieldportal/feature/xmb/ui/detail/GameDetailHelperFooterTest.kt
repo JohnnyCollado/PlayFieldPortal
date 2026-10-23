@@ -84,10 +84,14 @@ class GameDetailHelperFooterTest {
     }
 
     @Test
+    // Survey U4 (docs/audits/codebase-survey-2026-10-22.md): the footer said L1/R1 turn pages,
+    // but the viewer pages with Left/Right and scrolls with Up/Down — as its own hint line says.
     fun `the manual viewer documents its own paging`() {
         val state = baseState.copy(manualViewerUri = "/tmp/manual.pdf", manualPageCount = 4)
 
-        assertEquals(listOf("Scroll", "Prev / Next", "Close"), labels(state))
+        assertEquals(listOf("Page", "Scroll", "Close"), labels(state))
+        val page = gameDetailHelperItems(state).first()
+        assertEquals(listOf(GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT), page.actions)
     }
 
     @Test

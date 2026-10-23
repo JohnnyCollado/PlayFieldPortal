@@ -111,6 +111,12 @@ class PhotoScanner @Inject constructor(
         Timber.i("Photo scan started (${if (deep) "deep" else "quick"}): \"${library.displayName}\"")
         // ── Phase 1: enumerate candidate files — cursor-only, one query per directory. ─────
         val walk = context.walkSafTree(treeUri, library.scanRecursively)
+        // Part of the tree could not be listed: replacing the library from this walk would drop
+        // everything in the unread folders (survey L17). Nothing is changed; the next scan retries.
+        if (walk.incomplete) {
+            send(PhotoScanResult.Error(library.id, "Part of the folder couldn't be read, so nothing was changed. Try again in a moment."))
+            return@channelFlow
+        }
         if (!deep && knownSignature != null && walk.signature == knownSignature) {
             Timber.i("Photo scan skipped — tree unchanged: \"${library.displayName}\" (${walk.signature})")
             send(PhotoScanResult.Unchanged(library.id))

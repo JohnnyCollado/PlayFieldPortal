@@ -36,7 +36,7 @@ class GameRepositoryMergeTest {
             ApplicationProvider.getApplicationContext(),
             PFPDatabase::class.java,
         ).allowMainThreadQueries().build()
-        repository = GameRepositoryImpl(db.gameDao(), db.playSessionDao(), db.platformDao())
+        repository = GameRepositoryImpl(db.gameDao())
     }
 
     @After
