@@ -48,12 +48,12 @@ class ControllerSettingsKeyboardRowTest {
     fun `a Keyboard group sits between Navigation and Reset with the approved copy`() {
         show()
 
-        val navigation = top("NAVIGATION")
-        val keyboard = top("KEYBOARD")
-        val reset = top("RESET")
+        val navigation = top("Navigation")
+        val keyboard = top("Keyboard")
+        val reset = top("Reset")
         assertTrue("Keyboard after Navigation", keyboard > navigation)
         assertTrue("Keyboard before Reset", keyboard < reset)
-        composeRule.onNodeWithText("Virtual Keyboard").performScrollTo()
+        composeRule.onNodeWithText("Virtual keyboard").performScrollTo()
         composeRule.onNodeWithText(
             "Type with the controller on PFP's own keyboard. Off, or when you use touch, " +
                 "the system keyboard opens instead",
@@ -64,7 +64,7 @@ class ControllerSettingsKeyboardRowTest {
     fun `toggling the row turns the setting off`() {
         show()
 
-        composeRule.onNodeWithText("Virtual Keyboard").performScrollTo().performClick()
+        composeRule.onNodeWithText("Virtual keyboard").performScrollTo().performClick()
         composeRule.waitForIdle()
 
         coVerify { layoutRepository.setVirtualKeyboard(false) }

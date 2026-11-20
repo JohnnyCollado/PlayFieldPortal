@@ -85,7 +85,7 @@ private fun AssignmentListContent(
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
-            SettingsGroup("Consoles With Games")
+            SettingsGroup("Consoles with games")
             if (state.platforms.isEmpty()) {
                 EmulatorHint(
                     "No consoles with games yet — scan a console first, then set its default " +
@@ -173,19 +173,19 @@ private fun AssignmentDetailContent(
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
-            SettingsGroup("Current Default")
+            SettingsGroup("Current default")
             SettingsValueRow(
                 label   = "Emulator",
                 value   = row.defaultDisplayName ?: "None",
                 sublabel = sourceLine(row),
             )
             row.resolvedCoreName?.let { core ->
-                SettingsValueRow(label = "RetroArch Core", value = core)
+                SettingsValueRow(label = "RetroArch core", value = core)
             }
 
-            SettingsGroup("Choose the Default")
+            SettingsGroup("Choose the default")
             SettingsRow(
-                label    = "Automatic (Recommended)",
+                label    = "Automatic (recommended)",
                 sublabel = "First installed emulator — a standalone before RetroArch cores",
                 trailing = { if (row.isAutomatic) Badge("ACTIVE", DefaultBadgeColor) },
                 onClick  = { onUseAutomatic(row.platformId) },
@@ -215,7 +215,7 @@ private fun AssignmentDetailContent(
                 }
             }
 
-            SettingsGroup("Per-Game Overrides")
+            SettingsGroup("Per-game overrides")
             SettingsValueRow(
                 label    = "Games with a custom emulator",
                 value    = "${row.overrideCount} of ${row.gameCount}",

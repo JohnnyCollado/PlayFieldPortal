@@ -175,7 +175,7 @@ fun EmulatorsSettingsScreen(
 
             if (section == null || section == EmulatorSettingsSection.INSTALLED) {
                 val availableNonRetroArch = state.availableProfiles.filterNot(::isRetroArchProfile)
-                SettingsGroup("Available (Not Installed)")
+                SettingsGroup("Available (not installed)")
 
                 if (availableNonRetroArch.isEmpty()) {
                     EmulatorHint("Every known emulator is installed")
@@ -187,7 +187,7 @@ fun EmulatorsSettingsScreen(
             }
 
             if (section == null || section == EmulatorSettingsSection.CUSTOM) {
-                SettingsGroup("Custom Profiles")
+                SettingsGroup("Custom profiles")
 
             if (state.customProfiles.isEmpty()) {
                 EmulatorHint("No custom profiles yet")
@@ -201,7 +201,7 @@ fun EmulatorsSettingsScreen(
             }
 
             SettingsRow(
-                label    = "Add Custom Emulator",
+                label    = "Add custom emulator",
                 sublabel = "Pick an app — we auto-detect its launch settings",
                 focusKey = ADD_CUSTOM_EMULATOR_FOCUS_KEY,
                 onClick  = { viewModel.startAddEmulatorWizard() },
@@ -209,7 +209,7 @@ fun EmulatorsSettingsScreen(
             }
 
             if (section == null || section == EmulatorSettingsSection.RETROARCH) {
-            SettingsGroup("RetroArch Core Detection")
+            SettingsGroup("RetroArch core detection")
 
             EmulatorHint(
                 when {
@@ -231,7 +231,7 @@ fun EmulatorsSettingsScreen(
                 onClick  = { retroArchPicker.launch(null) },
             )
 
-            SettingsGroup("Available Cores")
+            SettingsGroup("Available cores")
             if (state.retroArchCores.isEmpty()) {
                 EmulatorHint("No RetroArch cores detected yet.")
             } else {
@@ -242,7 +242,7 @@ fun EmulatorsSettingsScreen(
 
             if (state.retroArchLinked) {
                 SettingsRow(
-                    label    = "Re-scan Installed Cores",
+                    label    = "Re-scan installed cores",
                     sublabel = "Run after downloading more cores in RetroArch's Core Downloader",
                     onClick  = { viewModel.redetectRetroArchCores() },
                 )
@@ -258,10 +258,11 @@ fun EmulatorsSettingsScreen(
             if (showsEmulatorMaintenance(section)) SettingsGroup("Maintenance")
 
             if (showsEmulatorMaintenance(section)) SettingsRow(
-                label    = "Reset Emulator Configuration",
+                label    = "Reset emulator configuration",
                 sublabel = "Clear launch settings and restore defaults. Your games, artwork, and saves are not affected.",
                 focusKey = "reset_emulator_config",
                 onClick  = { viewModel.requestResetEmulatorConfig() },
+                destructive = true,
             )
         }
     }
@@ -291,7 +292,7 @@ private fun WizardPickAppStep(
                 .fillMaxSize()
                 .verticalScroll(scrollState),
         ) {
-            SettingsGroup("Installed Apps")
+            SettingsGroup("Installed apps")
             if (apps.isEmpty()) {
                 EmulatorHint("No launchable apps found.")
             } else {
@@ -353,7 +354,7 @@ private fun TestLaunchFlow(
             modifier = Modifier.fillMaxSize().verticalScroll(scrollState),
         ) {
             test.preview?.let { p ->
-                SettingsGroup("Intent Preview")
+                SettingsGroup("Intent preview")
                 PreviewLine("Package", p.packageName)
                 PreviewLine("Activity", p.activity ?: "(resolved by package)")
                 PreviewLine("Action", p.action)
@@ -375,9 +376,9 @@ private fun TestLaunchFlow(
 
             SettingsGroup("Actions")
             if (test.canLaunch) {
-                SettingsRow(label = "Launch Now", sublabel = "Send the intent to the app", onClick = onLaunch)
+                SettingsRow(label = "Launch now", sublabel = "Send the intent to the app", onClick = onLaunch)
             }
-            SettingsRow(label = "Pick a Different ROM", onClick = onPickOther)
+            SettingsRow(label = "Pick a different ROM", onClick = onPickOther)
         }
     }
 }

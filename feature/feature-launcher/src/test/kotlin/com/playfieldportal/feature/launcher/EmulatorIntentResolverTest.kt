@@ -4,7 +4,9 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
+import android.os.Environment
 import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.core.domain.model.Game
@@ -389,5 +391,99 @@ class EmulatorIntentResolverTest {
 
         assertEquals(romUri, intent.dataString)
         assertTrue(intent.hasFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
+    }
+
+    // ── RetroArch (GitHub issue 19: settings never loaded or saved) ──────────
+
+    private val retroArchPkg = "com.retroarch.aarch64"
+    private val gbaCore = "/data/data/$retroArchPkg/cores/mgba_libretro_android.so"
+    private val gbaRom = "/storage/emulated/0/ROMs/gba/game.gba"
+
+    private fun installRetroArch(targetSdk: Int = 28) {
+        shadowOf(context.packageManager).installPackage(
+            PackageInfo().apply {
+                packageName = retroArchPkg
+                applicationInfo = ApplicationInfo().apply {
+                    packageName = retroArchPkg
+                    dataDir = "/data/user/0/$retroArchPkg"
+                    sourceDir = "/data/app/$retroArchPkg-1/base.apk"
+                    targetSdkVersion = targetSdk
+                }
+            },
+        )
+        registerComponentActivity(retroArchPkg, EmulatorDetector.RETROARCH_ACTIVITY_CLASS)
+    }
+
+    private fun retroArchProfile(extraExtras: Map<String, String> = emptyMap()) = EmulatorProfile(
+        id = "auto_retroarch_mgba_libretro_android",
+        name = "RetroArch · mGBA (GBA)",
+        packageName = retroArchPkg,
+        activityClass = EmulatorDetector.RETROARCH_ACTIVITY_CLASS,
+        intentType = IntentType.COMPONENT,
+        supportedPlatformIds = listOf("gba"),
+        intentExtras = mapOf("ROM" to "{rom_path}", "LIBRETRO" to gbaCore) + extraExtras,
+        coreMap = mapOf("gba" to gbaCore),
+    )
+
+    private fun gbaGame() = Game(title = "Test Game", platformId = "gba", romPath = gbaRom, romUri = romUri)
+
+    @Test
+    fun `a RetroArch launch names the config file and data folder so settings load and save`() {
+        installRetroArch()
+        val storageRoot = Environment.getExternalStorageDirectory().absolutePath
+        val external = "$storageRoot/Android/data/$retroArchPkg/files"
+
+        val intent = runBlocking { resolver.resolve(gbaGame(), retroArchProfile()).getOrThrow() }
+
+        assertEquals(gbaRom, intent.getStringExtra("ROM"))
+        assertEquals(gbaCore, intent.getStringExtra("LIBRETRO"))
+        assertEquals("$external/retroarch.cfg", intent.getStringExtra("CONFIGFILE"))
+        assertEquals("/data/user/0/$retroArchPkg", intent.getStringExtra("DATADIR"))
+        assertEquals("/data/app/$retroArchPkg-1/base.apk", intent.getStringExtra("APK"))
+        assertEquals(storageRoot, intent.getStringExtra("SDCARD"))
+        assertEquals(external, intent.getStringExtra("EXTERNAL"))
+    }
+
+    @Test
+    fun `a Play Store RetroArch build gets its own files folder as the storage root`() {
+        installRetroArch(targetSdk = 35)
+        val external =
+            "${Environment.getExternalStorageDirectory().absolutePath}/Android/data/$retroArchPkg/files"
+
+        val intent = runBlocking { resolver.resolve(gbaGame(), retroArchProfile()).getOrThrow() }
+
+        assertEquals(external, intent.getStringExtra("SDCARD"))
+    }
+
+    @Test
+    fun `a value the profile sets itself wins over the RetroArch default`() {
+        installRetroArch()
+        val custom = "/storage/emulated/0/RetroArch/custom.cfg"
+
+        val intent = runBlocking {
+            resolver.resolve(gbaGame(), retroArchProfile(mapOf("CONFIGFILE" to custom))).getOrThrow()
+        }
+
+        assertEquals(custom, intent.getStringExtra("CONFIGFILE"))
+    }
+
+    @Test
+    fun `other component emulators get no RetroArch values`() {
+        installPackage("com.github.stenzek.duckstation")
+        registerComponentActivity("com.github.stenzek.duckstation", "com.github.stenzek.duckstation.EmulationActivity")
+        val profile = EmulatorProfile(
+            id = "test_duckstation",
+            name = "DuckStation",
+            packageName = "com.github.stenzek.duckstation",
+            activityClass = "com.github.stenzek.duckstation.EmulationActivity",
+            intentType = IntentType.COMPONENT,
+            supportedPlatformIds = listOf("psx"),
+            intentExtras = mapOf("bootPath" to "{rom_uri}"),
+        )
+
+        val intent = runBlocking { resolver.resolve(safGame("psx"), profile).getOrThrow() }
+
+        assertNull(intent.getStringExtra("CONFIGFILE"))
+        assertNull(intent.getStringExtra("DATADIR"))
     }
 }

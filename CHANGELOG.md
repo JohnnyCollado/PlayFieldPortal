@@ -5,6 +5,38 @@ All notable changes to Play Field Portal are documented here. This project follo
 
 ## [Unreleased]
 
+### Added
+- **System Update.** *Settings › System › System Update* checks this project's GitHub releases for
+  a newer version, at most once a day and whenever you press **Check for updates**. A found update
+  is posted to Notifications once, then at most once a day; **Update notifications** turns that off.
+  **Download and install** fetches the Full or Lite APK that matches your install and opens
+  Android's installer, which asks you to confirm. The same screen lists every release as a
+  changelog: each one opens to a short summary and a link to its full notes. The summary is the
+  `## Summary` list at the top of a release's notes; a release published without one shows only the
+  link. Debug builds show the update but cannot install it, because they are signed with a
+  different key.
+
+### Changed
+- **Colour Scheme: shades you can pick by name.** Each preset in *Display › Colour Scheme* now has
+  **Tint** and **Depth** steppers under the list, two steps either way, so one preset offers 25
+  shades. D-pad left and right step the tint and the bumpers the depth; touch taps the arrows. The
+  monthly *Original* scheme has no steps. Every shade is named in words ("Dark muted green",
+  "Purple, leaning blue") with its hex code, and, when no wallpaper is set, a reading of how well
+  the menu text reads at the top and bottom of the background. **Custom** now docks its sliders at
+  the side and repaints the menu behind them as you move them; nothing is stored until **Apply**.
+  The chosen tint and depth are included in backups.
+
+### Fixed
+- **RetroArch uses your own settings when a game is started from PFP** (GitHub issue 19). A launch
+  named only the game and the core, so RetroArch up to 1.22.2 started on built-in defaults: your
+  hotkeys, controller mapping, shaders and overlays were ignored and nothing you changed could be
+  saved. A launch now also names RetroArch's config file and data folder, exactly as RetroArch's own
+  launcher does, for the direct-install and Play Store builds alike.
+  **Saves move with this fix.** Without those values RetroArch wrote save files and save states next
+  to the ROM. It now uses the save folders set in RetroArch, the same ones a game opened from
+  RetroArch itself uses. If a game started from PFP seems to have lost its progress, move its
+  `.srm` and `.state` files from the ROM's folder into RetroArch's `saves` and `states` folders.
+
 ## [1.3.2] - 2026-10-18
 
 ### Fixed

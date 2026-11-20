@@ -152,6 +152,13 @@ class BackupKeyCoverageTest {
     }
 
     @Test
+    fun `the colour scheme's tint and depth are backed up`() {
+        // The steps only mean something beside the preset they nudge; a restore that brought the
+        // preset back without them would quietly return the user's shade to Standard.
+        assertCovered("display_color_scheme_variant")
+    }
+
+    @Test
     fun `every sound level is backed up`() {
         // Generated from AudioChannel rather than typed out: the model owns the names, so a new
         // channel that someone forgets to add to BackupManager fails HERE rather than silently
@@ -171,7 +178,22 @@ class BackupKeyCoverageTest {
     }
 
     @Test
+    fun `the update notifications switch is backed up`() {
+        // A choice the user made, unlike the cached release list beside it (excluded below).
+        assertCovered("app_update_notify")
+    }
+
+    @Test
     fun `keys excluded on purpose stay excluded`() {
+        // The cached GitHub release list and the check and reminder stamps describe this
+        // install's last conversation with GitHub; another install fetches its own.
+        val updateCache = listOf(
+            "app_update_releases", "app_update_last_check_at",
+            "app_update_last_reminded_version", "app_update_last_reminded_at",
+        )
+        updateCache.forEach { key ->
+            assertTrue("$key is carried by BackupManager — if that is now intended, move it out of this list", key !in covered)
+        }
         // Migration and seed markers describe THIS install's schema progress. Restoring them onto
         // a fresh device would convince it that migrations already ran.
         val migrationMarkers = listOf(

@@ -9,6 +9,10 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
@@ -48,16 +52,20 @@ fun MediaAssignmentRow(
     onFocusChanged: (Boolean) -> Unit,
     sublabel: String? = null,
 ) {
+    // The value and the preview glyph are accent blue, which all but vanished on the pale cursor
+    // fill: under the cursor they turn white, as the row's own label and sublabel do.
+    var focused by remember { mutableStateOf(false) }
+    val valueColor = if (focused && LocalSettingsCursorVisible.current) Color.White else SettingsAccent
     SettingsRow(
         label = label,
         sublabel = sublabel,
         focusKey = focusKey,
         onClick = onPick,
-        onFocusChangedExternal = onFocusChanged,
+        onFocusChangedExternal = { focused = it; onFocusChanged(it) },
         trailing = {
             Text(
                 text = value,
-                color = SettingsAccent,
+                color = valueColor,
                 fontSize = 13.sp,
                 style = TextStyle(shadow = SettingsTextShadow),
             )
@@ -71,11 +79,12 @@ fun MediaAssignmentRow(
                         // The sample IS the feedback here. A cursor tick first would put the thing
                         // being auditioned second, on top of a cue that sounds like the default.
                         plays = null,
+                        shortLabel = "Preview",
                     ) {
                         Icon(
                             Icons.Default.PlayArrow,
                             contentDescription = "Preview $label",
-                            tint = SettingsAccent,
+                            tint = valueColor,
                             modifier = Modifier
                                 .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
                                 .padding(4.dp),
@@ -92,6 +101,7 @@ fun MediaAssignmentRow(
                         // it takes the confirm cue rather than the ordinary activation one. The
                         // north-face shortcut that does the same job plays the same cue.
                         plays = MenuSound.CONFIRM,
+                        shortLabel = "Default",
                     ) {
                         Icon(
                             Icons.Default.Refresh,

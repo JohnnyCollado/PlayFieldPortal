@@ -290,3 +290,35 @@ internal fun hslToColor(h: Float, s: Float, l: Float): Color {
         channel(hk - 1f / 3f).coerceIn(0f, 1f),
     )
 }
+
+// -- Contrast readings --------------------------------------------------------
+
+/**
+ * A contrast ratio in words, for the readings the colour pickers show. The words carry the
+ * verdict so it never rests on telling a warning colour from a normal one.
+ */
+enum class ContrastVerdict(val label: String) {
+    /** Clears the body-text bar. */
+    EASY("Easy to read"),
+
+    /** Clears only the large-text bar: the XMB's selected label, not its small print. */
+    READABLE("Readable"),
+    HARD("Hard to read"),
+    ;
+
+    companion object {
+        fun of(ratio: Float): ContrastVerdict = when {
+            ratio >= TextContrastRole.BODY.threshold -> EASY
+            ratio >= TextContrastRole.LARGE.threshold -> READABLE
+            else -> HARD
+        }
+    }
+}
+
+/** [text]'s lowest contrast across [backdrops]: the place on screen where it reads worst. */
+fun worstContrast(text: Color, backdrops: List<Color>): Float =
+    backdrops.minOf { contrastRatio(text, it) }.toFloat()
+
+/** A reading as shown: "3.9:1 · Readable". */
+fun contrastReadout(ratio: Float): String =
+    String.format(java.util.Locale.US, "%.1f:1 · %s", ratio, ContrastVerdict.of(ratio).label)

@@ -277,6 +277,7 @@ internal fun EmulatorKnowledgeContent(
                                     label = "Remove ${file.displayName}",
                                     onClick = { pendingRemove = file },
                                     actionFocusBackgroundColor = lerp(RemoveRed, Color.Black, 0.50f),
+                                    shortLabel = "Remove",
                                 ) {
                                     Icon(
                                         Icons.Default.Delete,

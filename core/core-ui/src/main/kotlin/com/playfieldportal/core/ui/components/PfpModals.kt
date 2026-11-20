@@ -1,5 +1,6 @@
 package com.playfieldportal.core.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,6 +19,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -311,8 +314,25 @@ fun PfpChoiceModal(
     messageScroll: ScrollState = rememberScrollState(),
 ) {
     PfpModalScaffold(title = title, onCancel = onCancel, showHints = showHints, modifier = modifier) { cancel ->
-        ModalMessage(message, messageScroll)
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // The message and the options scroll together in what height the card has left. They used
+        // to be a scrolling message over a fixed list, so a list as tall as the screen (six options
+        // on a 468dp-tall one) squeezed the message to nothing. The selected row is kept in view by
+        // its own geometry, so moving the selection scrolls the list.
+        Column(
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .verticalScroll(messageScroll),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (message.isNotBlank()) {
+                Text(
+                    message,
+                    color = themedSubText(ModalSubtext),
+                    fontSize = 15.sp,
+                    lineHeight = 22.sp,
+                    modifier = Modifier.padding(bottom = 6.dp),
+                )
+            }
             options.forEachIndexed { index, option ->
                 ModalChoiceRow(
                     option = option,
@@ -337,6 +357,7 @@ fun PfpChoiceModal(
 
 // One option row. The selected row wears the same ring and fill a focused button does; the others
 // sit on a faint fill so the list reads as a set of rows rather than loose text.
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ModalChoiceRow(
     option: PfpChoiceOption,
@@ -344,10 +365,13 @@ private fun ModalChoiceRow(
     accent: Color,
     onClick: () -> Unit,
 ) {
+    val intoView = remember { BringIntoViewRequester() }
+    LaunchedEffect(selected) { if (selected) intoView.bringIntoView() }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 40.dp)
+            .bringIntoViewRequester(intoView)
             .clip(ModalControlShape)
             .background(Color.White.copy(alpha = if (selected) 0.10f else 0.05f))
             .then(if (selected) Modifier.border(2.dp, accent, ModalControlShape) else Modifier)

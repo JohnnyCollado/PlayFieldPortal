@@ -247,7 +247,7 @@ private fun CategoryListContent(
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
             SettingsGroup("Manage")
             SettingsRow(
-                label    = "Create Category",
+                label    = "Create category",
                 sublabel = "Add a new category to the XMB bar",
                 focusKey = CREATE_CATEGORY_FOCUS_KEY,
                 onClick  = onStartCreate,
@@ -263,7 +263,7 @@ private fun CategoryListContent(
                 )
             }
 
-            SettingsGroup("XMB Categories")
+            SettingsGroup("XMB categories")
             state.categories.forEach { cat ->
                 SettingsRow(
                     label    = cat.name + if (!cat.visible) "  (Hidden)" else "",
@@ -323,10 +323,10 @@ private fun PickIconContent(
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
             if (imageKey != null) {
-                SettingsGroup("From Your Device")
+                SettingsGroup("From your device")
                 if (!hasImage) {
                     SettingsRow(
-                        label    = "Choose Image…",
+                        label    = "Choose image…",
                         sublabel = "PNG, JPG, WEBP, BMP, HEIC or GIF · animated GIFs play",
                         onClick  = { picker.launch(DEVICE_IMAGE_MIME) },
                     )
@@ -334,7 +334,7 @@ private fun PickIconContent(
                     val icon = LocalXmbIcons.current[imageKey]
                     // Read-only preview row: it plays under Animated Images while the cursor is on it.
                     SettingsRow(
-                        label    = "Your Image",
+                        label    = "Your image",
                         sublabel = if (icon is CustomIcon.Animated) "Animated · in use" else "In use",
                         onFocusChangedExternal = { previewFocused = it },
                         trailing = {
@@ -346,12 +346,12 @@ private fun PickIconContent(
                         },
                     )
                     SettingsRow(
-                        label    = "Replace Image…",
+                        label    = "Replace image…",
                         sublabel = "Pick a different file",
                         onClick  = { picker.launch(DEVICE_IMAGE_MIME) },
                     )
                     SettingsRow(
-                        label    = "Remove Image",
+                        label    = "Remove image",
                         sublabel = "Go back to the built-in icon ($fallbackLabel)",
                         onClick  = { vm.removeDeviceImage() },
                     )
@@ -441,12 +441,12 @@ private fun CategoryDetailContent(
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
             SettingsGroup("Edit")
-            SettingsRow(label = "Rename Category", onClick = { onBeginRename(cat) })
+            SettingsRow(label = "Rename category", onClick = { onBeginRename(cat) })
             // SettingsValueRow has no slot for a thumbnail, so the value text and the icon share
             // SettingsRow's trailing. The image plays only while the cursor is on this row.
             var iconRowFocused by remember { mutableStateOf(false) }
             SettingsRow(
-                label    = "Change Icon",
+                label    = "Change icon",
                 onFocusChangedExternal = { iconRowFocused = it },
                 onClick  = { vm.startChangeIcon() },
                 trailing = {
@@ -500,9 +500,9 @@ private fun CategoryDetailContent(
             }
 
             if (!cat.protected) {
-                SettingsGroup("Danger Zone")
+                SettingsGroup("Danger zone")
                 SettingsRow(
-                    label    = "Delete Category",
+                    label    = "Delete category",
                     sublabel = "Removes this custom category. Games and apps stay in your library.",
                     trailing = { Text("Delete", color = SettingsAccent) },
                     onClick  = { onAskDelete(cat) },

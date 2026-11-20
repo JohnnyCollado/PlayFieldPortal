@@ -82,7 +82,7 @@ class SettingsHierarchyTest {
         )
         assertEquals(
             // Backup & Restore is off until its rework (FeatureFlags.BACKUP_RESTORE).
-            listOf("settings_about", "settings_logs", "settings_initial_setup", "settings_credits"),
+            listOf("settings_about", "settings_system_update", "settings_logs", "settings_initial_setup", "settings_credits"),
             settingsSectionItems(SettingsSection.SYSTEM).map { it.id },
         )
     }

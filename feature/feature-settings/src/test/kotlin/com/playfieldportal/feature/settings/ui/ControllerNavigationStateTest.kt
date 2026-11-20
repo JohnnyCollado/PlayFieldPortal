@@ -319,4 +319,90 @@ class ControllerNavigationStateTest {
         state.updateItems(listOf(item("row")))
         assertEquals("row", state.focusedKey)
     }
+
+    // ── Action-first rows (a root folder: the row is a card, its buttons are the cursor) ──
+
+    private fun actionFirstRow(key: String = "root", ran: MutableList<String> = mutableListOf()) =
+        item(key, selectable = false).copy(
+            actionFirst = true,
+            trailingActions = listOf(
+                ControllerNavItem(key = "$key:action:0", label = "Edit", onSelect = { ran += "edit" }),
+                ControllerNavItem(key = "$key:action:1", label = "Delete", onSelect = { ran += "delete" }),
+            ),
+        )
+
+    @Test
+    fun `moving onto an action-first row lands on its first action`() {
+        val state = ControllerNavigationState()
+        state.updateItems(listOf(item("top"), actionFirstRow(), item("bottom")))
+
+        assertEquals("root:action:0", state.move(1))
+        assertEquals("bottom", state.move(1))
+        // Coming back up lands on the first action again, not on whichever was used last.
+        assertEquals("root:action:0", state.move(-1))
+    }
+
+    @Test
+    fun `left and right switch between the actions and never reach the row itself`() {
+        val state = ControllerNavigationState()
+        state.updateItems(listOf(item("top"), actionFirstRow()))
+        state.move(1)
+
+        assertEquals("root:action:1", state.moveHorizontal(1))
+        assertEquals("root:action:1", state.moveHorizontal(1))
+        assertEquals("root:action:0", state.moveHorizontal(-1))
+        // LEFT on the first action stays there: the row body is not a stop.
+        assertEquals("root:action:0", state.moveHorizontal(-1))
+    }
+
+    @Test
+    fun `confirm runs the action under the second cursor`() {
+        val ran = mutableListOf<String>()
+        val state = ControllerNavigationState()
+        state.updateItems(listOf(item("top"), actionFirstRow(ran = ran)))
+        state.move(1)
+
+        assertTrue(state.select())
+        state.moveHorizontal(1)
+        assertTrue(state.select())
+        assertEquals(listOf("edit", "delete"), ran)
+    }
+
+    @Test
+    fun `focus aimed at an action-first row is passed on to its first action`() {
+        val state = ControllerNavigationState()
+        state.updateItems(listOf(item("top"), actionFirstRow()))
+
+        state.setFocused("root")
+        assertEquals("root:action:0", state.focusedKey)
+
+        // A screen that opens on such a row starts on the action too.
+        val alone = ControllerNavigationState()
+        alone.updateItems(listOf(actionFirstRow()))
+        assertEquals("root:action:0", alone.focusedKey)
+    }
+
+    @Test
+    fun `the focused action names itself and counts its siblings for the footer`() {
+        val state = ControllerNavigationState()
+        state.updateItems(listOf(item("top"), actionFirstRow()))
+        assertNull(state.focusedActionLabel)
+
+        state.move(1)
+        assertEquals("Edit", state.focusedActionLabel)
+        assertEquals(2, state.focusedActionSiblingCount)
+        state.moveHorizontal(1)
+        assertEquals("Delete", state.focusedActionLabel)
+    }
+
+    @Test
+    fun `an ordinary row with actions still stops on the row first`() {
+        val state = ControllerNavigationState()
+        state.updateItems(
+            listOf(item("top"), item("row").copy(trailingActions = listOf(ControllerNavItem(key = "row:action:0")))),
+        )
+        assertEquals("row", state.move(1))
+        assertEquals("row:action:0", state.moveHorizontal(1))
+        assertEquals("row", state.moveHorizontal(-1))
+    }
 }

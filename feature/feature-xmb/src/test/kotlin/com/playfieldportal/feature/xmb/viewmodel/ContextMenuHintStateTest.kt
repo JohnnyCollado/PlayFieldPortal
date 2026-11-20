@@ -341,4 +341,53 @@ class ContextMenuHintStateTest {
         assertFalse(shouldShowMediaHint(delayed, 4_499))
         assertTrue(shouldShowMediaHint(delayed, 4_500))
     }
+
+    // ── Detail screens ────────────────────────────────────────────────────────
+
+    private fun detailEligibleState() = XMBUiState(
+        activeGameId = 7L,
+        lastInputWasTouch = false,
+        showBootSequence = false,
+    ).let { it.copy(showDetailHint = false) }
+
+    @Test
+    fun `detail hint shows after the shared idle delay, not before`() {
+        assertTrue(shouldShowDetailHint(detailEligibleState(), XMBViewModel.IDLE_HINT_DELAY_MS))
+        assertFalse(shouldShowDetailHint(detailEligibleState(), XMBViewModel.IDLE_HINT_DELAY_MS - 1))
+    }
+
+    @Test
+    fun `detail hint does not show after touch input`() {
+        assertFalse(
+            shouldShowDetailHint(
+                detailEligibleState().copy(lastInputWasTouch = true),
+                XMBViewModel.IDLE_HINT_DELAY_MS,
+            )
+        )
+    }
+
+    @Test
+    fun `detail hint shows on every detail screen`() {
+        val none = detailEligibleState().copy(activeGameId = null)
+        assertTrue(shouldShowDetailHint(none.copy(activeAppId = 3L), XMBViewModel.IDLE_HINT_DELAY_MS))
+        assertTrue(shouldShowDetailHint(none.copy(activePlayerStatus = true), XMBViewModel.IDLE_HINT_DELAY_MS))
+        assertTrue(shouldShowDetailHint(none.copy(activeSearchOnline = true), XMBViewModel.IDLE_HINT_DELAY_MS))
+    }
+
+    @Test
+    fun `detail hint does not show when no detail screen is open`() {
+        assertFalse(
+            shouldShowDetailHint(detailEligibleState().copy(activeGameId = null), XMBViewModel.IDLE_HINT_DELAY_MS)
+        )
+    }
+
+    @Test
+    fun `detail hint respects the shared setting and configured delay`() {
+        assertFalse(
+            shouldShowDetailHint(detailEligibleState().copy(contextMenuHintEnabled = false), XMBViewModel.IDLE_HINT_DELAY_MS)
+        )
+        val delayed = detailEligibleState().copy(contextMenuHintDelaySeconds = 4.5f)
+        assertFalse(shouldShowDetailHint(delayed, 4_499))
+        assertTrue(shouldShowDetailHint(delayed, 4_500))
+    }
 }

@@ -258,6 +258,14 @@ fun PfpDetailBreadcrumb(
  * Geometry is reserved whether or not the prompts are showing or resolving, so fading the hints
  * (existing PFP behaviour: hints fade while the last input was touch) never moves content.
  */
+/**
+ * Whether the detail screens' helper footer has earned its idle fade-in: true once the user has
+ * idled there with a controller, false again on the next press. Provided by the shell from the same
+ * clock and setting as the crossbar pill and the Settings footer. Defaults to true so a detail
+ * screen hosted without the shell (a preview, a test) still shows its prompts.
+ */
+val LocalDetailHintVisible = androidx.compose.runtime.compositionLocalOf { true }
+
 @Composable
 fun PfpDetailHelperFooter(
     items: List<ControllerPromptItem>,
@@ -267,7 +275,8 @@ fun PfpDetailHelperFooter(
     // The XMB pill's timing: fades in, and is gone the instant it stops applying. PFP's keyboard,
     // when open over the page, brings its own prompts in this footer's place.
     val alpha = com.playfieldportal.core.ui.components.idleHintAlpha(
-        visible && !com.playfieldportal.core.ui.keyboard.isVirtualKeyboardOverlayOpen(),
+        visible && LocalDetailHintVisible.current &&
+            !com.playfieldportal.core.ui.keyboard.isVirtualKeyboardOverlayOpen(),
     )
     // See-through like the App Drawer's footer. Content cannot slide underneath it: the body above
     // clips to its own viewport, so the footer row only ever shows the page background.

@@ -25,6 +25,12 @@ data class ControllerNavItem(
     // Inline actions rendered in the row's trailing slot, reached via LEFT/RIGHT (e.g. a
     // root row's Replace/Remove buttons). They never participate in vertical movement.
     val trailingActions: List<ControllerNavItem> = emptyList(),
+    // A row whose body does nothing and whose buttons are the point (a root folder: Edit, Delete).
+    // The cursor never rests on the row itself: arriving puts it on the first action, LEFT/RIGHT
+    // switch between the actions, and the row is drawn as the card they sit in.
+    val actionFirst: Boolean = false,
+    // What an inline action is called in a word ("Edit"), for the footer prompt and the button.
+    val label: String? = null,
 )
 
 /** Maps a Settings row onto the generic navigation-core node contract (spec §3, §4). */
@@ -83,7 +89,7 @@ class ControllerNavigationState(
             .minByOrNull { (_, nodeY) -> abs(nodeY - y) }
             ?.key
         if (target != null) engine.setFocused(target)
-        focusedKey = engine.focusedKey
+        focusedKey = passToFirstAction(engine.focusedKey)
         return focusedKey
     }
 
@@ -101,8 +107,37 @@ class ControllerNavigationState(
     ) {
         items = newItems
         engine.replaceNodes(newItems.map { it.toNavigationNode() }, geometry)
-        focusedKey = engine.focusedKey
+        focusedKey = passToFirstAction(engine.focusedKey)
     }
+
+    /**
+     * An [ControllerNavItem.actionFirst] row never holds the cursor itself: focus that lands on it
+     * — by a vertical move, a restore, or the screen opening on it — goes to its first action.
+     */
+    private fun passToFirstAction(key: String?): String? {
+        val first = items.firstOrNull { it.key == key && it.actionFirst }?.trailingActions?.firstOrNull()
+            ?: return key
+        engine.setFocused(first.key)
+        return engine.focusedKey
+    }
+
+    /** The row [key] is an inline action of, when that row is action-first. */
+    private fun actionFirstRowOf(key: String?): ControllerNavItem? =
+        items.firstOrNull { row -> row.actionFirst && row.trailingActions.any { it.key == key } }
+
+    /** The focused inline action's short name, for the footer's Confirm prompt; null off an action. */
+    val focusedActionLabel: String?
+        get() {
+            val key = focusedKey ?: return null
+            return items.firstNotNullOfOrNull { row -> row.trailingActions.firstOrNull { it.key == key }?.label }
+        }
+
+    /** How many actions share the focused action's row: more than one means LEFT/RIGHT switch. */
+    val focusedActionSiblingCount: Int
+        get() {
+            val key = focusedKey ?: return 0
+            return items.firstOrNull { row -> row.trailingActions.any { it.key == key } }?.trailingActions?.size ?: 0
+        }
 
     /** The focused row's (or focused inline action's) long-press, if it has one. */
     private fun focusedLongPress(): (() -> Unit)? {
@@ -128,7 +163,7 @@ class ControllerNavigationState(
 
     /** Vertical traversal (UP/DOWN) by [delta] steps, clamped with no wrapping. */
     fun move(delta: Int): String? {
-        focusedKey = engine.moveVerticalActive(delta)
+        focusedKey = passToFirstAction(engine.moveVerticalActive(delta))
         return focusedKey
     }
 
@@ -138,6 +173,10 @@ class ControllerNavigationState(
      * LEFT past the first action returns to the row. Returns null when the row has no actions.
      */
     fun moveHorizontal(delta: Int): String? {
+        // On an action-first row LEFT off the first action would step back onto the row body,
+        // which is not a stop: the cursor stays on that action instead.
+        val row = actionFirstRowOf(focusedKey)
+        if (row != null && delta < 0 && row.trailingActions.first().key == focusedKey) return focusedKey
         focusedKey = engine.moveHorizontalActive(delta)
         return focusedKey
     }
@@ -145,14 +184,14 @@ class ControllerNavigationState(
     /** Realign focus to the first navigable node (screen entry when nothing to restore). */
     fun focusFirst(): String? {
         engine.focusFirst()
-        focusedKey = engine.focusedKey
+        focusedKey = passToFirstAction(engine.focusedKey)
         return focusedKey
     }
 
     /** Realign the focused key with actual (e.g. Compose-driven) focus; ignores unknown keys. */
     fun setFocused(key: String?) {
         engine.setFocused(key)
-        focusedKey = engine.focusedKey
+        focusedKey = passToFirstAction(engine.focusedKey)
     }
 
     /** Confirm on the focused node; dispatches to its action. Returns whether anything consumed it. */

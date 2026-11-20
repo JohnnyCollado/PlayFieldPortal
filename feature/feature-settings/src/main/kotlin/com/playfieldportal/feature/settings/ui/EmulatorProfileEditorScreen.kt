@@ -86,7 +86,7 @@ fun EmulatorProfileEditorScreen(
             }
 
             // ── Recommended templates ─────────────────────────────────────
-            SettingsGroup("Recommended Templates")
+            SettingsGroup("Recommended templates")
             EmulatorTemplate.entries.forEach { template ->
                 SettingsRow(
                     label    = template.label,
@@ -99,21 +99,21 @@ fun EmulatorProfileEditorScreen(
             SettingsGroup("Required")
 
             EditorTextField(
-                label       = "Display Name",
+                label       = "Display name",
                 value       = editorState.name,
                 onValueChange = onNameChange,
                 placeholder = "e.g. My Emulator",
             )
 
             EditorTextField(
-                label         = "Package Name",
+                label         = "Package name",
                 value         = editorState.packageName,
                 onValueChange = onPackageNameChange,
                 placeholder   = "e.g. com.example.emulator",
             )
 
             // Intent type picker
-            SettingsGroup("Launch Method")
+            SettingsGroup("Launch method")
 
             // CUSTOM_COMMAND is refused at launch (AD-1), so it is no longer offered.
             IntentType.entries.filter { it != IntentType.CUSTOM_COMMAND }.forEach { type ->
@@ -133,21 +133,21 @@ fun EmulatorProfileEditorScreen(
             SettingsGroup("Optional")
 
             EditorTextField(
-                label         = "Activity Class",
+                label         = "Activity class",
                 value         = editorState.activityClass,
                 onValueChange = onActivityClassChange,
                 placeholder   = "e.g. com.example.emulator.MainActivity (leave blank for default)",
             )
 
             EditorTextField(
-                label         = "Supported Platforms",
+                label         = "Supported platforms",
                 value         = editorState.supportedPlatformIds,
                 onValueChange = onPlatformIdsChange,
                 placeholder   = "psx,psp,ps2  (comma-separated platform IDs)",
             )
 
             EditorTextField(
-                label         = "MIME Type",
+                label         = "MIME type",
                 value         = editorState.mimeType,
                 onValueChange = onMimeTypeChange,
                 placeholder   = "e.g. application/octet-stream",
@@ -162,10 +162,10 @@ fun EmulatorProfileEditorScreen(
             )
 
             // ── URI flags ─────────────────────────────────────────────────
-            SettingsGroup("URI Flags")
+            SettingsGroup("URI flags")
 
             SettingsToggleRow(
-                label    = "Use File URI",
+                label    = "Use file URI",
                 sublabel = "Pass rom path as file:// URI (most emulators)",
                 checked  = editorState.useFileUri,
                 onToggle = onUseFileUriChange,
@@ -196,38 +196,38 @@ fun EmulatorProfileEditorScreen(
             }
 
             EditorTextField(
-                label         = "Intent Action",
+                label         = "Intent action",
                 value         = editorState.intentActionText,
                 onValueChange = onIntentActionChange,
                 placeholder   = "e.g. me.magnum.melonds.LAUNCH_ROM (blank = default)",
             )
             EditorTextField(
-                label         = "Intent Extras",
+                label         = "Intent extras",
                 value         = editorState.intentExtrasText,
                 onValueChange = onIntentExtrasChange,
                 placeholder   = "key=value per line. {rom_path}, {rom_uri}, {core_path} tokens. true/false = boolean.",
                 singleLine    = false,
             )
             EditorTextField(
-                label         = "Intent Flags",
+                label         = "Intent flags",
                 value         = editorState.intentFlagsText,
                 onValueChange = onIntentFlagsChange,
                 placeholder   = "CLEAR_TASK, CLEAR_TOP, NEW_TASK (comma-separated)",
             )
             EditorTextField(
-                label         = "Intent Category",
+                label         = "Intent category",
                 value         = editorState.intentCategoryText,
                 onValueChange = onIntentCategoryChange,
                 placeholder   = "e.g. android.intent.category.LEANBACK_LAUNCHER",
             )
             EditorTextField(
-                label         = "RetroArch Core Path",
+                label         = "RetroArch core path",
                 value         = editorState.coreText,
                 onValueChange = onCoreChange,
                 placeholder   = "/data/data/com.retroarch/cores/xxx_libretro_android.so",
             )
             EditorTextField(
-                label         = "Supported Extensions",
+                label         = "Supported extensions",
                 value         = editorState.extensionsText,
                 onValueChange = onExtensionsChange,
                 placeholder   = "iso,cso,chd  (informational)",
@@ -247,7 +247,7 @@ fun EmulatorProfileEditorScreen(
             SettingsGroup("Test")
 
             SettingsRow(
-                label    = "Test Launch with a ROM",
+                label    = "Test launch with a ROM",
                 sublabel = "Pick a scanned ROM, preview the intent, and try launching",
                 onClick  = onTestLaunch,
             )
@@ -263,7 +263,7 @@ fun EmulatorProfileEditorScreen(
 
             onDelete?.let { doDelete ->
                 SettingsRow(
-                    label    = "Delete Profile",
+                    label    = "Delete profile",
                     sublabel = "Remove this custom profile permanently",
                     trailing = { Text("Delete", color = EditorError) },
                     onClick  = doDelete,

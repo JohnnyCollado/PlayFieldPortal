@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Settings ▸ System ▸ System Update hands a downloaded release APK to Android's installer.
+         Declared per GitHub-distributed flavor (full and lite), never in the shared manifest: a
+         store build may not update itself this way and must not carry this permission. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+</manifest>

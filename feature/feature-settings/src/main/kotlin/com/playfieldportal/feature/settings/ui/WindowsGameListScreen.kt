@@ -150,7 +150,6 @@ private fun GameListRow(
         sublabel = row.folderPath?.takeIf { showFolder },
         focusKey = "game:${row.gameId}",
         enabled = !row.busy,
-        hideRowHighlightOnActionFocus = showFolder,
         trailing = {
             Text(
                 text = if (row.busy) "Working…" else labelValueText(row),

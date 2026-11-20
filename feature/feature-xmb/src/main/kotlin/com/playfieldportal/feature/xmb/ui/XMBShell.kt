@@ -294,6 +294,7 @@ fun XMBShellContainer(
         onOpenColorSchemePicker = viewModel::openColorSchemePicker,
         onColorSchemeHighlightedAt = viewModel::onColorSchemeHighlightedAt,
         onColorSchemeConfirm = viewModel::confirmColorSchemePicker,
+        onColorSchemeStep = viewModel::stepColorSchemePicker,
         onColorSchemeCancel = viewModel::cancelColorSchemePicker,
         onCustomColorUpdate = viewModel::updateCustomColorPicker,
         onCustomColorConfirm = viewModel::confirmCustomColor,
@@ -572,6 +573,7 @@ fun XMBShell(
     onOpenColorSchemePicker: () -> Unit = {},
     onColorSchemeHighlightedAt: (Int) -> Unit = {},
     onColorSchemeConfirm: () -> Unit = {},
+    onColorSchemeStep: (tint: Int, depth: Int) -> Unit = { _, _ -> },
     onColorSchemeCancel: () -> Unit = {},
     onCustomColorUpdate: (com.playfieldportal.core.ui.components.HsvPickerState) -> Unit = {},
     onCustomColorConfirm: () -> Unit = {},
@@ -1178,6 +1180,8 @@ fun XMBShell(
                 LocalDensity provides Density(baseDensity.density, baseDensity.fontScale),
                 // The media screens' prompt rows idle in and blink out like the crossbar's pill.
                 LocalMediaHintVisible provides uiState.showMediaHint,
+                // The detail screens' footers keep the same contract.
+                com.playfieldportal.core.ui.detail.LocalDetailHintVisible provides uiState.showDetailHint,
             ) {
 
             // The Settings screen is suppressed while the color-scheme picker is open so
@@ -1346,12 +1350,18 @@ fun XMBShell(
                 )
             }
 
-            uiState.colorSchemePicker?.let { picker ->
+            // The list steps aside for the fine-tune picker, which docks in the same place.
+            uiState.colorSchemePicker?.takeIf { uiState.customColorPicker == null }?.let { picker ->
                 ColorSchemePickerOverlay(
                     state = picker,
                     onHighlightedAt = onColorSchemeHighlightedAt,
                     onConfirm = onColorSchemeConfirm,
                     onDismiss = onColorSchemeCancel,
+                    onStep = onColorSchemeStep,
+                    menuText = uiState.themeColors.textPrimary,
+                    // Under a wallpaper the scheme no longer paints what the text sits on.
+                    showContrast = uiState.customWallpaperPath == null && uiState.motionWallpaperPath == null,
+                    showHints = !uiState.resolvedShowTouchButton,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -1364,6 +1374,8 @@ fun XMBShell(
                     onCancel = onCustomColorCancel,
                     // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
                     showHints = !uiState.resolvedShowTouchButton,
+                    menuText = uiState.themeColors.textPrimary,
+                    showContrast = uiState.customWallpaperPath == null && uiState.motionWallpaperPath == null,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

@@ -354,6 +354,42 @@ class DisplaySettingsViewModel @Inject constructor(
         if (slot.kind == UiMediaKind.VIDEO) UiMediaLimits.VIDEO_MIME.toTypedArray()
         else UiMediaLimits.AUDIO_MIME.toTypedArray()
 
+    // ── Pick-one settings (DisplayOptionChoices.kt) ───────────────────────────
+
+    /** The row of [option]'s dialog that is the value in use, so the dialog opens on it. */
+    fun selectedChoice(option: DisplayOption): Int = uiState.value.let { state ->
+        when (option) {
+            DisplayOption.WAVE_STYLE, DisplayOption.BACKGROUND_MOTION -> state.waveStyle.ordinal
+            DisplayOption.ICON_LEGIBILITY -> state.iconLegibility.ordinal
+            DisplayOption.ITEM_LIST_MOTION -> state.itemListMotion.ordinal
+            DisplayOption.UMD_SLOT -> state.umdSlotMode.ordinal
+            DisplayOption.TEXT_LEGIBILITY -> state.textLegibility.ordinal
+            DisplayOption.SCREEN_ORIENTATION -> state.screenOrientation.ordinal
+            DisplayOption.TOUCH_NAV_BUTTON -> state.touchNavButtonMode.ordinal
+            DisplayOption.TOUCH_SENSITIVITY -> state.touchSensitivity.ordinal
+        }
+    }
+
+    /**
+     * Stores row [index] of [option]'s dialog as the setting's value. The dialog lists each
+     * setting's values in enum order, so the index is the entry; one outside the list is ignored.
+     */
+    fun choose(option: DisplayOption, index: Int) {
+        val (key, name) = when (option) {
+            DisplayOption.WAVE_STYLE, DisplayOption.BACKGROUND_MOTION ->
+                KEY_WAVE_STYLE to WaveStyle.entries.getOrNull(index)?.name
+            DisplayOption.ICON_LEGIBILITY -> KEY_ICON_LEGIBILITY to IconLegibilityStyle.entries.getOrNull(index)?.name
+            DisplayOption.ITEM_LIST_MOTION -> KEY_ITEM_LIST_MOTION to XmbListMotion.entries.getOrNull(index)?.name
+            DisplayOption.UMD_SLOT -> KEY_UMD_SLOT_MODE to UmdSlotMode.entries.getOrNull(index)?.name
+            DisplayOption.TEXT_LEGIBILITY -> KEY_TEXT_LEGIBILITY to TextLegibilityStyle.entries.getOrNull(index)?.name
+            DisplayOption.SCREEN_ORIENTATION ->
+                KEY_SCREEN_ORIENTATION to ScreenOrientationMode.entries.getOrNull(index)?.name
+            DisplayOption.TOUCH_NAV_BUTTON -> KEY_TOUCH_NAV_BUTTON to TouchNavButtonMode.entries.getOrNull(index)?.name
+            DisplayOption.TOUCH_SENSITIVITY -> KEY_TOUCH_SENSITIVITY to TouchSensitivity.entries.getOrNull(index)?.name
+        }
+        if (name != null) save { it[key] = name }
+    }
+
     fun cycleWaveStyle() {
         val styles = WaveStyle.values()
         val next = styles[(styles.indexOf(uiState.value.waveStyle) + 1) % styles.size]
@@ -471,7 +507,10 @@ class DisplaySettingsViewModel @Inject constructor(
                     prefs[KEY_COLOR_SCHEME] ?: XmbColorScheme.CLASSIC_BLUE.name,
                 )
             }.getOrDefault(XmbColorScheme.CLASSIC_BLUE)
-            val palette = scheme.resolve(java.time.LocalDate.now().monthValue)
+            val palette = scheme.resolve(
+                java.time.LocalDate.now().monthValue,
+                com.playfieldportal.core.domain.model.XmbSchemeVariant.decode(prefs[ThemePrefKeys.COLOR_SCHEME_VARIANT]),
+            )
             palette.backgroundTop to palette.backgroundBottom
         }
         fun backdrop(argb: Long, alpha: Float) = composite(

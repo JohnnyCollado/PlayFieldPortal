@@ -39,7 +39,7 @@ fun ControllerSettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState),
         ) {
-            SettingsGroup("A / B Swap")
+            SettingsGroup("A / B swap")
             Text(
                 text     = "Controls which button confirms and which goes back. " +
                     "Applies globally to all launcher menus.",
@@ -49,7 +49,7 @@ fun ControllerSettingsScreen(
             )
 
             SettingsValueRow(
-                label    = "A / B Swap",
+                label    = "A / B swap",
                 sublabel = state.layoutPrefs.confirmBackLayout.displayLabel(),
                 value    = if (state.layoutPrefs.confirmBackLayout == ConfirmBackLayout.STANDARD) {
                     "Off"
@@ -59,7 +59,7 @@ fun ControllerSettingsScreen(
                 onClick  = { viewModel.cycleConfirmBackLayout() },
             )
 
-            SettingsGroup("X / Y Swap")
+            SettingsGroup("X / Y swap")
             Text(
                 text     = "Swaps X and Y actions within the launcher UI only. " +
                     "Does not affect emulator controls.",
@@ -69,7 +69,7 @@ fun ControllerSettingsScreen(
             )
 
             SettingsValueRow(
-                label    = "X / Y Swap",
+                label    = "X / Y swap",
                 sublabel = state.layoutPrefs.xyLayout.displayLabel(),
                 value    = if (state.layoutPrefs.xyLayout == XYLayout.STANDARD) {
                     "Off"
@@ -79,7 +79,7 @@ fun ControllerSettingsScreen(
                 onClick  = { viewModel.cycleXYLayout() },
             )
 
-            SettingsGroup("Controller Type")
+            SettingsGroup("Controller type")
             Text(
                 text     = "Changes which button icons and labels are shown in help prompts.",
                 color    = SettingsSubtext,
@@ -94,7 +94,7 @@ fun ControllerSettingsScreen(
                 onClick  = { viewModel.cycleDisplayType() },
             )
 
-            SettingsGroup("Scroll Speed")
+            SettingsGroup("Scroll speed")
             Text(
                 text     = "How fast lists scroll while a direction is held. " +
                     "Holding longer accelerates; full stick tilt scrolls at top speed.",
@@ -104,7 +104,7 @@ fun ControllerSettingsScreen(
             )
 
             SettingsValueRow(
-                label    = "Scroll Speed",
+                label    = "Scroll speed",
                 sublabel = "Applies to held D-pad and stick navigation",
                 value    = state.layoutPrefs.scrollSpeed.displayLabel(),
                 onClick  = { viewModel.cycleScrollSpeed() },
@@ -112,7 +112,7 @@ fun ControllerSettingsScreen(
 
             SettingsGroup("Navigation")
             SettingsToggleRow(
-                label    = "Left Backs Out",
+                label    = "Left backs out",
                 sublabel = "Press LEFT to leave a folder or flyout — only where LEFT does " +
                     "nothing else",
                 checked  = state.layoutPrefs.leftBacksOut,
@@ -121,7 +121,7 @@ fun ControllerSettingsScreen(
 
             SettingsGroup("Keyboard")
             SettingsToggleRow(
-                label    = "Virtual Keyboard",
+                label    = "Virtual keyboard",
                 sublabel = "Type with the controller on PFP's own keyboard. Off, or when you use " +
                     "touch, the system keyboard opens instead",
                 checked  = state.layoutPrefs.virtualKeyboard,
@@ -130,7 +130,7 @@ fun ControllerSettingsScreen(
 
             SettingsGroup("Reset")
             SettingsRow(
-                label    = "Reset All Controller Settings",
+                label    = "Reset all controller settings",
                 sublabel = "Restores default swap and type presets",
                 onClick  = { viewModel.resetToDefaults() },
             )

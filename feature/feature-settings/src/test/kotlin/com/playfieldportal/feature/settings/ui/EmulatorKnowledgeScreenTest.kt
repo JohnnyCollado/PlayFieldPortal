@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -125,18 +126,25 @@ class EmulatorKnowledgeScreenTest {
         composeRule.onNode(isFocused()).assert(hasText(text) or hasAnyDescendant(hasText(text)))
     }
 
+    /** A row whose body does nothing puts the cursor straight on its button (the action-first rule). */
+    private fun assertFocusedAction(description: String) {
+        composeRule.onNode(isFocused())
+            .assert(hasContentDescription(description) or hasAnyDescendant(hasContentDescription(description)))
+    }
+
     @Test
     fun `every row is reachable with the D-pad in the mockup order`() {
         showScreen(EmulatorKnowledgeUiState(statusText = "Official v2026.10.02 · verified", userFiles = listOf(file)))
         // The status card is read-only, so the cursor opens on the first actionable row.
         assertFocusedRow("Check for updates")
-        listOf(
-            "Automatic updates",
-            "Import a knowledge file",
-            "my-emulators.json",
-            "Export your emulators",
-            "Reset to built-in",
-        ).forEach { row ->
+        listOf("Automatic updates", "Import a knowledge file").forEach { row ->
+            press(GamepadAction.NAVIGATE_DOWN)
+            assertFocusedRow(row)
+        }
+        // The user file's row has no action of its own, only Remove: the cursor lands on the button.
+        press(GamepadAction.NAVIGATE_DOWN)
+        assertFocusedAction("Remove my-emulators.json")
+        listOf("Export your emulators", "Reset to built-in").forEach { row ->
             press(GamepadAction.NAVIGATE_DOWN)
             assertFocusedRow(row)
         }
@@ -157,8 +165,8 @@ class EmulatorKnowledgeScreenTest {
         composeRule.onNodeWithText("Custom").assertIsDisplayed()
 
         repeat(3) { press(GamepadAction.NAVIGATE_DOWN) }
-        assertFocusedRow("my-emulators.json")
-        press(GamepadAction.NAVIGATE_RIGHT)
+        // Already on Remove: the row itself is not a stop.
+        assertFocusedAction("Remove my-emulators.json")
         press(GamepadAction.SELECT)
         composeRule.onNodeWithTag(PfpModalTags.CARD).assertIsDisplayed()
         assertEquals(emptyList<String>(), removed)

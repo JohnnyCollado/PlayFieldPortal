@@ -1,7 +1,5 @@
 package com.playfieldportal.feature.appbar
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -391,12 +389,11 @@ internal fun AppDrawerContent(
             // idle-controller gate. Alpha (not AnimatedVisibility) keeps the bar measured at
             // its natural height in both states, so the slot never changes size and the grid
             // never shifts. The pill has no clickables, so a fully transparent bar swallowing
-            // touches is not a concern. Fade-out is symmetric (unlike the XMB's instant cut-out)
-            // but still short; fallback if device testing disagrees is a ~90 ms fade-out.
-            val hintAlpha by animateFloatAsState(
-                targetValue = if (showControllerHint && state.menuApp == null && state.confirmUninstall == null) 1f else 0f,
-                animationSpec = tween(200),
-                label = "appDrawerHint",
+            // touches is not a concern. The timing is the shared idle hint's — a 200 ms fade in, gone
+            // on the frame the gate closes — so the drawer's pill behaves like the crossbar's, the
+            // Settings footer's and the detail screens'. It used to fade out over 200 ms as well.
+            val hintAlpha = com.playfieldportal.core.ui.components.idleHintAlpha(
+                showControllerHint && state.menuApp == null && state.confirmUninstall == null,
             )
             Box(
                 modifier = Modifier

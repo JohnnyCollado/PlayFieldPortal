@@ -73,7 +73,7 @@ fun CreditsSettingsScreen(
                 .verticalScroll(scrollState)
                 .padding(horizontal = 48.dp),
         ) {
-            SettingsGroup("XMB Design — Sony")
+            SettingsGroup("XMB design — Sony")
 
             CreditParagraph(
                 "The look and feel of this launcher is inspired by the XMB (XrossMediaBar), the " +
@@ -90,7 +90,7 @@ fun CreditsSettingsScreen(
             )
 
             Spacer(Modifier.height(16.dp))
-            SettingsGroup("App Icon & Logo")
+            SettingsGroup("App icon & logo")
 
             CreditParagraph(
                 "The Play Field Portal app icon and logo were designed by johakovi. Huge thanks for the " +
@@ -100,7 +100,7 @@ fun CreditsSettingsScreen(
             link("Reddit", "u/silverloc96", CreditLinks.JOHAKOVI_REDDIT)
 
             Spacer(Modifier.height(16.dp))
-            SettingsGroup("System & Console Artwork")
+            SettingsGroup("System & console artwork")
 
             CreditParagraph(
                 "The system, console and category icons used throughout this launcher are from " +
@@ -116,7 +116,7 @@ fun CreditsSettingsScreen(
             link("Source", "github.com/anthonycaccese/xmb-menu-es-de", CreditLinks.XMB_THEME)
 
             Spacer(Modifier.height(16.dp))
-            SettingsGroup("Controller Button Icons")
+            SettingsGroup("Controller button icons")
 
             CreditParagraph(
                 "Every on-screen button prompt — the PlayStation, Xbox and Nintendo face buttons, " +
@@ -138,7 +138,7 @@ fun CreditsSettingsScreen(
             link("License", "CC BY 3.0 — creativecommons.org/licenses/by/3.0", CreditLinks.CC_BY_3)
 
             Spacer(Modifier.height(16.dp))
-            SettingsGroup("Menu Sounds")
+            SettingsGroup("Menu sounds")
 
             CreditParagraph(
                 "The bundled menu sounds — navigation, back, confirm, error, launch, notification " +
@@ -159,7 +159,7 @@ fun CreditsSettingsScreen(
             link("Universfield", "pixabay.com/users/universfield-28281460", CreditLinks.PIXABAY_UNIVERSFIELD)
 
             Spacer(Modifier.height(16.dp))
-            SettingsGroup("Game Artwork & Metadata")
+            SettingsGroup("Game artwork & metadata")
 
             CreditParagraph(
                 "Box art, 3D boxes, cartridge/disc shots, hero banners, logos, icons, manuals, " +
@@ -200,7 +200,7 @@ fun CreditsSettingsScreen(
             link("License", "LGPL-3.0 — gnu.org/licenses/lgpl-3.0.html", CreditLinks.LGPL_3)
 
             Spacer(Modifier.height(16.dp))
-            SettingsGroup("Support the Project")
+            SettingsGroup("Support the project")
 
             CreditParagraph(
                 "Thank you all for your support. I created this as a love letter to the PSP and the " +

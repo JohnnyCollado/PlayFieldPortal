@@ -1345,6 +1345,7 @@ telemetry, and no account. Everything is HTTPS.
 | **Steam Community** (`steamcommunity.com`) | Hidden-achievement descriptions for earned coins (your own public page; for Local Steam, a fixed list of public profiles) | Profile id + app id |
 | **Steam Hunters** (`steamhunters.com`) | Hidden-achievement descriptions | Only the Steam app id (no key, no account) |
 | **Discord** (`discord.com` and the Discord Social SDK) | Full edition, after you sign in | Your Discord session; presence only if you turn activity sharing on |
+| **GitHub** (`api.github.com/repos/JohnnyCollado/PlayFieldPortal/releases`, and the release's APK on `github.com`) | *System Update*: the release list at most once a day when you return to the menu, or when you press **Check for updates**; the APK only when you press **Download and install** | Nothing but a `User-Agent: PlayFieldPortal` header |
 | **GitHub** (`github.com/JohnnyCollado/PlayFieldPortal`, release `emulator-kb`) | Emulator knowledge updates — **only in a build with a pinned release key; not this one** | Nothing but a `User-Agent: PlayFieldPortal` header |
 
 Artwork and image URLs returned by those services are then downloaded from the hosts they name.

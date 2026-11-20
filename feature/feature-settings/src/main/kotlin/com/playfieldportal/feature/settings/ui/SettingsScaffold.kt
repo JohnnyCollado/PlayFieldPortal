@@ -2,6 +2,7 @@ package com.playfieldportal.feature.settings.ui
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
@@ -23,7 +25,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -104,7 +109,6 @@ import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.LocalPfpTextColors
 import com.playfieldportal.core.ui.theme.dimmed
 import com.playfieldportal.core.ui.theme.solveScrimColor
-import com.playfieldportal.core.ui.theme.themedText
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -237,6 +241,40 @@ val SettingsTextShadow = Shadow(
 val SettingsDivider = com.playfieldportal.core.ui.theme.PfpPalette.Divider
 
 /**
+ * Label colour of a row that deletes or resets something. A light coral, not a saturated red: the
+ * rows sit on a mid-blue scrim, where a true red drops below readable contrast.
+ */
+val SettingsDestructive = Color(0xFFFFC2B8)
+
+/**
+ * The cursor on a Settings or setup-wizard row: the wizard's rounded, outlined card, filled dark.
+ *
+ * Settings' own, not the shared [com.playfieldportal.core.ui.theme.menuCursorFill]. That fill is
+ * pale, and on these rows — a label, a sublabel and a trailing value, all light — a pale card cost
+ * every one of them contrast at the moment it mattered. The dark fill keeps white text at full
+ * strength; the white outline is what marks the cursor. The context menu, the panels and the
+ * detail screens keep the shared fill.
+ */
+private val SettingsCursorFill = Color.Black.copy(alpha = 0.38f)
+private val SettingsCursorShape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
+
+/** How far a row's cursor card sits in from the screen edge, and the gap between two rows' cards. */
+internal val SettingsRowInset = 12.dp
+internal val SettingsRowGap = 2.dp
+
+/** A row's text starts 48dp in, as it always has: the card's inset plus this padding inside it. */
+internal val SettingsRowContentInset = 48.dp - SettingsRowInset
+
+/** Reserves the card's place around every row, so the cursor arriving never shifts the list. */
+internal fun Modifier.settingsRowSlot(): Modifier =
+    padding(horizontal = SettingsRowInset, vertical = SettingsRowGap)
+
+internal fun Modifier.settingsCursor(shown: Boolean): Modifier =
+    if (!shown) this
+    else background(SettingsCursorFill, SettingsCursorShape)
+        .border(2.dp, Color.White, SettingsCursorShape)
+
+/**
  * Margin kept between a focused row and either edge of the content viewport, and — the same value
  * on purpose — the height of the fade at the bottom of that viewport. Tying them together is what
  * makes the fade safe: keep-in-view parks a focused row's bottom edge exactly where the fade
@@ -246,6 +284,11 @@ val SettingsDivider = com.playfieldportal.core.ui.theme.PfpPalette.Divider
 private val CONTENT_EDGE_MARGIN = 16.dp
 
 // ── Standard helper footer ────────────────────────────────────────────────────
+
+private val ActionSwitchIcons = listOf(
+    com.playfieldportal.core.domain.model.ControllerIcon.DPAD_LEFT,
+    com.playfieldportal.core.domain.model.ControllerIcon.DPAD_RIGHT,
+)
 
 val SettingsDefaultHelperItems = listOf(
     ControllerPromptItem(GamepadAction.SELECT, "Enter"),
@@ -793,7 +836,13 @@ fun SettingsScaffold(
             val key = navigationOrder.firstOrNull { it.first === fr }?.second?.key
                 ?: rowActionFrs.entries.firstOrNull { (_, actions) -> actions.any { it.second === fr } }
                     ?.let { (_, actions) -> actions.firstOrNull { it.second === fr }?.first }
-            if (key != null) navigationState.setFocused(key)
+            if (key != null) {
+                navigationState.setFocused(key)
+                // An action-first row passes focus on to its first button; real focus follows the
+                // model. Deferred: this runs inside the row's own focus callback.
+                val passedOn = navigationState.focusedKey
+                if (passedOn != null && passedOn != key) coroutineScope.launch { requestFocusFor(passedOn) }
+            }
         },
         LocalSettingsReportRemoved provides { fr ->
             if (focusedRow == fr) {
@@ -906,12 +955,12 @@ fun SettingsScaffold(
                             modifier = Modifier.padding(end = 20.dp),
                         )
                         Column {
+                            // Where this screen sits: its parent, as written. The screen's own
+                            // name is the line below, so it is not repeated here.
                             Text(
-                                text = title.uppercase(),
-                                color = SettingsAccent,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 2.sp,
+                                text = title,
+                                color = SettingsSubtext,
+                                fontSize = 12.sp,
                                 style = TextStyle(shadow = SettingsTextShadow),
                             )
                             Text(
@@ -1021,7 +1070,20 @@ fun SettingsScaffold(
                         }
                     } else {
                         // "Options" joins the prompts while the cursor is on a row with a menu.
-                        val prompts = helperFooterItems.ifEmpty { SettingsDefaultHelperItems }
+                        // On an inline button the footer says what Confirm will do there, and that
+                        // LEFT/RIGHT switch buttons when the row has more than one.
+                        val actionLabel = navigationState.focusedActionLabel
+                        val prompts = if (actionLabel != null) {
+                            buildList {
+                                add(ControllerPromptItem(GamepadAction.SELECT, actionLabel))
+                                if (navigationState.focusedActionSiblingCount > 1) {
+                                    add(ControllerPromptItem.fixed(ActionSwitchIcons, "Switch"))
+                                }
+                                add(ControllerPromptItem(GamepadAction.BACK, "Back"))
+                            }
+                        } else {
+                            helperFooterItems.ifEmpty { SettingsDefaultHelperItems }
+                        }
                         val offersOptions = navigationState.focusedHasLongPress &&
                             prompts.none { GamepadAction.OPEN_CONTEXT_MENU in it.actions }
                         SettingsHelperFooter(
@@ -1047,16 +1109,17 @@ fun SettingsGroup(title: String) {
     // Headers are visual landmarks. The scaffold's first-item clamp scrolls the complete
     // settings column to offset zero, ensuring a long screen that starts with this header can
     // always be returned to its true top with UP at the first row.
+    //
+    // A quiet line over a rule, as written by the caller: the banded, tracked capitals competed
+    // with the rows they were only meant to label.
     Text(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White.copy(alpha = 0.1f))
-            .padding(start = 48.dp, top = 10.dp, bottom = 10.dp),
-        text = title.uppercase(),
-        color = themedText(Color.White),
-        fontSize = 15.sp,
-        fontWeight = FontWeight.Bold,
-        letterSpacing = 1.8.sp,
+            .padding(start = 48.dp, top = 16.dp, bottom = 6.dp),
+        text = title,
+        color = SettingsSubtext,
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Medium,
         style = TextStyle(shadow = SettingsTextShadow),
     )
 }
@@ -1080,6 +1143,9 @@ class SettingsRowAction(
     // Preview), where a cursor tick ahead of the sample would be the thing you are auditioning
     // arriving second.
     val plays: MenuSound? = MenuSound.SELECT,
+    // The action in a word ("Edit"), shown on the button while the cursor is on it and in the
+    // footer's Confirm prompt. [label] stays the full sentence a screen reader gets.
+    val shortLabel: String? = null,
     val icon: @Composable () -> Unit,
 )
 
@@ -1102,12 +1168,12 @@ fun SettingsRow(
     onFocusChangedExternal: ((Boolean) -> Unit)? = null,
     onClick: (() -> Unit)? = null,
     onLongPress: (() -> Unit)? = null,
-    // When true the row-level cursor fill is suppressed while an inline action has focus,
-    // letting the action's own background be the sole highlight indicator.
-    hideRowHighlightOnActionFocus: Boolean = false,
     // A disabled row keeps its place in navigation (every row is focusable) but greys out, and
     // SELECT and taps do nothing: [onClick] is dropped rather than guarded at each use.
     enabled: Boolean = true,
+    // A row that deletes or resets something: a warning glyph and [SettingsDestructive] label, so
+    // it does not read as one more ordinary action. The confirm step stays the caller's.
+    destructive: Boolean = false,
 ) {
     val menuSounds = LocalMenuSounds.current
     // The activation cue is attached to the row's lambda, not to the scaffold's SELECT branch,
@@ -1142,10 +1208,13 @@ fun SettingsRow(
         selectable = click != null,
         onSelect = click,
         onLongPress = onLongPress,
+        // A row that does nothing itself but has buttons: the cursor goes straight to the buttons.
+        actionFirst = click == null && actions.isNotEmpty(),
         trailingActionsFor = { rowKey ->
             actions.mapIndexed { index, action ->
                 ControllerNavItem(
                     key = "$rowKey:action:$index",
+                    label = action.shortLabel,
                     focusable = true,
                     selectable = true,
                     enabled = true,
@@ -1183,25 +1252,37 @@ fun SettingsRow(
             // One consistent cursor fill for every focused row — read-only rows get the same
             // highlight as actions. A dimmer tint read as "not navigable" and broke the visual
             // rhythm, so the cursor now treats every row identically.
-            .background(
-                if (isFocused && cursorVisible && !(hideRowHighlightOnActionFocus && anyActionFocused))
-                    com.playfieldportal.core.ui.theme.menuCursorFill()
-                else Color.Transparent
-            )
+            .settingsRowSlot()
+            // The card stays on the row while the cursor is on one of its buttons: the row is
+            // what is selected, the ring on the button is what Confirm will press.
+            .settingsCursor((isFocused || anyActionFocused) && cursorVisible)
             .focusable()
-            .padding(horizontal = 48.dp, vertical = 14.dp),
+            .padding(horizontal = SettingsRowContentInset, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
+        // The cursor is on this row and drawn: its text switches to full white, sublabel included,
+        // because the cursor fill is pale and the subtext colour all but vanished on it.
+        val showsCursor = (isFocused || anyActionFocused) && cursorVisible
         if (leading != null) {
             leading()
             Spacer(Modifier.width(16.dp))
+        } else if (destructive) {
+            Icon(
+                Icons.Default.Warning,
+                contentDescription = null,
+                tint = SettingsDestructive.let { if (enabled) it else it.copy(alpha = DISABLED_ROW_ALPHA) },
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(10.dp))
         }
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = label,
-                    color = (if (isFocused && cursorVisible && !(hideRowHighlightOnActionFocus && anyActionFocused)) Color.White else SettingsText)
+                    // Under the cursor a destructive label is white like any other: coral on the
+                    // pale cursor fill was soft, and the glyph beside it still carries the warning.
+                    color = (if (showsCursor) Color.White else if (destructive) SettingsDestructive else SettingsText)
                         .let { if (enabled) it else it.copy(alpha = it.alpha * DISABLED_ROW_ALPHA) },
                     fontSize = 15.sp,
                     style = TextStyle(shadow = SettingsTextShadow),
@@ -1215,7 +1296,8 @@ fun SettingsRow(
                 Spacer(Modifier.height(2.dp))
                 Text(
                     sublabel,
-                    color = SettingsSubtext.let { if (enabled) it else it.copy(alpha = it.alpha * DISABLED_ROW_ALPHA) },
+                    color = (if (showsCursor) Color.White else SettingsSubtext)
+                        .let { if (enabled) it else it.copy(alpha = it.alpha * DISABLED_ROW_ALPHA) },
                     fontSize = 12.sp,
                     // The helper line is the least legible text on screen over a bright
                     // wallpaper — small, gray, and lowest in the row. The shadow is what keeps
@@ -1250,7 +1332,7 @@ fun SettingsRow(
             }
         }
     }
-    HorizontalDivider(color = SettingsDivider, modifier = Modifier.padding(start = 48.dp))
+    // No rule under the row: rows are separate cards now, spaced by [SettingsRowGap].
 }
 
 /**
@@ -1351,6 +1433,8 @@ fun SettingsValueRow(
     focusKey: String? = null,
     onFocusChangedExternal: ((Boolean) -> Unit)? = null,
     onClick: (() -> Unit)? = null,
+    // The row opens a list of values to pick from: a › after the value says so.
+    opensPicker: Boolean = false,
 ) {
     SettingsRow(
         label = label,
@@ -1365,7 +1449,7 @@ fun SettingsValueRow(
                 // screen's mid-tone band every "PFP Default" measured 1.05–1.84:1. Accent is a
                 // fill/ring/border colour and is structurally incapable of carrying body text; no
                 // shadow fixes that, because a shadow changes the edge and not the fill.
-                text = value,
+                text = if (opensPicker) "$value  ›" else value,
                 color = SettingsText,
                 fontSize = 13.sp,
                 style = TextStyle(shadow = SettingsTextShadow),

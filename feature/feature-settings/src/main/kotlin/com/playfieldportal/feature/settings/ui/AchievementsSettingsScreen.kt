@@ -229,9 +229,9 @@ fun AchievementsSettingsScreen(
 
             // ── Local Steam (emulated) ─────────────────────────────────────────
             if (section == null || section == AchievementsSettingsSection.LOCAL_WINDOWS) {
-            SettingsGroup("Local Steam (Emulated)")
+            SettingsGroup("Local Steam (emulated)")
             SettingsToggleRow(
-                label    = "Track Local Steam Games (Emulated)",
+                label    = "Track Local Steam games (emulated)",
                 sublabel = "Find emulator games, generate their achievement data, and sync unlocks",
                 checked  = state.localSteamTrackingEnabled,
                 onToggle = { on ->
@@ -240,7 +240,7 @@ fun AchievementsSettingsScreen(
                 },
             )
             SettingsToggleRow(
-                label    = "Install Goldberg & Convert Games",
+                label    = "Install Goldberg & convert games",
                 sublabel = "When scanning, offer to write achievement data into detected games so " +
                     "the emulator can track them",
                 checked  = state.goldbergInstallerEnabled,
@@ -259,7 +259,7 @@ fun AchievementsSettingsScreen(
             // paused state are shown here.
             if (section == null || section == AchievementsSettingsSection.UPDATE) {
                 SettingsGroup("Update")
-                SettingsValueRow(label = "Last Updated", value = state.lastSyncedLabel)
+                SettingsValueRow(label = "Last updated", value = state.lastSyncedLabel)
                 if (state.updatesPaused) {
                     SettingsValueRow(label = "Automatic updates", value = "Updates paused until you resync")
                 }

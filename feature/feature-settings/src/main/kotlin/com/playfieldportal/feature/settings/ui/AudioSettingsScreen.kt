@@ -269,10 +269,11 @@ fun AudioSettingsScreen(
                 SettingsGroup("")
 
                 SettingsRow(
-                    label = "Reset Sound to Defaults",
+                    label = "Reset sound to defaults",
                     sublabel = "Return every menu sound to the bundled PFP sample and every level to full. Keeps your ambience track.",
                     onFocusChangedExternal = { if (it) focusedSlot = null },
                     onClick = { viewModel.requestReset() },
+                    destructive = true,
                 )
             }
         }

@@ -63,6 +63,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.domain.model.ColorNaming
 import com.playfieldportal.core.domain.model.ControllerIcon
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
@@ -75,6 +76,7 @@ import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.theme.contrastRatio
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
+import kotlin.math.roundToInt
 
 /**
  * The app's one HSV colour picker: a Hex field over Hue, Saturation and Brightness bars, the four
@@ -90,6 +92,13 @@ import com.playfieldportal.core.ui.theme.themedText
  * covers what is being typed; everything under them scrolls inside whatever height the card
  * is given, which with PFP's keyboard up is only what sits above [VirtualKeyboardBottomReserve].
  * The focused stop is always brought into view, so the Hex field being typed is never under it.
+ *
+ * Every value is also given in words — the colour's name beside the swatch, and each bar's
+ * position on its label — so a colour can be steered without judging the swatch by eye.
+ *
+ * [docked] drops the scrim and rests the card on the trailing edge, for a host that repaints what
+ * is behind the picker as the colour changes. [readout] is the host's own line or two about the
+ * colour (how text reads on it, say), drawn under the Hex field.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -110,6 +119,8 @@ fun HsvColorPickerDialog(
     /** Ratio below which a reading is called out. 3:1 by decision — see the legibility plan. */
     contrastWarnBelow: Float = 3f,
     showHints: Boolean = true,
+    docked: Boolean = false,
+    readout: (@Composable () -> Unit)? = null,
 ) {
     val preview = Color(state.argb)
     val menuSounds = LocalMenuSounds.current
@@ -158,7 +169,7 @@ fun HsvColorPickerDialog(
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xCC000000))
+            .background(if (docked) Color.Transparent else Color(0xCC000000))
             .testTag(HsvPickerTags.SCRIM)
             // Pointer input rather than clickable: a clickable merges its descendants' semantics.
             .pointerInput(Unit) { detectTapGestures { currentCancel() } },
@@ -174,13 +185,20 @@ fun HsvColorPickerDialog(
         modifier = Modifier
             .fillMaxSize()
             .padding(bottom = pfpReserve + systemKeyboard),
-        contentAlignment = if (compact) Alignment.BottomCenter else Alignment.Center,
+        contentAlignment = when {
+            compact -> Alignment.BottomCenter
+            docked -> Alignment.CenterEnd
+            else -> Alignment.Center
+        },
     ) {
         Column(
             modifier = Modifier
                 .then(
-                    if (compact) Modifier.fillMaxWidth(COMPACT_WIDTH_FRACTION).widthIn(max = CompactMaxWidth)
-                    else Modifier.width(440.dp),
+                    when {
+                        compact -> Modifier.fillMaxWidth(COMPACT_WIDTH_FRACTION).widthIn(max = CompactMaxWidth)
+                        docked -> Modifier.padding(end = DockedEdgeGap).width(DockedWidth)
+                        else -> Modifier.width(440.dp)
+                    },
                 )
                 .padding(vertical = if (compact) 8.dp else 0.dp)
                 .clip(RoundedCornerShape(16.dp))
@@ -206,7 +224,16 @@ fun HsvColorPickerDialog(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Swatch(preview, 56.dp)
                     Spacer(Modifier.width(16.dp))
-                    Text(hexOf(preview), color = subtext, fontSize = 14.sp, fontFamily = FontFamily.Monospace)
+                    Column {
+                        Text(
+                            ColorNaming.describe(state.argb),
+                            color = themedText(Color.White),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.testTag(HsvPickerTags.COLOR_NAME),
+                        )
+                        Text(hexOf(preview), color = subtext, fontSize = 14.sp, fontFamily = FontFamily.Monospace)
+                    }
                 }
             }
 
@@ -291,6 +318,10 @@ fun HsvColorPickerDialog(
                     Spacer(Modifier.height(16.dp))
                     ContrastStrip(preview, contrastAnchors.first, contrastAnchors.second, subtext, contrastWarnBelow)
                 }
+                if (readout != null) {
+                    Spacer(Modifier.height(8.dp))
+                    readout()
+                }
 
                 val bars = listOf(
                     Triple(HsvPickerField.HUE, "Hue", state.hue / 360f),
@@ -306,6 +337,7 @@ fun HsvColorPickerDialog(
                     ) {
                         ChannelBar(
                             label = label,
+                            value = channelReadout(field, state),
                             fraction = fraction,
                             brush = when (field) {
                                 HsvPickerField.HUE -> rainbowBrush()
@@ -340,6 +372,18 @@ fun HsvColorPickerDialog(
 
 private const val COMPACT_WIDTH_FRACTION = 0.94f
 private val CompactMaxWidth = 820.dp
+private val DockedWidth = 360.dp
+private val DockedEdgeGap = 16.dp
+
+/** A bar's position in words: the hue's name, or a word and a percentage. */
+internal fun channelReadout(field: HsvPickerField, state: HsvPickerState): String = when (field) {
+    HsvPickerField.HUE -> ColorNaming.hueDescription(state.hue)
+    HsvPickerField.SATURATION -> "${ColorNaming.saturationWord(state.saturation)} ${percent(state.saturation)}"
+    HsvPickerField.BRIGHTNESS -> "${ColorNaming.brightnessWord(state.brightness)} ${percent(state.brightness)}"
+    HsvPickerField.HEX -> state.hexText
+}
+
+private fun percent(fraction: Float): String = "${(fraction * 100f).roundToInt()}%"
 
 @Composable
 private fun Swatch(color: Color, size: Dp) {
@@ -384,6 +428,7 @@ object HsvPickerTags {
     const val SWATCH = "hsv_picker_swatch"
     const val HEX_FIELD = "hsv_picker_hex_field"
     const val HUE_BAR = "hsv_picker_hue_bar"
+    const val COLOR_NAME = "hsv_picker_color_name"
     const val APPLY = "hsv_picker_apply"
     const val CANCEL = "hsv_picker_cancel"
 }
@@ -453,6 +498,7 @@ private fun ContrastStrip(
 @Composable
 private fun ChannelBar(
     label: String,
+    value: String,
     fraction: Float,
     brush: Brush,
     selected: Boolean,
@@ -465,7 +511,10 @@ private fun ChannelBar(
     // silently, the way the settings sliders do.
     val tap by rememberUpdatedState(onTap)
     val drag by rememberUpdatedState(onDrag)
-    Text(label, color = if (selected) accent else subtext, fontSize = 12.sp)
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, color = if (selected) accent else subtext, fontSize = 12.sp)
+        Text(value, color = themedText(Color.White), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+    }
     Spacer(Modifier.height(6.dp))
     BoxWithConstraints(
         modifier = Modifier

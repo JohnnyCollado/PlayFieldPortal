@@ -33,6 +33,7 @@ import com.playfieldportal.feature.settings.ui.wizard.WizardScaffold
 import com.playfieldportal.feature.settings.ui.wizard.WizardSectionHeader
 import com.playfieldportal.feature.settings.ui.wizard.WizardTextField
 import com.playfieldportal.feature.settings.ui.wizard.WizardValueRow
+import com.playfieldportal.feature.settings.viewmodel.rootDisplayName
 import com.playfieldportal.feature.settings.viewmodel.ArtworkSourceUi
 import com.playfieldportal.feature.settings.viewmodel.ControllerSettingsViewModel
 import com.playfieldportal.feature.settings.viewmodel.InitialSetupUiState
@@ -167,8 +168,13 @@ fun InitialSetupScreen(
     // Every Continue row names the page after this one in THIS run's flow.
     val nextLabel = state.nextStep?.let(::stepTitle) ?: "Finish"
 
+    // Removing a root asks first, in the wizard as in Settings.
+    val removeGate = rememberRootRemoveGate()
+    val removeModal = rememberSettingsModal(removeGate.spec)
     WizardScaffold(
         stepNumber = stepNumber,
+        modalOpen = removeModal.open,
+        onInterceptModal = removeModal.intercept,
         title = "Initial Setup",
         onBack = { if (!viewModel.previousStep() && !firstRun) onBack() },
         backEnabled = canGoBack,
@@ -198,15 +204,17 @@ fun InitialSetupScreen(
                 roots = state.romRoots,
                 emptyText = "No ROM roots yet. Add the folder where your consoles' games live — " +
                     "one subfolder per console, scanned automatically.",
-                addLabel = "Add ROM Root",
+                addLabel = "Add ROM root",
                 addSublabel = "Grant a root folder with one subfolder per console",
-                rescanLabel = "Rescan ROM Roots",
+                rescanLabel = "Rescan ROM roots",
                 rescanSublabel = "Auto-detect consoles and scan their games",
                 // B3: "where do I put my ROMs?" — scaffold one ES-DE folder per platform.
                 onCreateFolders = viewModel::createStandardRomFolders,
                 onAdd = { pendingAdd = AddSlot.ROM; addPicker.launch(null) },
                 onRelink = { row -> pendingRelinkRom = row.treeUri; relinkRomPicker.launch(runCatching { Uri.parse(row.treeUri) }.getOrNull()) },
-                onRemove = { viewModel.removeRomRoot(it.treeUri) },
+                onRemove = { row ->
+                    removeGate.request(rootDisplayName(row.treeUri)) { viewModel.removeRomRoot(row.treeUri) }
+                },
                 onRescan = viewModel::rescanRomRoots,
                 onContinue = { viewModel.nextStep() },
                 nextLabel = nextLabel,
@@ -216,14 +224,18 @@ fun InitialSetupScreen(
                 kindLabel = "Music",
                 kind = MediaRootKind.MUSIC,
                 emptyText = "No music roots yet. Add the folder where your music lives — several roots can span internal storage and an SD card.",
-                addLabel = "Add Music Root",
+                addLabel = "Add music root",
                 addSublabel = "Grant a root folder (e.g. /Music) — add several to span locations",
                 onAdd = { pendingAdd = AddSlot.MUSIC; addPicker.launch(null) },
                 onRelink = { row ->
                     pendingRelinkKind = MediaRootKind.MUSIC to row.treeUri
                     relinkMediaPicker.launch(runCatching { Uri.parse(row.treeUri) }.getOrNull())
                 },
-                onRemove = { viewModel.removeMediaRoot(MediaRootKind.MUSIC, it.treeUri) },
+                onRemove = { row ->
+                    removeGate.request(rootDisplayName(row.treeUri)) {
+                        viewModel.removeMediaRoot(MediaRootKind.MUSIC, row.treeUri)
+                    }
+                },
                 onRescan = { viewModel.rescanMediaRoot(MediaRootKind.MUSIC) },
                 onContinue = { viewModel.nextStep() },
                 nextLabel = nextLabel,
@@ -233,14 +245,18 @@ fun InitialSetupScreen(
                 kindLabel = "Video",
                 kind = MediaRootKind.VIDEO,
                 emptyText = "No video roots yet. Add the folder where your videos live — several roots can span internal storage and an SD card.",
-                addLabel = "Add Video Root",
+                addLabel = "Add video root",
                 addSublabel = "Grant a root folder (e.g. /Videos) — add several to span locations",
                 onAdd = { pendingAdd = AddSlot.VIDEO; addPicker.launch(null) },
                 onRelink = { row ->
                     pendingRelinkKind = MediaRootKind.VIDEO to row.treeUri
                     relinkMediaPicker.launch(runCatching { Uri.parse(row.treeUri) }.getOrNull())
                 },
-                onRemove = { viewModel.removeMediaRoot(MediaRootKind.VIDEO, it.treeUri) },
+                onRemove = { row ->
+                    removeGate.request(rootDisplayName(row.treeUri)) {
+                        viewModel.removeMediaRoot(MediaRootKind.VIDEO, row.treeUri)
+                    }
+                },
                 onRescan = { viewModel.rescanMediaRoot(MediaRootKind.VIDEO) },
                 onContinue = { viewModel.nextStep() },
                 nextLabel = nextLabel,
@@ -250,14 +266,18 @@ fun InitialSetupScreen(
                 kindLabel = "Photo",
                 kind = MediaRootKind.PHOTO,
                 emptyText = "No photo roots yet. Add the folder where your photos live — several roots can span internal storage and an SD card.",
-                addLabel = "Add Photo Root",
+                addLabel = "Add photo root",
                 addSublabel = "Grant a root folder (e.g. /Photos) — add several to span locations",
                 onAdd = { pendingAdd = AddSlot.PHOTO; addPicker.launch(null) },
                 onRelink = { row ->
                     pendingRelinkKind = MediaRootKind.PHOTO to row.treeUri
                     relinkMediaPicker.launch(runCatching { Uri.parse(row.treeUri) }.getOrNull())
                 },
-                onRemove = { viewModel.removeMediaRoot(MediaRootKind.PHOTO, it.treeUri) },
+                onRemove = { row ->
+                    removeGate.request(rootDisplayName(row.treeUri)) {
+                        viewModel.removeMediaRoot(MediaRootKind.PHOTO, row.treeUri)
+                    }
+                },
                 onRescan = { viewModel.rescanMediaRoot(MediaRootKind.PHOTO) },
                 onContinue = { viewModel.nextStep() },
                 nextLabel = nextLabel,
@@ -350,6 +370,8 @@ fun InitialSetupScreen(
             )
         }
     }
+
+    removeModal.Content()
 }
 
 /** A page's short name, for the previous page's "Next: …" sublabel. */
@@ -429,13 +451,13 @@ private fun WelcomePage(onStart: () -> Unit, onSkip: () -> Unit) {
             "folders and connects the online services used for artwork and achievements."
     )
     WizardRow(
-        label = "Get Started",
+        label = "Get started",
         sublabel = "Choose your controller first",
         focusKey = "welcome_start",
         onClick = onStart,
     )
     WizardRow(
-        label = "Skip Setup",
+        label = "Skip setup",
         sublabel = "Go straight to the launcher — run the Setup Wizard from Settings ▸ System anytime",
         onClick = onSkip,
     )
@@ -474,7 +496,7 @@ private fun RootsPage(
     if (roots.isNotEmpty()) {
         // B3: answer "where do I put my ROMs?" — one folder per supported console, ready to fill.
         WizardRow(
-            label = "Create Standard Folders",
+            label = "Create standard folders",
             sublabel = "One subfolder per console, named for your games",
             onClick = onCreateFolders,
         )
@@ -642,7 +664,7 @@ private fun ServicesPage(
         WizardInfoText(it)  // transient validation result
     }
     if (igdbIdDraft.isNotBlank() && igdbSecretDraft.isNotBlank()) {
-        WizardRow(label = "Test Credentials", onClick = { onTestIgdb(igdbIdDraft, igdbSecretDraft) })
+        WizardRow(label = "Test credentials", onClick = { onTestIgdb(igdbIdDraft, igdbSecretDraft) })
         WizardRow(label = "Connect IGDB", onClick = { onConnectIgdb(igdbIdDraft, igdbSecretDraft) })
     }
 
@@ -667,7 +689,7 @@ private fun ServicesPage(
         )
         state.ssStatus?.let { WizardInfoText(it) }
         if (ssUserDraft.isNotBlank() && ssPassDraft.isNotBlank()) {
-            WizardRow(label = "Test Account", onClick = { onTestSs(ssUserDraft, ssPassDraft) })
+            WizardRow(label = "Test account", onClick = { onTestSs(ssUserDraft, ssPassDraft) })
             WizardRow(label = "Connect ScreenScraper", onClick = { onConnectSs(ssUserDraft, ssPassDraft) })
         }
     }
@@ -744,20 +766,20 @@ private fun ControllerPage(
     nextLabel: String,
 ) {
     WizardValueRow(
-        label = "Controller Type",
+        label = "Controller type",
         value = prefs.displayType.displayLabel(),
         sublabel = "Changes the button icons in every prompt",
         focusKey = "controller_type",
         onClick = onCycleType,
     )
     WizardValueRow(
-        label = "A / B Swap",
+        label = "A / B swap",
         value = if (prefs.confirmBackLayout == com.playfieldportal.core.domain.model.ConfirmBackLayout.REVERSED) "On" else "Off",
         sublabel = confirmSwapSublabel(prefs),
         onClick = onCycleConfirm,
     )
     WizardValueRow(
-        label = "X / Y Swap",
+        label = "X / Y swap",
         value = if (prefs.xyLayout == XYLayout.SWAPPED) "On" else "Off",
         sublabel = "Launcher menus only — emulator controls are untouched",
         onClick = onCycleXY,
@@ -788,7 +810,7 @@ private fun LocalAchievementsPage(
         val folder = state.vitaFolderName
         if (folder == null) {
             WizardRow(
-                label = "Set Vita3K Data Folder",
+                label = "Set Vita3K data folder",
                 sublabel = "Grant the ux0 folder (or the folder that contains it)",
                 onClick = onLinkVita,
             )
@@ -806,7 +828,7 @@ private fun LocalAchievementsPage(
         val folder = state.ps3FolderName
         if (folder == null) {
             WizardRow(
-                label = "Set ARMSX3 Data Folder",
+                label = "Set ARMSX3 data folder",
                 sublabel = "Grant PS3/config/dev_hdd0 — or any folder above or below it",
                 onClick = onLinkPs3,
             )
@@ -824,7 +846,7 @@ private fun LocalAchievementsPage(
         val folder = state.x360MobileFolderName
         if (folder == null) {
             WizardRow(
-                label = "Set X360 Mobile Data Folder",
+                label = "Set X360 Mobile data folder",
                 sublabel = "Pick X360 Mobile in the folder picker's side menu, then allow access",
                 onClick = onLinkX360Mobile,
             )
@@ -842,7 +864,7 @@ private fun LocalAchievementsPage(
         val folder = state.xenDroidFolderName
         if (folder == null) {
             WizardRow(
-                label = "Set XenDroid Data Folder",
+                label = "Set XenDroid data folder",
                 sublabel = "Grant Android/data/xendroid.compose — or any folder above or below it",
                 onClick = onLinkXenDroid,
             )
@@ -869,22 +891,22 @@ private fun RetroArchPage(
 ) {
     if (state.retroArchLinked) {
         WizardValueRow(
-            label = "Cores Folder",
+            label = "Cores folder",
             value = if (state.retroArchCoreCount != null) {
                 "${state.retroArchCoreCount} cores detected"
             } else {
                 "Linked"
             },
         )
-        WizardRow(label = "Re-link Folder", sublabel = "Pick RetroArch's folder again", onClick = onLink)
-        WizardRow(label = "Re-check Cores", sublabel = "After installing new cores", onClick = onRedetect)
+        WizardRow(label = "Re-link folder", sublabel = "Pick RetroArch's folder again", onClick = onLink)
+        WizardRow(label = "Re-check cores", sublabel = "After installing new cores", onClick = onRedetect)
         WizardRow(label = "Unlink RetroArch", sublabel = "Fall back to offering every curated core", onClick = onUnlink)
     } else {
         WizardInfoText(
             "RetroArch is installed. Link its folder so only the cores you actually have are " +
                 "offered when launching games — otherwise every curated core is shown (unverified)."
         )
-        WizardRow(label = "Link RetroArch Folder", sublabel = "Pick the com.retroarch document tree", onClick = onLink)
+        WizardRow(label = "Link RetroArch folder", sublabel = "Pick the com.retroarch document tree", onClick = onLink)
     }
     WizardContinueRow(nextLabel, onContinue)
 }
@@ -946,20 +968,20 @@ private fun HintsPage(
     nextLabel: String,
 ) {
     WizardCheckboxRow(
-        label = "Button Hints",
+        label = "Button hints",
         checked = hints.enabled,
         onToggle = { onToggleHints() },
         sublabel = "The idle hint chip on the XMB, in Settings and on media screens",
         focusKey = "hints_enabled",
     )
     WizardValueRow(
-        label = "Hint Delay",
+        label = "Hint delay",
         value = hintDelayLabel(hints.delaySeconds),
         sublabel = "How long to pause before hints appear (1–5 seconds)",
         onClick = onCycleDelay,
     )
     WizardValueRow(
-        label = "Touch Button",
+        label = "Touch button",
         value = touchButtonLabel(hints.touchButton),
         sublabel = "The on-screen App Drawer button — Auto shows it after you touch the screen",
         onClick = onCycleTouch,
@@ -978,9 +1000,9 @@ private fun HomeAppPage(
         "Android asks you to pick a Home app and confirm it. You can switch back anytime in " +
             "Android's Default apps settings."
     )
-    WizardValueRow(label = "Current Home App", value = homeAppSummary(isHomeApp))
+    WizardValueRow(label = "Current home app", value = homeAppSummary(isHomeApp))
     WizardRow(
-        label = "Set as Home App",
+        label = "Set as home app",
         sublabel = "Opens Android's Home app chooser",
         focusKey = "home_set",
         onClick = onSetHome,
@@ -1005,11 +1027,11 @@ private fun FinishPage(
     }
     WizardSectionHeader("Summary")
     WizardValueRow(label = "Controller", value = controllerSummary(controller))
-    WizardValueRow(label = "ROM Library", value = rootsShortLabel(state.romRoots))
+    WizardValueRow(label = "ROM library", value = rootsShortLabel(state.romRoots))
     WizardValueRow(label = "Music", value = rootsShortLabel(state.musicRoots))
     WizardValueRow(label = "Video", value = rootsShortLabel(state.videoRoots))
     WizardValueRow(label = "Photo", value = rootsShortLabel(state.photoRoots))
-    WizardValueRow(label = "Artwork Library", value = state.artworkFolderName ?: "Not set")
+    WizardValueRow(label = "Artwork library", value = state.artworkFolderName ?: "Not set")
     WizardValueRow(label = "SteamGridDB", value = if (state.hasSgdb) "Connected" else "Not set")
     WizardValueRow(label = "TheGamesDB", value = if (state.hasTgdb) "Connected" else "Not set")
     WizardValueRow(label = "IGDB (Twitch)", value = state.igdbClientId.ifBlank { "Not set" })
@@ -1019,16 +1041,16 @@ private fun FinishPage(
     WizardValueRow(label = "RetroAchievements", value = state.raUsername.ifBlank { "Not set" })
     WizardValueRow(label = "Steam", value = if (state.hasSteam) "Connected" else "Not set")
     if (state.vita3KInstalled) {
-        WizardValueRow(label = "Vita Data Folder", value = folderSummary(state.vitaFolderName))
+        WizardValueRow(label = "Vita data folder", value = folderSummary(state.vitaFolderName))
     }
     if (state.armsx3Installed) {
-        WizardValueRow(label = "PS3 Data Folder", value = folderSummary(state.ps3FolderName))
+        WizardValueRow(label = "PS3 data folder", value = folderSummary(state.ps3FolderName))
     }
     if (state.x360MobileInstalled) {
-        WizardValueRow(label = "X360 Mobile Data Folder", value = folderSummary(state.x360MobileFolderName))
+        WizardValueRow(label = "X360 Mobile data folder", value = folderSummary(state.x360MobileFolderName))
     }
     if (state.xenDroidInstalled) {
-        WizardValueRow(label = "XenDroid Data Folder", value = folderSummary(state.xenDroidFolderName))
+        WizardValueRow(label = "XenDroid data folder", value = folderSummary(state.xenDroidFolderName))
     }
     if (state.retroArchInstalled) {
         WizardValueRow(
@@ -1037,10 +1059,10 @@ private fun FinishPage(
         )
     }
     if (state.availability.pcLauncher) {
-        WizardValueRow(label = "Windows Games", value = folderSummary(pages.windowsFolderName))
+        WizardValueRow(label = "Windows games", value = folderSummary(pages.windowsFolderName))
     }
-    WizardValueRow(label = "Button Hints", value = hintsSummary(pages.hints))
-    WizardValueRow(label = "Home App", value = homeAppSummary(pages.isHomeApp))
+    WizardValueRow(label = "Button hints", value = hintsSummary(pages.hints))
+    WizardValueRow(label = "Home app", value = homeAppSummary(pages.isHomeApp))
 
     Spacer(Modifier.height(4.dp))
     // OPTIONAL XMB auto-fit — explicitly opt-in, never forced. Sizing the XMB's cross layout to
@@ -1136,9 +1158,9 @@ private fun RomRootsPagePreview() {
                 RootFolderRow("$prefix/SDROMS", "SD/ROMS", linked = false),
             ),
             emptyText = "No ROM roots yet. Add the folder where your consoles' games live.",
-            addLabel = "Add ROM Root",
+            addLabel = "Add ROM root",
             addSublabel = "Grant a root folder with one subfolder per console",
-            rescanLabel = "Rescan ROM Roots",
+            rescanLabel = "Rescan ROM roots",
             rescanSublabel = "Auto-detect consoles and scan their games",
             onCreateFolders = {},
             onAdd = {},
