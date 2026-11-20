@@ -312,12 +312,12 @@ private fun CollectionListStep(
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
             SettingsGroup("Manage")
             SettingsRow(
-                label    = "New Custom Memory Card",
+                label    = "New custom memory card",
                 sublabel = "For games or apps, e.g. RPGs, Currently Playing, Work Apps",
                 onClick  = onCreate,
             )
 
-            SettingsGroup("Your Custom Memory Cards")
+            SettingsGroup("Your custom memory cards")
             if (collections.isEmpty()) {
                 SettingsRow(
                     label    = "No custom memory cards yet",
@@ -368,15 +368,15 @@ private fun CollectionDetailStep(
             SettingsGroup("Custom Memory Card")
             SettingsRow(label = "Rename", onClick = onRename)
             SettingsRow(
-                label    = "Change Icon",
+                label    = "Change icon",
                 sublabel = collection.iconKey?.let { categoryIconFor(it).label } ?: "Default (Memory Card)",
                 onClick  = onChangeIcon,
             )
-            SettingsRow(label = "Move Up", onClick = onMoveUp)
-            SettingsRow(label = "Move Down", onClick = onMoveDown)
+            SettingsRow(label = "Move up", onClick = onMoveUp)
+            SettingsRow(label = "Move down", onClick = onMoveDown)
             val noun = if (holdsApps) "apps" else "games"
             SettingsRow(
-                label = "Delete Custom Card",
+                label = "Delete custom card",
                 sublabel = if (holdsApps) "Removes the card; its apps stay installed" else "Removes the card; its games stay in your library",
                 onClick = onDelete,
             )
@@ -476,10 +476,10 @@ private fun CollectionIconStep(
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
             if (imageKey != null) {
-                SettingsGroup("From Your Device")
+                SettingsGroup("From your device")
                 if (!hasImage) {
                     SettingsRow(
-                        label = "Choose Image…",
+                        label = "Choose image…",
                         sublabel = "PNG, JPG, WEBP, BMP, HEIC or GIF · animated GIFs play",
                         onClick = { picker.launch(DEVICE_IMAGE_MIME) },
                     )
@@ -487,7 +487,7 @@ private fun CollectionIconStep(
                     val icon = LocalXmbIcons.current[imageKey]
                     // Read-only preview row: it plays under Animated Images while the cursor is on it.
                     SettingsRow(
-                        label = "Your Image",
+                        label = "Your image",
                         sublabel = if (icon is CustomIcon.Animated) "Animated · in use" else "In use",
                         onFocusChangedExternal = { previewFocused = it },
                         trailing = {
@@ -499,12 +499,12 @@ private fun CollectionIconStep(
                         },
                     )
                     SettingsRow(
-                        label = "Replace Image…",
+                        label = "Replace image…",
                         sublabel = "Pick a different file",
                         onClick = { picker.launch(DEVICE_IMAGE_MIME) },
                     )
                     SettingsRow(
-                        label = "Remove Image",
+                        label = "Remove image",
                         sublabel = "Go back to the built-in icon ($builtInLabel)",
                         onClick = { viewModel.removeCardImage(collection.id) },
                     )
@@ -520,7 +520,7 @@ private fun CollectionIconStep(
                 }
 
                 if (themeIcons.isNotEmpty()) {
-                    SettingsGroup("From the Applied Theme")
+                    SettingsGroup("From the applied theme")
                     themeIcons.forEach { choice ->
                         var rowFocused by remember(choice.file) { mutableStateOf(false) }
                         SettingsRow(

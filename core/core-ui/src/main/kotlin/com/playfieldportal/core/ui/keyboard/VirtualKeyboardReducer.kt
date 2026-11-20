@@ -6,19 +6,25 @@ import com.playfieldportal.core.navigation.SpanGridCursor
 import com.playfieldportal.core.navigation.spanGridMove
 import com.playfieldportal.core.ui.sound.MenuSound
 
-/** Shift: off, for the next letter only, or locked until pressed again. */
+/**
+ * Shift: off, for the next letter only, held down, or locked until pressed again.
+ *
+ * [HELD] is the controller's Shift button: capitals for as long as it is down, like a real
+ * keyboard's. [ONCE] is the on-screen Shift key, which a pad cursor or a single finger cannot hold
+ * while it also presses a letter, so it arms the next letter instead. [LOCKED] is caps lock.
+ */
 enum class ShiftMode {
-    OFF, ONCE, LOCKED;
+    OFF, ONCE, HELD, LOCKED;
 
-    /** Shift's own press: off → once → locked → off. */
+    /** The on-screen Shift key's own press: off → once → locked → off. A hold counts as off. */
     fun next(): ShiftMode = when (this) {
-        OFF -> ONCE
+        OFF, HELD -> ONCE
         ONCE -> LOCKED
         LOCKED -> OFF
     }
 
-    /** After a typed character: a one-shot shift is spent, a lock holds. */
-    fun afterTyping(): ShiftMode = if (this == LOCKED) LOCKED else OFF
+    /** After a typed character: a one-shot shift is spent; a hold and a lock both carry on. */
+    fun afterTyping(): ShiftMode = if (this == ONCE) OFF else this
 }
 
 /** Everything the open keyboard shows: the text, the layer, shift, and the focused key. */
@@ -52,7 +58,7 @@ data class KeyboardReduction(val state: VirtualKeyboardState, val effects: List<
 /**
  * The keyboard as a pure state machine over [GamepadAction]s (Virtual Keyboard plan section 1).
  * SELECT presses the focused key; X/Y are Delete/Space; the shoulders move the caret; L2 shifts
- * the next letter and R3 locks caps; START is Done; BACK closes. The cursor cycles round every edge.
+ * while it is held (see [shiftReleased]) and R3 locks caps; START is Done; BACK closes. The cursor cycles round every edge.
  * A press that changes nothing returns the state unchanged with no effects — and no sound.
  */
 object VirtualKeyboardReducer {
@@ -78,10 +84,18 @@ object VirtualKeyboardReducer {
         GamepadAction.BACK           -> KeyboardReduction(state, listOf(KeyboardEffect.Close, KeyboardEffect.Sound(MenuSound.BACK)))
         // START: Done from anywhere, without walking the cursor down to the Done key.
         GamepadAction.HOME           -> done(state)
-        // L2: shift the next letter, or drop any shift. R3: caps lock on and off.
-        GamepadAction.SHIFT          -> setShift(state, if (state.shift == ShiftMode.OFF) ShiftMode.ONCE else ShiftMode.OFF)
+        // L2 down: capitals until it is released. Caps lock already has them on, so it stays put.
+        // R3: caps lock on and off.
+        GamepadAction.SHIFT          -> setShift(state, if (state.shift == ShiftMode.LOCKED) ShiftMode.LOCKED else ShiftMode.HELD)
         GamepadAction.CAPS_LOCK      -> setShift(state, if (state.shift == ShiftMode.LOCKED) ShiftMode.OFF else ShiftMode.LOCKED)
     }
+
+    /**
+     * The controller's Shift button came up: a hold ends, silently — the press already ticked. Caps
+     * lock and the on-screen key's one-shot are not holds, so they are left as they are.
+     */
+    fun shiftReleased(state: VirtualKeyboardState): KeyboardReduction =
+        if (state.shift == ShiftMode.HELD) KeyboardReduction(state.copy(shift = ShiftMode.OFF)) else KeyboardReduction(state)
 
     // Shift and caps exist only where the Shift key does: never on the symbols layer.
     private fun setShift(state: VirtualKeyboardState, shift: ShiftMode): KeyboardReduction {

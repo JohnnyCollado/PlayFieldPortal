@@ -117,6 +117,13 @@ class VirtualKeyboardController @Inject constructor() {
         return true
     }
 
+    /** The controller's Shift button was released: ends the keyboard's shift hold, if one is on. */
+    fun onShiftReleased() {
+        val current = _session.value ?: return
+        val released = VirtualKeyboardReducer.shiftReleased(current.keyboard).state
+        if (released != current.keyboard) _session.value = current.copy(keyboard = released)
+    }
+
     /** The field changed its text itself (e.g. a filter normalised it): follow it. */
     fun updateText(token: Long, text: String) {
         val current = _session.value?.takeIf { it.token == token } ?: return

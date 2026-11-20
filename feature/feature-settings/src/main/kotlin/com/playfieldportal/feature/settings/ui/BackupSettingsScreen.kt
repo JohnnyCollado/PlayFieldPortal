@@ -89,26 +89,26 @@ fun BackupSettingsScreen(
             SettingsGroup("Backup")
 
             SettingsValueRow(
-                label = "Last Backup",
+                label = "Last backup",
                 value = state.lastBackupDate ?: "Never",
             )
 
             SettingsRow(
-                label    = "Backup Folder",
+                label    = "Backup folder",
                 sublabel = state.backupFolder?.let { "Saving to: $it  (tap to change)" }
                     ?: "Not set — tap to choose where backups are saved",
                 onClick  = if (state.isWorking) null else ({ folderPicker.launch(null) }),
             )
 
             SettingsRow(
-                label    = "Back Up Now",
+                label    = "Back up now",
                 sublabel = if (state.backupFolderSet) "Saves library, settings, and play history"
                     else "Choose a backup folder first",
                 onClick  = if (state.isWorking || !state.backupFolderSet) null else ({ viewModel.backupNow() }),
             )
 
             if (state.backups.isNotEmpty()) {
-                SettingsGroup("Saved Backups")
+                SettingsGroup("Saved backups")
                 state.backups.forEach { info ->
                     SettingsRow(
                         label       = info.name,
@@ -127,7 +127,7 @@ fun BackupSettingsScreen(
                 }
             }
 
-            SettingsGroup("What's Included")
+            SettingsGroup("What's included")
 
             listOf("Game Library", "Play History", "Custom Categories", "Settings & API Keys", "Emulator Profiles")
                 .forEach { included ->
@@ -136,12 +136,12 @@ fun BackupSettingsScreen(
                         trailing = { com.playfieldportal.core.ui.components.PfpCheckMark(SettingsText) },
                     )
                 }
-            SettingsValueRow(label = "ROM Files",           value = "✗  (not included)")
+            SettingsValueRow(label = "ROM files",           value = "✗  (not included)")
 
             SettingsGroup("Restore")
 
             SettingsRow(
-                label    = "Restore from File",
+                label    = "Restore from file",
                 sublabel = "Browse to a .pfpbackup file",
                 onClick  = if (state.isWorking) null else ({
                     restorePicker.launch(arrayOf("*/*"))
@@ -149,7 +149,7 @@ fun BackupSettingsScreen(
             )
 
             SettingsRow(
-                label    = "After Restoring",
+                label    = "After restoring",
                 sublabel = "Your folders come back, but Android's access to them does not. Re-link " +
                     "each root under its section's Root Access (Library, Music, Video, Photo) — one " +
                     "tap each; re-linking a root restores everything under it at once.",

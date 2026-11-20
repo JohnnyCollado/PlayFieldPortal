@@ -81,8 +81,10 @@ fun MusicSettingsContent(
     modifier: Modifier = Modifier,
 ) {
     // The default-player picker, as the shared Choice modal so a pad can drive it (survey P6).
+    // Removing a root asks first; the question takes the screen's one modal slot while it is up.
+    val removeGate = rememberRootRemoveGate()
     val playerModal = rememberSettingsModal(
-        if (!state.showPlayerPicker) null else playerPickerSpec(
+        removeGate.spec ?: if (!state.showPlayerPicker) null else playerPickerSpec(
             title = "Default Music Player",
             options = listOf(
                 PlayerOption(MusicIntentResolver.BUILTIN, "Play Field Portal"),
@@ -110,18 +112,18 @@ fun MusicSettingsContent(
                 .verticalScroll(scrollState),
         ) {
             RootAccessSection(
-                groupTitle  = "Root Folders",
+                groupTitle  = "Root folders",
                 rootKind    = "Music",
                 roots       = state.roots,
-                addLabel    = "Add Music Root",
+                addLabel    = "Add music root",
                 addSublabel = "Grant a root folder (e.g. /Music) — add several to span locations",
                 onAddRoot   = onAddRoot,
                 onRelinkRoot = onRelinkRoot,
-                onRemoveRoot = onRemoveRoot,
+                onRemoveRoot = { row -> removeGate.request(row.name) { onRemoveRoot(row) } },
             )
 
             SettingsRow(
-                label    = "Rescan Music Library",
+                label    = "Rescan music library",
                 sublabel = when {
                     state.scanning            -> "Scanning…"
                     state.scanMessage != null -> state.scanMessage
@@ -142,7 +144,7 @@ fun MusicSettingsContent(
             SettingsGroup("Playback")
 
             SettingsValueRow(
-                label    = "Default Music Player",
+                label    = "Default music player",
                 sublabel = "App that opens music tracks",
                 value    = state.defaultPlayerLabel,
                 focusKey = "music_default_player",

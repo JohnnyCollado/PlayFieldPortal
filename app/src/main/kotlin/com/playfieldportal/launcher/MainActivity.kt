@@ -71,6 +71,9 @@ class MainActivity : ComponentActivity() {
     lateinit var mediaRescanCoordinator: MediaRescanCoordinator
 
     @Inject
+    lateinit var appUpdateReminder: com.playfieldportal.feature.settings.update.AppUpdateReminder
+
+    @Inject
     lateinit var artworkFolderStatus: com.playfieldportal.feature.artwork.api.ArtworkFolderStatus
 
     // Owns the user's ui-media assignments; a cold start prunes anything left by slots the
@@ -290,6 +293,9 @@ class MainActivity : ComponentActivity() {
                 mediaRescanCoordinator.onResume()
             }.onFailure { Timber.e(it, "Resume-triggered library rescan failed") }
         }
+        // Back at the menu is also when a newer app release is worth mentioning. Rate-limited
+        // inside (one network check and one panel reminder a day), and runs on its own scope.
+        appUpdateReminder.onResume()
         // An artwork folder that was unreachable (an SD card still mounting at boot) turns Ready
         // here, which clears its prompt and lets paused scrapes write again.
         lifecycleScope.launch {

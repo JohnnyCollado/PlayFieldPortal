@@ -13,6 +13,7 @@ import com.playfieldportal.core.data.repository.ThemeTiers
 import com.playfieldportal.core.domain.model.UiMediaSlot
 import com.playfieldportal.core.domain.model.XmbColorScheme
 import com.playfieldportal.core.domain.model.XmbPalette
+import com.playfieldportal.core.domain.model.XmbSchemeVariant
 import com.playfieldportal.core.domain.model.lightBackgroundAnchors
 import com.playfieldportal.core.domain.model.resolve
 import com.playfieldportal.core.ui.icons.CustomIcon
@@ -85,6 +86,7 @@ class ThemeLook internal constructor(
     /** The colour and geometry prefs the look is computed from. */
     private data class LookPrefs(
         val schemeName: String,
+        val schemeVariant: String?,
         val accentOverride: Long?,
         val iconColor: Long?,
         val layoutJson: String?,
@@ -99,6 +101,7 @@ class ThemeLook internal constructor(
         val look = prefs.map { p ->
             LookPrefs(
                 schemeName = p[ThemePrefKeys.COLOR_SCHEME] ?: XmbColorScheme.CLASSIC_BLUE.name,
+                schemeVariant = p[ThemePrefKeys.COLOR_SCHEME_VARIANT],
                 accentOverride = p[ThemePrefKeys.ACCENT_OVERRIDE],
                 iconColor = p[ThemePrefKeys.ICON_COLOR],
                 layoutJson = p[ThemePrefKeys.THEME_LAYOUT],
@@ -149,7 +152,7 @@ class ThemeLook internal constructor(
         } else {
             // ORIGINAL re-resolves to the current month each time the scheme is (re)observed.
             val scheme = runCatching { XmbColorScheme.valueOf(p.schemeName) }.getOrDefault(XmbColorScheme.CLASSIC_BLUE)
-            scheme.resolve(month()).toPFPColors()
+            scheme.resolve(month(), XmbSchemeVariant.decode(p.schemeVariant)).toPFPColors()
         }
         // The user's font colour joins beside iconColor and by the same rule: absent = inherit the
         // theme's own value (white on every preset). Secondary keeps the 0.7 alpha relationship

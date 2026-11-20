@@ -43,7 +43,7 @@ fun NotificationSettingsScreen(
             SettingsGroup("Notifications")
 
             SettingsToggleRow(
-                label = "Record Notifications",
+                label = "Record notifications",
                 sublabel = "Keep a history of scans, artwork, scraping and achievement work. " +
                     "Off stops new entries; running work still shows its progress.",
                 focusKey = "notifications_enabled",
@@ -54,7 +54,7 @@ fun NotificationSettingsScreen(
             SettingsGroup("History")
 
             SettingsValueRow(
-                label = "Keep Entries For",
+                label = "Keep entries for",
                 sublabel = "Older entries are dropped the next time something is recorded. " +
                     "A cap of 200 entries applies either way, and read entries go first.",
                 value = NotificationSettingsViewModel.autoClearLabel(state.autoClearDays),
@@ -63,7 +63,7 @@ fun NotificationSettingsScreen(
             )
 
             SettingsValueRow(
-                label = "Mark All Read",
+                label = "Mark all read",
                 sublabel = "Clears the unread count on the status bar",
                 value = if (state.unreadCount > 0) "${state.unreadCount} unread" else "None unread",
                 focusKey = "notifications_mark_all_read",
@@ -73,7 +73,7 @@ fun NotificationSettingsScreen(
             // Always available, and it can never cancel anything: running work is in-flight state,
             // not a stored entry, so there is nothing here for a clear to reach.
             SettingsValueRow(
-                label = "Clear All",
+                label = "Clear all",
                 sublabel = "Empties the history. Work that is still running is not affected.",
                 value = "${state.storedCount} stored",
                 focusKey = "notifications_clear_all",

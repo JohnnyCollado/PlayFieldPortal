@@ -167,20 +167,48 @@ class VirtualKeyboardReducerTest {
 
     // ── L2 Shift, R3 Caps Lock ───────────────────────────────────────────────
 
-    @Test fun `L2 shifts the next letter and a second press cancels it`() {
-        val shifted = open().press(GamepadAction.SHIFT)
-        assertEquals(ShiftMode.ONCE, shifted.state.shift)
-        assertEquals(listOf(MenuSound.SELECT), shifted.sounds())
-        assertEquals(ShiftMode.OFF, shifted.state.press(GamepadAction.SHIFT).state.shift)
-        assertEquals(listOf(KeyboardEffect.Edit("Q", 1)), shifted.state.press(GamepadAction.SELECT).edits())
+    @Test fun `L2 shifts for as long as it is held`() {
+        val held = open().press(GamepadAction.SHIFT)
+        assertEquals(ShiftMode.HELD, held.state.shift)
+        assertEquals(listOf(MenuSound.SELECT), held.sounds())
+
+        // Every letter typed during the hold is a capital: typing does not spend it.
+        val q = held.state.press(GamepadAction.SELECT)
+        assertEquals(listOf(KeyboardEffect.Edit("Q", 1)), q.edits())
+        assertEquals(ShiftMode.HELD, q.state.shift)
+        assertEquals(listOf(KeyboardEffect.Edit("QQ", 2)), q.state.press(GamepadAction.SELECT).edits())
+    }
+
+    @Test fun `releasing L2 goes back to lower case, silently`() {
+        val held = open().press(GamepadAction.SHIFT).state
+        val released = VirtualKeyboardReducer.shiftReleased(held)
+        assertEquals(ShiftMode.OFF, released.state.shift)
+        assertTrue(released.effects.isEmpty())
+        assertEquals(listOf(KeyboardEffect.Edit("q", 1)), released.state.press(GamepadAction.SELECT).edits())
+    }
+
+    @Test fun `a held L2 that repeats its press changes nothing`() {
+        val held = open().press(GamepadAction.SHIFT).state
+        val again = held.press(GamepadAction.SHIFT)
+        assertEquals(held, again.state)
+        assertTrue(again.effects.isEmpty())
+    }
+
+    @Test fun `L2 does not disturb caps lock or the on-screen key's one-shot`() {
+        val locked = open().press(GamepadAction.CAPS_LOCK).state
+        assertEquals(ShiftMode.LOCKED, locked.press(GamepadAction.SHIFT).state.shift)
+        assertEquals(ShiftMode.LOCKED, VirtualKeyboardReducer.shiftReleased(locked).state.shift)
+
+        // The on-screen Shift key's one-shot is not a hold, so a stray release leaves it armed.
+        val once = open().on(shift).press(GamepadAction.SELECT).state
+        assertEquals(ShiftMode.ONCE, once.shift)
+        assertEquals(ShiftMode.ONCE, VirtualKeyboardReducer.shiftReleased(once).state.shift)
     }
 
     @Test fun `R3 locks caps and a second press releases it`() {
         val locked = open().press(GamepadAction.CAPS_LOCK)
         assertEquals(ShiftMode.LOCKED, locked.state.shift)
         assertEquals(ShiftMode.OFF, locked.state.press(GamepadAction.CAPS_LOCK).state.shift)
-        // L2 out of a lock goes back to lower case too.
-        assertEquals(ShiftMode.OFF, locked.state.press(GamepadAction.SHIFT).state.shift)
     }
 
     @Test fun `shift and caps do nothing on the symbols layer`() {

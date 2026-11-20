@@ -274,12 +274,17 @@ private fun LibraryListContent(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri -> relinkTarget?.let { onRelinkRomRoot(it, uri) }; relinkTarget = null }
 
+    // Removing a ROM root asks first.
+    val removeGate = rememberRootRemoveGate()
+    val removeModal = rememberSettingsModal(removeGate.spec)
     SettingsScaffold(
         title = "Settings",
         subtitle = "Library Manager",
         onBack = onBack,
         modifier = modifier,
         restoreFocusKey = state.returnFocusKey,
+        modalOpen = removeModal.open,
+        onInterceptAction = removeModal.intercept,
     ) {
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
@@ -287,21 +292,21 @@ private fun LibraryListContent(
 
             // ── ROM Root Access ─────────────────────────────────────────────────
             RootAccessSection(
-                groupTitle  = "ROM Root Access",
+                groupTitle  = "ROM root access",
                 rootKind    = "ROM",
                 roots       = state.romRoots,
-                addLabel    = "Add ROM Root",
+                addLabel    = "Add ROM root",
                 addSublabel = "Grant a root folder (e.g. /Roms) — or a second location like an SD card",
                 onAddRoot    = { addRootPicker.launch(null) },
                 onRelinkRoot = { 
                     relinkTarget = it
                     relinkRootPicker.launch(onBeginRelink(it)) 
                 },
-                onRemoveRoot = { onRemoveRomRoot(it) },
+                onRemoveRoot = { row -> removeGate.request(row.name) { onRemoveRomRoot(row) } },
                 // The scan the ES-DE setup tells the user to run once their games are copied in.
                 // The row was wired but never drawn, so nothing could pick those games up short
                 // of re-adding the root (survey U13).
-                autoDetectLabel = if (state.romRoots.isNotEmpty()) "Scan ROM Roots" else null,
+                autoDetectLabel = if (state.romRoots.isNotEmpty()) "Scan ROM roots" else null,
                 autoDetectSublabel = "Find the console folders in your ROM roots and add their games",
                 onAutoDetect = onScanRomRoot,
             )
@@ -326,20 +331,20 @@ private fun LibraryListContent(
             SettingsGroup("Manage")
 
             SettingsRow(
-                label    = "Add Console",
+                label    = "Add console",
                 sublabel = "Pick a platform — its games live in the matching folder under your ROM Root",
                 focusKey = ADD_CONSOLE_FOCUS_KEY,
                 onClick  = { onStartAddConsole() },
             )
             SettingsRow(
-                label    = "Set Up ROM Folders (ES-DE)",
+                label    = "Set up ROM folders (ES-DE)",
                 sublabel = "Pick an empty folder — PFP creates the standard ES-DE system folders " +
                     "(gba, snes, psx…) for you to copy games into. No guessing folder names",
                 onClick  = { onRequestRomFolderSetup() },
             )
             val anyScannable = state.cards.any { it.enabled && (it.treeUri != null || it.romDirectory != null) }
             SettingsRow(
-                label    = "Scan All Consoles",
+                label    = "Scan all consoles",
                 sublabel = when {
                     state.scanningPlatformIds.isNotEmpty() -> "Scanning ${state.scanningPlatformIds.size}…"
                     state.cards.none { it.treeUri != null || it.romDirectory != null } -> "Configure a ROM folder first"
@@ -350,13 +355,13 @@ private fun LibraryListContent(
             var confirmRescanAll by remember { mutableStateOf(false) }
             if (!confirmRescanAll) {
                 SettingsRow(
-                    label    = "Re-Scan All (Mark Missing)",
+                    label    = "Re-scan all (mark missing)",
                     sublabel = "Also marks games whose ROM file is gone as missing. They stay in your library",
                     onClick  = if (anyScannable) ({ confirmRescanAll = true }) else null,
                 )
             } else {
                 SettingsRow(
-                    label    = "Confirm: Re-Scan and Mark Missing Games?",
+                    label    = "Confirm: Re-scan and mark missing games?",
                     sublabel = "Marks games whose ROM file is gone as missing; favorites, play time and artwork are kept. This can take a while with a large library",
                     onClick  = {
                         confirmRescanAll = false
@@ -372,6 +377,8 @@ private fun LibraryListContent(
             state.message?.let { MessageRow(it) { onDismissMessage() } }
         }
     }
+
+    removeModal.Content()
 }
 
 // ── PICK PLATFORM ───────────────────────────────────────────────────────────────
@@ -390,7 +397,7 @@ private fun PickPlatformContent(
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
-            SettingsGroup("Supported Platforms")
+            SettingsGroup("Supported platforms")
             state.platformOptions.forEach { option ->
                 SettingsRow(
                     label    = option.name,
@@ -447,17 +454,17 @@ private fun ScanPromptContent(
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
             SettingsGroup(state.pendingPlatformName ?: "New Console")
             SettingsValueRow(
-                label = "ROM Directory",
+                label = "ROM directory",
                 value = state.pendingDirectory?.substringAfterLast('/') ?: "Not set",
                 sublabel = state.pendingDirectory,
             )
             SettingsRow(
-                label    = "Scan Now",
+                label    = "Scan now",
                 sublabel = "Create the Memory Card and scan its folder immediately",
                 onClick  = { onConfirmAddConsole(true) },
             )
             SettingsRow(
-                label    = "Add Without Scanning",
+                label    = "Add without scanning",
                 sublabel = "Create the Memory Card now, scan later",
                 onClick  = { onConfirmAddConsole(false) },
             )
@@ -576,7 +583,7 @@ private fun CardDetailContent(
             if (isWindows) {
                 SettingsGroup("Library")
                 SettingsValueRow(
-                    label    = "Games Directory",
+                    label    = "Games directory",
                     value    = card.romDirectory?.substringAfterLast('/') ?: "Not set",
                     sublabel = card.romDirectory
                         ?: "Add a ROM Root — PFP creates and uses <root>/windows automatically",
@@ -585,7 +592,7 @@ private fun CardDetailContent(
 
                 SettingsGroup("Actions")
                 SettingsRow(
-                    label    = "Game List",
+                    label    = "Game list",
                     sublabel = "Label each Windows game Steam, Non-Steam or Local, and link Local folders",
                     focusKey = WINDOWS_GAME_LIST_FOCUS_KEY,
                     trailing = {
@@ -598,7 +605,7 @@ private fun CardDetailContent(
                     onClick  = onOpenWindowsGameList,
                 )
                 SettingsRow(
-                    label    = "Import PC Games",
+                    label    = "Import PC games",
                     sublabel = "Exported games, Add by ID, and launcher status",
                     focusKey = IMPORT_PC_FOCUS_KEY,
                     onClick  = onOpenImportPcGames,
@@ -606,7 +613,7 @@ private fun CardDetailContent(
             } else if (isVita) {
                 SettingsGroup("Library")
                 SettingsValueRow(
-                    label    = "Vita3K Data Folder",
+                    label    = "Vita3K data folder",
                     value    = state.vita3KFolderLabel ?: "Not set",
                     sublabel = state.vita3KFolderLabel
                         ?.let { "Reading installed titles from this ux0 folder" }
@@ -617,14 +624,14 @@ private fun CardDetailContent(
 
                 SettingsGroup("Actions")
                 SettingsRow(
-                    label    = "Scan For Vita Games",
+                    label    = "Scan for Vita games",
                     sublabel = "Reads installed titles from ux0/app in your Vita3K data folder",
                     onClick  = if (!isScanning && state.vita3KFolderLabel != null) ({ onScanVitaGames() }) else null,
                 )
             } else if (isAndroid) {
                 SettingsGroup("Apps")
                 SettingsRow(
-                    label    = "Add Apps",
+                    label    = "Add apps",
                     sublabel = "Pick installed apps to add to this library",
                     onClick  = onAddAndroidApps,
                 )
@@ -645,7 +652,7 @@ private fun CardDetailContent(
             } else {
                 SettingsGroup("Library")
                 SettingsValueRow(
-                    label    = "ROM Directory",
+                    label    = "ROM directory",
                     value    = card.romDirectory?.substringAfterLast('/') ?: "Not set",
                     sublabel = card.romDirectory
                         ?: "Scans this console's folder under your ROM Root",
@@ -673,7 +680,7 @@ private fun CardDetailContent(
                 )
                 SettingsValueRow(label = "Games", value = card.gameCount.toString())
 
-                SettingsGroup("Supported Files")
+                SettingsGroup("Supported files")
                 if (card.extensions.isEmpty()) {
                     Hint("No extensions set — add at least one so scanning can match this console's ROMs.")
                 } else {
@@ -689,7 +696,7 @@ private fun CardDetailContent(
                     }
                 }
                 SettingsTextFieldRow(
-                    label         = "Add Extension",
+                    label         = "Add extension",
                     value         = newExt,
                     onValueChange = { newExt = it },
                     placeholder   = "e.g. iso, chd, zip",
@@ -707,7 +714,7 @@ private fun CardDetailContent(
 
                 SettingsGroup("Actions")
                 SettingsRow(
-                    label    = "Scan This Console",
+                    label    = "Scan this console",
                     sublabel = when {
                         isScanning -> "Scanning…"
                         card.romDirectory == null -> "ROM directory not configured"
@@ -722,7 +729,7 @@ private fun CardDetailContent(
             if (isPs3) {
                 SettingsGroup("Achievements")
                 SettingsValueRow(
-                    label    = "PS3 Data Folder",
+                    label    = "PS3 data folder",
                     value    = state.ps3FolderLabel ?: "Not set",
                     sublabel = state.ps3FolderLabel
                         ?.let { "Reading trophies from this ARMSX3 PS3 folder" }
@@ -743,7 +750,7 @@ private fun CardDetailContent(
             if (isX360) {
                 SettingsGroup("Achievements")
                 SettingsValueRow(
-                    label    = "X360 Mobile Data Folder",
+                    label    = "X360 Mobile data folder",
                     value    = state.x360MobileFolderLabel ?: "Not set",
                     sublabel = state.x360MobileFolderLabel
                         ?.let { "Reading achievements from X360 Mobile's profiles" }
@@ -751,7 +758,7 @@ private fun CardDetailContent(
                     onClick  = { x360MobileFolderPicker.launch(Xbox360Emulator.X360_MOBILE.pickerStartUri) },
                 )
                 SettingsValueRow(
-                    label    = "XenDroid Data Folder",
+                    label    = "XenDroid data folder",
                     value    = state.xenDroidFolderLabel ?: "Not set",
                     sublabel = state.xenDroidFolderLabel
                         ?.let { "Reading achievements from XenDroid's profiles" }
@@ -780,12 +787,12 @@ private fun CardDetailContent(
                 checked  = card.pinned,
                 onToggle = { onTogglePinned(card.platformId, it) },
             )
-            SettingsRow(label = "Move Up",   onClick = { onMoveCard(card.platformId, true) })
-            SettingsRow(label = "Move Down", onClick = { onMoveCard(card.platformId, false) })
+            SettingsRow(label = "Move up",   onClick = { onMoveCard(card.platformId, true) })
+            SettingsRow(label = "Move down", onClick = { onMoveCard(card.platformId, false) })
 
             // The Windows Memory Card is managed by the PC import system and cannot be removed.
             if (!isWindows) {
-                SettingsGroup("Danger Zone")
+                SettingsGroup("Danger zone")
                 SettingsRow(
                     label    = "Remove Memory Card",
                     sublabel = "Removes this console and its games. ROM files are not deleted.",
@@ -896,9 +903,9 @@ private fun ImportPcGamesContent(
 
             state.message?.let { MessageRow(it) { onDismissMessage() } }
 
-            SettingsGroup("Add To Home Capture")
+            SettingsGroup("Add to home capture")
             SettingsValueRow(
-                label    = "Play Field Portal as Home",
+                label    = "Play Field Portal as home",
                 value    = if (state.isHomeLauncher) "Active" else "Set…",
                 sublabel = if (state.isHomeLauncher)
                     "Using \"Add to home\" inside a supported launcher imports the game here automatically"
@@ -907,9 +914,9 @@ private fun ImportPcGamesContent(
                 onClick  = { runCatching { homeLauncher.launch(homeRoleIntentProvider()) } },
             )
 
-            SettingsGroup("Exported Games")
+            SettingsGroup("Exported games")
             SettingsRow(
-                label    = "Scan Import Folder",
+                label    = "Scan import folder",
                 sublabel = "Every scan already reads <ROM Root>/windows/import on its own. This row is " +
                     "a one-time pick for a folder somewhere else — PFP scans it for GameNative / " +
                     "Winlator exports (.steam · .epic · .gog · .amazon · .pcgame · .desktop) and PFP's " +
@@ -917,7 +924,7 @@ private fun ImportPcGamesContent(
                 onClick  = { importPicker.launch(null) },
             )
             SettingsRow(
-                label    = "Export Manual Games",
+                label    = "Export manual games",
                 sublabel = "Writes a .pfpgame file into <windows>/import for each game added by ID or captured, " +
                     "and each pin with artwork, so a fresh install can bring them back with their artwork",
                 onClick  = onExportManualPcGames,
@@ -929,7 +936,7 @@ private fun ImportPcGamesContent(
             // launches — and because those folders can live anywhere, so PFP has to be told.
             SettingsGroup("Local Windows")
             SettingsRow(
-                label    = "Batch Match Local Games",
+                label    = "Batch match Local games",
                 sublabel = "Pick the folder that CONTAINS your game folders. Each one that is already " +
                     "in your Windows library is identified, remembered and linked; the rest are left " +
                     "untouched",
@@ -948,7 +955,7 @@ private fun ImportPcGamesContent(
                 LocalSteamFolderSettingsRow(row, onForget = { onForgetLocalSteamFolder(row.appId) })
             }
             SettingsValueRow(
-                label    = "Goldberg Installer",
+                label    = "Goldberg installer",
                 value    = if (state.goldbergInstallerEnabled) "On" else "Off",
                 sublabel = "Lets PFP write an achievement list into a game folder and swap in the " +
                     "bundled Steam emulator. The same switch as Settings ▸ Achievements ▸ Local Windows",
@@ -962,7 +969,7 @@ private fun ImportPcGamesContent(
                     "one back for you."
             )
 
-            SettingsGroup("PC Launchers")
+            SettingsGroup("PC launchers")
             state.pcLaunchers.forEach { launcher ->
                 when {
                     !launcher.installed -> SettingsValueRow(label = launcher.name, value = "Not installed")
@@ -983,7 +990,7 @@ private fun ImportPcGamesContent(
             // Apps PFP cannot identify with confidence: the user says what each one is. A choice
             // is stored per install and outranks every automatic rule.
             if (state.unknownLaunchers.isNotEmpty() || state.hiddenUnknownLaunchers.isNotEmpty()) {
-                SettingsGroup("Unknown Windows Emulators")
+                SettingsGroup("Unknown Windows emulators")
                 state.unknownLaunchers.forEach { app ->
                     SettingsRow(
                         label    = app.label,
@@ -1004,7 +1011,7 @@ private fun ImportPcGamesContent(
                 val hidden = state.hiddenUnknownLaunchers.size
                 if (hidden > 0) {
                     SettingsValueRow(
-                        label    = "Show Hidden Apps",
+                        label    = "Show hidden apps",
                         value    = hidden.toString(),
                         sublabel = (if (hidden == 1) "1 app" else "$hidden apps") +
                             " marked Not a launcher — bring them back to choose again",
@@ -1026,7 +1033,7 @@ private fun ImportPcGamesContent(
                     )
                 }
                 SettingsRow(
-                    label    = "Import All",
+                    label    = "Import all",
                     sublabel = "Move every found game into the Windows Games Memory Card",
                     onClick  = onImportAllPcGames,
                 )
@@ -1107,12 +1114,12 @@ private fun AddPcGameStep(
             }
             SettingsGroup("Add")
             SettingsRow(
-                label = "Test Launch",
+                label = "Test launch",
                 sublabel = "Open the game in ${launcher.name} to check the ID",
                 onClick = if (canTestPcGame(id)) ({ onTest(id.trim(), source) }) else null,
             )
             SettingsRow(
-                label = "Add Game",
+                label = "Add game",
                 sublabel = if (canAddPcGame(id, title)) "Add it to your Windows library" else "Set a Game ID and a name first",
                 onClick = if (canAddPcGame(id, title)) ({ onAdd(id.trim(), title.trim(), source) }) else null,
             )

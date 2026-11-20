@@ -95,7 +95,7 @@ fun ArtworkSettingsScreen(
                 SettingsGroup("Debug")
 
                 SettingsRow(
-                    label    = "Load Credentials File",
+                    label    = "Load credentials file",
                     sublabel = "Fill every artwork and achievement credential from a .properties file " +
                         "(steamgriddb.apiKey, thegamesdb.apiKey, igdb.*, screenscraper.*, retroachievements.*, steam.*)",
                     onClick  = { credentialsFilePicker.launch(arrayOf("*/*")) },
@@ -111,10 +111,10 @@ fun ArtworkSettingsScreen(
             }
 
             // ── Artwork library / import ──────────────────────────────────────
-            SettingsGroup("Artwork Library")
+            SettingsGroup("Artwork library")
 
             SettingsRow(
-                label    = "Artwork Folder & Import",
+                label    = "Artwork folder & import",
                 sublabel = if (state.artworkFolderUnavailable)
                     "Unavailable. Relink to resume new artwork"
                 else "Choose where artwork is stored and import existing artwork from ES-DE",
@@ -123,20 +123,20 @@ fun ArtworkSettingsScreen(
             )
 
             // ── Artwork status ────────────────────────────────────────────────
-            SettingsGroup("Library Artwork Status")
+            SettingsGroup("Library artwork status")
 
-            SettingsValueRow(label = "Total Games",      value = state.status.total.toString())
+            SettingsValueRow(label = "Total games",      value = state.status.total.toString())
             SettingsValueRow(label = "Complete",         value = state.status.complete.toString())
             SettingsValueRow(label = "Missing",          value = state.status.missing.toString())
             SettingsValueRow(label = "Stale / Invalid",  value = state.status.stale.toString())
             SettingsRow(
-                label    = "Refresh Status",
+                label    = "Refresh status",
                 sublabel = if (state.isLoadingStatus) "Checking files…" else "Re-check artwork on disk",
                 onClick  = if (state.isLoadingStatus) null else ({ viewModel.refreshStatus() }),
             )
 
             // ── Scraping ──────────────────────────────────────────────────────
-            SettingsGroup("Scrape Artwork")
+            SettingsGroup("Scrape artwork")
 
             if (state.isScraping) {
                 Column(modifier = Modifier.padding(horizontal = 48.dp, vertical = 10.dp)) {
@@ -172,18 +172,19 @@ fun ArtworkSettingsScreen(
                     )
                 }
                 SettingsRow(
-                    label    = "Cancel Scrape",
+                    label    = "Cancel scrape",
                     sublabel = "Stops after the current game — artwork fetched so far is kept",
                     onClick  = { viewModel.cancelScrape() },
                 )
             } else {
                 SettingsRow(
-                    label    = "Re-Scrape All Games",
+                    label    = "Re-scrape all games",
                     sublabel = "Clears and re-fetches artwork for every game",
                     onClick  = { viewModel.requestRescrapeAll() },
+                    destructive = true,
                 )
                 SettingsRow(
-                    label    = "Scrape Missing Games Only",
+                    label    = "Scrape missing games only",
                     sublabel = "Fetches only games with missing or invalid artwork — keeps valid art",
                     onClick  = { viewModel.scrapeMissingOnly() },
                 )
@@ -198,7 +199,7 @@ fun ArtworkSettingsScreen(
             }
 
             // ── Source priority ───────────────────────────────────────────────
-            SettingsGroup("Source Priority")
+            SettingsGroup("Source priority")
 
             if (state.ssEnabled) {
                 SettingsValueRow(label = "Primary",    value = "ScreenScraper (ROM hash)")
@@ -212,17 +213,17 @@ fun ArtworkSettingsScreen(
             }
 
             // ── Art preferences ───────────────────────────────────────────────
-            SettingsGroup("Art Preferences")
+            SettingsGroup("Art preferences")
 
             SettingsValueRow(
-                label    = "Game Icon Display",
+                label    = "Game icon display",
                 sublabel = "Default for every console — override per console or per game from their Options menus",
                 value    = state.iconDisplayMode.label,
                 onClick  = { viewModel.cycleIconDisplayMode() },
             )
 
             SettingsValueRow(
-                label    = "Animated Images",
+                label    = "Animated images",
                 sublabel = when (state.imageMotion) {
                     com.playfieldportal.core.domain.model.ImageMotion.ANIMATED ->
                         "Every animated artwork, icon and wallpaper on screen plays — the most battery"
@@ -236,14 +237,14 @@ fun ArtworkSettingsScreen(
             )
 
             SettingsToggleRow(
-                label    = "Animated Icons",
+                label    = "Animated icons",
                 sublabel = "Play a game's video snap in its icon after resting on it (Custom Icon mode; skipped on low battery)",
                 checked  = state.animatedIcons,
                 onToggle = { viewModel.setAnimatedIcons(it) },
             )
 
             SettingsSliderRow(
-                label     = "Video Snap Delay",
+                label     = "Video snap delay",
                 sublabel  = "Rest on a game ${formatSnapDelay(state.icon1LingerDelaySeconds)} " +
                     "before its video snap plays (1–5 seconds) — higher delays avoid pops while browsing",
                 value     = state.icon1LingerDelaySeconds,
@@ -255,7 +256,7 @@ fun ArtworkSettingsScreen(
             )
 
             SettingsToggleRow(
-                label    = "Crop Preview",
+                label    = "Crop preview",
                 sublabel = "Show the finished tile in the corner while cropping artwork " +
                     "(Ⓨ toggles it inside the crop editor too)",
                 checked  = state.cropPreviewEnabled,
@@ -263,21 +264,21 @@ fun ArtworkSettingsScreen(
             )
 
             SettingsToggleRow(
-                label    = "Prefer SteamGridDB Heroes",
+                label    = "Prefer SteamGridDB heroes",
                 sublabel = "Try SteamGridDB first for hero/banner art",
                 checked  = state.preferSteamGridDbHeroes,
                 onToggle = { viewModel.setPreferSteamGridDbHeroes(it) },
             )
 
             SettingsToggleRow(
-                label    = "Download Hero Images",
+                label    = "Download hero images",
                 sublabel = "Wide banner art shown in game detail view",
                 checked  = state.downloadHeroes,
                 onToggle = { viewModel.setDownloadHeroes(it) },
             )
 
             SettingsToggleRow(
-                label    = "Download Clear Logos",
+                label    = "Download clear logos",
                 sublabel = "Transparent logo PNGs overlaid on hero art",
                 checked  = state.downloadLogos,
                 onToggle = { viewModel.setDownloadLogos(it) },
@@ -285,13 +286,13 @@ fun ArtworkSettingsScreen(
 
             if (state.ssEnabled) {
                 SettingsToggleRow(
-                    label    = "Download Game Manuals",
+                    label    = "Download game manuals",
                     sublabel = "PDF manuals from ScreenScraper — opens from the game's Options menu",
                     checked  = state.downloadManuals,
                     onToggle = { viewModel.setDownloadManuals(it) },
                 )
                 SettingsToggleRow(
-                    label    = "Download Video Snaps",
+                    label    = "Download video snaps",
                     sublabel = "Short gameplay clips from ScreenScraper — large files",
                     checked  = state.downloadVideoSnaps,
                     onToggle = { viewModel.setDownloadVideoSnaps(it) },
@@ -317,7 +318,7 @@ fun ArtworkSettingsScreen(
 
             if (sgdbKeyDraft.isNotBlank()) {
                 SettingsRow(
-                    label   = "Save API Key",
+                    label   = "Save API key",
                     onClick = {
                         viewModel.saveApiKey(sgdbKeyDraft)
                         sgdbKeyDraft = ""
@@ -327,7 +328,7 @@ fun ArtworkSettingsScreen(
 
             if (state.hasApiKey) {
                 SettingsRow(
-                    label    = "Remove API Key",
+                    label    = "Remove API key",
                     sublabel = "SteamGridDB artwork will be disabled",
                     onClick  = { viewModel.clearApiKey() },
                 )
@@ -349,7 +350,7 @@ fun ArtworkSettingsScreen(
 
             if (tgdbKeyDraft.isNotBlank()) {
                 SettingsRow(
-                    label   = "Save TheGamesDB Key",
+                    label   = "Save TheGamesDB key",
                     onClick = {
                         viewModel.saveTgdbKey(tgdbKeyDraft)
                         tgdbKeyDraft = ""
@@ -359,14 +360,14 @@ fun ArtworkSettingsScreen(
 
             if (state.hasTgdbKey) {
                 SettingsRow(
-                    label    = "Remove TheGamesDB Key",
+                    label    = "Remove TheGamesDB key",
                     sublabel = "TheGamesDB will be skipped as a source",
                     onClick  = { viewModel.clearTgdbKey() },
                 )
             }
 
             // ── IGDB credentials (optional) ───────────────────────────────────
-            SettingsGroup("IGDB Credentials (Optional)")
+            SettingsGroup("IGDB credentials (optional)")
 
             SettingsTextFieldRow(
                 label         = if (state.hasIgdbCredentials) "Client ID (saved)" else "Client ID",
@@ -375,7 +376,7 @@ fun ArtworkSettingsScreen(
                 placeholder   = if (state.hasIgdbCredentials) "••••••••" else "Twitch Client ID",
             )
             SettingsTextFieldRow(
-                label         = "Client Secret",
+                label         = "Client secret",
                 value         = igdbClientSecretDraft,
                 onValueChange = { igdbClientSecretDraft = it },
                 placeholder   = "Twitch Client Secret",
@@ -389,11 +390,11 @@ fun ArtworkSettingsScreen(
 
             if (igdbClientIdDraft.isNotBlank() && igdbClientSecretDraft.isNotBlank()) {
                 SettingsRow(
-                    label   = "Test Credentials",
+                    label   = "Test credentials",
                     onClick = { viewModel.testIgdbCredentials(igdbClientIdDraft, igdbClientSecretDraft) },
                 )
                 SettingsRow(
-                    label   = "Save Credentials",
+                    label   = "Save credentials",
                     onClick = {
                         viewModel.saveIgdbCredentials(igdbClientIdDraft, igdbClientSecretDraft)
                         igdbClientIdDraft = ""
@@ -404,7 +405,7 @@ fun ArtworkSettingsScreen(
 
             if (state.hasIgdbCredentials) {
                 SettingsRow(
-                    label    = "Clear IGDB Credentials",
+                    label    = "Clear IGDB credentials",
                     sublabel = "IGDB will be skipped as a fallback source",
                     onClick  = { viewModel.clearIgdbCredentials() },
                 )
@@ -436,7 +437,7 @@ fun ArtworkSettingsScreen(
 
             // ── ScreenScraper user account (optional) ─────────────────────────
             // Only raises the rate limit and daily quota; scraping works without it.
-            SettingsGroup("ScreenScraper Account (Optional)")
+            SettingsGroup("ScreenScraper account (optional)")
 
             SettingsTextFieldRow(
                 label         = if (state.hasSsCredentials) "Username (saved: ${state.ssUsername})" else "Username",
@@ -461,12 +462,12 @@ fun ArtworkSettingsScreen(
             if (ssUsernameDraft.isNotBlank() && ssPasswordDraft.isNotBlank()) {
                 if (state.ssEnabled) {
                     SettingsRow(
-                        label   = "Test Account",
+                        label   = "Test account",
                         onClick = { viewModel.testSsCredentials(ssUsernameDraft, ssPasswordDraft) },
                     )
                 }
                 SettingsRow(
-                    label   = "Save Account",
+                    label   = "Save account",
                     onClick = {
                         viewModel.saveSsCredentials(ssUsernameDraft, ssPasswordDraft)
                         ssUsernameDraft = ""
@@ -477,7 +478,7 @@ fun ArtworkSettingsScreen(
 
             if (state.hasSsCredentials) {
                 SettingsRow(
-                    label    = "Clear ScreenScraper Account",
+                    label    = "Clear ScreenScraper account",
                     sublabel = "Scraping continues at anonymous rate limits",
                     onClick  = { viewModel.clearSsCredentials() },
                 )
@@ -487,19 +488,19 @@ fun ArtworkSettingsScreen(
             SettingsGroup("Cache")
 
             SettingsValueRow(
-                label    = "Stored Artwork Size",
+                label    = "Stored artwork size",
                 sublabel = "Image cache + artwork stored on this device (your artwork folder isn't counted)",
                 value    = state.diskCacheSizeMb,
             )
 
             SettingsRow(
-                label    = "Clear ScreenScraper URL Cache",
+                label    = "Clear ScreenScraper URL cache",
                 sublabel = "Forget cached artwork URLs — the next scrape re-asks ScreenScraper per game. Harmless; never deletes artwork",
                 onClick  = { viewModel.clearSsUrlCache() },
             )
 
             SettingsRow(
-                label    = "Clear All Artwork",
+                label    = "Clear all artwork",
                 sublabel = "Fresh start: removes cached images, stored artwork, and every game's art links. Files in your artwork folder are kept — Relink or re-scrape to restore",
                 onClick  = { viewModel.clearCache() },
             )

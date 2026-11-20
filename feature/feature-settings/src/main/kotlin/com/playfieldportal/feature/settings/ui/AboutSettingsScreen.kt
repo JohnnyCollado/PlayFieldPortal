@@ -52,7 +52,7 @@ fun AboutSettingsScreen(
             SettingsValueRow(label = "Min Android",  value = "Android 10 (API 29)")
             SettingsValueRow(label = "Target",       value = "Android 15 (API 35)")
 
-            SettingsGroup("Open Source")
+            SettingsGroup("Open source")
 
             SettingsValueRow(label = "Jetpack Compose",   value = "UI framework")
             SettingsValueRow(label = "Room",              value = "Local database")
@@ -65,7 +65,7 @@ fun AboutSettingsScreen(
 
             SettingsGroup("Credits")
 
-            SettingsValueRow(label = "Artwork & Media", value = "ScreenScraper · SteamGridDB")
+            SettingsValueRow(label = "Artwork & media", value = "ScreenScraper · SteamGridDB")
             SettingsValueRow(label = "Metadata",        value = "ScreenScraper · TheGamesDB · IGDB")
             SettingsValueRow(label = "Inspired by",     value = "Sony PSP XMB")
             SettingsValueRow(label = "See also",        value = "Settings ▸ Credits")

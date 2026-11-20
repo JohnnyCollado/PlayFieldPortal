@@ -687,6 +687,8 @@ open class BackupManager @Inject constructor(
         // read-time rule instead of silently reverting to the default.
         stringPreferencesKey("display_gameboot_mode"),
         ThemePrefKeys.COLOR_SCHEME,
+        // The preset's tint and depth steps: meaningless without the preset, so they travel with it.
+        ThemePrefKeys.COLOR_SCHEME_VARIANT,
         ThemePrefKeys.CUSTOM_WALLPAPER,
         ThemePrefKeys.MOTION_WALLPAPER,
         // The theme's crop of that video (compact JSON of fractions, no paths) — travels with it.
@@ -829,6 +831,9 @@ open class BackupManager @Inject constructor(
             // restored data. (It used to sit at the end of this comment line, so it was never in
             // the list — survey, latent backup items.)
             booleanPreferencesKey("db_seeded_v1"),
+            // System Update ▸ Update notifications (AppUpdateChecker). Only the switch: the cached
+            // release list and reminder stamps beside it belong to the install that fetched them.
+            booleanPreferencesKey("app_update_notify"),
         )
 
         private val BACKED_UP_FLOAT_KEYS = listOf(

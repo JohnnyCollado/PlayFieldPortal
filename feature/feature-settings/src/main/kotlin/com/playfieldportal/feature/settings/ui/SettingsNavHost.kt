@@ -47,6 +47,7 @@ val SETTINGS_SCREEN_ROUTES: Set<String> = setOf(
     "settings_controller",
     "settings_backup",
     "settings_logs",
+    "settings_system_update",
     "settings_about",
     "settings_credits",
     // Hidden Items manager — moved out of Display; also the Library ▸ Hidden Games target.
@@ -181,6 +182,7 @@ fun SettingsNavHost(
                 LaunchedEffect(Unit) { onBack() }
             }
             "settings_logs"       -> LogsSettingsScreen(onBack = onBack, modifier = modifier)
+            "settings_system_update" -> SystemUpdateScreen(onBack = onBack, modifier = modifier)
             "settings_about"      -> AboutSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_credits"    -> CreditsSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_app_visibility" -> AppVisibilitySettingsScreen(onBack = onBack, modifier = modifier)

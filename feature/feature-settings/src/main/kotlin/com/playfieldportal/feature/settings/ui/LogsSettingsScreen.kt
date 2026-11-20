@@ -146,7 +146,7 @@ fun LogsSettingsScreen(
             // would lose the screen's first focus to Clear All Logs, the only action present.
             if (!state.loaded) return@Column
 
-            SettingsGroup("Log Files")
+            SettingsGroup("Log files")
 
             if (state.logFiles.isEmpty()) {
                 SettingsRow(
@@ -176,7 +176,7 @@ fun LogsSettingsScreen(
 
             val hasLogs = state.logFiles.isNotEmpty()
             SettingsRow(
-                label = "Clear All Logs",
+                label = "Clear all logs",
                 sublabel = if (hasLogs) {
                     "Deletes every saved log. This session keeps logging into a fresh file."
                 } else {
@@ -189,11 +189,12 @@ fun LogsSettingsScreen(
                     null
                 },
                 enabled = hasLogs,
+                destructive = true,
                 onFocusChangedExternal = { clearFocused = it },
                 onClick = { viewModel.requestClear() },
             )
 
-            SettingsGroup("About Logs")
+            SettingsGroup("About logs")
 
             SettingsRow(
                 label = "What gets saved",

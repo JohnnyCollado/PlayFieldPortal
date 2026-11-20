@@ -73,12 +73,12 @@ fun DirectoryRow(
         label = label,
         sublabel = sublabel,
         focusKey = focusKey,
-        hideRowHighlightOnActionFocus = true,
         onClick = null,
         actions = listOf(
             SettingsRowAction(
                 SettingsLabels.EDIT_FOLDER, onEdit,
                 actionFocusBackgroundColor = lerp(SettingsAccent, Color.Black, 0.50f),
+                shortLabel = "Edit",
             ) {
                 Icon(
                     Icons.Default.Create,
@@ -92,6 +92,7 @@ fun DirectoryRow(
             SettingsRowAction(
                 SettingsLabels.REMOVE_FOLDER, onRemove,
                 actionFocusBackgroundColor = lerp(Color(0xFFE55353), Color.Black, 0.50f),
+                shortLabel = "Remove",
             ) {
                 Icon(
                     Icons.Default.Delete,

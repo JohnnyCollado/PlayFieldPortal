@@ -91,18 +91,26 @@ fun WizardScaffold(
     /** The page [content] currently shows. Changing it returns the page to the top. */
     contentKey: Any? = null,
     modifier: Modifier = Modifier,
+    /** True while the page shows a modal over the wizard (the "remove this folder?" question). */
+    modalOpen: Boolean = false,
+    /** The modal's own input handler: asked first, so nothing behind an open modal sees a press. */
+    onInterceptModal: (GamepadAction) -> Boolean = { false },
     content: @Composable () -> Unit,
 ) {
     // Read through State so the interceptor installed once always reaches this page's skip.
     val skip by rememberUpdatedState(onSkip)
+    val interceptModal by rememberUpdatedState(onInterceptModal)
     SettingsScaffold(
         title = title,
         subtitle = "",
         onBack = onBack,
         modifier = modifier,
+        modalOpen = modalOpen,
         onInterceptAction = { action ->
             val onSkipNow = skip
-            if (action == GamepadAction.NEXT_CATEGORY && onSkipNow != null) {
+            if (interceptModal(action)) {
+                true
+            } else if (action == GamepadAction.NEXT_CATEGORY && onSkipNow != null) {
                 onSkipNow()
                 true
             } else {

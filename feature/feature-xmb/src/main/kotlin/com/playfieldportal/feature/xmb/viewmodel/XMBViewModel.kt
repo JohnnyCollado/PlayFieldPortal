@@ -48,6 +48,7 @@ import com.playfieldportal.core.domain.model.IconDisplayMode
 import com.playfieldportal.core.domain.model.MemoryCard
 import com.playfieldportal.core.domain.model.MusicTrack
 import com.playfieldportal.core.domain.model.XmbColorScheme
+import com.playfieldportal.core.domain.model.XmbSchemeVariant
 import com.playfieldportal.core.domain.model.displayLabel
 import com.playfieldportal.core.domain.model.resolve
 import com.playfieldportal.core.domain.repository.GameRepository
@@ -335,6 +336,8 @@ data class PlaylistImportQueue(
 data class ColorSchemePickerState(
     val options: List<ColorSchemeOption>,
     val selectedIndex: Int = 0,
+    /** The highlighted preset's tint and depth steps (see ColorSchemePicker.kt). */
+    val variant: XmbSchemeVariant = XmbSchemeVariant.STANDARD,
 )
 
 data class ColorSchemeOption(
@@ -512,7 +515,7 @@ enum class SettingsSection(
     MEDIA       ("settings_section_media",        "Media",        "Music, video & photo settings"),
     SYSTEM      (
         "settings_section_system", "System",
-        if (FeatureFlags.BACKUP_RESTORE) "About, logs, backup, setup & credits" else "About, logs, setup & credits",
+        if (FeatureFlags.BACKUP_RESTORE) "About, updates, logs, backup, setup & credits" else "About, updates, logs, setup & credits",
     ),
 }
 
@@ -571,7 +574,8 @@ fun settingsSectionItems(section: SettingsSection): List<XMBItem> = when (sectio
     )
     SettingsSection.SYSTEM -> listOfNotNull(
         XMBItem(id = "settings_about",  title = "About",            subtitle = "Play Field Portal"),
-        XMBItem(id = "settings_logs",   title = "Logs",             subtitle = "Open or share session logs"),
+        XMBItem(id = "settings_system_update", title = "System Update", subtitle = "New versions & changelog"),
+        XMBItem(id = "settings_logs",  title = "Logs",             subtitle = "Open or share session logs"),
         // Parked until the backup rework; the route stays registered.
         XMBItem(id = "settings_backup", title = "Backup & Restore", subtitle = "Export & import")
             .takeIf { FeatureFlags.BACKUP_RESTORE },
@@ -795,6 +799,9 @@ data class XMBUiState(
     // True when the user has been idle on a media screen (video, photo, music browser, player or
     // track picker) with a controller. Those screens are overlays too, so they need their own flag.
     val showMediaHint: Boolean = false,
+    // True when the user has been idle on a detail screen (game, app, Player Status, Shiba Coins,
+    // Shiba library, search online) with a controller. Those footers used to show permanently.
+    val showDetailHint: Boolean = false,
     // User setting (Display ▸ Options Hint). When false the idle hint never shows.
     val contextMenuHintEnabled: Boolean = true,
     // User-configured idle delay in seconds, clamped to 1..5 and defaulting to the original 2.5s.
@@ -1624,6 +1631,24 @@ fun shouldShowMediaHint(state: XMBUiState, idleMs: Long): Boolean =
             state.musicTrackPicker != null) &&
         idleMs >= (state.contextMenuHintDelaySeconds * 1_000f).toLong()
 
+/**
+ * Pure decision for the detail screens' helper footer: game and app detail, Player Status, Shiba
+ * Coins, the Shiba library and search online. They are browse screens like Settings, so they keep
+ * the same contract — fade in after the idle delay, gone on the next press — on the same clock and
+ * the same Display ▸ Options Hint setting. Their footers used to show whenever a controller was in
+ * use, which made them the one family of browse screens that never faded.
+ */
+fun shouldShowDetailHint(state: XMBUiState, idleMs: Long): Boolean =
+    state.contextMenuHintEnabled &&
+        !state.lastInputWasTouch &&
+        (state.activeGameId != null ||
+            state.activeAppId != null ||
+            state.activeShibaCoinsTarget != null ||
+            state.activeShibaLibrary != null ||
+            state.activeSearchOnline ||
+            state.activePlayerStatus) &&
+        idleMs >= (state.contextMenuHintDelaySeconds * 1_000f).toLong()
+
 data class XMBItem(
     val id: String,
     val title: String,
@@ -2072,6 +2097,8 @@ class XMBViewModel @Inject constructor(
     init {
         scheduleAchievementCheck()
         gamepadInputHandler.scope = viewModelScope
+        // Shift is a hold on PFP's keyboard: its release ends the capitals.
+        gamepadInputHandler.onShiftReleased = { virtualKeyboard.onShiftReleased() }
         observeContextMenuHintIdle()
         observeContextMenuOpening()
         observeIconDisplayMode()
@@ -6123,11 +6150,16 @@ class XMBViewModel @Inject constructor(
                     state = s,
                     idleMs = idleMs,
                 )
+                val shouldShowDetail = com.playfieldportal.feature.xmb.viewmodel.shouldShowDetailHint(
+                    state = s,
+                    idleMs = idleMs,
+                )
                 if (shouldShow != s.showContextMenuHint ||
                     shouldShowDrawer != s.showAppDrawerHint ||
                     shouldShowSettings != s.showSettingsHint ||
                     shouldShowNotifications != s.showNotificationHint ||
-                    shouldShowMedia != s.showMediaHint
+                    shouldShowMedia != s.showMediaHint ||
+                    shouldShowDetail != s.showDetailHint
                 ) {
                     _uiState.update {
                         it.copy(
@@ -6136,6 +6168,7 @@ class XMBViewModel @Inject constructor(
                             showSettingsHint = shouldShowSettings,
                             showNotificationHint = shouldShowNotifications,
                             showMediaHint = shouldShowMedia,
+                            showDetailHint = shouldShowDetail,
                         )
                     }
                 }
@@ -6368,13 +6401,18 @@ class XMBViewModel @Inject constructor(
                 onApply = { closed = true; confirmCustomColor() },
                 onCancel = { closed = true; cancelCustomColor() },
             )
-            if (!closed && next != picker) _uiState.update { it.copy(customColorPicker = next) }
+            if (!closed && next != picker) updateCustomColorPicker(next)
             return
         }
         if (state.colorSchemePicker != null) {
             when (action) {
                 GamepadAction.NAVIGATE_UP   -> moveColorSchemePicker(-1)
                 GamepadAction.NAVIGATE_DOWN -> moveColorSchemePicker(+1)
+                // The highlighted preset's shades: the D-pad steps its tint, the bumpers its depth.
+                GamepadAction.NAVIGATE_LEFT  -> stepColorSchemePicker(tint = -1)
+                GamepadAction.NAVIGATE_RIGHT -> stepColorSchemePicker(tint = +1)
+                GamepadAction.PREV_CATEGORY  -> stepColorSchemePicker(depth = -1)
+                GamepadAction.NEXT_CATEGORY  -> stepColorSchemePicker(depth = +1)
                 GamepadAction.SELECT        -> confirmColorSchemePicker()
                 GamepadAction.BACK,
                 GamepadAction.OPEN_CONTEXT_MENU    -> cancelColorSchemePicker()
@@ -9229,7 +9267,8 @@ class XMBViewModel @Inject constructor(
                 !it.showAppDrawerHint &&
                 !it.showSettingsHint &&
                 !it.showNotificationHint &&
-                !it.showMediaHint
+                !it.showMediaHint &&
+                !it.showDetailHint
             ) it
             else it.copy(
                 lastInputWasTouch = true,
@@ -9238,6 +9277,7 @@ class XMBViewModel @Inject constructor(
                 showSettingsHint = false,
                 showNotificationHint = false,
                 showMediaHint = false,
+                showDetailHint = false,
             )
         }
     }
@@ -9253,7 +9293,8 @@ class XMBViewModel @Inject constructor(
                 !it.showAppDrawerHint &&
                 !it.showSettingsHint &&
                 !it.showNotificationHint &&
-                !it.showMediaHint
+                !it.showMediaHint &&
+                !it.showDetailHint
             ) it
             else it.copy(
                 lastInputWasTouch = false,
@@ -9262,6 +9303,7 @@ class XMBViewModel @Inject constructor(
                 showSettingsHint = false,
                 showNotificationHint = false,
                 showMediaHint = false,
+                showDetailHint = false,
             )
         }
     }
@@ -9838,6 +9880,7 @@ class XMBViewModel @Inject constructor(
         // Stop intercepting the controller PTT button once the call ends.
         gamepadInputHandler.pttKeyCode = null
         gamepadInputHandler.onPttHold = null
+        gamepadInputHandler.onShiftReleased = null
         voiceWasInRoom = false
         viewModelScope.launch {
             discordVoice.leave()
@@ -10725,6 +10768,7 @@ class XMBViewModel @Inject constructor(
     /** The custom accent picker's cursor, on the navigation core. */
     private val customColorNav = com.playfieldportal.core.ui.components.HsvPickerNav()
     private var colorSchemeOriginal: XmbColorScheme? = null
+    private var colorSchemeVariantOriginal: String? = null
     // A custom-theme accent active when the picker opened — restored on cancel (previews
     // temporarily clear it so presets are actually visible).
     private var accentOverrideOriginal: Long? = null
@@ -10736,6 +10780,7 @@ class XMBViewModel @Inject constructor(
                 XmbColorScheme.valueOf(prefs[KEY_COLOR_SCHEME] ?: XmbColorScheme.CLASSIC_BLUE.name)
             }.getOrDefault(XmbColorScheme.CLASSIC_BLUE)
             colorSchemeOriginal = current
+            colorSchemeVariantOriginal = prefs[ThemePrefKeys.COLOR_SCHEME_VARIANT]
             accentOverrideOriginal = prefs[KEY_ACCENT_OVERRIDE]
 
             val month = java.time.LocalDate.now().monthValue
@@ -10751,12 +10796,14 @@ class XMBViewModel @Inject constructor(
             val pickerOptions = options + ColorSchemeOption(
                 scheme = null,
                 label = "Custom",
-                sublabel = "Choose a custom accent color",
+                sublabel = "Fine-tune any color with sliders",
                 swatch = custom ?: 0xFF888888L,
                 isCustom = true,
             )
             val index = if (custom != null) pickerOptions.lastIndex else options.indexOfFirst { it.scheme == current }.coerceAtLeast(0)
-            _uiState.update { it.copy(colorSchemePicker = ColorSchemePickerState(pickerOptions, index)) }
+            // The stored steps belong to the stored preset; under a custom colour they are inert.
+            val variant = if (custom == null) XmbSchemeVariant.decode(colorSchemeVariantOriginal) else XmbSchemeVariant.STANDARD
+            _uiState.update { it.copy(colorSchemePicker = ColorSchemePickerState(pickerOptions, index, variant)) }
         }
     }
 
@@ -10767,8 +10814,21 @@ class XMBViewModel @Inject constructor(
         // After the clamp guard, so an end of the list is silent — the same rule every other
         // cursor in the app follows.
         menuSound.play(MenuSound.SCROLL)
-        _uiState.update { it.copy(colorSchemePicker = picker.copy(selectedIndex = next)) }
-        picker.options[next].scheme?.let(::previewColorScheme)
+        _uiState.update { it.copy(colorSchemePicker = picker.movedTo(next)) }
+        picker.options[next].scheme?.let { previewColorScheme(it, XmbSchemeVariant.STANDARD) }
+    }
+
+    /**
+     * Steps the highlighted preset's tint or depth and live-previews the shade. Silent at the end
+     * of the range and on the rows that have no steps, like every other cursor in the app.
+     */
+    fun stepColorSchemePicker(tint: Int = 0, depth: Int = 0) {
+        val picker = _uiState.value.colorSchemePicker ?: return
+        val next = picker.stepped(tint, depth)
+        if (next == null) { gamepadInputHandler.cancelRepeat(); return }
+        menuSound.play(MenuSound.SCROLL)
+        _uiState.update { it.copy(colorSchemePicker = next) }
+        next.selected?.scheme?.let { previewColorScheme(it, next.variant) }
     }
 
     /** Touch handler — highlight (and live-preview) the tapped row. */
@@ -10777,14 +10837,15 @@ class XMBViewModel @Inject constructor(
         if (index !in picker.options.indices || index == picker.selectedIndex) return
         // Tapping a row moves the cursor there (and live-previews it), so it ticks like a move.
         menuSound.play(MenuSound.SCROLL)
-        _uiState.update { it.copy(colorSchemePicker = picker.copy(selectedIndex = index)) }
-        picker.options[index].scheme?.let(::previewColorScheme)
+        _uiState.update { it.copy(colorSchemePicker = picker.movedTo(index)) }
+        picker.options[index].scheme?.let { previewColorScheme(it, XmbSchemeVariant.STANDARD) }
     }
 
-    private fun previewColorScheme(scheme: XmbColorScheme) {
+    private fun previewColorScheme(scheme: XmbColorScheme, variant: XmbSchemeVariant) {
         viewModelScope.launch {
             context.pfpDataStore.edit {
                 it[KEY_COLOR_SCHEME] = scheme.name
+                it.setSchemeVariant(variant)
                 // Suspend a custom-theme accent while previewing, or the preset preview would
                 // be invisibly masked by the override. Cancel restores it (see below).
                 it.remove(KEY_ACCENT_OVERRIDE)
@@ -10810,22 +10871,43 @@ class XMBViewModel @Inject constructor(
                 // theme's accent would keep overriding the pick invisibly. The theme's icons,
                 // geometry and name leave with it (PfpThemeStore.clearThemeLook).
                 pfpThemeStore.clearThemeLook()
-                context.pfpDataStore.edit { it[KEY_COLOR_SCHEME] = chosen.name }
+                context.pfpDataStore.edit {
+                    it[KEY_COLOR_SCHEME] = chosen.name
+                    it.setSchemeVariant(if (picker.variantsAvailable) picker.variant else XmbSchemeVariant.STANDARD)
+                }
             }
             colorSchemeOriginal = null
+            colorSchemeVariantOriginal = null
             accentOverrideOriginal = null
             _uiState.update { it.copy(colorSchemePicker = null) }
         }
     }
 
+    /** Standard is stored as no key at all, so an untouched preset leaves prefs as they always were. */
+    private fun androidx.datastore.preferences.core.MutablePreferences.setSchemeVariant(variant: XmbSchemeVariant) {
+        if (variant.isStandard) remove(ThemePrefKeys.COLOR_SCHEME_VARIANT)
+        else this[ThemePrefKeys.COLOR_SCHEME_VARIANT] = variant.encode()
+    }
+
     private fun openCustomColorPicker() {
-        val argb = _uiState.value.themeColors.accentColor.toArgb().toLong() and 0xFFFFFFFFL
+        // Seeded from the colour on screen (the wave's), so fine-tuning starts from the shade the
+        // list was previewing rather than from the palette's white accent.
+        val argb = _uiState.value.themeColors.waveColor.toArgb().toLong() and 0xFFFFFFFFL
         _uiState.update { it.copy(customColorPicker = com.playfieldportal.core.ui.components.HsvPickerState.fromArgb(argb)) }
     }
 
-    /** Touch and typing in the picker: a bar tapped or dragged, the Hex field tapped or typed into. */
+    /**
+     * Touch, typing and the pad in the picker: a bar tapped, dragged or stepped, the Hex field
+     * typed into. A colour change repaints the XMB behind the docked picker at once, in memory —
+     * nothing is stored until Apply, and Cancel puts the stored look back.
+     */
     fun updateCustomColorPicker(picker: com.playfieldportal.core.ui.components.HsvPickerState) {
-        _uiState.update { state -> if (state.customColorPicker == null) state else state.copy(customColorPicker = picker) }
+        _uiState.update { state ->
+            val open = state.customColorPicker ?: return@update state
+            val colors = if (picker.argb == open.argb) state.themeColors
+            else baseThemeColors.withWaveTint(androidx.compose.ui.graphics.Color(picker.argb))
+            state.copy(customColorPicker = picker, themeColors = colors)
+        }
     }
 
     fun confirmCustomColor() {
@@ -10837,7 +10919,7 @@ class XMBViewModel @Inject constructor(
     }
 
     fun cancelCustomColor() {
-        _uiState.update { it.copy(customColorPicker = null) }
+        _uiState.update { it.copy(customColorPicker = null, themeColors = baseThemeColors) }
     }
 
     fun cancelColorSchemePicker() {
@@ -10848,11 +10930,13 @@ class XMBViewModel @Inject constructor(
             if (original != null) {
                 context.pfpDataStore.edit {
                     it[KEY_COLOR_SCHEME] = original.name
+                    it.setSchemeVariant(XmbSchemeVariant.decode(colorSchemeVariantOriginal))
                     // Restore the custom-theme accent that previews temporarily cleared.
                     if (accentOriginal != null) it[KEY_ACCENT_OVERRIDE] = accentOriginal
                 }
             }
             colorSchemeOriginal = null
+            colorSchemeVariantOriginal = null
             accentOverrideOriginal = null
             _uiState.update { it.copy(colorSchemePicker = null) }
         }
@@ -11650,7 +11734,8 @@ class XMBViewModel @Inject constructor(
             _uiState.value.showAppDrawerHint ||
             _uiState.value.showSettingsHint ||
             _uiState.value.showNotificationHint ||
-            _uiState.value.showMediaHint
+            _uiState.value.showMediaHint ||
+            _uiState.value.showDetailHint
         ) {
             _uiState.update {
                 it.copy(
@@ -11659,6 +11744,7 @@ class XMBViewModel @Inject constructor(
                     showSettingsHint = false,
                     showNotificationHint = false,
                     showMediaHint = false,
+                    showDetailHint = false,
                 )
             }
         }

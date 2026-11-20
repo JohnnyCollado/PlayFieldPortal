@@ -80,8 +80,10 @@ fun VideoSettingsContent(
     modifier: Modifier = Modifier,
 ) {
     // The default-player picker, as the shared Choice modal so a pad can drive it (survey P6).
+    // Removing a root asks first; the question takes the screen's one modal slot while it is up.
+    val removeGate = rememberRootRemoveGate()
     val playerModal = rememberSettingsModal(
-        if (!state.showPlayerPicker) null else playerPickerSpec(
+        removeGate.spec ?: if (!state.showPlayerPicker) null else playerPickerSpec(
             title = "Default Video Player",
             options = listOf(
                 PlayerOption("builtin", "Play Field Portal"),
@@ -109,18 +111,18 @@ fun VideoSettingsContent(
                 .verticalScroll(scrollState),
         ) {
             RootAccessSection(
-                groupTitle  = "Root Folders",
+                groupTitle  = "Root folders",
                 rootKind    = "Video",
                 roots       = state.roots,
-                addLabel    = "Add Video Root",
+                addLabel    = "Add video root",
                 addSublabel = "Grant a root folder (e.g. /Movies) — add several to span locations",
                 onAddRoot   = onAddRoot,
                 onRelinkRoot = onRelinkRoot,
-                onRemoveRoot = onRemoveRoot,
+                onRemoveRoot = { row -> removeGate.request(row.name) { onRemoveRoot(row) } },
             )
 
             SettingsRow(
-                label    = "Rescan Video Library",
+                label    = "Rescan video library",
                 sublabel = when {
                     state.scanning            -> "Scanning…"
                     state.scanMessage != null -> state.scanMessage
@@ -141,7 +143,7 @@ fun VideoSettingsContent(
             SettingsGroup("Playback")
 
             SettingsValueRow(
-                label    = "Default Video Player",
+                label    = "Default video player",
                 sublabel = "Play Field Portal plays in-app; or pick an app / be asked each time.",
                 value    = state.defaultPlayerLabel,
                 focusKey = "video_default_player",

@@ -43,6 +43,25 @@ class GamepadInputHandlerTest {
     }
 
     @Test
+    fun `releasing the Shift button is reported, so the keyboard can end its hold`() = runTest {
+        var releases = 0
+        handler.onShiftReleased = { releases++ }
+        handler.actions.test {
+            assertTrue(handler.onKeyEvent(keyEvent(KeyEvent.KEYCODE_BUTTON_L2, KeyEvent.ACTION_DOWN)))
+            assertEquals(GamepadAction.SHIFT, awaitItem())
+            assertEquals(0, releases)
+
+            assertTrue(handler.onKeyEvent(keyEvent(KeyEvent.KEYCODE_BUTTON_L2, KeyEvent.ACTION_UP)))
+            assertEquals(1, releases)
+
+            // No other button's release counts as Shift's.
+            handler.onKeyEvent(keyEvent(KeyEvent.KEYCODE_BUTTON_A, KeyEvent.ACTION_UP))
+            assertEquals(1, releases)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `onKeyEvent emits BACK for BUTTON_B down`() = runTest {
         handler.actions.test {
             handler.onKeyEvent(keyEvent(KeyEvent.KEYCODE_BUTTON_B, KeyEvent.ACTION_DOWN))

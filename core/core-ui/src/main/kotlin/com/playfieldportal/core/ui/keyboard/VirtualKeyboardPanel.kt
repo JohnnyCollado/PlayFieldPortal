@@ -143,6 +143,7 @@ private fun KeyCap(key: VirtualKey, shift: ShiftMode, focused: Boolean, modifier
                     stateDescription = when (shift) {
                         ShiftMode.OFF -> "Off"
                         ShiftMode.ONCE -> "On for the next letter"
+                        ShiftMode.HELD -> "On while held"
                         ShiftMode.LOCKED -> "Caps lock on"
                     }
                 }

@@ -37,6 +37,12 @@ object ThemePrefKeys {
     /** The preset colour scheme's name (Display ▸ Colour Scheme); a theme accent overrides it. */
     val COLOR_SCHEME = stringPreferencesKey("display_color_scheme")
 
+    /**
+     * The tint and depth steps the user nudged [COLOR_SCHEME]'s preset by, as XmbSchemeVariant's
+     * `"tint,depth"`; absent = the preset as designed.
+     */
+    val COLOR_SCHEME_VARIANT = stringPreferencesKey("display_color_scheme_variant")
+
     /** A custom theme's one accent colour, overriding the preset scheme; absent = the preset's. */
     val ACCENT_OVERRIDE = longPreferencesKey("theme_accent_override")
 

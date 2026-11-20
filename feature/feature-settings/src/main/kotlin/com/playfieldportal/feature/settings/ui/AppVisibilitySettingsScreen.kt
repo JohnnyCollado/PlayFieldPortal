@@ -58,7 +58,7 @@ fun AppVisibilitySettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState),
         ) {
-            SettingsGroup("Hidden Items")
+            SettingsGroup("Hidden items")
 
             Text(
                 text = "Apps and games you've hidden, grouped by item with the places each is hidden " +

@@ -55,7 +55,10 @@ its stated purpose:
 
 - **Microphone** — to transmit your voice during voice chat;
 - **Storage / file access** — to locate and launch the games and media you configure;
-- **Network access** — to communicate with Discord for the Social features.
+- **Network access** — to communicate with Discord for the Social features, and to check
+  GitHub for a newer version of the App. That check sends no account or device information;
+- **Install packages** — to hand an update you chose to download to your device's own
+  installer, which asks you to confirm before anything is installed.
 
 **e. Diagnostic logs.** The App may write diagnostic logs locally on your device to help
 you troubleshoot. These logs stay on your device unless you choose to share them with us.

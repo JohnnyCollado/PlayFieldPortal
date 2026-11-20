@@ -82,11 +82,16 @@ fun PhotoSettingsContent(
     onClearCache: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Removing a root asks first.
+    val removeGate = rememberRootRemoveGate()
+    val modal = rememberSettingsModal(removeGate.spec)
     SettingsScaffold(
         title    = "Settings",
         subtitle = "Photo",
         onBack   = onBack,
         modifier = modifier,
+        modalOpen = modal.open,
+        onInterceptAction = modal.intercept,
     ) {
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
@@ -96,18 +101,18 @@ fun PhotoSettingsContent(
                 .verticalScroll(scrollState),
         ) {
             RootAccessSection(
-                groupTitle  = "Root Folders",
+                groupTitle  = "Root folders",
                 rootKind    = "Photo",
                 roots       = state.roots,
-                addLabel    = "Add Photo Root",
+                addLabel    = "Add photo root",
                 addSublabel = "Grant a root folder (e.g. /Pictures) — add several to span locations",
                 onAddRoot   = onAddRoot,
                 onRelinkRoot = onRelinkRoot,
-                onRemoveRoot = onRemoveRoot,
+                onRemoveRoot = { row -> removeGate.request(row.name) { onRemoveRoot(row) } },
             )
 
             SettingsRow(
-                label    = "Rescan Photo Library",
+                label    = "Rescan photo library",
                 sublabel = when {
                     state.scanning            -> "Scanning…"
                     state.scanMessage != null -> state.scanMessage
@@ -128,12 +133,14 @@ fun PhotoSettingsContent(
             SettingsGroup("Maintenance")
 
             SettingsRow(
-                label    = "Clear Thumbnail Cache",
+                label    = "Clear thumbnail cache",
                 sublabel = "Delete generated thumbnails. A rescan regenerates them.",
                 onClick  = onClearCache,
             )
         }
     }
+
+    modal.Content()
 }
 
 @CombinedPreviews

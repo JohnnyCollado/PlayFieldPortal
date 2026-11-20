@@ -61,7 +61,6 @@ import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
 import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
 import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import com.playfieldportal.core.ui.sound.MenuSound
-import com.playfieldportal.core.ui.theme.menuCursor
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.menuCursorFill
 import com.playfieldportal.core.ui.theme.themedSubText
@@ -75,7 +74,10 @@ import com.playfieldportal.feature.settings.ui.SettingsDivider
 import com.playfieldportal.feature.settings.ui.SettingsLabels
 import com.playfieldportal.feature.settings.ui.SettingsRowAction
 import com.playfieldportal.feature.settings.ui.SettingsRowActionButton
+import com.playfieldportal.feature.settings.ui.SettingsRowContentInset
 import com.playfieldportal.feature.settings.ui.SettingsSubtext
+import com.playfieldportal.feature.settings.ui.settingsCursor
+import com.playfieldportal.feature.settings.ui.settingsRowSlot
 import com.playfieldportal.feature.settings.ui.SettingsText
 import com.playfieldportal.feature.settings.ui.rememberControllerRowRegistration
 
@@ -99,9 +101,6 @@ fun WizardRow(
     focusKey: String? = null,
     trailing: (@Composable () -> Unit)? = null,
     actions: List<SettingsRowAction> = emptyList(),
-    // Root rows: while an inline action holds focus, the row-level cursor fill is suppressed so
-    // the action's own background is the sole highlight (same rule as the settings DirectoryRow).
-    hideRowHighlightOnActionFocus: Boolean = false,
     // Tints the sublabel (the amber "Unavailable" notice); null keeps the standard subtext colour.
     sublabelColor: Color? = null,
     onClick: (() -> Unit)? = null,
@@ -132,10 +131,12 @@ fun WizardRow(
         claimInitialFocus = onClick != null,
         selectable = onClick != null,
         onSelect = activate,
+        actionFirst = activate == null && actions.isNotEmpty(),
         trailingActionsFor = { rowKey ->
             actions.mapIndexed { index, action ->
                 ControllerNavItem(
                     key = "$rowKey:action:$index",
+                    label = action.shortLabel,
                     focusable = true,
                     selectable = true,
                     enabled = true,
@@ -145,7 +146,8 @@ fun WizardRow(
             }
         },
     )
-    val highlighted = isFocused && cursorVisible && !(hideRowHighlightOnActionFocus && anyActionFocused)
+    // The card stays on the row while the cursor is on one of its buttons (see SettingsRow).
+    val highlighted = (isFocused || anyActionFocused) && cursorVisible
 
     Row(
         modifier = modifier
@@ -162,9 +164,12 @@ fun WizardRow(
                     reportFocused(row.focusRequester)
                 }
             }
-            .menuCursor(highlighted)
+            // The same card as a Settings row: the wizard's rounded outline, filled dark so the
+            // focused row's sublabel reads (it all but vanished on the pale fill).
+            .settingsRowSlot()
+            .settingsCursor(highlighted)
             .focusable()
-            .padding(horizontal = 48.dp, vertical = 11.dp),
+            .padding(horizontal = SettingsRowContentInset, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -175,7 +180,11 @@ fun WizardRow(
             )
             if (!sublabel.isNullOrBlank()) {
                 Spacer(Modifier.height(2.dp))
-                Text(text = sublabel, color = sublabelColor ?: SettingsSubtext, fontSize = 12.sp)
+                Text(
+                    text = sublabel,
+                    color = sublabelColor ?: if (highlighted) Color.White else SettingsSubtext,
+                    fontSize = 12.sp,
+                )
             }
         }
         if (trailing != null) {
@@ -253,11 +262,11 @@ fun WizardRootRow(
         sublabel = sublabel,
         sublabelColor = sublabelColor,
         modifier = modifier,
-        hideRowHighlightOnActionFocus = true,
         actions = listOfNotNull(
             SettingsRowAction(
                 SettingsLabels.EDIT_FOLDER, onEdit,
                 actionFocusBackgroundColor = lerp(SettingsAccent, Color.Black, 0.50f),
+                shortLabel = "Edit",
             ) {
                 Icon(
                     Icons.Default.Create,
@@ -272,6 +281,7 @@ fun WizardRootRow(
                 SettingsRowAction(
                     SettingsLabels.REMOVE_FOLDER, remove,
                     actionFocusBackgroundColor = lerp(Color(0xFFE55353), Color.Black, 0.50f),
+                    shortLabel = "Remove",
                 ) {
                     Icon(
                         Icons.Default.Delete,
@@ -544,16 +554,17 @@ fun WizardMessageRow(
                     reportFocused(row.focusRequester)
                 }
             }
-            .menuCursor(isFocused)
+            .settingsRowSlot()
+            .settingsCursor(isFocused)
             .focusable()
-            .padding(horizontal = 48.dp, vertical = 8.dp),
+            .padding(horizontal = SettingsRowContentInset, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(text = message, color = WizardAmber, fontSize = 13.sp)
             Text(
                 text = "Tap to dismiss — or confirm on this row",
-                color = SettingsSubtext,
+                color = if (isFocused) Color.White else SettingsSubtext,
                 fontSize = 11.sp,
             )
         }

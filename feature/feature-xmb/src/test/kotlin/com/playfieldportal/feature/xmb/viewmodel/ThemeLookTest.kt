@@ -153,4 +153,27 @@ class ThemeLookTest {
         assertEquals("/files/ui-media/boot_video.mp4", looks.last().bootVideoPath)
         assertNull(looks.last().bootAudioPath, "a custom boot video keeps its own track")
     }
+
+    @Test
+    fun `a stored tint and depth repaint the preset`() = runTest {
+        val h = Harness(kotlinx.coroutines.test.StandardTestDispatcher(testScheduler))
+        val variant = com.playfieldportal.core.domain.model.XmbSchemeVariant(tint = -1, depth = 1)
+        h.edit {
+            it[ThemePrefKeys.COLOR_SCHEME] = XmbColorScheme.ROYAL_PURPLE.name
+            it[ThemePrefKeys.COLOR_SCHEME_VARIANT] = variant.encode()
+        }
+        val look = h.look.observe().first()
+        assertEquals(Color(variant.applyTo(0xFF7A4DD6L)), look.colors.waveColor)
+    }
+
+    @Test
+    fun `a theme accent still wins over a stored tint and depth`() = runTest {
+        val h = Harness(kotlinx.coroutines.test.StandardTestDispatcher(testScheduler))
+        h.edit {
+            it[ThemePrefKeys.COLOR_SCHEME_VARIANT] = "2,2"
+            it[ThemePrefKeys.ACCENT_OVERRIDE] = 0xFF00FF00L
+        }
+        val look = h.look.observe().first()
+        assertEquals(Color(0xFF00FF00), look.colors.waveColor)
+    }
 }

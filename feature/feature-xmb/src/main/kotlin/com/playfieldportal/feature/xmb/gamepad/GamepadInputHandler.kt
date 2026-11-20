@@ -103,6 +103,11 @@ class GamepadInputHandler @Inject constructor(
     var pttKeyCode: Int? = null
     var onPttHold: ((Boolean) -> Unit)? = null
 
+    // The button bound to Shift came up. Shift is the one action that is a hold rather than a
+    // press — PFP's keyboard types capitals while it is down — so its release has to be reported;
+    // every other action is complete the moment it is emitted. Set by XMBViewModel.
+    var onShiftReleased: (() -> Unit)? = null
+
     // Called by MainActivity.dispatchKeyEvent
     fun onKeyEvent(event: KeyEvent): Boolean {
         // During button remapping: capture the raw keyCode before any action translation.
@@ -156,6 +161,7 @@ class GamepadInputHandler @Inject constructor(
             }
             KeyEvent.ACTION_UP -> {
                 if (action.isDirectional()) cancelRepeat()
+                if (action == GamepadAction.SHIFT) onShiftReleased?.invoke()
                 true
             }
             else -> false

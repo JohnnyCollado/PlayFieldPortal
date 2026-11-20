@@ -63,7 +63,7 @@ fun ArtworkImportScreen(
                 .verticalScroll(scrollState),
         ) {
             // ── Artwork folder ────────────────────────────────────────────────
-            SettingsGroup("Artwork Folder")
+            SettingsGroup("Artwork folder")
 
             SettingsRow(
                 label    = if (state.folderLinked) "Change artwork folder" else "Choose artwork folder",
@@ -83,7 +83,7 @@ fun ArtworkImportScreen(
 
             // ── Import sources ────────────────────────────────────────────────
             if (state.folderLinked && state.grantAlive) {
-                SettingsGroup("Import Existing Artwork")
+                SettingsGroup("Import existing artwork")
 
                 if (state.sources.isEmpty() && !state.scanning) {
                     SettingsRow(
@@ -135,7 +135,7 @@ fun ArtworkImportScreen(
 
                 // ── Internal-storage migration (M-F2) ────────────────────────
                 if (state.internalFiles > 0 || state.migrationRunning) {
-                    SettingsGroup("App Storage")
+                    SettingsGroup("App storage")
                     if (state.migrationRunning) {
                         SettingsRow(
                             label    = "Moving artwork into your folder…",
@@ -144,13 +144,13 @@ fun ArtworkImportScreen(
                             else "Runs in the background — you can leave this screen",
                         )
                         SettingsRow(
-                            label    = "Cancel Move",
+                            label    = "Cancel move",
                             sublabel = "Already-moved artwork stays in the folder",
                             onClick  = { viewModel.cancelInternalMigration() },
                         )
                     } else {
                         SettingsRow(
-                            label    = "Move Into Folder",
+                            label    = "Move into folder",
                             sublabel = "${state.internalFiles} artwork files (${formatBytes(state.internalBytes)}) " +
                                 "were saved before this folder was linked and live in app storage. " +
                                 "Moving them makes them portable and frees app space. Locked and " +
@@ -172,41 +172,41 @@ fun ArtworkImportScreen(
 
             // ── Preview ───────────────────────────────────────────────────────
             if (state.planning) {
-                SettingsGroup("Import Preview")
+                SettingsGroup("Import preview")
                 SettingsRow(label = "Building preview…", sublabel = "Matching artwork to your games")
             }
 
             state.plan?.let { plan ->
                 SettingsGroup("Import Preview — ${plan.sourceLabel}")
 
-                SettingsValueRow(label = "Games Matched",     value = plan.games.size.toString())
-                SettingsValueRow(label = "Files To Import",   value = plan.itemCount.toString())
+                SettingsValueRow(label = "Games matched",     value = plan.games.size.toString())
+                SettingsValueRow(label = "Files to import",   value = plan.itemCount.toString())
                 plan.countsByKind().entries.sortedBy { it.key }.forEach { (kind, count) ->
                     SettingsValueRow(label = "   ${kindLabel(kind)}", value = count.toString())
                 }
-                SettingsValueRow(label = "Estimated Size",    value = formatBytes(plan.totalBytes))
+                SettingsValueRow(label = "Estimated size",    value = formatBytes(plan.totalBytes))
                 SettingsValueRow(
-                    label    = "Game Details Found",
+                    label    = "Game details found",
                     sublabel = if (plan.metadataUpdates.isEmpty())
                         "Copy ES-DE's gamelists folder into the launcher's import folder to bring " +
                             "descriptions, developers and release years along"
                     else "Descriptions and details from gamelist.xml — never overwrites existing data",
                     value    = plan.metadataUpdates.size.toString(),
                 )
-                SettingsValueRow(label = "Already Present",   value = plan.skippedExistingCount.toString())
-                SettingsValueRow(label = "Needs Review",      value = plan.ambiguous.size.toString())
-                SettingsValueRow(label = "Unmatched Artwork", value = plan.unmatchedCount.toString())
+                SettingsValueRow(label = "Already present",   value = plan.skippedExistingCount.toString())
+                SettingsValueRow(label = "Needs review",      value = plan.ambiguous.size.toString())
+                SettingsValueRow(label = "Unmatched artwork", value = plan.unmatchedCount.toString())
 
                 if (plan.unknownSystemFolders.isNotEmpty()) {
                     SettingsRow(
-                        label    = "Skipped System Folders",
+                        label    = "Skipped system folders",
                         sublabel = plan.unknownSystemFolders.joinToString(", "),
                     )
                 }
 
                 if (plan.platformsWithoutGames.isNotEmpty()) {
                     SettingsRow(
-                        label    = "No Games In Library",
+                        label    = "No games in library",
                         sublabel = "Artwork found for ${plan.platformsWithoutGames.joinToString(", ")} " +
                             "but your library has no games on these systems — add the games first, " +
                             "then re-run the import.",
@@ -214,7 +214,7 @@ fun ArtworkImportScreen(
                 }
 
                 SettingsToggleRow(
-                    label    = "Move Files (faster, frees space)",
+                    label    = "Move files (faster, frees space)",
                     sublabel = "Moves artwork out of the launcher's folder instead of copying. " +
                         "The other launcher loses these files.",
                     checked  = state.moveFiles,
@@ -239,7 +239,7 @@ fun ArtworkImportScreen(
                                 )
                             }
                             SettingsRow(
-                                label   = "   Skip This File",
+                                label   = "   Skip this file",
                                 onClick = { viewModel.skipAmbiguous(index) },
                             )
                         }
@@ -248,12 +248,12 @@ fun ArtworkImportScreen(
 
                 if (!state.importRunning) {
                     SettingsRow(
-                        label    = "Start Import",
+                        label    = "Start import",
                         sublabel = if (state.moveFiles) "Moves ${plan.itemCount} files into the artwork library"
                         else "Copies ${plan.itemCount} files into the artwork library",
                         onClick  = if (plan.itemCount > 0) ({ viewModel.startImport() }) else null,
                     )
-                    SettingsRow(label = "Cancel Preview", onClick = { viewModel.dismissPreview() })
+                    SettingsRow(label = "Cancel preview", onClick = { viewModel.dismissPreview() })
                 }
             }
 
@@ -283,7 +283,7 @@ fun ArtworkImportScreen(
                     )
                 }
                 SettingsRow(
-                    label    = "Cancel Import",
+                    label    = "Cancel import",
                     sublabel = "Already-imported artwork is kept",
                     onClick  = { viewModel.cancelImport() },
                 )
@@ -291,12 +291,12 @@ fun ArtworkImportScreen(
 
             // ── Reports ───────────────────────────────────────────────────────
             if (state.reports.isNotEmpty()) {
-                SettingsGroup("Import Report")
+                SettingsGroup("Import report")
                 state.reports.forEach { report ->
                     SettingsRow(label = report.title, sublabel = report.detail)
                 }
                 SettingsRow(
-                    label    = "Clear Reports",
+                    label    = "Clear reports",
                     onClick  = { viewModel.clearReports() },
                 )
             }

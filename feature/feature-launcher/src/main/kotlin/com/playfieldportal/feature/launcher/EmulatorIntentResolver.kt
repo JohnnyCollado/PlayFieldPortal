@@ -7,6 +7,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
+import android.provider.Settings
 import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.IntentType
@@ -282,6 +284,8 @@ class EmulatorIntentResolver(
 
             profile.intentCategory?.let { addCategory(it) }
 
+            // First, so anything the profile sets itself below replaces it.
+            retroArchDefaultExtras(profile).forEach { (key, value) -> putExtra(key, value) }
             profile.intentExtras.forEach { (key, valueTemplate) ->
                 putExtra(key, resolveTemplate(valueTemplate, game, profile, romUri))
             }
@@ -405,7 +409,38 @@ class EmulatorIntentResolver(
     }
 
     private fun retroarchConfigPath(packageName: String): String =
-        "/storage/emulated/0/Android/data/$packageName/files/retroarch.cfg"
+        RetroArchLaunchExtras.configPath(packageName, sharedStorageRoot())
+
+    private fun sharedStorageRoot(): String = Environment.getExternalStorageDirectory().absolutePath
+
+    /**
+     * What RetroArch's own launcher sends its native activity and PFP used to leave out (see
+     * [RetroArchLaunchExtras]); empty for every other emulator. The package was proved installed by
+     * [validateBeforeLaunch], but a lookup failure still degrades to the bare launch rather than
+     * refusing it.
+     */
+    private fun retroArchDefaultExtras(profile: EmulatorProfile): Map<String, String> {
+        if (!RetroArchLaunchExtras.appliesTo(profile)) return emptyMap()
+        val app = try {
+            context.packageManager.getApplicationInfo(profile.packageName, 0)
+        } catch (_: PackageManager.NameNotFoundException) {
+            Timber.w("RetroArch app info unavailable for %s; launching without its config values", profile.packageName)
+            return emptyMap()
+        }
+        return RetroArchLaunchExtras.build(
+            RetroArchLaunchExtras.Install(
+                packageName = profile.packageName,
+                dataDir = app.dataDir ?: "/data/data/${profile.packageName}",
+                apkPath = app.sourceDir,
+                targetSdk = app.targetSdkVersion,
+                storageRoot = sharedStorageRoot(),
+                defaultIme = Settings.Secure.getString(
+                    context.contentResolver,
+                    Settings.Secure.DEFAULT_INPUT_METHOD,
+                ),
+            ),
+        )
+    }
 
     // corePathFor / platformAliases / normalizeRetroArchCorePath live in
     // EmulatorPlatformMapping.kt (shared with EmulatorProfileRepository and the launch ladder) so

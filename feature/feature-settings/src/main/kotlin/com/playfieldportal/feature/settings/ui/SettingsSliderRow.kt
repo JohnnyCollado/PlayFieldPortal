@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -56,6 +56,7 @@ internal class SettingsSliderNode(
  *  - The Material slider underneath stays fully touch-draggable at all times (touch also exits
  *    controller adjust mode, like any pointer activity on the screen).
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsSliderRow(
     label: String,
@@ -133,12 +134,10 @@ fun SettingsSliderRow(
                 }
             }
             // Same one-consistent cursor fill as every other focused row (see SettingsRow).
-            .background(
-                if (isFocused && cursorVisible) com.playfieldportal.core.ui.theme.menuCursorFill()
-                else Color.Transparent
-            )
+            .settingsRowSlot()
+            .settingsCursor(isFocused && cursorVisible)
             .focusable()
-            .padding(horizontal = 48.dp, vertical = 14.dp),
+            .padding(horizontal = SettingsRowContentInset, vertical = 12.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -156,7 +155,8 @@ fun SettingsSliderRow(
                     Spacer(Modifier.height(2.dp))
                     Text(
                         sublabel,
-                        color = SettingsSubtext,
+                        // White under the cursor, as SettingsRow does: subtext vanished on the fill.
+                        color = if (isFocused && cursorVisible) Color.White else SettingsSubtext,
                         fontSize = 12.sp,
                         // Same helper-line shadow as SettingsRow — the slider sublabels are
                         // equally washed out over a bright wallpaper.
@@ -167,12 +167,19 @@ fun SettingsSliderRow(
             Spacer(Modifier.width(16.dp))
             Text(
                 text = valueFormatter(value),
-                color = if (adjusting) adjustAccent else SettingsSubtext,
+                color = if (adjusting) adjustAccent else if (isFocused && cursorVisible) Color.White else SettingsText,
                 fontSize = 13.sp,
                 style = TextStyle(shadow = SettingsTextShadow),
             )
         }
         Spacer(Modifier.height(8.dp))
+        val sliderColors = SliderDefaults.colors(
+                // The filled part is the light one. It used to be the divider colour, so a slider
+                // at 100% read as an empty dark bar.
+                thumbColor = if (adjusting) adjustAccent else SettingsText,
+                activeTrackColor = if (adjusting) adjustAccent else SettingsText,
+                inactiveTrackColor = SettingsDivider,
+        )
         Slider(
             value = value,
             onValueChange = { v ->
@@ -184,12 +191,24 @@ fun SettingsSliderRow(
             valueRange = valueRange,
             steps = steps,
             enabled = enabled,
-            colors = SliderDefaults.colors(
-                thumbColor = if (adjusting) adjustAccent else SettingsSubtext,
-                activeTrackColor = if (adjusting) adjustAccent else SettingsDivider,
-                inactiveTrackColor = SettingsDivider.copy(alpha = 0.4f),
-            ),
+            colors = sliderColors,
+            // A thin, plain track: the filled part light, the rest dark, no tick dots. Material's
+            // default drew a thick bar studded with stop marks, which read as decoration.
+            track = { sliderState ->
+                SliderDefaults.Track(
+                    sliderState = sliderState,
+                    modifier = Modifier.height(SliderTrackHeight),
+                    colors = sliderColors,
+                    enabled = enabled,
+                    drawStopIndicator = null,
+                    drawTick = { _, _ -> },
+                    thumbTrackGapSize = 0.dp,
+                    trackInsideCornerSize = 0.dp,
+                )
+            },
         )
     }
-    HorizontalDivider(color = SettingsDivider, modifier = Modifier.padding(start = 48.dp))
 }
+
+/** Height of the slider's track: a line, not a bar. */
+private val SliderTrackHeight = 4.dp

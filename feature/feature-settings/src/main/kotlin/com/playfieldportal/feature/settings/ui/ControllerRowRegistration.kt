@@ -1,12 +1,15 @@
 package com.playfieldportal.feature.settings.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
@@ -17,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -24,7 +28,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import com.playfieldportal.core.ui.sound.MenuSound
 
@@ -69,6 +78,9 @@ internal fun rememberControllerRowRegistration(
     enabled: Boolean = true,
     onSelect: (() -> Unit)?,
     onLongPress: (() -> Unit)? = null,
+    // The row's body does nothing and it has inline actions: the cursor rests on those, never on
+    // the row (see ControllerNavItem.actionFirst).
+    actionFirst: Boolean = false,
     trailingActionsFor: (rowKey: String) -> List<ControllerNavItem> = { emptyList() },
 ): ControllerRowRegistration {
     val focusRegistry = LocalSettingsFocusRegistry.current
@@ -98,6 +110,7 @@ internal fun rememberControllerRowRegistration(
         onSelect = onSelect,
         onLongPress = onLongPress,
         trailingActions = trailingActionsFor(rowKey),
+        actionFirst = actionFirst,
     )
     DisposableEffect(Unit) {
         navigationOrder?.add(focusRequester to navItem)
@@ -148,6 +161,8 @@ internal fun SettingsRowActionButton(
     val reportFocused = LocalSettingsReportFocused.current
     val reportRemoved = LocalSettingsReportRemoved.current
     val menuSounds = LocalMenuSounds.current
+    val cursorVisible = LocalSettingsCursorVisible.current
+    val touch = LocalSettingsLastInputWasTouch.current
     // One wrapped activation for both ways in — the icon button's own click and the tap gesture
     // layered over it — honouring the action's [SettingsRowAction.plays] opt-out. The controller
     // path wraps the same way where the nav node is built (SettingsRow / WizardRow).
@@ -163,11 +178,22 @@ internal fun SettingsRowActionButton(
         onDispose {
             list?.removeAll { it.second === actionFr }
             reportRemoved(actionFr)
+            // A button that leaves while it holds the cursor must not leave its row counted as focused.
+            if (actionFocused) onFocusedChanged(false)
         }
     }
-    IconButton(
-        onClick = activate,
+    // A plain Box, not an IconButton: IconButton clips its content to a circle, which cut the
+    // cursor ring into two arcs and hid the button's name. The 48dp minimum keeps its touch target.
+    Box(
+        contentAlignment = Alignment.Center,
         modifier = Modifier
+            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+            // Merged, as IconButton's own click target was: the focused button carries its icon's
+            // description, which is what a screen reader announces.
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                onClick(label = action.label) { activate(); true }
+            }
             .pointerInput(actionKey, activate, action.onLongPress) {
                 detectTapGestures(
                     onTap = { touchInput(); activate() },
@@ -176,8 +202,11 @@ internal fun SettingsRowActionButton(
             }
             .focusRequester(actionFr)
             .onFocusChanged { state ->
+                // Report changes only. The first callback of every focus target says "not focused";
+                // passing that on made each row start its count of focused buttons one short, so
+                // the row never knew the cursor was on one of them.
+                if (state.isFocused != actionFocused) onFocusedChanged(state.isFocused)
                 actionFocused = state.isFocused
-                onFocusedChanged(state.isFocused)
                 action.onFocusChanged?.invoke(state.isFocused)
                 if (state.isFocused) {
                     focusTracker(activate)
@@ -186,15 +215,35 @@ internal fun SettingsRowActionButton(
             }
             .focusable(),
     ) {
-        Box(
+        // The second cursor: the row is the card, and this ring says which of its buttons Confirm
+        // will press. The button names itself while it has the ring, so the icon is not the only cue.
+        val ringed = actionFocused && cursorVisible
+        Row(
             modifier = Modifier
+                // Touch has no cursor to aim with, so the buttons are drawn a size larger for a thumb.
+                .scale(if (touch) TOUCH_ACTION_SCALE else 1f)
                 .background(
-                    if (actionFocused) action.actionFocusBackgroundColor else Color.Transparent,
-                    RoundedCornerShape(6.dp),
-                ),
-            contentAlignment = Alignment.Center,
+                    if (ringed) action.actionFocusBackgroundColor else Color.Transparent,
+                    ActionButtonShape,
+                )
+                .then(if (ringed) Modifier.border(2.dp, Color.White, ActionButtonShape) else Modifier)
+                .padding(horizontal = if (ringed && action.shortLabel != null) 6.dp else 0.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             action.icon()
+            if (ringed && action.shortLabel != null) {
+                Text(
+                    text = action.shortLabel,
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(start = 4.dp, end = 2.dp),
+                )
+            }
         }
     }
 }
+
+private val ActionButtonShape = RoundedCornerShape(6.dp)
+
+/** How much larger an inline button is drawn under touch: 32dp becomes 40dp. */
+private const val TOUCH_ACTION_SCALE = 1.25f

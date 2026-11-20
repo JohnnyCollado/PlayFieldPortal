@@ -330,7 +330,7 @@ private fun ThemesSettingsContent(
             ) {
                 SettingsGroup("Appearance")
                 SettingsRow(
-                    label    = "Color Scheme",
+                    label    = "Color scheme",
                     sublabel = if (state.accentOverrideArgb != null) {
                         "Custom theme color active — picking a preset replaces it"
                     } else "PSP-style background colors — preview live",
@@ -339,14 +339,14 @@ private fun ThemesSettingsContent(
 
                 state.accentOverrideArgb?.let { accent ->
                     SettingsRow(
-                        label    = "Custom Theme Color",
+                        label    = "Custom theme color",
                         sublabel = "From an imported theme — tap to remove and return to the color scheme",
                         onClick  = onClearAccentOverride,
                         trailing = { ColorDot(argb = accent) },
                     )
                 }
 
-                SettingsGroup("Icon Color")
+                SettingsGroup("Icon color")
                 FocusableStrip(
                     focusRequester = iconStripRequester,
                     onFocusChange = { focused ->
@@ -370,15 +370,15 @@ private fun ThemesSettingsContent(
 
                 SettingsGroup("Icons")
                 SettingsValueRow(
-                    label    = "Customize XMB Icons",
+                    label    = "Customize XMB icons",
                     value    = state.customIconsValue,
                     sublabel = "Crossbar, items, consoles and physical media — in XMB order, live over the XMB",
                     onClick  = onOpenCustomIcons,
                 )
 
-                SettingsGroup("My Themes")
+                SettingsGroup("My themes")
                 SettingsRow(
-                    label    = "New Theme from Photo",
+                    label    = "New theme from photo",
                     sublabel = "Pick a picture — wallpaper and color are set from it",
                     onClick  = if (state.isInstalling) null else ({ photoPicker.launch(arrayOf("image/*")) }),
                 )
@@ -409,27 +409,28 @@ private fun ThemesSettingsContent(
                     }
                 }
 
-                SettingsGroup("Active Theme")
-                SettingsValueRow(label = "Current Theme", value = state.activeThemeName)
+                SettingsGroup("Active theme")
+                SettingsValueRow(label = "Current theme", value = state.activeThemeName)
                 SettingsRow(
-                    label    = "Reset to Default",
+                    label    = "Reset to default",
                     sublabel = "Remove the applied wallpaper, theme colors, and custom icons",
                     onClick  = onResetTheme,
+                    destructive = true,
                 )
 
                 SettingsGroup("Install")
                 SettingsRow(
-                    label    = "Save Current Look as Theme",
+                    label    = "Save current look as theme",
                     sublabel = "Bundle your icons, wallpaper, colors and motion into a shareable .pfptheme",
                     onClick  = { showSaveNameDialog = true },
                 )
                 SettingsRow(
-                    label    = "Import PSP Theme (.ptf)",
+                    label    = "Import PSP theme (.ptf)",
                     sublabel = "Uses the theme's wallpaper, color and matching icons",
                     onClick  = if (state.isInstalling) null else ({ ptfPicker.launch(arrayOf("*/*")) }),
                 )
                 SettingsRow(
-                    label    = "Import Theme (.pfptheme)",
+                    label    = "Import theme (.pfptheme)",
                     sublabel = "A theme shared from PlayFieldPortal",
                     onClick  = if (state.isInstalling) null else ({ pfpPicker.launch(arrayOf("*/*")) }),
                 )
