@@ -1,14 +1,14 @@
 package com.playfieldportal.themekit
 
 /**
- * The UI-media entries a `.pfptheme` can carry (plan 5.2): the five menu sounds, ambience, the
+ * The UI-media entries a `.pfptheme` can carry (plan 5.2): the seven menu sounds, ambience, the
  * boot clip and the GameBoot clip.
  *
  * Keys are IDENTICAL to the launcher's `UiMediaSlot` keys — core-domain's UiMediaSlotTest pins
  * that, since theme-kit cannot depend on the enum. Entry names:
  *
  * ```
- * sounds/<sound_scroll|sound_back|sound_confirm|sound_error|sound_notification>.<mp3|wav|ogg|m4a>
+ * sounds/<sound_scroll|sound_category|sound_options|sound_back|sound_confirm|sound_error|sound_notification>.<mp3|wav|ogg|m4a>
  * ambience.<mp3|wav|ogg|m4a>
  * boot.<mp4|webm>
  * gameboot.<mp4|webm>
@@ -59,6 +59,8 @@ object ThemeMediaSlots {
     /** Every slot, in the launcher's `UiMediaSlot` order. */
     val ALL: List<Slot> = listOf(
         sound("sound_scroll", UiMediaLimits.NAVIGATION),
+        sound("sound_category", UiMediaLimits.CATEGORY),
+        sound("sound_options", UiMediaLimits.OPTIONS),
         sound("sound_back", UiMediaLimits.BACK),
         sound("sound_confirm", UiMediaLimits.CONFIRM),
         sound("sound_error", UiMediaLimits.ERROR),

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- QR login screen -->
+    <string name="soc_qr_preparing">Przygotowywanie logowania…</string>
+    <string name="soc_qr_connected">Połączono</string>
+    <string name="soc_qr_expired">Kod wygasł.</string>
+    <string name="soc_qr_declined">Logowanie zostało odrzucone.</string>
+    <string name="soc_qr_error">Nie udało się zalogować. %1$s</string>
+    <string name="soc_qr_content_description">Kod QR logowania do Discorda</string>
+    <string name="soc_qr_title">Zaloguj się przez Discorda</string>
+    <string name="soc_qr_copied">Skopiowano!</string>
+    <string name="soc_qr_tap_to_copy">Wybierz kod, aby skopiować</string>
+    <string name="soc_qr_instructions">Zeskanuj aparatem telefonu lub przejdź do discord.com/activate i wklej kod.</string>
+    <string name="soc_qr_expires_in">Wygasa za %1$ds</string>
+    <string name="soc_qr_expired_short">Wygasł</string>
+    <string name="soc_qr_cancel">Anuluj</string>
+    <string name="soc_qr_try_again">Spróbuj ponownie</string>
+</resources>

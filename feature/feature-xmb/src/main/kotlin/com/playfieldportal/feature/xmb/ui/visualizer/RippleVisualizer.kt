@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.sin
+import com.playfieldportal.feature.xmb.R
 
 /**
  * The water surface: concentric rings expand from one or two drift points, thinning and fading as
@@ -105,7 +106,7 @@ class RippleVisualizer(
     private val tint: () -> Color,
 ) : PfpVisualizer {
     override val id = VisualizerIds.RIPPLE
-    override val label = "Ripple"
+    override val labelRes = R.string.xmbu_visualizer_ripple
 
     override fun DrawScope.render(frame: VisualizerFrame, budget: Int, sprite: ImageBitmap) {
         val count = budget.coerceIn(0, RIPPLE_MAX_RINGS)

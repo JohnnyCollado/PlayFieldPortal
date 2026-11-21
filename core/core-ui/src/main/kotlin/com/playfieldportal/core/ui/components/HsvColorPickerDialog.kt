@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -64,8 +65,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.ColorNaming
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.core.ui.text.asString
 import com.playfieldportal.core.domain.model.ControllerIcon
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.R
 import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
 import com.playfieldportal.core.ui.keyboard.VirtualKeyboardBottomReserve
 import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
@@ -226,7 +230,7 @@ fun HsvColorPickerDialog(
                     Spacer(Modifier.width(16.dp))
                     Column {
                         Text(
-                            ColorNaming.describe(state.argb),
+                            ColorNaming.describe(state.argb).asString(),
                             color = themedText(Color.White),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -247,7 +251,7 @@ fun HsvColorPickerDialog(
                 val hexActive = state.editingHex || (cursor && state.focus == HsvPickerField.HEX)
                 Column(Modifier.bringIntoViewRequester(stopInView.getValue(HsvPickerField.HEX))) {
                     if (!compact) {
-                        Text("Hex", color = if (hexActive) accent else subtext, fontSize = 12.sp)
+                        Text(stringResource(R.string.core_hsv_hex), color = if (hexActive) accent else subtext, fontSize = 12.sp)
                         Spacer(Modifier.height(6.dp))
                     }
                     // The field keeps one place in the tree in both layouts: re-creating it would
@@ -324,9 +328,9 @@ fun HsvColorPickerDialog(
                 }
 
                 val bars = listOf(
-                    Triple(HsvPickerField.HUE, "Hue", state.hue / 360f),
-                    Triple(HsvPickerField.SATURATION, "Saturation", state.saturation),
-                    Triple(HsvPickerField.BRIGHTNESS, "Brightness", state.brightness),
+                    Triple(HsvPickerField.HUE, stringResource(R.string.core_hsv_hue), state.hue / 360f),
+                    Triple(HsvPickerField.SATURATION, stringResource(R.string.core_hsv_saturation), state.saturation),
+                    Triple(HsvPickerField.BRIGHTNESS, stringResource(R.string.core_hsv_brightness), state.brightness),
                 )
                 bars.forEach { (field, label, fraction) ->
                     Spacer(Modifier.height(if (field == HsvPickerField.HUE) 20.dp else 14.dp))
@@ -337,7 +341,7 @@ fun HsvColorPickerDialog(
                     ) {
                         ChannelBar(
                             label = label,
-                            value = channelReadout(field, state),
+                            value = channelReadout(field, state).asString(),
                             fraction = fraction,
                             brush = when (field) {
                                 HsvPickerField.HUE -> rainbowBrush()
@@ -376,11 +380,11 @@ private val DockedWidth = 360.dp
 private val DockedEdgeGap = 16.dp
 
 /** A bar's position in words: the hue's name, or a word and a percentage. */
-internal fun channelReadout(field: HsvPickerField, state: HsvPickerState): String = when (field) {
+internal fun channelReadout(field: HsvPickerField, state: HsvPickerState): UiText = when (field) {
     HsvPickerField.HUE -> ColorNaming.hueDescription(state.hue)
-    HsvPickerField.SATURATION -> "${ColorNaming.saturationWord(state.saturation)} ${percent(state.saturation)}"
-    HsvPickerField.BRIGHTNESS -> "${ColorNaming.brightnessWord(state.brightness)} ${percent(state.brightness)}"
-    HsvPickerField.HEX -> state.hexText
+    HsvPickerField.SATURATION -> UiText.Joined(listOf(ColorNaming.saturationWord(state.saturation), UiText.raw(percent(state.saturation))), " ")
+    HsvPickerField.BRIGHTNESS -> UiText.Joined(listOf(ColorNaming.brightnessWord(state.brightness), UiText.raw(percent(state.brightness))), " ")
+    HsvPickerField.HEX -> UiText.raw(state.hexText)
 }
 
 private fun percent(fraction: Float): String = "${(fraction * 100f).roundToInt()}%"
@@ -402,7 +406,7 @@ private fun Swatch(color: Color, size: Dp) {
 private fun PickerActions(accent: Color, subtext: Color, onApply: () -> Unit, onCancel: () -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
-            "Apply",
+            stringResource(R.string.core_apply),
             color = accent,
             fontSize = 15.sp,
             modifier = Modifier
@@ -411,7 +415,7 @@ private fun PickerActions(accent: Color, subtext: Color, onApply: () -> Unit, on
                 .padding(vertical = 6.dp, horizontal = 10.dp),
         )
         Text(
-            "Cancel",
+            stringResource(R.string.core_cancel),
             color = subtext,
             fontSize = 15.sp,
             modifier = Modifier
@@ -439,19 +443,20 @@ private val MoveIcons = listOf(ControllerIcon.DPAD_UP, ControllerIcon.DPAD_DOWN)
 private val AdjustIcons = listOf(ControllerIcon.DPAD_LEFT, ControllerIcon.DPAD_RIGHT)
 
 /** Every button the focused stop answers to: ✕ applies on a bar and types on Hex. */
+@Composable
 private fun hintItems(focus: HsvPickerField): List<ControllerPromptItem> =
     if (focus == HsvPickerField.HEX) {
         listOf(
-            ControllerPromptItem.fixed(MoveIcons, "Move"),
-            ControllerPromptItem(GamepadAction.SELECT, "Type hex"),
-            ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+            ControllerPromptItem.fixed(MoveIcons, stringResource(R.string.core_hsv_hint_move)),
+            ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.core_hsv_hint_type_hex)),
+            ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.core_cancel)),
         )
     } else {
         listOf(
-            ControllerPromptItem.fixed(AdjustIcons, "Adjust"),
-            ControllerPromptItem.fixed(MoveIcons, "Move"),
-            ControllerPromptItem(GamepadAction.SELECT, "Apply"),
-            ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+            ControllerPromptItem.fixed(AdjustIcons, stringResource(R.string.core_hsv_hint_adjust)),
+            ControllerPromptItem.fixed(MoveIcons, stringResource(R.string.core_hsv_hint_move)),
+            ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.core_apply)),
+            ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.core_cancel)),
         )
     }
 
@@ -481,7 +486,7 @@ private fun ContrastStrip(
                         .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(8.dp)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("Sample text", color = color, fontSize = 14.sp)
+                    Text(stringResource(R.string.core_hsv_sample_text), color = color, fontSize = 14.sp)
                 }
                 Spacer(Modifier.height(4.dp))
                 Text(
@@ -552,16 +557,16 @@ private fun ChannelBar(
 
 // ── Preset swatches ───────────────────────────────────────────────────────────
 
-/** The shared preset list. `null` means "no override — inherit the theme's own colour". */
-val PfpColorChoices: List<Pair<String, Long?>> = listOf(
-    "Default" to null,
-    "Pink" to 0xFFFFD6E8L,
-    "Gold" to 0xFFE8C64AL,
-    "Aqua" to 0xFF7FD8D8L,
-    "Sky Blue" to 0xFF9DBEF5L,
-    "Green" to 0xFF9FDB9FL,
-    "Coral" to 0xFFE88A8AL,
-    "Slate" to 0xFFAAB2BFL,
+/** The shared preset list: string-resource id of the name, and the colour. `null` means "no override — inherit the theme's own colour". */
+val PfpColorChoices: List<Pair<Int, Long?>> = listOf(
+    R.string.core_color_default to null,
+    R.string.core_color_pink to 0xFFFFD6E8L,
+    R.string.core_color_gold to 0xFFE8C64AL,
+    R.string.core_color_aqua to 0xFF7FD8D8L,
+    R.string.core_color_sky_blue to 0xFF9DBEF5L,
+    R.string.core_color_green to 0xFF9FDB9FL,
+    R.string.core_color_coral to 0xFFE88A8AL,
+    R.string.core_color_slate to 0xFFAAB2BFL,
 )
 
 /**
@@ -595,9 +600,9 @@ fun ColorSwatchRow(
         contentPadding       = PaddingValues(horizontal = 48.dp, vertical = 10.dp),
         modifier             = modifier.fillMaxWidth(),
     ) {
-        itemsIndexed(PfpColorChoices) { index, (label, argb) ->
+        itemsIndexed(PfpColorChoices) { index, (labelRes, argb) ->
             ColorSwatch(
-                label = label,
+                label = stringResource(labelRes),
                 fill = Color(argb ?: 0xFFFFFFFFL),
                 brush = null,
                 selected = selectedArgb == argb,
@@ -609,7 +614,7 @@ fun ColorSwatchRow(
         }
         item {
             ColorSwatch(
-                label = "Custom",
+                label = stringResource(R.string.core_color_custom),
                 fill = selectedArgb?.takeIf { customActive }?.let { Color(it and 0xFFFFFFFFL) },
                 brush = if (customActive) null else rainbowBrush(),
                 selected = customActive,

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="xmb_icons_reset_removed_themed">Valet togs bort – det aktiva temats ikon visas nu.</string>
+    <string name="xmb_icons_reset_themed_slot">Inget att återställa – ikonen kommer från det aktiva temat.</string>
+    <string name="xmb_icons_reset_builtin_slot">Inget att återställa – platsen använder redan den inbyggda ikonen.</string>
+    <string name="xmb_icons_reset_all_none">Inget att återställa – du har inte valt några ikoner.</string>
+    <string name="xmb_icons_reset_all_themed">Valen rensades – det aktiva temats ikoner visas nu.</string>
+</resources>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Backup failures -->
+    <string name="bak_no_folder">Není nastavena složka pro zálohy. Vyberte ji v Nastavení → Zálohování a obnovení → Složka záloh.</string>
+    <string name="bak_too_large">Tato záloha by byla příliš velká na obnovení (může obsahovat až 20 000 souborů a 2 GB). Odeberte nepoužívané obrázky nebo média a zkuste to znovu.</string>
+    <string name="bak_write_failed">Do složky záloh nelze zapisovat. Vyberte složku záloh znovu v Nastavení ▸ Systém ▸ Zálohování a obnovení.</string>
+    <string name="bak_unknown_error">Neznámá chyba</string>
+
+    <!-- Restore failures -->
+    <string name="bak_open_failed">Soubor zálohy nelze otevřít</string>
+    <string name="bak_missing_manifest">V záloze chybí manifest</string>
+    <string name="bak_format_too_new">Formát zálohy v%1$d je novější, než tato aplikace podporuje (v%2$d)</string>
+    <string name="bak_no_uri">Nebylo zadáno URI</string>
+
+    <!-- Notification titles -->
+    <string name="bak_task_created">Záloha vytvořena</string>
+    <string name="bak_task_failed">Zálohování selhalo</string>
+    <string name="bak_task_restored">Záloha obnovena</string>
+    <string name="bak_task_restore_failed">Obnovení selhalo</string>
+    <string name="bak_results_restored">Obnoveno</string>
+    <plurals name="bak_items_skipped">
+        <item quantity="one">%d položka přeskočena</item>
+        <item quantity="few">%d položky přeskočeny</item>
+        <item quantity="many">%d položky přeskočeno</item>
+        <item quantity="other">%d položek přeskočeno</item>
+    </plurals>
+
+    <!-- Items turned away during restore -->
+    <string name="bak_refused_out_of_root">Odmítnuto \'%1$s\': není ve složce, kterou lze obnovit</string>
+    <string name="bak_refused_profiles_unparseable">Odmítnuty profily emulátorů: soubor nelze zpracovat</string>
+    <string name="bak_refused_profile">Odmítnut profil emulátoru \'%1$s\': %2$s</string>
+</resources>

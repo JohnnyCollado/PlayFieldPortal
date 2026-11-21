@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="thm_error_manifest_missing">封存檔中缺少必要的 theme.json</string>
+    <string name="thm_error_manifest_invalid">theme.json 無效：%1$s</string>
+    <string name="thm_error_id_invalid">主題 ID「%1$s」無效。請使用字母、數字、「.」、「_」或「-」（最多 64 個字元）</string>
+    <string name="thm_error_color_invalid">%1$s「%2$s」無效。應為 #RRGGBB 或 #AARRGGBB</string>
+</resources>

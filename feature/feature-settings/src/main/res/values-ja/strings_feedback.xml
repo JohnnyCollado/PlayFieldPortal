@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings > Sound: two more assignable sounds. Each follows Navigation until set. -->
+    <!-- Name of the sound that plays when a category changes (row and level slider). -->
+    <string name="fb_sound_slot_category">カテゴリー</string>
+    <string name="fb_sound_channel_category">カテゴリー</string>
+    <!-- Name of the sound that plays when an options menu opens (row and level slider). -->
+    <string name="fb_sound_slot_options">オプション</string>
+    <string name="fb_sound_channel_options">オプション</string>
+
+    <!-- Settings > Controller: haptic feedback switch. -->
+    <string name="fb_haptic_feedback">触覚フィードバック</string>
+    <string name="fb_haptic_feedback_help">項目を移動するたびに軽く、決定時にはしっかりと振動します。このデバイスと、振動に対応したコントローラーで動作します。</string>
+</resources>

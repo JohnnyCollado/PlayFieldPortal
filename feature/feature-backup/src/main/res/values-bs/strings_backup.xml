@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Backup failures -->
+    <string name="bak_no_folder">Folder za sigurnosne kopije nije postavljen. Odaberite ga u Postavke → Sigurnosno kopiranje i vraćanje → Folder za sigurnosne kopije.</string>
+    <string name="bak_too_large">Ova bi sigurnosna kopija bila prevelika za vraćanje (može sadržavati najviše 20.000 datoteka i 2 GB). Uklonite nekorištene grafike ili medije i pokušajte ponovo.</string>
+    <string name="bak_write_failed">Nije moguće pisati u folder za sigurnosne kopije. Ponovo odaberite folder u Postavke ▸ Sistem ▸ Sigurnosno kopiranje i vraćanje.</string>
+    <string name="bak_unknown_error">Nepoznata greška</string>
+
+    <!-- Restore failures -->
+    <string name="bak_open_failed">Nije moguće otvoriti datoteku sigurnosne kopije</string>
+    <string name="bak_missing_manifest">Sigurnosnoj kopiji nedostaje manifest</string>
+    <string name="bak_format_too_new">Format sigurnosne kopije v%1$d noviji je od onoga koji ova aplikacija podržava (v%2$d)</string>
+    <string name="bak_no_uri">Nije naveden URI</string>
+
+    <!-- Notification titles -->
+    <string name="bak_task_created">Sigurnosna kopija stvorena</string>
+    <string name="bak_task_failed">Sigurnosno kopiranje nije uspjelo</string>
+    <string name="bak_task_restored">Sigurnosna kopija vraćena</string>
+    <string name="bak_task_restore_failed">Vraćanje nije uspjelo</string>
+    <string name="bak_results_restored">Vraćeno</string>
+    <plurals name="bak_items_skipped">
+        <item quantity="one">%d stavka preskočena</item>
+        <item quantity="few">%d stavke preskočene</item>
+        <item quantity="other">%d stavki preskočeno</item>
+    </plurals>
+
+    <!-- Items turned away during restore. The text before the first colon is shown as the item's name. -->
+    <string name="bak_refused_out_of_root">Odbijeno \'%1$s\': nije unutar foldera koji se može vratiti</string>
+    <string name="bak_refused_profiles_unparseable">Odbijeni profili emulatora: datoteku nije moguće raščlaniti</string>
+    <string name="bak_refused_profile">Odbijen profil emulatora \'%1$s\': %2$s</string>
+</resources>

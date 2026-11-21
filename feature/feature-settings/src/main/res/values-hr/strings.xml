@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Postavke</string>
+    <string name="sound_title">Zvuk</string>
+    <string name="sound_group_master">Glavno</string>
+    <string name="sound_group_levels">Razine</string>
+    <string name="sound_group_sounds">Zvukovi</string>
+    <string name="sound_master_volume">Glavna glasnoća</string>
+    <string name="sound_master_volume_help">Određuje glasnoću svih zvukova launchera. Na 0 je launcher bez zvuka.</string>
+    <string name="sound_ambience_help">Ponavlja se dok pregledavate. OGG se ponavlja bez prekida; MP3 može kliknuti.</string>
+    <string name="sound_rejected_title">Taj zvuk nije moguće upotrijebiti</string>
+    <string name="sound_reset_confirm_title">Vratiti zvuk na zadane postavke?</string>
+    <string name="sound_reset_confirm_message">Svaki zvuk izbornika vraća se na priloženi PFP uzorak, a svaka razina, uključujući glavnu, vraća se na najvišu. Vaša ambijentalna pjesma te mediji za Boot Video i Game Boot ostaju nepromijenjeni.</string>
+    <string name="sound_reset_confirm_action">Vrati</string>
+    <string name="sound_reset_row">Vrati zvuk na zadane postavke</string>
+    <string name="sound_reset_row_help">Vraća svaki zvuk izbornika na priloženi PFP uzorak i svaku razinu na najvišu. Zadržava vašu ambijentalnu pjesmu.</string>
+    <string name="sound_channel_navigation">Navigacija</string>
+    <string name="sound_channel_back">Natrag / Odustani</string>
+    <string name="sound_channel_confirm">Potvrdi / Primijeni</string>
+    <string name="sound_channel_error">Pogreška / Nevažeće</string>
+    <string name="sound_channel_notification">Obavijest</string>
+    <string name="sound_channel_boot">Slijed pokretanja</string>
+    <string name="sound_channel_ambience">Ambijent</string>
+    <string name="sound_slot_navigation">Navigacija</string>
+    <string name="sound_slot_back">Natrag / Odustani</string>
+    <string name="sound_slot_confirm">Potvrdi / Primijeni</string>
+    <string name="sound_slot_error">Pogreška / Nevažeće</string>
+    <string name="sound_slot_notification">Obavijest</string>
+    <string name="sound_slot_ambience">Ambijentalna pjesma</string>
+</resources>

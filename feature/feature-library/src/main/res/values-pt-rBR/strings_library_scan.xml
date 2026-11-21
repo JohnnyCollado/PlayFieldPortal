@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Scan error messages -->
+    <string name="scan_error_card_not_found">Memory Card não encontrado.</string>
+    <string name="scan_error_scan_failed">Falha na verificação — veja o log.</string>
+    <string name="scan_error_library_unreadable">Não foi possível ler a biblioteca.</string>
+    <string name="scan_error_save_failed">Não foi possível salvar um jogo verificado.</string>
+    <string name="scan_error_rom_dir_not_found">Pasta de ROMs não encontrada: %1$s</string>
+    <string name="scan_error_folder_link_invalid">O link de pasta desta biblioteca é inválido. Adicione a pasta de novo.</string>
+    <string name="scan_error_root_unreadable">Não foi possível ler uma pasta de ROMs. Se ela estiver em um cartão SD, verifique se o cartão está inserido.</string>
+    <string name="scan_error_permission_lost">Permissão perdida. Selecione a pasta de novo.</string>
+    <string name="scan_error_partial_read">Parte da pasta não pôde ser lida, então nada foi alterado. Tente de novo daqui a pouco.</string>
+    <string name="scan_outcome_line">%1$s: %2$s</string>
+    <string name="scan_outcome_no_source">Pasta de ROMs não configurada.</string>
+    <string name="scan_outcome_busy">verificação já em andamento.</string>
+    <string name="scan_outcome_failed">falha na verificação.</string>
+    <string name="scan_outcome_no_new">nenhuma ROM nova</string>
+    <string name="scan_outcome_no_new_none_missing">nenhuma ROM nova, nenhuma ausente</string>
+    <string name="scan_outcome_no_new_marked_missing">nenhuma ROM nova, %1$d marcadas como ausentes</string>
+    <plurals name="scan_outcome_added">
+        <item quantity="one">%1$d ROM nova adicionada</item>
+        <item quantity="many">%1$d ROMs novas adicionadas</item>
+        <item quantity="other">%1$d ROMs novas adicionadas</item>
+    </plurals>
+    <plurals name="scan_outcome_added_none_missing">
+        <item quantity="one">%1$d ROM nova adicionada, nenhuma ausente</item>
+        <item quantity="many">%1$d ROMs novas adicionadas, nenhuma ausente</item>
+        <item quantity="other">%1$d ROMs novas adicionadas, nenhuma ausente</item>
+    </plurals>
+    <plurals name="scan_outcome_added_marked_missing">
+        <item quantity="one">%1$d ROM nova adicionada, %2$d marcadas como ausentes</item>
+        <item quantity="many">%1$d ROMs novas adicionadas, %2$d marcadas como ausentes</item>
+        <item quantity="other">%1$d ROMs novas adicionadas, %2$d marcadas como ausentes</item>
+    </plurals>
+    <string name="scan_with_error_note">%1$s (%2$s)</string>
+
+    <!-- Per-card line in the scan results list -->
+    <string name="scan_badge_no_new">Nada novo</string>
+    <string name="scan_reason_no_new">Nenhum jogo novo</string>
+    <string name="scan_reason_no_new_marked_missing">Nenhum jogo novo, %1$d marcados como ausentes</string>
+    <plurals name="scan_reason_added">
+        <item quantity="one">%1$d jogo novo adicionado</item>
+        <item quantity="many">%1$d jogos novos adicionados</item>
+        <item quantity="other">%1$d jogos novos adicionados</item>
+    </plurals>
+    <plurals name="scan_reason_added_marked_missing">
+        <item quantity="one">%1$d jogo novo adicionado, %2$d marcados como ausentes</item>
+        <item quantity="many">%1$d jogos novos adicionados, %2$d marcados como ausentes</item>
+        <item quantity="other">%1$d jogos novos adicionados, %2$d marcados como ausentes</item>
+    </plurals>
+</resources>

@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.launcher
 
+import android.content.Context
 import com.playfieldportal.core.data.database.dao.LaunchOutcomeDao
 import com.playfieldportal.core.data.database.entity.LaunchOutcomeEntity
 import com.playfieldportal.core.domain.model.NoteFact
@@ -9,6 +10,7 @@ import com.playfieldportal.core.domain.model.NotificationKind
 import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.PfpErrorCode
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -29,6 +31,8 @@ class LaunchOutcomeRecorder @Inject constructor(
     // means no future failure path can forget to. Through the shared center, so the row rings the
     // notification cue like every other one.
     private val tasks: BackgroundTaskCenter,
+    // Resolves the notification text in the user's language when the row is posted.
+    @ApplicationContext private val context: Context,
 ) {
 
     suspend fun record(outcome: LaunchOutcome) = withContext(io) {
@@ -50,9 +54,9 @@ class LaunchOutcomeRecorder @Inject constructor(
      */
     private suspend fun postFailureNotification(outcome: LaunchOutcome) {
         val reason = when (outcome.status) {
-            LaunchOutcomeStatus.INTENT_FAILED -> outcome.failureReason ?: "The emulator could not be started"
+            LaunchOutcomeStatus.INTENT_FAILED -> outcome.failureReason ?: context.getString(R.string.launch_rec_could_not_start)
             LaunchOutcomeStatus.NEVER_FOREGROUNDED ->
-                outcome.failureReason ?: "The emulator never came to the foreground"
+                outcome.failureReason ?: context.getString(R.string.launch_rec_never_foreground)
             else -> return
         }
         val code = outcome.errorCode?.let(PfpErrorCode::fromId) ?: when (outcome.status) {
@@ -63,14 +67,17 @@ class LaunchOutcomeRecorder @Inject constructor(
         val recent = runCatching { dao.recentForGame(outcome.gameId, RECENT_LIMIT) }.getOrDefault(emptyList())
         val failures = recent.count { it.outcome != LaunchOutcomeStatus.SUCCEEDED.name }
         val facts = listOfNotNull(
-            outcome.emulatorName?.let { NoteFact("Emulator", it) },
-            outcome.coreName?.let { NoteFact("Core", it) },
-            outcome.platformId?.let { NoteFact("Platform", it.uppercase()) },
-            if (recent.size > 1 && failures > 0) NoteFact("Recent launches", "$failures of the last ${recent.size} failed") else null,
+            outcome.emulatorName?.let { NoteFact(context.getString(R.string.launch_fact_emulator), it) },
+            outcome.coreName?.let { NoteFact(context.getString(R.string.launch_fact_core), it) },
+            outcome.platformId?.let { NoteFact(context.getString(R.string.launch_fact_platform), it.uppercase()) },
+            if (recent.size > 1 && failures > 0) NoteFact(
+                context.getString(R.string.launch_fact_recent),
+                context.getString(R.string.launch_fact_recent_value, failures, recent.size),
+            ) else null,
         )
         tasks.report(
             id = "launch_${outcome.gameId}",
-            label = "Couldn't launch ${outcome.gameTitle}",
+            label = context.getString(R.string.launch_rec_title, outcome.gameTitle),
             message = reason,
             severity = NotificationSeverity.ERROR,
             kind = NotificationKind.LAUNCH,

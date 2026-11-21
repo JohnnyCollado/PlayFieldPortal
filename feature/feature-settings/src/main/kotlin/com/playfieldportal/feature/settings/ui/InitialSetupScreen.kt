@@ -1,6 +1,8 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.domain.text.labelRes
 import android.net.Uri
+import androidx.annotation.StringRes
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +16,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -21,9 +25,10 @@ import com.playfieldportal.core.data.repository.Xbox360Emulator
 import com.playfieldportal.core.data.repository.MediaRootKind
 import com.playfieldportal.core.domain.model.ControllerLayoutPrefs
 import com.playfieldportal.core.domain.model.XYLayout
-import com.playfieldportal.core.domain.model.displayLabel
 import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpScreenPreview
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.feature.settings.ui.wizard.WizardAmber
 import com.playfieldportal.feature.settings.ui.wizard.WizardCheckboxRow
 import com.playfieldportal.feature.settings.ui.wizard.WizardInfoText
@@ -166,24 +171,25 @@ fun InitialSetupScreen(
     val stepNumber = state.stepNumber
     val canGoBack = step != SetupStep.WELCOME
     // Every Continue row names the page after this one in THIS run's flow.
-    val nextLabel = state.nextStep?.let(::stepTitle) ?: "Finish"
+    val nextLabel = state.nextStep?.let { stringResource(stepTitleRes(it)) } ?: stringResource(R.string.setup_step_finish)
 
     // Removing a root asks first, in the wizard as in Settings.
     val removeGate = rememberRootRemoveGate()
     val removeModal = rememberSettingsModal(removeGate.spec)
     WizardScaffold(
         stepNumber = stepNumber,
+        stepCount = state.steps.size,
         modalOpen = removeModal.open,
         onInterceptModal = removeModal.intercept,
-        title = "Initial Setup",
+        title = stringResource(R.string.setup_title),
         onBack = { if (!viewModel.previousStep() && !firstRun) onBack() },
         backEnabled = canGoBack,
-        message = state.message,
+        message = state.message?.asString(),
         onDismissMessage = viewModel::dismissMessage,
-        heading = headingFor(step),
-        hint = hintFor(step),
+        heading = stringResource(headingRes(step)),
+        hint = hintRes(step)?.let { stringResource(it) },
         onSkip = if (wizardOffersSkip(step, state.artworkReady)) viewModel::skipStep else null,
-        confirmLabel = if (step == SetupStep.EMULATORS) "Change" else "Enter",
+        confirmLabel = stringResource(if (step == SetupStep.EMULATORS) R.string.setup_prompt_change else R.string.setup_prompt_enter),
         contentKey = step,
         modifier = modifier,
     ) {
@@ -202,12 +208,11 @@ fun InitialSetupScreen(
             )
             SetupStep.ROM_ROOTS -> RootsPage(
                 roots = state.romRoots,
-                emptyText = "No ROM roots yet. Add the folder where your consoles' games live — " +
-                    "one subfolder per console, scanned automatically.",
-                addLabel = "Add ROM root",
-                addSublabel = "Grant a root folder with one subfolder per console",
-                rescanLabel = "Rescan ROM roots",
-                rescanSublabel = "Auto-detect consoles and scan their games",
+                emptyText = stringResource(R.string.setup_rom_empty),
+                addLabel = stringResource(R.string.setup_rom_add),
+                addSublabel = stringResource(R.string.setup_rom_add_sub),
+                rescanLabel = stringResource(R.string.setup_rom_rescan),
+                rescanSublabel = stringResource(R.string.setup_rom_rescan_sub),
                 // B3: "where do I put my ROMs?" — scaffold one ES-DE folder per platform.
                 onCreateFolders = viewModel::createStandardRomFolders,
                 onAdd = { pendingAdd = AddSlot.ROM; addPicker.launch(null) },
@@ -221,11 +226,10 @@ fun InitialSetupScreen(
             )
             SetupStep.MUSIC -> MediaRootsPage(
                 roots = state.musicRoots,
-                kindLabel = "Music",
                 kind = MediaRootKind.MUSIC,
-                emptyText = "No music roots yet. Add the folder where your music lives — several roots can span internal storage and an SD card.",
-                addLabel = "Add music root",
-                addSublabel = "Grant a root folder (e.g. /Music) — add several to span locations",
+                emptyText = stringResource(R.string.setup_music_empty),
+                addLabel = stringResource(R.string.setup_music_add),
+                addSublabel = stringResource(R.string.setup_music_add_sub),
                 onAdd = { pendingAdd = AddSlot.MUSIC; addPicker.launch(null) },
                 onRelink = { row ->
                     pendingRelinkKind = MediaRootKind.MUSIC to row.treeUri
@@ -242,11 +246,10 @@ fun InitialSetupScreen(
             )
             SetupStep.VIDEO -> MediaRootsPage(
                 roots = state.videoRoots,
-                kindLabel = "Video",
                 kind = MediaRootKind.VIDEO,
-                emptyText = "No video roots yet. Add the folder where your videos live — several roots can span internal storage and an SD card.",
-                addLabel = "Add video root",
-                addSublabel = "Grant a root folder (e.g. /Videos) — add several to span locations",
+                emptyText = stringResource(R.string.setup_video_empty),
+                addLabel = stringResource(R.string.setup_video_add),
+                addSublabel = stringResource(R.string.setup_video_add_sub),
                 onAdd = { pendingAdd = AddSlot.VIDEO; addPicker.launch(null) },
                 onRelink = { row ->
                     pendingRelinkKind = MediaRootKind.VIDEO to row.treeUri
@@ -263,11 +266,10 @@ fun InitialSetupScreen(
             )
             SetupStep.PHOTO -> MediaRootsPage(
                 roots = state.photoRoots,
-                kindLabel = "Photo",
                 kind = MediaRootKind.PHOTO,
-                emptyText = "No photo roots yet. Add the folder where your photos live — several roots can span internal storage and an SD card.",
-                addLabel = "Add photo root",
-                addSublabel = "Grant a root folder (e.g. /Photos) — add several to span locations",
+                emptyText = stringResource(R.string.setup_photo_empty),
+                addLabel = stringResource(R.string.setup_photo_add),
+                addSublabel = stringResource(R.string.setup_photo_add_sub),
                 onAdd = { pendingAdd = AddSlot.PHOTO; addPicker.launch(null) },
                 onRelink = { row ->
                     pendingRelinkKind = MediaRootKind.PHOTO to row.treeUri
@@ -375,61 +377,64 @@ fun InitialSetupScreen(
 }
 
 /** A page's short name, for the previous page's "Next: …" sublabel. */
-private fun stepTitle(step: SetupStep): String = when (step) {
-    SetupStep.WELCOME      -> "Welcome"
-    SetupStep.CONTROLLER   -> "Controller"
-    SetupStep.ROM_ROOTS    -> "ROM folders"
-    SetupStep.MUSIC        -> "Music"
-    SetupStep.VIDEO        -> "Video"
-    SetupStep.PHOTO        -> "Photo"
-    SetupStep.ARTWORK      -> "Artwork"
-    SetupStep.SERVICES     -> "Online Services"
-    SetupStep.ACHIEVEMENTS -> "Achievement Services"
-    SetupStep.LOCAL_ACHIEVEMENTS -> "Local Achievements"
-    SetupStep.RETROARCH    -> "RetroArch"
-    SetupStep.EMULATORS    -> "Emulators"
-    SetupStep.WINDOWS      -> "Windows Games"
-    SetupStep.HINTS        -> "Hints & Touch"
-    SetupStep.HOME_APP     -> "Home App"
-    SetupStep.FINISH       -> "Finish"
+@StringRes
+private fun stepTitleRes(step: SetupStep): Int = when (step) {
+    SetupStep.WELCOME            -> R.string.setup_step_welcome
+    SetupStep.CONTROLLER         -> R.string.setup_step_controller
+    SetupStep.ROM_ROOTS          -> R.string.setup_step_rom_roots
+    SetupStep.MUSIC              -> R.string.setup_step_music
+    SetupStep.VIDEO              -> R.string.setup_step_video
+    SetupStep.PHOTO              -> R.string.setup_step_photo
+    SetupStep.ARTWORK            -> R.string.setup_step_artwork
+    SetupStep.SERVICES           -> R.string.setup_step_services
+    SetupStep.ACHIEVEMENTS       -> R.string.setup_step_achievements
+    SetupStep.LOCAL_ACHIEVEMENTS -> R.string.setup_step_local_achievements
+    SetupStep.RETROARCH          -> R.string.setup_step_retroarch
+    SetupStep.EMULATORS          -> R.string.setup_step_emulators
+    SetupStep.WINDOWS            -> R.string.setup_step_windows
+    SetupStep.HINTS              -> R.string.setup_step_hints
+    SetupStep.HOME_APP           -> R.string.setup_step_home_app
+    SetupStep.FINISH             -> R.string.setup_step_finish
 }
 
-private fun headingFor(step: SetupStep): String = when (step) {
-    SetupStep.WELCOME     -> "Welcome to Play Field Portal."
-    SetupStep.CONTROLLER  -> "Choose your controller."
-    SetupStep.ROM_ROOTS   -> "Choose your ROM folders."
-    SetupStep.MUSIC       -> "Choose your music folders."
-    SetupStep.VIDEO       -> "Choose your video folders."
-    SetupStep.PHOTO       -> "Choose your photo folders."
-    SetupStep.ARTWORK     -> "Choose your artwork folder."
-    SetupStep.SERVICES    -> "Connect your artwork sources."
-    SetupStep.ACHIEVEMENTS -> "Connect your achievement services."
-    SetupStep.LOCAL_ACHIEVEMENTS -> "Link your emulator data folders."
-    SetupStep.RETROARCH   -> "Link RetroArch's cores folder."
-    SetupStep.EMULATORS   -> "Check your emulators."
-    SetupStep.WINDOWS     -> "Set up Windows games."
-    SetupStep.HINTS       -> "Choose how the launcher helps you."
-    SetupStep.HOME_APP    -> "Make Play Field Portal your Home screen."
-    SetupStep.FINISH      -> "You're all set!"
+@StringRes
+private fun headingRes(step: SetupStep): Int = when (step) {
+    SetupStep.WELCOME            -> R.string.setup_heading_welcome
+    SetupStep.CONTROLLER         -> R.string.setup_heading_controller
+    SetupStep.ROM_ROOTS          -> R.string.setup_heading_rom_roots
+    SetupStep.MUSIC              -> R.string.setup_heading_music
+    SetupStep.VIDEO              -> R.string.setup_heading_video
+    SetupStep.PHOTO              -> R.string.setup_heading_photo
+    SetupStep.ARTWORK            -> R.string.setup_heading_artwork
+    SetupStep.SERVICES           -> R.string.setup_heading_services
+    SetupStep.ACHIEVEMENTS       -> R.string.setup_heading_achievements
+    SetupStep.LOCAL_ACHIEVEMENTS -> R.string.setup_heading_local_achievements
+    SetupStep.RETROARCH          -> R.string.setup_heading_retroarch
+    SetupStep.EMULATORS          -> R.string.setup_heading_emulators
+    SetupStep.WINDOWS            -> R.string.setup_heading_windows
+    SetupStep.HINTS              -> R.string.setup_heading_hints
+    SetupStep.HOME_APP           -> R.string.setup_heading_home_app
+    SetupStep.FINISH             -> R.string.setup_heading_finish
 }
 
-private fun hintFor(step: SetupStep): String? = when (step) {
-    SetupStep.WELCOME   -> "Most steps are optional. You'll need to pick an artwork folder."
-    SetupStep.CONTROLLER -> "Sets the button icons and which button confirms, so every prompt from here on matches your pad."
-    SetupStep.ROM_ROOTS -> "Add one or more root folders — each console's games live in a subfolder under them."
-    SetupStep.MUSIC     -> "Add several roots to span internal storage and an SD card."
-    SetupStep.VIDEO     -> "Add several roots to span internal storage and an SD card."
-    SetupStep.PHOTO     -> "Add several roots to span internal storage and an SD card."
-    SetupStep.ARTWORK   -> "Required. Your art lives here, outside the app, so it survives a reinstall."
-    SetupStep.SERVICES  -> "All optional and free. SteamGridDB, TheGamesDB, IGDB, and ScreenScraper fetch game artwork and metadata."
-    SetupStep.ACHIEVEMENTS -> "RetroAchievements and Steam track achievements as Shiba Coins."
-    SetupStep.LOCAL_ACHIEVEMENTS -> "Trophies and achievements your emulators save on this device. One grant per emulator links every title."
-    SetupStep.RETROARCH -> "Lets the launcher know exactly which cores you have, so only those are offered."
-    SetupStep.EMULATORS -> "Each console's default, picked from what's installed. Change any that look wrong."
-    SetupStep.WINDOWS   -> "A Windows emulator is installed — choose where your PC games live."
-    SetupStep.HINTS     -> "Button hints fade in when you pause, and vanish the moment you press anything."
-    SetupStep.HOME_APP  -> "The Home button then brings you back here instead of the stock launcher."
-    SetupStep.FINISH    -> "Everything below can be adjusted anytime in Settings."
+@StringRes
+private fun hintRes(step: SetupStep): Int? = when (step) {
+    SetupStep.WELCOME            -> R.string.setup_hint_welcome
+    SetupStep.CONTROLLER         -> R.string.setup_hint_controller
+    SetupStep.ROM_ROOTS          -> R.string.setup_hint_rom_roots
+    SetupStep.MUSIC              -> R.string.setup_hint_media_roots
+    SetupStep.VIDEO              -> R.string.setup_hint_media_roots
+    SetupStep.PHOTO              -> R.string.setup_hint_media_roots
+    SetupStep.ARTWORK            -> R.string.setup_hint_artwork
+    SetupStep.SERVICES           -> R.string.setup_hint_services
+    SetupStep.ACHIEVEMENTS       -> R.string.setup_hint_achievements
+    SetupStep.LOCAL_ACHIEVEMENTS -> R.string.setup_hint_local_achievements
+    SetupStep.RETROARCH          -> R.string.setup_hint_retroarch
+    SetupStep.EMULATORS          -> R.string.setup_hint_emulators
+    SetupStep.WINDOWS            -> R.string.setup_hint_windows
+    SetupStep.HINTS              -> R.string.setup_hint_hints
+    SetupStep.HOME_APP           -> R.string.setup_hint_home_app
+    SetupStep.FINISH             -> R.string.setup_hint_finish
 }
 
 @Composable
@@ -437,8 +442,8 @@ private fun WizardContinueRow(label: String, onClick: (() -> Unit)?) {
     Spacer(Modifier.height(4.dp))
     // A null onClick is the inert form: no activation for pad or touch, dimmed, saying why.
     WizardRow(
-        label = "Continue",
-        sublabel = if (onClick != null) "Next: $label" else "Choose a folder first",
+        label = stringResource(R.string.setup_continue),
+        sublabel = if (onClick != null) stringResource(R.string.setup_continue_next, label) else stringResource(R.string.setup_continue_blocked),
         modifier = if (onClick != null) Modifier else Modifier.alpha(0.45f),
         onClick = onClick,
     )
@@ -447,18 +452,17 @@ private fun WizardContinueRow(label: String, onClick: (() -> Unit)?) {
 @Composable
 private fun WelcomePage(onStart: () -> Unit, onSkip: () -> Unit) {
     WizardInfoText(
-        "Welcome to Play Field Portal. This quick setup points the launcher at your media " +
-            "folders and connects the online services used for artwork and achievements."
+        stringResource(R.string.setup_welcome_intro)
     )
     WizardRow(
-        label = "Get started",
-        sublabel = "Choose your controller first",
+        label = stringResource(R.string.setup_welcome_start),
+        sublabel = stringResource(R.string.setup_welcome_start_sub),
         focusKey = "welcome_start",
         onClick = onStart,
     )
     WizardRow(
-        label = "Skip setup",
-        sublabel = "Go straight to the launcher — run the Setup Wizard from Settings ▸ System anytime",
+        label = stringResource(R.string.setup_welcome_skip),
+        sublabel = stringResource(R.string.setup_welcome_skip_sub),
         onClick = onSkip,
     )
 }
@@ -485,8 +489,8 @@ private fun RootsPage(
         roots.forEach { row ->
             WizardRootRow(
                 name = row.name,
-                sublabel = if (row.linked) "Consoles home under this root"
-                           else "Access lost — use ✎ to re-grant access",
+                sublabel = if (row.linked) stringResource(R.string.setup_rom_root_linked)
+                           else stringResource(R.string.setup_root_access_lost),
                 onEdit = { onRelink(row) },
                 onRemove = { onRemove(row) },
             )
@@ -496,8 +500,8 @@ private fun RootsPage(
     if (roots.isNotEmpty()) {
         // B3: answer "where do I put my ROMs?" — one folder per supported console, ready to fill.
         WizardRow(
-            label = "Create standard folders",
-            sublabel = "One subfolder per console, named for your games",
+            label = stringResource(R.string.setup_rom_create_folders),
+            sublabel = stringResource(R.string.setup_rom_create_folders_sub),
             onClick = onCreateFolders,
         )
     }
@@ -508,7 +512,6 @@ private fun RootsPage(
 @Composable
 private fun MediaRootsPage(
     roots: List<RootFolderRow>,
-    kindLabel: String,
     kind: MediaRootKind,
     emptyText: String,
     addLabel: String,
@@ -526,15 +529,30 @@ private fun MediaRootsPage(
         roots.forEach { row ->
             WizardRootRow(
                 name = row.name,
-                sublabel = if (row.linked) "$kindLabel library lives here"
-                           else "Access lost — use ✎ to re-grant access",
+                sublabel = if (row.linked) stringResource(
+                    when (kind) {
+                        MediaRootKind.MUSIC -> R.string.setup_music_root_linked
+                        MediaRootKind.VIDEO -> R.string.setup_video_root_linked
+                        MediaRootKind.PHOTO -> R.string.setup_photo_root_linked
+                    },
+                ) else stringResource(R.string.setup_root_access_lost),
                 onEdit = { onRelink(row) },
                 onRemove = { onRemove(row) },
             )
         }
     }
     WizardRow(label = addLabel, sublabel = addSublabel, onClick = onAdd)
-    WizardRow(label = "Rescan $kindLabel Library", sublabel = "Update the libraries from every root folder", onClick = onRescan)
+    WizardRow(
+        label = stringResource(
+            when (kind) {
+                MediaRootKind.MUSIC -> R.string.setup_music_rescan
+                MediaRootKind.VIDEO -> R.string.setup_video_rescan
+                MediaRootKind.PHOTO -> R.string.setup_photo_rescan
+            },
+        ),
+        sublabel = stringResource(R.string.setup_media_rescan_sub),
+        onClick = onRescan,
+    )
     WizardContinueRow(nextLabel, onContinue)
 }
 
@@ -549,48 +567,52 @@ private fun ArtworkPage(
     val folder = state.artworkFolderName
     if (folder == null) {
         WizardInfoText(
-            "Pick a writable folder. The launcher sets up an artwork library inside it " +
-                "automatically — games get art as they're added."
+            stringResource(R.string.setup_artwork_empty)
         )
     } else {
         // Edit only: the artwork folder is required, so there is no unlink.
         WizardRootRow(
             name = folder,
-            sublabel = if (state.artworkUnavailable) "Unavailable. Relink to resume new artwork"
-                       else "Artwork library — use ✎ to pick a different folder",
+            sublabel = if (state.artworkUnavailable) stringResource(R.string.setup_artwork_unavailable)
+                       else stringResource(R.string.setup_artwork_folder_sub),
             sublabelColor = if (state.artworkUnavailable) WizardAmber else null,
             onEdit = onPickFolder,
         )
     }
     if (folder == null) {
         WizardRow(
-            label = "Choose artwork folder",
-            sublabel = "One folder hosts the artwork library",
+            label = stringResource(R.string.setup_artwork_choose),
+            sublabel = stringResource(R.string.setup_artwork_choose_sub),
             onClick = onPickFolder,
         )
     }
     // The import offer needs a reachable folder.
     if (state.artworkReady && state.artworkSources.isNotEmpty()) {
         WizardRow(
-            label = "Import artwork now?",
-            sublabel = "Copy ${state.sizeLabelForSources()} from the folder's import/ into the library",
+            label = stringResource(R.string.setup_artwork_import_title),
+            sublabel = state.importSublabel(),
             focusKey = "artwork_import_now",
             onClick = onImportNow,
         )
     } else if (state.artworkReady) {
         WizardRow(
-            label = "Artwork import",
-            sublabel = "Nothing to import yet — add a launcher's media folder under import/",
+            label = stringResource(R.string.setup_artwork_import_row),
+            sublabel = stringResource(R.string.setup_artwork_import_none_sub),
             onClick = onImportNow,
         )
     }
     WizardContinueRow(nextLabel, if (state.artworkReady) onContinue else null)
 }
 
-private fun InitialSetupUiState.sizeLabelForSources(): String {
+/** "Copy <source> from the folder's import/ into the library" — one named source, or a count of them. */
+@Composable
+private fun InitialSetupUiState.importSublabel(): String {
     val n = artworkSources.size
-    val label = if (n == 1) artworkSources.first().label else "$n source folders"
-    return label
+    return if (n == 1) {
+        stringResource(R.string.setup_artwork_import_sub_one, artworkSources.first().label)
+    } else {
+        pluralStringResource(R.plurals.setup_artwork_import_sub_many, n, n)
+    }
 }
 
 @Composable
@@ -613,21 +635,20 @@ private fun ServicesPage(
     var ssPassDraft by remember(state.hasScreenScraper) { mutableStateOf("") }
 
     WizardInfoText(
-        "All accounts are optional and free. SteamGridDB, TheGamesDB, IGDB, and ScreenScraper " +
-            "fetch game artwork and metadata for your library."
+        stringResource(R.string.setup_services_intro)
     )
 
     // ── SteamGridDB ───────────────────────────────────────────────────────────
     WizardSectionHeader("SteamGridDB")
     WizardTextField(
-        label = if (state.hasSgdb) "API Key (saved)" else "API Key",
+        label = if (state.hasSgdb) stringResource(R.string.setup_field_api_key_saved) else stringResource(R.string.setup_field_api_key),
         value = sgdbKeyDraft,
         onValueChange = { sgdbKeyDraft = it },
-        placeholder = if (state.hasSgdb) "••••••••  (tap to replace)" else "Paste your SteamGridDB key",
+        placeholder = if (state.hasSgdb) stringResource(R.string.setup_placeholder_secret_saved) else stringResource(R.string.setup_placeholder_sgdb_key),
         isPassword = true,
     )
     if (sgdbKeyDraft.isNotBlank()) {
-        WizardRow(label = "Connect SteamGridDB", onClick = { onConnectSgdb(sgdbKeyDraft) })
+        WizardRow(label = stringResource(R.string.setup_connect_sgdb), onClick = { onConnectSgdb(sgdbKeyDraft) })
     }
 
     // ── TheGamesDB ────────────────────────────────────────────────────────────
@@ -635,62 +656,62 @@ private fun ServicesPage(
     // writes through the same MetadataApiKeyProvider, so either place configures the other.
     WizardSectionHeader("TheGamesDB")
     WizardTextField(
-        label = if (state.hasTgdb) "API Key (saved)" else "API Key",
+        label = if (state.hasTgdb) stringResource(R.string.setup_field_api_key_saved) else stringResource(R.string.setup_field_api_key),
         value = tgdbKeyDraft,
         onValueChange = { tgdbKeyDraft = it },
-        placeholder = if (state.hasTgdb) "••••••••  (tap to replace)" else "Paste your TheGamesDB key",
+        placeholder = if (state.hasTgdb) stringResource(R.string.setup_placeholder_secret_saved) else stringResource(R.string.setup_placeholder_tgdb_key),
         isPassword = true,
     )
     if (tgdbKeyDraft.isNotBlank()) {
-        WizardRow(label = "Connect TheGamesDB", onClick = { onConnectTgdb(tgdbKeyDraft) })
+        WizardRow(label = stringResource(R.string.setup_connect_tgdb), onClick = { onConnectTgdb(tgdbKeyDraft) })
     }
 
     // ── IGDB (Twitch) ─────────────────────────────────────────────────────────
     WizardSectionHeader("IGDB (Twitch)")
     WizardTextField(
-        label = if (state.hasIgdb) "Client ID (saved)" else "Client ID",
+        label = if (state.hasIgdb) stringResource(R.string.setup_field_client_id_saved) else stringResource(R.string.setup_field_client_id),
         value = igdbIdDraft,
         onValueChange = { igdbIdDraft = it },
-        placeholder = if (state.hasIgdb) "Tap to replace" else "Twitch Client ID",
+        placeholder = if (state.hasIgdb) stringResource(R.string.setup_placeholder_tap_to_replace) else stringResource(R.string.setup_placeholder_twitch_client_id),
     )
     WizardTextField(
-        label = if (state.hasIgdb) "Client Secret (saved)" else "Client Secret",
+        label = if (state.hasIgdb) stringResource(R.string.setup_field_client_secret_saved) else stringResource(R.string.setup_field_client_secret),
         value = igdbSecretDraft,
         onValueChange = { igdbSecretDraft = it },
-        placeholder = if (state.hasIgdb) "••••••••  (tap to replace)" else "Twitch Client Secret",
+        placeholder = if (state.hasIgdb) stringResource(R.string.setup_placeholder_secret_saved) else stringResource(R.string.setup_placeholder_twitch_client_secret),
         isPassword = true,
     )
     state.igdbStatus?.let {
-        WizardInfoText(it)  // transient validation result
+        WizardInfoText(it.asString())  // transient validation result
     }
     if (igdbIdDraft.isNotBlank() && igdbSecretDraft.isNotBlank()) {
-        WizardRow(label = "Test credentials", onClick = { onTestIgdb(igdbIdDraft, igdbSecretDraft) })
-        WizardRow(label = "Connect IGDB", onClick = { onConnectIgdb(igdbIdDraft, igdbSecretDraft) })
+        WizardRow(label = stringResource(R.string.setup_test_credentials), onClick = { onTestIgdb(igdbIdDraft, igdbSecretDraft) })
+        WizardRow(label = stringResource(R.string.setup_connect_igdb), onClick = { onConnectIgdb(igdbIdDraft, igdbSecretDraft) })
     }
 
     // ── ScreenScraper (only when the build ships dev credentials) ─────────────
     if (state.ssEnabled) {
         WizardSectionHeader("ScreenScraper")
         if (state.hasScreenScraper) {
-            WizardValueRow(label = "Connected as", value = state.ssUsername)
+            WizardValueRow(label = stringResource(R.string.setup_connected_as), value = state.ssUsername)
         }
         WizardTextField(
-            label = if (state.hasScreenScraper) "Username (saved)" else "Username",
+            label = if (state.hasScreenScraper) stringResource(R.string.setup_field_username_saved) else stringResource(R.string.setup_field_username),
             value = ssUserDraft,
             onValueChange = { ssUserDraft = it },
-            placeholder = if (state.hasScreenScraper) "Tap to replace" else "ScreenScraper username",
+            placeholder = if (state.hasScreenScraper) stringResource(R.string.setup_placeholder_tap_to_replace) else stringResource(R.string.setup_placeholder_ss_username),
         )
         WizardTextField(
-            label = if (state.hasScreenScraper) "Password (saved)" else "Password",
+            label = if (state.hasScreenScraper) stringResource(R.string.setup_field_password_saved) else stringResource(R.string.setup_field_password),
             value = ssPassDraft,
             onValueChange = { ssPassDraft = it },
-            placeholder = if (state.hasScreenScraper) "••••••••  (tap to replace)" else "ScreenScraper password",
+            placeholder = if (state.hasScreenScraper) stringResource(R.string.setup_placeholder_secret_saved) else stringResource(R.string.setup_placeholder_ss_password),
             isPassword = true,
         )
-        state.ssStatus?.let { WizardInfoText(it) }
+        state.ssStatus?.let { WizardInfoText(it.asString()) }
         if (ssUserDraft.isNotBlank() && ssPassDraft.isNotBlank()) {
-            WizardRow(label = "Test account", onClick = { onTestSs(ssUserDraft, ssPassDraft) })
-            WizardRow(label = "Connect ScreenScraper", onClick = { onConnectSs(ssUserDraft, ssPassDraft) })
+            WizardRow(label = stringResource(R.string.setup_test_account), onClick = { onTestSs(ssUserDraft, ssPassDraft) })
+            WizardRow(label = stringResource(R.string.setup_connect_ss), onClick = { onConnectSs(ssUserDraft, ssPassDraft) })
         }
     }
 
@@ -712,45 +733,45 @@ private fun AchievementsPage(
     var steamKeyDraft by remember(state.hasSteam) { mutableStateOf("") }
 
     WizardInfoText(
-        "Optional and free. RetroAchievements and Steam track achievements as Shiba Coins."
+        stringResource(R.string.setup_achievements_intro)
     )
 
     // ── RetroAchievements ─────────────────────────────────────────────────────
     WizardSectionHeader("RetroAchievements")
     WizardTextField(
-        label = if (state.hasRetroAchievements) "Username (saved)" else "Username",
+        label = if (state.hasRetroAchievements) stringResource(R.string.setup_field_username_saved) else stringResource(R.string.setup_field_username),
         value = raUserDraft,
         onValueChange = { raUserDraft = it },
-        placeholder = if (state.hasRetroAchievements) "Tap to replace" else "Your RA username",
+        placeholder = if (state.hasRetroAchievements) stringResource(R.string.setup_placeholder_tap_to_replace) else stringResource(R.string.setup_placeholder_ra_username),
     )
     WizardTextField(
-        label = if (state.hasRetroAchievements) "Web API Key (saved)" else "Web API Key",
+        label = if (state.hasRetroAchievements) stringResource(R.string.setup_field_web_api_key_saved) else stringResource(R.string.setup_field_web_api_key),
         value = raKeyDraft,
         onValueChange = { raKeyDraft = it },
-        placeholder = if (state.hasRetroAchievements) "••••••••  (tap to replace)" else "Paste your RA Web API key",
+        placeholder = if (state.hasRetroAchievements) stringResource(R.string.setup_placeholder_secret_saved) else stringResource(R.string.setup_placeholder_ra_key),
         isPassword = true,
     )
     if (raUserDraft.isNotBlank() && raKeyDraft.isNotBlank()) {
-        WizardRow(label = "Connect RetroAchievements", onClick = { onConnectRa(raUserDraft, raKeyDraft) })
+        WizardRow(label = stringResource(R.string.setup_connect_ra), onClick = { onConnectRa(raUserDraft, raKeyDraft) })
     }
 
     // ── Steam ─────────────────────────────────────────────────────────────────
     WizardSectionHeader("Steam")
     WizardTextField(
-        label = if (state.hasSteam) "SteamID64 or vanity name (saved)" else "SteamID64 or vanity name",
+        label = if (state.hasSteam) stringResource(R.string.setup_field_steam_id_saved) else stringResource(R.string.setup_field_steam_id),
         value = steamIdDraft,
         onValueChange = { steamIdDraft = it },
-        placeholder = if (state.hasSteam) "Tap to replace" else "7656119… or your custom URL name",
+        placeholder = if (state.hasSteam) stringResource(R.string.setup_placeholder_tap_to_replace) else stringResource(R.string.setup_placeholder_steam_id),
     )
     WizardTextField(
-        label = if (state.hasSteam) "Web API Key (saved)" else "Web API Key",
+        label = if (state.hasSteam) stringResource(R.string.setup_field_web_api_key_saved) else stringResource(R.string.setup_field_web_api_key),
         value = steamKeyDraft,
         onValueChange = { steamKeyDraft = it },
-        placeholder = if (state.hasSteam) "••••••••  (tap to replace)" else "Paste your Steam Web API key",
+        placeholder = if (state.hasSteam) stringResource(R.string.setup_placeholder_secret_saved) else stringResource(R.string.setup_placeholder_steam_key),
         isPassword = true,
     )
     if (steamIdDraft.isNotBlank() && steamKeyDraft.isNotBlank()) {
-        WizardRow(label = "Connect Steam", onClick = { onConnectSteam(steamIdDraft, steamKeyDraft) })
+        WizardRow(label = stringResource(R.string.setup_connect_steam), onClick = { onConnectSteam(steamIdDraft, steamKeyDraft) })
     }
 
     WizardContinueRow(nextLabel, onContinue)
@@ -766,22 +787,22 @@ private fun ControllerPage(
     nextLabel: String,
 ) {
     WizardValueRow(
-        label = "Controller type",
-        value = prefs.displayType.displayLabel(),
-        sublabel = "Changes the button icons in every prompt",
+        label = stringResource(R.string.setup_controller_type),
+        value = stringResource(prefs.displayType.labelRes),
+        sublabel = stringResource(R.string.setup_controller_type_sub),
         focusKey = "controller_type",
         onClick = onCycleType,
     )
     WizardValueRow(
-        label = "A / B swap",
-        value = if (prefs.confirmBackLayout == com.playfieldportal.core.domain.model.ConfirmBackLayout.REVERSED) "On" else "Off",
-        sublabel = confirmSwapSublabel(prefs),
+        label = stringResource(R.string.setup_controller_ab_swap),
+        value = if (prefs.confirmBackLayout == com.playfieldportal.core.domain.model.ConfirmBackLayout.REVERSED) stringResource(R.string.setup_on) else stringResource(R.string.setup_off),
+        sublabel = confirmSwapSublabel(prefs).asString(),
         onClick = onCycleConfirm,
     )
     WizardValueRow(
-        label = "X / Y swap",
-        value = if (prefs.xyLayout == XYLayout.SWAPPED) "On" else "Off",
-        sublabel = "Launcher menus only — emulator controls are untouched",
+        label = stringResource(R.string.setup_controller_xy_swap),
+        value = if (prefs.xyLayout == XYLayout.SWAPPED) stringResource(R.string.setup_on) else stringResource(R.string.setup_off),
+        sublabel = stringResource(R.string.setup_controller_xy_swap_sub),
         onClick = onCycleXY,
     )
     WizardContinueRow(nextLabel, onContinue)
@@ -806,72 +827,72 @@ private fun LocalAchievementsPage(
     nextLabel: String,
 ) {
     if (state.vita3KInstalled) {
-        WizardSectionHeader("PS Vita · Vita3K")
+        WizardSectionHeader(stringResource(R.string.setup_local_vita_header))
         val folder = state.vitaFolderName
         if (folder == null) {
             WizardRow(
-                label = "Set Vita3K data folder",
-                sublabel = "Grant the ux0 folder (or the folder that contains it)",
+                label = stringResource(R.string.setup_local_vita_set),
+                sublabel = stringResource(R.string.setup_local_vita_set_sub),
                 onClick = onLinkVita,
             )
         } else {
             WizardRootRow(
                 name = folder,
-                sublabel = "Vita3K data folder — use ✎ to pick a different one",
+                sublabel = stringResource(R.string.setup_local_vita_folder_sub),
                 onEdit = onLinkVita,
                 onRemove = onForgetVita,
             )
         }
     }
     if (state.armsx3Installed) {
-        WizardSectionHeader("PS3 · ARMSX3")
+        WizardSectionHeader(stringResource(R.string.setup_local_ps3_header))
         val folder = state.ps3FolderName
         if (folder == null) {
             WizardRow(
-                label = "Set ARMSX3 data folder",
-                sublabel = "Grant PS3/config/dev_hdd0 — or any folder above or below it",
+                label = stringResource(R.string.setup_local_ps3_set),
+                sublabel = stringResource(R.string.setup_local_ps3_set_sub),
                 onClick = onLinkPs3,
             )
         } else {
             WizardRootRow(
                 name = folder,
-                sublabel = "ARMSX3 data folder — use ✎ to pick a different one",
+                sublabel = stringResource(R.string.setup_local_ps3_folder_sub),
                 onEdit = onLinkPs3,
                 onRemove = onForgetPs3,
             )
         }
     }
     if (state.x360MobileInstalled) {
-        WizardSectionHeader("Xbox 360 · X360 Mobile")
+        WizardSectionHeader(stringResource(R.string.setup_local_x360_header))
         val folder = state.x360MobileFolderName
         if (folder == null) {
             WizardRow(
-                label = "Set X360 Mobile data folder",
-                sublabel = "Pick X360 Mobile in the folder picker's side menu, then allow access",
+                label = stringResource(R.string.setup_local_x360_set),
+                sublabel = stringResource(R.string.setup_local_x360_set_sub),
                 onClick = onLinkX360Mobile,
             )
         } else {
             WizardRootRow(
                 name = folder,
-                sublabel = "X360 Mobile data folder — use ✎ to pick a different one",
+                sublabel = stringResource(R.string.setup_local_x360_folder_sub),
                 onEdit = onLinkX360Mobile,
                 onRemove = onForgetX360Mobile,
             )
         }
     }
     if (state.xenDroidInstalled) {
-        WizardSectionHeader("Xbox 360 · XenDroid")
+        WizardSectionHeader(stringResource(R.string.setup_local_xendroid_header))
         val folder = state.xenDroidFolderName
         if (folder == null) {
             WizardRow(
-                label = "Set XenDroid data folder",
-                sublabel = "Grant Android/data/xendroid.compose — or any folder above or below it",
+                label = stringResource(R.string.setup_local_xendroid_set),
+                sublabel = stringResource(R.string.setup_local_xendroid_set_sub),
                 onClick = onLinkXenDroid,
             )
         } else {
             WizardRootRow(
                 name = folder,
-                sublabel = "XenDroid data folder — use ✎ to pick a different one",
+                sublabel = stringResource(R.string.setup_local_xendroid_folder_sub),
                 onEdit = onLinkXenDroid,
                 onRemove = onForgetXenDroid,
             )
@@ -891,22 +912,21 @@ private fun RetroArchPage(
 ) {
     if (state.retroArchLinked) {
         WizardValueRow(
-            label = "Cores folder",
+            label = stringResource(R.string.setup_retroarch_cores_folder),
             value = if (state.retroArchCoreCount != null) {
-                "${state.retroArchCoreCount} cores detected"
+                pluralStringResource(R.plurals.setup_retroarch_cores_detected, state.retroArchCoreCount, state.retroArchCoreCount)
             } else {
-                "Linked"
+                stringResource(R.string.setup_retroarch_linked)
             },
         )
-        WizardRow(label = "Re-link folder", sublabel = "Pick RetroArch's folder again", onClick = onLink)
-        WizardRow(label = "Re-check cores", sublabel = "After installing new cores", onClick = onRedetect)
-        WizardRow(label = "Unlink RetroArch", sublabel = "Fall back to offering every curated core", onClick = onUnlink)
+        WizardRow(label = stringResource(R.string.setup_retroarch_relink), sublabel = stringResource(R.string.setup_retroarch_relink_sub), onClick = onLink)
+        WizardRow(label = stringResource(R.string.setup_retroarch_recheck), sublabel = stringResource(R.string.setup_retroarch_recheck_sub), onClick = onRedetect)
+        WizardRow(label = stringResource(R.string.setup_retroarch_unlink), sublabel = stringResource(R.string.setup_retroarch_unlink_sub), onClick = onUnlink)
     } else {
         WizardInfoText(
-            "RetroArch is installed. Link its folder so only the cores you actually have are " +
-                "offered when launching games — otherwise every curated core is shown (unverified)."
+            stringResource(R.string.setup_retroarch_intro)
         )
-        WizardRow(label = "Link RetroArch folder", sublabel = "Pick the com.retroarch document tree", onClick = onLink)
+        WizardRow(label = stringResource(R.string.setup_retroarch_link), sublabel = stringResource(R.string.setup_retroarch_link_sub), onClick = onLink)
     }
     WizardContinueRow(nextLabel, onContinue)
 }
@@ -921,14 +941,13 @@ private fun EmulatorsPage(
 ) {
     if (rows.isEmpty()) {
         WizardInfoText(
-            "No consoles with games yet. Once your ROM folders are scanned, each console appears " +
-                "here with the emulator it will launch — change it anytime in Settings ▸ Emulators."
+            stringResource(R.string.setup_emulators_empty)
         )
     }
     rows.forEach { row ->
         WizardValueRow(
             label = row.consoleName,
-            value = row.emulatorLabel ?: "None",
+            value = row.emulatorLabel ?: stringResource(R.string.setup_emulators_none),
             focusKey = "emulator_${row.platformId}",
             onClick = if (row.candidateIds.size > 1) ({ onCycle(row.platformId) }) else null,
         )
@@ -944,14 +963,13 @@ private fun WindowsGamesPage(
     nextLabel: String,
 ) {
     WizardInfoText(
-        "Pick the folder that holds one subfolder per game. PFP scans it for your Windows games; " +
-            "nothing in it is changed."
+        stringResource(R.string.setup_windows_intro)
     )
-    WizardValueRow(label = "Detected", value = pages.detectedLaunchers)
+    WizardValueRow(label = stringResource(R.string.setup_windows_detected), value = pages.detectedLaunchers)
     val folder = pages.windowsFolderName
     WizardRow(
-        label = if (folder == null) "Set Windows Games Folder" else "Change Windows Games Folder",
-        sublabel = folder ?: "Grant the folder your games are installed in",
+        label = if (folder == null) stringResource(R.string.setup_windows_set) else stringResource(R.string.setup_windows_change),
+        sublabel = folder ?: stringResource(R.string.setup_windows_set_sub),
         focusKey = "windows_folder",
         onClick = onPickFolder,
     )
@@ -968,22 +986,22 @@ private fun HintsPage(
     nextLabel: String,
 ) {
     WizardCheckboxRow(
-        label = "Button hints",
+        label = stringResource(R.string.setup_hints_enabled),
         checked = hints.enabled,
         onToggle = { onToggleHints() },
-        sublabel = "The idle hint chip on the XMB, in Settings and on media screens",
+        sublabel = stringResource(R.string.setup_hints_enabled_sub),
         focusKey = "hints_enabled",
     )
     WizardValueRow(
-        label = "Hint delay",
-        value = hintDelayLabel(hints.delaySeconds),
-        sublabel = "How long to pause before hints appear (1–5 seconds)",
+        label = stringResource(R.string.setup_hints_delay),
+        value = hintDelayLabel(hints.delaySeconds).asString(),
+        sublabel = stringResource(R.string.setup_hints_delay_sub),
         onClick = onCycleDelay,
     )
     WizardValueRow(
-        label = "Touch button",
-        value = touchButtonLabel(hints.touchButton),
-        sublabel = "The on-screen App Drawer button — Auto shows it after you touch the screen",
+        label = stringResource(R.string.setup_hints_touch),
+        value = touchButtonLabel(hints.touchButton).asString(),
+        sublabel = stringResource(R.string.setup_hints_touch_sub),
         onClick = onCycleTouch,
     )
     WizardContinueRow(nextLabel, onContinue)
@@ -997,13 +1015,12 @@ private fun HomeAppPage(
     nextLabel: String,
 ) {
     WizardInfoText(
-        "Android asks you to pick a Home app and confirm it. You can switch back anytime in " +
-            "Android's Default apps settings."
+        stringResource(R.string.setup_home_intro)
     )
-    WizardValueRow(label = "Current home app", value = homeAppSummary(isHomeApp))
+    WizardValueRow(label = stringResource(R.string.setup_home_current), value = homeAppSummary(isHomeApp).asString())
     WizardRow(
-        label = "Set as home app",
-        sublabel = "Opens Android's Home app chooser",
+        label = stringResource(R.string.setup_home_set),
+        sublabel = stringResource(R.string.setup_home_set_sub),
         focusKey = "home_set",
         onClick = onSetHome,
     )
@@ -1022,86 +1039,94 @@ private fun FinishPage(
 ) {
     if (!state.anyFolderSet) {
         WizardInfoText(
-            "Nothing was configured yet — every folder and service can be added anytime from Settings."
+            stringResource(R.string.setup_finish_nothing)
         )
     }
-    WizardSectionHeader("Summary")
-    WizardValueRow(label = "Controller", value = controllerSummary(controller))
-    WizardValueRow(label = "ROM library", value = rootsShortLabel(state.romRoots))
-    WizardValueRow(label = "Music", value = rootsShortLabel(state.musicRoots))
-    WizardValueRow(label = "Video", value = rootsShortLabel(state.videoRoots))
-    WizardValueRow(label = "Photo", value = rootsShortLabel(state.photoRoots))
-    WizardValueRow(label = "Artwork library", value = state.artworkFolderName ?: "Not set")
-    WizardValueRow(label = "SteamGridDB", value = if (state.hasSgdb) "Connected" else "Not set")
-    WizardValueRow(label = "TheGamesDB", value = if (state.hasTgdb) "Connected" else "Not set")
-    WizardValueRow(label = "IGDB (Twitch)", value = state.igdbClientId.ifBlank { "Not set" })
+    WizardSectionHeader(stringResource(R.string.setup_finish_summary))
+    val notSet = stringResource(R.string.setup_not_set)
+    val connected = stringResource(R.string.setup_connected)
+    WizardValueRow(label = stringResource(R.string.setup_summary_controller), value = controllerSummary(controller).asString())
+    WizardValueRow(label = stringResource(R.string.setup_summary_rom), value = rootsShortLabel(state.romRoots))
+    WizardValueRow(label = stringResource(R.string.setup_summary_music), value = rootsShortLabel(state.musicRoots))
+    WizardValueRow(label = stringResource(R.string.setup_summary_video), value = rootsShortLabel(state.videoRoots))
+    WizardValueRow(label = stringResource(R.string.setup_summary_photo), value = rootsShortLabel(state.photoRoots))
+    WizardValueRow(label = stringResource(R.string.setup_summary_artwork), value = state.artworkFolderName ?: notSet)
+    WizardValueRow(label = "SteamGridDB", value = if (state.hasSgdb) connected else notSet)
+    WizardValueRow(label = "TheGamesDB", value = if (state.hasTgdb) connected else notSet)
+    WizardValueRow(label = "IGDB (Twitch)", value = state.igdbClientId.ifBlank { notSet })
     if (state.ssEnabled) {
-        WizardValueRow(label = "ScreenScraper", value = state.ssUsername.ifBlank { "Not set" })
+        WizardValueRow(label = "ScreenScraper", value = state.ssUsername.ifBlank { notSet })
     }
-    WizardValueRow(label = "RetroAchievements", value = state.raUsername.ifBlank { "Not set" })
-    WizardValueRow(label = "Steam", value = if (state.hasSteam) "Connected" else "Not set")
+    WizardValueRow(label = "RetroAchievements", value = state.raUsername.ifBlank { notSet })
+    WizardValueRow(label = "Steam", value = if (state.hasSteam) connected else notSet)
     if (state.vita3KInstalled) {
-        WizardValueRow(label = "Vita data folder", value = folderSummary(state.vitaFolderName))
+        WizardValueRow(label = stringResource(R.string.setup_summary_vita), value = folderSummary(state.vitaFolderName).asString())
     }
     if (state.armsx3Installed) {
-        WizardValueRow(label = "PS3 data folder", value = folderSummary(state.ps3FolderName))
+        WizardValueRow(label = stringResource(R.string.setup_summary_ps3), value = folderSummary(state.ps3FolderName).asString())
     }
     if (state.x360MobileInstalled) {
-        WizardValueRow(label = "X360 Mobile data folder", value = folderSummary(state.x360MobileFolderName))
+        WizardValueRow(label = stringResource(R.string.setup_summary_x360), value = folderSummary(state.x360MobileFolderName).asString())
     }
     if (state.xenDroidInstalled) {
-        WizardValueRow(label = "XenDroid data folder", value = folderSummary(state.xenDroidFolderName))
+        WizardValueRow(label = stringResource(R.string.setup_summary_xendroid), value = folderSummary(state.xenDroidFolderName).asString())
     }
     if (state.retroArchInstalled) {
         WizardValueRow(
             label = "RetroArch",
-            value = if (state.retroArchLinked) "${state.retroArchCoreCount ?: 0} cores" else "Not linked",
+            value = if (state.retroArchLinked) {
+                val cores = state.retroArchCoreCount ?: 0
+                pluralStringResource(R.plurals.setup_retroarch_cores_count, cores, cores)
+            } else {
+                stringResource(R.string.setup_retroarch_not_linked)
+            },
         )
     }
     if (state.availability.pcLauncher) {
-        WizardValueRow(label = "Windows games", value = folderSummary(pages.windowsFolderName))
+        WizardValueRow(label = stringResource(R.string.setup_summary_windows), value = folderSummary(pages.windowsFolderName).asString())
     }
-    WizardValueRow(label = "Button hints", value = hintsSummary(pages.hints))
-    WizardValueRow(label = "Home app", value = homeAppSummary(pages.isHomeApp))
+    WizardValueRow(label = stringResource(R.string.setup_summary_hints), value = hintsSummary(pages.hints).asString())
+    WizardValueRow(label = stringResource(R.string.setup_summary_home), value = homeAppSummary(pages.isHomeApp).asString())
 
     Spacer(Modifier.height(4.dp))
     // OPTIONAL XMB auto-fit — explicitly opt-in, never forced. Sizing the XMB's cross layout to
     // the PSP-authentic proportions is a preference, not a default; skipping it leaves the
     // launcher exactly as it renders today. Undoable later in Display settings.
-    WizardSectionHeader("XMB Layout")
+    WizardSectionHeader(stringResource(R.string.setup_finish_xmb_header))
     WizardCheckboxRow(
-        label = "Auto-fit the XMB layout (PSP proportions) — changeable anytime in Settings",
+        label = stringResource(R.string.setup_finish_autofit),
         checked = state.autoFitXmbLayout,
         onToggle = onToggleAutoFit,
         focusKey = "finish_autofit",
     )
     if (state.romRoots.isNotEmpty()) {
         WizardRow(
-            label = "Open Library Manager",
-            sublabel = "Add consoles and scan the ROM roots you just set",
+            label = stringResource(R.string.setup_finish_open_lm),
+            sublabel = stringResource(R.string.setup_finish_open_lm_sub),
             onClick = onOpenLibraryManager,
         )
         // B3: end on a real launch — All Games with the cursor on the first playable game.
         WizardRow(
-            label = "Go to your library",
-            sublabel = "Jump straight to All Games",
+            label = stringResource(R.string.setup_finish_go_library),
+            sublabel = stringResource(R.string.setup_finish_go_library_sub),
             focusKey = "finish_go_library",
             onClick = onGoToLibrary,
         )
     }
     WizardRow(
-        label = "Finish",
-        sublabel = "Head to the launcher",
+        label = stringResource(R.string.setup_finish_done),
+        sublabel = stringResource(R.string.setup_finish_done_sub),
         focusKey = "finish_done",
         onClick = onFinish,
     )
 }
 
+@Composable
 private fun rootsShortLabel(roots: List<RootFolderRow>): String =
     when {
-        roots.isEmpty() -> "Not set"
+        roots.isEmpty() -> stringResource(R.string.setup_not_set)
         roots.size == 1 -> roots.first().name
-        else -> "${roots.first().name} +${roots.size - 1} more"
+        else -> stringResource(R.string.setup_roots_more, roots.first().name, roots.size - 1)
     }
 
 // ── Preview scaffolding ────────────────────────────────────────────────────────
@@ -1150,17 +1175,17 @@ private fun RomRootsPagePreview() {
     WizardPagePreview(
         stepNumber = 2,
         heading = "Choose your ROM folders.",
-        hint = "Add one or more root folders — each console's games live in a subfolder under them.",
+        hint = "Add one or more ROM folders — each console's games live in a subfolder inside them.",
     ) {
         RootsPage(
             roots = listOf(
                 RootFolderRow("$prefix/ROMS", "ROMS/Sega", linked = true),
                 RootFolderRow("$prefix/SDROMS", "SD/ROMS", linked = false),
             ),
-            emptyText = "No ROM roots yet. Add the folder where your consoles' games live.",
-            addLabel = "Add ROM root",
-            addSublabel = "Grant a root folder with one subfolder per console",
-            rescanLabel = "Rescan ROM roots",
+            emptyText = "No ROM folders yet. Add the folder where your consoles' games live — one subfolder per console, scanned automatically.",
+            addLabel = "Add ROM folder",
+            addSublabel = "Grant a ROM folder with one subfolder per console",
+            rescanLabel = "Rescan ROM folders",
             rescanSublabel = "Auto-detect consoles and scan their games",
             onCreateFolders = {},
             onAdd = {},
@@ -1192,7 +1217,6 @@ private fun MediaRootsPagePreview(
                 RootFolderRow("$prefix/$kindLabel", "/$kindLabel", linked = true),
                 RootFolderRow("$prefix/SD$kindLabel", "SD/$kindLabel", linked = true),
             ),
-            kindLabel = kindLabel,
             kind = kind,
             emptyText = "No $kindLabel roots yet.",
             addLabel = "Add $kindLabel Root",

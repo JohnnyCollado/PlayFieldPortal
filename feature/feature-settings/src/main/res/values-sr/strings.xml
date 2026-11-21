@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared by every Settings screen: the scaffold's title. -->
+    <string name="settings_title">Подешавања</string>
+
+    <!-- Settings ▸ Sound -->
+    <string name="sound_title">Звук</string>
+    <string name="sound_group_master">Главно</string>
+    <string name="sound_group_levels">Нивои</string>
+    <string name="sound_group_sounds">Звукови</string>
+    <string name="sound_master_volume">Главна јачина звука</string>
+    <string name="sound_master_volume_help">Одређује јачину свих звукова лаунчера. На 0 је лаунчер без звука.</string>
+    <string name="sound_ambience_help">Понавља се док прегледате. OGG се понавља без прекида; MP3 може да кликне.</string>
+    <string name="sound_rejected_title">Тај звук није могуће користити</string>
+    <string name="sound_reset_confirm_title">Вратити звук на подразумеване вредности?</string>
+    <string name="sound_reset_confirm_message">Сваки звук менија враћа се на приложени PFP узорак, а сваки ниво, укључујући главни, враћа се на највиши. Ваша амбијентална нумера и медији за Boot Video и Game Boot остају непромењени.</string>
+    <string name="sound_reset_confirm_action">Врати</string>
+    <string name="sound_reset_row">Врати звук на подразумеване вредности</string>
+    <string name="sound_reset_row_help">Враћа сваки звук менија на приложени PFP узорак и сваки ниво на највиши. Задржава вашу амбијенталну нумеру.</string>
+
+    <!-- Level rows: one per AudioChannel. -->
+    <string name="sound_channel_navigation">Навигација</string>
+    <string name="sound_channel_back">Назад / Откажи</string>
+    <string name="sound_channel_confirm">Потврди / Примени</string>
+    <string name="sound_channel_error">Грешка / Неважеће</string>
+    <string name="sound_channel_notification">Обавештење</string>
+    <string name="sound_channel_boot">Секвенца покретања</string>
+    <!-- A feature name: written the same in every language. -->
+    <string name="sound_channel_ambience">Амбијент</string>
+
+    <!-- Assignment rows: one per assignable UiMediaSlot. -->
+    <string name="sound_slot_navigation">Навигација</string>
+    <string name="sound_slot_back">Назад / Откажи</string>
+    <string name="sound_slot_confirm">Потврди / Примени</string>
+    <string name="sound_slot_error">Грешка / Неважеће</string>
+    <string name="sound_slot_notification">Обавештење</string>
+    <string name="sound_slot_ambience">Амбијентална нумера</string>
+</resources>

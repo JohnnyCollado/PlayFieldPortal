@@ -155,6 +155,15 @@ object IconSlots {
         // The UMD slot atop each gaming column, unfocused: the PSP's UMD whatever the game.
         // Appended (keys only ever add); focused, it still turns into the game's ICON0.
         item("item_umd", "UMD slot"),
+
+        // The six Settings sections' own icons (the rows of the Settings root; key = "item_" + the
+        // section id). The rows inside a section keep item_settings. Appended: keys only ever add.
+        item("item_settings_section_library", "Settings: Library"),
+        item("item_settings_section_emulators", "Settings: Emulators"),
+        item("item_settings_section_interface", "Settings: Interface"),
+        item("item_settings_section_achievements", "Settings: Achievements"),
+        item("item_settings_section_media", "Settings: Media"),
+        item("item_settings_section_system", "Settings: System"),
     )
 
     /**

@@ -16,6 +16,8 @@ import com.playfieldportal.core.ui.components.ControllerPromptStyle
 import com.playfieldportal.core.ui.components.LocalControllerPromptStyle
 import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
+import androidx.compose.ui.res.stringResource
+import com.playfieldportal.feature.xmb.R
 
 // ── Idle hint pill ────────────────────────────────────────────────────────────
 //
@@ -68,7 +70,7 @@ fun ContextMenuHint(
      * Games column, where it opens a menu of Search and Sort instead. The pill names actions, so
      * a press that stopped cycling has to stop saying it cycles.
      */
-    sortLabel: String = "Sort",
+    sortLabel: String = stringResource(R.string.xmbu_common_sort),
     /** Show the Options half — the focused item has a context menu. */
     showOptions: Boolean = true,
     /**
@@ -83,8 +85,8 @@ fun ContextMenuHint(
 ) {
     val items = buildList {
         if (showSort) add(ControllerPromptItem(GamepadAction.CHANGE_SORT, sortLabel))
-        if (showOptions) add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
-        if (showNotifications) add(ControllerPromptItem(GamepadAction.HOME, "Notifications"))
+        if (showOptions) add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, stringResource(R.string.xmbu_common_options)))
+        if (showNotifications) add(ControllerPromptItem(GamepadAction.HOME, stringResource(R.string.xmbu_common_notifications)))
     }
     ControllerHintBar(items = items, modifier = modifier, compact = true)
 }

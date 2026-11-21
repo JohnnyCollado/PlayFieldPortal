@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.feature.xmb.R
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.domain.model.BackgroundTaskInfo
 import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.NotificationDetail
@@ -63,8 +65,14 @@ class NotificationPanelLogicTest {
         val rows = buildNotificationRows(listOf(task("psx")), emptyList())
         val confirm = assertIs<PanelConfirm.AskStop>(panelConfirm(rows, cursor = 1))
         assertEquals("psx", confirm.state.taskId)
-        assertEquals("Stop \"Scanning psx\"?", confirm.state.title)
-        assertEquals("14 of 56 are done. Games found so far are kept.", confirm.state.message)
+        assertEquals(UiText.res(R.string.xmbm_stop_confirm_title, "Scanning psx"), confirm.state.title)
+        assertEquals(
+            UiText.Joined(
+                listOf(UiText.res(R.string.xmbm_stop_confirm_progress, 14, 56), UiText.raw("Games found so far are kept.")),
+                " ",
+            ),
+            confirm.state.message,
+        )
     }
 
     @Test
@@ -77,7 +85,7 @@ class NotificationPanelLogicTest {
     @Test
     fun `a stop message without counts is just the keep line`() {
         val state = stopConfirmFor(task("psx").copy(current = null, total = null))
-        assertEquals("Games found so far are kept.", state.message)
+        assertEquals(UiText.raw("Games found so far are kept."), state.message)
     }
 
     // ── Layered states survive the lists changing ─────────────────────────────
@@ -152,7 +160,14 @@ class NotificationPanelLogicTest {
             listOf(NotificationMenuIds.MARK_ALL_READ, NotificationMenuIds.CLEAR_READ, NotificationMenuIds.CLEAR_ALL),
             items.map { it.id },
         )
-        assertEquals(listOf("Mark All Read", "Clear Read", "Clear All"), items.map { it.label })
+        assertEquals(
+            listOf(
+                UiText.res(R.string.xmbm_notifmenu_mark_all_read),
+                UiText.res(R.string.xmbm_notifmenu_clear_read),
+                UiText.res(R.string.xmbm_notifmenu_clear_all),
+            ),
+            items.map { it.label },
+        )
         assertEquals(listOf(false, false, true), items.map { it.isDestructive })
     }
 
@@ -160,8 +175,8 @@ class NotificationPanelLogicTest {
 
     @Test
     fun `the account menu is titled with the account name`() {
-        assertEquals("Johnny", socialAccountMenuTitle("Johnny"))
-        assertEquals("Account", socialAccountMenuTitle(""))
-        assertEquals("Account", socialAccountMenuTitle(null))
+        assertEquals(UiText.raw("Johnny"), socialAccountMenuTitle(UiText.raw("Johnny")))
+        assertEquals(UiText.res(R.string.xmbm_social_account), socialAccountMenuTitle(UiText.raw("")))
+        assertEquals(UiText.res(R.string.xmbm_social_account), socialAccountMenuTitle(null))
     }
 }

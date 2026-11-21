@@ -13,12 +13,19 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class AppUpdateReminderTest {
 
     private val checker = mockk<AppUpdateChecker>()
     private val tasks = mockk<BackgroundTaskCenter>(relaxed = true)
-    private val reminder = AppUpdateReminder(checker, tasks)
+    private val reminder = AppUpdateReminder(ApplicationProvider.getApplicationContext<Context>(), checker, tasks)
 
     // The usual case: no reminded update has just been installed.
     init {

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Slice G2: core-data strings (data-layer messages and enum labels) -->
+<resources>
+
+    <!-- Voice microphone sensitivity (Discord) -->
+    <string name="data_mic_sensitivity_auto">Auto</string>
+    <string name="data_mic_sensitivity_high">Hoch</string>
+    <string name="data_mic_sensitivity_low">Niedrig · filtert Klicks</string>
+    <string name="data_mic_sensitivity_minimal">Minimal · nur laute Sprache</string>
+
+    <!-- Discord sign-in errors -->
+    <string name="data_discord_offline">Du bist offline. Stelle die Internetverbindung wieder her und versuche es erneut.</string>
+    <string name="data_discord_unreachable">Discord nicht erreichbar</string>
+    <string name="data_discord_signin_network_error">Netzwerkfehler bei der Anmeldung</string>
+
+    <!-- Music and video players -->
+    <string name="data_music_no_player">Kein Musikplayer konnte diesen Titel öffnen. Installiere einen Player oder wähle einen unter Einstellungen → Musik.</string>
+    <string name="data_video_no_player_open">Kein Videoplayer konnte diese Datei öffnen. Installiere einen Player oder wähle einen unter Einstellungen → Video.</string>
+    <string name="data_video_chooser_title">Video abspielen mit…</string>
+    <string name="data_video_none_installed">Es ist kein Videoplayer installiert.</string>
+    <string name="data_video_bad_location">Der Speicherort dieses Videos ist ungültig.</string>
+    <string name="data_video_unreachable">Diese Videodatei wurde nicht gefunden oder der Zugriff ging verloren. Versuche, die Bibliothek neu zu scannen.</string>
+    <string name="data_video_player_cannot_open">%1$s kann dieses Video nicht öffnen oder ist nicht installiert.</string>
+    <string name="data_video_that_player">Dieser Player</string>
+    <string name="data_video_none_installed_for_file">Es ist kein Videoplayer installiert, der diese Datei öffnen kann.</string>
+
+    <!-- Lock screen image -->
+    <string name="data_lockscreen_unreadable">Dieses Bild konnte nicht gelesen werden</string>
+    <string name="data_lockscreen_rejected">Dieses Gerät hat kein Sperrbildschirm-Bild akzeptiert</string>
+
+    <!-- PSP theme import (.ptf) -->
+    <string name="data_ptf_unreadable">Datei konnte nicht gelesen werden (oder sie ist zu groß)</string>
+    <string name="data_ptf_not_ptf">Keine PSP-Design-Datei (.ptf)</string>
+    <string name="data_ptf_unparseable">Die Design-Datei konnte nicht ausgewertet werden</string>
+    <string name="data_ptf_wallpaper_missing">Das Design enthält kein Hintergrundbild</string>
+    <string name="data_ptf_wallpaper_unsupported">Dieses Design komprimiert sein Hintergrundbild mit einer nicht unterstützten Methode</string>
+    <string name="data_ptf_wallpaper_damaged">Das Hintergrundbild des Designs ist beschädigt und konnte nicht dekodiert werden</string>
+    <string name="data_ptf_save_failed">Das Design konnte nicht gespeichert werden</string>
+
+    <!-- Custom media names -->
+    <string name="data_custom_video">Eigenes Video</string>
+    <string name="data_custom_sound">Eigener Ton</string>
+
+    <!-- Controllers -->
+    <string name="data_controller_fallback_name">Controller</string>
+</resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_title">Fokusleuchten</string>
+    <string name="glow_sub_off">Kein Leuchten um das ausgewählte Symbol.</string>
+    <string name="glow_sub_steady">Ein weiches Licht um das ausgewählte Symbol. Es bleibt ruhig.</string>
+    <string name="glow_sub_pulsing">Das Licht um das ausgewählte Symbol schwillt langsam an und ab. Es bleibt ruhig, solange „Bewegung“ auf „Statisch“ steht.</string>
+    <string name="glow_value_off">Aus</string>
+    <string name="glow_value_steady">Ruhig</string>
+    <string name="glow_value_pulsing">Pulsierend</string>
+</resources>

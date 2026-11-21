@@ -1,0 +1,749 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- App picker -->
+    <string name="xmbm_picker_touch_toggle">Comută</string>
+    <plurals name="xmbm_picker_remove_from_card">
+        <item quantity="one">Elimini %d aplicație de pe acest card?</item>
+        <item quantity="few">Elimini %d aplicații de pe acest card?</item>
+        <item quantity="other">Elimini %d de aplicații de pe acest card?</item>
+    </plurals>
+    <plurals name="xmbm_picker_remove_from_library">
+        <item quantity="one">Elimini %d aplicație din această bibliotecă?</item>
+        <item quantity="few">Elimini %d aplicații din această bibliotecă?</item>
+        <item quantity="other">Elimini %d de aplicații din această bibliotecă?</item>
+    </plurals>
+
+    <!-- Category menu -->
+    <string name="xmbm_catmenu_rename">Redenumește categoria</string>
+    <string name="xmbm_catmenu_change_icon">Schimbă pictograma</string>
+    <string name="xmbm_catmenu_show_on_bar">Afișează pe bară</string>
+    <string name="xmbm_catmenu_new_card">Card personalizat nou</string>
+    <string name="xmbm_catmenu_manage">Gestionează categoriile</string>
+
+    <!-- Shared menu rows -->
+    <string name="xmbm_common_on">Activat</string>
+    <string name="xmbm_common_off">Dezactivat</string>
+    <string name="xmbm_sort">Sortare</string>
+    <string name="xmbm_move">Mută</string>
+    <string name="xmbm_resume">Reia</string>
+    <string name="xmbm_open">Deschide</string>
+    <string name="xmbm_pin_to_top">Fixează sus</string>
+    <string name="xmbm_icon_display">Afișare pictograme</string>
+    <string name="xmbm_manage_custom_cards">Gestionează cardurile personalizate</string>
+    <string name="xmbm_play_in_background">Redă în fundal</string>
+    <string name="xmbm_add_to_playlist">Adaugă în playlist</string>
+    <string name="xmbm_remove_from_library">Elimină din bibliotecă</string>
+    <string name="xmbm_remove_from_this_playlist">Elimină din acest playlist</string>
+    <string name="xmbm_rename_playlist">Redenumește playlistul</string>
+    <string name="xmbm_delete_playlist">Șterge playlistul</string>
+    <string name="xmbm_manage_in_settings">Gestionează în Setări</string>
+    <string name="xmbm_favorite">Preferat</string>
+    <string name="xmbm_visualizer">Vizualizator</string>
+    <string name="xmbm_stop_and_close">Oprește și închide</string>
+    <string name="xmbm_pause">Pauză</string>
+    <string name="xmbm_add_games">Adaugă jocuri</string>
+    <string name="xmbm_add_apps">Adaugă aplicații</string>
+    <string name="xmbm_pinned">Fixat</string>
+    <string name="xmbm_update_metadata">Actualizează metadatele</string>
+    <string name="xmbm_fetch_missing_artwork">Descarcă artwork-ul lipsă</string>
+    <string name="xmbm_library_manager">Managerul bibliotecii</string>
+    <string name="xmbm_default">Implicit</string>
+    <string name="xmbm_favorites">Preferate</string>
+    <string name="xmbm_all_games">Toate jocurile</string>
+    <string name="xmbm_playlists">Playlisturi</string>
+    <string name="xmbm_create_new_playlist">Creează un playlist nou</string>
+
+    <!-- Custom icon source chooser -->
+    <string name="xmbm_srcchooser_title">Alege o pictogramă pentru %1$s</string>
+    <string name="xmbm_srcchooser_message">Folosește una din tema aplicată sau o imagine de pe dispozitiv.</string>
+    <plurals name="xmbm_srcchooser_theme_detail">
+        <item quantity="one">%2$s · %1$d pictogramă</item>
+        <item quantity="few">%2$s · %1$d pictograme</item>
+        <item quantity="other">%2$s · %1$d de pictograme</item>
+    </plurals>
+
+    <!-- Theme icon grid -->
+    <string name="xmbm_themegrid_title">%1$s · pictogramă pentru %2$s</string>
+
+    <!-- Notification panel and music browser list menus -->
+    <string name="xmbm_notifmenu_mark_all_read">Marchează toate ca citite</string>
+    <string name="xmbm_notifmenu_clear_read">Șterge cele citite</string>
+    <string name="xmbm_notifmenu_clear_all">Șterge tot</string>
+    <string name="xmbm_social_account">Cont</string>
+
+    <!-- Playlist list rows -->
+    <string name="xmbm_playlist_create_title">Creează playlist</string>
+    <string name="xmbm_playlist_create_music_sub">Începe un playlist nou</string>
+    <string name="xmbm_playlist_create_video_sub">Începe un playlist video nou</string>
+    <string name="xmbm_playlist_import_title">Importă playlist</string>
+    <string name="xmbm_playlist_import_sub">Dintr-un fișier .m3u, .m3u8, .pls sau .xspf</string>
+
+    <!-- Menu group headers -->
+    <string name="xmbm_group_play">Joc</string>
+    <string name="xmbm_group_library">Bibliotecă</string>
+    <string name="xmbm_group_arrange">Aranjare</string>
+    <string name="xmbm_group_customize">Personalizare</string>
+    <string name="xmbm_group_pc">PC</string>
+    <string name="xmbm_group_manage">Gestionare</string>
+    <string name="xmbm_group_games">Jocuri</string>
+    <string name="xmbm_group_update">Actualizare</string>
+    <string name="xmbm_group_display">Afișare</string>
+
+    <!-- Sort and arrange rows -->
+    <string name="xmbm_sort_default">Implicit</string>
+    <string name="xmbm_sort_default_order">Ordine implicită</string>
+    <string name="xmbm_sort_global_value">Global: %1$s</string>
+    <string name="xmbm_sort_use_global">Folosește setarea globală (%1$s)</string>
+    <string name="xmbm_sort_az">A–Z</string>
+    <string name="xmbm_sort_recently_used">Folosite recent</string>
+    <string name="xmbm_umd_insert">Introdu ca UMD</string>
+    <string name="xmbm_umd_eject">Scoate UMD-ul</string>
+    <string name="xmbm_card_rename">Redenumește cardul</string>
+    <string name="xmbm_card_move_to_category">Mută în categorie</string>
+    <string name="xmbm_card_delete">Șterge cardul personalizat</string>
+    <string name="xmbm_card_in_category">În %1$s</string>
+    <string name="xmbm_card_other_categories">Alte categorii</string>
+    <string name="xmbm_card_new_here">Card personalizat nou aici…</string>
+    <string name="xmbm_sort_all_lists">Toate listele</string>
+    <plurals name="xmbm_memcard_sub_games">
+        <item quantity="one">Card de memorie · %d joc</item>
+        <item quantity="few">Card de memorie · %d jocuri</item>
+        <item quantity="other">Card de memorie · %d de jocuri</item>
+    </plurals>
+    <plurals name="xmbm_memcard_sub_games_pinned">
+        <item quantity="one">Card de memorie · Fixat · %d joc</item>
+        <item quantity="few">Card de memorie · Fixat · %d jocuri</item>
+        <item quantity="other">Card de memorie · Fixat · %d de jocuri</item>
+    </plurals>
+
+    <!-- Memory Card menus -->
+    <string name="xmbm_card_find_games">Găsește jocuri</string>
+    <string name="xmbm_card_scan_roms">Scanează pentru jocuri</string>
+    <string name="xmbm_card_import_pc">Importă jocuri PC</string>
+    <string name="xmbm_card_match_achievements">Potrivește realizările</string>
+    <string name="xmbm_card_hide">Ascunde cardul</string>
+    <string name="xmbm_card_remove">Elimină cardul</string>
+    <string name="xmbm_card_scan_all">Scanează toate cardurile</string>
+    <string name="xmbm_card_relink_artwork">Leagă din nou artwork-ul</string>
+    <string name="xmbm_card_global_sort">Sortare globală</string>
+    <string name="xmbm_scan_none_new">Nu s-au găsit jocuri noi</string>
+    <plurals name="xmbm_scan_new_games">
+        <item quantity="one">%d joc nou</item>
+        <item quantity="few">%d jocuri noi</item>
+        <item quantity="other">%d de jocuri noi</item>
+    </plurals>
+    <plurals name="xmbm_scan_cards_scanned">
+        <item quantity="one">%d card de memorie scanat</item>
+        <item quantity="few">%d carduri de memorie scanate</item>
+        <item quantity="other">%d de carduri de memorie scanate</item>
+    </plurals>
+    <plurals name="xmbm_scan_cards_failed">
+        <item quantity="one">%d card nu a putut fi scanat</item>
+        <item quantity="few">%d carduri nu au putut fi scanate</item>
+        <item quantity="other">%d de carduri nu au putut fi scanate</item>
+    </plurals>
+
+    <!-- Game row menu -->
+    <string name="xmbm_game_view_details">Vezi detaliile jocului</string>
+    <string name="xmbm_game_choose_disc">Alege discul</string>
+    <string name="xmbm_game_view_shiba_coins">Vezi Shiba Coins</string>
+    <string name="xmbm_game_change_emulator">Schimbă emulatorul</string>
+    <string name="xmbm_game_add_to_card">Adaugă pe card</string>
+    <string name="xmbm_game_remove_from_card">Elimină de pe card</string>
+    <string name="xmbm_game_select_multiple">Selectează mai multe</string>
+    <string name="xmbm_game_add_to_category">Adaugă în categorie</string>
+    <string name="xmbm_game_move_to_category">Mută în categorie</string>
+    <string name="xmbm_game_remove_from_category">Elimină din categorie</string>
+    <string name="xmbm_game_fetch_artwork">Descarcă artwork</string>
+    <string name="xmbm_game_launch_with">Pornește cu</string>
+    <string name="xmbm_game_install_goldberg">Instalează realizările Goldberg</string>
+    <string name="xmbm_game_export">Exportă jocul</string>
+    <string name="xmbm_game_file_location">Afișează locația fișierului</string>
+    <string name="xmbm_game_hide_from">Ascunde din %1$s</string>
+    <string name="xmbm_game_remove_permanently">Elimină definitiv</string>
+    <string name="xmbm_game_mark_as_game">Marchează ca joc</string>
+    <string name="xmbm_game_unmark_as_game">Nu mai marca drept joc</string>
+
+    <!-- Media row menus -->
+    <string name="xmbm_play">Redă</string>
+    <string name="xmbm_media_view_information">Vezi informațiile</string>
+    <string name="xmbm_media_add_tracks">Adaugă piese</string>
+    <string name="xmbm_media_view_details">Vezi detaliile</string>
+    <string name="xmbm_media_scan_library">Scanează biblioteca</string>
+    <string name="xmbm_media_scan_album">Scanează albumul</string>
+    <string name="xmbm_media_set_wallpaper">Setează ca fundal al launcherului</string>
+    <string name="xmbm_media_set_lockscreen">Setează ca ecran de blocare</string>
+    <string name="xmbm_media_scan_section">Scanează %1$s</string>
+    <string name="xmbm_info_artist">Artist: %1$s</string>
+    <string name="xmbm_info_album">Album: %1$s</string>
+    <string name="xmbm_info_duration">Durată: %1$s</string>
+    <string name="xmbm_info_type">Tip: %1$s</string>
+    <string name="xmbm_info_size">Dimensiune: %1$s</string>
+    <string name="xmbm_info_location">Locație: %1$s</string>
+    <string name="xmbm_info_file">Fișier: %1$s</string>
+
+    <!-- Confirmation dialogs -->
+    <string name="xmbm_confirm_remove_library_title">Elimini „%1$s” din bibliotecă?</string>
+    <string name="xmbm_confirm_remove_game_msg">Fișierul nu este șters. O scanare ulterioară îl adaugă din nou dacă se află încă într-un dosar scanat.</string>
+    <string name="xmbm_confirm_remove">Elimină</string>
+    <string name="xmbm_confirm_remove_missing_title">Elimini definitiv „%1$s”?</string>
+    <string name="xmbm_confirm_remove_missing_msg">Fișierul nu mai există, așa că această intrare nu poate fi restaurată.</string>
+    <string name="xmbm_confirm_remove_permanently">Elimină definitiv</string>
+    <string name="xmbm_confirm_delete_card_title">Ștergi „%1$s”?</string>
+    <string name="xmbm_confirm_delete_card_msg">Jocurile sale rămân în bibliotecă.</string>
+    <string name="xmbm_confirm_delete_card_button">Șterge cardul personalizat</string>
+    <string name="xmbm_confirm_remove_category_title">Elimini din %1$s?</string>
+    <string name="xmbm_confirm_remove_category_msg">„%1$s” părăsește și: %2$s.</string>
+    <string name="xmbm_confirm_remove_android_msg">Aplicația rămâne instalată. Găsește jocuri o poate adăuga din nou.</string>
+    <string name="xmbm_confirm_remove_card_title">Elimini cardul „%1$s”?</string>
+    <string name="xmbm_confirm_remove_card_android_msg">Jocurile sale părăsesc și ele biblioteca. Aplicațiile rămân instalate, iar Găsește jocuri le poate adăuga din nou.</string>
+    <string name="xmbm_confirm_remove_card_msg">Jocurile sale părăsesc și ele biblioteca. Fișierele ROM rămân pe disc, iar o scanare le poate readuce.</string>
+    <string name="xmbm_confirm_remove_card_button">Elimină cardul</string>
+    <string name="xmbm_confirm_remove_app_row_msg">Aplicația rămâne instalată și rămâne în categoriile sale de aplicații.</string>
+    <string name="xmbm_confirm_remove_track_msg">Fișierul nu este șters. O scanare ulterioară îl adaugă din nou dacă se află încă într-un dosar de muzică.</string>
+    <string name="xmbm_confirm_remove_video_msg">Fișierul nu este șters. O scanare ulterioară îl adaugă din nou dacă se află încă într-o bibliotecă video.</string>
+    <string name="xmbm_confirm_remove_photo_msg">Fișierul nu este șters. O scanare ulterioară îl adaugă din nou dacă se află încă într-un album.</string>
+    <string name="xmbm_confirm_delete_music_playlist_msg">Piesele sale rămân în bibliotecă.</string>
+    <string name="xmbm_confirm_delete_video_playlist_msg">Videoclipurile sale rămân în bibliotecă.</string>
+    <string name="xmbm_confirm_delete_playlist_button">Șterge playlistul</string>
+    <string name="xmbm_confirm_uninstall_title">Dezinstalezi „%1$s”?</string>
+    <string name="xmbm_confirm_uninstall_msg">Aplicația și datele ei sunt eliminate de pe acest dispozitiv.</string>
+    <string name="xmbm_confirm_uninstall_button">Dezinstalează</string>
+    <string name="xmbm_confirm_clear_notifs_title">Ștergi toate notificările?</string>
+    <string name="xmbm_confirm_clear_notifs_msg">Sarcinile în curs nu sunt afectate.</string>
+    <string name="xmbm_confirm_clear_all_button">Șterge tot</string>
+
+    <!-- Notification panel -->
+    <string name="xmbm_stop_confirm_title">Oprești „%1$s”?</string>
+    <string name="xmbm_stop_confirm_kept_default">Ce s-a făcut până acum se păstrează.</string>
+    <string name="xmbm_stop_confirm_progress">%1$d din %2$d sunt gata.</string>
+    <string name="xmbm_panel_prompt_open">Deschide</string>
+    <string name="xmbm_panel_prompt_stop">Oprește</string>
+    <string name="xmbm_panel_prompt_options">Opțiuni</string>
+    <string name="xmbm_panel_prompt_close">Închide</string>
+
+    <!-- Fetch Artwork notifications -->
+    <string name="xmbm_fetchart_running">Se descarcă artwork-ul: %1$s</string>
+    <string name="xmbm_fetchart_failed">Descărcarea artwork-ului a eșuat</string>
+    <string name="xmbm_fetchart_failed_title">Artwork-ul pentru %1$s nu a putut fi descărcat</string>
+    <string name="xmbm_fetchart_paused_title">Artwork întrerupt pentru %1$s</string>
+    <string name="xmbm_fetchart_done_title">Artwork actualizat pentru %1$s</string>
+
+    <!-- Playlist import -->
+    <string name="xmbm_plimport_cant_open">Fișierul nu a putut fi deschis</string>
+    <string name="xmbm_plimport_too_large">Fișierul depășește %1$d MiB</string>
+    <string name="xmbm_plimport_cant_read">Fișierul nu a putut fi citit</string>
+    <string name="xmbm_plimport_default_name">playlist</string>
+    <string name="xmbm_plimport_not_playlist">Nu este un fișier playlist</string>
+    <string name="xmbm_plimport_unexpected">Eroare neașteptată</string>
+    <string name="xmbm_plimport_title_error">„%1$s” nu a putut fi importat</string>
+    <string name="xmbm_plimport_title_ok">„%1$s” a fost importat</string>
+    <string name="xmbm_plimport_title_none">Nimic importat din „%1$s”</string>
+    <string name="xmbm_plimport_reason_web">nu este un fișier local</string>
+    <string name="xmbm_plimport_reason_type">tip media greșit</string>
+    <string name="xmbm_plimport_reason_dup">deja în playlist</string>
+    <string name="xmbm_plimport_reason_ambiguous">mai multe potriviri</string>
+    <string name="xmbm_plimport_reason_missing">nu este în biblioteca ta</string>
+    <string name="xmbm_plimport_sum_found">%1$d găsite</string>
+    <string name="xmbm_plimport_sum_missing">%1$d nu sunt în biblioteca ta</string>
+    <string name="xmbm_plimport_sum_skipped">%1$d omise</string>
+    <string name="xmbm_plimport_sum_dropped">%1$d ignorate peste limita de %2$d intrări</string>
+    <string name="xmbm_plimport_label_found">Găsite</string>
+    <string name="xmbm_plimport_label_missing">Nu sunt în biblioteca ta</string>
+    <string name="xmbm_plimport_label_skipped">Omise</string>
+
+    <!-- Settings menu -->
+    <string name="xmbm_setsec_library_title">Bibliotecă</string>
+    <string name="xmbm_setsec_library_sub">Surse, carduri, artwork și elemente ascunse</string>
+    <string name="xmbm_setsec_emulators_title">Emulatoare</string>
+    <string name="xmbm_setsec_emulators_sub">Profiluri de pornire și core-uri RetroArch</string>
+    <string name="xmbm_setsec_interface_title">Interfață</string>
+    <string name="xmbm_setsec_interface_sub">Categorii, teme, afișaj și controler</string>
+    <string name="xmbm_setsec_achievements_title">Realizări</string>
+    <string name="xmbm_setsec_achievements_sub">RetroAchievements și Steam</string>
+    <string name="xmbm_setsec_media_title">Media</string>
+    <string name="xmbm_setsec_media_sub">Setări muzică, video și foto</string>
+    <string name="xmbm_setsec_system_title">Sistem</string>
+    <string name="xmbm_setsec_system_sub">Despre, actualizări, jurnale, backup, configurare și mulțumiri</string>
+    <string name="xmbm_setsec_system_sub_nobackup">Despre, actualizări, jurnale, configurare și mulțumiri</string>
+    <string name="xmbm_set_library_title">Managerul bibliotecii</string>
+    <string name="xmbm_set_library_sub">Surse ROM și scanare</string>
+    <string name="xmbm_set_windows_games_title">Jocuri Windows</string>
+    <string name="xmbm_set_windows_games_sub">Jocuri PC, launchere și importuri</string>
+    <string name="xmbm_set_collections_title">Carduri de memorie personalizate</string>
+    <string name="xmbm_set_collections_sub">Creează și gestionează carduri de memorie personalizate</string>
+    <string name="xmbm_set_artwork_title">Artwork</string>
+    <string name="xmbm_set_artwork_sub">Surse de descărcare și cache</string>
+    <string name="xmbm_set_app_visibility_title">Elemente ascunse</string>
+    <string name="xmbm_set_app_visibility_sub">Verifică aplicațiile și jocurile pe care le-ai ascuns</string>
+    <string name="xmbm_set_emulators_installed_title">Instalate</string>
+    <string name="xmbm_set_emulators_installed_sub">Profiluri de emulator detectate</string>
+    <string name="xmbm_set_emulators_custom_title">Emulatoare personalizate</string>
+    <string name="xmbm_set_emulators_custom_sub">Profiluri personalizate și Adaugă emulator personalizat</string>
+    <string name="xmbm_set_emulators_retroarch_title">RetroArch</string>
+    <string name="xmbm_set_emulators_retroarch_sub">Detectarea și legarea core-urilor</string>
+    <string name="xmbm_set_emulators_assign_title">Implicite per sistem</string>
+    <string name="xmbm_set_emulators_assign_sub">Emulator și core implicit per consolă și setări per joc</string>
+    <string name="xmbm_set_emulators_knowledge_title">Cunoștințe despre emulatoare</string>
+    <string name="xmbm_set_emulators_knowledge_sub">Actualizări, fișierele tale și resetare la cele integrate</string>
+    <string name="xmbm_set_display_title">Afișaj</string>
+    <string name="xmbm_set_display_sub">Val, fundal, pornire și pictograme</string>
+    <string name="xmbm_set_audio_title">Sunet</string>
+    <string name="xmbm_set_audio_sub">Sunete de meniu, niveluri și ambianță</string>
+    <string name="xmbm_set_notifications_title">Notificări</string>
+    <string name="xmbm_set_notifications_sub">Istoricul panoului și păstrarea</string>
+    <string name="xmbm_set_categories_title">Categorii</string>
+    <string name="xmbm_set_categories_sub">Gestionează categoriile XMB</string>
+    <string name="xmbm_set_themes_title">Teme</string>
+    <string name="xmbm_set_themes_sub">Aspect XMB, culori și pictograme</string>
+    <string name="xmbm_set_controller_title">Controler</string>
+    <string name="xmbm_set_controller_sub">Maparea butoanelor</string>
+    <string name="xmbm_set_achievements_player_card_title">Cardul jucătorului</string>
+    <string name="xmbm_set_achievements_player_card_sub">Niveluri, ranguri și starea sincronizării</string>
+    <string name="xmbm_set_achievements_credentials_title">Date de autentificare furnizori</string>
+    <string name="xmbm_set_achievements_credentials_sub">Conturi RetroAchievements și Steam</string>
+    <string name="xmbm_set_achievements_local_windows_title">Windows local</string>
+    <string name="xmbm_set_achievements_local_windows_sub">Urmărește jocurile Windows locale (Steam emulat)</string>
+    <string name="xmbm_set_achievements_update_title">Actualizează realizările</string>
+    <string name="xmbm_set_achievements_update_sub">Sincronizează și potrivește automat jocurile urmărite</string>
+    <string name="xmbm_set_music_title">Muzică</string>
+    <string name="xmbm_set_music_sub">Dosare de muzică și player implicit</string>
+    <string name="xmbm_set_video_title">Video</string>
+    <string name="xmbm_set_video_sub">Biblioteci video, scanare și redare</string>
+    <string name="xmbm_set_photo_title">Foto</string>
+    <string name="xmbm_set_photo_sub">Biblioteci foto și scanare</string>
+    <string name="xmbm_set_about_title">Despre</string>
+    <string name="xmbm_set_about_sub">Play Field Portal</string>
+    <string name="xmbm_set_system_update_title">Actualizare sistem</string>
+    <string name="xmbm_set_system_update_sub">Versiuni noi și istoric modificări</string>
+    <string name="xmbm_set_logs_title">Jurnale</string>
+    <string name="xmbm_set_logs_sub">Deschide sau distribuie jurnalele sesiunilor</string>
+    <string name="xmbm_set_backup_title">Backup și restaurare</string>
+    <string name="xmbm_set_backup_sub">Export și import</string>
+    <string name="xmbm_set_setup_title">Asistent de configurare</string>
+    <string name="xmbm_set_setup_sub">Configurare ghidată a dosarelor și conturilor</string>
+    <string name="xmbm_set_credits_title">Mulțumiri</string>
+    <string name="xmbm_set_credits_sub">Artwork și atribuiri</string>
+
+    <!-- Media sections -->
+    <string name="xmbm_media_music">Muzică</string>
+    <string name="xmbm_media_videos">Videoclipuri</string>
+    <string name="xmbm_media_photos">Fotografii</string>
+    <string name="xmbm_sort_pill">Sortare: %1$s</string>
+    <string name="xmbm_filter">Filtru</string>
+
+    <!-- Sort modes -->
+    <string name="xmbm_sortmode_title">Titlu</string>
+    <string name="xmbm_sortmode_artist">Artist</string>
+    <string name="xmbm_sortmode_album">Album</string>
+    <string name="xmbm_sortmode_recent_played">Jucate recent</string>
+    <string name="xmbm_sortmode_date_added">Data adăugării</string>
+    <string name="xmbm_sortmode_custom">Personalizat</string>
+    <string name="xmbm_filter_search">Caută</string>
+    <string name="xmbm_filter_none">Niciuna</string>
+    <string name="xmbm_filter_term">„%1$s”</string>
+    <string name="xmbm_filter_clear">Șterge căutarea</string>
+
+    <!-- Local Windows games notifications -->
+    <string name="xmbm_lwm_running">Se potrivesc jocurile Windows locale…</string>
+    <string name="xmbm_lwm_stop_note">Jocurile deja potrivite rămân legate.</string>
+    <string name="xmbm_task_stopped">Oprită înainte de final</string>
+    <string name="xmbm_lwm_stopped_title">Potrivirea realizărilor Windows a fost oprită</string>
+    <string name="xmbm_lwm_failed">Potrivirea în lot a eșuat</string>
+    <string name="xmbm_lwm_failed_title">Potrivirea realizărilor Windows a eșuat</string>
+    <string name="xmbm_lwm_done_title">Potrivirea realizărilor Windows s-a încheiat</string>
+    <string name="xmbm_schema_label">Scheme de realizări</string>
+    <string name="xmbm_convert_no_ach" formatted="false">%d nu aveau realizări</string>
+    <string name="xmbm_convert_no_key" formatted="false">%d au nevoie de o cheie Steam Web API</string>
+    <string name="xmbm_convert_failed" formatted="false">%d au eșuat</string>
+    <string name="xmbm_convert_tail">Joacă fiecare joc pentru a începe să câștigi monede.</string>
+    <string name="xmbm_convert_linked" formatted="false">%d legate la jocuri din bibliotecă.</string>
+    <string name="xmbm_diag_copied">Diagnosticul a fost copiat în clipboard</string>
+    <string name="xmbm_artwork_folder_label">Dosar de artwork</string>
+    <string name="xmbm_artwork_folder_failed">Acel dosar nu a putut fi configurat. Alege un dosar în care PFP poate scrie.</string>
+    <plurals name="xmbm_convert_converted">
+        <item quantity="one">S-a convertit %d joc</item>
+        <item quantity="few">S-au convertit %d jocuri</item>
+        <item quantity="other">S-au convertit %d de jocuri</item>
+    </plurals>
+
+    <!-- Games and apps list rows -->
+    <string name="xmbm_additem_apps_sub">Alege aplicațiile instalate pe care să le adaugi în această secțiune</string>
+    <string name="xmbm_additem_games_sub">Alege jocuri și carduri de memorie personalizate pe care să le adaugi în această categorie</string>
+    <string name="xmbm_catcard_title">Card de memorie %1$s</string>
+    <string name="xmbm_total_games">Total jocuri %1$d</string>
+    <string name="xmbm_catcard_loose">Separat</string>
+    <string name="xmbm_empty_category_title">Încă nu există jocuri în această categorie</string>
+    <string name="xmbm_empty_category_sub">Întoarce-te și alege Adaugă jocuri.</string>
+    <plurals name="xmbm_customcard_games">
+        <item quantity="one">Personalizat · %d joc</item>
+        <item quantity="few">Personalizat · %d jocuri</item>
+        <item quantity="other">Personalizat · %d de jocuri</item>
+    </plurals>
+    <plurals name="xmbm_customcard_games_pinned">
+        <item quantity="one">Personalizat · Fixat · %d joc</item>
+        <item quantity="few">Personalizat · Fixat · %d jocuri</item>
+        <item quantity="other">Personalizat · Fixat · %d de jocuri</item>
+    </plurals>
+    <plurals name="xmbm_customcard_apps">
+        <item quantity="one">Personalizat · %d aplicație</item>
+        <item quantity="few">Personalizat · %d aplicații</item>
+        <item quantity="other">Personalizat · %d de aplicații</item>
+    </plurals>
+    <plurals name="xmbm_customcard_apps_pinned">
+        <item quantity="one">Personalizat · Fixat · %d aplicație</item>
+        <item quantity="few">Personalizat · Fixat · %d aplicații</item>
+        <item quantity="other">Personalizat · Fixat · %d de aplicații</item>
+    </plurals>
+
+    <!-- Music list rows -->
+    <string name="xmbm_music_now_playing">Se redă acum</string>
+    <string name="xmbm_music_playlist_title">Playlist</string>
+    <string name="xmbm_music_playlist_sub">Creează și redă propriile liste de piese</string>
+    <string name="xmbm_music_apps_title">Aplicații de muzică</string>
+    <string name="xmbm_music_apps_sub">Deschide aplicațiile de muzică instalate</string>
+    <string name="xmbm_music_add_folder_title">Adaugă dosar de muzică</string>
+    <string name="xmbm_music_add_folder_sub">Setează dosarul rădăcină de muzică în Setări pentru a începe</string>
+    <string name="xmbm_music_add_apps_title">Adaugă aplicații de muzică</string>
+    <string name="xmbm_picker_show_here_sub">Alege aplicațiile instalate care să apară aici</string>
+    <string name="xmbm_music_add_tracks_title">Adaugă piese</string>
+    <string name="xmbm_music_add_tracks_sub">Alege melodiile de adăugat în acest playlist</string>
+    <string name="xmbm_music_empty_title">Nu s-a găsit muzică</string>
+    <string name="xmbm_music_empty_sub">Adaugă un dosar de muzică în Setări → Muzică</string>
+    <string name="xmbm_playlist_empty_title">Acest playlist este gol</string>
+    <string name="xmbm_playlist_empty_sub">Adaugă piese mai jos sau din meniul Opțiuni al unei melodii.</string>
+
+    <!-- Hide locations -->
+    <string name="xmbm_hide_custom_card">Card personalizat</string>
+    <string name="xmbm_hide_android">Android</string>
+    <string name="xmbm_music_apps_name">Aplicații de muzică</string>
+    <string name="xmbm_video_apps_name">Aplicații video</string>
+
+    <!-- Video list rows -->
+    <string name="xmbm_video_collections_title">Colecții</string>
+    <string name="xmbm_video_collections_sub">Vizionate recent, Preferate și Playlisturi</string>
+    <string name="xmbm_video_libraries_title">Biblioteci video</string>
+    <string name="xmbm_video_apps_sub">Deschide aplicațiile video instalate</string>
+    <string name="xmbm_video_add_title">Adaugă videoclipuri</string>
+    <string name="xmbm_video_add_sub">Setează dosarul rădăcină video în Setări pentru a începe</string>
+    <string name="xmbm_video_recent_title">Vizionate recent</string>
+    <string name="xmbm_video_recent_sub">Continuă de unde ai rămas</string>
+    <string name="xmbm_video_favorites_sub">Videoclipurile tale marcate cu stea</string>
+    <string name="xmbm_video_playlists_sub">Creează și redă propriile liste</string>
+    <string name="xmbm_video_nolibs_title">Încă nu există biblioteci video</string>
+    <string name="xmbm_video_nolibs_sub">Setează un dosar rădăcină în Setări → Video</string>
+    <string name="xmbm_video_add_apps_title">Adaugă aplicații video</string>
+    <string name="xmbm_video_none_title">Nu s-au găsit videoclipuri</string>
+    <string name="xmbm_video_none_sub">Adaugă o bibliotecă video în Setări → Video</string>
+    <string name="xmbm_video_nowatched_title">Încă nu ai vizionat nimic</string>
+    <string name="xmbm_video_nowatched_sub">Videoclipurile pe care le redai apar aici</string>
+    <string name="xmbm_video_nofav_title">Încă nu există preferate</string>
+    <string name="xmbm_video_nofav_sub">Marchează cu stea un videoclip din meniul său ⚙ Opțiuni</string>
+    <string name="xmbm_video_playlist_empty_sub">Adaugă videoclipuri din meniul ⚙ Opțiuni al unui videoclip</string>
+    <string name="xmbm_video_new_playlist">Playlist video nou</string>
+    <string name="xmbm_music_new_playlist">Playlist nou</string>
+    <plurals name="xmbm_video_libraries_count">
+        <item quantity="one">%d bibliotecă</item>
+        <item quantity="few">%d biblioteci</item>
+        <item quantity="other">%d de biblioteci</item>
+    </plurals>
+
+    <!-- Photo list rows -->
+    <string name="xmbm_photo_camera_title">Cameră</string>
+    <string name="xmbm_photo_camera_sub">Deschide camera</string>
+    <string name="xmbm_photo_albums_title">Albume</string>
+    <string name="xmbm_photo_apps_title">Aplicații foto</string>
+    <string name="xmbm_photo_apps_sub">Deschide aplicațiile foto instalate</string>
+    <string name="xmbm_photo_add_title">Adaugă bibliotecă foto</string>
+    <string name="xmbm_photo_add_sub">Setează dosarul rădăcină foto în Setări pentru a începe</string>
+    <string name="xmbm_photo_add_apps_title">Adaugă aplicații foto</string>
+    <string name="xmbm_photo_noalbums_title">Încă nu există albume</string>
+    <string name="xmbm_photo_noalbums_sub">Setează un dosar rădăcină în Setări → Foto</string>
+    <string name="xmbm_photo_none_title">Nu s-au găsit fotografii</string>
+    <string name="xmbm_photo_none_sub">Adaugă o bibliotecă foto și scaneaz-o</string>
+    <string name="xmbm_photo_noalbumphotos_title">Nicio fotografie în acest album</string>
+    <string name="xmbm_photo_noalbumphotos_sub">Scanează-l din meniul său ⚙ Opțiuni sau din Setări → Foto</string>
+    <plurals name="xmbm_photo_albums_count">
+        <item quantity="one">%d album</item>
+        <item quantity="few">%d albume</item>
+        <item quantity="other">%d de albume</item>
+    </plurals>
+
+    <string name="xmbm_no_matches_title">Nicio potrivire</string>
+    <string name="xmbm_no_matches_sub">Încearcă o altă căutare.</string>
+    <string name="xmbm_queue_all_music">Toată muzica</string>
+
+    <string name="xmbm_video_all">Toate videoclipurile</string>
+    <string name="xmbm_photo_all">Toate fotografiile</string>
+    <string name="xmbm_missing">Lipsă</string>
+    <string name="xmbm_social_friends">Prieteni</string>
+    <string name="xmbm_social_voice">Voce</string>
+    <string name="xmbm_social_voice_settings">Setări voce</string>
+    <string name="xmbm_social_invites">Invitații</string>
+    <string name="xmbm_social_invite_friends">Invită prieteni</string>
+    <string name="xmbm_social_activity_settings">Setări activitate</string>
+    <string name="xmbm_social_discord_settings">Setări Discord</string>
+    <string name="xmbm_android_settings_title">Setări Android</string>
+    <string name="xmbm_android_settings_sub">Deschide setările dispozitivului</string>
+    <string name="xmbm_filter_chip">Filtru: %1$s</string>
+    <string name="xmbm_filter_chip_term">Filtru: „%1$s” · %2$s</string>
+
+    <string name="xmbm_empty_games_assigned_title">Niciun joc atribuit.</string>
+    <string name="xmbm_empty_games_assigned_sub">Adaugă jocuri în această categorie.</string>
+    <string name="xmbm_empty_videos_apps">Nu s-au găsit aplicații video.</string>
+    <string name="xmbm_empty_network_apps">Nu s-au găsit browsere.</string>
+    <string name="xmbm_empty_store_apps">Nu s-au găsit magazine de aplicații.</string>
+    <string name="xmbm_empty_music_apps">Nu s-au găsit aplicații de muzică.</string>
+    <string name="xmbm_empty_photo_apps">Nu s-au găsit aplicații foto.</string>
+    <string name="xmbm_empty_apps_assigned">Nicio aplicație atribuită.</string>
+    <string name="xmbm_empty_install_apps">Instalează câteva aplicații pentru a începe.</string>
+    <string name="xmbm_noconsoles_title">Nicio consolă configurată</string>
+    <string name="xmbm_noconsoles_sub">Deschide Managerul bibliotecii pentru a adăuga un card de memorie</string>
+    <string name="xmbm_gap_press_confirm">Apasă Confirmă pentru a deschide Setări și a rezolva problema.</string>
+    <string name="xmbm_nogames_imported_title">Încă nu au fost importate jocuri</string>
+    <string name="xmbm_nogames_imported_sub">Deschide un card de memorie pentru a-ți scana biblioteca.</string>
+    <string name="xmbm_emptycard_title">Acest card de memorie personalizat este gol</string>
+    <string name="xmbm_emptycard_sub">Adaugă jocuri de pe orice consolă din meniul de opțiuni (△).</string>
+    <string name="xmbm_emptyfav_title">Încă nu există preferate</string>
+    <string name="xmbm_emptyfav_sub">Marchează un joc ca preferat din meniul său de opțiuni (△).</string>
+    <string name="xmbm_emptymissing_title">Nu lipsește nimic</string>
+    <string name="xmbm_emptymissing_sub">Fișierul fiecărui joc a fost găsit la ultima scanare.</string>
+    <string name="xmbm_findgames_sub">Alege aplicațiile instalate pe care să le adaugi în această bibliotecă</string>
+    <string name="xmbm_empty_romdir">Directorul ROM nu este configurat</string>
+    <string name="xmbm_empty_scan_console">Apasă ▲ pentru a scana această consolă</string>
+    <string name="xmbm_empty_folder_title">Nu s-au găsit jocuri în acest dosar</string>
+    <plurals name="xmbm_games_count">
+        <item quantity="one">%d joc</item>
+        <item quantity="few">%d jocuri</item>
+        <item quantity="other">%d de jocuri</item>
+    </plurals>
+
+    <string name="xmbm_nomatch_title">Niciun joc nu corespunde cu „%1$s”</string>
+    <string name="xmbm_nomatch_sub">Deschide meniul Filtru pentru a-l schimba sau șterge.</string>
+    <string name="xmbm_ach_untracked">Neurmărite</string>
+    <string name="xmbm_ach_connect_title">Conectează conturi</string>
+    <string name="xmbm_ach_connect_sub">Configurează Shiba Coins și potrivește automat biblioteca</string>
+    <string name="xmbm_ach_all_tracked">Toate jocurile urmărite</string>
+    <string name="xmbm_ach_matching_progress">Potrivire automată…  %1$d / %2$d</string>
+    <string name="xmbm_ach_syncing_progress">Se sincronizează monedele…  %1$d / %2$d</string>
+    <string name="xmbm_ach_summary">%1$s / %2$s monede  •  %3$d urmărite  •  %4$d completate</string>
+    <string name="xmbm_ach_level_badge">Nv %1$d</string>
+    <plurals name="xmbm_ach_games_count">
+        <item quantity="one">%d joc</item>
+        <item quantity="few">%d jocuri</item>
+        <item quantity="other">%d de jocuri</item>
+    </plurals>
+
+    <string name="xmbm_icon_global_value">Global: %1$s</string>
+    <string name="xmbm_icon_use_global">Folosește setarea globală (%1$s)</string>
+    <string name="xmbm_ach_player_card">Cardul jucătorului</string>
+    <string name="xmbm_ach_auto_matching_busy">Potrivire automată…</string>
+    <string name="xmbm_ach_auto_matching">Potrivire automată</string>
+    <string name="xmbm_ach_updating_busy">Se actualizează…</string>
+    <string name="xmbm_ach_update_installed">Actualizează realizările instalate</string>
+
+    <string name="xmbm_move_card_to">Mută cardul personalizat în</string>
+    <string name="xmbm_move_to">Mută în…</string>
+    <string name="xmbm_add_to">Adaugă în…</string>
+    <string name="xmbm_move_game_to">Mută jocul în</string>
+    <string name="xmbm_add_game_to">Adaugă jocul în</string>
+    <string name="xmbm_picker_add_apps_named">Adaugă aplicații · %1$s</string>
+    <string name="xmbm_picker_add_android_apps">Adaugă aplicații Android</string>
+    <string name="xmbm_icon_use_default">Folosește implicitul (%1$s)</string>
+    <string name="xmbm_emu_use_platform_default">Folosește implicitul platformei</string>
+    <string name="xmbm_emu_choose">Alege emulatorul</string>
+    <string name="xmbm_launchwith_imported_from">Importat din</string>
+    <string name="xmbm_disc_n">Discul %1$d</string>
+    <string name="xmbm_disc_unnumbered">Playlist</string>
+    <string name="xmbm_card_new_title">Card de memorie personalizat nou</string>
+    <string name="xmbm_card_rename_title">Redenumește cardul de memorie personalizat</string>
+    <plurals name="xmbm_marked_add_to_card">
+        <item quantity="one">Adaugă %d joc pe card</item>
+        <item quantity="few">Adaugă %d jocuri pe card</item>
+        <item quantity="other">Adaugă %d de jocuri pe card</item>
+    </plurals>
+
+    <string name="xmbm_info_package">Pachet: %1$s</string>
+    <string name="xmbm_info_no_location">Nicio locație de fișier înregistrată</string>
+    <string name="xmbm_info_export_failed">Exportul a eșuat — vezi jurnalul.</string>
+    <string name="xmbm_goldberg_off">Instalarea realizărilor Goldberg este dezactivată. Activează „Instalează Goldberg și convertește jocurile” în Setări ▸ Realizări ▸ Windows local, apoi încearcă din nou.</string>
+    <string name="xmbm_goldberg_no_setup">Nu s-a găsit nicio configurare Steam-emu (steam_settings) pentru acest joc.</string>
+    <string name="xmbm_goldberg_has_schema">%1$s are deja date de realizări.</string>
+    <string name="xmbm_goldberg_installed">Realizările Goldberg au fost instalate. Joacă jocul prin emulator pentru a începe să câștigi monede.</string>
+    <string name="xmbm_goldberg_none">Acest joc nu are realizări de instalat.</string>
+    <string name="xmbm_goldberg_no_key">Adaugă mai întâi cheia ta Steam Web API în setările Realizări.</string>
+    <string name="xmbm_goldberg_failed">Realizările pentru acest joc nu au putut fi instalate.</string>
+
+    <string name="xmbm_scan_running">Se scanează %1$s…</string>
+    <string name="xmbm_scan_stop_note">Jocurile găsite până acum se păstrează.</string>
+    <string name="xmbm_scan_stopped_title">Scanarea %1$s a fost oprită</string>
+    <string name="xmbm_scan_failed_title">Scanarea %1$s a eșuat</string>
+    <string name="xmbm_scan_finished_title">Scanarea %1$s s-a încheiat</string>
+    <string name="xmbm_scan_skipped_title">Scanarea %1$s a fost omisă</string>
+    <string name="xmbm_pcscan_failed">Scanarea PC a eșuat</string>
+    <string name="xmbm_pcscan_no_new">Nu s-au găsit jocuri PC noi</string>
+    <string name="xmbm_scanall_running">Se scanează toate cardurile de memorie…</string>
+    <string name="xmbm_scanall_stop_note">Cardurile deja scanate își păstrează jocurile noi.</string>
+    <string name="xmbm_scanall_nothing">Niciun card de memorie nu are un dosar de scanat</string>
+    <string name="xmbm_scanall_nothing_title">Nimic de scanat</string>
+    <string name="xmbm_scanall_stopped_title">Scanarea tuturor cardurilor de memorie a fost oprită</string>
+    <string name="xmbm_scanall_failed_title">Scanarea tuturor cardurilor de memorie a eșuat</string>
+    <string name="xmbm_scanall_finished_title">Scanarea tuturor cardurilor de memorie s-a încheiat</string>
+    <string name="xmbm_scrape_running">Se descarcă artwork-ul lipsă: %1$s</string>
+    <string name="xmbm_scrape_stop_note">Artwork-ul deja descărcat se păstrează.</string>
+    <string name="xmbm_scrape_paused_title">Descărcarea artwork-ului a fost întreruptă: %1$s</string>
+    <string name="xmbm_scrape_none_missing">Niciunui joc nu îi lipsește artwork-ul</string>
+    <string name="xmbm_scrape_finished_title">Descărcarea artwork-ului s-a încheiat: %1$s</string>
+    <string name="xmbm_scrape_stopped_title">Descărcarea artwork-ului a fost oprită: %1$s</string>
+    <string name="xmbm_scrape_failed_title">Descărcarea artwork-ului a eșuat: %1$s</string>
+    <string name="xmbm_meta_running">Se actualizează metadatele: %1$s</string>
+    <string name="xmbm_meta_stop_note">Jocurile deja actualizate își păstrează detaliile.</string>
+    <string name="xmbm_meta_no_games_library">Niciun joc în bibliotecă</string>
+    <string name="xmbm_meta_no_games_card">Niciun joc pe acest card</string>
+    <string name="xmbm_meta_finished_title">Actualizarea metadatelor s-a încheiat: %1$s</string>
+    <string name="xmbm_meta_stopped_title">Actualizarea metadatelor a fost oprită: %1$s</string>
+    <string name="xmbm_meta_failed">Actualizarea metadatelor a eșuat</string>
+    <string name="xmbm_meta_failed_title">Actualizarea metadatelor a eșuat: %1$s</string>
+    <plurals name="xmbm_scanall_stopped_after">
+        <item quantity="one">Oprit după %1$d din %2$d card</item>
+        <item quantity="few">Oprit după %1$d din %2$d carduri</item>
+        <item quantity="other">Oprit după %1$d din %2$d de carduri</item>
+    </plurals>
+    <plurals name="xmbm_scrape_updated">
+        <item quantity="one">%1$d din %2$d joc actualizat</item>
+        <item quantity="few">%1$d din %2$d jocuri actualizate</item>
+        <item quantity="other">%1$d din %2$d de jocuri actualizate</item>
+    </plurals>
+    <plurals name="xmbm_stopped_after_games">
+        <item quantity="one">Oprit după %d joc</item>
+        <item quantity="few">Oprit după %d jocuri</item>
+        <item quantity="other">Oprit după %d de jocuri</item>
+    </plurals>
+
+    <string name="xmbm_shortcut_request_title">Cerere de scurtătură</string>
+    <string name="xmbm_shortcut_request_handled">Această cerere a fost deja procesată.</string>
+    <string name="xmbm_notifications_title">Notificări</string>
+
+    <string name="xmbm_social_signin_title">Conectează-te cu Discord</string>
+    <string name="xmbm_social_signin_sub">Scanează un cod QR cu telefonul</string>
+    <string name="xmbm_social_connected">Conectat la Discord</string>
+    <string name="xmbm_social_online">Online</string>
+    <string name="xmbm_social_offline">Offline</string>
+    <string name="xmbm_social_connecting">Se conectează…</string>
+    <string name="xmbm_social_idle">Inactiv</string>
+    <string name="xmbm_social_dnd">Nu deranjați</string>
+    <string name="xmbm_social_streaming">Transmite live</string>
+    <string name="xmbm_social_friends_unknown">Vezi cine este online</string>
+    <string name="xmbm_social_friends_none_online">Niciun prieten online</string>
+    <string name="xmbm_social_voice_sub">Vorbește într-o cameră comună</string>
+    <string name="xmbm_social_activity_sub">Arată ce joci</string>
+    <string name="xmbm_social_discord_sub">Cont și deconectare</string>
+    <string name="xmbm_social_share_title">Partajează activitatea</string>
+    <string name="xmbm_social_share_on">Activat · prietenii pot vedea că ești în Playfield Portal</string>
+    <string name="xmbm_social_share_off">Dezactivat · nu se partajează nimic cu prietenii</string>
+    <string name="xmbm_social_generic_title">Mod generic</string>
+    <string name="xmbm_social_generic_on">Activat · afișează „un joc” în locul numelui aplicației</string>
+    <string name="xmbm_social_generic_off">Dezactivat · afișează numele aplicației</string>
+    <string name="xmbm_social_signout_title">Deconectează-te</string>
+    <string name="xmbm_social_signout_named">Deconectează %1$s</string>
+    <string name="xmbm_social_signout_sub">Deconectează acest cont Discord</string>
+    <string name="xmbm_social_you_offline">Ești offline</string>
+    <string name="xmbm_social_friends_reconnect">Reconectează-te pentru a-ți vedea prietenii</string>
+    <string name="xmbm_social_no_friends">Niciun prieten de afișat</string>
+    <string name="xmbm_social_in_lobby">Într-un lobby vocal · Cere să te alături</string>
+    <string name="xmbm_social_playing">Joacă %1$s</string>
+    <string name="xmbm_social_voice_reconnect">Reconectează-te pentru a folosi vocea</string>
+    <string name="xmbm_social_invites_none">Nicio invitație în așteptare</string>
+    <string name="xmbm_social_create_lobby">Creează lobby</string>
+    <string name="xmbm_social_create_lobby_sub">Pornește o cameră privată și invită prieteni</string>
+    <string name="xmbm_social_someone">Cineva</string>
+    <string name="xmbm_social_participant_you">%1$s (tu)</string>
+    <string name="xmbm_social_muted">Fără sunet</string>
+    <string name="xmbm_social_speaking">Vorbește</string>
+    <string name="xmbm_social_waiting_others">Se așteaptă alăturarea altora</string>
+    <string name="xmbm_social_invite_friends_sub">Adu prieteni în acest lobby</string>
+    <string name="xmbm_social_unmute">Activează microfonul</string>
+    <string name="xmbm_social_mute">Dezactivează microfonul</string>
+    <string name="xmbm_social_mic_off">Microfonul tău este oprit</string>
+    <string name="xmbm_social_mic_on">Microfonul tău este pornit</string>
+    <string name="xmbm_social_leave_voice">Părăsește vocea</string>
+    <string name="xmbm_social_leave_voice_sub">Deconectează-te de la cameră</string>
+    <string name="xmbm_social_no_invites">Nicio invitație</string>
+    <string name="xmbm_social_no_invites_sub">Invitațiile și cererile de alăturare apar aici</string>
+    <string name="xmbm_social_wants_to_join">%1$s vrea să se alăture</string>
+    <string name="xmbm_social_join_lobby">Alătură-te lobby-ului lui %1$s</string>
+    <string name="xmbm_social_select_approve">Selectează pentru a aproba</string>
+    <string name="xmbm_social_select_join">Selectează pentru a te alătura</string>
+    <string name="xmbm_social_invite_offline">Reconectează-te pentru a invita prieteni</string>
+    <string name="xmbm_social_invited">Invitat ✓</string>
+    <string name="xmbm_social_already_lobby">Deja într-un lobby</string>
+    <string name="xmbm_social_select_invite">Selectează pentru a invita</string>
+    <string name="xmbm_social_voice_settings_sub">Sensibilitatea microfonului, filtru de zgomot, volum</string>
+    <string name="xmbm_social_vs_toggle_on">Activat · %1$s</string>
+    <string name="xmbm_social_vs_sens_title">Sensibilitatea microfonului</string>
+    <string name="xmbm_social_vs_sens_value">%1$s · mai scăzută filtrează clicurile</string>
+    <string name="xmbm_social_vs_noise_title">Anularea zgomotului</string>
+    <string name="xmbm_social_vs_noise_on">Krisp elimină zgomotul de fundal + clicurile butoanelor</string>
+    <string name="xmbm_social_vs_echo_title">Anularea ecoului</string>
+    <string name="xmbm_social_vs_echo_on">oprește feedbackul difuzorului</string>
+    <string name="xmbm_social_vs_agc_title">Control automat al amplificării</string>
+    <string name="xmbm_social_vs_agc_on">echilibrează volumul microfonului</string>
+    <string name="xmbm_social_vs_input_title">Volumul microfonului</string>
+    <string name="xmbm_social_vs_balance_title">Balans audio</string>
+    <string name="xmbm_social_vs_balance_bar">Joc ◀%1$s▶ Voce</string>
+    <string name="xmbm_social_vs_ptt_title">Apasă pentru a vorbi</string>
+    <string name="xmbm_social_vs_ptt_on">ține apăsat pentru a vorbi — altfel microfonul rămâne închis</string>
+    <string name="xmbm_social_vs_overlay_title">Buton de vorbire suprapus</string>
+    <string name="xmbm_social_vs_overlay_needs">Dezactivat · necesită „Afișare peste alte aplicații”</string>
+    <string name="xmbm_social_vs_overlay_on">Activat · buton plutitor ține-apăsat-pentru-a-vorbi</string>
+    <string name="xmbm_social_vs_overlay_hidden">Dezactivat · ascuns (folosește un buton al controlerului)</string>
+    <string name="xmbm_social_vs_pttbtn_title">Buton PTT</string>
+    <string name="xmbm_social_vs_pttbtn_press">Apasă un buton al controlerului…</string>
+    <string name="xmbm_social_vs_pttbtn_set">%1$s  ·  ține apăsat pentru a vorbi în Playfield Portal</string>
+    <string name="xmbm_social_vs_pttbtn_unset">Nesetat · selectează pentru a mapa un buton al controlerului</string>
+    <string name="xmbm_social_hint_cancel">anulează</string>
+    <string name="xmbm_ptt_not_set">Nesetat</string>
+    <string name="xmbm_ptt_l3">L3 (clic stick stânga)</string>
+    <string name="xmbm_ptt_r3">R3 (clic stick dreapta)</string>
+    <string name="xmbm_ptt_select">Select</string>
+    <string name="xmbm_ptt_start">Start</string>
+    <plurals name="xmbm_social_friends_online">
+        <item quantity="one">%d online</item>
+        <item quantity="few">%d online</item>
+        <item quantity="other">%d online</item>
+    </plurals>
+    <plurals name="xmbm_social_invites_waiting">
+        <item quantity="one">%d în așteptare</item>
+        <item quantity="few">%d în așteptare</item>
+        <item quantity="other">%d în așteptare</item>
+    </plurals>
+
+    <string name="xmbm_missing_reason">Fișierul nu a fost găsit la ultima scanare</string>
+    <string name="xmbm_social_reconnect">Reconectează-te</string>
+    <string name="xmbm_launch_failed">Pornirea nu a reușit: %1$s</string>
+    <string name="xmbm_launch_could_not">%1$s nu a putut fi pornit</string>
+    <string name="xmbm_launch_no_emulator">Niciun emulator nu este configurat pentru %1$s. Atribuie unul în Setări ▸ Emulatoare ▸ Implicite per sistem.</string>
+    <string name="xmbm_shortcut_fav_added">Adăugat la Preferate</string>
+    <string name="xmbm_shortcut_fav_removed">Eliminat din Preferate</string>
+    <string name="xmbm_shortcut_fav_failed">Preferatele nu au putut fi actualizate: %1$s</string>
+    <string name="xmbm_shortcut_create_failed">Scurtătura nu a putut fi creată: %1$s</string>
+    <string name="xmbm_scheme_original_sub">Se schimbă în funcție de lună</string>
+    <string name="xmbm_scheme_fixed_sub">Presetare de culoare fixă</string>
+    <string name="xmbm_scheme_custom">Personalizată</string>
+    <string name="xmbm_scheme_custom_sub">Reglează fin orice culoare cu glisoare</string>
+    <string name="xmbm_theme_current">Tema actuală</string>
+    <string name="xmbm_theme_save_title">Salvează aspectul actual ca temă</string>
+    <string name="xmbm_theme_save_failed">Tema nu a putut fi salvată</string>
+    <string name="xmbm_theme_saved">Tema a fost salvată — %1$s</string>
+    <string name="xmbm_gameboot_preview_title">Previzualizare</string>
+    <string name="xmbm_drawer_all_title">Toate aplicațiile</string>
+    <string name="xmbm_drawer_all_sub">Răsfoiește toate aplicațiile instalate</string>
+    <string name="xmbm_drawer_games_title">Jocuri</string>
+    <string name="xmbm_drawer_games_sub">Aplicații clasificate ca jocuri</string>
+    <string name="xmbm_drawer_emulators_title">Emulatoare</string>
+    <string name="xmbm_drawer_emulators_sub">RetroArch, PPSSPP, Dolphin și altele</string>
+    <string name="xmbm_drawer_recent_title">Folosite recent</string>
+    <string name="xmbm_drawer_recent_sub">Aplicații folosite recent</string>
+    <string name="xmbm_shortcut_unsafe">Scurtătura capturată nu este sigură pentru pornire</string>
+</resources>

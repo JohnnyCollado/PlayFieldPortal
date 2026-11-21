@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Localization slice G1: core-ui shared components -->
+
+    <!-- Shared button and prompt labels -->
+    <!-- Button label that dismisses a dialog without acting -->
+    <string name="core_cancel">Откажи</string>
+    <!-- Button label that acknowledges a message dialog -->
+    <string name="core_ok">У реду</string>
+    <!-- Button label that saves the entered text -->
+    <string name="core_save">Сачувај</string>
+    <!-- Button label that applies the chosen colour -->
+    <string name="core_apply">Примени</string>
+    <!-- Controller hint: the button that confirms the highlighted choice -->
+    <string name="core_select">Изабери</string>
+    <!-- Controller hint and button label: close the open sheet or keyboard -->
+    <string name="core_close">Затвори</string>
+    <!-- Accessibility description of the back arrow in a detail screen header -->
+    <string name="core_back">Назад</string>
+
+    <!-- Modals (text entry) -->
+    <!-- Default caption above a text field in a name-entry dialog -->
+    <string name="core_modal_name_label">Назив</string>
+    <!-- Character counter under a text field: %1$d characters typed, %2$d maximum -->
+    <string name="core_modal_counter">%1$d / %2$d</string>
+
+    <!-- Convert-to-achievement-tracking picker -->
+    <string name="core_steam_convert_title">Инсталирати праћење достигнућа?</string>
+    <!-- %1$d games ticked out of %2$d listed -->
+    <string name="core_steam_convert_selected_count">%1$d од %2$d</string>
+    <!-- %1$d games listed that can be converted -->
+    <string name="core_steam_convert_found_count">Пронађено: %1$d</string>
+    <!-- Controller hint line. Keep the double spaces and bullets; button names (Select, Start, B, Up/Down) are the controller's own -->
+    <string name="core_steam_convert_hints">"Горе/доле  Редови  •  Select  Укључи/искључи  •  △  Све/ништа  •  Start  Инсталирај  •  B  Откажи"</string>
+    <string name="core_steam_convert_loading">Учитавање листе достигнућа сваке игре са Steam-а…</string>
+    <!-- Button: install tracking into the %1$d ticked games -->
+    <string name="core_steam_convert_install">Инсталирај (%1$d)</string>
+    <!-- Button that unticks every game -->
+    <string name="core_steam_convert_none">Ништа</string>
+    <!-- Button that ticks every game -->
+    <string name="core_steam_convert_all">Све</string>
+    <!-- Button: skip installing, but still link the games that were already ready -->
+    <string name="core_steam_convert_skip_sync">Прескочи и синхронизуј</string>
+    <!-- Keep the file names exactly as written -->
+    <string name="core_steam_convert_write_notice">У фасциклу сваке означене игре PFP уписује achievements.json, stats.json и configs.user.ini, прави фасциклу saves и преименује steam_api64.dll у steam_api64_o.dll како би приложени емулатор могао да се учита преко ње.</string>
+    <string name="core_steam_convert_backup_warning">Пре конверзије направите резервну копију сачуваних позиција сваке игре коју сте већ играли — емулатор ће почети да чита са нове локације за чување.</string>
+
+    <!-- Shiba player card -->
+    <!-- Experience points total; %1$s is an already formatted number such as 1,250 -->
+    <string name="core_shiba_xp">%1$s XP</string>
+    <!-- Level progress; %1$s coins earned so far in this level, %2$s coins needed. A Bone is the in-app reward earned every 100 levels -->
+    <string name="core_shiba_progress_next_bone">%1$s / %2$s до следеће Коске</string>
+    <!-- Level progress; %1$s coins earned so far, %2$s coins needed, %3$d the level number being worked toward -->
+    <string name="core_shiba_progress_next_level">%1$s / %2$s до нивоа %3$d</string>
+    <!-- Short abbreviation of "Level", printed above the level number in a small badge -->
+    <string name="core_shiba_level_abbrev">НИВ</string>
+
+    <!-- Colour picker -->
+    <!-- Caption above the hexadecimal colour code field -->
+    <string name="core_hsv_hex">Hex</string>
+    <string name="core_hsv_hue">Нијанса</string>
+    <string name="core_hsv_saturation">Засићеност</string>
+    <string name="core_hsv_brightness">Осветљеност</string>
+    <!-- Controller hints under the picker -->
+    <string name="core_hsv_hint_move">Помери</string>
+    <string name="core_hsv_hint_type_hex">Унеси hex</string>
+    <string name="core_hsv_hint_adjust">Подеси</string>
+    <!-- Preview text shown in the chosen colour on dark and light backgrounds -->
+    <string name="core_hsv_sample_text">Пример текста</string>
+    <!-- Preset colour names -->
+    <string name="core_color_default">Подразумевана</string>
+    <string name="core_color_pink">Ружичаста</string>
+    <string name="core_color_gold">Златна</string>
+    <string name="core_color_aqua">Аква</string>
+    <string name="core_color_sky_blue">Небеско плава</string>
+    <string name="core_color_green">Зелена</string>
+    <string name="core_color_coral">Корал</string>
+    <string name="core_color_slate">Шкриљац</string>
+    <!-- Swatch that opens the full colour picker -->
+    <string name="core_color_custom">Прилагођена</string>
+
+    <!-- Notification detail sheets -->
+    <!-- Controller hint after copying: the details were copied to the clipboard -->
+    <string name="core_sheet_copied">Копирано</string>
+    <!-- Controller hint: copy the full details of a notification to the clipboard -->
+    <string name="core_sheet_copy_details">Копирај детаље</string>
+    <!-- Controller hint: copy the list of results to the clipboard -->
+    <string name="core_sheet_copy_list">Копирај листу</string>
+    <!-- Controller hint: switch between result filters (All, Failed, ...) -->
+    <string name="core_sheet_filter">Филтер</string>
+    <!-- Heading above the plain-language summary of a notification -->
+    <string name="core_sheet_what_happened">Шта се догодило</string>
+    <!-- Expandable row: technical details, shown collapsed (▸) or expanded (▾). Keep the arrow and two spaces -->
+    <string name="core_sheet_diagnostic_open">"▾  Дијагностички детаљи"</string>
+    <string name="core_sheet_diagnostic_closed">"▸  Дијагностички детаљи"</string>
+    <!-- Heading of the technical block in the copied plain text -->
+    <string name="core_sheet_diagnostic_heading">Дијагностика</string>
+    <!-- Chip: %1$d items with the outcome named by %2$s (for example "3 Updated") -->
+    <string name="core_sheet_summary_chip">%1$d %2$s</string>
+    <!-- Results filter tab that shows every item -->
+    <string name="core_sheet_filter_all">Све</string>
+    <!-- %1$d further items are not listed -->
+    <string name="core_sheet_more">још %1$d</string>
+    <!-- Heading above suggested remedies for a failed item -->
+    <string name="core_sheet_what_you_can_do">Шта можете да урадите</string>
+
+    <!-- On-screen keyboard (function keys and controller prompts; the letter rows are not translated) -->
+    <!-- Controller hint: type the highlighted key -->
+    <string name="core_vk_prompt_type">Унеси</string>
+    <!-- Controller hint: delete the character before the cursor -->
+    <string name="core_vk_prompt_delete">Избриши</string>
+    <!-- Controller hint: move the text cursor left or right -->
+    <string name="core_vk_prompt_cursor">Курсор</string>
+    <!-- Controller hint: toggle Caps Lock -->
+    <string name="core_vk_prompt_caps">Велика слова</string>
+    <!-- Key names, also read aloud by screen readers -->
+    <string name="core_vk_key_space">Размак</string>
+    <string name="core_vk_key_shift">Shift</string>
+    <string name="core_vk_key_backspace">Брисање</string>
+    <!-- Key that finishes typing -->
+    <string name="core_vk_key_done">Готово</string>
+    <!-- Screen-reader state of the Shift key -->
+    <string name="core_vk_shift_off">Искључено</string>
+    <string name="core_vk_shift_once">Укључено за следеће слово</string>
+    <string name="core_vk_shift_held">Укључено док се држи</string>
+    <string name="core_vk_shift_locked">Велика слова су закључана</string>
+
+    <!-- Background tasks -->
+    <!-- Fallback notification title when a task failed and gave no title -->
+    <string name="core_task_failed">Задатак није успео</string>
+    <!-- Fallback notification title when a task finished and gave no title -->
+    <string name="core_task_done">Готово</string>
+
+    <!-- Detail screens -->
+    <!-- Small badge on a favourite game's banner; shown in capitals -->
+    <string name="core_detail_favorite_badge">ОМИЉЕНО</string>
+    <!-- Small badge over a video thumbnail; shown in capitals -->
+    <string name="core_detail_video_badge">ВИДЕО</string>
+    <string name="core_detail_confirm_collapse">Потврдите да скупите</string>
+    <string name="core_detail_confirm_read_more">Потврдите да прочитате више</string>
+
+    <!-- Rotate-to-landscape prompt -->
+    <string name="core_rotate_title">Окрените у пејзажни режим</string>
+    <string name="core_rotate_message">PlayField Portal ради у пејзажном режиму. Окрените уређај на бок да бисте наставили.</string>
+    <!-- Button that opens the system chooser to switch to another home app (launcher) -->
+    <string name="core_rotate_switch_launcher">Промени лаунчер</string>
+</resources>

@@ -44,18 +44,21 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.achievement.ShibaTier
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.detail.DetailContentPadding
 import com.playfieldportal.core.ui.detail.DetailPalette
 import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
 import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
 import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
 import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
+import com.playfieldportal.feature.xmb.R
 
 // ── Shared achievement-page parts ─────────────────────────────────────────────
 //
@@ -107,7 +110,7 @@ internal fun SearchRow(
     onClick: () -> Unit,
     onEditEnded: () -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = "Search games…",
+    placeholder: String = stringResource(R.string.shiba_search_games_placeholder),
     trailing: (@Composable () -> Unit)? = null,
 ) {
     val fieldFocus = remember { FocusRequester() }
@@ -232,19 +235,28 @@ internal fun Separator(palette: DetailPalette) {
 }
 
 /** A short, human age: "Just now", "5 min ago", "3 hr ago", "Yesterday", "5 days ago". */
-internal fun relativeTime(atMillis: Long, now: Long = System.currentTimeMillis()): String {
+internal fun relativeTime(atMillis: Long, now: Long = System.currentTimeMillis()): UiText {
     val diff = (now - atMillis).coerceAtLeast(0)
     val minutes = diff / 60_000
     val hours = diff / 3_600_000
     val days = diff / 86_400_000
     return when {
-        minutes < 1 -> "Just now"
-        minutes < 60 -> "$minutes min ago"
-        hours < 24 -> "$hours hr ago"
-        days == 1L -> "Yesterday"
-        else -> "$days days ago"
+        minutes < 1 -> UiText.res(R.string.shiba_time_just_now)
+        minutes < 60 -> UiText.res(R.string.shiba_time_minutes_ago, minutes)
+        hours < 24 -> UiText.res(R.string.shiba_time_hours_ago, hours)
+        days == 1L -> UiText.res(R.string.shiba_time_yesterday)
+        else -> UiText.plural(R.plurals.shiba_time_days_ago, days.toInt())
     }
 }
+
+/** A coin tier's name ("Bronze"), for every place the pages say which tier a coin is. */
+internal val ShibaTier.shibaTierNameRes: Int
+    get() = when (this) {
+        ShibaTier.BRONZE -> R.string.shiba_tier_bronze
+        ShibaTier.SILVER -> R.string.shiba_tier_silver
+        ShibaTier.GOLD -> R.string.shiba_tier_gold
+        ShibaTier.PLATINUM -> R.string.shiba_tier_platinum
+    }
 
 /**
  * A set's source ("Steam", "Local Steam") as a small tag: beside a list row's platform when one

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App context menu: group headings -->
+    <string name="apps_menu_group_library">ライブラリ</string>
+    <string name="apps_menu_group_arrange">並べ替え</string>
+    <string name="apps_menu_group_manage">管理</string>
+
+    <!-- App context menu: rows -->
+    <string name="apps_menu_launch">起動</string>
+    <string name="apps_menu_edit_details">アプリの詳細を編集</string>
+    <string name="apps_menu_mark_game">ゲームとして登録</string>
+    <string name="apps_menu_unmark_game">ゲームの登録を解除</string>
+    <string name="apps_menu_favorite">お気に入り</string>
+    <string name="apps_menu_add_to_card">カードに追加</string>
+    <string name="apps_menu_pin_to_top">先頭に固定</string>
+    <string name="apps_menu_move">移動</string>
+    <string name="apps_menu_move_to_category">カテゴリーへ移動</string>
+    <string name="apps_menu_add_to_category">カテゴリーに追加</string>
+    <string name="apps_menu_remove_from_category">カテゴリーから削除</string>
+    <string name="apps_menu_rename_shortcut">ショートカット名を変更</string>
+    <string name="apps_menu_hide_from">%1$s で非表示</string>
+    <string name="apps_menu_hide_everywhere">すべての場所で非表示</string>
+    <string name="apps_menu_app_info">アプリ情報</string>
+    <string name="apps_menu_uninstall">アンインストール</string>
+    <string name="apps_value_on">オン</string>
+    <string name="apps_value_off">オフ</string>
+
+    <!-- Uninstall confirmation -->
+    <string name="apps_uninstall_title">%1$s をアンインストールしますか？</string>
+    <string name="apps_uninstall_message">%1$s をデバイスから削除します。Android で確認を求められます。</string>
+
+    <!-- Category tabs and header title -->
+    <string name="apps_filter_all">すべてのアプリ</string>
+    <string name="apps_filter_games">ゲーム</string>
+    <string name="apps_filter_emulators">エミュレーター</string>
+    <string name="apps_filter_recent">最近使用</string>
+
+    <!-- Header search -->
+    <string name="apps_search_placeholder">検索…</string>
+    <string name="apps_search_button">検索</string>
+
+    <!-- Empty states -->
+    <string name="apps_empty_no_match">検索に一致するアプリはありません</string>
+    <string name="apps_empty_no_games">ゲームが見つかりません</string>
+    <string name="apps_empty_no_emulators">エミュレーターがインストールされていません</string>
+    <string name="apps_empty_usage_access">使用状況へのアクセスが必要です</string>
+    <string name="apps_empty_no_recent">最近使用したアプリはまだありません</string>
+    <string name="apps_empty_no_apps">アプリがインストールされていません</string>
+    <string name="apps_hint_try_search">別のキーワードで検索してください</string>
+    <string name="apps_hint_games">Play ストアでゲームとして登録されたアプリがここに表示されます</string>
+    <string name="apps_hint_emulators">RetroArch、PPSSPP などのエミュレーターをインストールしてください</string>
+    <string name="apps_hint_usage_access">PFP が最終使用日時でアプリを並べ替えられるよう、アクセスを許可してください</string>
+    <string name="apps_open_usage_access">使用状況へのアクセスを開く</string>
+
+    <!-- Controller hint bar -->
+    <string name="apps_hint_prev">前へ</string>
+    <string name="apps_hint_next">次へ</string>
+    <string name="apps_hint_back">戻る</string>
+    <string name="apps_hint_launch">起動</string>
+    <string name="apps_hint_options">オプション</string>
+    <string name="apps_hint_search">検索</string>
+    <string name="apps_drawer_title">アプリドロワー</string>
+    <string name="apps_drawer_subtitle">このデバイスのアプリ</string>
+</resources>

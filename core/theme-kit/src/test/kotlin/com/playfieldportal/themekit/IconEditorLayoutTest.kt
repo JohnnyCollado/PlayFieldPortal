@@ -65,7 +65,15 @@ class IconEditorLayoutTest {
             runs.map { it.label },
         )
         val byLabel = runs.associate { it.label to keys(it.slots) }
-        assertEquals(listOf("item_settings"), byLabel["Settings"])
+        // Android Settings' wrench first, then the six sections' own icons in section order.
+        assertEquals(
+            listOf(
+                "item_settings", "item_settings_section_library", "item_settings_section_emulators",
+                "item_settings_section_interface", "item_settings_section_achievements",
+                "item_settings_section_media", "item_settings_section_system",
+            ),
+            byLabel["Settings"],
+        )
         assertEquals(
             listOf("item_camera", "item_photo_albums", "item_photo_folder", "item_photo_file", "item_photo_apps", "item_memcard_photos"),
             byLabel["Photo"],
@@ -146,13 +154,13 @@ class IconEditorLayoutTest {
         assertEquals(
             mapOf(
                 IconEditorTab.CROSSBAR to 9,
-                IconEditorTab.ITEMS to 38,
+                IconEditorTab.ITEMS to 44,
                 IconEditorTab.CONSOLES to 45,
                 IconEditorTab.PHYSICAL_MEDIA to 42,
             ),
             IconEditorTab.entries.associateWith { IconEditorLayout.slots(it).size },
         )
-        assertEquals(134, IconEditorLayout.ALL.size)
+        assertEquals(140, IconEditorLayout.ALL.size)
     }
 
     @Test

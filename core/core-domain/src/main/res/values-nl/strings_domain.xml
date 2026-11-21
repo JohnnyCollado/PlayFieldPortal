@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shiba rank titles -->
+    <string name="dom_shiba_rank_pup">Pup</string>
+    <string name="dom_shiba_rank_ruffian">Deugniet</string>
+    <string name="dom_shiba_rank_lone_ron_inu">Eenzame Ron-inu</string>
+    <string name="dom_shiba_rank_inu_master">Inu-meester</string>
+    <string name="dom_shiba_rank_legendary_hachiko">Legendarische Hachiko</string>
+
+    <!-- App editions -->
+    <string name="dom_edition_full">Volledig</string>
+    <string name="dom_edition_lite">Lite</string>
+
+    <!-- Audio channels (volume rows) -->
+    <string name="dom_audio_channel_navigation">Navigatie</string>
+    <string name="dom_audio_channel_back">Terug / annuleren</string>
+    <string name="dom_audio_channel_confirm">Bevestigen / toepassen</string>
+    <string name="dom_audio_channel_error">Fout / ongeldig</string>
+    <string name="dom_audio_channel_category">Categorie</string>
+    <string name="dom_audio_channel_options">Opties</string>
+    <string name="dom_audio_channel_notification">Melding</string>
+    <string name="dom_audio_channel_boot">Opstartreeks</string>
+    <string name="dom_audio_channel_gameboot">Game Boot</string>
+    <string name="dom_audio_channel_ambience">Sfeer</string>
+
+    <!-- Customisable media slots -->
+    <string name="dom_media_slot_navigation">Navigatie</string>
+    <string name="dom_media_slot_back">Terug / Annuleren</string>
+    <string name="dom_media_slot_confirm">Bevestigen / Toepassen</string>
+    <string name="dom_media_slot_error">Fout / Ongeldig</string>
+    <string name="dom_media_slot_category">Categorie</string>
+    <string name="dom_media_slot_options">Opties</string>
+    <string name="dom_media_slot_notification">Melding</string>
+    <string name="dom_media_slot_boot_video">Opstartanimatie</string>
+    <string name="dom_media_slot_gameboot_video">Game Boot-animatie</string>
+    <string name="dom_media_slot_ambience_audio">Sfeertrack</string>
+
+    <!-- Game tile display modes -->
+    <string name="dom_icon_display_icon0">Eigen pictogram</string>
+    <string name="dom_icon_display_box_art">Hoesafbeelding</string>
+    <string name="dom_icon_display_physical_media">Fysieke media</string>
+    <string name="dom_icon_display_box_3d">3D-hoesafbeelding</string>
+
+    <!-- Icon legibility styles -->
+    <string name="dom_icon_legibility_none">Geen</string>
+    <string name="dom_icon_legibility_offset_shadow">Verschoven schaduw (donker)</string>
+    <string name="dom_icon_legibility_offset_shadow_light">Verschoven schaduw (licht)</string>
+    <string name="dom_icon_legibility_contour_dark">Contour (donker)</string>
+    <string name="dom_icon_legibility_contour_light">Contour (licht)</string>
+    <string name="dom_icon_legibility_contour_auto">Contour (automatisch)</string>
+
+    <!-- Animated image playback -->
+    <string name="dom_image_motion_animated">Geanimeerd</string>
+    <string name="dom_image_motion_reduced">Beperkt</string>
+    <string name="dom_image_motion_static">Statisch</string>
+
+    <!-- Text legibility styles -->
+    <string name="dom_text_legibility_none">Geen</string>
+    <string name="dom_text_legibility_shadow">Slagschaduw</string>
+    <string name="dom_text_legibility_outline">Omlijning</string>
+    <string name="dom_text_legibility_plate">Contrastvlak</string>
+    <string name="dom_text_legibility_auto">Automatisch</string>
+
+    <!-- Touch gestures -->
+    <string name="dom_touch_gesture_tap">Tikken</string>
+    <string name="dom_touch_gesture_long_press">Vasthouden</string>
+    <string name="dom_touch_gesture_swipe_left">Naar links vegen</string>
+    <string name="dom_touch_gesture_swipe_right">Naar rechts vegen</string>
+    <string name="dom_touch_gesture_swipe_down">Omlaag vegen</string>
+
+    <!-- UMD slot display modes -->
+    <string name="dom_umd_slot_off">Uit</string>
+    <string name="dom_umd_slot_inserted">Geplaatst</string>
+    <string name="dom_umd_slot_inserted_and_recent">Geplaatst en recent</string>
+
+    <!-- Item list motion styles -->
+    <string name="dom_list_motion_rewind">Terugspoelen</string>
+    <string name="dom_list_motion_glide">Glijden</string>
+
+    <!-- Confirm / Back button layouts -->
+    <string name="dom_confirm_back_standard">Standaard (A = Bevestigen, B = Terug)</string>
+    <string name="dom_confirm_back_reversed">Omgekeerd (B = Bevestigen, A = Terug)</string>
+
+    <!-- X / Y button layouts -->
+    <string name="dom_xy_layout_standard">Standaard (Y = Opties, X = Sorteren)</string>
+    <string name="dom_xy_layout_swapped">Omgewisseld (X = Opties, Y = Sorteren)</string>
+
+    <!-- Controller prompt styles -->
+    <string name="dom_controller_type_xbox">Xbox</string>
+    <string name="dom_controller_type_nintendo">Nintendo</string>
+    <string name="dom_controller_type_playstation">PlayStation</string>
+
+    <!-- Held-navigation scroll speeds -->
+    <string name="dom_scroll_speed_relaxed">Rustig</string>
+    <string name="dom_scroll_speed_standard">Standaard</string>
+    <string name="dom_scroll_speed_fast">Snel</string>
+
+    <!-- Colour schemes -->
+    <string name="dom_color_scheme_original">Origineel (maandelijks)</string>
+    <string name="dom_color_scheme_classic_blue">Klassiek blauw</string>
+    <string name="dom_color_scheme_sunset_orange">Zonsondergangoranje</string>
+    <string name="dom_color_scheme_fresh_green">Fris groen</string>
+    <string name="dom_color_scheme_royal_purple">Koninklijk paars</string>
+    <string name="dom_color_scheme_crimson_red">Karmijnrood</string>
+    <string name="dom_color_scheme_silver">Zilver</string>
+    <string name="dom_color_scheme_sakura_pink">Sakuraroze</string>
+    <string name="dom_color_scheme_golden_amber">Goudamber</string>
+    <string name="dom_color_scheme_aqua_teal">Aqua-blauwgroen</string>
+    <string name="dom_color_scheme_midnight_navy">Middernachtblauw</string>
+    <string name="dom_color_scheme_charcoal">Antraciet</string>
+
+    <!-- Controller actions -->
+    <string name="dom_action_navigate_up">Omhoog navigeren</string>
+    <string name="dom_action_navigate_down">Omlaag navigeren</string>
+    <string name="dom_action_navigate_left">Naar links (vorige categorie)</string>
+    <string name="dom_action_navigate_right">Naar rechts (volgende categorie)</string>
+    <string name="dom_action_select">Selecteren / starten</string>
+    <string name="dom_action_back">Terug / sluiten</string>
+    <string name="dom_action_open_context_menu">Opties / contextmenu</string>
+    <string name="dom_action_change_sort">Sorteervolgorde wijzigen</string>
+    <string name="dom_action_prev_category">Vorig tabblad (app-lade)</string>
+    <string name="dom_action_next_category">Volgend tabblad (app-lade)</string>
+    <string name="dom_action_home">Start (meldingen / bevestigen in kiezers)</string>
+    <string name="dom_action_shift">Shift (toetsenbord)</string>
+    <string name="dom_action_caps_lock">Caps Lock (toetsenbord)</string>
+    <string name="dom_action_category_menu">Categoriemenu</string>
+
+    <!-- Controller button names -->
+    <string name="dom_key_a">A / Kruisje</string>
+    <string name="dom_key_b">B / Rondje</string>
+    <string name="dom_key_x">X / Vierkantje</string>
+    <string name="dom_key_y">Y / Driehoekje</string>
+    <string name="dom_key_dpad_up">D-pad omhoog</string>
+    <string name="dom_key_dpad_down">D-pad omlaag</string>
+    <string name="dom_key_dpad_left">D-pad links</string>
+    <string name="dom_key_dpad_right">D-pad rechts</string>
+    <string name="dom_key_dpad_center">D-pad midden</string>
+    <string name="dom_key_l1">L1</string>
+    <string name="dom_key_r1">R1</string>
+    <string name="dom_key_l2">L2</string>
+    <string name="dom_key_r2">R2</string>
+    <string name="dom_key_start">Start</string>
+    <string name="dom_key_select">Select</string>
+    <string name="dom_key_enter">Enter</string>
+    <string name="dom_key_back">Terug</string>
+    <string name="dom_key_unknown">Toets %1$d</string>
+
+    <!-- Colour naming -->
+    <string name="dom_hue_orange">oranje</string>
+    <string name="dom_hue_yellow">geel</string>
+    <string name="dom_hue_green">groen</string>
+    <string name="dom_hue_teal">blauwgroen</string>
+    <string name="dom_hue_blue">blauw</string>
+    <string name="dom_hue_purple">paars</string>
+    <string name="dom_hue_pink">roze</string>
+    <string name="dom_hue_red">rood</string>
+    <string name="dom_hue_orange_cap">Oranje</string>
+    <string name="dom_hue_yellow_cap">Geel</string>
+    <string name="dom_hue_green_cap">Groen</string>
+    <string name="dom_hue_teal_cap">Blauwgroen</string>
+    <string name="dom_hue_blue_cap">Blauw</string>
+    <string name="dom_hue_purple_cap">Paars</string>
+    <string name="dom_hue_pink_cap">Roze</string>
+    <string name="dom_hue_red_cap">Rood</string>
+    <string name="dom_hue_lean">%1$s, neigend naar %2$s</string>
+    <string name="dom_hue_lean_cap">%1$s, neigend naar %2$s</string>
+    <string name="dom_color_dark">Donker %1$s</string>
+    <string name="dom_color_very_dark">Zeer donker %1$s</string>
+    <string name="dom_color_muted">Gedempt %1$s</string>
+    <string name="dom_color_dark_muted">Donker gedempt %1$s</string>
+    <string name="dom_color_very_dark_muted">Zeer donker gedempt %1$s</string>
+    <string name="dom_color_grey">Grijs (%1$s)</string>
+    <string name="dom_saturation_grey">Grijs</string>
+    <string name="dom_saturation_muted">Gedempt</string>
+    <string name="dom_saturation_vivid">Levendig</string>
+    <string name="dom_saturation_intense">Intens</string>
+    <string name="dom_brightness_very_dark">Zeer donker</string>
+    <string name="dom_brightness_dark">Donker</string>
+    <string name="dom_brightness_medium">Middel</string>
+    <string name="dom_brightness_bright">Licht</string>
+    <string name="dom_tint_standard">Standaard</string>
+    <string name="dom_tint_orange">Oranjer</string>
+    <string name="dom_tint_yellow">Geler</string>
+    <string name="dom_tint_green">Groener</string>
+    <string name="dom_tint_teal">Meer blauwgroen</string>
+    <string name="dom_tint_blue">Blauwer</string>
+    <string name="dom_tint_purple">Paarser</string>
+    <string name="dom_tint_pink">Rozer</string>
+    <string name="dom_tint_red">Roder</string>
+    <string name="dom_tint_much_orange">Veel oranjer</string>
+    <string name="dom_tint_much_yellow">Veel geler</string>
+    <string name="dom_tint_much_green">Veel groener</string>
+    <string name="dom_tint_much_teal">Veel meer blauwgroen</string>
+    <string name="dom_tint_much_blue">Veel blauwer</string>
+    <string name="dom_tint_much_purple">Veel paarser</string>
+    <string name="dom_tint_much_pink">Veel rozer</string>
+    <string name="dom_tint_much_red">Veel roder</string>
+    <string name="dom_tint_cooler">Koeler</string>
+    <string name="dom_tint_warmer">Warmer</string>
+    <string name="dom_tint_much_cooler">Veel koeler</string>
+    <string name="dom_tint_much_warmer">Veel warmer</string>
+    <string name="dom_depth_much_lighter">Veel lichter</string>
+    <string name="dom_depth_lighter">Lichter</string>
+    <string name="dom_depth_deeper">Dieper</string>
+    <string name="dom_depth_much_deeper">Veel dieper</string>
+
+    <!-- File limit messages -->
+    <string name="dom_limit_motion_unsupported_format">Niet-ondersteunde indeling — gebruik MP4, WebM, GIF of WebP</string>
+    <string name="dom_limit_motion_too_large_resolution">Video is te groot — 1080p of kleiner</string>
+    <string name="dom_limit_motion_too_long">Clip is te lang — 60 seconden of korter</string>
+    <string name="dom_limit_motion_too_large_bytes">Bestand is te groot — kleiner dan 60 MB</string>
+    <string name="dom_limit_motion_undecodable">Kan die video niet lezen — probeer een ander bestand</string>
+    <string name="dom_limit_media_unsupported_audio">Niet-ondersteunde indeling — gebruik MP3-, WAV-, OGG- of M4A-audio</string>
+    <string name="dom_limit_media_unsupported_video">Niet-ondersteunde indeling — gebruik MP4- of WebM-video</string>
+    <string name="dom_limit_media_too_large_sound">Bestand is te groot</string>
+    <string name="dom_limit_media_too_large_video">Bestand is te groot — video\'s moeten kleiner zijn dan 25 MB</string>
+    <string name="dom_limit_media_undecodable">Kan dat bestand niet lezen — probeer een ander</string>
+    <string name="dom_limit_media_no_duration">Kan de lengte van dat bestand niet lezen — probeer een ander bestand of converteer het naar MP3/WAV/OGG/M4A</string>
+    <string name="dom_limit_media_too_long">Die clip is te lang — %1$s of korter</string>
+
+    <!-- Error codes -->
+    <string name="dom_error_ln_1001_title">Er is geen emulator aan dit platform toegewezen</string>
+    <string name="dom_error_ln_1001_why">PlayFieldPortal weet niet welke app spellen voor dit platform moet uitvoeren.</string>
+    <string name="dom_error_ln_1001_action">Kies een emulator voor dit platform in Instellingen › Emulatortoewijzing.</string>
+    <string name="dom_error_ln_1002_title">De geselecteerde RetroArch-core is niet geïnstalleerd</string>
+    <string name="dom_error_ln_1002_why">RetroArch moest een core laden die niet op dit apparaat staat.</string>
+    <string name="dom_error_ln_1002_action">Installeer de core via de Online Updater van RetroArch, of kies een andere core in Emulatortoewijzing.</string>
+    <string name="dom_error_ln_2001_title">Het spelbestand ontbreekt of is onleesbaar</string>
+    <string name="dom_error_ln_2001_why">Het bestand is mogelijk verplaatst, hernoemd of verwijderd, of de SD-kaart waarop het stond is verwijderd.</string>
+    <string name="dom_error_ln_2001_action">Controleer of het bestand er nog is en scan daarna de geheugenkaart opnieuw.</string>
+    <string name="dom_error_ln_4001_title">De emulator is niet gevonden</string>
+    <string name="dom_error_ln_4001_why">De emulator die aan dit spel is toegewezen, is niet geïnstalleerd, of Android kon het scherm dat PlayFieldPortal opent niet vinden.</string>
+    <string name="dom_error_ln_4001_action">Installeer de emulator of kies een andere in Instellingen › Emulatortoewijzing.</string>
+    <string name="dom_error_ln_4002_title">Android liet de emulator niet openen</string>
+    <string name="dom_error_ln_4002_why">Android weigerde PlayFieldPortal toestemming om deze emulator te starten.</string>
+    <string name="dom_error_ln_4002_action">Open de emulator één keer zelf en probeer het daarna opnieuw. Blijft het gebeuren, werk dan de emulator bij.</string>
+    <string name="dom_error_ln_4003_title">De emulator is nooit naar voren gekomen</string>
+    <string name="dom_error_ln_4003_why">De emulator is waarschijnlijk tijdens het starten gesloten, of Android heeft hem gestopt voordat het spel kon laden.</string>
+    <string name="dom_error_ln_4003_action">Open de emulator één keer zelf om te controleren of hij start, en werk hem bij als er een nieuwere versie is. Blijft het gebeuren, kies dan een andere emulator in Instellingen › Emulatortoewijzing.</string>
+    <string name="dom_error_ln_9001_title">De emulator kon niet worden geopend</string>
+    <string name="dom_error_ln_9001_why">Er ging iets onverwachts mis bij het starten van de emulator.</string>
+    <string name="dom_error_ln_9001_action">Probeer het opnieuw. Blijft het gebeuren, kopieer dan de details en meld het.</string>
+    <string name="dom_error_sc_1001_title">Er is geen map ingesteld voor deze geheugenkaart</string>
+    <string name="dom_error_sc_1001_why">Deze geheugenkaart heeft nog geen plek om te scannen.</string>
+    <string name="dom_error_sc_1001_action">Kies een map via de opties van de geheugenkaart en scan die daarna.</string>
+    <string name="dom_error_sc_1002_title">Er loopt al een scan</string>
+    <string name="dom_error_sc_1002_why">Deze geheugenkaart werd al gescand, dus de tweede scan is overgeslagen.</string>
+    <string name="dom_error_sc_1002_action">Wacht tot de lopende scan klaar is. Het resultaat verschijnt hier zodra hij klaar is.</string>
+    <string name="dom_error_sc_2001_title">Toegang tot de map is verloren</string>
+    <string name="dom_error_sc_2001_why">PlayFieldPortal heeft geen toestemming meer om deze map te lezen.</string>
+    <string name="dom_error_sc_2001_action">Kies de map opnieuw via de opties van de geheugenkaart zodat er toegang wordt verleend, en scan hem daarna.</string>
+    <string name="dom_error_sc_2002_title">De map bestaat niet meer</string>
+    <string name="dom_error_sc_2002_why">De map is verplaatst of verwijderd. Staat hij op een SD-kaart, dan is de kaart misschien verwijderd.</string>
+    <string name="dom_error_sc_2002_action">Plaats de SD-kaart en scan opnieuw, of kies een nieuwe map via de opties van de geheugenkaart.</string>
+    <string name="dom_error_sc_2003_title">Onbekende systeemmap</string>
+    <string name="dom_error_sc_2003_why">Deze map in de primaire ROM-map komt niet overeen met een systeem dat PlayFieldPortal kent.</string>
+    <string name="dom_error_sc_2003_action">Hernoem de map naar een ondersteunde systeemnaam, of verplaats de spellen naar zo\'n map.</string>
+    <string name="dom_error_sc_2004_title">Bestand niet herkend</string>
+    <string name="dom_error_sc_2004_why">Het type van dit bestand wordt niet gebruikt door spellen voor dit platform.</string>
+    <string name="dom_error_sc_2004_action">Controleer of het bestand een spel voor dit platform is. Archieven en patches worden bewust overgeslagen.</string>
+    <string name="dom_error_sc_9001_title">De scan is onverwacht mislukt</string>
+    <string name="dom_error_sc_9001_why">Er ging iets onverwachts mis tijdens het scannen.</string>
+    <string name="dom_error_sc_9001_action">Probeer de scan opnieuw. Blijft het gebeuren, kopieer dan de details en meld het.</string>
+    <string name="dom_error_ar_1001_title">Artworkmap niet beschikbaar</string>
+    <string name="dom_error_ar_1001_why">PFP kan de artworkmap niet bereiken, dus nieuwe artwork is gepauzeerd.</string>
+    <string name="dom_error_ar_1001_action">Koppel de map opnieuw in Instellingen › Artwork.</string>
+    <string name="dom_error_ar_2001_title">Het artworkbestand kon niet worden opgeslagen</string>
+    <string name="dom_error_ar_2001_why">De opslag was vol, of er kon niet naar de artworkmap worden geschreven.</string>
+    <string name="dom_error_ar_2001_action">Maak wat ruimte vrij en probeer het opnieuw.</string>
+    <string name="dom_error_ar_2002_title">Een bestand kon niet worden gekopieerd</string>
+    <string name="dom_error_ar_2002_why">Het kopiëren is halverwege mislukt, of er kon niet naar de bestemming worden geschreven.</string>
+    <string name="dom_error_ar_2002_action">Controleer of er vrije ruimte is op de bestemming en voer het daarna opnieuw uit.</string>
+    <string name="dom_error_ar_2003_title">Onbekende systeemmap in de import</string>
+    <string name="dom_error_ar_2003_why">Deze map in de import komt niet overeen met een systeem dat PlayFieldPortal kent.</string>
+    <string name="dom_error_ar_2003_action">Hernoem de map naar een ondersteunde systeemnaam en importeer opnieuw.</string>
+    <string name="dom_error_ar_3001_title">De artworkbron kon niet worden bereikt</string>
+    <string name="dom_error_ar_3001_why">Het apparaat is offline, of de bron reageerde niet.</string>
+    <string name="dom_error_ar_3001_action">Controleer de verbinding en probeer het later opnieuw.</string>
+    <string name="dom_error_ar_3002_title">De bron heeft het verzoek geweigerd</string>
+    <string name="dom_error_ar_3002_why">De bron beperkt het aantal verzoeken, of het benodigde account of de sleutel is geweigerd.</string>
+    <string name="dom_error_ar_3002_action">Wacht even en probeer het opnieuw, of controleer het account van de bron in Instellingen.</string>
+    <string name="dom_error_ar_3003_title">Geen overeenkomst gevonden voor dit spel</string>
+    <string name="dom_error_ar_3003_why">De bron heeft geen vermelding die overeenkomt met de titel van dit spel.</string>
+    <string name="dom_error_ar_3003_action">Controleer de titel van het spel, of kies zelf artwork in de Artwork Studio.</string>
+    <string name="dom_error_ar_9001_title">Ophalen is onverwacht mislukt</string>
+    <string name="dom_error_ar_9001_why">Er ging iets onverwachts mis tijdens het ophalen.</string>
+    <string name="dom_error_ar_9001_action">Probeer het opnieuw. Blijft het gebeuren, kopieer dan de details en meld het.</string>
+    <string name="dom_error_ac_1001_title">Geen prestatieset gevonden voor dit spel</string>
+    <string name="dom_error_ac_1001_why">Geen van de verbonden diensten heeft prestaties voor een spel met deze titel.</string>
+    <string name="dom_error_ac_1001_action">Koppel het spel handmatig via de prestatiepagina.</string>
+    <string name="dom_error_ac_2001_title">De Windows-prestatiemap kan niet worden gelezen</string>
+    <string name="dom_error_ac_2001_why">De map die voor de lokale prestaties van dit spel is gekozen, kon niet worden geopend.</string>
+    <string name="dom_error_ac_2001_action">Kies de map van het spel opnieuw via de prestatiepagina.</string>
+    <string name="dom_error_ac_3001_title">Het apparaat is offline</string>
+    <string name="dom_error_ac_3001_why">Prestaties kunnen niet worden bijgewerkt zonder internetverbinding.</string>
+    <string name="dom_error_ac_3001_action">Maak verbinding met internet. De update wordt vanzelf opnieuw uitgevoerd.</string>
+    <string name="dom_error_ac_3002_title">Inloggen verlopen</string>
+    <string name="dom_error_ac_3002_why">De verbonden dienst accepteert de aanmelding van PlayFieldPortal niet meer.</string>
+    <string name="dom_error_ac_3002_action">Verbind de dienst opnieuw in Instellingen › Prestaties.</string>
+    <string name="dom_error_ac_3003_title">Steam-speldetails zijn privé</string>
+    <string name="dom_error_ac_3003_why">Steam deelt prestaties alleen als je speldetails openbaar zijn.</string>
+    <string name="dom_error_ac_3003_action">Zet Speldetails op Openbaar in je Steam-privacyinstellingen en werk daarna opnieuw bij.</string>
+    <string name="dom_error_ac_3004_title">Dit spel kon niet worden bijgewerkt</string>
+    <string name="dom_error_ac_3004_why">De dienst reageerde niet voor dit spel, of gaf een fout terug.</string>
+    <string name="dom_error_ac_3004_action">Probeer later opnieuw bij te werken.</string>
+    <string name="dom_error_md_2001_title">De mediamap kan niet worden gelezen</string>
+    <string name="dom_error_md_2001_why">PlayFieldPortal heeft geen toegang meer tot deze map, of hij bestaat niet meer.</string>
+    <string name="dom_error_md_2001_action">Kies de map opnieuw in de media-instellingen en scan daarna.</string>
+    <string name="dom_error_md_9001_title">De mediascan is onverwacht mislukt</string>
+    <string name="dom_error_md_9001_why">Er ging iets onverwachts mis tijdens het scannen.</string>
+    <string name="dom_error_md_9001_action">Probeer de scan opnieuw. Blijft het gebeuren, kopieer dan de details en meld het.</string>
+    <string name="dom_error_bk_1001_title">Herstellen heeft een item overgeslagen</string>
+    <string name="dom_error_bk_1001_why">Dit item kon niet veilig worden hersteld, dus het is gelaten zoals het was.</string>
+    <string name="dom_error_bk_1001_action">Verder is er niets geraakt. Stel dit item zelf opnieuw in als je het nodig hebt.</string>
+    <string name="dom_error_bk_2001_title">Het back-upbestand kon niet worden geschreven</string>
+    <string name="dom_error_bk_2001_why">De opslag was vol, of er kon niet naar de back-upmap worden geschreven.</string>
+    <string name="dom_error_bk_2001_action">Maak wat ruimte vrij of kies een andere back-uplocatie en probeer het opnieuw.</string>
+    <string name="dom_error_bk_2002_title">Het back-upbestand is onleesbaar of beschadigd</string>
+    <string name="dom_error_bk_2002_why">Het bestand is geen PlayFieldPortal-back-up, of het is afgebroken.</string>
+    <string name="dom_error_bk_2002_action">Kies een ander back-upbestand.</string>
+    <string name="dom_error_sy_9001_title">Er is iets misgegaan</string>
+    <string name="dom_error_sy_9001_why">Er ging iets onverwachts mis.</string>
+    <string name="dom_error_sy_9001_action">Probeer het opnieuw. Blijft het gebeuren, kopieer dan de details en meld het.</string>
+</resources>

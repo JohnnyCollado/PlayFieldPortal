@@ -7,6 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -16,6 +18,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.playfieldportal.core.ui.theme.themedText
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.feature.settings.viewmodel.ArtworkOrphanViewModel
 
 /**
@@ -40,13 +44,14 @@ fun ArtworkOrphanScreen(
     val selected = state.selected
 
     SettingsScaffold(
-        title = "Settings",
-        subtitle = if (selected == null) "Unmatched Artwork" else "Link “${selected.stem}”",
+        title = stringResource(R.string.settings_title),
+        subtitle = if (selected == null) stringResource(R.string.setd_orphan_title)
+        else stringResource(R.string.setd_orphan_link_title, selected.stem),
         onBack = if (selected == null) onBack else ({ viewModel.clearSelection() }),
         modifier = modifier,
     ) {
         state.notice?.let { notice ->
-            SettingsRow(label = notice, onClick = { viewModel.dismissNotice() })
+            SettingsRow(label = notice.asString(), onClick = { viewModel.dismissNotice() })
         }
 
         if (selected == null) {
@@ -63,19 +68,18 @@ private fun OrphanList(
     viewModel: ArtworkOrphanViewModel,
 ) {
     if (state.loading) {
-        SettingsRow(label = "Loading…")
+        SettingsRow(label = stringResource(R.string.setd_loading))
         return
     }
     if (state.orphans.isEmpty()) {
         SettingsRow(
-            label = "Nothing unmatched",
-            sublabel = "Every artwork file in your folder is linked to a game. " +
-                "Run Scan & Relink after adding files to check again.",
+            label = stringResource(R.string.setd_orphan_none),
+            sublabel = stringResource(R.string.setd_orphan_none_sublabel),
         )
         return
     }
 
-    SettingsGroup("${state.orphans.size} files matched no game")
+    SettingsGroup(pluralStringResource(R.plurals.setd_orphan_count, state.orphans.size, state.orphans.size))
     // Grouped by platform so a user resolving one console's drop is not reading the whole library.
     state.orphans.groupBy { it.platformId }.forEach { (platformId, rows) ->
         SettingsGroup(platformId.uppercase())
@@ -96,15 +100,15 @@ private fun OrphanResolver(
 ) {
     val selected = state.selected ?: return
 
-    SettingsGroup("File")
+    SettingsGroup(stringResource(R.string.setd_orphan_group_file))
     SettingsRow(
         label = selected.fileName,
         sublabel = "${selected.platformId.uppercase()} · ${selected.artworkType.lowercase().replace('_', ' ')}",
     )
 
-    SettingsGroup("Search your games")
+    SettingsGroup(stringResource(R.string.setd_orphan_group_search))
     SettingsRow(
-        label = "Title",
+        label = stringResource(R.string.setd_orphan_title_field),
         trailing = {
             BasicTextField(
                 value = state.query,
@@ -121,8 +125,8 @@ private fun OrphanResolver(
         },
     )
     SettingsRow(
-        label = if (state.searching) "Searching…" else "Search",
-        sublabel = "Looks only at your own ${selected.platformId.uppercase()} games — nothing is downloaded",
+        label = stringResource(if (state.searching) R.string.setd_orphan_searching else R.string.setd_orphan_search),
+        sublabel = stringResource(R.string.setd_orphan_search_sublabel, selected.platformId.uppercase()),
         onClick = if (state.searching) null else ({ viewModel.search() }),
     )
 
@@ -130,16 +134,16 @@ private fun OrphanResolver(
         // Nothing has been asked for yet. This is the state the requirement is about: an opened
         // file shows no candidates at all until the user presses Search.
         null -> SettingsRow(
-            label = "No search yet",
-            sublabel = "Edit the title above and press Search to see matching games",
+            label = stringResource(R.string.setd_orphan_no_search),
+            sublabel = stringResource(R.string.setd_orphan_no_search_sublabel),
         )
         else -> if (results.isEmpty()) {
             SettingsRow(
-                label = "No matching games",
-                sublabel = "Try a shorter title — a single distinctive word usually works",
+                label = stringResource(R.string.setd_orphan_no_match),
+                sublabel = stringResource(R.string.setd_orphan_no_match_sublabel),
             )
         } else {
-            SettingsGroup("${results.size} match(es) — pick the owner")
+            SettingsGroup(pluralStringResource(R.plurals.setd_orphan_matches, results.size, results.size))
             results.forEach { candidate ->
                 SettingsRow(
                     label = candidate.title,

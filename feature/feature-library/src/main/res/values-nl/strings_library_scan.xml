@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Scan error messages -->
+    <string name="scan_error_card_not_found">Geheugenkaart niet gevonden.</string>
+    <string name="scan_error_scan_failed">Scannen mislukt — bekijk het logboek.</string>
+    <string name="scan_error_library_unreadable">Kan de bibliotheek niet lezen.</string>
+    <string name="scan_error_save_failed">Kan een gescand spel niet opslaan.</string>
+    <string name="scan_error_rom_dir_not_found">ROM-map niet gevonden: %1$s</string>
+    <string name="scan_error_folder_link_invalid">De maplink van deze bibliotheek is ongeldig. Voeg de map opnieuw toe.</string>
+    <string name="scan_error_root_unreadable">Een ROM-map kan niet worden gelezen. Staat die op een SD-kaart, controleer dan of de kaart erin zit.</string>
+    <string name="scan_error_permission_lost">Toestemming verloren, selecteer de map opnieuw.</string>
+    <string name="scan_error_partial_read">Een deel van de map kon niet worden gelezen, dus er is niets gewijzigd. Probeer het zo opnieuw.</string>
+
+    <!-- One-line scan outcome -->
+    <string name="scan_outcome_line">%1$s: %2$s</string>
+    <string name="scan_outcome_no_source">ROM-map niet ingesteld.</string>
+    <string name="scan_outcome_busy">scan is al bezig.</string>
+    <string name="scan_outcome_failed">scannen mislukt.</string>
+    <string name="scan_outcome_no_new">geen nieuwe ROM\'s</string>
+    <string name="scan_outcome_no_new_none_missing">geen nieuwe ROM\'s, geen ontbrekend</string>
+    <string name="scan_outcome_no_new_marked_missing">geen nieuwe ROM\'s, %1$d als ontbrekend gemarkeerd</string>
+    <plurals name="scan_outcome_added">
+        <item quantity="one">%1$d nieuwe ROM toegevoegd</item>
+        <item quantity="other">%1$d nieuwe ROM\'s toegevoegd</item>
+    </plurals>
+    <plurals name="scan_outcome_added_none_missing">
+        <item quantity="one">%1$d nieuwe ROM toegevoegd, geen ontbrekend</item>
+        <item quantity="other">%1$d nieuwe ROM\'s toegevoegd, geen ontbrekend</item>
+    </plurals>
+    <plurals name="scan_outcome_added_marked_missing">
+        <item quantity="one">%1$d nieuwe ROM toegevoegd, %2$d als ontbrekend gemarkeerd</item>
+        <item quantity="other">%1$d nieuwe ROM\'s toegevoegd, %2$d als ontbrekend gemarkeerd</item>
+    </plurals>
+    <string name="scan_with_error_note">%1$s (%2$s)</string>
+
+    <!-- Per-card line in the scan results list -->
+    <string name="scan_badge_no_new">Niets nieuws</string>
+    <string name="scan_reason_no_new">Geen nieuwe spellen</string>
+    <string name="scan_reason_no_new_marked_missing">Geen nieuwe spellen, %1$d als ontbrekend gemarkeerd</string>
+    <plurals name="scan_reason_added">
+        <item quantity="one">%1$d nieuw spel toegevoegd</item>
+        <item quantity="other">%1$d nieuwe spellen toegevoegd</item>
+    </plurals>
+    <plurals name="scan_reason_added_marked_missing">
+        <item quantity="one">%1$d nieuw spel toegevoegd, %2$d als ontbrekend gemarkeerd</item>
+        <item quantity="other">%1$d nieuwe spellen toegevoegd, %2$d als ontbrekend gemarkeerd</item>
+    </plurals>
+</resources>

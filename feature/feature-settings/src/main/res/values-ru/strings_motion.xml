@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="motion_title">Движение</string>
+    <string name="motion_summary">Сколько всего движется само по себе.</string>
+    <string name="motion_detail_animated">Движется всё</string>
+    <string name="motion_detail_reduced">Только выбранное</string>
+    <string name="motion_detail_static">Ничего само по себе</string>
+    <string name="motion_sub_animated">Движется всё, что может: обложки, значки, обои, фон и свечение. Расходует больше всего заряда.</string>
+    <string name="motion_sub_reduced">Движется только выбранное: его обложка, видеофрагмент и свечение. Фон продолжает двигаться.</string>
+    <string name="motion_sub_static">Ничто не движется само по себе. Меню по-прежнему сдвигаются при навигации.</string>
+    <string name="motion_holds_background">Остановлено, пока для параметра «Движение» выбрано «Статично».</string>
+    <string name="motion_holds_glow">Неподвижно, пока для параметра «Движение» выбрано «Статично».</string>
+</resources>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="motion_title">Movimento</string>
+    <string name="motion_summary">Quanto si muove da solo.</string>
+    <string name="motion_detail_animated">Tutto si muove</string>
+    <string name="motion_detail_reduced">Solo la selezione</string>
+    <string name="motion_detail_static">Niente da solo</string>
+    <string name="motion_sub_animated">Tutto ciò che può muoversi si muove: illustrazioni, icone, sfondi, lo sfondo e il bagliore. Consuma più batteria.</string>
+    <string name="motion_sub_reduced">Si muove solo l\'elemento selezionato: la sua illustrazione, il suo video e il suo bagliore. Lo sfondo continua a muoversi.</string>
+    <string name="motion_sub_static">Niente si muove da solo. I menu scorrono comunque quando li attraversi.</string>
+    <string name="motion_holds_background">Fermo finché «Movimento» è su «Statiche».</string>
+    <string name="motion_holds_glow">Fisso finché «Movimento» è su «Statiche».</string>
+</resources>

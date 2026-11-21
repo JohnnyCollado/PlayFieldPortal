@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="art_error_unexpected">發生未預期的錯誤</string>
+    <string name="art_no_folder_linked">未連結任何圖片資料夾</string>
+    <string name="art_paused_message">圖片功能已暫停。請重新連結你的圖片資料夾以儲存新圖片。</string>
+    <string name="art_error_game_not_found">找不到遊戲</string>
+    <string name="art_error_not_found_any_source">所有來源皆找不到</string>
+    <string name="art_found_via">透過 %1$s 找到</string>
+    <string name="art_results_label_updated">已更新</string>
+    <string name="art_results_label_imported">已匯入</string>
+
+    <!-- Live scrape progress: what is being fetched right now (shown after the source name) -->
+    <string name="art_progress_hashing">正在計算 ROM 雜湊值…</string>
+    <string name="art_progress_searching">正在搜尋…</string>
+    <string name="art_asset_hero">主視覺圖</string>
+    <string name="art_asset_background">背景</string>
+    <string name="art_asset_logo">標誌</string>
+    <string name="art_asset_box_art">盒裝封面</string>
+    <string name="art_asset_physical_media">實體媒體</string>
+    <string name="art_asset_3d_box">3D 盒裝</string>
+    <string name="art_asset_screenshot">螢幕擷圖</string>
+    <string name="art_asset_manual">說明書</string>
+    <string name="art_asset_video">影片</string>
+    <string name="art_asset_icon_video">圖示影片</string>
+    <string name="art_asset_icon_video_converting">圖示影片（轉換中）</string>
+    <string name="art_source_storefronts">商店</string>
+
+    <!-- Metadata fields (labels in the metadata preview and editor) -->
+    <string name="art_field_title">標題</string>
+    <string name="art_field_description">說明</string>
+    <string name="art_field_developer">開發商</string>
+    <string name="art_field_publisher">發行商</string>
+    <string name="art_field_year">年份</string>
+    <string name="art_field_release_date">發行日期</string>
+    <string name="art_field_genre">類型</string>
+    <string name="art_field_age_rating">年齡分級</string>
+    <string name="art_field_franchise">系列</string>
+    <string name="art_field_rating">評分</string>
+
+    <!-- Ways to apply scraped metadata (button labels) -->
+    <string name="art_policy_replace_all">全部取代</string>
+    <string name="art_policy_fill_missing">僅填入缺少的欄位</string>
+    <string name="art_policy_choose_fields">選擇欄位</string>
+    <string name="art_policy_keep_current">保留目前內容</string>
+
+    <!-- Scrape (background task) -->
+    <string name="art_scrape_label_all">正在重新抓取所有遊戲</string>
+    <string name="art_scrape_label_missing">正在抓取缺少的圖片</string>
+    <string name="art_scrape_stop_note">已取得的圖片會保留。</string>
+    <string name="art_scrape_paused_all_title">圖片重新抓取已暫停</string>
+    <string name="art_scrape_paused_title">圖片抓取已暫停</string>
+    <string name="art_scrape_finished_all_title">圖片重新抓取已完成</string>
+    <string name="art_scrape_finished_title">圖片抓取已完成</string>
+    <string name="art_scrape_stopped_title">圖片抓取已停止</string>
+    <string name="art_scrape_failed_title">圖片抓取失敗</string>
+    <string name="art_scrape_result">共 %3$d 款：%1$d 款成功，%2$d 款失敗</string>
+    <plurals name="art_scrape_stopped_after">
+        <item quantity="other">處理 %1$d 款遊戲後停止，已取得的圖片會保留</item>
+    </plurals>
+
+    <!-- Relink (background task) -->
+    <string name="art_relink_label">正在重新連結圖片</string>
+    <plurals name="art_relink_label_consoles">
+        <item quantity="other">正在重新連結 %1$d 部主機的圖片</item>
+    </plurals>
+    <string name="art_relink_stop_note">已連結的圖片會保持連結。</string>
+    <string name="art_relink_finished_title">圖片重新連結已完成</string>
+    <string name="art_relink_stopped_title">圖片重新連結已停止</string>
+    <string name="art_relink_stopped_note">目前已連結的圖片會保留</string>
+    <string name="art_relink_failed_title">圖片重新連結失敗</string>
+    <plurals name="art_relink_games_linked">
+        <item quantity="other">已連結 %1$d 款遊戲</item>
+    </plurals>
+    <plurals name="art_relink_files">
+        <item quantity="other">%1$d 個檔案</item>
+    </plurals>
+    <string name="art_relink_result">%2$s中%1$s</string>
+    <string name="art_relink_result_unmatched">%1$s · %2$d 個未配對</string>
+
+    <!-- Export to ES-DE (background task) -->
+    <string name="art_export_label">正在為 ES-DE 匯出圖片</string>
+    <string name="art_export_stop_note">已匯出的檔案會保留原處。</string>
+    <string name="art_export_error_no_destination">沒有目標資料夾</string>
+    <string name="art_export_error_access_lost">已失去圖片資料夾的存取權</string>
+    <string name="art_export_dest_not_created">無法建立目標資料夾。</string>
+    <plurals name="art_export_files_badge">
+        <item quantity="other">%1$d 個檔案</item>
+    </plurals>
+    <string name="art_export_failed_title">圖片匯出失敗</string>
+    <string name="art_export_stopped_title">圖片匯出已停止</string>
+    <string name="art_export_finished_title">圖片匯出已完成</string>
+    <plurals name="art_export_stopped_note">
+        <item quantity="other">已先匯出 %1$d 個檔案</item>
+    </plurals>
+    <string name="art_export_result">已複製 %1$d 個，%2$d 個已存在，%3$d 個失敗</string>
+
+    <!-- Import (background task and its notification) -->
+    <string name="art_import_plan_not_found">找不到匯入計畫</string>
+    <string name="art_import_plan_unreadable">無法讀取匯入計畫</string>
+    <string name="art_import_label">正在匯入圖片：%1$s</string>
+    <string name="art_import_stop_note">已匯入的圖片會保留。</string>
+    <string name="art_import_failed_title">圖片匯入失敗</string>
+    <string name="art_import_cancelled">已取消圖片匯入</string>
+    <string name="art_import_done">已匯入圖片</string>
+    <plurals name="art_import_needs_review">
+        <item quantity="other">已匯入圖片，%1$d 個項目需要檢查</item>
+    </plurals>
+    <string name="art_import_headline">%1$s：%2$s</string>
+    <string name="art_import_counts">已匯入 %1$d 個，略過 %2$d 個，失敗 %3$d 個，不明確 %4$d 個，未配對 %5$d 個。</string>
+    <string name="art_import_results_summary">已匯入 %1$d 個，略過 %2$d 個</string>
+
+    <!-- Move artwork into the linked folder (background task) -->
+    <string name="art_move_label">正在將圖片移至你的資料夾</string>
+    <string name="art_move_failed_title">圖片移動失敗</string>
+    <string name="art_move_stopped_title">圖片移動已停止</string>
+    <string name="art_move_finished_title">圖片移動已完成</string>
+    <plurals name="art_move_stopped_note">
+        <item quantity="other">已先移動 %1$d 個檔案</item>
+    </plurals>
+    <string name="art_move_result">已移動 %1$d 個，%2$d 個已存在，%3$d 個失敗</string>
+</resources>

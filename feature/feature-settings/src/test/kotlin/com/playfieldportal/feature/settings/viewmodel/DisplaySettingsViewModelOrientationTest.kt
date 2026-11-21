@@ -63,7 +63,7 @@ class DisplaySettingsViewModelOrientationTest {
     fun `defaults to landscape`() = runTest(dispatcher) {
         observeUntilSettled(vm.uiState)
         assertEquals(ScreenOrientationMode.LANDSCAPE, vm.uiState.value.screenOrientation)
-        assertEquals("Landscape", vm.screenOrientationLabel())
+        assertEquals("Landscape", vm.screenOrientationLabel().resolve(context))
     }
 
     @Test
@@ -78,7 +78,7 @@ class DisplaySettingsViewModelOrientationTest {
         eventually("follow device surfaced") {
             vm.uiState.value.screenOrientation == ScreenOrientationMode.FOLLOW_DEVICE
         }
-        assertEquals("Follow Device", vm.screenOrientationLabel())
+        assertEquals("Follow Device", vm.screenOrientationLabel().resolve(context))
 
         vm.cycleScreenOrientation()
         eventually("landscape again") {

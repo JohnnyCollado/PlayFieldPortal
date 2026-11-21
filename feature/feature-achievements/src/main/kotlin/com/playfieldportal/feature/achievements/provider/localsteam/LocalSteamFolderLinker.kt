@@ -7,7 +7,9 @@ import android.provider.DocumentsContract
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.domain.achievement.AchievementProvider
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.achievements.AchievementController
+import com.playfieldportal.feature.achievements.R
 import com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate
 import com.playfieldportal.feature.artwork.match.StorefrontMatchResult
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -72,10 +74,10 @@ class LocalSteamFolderLinker @Inject constructor(
         ) : LinkOutcome
 
         /** Nothing here can be tracked, in the folder's own terms. */
-        data class NoEmuData(val reason: String) : LinkOutcome
+        data class NoEmuData(val text: UiText) : LinkOutcome
 
         /** The pick itself could not be used — a revoked grant, an unreadable tree. */
-        data class Failed(val reason: String) : LinkOutcome
+        data class Failed(val text: UiText) : LinkOutcome
     }
 
     /**
@@ -133,18 +135,10 @@ class LocalSteamFolderLinker @Inject constructor(
             is LocalSteamIdentityResolver.Outcome.Resolved -> finish(gameId, anchor, outcome.appId, outcome.source)
             is LocalSteamIdentityResolver.Outcome.NeedsConfirmation ->
                 LinkOutcome.NeedsConfirmation(outcome.result, outcome.query, anchor.folderName)
-            LocalSteamIdentityResolver.Outcome.NoMatch -> LinkOutcome.NoEmuData(
-                "Steam has no game matching \"${anchor.folderName}\". Rename the folder to the " +
-                    "game's Steam name, or link it from Game Detail ▸ Match Game first."
-            )
-            is LocalSteamIdentityResolver.Outcome.Unavailable -> LinkOutcome.NoEmuData(
-                "${outcome.reason}, so this folder's app id could not be worked out. " +
-                    "Nothing was changed — try again when you are back online."
-            )
+            LocalSteamIdentityResolver.Outcome.NoMatch -> LinkOutcome.NoEmuData(UiText.res(R.string.ach_link_no_match, anchor.folderName))
+            is LocalSteamIdentityResolver.Outcome.Unavailable -> LinkOutcome.NoEmuData(UiText.res(R.string.ach_link_unavailable, outcome.reason))
             LocalSteamIdentityResolver.Outcome.NotASteamBuild -> notASteamBuild(treeUri)
-            is LocalSteamIdentityResolver.Outcome.WriteFailed -> LinkOutcome.Failed(
-                "Could not create steam_appid.txt in that folder — PFP may only have read access to it."
-            )
+            is LocalSteamIdentityResolver.Outcome.WriteFailed -> LinkOutcome.Failed(UiText.res(R.string.ach_link_marker_failed))
         }
     }
 
@@ -153,11 +147,9 @@ class LocalSteamFolderLinker @Inject constructor(
         val anchor = anchorOrNull(treeUri) ?: return notASteamBuild(treeUri)
         return when (val outcome = identity.confirm(anchor, appId)) {
             is LocalSteamIdentityResolver.Outcome.Resolved -> finish(gameId, anchor, outcome.appId, outcome.source)
-            is LocalSteamIdentityResolver.Outcome.WriteFailed -> LinkOutcome.Failed(
-                "Could not create steam_appid.txt in that folder — PFP may only have read access to it."
-            )
+            is LocalSteamIdentityResolver.Outcome.WriteFailed -> LinkOutcome.Failed(UiText.res(R.string.ach_link_marker_failed))
             // confirm() only ever resolves or fails to write; the rest cannot be reached from here.
-            else -> LinkOutcome.Failed("The chosen match could not be recorded.")
+            else -> LinkOutcome.Failed(UiText.res(R.string.ach_link_not_recorded))
         }
     }
 
@@ -186,25 +178,19 @@ class LocalSteamFolderLinker @Inject constructor(
         source: AppIdSource,
     ): LinkOutcome {
         if (!credentials.goldbergInstallerEnabled()) {
-            return LinkOutcome.Failed(
-                "Turn on Install Goldberg & Convert Games in Achievement settings before PFP writes into a game folder."
-            )
+            return LinkOutcome.Failed(UiText.res(R.string.ach_link_installer_off))
         }
         val anchor = anchorOrNull(treeUri) ?: return notASteamBuild(treeUri)
         // The generator needs a settings folder to write into; the marker write already created one
         // for every path that reaches here, so re-inspect rather than assume the anchor is stale.
         val folder = discovery.inspect(anchor.treeUri, anchor.folderDocId)
-            ?: return LinkOutcome.Failed("That folder no longer declares an app id — pick it again.")
+            ?: return LinkOutcome.Failed(UiText.res(R.string.ach_link_no_app_id))
         when (val result = generator.generate(folder)) {
             LocalSteamSchemaGenerator.Result.Written -> Unit
-            LocalSteamSchemaGenerator.Result.NoKey -> return LinkOutcome.Failed(
-                "Add your Steam Web API key in Settings ▸ Achievements ▸ Provider Credentials — the achievement list comes from it."
-            )
-            LocalSteamSchemaGenerator.Result.NoAchievements -> return LinkOutcome.NoEmuData(
-                "Steam lists no achievements for app id $appId, so there is nothing to track."
-            )
+            LocalSteamSchemaGenerator.Result.NoKey -> return LinkOutcome.Failed(UiText.res(R.string.ach_link_need_key))
+            LocalSteamSchemaGenerator.Result.NoAchievements -> return LinkOutcome.NoEmuData(UiText.res(R.string.ach_link_no_achievements, appId))
             is LocalSteamSchemaGenerator.Result.Failed ->
-                return LinkOutcome.Failed("Could not write the achievement kit: ${result.reason}")
+                return LinkOutcome.Failed(UiText.res(R.string.ach_link_kit_failed, result.reason))
         }
         return register(gameId, anchor, appId, source, requireSchema = false)
     }
@@ -236,9 +222,7 @@ class LocalSteamFolderLinker @Inject constructor(
         val folder = discovery.inspect(anchor.treeUri, anchor.folderDocId)
             // The marker was just written (or was already there), so a null here means the folder
             // became unreachable mid-flow — a revoked grant, a moved folder, an unmounted card.
-            ?: return LinkOutcome.Failed(
-                "That folder could not be read back. If it is on removable storage, remount it and pick it again."
-            )
+            ?: return LinkOutcome.Failed(UiText.res(R.string.ach_link_read_back_failed))
         if (requireSchema && !folder.hasSchema) {
             return LinkOutcome.NeedsKit(
                 appId = appId,
@@ -282,11 +266,7 @@ class LocalSteamFolderLinker @Inject constructor(
         }.onFailure { Timber.w(it, "Could not persist the grant for the picked game folder") }
     }
 
-    private fun notASteamBuild(treeUri: Uri) = LinkOutcome.NoEmuData(
-        "No Steam library file (steam_api64.dll) anywhere in that folder, so it is not a Steam " +
-            "build and there is nothing for the emulator to track. Pick the folder the game's " +
-            ".exe lives in."
-    ).also { Timber.i("LOCAL_STEAM — picked folder is not a Steam build: $treeUri") }
+    private fun notASteamBuild(treeUri: Uri) = LinkOutcome.NoEmuData(UiText.res(R.string.ach_link_not_steam_build)).also { Timber.i("LOCAL_STEAM — picked folder is not a Steam build: $treeUri") }
 
     private fun displayTitleOf(game: com.playfieldportal.core.data.database.entity.GameEntity): String =
         game.userTitleOverride?.takeIf { it.isNotBlank() }

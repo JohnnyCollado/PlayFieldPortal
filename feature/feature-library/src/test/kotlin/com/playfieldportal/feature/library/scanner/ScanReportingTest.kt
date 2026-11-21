@@ -5,16 +5,21 @@ import com.playfieldportal.core.domain.model.NotificationDetail
 import com.playfieldportal.core.domain.model.PfpErrorCode
 import com.playfieldportal.core.domain.model.ResultOutcome
 import com.playfieldportal.core.domain.model.toNotificationAction
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.library.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** A scan's outcomes as the panel shows them: one Results item per card, with the right code. */
 class ScanReportingTest {
 
     private fun outcome(status: ScanStatus, error: String? = null, added: Int = 0, missing: Int = 0) =
-        PlatformScanOutcome("psp", "PSP", status, added = added, markedMissing = missing, errorMessage = error)
+        PlatformScanOutcome("psp", "PSP", status, added = added, markedMissing = missing, errorMessage = error?.let(UiText::raw))
+
+    // No Context in a plain JUnit test: a text "resolves" to its own description, which is enough
+    // to assert on which text was chosen.
+    private val resolve: (UiText) -> String = { it.toString() }
 
     @Test
     fun `each status maps to its code`() {
@@ -32,24 +37,25 @@ class ScanReportingTest {
 
     @Test
     fun `a card outcome becomes an item that opens its card`() {
-        val failed = outcome(ScanStatus.FAILED, "Folder not found").toResultItem()
+        val failed = outcome(ScanStatus.FAILED, "Folder not found").toResultItem(resolve)
         assertEquals(ResultOutcome.FAILED, failed.outcome)
         assertEquals("SC-2002", failed.code)
         assertEquals(NotificationAction.OpenMemoryCard("psp"), failed.action?.toNotificationAction())
 
-        val skipped = outcome(ScanStatus.SKIPPED_NO_SOURCE).toResultItem()
+        val skipped = outcome(ScanStatus.SKIPPED_NO_SOURCE).toResultItem(resolve)
         assertEquals(ResultOutcome.SKIPPED, skipped.outcome)
 
-        val done = outcome(ScanStatus.COMPLETED, added = 12, missing = 1).toResultItem()
+        val done = outcome(ScanStatus.COMPLETED, added = 12, missing = 1).toResultItem(resolve)
         assertEquals(ResultOutcome.DONE, done.outcome)
         assertEquals("+12", done.badge)
-        assertTrue(done.reason!!.contains("1 marked missing"))
+        assertEquals(resolve(UiText.plural(R.plurals.scan_reason_added_marked_missing, 12, 12, 1)), done.reason)
     }
 
     @Test
     fun `scan results put failures first and label successes Added`() {
         val results = scanResults(
             listOf(outcome(ScanStatus.COMPLETED, added = 3), outcome(ScanStatus.FAILED, "x")),
+            resolve = resolve,
         )
         assertEquals(ResultOutcome.FAILED, results.items.first().outcome)
         assertEquals("Added", results.labels.done)
@@ -57,8 +63,8 @@ class ScanReportingTest {
 
     @Test
     fun `a failed single card scan is a note with its code`() {
-        val notes = outcome(ScanStatus.SKIPPED_NO_SOURCE).failureNotes() as NotificationDetail.Notes
+        val notes = outcome(ScanStatus.SKIPPED_NO_SOURCE).failureNotes(resolve) as NotificationDetail.Notes
         assertEquals("SC-1001", notes.code)
-        assertNull(outcome(ScanStatus.COMPLETED).failureNotes())
+        assertNull(outcome(ScanStatus.COMPLETED).failureNotes(resolve))
     }
 }

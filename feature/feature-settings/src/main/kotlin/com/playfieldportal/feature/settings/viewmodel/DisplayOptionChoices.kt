@@ -4,6 +4,9 @@ import com.playfieldportal.core.domain.model.IconLegibilityStyle
 import com.playfieldportal.core.domain.model.TextLegibilityStyle
 import com.playfieldportal.core.domain.model.UmdSlotMode
 import com.playfieldportal.core.domain.model.XmbListMotion
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.core.domain.text.labelRes
+import com.playfieldportal.feature.settings.R
 
 // ── Display's pick-one settings ───────────────────────────────────────────────
 //
@@ -14,65 +17,81 @@ import com.playfieldportal.core.domain.model.XmbListMotion
 // that enum's entry N, which is what DisplaySettingsViewModel.choose relies on.
 
 /** One value of a pick-one setting: its name and, where the name alone is not enough, a few words. */
-data class DisplayChoice(val label: String, val detail: String? = null)
+data class DisplayChoice(val label: UiText, val detail: UiText? = null)
 
 /**
  * A Display setting chosen from a short list. [summary] is the row's sublabel and the dialog's
  * message: what the setting is for, never a list of its values.
  */
-enum class DisplayOption(val title: String, val summary: String, val choices: List<DisplayChoice>) {
+enum class DisplayOption(val title: UiText, val summary: UiText, val choices: List<DisplayChoice>) {
+    /** How much moves on its own: everything, only what is selected, or nothing. Above every other motion choice. */
+    MOTION(
+        title = UiText.res(R.string.motion_title),
+        summary = UiText.res(R.string.motion_summary),
+        choices = com.playfieldportal.core.domain.model.ImageMotion.entries.map { motion ->
+            DisplayChoice(
+                label = UiText.res(motion.labelRes),
+                detail = UiText.res(
+                    when (motion) {
+                        com.playfieldportal.core.domain.model.ImageMotion.ANIMATED -> R.string.motion_detail_animated
+                        com.playfieldportal.core.domain.model.ImageMotion.REDUCED -> R.string.motion_detail_reduced
+                        com.playfieldportal.core.domain.model.ImageMotion.STATIC -> R.string.motion_detail_static
+                    },
+                ),
+            )
+        },
+    ),
     WAVE_STYLE(
-        title = "Wave style",
-        summary = "How lively the background wave is.",
+        title = UiText.res(R.string.setd_opt_wave_style_title),
+        summary = UiText.res(R.string.setd_opt_wave_style_summary),
         choices = listOf(
-            DisplayChoice("Animated", "Full motion"),
-            DisplayChoice("Reduced", "Dimmer, calmer"),
-            DisplayChoice("Static", "Frozen"),
-            DisplayChoice("Reduced + Static"),
+            DisplayChoice(UiText.res(R.string.setd_motion_animated), UiText.res(R.string.setd_motion_animated_detail)),
+            DisplayChoice(UiText.res(R.string.setd_motion_reduced), UiText.res(R.string.setd_wave_reduced_detail)),
+            DisplayChoice(UiText.res(R.string.setd_motion_static), UiText.res(R.string.setd_wave_static_detail)),
+            DisplayChoice(UiText.res(R.string.setd_motion_reduced_static)),
         ),
     ),
 
     /** The same setting as [WAVE_STYLE], named for a motion wallpaper, which it also governs. */
     BACKGROUND_MOTION(
-        title = "Background motion",
-        summary = "How lively the motion wallpaper is.",
+        title = UiText.res(R.string.setd_opt_background_motion_title),
+        summary = UiText.res(R.string.setd_opt_background_motion_summary),
         choices = listOf(
-            DisplayChoice("Animated", "Full motion"),
-            DisplayChoice("Reduced", "Slower, calmer"),
-            DisplayChoice("Static", "Still image"),
-            DisplayChoice("Reduced + Static"),
+            DisplayChoice(UiText.res(R.string.setd_motion_animated), UiText.res(R.string.setd_motion_animated_detail)),
+            DisplayChoice(UiText.res(R.string.setd_motion_reduced), UiText.res(R.string.setd_bgmotion_reduced_detail)),
+            DisplayChoice(UiText.res(R.string.setd_motion_static), UiText.res(R.string.setd_bgmotion_static_detail)),
+            DisplayChoice(UiText.res(R.string.setd_motion_reduced_static)),
         ),
     ),
     ICON_LEGIBILITY(
-        title = "Icon legibility",
-        summary = "How XMB icons separate from the background.",
+        title = UiText.res(R.string.setd_opt_icon_legibility_title),
+        summary = UiText.res(R.string.setd_opt_icon_legibility_summary),
         choices = IconLegibilityStyle.entries.map { style ->
             DisplayChoice(
-                label = style.label,
+                label = UiText.res(style.labelRes),
                 detail = when (style) {
-                    IconLegibilityStyle.OFFSET_SHADOW_LIGHT -> "For dark icons"
-                    IconLegibilityStyle.CONTOUR_AUTO -> "Follows the icon color"
+                    IconLegibilityStyle.OFFSET_SHADOW_LIGHT -> UiText.res(R.string.setd_icon_legibility_light_detail)
+                    IconLegibilityStyle.CONTOUR_AUTO -> UiText.res(R.string.setd_icon_legibility_auto_detail)
                     else -> null
                 },
             )
         },
     ),
     ITEM_LIST_MOTION(
-        title = "Item list motion",
-        summary = "How the item list moves as you step through it. Rewind slips the focused item behind " +
-            "the category icon and plays in reverse going up; Glide moves the whole list together.",
-        choices = XmbListMotion.entries.map { DisplayChoice(it.label) },
+        title = UiText.res(R.string.setd_opt_item_list_motion_title),
+        summary = UiText.res(R.string.setd_opt_item_list_motion_summary),
+        choices = XmbListMotion.entries.map { DisplayChoice(UiText.res(it.labelRes)) },
     ),
     UMD_SLOT(
-        title = "UMD slot",
-        summary = "Which game sits in the UMD slot.",
+        title = UiText.res(R.string.setd_opt_umd_slot_title),
+        summary = UiText.res(R.string.setd_opt_umd_slot_summary),
         choices = UmdSlotMode.entries.map { mode ->
             DisplayChoice(
-                label = mode.label,
+                label = UiText.res(mode.labelRes),
                 detail = when (mode) {
                     UmdSlotMode.OFF -> null
-                    UmdSlotMode.INSERTED -> "Only a game you inserted"
-                    UmdSlotMode.INSERTED_AND_RECENT -> "Else the last game played"
+                    UmdSlotMode.INSERTED -> UiText.res(R.string.setd_umd_inserted_detail)
+                    UmdSlotMode.INSERTED_AND_RECENT -> UiText.res(R.string.setd_umd_recent_detail)
                 },
             )
         },
@@ -81,35 +100,34 @@ enum class DisplayOption(val title: String, val summary: String, val choices: Li
     // Honest copy: the choice is stored and travels with themes and backups, but no renderer reads
     // it yet (survey U2, docs/audits/codebase-survey-2026-10-22.md).
     TEXT_LEGIBILITY(
-        title = "Text legibility",
-        summary = "Not applied yet. Saved with your themes and backups for a later update.",
-        choices = TextLegibilityStyle.entries.map { DisplayChoice(it.label) },
+        title = UiText.res(R.string.setd_opt_text_legibility_title),
+        summary = UiText.res(R.string.setd_opt_text_legibility_summary),
+        choices = TextLegibilityStyle.entries.map { DisplayChoice(UiText.res(it.labelRes)) },
     ),
     SCREEN_ORIENTATION(
-        title = "Screen orientation",
-        summary = "Whether PFP turns with the device. Follow Device shows a rotate prompt in portrait " +
-            "(for Tasker / launcher switching).",
+        title = UiText.res(R.string.setd_opt_orientation_title),
+        summary = UiText.res(R.string.setd_opt_orientation_summary),
         choices = listOf(
-            DisplayChoice("Landscape", "PFP stays landscape"),
-            DisplayChoice("Follow Device", "Rotates with the device"),
+            DisplayChoice(UiText.res(R.string.setd_orientation_landscape), UiText.res(R.string.setd_orientation_landscape_detail)),
+            DisplayChoice(UiText.res(R.string.setd_orientation_follow), UiText.res(R.string.setd_orientation_follow_detail)),
         ),
     ),
     TOUCH_NAV_BUTTON(
-        title = "Touch navigation button",
-        summary = "The on-screen App Drawer / Back button.",
+        title = UiText.res(R.string.setd_opt_touch_nav_title),
+        summary = UiText.res(R.string.setd_opt_touch_nav_summary),
         choices = listOf(
-            DisplayChoice("Auto", "Only while using touch"),
-            DisplayChoice("Always Show"),
-            DisplayChoice("Always Hide", "Controller-only"),
+            DisplayChoice(UiText.res(R.string.setd_touch_nav_auto), UiText.res(R.string.setd_touch_nav_auto_detail)),
+            DisplayChoice(UiText.res(R.string.setd_touch_nav_show)),
+            DisplayChoice(UiText.res(R.string.setd_touch_nav_hide), UiText.res(R.string.setd_touch_nav_hide_detail)),
         ),
     ),
     TOUCH_SENSITIVITY(
-        title = "Touch sensitivity",
-        summary = "How far a swipe travels per XMB step.",
+        title = UiText.res(R.string.setd_opt_touch_sens_title),
+        summary = UiText.res(R.string.setd_opt_touch_sens_summary),
         choices = listOf(
-            DisplayChoice("Low", "Steadier"),
-            DisplayChoice("Normal"),
-            DisplayChoice("High", "Faster scrubbing"),
+            DisplayChoice(UiText.res(R.string.setd_touch_sens_low), UiText.res(R.string.setd_touch_sens_low_detail)),
+            DisplayChoice(UiText.res(R.string.setd_touch_sens_normal)),
+            DisplayChoice(UiText.res(R.string.setd_touch_sens_high), UiText.res(R.string.setd_touch_sens_high_detail)),
         ),
     ),
 }

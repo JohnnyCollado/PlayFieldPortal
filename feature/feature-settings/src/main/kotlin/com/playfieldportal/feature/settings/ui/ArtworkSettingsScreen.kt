@@ -21,11 +21,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.playfieldportal.core.domain.text.labelRes
+import com.playfieldportal.core.ui.text.asString
 import com.playfieldportal.feature.artwork.api.ArtworkScrapePreferences
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.feature.settings.viewmodel.ArtworkSettingsViewModel
 
 @Composable
@@ -60,10 +65,9 @@ fun ArtworkSettingsScreen(
         if (state.confirmRescrapeAll) {
             PfpModalSpec.Confirm(
                 key = "rescrape_all",
-                title = "Re-Scrape All Games?",
-                message = "This will clear and re-scrape artwork for all ${state.status.total} games. " +
-                    "Existing artwork will be replaced. Continue?",
-                confirmLabel = "Re-Scrape All",
+                title = stringResource(R.string.setd_rescrape_title),
+                message = pluralStringResource(R.plurals.setd_rescrape_message, state.status.total, state.status.total),
+                confirmLabel = stringResource(R.string.setd_rescrape_confirm),
                 onConfirm = { viewModel.confirmRescrapeAll() },
                 onCancel = { viewModel.cancelRescrapeAll() },
             )
@@ -73,8 +77,8 @@ fun ArtworkSettingsScreen(
     )
 
     SettingsScaffold(
-        title    = "Settings",
-        subtitle = "Artwork",
+        title    = stringResource(R.string.settings_title),
+        subtitle = stringResource(R.string.setd_artwork_title),
         onBack   = onBack,
         modifier = modifier,
         modalOpen = modal.open,
@@ -111,32 +115,34 @@ fun ArtworkSettingsScreen(
             }
 
             // ── Artwork library / import ──────────────────────────────────────
-            SettingsGroup("Artwork library")
+            SettingsGroup(stringResource(R.string.setd_group_artwork_library))
 
             SettingsRow(
-                label    = "Artwork folder & import",
+                label    = stringResource(R.string.setd_artwork_folder_row),
                 sublabel = if (state.artworkFolderUnavailable)
-                    "Unavailable. Relink to resume new artwork"
-                else "Choose where artwork is stored and import existing artwork from ES-DE",
-                labelTrailing = if (state.artworkFolderUnavailable) ({ KnowledgeBadge("Unavailable", WarningAmber) }) else null,
+                    stringResource(R.string.setd_artwork_folder_unavailable_sublabel)
+                else stringResource(R.string.setd_artwork_folder_sublabel),
+                labelTrailing = if (state.artworkFolderUnavailable) ({
+                    KnowledgeBadge(stringResource(R.string.setd_unavailable), WarningAmber)
+                }) else null,
                 onClick  = { showImport = true },
             )
 
             // ── Artwork status ────────────────────────────────────────────────
-            SettingsGroup("Library artwork status")
+            SettingsGroup(stringResource(R.string.setd_group_artwork_status))
 
-            SettingsValueRow(label = "Total games",      value = state.status.total.toString())
-            SettingsValueRow(label = "Complete",         value = state.status.complete.toString())
-            SettingsValueRow(label = "Missing",          value = state.status.missing.toString())
-            SettingsValueRow(label = "Stale / Invalid",  value = state.status.stale.toString())
+            SettingsValueRow(label = stringResource(R.string.setd_status_total),      value = state.status.total.toString())
+            SettingsValueRow(label = stringResource(R.string.setd_status_complete),         value = state.status.complete.toString())
+            SettingsValueRow(label = stringResource(R.string.setd_status_missing),          value = state.status.missing.toString())
+            SettingsValueRow(label = stringResource(R.string.setd_status_stale),  value = state.status.stale.toString())
             SettingsRow(
-                label    = "Refresh status",
-                sublabel = if (state.isLoadingStatus) "Checking files…" else "Re-check artwork on disk",
+                label    = stringResource(R.string.setd_refresh_status),
+                sublabel = if (state.isLoadingStatus) stringResource(R.string.setd_refresh_checking) else stringResource(R.string.setd_refresh_sublabel),
                 onClick  = if (state.isLoadingStatus) null else ({ viewModel.refreshStatus() }),
             )
 
             // ── Scraping ──────────────────────────────────────────────────────
-            SettingsGroup("Scrape artwork")
+            SettingsGroup(stringResource(R.string.setd_group_scrape))
 
             if (state.isScraping) {
                 Column(modifier = Modifier.padding(horizontal = 48.dp, vertical = 10.dp)) {
@@ -149,7 +155,12 @@ fun ArtworkSettingsScreen(
                     )
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        text  = "${state.scrapeCurrent} / ${state.scrapeTotal}  —  ${state.scrapeTitle}",
+                        text  = stringResource(
+                            R.string.setd_scrape_progress,
+                            state.scrapeCurrent,
+                            state.scrapeTotal,
+                            state.scrapeTitle.asString(),
+                        ),
                         color = SettingsText,
                     )
                     if (state.scrapeSource.isNotEmpty() || state.scrapeAsset.isNotEmpty()) {
@@ -163,90 +174,76 @@ fun ArtworkSettingsScreen(
                         )
                     }
                     Text(
-                        text  = "${state.scrapeSucceeded} succeeded · ${state.scrapeFailed} failed",
+                        text  = stringResource(R.string.setd_scrape_counts, state.scrapeSucceeded, state.scrapeFailed),
                         color = SettingsSubtext,
                     )
                     Text(
-                        text  = "Runs in the background — you can leave this screen.",
+                        text  = stringResource(R.string.setd_scrape_background),
                         color = SettingsSubtext,
                     )
                 }
                 SettingsRow(
-                    label    = "Cancel scrape",
-                    sublabel = "Stops after the current game — artwork fetched so far is kept",
+                    label    = stringResource(R.string.setd_scrape_cancel),
+                    sublabel = stringResource(R.string.setd_scrape_cancel_sublabel),
                     onClick  = { viewModel.cancelScrape() },
                 )
             } else {
                 SettingsRow(
-                    label    = "Re-scrape all games",
-                    sublabel = "Clears and re-fetches artwork for every game",
+                    label    = stringResource(R.string.setd_scrape_all),
+                    sublabel = stringResource(R.string.setd_scrape_all_sublabel),
                     onClick  = { viewModel.requestRescrapeAll() },
                     destructive = true,
                 )
                 SettingsRow(
-                    label    = "Scrape missing games only",
-                    sublabel = "Fetches only games with missing or invalid artwork — keeps valid art",
+                    label    = stringResource(R.string.setd_scrape_missing),
+                    sublabel = stringResource(R.string.setd_scrape_missing_sublabel),
                     onClick  = { viewModel.scrapeMissingOnly() },
                 )
             }
 
             state.summary?.let { summary ->
                 SettingsRow(
-                    label    = summary,
-                    sublabel = "Tap to dismiss",
+                    label    = summary.asString(),
+                    sublabel = stringResource(R.string.setd_tap_to_dismiss),
                     onClick  = { viewModel.dismissSummary() },
                 )
             }
 
             // ── Source priority ───────────────────────────────────────────────
-            SettingsGroup("Source priority")
+            SettingsGroup(stringResource(R.string.setd_group_source_priority))
 
             if (state.ssEnabled) {
-                SettingsValueRow(label = "Primary",    value = "ScreenScraper (ROM hash)")
-                SettingsValueRow(label = "Fallback 1", value = "TheGamesDB")
-                SettingsValueRow(label = "Fallback 2", value = "IGDB")
-                SettingsValueRow(label = "Fallback 3", value = "SteamGridDB (artwork)")
+                SettingsValueRow(label = stringResource(R.string.setd_source_primary),    value = stringResource(R.string.setd_source_screenscraper_hash))
+                SettingsValueRow(label = stringResource(R.string.setd_source_fallback, 1), value = "TheGamesDB")
+                SettingsValueRow(label = stringResource(R.string.setd_source_fallback, 2), value = "IGDB")
+                SettingsValueRow(label = stringResource(R.string.setd_source_fallback, 3), value = stringResource(R.string.setd_source_steamgriddb_artwork))
             } else {
-                SettingsValueRow(label = "Primary",    value = "TheGamesDB")
-                SettingsValueRow(label = "Fallback 1", value = "IGDB")
-                SettingsValueRow(label = "Fallback 2", value = "SteamGridDB (artwork)")
+                SettingsValueRow(label = stringResource(R.string.setd_source_primary),    value = "TheGamesDB")
+                SettingsValueRow(label = stringResource(R.string.setd_source_fallback, 1), value = "IGDB")
+                SettingsValueRow(label = stringResource(R.string.setd_source_fallback, 2), value = stringResource(R.string.setd_source_steamgriddb_artwork))
             }
 
             // ── Art preferences ───────────────────────────────────────────────
-            SettingsGroup("Art preferences")
+            SettingsGroup(stringResource(R.string.setd_group_art_preferences))
 
             SettingsValueRow(
-                label    = "Game icon display",
-                sublabel = "Default for every console — override per console or per game from their Options menus",
-                value    = state.iconDisplayMode.label,
+                label    = stringResource(R.string.setd_icon_display),
+                sublabel = stringResource(R.string.setd_icon_display_sublabel),
+                value    = stringResource(state.iconDisplayMode.labelRes),
                 onClick  = { viewModel.cycleIconDisplayMode() },
             )
 
-            SettingsValueRow(
-                label    = "Animated images",
-                sublabel = when (state.imageMotion) {
-                    com.playfieldportal.core.domain.model.ImageMotion.ANIMATED ->
-                        "Every animated artwork, icon and wallpaper on screen plays — the most battery"
-                    com.playfieldportal.core.domain.model.ImageMotion.REDUCED ->
-                        "Only the focused game's animated art plays; the rest hold their first frame"
-                    com.playfieldportal.core.domain.model.ImageMotion.STATIC ->
-                        "Animated art never plays — every image shows its first frame"
-                } + ". Off-screen images never play.",
-                value    = state.imageMotion.label,
-                onClick  = { viewModel.cycleImageMotion() },
-            )
-
+            // "Animated images" lives in Display now, as Motion: one setting for everything that moves.
             SettingsToggleRow(
-                label    = "Animated icons",
-                sublabel = "Play a game's video snap in its icon after resting on it (Custom Icon mode; skipped on low battery)",
+                label    = stringResource(R.string.setd_animated_icons),
+                sublabel = stringResource(R.string.setd_animated_icons_sublabel),
                 checked  = state.animatedIcons,
                 onToggle = { viewModel.setAnimatedIcons(it) },
             )
 
             SettingsSliderRow(
-                label     = "Video snap delay",
-                sublabel  = "Rest on a game ${formatSnapDelay(state.icon1LingerDelaySeconds)} " +
-                    "before its video snap plays (1–5 seconds) — higher delays avoid pops while browsing",
+                label     = stringResource(R.string.setd_snap_delay),
+                sublabel  = stringResource(R.string.setd_snap_delay_sublabel, formatSnapDelay(state.icon1LingerDelaySeconds)),
                 value     = state.icon1LingerDelaySeconds,
                 onValueChange = viewModel::setIcon1LingerDelaySeconds,
                 valueRange = 1f..5f,
@@ -256,69 +253,68 @@ fun ArtworkSettingsScreen(
             )
 
             SettingsToggleRow(
-                label    = "Crop preview",
-                sublabel = "Show the finished tile in the corner while cropping artwork " +
-                    "(Ⓨ toggles it inside the crop editor too)",
+                label    = stringResource(R.string.setd_crop_preview),
+                sublabel = stringResource(R.string.setd_crop_preview_sublabel),
                 checked  = state.cropPreviewEnabled,
                 onToggle = { viewModel.setCropPreviewEnabled(it) },
             )
 
             SettingsToggleRow(
-                label    = "Prefer SteamGridDB heroes",
-                sublabel = "Try SteamGridDB first for hero/banner art",
+                label    = stringResource(R.string.setd_prefer_sgdb_heroes),
+                sublabel = stringResource(R.string.setd_prefer_sgdb_heroes_sublabel),
                 checked  = state.preferSteamGridDbHeroes,
                 onToggle = { viewModel.setPreferSteamGridDbHeroes(it) },
             )
 
             SettingsToggleRow(
-                label    = "Download hero images",
-                sublabel = "Wide banner art shown in game detail view",
+                label    = stringResource(R.string.setd_download_heroes),
+                sublabel = stringResource(R.string.setd_download_heroes_sublabel),
                 checked  = state.downloadHeroes,
                 onToggle = { viewModel.setDownloadHeroes(it) },
             )
 
             SettingsToggleRow(
-                label    = "Download clear logos",
-                sublabel = "Transparent logo PNGs overlaid on hero art",
+                label    = stringResource(R.string.setd_download_logos),
+                sublabel = stringResource(R.string.setd_download_logos_sublabel),
                 checked  = state.downloadLogos,
                 onToggle = { viewModel.setDownloadLogos(it) },
             )
 
             if (state.ssEnabled) {
                 SettingsToggleRow(
-                    label    = "Download game manuals",
-                    sublabel = "PDF manuals from ScreenScraper — opens from the game's Options menu",
+                    label    = stringResource(R.string.setd_download_manuals),
+                    sublabel = stringResource(R.string.setd_download_manuals_sublabel),
                     checked  = state.downloadManuals,
                     onToggle = { viewModel.setDownloadManuals(it) },
                 )
                 SettingsToggleRow(
-                    label    = "Download video snaps",
-                    sublabel = "Short gameplay clips from ScreenScraper — large files",
+                    label    = stringResource(R.string.setd_download_video_snaps),
+                    sublabel = stringResource(R.string.setd_download_video_snaps_sublabel),
                     checked  = state.downloadVideoSnaps,
                     onToggle = { viewModel.setDownloadVideoSnaps(it) },
                 )
                 SettingsRow(
-                    label    = "Artwork Region (${regionLabel(state.artworkRegion)})",
-                    sublabel = "Which region's box art and logos to prefer when a game has several",
+                    label    = stringResource(R.string.setd_artwork_region, regionLabel(state.artworkRegion)),
+                    sublabel = stringResource(R.string.setd_artwork_region_sublabel),
                     onClick  = { viewModel.cycleArtworkRegion() },
                 )
             }
 
             // ── SteamGridDB API key ───────────────────────────────────────────
-            SettingsGroup("SteamGridDB API")
+            SettingsGroup(stringResource(R.string.setd_group_sgdb_api))
 
             SettingsTextFieldRow(
-                label         = if (state.hasApiKey) "API Key (saved)" else "API Key",
+                label         = stringResource(if (state.hasApiKey) R.string.setd_api_key_saved else R.string.setd_api_key),
                 value         = sgdbKeyDraft,
                 onValueChange = { sgdbKeyDraft = it },
-                placeholder   = if (state.hasApiKey) "••••••••  (tap to replace)" else "Paste your SteamGridDB key",
+                placeholder   = stringResource(if (state.hasApiKey) R.string.setd_key_replace_placeholder else R.string.setd_sgdb_key_placeholder),
                 isPassword    = true,
-                helper        = "Get a free key at steamgriddb.com/api",
+                helper        = stringResource(R.string.setd_sgdb_key_helper),
             )
 
             if (sgdbKeyDraft.isNotBlank()) {
                 SettingsRow(
-                    label   = "Save API key",
+                    label   = stringResource(R.string.setd_save_api_key),
                     onClick = {
                         viewModel.saveApiKey(sgdbKeyDraft)
                         sgdbKeyDraft = ""
@@ -328,8 +324,8 @@ fun ArtworkSettingsScreen(
 
             if (state.hasApiKey) {
                 SettingsRow(
-                    label    = "Remove API key",
-                    sublabel = "SteamGridDB artwork will be disabled",
+                    label    = stringResource(R.string.setd_remove_api_key),
+                    sublabel = stringResource(R.string.setd_remove_api_key_sublabel),
                     onClick  = { viewModel.clearApiKey() },
                 )
             }
@@ -337,20 +333,20 @@ fun ArtworkSettingsScreen(
             // ── TheGamesDB API key ────────────────────────────────────────────
             // Stored encrypted like the SteamGridDB key. Without one TheGamesDB is skipped by the
             // scraper and not offered in the Artwork Studio.
-            SettingsGroup("TheGamesDB API")
+            SettingsGroup(stringResource(R.string.setd_group_tgdb_api))
 
             SettingsTextFieldRow(
-                label         = if (state.hasTgdbKey) "API Key (saved)" else "API Key",
+                label         = stringResource(if (state.hasTgdbKey) R.string.setd_api_key_saved else R.string.setd_api_key),
                 value         = tgdbKeyDraft,
                 onValueChange = { tgdbKeyDraft = it },
-                placeholder   = if (state.hasTgdbKey) "••••••••  (tap to replace)" else "Paste your TheGamesDB key",
+                placeholder   = stringResource(if (state.hasTgdbKey) R.string.setd_key_replace_placeholder else R.string.setd_tgdb_key_placeholder),
                 isPassword    = true,
-                helper        = "Request a key from TheGamesDB at thegamesdb.net",
+                helper        = stringResource(R.string.setd_tgdb_key_helper),
             )
 
             if (tgdbKeyDraft.isNotBlank()) {
                 SettingsRow(
-                    label   = "Save TheGamesDB key",
+                    label   = stringResource(R.string.setd_save_tgdb_key),
                     onClick = {
                         viewModel.saveTgdbKey(tgdbKeyDraft)
                         tgdbKeyDraft = ""
@@ -360,41 +356,41 @@ fun ArtworkSettingsScreen(
 
             if (state.hasTgdbKey) {
                 SettingsRow(
-                    label    = "Remove TheGamesDB key",
-                    sublabel = "TheGamesDB will be skipped as a source",
+                    label    = stringResource(R.string.setd_remove_tgdb_key),
+                    sublabel = stringResource(R.string.setd_remove_tgdb_key_sublabel),
                     onClick  = { viewModel.clearTgdbKey() },
                 )
             }
 
             // ── IGDB credentials (optional) ───────────────────────────────────
-            SettingsGroup("IGDB credentials (optional)")
+            SettingsGroup(stringResource(R.string.setd_group_igdb))
 
             SettingsTextFieldRow(
-                label         = if (state.hasIgdbCredentials) "Client ID (saved)" else "Client ID",
+                label         = stringResource(if (state.hasIgdbCredentials) R.string.setd_igdb_client_id_saved else R.string.setd_igdb_client_id),
                 value         = igdbClientIdDraft,
                 onValueChange = { igdbClientIdDraft = it },
-                placeholder   = if (state.hasIgdbCredentials) "••••••••" else "Twitch Client ID",
+                placeholder   = if (state.hasIgdbCredentials) "••••••••" else stringResource(R.string.setd_igdb_client_id_placeholder),
             )
             SettingsTextFieldRow(
-                label         = "Client secret",
+                label         = stringResource(R.string.setd_igdb_client_secret),
                 value         = igdbClientSecretDraft,
                 onValueChange = { igdbClientSecretDraft = it },
-                placeholder   = "Twitch Client Secret",
+                placeholder   = stringResource(R.string.setd_igdb_client_secret_placeholder),
                 isPassword    = true,
-                helper        = "Create app at dev.twitch.tv — improves fallback coverage for modern games",
+                helper        = stringResource(R.string.setd_igdb_helper),
             )
 
             state.igdbCredentialStatus?.let {
-                SettingsRow(label = it, sublabel = "Tap to dismiss", onClick = { viewModel.dismissCredentialStatus() })
+                SettingsRow(label = it.asString(), sublabel = stringResource(R.string.setd_tap_to_dismiss), onClick = { viewModel.dismissCredentialStatus() })
             }
 
             if (igdbClientIdDraft.isNotBlank() && igdbClientSecretDraft.isNotBlank()) {
                 SettingsRow(
-                    label   = "Test credentials",
+                    label   = stringResource(R.string.setd_test_credentials),
                     onClick = { viewModel.testIgdbCredentials(igdbClientIdDraft, igdbClientSecretDraft) },
                 )
                 SettingsRow(
-                    label   = "Save credentials",
+                    label   = stringResource(R.string.setd_save_credentials),
                     onClick = {
                         viewModel.saveIgdbCredentials(igdbClientIdDraft, igdbClientSecretDraft)
                         igdbClientIdDraft = ""
@@ -405,8 +401,8 @@ fun ArtworkSettingsScreen(
 
             if (state.hasIgdbCredentials) {
                 SettingsRow(
-                    label    = "Clear IGDB credentials",
-                    sublabel = "IGDB will be skipped as a fallback source",
+                    label    = stringResource(R.string.setd_clear_igdb),
+                    sublabel = stringResource(R.string.setd_clear_igdb_sublabel),
                     onClick  = { viewModel.clearIgdbCredentials() },
                 )
             }
@@ -418,56 +414,55 @@ fun ArtworkSettingsScreen(
             SettingsGroup("ScreenScraper")
 
             SettingsValueRow(
-                label    = "Status",
+                label    = stringResource(R.string.setd_ss_status),
                 sublabel = if (state.ssEnabled) {
-                    "Hash-based scraping is active (built-in developer pair)"
+                    stringResource(R.string.setd_ss_status_active_sublabel)
                 } else {
-                    "ScreenScraper is unavailable in this build — no developer pair was bundled"
+                    stringResource(R.string.setd_ss_status_inactive_sublabel)
                 },
-                value    = if (state.ssEnabled) "Active" else "Inactive",
+                value    = stringResource(if (state.ssEnabled) R.string.setd_ss_active else R.string.setd_ss_inactive),
             )
 
             state.unprotectedSecretWarning?.let {
                 SettingsRow(
-                    label    = it,
-                    sublabel = "Tap to dismiss",
+                    label    = it.asString(),
+                    sublabel = stringResource(R.string.setd_tap_to_dismiss),
                     onClick  = { viewModel.dismissUnprotectedSecretWarning() },
                 )
             }
 
             // ── ScreenScraper user account (optional) ─────────────────────────
             // Only raises the rate limit and daily quota; scraping works without it.
-            SettingsGroup("ScreenScraper account (optional)")
+            SettingsGroup(stringResource(R.string.setd_group_ss_account))
 
             SettingsTextFieldRow(
-                label         = if (state.hasSsCredentials) "Username (saved: ${state.ssUsername})" else "Username",
+                label         = if (state.hasSsCredentials) stringResource(R.string.setd_ss_username_saved, state.ssUsername) else stringResource(R.string.setd_ss_username),
                 value         = ssUsernameDraft,
                 onValueChange = { ssUsernameDraft = it },
-                placeholder   = if (state.hasSsCredentials) "Tap to replace" else "ScreenScraper username",
+                placeholder   = stringResource(if (state.hasSsCredentials) R.string.setd_ss_tap_to_replace else R.string.setd_ss_username_placeholder),
             )
             SettingsTextFieldRow(
-                label         = "Password",
+                label         = stringResource(R.string.setd_ss_password),
                 value         = ssPasswordDraft,
                 onValueChange = { ssPasswordDraft = it },
-                placeholder   = if (state.hasSsCredentials) "••••••••  (tap to replace)" else "ScreenScraper password",
+                placeholder   = stringResource(if (state.hasSsCredentials) R.string.setd_key_replace_placeholder else R.string.setd_ss_password_placeholder),
                 isPassword    = true,
-                helper        = "Free account at screenscraper.fr — raises the scrape rate limit and daily quota. " +
-                    "Stored encrypted on this device (Android Keystore).",
+                helper        = stringResource(R.string.setd_ss_password_helper),
             )
 
             state.ssCredentialStatus?.let {
-                SettingsRow(label = it, sublabel = "Tap to dismiss", onClick = { viewModel.dismissSsCredentialStatus() })
+                SettingsRow(label = it.asString(), sublabel = stringResource(R.string.setd_tap_to_dismiss), onClick = { viewModel.dismissSsCredentialStatus() })
             }
 
             if (ssUsernameDraft.isNotBlank() && ssPasswordDraft.isNotBlank()) {
                 if (state.ssEnabled) {
                     SettingsRow(
-                        label   = "Test account",
+                        label   = stringResource(R.string.setd_test_account),
                         onClick = { viewModel.testSsCredentials(ssUsernameDraft, ssPasswordDraft) },
                     )
                 }
                 SettingsRow(
-                    label   = "Save account",
+                    label   = stringResource(R.string.setd_save_account),
                     onClick = {
                         viewModel.saveSsCredentials(ssUsernameDraft, ssPasswordDraft)
                         ssUsernameDraft = ""
@@ -478,30 +473,30 @@ fun ArtworkSettingsScreen(
 
             if (state.hasSsCredentials) {
                 SettingsRow(
-                    label    = "Clear ScreenScraper account",
-                    sublabel = "Scraping continues at anonymous rate limits",
+                    label    = stringResource(R.string.setd_clear_ss_account),
+                    sublabel = stringResource(R.string.setd_clear_ss_account_sublabel),
                     onClick  = { viewModel.clearSsCredentials() },
                 )
             }
 
             // ── Cache ─────────────────────────────────────────────────────────
-            SettingsGroup("Cache")
+            SettingsGroup(stringResource(R.string.setd_group_cache))
 
             SettingsValueRow(
-                label    = "Stored artwork size",
-                sublabel = "Image cache + artwork stored on this device (your artwork folder isn't counted)",
+                label    = stringResource(R.string.setd_cache_size),
+                sublabel = stringResource(R.string.setd_cache_size_sublabel),
                 value    = state.diskCacheSizeMb,
             )
 
             SettingsRow(
-                label    = "Clear ScreenScraper URL cache",
-                sublabel = "Forget cached artwork URLs — the next scrape re-asks ScreenScraper per game. Harmless; never deletes artwork",
+                label    = stringResource(R.string.setd_clear_ss_cache),
+                sublabel = stringResource(R.string.setd_clear_ss_cache_sublabel),
                 onClick  = { viewModel.clearSsUrlCache() },
             )
 
             SettingsRow(
-                label    = "Clear all artwork",
-                sublabel = "Fresh start: removes cached images, stored artwork, and every game's art links. Files in your artwork folder are kept — Relink or re-scrape to restore",
+                label    = stringResource(R.string.setd_clear_all_artwork),
+                sublabel = stringResource(R.string.setd_clear_all_artwork_sublabel),
                 onClick  = { viewModel.clearCache() },
             )
         }
@@ -514,7 +509,8 @@ private fun formatSnapDelay(seconds: Float): String =
     if (seconds % 1f == 0f) "${seconds.toInt()}s" else "${seconds}s"
 
 /** The menu label for a stored ScreenScraper region code. */
+@Composable
 private fun regionLabel(region: String?): String =
     ArtworkScrapePreferences.ARTWORK_REGIONS.firstOrNull { it.first == region }?.second
         ?: region?.uppercase()
-        ?: "No preference"
+        ?: stringResource(R.string.setd_region_no_preference)

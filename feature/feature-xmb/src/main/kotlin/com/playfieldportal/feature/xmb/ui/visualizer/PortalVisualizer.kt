@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
+import com.playfieldportal.feature.xmb.R
 
 /**
  * The house field, and the one the app is named for: circles orbit a centre and spiral outward,
@@ -105,7 +106,7 @@ class PortalField {
  */
 class PortalVisualizer(private val field: PortalField) : PfpVisualizer {
     override val id = VisualizerIds.PORTAL
-    override val label = "Portal"
+    override val labelRes = R.string.xmbu_visualizer_portal
 
     override fun DrawScope.render(frame: VisualizerFrame, budget: Int, sprite: ImageBitmap) {
         val count = budget.coerceIn(0, PORTAL_MAX_PARTICLES)

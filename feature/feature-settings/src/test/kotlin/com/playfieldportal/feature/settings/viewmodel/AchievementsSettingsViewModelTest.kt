@@ -28,13 +28,15 @@ class AchievementsSettingsViewModelTest {
     private val repository = mockk<AchievementController>(relaxed = true)
     // Relaxed: these tests are about credential resolution, not about what reaches the tray. The
     // center posts real Android notifications, which a bare JVM cannot build.
+    // Relaxed: getString answers "" — these tests do not read the tray text.
+    private val context = mockk<android.content.Context>(relaxed = true)
     private val tasks =
         mockk<com.playfieldportal.core.ui.notification.BackgroundTaskCenter>(relaxed = true)
     private lateinit var vm: AchievementsSettingsViewModel
 
     @Before fun setUp() {
         Dispatchers.setMain(dispatcher)
-        vm = AchievementsSettingsViewModel(credentials, steamApi, matchAndUpdate, repository, tasks)
+        vm = AchievementsSettingsViewModel(context, credentials, steamApi, matchAndUpdate, repository, tasks)
     }
 
     @After fun tearDown() = Dispatchers.resetMain()

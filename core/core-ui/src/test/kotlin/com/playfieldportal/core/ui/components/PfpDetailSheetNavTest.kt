@@ -171,6 +171,7 @@ class PfpDetailSheetNavTest {
                 code = "LN-4003",
                 diagnostic = "game=42",
             ),
+            diagnosticHeading = "Diagnostic",
         )
         listOf("Couldn't launch Ape Escape", "LN-4003", "It never came to the front.", "Why", "It closed.",
             "Emulator: DuckStation", "game=42").forEach { assertTrue("missing $it", text.contains(it)) }

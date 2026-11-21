@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_title">포커스 글로우</string>
+    <string name="glow_sub_off">선택한 아이콘 주위에 빛을 표시하지 않습니다.</string>
+    <string name="glow_sub_steady">선택한 아이콘 주위에 부드러운 빛을 표시합니다. 움직이지 않습니다.</string>
+    <string name="glow_sub_pulsing">선택한 아이콘 주위의 빛이 천천히 밝아졌다 어두워집니다. ‘모션’이(가) ‘정지’(으)로 설정된 동안에는 움직이지 않습니다.</string>
+    <string name="glow_value_off">끄기</string>
+    <string name="glow_value_steady">고정</string>
+    <string name="glow_value_pulsing">맥동</string>
+</resources>

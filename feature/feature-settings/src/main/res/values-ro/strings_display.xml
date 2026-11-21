@@ -1,0 +1,628 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared labels -->
+    <string name="setd_apply">Aplică</string>
+    <string name="setd_cancel">Anulează</string>
+    <string name="setd_select">Selectează</string>
+    <string name="setd_close">Închide</string>
+    <string name="setd_tap_to_dismiss">Selectează pentru a închide</string>
+    <string name="setd_unavailable">Indisponibil</string>
+    <string name="setd_loading">Se încarcă…</string>
+    <string name="setd_error">Eroare</string>
+    <string name="setd_error_tap_to_dismiss">"%1$s  (selectează pentru a închide)"</string>
+    <string name="setd_testing">Se testează…</string>
+    <string name="setd_key_replace_placeholder">"••••••••  (selectează pentru a înlocui)"</string>
+    <string name="setd_pfp_default">Implicit PFP</string>
+    <string name="setd_from_theme">Din temă</string>
+    <string name="setd_custom_video">Videoclip personalizat</string>
+    <string name="setd_custom_sound">Sunet personalizat</string>
+
+    <!-- ===== Display ===== -->
+    <string name="setd_display_title">Afișaj</string>
+    <string name="setd_group_appearance">Aspect</string>
+    <string name="setd_group_lock_screen">Ecran de blocare</string>
+    <string name="setd_group_xmb_layout">Aspect XMB</string>
+    <string name="setd_group_boot_sequence">Secvență de pornire</string>
+    <string name="setd_group_game_boot">Game Boot</string>
+    <string name="setd_group_orientation">Orientare</string>
+    <string name="setd_group_interface">Interfață</string>
+    <string name="setd_group_performance">Performanță</string>
+    <string name="setd_group_games">Jocuri</string>
+
+    <!-- Wallpaper -->
+    <string name="setd_wallpaper_title">Imagine de fundal</string>
+    <string name="setd_wallpaper_choose">Alege imaginea de fundal</string>
+    <string name="setd_wallpaper_choose_motion_set">Fundal animat setat — un videoclip în buclă înlocuiește valul</string>
+    <string name="setd_wallpaper_choose_custom_set">Fundal personalizat setat — înlocuiește valul</string>
+    <string name="setd_wallpaper_choose_none">Alege o imagine sau un videoclip scurt (PNG, JPG, WEBP, MP4, WEBM, GIF) — înlocuiește valul</string>
+    <string name="setd_wallpaper_preview">Previzualizează fundalul</string>
+    <string name="setd_wallpaper_preview_sublabel">Vezi fundalul selectat pe tot ecranul</string>
+    <string name="setd_wallpaper_reset_row">Resetează fundalul</string>
+    <string name="setd_wallpaper_reset_row_sublabel">Elimină fundalul personalizat și restabilește fundalul implicit</string>
+    <string name="setd_wallpaper_preview_cd">Previzualizare fundal</string>
+    <string name="setd_wallpaper_unsupported">Format neacceptat — folosește PNG, JPG, WEBP, MP4, WEBM sau GIF</string>
+    <string name="setd_wallpaper_applied">Fundal aplicat</string>
+    <string name="setd_wallpaper_unreadable">Fișierul nu a putut fi citit — încearcă altul</string>
+    <string name="setd_wallpaper_motion_applied">Fundal animat aplicat</string>
+    <string name="setd_wallpaper_reset">Fundalul a fost resetat la cel implicit</string>
+    <string name="setd_wallpaper_none">Încă nu este selectat niciun fundal</string>
+
+    <!-- Lock screen image -->
+    <string name="setd_lock_choose">Alege imaginea ecranului de blocare</string>
+    <string name="setd_lock_choose_busy">Se setează ecranul de blocare…</string>
+    <string name="setd_lock_choose_from_theme">Setat de tema aplicată — alege o imagine pentru a o folosi pe a ta</string>
+    <string name="setd_lock_choose_set">Imaginea ta este pe ecranul de blocare</string>
+    <string name="setd_lock_choose_none">Alege o imagine (PNG, JPG, WEBP) pentru ecranul de blocare al dispozitivului</string>
+    <string name="setd_lock_use_wallpaper">Folosește fundalul launcherului</string>
+    <string name="setd_lock_use_wallpaper_motion">Folosește cadrul static al fundalului animat</string>
+    <string name="setd_lock_use_wallpaper_still">Folosește fundalul din spatele XMB</string>
+    <string name="setd_lock_reset_row">Resetează ecranul de blocare</string>
+    <string name="setd_lock_reset_row_sublabel">Revino la ecranul de blocare implicit al dispozitivului</string>
+    <string name="setd_lock_tray_label">Ecran de blocare</string>
+    <string name="setd_lock_unreadable">Imaginea nu a putut fi citită</string>
+    <string name="setd_lock_no_wallpaper">Launcherul nu are nicio imagine de fundal de folosit</string>
+    <string name="setd_lock_reset_done">Ecranul de blocare a fost resetat la cel implicit al dispozitivului</string>
+    <string name="setd_lock_reset_failed">Dispozitivul nu a resetat ecranul de blocare. Acesta afișează în continuare imaginea actuală.</string>
+    <string name="setd_lock_set_done">Imaginea ecranului de blocare a fost setată</string>
+
+    <!-- Pick-one options -->
+    <string name="setd_opt_wave_style_title">Stilul valului</string>
+    <string name="setd_opt_wave_style_summary">Cât de vioi este valul de fundal.</string>
+    <string name="setd_opt_background_motion_title">Mișcarea fundalului</string>
+    <string name="setd_opt_background_motion_summary">Cât de vioi este fundalul animat.</string>
+    <string name="setd_motion_animated">În mișcare</string>
+    <string name="setd_motion_animated_detail">Mișcare completă</string>
+    <string name="setd_motion_reduced">În mișcare, estompat</string>
+    <string name="setd_wave_reduced_detail">Mai estompat, mai calm</string>
+    <string name="setd_bgmotion_reduced_detail">Mai lent, mai calm</string>
+    <string name="setd_motion_static">Nemișcat</string>
+    <string name="setd_wave_static_detail">Înghețat</string>
+    <string name="setd_bgmotion_static_detail">Imagine statică</string>
+    <string name="setd_motion_reduced_static">Nemișcat, estompat</string>
+    <string name="setd_opt_icon_legibility_title">Lizibilitatea pictogramelor</string>
+    <string name="setd_opt_icon_legibility_summary">Cum se separă pictogramele XMB de fundal.</string>
+    <string name="setd_icon_legibility_light_detail">Pentru pictograme închise</string>
+    <string name="setd_icon_legibility_auto_detail">Urmează culoarea pictogramei</string>
+    <string name="setd_opt_item_list_motion_title">Mișcarea listei de elemente</string>
+    <string name="setd_opt_item_list_motion_summary">Cum se mișcă lista de elemente pe măsură ce o parcurgi. Derulare înapoi strecoară elementul selectat în spatele pictogramei categoriei și rulează invers la urcare; Alunecare mută întreaga listă împreună.</string>
+    <string name="setd_opt_umd_slot_title">Slot UMD</string>
+    <string name="setd_opt_umd_slot_summary">Ce joc stă în slotul UMD.</string>
+    <string name="setd_umd_inserted_detail">Doar un joc pe care l-ai introdus</string>
+    <string name="setd_umd_recent_detail">Altfel, ultimul joc jucat</string>
+    <string name="setd_opt_text_legibility_title">Lizibilitatea textului</string>
+    <string name="setd_opt_text_legibility_summary">Încă neaplicat. Se salvează cu temele și backupurile tale pentru o actualizare ulterioară.</string>
+    <string name="setd_opt_orientation_title">Orientarea ecranului</string>
+    <string name="setd_opt_orientation_summary">Dacă PFP se rotește odată cu dispozitivul. Urmează dispozitivul afișează o solicitare de rotire în modul portret (pentru Tasker / comutarea launcherului).</string>
+    <string name="setd_orientation_landscape">Peisaj</string>
+    <string name="setd_orientation_landscape_detail">PFP rămâne în modul peisaj</string>
+    <string name="setd_orientation_follow">Urmează dispozitivul</string>
+    <string name="setd_orientation_follow_detail">Se rotește odată cu dispozitivul</string>
+    <string name="setd_opt_touch_nav_title">Buton de navigare tactil</string>
+    <string name="setd_opt_touch_nav_summary">Butonul de pe ecran Sertar aplicații / Înapoi.</string>
+    <string name="setd_touch_nav_auto">Automat</string>
+    <string name="setd_touch_nav_auto_detail">Doar când folosești atingerea</string>
+    <string name="setd_touch_nav_show">Afișează mereu</string>
+    <string name="setd_touch_nav_hide">Ascunde mereu</string>
+    <string name="setd_touch_nav_hide_detail">Doar controler</string>
+    <string name="setd_opt_touch_sens_title">Sensibilitate la atingere</string>
+    <string name="setd_opt_touch_sens_summary">Cât de lungă trebuie să fie o glisare pentru un pas în XMB.</string>
+    <string name="setd_touch_sens_low">Scăzută</string>
+    <string name="setd_touch_sens_low_detail">Mai stabilă</string>
+    <string name="setd_touch_sens_normal">Normală</string>
+    <string name="setd_touch_sens_high">Ridicată</string>
+    <string name="setd_touch_sens_high_detail">Parcurgere mai rapidă</string>
+
+    <!-- Appearance toggles -->
+    <string name="setd_solid_icons">Pictograme neselectate opace</string>
+    <string name="setd_solid_icons_sublabel">Desenează pictogramele neselectate la opacitate completă — selecția se distinge în continuare prin dimensiune și etichetă</string>
+    <string name="setd_text_shadow">Umbra textului</string>
+    <string name="setd_text_shadow_sublabel">Umbră în spatele textului ajutător al rândurilor — îl păstrează lizibil peste zonele luminoase ale fundalului</string>
+
+    <!-- Font colour -->
+    <string name="setd_font_colour">Culoarea fontului</string>
+    <string name="setd_font_colour_sublabel">Culoarea pentru etichete și textul principal din toată interfața</string>
+    <string name="setd_font_colour_theme_default">Implicit temei</string>
+    <string name="setd_sub_font_colour">Culoarea fontului secundar</string>
+    <string name="setd_sub_font_colour_sublabel">Culoarea pentru subtitluri, subetichete și valori. Urmează Culoarea fontului până când este setată</string>
+    <string name="setd_sub_font_colour_same">La fel ca Culoarea fontului</string>
+    <string name="setd_sub_font_colour_reset">Resetează culoarea fontului secundar</string>
+    <string name="setd_sub_font_colour_reset_sublabel">Revino la urmarea Culorii fontului</string>
+    <string name="setd_font_colour_reset">Resetează culoarea fontului</string>
+    <string name="setd_font_colour_reset_sublabel">Revino la culoarea oferită de tema actuală</string>
+    <string name="setd_picker_font_title">Culoarea fontului</string>
+    <string name="setd_picker_sub_font_title">Culoarea fontului secundar</string>
+    <string name="setd_contrast_title">Culoarea fontului poate fi greu de citit</string>
+    <string name="setd_text_contrast_notice">Această culoare are un contrast de %1$s față de acest fundal, sub ghidul de lizibilitate de 4,5:1. Textul cu această culoare poate fi greu de citit.</string>
+    <string name="setd_contrast_ok">OK</string>
+    <string name="setd_contrast_dont_warn">Nu mă mai avertiza</string>
+
+    <!-- XMB layout -->
+    <string name="setd_xmb_layout_intro">Poziționează XMB-ul în timp real pentru acest ecran — scalează-l și mută bara în cruce sus/jos și stânga/dreapta — peste interfața reală. Fiecare dimensiune de ecran (consolă portabilă, pliabil, tabletă) își păstrează propriile reglaje.</string>
+    <string name="setd_xmb_adjust">Ajustează aspectul XMB</string>
+    <string name="setd_xmb_adjust_sublabel">Editor în timp real — scalează și repoziționează bara în cruce cu D-pad-ul sau cu glisoarele</string>
+    <string name="setd_psp_row">XMB PSP de o acuratețe biblică</string>
+    <string name="setd_psp_row_applied">Aplicat pe acest ecran. Schimbă aspectul cu Ajustează aspectul XMB pentru a-l folosi din nou</string>
+    <string name="setd_psp_row_apply">Aplică proporțiile originale ale PSP pe acest ecran</string>
+    <string name="setd_psp_confirm_title">Aplici XMB PSP de o acuratețe biblică?</string>
+    <string name="setd_psp_confirm_message">Setează scala XMB și poziția barei în cruce pentru acest ecran la proporțiile originale ale PSP. Aspectul actual pentru această dimensiune de ecran este înlocuit; celelalte dimensiuni își păstrează aspectul.</string>
+
+    <!-- Boot sequence -->
+    <string name="setd_boot_show">Afișează secvența de pornire</string>
+    <string name="setd_boot_show_sublabel">Animație de pornire în stil PSP la fiecare lansare</string>
+    <string name="setd_boot_resume">Afișează secvența de pornire la revenire</string>
+    <string name="setd_boot_resume_sublabel">Redă-o și la întoarcerea dintr-un joc</string>
+    <string name="setd_boot_video">Video de pornire</string>
+    <string name="setd_boot_video_sublabel">Redă propriul tău videoclip în locul animației cu logoul PFP %1$s</string>
+    <string name="setd_gameboot">Game Boot</string>
+    <string name="setd_gameboot_sublabel">"O scurtă prezentare între confirmarea unui joc și deschiderea emulatorului — cinci secunde integrate, până la zece cu propriul clip — care poate fi omisă cu Confirmă sau Înapoi.  Dezactivat înseamnă o pornire silențioasă — fără animație, fără sunet."</string>
+    <string name="setd_gameboot_video">Video Game Boot</string>
+    <string name="setd_gameboot_video_sublabel">Înlocuiește secvența integrată cu propriul clip, care se redă cu propriul sunet, la nivelul Game Boot din Sunet ▸ Niveluri %1$s</string>
+    <plurals name="setd_video_cap">
+        <item quantity="one">(MP4 sau WebM, până la %1$d secundă)</item>
+        <item quantity="few">(MP4 sau WebM, până la %1$d secunde)</item>
+        <item quantity="other">(MP4 sau WebM, până la %1$d de secunde)</item>
+    </plurals>
+
+    <!-- Media rows -->
+    <string name="setd_media_preview">Previzualizează</string>
+    <string name="setd_media_default">Implicit</string>
+    <string name="setd_media_use_default_prompt">Folosește implicitul</string>
+    <string name="setd_media_preview_cd">Previzualizează %1$s</string>
+    <string name="setd_media_use_default_cd">Folosește implicitul PFP pentru %1$s</string>
+
+    <!-- Interface / performance / games -->
+    <string name="setd_options_hint_sublabel">Afișează eticheta „Opțiuni” la inactivitate peste elementele XMB care au meniu contextual</string>
+    <string name="setd_hint_delay">Întârzierea indiciilor</string>
+    <string name="setd_hint_delay_sublabel">Afișează după %1$s de inactivitate (1–5 secunde)</string>
+    <string name="setd_thermal">Atenție la limitarea termică</string>
+    <string name="setd_thermal_sublabel">Îngheață fundalul (valul sau fundalul animat) cât timp dispozitivul raportează că s-a încălzit</string>
+    <string name="setd_battery_saver">Modul de economisire a bateriei</string>
+    <string name="setd_battery_saver_sublabel">Îngheață fundalul (valul sau fundalul animat) când Economisirea bateriei este activă</string>
+    <string name="setd_direct_launch">Pornește jocurile direct</string>
+    <string name="setd_direct_launch_sublabel">Confirmarea pornește jocul imediat în loc să deschidă Detalii joc — folosește „Vezi detaliile jocului” din meniul Opțiuni al jocului pentru a edita</string>
+
+    <!-- Dropped-clip report from a theme -->
+    <string name="setd_slot_boot_video">Boot Video</string>
+    <string name="setd_slot_gameboot_video">Video Game Boot</string>
+    <string name="setd_slot_sound_name">Sunetul %1$s</string>
+    <string name="setd_dropped_header">Neinstalate din această temă:</string>
+    <string name="setd_dropped_item">%1$s — %2$s</string>
+
+    <!-- ===== Themes ===== -->
+    <string name="setd_themes_title">Teme</string>
+    <string name="setd_color_scheme">Schemă de culori</string>
+    <string name="setd_color_scheme_custom_active">Culoare de temă personalizată activă — alegerea unei presetări o înlocuiește</string>
+    <string name="setd_color_scheme_sublabel">Culori de fundal în stil PSP — previzualizare în timp real</string>
+    <string name="setd_custom_theme_color">Culoare de temă personalizată</string>
+    <string name="setd_custom_theme_color_sublabel">Dintr-o temă importată — selectează pentru a o elimina și a reveni la schema de culori</string>
+    <string name="setd_group_icon_color">Culoarea pictogramelor</string>
+    <string name="setd_custom_icon_color_title">Culoare personalizată pentru pictograme</string>
+    <string name="setd_group_icons">Pictograme</string>
+    <string name="setd_customize_icons">Personalizează pictogramele XMB</string>
+    <string name="setd_customize_icons_sublabel">Bara în cruce, elementele, consolele și suporturile fizice — în ordinea XMB, în timp real peste XMB</string>
+    <string name="setd_custom_icons_none">Niciuna personalizată</string>
+    <string name="setd_custom_icons_count">%1$d personalizate</string>
+    <string name="setd_group_my_themes">Temele mele</string>
+    <string name="setd_new_from_photo">Temă nouă dintr-o fotografie</string>
+    <string name="setd_new_from_photo_sublabel">Alege o imagine — fundalul și culoarea sunt setate din ea</string>
+    <string name="setd_group_active_theme">Tema activă</string>
+    <string name="setd_current_theme">Tema actuală</string>
+    <string name="setd_theme_default_name">Implicită</string>
+    <string name="setd_reset_to_default">Resetează la implicit</string>
+    <string name="setd_reset_to_default_sublabel">Elimină fundalul aplicat, culorile temei și pictogramele personalizate</string>
+    <string name="setd_group_install">Instalare</string>
+    <string name="setd_save_look_row">Salvează aspectul actual ca temă</string>
+    <string name="setd_save_look_row_sublabel">Grupează pictogramele, fundalul, culorile și mișcarea într-un fișier .pfptheme care poate fi distribuit</string>
+    <string name="setd_save_look_title">Salvează aspectul actual ca temă</string>
+    <string name="setd_theme_name_placeholder">Numele temei</string>
+    <string name="setd_import_ptf">Importă temă PSP (.ptf)</string>
+    <string name="setd_import_ptf_sublabel">Folosește fundalul, culoarea și pictogramele corespunzătoare ale temei</string>
+    <string name="setd_import_pfptheme">Importă temă (.pfptheme)</string>
+    <string name="setd_import_pfptheme_sublabel">O temă distribuită din PlayFieldPortal</string>
+
+    <!-- Saved theme cards and menu -->
+    <string name="setd_theme_older_format">Format mai vechi</string>
+    <string name="setd_theme_share">Distribuie</string>
+    <string name="setd_theme_update">Actualizează</string>
+    <string name="setd_theme_update_file">Actualizează fișierul temei</string>
+    <string name="setd_theme_rename">Redenumește tema</string>
+    <string name="setd_theme_delete">Șterge tema</string>
+    <string name="setd_theme_delete_title">Ștergi tema?</string>
+    <string name="setd_theme_delete_message">„%1$s” va fi ștearsă. Acțiunea nu poate fi anulată.</string>
+    <string name="setd_theme_delete_confirm">Șterge</string>
+    <string name="setd_theme_share_chooser">Distribuie tema</string>
+
+    <!-- Apply-theme question -->
+    <string name="setd_apply_theme_title">Aplici „%1$s”?</string>
+    <string name="setd_apply_base_message">Aceasta schimbă culorile, pictogramele și fundalul launcherului.</string>
+    <string name="setd_apply_use_themes">Folosește-le pe ale temei</string>
+    <string name="setd_apply_keep_mine">Păstrează-le pe ale mele</string>
+    <string name="setd_apply_turn_on">Activează</string>
+    <string name="setd_apply_leave_off">Lasă dezactivat</string>
+    <string name="setd_apply_replace_icons">Această temă are propriile pictograme pentru %1$s, dar ale tale sunt setate și se afișează în schimb. Folosești pictogramele temei? Ale tale vor fi eliminate pentru acestea.</string>
+    <string name="setd_apply_replace_media">Această temă are propriul %1$s, dar al tău este setat și se redă în schimb. Folosești varianta temei? Ale tale vor fi eliminate pentru acestea.</string>
+    <string name="setd_apply_boot_off">Secvența de pornire este dezactivată — activeaz-o pentru a reda Boot Video al temei.</string>
+    <string name="setd_apply_gameboot_off">Game Boot este dezactivat — activează-l pentru a reda videoclipul Game Boot al temei.</string>
+    <string name="setd_apply_lock_screen">Are și o imagine pentru ecranul de blocare — vei fi întrebat despre ea după aplicare.</string>
+    <string name="setd_lock_offer_title">Setezi ecranul de blocare?</string>
+    <string name="setd_lock_offer_message">„%1$s” are o imagine pentru ecranul de blocare. O folosești ca ecran de blocare al dispozitivului? Resetarea temei readuce ecranul de blocare anterior.</string>
+    <string name="setd_lock_offer_confirm">Setează ecranul de blocare</string>
+    <string name="setd_lock_offer_cancel">Nu acum</string>
+
+    <!-- Notification-tray messages about themes -->
+    <string name="setd_theme_reset_done">Tema a fost resetată — înapoi la aspectul implicit</string>
+    <string name="setd_theme_created">„%1$s” a fost creată</string>
+    <string name="setd_theme_created_derived">„%1$s” a fost creată — culoare derivată din fotografie</string>
+    <string name="setd_theme_image_unreadable">Imaginea nu a putut fi citită</string>
+    <string name="setd_theme_apply_failed">Tema nu a putut fi aplicată</string>
+    <string name="setd_theme_lock_unreadable">Imaginea ecranului de blocare a acestei teme nu a putut fi citită</string>
+    <string name="setd_theme_lock_set">Ecranul de blocare a fost setat din „%1$s”</string>
+    <string name="setd_theme_saved">„%1$s” a fost salvată</string>
+    <string name="setd_theme_save_failed">Tema nu a putut fi salvată</string>
+    <string name="setd_theme_fallback_name">tema</string>
+    <string name="setd_theme_updated">„%1$s” a fost actualizată la formatul actual de temă</string>
+    <string name="setd_theme_update_failed">„%1$s” nu a putut fi actualizată — fișierul original a rămas neschimbat</string>
+    <string name="setd_theme_export_failed">Tema nu a putut fi exportată</string>
+    <string name="setd_theme_imported">„%1$s” a fost importată</string>
+    <string name="setd_theme_import_unreadable">Fișierul nu a putut fi deschis</string>
+    <string name="setd_theme_import_too_large">Tema este prea mare pentru a fi importată</string>
+    <string name="setd_theme_import_out_of_memory">Memorie insuficientă pentru a importa tema — fundalul ei animat este prea mare</string>
+    <string name="setd_theme_import_not_a_bundle">Nu este un fișier .pfptheme valid</string>
+    <string name="setd_theme_import_damaged_wallpaper">Fundalul acestei teme este deteriorat</string>
+    <string name="setd_theme_import_not_saved">Tema importată nu a putut fi salvată</string>
+
+    <!-- ===== Artwork ===== -->
+    <string name="setd_artwork_title">Artwork</string>
+    <string name="setd_group_artwork_library">Biblioteca de artwork</string>
+    <string name="setd_artwork_folder_row">Dosar de artwork și import</string>
+    <string name="setd_artwork_folder_sublabel">Alege unde se stochează artwork-ul și importă artwork existent din ES-DE</string>
+    <string name="setd_artwork_folder_unavailable_sublabel">Indisponibil. Leagă din nou pentru a relua artwork-ul nou</string>
+    <string name="setd_group_artwork_status">Starea artwork-ului din bibliotecă</string>
+    <string name="setd_status_total">Total jocuri</string>
+    <string name="setd_status_complete">Complete</string>
+    <string name="setd_status_missing">Lipsă</string>
+    <string name="setd_status_stale">Învechite / Nevalide</string>
+    <string name="setd_refresh_status">Reîmprospătează starea</string>
+    <string name="setd_refresh_checking">Se verifică fișierele…</string>
+    <string name="setd_refresh_sublabel">Reverifică artwork-ul de pe disc</string>
+    <string name="setd_group_scrape">Descarcă artwork</string>
+    <string name="setd_scrape_progress">"%1$d / %2$d  —  %3$s"</string>
+    <string name="setd_scrape_counts">%1$d reușite · %2$d eșuate</string>
+    <string name="setd_scrape_background">Rulează în fundal — poți părăsi acest ecran.</string>
+    <string name="setd_scrape_starting">Se pornește…</string>
+    <string name="setd_scrape_cancel">Anulează descărcarea</string>
+    <string name="setd_scrape_cancel_sublabel">Se oprește după jocul curent — artwork-ul descărcat până acum se păstrează</string>
+    <string name="setd_scrape_all">Redescarcă pentru toate jocurile</string>
+    <string name="setd_scrape_all_sublabel">Șterge și descarcă din nou artwork-ul pentru fiecare joc</string>
+    <string name="setd_scrape_missing">Descarcă doar pentru jocurile lipsă</string>
+    <string name="setd_scrape_missing_sublabel">Descarcă doar pentru jocurile cu artwork lipsă sau nevalid — păstrează artwork-ul valid</string>
+    <string name="setd_scrape_done_all">Toate jocurile au fost redescărcate: %1$d reușite, %2$d eșuate din %3$d</string>
+    <string name="setd_scrape_done_missing">Jocurile lipsă au fost descărcate: %1$d reușite, %2$d eșuate din %3$d</string>
+    <string name="setd_scrape_cancelled">Descărcare anulată — artwork-ul descărcat până acum se păstrează</string>
+    <string name="setd_scrape_failed">Descărcarea a eșuat: %1$s</string>
+    <string name="setd_scrape_unknown_error">eroare necunoscută</string>
+    <string name="setd_rescrape_title">Redescarci pentru toate jocurile?</string>
+    <string name="setd_rescrape_confirm">Redescarcă tot</string>
+    <plurals name="setd_rescrape_message">
+        <item quantity="one">Aceasta va șterge și va descărca din nou artwork-ul pentru %1$d joc. Artwork-ul existent va fi înlocuit. Continui?</item>
+        <item quantity="few">Aceasta va șterge și va descărca din nou artwork-ul pentru toate cele %1$d jocuri. Artwork-ul existent va fi înlocuit. Continui?</item>
+        <item quantity="other">Aceasta va șterge și va descărca din nou artwork-ul pentru toate cele %1$d de jocuri. Artwork-ul existent va fi înlocuit. Continui?</item>
+    </plurals>
+    <string name="setd_group_source_priority">Prioritatea surselor</string>
+    <string name="setd_source_primary">Principală</string>
+    <string name="setd_source_fallback">Rezervă %1$d</string>
+    <string name="setd_source_screenscraper_hash">ScreenScraper (hash ROM)</string>
+    <string name="setd_source_steamgriddb_artwork">SteamGridDB (artwork)</string>
+    <string name="setd_group_art_preferences">Preferințe artwork</string>
+    <string name="setd_icon_display">Afișarea pictogramei jocului</string>
+    <string name="setd_icon_display_sublabel">Implicit pentru fiecare consolă — suprascrie per consolă sau per joc din meniurile lor Opțiuni</string>
+    <string name="setd_animated_icons">Pictograme animate</string>
+    <string name="setd_animated_icons_sublabel">Redă clipul video al unui joc în pictograma sa după ce te oprești pe el (modul Pictogramă personalizată; omis când bateria este scăzută)</string>
+    <string name="setd_snap_delay">Întârzierea clipului video</string>
+    <string name="setd_snap_delay_sublabel">Oprește-te pe un joc %1$s înainte să se redea clipul video (1–5 secunde) — întârzierile mai mari evită aparițiile bruște în timpul navigării</string>
+    <string name="setd_crop_preview">Previzualizare decupare</string>
+    <string name="setd_crop_preview_sublabel">Afișează placa finală în colț în timp ce decupezi artwork-ul (Ⓨ o comută și în editorul de decupare)</string>
+    <string name="setd_prefer_sgdb_heroes">Preferă imaginile hero SteamGridDB</string>
+    <string name="setd_prefer_sgdb_heroes_sublabel">Încearcă mai întâi SteamGridDB pentru imaginile hero/banner</string>
+    <string name="setd_download_heroes">Descarcă imagini hero</string>
+    <string name="setd_download_heroes_sublabel">Banner lat afișat în vizualizarea detaliilor jocului</string>
+    <string name="setd_download_logos">Descarcă logouri transparente</string>
+    <string name="setd_download_logos_sublabel">Logouri PNG transparente suprapuse peste imaginea hero</string>
+    <string name="setd_download_manuals">Descarcă manualele jocurilor</string>
+    <string name="setd_download_manuals_sublabel">Manuale PDF de la ScreenScraper — se deschid din meniul Opțiuni al jocului</string>
+    <string name="setd_download_video_snaps">Descarcă clipuri video</string>
+    <string name="setd_download_video_snaps_sublabel">Clipuri scurte de gameplay de la ScreenScraper — fișiere mari</string>
+    <string name="setd_artwork_region">Regiunea artwork-ului (%1$s)</string>
+    <string name="setd_artwork_region_sublabel">Ce regiune să fie preferată pentru coperte și logouri când un joc are mai multe</string>
+    <string name="setd_region_no_preference">Nicio preferință</string>
+
+    <!-- Provider keys -->
+    <string name="setd_api_key">Cheie API</string>
+    <string name="setd_api_key_saved">Cheie API (salvată)</string>
+    <string name="setd_group_sgdb_api">SteamGridDB API</string>
+    <string name="setd_sgdb_key_placeholder">Lipește cheia SteamGridDB</string>
+    <string name="setd_sgdb_key_helper">Obține o cheie gratuită la steamgriddb.com/api</string>
+    <string name="setd_save_api_key">Salvează cheia API</string>
+    <string name="setd_remove_api_key">Elimină cheia API</string>
+    <string name="setd_remove_api_key_sublabel">Artwork-ul SteamGridDB va fi dezactivat</string>
+    <string name="setd_group_tgdb_api">TheGamesDB API</string>
+    <string name="setd_tgdb_key_placeholder">Lipește cheia TheGamesDB</string>
+    <string name="setd_tgdb_key_helper">Solicită o cheie de la TheGamesDB la thegamesdb.net</string>
+    <string name="setd_save_tgdb_key">Salvează cheia TheGamesDB</string>
+    <string name="setd_remove_tgdb_key">Elimină cheia TheGamesDB</string>
+    <string name="setd_remove_tgdb_key_sublabel">TheGamesDB va fi omis ca sursă</string>
+    <string name="setd_group_igdb">Date de autentificare IGDB (opțional)</string>
+    <string name="setd_igdb_client_id">Client ID</string>
+    <string name="setd_igdb_client_id_saved">Client ID (salvat)</string>
+    <string name="setd_igdb_client_id_placeholder">Twitch Client ID</string>
+    <string name="setd_igdb_client_secret">Client secret</string>
+    <string name="setd_igdb_client_secret_placeholder">Twitch Client Secret</string>
+    <string name="setd_igdb_helper">Creează o aplicație la dev.twitch.tv — îmbunătățește acoperirea de rezervă pentru jocurile moderne</string>
+    <string name="setd_test_credentials">Testează datele de autentificare</string>
+    <string name="setd_save_credentials">Salvează datele de autentificare</string>
+    <string name="setd_clear_igdb">Șterge datele de autentificare IGDB</string>
+    <string name="setd_clear_igdb_sublabel">IGDB va fi omis ca sursă de rezervă</string>
+    <string name="setd_ss_status">Stare</string>
+    <string name="setd_ss_status_active_sublabel">Descărcarea pe bază de hash este activă (pereche de dezvoltator integrată)</string>
+    <string name="setd_ss_status_inactive_sublabel">ScreenScraper nu este disponibil în această versiune — nu a fost inclusă nicio pereche de dezvoltator</string>
+    <string name="setd_ss_active">Activ</string>
+    <string name="setd_ss_inactive">Inactiv</string>
+    <string name="setd_group_ss_account">Cont ScreenScraper (opțional)</string>
+    <string name="setd_ss_username_saved">Nume de utilizator (salvat: %1$s)</string>
+    <string name="setd_ss_username">Nume de utilizator</string>
+    <string name="setd_ss_tap_to_replace">Selectează pentru a înlocui</string>
+    <string name="setd_ss_username_placeholder">Nume de utilizator ScreenScraper</string>
+    <string name="setd_ss_password">Parolă</string>
+    <string name="setd_ss_password_placeholder">Parolă ScreenScraper</string>
+    <string name="setd_ss_password_helper">Cont gratuit la screenscraper.fr — crește limita de cereri și cota zilnică. Stocat criptat pe acest dispozitiv (Android Keystore).</string>
+    <string name="setd_test_account">Testează contul</string>
+    <string name="setd_save_account">Salvează contul</string>
+    <string name="setd_clear_ss_account">Șterge contul ScreenScraper</string>
+    <string name="setd_clear_ss_account_sublabel">Descărcarea continuă cu limitele pentru utilizatori anonimi</string>
+    <!-- Names of the secrets -->
+    <string name="setd_secret_sgdb_key">Cheia SteamGridDB</string>
+    <string name="setd_secret_tgdb_key">Cheia TheGamesDB</string>
+    <string name="setd_secret_igdb_secret">Client secret IGDB</string>
+    <string name="setd_secret_ss_password">Parola ScreenScraper</string>
+    <string name="setd_secret_unprotected">%1$s a fost salvată, dar depozitul securizat de chei al acestui dispozitiv nu a fost disponibil, așa că este stocată necriptat. Dacă o ștergi și o reintroduci mai târziu, se va încerca din nou.</string>
+
+    <!-- Cache -->
+    <string name="setd_group_cache">Cache</string>
+    <string name="setd_cache_size">Dimensiunea artwork-ului stocat</string>
+    <string name="setd_cache_size_sublabel">Cache-ul de imagini + artwork-ul stocat pe acest dispozitiv (dosarul tău de artwork nu este inclus)</string>
+    <string name="setd_clear_ss_cache">Golește cache-ul de URL-uri ScreenScraper</string>
+    <string name="setd_clear_ss_cache_sublabel">Uită URL-urile de artwork din cache — următoarea descărcare va interoga din nou ScreenScraper pentru fiecare joc. Inofensiv; nu șterge niciodată artwork-ul</string>
+    <string name="setd_ss_cache_cleared">Cache-ul de URL-uri ScreenScraper a fost golit</string>
+    <string name="setd_clear_all_artwork">Șterge tot artwork-ul</string>
+    <string name="setd_clear_all_artwork_sublabel">Pornire de la zero: elimină imaginile din cache, artwork-ul stocat și legăturile de artwork ale fiecărui joc. Fișierele din dosarul de artwork se păstrează — leagă din nou sau redescarcă pentru a le restaura</string>
+
+    <!-- ===== Artwork Folder & Import ===== -->
+    <string name="setd_import_title">Dosar de artwork și import</string>
+    <string name="setd_import_group_folder">Dosar de artwork</string>
+    <string name="setd_import_change_folder">Schimbă dosarul de artwork</string>
+    <string name="setd_import_choose_folder">Alege dosarul de artwork</string>
+    <string name="setd_import_folder_not_set">Nesetat — selectează pentru a alege unde păstrează PFP artwork-ul</string>
+    <string name="setd_import_group_existing">Importă artwork existent</string>
+    <string name="setd_import_no_launchers">Nu s-au găsit launchere</string>
+    <string name="setd_import_no_launchers_sublabel">Copiază sau mută mai întâi fișierele media ale altui launcher în dosar, de ex. import/ES-DE/downloaded_media. Mutarea eliberează spațiu, dar elimină artwork-ul din acel launcher.</string>
+    <plurals name="setd_import_source_systems">
+        <item quantity="one">%1$d dosar de sistem recunoscut — selectează pentru a previzualiza importul</item>
+        <item quantity="few">%1$d dosare de sistem recunoscute — selectează pentru a previzualiza importul</item>
+        <item quantity="other">%1$d de dosare de sistem recunoscute — selectează pentru a previzualiza importul</item>
+    </plurals>
+    <string name="setd_import_unrecognized">Structură nerecunoscută — se aștepta structura downloaded_media din ES-DE</string>
+    <string name="setd_import_scanning">Se scanează…</string>
+    <string name="setd_import_rescan">Rescanează dosarul de import</string>
+    <string name="setd_import_rescan_sublabel">Reverifică import/ pentru dosare de launchere</string>
+    <string name="setd_import_relinking">Se scanează biblioteca…</string>
+    <string name="setd_import_relink">Scanează și leagă din nou biblioteca</string>
+    <string name="setd_import_relink_sublabel">Reconectează artwork-ul din dosar la jocurile tale, reîmprospătează fișierele mutate sau modificate și curăță referințele către cele șterse</string>
+    <string name="setd_import_unmatched">Artwork fără corespondență (%1$d)</string>
+    <string name="setd_import_unmatched_sublabel">Fișiere din dosarul tău care nu corespund niciunui joc — leagă-le manual</string>
+    <string name="setd_import_group_storage">Stocarea aplicației</string>
+    <string name="setd_import_moving">Se mută artwork-ul în dosarul tău…</string>
+    <string name="setd_import_moving_progress">%1$d / %2$d — rulează în fundal</string>
+    <string name="setd_import_moving_background">Rulează în fundal — poți părăsi acest ecran</string>
+    <string name="setd_import_cancel_move">Anulează mutarea</string>
+    <string name="setd_import_cancel_move_sublabel">Artwork-ul deja mutat rămâne în dosar</string>
+    <string name="setd_import_move_in">Mută în dosar</string>
+    <plurals name="setd_import_move_in_sublabel">
+        <item quantity="one">%1$d fișier de artwork (%2$s) a fost salvat înainte de legarea acestui dosar și se află în stocarea aplicației. Mutarea îl face portabil și eliberează spațiu în aplicație. Artwork-ul blocat și cel ales manual care se află deja în dosar nu este niciodată suprascris.</item>
+        <item quantity="few">%1$d fișiere de artwork (%2$s) au fost salvate înainte de legarea acestui dosar și se află în stocarea aplicației. Mutarea le face portabile și eliberează spațiu în aplicație. Artwork-ul blocat și cel ales manual care se află deja în dosar nu este niciodată suprascris.</item>
+        <item quantity="other">%1$d de fișiere de artwork (%2$s) au fost salvate înainte de legarea acestui dosar și se află în stocarea aplicației. Mutarea le face portabile și eliberează spațiu în aplicație. Artwork-ul blocat și cel ales manual care se află deja în dosar nu este niciodată suprascris.</item>
+    </plurals>
+    <string name="setd_import_group_export">Export</string>
+    <string name="setd_import_export">Exportă pentru ES-DE</string>
+    <string name="setd_import_export_sublabel">Copiază artwork-ul într-un dosar ales de tine (de ex. downloaded_media din ES-DE) — incremental, biblioteca ta nu este niciodată modificată</string>
+    <string name="setd_import_group_preview">Previzualizare import</string>
+    <string name="setd_import_building">Se creează previzualizarea…</string>
+    <string name="setd_import_building_sublabel">Se potrivește artwork-ul cu jocurile tale</string>
+    <string name="setd_import_preview_group">Previzualizare import — %1$s</string>
+    <string name="setd_import_games_matched">Jocuri potrivite</string>
+    <string name="setd_import_files_to_import">Fișiere de importat</string>
+    <string name="setd_import_estimated_size">Dimensiune estimată</string>
+    <string name="setd_import_details_found">Detalii de joc găsite</string>
+    <string name="setd_import_details_none_sublabel">Copiază dosarul gamelists din ES-DE în dosarul de import al launcherului pentru a aduce și descrierile, dezvoltatorii și anii de lansare</string>
+    <string name="setd_import_details_some_sublabel">Descrieri și detalii din gamelist.xml — nu suprascrie niciodată datele existente</string>
+    <string name="setd_import_already_present">Deja prezente</string>
+    <string name="setd_import_needs_review">Necesită verificare</string>
+    <string name="setd_import_unmatched_artwork">Artwork fără corespondență</string>
+    <string name="setd_import_skipped_folders">Dosare de sistem omise</string>
+    <string name="setd_import_no_games">Niciun joc în bibliotecă</string>
+    <string name="setd_import_no_games_sublabel">S-a găsit artwork pentru %1$s, dar biblioteca ta nu are jocuri pe aceste sisteme — adaugă mai întâi jocurile, apoi rulează din nou importul.</string>
+    <string name="setd_import_move_files">Mută fișierele (mai rapid, eliberează spațiu)</string>
+    <string name="setd_import_move_files_sublabel">Mută artwork-ul din dosarul launcherului în loc să-l copieze. Celălalt launcher pierde aceste fișiere.</string>
+    <string name="setd_import_review_group">Verifică potrivirile ambigue (%1$d)</string>
+    <plurals name="setd_import_possible_games">
+        <item quantity="one">%1$d joc posibil — selectează pentru a alege</item>
+        <item quantity="few">%1$d jocuri posibile — selectează pentru a alege</item>
+        <item quantity="other">%1$d de jocuri posibile — selectează pentru a alege</item>
+    </plurals>
+    <string name="setd_import_game_number">Jocul nr. %1$d</string>
+    <string name="setd_import_assign_sublabel">Atribuie acest artwork acestui joc</string>
+    <string name="setd_import_skip_file">Omite acest fișier</string>
+    <string name="setd_import_start">Pornește importul</string>
+    <plurals name="setd_import_start_move">
+        <item quantity="one">Mută %1$d fișier în biblioteca de artwork</item>
+        <item quantity="few">Mută %1$d fișiere în biblioteca de artwork</item>
+        <item quantity="other">Mută %1$d de fișiere în biblioteca de artwork</item>
+    </plurals>
+    <plurals name="setd_import_start_copy">
+        <item quantity="one">Copiază %1$d fișier în biblioteca de artwork</item>
+        <item quantity="few">Copiază %1$d fișiere în biblioteca de artwork</item>
+        <item quantity="other">Copiază %1$d de fișiere în biblioteca de artwork</item>
+    </plurals>
+    <string name="setd_import_cancel_preview">Anulează previzualizarea</string>
+    <string name="setd_import_group_importing">Se importă</string>
+    <string name="setd_import_cancel">Anulează importul</string>
+    <string name="setd_import_cancel_sublabel">Artwork-ul deja importat se păstrează</string>
+    <string name="setd_import_group_report">Raport de import</string>
+    <string name="setd_import_clear_reports">Șterge rapoartele</string>
+    <!-- Names of artwork kinds -->
+    <string name="setd_kind_icon">Coperte</string>
+    <string name="setd_kind_hero">Imagini mix</string>
+    <string name="setd_kind_background">Fanart</string>
+    <string name="setd_kind_logo">Marquee</string>
+    <string name="setd_kind_screenshot">Capturi de ecran</string>
+    <string name="setd_kind_titlescreen">Ecrane de titlu</string>
+    <string name="setd_kind_physical_media">Suporturi fizice</string>
+    <string name="setd_kind_manual">Manuale</string>
+    <!-- Notices -->
+    <string name="setd_import_link_failed">Nu s-a putut configura biblioteca de artwork în acel dosar — poate fi doar pentru citire.</string>
+    <string name="setd_import_library_reconnected">Biblioteca de artwork PFP existentă a fost reconectată.</string>
+    <string name="setd_import_library_created">Biblioteca de artwork a fost creată.</string>
+    <plurals name="setd_import_games_linked">
+        <item quantity="one">%1$d joc legat din %2$d fișiere deja existente în dosar.</item>
+        <item quantity="few">%1$d jocuri legate din %2$d fișiere deja existente în dosar.</item>
+        <item quantity="other">%1$d de jocuri legate din %2$d fișiere deja existente în dosar.</item>
+    </plurals>
+    <string name="setd_import_place_media">Pune fișierele media ale altor launchere în import/.</string>
+    <plurals name="setd_import_internal_files">
+        <item quantity="one">%1$d fișier de artwork este încă în stocarea aplicației — vezi Mută în dosar mai jos.</item>
+        <item quantity="few">%1$d fișiere de artwork sunt încă în stocarea aplicației — vezi Mută în dosar mai jos.</item>
+        <item quantity="other">%1$d de fișiere de artwork sunt încă în stocarea aplicației — vezi Mută în dosar mai jos.</item>
+    </plurals>
+    <plurals name="setd_import_upgraded">
+        <item quantity="one">Biblioteca de artwork a fost actualizată la noua structură — %1$d fișier reorganizat.</item>
+        <item quantity="few">Biblioteca de artwork a fost actualizată la noua structură — %1$d fișiere reorganizate.</item>
+        <item quantity="other">Biblioteca de artwork a fost actualizată la noua structură — %1$d de fișiere reorganizate.</item>
+    </plurals>
+    <string name="setd_import_scan_failed">Dosarul de import nu a putut fi scanat.</string>
+    <string name="setd_import_source_unreadable">Această sursă nu a putut fi citită.</string>
+    <string name="setd_import_preview_failed">Previzualizarea a eșuat — vezi jurnalele.</string>
+    <string name="setd_import_nothing">Nimic de importat — totul este deja prezent.</string>
+    <string name="setd_import_export_started">Exportul a început — progresul apare în notificare; rezultatul ajunge în Raport de import.</string>
+    <plurals name="setd_relink_files">
+        <item quantity="one">Scanare: %1$d fișier</item>
+        <item quantity="few">Scanare: %1$d fișiere</item>
+        <item quantity="other">Scanare: %1$d de fișiere</item>
+    </plurals>
+    <plurals name="setd_relink_linked">
+        <item quantity="one">%1$d joc legat</item>
+        <item quantity="few">%1$d jocuri legate</item>
+        <item quantity="other">%1$d de jocuri legate</item>
+    </plurals>
+    <string name="setd_relink_orphans">%1$d fără corespondență — vezi Artwork fără corespondență</string>
+    <string name="setd_relink_failed">Scanarea bibliotecii a eșuat — vezi jurnalele.</string>
+    <string name="setd_relink_cancelled">Scanarea bibliotecii a fost anulată.</string>
+    <string name="setd_report_title">%1$s — %2$s</string>
+    <string name="setd_report_unreadable">Raportul nu poate fi citit</string>
+    <string name="setd_report_imported">%1$d importate</string>
+    <string name="setd_report_skipped">%1$d omise</string>
+    <string name="setd_report_failed">%1$d eșuate</string>
+    <plurals name="setd_report_game_details">
+        <item quantity="one">%1$d detaliu de joc</item>
+        <item quantity="few">%1$d detalii de joc</item>
+        <item quantity="other">%1$d de detalii de joc</item>
+    </plurals>
+    <string name="setd_report_need_review">%1$d necesită verificare</string>
+    <string name="setd_report_unmatched">%1$d fără corespondență</string>
+    <string name="setd_report_cancelled">anulat</string>
+
+    <!-- ===== Unmatched Artwork ===== -->
+    <string name="setd_orphan_title">Artwork fără corespondență</string>
+    <string name="setd_orphan_link_title">Leagă „%1$s”</string>
+    <string name="setd_orphan_none">Nimic fără corespondență</string>
+    <string name="setd_orphan_none_sublabel">Fiecare fișier de artwork din dosarul tău este legat de un joc. Rulează Scanează și leagă din nou după ce adaugi fișiere pentru a verifica din nou.</string>
+    <plurals name="setd_orphan_count">
+        <item quantity="one">%1$d fișier nu corespunde niciunui joc</item>
+        <item quantity="few">%1$d fișiere nu corespund niciunui joc</item>
+        <item quantity="other">%1$d de fișiere nu corespund niciunui joc</item>
+    </plurals>
+    <string name="setd_orphan_group_file">Fișier</string>
+    <string name="setd_orphan_group_search">Caută în jocurile tale</string>
+    <string name="setd_orphan_title_field">Titlu</string>
+    <string name="setd_orphan_searching">Se caută…</string>
+    <string name="setd_orphan_search">Caută</string>
+    <string name="setd_orphan_search_sublabel">Caută doar în propriile tale jocuri %1$s — nu se descarcă nimic</string>
+    <string name="setd_orphan_no_search">Încă nicio căutare</string>
+    <string name="setd_orphan_no_search_sublabel">Editează titlul de mai sus și apasă Caută pentru a vedea jocurile corespunzătoare</string>
+    <string name="setd_orphan_no_match">Niciun joc corespunzător</string>
+    <string name="setd_orphan_no_match_sublabel">Încearcă un titlu mai scurt — un singur cuvânt distinctiv funcționează de obicei</string>
+    <plurals name="setd_orphan_matches">
+        <item quantity="one">%1$d potrivire — alege proprietarul</item>
+        <item quantity="few">%1$d potriviri — alege proprietarul</item>
+        <item quantity="other">%1$d de potriviri — alege proprietarul</item>
+    </plurals>
+
+    <!-- ===== Achievements ===== -->
+    <string name="setd_ach_subtitle_credentials">Realizări · Date de autentificare furnizori</string>
+    <string name="setd_ach_subtitle_local_windows">Realizări · Windows local</string>
+    <string name="setd_ach_subtitle_update">Realizări · Actualizează realizările</string>
+    <string name="setd_ach_subtitle_coins">Shiba Coins</string>
+    <string name="setd_ach_enable">Activează Shiba Coins</string>
+    <string name="setd_ach_enable_sublabel">Urmărește realizările ca Shiba Coins din RetroAchievements și Steam</string>
+    <string name="setd_ach_connected_as">Conectat ca</string>
+    <string name="setd_ach_username">Nume de utilizator</string>
+    <string name="setd_ach_ra_username_placeholder">Numele tău de utilizator RA</string>
+    <string name="setd_ach_web_api_key">Cheie Web API</string>
+    <string name="setd_ach_web_api_key_saved">Cheie Web API (salvată)</string>
+    <string name="setd_ach_ra_key_placeholder">Lipește cheia ta RA Web API</string>
+    <string name="setd_ach_ra_key_helper">retroachievements.org → Settings → Keys → Web API Key</string>
+    <string name="setd_ach_ra_connect">Conectează RetroAchievements</string>
+    <string name="setd_ach_ra_disconnect">Deconectează RetroAchievements</string>
+    <string name="setd_ach_ra_disconnect_sublabel">Elimină numele de utilizator și cheia de pe acest dispozitiv</string>
+    <string name="setd_ach_steam_id">SteamID64 sau nume de profil</string>
+    <string name="setd_ach_steam_id_placeholder">76561… sau numele personalizat</string>
+    <string name="setd_ach_steam_id_helper">Un nume personalizat este convertit într-un SteamID64 la conectare</string>
+    <string name="setd_ach_steam_key_placeholder">Lipește cheia ta Steam Web API</string>
+    <string name="setd_ach_steam_key_helper">steamcommunity.com/dev — Detaliile jocurilor din profilul tău trebuie să fie publice</string>
+    <string name="setd_ach_steam_connect">Conectează Steam</string>
+    <string name="setd_ach_steam_disconnect">Deconectează Steam</string>
+    <string name="setd_ach_steam_disconnect_sublabel">Elimină SteamID-ul și cheia de pe acest dispozitiv</string>
+    <string name="setd_ach_ra_connected">RetroAchievements conectat</string>
+    <string name="setd_ach_ra_disconnected">RetroAchievements deconectat</string>
+    <string name="setd_ach_steam_disconnected">Steam deconectat</string>
+    <string name="setd_ach_group_local_steam">Steam local (emulat)</string>
+    <string name="setd_ach_track_local">Urmărește jocurile Steam locale (emulate)</string>
+    <string name="setd_ach_track_local_sublabel">Găsește jocurile din emulator, generează datele lor de realizări și sincronizează deblocările</string>
+    <string name="setd_ach_goldberg">Instalează Goldberg și convertește jocurile</string>
+    <string name="setd_ach_goldberg_sublabel">La scanare, oferă scrierea datelor de realizări în jocurile detectate pentru ca emulatorul să le poată urmări</string>
+    <string name="setd_ach_backup_title">Fă mai întâi backup la salvări</string>
+    <string name="setd_ach_backup_confirm">Am făcut backup — activează</string>
+    <string name="setd_ach_local_steam_message">Înainte de sincronizare, deschide emulatorul Windows și fă backup la salvările oricăror jocuri cu Steam emulat pe care le-ai configurat deja.\n\nUrmărirea acestor jocuri permite unei sincronizări să rescrie configurația emulatorului pentru fiecare joc și să-i înlocuiască fișierele Steam, astfel încât deblocările să poată fi înregistrate. Un joc configurat și jucat înainte de această funcție ar putea altfel pierde accesul la salvările existente.\n\nAceasta folosește și propria ta cheie Steam Web API pentru a citi datele de realizări — folosește-o pe propriul risc. Urmărirea Steam este complet opțională; lasă opțiunea dezactivată dacă preferi să nu accepți aceste riscuri.\n\nFă mai întâi backup, apoi activează opțiunea și Actualizează realizările instalate.</string>
+    <string name="setd_ach_goldberg_message">Înainte de a converti vreun joc, deschide emulatorul Windows și fă backup la salvările oricăror jocuri cu Steam emulat pe care le-ai configurat deja.\n\nConversia rescrie configurația emulatorului pentru fiecare joc și îi înlocuiește fișierele Steam, astfel încât deblocările să poată fi înregistrate. Un joc configurat și jucat înainte de această funcție ar putea altfel pierde accesul la salvările existente.\n\nAceasta folosește și propria ta cheie Steam Web API pentru a citi datele de realizări — folosește-o pe propriul risc. Lasă opțiunea dezactivată dacă preferi să nu accepți aceste riscuri.\n\nFă mai întâi backup, apoi activează opțiunea și scanează-ți jocurile.</string>
+    <string name="setd_ach_group_update">Actualizare</string>
+    <string name="setd_ach_last_updated">Ultima actualizare</string>
+    <string name="setd_ach_never">Niciodată</string>
+    <string name="setd_ach_auto_updates">Actualizări automate</string>
+    <string name="setd_ach_updates_paused">Actualizări întrerupte până la resincronizare</string>
+    <string name="setd_ach_updating">Se actualizează realizările…</string>
+    <string name="setd_ach_update_installed">Actualizează realizările instalate</string>
+    <string name="setd_ach_update_after_match">Rulează automat după ce se termină potrivirea automată</string>
+    <string name="setd_ach_update_resume">Resincronizează jocurile de pe acest dispozitiv și reia actualizările automate</string>
+    <string name="setd_ach_update_check">Verifică jocurile de pe acest dispozitiv pentru realizări noi</string>
+    <string name="setd_ach_group_auto_match">Potrivire automată</string>
+    <string name="setd_ach_matching">Se potrivesc jocurile…</string>
+    <string name="setd_ach_auto_match">Potrivește automat jocurile</string>
+    <string name="setd_ach_auto_match_sublabel">Leagă jocurile de pe acest dispozitiv de RetroAchievements (hash ROM) și Steam</string>
+    <string name="setd_ach_group_reset">Resetare</string>
+    <string name="setd_ach_clearing">Se șterg realizările…</string>
+    <string name="setd_ach_clear_row">Șterge toate realizările urmărite</string>
+    <string name="setd_ach_clear_row_sublabel">Elimină toate realizările înregistrate în Play Field Portal. Jocurile și conexiunile cu furnizorii rămân.</string>
+    <string name="setd_ach_clear_title">Ștergi toate realizările urmărite?</string>
+    <string name="setd_ach_clear_message">Aceasta va elimina toate realizările înregistrate în Play Field Portal, inclusiv progresul obținut și înregistrările pentru jocurile care nu mai sunt instalate. Jocurile și conexiunile cu furnizorii vor rămâne. Jocurile vor trebui resincronizate pentru a-și afișa din nou realizările.</string>
+    <string name="setd_ach_clear_confirm">Șterge realizările</string>
+
+</resources>

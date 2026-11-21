@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ===== Shared Shiba page text ===== -->
+    <string name="shiba_prompt_select">Vybrat</string>
+    <string name="shiba_prompt_close">Zavřít</string>
+    <string name="shiba_prompt_done">Hotovo</string>
+    <string name="shiba_prompt_back">Zpět</string>
+    <string name="shiba_prompt_options">Možnosti</string>
+    <string name="shiba_prompt_search">Hledat</string>
+    <string name="shiba_prompt_type">Psát</string>
+    <string name="shiba_prompt_change_view">Změnit zobrazení</string>
+    <string name="shiba_prompt_switch_source">Přepnout zdroj</string>
+    <string name="shiba_prompt_view_game">Zobrazit hru</string>
+    <string name="shiba_prompt_view_achievements">Zobrazit achievementy</string>
+    <string name="shiba_prompt_attempt_match">Zkusit přiřadit</string>
+    <string name="shiba_prompt_search_online">Hledat online</string>
+    <string name="shiba_prompt_auto_match">Automaticky přiřadit</string>
+    <string name="shiba_prompt_pick_game_folder">Vybrat složku hry</string>
+    <string name="shiba_prompt_reveal">Odhalit</string>
+    <string name="shiba_prompt_hide">Skrýt</string>
+    <string name="shiba_prompt_navigate">Navigovat</string>
+
+    <!-- Buttons in the Auto-Match panels. -->
+    <string name="shiba_action_yes">Ano</string>
+    <string name="shiba_action_no">Ne</string>
+    <string name="shiba_action_cancel">Zrušit</string>
+    <string name="shiba_action_close">Zavřít</string>
+    <string name="shiba_action_link">Propojit</string>
+
+    <string name="shiba_options_title">Možnosti</string>
+    <string name="shiba_options_sort">Řazení</string>
+    <string name="shiba_options_provider">Poskytovatel</string>
+    <string name="shiba_options_update_installed">Aktualizovat achievementy nainstalovaných her</string>
+    <string name="shiba_options_updating">Aktualizace…</string>
+
+    <string name="shiba_sort_newest">Nejnovější</string>
+    <string name="shiba_sort_rarest">Nejvzácnější</string>
+    <string name="shiba_sort_tier">Úroveň</string>
+    <string name="shiba_sort_earned">Získané</string>
+    <string name="shiba_filter_all">Vše</string>
+
+    <!-- Coin tier names. -->
+    <string name="shiba_tier_bronze">Bronz</string>
+    <string name="shiba_tier_silver">Stříbro</string>
+    <string name="shiba_tier_gold">Zlato</string>
+    <string name="shiba_tier_platinum">Platina</string>
+
+    <!-- Header statistics labels; shown in capitals. -->
+    <string name="shiba_stat_shiba_level">ÚROVEŇ SHIBA</string>
+    <string name="shiba_stat_next_level">DALŠÍ ÚROVEŇ</string>
+    <string name="shiba_stat_total_coins">MINCE CELKEM</string>
+    <string name="shiba_stat_total">CELKEM</string>
+
+    <string name="shiba_platform_not_installed">%1$s · Nenainstalováno</string>
+
+    <!-- Relative times. -->
+    <string name="shiba_time_just_now">Právě teď</string>
+    <string name="shiba_time_minutes_ago">před %1$d min</string>
+    <string name="shiba_time_hours_ago">před %1$d h</string>
+    <string name="shiba_time_yesterday">Včera</string>
+    <plurals name="shiba_time_days_ago">
+        <item quantity="one">před %1$d dnem</item>
+        <item quantity="few">před %1$d dny</item>
+        <item quantity="many">před %1$d dne</item>
+        <item quantity="other">před %1$d dny</item>
+    </plurals>
+
+    <string name="shiba_search_games_placeholder">Hledat hry…</string>
+
+    <!-- ===== Player Status ===== -->
+    <string name="shiba_player_status_title">Stav hráče</string>
+    <string name="shiba_player_status_no_rarest">Zatím žádný nejvzácnější achievement.</string>
+    <string name="shiba_player_status_rarest_unlocked">NEJVZÁCNĚJŠÍ ODEMČENÝ</string>
+    <string name="shiba_player_status_rarity_caption">hráčů jej má</string>
+    <string name="shiba_player_status_game_and_time">%1$s · %2$s</string>
+    <plurals name="shiba_status_checking_games">
+        <item quantity="one">Kontrola hry %1$d z %2$d…</item>
+        <item quantity="few">Kontrola hry %1$d z %2$d…</item>
+        <item quantity="many">Kontrola hry %1$d z %2$d…</item>
+        <item quantity="other">Kontrola hry %1$d z %2$d…</item>
+    </plurals>
+    <string name="shiba_status_updating_achievements">Aktualizace achievementů nainstalovaných her…</string>
+
+    <!-- ===== Achievements library ===== -->
+    <string name="shiba_library_view_tracked">Sledované hry</string>
+    <string name="shiba_library_view_untracked">Nesledované hry</string>
+    <string name="shiba_library_breadcrumb">Achievementy / %1$s</string>
+    <plurals name="shiba_library_game_count">
+        <item quantity="one">%1$d hra</item>
+        <item quantity="few">%1$d hry</item>
+        <item quantity="many">%1$d hry</item>
+        <item quantity="other">%1$d her</item>
+    </plurals>
+    <string name="shiba_library_empty_no_match">Výrazu „%1$s“ neodpovídají žádné hry.</string>
+    <string name="shiba_library_empty_tracked">Zatím žádné sledované hry.</string>
+    <string name="shiba_library_empty_untracked">Všechny vhodné hry jsou sledovány.</string>
+    <string name="shiba_library_sort_title_asc">Název A–Z</string>
+    <string name="shiba_library_sort_title_desc">Název Z–A</string>
+    <string name="shiba_library_sort_progress_asc">Průběh od nejnižšího</string>
+    <string name="shiba_library_sort_progress_desc">Průběh od nejvyššího</string>
+    <string name="shiba_library_sort_platform_asc">Platforma A–Z</string>
+    <string name="shiba_library_sort_platform_desc">Platforma Z–A</string>
+    <string name="shiba_library_search_online">Hledat online</string>
+    <string name="shiba_library_search_online_subtitle">Vyhledat hru, která není v tomto zařízení</string>
+    <string name="shiba_library_awaiting_sync">Čeká na synchronizaci</string>
+
+    <!-- ===== A game's Shiba Coins page ===== -->
+    <string name="shiba_coins_search_placeholder">Hledat mince…</string>
+    <string name="shiba_coins_stat_completion">DOKONČENO</string>
+    <string name="shiba_coins_stat_earned">ZÍSKÁNO</string>
+    <string name="shiba_coins_tab_all">Vše %1$d</string>
+    <string name="shiba_coins_tab_earned">Získané %1$d</string>
+    <string name="shiba_coins_tab_locked">Zamčené %1$d</string>
+    <string name="shiba_coins_synced">Synchronizováno %1$s</string>
+    <string name="shiba_coins_not_linked">Nepropojeno</string>
+    <string name="shiba_coins_never_synced">Nikdy nesynchronizováno</string>
+    <string name="shiba_coins_owned_on_steam">Vlastněno na Steamu</string>
+    <string name="shiba_coins_tracked_locally">Sledováno místně</string>
+
+    <!-- Empty-list messages. -->
+    <string name="shiba_coins_empty_no_match">Výrazu „%1$s“ neodpovídají žádné mince.</string>
+    <string name="shiba_coins_empty_none_earned">Zatím nebyly získány žádné mince.</string>
+    <string name="shiba_coins_empty_all_earned">Všechny mince jsou získány.</string>
+    <string name="shiba_coins_empty_default">Žádné mince k zobrazení.</string>
+
+    <!-- Options menu rows. -->
+    <string name="shiba_coins_options_update">Aktualizovat achievementy</string>
+    <string name="shiba_coins_options_change_match">Změnit přiřazení</string>
+    <string name="shiba_coins_options_unlink">Odpojit hru</string>
+
+    <!-- Unlink confirmation. -->
+    <string name="shiba_coins_unlink_title">Odpojit hru?</string>
+    <string name="shiba_coins_unlink_message">%1$s již není přiřazena, takže se její mince přestanou zobrazovat. Již uložené mince zůstanou zachovány a vrátí se, až ji znovu přiřadíte.</string>
+    <string name="shiba_coins_unlink_confirm">Odpojit</string>
+
+    <!-- Coin rows. -->
+    <string name="shiba_coin_hidden_title">Skrytá mince</string>
+    <string name="shiba_coin_hidden_hint">Hrajte dál — nebo ji odhalte stisknutím Potvrdit</string>
+    <string name="shiba_coin_description_secret">Steam popis této mince tají</string>
+    <string name="shiba_coin_metric_of_players">hráčů</string>
+    <string name="shiba_coin_status_earned">Získáno</string>
+    <string name="shiba_coin_status_locked">Zamčeno</string>
+    <string name="shiba_platinum_crown_title">Platinová koruna</string>
+    <string name="shiba_platinum_crown_description">Získejte všechny ostatní mince ve hře</string>
+    <string name="shiba_platinum_crown_metric">získaných mincí</string>
+
+    <!-- Auto-Match panel -->
+    <string name="shiba_link_not_linked_yet_game">Tato hra zatím není propojena</string>
+    <string name="shiba_link_not_linked_yet">Zatím nepropojeno</string>
+    <string name="shiba_link_steam_body">Automatické přiřazení se zeptá, zda jde o legitimní kopii ze Steamu, a poté ji přiřadí přes Steam nebo prohledá složky her kvůli datům emulace Steamu.</string>
+    <string name="shiba_link_retro_body">RetroAchievements rozpoznává hry podle hashe ROM. Automatické přiřazení vypočítá hash této ROM a vyhledá jej — propojit lze jen ověřený dump registrovaný na RetroAchievements.</string>
+    <string name="shiba_link_local_steam_body">Vyberte složku této hry a PFP přečte její Steam app id — ze souboru steam_appid.txt, pokud existuje, jinak podle názvu. Složku si zapamatuje, takže ji už nebude nutné hledat.</string>
+    <string name="shiba_link_vita_body">Trofeje PS Vita se propojují automaticky z Vita3K. Nastavte v knihovně datovou složku Vita3K a prohledáním hru propojte.</string>
+    <string name="shiba_link_ps3_body">Trofeje PS3 se propojují z vlastního disku hry — nastavte v knihovně datovou složku PS3 a použijte Automatické přiřazení.</string>
+    <string name="shiba_link_x360_body">Achievementy Xbox 360 se propojují podle title ID hry — nastavte v knihovně datovou složku X360 Mobile nebo XenDroid a použijte Automatické přiřazení.</string>
+    <string name="shiba_link_auto_match">Automaticky přiřadit</string>
+    <string name="shiba_link_matching">Přiřazování…</string>
+    <string name="shiba_link_pick_game_folder">Vybrat složku hry</string>
+
+    <string name="shiba_link_copy_title">Je to legitimní kopie ze Steamu?</string>
+    <string name="shiba_link_copy_body">Legitimní kopie se přiřadí k vašemu účtu Steam. Cokoli jiného se sleduje z vlastní složky hry, na kterou vás PFP požádá ukázat.</string>
+
+    <string name="shiba_link_folder_title">Ve které složce je tato hra?</string>
+    <string name="shiba_link_folder_body">Vyberte vlastní složku hry — tu, ve které je její .exe. PFP z ní přečte Steam app id a sleduje odemčení, která tam emulátor zapisuje. Vaše hry pro Windows mohou být kdekoli; PFP si pamatuje, kde je tato, takže ji nikdy nemusí hledat.</string>
+
+    <string name="shiba_link_identify_title_steam">Hledání shody na Steamu…</string>
+    <string name="shiba_link_identify_title_appid">Zjišťování Steam app id…</string>
+    <string name="shiba_link_identify_body_steam">Hledání názvu této hry na Steamu. Vyberte správnou hru a znovu ji propojte.</string>
+    <string name="shiba_link_identify_body_appid">Čtení steam_appid.txt ze složky a porovnání názvu hry se Steamem, pokud zatím žádný nemá.</string>
+
+    <string name="shiba_link_kit_title">Tato složka zatím nemá seznam achievementů</string>
+    <string name="shiba_link_kit_body_generic">Emulátor potřebuje seznam achievementů, aby mohl zaznamenávat odemčení.</string>
+    <string name="shiba_link_kit_body">„%1$s“ má Steam app id %2$s, ale emulátor nemá seznam achievementů, podle kterého by zaznamenával. Instalovat a propojit zapíše do složky achievements.json, stats.json a configs.user.ini, vytvoří složku saves a přejmenuje steam_api64.dll na steam_api64_o.dll, aby se přes ni načítal přiložený emulátor — nejprve zálohujte uložené pozice této hry. Jen propojit ji sleduje na 0%% a nic dalšího nezapíše.</string>
+    <string name="shiba_link_kit_installer_off">Instalovat a propojit vyžaduje zapnutou volbu Instalovat Goldberg a převést hry v nastavení achievementů.</string>
+    <string name="shiba_link_kit_install">Instalovat a propojit</string>
+    <string name="shiba_link_kit_link_only">Jen propojit</string>
+
+    <string name="shiba_link_no_emu_title">V této složce není co sledovat</string>
+    <string name="shiba_link_no_emu_default">Tato složka neobsahuje žádná data emulátoru Steamu.</string>
+    <string name="shiba_link_try_another_folder">Zkusit jinou složku</string>
+
+    <string name="shiba_link_appid_title">Nebyla nalezena automatická shoda</string>
+    <string name="shiba_link_appid_body">Zadejte Steam app id hry:</string>
+    <string name="shiba_link_appid_field">Steam app id</string>
+
+    <!-- Messages shown on the page after linking or syncing. -->
+    <string name="shiba_coins_folder_unreadable">Tuto složku nelze přečíst. Vyberte ji znovu nebo znovu připojte úložiště, na kterém je.</string>
+    <string name="shiba_coins_linked_to">Propojeno s %1$s (appid %2$s).</string>
+    <string name="shiba_coins_nothing_written">Nic nebylo zapsáno. Nastavte shodu hry na Steamu v Podrobnostech hry ▸ Přiřadit hru a pak znovu použijte Automatické přiřazení — PFP použije toto id.</string>
+    <string name="shiba_coins_appid_not_number">Steam app id je číslo — více informací o hře najdete na steamdb.info</string>
+    <string name="shiba_coins_appid_no_match">App id %1$s neodpovídá — více informací o hře najdete na steamdb.info</string>
+    <string name="shiba_coins_sync_not_linked">Nejprve propojte tuto hru s id poskytovatele</string>
+    <string name="shiba_coins_sync_not_installed">Tato hra není nainstalována — zobrazují se její uložené achievementy</string>
+    <string name="shiba_coins_sync_missing_credentials">Přidejte svůj klíč v Nastavení ▸ Achievementy ▸ Přihlašovací údaje poskytovatelů</string>
+    <string name="shiba_coins_sync_profile_private">Podrobnosti o hrách ve vašem profilu Steam jsou soukromé</string>
+    <string name="shiba_coins_sync_not_found">Pro tuto hru nebyly nalezeny žádné achievementy</string>
+    <string name="shiba_coins_sync_failed">Synchronizace selhala: %1$s</string>
+
+    <!-- ===== Video Detail ===== -->
+    <string name="shiba_video_play">Přehrát</string>
+    <string name="shiba_video_resume">Pokračovat</string>
+    <string name="shiba_video_restart">Přehrát od začátku</string>
+    <string name="shiba_video_resume_at">Pokračovat od %1$s</string>
+    <string name="shiba_video_group_library">Knihovna</string>
+    <string name="shiba_video_group_customize">Přizpůsobit</string>
+    <string name="shiba_video_group_manage">Spravovat</string>
+    <string name="shiba_video_favorite">Oblíbené</string>
+    <string name="shiba_video_favorite_on">Zap.</string>
+    <string name="shiba_video_favorite_off">Vyp.</string>
+    <string name="shiba_video_add_to_playlist">Přidat do playlistu</string>
+    <string name="shiba_video_create_playlist">Vytvořit nový playlist</string>
+    <string name="shiba_video_edit_title">Upravit název</string>
+    <string name="shiba_video_change_thumbnail">Změnit náhled</string>
+    <string name="shiba_video_view_information">Zobrazit informace</string>
+    <string name="shiba_video_show_location">Zobrazit umístění souboru</string>
+    <string name="shiba_video_remove">Odebrat z knihovny</string>
+    <string name="shiba_video_remove_message">„%1$s“ bude z této knihovny odebráno. Soubor na disku smazán nebude.</string>
+    <string name="shiba_video_remove_confirm">Odebrat</string>
+    <string name="shiba_video_new_playlist_title">Nový playlist</string>
+    <string name="shiba_video_new_playlist_placeholder">Název playlistu</string>
+    <string name="shiba_video_new_playlist_create">Vytvořit</string>
+    <string name="shiba_video_launching">Spouštění…</string>
+    <string name="shiba_video_player_ask">externí přehrávač</string>
+    <string name="shiba_video_player_fallback">externí přehrávač</string>
+    <string name="shiba_video_launch_error_title">Video nelze přehrát</string>
+    <string name="shiba_video_added_favorite">Přidáno do Oblíbených</string>
+    <string name="shiba_video_removed_favorite">Odebráno z Oblíbených</string>
+    <string name="shiba_video_import_failed">Obrázek nelze importovat</string>
+    <string name="shiba_video_thumbnail_updated">Náhled aktualizován</string>
+    <string name="shiba_video_location_in">Ve složce: %1$s</string>
+    <string name="shiba_video_info_duration">Délka: %1$s</string>
+    <string name="shiba_video_info_resolution">Rozlišení: %1$s</string>
+    <string name="shiba_video_info_format">Formát: %1$s</string>
+    <string name="shiba_video_info_type">Typ: %1$s</string>
+    <string name="shiba_video_info_size">Velikost: %1$s</string>
+    <string name="shiba_video_info_location">Umístění: %1$s</string>
+    <string name="shiba_video_info_file">Soubor: %1$s</string>
+
+    <!-- ===== Manual viewer ===== -->
+    <string name="shiba_manual_failed">Tento manuál nelze zobrazit.</string>
+    <string name="shiba_manual_page_description">%1$s — stránka manuálu %2$d</string>
+    <string name="shiba_manual_footer_hint">"◀ ▶  Stránka   •   ▲ ▼  Posun   •   B  Zavřít"</string>
+
+</resources>

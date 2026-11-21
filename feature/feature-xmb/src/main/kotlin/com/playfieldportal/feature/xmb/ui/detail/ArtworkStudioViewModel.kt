@@ -1,10 +1,12 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
 import android.net.Uri
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
 import com.playfieldportal.feature.artwork.api.SgdbArtType
@@ -21,6 +23,7 @@ import com.playfieldportal.feature.artwork.match.ProviderMatchEvidence
 import com.playfieldportal.feature.artwork.store.ArtworkKind
 import com.playfieldportal.feature.artwork.store.ArtworkStore
 import com.playfieldportal.feature.artwork.store.CropProfileRegistry
+import com.playfieldportal.feature.xmb.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,18 +48,22 @@ import javax.inject.Inject
  */
 data class StudioTab(
     val kind: ArtworkKind,
-    val label: String,
-    val contract: String,
+    @StringRes val labelRes: Int,
+    @StringRes val contractRes: Int,
     val tileClass: StudioTileClass,
-)
+) {
+    val label: UiText get() = UiText.res(labelRes)
+    val contract: UiText get() = UiText.res(contractRes)
+}
 
-enum class StudioSource(val label: String) {
-    SCREENSCRAPER("ScreenScraper"),
-    STEAMGRIDDB("SteamGridDB"),
-    THEGAMESDB("TheGamesDB"),
-    IGDB("IGDB"),
-    STEAM("Steam"),
-    LOCAL("Local File"),
+/** The art providers by name (proper nouns, so not translated), and Local File. */
+enum class StudioSource(val label: UiText) {
+    SCREENSCRAPER(UiText.raw("ScreenScraper")),
+    STEAMGRIDDB(UiText.raw("SteamGridDB")),
+    THEGAMESDB(UiText.raw("TheGamesDB")),
+    IGDB(UiText.raw("IGDB")),
+    STEAM(UiText.raw("Steam")),
+    LOCAL(UiText.res(R.string.det_source_local)),
 }
 
 /**
@@ -67,7 +74,7 @@ data class StudioArt(
     val url: String,
     val thumb: String?,
     val provider: String,
-    val label: String? = null,
+    val label: UiText? = null,
     val isVideo: Boolean = false,
     val providerAssetId: String? = null,
     /** What the Options menu's filters read (style, size, region, media type); null filters nothing. */
@@ -119,10 +126,10 @@ data class StudioQueueSummary(
 }
 
 /** The leave prompt's rows, in order: B asked to close while changes were not applied (task 5.2). */
-enum class StudioLeaveChoice(val label: String) {
-    APPLY("Apply and Close"),
-    DISCARD("Discard Changes"),
-    STAY("Stay"),
+enum class StudioLeaveChoice(@StringRes val labelRes: Int) {
+    APPLY(R.string.det_leave_apply),
+    DISCARD(R.string.det_leave_discard),
+    STAY(R.string.det_leave_stay),
 }
 
 /**
@@ -145,19 +152,22 @@ enum class CropOption {
 }
 
 /** The crop menu's title. */
-const val STUDIO_CROP_OPTIONS_TITLE = "Crop Options"
+val STUDIO_CROP_OPTIONS_TITLE: UiText = UiText.res(R.string.det_crop_options_title)
 
 /** One crop-menu row as the panel shows it: a label, its setting at the right, a check for the shape in force. */
-data class StudioCropRow(val label: String, val value: String, val checked: Boolean = false)
+data class StudioCropRow(val label: UiText, val value: UiText, val checked: Boolean = false)
 
 /** The panel row for [option]: Live Preview with its On/Off, or Shape with the shape that row selects. */
 fun studioCropRow(option: CropOption, previewEnabled: Boolean, current: CropShapeChoice): StudioCropRow {
-    val shape = option.shape ?: return StudioCropRow("Live Preview", if (previewEnabled) "On" else "Off")
-    return StudioCropRow("Shape", shape.label, checked = shape == current)
+    val shape = option.shape ?: return StudioCropRow(
+        UiText.res(R.string.det_crop_live_preview),
+        UiText.res(if (previewEnabled) R.string.det_filter_on else R.string.det_filter_off),
+    )
+    return StudioCropRow(UiText.res(R.string.det_crop_shape), UiText.res(shape.labelRes), checked = shape == current)
 }
 
 /** Shown when Triangle is pressed on a source that has no options to offer. */
-const val STUDIO_NO_OPTIONS_MESSAGE = "No options available here"
+val STUDIO_NO_OPTIONS_MESSAGE: UiText = UiText.res(R.string.det_no_options)
 
 /**
  * The crop shapes a game can be pinned to (task 6.3).
@@ -166,9 +176,9 @@ const val STUDIO_NO_OPTIONS_MESSAGE = "No options available here"
  * purpose — "follow the defaults" is the absence of an override, so choosing it IS Reset to Platform
  * Default and a later change to the shared table reaches this game without a migration.
  */
-enum class CropShapeChoice(val label: String, val storedKey: String?) {
-    PLATFORM_DEFAULT("Platform Default", null),
-    ORIGINAL_IMAGE("Original Image", CropProfileRegistry.ORIGINAL_KEY);
+enum class CropShapeChoice(@StringRes val labelRes: Int, val storedKey: String?) {
+    PLATFORM_DEFAULT(R.string.det_crop_shape_platform_default, null),
+    ORIGINAL_IMAGE(R.string.det_crop_shape_original, CropProfileRegistry.ORIGINAL_KEY);
 
     companion object {
         /** The row a stored key selects. An unrecognized key reads as the default, matching how
@@ -179,9 +189,9 @@ enum class CropShapeChoice(val label: String, val storedKey: String?) {
 }
 
 /** The apply confirmation's rows, in order: START, the Apply pill or Apply Changes ask before changing the slot. */
-enum class StudioApplyChoice(val label: String) {
-    APPLY("Apply"),
-    CANCEL("Cancel"),
+enum class StudioApplyChoice(@StringRes val labelRes: Int) {
+    APPLY(R.string.det_picks_apply),
+    CANCEL(R.string.det_cancel),
 }
 
 /**
@@ -192,9 +202,9 @@ enum class StudioApplyChoice(val label: String) {
  * that same image. Replacing re-downloads identical bytes and backs them up over the one real
  * previous version — nothing gained, one version lost.
  */
-enum class StudioReplaceChoice(val label: String) {
-    CANCEL("Cancel"),
-    REPLACE("Replace Anyway"),
+enum class StudioReplaceChoice(@StringRes val labelRes: Int) {
+    CANCEL(R.string.det_cancel),
+    REPLACE(R.string.det_replace_anyway),
 }
 
 /**
@@ -207,7 +217,7 @@ enum class StudioDestructive { CLEAR_ARTWORK, FORGET_MATCH }
 enum class StudioConfirmKind { APPLY, REPLACE }
 
 /** One row of a confirmation overlay. */
-data class StudioConfirmRow(val label: String, val isDestructive: Boolean = false)
+data class StudioConfirmRow(val label: UiText, val isDestructive: Boolean = false)
 
 /**
  * The open confirmation, or null when none is. The screen renders this one descriptor and the
@@ -217,20 +227,20 @@ data class StudioConfirmRow(val label: String, val isDestructive: Boolean = fals
  */
 data class StudioConfirmPrompt(
     val kind: StudioConfirmKind,
-    val title: String,
+    val title: UiText,
     val rows: List<StudioConfirmRow>,
     val selectedIndex: Int,
 )
 
 /** "3 screenshots", "1 video": [count] assets of [kind], for the confirmation's title. */
-fun studioAssetCount(kind: ArtworkKind, count: Int): String {
-    val noun = when (kind) {
-        ArtworkKind.SCREENSHOT -> "screenshot"
-        ArtworkKind.VIDEO      -> "video"
-        else                   -> "image"
-    }
-    return if (count == 1) "1 $noun" else "$count ${noun}s"
-}
+fun studioAssetCount(kind: ArtworkKind, count: Int): UiText = UiText.plural(
+    when (kind) {
+        ArtworkKind.SCREENSHOT -> R.plurals.det_asset_count_screenshot
+        ArtworkKind.VIDEO      -> R.plurals.det_asset_count_video
+        else                   -> R.plurals.det_asset_count_image
+    },
+    count,
+)
 
 /** The provider a record picked from the device is stored under. */
 const val LOCAL_FILE_PROVIDER = "Local file"
@@ -239,23 +249,23 @@ const val LOCAL_FILE_PROVIDER = "Local file"
  * What a batch of local picks did: "Added 3 screenshots", with the cap or failures after it when
  * either held some back.
  */
-fun studioLocalAddMessage(kind: ArtworkKind, added: Int, failed: Int, droppedOverCap: Boolean): String {
+fun studioLocalAddMessage(kind: ArtworkKind, added: Int, failed: Int, droppedOverCap: Boolean): UiText {
     val capacity = com.playfieldportal.feature.artwork.store.ArtworkFileNaming.MAX_SORT_ORDER + 1
     return when {
-        droppedOverCap && added == 0 -> "A game holds ${studioAssetCount(kind, capacity)} at most"
-        droppedOverCap               -> "Added ${studioAssetCount(kind, added)} — a game holds $capacity at most"
-        failed > 0 && added == 0     -> if (failed == 1) "The file could not be added" else "$failed files could not be added"
+        droppedOverCap && added == 0 -> UiText.res(R.string.det_local_add_cap_only, studioAssetCount(kind, capacity))
+        droppedOverCap               -> UiText.res(R.string.det_local_add_cap, studioAssetCount(kind, added), capacity)
+        failed > 0 && added == 0     -> UiText.plural(R.plurals.det_local_add_failed, failed)
         failed > 0                   ->
-            "Added ${studioAssetCount(kind, added)} · $failed ${if (failed == 1) "file" else "files"} could not be added"
-        else                         -> "Added ${studioAssetCount(kind, added)}"
+            UiText.plural(R.plurals.det_local_add_some_failed, failed, studioAssetCount(kind, added), failed)
+        else                         -> UiText.res(R.string.det_local_added, studioAssetCount(kind, added))
     }
 }
 
 /** The apply confirmation's title: "Add 2 screenshots?", "Remove 1 video?" or "Add 2 screenshots and remove 1?". */
-fun studioApplyTitle(kind: ArtworkKind, toAdd: Int, toRemove: Int): String = when {
-    toAdd > 0 && toRemove > 0 -> "Add ${studioAssetCount(kind, toAdd)} and remove $toRemove?"
-    toRemove > 0              -> "Remove ${studioAssetCount(kind, toRemove)}?"
-    else                      -> "Add ${studioAssetCount(kind, toAdd)}?"
+fun studioApplyTitle(kind: ArtworkKind, toAdd: Int, toRemove: Int): UiText = when {
+    toAdd > 0 && toRemove > 0 -> UiText.res(R.string.det_apply_title_add_remove, studioAssetCount(kind, toAdd), toRemove)
+    toRemove > 0              -> UiText.res(R.string.det_apply_title_remove, studioAssetCount(kind, toRemove))
+    else                      -> UiText.res(R.string.det_apply_title_add, studioAssetCount(kind, toAdd))
 }
 
 data class ArtworkStudioUiState(
@@ -310,7 +320,7 @@ data class ArtworkStudioUiState(
     // The picker is waiting on ScreenScraper's every-platform search, which takes about ten seconds.
     val changeMatchSearchingEveryPlatform: Boolean = false,
     // Set when the picker's search failed, as opposed to finding nothing.
-    val changeMatchError: String? = null,
+    val changeMatchError: UiText? = null,
     // Current asset of the active tab (what the game uses right now).
     val currentUri: String? = null,
     // Bumped on every apply/clear so the preview reloads even when the portable library reuses
@@ -370,7 +380,7 @@ data class ArtworkStudioUiState(
     val manualPage: Int = 0,
     val manualPageCount: Int = 0,
     val applying: Boolean = false,
-    val message: String? = null,
+    val message: UiText? = null,
     // Set when the user picked "Local File" — the screen launches the SAF picker for it.
     val localPickKind: ArtworkKind? = null,
     // The grid cursor is on Local File's upload bar rather than a tile. Read through
@@ -552,19 +562,20 @@ data class ArtworkStudioUiState(
                 kind = StudioConfirmKind.APPLY,
                 title = STUDIO_TABS.getOrNull(tabIndex)
                     ?.let { studioApplyTitle(it.kind, queueSummary.toAdd, queueSummary.toRemove) }
-                    ?: "Apply changes?",
+                    ?: UiText.res(R.string.det_apply_title_default),
                 rows = StudioApplyChoice.entries.map {
                     // Apply reads as destructive when it deletes stored artwork.
-                    StudioConfirmRow(it.label, isDestructive = it == StudioApplyChoice.APPLY && queueSummary.toRemove > 0)
+                    StudioConfirmRow(UiText.res(it.labelRes), isDestructive = it == StudioApplyChoice.APPLY && queueSummary.toRemove > 0)
                 },
                 selectedIndex = applyConfirmIndex,
             )
             replacePromptOpen -> StudioConfirmPrompt(
                 kind = StudioConfirmKind.REPLACE,
-                title = "${STUDIO_TABS.getOrNull(tabIndex)?.label ?: "This artwork"} is already this image",
+                title = STUDIO_TABS.getOrNull(tabIndex)?.let { UiText.res(R.string.det_replace_title, it.label) }
+                    ?: UiText.res(R.string.det_replace_title_default),
                 rows = StudioReplaceChoice.entries.map {
                     // Replace overwrites the one stored previous version, so it is the destructive row.
-                    StudioConfirmRow(it.label, isDestructive = it == StudioReplaceChoice.REPLACE)
+                    StudioConfirmRow(UiText.res(it.labelRes), isDestructive = it == StudioReplaceChoice.REPLACE)
                 },
                 selectedIndex = replacePromptIndex,
             )
@@ -652,20 +663,20 @@ data class ArtworkStudioUiState(
         }
 }
 
-enum class StudioAction(val label: String) {
-    APPLY_CHANGES("Apply Changes"),
-    PREVIEW("Preview"),
-    RETRY_FAILED("Retry Failed Downloads"),
-    REMOVE_FAILED("Remove Failed Downloads"),
-    MANAGE_ASSETS("Reorder Stored Artwork"),
-    CROP("Adjust Crop / Position"),
-    CROP_BEFORE_APPLY("Crop Before Applying"),
-    RESTORE_PREVIOUS("Restore Previous"),
-    RESET_DEFAULT("Reset to Scraped Default"),
-    CLEAR("Clear Artwork"),
-    FILE_INFO("View File Information"),
-    CHANGE_MATCH("Change Match"),
-    FORGET_MATCH("Forget Match"),
+enum class StudioAction(@StringRes val labelRes: Int) {
+    APPLY_CHANGES(R.string.det_action_apply_changes),
+    PREVIEW(R.string.det_confirm_preview),
+    RETRY_FAILED(R.string.det_action_retry_failed),
+    REMOVE_FAILED(R.string.det_action_remove_failed),
+    MANAGE_ASSETS(R.string.det_action_reorder),
+    CROP(R.string.det_action_crop),
+    CROP_BEFORE_APPLY(R.string.det_action_crop_before),
+    RESTORE_PREVIOUS(R.string.det_action_restore_previous),
+    RESET_DEFAULT(R.string.det_action_reset_default),
+    CLEAR(R.string.det_action_clear),
+    FILE_INFO(R.string.det_action_file_info),
+    CHANGE_MATCH(R.string.det_action_change_match),
+    FORGET_MATCH(R.string.det_action_forget_match),
 }
 
 // Kinds where a crop frame is meaningful. ICON1 (icon-slot video snap) is included — its crop
@@ -726,17 +737,17 @@ private val PROVIDER_IDS: List<Pair<MatchProvider, (Game) -> Long?>> = listOf(
 private val SHOW_ALL_ART_KINDS = setOf(ArtworkKind.BOX_3D, ArtworkKind.PHYSICAL_MEDIA, ArtworkKind.SCREENSHOT)
 
 val STUDIO_TABS = listOf(
-    StudioTab(ArtworkKind.ICON,           "ICON0",       "XMB tile · 144×80 · crop",                       StudioTileClass.LANDSCAPE),
-    StudioTab(ArtworkKind.ICON1,          "ICON1",       "XMB icon animation · 60 s muted snap",           StudioTileClass.LANDSCAPE),
-    StudioTab(ArtworkKind.BOX_ART,        "BOX ART",     "XMB tile (Box Art mode) · natural aspect",       StudioTileClass.PORTRAIT),
-    StudioTab(ArtworkKind.BOX_3D,         "3D BOX",      "XMB tile (3D Box mode) · natural aspect",        StudioTileClass.PORTRAIT),
-    StudioTab(ArtworkKind.PHYSICAL_MEDIA, "PHYS. MEDIA", "XMB tile (Physical Media mode) · natural aspect", StudioTileClass.SQUARE),
-    StudioTab(ArtworkKind.HERO,           "HERO",        "Game Details banner · wide · crop",              StudioTileClass.LANDSCAPE),
-    StudioTab(ArtworkKind.BACKGROUND,     "BACKGROUND",  "XMB hover background · full screen",             StudioTileClass.LANDSCAPE),
-    StudioTab(ArtworkKind.LOGO,           "LOGO",        "PIC0 overlay · transparent PNG · fit",           StudioTileClass.WIDE),
-    StudioTab(ArtworkKind.SCREENSHOT,     "SCREENSHOT",  "Game Details media strip",                       StudioTileClass.LANDSCAPE),
-    StudioTab(ArtworkKind.MANUAL,         "MANUAL",      "In-app PDF manual",                              StudioTileClass.PORTRAIT),
-    StudioTab(ArtworkKind.VIDEO,          "VIDEO",       "Game Details media strip · full video",          StudioTileClass.LANDSCAPE),
+    StudioTab(ArtworkKind.ICON, R.string.det_tab_tile, R.string.det_tab_tile_contract, StudioTileClass.LANDSCAPE),
+    StudioTab(ArtworkKind.ICON1, R.string.det_tab_icon1, R.string.det_tab_icon1_contract, StudioTileClass.LANDSCAPE),
+    StudioTab(ArtworkKind.BOX_ART, R.string.det_tab_box_art, R.string.det_tab_box_art_contract, StudioTileClass.PORTRAIT),
+    StudioTab(ArtworkKind.BOX_3D, R.string.det_tab_box_3d, R.string.det_tab_box_3d_contract, StudioTileClass.PORTRAIT),
+    StudioTab(ArtworkKind.PHYSICAL_MEDIA, R.string.det_tab_phys, R.string.det_tab_phys_contract, StudioTileClass.SQUARE),
+    StudioTab(ArtworkKind.HERO, R.string.det_tab_hero, R.string.det_tab_hero_contract, StudioTileClass.LANDSCAPE),
+    StudioTab(ArtworkKind.BACKGROUND, R.string.det_tab_background, R.string.det_tab_background_contract, StudioTileClass.LANDSCAPE),
+    StudioTab(ArtworkKind.LOGO, R.string.det_tab_logo, R.string.det_tab_logo_contract, StudioTileClass.WIDE),
+    StudioTab(ArtworkKind.SCREENSHOT, R.string.det_tab_screenshot, R.string.det_tab_screenshot_contract, StudioTileClass.LANDSCAPE),
+    StudioTab(ArtworkKind.MANUAL, R.string.det_tab_manual, R.string.det_tab_manual_contract, StudioTileClass.PORTRAIT),
+    StudioTab(ArtworkKind.VIDEO, R.string.det_tab_video, R.string.det_tab_video_contract, StudioTileClass.LANDSCAPE),
 )
 
 /**
@@ -1334,11 +1345,13 @@ class ArtworkStudioViewModel @Inject constructor(
                     url = art.url,
                     thumb = art.thumb,
                     provider = "SteamGridDB",
-                    label = listOfNotNull(
-                        type.endpoint.takeIf { types.size > 1 },
-                        art.style,
-                        art.width?.let { w -> "${w}×${art.height}" },
-                    ).joinToString(" · "),
+                    label = UiText.raw(
+                        listOfNotNull(
+                            type.endpoint.takeIf { types.size > 1 },
+                            art.style,
+                            art.width?.let { w -> "${w}×${art.height}" },
+                        ).joinToString(" · "),
+                    ),
                     // SteamGridDB numbers each art type separately, so a grid and a hero can share an id.
                     providerAssetId = "${type.endpoint}:${art.id}",
                     facets = StudioArtFacets(sgdbType = type, style = art.style, width = art.width, height = art.height),
@@ -1377,15 +1390,15 @@ class ArtworkStudioViewModel @Inject constructor(
             ?: return emptyList()
         if (kind in SHOW_ALL_ART_KINDS) {
             return listOfNotNull(
-                info.artworkUrl?.let { StudioArt(it, null, "TheGamesDB", "box art") },
-                info.heroUrl?.let { StudioArt(it, null, "TheGamesDB", "fanart") },
-                info.logoUrl?.let { StudioArt(it, null, "TheGamesDB", "clear logo") },
+                info.artworkUrl?.let { StudioArt(it, null, "TheGamesDB", UiText.res(R.string.det_tgdb_box_art)) },
+                info.heroUrl?.let { StudioArt(it, null, "TheGamesDB", UiText.res(R.string.det_tgdb_fanart)) },
+                info.logoUrl?.let { StudioArt(it, null, "TheGamesDB", UiText.res(R.string.det_tgdb_clear_logo)) },
             )
         }
         if (kind == ArtworkKind.ICON) {
             return listOfNotNull(
-                info.artworkUrl?.let { StudioArt(it, null, "TheGamesDB", "box art · crop to tile") },
-                info.heroUrl?.let { StudioArt(it, null, "TheGamesDB", "hero · crop to tile") },
+                info.artworkUrl?.let { StudioArt(it, null, "TheGamesDB", UiText.res(R.string.det_tgdb_box_art_crop)) },
+                info.heroUrl?.let { StudioArt(it, null, "TheGamesDB", UiText.res(R.string.det_tgdb_hero_crop)) },
             )
         }
         val url = when (kind) {
@@ -1394,7 +1407,7 @@ class ArtworkStudioViewModel @Inject constructor(
             ArtworkKind.LOGO                           -> info.logoUrl
             else                                       -> null
         } ?: return emptyList()
-        return listOf(StudioArt(url = url, thumb = null, provider = "TheGamesDB", label = "best title match"))
+        return listOf(StudioArt(url = url, thumb = null, provider = "TheGamesDB", label = UiText.res(R.string.det_art_best_title_match)))
     }
 
     /**
@@ -1417,14 +1430,14 @@ class ArtworkStudioViewModel @Inject constructor(
         if (kind in SHOW_ALL_ART_KINDS) {
             // IGDB has no clear logos, so its whole offer is the cover and the first artwork.
             return listOfNotNull(
-                info.artworkUrl?.let { StudioArt(it, null, "IGDB", "cover") },
-                info.heroUrl?.let { StudioArt(it, null, "IGDB", "artwork") },
+                info.artworkUrl?.let { StudioArt(it, null, "IGDB", UiText.res(R.string.det_igdb_cover)) },
+                info.heroUrl?.let { StudioArt(it, null, "IGDB", UiText.res(R.string.det_igdb_artwork)) },
             )
         }
         if (kind == ArtworkKind.ICON) {
             return listOfNotNull(
-                info.artworkUrl?.let { StudioArt(it, null, "IGDB", "cover · crop to tile") },
-                info.heroUrl?.let { StudioArt(it, null, "IGDB", "artwork · crop to tile") },
+                info.artworkUrl?.let { StudioArt(it, null, "IGDB", UiText.res(R.string.det_igdb_cover_crop)) },
+                info.heroUrl?.let { StudioArt(it, null, "IGDB", UiText.res(R.string.det_igdb_artwork_crop)) },
             )
         }
         val url = when (kind) {
@@ -1433,7 +1446,7 @@ class ArtworkStudioViewModel @Inject constructor(
             ArtworkKind.LOGO                           -> info.logoUrl
             else                                       -> null
         } ?: return emptyList()
-        return listOf(StudioArt(url = url, thumb = null, provider = "IGDB", label = "best title match"))
+        return listOf(StudioArt(url = url, thumb = null, provider = "IGDB", label = UiText.res(R.string.det_art_best_title_match)))
     }
 
     /**
@@ -1576,16 +1589,16 @@ class ArtworkStudioViewModel @Inject constructor(
      * Why [source] is disabled on the active tab, as the source row's short suffix, or null when it
      * can be asked. "Nothing for this tab" outranks "no key": adding a key would not help there.
      */
-    override fun sourceBadge(source: StudioSource): String? = when {
-        !servesKind(source, tab().kind)                -> "n/a"
-        source in _uiState.value.unavailableSources    -> "no key"
+    override fun sourceBadge(source: StudioSource): UiText? = when {
+        !servesKind(source, tab().kind)                -> UiText.res(R.string.det_source_badge_na)
+        source in _uiState.value.unavailableSources    -> UiText.res(R.string.det_source_badge_no_key)
         else                                           -> null
     }
 
-    private fun unavailableReason(source: StudioSource): String = when {
-        !servesKind(source, tab().kind) -> "${source.label} has no ${tab().label} artwork"
-        source == StudioSource.IGDB     -> "IGDB needs a Client ID and Secret — add them in Settings ▸ Artwork"
-        else                            -> "${source.label} needs an API key — add one in Settings ▸ Artwork"
+    private fun unavailableReason(source: StudioSource): UiText = when {
+        !servesKind(source, tab().kind) -> UiText.res(R.string.det_source_no_artwork, source.label, tab().label)
+        source == StudioSource.IGDB     -> UiText.res(R.string.det_source_igdb_needs)
+        else                            -> UiText.res(R.string.det_source_needs_key, source.label)
     }
 
     /** Keeps the cursor off a disabled source after a tab change or a key being removed. */
@@ -1824,7 +1837,7 @@ class ArtworkStudioViewModel @Inject constructor(
         _uiState.update {
             // Close the menu first when this came from it, or the message would sit under the overlay.
             it.copy(
-                message = "$label can't be searched by title — there are no alternatives to choose from.",
+                message = UiText.res(R.string.det_match_cant_search, label),
                 actionsOpen = false,
                 showFileInfo = false,
             )
@@ -1922,7 +1935,7 @@ class ArtworkStudioViewModel @Inject constructor(
                     // A failure is said as one, never shown as "No games found". It is not
                     // remembered, so Search asks again.
                     changeMatchError = outcome.exceptionOrNull()
-                        ?.let { "${provider.label} didn't answer. Press Search to try again." },
+                        ?.let { UiText.res(R.string.det_match_no_answer, provider.label) },
                     changeMatchIndex = if (results.isEmpty()) -1 else 0,
                 )
             }
@@ -1981,7 +1994,7 @@ class ArtworkStudioViewModel @Inject constructor(
                 changeMatchOpen = false,
                 changeMatchResults = emptyList(),
                 changeMatchIndex = 0,
-                message = "Matched as ${candidate.title}",
+                message = UiText.res(R.string.det_matched_as, candidate.title),
             )
         }
         viewModelScope.launch {
@@ -2150,7 +2163,7 @@ class ArtworkStudioViewModel @Inject constructor(
                 actionsOpen = false,
                 message = STUDIO_TABS.getOrNull(s.tabIndex)?.kind?.let { kind ->
                     val capacity = com.playfieldportal.feature.artwork.store.ArtworkFileNaming.MAX_SORT_ORDER + 1
-                    "A game holds ${studioAssetCount(kind, capacity)} at most — uncheck $over to apply"
+                    UiText.res(R.string.det_cap_uncheck, studioAssetCount(kind, capacity), over)
                 } ?: s.message,
             )
             else -> s.copy(applyConfirmOpen = true, applyConfirmIndex = 0, actionsOpen = false)
@@ -2246,7 +2259,7 @@ class ArtworkStudioViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 Timber.w(e, "Studio asset reorder failed")
-                _uiState.update { it.copy(message = "Could not reorder artwork") }
+                _uiState.update { it.copy(message = UiText.res(R.string.det_msg_reorder_failed)) }
             }
             // Re-reads the rail's thumbnail and [library], so the panel redraws in the written order
             // rather than one this function guessed.
@@ -2332,7 +2345,7 @@ class ArtworkStudioViewModel @Inject constructor(
             s.copy(
                 // A removed asset's download this open is over, or its tile would still read as added.
                 queue = s.queue.filterNot { it.gameId == gid && it.key in removals.keys && it.state == StudioQueueState.ADDED },
-                message = if (failed > 0) "Some artwork could not be removed" else s.message,
+                message = if (failed > 0) UiText.res(R.string.det_msg_remove_failed) else s.message,
             )
         }
         if (gid == gameId) refreshCurrent()
@@ -2767,12 +2780,12 @@ class ArtworkStudioViewModel @Inject constructor(
             _uiState.update { it.copy(applying = true, actionsOpen = false) }
             val path = routingStore.restorePrevious(gid, kind)
             if (path == null) {
-                _uiState.update { it.copy(applying = false, message = "No previous version to restore") }
+                _uiState.update { it.copy(applying = false, message = UiText.res(R.string.det_msg_no_previous)) }
             } else {
                 repointColumn(gid, kind, path)
                 _uiState.update {
                     it.copy(applying = false, currentUri = path, previewVersion = it.previewVersion + 1,
-                        message = "${tab().label} restored to previous")
+                        message = UiText.res(R.string.det_msg_restored, tab().label))
                 }
             }
         }
@@ -2785,12 +2798,12 @@ class ArtworkStudioViewModel @Inject constructor(
             _uiState.update { it.copy(applying = true, actionsOpen = false) }
             val path = routingStore.resetToScrapedDefault(gid, kind)
             if (path == null) {
-                _uiState.update { it.copy(applying = false, message = "Could not re-download the scraped default") }
+                _uiState.update { it.copy(applying = false, message = UiText.res(R.string.det_msg_redownload_failed)) }
             } else {
                 repointColumn(gid, kind, path)
                 _uiState.update {
                     it.copy(applying = false, currentUri = path, previewVersion = it.previewVersion + 1,
-                        message = "${tab().label} reset to scraped default")
+                        message = UiText.res(R.string.det_msg_reset, tab().label))
                 }
             }
         }
@@ -2830,13 +2843,13 @@ class ArtworkStudioViewModel @Inject constructor(
                 routingStore.candidateToTemp(kind, art.url)
             }
             if (temp == null) {
-                _uiState.update { it.copy(cropPreparing = false, message = "Could not download that pick to crop") }
+                _uiState.update { it.copy(cropPreparing = false, message = UiText.res(R.string.det_msg_crop_download_failed)) }
                 return@launch
             }
             val (w, h) = withContext(ioDispatcher) { decodeBounds(temp) }
             if (w <= 0 || h <= 0) {
                 temp.delete()
-                _uiState.update { it.copy(cropPreparing = false, message = "That pick is not an image this can crop") }
+                _uiState.update { it.copy(cropPreparing = false, message = UiText.res(R.string.det_msg_crop_not_image)) }
                 return@launch
             }
             val override = routingStore.cropProfileOverride(gameId, kind)
@@ -2860,7 +2873,7 @@ class ArtworkStudioViewModel @Inject constructor(
             _uiState.update { it.copy(actionsOpen = false, cropPreparing = true) }
             val original = routingStore.originalToTemp(gameId, kind)
             if (original == null) {
-                _uiState.update { it.copy(cropPreparing = false, message = "Could not open the original to crop") }
+                _uiState.update { it.copy(cropPreparing = false, message = UiText.res(R.string.det_msg_crop_open_failed)) }
                 return@launch
             }
             val prepared = withContext(ioDispatcher) {
@@ -2874,7 +2887,7 @@ class ArtworkStudioViewModel @Inject constructor(
                 }
             }
             if (prepared == null) {
-                _uiState.update { it.copy(cropPreparing = false, message = "Could not open the original to crop") }
+                _uiState.update { it.copy(cropPreparing = false, message = UiText.res(R.string.det_msg_crop_open_failed)) }
                 return@launch
             }
             val (displayPath, videoPath, dims) = prepared
@@ -3071,7 +3084,7 @@ class ArtworkStudioViewModel @Inject constructor(
                     }
                     java.io.File(displayPath).delete()
                     if (baked == null) {
-                        _uiState.update { it.copy(applying = false, message = "Crop failed") }
+                        _uiState.update { it.copy(applying = false, message = UiText.res(R.string.det_msg_crop_failed)) }
                         return@launch
                     }
                     routingStore.saveCropBaked(
@@ -3083,12 +3096,12 @@ class ArtworkStudioViewModel @Inject constructor(
                 }
             }
             if (path == null) {
-                _uiState.update { it.copy(applying = false, message = "Could not save the cropped artwork") }
+                _uiState.update { it.copy(applying = false, message = UiText.res(R.string.det_msg_crop_save_failed)) }
             } else {
                 repointColumn(gid, kind, path)
                 _uiState.update {
                     it.copy(applying = false, currentUri = path, previewVersion = it.previewVersion + 1,
-                        message = "${tab().label} cropped")
+                        message = UiText.res(R.string.det_msg_cropped, tab().label))
                 }
             }
         }
@@ -3154,7 +3167,7 @@ class ArtworkStudioViewModel @Inject constructor(
 
     private suspend fun finishApply(gid: Long, kind: ArtworkKind, path: String?, provider: String) {
         if (path == null) {
-            _uiState.update { it.copy(applying = false, message = "Could not apply — download or file was rejected") }
+            _uiState.update { it.copy(applying = false, message = UiText.res(R.string.det_msg_apply_rejected)) }
             return
         }
         // Column-backed kinds repoint the game row; record-only kinds resolve by fixed name.
@@ -3174,7 +3187,7 @@ class ArtworkStudioViewModel @Inject constructor(
                 candidate = null,
                 currentUri = path,
                 previewVersion = it.previewVersion + 1,
-                message = "${tab().label} updated from $provider",
+                message = UiText.res(R.string.det_msg_updated_from, tab().label, provider),
             )
         }
     }
@@ -3204,7 +3217,7 @@ class ArtworkStudioViewModel @Inject constructor(
             refreshLibrary()
             _uiState.update {
                 it.copy(currentUri = null, info = null, previewVersion = it.previewVersion + 1,
-                    message = "${tab().label} cleared")
+                    message = UiText.res(R.string.det_msg_cleared, tab().label))
             }
         }
     }

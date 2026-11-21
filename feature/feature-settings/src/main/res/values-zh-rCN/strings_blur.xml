@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blur_title">背景模糊</string>
+    <string name="blur_sublabel">提示和选项菜单后方屏幕的模糊强度。调到零即可关闭。</string>
+    <string name="blur_unavailable">需要 Android 12 或更高版本。</string>
+</resources>

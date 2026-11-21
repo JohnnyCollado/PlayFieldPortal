@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Slice H2: feature-launcher (launching games and apps, emulator setup) -->
+<resources>
+    <!-- Launch refusals shown before an emulator starts. %1$s names a game or an emulator unless noted -->
+    <string name="launch_err_custom_command">Custom command profiles are no longer supported. Switch this emulator to the "Open the ROM with the app" or "Open an app screen" launch method.</string>
+    <string name="launch_err_shortcut_unsupported">Shortcut launch not supported from this screen</string>
+    <!-- %1$s is a game title -->
+    <string name="launch_err_no_package">No Android package recorded for %1$s</string>
+    <!-- %1$s is an Android package name -->
+    <string name="launch_err_app_not_launchable">Android app not installed or not launchable: %1$s</string>
+    <!-- %1$s is the emulator name, %2$s its Android package name -->
+    <string name="launch_err_emulator_not_installed">Emulator not installed: %1$s (%2$s)</string>
+    <!-- %1$s is the emulator name, %2$s its Android package name -->
+    <string name="launch_err_wrong_build">%1$s (%2$s) is not the expected build: its signing certificate does not match. Reinstall the emulator from its official source.</string>
+    <!-- %1$s is the emulator name -->
+    <string name="launch_err_no_activity_for_path">%1$s has no launch activity recorded, so it cannot be handed a file path. Import its knowledge entry again, or re-detect the emulator.</string>
+    <!-- %1$s is the emulator name. The launch method is named in plain words -->
+    <string name="launch_err_activity_required">An app screen name is required for this launch method - profile: %1$s</string>
+    <!-- %1$s is the emulator name, %2$s the name of the activity class it no longer provides -->
+    <string name="launch_err_activity_gone">%1$s no longer provides its launch activity (%2$s). Update the emulator, or pick another emulator for this platform.</string>
+    <!-- %1$s is a game title -->
+    <string name="launch_err_no_launch_id">No launch ID recorded for %1$s. Re-scan its library.</string>
+    <string name="launch_err_rom_link_invalid">This game\'s ROM link is invalid. Re-scan its library.</string>
+    <string name="launch_err_lost_access">Play Field Portal lost access to this game\'s file. Reconnect the storage and rescan its library.</string>
+    <!-- %1$s is a game title -->
+    <string name="launch_err_rom_path_required">ROM path is required to launch %1$s</string>
+    <!-- %1$s is a file path -->
+    <string name="launch_err_rom_not_found">ROM file not found: %1$s</string>
+    <!-- %1$s is a platform id such as psx, %2$s the emulator profile name -->
+    <string name="launch_err_no_core">No RetroArch core configured for platform \'%1$s\' in profile \'%2$s\'. Open RetroArch → Core Downloader to install a core for this system.</string>
+    <!-- %1$s is the emulator name -->
+    <string name="launch_err_cannot_open_rom_type">%1$s cannot open this ROM type. Try reinstalling the emulator, or verify its app permissions in Android Settings.</string>
+    <!-- %1$s is a game title, %2$s the emulator name -->
+    <string name="launch_err_no_file_path">%1$s has no file path on this device, so %2$s can\'t be told which game to start.</string>
+    <!-- %1$s is a game title, %2$s the emulator name -->
+    <string name="launch_err_not_in_rom_folder">%1$s is not inside a configured ROM folder, so it cannot be handed to %2$s. Check the folder set for this Memory Card in Settings.</string>
+
+    <!-- Emulator choice problems. %1$s is the emulator name, %2$s one of the launch_source_*_lower phrases -->
+    <!-- %1$s is a phrase from launch_phrase_*, %2$s the stored emulator id or package -->
+    <string name="launch_err_configured_missing">The %1$s emulator is not installed or available: %2$s</string>
+    <string name="launch_err_core_not_installed">%1$s is set as the %2$s, but that core is not installed in RetroArch. Install it, or choose another emulator.</string>
+    <string name="launch_err_no_longer_available">%1$s is set as the %2$s, but is no longer available. Choose another emulator.</string>
+    <!-- %1$s is the emulator name, %2$s a console id in capitals such as PSX -->
+    <string name="launch_err_not_configured_for_platform">%1$s is not configured for %2$s</string>
+    <!-- %1$s is a console id in capitals such as PSX -->
+    <string name="launch_err_no_emulator_for_platform">No emulator configured for %1$s. Choose an emulator for this game or set a platform default.</string>
+
+    <!-- Where an emulator choice came from (shown under the emulator on Game Detail), and the same in lowercase for use inside a sentence -->
+    <string name="launch_source_per_game">Per-game override</string>
+    <string name="launch_source_per_game_lower">per-game override</string>
+    <string name="launch_source_memory_card">Memory card default</string>
+    <string name="launch_source_memory_card_lower">memory card default</string>
+    <string name="launch_source_platform">Platform default</string>
+    <string name="launch_source_platform_lower">platform default</string>
+    <string name="launch_source_recommended">Recommended</string>
+    <string name="launch_source_recommended_lower">recommended</string>
+    <!-- Noun phrases placed in "The ... emulator is not installed or available" -->
+    <string name="launch_phrase_per_game">per-game override</string>
+    <string name="launch_phrase_memory_card">memory card emulator</string>
+    <string name="launch_phrase_platform">platform default</string>
+
+    <!-- Launch hand-off failures -->
+    <string name="launch_err_emulator_not_found">Emulator not found. Is it installed?</string>
+    <string name="launch_err_permission_denied">Permission denied launching emulator</string>
+    <!-- %1$s is the system's error text -->
+    <string name="launch_err_open_emulator">Could not open emulator: %1$s</string>
+    <string name="launch_never_foreground">The emulator never came to the foreground after launch.</string>
+    <string name="launch_never_appeared">The emulator never appeared. Check that it is installed and up to date, then try launching again.</string>
+    <!-- %1$d is how many of the recent launches failed, %2$d how many recent launches there are -->
+    <plurals name="launch_history_failed">
+        <item quantity="one">%1$d of the last %2$d launch for this game failed.</item>
+        <item quantity="other">%1$d of the last %2$d launches for this game failed.</item>
+    </plurals>
+
+    <!-- Launch failure notification -->
+    <!-- %1$s is a game title -->
+    <string name="launch_rec_title">Couldn\'t launch %1$s</string>
+    <string name="launch_rec_could_not_start">The emulator could not be started</string>
+    <string name="launch_rec_never_foreground">The emulator never came to the foreground</string>
+    <!-- Labels of the facts listed in the notification detail -->
+    <string name="launch_fact_emulator">Emulator</string>
+    <string name="launch_fact_core">Core</string>
+    <string name="launch_fact_platform">Platform</string>
+    <string name="launch_fact_recent">Recent launches</string>
+    <!-- %1$d is how many of the recent launches failed, %2$d how many recent launches there are -->
+    <string name="launch_fact_recent_value">%1$d of the last %2$d failed</string>
+
+    <!-- Shortcut requests. %1$s is the shortcut's name, %2$s the app it opens -->
+    <string name="launch_shortcut_request_title">Shortcut request: %1$s (opens %2$s)</string>
+    <string name="launch_shortcut_request_message">Only add it if you just made this shortcut yourself.</string>
+    <string name="launch_shortcut_added_title">Added shortcut: %1$s</string>
+    <string name="launch_shortcut_ignored_title">Ignored shortcut: %1$s</string>
+    <!-- %1$s is the name of the app the shortcut came from -->
+    <string name="launch_shortcut_from">From %1$s</string>
+    <!-- %1$s is a game title -->
+    <string name="launch_windows_added_title">\"%1$s\" added to Windows Games</string>
+    <string name="launch_windows_added_message">Finish setting up your Windows Library to scan its folder</string>
+
+    <!-- First-run setup prompts -->
+    <string name="launch_setup_add_rom_folder">Add a ROM folder to start your library</string>
+    <string name="launch_setup_add_console_card">Add a console Memory Card to scan into</string>
+    <string name="launch_setup_install_emulator">Install an emulator to play your games</string>
+
+    <!-- Emulator detection notes for an app being added -->
+    <!-- %1$s is the emulator name -->
+    <string name="launch_inspect_known">Auto-filled from the built-in profile for %1$s. Confirm the platform(s) and save.</string>
+    <string name="launch_inspect_best_guess">Best guess from how this app opens ROM files. Set the platform(s), then test a ROM before saving.</string>
+    <string name="launch_inspect_minimal">Couldn\'t detect how this app accepts ROMs. Fill in the activity / intent settings manually, then test a ROM.</string>
+
+    <!-- Emulator knowledge file updates -->
+    <!-- %1$d is the maximum number of files -->
+    <string name="launch_kb_too_many_files">At most %1$d knowledge files can be imported; remove one first</string>
+    <string name="launch_kb_installed">Updated</string>
+    <string name="launch_kb_not_configured">Updates are not set up in this build</string>
+    <string name="launch_kb_offline">Couldn\'t reach the update server</string>
+    <string name="launch_kb_too_large">The update file is too large</string>
+    <string name="launch_kb_signature_invalid">The update\'s signature is not valid</string>
+    <string name="launch_kb_needs_app_update">This update needs a newer version of the app</string>
+    <string name="launch_kb_older">The update is older than the one already installed</string>
+    <string name="launch_kb_invalid_content">The update file has invalid content</string>
+    <string name="launch_kb_storage_failed">The update could not be saved</string>
+    <string name="launch_kb_skipped">No check was needed</string>
+
+    <!-- Windows game launchers: why an unrecognised app is listed, and the choice offered for it -->
+    <string name="launch_unknown_gamehub_or_bannerhub">could be GameHub or BannerHub</string>
+    <string name="launch_unknown_gamehublite_or_bannerhub">could be GameHub Lite or BannerHub</string>
+    <string name="launch_unknown_not_in_list">not in PFP\'s list</string>
+    <!-- One of the values the user cycles through for an unrecognised app -->
+    <string name="launch_choice_not_a_launcher">Not a launcher</string>
+    <!-- Hints for where to find a game id when adding a Windows game by id -->
+    <string name="launch_id_prompt_gamehub">Game ID — on the game\'s page: tap Copy next to Local Game ID, or ⋮ → Banner Tools → Show Game ID</string>
+    <string name="launch_id_prompt_gamenative">Steam App ID (or store app id) for the installed game</string>
+</resources>

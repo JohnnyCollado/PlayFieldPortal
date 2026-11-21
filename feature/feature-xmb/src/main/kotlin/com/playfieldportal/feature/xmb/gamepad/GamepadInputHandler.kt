@@ -46,12 +46,35 @@ private const val STICK_FULL_TILT = 0.9f
 // Held-navigation repeat tuning: after [initialDelayMs] the action repeats starting at
 // [baseIntervalMs], tightening linearly to [fastIntervalMs] over [rampSteps] repeats — short
 // holds stay precise, long holds accelerate instead of plodding at one fixed rate.
-private data class RepeatTuning(
+internal data class RepeatTuning(
     val initialDelayMs: Long,
     val baseIntervalMs: Long,
     val fastIntervalMs: Long,
     val rampSteps: Int,
 )
+
+// A stick just past the dead zone steps this many base intervals apart; the delay tightens
+// continuously to the fast interval at [STICK_FULL_TILT].
+private const val STICK_LIGHT_TILT_SLOWDOWN = 2
+
+/**
+ * Delay before repeat number [step] + 1. Digital holds (magnitude 0, the D-pad) follow the linear
+ * ramp from base to fast over rampSteps, exactly as before. A stick maps its live deflection
+ * continuously: just past the dead zone it steps at [STICK_LIGHT_TILT_SLOWDOWN] x the base
+ * interval, tightening to the fast interval at full tilt (>= 0.9), never faster than the hold ramp
+ * allows. Monotonic: a larger magnitude never gives a longer delay.
+ */
+internal fun repeatDelayFor(t: RepeatTuning, magnitude: Float, step: Int): Long {
+    val ramped =
+        if (step >= t.rampSteps) t.fastIntervalMs
+        else t.baseIntervalMs - (t.baseIntervalMs - t.fastIntervalMs) * step / t.rampSteps
+    if (magnitude <= 0f) return ramped
+    if (magnitude >= STICK_FULL_TILT) return t.fastIntervalMs
+    val tilt = ((magnitude - STICK_DEAD_ZONE) / (STICK_FULL_TILT - STICK_DEAD_ZONE)).coerceIn(0f, 1f)
+    val slow = t.baseIntervalMs * STICK_LIGHT_TILT_SLOWDOWN
+    val byTilt = slow - ((slow - t.fastIntervalMs) * tilt).toLong()
+    return maxOf(ramped, byTilt)
+}
 
 private fun ScrollSpeed.tuning(): RepeatTuning = when (this) {
     ScrollSpeed.RELAXED  -> RepeatTuning(initialDelayMs = 350, baseIntervalMs = 130, fastIntervalMs = 80, rampSteps = 6)
@@ -238,12 +261,7 @@ class GamepadInputHandler @Inject constructor(
             while (true) {
                 emit(action)
                 step++
-                // Linear ramp from base to fast over rampSteps; a full-tilt stick jumps straight
-                // to the fast interval regardless of how far into the ramp the hold is.
-                val ramped =
-                    if (step >= t.rampSteps) t.fastIntervalMs
-                    else t.baseIntervalMs - (t.baseIntervalMs - t.fastIntervalMs) * step / t.rampSteps
-                delay(if (stickMagnitude >= STICK_FULL_TILT) t.fastIntervalMs else ramped)
+                delay(repeatDelayFor(t, stickMagnitude, step))
             }
         }
     }

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- theme.json is the name of a file inside the theme archive; keep it as is -->
+    <string name="thm_error_manifest_missing">الملف المطلوب theme.json غير موجود في الأرشيف</string>
+    <string name="thm_error_manifest_invalid">ملف theme.json غير صالح: %1$s</string>
+    <string name="thm_error_id_invalid">معرّف السمة \'%1$s\' غير صالح — استخدم الأحرف أو الأرقام أو \'.\' أو \'_\' أو \'-\' (64 كحد أقصى)</string>
+    <string name="thm_error_color_invalid">قيمة %1$s غير صالحة \'%2$s\' — المتوقع #RRGGBB أو #AARRGGBB</string>
+</resources>

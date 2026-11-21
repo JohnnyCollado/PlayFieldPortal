@@ -88,6 +88,13 @@ object StudioIconSet {
         "item_umd" to "xmb/umd_psp.png",
         // Settings rows' wrench badge (launcher: sysicon_settings).
         "item_settings" to "xmb/item_settings.png",
+        // Settings section rows' own art (launcher: drawable-nodpi/settings_section_*.png, built from existing art plus the wrench badge).
+        "item_settings_section_library" to "xmb/settings_section_library.png",
+        "item_settings_section_emulators" to "xmb/settings_section_emulators.png",
+        "item_settings_section_interface" to "xmb/settings_section_interface.png",
+        "item_settings_section_achievements" to "xmb/settings_section_achievements.png",
+        "item_settings_section_media" to "xmb/settings_section_media.png",
+        "item_settings_section_system" to "xmb/settings_section_system.png",
         "status_battery_full" to "xmb/ic_status_battery_full.xml",
         "status_battery_high" to "xmb/ic_status_battery_high.xml",
         "status_battery_medium" to "xmb/ic_status_battery_medium.xml",

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Voice microphone sensitivity (Discord) -->
+    <string name="data_mic_sensitivity_auto">Automat</string>
+    <string name="data_mic_sensitivity_high">Ridicată</string>
+    <string name="data_mic_sensitivity_low">Scăzută · filtrează clicurile</string>
+    <string name="data_mic_sensitivity_minimal">Minimă · doar vorbire tare</string>
+
+    <!-- Discord sign-in errors -->
+    <string name="data_discord_offline">Ești offline. Reconectează-te la internet și încearcă din nou.</string>
+    <string name="data_discord_unreachable">Discord nu a putut fi accesat</string>
+    <string name="data_discord_signin_network_error">Eroare de rețea la conectare</string>
+
+    <!-- Music and video players -->
+    <string name="data_music_no_player">Niciun player de muzică nu a putut deschide această piesă. Instalează un player sau alege unul în Setări → Muzică.</string>
+    <string name="data_video_no_player_open">Niciun player video nu a putut deschide acest fișier. Instalează un player sau alege unul în Setări → Video.</string>
+    <string name="data_video_chooser_title">Redă videoclipul cu…</string>
+    <string name="data_video_none_installed">Nu este instalat niciun player video.</string>
+    <string name="data_video_bad_location">Locația acestui videoclip nu este validă.</string>
+    <string name="data_video_unreachable">Acest fișier video nu a fost găsit sau accesul la el s-a pierdut. Încearcă să rescanezi biblioteca.</string>
+    <string name="data_video_player_cannot_open">%1$s nu poate deschide acest videoclip sau nu este instalat.</string>
+    <string name="data_video_that_player">Acel player</string>
+    <string name="data_video_none_installed_for_file">Nu este instalat niciun player video care să deschidă acest fișier.</string>
+
+    <!-- Lock screen image -->
+    <string name="data_lockscreen_unreadable">Imaginea nu a putut fi citită</string>
+    <string name="data_lockscreen_rejected">Acest dispozitiv nu a acceptat o imagine pentru ecranul de blocare</string>
+
+    <!-- PSP theme import (.ptf) -->
+    <string name="data_ptf_unreadable">Fișierul nu a putut fi citit (sau este prea mare)</string>
+    <string name="data_ptf_not_ptf">Nu este un fișier de temă PSP (.ptf)</string>
+    <string name="data_ptf_unparseable">Fișierul temei nu a putut fi analizat</string>
+    <string name="data_ptf_wallpaper_missing">Tema nu are o imagine de fundal</string>
+    <string name="data_ptf_wallpaper_unsupported">Această temă comprimă imaginea de fundal cu o metodă neacceptată</string>
+    <string name="data_ptf_wallpaper_damaged">Imaginea de fundal a temei este deteriorată și nu a putut fi decodată</string>
+    <string name="data_ptf_save_failed">Tema nu a putut fi salvată</string>
+
+    <!-- Custom media names -->
+    <string name="data_custom_video">Videoclip personalizat</string>
+    <string name="data_custom_sound">Sunet personalizat</string>
+
+    <!-- Controllers -->
+    <string name="data_controller_fallback_name">Controler</string>
+</resources>

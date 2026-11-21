@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import com.playfieldportal.core.domain.model.ImageMotion
+import kotlinx.coroutines.flow.first
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ApplicationProvider
@@ -82,6 +84,21 @@ class DisplaySettingsViewModelOptionChoiceTest {
 
         vm.choose(DisplayOption.UMD_SLOT, UmdSlotMode.OFF.ordinal)
         eventually("umd slot surfaced") { vm.uiState.value.umdSlotMode == UmdSlotMode.OFF }
+    }
+
+    @Test
+    fun `motion starts reduced and a pick is stored under the animated images key`() = runTest(dispatcher) {
+        observeUntilSettled(vm.uiState)
+        assertEquals(ImageMotion.REDUCED, vm.uiState.value.motion)
+        assertEquals(ImageMotion.REDUCED.ordinal, vm.selectedChoice(DisplayOption.MOTION))
+
+        vm.choose(DisplayOption.MOTION, ImageMotion.STATIC.ordinal)
+        eventually("motion surfaced") { vm.uiState.value.motion == ImageMotion.STATIC }
+        // The same stored value the Artwork screen's Animated images row used: nobody's choice moves.
+        val stored = context.pfpDataStore.data.first()[
+            androidx.datastore.preferences.core.stringPreferencesKey("pref_image_motion"),
+        ]
+        assertEquals("STATIC", stored)
     }
 
     @Test

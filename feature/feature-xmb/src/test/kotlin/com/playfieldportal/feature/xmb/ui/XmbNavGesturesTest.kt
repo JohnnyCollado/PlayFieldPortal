@@ -63,19 +63,28 @@ class XmbNavGesturesTest {
     }
 
     // ── Swipe-back commit (drilled in) ──────────────────────────────────────────
+    // Changed from the old leftward swipe: stepping out now runs toward the END edge, the way the
+    // child list arrived from it.
 
-    @Test fun `a long enough leftward drag backs out`() {
-        assertTrue(commitsSwipeBack(-72f, backCommitPx))     // exactly at the threshold
-        assertTrue(commitsSwipeBack(-300f, backCommitPx))
+    @Test fun `a long enough drag toward the end edge backs out`() {
+        assertTrue(commitsSwipeBack(72f, backCommitPx))     // exactly at the threshold
+        assertTrue(commitsSwipeBack(300f, backCommitPx))
     }
 
-    @Test fun `a short leftward drag does not back out`() {
-        assertFalse(commitsSwipeBack(-71f, backCommitPx))
+    @Test fun `a short drag toward the end edge does not back out`() {
+        assertFalse(commitsSwipeBack(71f, backCommitPx))
         assertFalse(commitsSwipeBack(0f, backCommitPx))
     }
 
-    @Test fun `a rightward drag never backs out, however far`() {
-        assertFalse(commitsSwipeBack(72f, backCommitPx))
-        assertFalse(commitsSwipeBack(9999f, backCommitPx))
+    @Test fun `a drag toward the start edge never backs out, however far`() {
+        assertFalse(commitsSwipeBack(-72f, backCommitPx))
+        assertFalse(commitsSwipeBack(-9999f, backCommitPx))
+    }
+
+    @Test fun `under RTL the end edge is the left, so the direction mirrors`() {
+        assertTrue(commitsSwipeBack(-72f, backCommitPx, rtl = true))
+        assertTrue(commitsSwipeBack(-300f, backCommitPx, rtl = true))
+        assertFalse(commitsSwipeBack(-71f, backCommitPx, rtl = true))
+        assertFalse(commitsSwipeBack(9999f, backCommitPx, rtl = true))
     }
 }

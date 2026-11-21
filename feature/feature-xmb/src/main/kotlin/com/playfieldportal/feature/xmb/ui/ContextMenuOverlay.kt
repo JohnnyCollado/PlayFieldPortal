@@ -1,9 +1,14 @@
 package com.playfieldportal.feature.xmb.ui
 
+import android.content.res.Resources
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import com.playfieldportal.core.ui.components.PspContextMenuOverlay
 import com.playfieldportal.core.ui.components.PspMenuRow
+import com.playfieldportal.core.ui.sound.LocalMenuSounds
+import com.playfieldportal.core.ui.sound.MenuSound
+import com.playfieldportal.core.ui.text.asString
 import com.playfieldportal.feature.xmb.viewmodel.XMBContextMenu
 
 // ── Context menu overlay — appears on Y/Triangle press ───────────────────────
@@ -15,13 +20,13 @@ import com.playfieldportal.feature.xmb.viewmodel.XMBContextMenu
 // activeContextMenu != null. The shared panel handles touch/click interaction.
 
 /** The shared panel's rows for this menu — a straight field-for-field mapping. */
-internal fun XMBContextMenu.toPspRows(): List<PspMenuRow> = items.map {
+internal fun XMBContextMenu.toPspRows(res: Resources): List<PspMenuRow> = items.map {
     PspMenuRow(
-        label = it.label,
+        label = it.label.resolve(res),
         isDestructive = it.isDestructive,
         checked = it.checked,
-        value = it.value,
-        header = it.header,
+        value = it.value?.resolve(res),
+        header = it.header?.resolve(res),
         opensMenu = it.opensMenu,
         silent = it.silent,
     )
@@ -35,8 +40,8 @@ fun ContextMenuOverlay(
     modifier: Modifier = Modifier,
 ) {
     PspContextMenuOverlay(
-        title         = menu.title,
-        rows          = menu.toPspRows(),
+        title         = menu.title.asString(),
+        rows          = menu.toPspRows(uiResources()),
         selectedIndex = menu.selectedIndex,
         onRowActivated = onItemActivated,
         onDismiss     = onDismiss,

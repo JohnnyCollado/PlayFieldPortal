@@ -73,7 +73,7 @@ enum class PfpErrorCode(
     ),
     SC_2003(
         "SC-2003", "Unknown system folder",
-        "This folder under ROM Root doesn't match a system PlayFieldPortal knows.",
+        "This folder inside the main ROM folder doesn't match a system PlayFieldPortal knows.",
         "Rename the folder to a supported system name, or move its games into one.",
     ),
     SC_2004(

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="motion_title">モーション</string>
+    <string name="motion_summary">自動で動くものの量です。</string>
+    <string name="motion_detail_animated">すべて動く</string>
+    <string name="motion_detail_reduced">選択中のみ</string>
+    <string name="motion_detail_static">自動では動かない</string>
+    <string name="motion_sub_animated">動かせるものはすべて動きます（アートワーク、アイコン、壁紙、背景、光）。バッテリーを最も消費します。</string>
+    <string name="motion_sub_reduced">選択中の項目だけが動きます（アートワーク、ビデオスナップ、光）。背景は動き続けます。</string>
+    <string name="motion_sub_static">自動では何も動きません。メニューは操作に合わせてスライドします。</string>
+    <string name="motion_holds_background">「モーション」が「静止」の間は停止します。</string>
+    <string name="motion_holds_glow">「モーション」が「静止」の間は固定されます。</string>
+</resources>

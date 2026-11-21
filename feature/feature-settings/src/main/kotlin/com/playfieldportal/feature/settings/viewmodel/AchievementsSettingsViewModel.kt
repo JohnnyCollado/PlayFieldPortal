@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
@@ -10,7 +11,12 @@ import com.playfieldportal.core.domain.model.NotificationKind
 import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.feature.achievements.provider.steam.SteamRemoteDataSource
 import com.playfieldportal.feature.achievements.match.AchievementMatchAndUpdate
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.settings.R
+import com.playfieldportal.core.ui.text.PfpDateFormat
+import com.playfieldportal.core.ui.text.PfpDateStyle
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,9 +24,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import javax.inject.Inject
 
 data class AchievementsSettingsUiState(
@@ -32,7 +35,7 @@ data class AchievementsSettingsUiState(
     val raUsername: String = "",
     val hasSteam: Boolean = false,
     val steamId64: String = "",
-    val lastSyncedLabel: String = "Never",
+    val lastSyncedLabel: UiText = UiText.res(R.string.setd_ach_never),
     // Match/update/clear/connection OUTCOMES are tray-only (row + notification cue); the
     // screen keeps only live progress, the paused state and the clear confirmation.
     val isMatching: Boolean = false,
@@ -69,8 +72,6 @@ private data class Extra(
     val isClearing: Boolean = false,
 )
 
-private val DATE_FMT = SimpleDateFormat("MMM d, yyyy HH:mm", Locale.US)
-
 /**
  * Connect-accounts screen state. API keys are write-only: never read back into the UI (the fields
  * show a masked placeholder when configured), only the public identities are surfaced. Saving Steam
@@ -80,6 +81,7 @@ private val DATE_FMT = SimpleDateFormat("MMM d, yyyy HH:mm", Locale.US)
  */
 @HiltViewModel
 class AchievementsSettingsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val credentials: AchievementCredentialsProvider,
     private val steamApi: SteamRemoteDataSource,
     private val matchAndUpdate: AchievementMatchAndUpdate,
@@ -117,7 +119,8 @@ class AchievementsSettingsViewModel @Inject constructor(
             raUsername = acc.raUsername.orEmpty(),
             hasSteam = !acc.steamId64.isNullOrBlank(),
             steamId64 = acc.steamId64.orEmpty(),
-            lastSyncedLabel = acc.lastSyncedAt?.let { DATE_FMT.format(Date(it)) } ?: "Never",
+            lastSyncedLabel = acc.lastSyncedAt?.let { UiText.raw(PfpDateFormat.format(context, PfpDateStyle.DateTime, it)) }
+                ?: UiText.res(R.string.setd_ach_never),
             isMatching = ex.isMatching,
             matchDone = ex.matchDone,
             matchTotal = ex.matchTotal,
@@ -160,12 +163,12 @@ class AchievementsSettingsViewModel @Inject constructor(
      */
     private fun announce(
         id: String,
-        message: String,
+        message: UiText,
         severity: NotificationSeverity = NotificationSeverity.INFO,
     ) {
         tasks.report(
             id = id,
-            label = message,
+            label = message.resolve(context),
             severity = severity,
             kind = NotificationKind.ACHIEVEMENT,
             action = NotificationAction.OpenSettingsScreen("settings_achievements_credentials"),
@@ -175,14 +178,14 @@ class AchievementsSettingsViewModel @Inject constructor(
     fun connectRetroAchievements(username: String, apiKey: String) {
         viewModelScope.launch {
             credentials.saveRetroAchievements(username, apiKey)
-            announce("ra_connection", "RetroAchievements connected", NotificationSeverity.SUCCESS)
+            announce("ra_connection", UiText.res(R.string.setd_ach_ra_connected), NotificationSeverity.SUCCESS)
         }
     }
 
     fun disconnectRetroAchievements() {
         viewModelScope.launch {
             credentials.clearRetroAchievements()
-            announce("ra_connection", "RetroAchievements disconnected")
+            announce("ra_connection", UiText.res(R.string.setd_ach_ra_disconnected))
         }
     }
 
@@ -196,7 +199,7 @@ class AchievementsSettingsViewModel @Inject constructor(
     fun disconnectSteam() {
         viewModelScope.launch {
             credentials.clearSteam()
-            announce("steam_connection", "Steam disconnected")
+            announce("steam_connection", UiText.res(R.string.setd_ach_steam_disconnected))
         }
     }
 

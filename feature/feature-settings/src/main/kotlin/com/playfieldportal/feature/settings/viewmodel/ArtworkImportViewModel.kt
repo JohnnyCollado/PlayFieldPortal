@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.artwork.api.ArtworkFolderState
 import com.playfieldportal.feature.artwork.api.ArtworkImportManager
 import com.playfieldportal.feature.artwork.api.ArtworkRelinkWorker
@@ -18,6 +19,9 @@ import com.playfieldportal.feature.artwork.importer.ImportPlan
 import com.playfieldportal.feature.artwork.importer.ImportSummary
 import com.playfieldportal.feature.artwork.migrate.InternalArtworkMigrationWorker
 import com.playfieldportal.feature.artwork.portable.PortableArtworkLibrary
+import com.playfieldportal.feature.settings.R
+import com.playfieldportal.core.ui.text.PfpDateFormat
+import com.playfieldportal.core.ui.text.PfpDateStyle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,9 +29,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import javax.inject.Inject
 
 // Sticky Move/Copy choice for artwork imports — survives process restarts.
@@ -67,11 +68,11 @@ data class ArtworkImportUiState(
     val migrationTotal: Int = 0,
     // Reports
     val reports: List<ReportUi> = emptyList(),
-    val error: String? = null,
-    val notice: String? = null,
+    val error: UiText? = null,
+    val notice: UiText? = null,
 ) {
     data class SourceUi(val detected: DetectedImportSource, val label: String, val systems: Int)
-    data class ReportUi(val id: Long, val title: String, val detail: String)
+    data class ReportUi(val id: Long, val title: UiText, val detail: UiText)
 }
 
 @HiltViewModel
@@ -160,7 +161,7 @@ class ArtworkImportViewModel @Inject constructor(
                 ArtworkImportManager.LinkResult.ForeignLibrary -> return@launch
                 ArtworkImportManager.LinkResult.Failed -> {
                     _uiState.value = _uiState.value.copy(
-                        error = "Could not set up the artwork library in that folder — it may be read-only.",
+                        error = UiText.res(R.string.setd_import_link_failed),
                     )
                     return@launch
                 }
@@ -170,20 +171,26 @@ class ArtworkImportViewModel @Inject constructor(
             val scan = runCatching { importManager.relinkLibrary() }.getOrNull()
             refreshInternalFootprint()
             _uiState.value = _uiState.value.copy(
-                notice = buildString {
-                    append(
-                        if (result.existingLibrary) "Existing PFP artwork library reconnected."
-                        else "Artwork library created.",
-                    )
-                    if (scan != null && scan.gamesLinked > 0) {
-                        append(" ${scan.gamesLinked} games linked from ${scan.entriesScanned} files already in the folder.")
-                    } else if (!result.existingLibrary) {
-                        append(" Place other launchers' media under import/.")
-                    }
-                    if (_uiState.value.internalFiles > 0) {
-                        append(" ${_uiState.value.internalFiles} artwork files are still in app storage — see Move Into Folder below.")
-                    }
-                },
+                notice = UiText.Joined(
+                    buildList<UiText> {
+                        add(
+                            UiText.res(
+                                if (result.existingLibrary) R.string.setd_import_library_reconnected
+                                else R.string.setd_import_library_created,
+                            ),
+                        )
+                        if (scan != null && scan.gamesLinked > 0) {
+                            add(UiText.plural(R.plurals.setd_import_games_linked, scan.gamesLinked, scan.gamesLinked, scan.entriesScanned))
+                        } else if (!result.existingLibrary) {
+                            add(UiText.res(R.string.setd_import_place_media))
+                        }
+                        val internal = _uiState.value.internalFiles
+                        if (internal > 0) {
+                            add(UiText.plural(R.plurals.setd_import_internal_files, internal))
+                        }
+                    },
+                    " ",
+                ),
                 plan = null,
             )
         }
@@ -201,7 +208,7 @@ class ArtworkImportViewModel @Inject constructor(
                 val migrated = importManager.migrateV1IfNeeded()
                 if (migrated > 0) {
                     _uiState.value = _uiState.value.copy(
-                        notice = "Artwork library upgraded to the new layout — $migrated files reorganized.",
+                        notice = UiText.plural(R.plurals.setd_import_upgraded, migrated),
                     )
                 }
                 val detected = importManager.detectSources()
@@ -215,7 +222,7 @@ class ArtworkImportViewModel @Inject constructor(
                 )
             }.onFailure {
                 Timber.e(it, "Import source scan failed")
-                _uiState.value = _uiState.value.copy(scanning = false, error = "Could not scan the import folder.")
+                _uiState.value = _uiState.value.copy(scanning = false, error = UiText.res(R.string.setd_import_scan_failed))
             }
         }
     }
@@ -229,12 +236,12 @@ class ArtworkImportViewModel @Inject constructor(
                     _uiState.value = _uiState.value.copy(
                         planning = false,
                         plan = plan,
-                        error = if (plan == null) "Could not read this source." else null,
+                        error = if (plan == null) UiText.res(R.string.setd_import_source_unreadable) else null,
                     )
                 }
                 .onFailure {
                     Timber.e(it, "Import planning failed")
-                    _uiState.value = _uiState.value.copy(planning = false, error = "Preview failed — see logs.")
+                    _uiState.value = _uiState.value.copy(planning = false, error = UiText.res(R.string.setd_import_preview_failed))
                 }
         }
     }
@@ -279,7 +286,7 @@ class ArtworkImportViewModel @Inject constructor(
         val state = _uiState.value
         val plan = state.plan ?: return
         if (plan.itemCount == 0) {
-            _uiState.value = state.copy(notice = "Nothing to import — everything is already present.")
+            _uiState.value = state.copy(notice = UiText.res(R.string.setd_import_nothing))
             return
         }
         val transfer = if (state.moveFiles) PortableArtworkLibrary.Transfer.MOVE
@@ -299,7 +306,7 @@ class ArtworkImportViewModel @Inject constructor(
     fun startExport(destUri: Uri) {
         importManager.startExport(destUri)
         _uiState.value = _uiState.value.copy(
-            notice = "Export started — progress in the notification; the result lands under Import Report.",
+            notice = UiText.res(R.string.setd_import_export_started),
         )
     }
 
@@ -333,13 +340,17 @@ class ArtworkImportViewModel @Inject constructor(
                 val scanned = last.outputData.getInt(ArtworkRelinkWorker.KEY_SCANNED, 0)
                 val linked = last.outputData.getInt(ArtworkRelinkWorker.KEY_LINKED, 0)
                 val orphans = last.outputData.getInt(ArtworkRelinkWorker.KEY_ORPHANS, 0)
-                buildString {
-                    append("Scan: $scanned files · $linked games linked")
-                    if (orphans > 0) append(" · $orphans unmatched — see Unmatched Artwork")
-                }
+                UiText.Joined(
+                    buildList<UiText> {
+                        add(UiText.plural(R.plurals.setd_relink_files, scanned))
+                        add(UiText.plural(R.plurals.setd_relink_linked, linked))
+                        if (orphans > 0) add(UiText.res(R.string.setd_relink_orphans, orphans))
+                    },
+                    " · ",
+                )
             }
-            WorkInfo.State.FAILED -> "Library scan failed — see logs."
-            WorkInfo.State.CANCELLED -> "Library scan cancelled."
+            WorkInfo.State.FAILED -> UiText.res(R.string.setd_relink_failed)
+            WorkInfo.State.CANCELLED -> UiText.res(R.string.setd_relink_cancelled)
             else -> null
         }
         _uiState.value = _uiState.value.copy(relinking = false, notice = notice ?: _uiState.value.notice)
@@ -404,19 +415,21 @@ class ArtworkImportViewModel @Inject constructor(
     }
 
     private fun ArtworkImportManager.ReportRow.toUi(): ArtworkImportUiState.ReportUi {
-        val date = DATE_FORMAT.format(Date(entity.startedAt))
+        val date = PfpDateFormat.format(context, PfpDateStyle.DateTime, entity.startedAt)
         val s = summary
-        val detail = if (s == null) "Report unreadable" else buildString {
-            append("${s.imported} imported · ${s.skipped} skipped · ${s.failed} failed")
-            if (s.metadataApplied > 0) append(" · ${s.metadataApplied} game details")
-            if (s.ambiguous > 0) append(" · ${s.ambiguous} need review")
-            if (s.unmatched > 0) append(" · ${s.unmatched} unmatched")
-            if (s.cancelled) append(" · cancelled")
-        }
-        return ArtworkImportUiState.ReportUi(entity.id, "${entity.source} — $date", detail)
+        val detail = if (s == null) UiText.res(R.string.setd_report_unreadable) else UiText.Joined(
+            buildList<UiText> {
+                add(UiText.res(R.string.setd_report_imported, s.imported))
+                add(UiText.res(R.string.setd_report_skipped, s.skipped))
+                add(UiText.res(R.string.setd_report_failed, s.failed))
+                if (s.metadataApplied > 0) add(UiText.plural(R.plurals.setd_report_game_details, s.metadataApplied))
+                if (s.ambiguous > 0) add(UiText.res(R.string.setd_report_need_review, s.ambiguous))
+                if (s.unmatched > 0) add(UiText.res(R.string.setd_report_unmatched, s.unmatched))
+                if (s.cancelled) add(UiText.res(R.string.setd_report_cancelled))
+            },
+            " · ",
+        )
+        return ArtworkImportUiState.ReportUi(entity.id, UiText.res(R.string.setd_report_title, entity.source, date), detail)
     }
 
-    companion object {
-        private val DATE_FORMAT = SimpleDateFormat("MMM d, yyyy HH:mm", Locale.US)
-    }
 }

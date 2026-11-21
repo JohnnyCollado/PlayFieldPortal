@@ -20,7 +20,9 @@ import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.UiMediaSlot
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
+import com.playfieldportal.feature.settings.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -37,8 +39,8 @@ import timber.log.Timber
 import javax.inject.Inject
 
 data class ThemesSettingsUiState(
-    // Name of the theme applied through PfpThemeStore ("Default" = stock look).
-    val activeThemeName: String = "Default",
+    // Name of the theme applied through PfpThemeStore (null = the stock look, shown as "Default").
+    val activeThemeName: String? = null,
     val isInstalling: Boolean = false,
     // Custom-theme cascade state (docs/dev/theme-format.md): the imported/custom accent
     // that supersedes the preset scheme, and the unified icon tint (null = default white).
@@ -54,7 +56,7 @@ data class ThemesSettingsUiState(
     // After applying a theme that carries a lock screen image: offer it, opt-in. Null = not asking.
     val lockScreenOffer: ThemeApplyConfirmation? = null,
     // Customize XMB Icons' value: the user's own picks, "None custom" / "N custom".
-    val customIconsValue: String = CustomIconsRowText.value(emptySet()),
+    val customIconsValue: UiText = CustomIconsRowText.value(emptySet()),
 )
 
 @HiltViewModel
@@ -80,7 +82,7 @@ class ThemesSettingsViewModel @Inject constructor(
     ) { prefs, saved, iconKeys, extra ->
         extra.copy(
             customIconsValue   = CustomIconsRowText.value(iconKeys),
-            activeThemeName    = prefs[ThemePrefKeys.APPLIED_THEME_NAME] ?: "Default",
+            activeThemeName    = prefs[ThemePrefKeys.APPLIED_THEME_NAME],
             accentOverrideArgb = prefs[KEY_ACCENT_OVERRIDE],
             iconColorArgb      = prefs[KEY_ICON_COLOR],
             savedThemes        = saved,
@@ -89,11 +91,11 @@ class ThemesSettingsViewModel @Inject constructor(
 
     // Theme import/create/reset outcomes land in the tray (row + notification cue), keyed so
     // a repeat replaces its row. INFO for plain results, ERROR when the store reported a failure.
-    private fun reportTheme(message: String, severity: NotificationSeverity = NotificationSeverity.SUCCESS) {
+    private fun reportTheme(message: UiText, severity: NotificationSeverity = NotificationSeverity.SUCCESS) {
         tasks.report(
             id = "themes_result",
-            label = "Themes",
-            message = message,
+            label = context.getString(R.string.setd_themes_title),
+            message = message.resolve(context),
             severity = severity,
             action = NotificationAction.OpenSettingsScreen("settings_themes"),
         )
@@ -147,7 +149,7 @@ class ThemesSettingsViewModel @Inject constructor(
             // A lock screen a theme set goes with the theme; one the user chose stays.
             lockScreen.clearIfFromTheme()
             Timber.i("Theme reset to default")
-            reportTheme("Theme reset — back to the default look")
+            reportTheme(UiText.res(R.string.setd_theme_reset_done))
         }
     }
 
@@ -161,11 +163,13 @@ class ThemesSettingsViewModel @Inject constructor(
             if (saved != null) {
                 applyAndReport(saved.id)
                 reportTheme(
-                    "Created \"${saved.name}\"" +
-                        if (saved.accentArgb != null) " — color derived from the photo" else "",
+                    UiText.res(
+                        if (saved.accentArgb != null) R.string.setd_theme_created_derived else R.string.setd_theme_created,
+                        saved.name,
+                    ),
                 )
             } else {
-                reportTheme("Could not read that image", NotificationSeverity.ERROR)
+                reportTheme(UiText.res(R.string.setd_theme_image_unreadable), NotificationSeverity.ERROR)
             }
             _extra.update { it.copy(isInstalling = false) }
         }
@@ -209,7 +213,7 @@ class ThemesSettingsViewModel @Inject constructor(
         _extra.update { it.copy(applyConfirmation = null) }
         viewModelScope.launch {
             if (!applyAndReport(confirmation.themeId)) {
-                reportTheme("Could not apply the theme", NotificationSeverity.ERROR)
+                reportTheme(UiText.res(R.string.setd_theme_apply_failed), NotificationSeverity.ERROR)
                 return@launch
             }
             if (confirmation.hasChoices && choice == ThemeApplyConfirmation.USE_THEMES) {
@@ -229,13 +233,13 @@ class ThemesSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val bytes = themeStore.lockScreenOf(offer.themeId)
             val result = if (bytes == null) {
-                LockScreenImage.Result.Failed("This theme's lock screen image could not be read")
+                LockScreenImage.Result.Failed(context.getString(R.string.setd_theme_lock_unreadable))
             } else {
                 lockScreen.set(bytes, LockScreenImage.Source.THEME)
             }
             when (result) {
-                LockScreenImage.Result.Set -> reportTheme("Lock screen set from \"${offer.themeName}\"")
-                is LockScreenImage.Result.Failed -> reportTheme(result.reason, NotificationSeverity.ERROR)
+                LockScreenImage.Result.Set -> reportTheme(UiText.res(R.string.setd_theme_lock_set, offer.themeName))
+                is LockScreenImage.Result.Failed -> reportTheme(UiText.raw(result.reason), NotificationSeverity.ERROR)
             }
         }
     }
@@ -259,8 +263,8 @@ class ThemesSettingsViewModel @Inject constructor(
         UiMediaRowText.droppedReport(result.droppedMedia)?.let { body ->
             tasks.report(
                 id = "themes_media_dropped",
-                label = "Themes",
-                message = body,
+                label = context.getString(R.string.setd_themes_title),
+                message = body.resolve(context),
                 severity = NotificationSeverity.WARNING,
                 action = NotificationAction.OpenSettingsScreen("settings_themes"),
             )
@@ -276,17 +280,18 @@ class ThemesSettingsViewModel @Inject constructor(
     fun saveCurrentLookAsTheme(name: String) {
         viewModelScope.launch {
             val saved = themeStore.saveCurrentLook(name)
-            if (saved != null) reportTheme("Saved \"${saved.name}\"")
-            else reportTheme("Could not save the theme", NotificationSeverity.ERROR)
+            if (saved != null) reportTheme(UiText.res(R.string.setd_theme_saved, saved.name))
+            else reportTheme(UiText.res(R.string.setd_theme_save_failed), NotificationSeverity.ERROR)
         }
     }
 
     /** Rewrites an older-format saved theme in the current format; the outcome lands in the tray. */
     fun updateThemeFile(id: String) {
         viewModelScope.launch {
-            val name = themeStore.themes.value.firstOrNull { it.id == id }?.name ?: "theme"
-            if (themeStore.upgradeInPlace(id)) reportTheme("Updated \"$name\" to the current theme format")
-            else reportTheme("Could not update \"$name\" — the original file was left as it was", NotificationSeverity.ERROR)
+            val name = themeStore.themes.value.firstOrNull { it.id == id }?.name
+                ?: context.getString(R.string.setd_theme_fallback_name)
+            if (themeStore.upgradeInPlace(id)) reportTheme(UiText.res(R.string.setd_theme_updated, name))
+            else reportTheme(UiText.res(R.string.setd_theme_update_failed, name), NotificationSeverity.ERROR)
         }
     }
 
@@ -303,7 +308,7 @@ class ThemesSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val file = themeStore.exportForShare(id)
             if (file == null) {
-                reportTheme("Could not export the theme", NotificationSeverity.ERROR)
+                reportTheme(UiText.res(R.string.setd_theme_export_failed), NotificationSeverity.ERROR)
                 return@launch
             }
             val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
@@ -313,7 +318,7 @@ class ThemesSettingsViewModel @Inject constructor(
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             context.startActivity(
-                Intent.createChooser(send, "Share theme").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                Intent.createChooser(send, context.getString(R.string.setd_theme_share_chooser)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             )
         }
     }
@@ -342,15 +347,14 @@ class ThemesSettingsViewModel @Inject constructor(
      * legitimate bundle this device could not hold, which is fixable by shrinking the motion
      * wallpaper rather than by re-exporting.
      */
-    private fun messageFor(result: PfpThemeStore.ImportResult): String = when (result) {
-        is PfpThemeStore.ImportResult.Success -> "Imported \"${result.theme.name}\""
-        is PfpThemeStore.ImportResult.Unreadable -> "Could not open that file"
-        PfpThemeStore.ImportResult.TooLarge -> "That theme is too large to import"
-        PfpThemeStore.ImportResult.OutOfMemory ->
-            "Not enough memory to import that theme — its motion wallpaper is too big"
-        PfpThemeStore.ImportResult.NotABundle -> "Not a valid .pfptheme file"
-        PfpThemeStore.ImportResult.DamagedWallpaper -> "That theme's wallpaper is damaged"
-        is PfpThemeStore.ImportResult.NotSaved -> "Could not save the imported theme"
+    private fun messageFor(result: PfpThemeStore.ImportResult): UiText = when (result) {
+        is PfpThemeStore.ImportResult.Success -> UiText.res(R.string.setd_theme_imported, result.theme.name)
+        is PfpThemeStore.ImportResult.Unreadable -> UiText.res(R.string.setd_theme_import_unreadable)
+        PfpThemeStore.ImportResult.TooLarge -> UiText.res(R.string.setd_theme_import_too_large)
+        PfpThemeStore.ImportResult.OutOfMemory -> UiText.res(R.string.setd_theme_import_out_of_memory)
+        PfpThemeStore.ImportResult.NotABundle -> UiText.res(R.string.setd_theme_import_not_a_bundle)
+        PfpThemeStore.ImportResult.DamagedWallpaper -> UiText.res(R.string.setd_theme_import_damaged_wallpaper)
+        is PfpThemeStore.ImportResult.NotSaved -> UiText.res(R.string.setd_theme_import_not_saved)
     }
 
     private companion object {

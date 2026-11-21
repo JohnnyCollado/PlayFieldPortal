@@ -1,5 +1,8 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.core.domain.text.UiText
+import androidx.test.core.app.ApplicationProvider
+import android.content.Context
 import com.playfieldportal.core.domain.model.BackgroundTaskInfo
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.NotificationAction
@@ -19,12 +22,17 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import kotlin.test.assertFailsWith
 
 /**
  * Fetch Artwork from the XMB game menu. Progress goes on a RUNNING task row; the outcome goes to
  * the notification tray only, and tapping it opens the game.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class GameArtworkFetchRunnerTest {
 
     private val artworkRepository = mockk<ArtworkRepository>()
@@ -34,7 +42,8 @@ class GameArtworkFetchRunnerTest {
         every { this@mockk.running } returns this@GameArtworkFetchRunnerTest.running
     }
 
-    private val runner = GameArtworkFetchRunner(artworkRepository, gameRepository, tasks)
+    private val context: Context = ApplicationProvider.getApplicationContext()
+    private val runner = GameArtworkFetchRunner(artworkRepository, gameRepository, tasks, context)
 
     private val game = Game(
         id = 1L, title = "crash", platformId = "psx", romPath = "/roms/psx/crash.bin",
@@ -82,7 +91,7 @@ class GameArtworkFetchRunnerTest {
     @Test
     fun `a fetch that finds nothing fails in the tray with the scraper's message`() = runTest {
         coEvery { artworkRepository.refetchArtworkForGame(1L, any()) } returns
-            ArtworkFetchResult(1L, "crash", success = false, errorMessage = "Not found on any source")
+            ArtworkFetchResult(1L, "crash", success = false, errorMessage = UiText.raw("Not found on any source"))
 
         val changed = runner.run(1L)
 

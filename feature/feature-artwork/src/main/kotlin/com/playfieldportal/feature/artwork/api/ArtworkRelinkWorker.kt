@@ -12,7 +12,9 @@ import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.NotificationDetail
 import com.playfieldportal.core.domain.model.PfpErrorCode
 import com.playfieldportal.core.domain.model.TaskKind
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
+import com.playfieldportal.feature.artwork.R
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
@@ -50,12 +52,12 @@ class ArtworkRelinkWorker @AssistedInject constructor(
             if (platformIds.isEmpty()) ArtworkImportManager.RelinkScope.FullLibrary
             else ArtworkImportManager.RelinkScope.Platforms(platformIds)
         val label =
-            if (platformIds.isEmpty()) "Relinking artwork"
-            else "Relinking artwork for ${platformIds.size} console(s)"
+            if (platformIds.isEmpty()) applicationContext.getString(R.string.art_relink_label)
+            else UiText.plural(R.plurals.art_relink_label_consoles, platformIds.size).resolve(applicationContext)
         tasks.start(
             TASK_ID, label, TaskKind.ARTWORK,
             onStop = { WorkManager.getInstance(applicationContext).cancelUniqueWork(UNIQUE_NAME) },
-            stopNote = "Artwork already linked stays linked.",
+            stopNote = applicationContext.getString(R.string.art_relink_stop_note),
         )
         var lastNotified = 0L
 
@@ -74,22 +76,20 @@ class ArtworkRelinkWorker @AssistedInject constructor(
                 // a notification, so it settles as a completed row that says what happened.
                 tasks.complete(
                     TASK_ID,
-                    "No artwork folder linked",
+                    applicationContext.getString(R.string.art_no_folder_linked),
                     NotificationAction.OpenSettingsScreen(SETTINGS_ROUTE),
-                    title = "Artwork relink finished",
+                    title = applicationContext.getString(R.string.art_relink_finished_title),
                 )
                 return Result.success()
             }
             tasks.complete(
                 TASK_ID,
-                buildString {
-                    append("${result.gamesLinked} games linked of ${result.entriesScanned} files")
-                    if (result.orphanEntries > 0) append(" · ${result.orphanEntries} unmatched")
-                },
+                relinkResultText(result.gamesLinked, result.entriesScanned, result.orphanEntries)
+                    .resolve(applicationContext),
                 NotificationAction.OpenSettingsScreen(
                     if (result.orphanEntries > 0) SETTINGS_ROUTE_ORPHANS else SETTINGS_ROUTE,
                 ),
-                title = "Artwork relink finished",
+                title = applicationContext.getString(R.string.art_relink_finished_title),
             )
             Result.success(
                 workDataOf(
@@ -101,18 +101,31 @@ class ArtworkRelinkWorker @AssistedInject constructor(
         } catch (e: CancellationException) {
             // The walk only ever adds and repoints records; whatever it linked before being
             // cancelled is already committed and correct.
-            tasks.stopped(TASK_ID, "Artwork linked so far is kept", title = "Artwork relink stopped")
+            tasks.stopped(
+                TASK_ID, applicationContext.getString(R.string.art_relink_stopped_note),
+                title = applicationContext.getString(R.string.art_relink_stopped_title),
+            )
             throw e
         } catch (e: Exception) {
             Timber.e(e, "Artwork relink failed")
             tasks.fail(
-                TASK_ID, e.message ?: "Unexpected error",
+                TASK_ID, e.message ?: applicationContext.getString(R.string.art_error_unexpected),
                 detail = NotificationDetail.notes(PfpErrorCode.AR_9001, summary = e.message,
                     diagnostic = e.stackTraceToString().take(4_000)),
-                title = "Artwork relink failed",
+                title = applicationContext.getString(R.string.art_relink_failed_title),
             )
-            Result.failure(workDataOf(KEY_ERROR to (e.message ?: "Unexpected error")))
+            Result.failure(workDataOf(KEY_ERROR to (e.message ?: applicationContext.getString(R.string.art_error_unexpected))))
         }
+    }
+
+    // "3 games linked of 12 files", plus "· 2 unmatched" when some files found no game.
+    private fun relinkResultText(linked: Int, scanned: Int, unmatched: Int): UiText {
+        val summary = UiText.res(
+            R.string.art_relink_result,
+            UiText.plural(R.plurals.art_relink_games_linked, linked),
+            UiText.plural(R.plurals.art_relink_files, scanned),
+        )
+        return if (unmatched > 0) UiText.res(R.string.art_relink_result_unmatched, summary, unmatched) else summary
     }
 
     companion object {

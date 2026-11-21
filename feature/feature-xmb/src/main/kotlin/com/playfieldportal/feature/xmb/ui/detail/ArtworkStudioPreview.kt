@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import com.playfieldportal.core.domain.text.UiText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.playfieldportal.core.domain.model.Game
@@ -21,7 +22,7 @@ private object PreviewStudioActions : ArtworkStudioActions {
     override fun handleGamepadAction(action: GamepadAction) = Unit
     override fun selectTab(index: Int) = Unit
     override fun sourcesForTab(): List<StudioSource> = StudioSource.entries
-    override fun sourceBadge(source: StudioSource): String? = null
+    override fun sourceBadge(source: StudioSource): UiText? = null
     override fun selectSource(index: Int) = Unit
     override fun requestLocalPick() = Unit
     override fun toggleNsfw() = Unit
@@ -109,7 +110,7 @@ private fun sampleStudioState(slotWidthDp: Float, slotHeightDp: Float): ArtworkS
                 url = "https://preview.invalid/grid_$i.png",
                 thumb = null,
                 provider = "SteamGridDB",
-                label = if (i % 4 == 3) "white_logo · 660×930" else "alternate · 600×900",
+                label = UiText.raw(if (i % 4 == 3) "white_logo · 660×930" else "alternate · 600×900"),
             )
         },
         query = "Tactics Ogre: Reborn",

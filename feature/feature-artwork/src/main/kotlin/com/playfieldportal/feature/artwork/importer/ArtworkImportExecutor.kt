@@ -8,6 +8,8 @@ import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.entity.ArtworkImportReportEntity
 import com.playfieldportal.core.data.database.entity.ArtworkRecordEntity
 import com.playfieldportal.core.data.saf.SafChild
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.artwork.R
 import com.playfieldportal.feature.artwork.portable.ArtworkEntryMetadata
 import com.playfieldportal.feature.artwork.portable.ArtworkPathResolver
 import com.playfieldportal.feature.artwork.portable.PortableArtworkLibrary
@@ -192,9 +194,9 @@ class ArtworkImportExecutor @Inject constructor(
             else -> com.playfieldportal.core.domain.model.NotificationSeverity.SUCCESS
         }
         val headline = when {
-            summary.cancelled -> "Artwork import cancelled"
-            rejected > 0 -> "Artwork imported, ${rejected} item(s) need review"
-            else -> "Artwork imported"
+            summary.cancelled -> context.getString(R.string.art_import_cancelled)
+            rejected > 0 -> UiText.plural(R.plurals.art_import_needs_review, rejected).resolve(context)
+            else -> context.getString(R.string.art_import_done)
         }
         tasks.report(
             // Keyed by the source, so re-importing the same folder replaces its row rather than
@@ -202,15 +204,14 @@ class ArtworkImportExecutor @Inject constructor(
             id = "artwork_import:${summary.sourceLabel}",
             kind = com.playfieldportal.core.domain.model.NotificationKind.ARTWORK,
             severity = severity,
-            label = "$headline: ${summary.sourceLabel}",
-            message = buildString {
-                append("${summary.imported} imported, ${summary.skipped} skipped, ")
-                append("${summary.failed} failed, ${summary.ambiguous} ambiguous, ")
-                append("${summary.unmatched} unmatched.")
-            },
+            label = context.getString(R.string.art_import_headline, headline, summary.sourceLabel),
+            message = context.getString(
+                R.string.art_import_counts,
+                summary.imported, summary.skipped, summary.failed, summary.ambiguous, summary.unmatched,
+            ),
             action = com.playfieldportal.core.domain.model.NotificationAction
                 .OpenSettingsScreen("settings_artwork"),
-            detail = importResults(summary),
+            detail = importResults(summary, context),
             // A cancelled import was stopped by the user, who already knows.
             read = summary.cancelled,
         )
@@ -403,7 +404,7 @@ class ArtworkImportExecutor @Inject constructor(
  * The import's Results list: each recorded failure, and each system folder the import could not
  * place (AR-2003). Null when there is nothing to list — the counts in the body say the rest.
  */
-internal fun importResults(summary: ImportSummary): com.playfieldportal.core.domain.model.NotificationDetail.Results? {
+internal fun importResults(summary: ImportSummary, context: android.content.Context): com.playfieldportal.core.domain.model.NotificationDetail.Results? {
     val failures = summary.errors.map { message ->
         val code = com.playfieldportal.feature.artwork.api.classifyScrapeFailure(message)
         com.playfieldportal.core.domain.model.ResultItem(
@@ -423,7 +424,7 @@ internal fun importResults(summary: ImportSummary): com.playfieldportal.core.dom
     if (failures.isEmpty() && unknown.isEmpty()) return null
     return com.playfieldportal.core.domain.model.NotificationDetail.results(
         failures + unknown,
-        summary = "${summary.imported} imported, ${summary.skipped} skipped",
-        labels = com.playfieldportal.core.domain.model.ResultsLabels(done = "Imported"),
+        summary = context.getString(R.string.art_import_results_summary, summary.imported, summary.skipped),
+        labels = com.playfieldportal.core.domain.model.ResultsLabels(done = context.getString(R.string.art_results_label_imported)),
     )
 }

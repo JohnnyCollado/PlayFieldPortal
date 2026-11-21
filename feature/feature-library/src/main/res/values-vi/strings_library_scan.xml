@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Scan error messages -->
+    <string name="scan_error_card_not_found">Không tìm thấy Memory Card.</string>
+    <string name="scan_error_scan_failed">Quét thất bại — xem nhật ký.</string>
+    <string name="scan_error_library_unreadable">Không thể đọc thư viện.</string>
+    <string name="scan_error_save_failed">Không thể lưu trò chơi đã quét.</string>
+    <string name="scan_error_rom_dir_not_found">Không tìm thấy thư mục ROM: %1$s</string>
+    <string name="scan_error_folder_link_invalid">Liên kết thư mục của thư viện này không hợp lệ. Hãy thêm lại thư mục.</string>
+    <string name="scan_error_root_unreadable">Không thể đọc một thư mục ROM. Nếu nó nằm trên thẻ SD, hãy kiểm tra thẻ đã được lắp chưa.</string>
+    <string name="scan_error_permission_lost">Mất quyền truy cập, hãy chọn lại thư mục.</string>
+    <string name="scan_error_partial_read">Không đọc được một phần thư mục, nên chưa có gì thay đổi. Hãy thử lại sau giây lát.</string>
+
+    <string name="scan_outcome_line">%1$s: %2$s</string>
+    <string name="scan_outcome_no_source">Chưa cấu hình thư mục ROM.</string>
+    <string name="scan_outcome_busy">đang quét.</string>
+    <string name="scan_outcome_failed">quét thất bại.</string>
+    <string name="scan_outcome_no_new">không có ROM mới</string>
+    <string name="scan_outcome_no_new_none_missing">không có ROM mới, không thiếu ROM nào</string>
+    <string name="scan_outcome_no_new_marked_missing">không có ROM mới, %1$d bị đánh dấu thiếu</string>
+    <plurals name="scan_outcome_added">
+        <item quantity="other">đã thêm %1$d ROM mới</item>
+    </plurals>
+    <plurals name="scan_outcome_added_none_missing">
+        <item quantity="other">đã thêm %1$d ROM mới, không thiếu ROM nào</item>
+    </plurals>
+    <plurals name="scan_outcome_added_marked_missing">
+        <item quantity="other">đã thêm %1$d ROM mới, %2$d bị đánh dấu thiếu</item>
+    </plurals>
+    <string name="scan_with_error_note">%1$s (%2$s)</string>
+
+    <!-- Per-card line in the scan results list -->
+    <!-- Short badge on a card that scanned but found no new games -->
+    <string name="scan_badge_no_new">Không có mới</string>
+    <string name="scan_reason_no_new">Không có trò chơi mới</string>
+    <string name="scan_reason_no_new_marked_missing">Không có trò chơi mới, %1$d bị đánh dấu thiếu</string>
+    <plurals name="scan_reason_added">
+        <item quantity="other">Đã thêm %1$d trò chơi mới</item>
+    </plurals>
+    <plurals name="scan_reason_added_marked_missing">
+        <item quantity="other">Đã thêm %1$d trò chơi mới, %2$d bị đánh dấu thiếu</item>
+    </plurals>
+</resources>

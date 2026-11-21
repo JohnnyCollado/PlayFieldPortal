@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Compartit per diverses pantalles de Configuració -->
+    <string name="sets_on">Activat</string>
+    <string name="sets_off">Desactivat</string>
+    <string name="sets_prompt_back">Enrere</string>
+    <string name="sets_prompt_enter">Entra</string>
+    <string name="sets_prompt_switch">Commuta</string>
+    <string name="sets_prompt_options">Opcions</string>
+
+    <!-- Configuració ▸ Còpia de seguretat i restauració -->
+    <string name="sets_backup_title">Còpia de seguretat i restauració</string>
+    <string name="sets_backup_group_backup">Còpia de seguretat</string>
+    <string name="sets_backup_last_backup">Última còpia</string>
+    <string name="sets_backup_never">Mai</string>
+    <string name="sets_backup_folder">Carpeta de còpies</string>
+    <string name="sets_backup_folder_saving_to">Es desa a: %1$s  (selecciona per canviar-la)</string>
+    <string name="sets_backup_folder_not_set">No definida — selecciona per triar on es desen les còpies</string>
+    <string name="sets_backup_now">Fes una còpia ara</string>
+    <string name="sets_backup_now_help">Desa la biblioteca, la configuració i l\'historial de joc</string>
+    <string name="sets_backup_choose_folder_first">Primer tria una carpeta de còpies</string>
+    <string name="sets_backup_choose_folder_first_error">Primer tria una carpeta de còpies.</string>
+    <string name="sets_backup_group_saved">Còpies desades</string>
+    <string name="sets_backup_group_included">Què s\'hi inclou</string>
+    <string name="sets_backup_included_library">Biblioteca de jocs</string>
+    <string name="sets_backup_included_history">Historial de joc</string>
+    <string name="sets_backup_included_categories">Categories personalitzades</string>
+    <string name="sets_backup_included_settings">Configuració i claus d\'API</string>
+    <string name="sets_backup_included_profiles">Perfils d\'emulador</string>
+    <string name="sets_backup_rom_files">Fitxers de ROM</string>
+    <string name="sets_backup_not_included">✗  (no inclosos)</string>
+    <string name="sets_backup_group_restore">Restauració</string>
+    <string name="sets_backup_restore_from_file">Restaura des d\'un fitxer</string>
+    <string name="sets_backup_restore_from_file_help">Busca un fitxer .pfpbackup</string>
+    <string name="sets_backup_after_restoring">Després de restaurar</string>
+    <string name="sets_backup_after_restoring_help">Les carpetes tornen, però l\'accés d\'Android a les carpetes no. Torna a enllaçar cada arrel a l\'Accés a les arrels de la seva secció (Biblioteca, Música, Vídeo, Fotos) — un pas per a cadascuna; en tornar a enllaçar una arrel es restaura tot el que hi ha a dins de cop.</string>
+    <string name="sets_backup_working">S\'està treballant…</string>
+    <string name="sets_backup_error">Error</string>
+    <string name="sets_backup_creating">S\'està creant la còpia de seguretat…</string>
+    <string name="sets_backup_restoring">S\'està restaurant la còpia de seguretat…</string>
+    <string name="sets_backup_unknown_error">Error desconegut</string>
+    <string name="sets_backup_delete_failed">No s\'ha pogut suprimir %1$s.</string>
+    <string name="sets_backup_menu_restore">Restaura</string>
+    <string name="sets_backup_menu_share">Comparteix</string>
+    <string name="sets_backup_menu_delete">Suprimeix la còpia</string>
+    <string name="sets_backup_delete_title">Vols suprimir la còpia?</string>
+    <string name="sets_backup_delete_message">\"%1$s\" se suprimirà. Aquesta acció no es pot desfer.</string>
+    <string name="sets_backup_delete_confirm">Suprimeix</string>
+    <string name="sets_backup_restore_title">Vols restaurar la còpia?</string>
+    <string name="sets_backup_restore_message_named">\"%1$s\" substituirà la biblioteca, la configuració i l\'historial de joc actuals. Aquesta acció no es pot desfer.</string>
+    <string name="sets_backup_restore_message_picked">Aquesta còpia substituirà la biblioteca, la configuració i l\'historial de joc actuals. Aquesta acció no es pot desfer.</string>
+    <string name="sets_backup_restore_confirm">Restaura</string>
+    <string name="sets_backup_share_chooser">Comparteix la còpia de seguretat</string>
+
+    <!-- Configuració ▸ Crèdits -->
+    <string name="sets_credits_group_xmb">Disseny de l\'XMB — Sony</string>
+    <string name="sets_credits_xmb_inspired">L\'aspecte d\'aquest launcher s\'inspira en l\'XMB (XrossMediaBar), la interfície que Sony va crear per a la PlayStation Portable i la PlayStation 3 — la disposició en creu, l\'ona fluida i el model de navegació són homenatges a aquesta interfície.</string>
+    <string name="sets_credits_xmb_trademarks">\"XrossMediaBar\", \"XMB\", \"PSP\" i \"PlayStation\" són marques comercials de Sony Interactive Entertainment Inc. Play Field Portal és un projecte de fans independent i sense ànim de lucre — no està afiliat, avalat ni patrocinat per Sony. Les imatges de la interfície incloses provenen del tema de la comunitat \"XMB Menu for ES-DE\" (amb els crèdits a sota) i continuen sent propietat dels seus autors respectius. No s\'inclou cap àudio de Sony: cada so del menú té els seus crèdits per separat a sota.</string>
+    <string name="sets_credits_group_icon">Icona i logotip de l\'aplicació</string>
+    <string name="sets_credits_icon_designed">La icona i el logotip de Play Field Portal els va dissenyar johakovi. Moltíssimes gràcies per les imatges que donen identitat al launcher.</string>
+    <string name="sets_credits_label_design">Disseny</string>
+    <string name="sets_credits_group_artwork">Imatges de sistemes i consoles</string>
+    <string name="sets_credits_artwork_from">Les icones de sistemes, consoles i categories que es fan servir a tot el launcher provenen del tema \"XMB Menu for ES-DE\" — una recreació de la comunitat de l\'XMB de la PSP.</string>
+    <string name="sets_credits_artwork_rights">Tots els drets sobre aquestes imatges pertanyen als seus creadors — Anthony Caccese, a partir del treball original d\'InitialDin. Les icones s\'utilitzen aquí amb agraïment i continuen sent propietat dels seus autors respectius.</string>
+    <string name="sets_credits_label_project">Projecte</string>
+    <string name="sets_credits_label_authors">Autors</string>
+    <string name="sets_credits_label_source">Font</string>
+    <string name="sets_credits_group_buttons">Icones dels botons del comandament</string>
+    <string name="sets_credits_buttons_from">Totes les indicacions de botons en pantalla — els botons frontals de PlayStation, Xbox i Nintendo, les creuetes, els botons superiors, els gatells, les palanques i els botons de sistema — provenen dels paquets d\'icones de botons de Zacksly, utilitzats sota la llicència Creative Commons Reconeixement 3.0.</string>
+    <string name="sets_credits_buttons_unmodified">Les imatges no s\'han modificat: només s\'han canviat els noms dels fitxers pels noms de recursos d\'Android, i només s\'inclouen les icones que mostra el launcher.</string>
+    <string name="sets_credits_label_author">Autor</string>
+    <string name="sets_credits_label_website">Lloc web</string>
+    <string name="sets_credits_label_support">Suport</string>
+    <string name="sets_credits_label_packs">Paquets</string>
+    <string name="sets_credits_label_license">Llicència</string>
+    <string name="sets_credits_group_sounds">Sons del menú</string>
+    <string name="sets_credits_sounds_built">Els sons del menú inclosos — navegació, enrere, confirmació, error, inici, notificació i la melodia d\'arrencada — estan fets amb àudio lliure de drets publicat a Pixabay i editat per al launcher: retallat, reafinat, reequilibrat i convertit. Gràcies als creadors de les obres a partir de les quals s\'ha fet el conjunt.</string>
+    <string name="sets_credits_sounds_license">La llicència de contingut de Pixabay no exigeix atribució; tot i així, aquí es dona amb agraïment. Si ets un d\'aquests creadors i vols que es canviï el crèdit o que es retiri algun recurs, posa-t\'hi en contacte.</string>
+    <string name="sets_credits_group_metadata">Imatges i metadades dels jocs</string>
+    <string name="sets_credits_metadata_fetched">Les caràtules, caixes 3D, fotos de cartutxos i discos, bàners de capçalera, logotips, icones, manuals, vídeos i metadades dels jocs s\'obtenen a petició teva de proveïdors externs i continuen sent propietat dels seus propietaris respectius.</string>
+    <string name="sets_credits_label_primary_scraper">Font principal</string>
+    <string name="sets_credits_value_screenscraper">ScreenScraper — screenscraper.fr, base de dades de mitjans de jocs mantinguda per la comunitat</string>
+    <string name="sets_credits_label_artwork">Imatges</string>
+    <string name="sets_credits_label_metadata">Metadades</string>
+    <string name="sets_credits_group_achievements">Assoliments — Shiba Coins</string>
+    <string name="sets_credits_achievements_from">Les dades d\'assoliments del sistema Shiba Coins provenen dels serveis i projectes següents i continuen sent propietat dels seus propietaris respectius.</string>
+    <string name="sets_credits_value_retroachievements">retroachievements.org — conjunts d\'assoliments i dades de desbloqueig fets per la comunitat per a jocs retro, a través de la Web API oficial de RetroAchievements i el client api-kotlin</string>
+    <string name="sets_credits_value_steam">Powered by Steam — esquemes d\'assoliments i dades de desbloqueig a través de la Steam Web API, amb la teva pròpia clau. Steam i el logotip de Steam són marques comercials de Valve Corporation. steampowered.com</string>
+    <string name="sets_credits_goldberg_bundles">El seguiment local d\'assoliments per a jocs de PC amb emulació de Steam inclou el Goldberg Steam Emulator — concretament gbe_fork, la bifurcació de la comunitat mantinguda per Detanup01 i col·laboradors, basada en el Goldberg Emulator original de Mr. Goldberg.</string>
+    <string name="sets_credits_goldberg_license">L\'emulador és programari lliure amb llicència GNU Lesser General Public License v3.0 (LGPL-3.0). Play Field Portal inclou una versió sense modificar del seu steam_api64.dll; el codi font corresponent complet i el text íntegre de la llicència són als enllaços de sota.</string>
+    <string name="sets_credits_value_gbe">gbe_fork — Detanup01 i col·laboradors</string>
+    <string name="sets_credits_label_original_project">Projecte original</string>
+    <string name="sets_credits_value_goldberg_original">Goldberg Emulator de Mr. Goldberg — gitlab.com/Mr_Goldberg/goldberg_emulator</string>
+    <string name="sets_credits_group_support">Dona suport al projecte</string>
+    <string name="sets_credits_support_thanks">Moltes gràcies a tothom pel vostre suport. Vaig crear això com una carta d\'amor a la PSP i a la comunitat increïble que també l\'estima, així que aquest projecte sempre serà gratuït. Dit això, si t\'agrada el que faig i vols mostrar-ho d\'una altra manera, em pots convidar a un taco. Evidentment, les donacions són sempre opcionals i mai obligatòries. Us estimo a tots, i feliç 15 de juny.</string>
+    <string name="sets_credits_label_buy_taco">Convida\'m a un taco</string>
+    <string name="sets_credits_group_notes">Notes</string>
+    <string name="sets_credits_notes_text">Si ets titular de drets i vols que es canviï l\'atribució o que es retiri algun recurs, posa-t\'hi en contacte i s\'atendrà de seguida.</string>
+    <string name="sets_credits_title">Crèdits</string>
+    <string name="sets_credits_no_browser">Cap aplicació no pot obrir enllaços web. Visita %1$s en un navegador.</string>
+
+    <!-- Configuració ▸ Registres -->
+    <string name="sets_logs_title">Registres</string>
+    <string name="sets_logs_prompt_share">Comparteix</string>
+    <string name="sets_logs_prompt_open">Obre</string>
+    <string name="sets_logs_prompt_clear">Esborra</string>
+    <string name="sets_logs_clear_title">Vols esborrar tots els registres?</string>
+    <plurals name="sets_logs_clear_message">
+        <item quantity="one">Se suprimirà el fitxer de registre (%2$s). Si estàs a punt d\'informar d\'un problema, comparteix primer el registre. Un registre esborrat no es pot recuperar.</item>
+        <item quantity="many">Se suprimiran els %1$d fitxers de registre (%2$s). Si estàs a punt d\'informar d\'un problema, comparteix primer el registre. Un registre esborrat no es pot recuperar.</item>
+        <item quantity="other">Se suprimiran els %1$d fitxers de registre (%2$s). Si estàs a punt d\'informar d\'un problema, comparteix primer el registre. Un registre esborrat no es pot recuperar.</item>
+    </plurals>
+    <string name="sets_logs_clear_confirm">Esborra</string>
+    <string name="sets_logs_group_files">Fitxers de registre</string>
+    <string name="sets_logs_empty">Encara no hi ha fitxers de registre</string>
+    <string name="sets_logs_empty_help">Cada vegada que s\'obre l\'aplicació comença un registre nou. Selecciona per tornar a comprovar-ho.</string>
+    <string name="sets_logs_group_manage">Gestiona</string>
+    <string name="sets_logs_clear_row">Esborra tots els registres</string>
+    <string name="sets_logs_clear_row_help">Suprimeix tots els registres desats. Aquesta sessió continua registrant en un fitxer nou.</string>
+    <string name="sets_logs_clear_row_none">No hi ha res a esborrar</string>
+    <string name="sets_logs_group_about">Quant als registres</string>
+    <string name="sets_logs_saved">Què es desa</string>
+    <string name="sets_logs_saved_help">Només es conserven les sessions més recents (uns 2 MB com a màxim). Les contrasenyes, els tokens, els noms de compte i les adreces electròniques s\'eliminen abans d\'escriure res.</string>
+    <string name="sets_logs_share_file">Comparteix %1$s</string>
+    <string name="sets_logs_current">ACTUAL</string>
+    <string name="sets_logs_open_with">Obre el registre amb</string>
+    <string name="sets_logs_share_subject">Registre de Play Field Portal — %1$s</string>
+    <string name="sets_logs_share_chooser">Comparteix el fitxer de registre</string>
+    <string name="sets_logs_no_files">No hi ha fitxers</string>
+    <plurals name="sets_logs_summary">
+        <item quantity="one">%1$d fitxer · %2$s</item>
+        <item quantity="many">%1$d fitxers · %2$s</item>
+        <item quantity="other">%1$d fitxers · %2$s</item>
+    </plurals>
+    <plurals name="sets_logs_deleted">
+        <item quantity="one">S\'ha suprimit %1$d fitxer (%2$s)</item>
+        <item quantity="many">S\'han suprimit %1$d fitxers (%2$s)</item>
+        <item quantity="other">S\'han suprimit %1$d fitxers (%2$s)</item>
+    </plurals>
+    <string name="sets_logs_started_today">Iniciat avui, %1$s</string>
+    <string name="sets_logs_started_yesterday">Iniciat ahir, %1$s</string>
+    <string name="sets_logs_started_on">Iniciat el %1$s, %2$s</string>
+
+    <!-- Carpetes arrel -->
+    <string name="sets_roots_group">Carpetes arrel</string>
+    <string name="sets_scanning">S\'està escanejant…</string>
+    <string name="sets_rescan_help">Actualitza les biblioteques des de totes les carpetes arrel</string>
+    <string name="sets_playback_group">Reproducció</string>
+    <string name="sets_root_kind_music">música</string>
+    <string name="sets_root_kind_video">vídeo</string>
+    <string name="sets_root_kind_photo">fotos</string>
+    <string name="sets_root_kind_rom">ROM</string>
+    <string name="sets_root_fallback_music">Música</string>
+    <string name="sets_root_fallback_video">Vídeos</string>
+    <string name="sets_root_fallback_photo">Fotos</string>
+    <string name="sets_root_none">No hi ha cap arrel de %1$s configurada</string>
+    <string name="sets_root_none_help">Afegeix una carpeta a sota per començar a gestionar la biblioteca</string>
+    <string name="sets_root_access_lost">S\'ha perdut l\'accés — fes servir Edita per tornar-lo a concedir</string>
+    <string name="sets_root_consoles">Consoles: %1$s</string>
+    <string name="sets_root_kind_root">Arrel de %1$s</string>
+    <string name="sets_label_edit_folder">Edita la carpeta</string>
+    <string name="sets_label_remove_folder">Treu la carpeta</string>
+    <string name="sets_label_options_hint">Indicació d\'opcions</string>
+    <string name="sets_label_show_on_bar">Mostra a la barra</string>
+    <string name="sets_label_show_in_games">Mostra a Jocs</string>
+    <string name="sets_label_pin_to_top">Fixa a dalt</string>
+    <string name="sets_root_edit_short">Edita</string>
+    <string name="sets_root_remove_short">Treu</string>
+    <string name="sets_root_remove_title">Vols treure aquesta carpeta?</string>
+    <string name="sets_root_remove_message">PFP deixarà d\'utilitzar \"%1$s\", i el que hi ha trobat sortirà de la biblioteca. No se suprimeix cap fitxer de l\'emmagatzematge.</string>
+    <string name="sets_root_remove_confirm">Treu</string>
+
+    <!-- Selectors de reproductor predeterminat -->
+    <string name="sets_player_builtin">Play Field Portal</string>
+    <string name="sets_player_system_default">Predeterminat del sistema</string>
+
+    <!-- Configuració ▸ Música -->
+    <string name="sets_music_title">Música</string>
+    <string name="sets_music_player_title">Reproductor de música predeterminat</string>
+    <string name="sets_music_player_none">No s\'ha trobat cap altre reproductor de música en aquest dispositiu.</string>
+    <string name="sets_music_add_root">Afegeix una arrel de música</string>
+    <string name="sets_music_add_root_help">Concedeix una carpeta arrel (p. ex. /Music) — afegeix-ne diverses per cobrir més ubicacions</string>
+    <string name="sets_music_rescan">Torna a escanejar la biblioteca de música</string>
+    <string name="sets_music_player">Reproductor de música predeterminat</string>
+    <string name="sets_music_player_help">Aplicació que obre les pistes de música</string>
+
+    <!-- Configuració ▸ Vídeo -->
+    <string name="sets_video_title">Vídeo</string>
+    <string name="sets_video_player_title">Reproductor de vídeo predeterminat</string>
+    <string name="sets_video_player_none">No s\'ha trobat cap reproductor de vídeo extern en aquest dispositiu.</string>
+    <string name="sets_video_add_root">Afegeix una arrel de vídeo</string>
+    <string name="sets_video_add_root_help">Concedeix una carpeta arrel (p. ex. /Movies) — afegeix-ne diverses per cobrir més ubicacions</string>
+    <string name="sets_video_rescan">Torna a escanejar la biblioteca de vídeo</string>
+    <string name="sets_video_player">Reproductor de vídeo predeterminat</string>
+    <string name="sets_video_player_help">Play Field Portal reprodueix dins de l\'aplicació; també pots triar una aplicació o que se\'t pregunti cada vegada.</string>
+
+    <!-- Configuració ▸ Fotos -->
+    <string name="sets_photo_title">Fotos</string>
+    <string name="sets_photo_add_root">Afegeix una arrel de fotos</string>
+    <string name="sets_photo_add_root_help">Concedeix una carpeta arrel (p. ex. /Pictures) — afegeix-ne diverses per cobrir més ubicacions</string>
+    <string name="sets_photo_rescan">Torna a escanejar la biblioteca de fotos</string>
+    <string name="sets_photo_group_maintenance">Manteniment</string>
+    <string name="sets_photo_clear_cache">Esborra la memòria cau de miniatures</string>
+    <string name="sets_photo_clear_cache_help">Suprimeix les miniatures generades. Un nou escaneig les torna a generar.</string>
+    <plurals name="sets_photo_cache_cleared">
+        <item quantity="one">S\'ha esborrat %1$d miniatura de la memòria cau. Torna a escanejar per regenerar-la.</item>
+        <item quantity="many">S\'han esborrat %1$d miniatures de la memòria cau. Torna a escanejar per regenerar-les.</item>
+        <item quantity="other">S\'han esborrat %1$d miniatures de la memòria cau. Torna a escanejar per regenerar-les.</item>
+    </plurals>
+
+    <!-- Configuració ▸ Interfície ▸ Notificacions -->
+    <string name="sets_notif_title">Notificacions</string>
+    <string name="sets_notif_record">Registra les notificacions</string>
+    <string name="sets_notif_record_help">Conserva un historial dels escanejos, les imatges, l\'obtenció de dades i els assoliments. Si ho desactives, no s\'afegeixen entrades noves; les tasques en curs continuen mostrant el progrés.</string>
+    <string name="sets_notif_group_history">Historial</string>
+    <string name="sets_notif_keep_for">Conserva les entrades durant</string>
+    <string name="sets_notif_keep_for_help">Les entrades més antigues s\'eliminen la propera vegada que es registri alguna cosa. En qualsevol cas hi ha un límit de 200 entrades, i les llegides s\'eliminen primer.</string>
+    <string name="sets_notif_never">Mai</string>
+    <plurals name="sets_notif_days">
+        <item quantity="one">%1$d dia</item>
+        <item quantity="many">%1$d dies</item>
+        <item quantity="other">%1$d dies</item>
+    </plurals>
+    <string name="sets_notif_mark_read">Marca-ho tot com a llegit</string>
+    <string name="sets_notif_mark_read_help">Esborra el comptador de no llegides de la barra d\'estat</string>
+    <plurals name="sets_notif_unread">
+        <item quantity="one">%1$d sense llegir</item>
+        <item quantity="many">%1$d sense llegir</item>
+        <item quantity="other">%1$d sense llegir</item>
+    </plurals>
+    <string name="sets_notif_none_unread">Cap sense llegir</string>
+    <string name="sets_notif_clear_all">Esborra-ho tot</string>
+    <string name="sets_notif_clear_all_help">Buida l\'historial. Les tasques que encara s\'executen no es veuen afectades.</string>
+    <plurals name="sets_notif_stored">
+        <item quantity="one">%1$d desada</item>
+        <item quantity="many">%1$d desades</item>
+        <item quantity="other">%1$d desades</item>
+    </plurals>
+
+    <!-- Configuració ▸ Sistema ▸ Actualització del sistema -->
+    <string name="sets_update_title">Actualització del sistema</string>
+    <string name="sets_update_group_update">Actualització</string>
+    <string name="sets_update_installed">Versió instal·lada</string>
+    <string name="sets_update_latest">Darrera versió</string>
+    <string name="sets_update_check">Cerca actualitzacions</string>
+    <string name="sets_update_checking">S\'està comprovant…</string>
+    <string name="sets_update_notifications">Notificacions d\'actualització</string>
+    <string name="sets_update_notifications_help">Avisa\'m a Notificacions quan surti una versió nova, com a màxim un cop al dia</string>
+    <string name="sets_update_group_changelog">Registre de canvis</string>
+    <string name="sets_update_no_releases">Encara no s\'ha carregat cap versió</string>
+    <string name="sets_update_no_releases_help">Cerca actualitzacions per carregar el registre de canvis</string>
+    <string name="sets_update_install">Baixa i instal·la %1$s</string>
+    <string name="sets_update_cannot_install">Aquesta versió no pot instal·lar actualitzacions des d\'aquí</string>
+    <string name="sets_update_handed_over">Confirma-ho a l\'instal·lador d\'Android per acabar</string>
+    <string name="sets_update_downloading">S\'està baixant…</string>
+    <string name="sets_update_install_help">Android et demana confirmació abans d\'instal·lar res</string>
+    <string name="sets_update_no_summary">No hi ha resum per a aquesta versió</string>
+    <string name="sets_update_full_notes">Notes de la versió completes</string>
+    <string name="sets_update_full_notes_help">Obre GitHub al navegador</string>
+    <string name="sets_edition_full">Completa</string>
+    <string name="sets_edition_lite">Lite</string>
+    <string name="sets_update_installed_label">%1$s · %2$s</string>
+    <string name="sets_update_unknown_version">Desconeguda</string>
+    <string name="sets_update_available">%1$s disponible</string>
+    <string name="sets_update_not_checked">Encara no s\'ha comprovat</string>
+    <string name="sets_update_up_to_date">Actualitzat</string>
+    <string name="sets_update_never_checked">Mai comprovat</string>
+    <string name="sets_update_checked">Comprovat: %1$s</string>
+    <string name="sets_update_tag_new">Nova</string>
+    <string name="sets_update_tag_installed">Instal·lada</string>
+    <string name="sets_update_msg_available">Hi ha una versió nova disponible.</string>
+    <string name="sets_update_msg_latest">Tens la darrera versió.</string>
+    <string name="sets_update_msg_offline">No s\'ha pogut connectar amb GitHub. Torna-ho a provar més tard.</string>
+    <string name="sets_update_msg_invalid">GitHub ha enviat una resposta inesperada. Torna-ho a provar més tard.</string>
+    <string name="sets_update_no_apk">La versió %1$s encara no té baixada %2$s. Torna-ho a provar més tard.</string>
+    <string name="sets_update_download_failed">No s\'ha pogut baixar l\'actualització. Comprova la connexió i torna-ho a provar.</string>
+    <string name="sets_update_not_newer">La baixada no és una versió més nova d\'aquesta aplicació, així que no s\'ha instal·lat.</string>
+    <string name="sets_update_no_installer">No s\'ha pogut obrir l\'instal·lador d\'Android en aquest dispositiu.</string>
+    <string name="sets_update_reminder_installed">La versió %1$s està instal·lada.</string>
+    <string name="sets_update_reminder_available">La versió %1$s està disponible.</string>
+
+    <!-- Configuració ▸ Quant a -->
+    <string name="sets_about_label_version">Versió</string>
+    <string name="sets_about_label_build">Compilació</string>
+    <string name="sets_about_label_edition">Edició</string>
+    <string name="sets_about_label_min_android">Android mínim</string>
+    <string name="sets_about_label_target">Objectiu</string>
+    <string name="sets_about_group_open_source">Codi obert</string>
+    <string name="sets_about_value_compose">Marc d\'interfície</string>
+    <string name="sets_about_value_room">Base de dades local</string>
+    <string name="sets_about_value_hilt">Injecció de dependències</string>
+    <string name="sets_about_value_ktor">Client de xarxa</string>
+    <string name="sets_about_value_coil">Càrrega d\'imatges</string>
+    <string name="sets_about_value_media3">Vídeos i reproducció</string>
+    <string name="sets_about_value_workmanager">Tasques en segon pla</string>
+    <string name="sets_about_value_timber">Registre</string>
+    <string name="sets_about_group_credits">Crèdits</string>
+    <string name="sets_about_label_art_media">Imatges i mitjans</string>
+    <string name="sets_about_label_metadata">Metadades</string>
+    <string name="sets_about_label_inspired">Inspirat en</string>
+    <string name="sets_about_label_see_also">Vegeu també</string>
+    <string name="sets_about_value_see_also">Configuració ▸ Crèdits</string>
+    <string name="sets_about_group_legal">Informació legal</string>
+    <string name="sets_about_legal_independent">Play Field Portal és un projecte de fans independent, no afiliat a Sony Interactive Entertainment.</string>
+    <string name="sets_about_legal_trademarks">PlayStation, PSP i XMB són marques comercials de Sony Interactive Entertainment Inc.</string>
+    <string name="sets_about_title">Quant a</string>
+    <string name="sets_about_unknown">desconegut</string>
+
+    <!-- Imatges òrfenes -->
+    <string name="sets_orphan_linked">Imatge enllaçada — continuarà enllaçada en els escanejos futurs.</string>
+    <string name="sets_orphan_link_failed">No s\'ha pogut enllaçar aquest fitxer — executa Escaneja i torna a enllaçar i torna-ho a provar.</string>
+
+    <!-- Configuració ▸ So -->
+    <string name="sets_audio_custom_sound">So personalitzat</string>
+    <string name="sets_audio_import_failed">No s\'ha pogut importar aquest so. Prova un altre fitxer.</string>
+    <string name="sets_ptf_wallpaper_only">S\'ha importat \"%1$s\" — només el fons de pantalla</string>
+    <plurals name="sets_ptf_icons">
+        <item quantity="one">S\'ha importat \"%1$s\" — fons de pantalla i %2$d icona</item>
+        <item quantity="many">S\'ha importat \"%1$s\" — fons de pantalla i %2$d icones</item>
+        <item quantity="other">S\'ha importat \"%1$s\" — fons de pantalla i %2$d icones</item>
+    </plurals>
+    <plurals name="sets_ptf_icons_tint">
+        <item quantity="one">S\'ha importat \"%1$s\" — fons de pantalla i %2$d icona, coincidència del to %3$d%%</item>
+        <item quantity="many">S\'ha importat \"%1$s\" — fons de pantalla i %2$d icones, coincidència del to %3$d%%</item>
+        <item quantity="other">S\'ha importat \"%1$s\" — fons de pantalla i %2$d icones, coincidència del to %3$d%%</item>
+    </plurals>
+    <string name="sets_ptf_cxmb_unsupported">Els temes CXMB (.ctf) no són compatibles — només els temes .ptf oficials</string>
+
+    <!-- Connexió de serveis -->
+    <string name="sets_svc_steam_connected">Steam connectat</string>
+    <string name="sets_svc_steam_resolved">Steam connectat — s\'ha resolt \"%1$s\"</string>
+    <string name="sets_svc_steam_unresolved">S\'ha desat la clau, però no s\'ha pogut resoldre \"%1$s\". Introdueix el teu SteamID64.</string>
+    <string name="sets_svc_valid">Vàlid</string>
+    <string name="sets_svc_igdb_invalid">No vàlid — comprova l\'ID i el secret de client</string>
+    <string name="sets_svc_screenscraper_invalid">No vàlid — comprova el nom d\'usuari i la contrasenya</string>
+    <plurals name="sets_svc_screenscraper_valid_threads">
+        <item quantity="one">Vàlid — %1$s fil</item>
+        <item quantity="many">Vàlid — %1$s fils</item>
+        <item quantity="other">Vàlid — %1$s fils</item>
+    </plurals>
+    <plurals name="sets_svc_screenscraper_valid_both">
+        <item quantity="one">Vàlid — %1$s fil, %2$s sol·licituds/dia</item>
+        <item quantity="many">Vàlid — %1$s fils, %2$s sol·licituds/dia</item>
+        <item quantity="other">Vàlid — %1$s fils, %2$s sol·licituds/dia</item>
+    </plurals>
+    <string name="sets_svc_screenscraper_valid_requests">Vàlid, %1$s sol·licituds/dia</string>
+
+    <!-- Configuració ▸ Comandament -->
+    <string name="sets_controller_title">Comandament</string>
+    <string name="sets_controller_group_ab">Confirmar i enrere</string>
+    <string name="sets_controller_ab_help">Determina quin botó confirma i quin torna enrere. S\'aplica a tots els menús del launcher.</string>
+    <string name="sets_controller_group_xy">Opcions i ordenació</string>
+    <string name="sets_controller_xy_help">Intercanvia les accions d\'X i Y només a la interfície del launcher. No afecta els controls dels emuladors.</string>
+    <string name="sets_controller_group_type">Tipus de comandament</string>
+    <string name="sets_controller_type_help">Canvia quines icones i etiquetes de botons es mostren a les indicacions d\'ajuda.</string>
+    <string name="sets_controller_type">Tipus</string>
+    <string name="sets_controller_type_sub">Afecta la barra d\'ajuda de la part inferior del launcher</string>
+    <string name="sets_controller_group_scroll">Velocitat de desplaçament</string>
+    <string name="sets_controller_scroll_help">Velocitat de desplaçament de les llistes mentre mantens premuda una direcció. Com més estona, més accelera; amb la palanca inclinada del tot va a la velocitat màxima.</string>
+    <string name="sets_controller_scroll_sub">S\'aplica a la navegació mantenint premuda la creueta o la palanca</string>
+    <string name="sets_controller_group_navigation">Navegació</string>
+    <string name="sets_controller_left_backs_out">Esquerra torna enrere</string>
+    <string name="sets_controller_left_backs_out_help">Prem ESQUERRA per sortir d\'una carpeta o d\'un menú desplegable — només on ESQUERRA no fa res més</string>
+    <string name="sets_controller_group_keyboard">Teclat</string>
+    <string name="sets_controller_virtual_keyboard">Teclat virtual</string>
+    <string name="sets_controller_virtual_keyboard_help">Escriu amb el comandament al teclat propi de PFP. Si està desactivat, o quan fas servir el tàctil, s\'obre el teclat del sistema</string>
+    <string name="sets_controller_group_reset">Restabliment</string>
+    <string name="sets_controller_reset">Restableix tota la configuració del comandament</string>
+    <string name="sets_controller_reset_help">Restaura els valors predeterminats d\'intercanvi i de tipus</string>
+</resources>

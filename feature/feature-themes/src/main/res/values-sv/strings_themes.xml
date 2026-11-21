@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="thm_error_manifest_missing">Den obligatoriska filen theme.json saknas i arkivet</string>
+    <string name="thm_error_manifest_invalid">Ogiltig theme.json: %1$s</string>
+    <string name="thm_error_id_invalid">Ogiltigt tema-id \'%1$s\' – använd bokstäver, siffror, \'.\', \'_\' eller \'-\' (max 64)</string>
+    <string name="thm_error_color_invalid">Ogiltigt värde för %1$s \'%2$s\' – förväntade #RRGGBB eller #AARRGGBB</string>
+</resources>

@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Achievement update notifications -->
+    <string name="ach_upd_running">Geïnstalleerde prestaties bijwerken</string>
+    <string name="ach_upd_running_stop_note">Al bijgewerkte prestaties blijven behouden.</string>
+    <string name="ach_upd_progress">%1$d van %2$d spellen controleren</string>
+    <string name="ach_upd_stopped">Bijwerken van prestaties gestopt</string>
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="one">%d spel gecontroleerd; opgeslagen voortgang behouden</item>
+        <item quantity="other">%d spellen gecontroleerd; opgeslagen voortgang behouden</item>
+    </plurals>
+    <string name="ach_upd_some_failed">Sommige prestaties konden niet worden bijgewerkt</string>
+    <plurals name="ach_upd_failed_message">
+        <item quantity="one">%1$d van %2$d spel moet opnieuw worden geprobeerd</item>
+        <item quantity="other">%1$d van %2$d spellen moeten opnieuw worden geprobeerd</item>
+    </plurals>
+    <string name="ach_upd_results_done">Bijgewerkt</string>
+    <string name="ach_upd_updated">Prestaties bijgewerkt</string>
+    <plurals name="ach_upd_updated_message">
+        <item quantity="one">%1$d spel bijgewerkt · %2$d ongewijzigd</item>
+        <item quantity="other">%1$d spellen bijgewerkt · %2$d ongewijzigd</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">Prestaties zijn up-to-date</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="one">%d geïnstalleerd spel gecontroleerd</item>
+        <item quantity="other">%d geïnstalleerde spellen gecontroleerd</item>
+    </plurals>
+    <string name="ach_upd_paused">Bijwerken van prestaties gepauzeerd</string>
+    <string name="ach_upd_fact_service">Dienst</string>
+    <string name="ach_upd_pause_offline">Maak verbinding met internet</string>
+    <string name="ach_upd_pause_reconnect">%1$s opnieuw verbinden</string>
+    <string name="ach_upd_pause_steam_private">Steam-speldetails zijn niet beschikbaar</string>
+
+    <!-- Auto-match notifications -->
+    <string name="ach_match_running">Spellen automatisch koppelen</string>
+    <string name="ach_match_running_stop_note">Al gekoppelde spellen blijven gekoppeld.</string>
+    <string name="ach_match_stopped_note">Al gekoppelde spellen blijven gekoppeld</string>
+    <string name="ach_match_stopped">Automatisch koppelen gestopt</string>
+    <string name="ach_match_recognized">Spellen herkend</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="one">%d geïnstalleerd spel gekoppeld. De prestaties worden bijgewerkt.</item>
+        <item quantity="other">%d geïnstalleerde spellen gekoppeld. Hun prestaties worden bijgewerkt.</item>
+    </plurals>
+
+    <!-- Clearing achievement records -->
+    <string name="ach_clear_done">Prestatiegegevens gewist</string>
+    <string name="ach_clear_done_message">Geïnstalleerde spellen moeten opnieuw worden gesynchroniseerd om prestaties weer te tonen</string>
+    <string name="ach_clear_failed">Kan prestaties niet wissen</string>
+    <string name="ach_clear_failed_message">Er is niets verwijderd. Probeer het opnieuw via Instellingen ▸ Prestaties</string>
+
+    <!-- Local Steam: reason phrases -->
+    <string name="ach_ls_unavail_store">de winkel kon niet worden geraadpleegd</string>
+    <string name="ach_ls_unavail_steam">Steam is nu niet beschikbaar</string>
+    <string name="ach_ls_steam_unreachable">Steam kon niet worden bereikt</string>
+    <string name="ach_ls_steam_rate_limited">Steam beperkt het aantal verzoeken</string>
+    <string name="ach_ls_steam_error">Steam gaf een fout terug</string>
+    <string name="ach_ls_steam_needs_key">Steam heeft je Web API-sleutel nodig</string>
+
+    <!-- Local Steam: linking a picked game folder -->
+    <string name="ach_link_no_match">Steam heeft geen spel dat overeenkomt met \"%1$s\". Hernoem de map naar de Steam-naam van het spel, of koppel het eerst via Speldetails ▸ Spel koppelen.</string>
+    <string name="ach_link_unavailable">%1$s, dus de app-id van deze map kon niet worden bepaald. Er is niets gewijzigd — probeer het opnieuw zodra je weer online bent.</string>
+    <string name="ach_link_marker_failed">Kan steam_appid.txt niet in die map aanmaken — PFP heeft er mogelijk alleen leestoegang toe.</string>
+    <string name="ach_link_not_recorded">De gekozen koppeling kon niet worden vastgelegd.</string>
+    <string name="ach_link_installer_off">Zet Goldberg installeren en spellen converteren aan in de prestatie-instellingen voordat PFP in een spelmap schrijft.</string>
+    <string name="ach_link_no_app_id">Die map vermeldt geen app-id meer — kies hem opnieuw.</string>
+    <string name="ach_link_need_key">Voeg je Steam Web API-sleutel toe in Instellingen ▸ Prestaties ▸ Inloggegevens van providers — de prestatielijst komt daarvandaan.</string>
+    <string name="ach_link_no_achievements">Steam vermeldt geen prestaties voor app-id %1$s, dus er valt niets bij te houden.</string>
+    <string name="ach_link_kit_failed">Kan de prestatiekit niet schrijven: %1$s</string>
+    <string name="ach_link_read_back_failed">Die map kon niet opnieuw worden gelezen. Staat hij op verwisselbare opslag, koppel die dan opnieuw en kies de map nogmaals.</string>
+    <string name="ach_link_not_steam_build">Nergens in die map staat een Steam-bibliotheekbestand (steam_api64.dll), dus het is geen Steam-build en er valt niets bij te houden voor de emulator. Kies de map waarin de .exe van het spel staat.</string>
+
+    <!-- Local Steam: convert picker rows -->
+    <string name="ach_pick_checking">Steam controleren…</string>
+    <plurals name="ach_pick_coins">
+        <item quantity="one">%1$d munt  ·  appid %2$s</item>
+        <item quantity="other">%1$d munten  ·  appid %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">Geen lijst op Steam  ·  appid %1$s</string>
+    <string name="ach_pick_needs_key">Steam Web API-sleutel nodig  ·  appid %1$s</string>
+    <string name="ach_pick_no_answer">Steam antwoordde niet  ·  appid %1$s</string>
+
+    <!-- Local Steam: batch match summary -->
+    <string name="ach_batch_already_running">Er loopt al een batchkoppeling.</string>
+    <string name="ach_batch_no_folders">Daar staan geen spelmappen in. Kies de map die je spelmappen BEVAT, niet de map van één spel.</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="one">%d map gevonden, maar dat is geen Steam-build — geen steam_api-bibliotheek, dus er valt niets bij te houden voor de emulator.</item>
+        <item quantity="other">%d mappen gevonden, maar geen daarvan is een Steam-build — geen steam_api-bibliotheek, dus er valt niets bij te houden voor de emulator.</item>
+    </plurals>
+    <string name="ach_batch_linked">%1$d gekoppeld aan spellen in de bibliotheek</string>
+    <string name="ach_batch_tracked">%1$d apart bijgehouden</string>
+    <string name="ach_batch_converting">%1$d wachten op conversie</string>
+    <plurals name="ach_batch_matched">
+        <item quantity="one">%1$d van %2$d map gekoppeld.</item>
+        <item quantity="other">%1$d van %2$d mappen gekoppeld.</item>
+    </plurals>
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="one">%1$d van %2$d map gekoppeld: %3$s.</item>
+        <item quantity="other">%1$d van %2$d mappen gekoppeld: %3$s.</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="one">%1$d kon niet aan de naam worden herkend — open de Shiba Coins-pagina van het spel en gebruik Automatisch koppelen om de map te kiezen.</item>
+        <item quantity="other">%1$d konden niet aan hun naam worden herkend — open de Shiba Coins-pagina van elk spel en gebruik Automatisch koppelen om de map te kiezen.</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="one">%1$d staat niet in je bibliotheek — voeg het eerst toe aan de Windows-kaart en koppel dan opnieuw.</item>
+        <item quantity="other">%1$d staan niet in je bibliotheek — voeg ze eerst toe aan de Windows-kaart en koppel dan opnieuw.</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="one">%1$d is geen Steam-build.</item>
+        <item quantity="other">%1$d zijn geen Steam-builds.</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="one">%1$d mislukt — bekijk het logboek.</item>
+        <item quantity="other">%1$d mislukt — bekijk het logboek.</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">Die map kon niet worden geopend.</string>
+    <string name="ach_batch_fail_read_back">%1$s: kon na herkenning niet opnieuw worden gelezen.</string>
+    <string name="ach_batch_fail_reason">%1$s: %2$s.</string>
+    <string name="ach_batch_fail_marker">%1$s: steam_appid.txt kon niet worden aangemaakt.</string>
+
+    <!-- Vita3K library scan results -->
+    <string name="ach_vita_set_folder">Stel eerst je Vita3K-gegevensmap (ux0) in.</string>
+    <string name="ach_vita_link_invalid">Die Vita3K-maplink is ongeldig — geef opnieuw toegang.</string>
+    <string name="ach_vita_no_ux0">Kan ux0/app niet vinden in de map met toegang — kies je Vita3K-map ux0 (of de map die deze bevat).</string>
+    <string name="ach_vita_no_app">Geen map app/ onder ux0 — controleer de map met toegang.</string>
+    <string name="ach_vita_none_installed">Geen geïnstalleerde Vita-spellen gevonden onder ux0/app. Installeer eerst een spel in Vita3K.</string>
+    <plurals name="ach_vita_no_new">
+        <item quantity="one">Geen nieuwe Vita-spellen — %d staat al in je bibliotheek.</item>
+        <item quantity="other">Geen nieuwe Vita-spellen — %d staan al in je bibliotheek.</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="one">%d Vita-spel geïmporteerd.</item>
+        <item quantity="other">%d Vita-spellen geïmporteerd.</item>
+    </plurals>
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="one">%1$d Vita-spel geïmporteerd, %2$d bijgewerkt.</item>
+        <item quantity="other">%1$d Vita-spellen geïmporteerd, %2$d bijgewerkt.</item>
+    </plurals>
+</resources>

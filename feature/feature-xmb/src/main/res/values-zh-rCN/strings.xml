@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="xmb_icons_reset_removed_themed">已移除所选图标，现在显示已应用主题的图标。</string>
+    <string name="xmb_icons_reset_themed_slot">无需重置：此图标来自已应用的主题。</string>
+    <string name="xmb_icons_reset_builtin_slot">无需重置：此位置已在使用内置图标。</string>
+    <string name="xmb_icons_reset_all_none">无需重置：你尚未选择任何图标。</string>
+    <string name="xmb_icons_reset_all_themed">已清除所选图标，现在显示已应用主题的图标。</string>
+</resources>

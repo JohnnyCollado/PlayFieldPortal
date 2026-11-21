@@ -12,7 +12,9 @@ import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.NotificationDetail
 import com.playfieldportal.core.domain.model.PfpErrorCode
 import com.playfieldportal.core.domain.model.TaskKind
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
+import com.playfieldportal.feature.artwork.R
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
@@ -39,11 +41,13 @@ class MetadataScrapeWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         val mode = inputData.getString(KEY_MODE) ?: MODE_MISSING
-        val label = if (mode == MODE_ALL) "Re-scraping all games" else "Scraping missing artwork"
+        val label = applicationContext.getString(
+            if (mode == MODE_ALL) R.string.art_scrape_label_all else R.string.art_scrape_label_missing,
+        )
         tasks.start(
             TASK_ID, label, TaskKind.ARTWORK,
             onStop = { WorkManager.getInstance(applicationContext).cancelUniqueWork(UNIQUE_NAME) },
-            stopNote = "Artwork already fetched is kept.",
+            stopNote = applicationContext.getString(R.string.art_scrape_stop_note),
         )
         var lastNotified = 0L
         // Every game's result, for the Results sheet.
@@ -78,20 +82,25 @@ class MetadataScrapeWorker @AssistedInject constructor(
             else artworkRepository.scrapeMissingOnly(onProgress)
             // A paused pass is one outcome, not N failures: say what to do and where (AD-4).
             if (result.paused) {
+                val pausedMessage = ARTWORK_PAUSED_TEXT.resolve(applicationContext)
                 tasks.fail(
-                    TASK_ID, ARTWORK_PAUSED_MESSAGE,
+                    TASK_ID, pausedMessage,
                     NotificationAction.OpenSettingsScreen("settings_artwork_import"),
-                    detail = NotificationDetail.notes(PfpErrorCode.AR_1001, summary = ARTWORK_PAUSED_MESSAGE),
-                    title = if (mode == MODE_ALL) "Artwork re-scrape paused" else "Artwork scrape paused",
+                    detail = NotificationDetail.notes(PfpErrorCode.AR_1001, summary = pausedMessage),
+                    title = applicationContext.getString(
+                        if (mode == MODE_ALL) R.string.art_scrape_paused_all_title else R.string.art_scrape_paused_title,
+                    ),
                 )
-                return Result.failure(workDataOf(KEY_ERROR to ARTWORK_PAUSED_MESSAGE))
+                return Result.failure(workDataOf(KEY_ERROR to pausedMessage))
             }
             tasks.complete(
                 TASK_ID,
-                "${result.succeeded} succeeded, ${result.failed} failed of ${result.total}",
+                applicationContext.getString(R.string.art_scrape_result, result.succeeded, result.failed, result.total),
                 NotificationAction.OpenSettingsScreen("settings_artwork"),
-                detail = outcomes.takeIf { it.isNotEmpty() }?.let(::scrapeResults),
-                title = if (mode == MODE_ALL) "Artwork re-scrape finished" else "Artwork scrape finished",
+                detail = outcomes.takeIf { it.isNotEmpty() }?.let { scrapeResults(it) { text -> text.resolve(applicationContext) } },
+                title = applicationContext.getString(
+                    if (mode == MODE_ALL) R.string.art_scrape_finished_all_title else R.string.art_scrape_finished_title,
+                ),
             )
             Result.success(
                 workDataOf(
@@ -103,18 +112,21 @@ class MetadataScrapeWorker @AssistedInject constructor(
             )
         } catch (e: CancellationException) {
             // Only ever a user's stop (the panel or Settings), so it is recorded, quietly.
-            tasks.stopped(TASK_ID, "Stopped after ${outcomes.size} game(s) — artwork fetched so far is kept",
-                detail = scrapeResults(outcomes), title = "Artwork scrape stopped")
+            tasks.stopped(
+                TASK_ID, UiText.plural(R.plurals.art_scrape_stopped_after, outcomes.size).resolve(applicationContext),
+                detail = scrapeResults(outcomes) { text -> text.resolve(applicationContext) },
+                title = applicationContext.getString(R.string.art_scrape_stopped_title),
+            )
             throw e
         } catch (e: Exception) {
             Timber.e(e, "Scrape batch failed")
             tasks.fail(
-                TASK_ID, e.message ?: "Unexpected error",
+                TASK_ID, e.message ?: applicationContext.getString(R.string.art_error_unexpected),
                 detail = NotificationDetail.notes(PfpErrorCode.AR_9001, summary = e.message,
                     diagnostic = e.stackTraceToString().take(4_000)),
-                title = "Artwork scrape failed",
+                title = applicationContext.getString(R.string.art_scrape_failed_title),
             )
-            Result.failure(workDataOf(KEY_ERROR to (e.message ?: "Unexpected error")))
+            Result.failure(workDataOf(KEY_ERROR to (e.message ?: applicationContext.getString(R.string.art_error_unexpected))))
         }
     }
 

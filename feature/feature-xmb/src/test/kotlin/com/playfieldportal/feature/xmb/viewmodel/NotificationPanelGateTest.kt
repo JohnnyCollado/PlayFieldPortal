@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.core.domain.text.UiText
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -39,7 +40,7 @@ class NotificationPanelGateTest {
             XMBUiState(showBootSequence = false, activeSettingsScreen = "settings_display"),
             XMBUiState(showBootSequence = false, activeGameId = 7L),
             XMBUiState(showBootSequence = false, musicPlayerVisible = true),
-            XMBUiState(showBootSequence = false, infoDialog = InfoDialogState("t", "m")),
+            XMBUiState(showBootSequence = false, infoDialog = InfoDialogState(UiText.raw("t"), UiText.raw("m"))),
         )
         for (state in behind) {
             assertEquals(StartOutcome.FORWARD_TO_OVERLAY, startOutcome(state))
@@ -74,7 +75,7 @@ class NotificationPanelGateTest {
     @Test
     fun `the hint yields to the context menu it is advertising`() {
         // Offering Options over an open menu would name an action that no longer does that.
-        val withMenu = openPanel.copy(activeContextMenu = XMBContextMenu("Notifications", emptyList()))
+        val withMenu = openPanel.copy(activeContextMenu = XMBContextMenu(UiText.raw("Notifications"), emptyList()))
         assertEquals(false, shouldShowNotificationHint(withMenu, idleMs = 10_000))
     }
 
@@ -82,7 +83,7 @@ class NotificationPanelGateTest {
     fun `the panel hint yields to a sheet or stop confirm opened over it`() {
         val withSheet = openPanel.copy(notificationPanel = NotificationPanelState(cursor = 2, sheetNotificationId = 4))
         val withStop = openPanel.copy(
-            notificationPanel = NotificationPanelState(cursor = 1, stopConfirm = StopConfirmState("psx", "Stop?", "m")),
+            notificationPanel = NotificationPanelState(cursor = 1, stopConfirm = StopConfirmState("psx", UiText.raw("Stop?"), UiText.raw("m"))),
         )
         assertEquals(false, shouldShowNotificationHint(withSheet, idleMs = 10_000))
         assertEquals(false, shouldShowNotificationHint(withStop, idleMs = 10_000))

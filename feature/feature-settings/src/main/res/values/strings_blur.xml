@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings ▸ Interface ▸ Display ▸ Background blur: a slider from off to full strength. -->
+    <string name="blur_title">Background blur</string>
+    <string name="blur_sublabel">How strongly the screen is blurred behind prompts and the options menu. Slide it to zero to turn it off.</string>
+    <string name="blur_unavailable">Needs Android 12 or later.</string>
+</resources>

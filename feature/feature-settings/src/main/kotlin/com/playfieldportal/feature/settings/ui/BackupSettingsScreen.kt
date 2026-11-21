@@ -1,5 +1,9 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.settings.R
+import androidx.compose.ui.res.stringResource
+import android.content.res.Resources
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -46,12 +50,14 @@ fun BackupSettingsScreen(
     ) { uri: Uri? -> uri?.let { viewModel.setBackupFolder(it) } }
 
     val context = LocalContext.current
+    val resources = rememberSettingsResources()
 
     // Delete Backup, from the row's menu, asks here first.
     var pendingDelete by remember { mutableStateOf<BackupInfo?>(null) }
     val deleteModal = rememberSettingsModal(
         pendingDelete?.let { info ->
             deleteBackupConfirmSpec(
+                resources,
                 info,
                 onConfirm = { pendingDelete = null; viewModel.deleteBackup(info) },
                 onCancel = { pendingDelete = null },
@@ -61,6 +67,7 @@ fun BackupSettingsScreen(
     val restoreModal = rememberSettingsModal(
         pendingRestore?.let { restore ->
             restoreBackupConfirmSpec(
+                resources,
                 restore.name,
                 onConfirm = { pendingRestore = null; viewModel.restoreFromUri(restore.uri) },
                 onCancel = { pendingRestore = null },
@@ -71,8 +78,8 @@ fun BackupSettingsScreen(
 
     Box(modifier = modifier) {
     SettingsScaffold(
-        title    = "Settings",
-        subtitle = "Backup & Restore",
+        title    = stringResource(R.string.settings_title),
+        subtitle = stringResource(R.string.sets_backup_title),
         onBack   = onBack,
         modifier = Modifier.fillMaxSize(),
         modalOpen = deleteModal.open || restoreModal.open,
@@ -86,29 +93,29 @@ fun BackupSettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState),
         ) {
-            SettingsGroup("Backup")
+            SettingsGroup(stringResource(R.string.sets_backup_group_backup))
 
             SettingsValueRow(
-                label = "Last backup",
-                value = state.lastBackupDate ?: "Never",
+                label = stringResource(R.string.sets_backup_last_backup),
+                value = state.lastBackupDate ?: stringResource(R.string.sets_backup_never),
             )
 
             SettingsRow(
-                label    = "Backup folder",
-                sublabel = state.backupFolder?.let { "Saving to: $it  (tap to change)" }
-                    ?: "Not set — tap to choose where backups are saved",
+                label    = stringResource(R.string.sets_backup_folder),
+                sublabel = state.backupFolder?.let { stringResource(R.string.sets_backup_folder_saving_to, it) }
+                    ?: stringResource(R.string.sets_backup_folder_not_set),
                 onClick  = if (state.isWorking) null else ({ folderPicker.launch(null) }),
             )
 
             SettingsRow(
-                label    = "Back up now",
-                sublabel = if (state.backupFolderSet) "Saves library, settings, and play history"
-                    else "Choose a backup folder first",
+                label    = stringResource(R.string.sets_backup_now),
+                sublabel = if (state.backupFolderSet) stringResource(R.string.sets_backup_now_help)
+                    else stringResource(R.string.sets_backup_choose_folder_first),
                 onClick  = if (state.isWorking || !state.backupFolderSet) null else ({ viewModel.backupNow() }),
             )
 
             if (state.backups.isNotEmpty()) {
-                SettingsGroup("Saved backups")
+                SettingsGroup(stringResource(R.string.sets_backup_group_saved))
                 state.backups.forEach { info ->
                     SettingsRow(
                         label       = info.name,
@@ -116,6 +123,7 @@ fun BackupSettingsScreen(
                             itemMenu.show(
                                 info.name,
                                 savedBackupMenuRows(
+                                    resources,
                                     info,
                                     onRestore = { pendingRestore = PendingRestore(it.uri, it.name) },
                                     onShare = { shareBackup(context, it) },
@@ -127,45 +135,51 @@ fun BackupSettingsScreen(
                 }
             }
 
-            SettingsGroup("What's included")
+            SettingsGroup(stringResource(R.string.sets_backup_group_included))
 
-            listOf("Game Library", "Play History", "Custom Categories", "Settings & API Keys", "Emulator Profiles")
-                .forEach { included ->
+            listOf(
+                R.string.sets_backup_included_library,
+                R.string.sets_backup_included_history,
+                R.string.sets_backup_included_categories,
+                R.string.sets_backup_included_settings,
+                R.string.sets_backup_included_profiles,
+            ).forEach { included ->
                     SettingsRow(
-                        label    = included,
+                        label    = stringResource(included),
                         trailing = { com.playfieldportal.core.ui.components.PfpCheckMark(SettingsText) },
                     )
                 }
-            SettingsValueRow(label = "ROM files",           value = "✗  (not included)")
+            SettingsValueRow(
+                label = stringResource(R.string.sets_backup_rom_files),
+                value = stringResource(R.string.sets_backup_not_included),
+            )
 
-            SettingsGroup("Restore")
+            SettingsGroup(stringResource(R.string.sets_backup_group_restore))
 
             SettingsRow(
-                label    = "Restore from file",
-                sublabel = "Browse to a .pfpbackup file",
+                label    = stringResource(R.string.sets_backup_restore_from_file),
+                sublabel = stringResource(R.string.sets_backup_restore_from_file_help),
                 onClick  = if (state.isWorking) null else ({
                     restorePicker.launch(arrayOf("*/*"))
                 }),
             )
 
             SettingsRow(
-                label    = "After restoring",
-                sublabel = "Your folders come back, but Android's access to them does not. Re-link " +
-                    "each root under its section's Root Access (Library, Music, Video, Photo) — one " +
-                    "tap each; re-linking a root restores everything under it at once.",
+                label    = stringResource(R.string.sets_backup_after_restoring),
+                sublabel = stringResource(R.string.sets_backup_after_restoring_help),
             )
 
             if (state.isWorking) {
                 SettingsRow(
-                    label    = "Working…",
-                    sublabel = state.workingMessage,
+                    label    = stringResource(R.string.sets_backup_working),
+                    sublabel = state.workingMessage.asString(),
                 )
             }
 
             state.errorMessage?.let { err ->
                 SettingsRow(
-                    label    = "Error",
-                    sublabel = err,
+                    label    = stringResource(R.string.sets_backup_error),
+                    sublabel = err.asString(),
                     onClick  = { viewModel.dismissError() },
                 )
             }
@@ -181,40 +195,46 @@ private class PendingRestore(val uri: Uri, val name: String?)
 
 /** The Saved Backups row menu. Delete Backup is red and last, and only asks: the delete waits for a confirm. */
 internal fun savedBackupMenuRows(
+    resources: Resources,
     info: BackupInfo,
     onRestore: (BackupInfo) -> Unit,
     onShare: (BackupInfo) -> Unit,
     onRequestDelete: (BackupInfo) -> Unit,
 ): List<SettingsMenuItem> = listOf(
-    SettingsMenuItem("Restore") { onRestore(info) },
-    SettingsMenuItem("Share") { onShare(info) },
-    SettingsMenuItem("Delete Backup", destructive = true) { onRequestDelete(info) },
+    SettingsMenuItem(resources.getString(R.string.sets_backup_menu_restore)) { onRestore(info) },
+    SettingsMenuItem(resources.getString(R.string.sets_backup_menu_share)) { onShare(info) },
+    SettingsMenuItem(resources.getString(R.string.sets_backup_menu_delete), destructive = true) { onRequestDelete(info) },
 )
 
 internal fun deleteBackupConfirmSpec(
+    resources: Resources,
     info: BackupInfo,
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
 ): PfpModalSpec.Confirm = PfpModalSpec.Confirm(
     key = "delete_backup_${info.name}",
-    title = "Delete Backup?",
-    message = "\"${info.name}\" will be deleted. This can't be undone.",
-    confirmLabel = "Delete",
+    title = resources.getString(R.string.sets_backup_delete_title),
+    message = resources.getString(R.string.sets_backup_delete_message, info.name),
+    confirmLabel = resources.getString(R.string.sets_backup_delete_confirm),
     destructive = true,
     onConfirm = onConfirm,
     onCancel = onCancel,
 )
 
 internal fun restoreBackupConfirmSpec(
+    resources: Resources,
     name: String?,
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
 ): PfpModalSpec.Confirm = PfpModalSpec.Confirm(
     key = "restore_backup_${name.orEmpty()}",
-    title = "Restore Backup?",
-    message = (name?.let { "\"$it\"" } ?: "This backup") +
-        " will replace your current library, settings and play history. This can't be undone.",
-    confirmLabel = "Restore",
+    title = resources.getString(R.string.sets_backup_restore_title),
+    message = if (name != null) {
+        resources.getString(R.string.sets_backup_restore_message_named, name)
+    } else {
+        resources.getString(R.string.sets_backup_restore_message_picked)
+    },
+    confirmLabel = resources.getString(R.string.sets_backup_restore_confirm),
     destructive = true,
     onConfirm = onConfirm,
     onCancel = onCancel,
@@ -227,5 +247,5 @@ private fun shareBackup(context: Context, info: BackupInfo) {
         putExtra(Intent.EXTRA_STREAM, info.uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    context.startActivity(Intent.createChooser(send, "Share backup").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    context.startActivity(Intent.createChooser(send, context.getString(R.string.sets_backup_share_chooser)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
 }

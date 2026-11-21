@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_title">Focusgloed</string>
+    <string name="glow_sub_off">Geen gloed rond het geselecteerde pictogram.</string>
+    <string name="glow_sub_steady">Een zacht licht rond het geselecteerde pictogram. Het blijft stil.</string>
+    <string name="glow_sub_pulsing">Het licht rond het geselecteerde pictogram zwelt langzaam aan en neemt weer af. Het blijft stil zolang ‘Beweging’ op ‘Statisch’ staat.</string>
+    <string name="glow_value_off">Uit</string>
+    <string name="glow_value_steady">Stil</string>
+    <string name="glow_value_pulsing">Pulserend</string>
+</resources>

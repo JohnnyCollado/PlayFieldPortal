@@ -1,5 +1,8 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.xmb.R
+
 /** Where Pick in the icon editor goes next. */
 enum class CustomIconPickRoute { FILE_PICKER, CHOOSER, GRID }
 
@@ -28,12 +31,12 @@ data class SourceChooserState(
     val themeName: String,
     val count: Int,
 ) {
-    val title: String get() = "Pick an icon for $slotName"
+    val title: UiText get() = UiText.res(R.string.xmbm_srcchooser_title, slotName)
 
-    val message: String get() = "Use one from the applied theme, or an image on your device."
+    val message: UiText get() = UiText.res(R.string.xmbm_srcchooser_message)
 
     /** "{theme name} · {n} icons", "1 icon" for a single one. */
-    val themeDetail: String get() = "$themeName · " + if (count == 1) "1 icon" else "$count icons"
+    val themeDetail: UiText get() = UiText.plural(R.plurals.xmbm_srcchooser_theme_detail, count, count, themeName)
 }
 
 fun sourceChooserFor(slotKey: String, slotName: String, themeName: String, count: Int) =

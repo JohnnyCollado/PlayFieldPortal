@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui
 
+import com.playfieldportal.core.ui.text.asString
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -64,6 +65,8 @@ import com.playfieldportal.feature.xmb.viewmodel.THEME_ICON_GRID_COLUMNS
 import com.playfieldportal.feature.xmb.viewmodel.ThemeIconGridNav
 import com.playfieldportal.feature.xmb.viewmodel.ThemeIconGridState
 import kotlinx.coroutines.flow.distinctUntilChanged
+import androidx.compose.ui.res.stringResource
+import com.playfieldportal.feature.xmb.R
 
 /**
  * The applied theme's icons as a grid, drawn over the Customize XMB Icons editor, for choosing one
@@ -150,7 +153,7 @@ fun ThemeIconGridOverlay(
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 28.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = grid.title,
+                    text = grid.title.asString(),
                     color = textColors.primary,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Light,
@@ -160,7 +163,7 @@ fun ThemeIconGridOverlay(
                 )
                 if (showTouchControls) {
                     XmbHeaderPill(
-                        label = "Cancel",
+                        label = stringResource(R.string.xmbu_common_cancel),
                         leadingGlyph = "◀",
                         onClick = onBack,
                         modifier = Modifier.testTag(ThemeIconGridTags.CANCEL),
@@ -205,7 +208,7 @@ fun ThemeIconGridOverlay(
             // above, so its prompt carries only the tap.
             if (showTouchControls) {
                 TouchPromptBar(
-                    items = listOf(TouchPromptItem(TouchGesture.TAP, "Use this icon")),
+                    items = listOf(TouchPromptItem(TouchGesture.TAP, stringResource(R.string.xmbu_icon_grid_use))),
                     labelColor = textColors.secondary,
                     labelStyle = TextStyle(fontSize = 12.sp),
                     glyphSize = 16.dp,
@@ -214,8 +217,8 @@ fun ThemeIconGridOverlay(
             } else {
                 ControllerPromptBar(
                     items = listOf(
-                        ControllerPromptItem(GamepadAction.SELECT, "Use this icon"),
-                        ControllerPromptItem(GamepadAction.BACK, "Back"),
+                        ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.xmbu_icon_grid_use)),
+                        ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.xmbu_common_back)),
                     ),
                     labelColor = textColors.secondary,
                     labelStyle = TextStyle(fontSize = 12.sp),

@@ -1,0 +1,730 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Localization slice E1: game detail, Artwork Studio, storefront matching, search online -->
+    <!-- Stored-assets manager -->
+    <!-- %1$s is the artwork slot name, e.g. Screenshots. Shown in capitals. -->
+    <string name="det_assets_reorder_title">Reorder %1$s</string>
+    <string name="det_assets_first_hint">The first one is what the game shows.</string>
+    <string name="det_assets_empty">Nothing stored for this slot.</string>
+    <!-- Button: move the highlighted item one place up -->
+    <string name="det_assets_up">Up</string>
+    <!-- Button: move the highlighted item one place down -->
+    <string name="det_assets_down">Down</string>
+    <!-- Button and controller prompt: make the highlighted item the first one -->
+    <string name="det_assets_make_first">Make First</string>
+    <!-- Controller prompt for the shoulder buttons: move the item in the list -->
+    <string name="det_assets_move">Move</string>
+    <string name="det_assets_relink_note">Re-linking a library rebuilds this order from the filenames, which is how artwork reconnects to re-imported games.</string>
+    <string name="det_assets_primary">Primary</string>
+    <string name="det_assets_stored_artwork">Stored artwork</string>
+
+    <!-- Shared -->
+    <string name="det_close">Close</string>
+
+    <!-- Crop preview captions: the slot the live preview stands for -->
+    <string name="det_crop_caption_tile">XMB tile</string>
+    <string name="det_crop_caption_icon_anim">XMB icon animation</string>
+    <string name="det_crop_caption_box_art">Box Art tile</string>
+    <string name="det_crop_caption_box_3d">3D Box tile</string>
+    <string name="det_crop_caption_phys_media">Phys. Media tile</string>
+    <string name="det_crop_caption_media_strip">Media strip</string>
+
+    <!-- Artwork Studio: filters (options menu rows, lists and values) -->
+    <string name="det_filter_filters">Filters</string>
+    <string name="det_filter_style">Style</string>
+    <string name="det_filter_dimensions">Dimensions</string>
+    <string name="det_filter_animation">Animation</string>
+    <string name="det_filter_region">Region</string>
+    <string name="det_filter_media">Media</string>
+    <!-- Filter value meaning "no filter applied" -->
+    <string name="det_filter_all">All</string>
+    <string name="det_filter_anim_static">Static</string>
+    <string name="det_filter_anim_animated">Animated</string>
+    <string name="det_filter_on">On</string>
+    <string name="det_filter_off">Off</string>
+    <!-- Value on the Filters row when a filter narrows the results -->
+    <string name="det_filter_active">Active</string>
+    <!-- Filter value: %1$d options chosen out of %2$d, e.g. 3 of 5 -->
+    <string name="det_filter_n_of_m">%1$d of %2$d</string>
+    <!-- Content rating filter: adult content -->
+    <string name="det_filter_mature">Mature</string>
+    <string name="det_filter_humor">Humor</string>
+    <string name="det_filter_epilepsy">Epilepsy Warning</string>
+    <string name="det_filter_clear">Clear Filters</string>
+    <!-- %1$s is a region code such as US; the region comes from the game's disc -->
+    <string name="det_filter_region_from_disc">%1$s · from disc</string>
+    <!-- ScreenScraper media type names -->
+    <string name="det_ssmedia_mix_v2">Mix v2</string>
+    <string name="det_ssmedia_mix_v1">Mix v1</string>
+    <string name="det_ssmedia_marquee">Marquee</string>
+    <string name="det_ssmedia_steam_grid">Steam Grid</string>
+    <string name="det_ssmedia_box_2d">Box Art 2D</string>
+    <string name="det_ssmedia_box_3d">Box Art 3D</string>
+    <string name="det_ssmedia_disc_art_2d">Disc Art 2D</string>
+    <string name="det_ssmedia_disc_texture">Disc Texture</string>
+    <string name="det_ssmedia_fan_art">Fan Art</string>
+    <string name="det_ssmedia_screenshot">Screenshot</string>
+    <string name="det_ssmedia_title_screen">Title Screen</string>
+    <string name="det_ssmedia_logo">Logo</string>
+    <string name="det_ssmedia_logo_hd">Logo HD</string>
+    <string name="det_ssmedia_manual">Manual</string>
+    <string name="det_ssmedia_video">Video</string>
+    <string name="det_ssmedia_video_normalized">Video (Normalized)</string>
+
+    <!-- Steam artwork tile captions (small caption under each picture in the Artwork Studio grid) -->
+    <string name="det_steam_art_library_capsule">library capsule</string>
+    <string name="det_steam_art_library_hero">library hero</string>
+    <string name="det_steam_art_logo">logo</string>
+    <string name="det_steam_art_header">header</string>
+    <string name="det_steam_art_store_capsule">store capsule</string>
+    <string name="det_steam_art_store_background">store background</string>
+    <!-- %1$d is the screenshot's number in the list -->
+    <string name="det_steam_art_screenshot_n">screenshot %1$d</string>
+    <!-- %1$s is the trailer's name; "short" marks the shorter cut of the trailer -->
+    <string name="det_steam_art_trailer_short">%1$s · short</string>
+    <string name="det_art_best_title_match">best title match</string>
+
+    <!-- Artwork Studio: page line, paging and pick status -->
+    <!-- Range of results on this page: %1$d first, %2$d last, %3$d total -->
+    <string name="det_page_range">%1$d–%2$d of %3$d</string>
+    <!-- Filters hid some results: %1$d first, %2$d last, %3$d shown, %4$d before filtering -->
+    <string name="det_page_range_shown">%1$d–%2$d · %3$d of %4$d shown</string>
+    <!-- Button: go to the previous page -->
+    <string name="det_page_prev">‹ Prev</string>
+    <!-- Button: go to the next page -->
+    <string name="det_page_next">Next ›</string>
+    <!-- %1$d is the current page, %2$d the number of pages -->
+    <string name="det_page_n_of_m">Page %1$d / %2$d</string>
+    <!-- Pending picks before Apply: how many artwork pictures will be added and/or removed -->
+    <string name="det_picks_add">%1$d to add</string>
+    <string name="det_picks_remove">%1$d to remove</string>
+    <string name="det_picks_add_remove">%1$d to add · %2$d to remove</string>
+    <!-- Touch button that applies the pending picks -->
+    <string name="det_picks_apply_pill">Apply ›</string>
+    <!-- Controller prompt: apply the pending picks -->
+    <string name="det_picks_apply">Apply</string>
+    <!-- Download progress: %1$d done out of %2$d -->
+    <string name="det_picks_progress">%1$d of %2$d added</string>
+    <string name="det_picks_progress_failed">%1$d of %2$d added · %3$d failed</string>
+    <!-- Button: retry the failed downloads -->
+    <string name="det_picks_retry">Retry</string>
+    <!-- Button: remove the failed downloads from the queue -->
+    <string name="det_picks_remove_failed">Remove</string>
+    <!-- Controller prompt / touch label that opens the Options menu -->
+    <string name="det_options">Options</string>
+
+    <!-- Storefront match picker ("Match Game") -->
+    <string name="det_store_match_title">Match Game</string>
+    <!-- Controller hint line. Up/Down, L1/R1, Select and B are controller buttons; △ is the Triangle button -->
+    <string name="det_store_hint_multi">"Up/Down  Rows  •  L1/R1  Store  •  Select  Choose  •  △  More Information  •  B  Cancel"</string>
+    <!-- Controller hint line. Up/Down, Select and B are controller buttons; △ is the Triangle button -->
+    <string name="det_store_hint_single">"Up/Down  Rows  •  Select  Choose  •  △  More Information  •  B  Cancel"</string>
+    <string name="det_store_notice_tied">Two store entries carry this exact title. A tie on an identical name can\'t be broken by evidence, so nothing is linked until you choose.</string>
+    <string name="det_store_notice_low">None of these is a confident match — the names only partly agree. Check the year and the developer before choosing, or leave it unlinked.</string>
+    <!-- %1$s is a comma-separated list of store names that could not be reached -->
+    <string name="det_store_empty_unavailable_title">%1$s didn\'t answer.</string>
+    <string name="det_store_empty_unavailable_detail">Nothing was changed. This is a connection problem, not a missing game — try again later.</string>
+    <string name="det_store_empty_not_windows_title">This isn\'t a Windows game.</string>
+    <string name="det_store_empty_not_windows_detail">Storefront identities only exist for PC games. Console ROMs are matched by their file.</string>
+    <string name="det_store_empty_settled_title">Already matched.</string>
+    <!-- %1$s is the title of the store entry the game is already linked to -->
+    <string name="det_store_empty_settled_detail">%1$s — there was nothing to choose between. Use Store Match to change it.</string>
+    <!-- %1$s is the name the user typed into the search bar -->
+    <string name="det_store_empty_typed_title">No store has “%1$s”.</string>
+    <string name="det_store_empty_typed_detail">Nothing was changed, and nothing is linked. Go back to try another name.</string>
+    <string name="det_store_empty_none_title">No store has this game.</string>
+    <string name="det_store_empty_none_detail">Nothing was changed, and nothing is linked. Use the search bar in Store Match to try another name.</string>
+    <!-- %1$s: store names that did not answer; %2$s: the one store whose list is shown -->
+    <string name="det_store_note_unreachable">%1$s didn\'t answer, so this list is %2$s\'s alone. Try again later for %1$s.</string>
+    <!-- %1$s: names of stores the game is already linked on -->
+    <string name="det_store_note_linked">Already linked on %1$s. That link is not changed here.</string>
+    <!-- Label above the game's own title -->
+    <string name="det_store_your_game">Your game</string>
+    <!-- Label above the search text that was sent to the stores -->
+    <string name="det_store_searched_as">Searched as</string>
+    <string name="det_store_quoted">“%1$s”</string>
+    <!-- Match score of a candidate, %1$d is the number of points -->
+    <string name="det_store_score">score %1$d</string>
+    <string name="det_store_no_match">No correct match</string>
+    <!-- %1$s is the game's title -->
+    <string name="det_store_no_match_detail">Leave %1$s unlinked. Nothing is written, and you can try again later.</string>
+    <!-- Button: pick the highlighted candidate -->
+    <string name="det_store_choose">Choose</string>
+    <string name="det_store_more_info">More Information</string>
+    <!-- Controller hint line on the More Information panel -->
+    <string name="det_store_hint_more_info">"Select  Choose this game  •  B  Back"</string>
+    <string name="det_store_why_ranked">Why it ranked here</string>
+    <!-- Row label above the total of the match points -->
+    <string name="det_store_total">Total</string>
+    <!-- %1$s is the store's own id of the other entry with the same title -->
+    <string name="det_store_notice_rival">Still not linked automatically: another store entry (%1$s) carries the same exact title, and an identical name is not something points are allowed to settle.</string>
+    <string name="det_store_choose_this">Choose this game</string>
+    <string name="det_store_back_to_matches">Back to matches</string>
+    <!-- Store identifiers: %1$s is the id number. The word is the store's own term for its id -->
+    <string name="det_store_id_steam">appid %1$s</string>
+    <string name="det_store_id_gog">product %1$s</string>
+    <string name="det_store_id_epic">catalog %1$s</string>
+    <!-- Small chips on a candidate showing a strong sign that it is the right game -->
+    <string name="det_signal_chip_store_id">Store id</string>
+    <string name="det_signal_chip_exact_title">Exact title</string>
+    <string name="det_signal_chip_developer">Developer matches</string>
+    <string name="det_signal_chip_publisher">Publisher matches</string>
+    <string name="det_signal_chip_year">Year matches</string>
+    <string name="det_signal_chip_other_edition">Same game, other edition</string>
+    <string name="det_signal_chip_partial_title">Partial title</string>
+    <string name="det_signal_chip_year_conflict">Year disagrees</string>
+    <!-- Lines of the "Why it ranked here" list -->
+    <string name="det_signal_desc_store_id">Store id — the launcher reported this id itself</string>
+    <string name="det_signal_desc_exact_title">Exact title — the normalized names are identical</string>
+    <string name="det_signal_desc_developer">Developer — matches the one on your copy</string>
+    <string name="det_signal_desc_publisher">Publisher — matches the one on your copy</string>
+    <string name="det_signal_desc_year">Release year — matches the one on your copy</string>
+    <string name="det_signal_desc_other_edition">Same game, different edition</string>
+    <string name="det_signal_desc_partial_title">Partial title — one name contains the other</string>
+    <string name="det_signal_desc_year_conflict">Release year — disagrees with your copy</string>
+    <string name="det_signal_field_release_year">Release year</string>
+    <string name="det_signal_field_developer">Developer</string>
+    <string name="det_signal_field_publisher">Publisher</string>
+    <!-- %1$s is a field name such as Developer -->
+    <string name="det_signal_absent_no_match">%1$s — no match against your copy</string>
+    <string name="det_signal_absent_silent">%1$s — the store didn\'t say</string>
+
+    <!-- Storefront rematch ("Store Match") -->
+    <string name="det_rematch_title">Store Match</string>
+    <!-- Controller hint lines. Up/Down, Left/Right, Select, B and Keyboard Search are controller or keyboard buttons -->
+    <string name="det_rematch_hint_editing">"Keyboard Search  Find matches  •  B  Done typing"</string>
+    <string name="det_rematch_hint_query">"Up/Down  Rows  •  Select  Type a name  •  B  Close"</string>
+    <string name="det_rematch_hint_rows">"Up/Down  Rows  •  Left/Right  Action  •  Select  Confirm  •  B  Close"</string>
+    <string name="det_rematch_remove_note">Removing a link removes the link and nothing else. Your description, developer and every other field stay exactly as they are — including anything you typed by hand.</string>
+    <string name="det_rematch_searching">Searching…</string>
+    <string name="det_rematch_search_all">Search every store again</string>
+    <string name="det_rematch_search_by_name">Search by name</string>
+    <!-- Button: search the stores for the typed name, also the action on a store row -->
+    <string name="det_rematch_search">Search</string>
+    <!-- Action on a store row: replace the current link with another -->
+    <string name="det_rematch_replace">Replace</string>
+    <!-- Action on a store row: remove the link -->
+    <string name="det_rematch_remove">Remove</string>
+    <string name="det_rematch_search_help">Searches the stores for this name. Your game\'s title is not changed.</string>
+    <string name="det_rematch_confirmed">Confirmed by you</string>
+    <string name="det_rematch_not_linked">Not linked</string>
+    <string name="det_rematch_note_not_searchable">Can\'t be searched — this store has no public catalog to ask</string>
+    <string name="det_rematch_note_nothing_stored">Nothing stored for this store</string>
+    <string name="det_rematch_note_auto">Matched automatically</string>
+
+    <!-- Shared buttons -->
+    <string name="det_cancel">Cancel</string>
+    <string name="det_back">Back</string>
+
+    <!-- Metadata preview ("Update Metadata") -->
+    <string name="det_meta_title">Update Metadata</string>
+    <!-- Controller hint lines. Select and B are controller buttons -->
+    <string name="det_meta_hint_nothing">"Select or B  Close"</string>
+    <string name="det_meta_hint_manual">"Up/Down  Rows  •  Left/Right  Policy  •  L1/R1  Source  •  Select  Edit / Apply  •  B  Cancel"</string>
+    <string name="det_meta_hint_rows">"Up/Down  Rows  •  Left/Right  Policy  •  L1/R1  Source  •  Select  Toggle / Apply  •  B  Cancel"</string>
+    <string name="det_meta_failed_title">The metadata sources didn\'t answer.</string>
+    <string name="det_meta_unreadable_title">This game couldn\'t be read.</string>
+    <string name="det_meta_failed_detail">Nothing was changed. Check the connection and try again.</string>
+    <string name="det_meta_unreadable_detail">Nothing was changed. Try reopening this game.</string>
+    <string name="det_meta_no_source">No source recognised this game — fill the fields you want by hand.</string>
+    <!-- Table column headings: the field name, the game\'s current value, the value from the chosen source -->
+    <string name="det_meta_col_field">Field</string>
+    <string name="det_meta_col_current">Current</string>
+    <string name="det_meta_col_yours">Your value</string>
+    <string name="det_meta_col_incoming">Incoming</string>
+    <string name="det_meta_applying">Applying…</string>
+    <string name="det_meta_keep_close">Keep Current &amp; Close</string>
+    <string name="det_meta_nothing_to_change">Nothing to Change</string>
+    <string name="det_meta_tap_to_type">Select to type</string>
+    <plurals name="det_meta_apply_changes">
+        <item quantity="one">Apply %1$d Change</item>
+        <item quantity="other">Apply %1$d Changes</item>
+    </plurals>
+
+    <!-- Search online (achievement preview lookup) -->
+    <string name="det_search_title">Search online</string>
+    <!-- Options menu list names -->
+    <string name="det_search_group_provider">Provider</string>
+    <!-- A game system / console, e.g. Super Nintendo -->
+    <string name="det_search_group_system">System</string>
+    <!-- %1$s is the game\'s platform name; the game is not installed on this device -->
+    <string name="det_search_subtitle_not_installed">%1$s · Not installed</string>
+    <!-- %1$s is the provider (and console), %2$s is the number of results, e.g. 12 results -->
+    <string name="det_search_subtitle_results">%1$s · %2$s</string>
+    <plurals name="det_search_result_count">
+        <item quantity="one">%1$d result</item>
+        <item quantity="other">%1$d results</item>
+    </plurals>
+    <string name="det_search_placeholder_coins">Search coins…</string>
+    <!-- %1$s is a provider name, e.g. Steam -->
+    <string name="det_search_placeholder_provider">Search %1$s…</string>
+    <string name="det_search_loading_achievements">Loading achievements…</string>
+    <!-- %1$s is a game title, %2$s a provider name -->
+    <string name="det_search_no_achievements">%1$s has no achievements on %2$s.</string>
+    <!-- %1$s is the text the user typed in the coin filter -->
+    <string name="det_search_no_coins_match">No coins match \"%1$s\".</string>
+    <string name="det_search_no_coins_in_view">No coins in this view.</string>
+    <!-- %1$d is the minimum number of letters, %2$s a provider name -->
+    <string name="det_search_idle">Type at least %1$d letters to search %2$s.</string>
+    <string name="det_search_searching">Searching %1$s…</string>
+    <!-- %1$s is a provider name, %2$s what the user typed -->
+    <string name="det_search_no_games_match">No %1$s games match \"%2$s\".</string>
+    <string name="det_search_offline">Searching needs an internet connection.</string>
+    <!-- %1$s is a provider name; the user has to sign in or add credentials for it -->
+    <string name="det_search_not_connected">Connect %1$s to search its games.</string>
+    <string name="det_search_failed">%1$s couldn\'t be reached. Try again.</string>
+    <!-- Button shown on an error: search again -->
+    <string name="det_search_retry">Try again</string>
+    <string name="det_search_open_settings">Open Settings</string>
+    <string name="det_search_refresh_preview">Refresh Preview</string>
+    <!-- Controller prompts in the footer. Each names what the button does -->
+    <string name="det_search_prompt_select">Select</string>
+    <string name="det_search_prompt_done">Done</string>
+    <string name="det_search_prompt_hide">Hide</string>
+    <string name="det_search_prompt_reveal">Reveal</string>
+    <string name="det_search_prompt_search">Search</string>
+    <string name="det_search_prompt_change_view">Change View</string>
+    <string name="det_search_prompt_close_preview">Close Preview</string>
+    <string name="det_search_prompt_type">Type</string>
+    <string name="det_search_prompt_preview">Preview</string>
+    <!-- Reasons a preview could not be shown -->
+    <string name="det_search_err_missing_credentials">Connect this provider in Settings to look its games up.</string>
+    <string name="det_search_err_not_linked">This game has no achievement set to show.</string>
+    <string name="det_search_err_profile_private">Steam Game Details aren\'t available for your profile.</string>
+    <string name="det_search_err_not_found">This game has no achievements on this provider.</string>
+    <string name="det_search_lookup_only">Results are looked up only — nothing here is added to your library or your coin wallet.</string>
+    <!-- Small heading above the number of achievements in a game, shown in capitals -->
+    <string name="det_search_available">AVAILABLE</string>
+    <plurals name="det_search_achievement_count">
+        <item quantity="one">%1$d achievement</item>
+        <item quantity="other">%1$d achievements</item>
+    </plurals>
+    <!-- Gold chip: this is only a preview of a game that is not on the device -->
+    <string name="det_search_preview_chip">PREVIEW</string>
+    <string name="det_search_preview_notice">Preview only. This game isn\'t on this device, so nothing here is tracked, counted or synced. Closing the preview discards it.</string>
+    <!-- Search result subtitle: %1$s is the platform, %2$s the provider\'s id of the game -->
+    <string name="det_search_candidate_app">%1$s · app %2$s</string>
+    <string name="det_search_candidate_game">%1$s · game %2$s</string>
+
+    <!-- Game Detail page -->
+    <!-- Breadcrumb header shown when the game row no longer exists -->
+    <string name="det_library">Library</string>
+    <string name="det_game_not_found">Game not found</string>
+    <string name="det_game_gone">This game is no longer in your library.</string>
+    <string name="det_game_gone_hint">Press Back to return to the library.</string>
+    <string name="det_meta_replace_title">Replace your title?</string>
+    <!-- %1$s is the title the user typed by hand, %2$s the new title from the source -->
+    <string name="det_meta_replace_message">You set this title by hand. Applying the new one clears yours.\n\nYours: %1$s\nNew: %2$s</string>
+    <!-- Button: replace the hand-typed title with the new one -->
+    <string name="det_meta_replace">Replace</string>
+    <!-- Button: keep the title the user typed -->
+    <string name="det_meta_keep_mine">Keep Mine</string>
+    <!-- %1$s is a metadata field name, e.g. Developer -->
+    <string name="det_meta_edit_field">Edit %1$s</string>
+    <string name="det_remove_title">Remove from Library</string>
+    <!-- %1$s is the game\'s title -->
+    <string name="det_remove_message">\"%1$s\" will be removed from your library. The files stay on your device.</string>
+    <!-- Button: confirm removing the game -->
+    <string name="det_remove">Remove</string>
+    <string name="det_edit_note">Edit Note</string>
+    <string name="det_edit_title">Edit Title</string>
+    <!-- Hero banner facts. %1$s is a relative time such as Today or 3 days ago, or a play time such as 2 h 5 min -->
+    <string name="det_fact_last_played">Last played %1$s</string>
+    <string name="det_fact_play_time">Play time %1$s</string>
+    <!-- Main buttons -->
+    <string name="det_launch">Launch</string>
+    <string name="det_favorite">Favorite</string>
+    <string name="det_favorite_remove_cd">Remove from favorites</string>
+    <string name="det_favorite_add_cd">Add to favorites</string>
+    <!-- Button that opens the artwork tools -->
+    <string name="det_artwork">Artwork</string>
+    <string name="det_artwork_edit_cd">Edit artwork</string>
+    <!-- Button that opens the game\'s manual -->
+    <string name="det_manual">Manual</string>
+    <string name="det_manual_open_cd">Open manual</string>
+    <!-- Link next to a launch error that opens help -->
+    <string name="det_get_help">Get help</string>
+    <string name="det_shiba_coins">Shiba Coins</string>
+    <string name="det_coins_not_tracked">Not tracked yet</string>
+    <string name="det_no_description">No description available.</string>
+    <!-- Heading of the game description row -->
+    <string name="det_overview">Overview</string>
+    <string name="det_media_preview">Media Preview</string>
+    <string name="det_media_play_video_cd">Play video</string>
+    <string name="det_media_screenshot_cd">Screenshot</string>
+    <string name="det_media_preview_cd">Media preview</string>
+    <!-- %1$s is the game\'s title -->
+    <string name="det_manual_viewer_title">%1$s — Manual</string>
+    <!-- Disc row for multi-disc games -->
+    <string name="det_discs">Discs</string>
+    <string name="det_disc_n">Disc %1$d</string>
+    <string name="det_disc_playlist">Playlist</string>
+    <string name="det_disc_missing">Missing</string>
+    <string name="det_disc_preferred">Preferred</string>
+    <string name="det_disc_available">Available</string>
+    <!-- Game information fields -->
+    <string name="det_info_released">Released</string>
+    <string name="det_info_developer">Developer</string>
+    <string name="det_info_publisher">Publisher</string>
+    <string name="det_info_genre">Genre</string>
+    <string name="det_info_last_played">Last played</string>
+    <string name="det_info_play_time">Play time</string>
+    <string name="det_info_emulator">Emulator</string>
+    <!-- %1$s is the RetroArch core\'s name -->
+    <string name="det_info_core">Core: %1$s</string>
+    <!-- Helper footer prompts. Each names what a controller button does -->
+    <string name="det_prompt_page">Page</string>
+    <string name="det_prompt_scroll">Scroll</string>
+    <string name="det_prompt_navigate">Navigate</string>
+    <string name="det_prompt_apply_toggle">Apply / Toggle</string>
+    <!-- Controller prompt: change how metadata is applied (Left/Right) -->
+    <string name="det_prompt_policy">Policy</string>
+    <!-- Controller prompt: change the metadata source (shoulder buttons) -->
+    <string name="det_prompt_source">Source</string>
+    <string name="det_prompt_toggle">Toggle</string>
+    <string name="det_prompt_select">Select</string>
+    <string name="det_choose">Choose</string>
+    <!-- What the Confirm button does on the focused item -->
+    <string name="det_confirm_play">Play</string>
+    <string name="det_confirm_preview">Preview</string>
+    <string name="det_confirm_view">View</string>
+    <string name="det_confirm_collapse">Collapse</string>
+    <string name="det_confirm_read_more">Read more</string>
+    <string name="det_confirm_choose_disc">Choose disc</string>
+    <string name="det_confirm_change_emulator">Change emulator</string>
+    <!-- What kind of library entry a game is, shown under the title -->
+    <string name="det_kind_app">App</string>
+    <string name="det_kind_pc_shortcut">PC Shortcut</string>
+    <string name="det_kind_game_app">Game App</string>
+    <string name="det_kind_rom">ROM</string>
+    <!-- Play time -->
+    <string name="det_time_under_minute">Under a minute</string>
+    <string name="det_time_minutes">%1$d min</string>
+    <!-- %1$d is hours, %2$d is minutes -->
+    <string name="det_time_hours_minutes">%1$d h %2$d min</string>
+    <string name="det_days_today">Today</string>
+    <string name="det_days_yesterday">Yesterday</string>
+    <plurals name="det_days_ago">
+        <item quantity="one">%1$d day ago</item>
+        <item quantity="other">%1$d days ago</item>
+    </plurals>
+    <string name="det_fetching_artwork">Fetching Artwork…</string>
+    <!-- Options menu value when nothing is set -->
+    <string name="det_none">None</string>
+    <string name="det_emulator_picker_title">Choose Emulator</string>
+    <string name="det_emulator_picker_hint">"Up/Down  Navigate  •  Select  Confirm  •  B  Cancel"</string>
+
+    <!-- Options menu: panel titles, group headings and row labels -->
+    <string name="det_menu_options">Options</string>
+    <string name="det_menu_artwork">Artwork</string>
+    <string name="det_menu_information">Information</string>
+    <string name="det_menu_file">File</string>
+    <string name="det_group_library">Library</string>
+    <string name="det_group_play">Play</string>
+    <string name="det_group_customize">Customize</string>
+    <string name="det_group_manage">Manage</string>
+    <string name="det_action_favorite">Favorite</string>
+    <!-- Adds the game to a card (a collection) -->
+    <string name="det_action_collections">Add to Card</string>
+    <string name="det_action_emulator">Emulator</string>
+    <string name="det_action_manual">Manual</string>
+    <string name="det_action_menu_artwork">Artwork</string>
+    <string name="det_action_menu_information">Information</string>
+    <string name="det_action_menu_file">File</string>
+    <string name="det_action_remove">Remove from Library</string>
+    <string name="det_action_artwork_studio">Artwork Studio</string>
+    <string name="det_action_fetch_artwork">Fetch Artwork</string>
+    <string name="det_action_metadata">Update Metadata</string>
+    <string name="det_action_rename">Edit Title</string>
+    <string name="det_action_edit_note">Edit Note</string>
+    <string name="det_action_storefront">Store Match</string>
+    <string name="det_action_location">Show File Location</string>
+    <string name="det_action_export">Export Game</string>
+    <!-- Artwork kind names -->
+    <string name="det_arttype_icon">Game Icon</string>
+    <string name="det_arttype_hero">Hero Banner</string>
+    <string name="det_arttype_background">Background</string>
+
+    <!-- Game Detail messages -->
+    <!-- %1$s is a package name -->
+    <string name="det_location_package">Package: %1$s</string>
+    <string name="det_location_none">No file location on record</string>
+    <string name="det_export_failed">Export failed — see the log.</string>
+    <string name="det_no_video_snap">No video snap — enable Download Video Snaps and re-scrape</string>
+    <string name="det_no_manual">No manual available for this game</string>
+    <string name="det_launch_loading">Game is still loading</string>
+    <string name="det_launch_file_missing">File not found on the last scan. Reconnect the card or restore the file, then rescan.</string>
+    <!-- %1$s is the game\'s title -->
+    <string name="det_launching">Launching %1$s...</string>
+    <!-- %1$s is the reason the system gave -->
+    <string name="det_launch_failed">Couldn\'t launch: %1$s</string>
+    <!-- %1$s is a game title or an emulator name -->
+    <string name="det_launch_could_not">Could not launch %1$s</string>
+    <string name="det_launch_no_emulator">Could not resolve emulator for %1$s</string>
+    <!-- %1$s is a platform code such as PS2 -->
+    <string name="det_no_emulators">No emulators installed for %1$s</string>
+    <!-- %1$s is an emulator name -->
+    <string name="det_emulator_set">Emulator set to %1$s</string>
+    <string name="det_title_updated">Title updated to \"%1$s\"</string>
+    <string name="det_title_reset">Title reset to \"%1$s\"</string>
+    <string name="det_artwork_updated">Artwork updated</string>
+    <string name="det_artwork_already_fetching">Already fetching artwork for this game</string>
+    <string name="det_artwork_fetch_failed">Artwork fetch failed</string>
+    <!-- %1$s is a metadata field name, e.g. Developer -->
+    <string name="det_meta_reverted">Reverted %1$s to the scraped value</string>
+    <string name="det_meta_kept_current">Kept current metadata</string>
+    <string name="det_meta_msg_nothing">Nothing to change</string>
+    <!-- %1$d is how many fields were written, %2$s the source name, e.g. ScreenScraper -->
+    <plurals name="det_meta_updated_from">
+        <item quantity="one">Updated %1$d field from %2$s</item>
+        <item quantity="other">Updated %1$d fields from %2$s</item>
+    </plurals>
+    <plurals name="det_meta_updated_by_hand">
+        <item quantity="one">Updated %1$d field set by hand</item>
+        <item quantity="other">Updated %1$d fields set by hand</item>
+    </plurals>
+    <string name="det_meta_update_failed">Metadata update failed</string>
+    <!-- %1$s is a store name, e.g. GOG -->
+    <string name="det_rematch_cant_search">%1$s can\'t be searched</string>
+    <string name="det_rematch_link_removed">%1$s link removed. Your metadata is unchanged.</string>
+    <!-- %1$s is a store name, %2$s the title of the store entry -->
+    <string name="det_rematch_linked">Linked to %1$s: %2$s</string>
+
+    <!-- Artwork Studio -->
+    <!-- Artwork source: pictures chosen from this device -->
+    <string name="det_source_local">Local File</string>
+    <!-- Tab names, shown in capitals. ICON0 and ICON1 are the PSP file names of the XMB tile picture and its animation -->
+    <string name="det_tab_tile">ICON0</string>
+    <string name="det_tab_icon1">ICON1</string>
+    <string name="det_tab_box_art">BOX ART</string>
+    <string name="det_tab_box_3d">3D BOX</string>
+    <string name="det_tab_phys">PHYS. MEDIA</string>
+    <string name="det_tab_hero">HERO</string>
+    <string name="det_tab_background">BACKGROUND</string>
+    <string name="det_tab_logo">LOGO</string>
+    <string name="det_tab_screenshot">SCREENSHOT</string>
+    <string name="det_tab_manual">MANUAL</string>
+    <string name="det_tab_video">VIDEO</string>
+    <!-- What each tab is used for. XMB is the app\'s main menu; PIC0 is the PSP file name of the overlay picture -->
+    <string name="det_tab_tile_contract">XMB tile · 144×80 · crop</string>
+    <string name="det_tab_icon1_contract">XMB icon animation · 60 s muted snap</string>
+    <string name="det_tab_box_art_contract">XMB tile (Box Art mode) · natural aspect</string>
+    <string name="det_tab_box_3d_contract">XMB tile (3D Box mode) · natural aspect</string>
+    <string name="det_tab_phys_contract">XMB tile (Physical Media mode) · natural aspect</string>
+    <string name="det_tab_hero_contract">Game Details banner · wide · crop</string>
+    <string name="det_tab_background_contract">XMB hover background · full screen</string>
+    <string name="det_tab_logo_contract">PIC0 overlay · transparent PNG · fit</string>
+    <string name="det_tab_screenshot_contract">Game Details media strip</string>
+    <string name="det_tab_manual_contract">In-app PDF manual</string>
+    <string name="det_tab_video_contract">Game Details media strip · full video</string>
+    <!-- Leave prompt rows: shown when the user leaves with picks that were not applied -->
+    <string name="det_leave_apply">Apply and Close</string>
+    <string name="det_leave_discard">Discard Changes</string>
+    <string name="det_leave_stay">Stay</string>
+    <plurals name="det_leave_changes_waiting">
+        <item quantity="one">%1$d change not applied</item>
+        <item quantity="other">%1$d changes not applied</item>
+    </plurals>
+    <!-- Crop editor menu -->
+    <string name="det_crop_options_title">Crop Options</string>
+    <string name="det_crop_live_preview">Live Preview</string>
+    <!-- Row label: the shape of the crop frame -->
+    <string name="det_crop_shape">Shape</string>
+    <string name="det_crop_shape_platform_default">Platform Default</string>
+    <string name="det_crop_shape_original">Original Image</string>
+    <string name="det_no_options">No options available here</string>
+    <string name="det_replace_anyway">Replace Anyway</string>
+    <!-- %1$s is a tab name such as BOX ART -->
+    <string name="det_replace_title">%1$s is already this image</string>
+    <string name="det_replace_title_default">This artwork is already this image</string>
+    <string name="det_apply_title_default">Apply changes?</string>
+    <!-- %1$s is a count such as 3 screenshots, %2$d the number of stored pictures that will be removed -->
+    <string name="det_apply_title_add_remove">Add %1$s and remove %2$d?</string>
+    <string name="det_apply_title_remove">Remove %1$s?</string>
+    <string name="det_apply_title_add">Add %1$s?</string>
+    <plurals name="det_asset_count_screenshot">
+        <item quantity="one">%1$d screenshot</item>
+        <item quantity="other">%1$d screenshots</item>
+    </plurals>
+    <plurals name="det_asset_count_video">
+        <item quantity="one">%1$d video</item>
+        <item quantity="other">%1$d videos</item>
+    </plurals>
+    <plurals name="det_asset_count_image">
+        <item quantity="one">%1$d image</item>
+        <item quantity="other">%1$d images</item>
+    </plurals>
+    <!-- %1$s is a count such as 3 screenshots -->
+    <string name="det_local_add_cap_only">A game holds %1$s at most</string>
+    <string name="det_local_add_cap">Added %1$s — a game holds %2$d at most</string>
+    <plurals name="det_local_add_failed">
+        <item quantity="one">The file could not be added</item>
+        <item quantity="other">%1$d files could not be added</item>
+    </plurals>
+    <!-- %1$s is a count such as 3 screenshots, %2$d the number of files that failed -->
+    <plurals name="det_local_add_some_failed">
+        <item quantity="one">Added %1$s · %2$d file could not be added</item>
+        <item quantity="other">Added %1$s · %2$d files could not be added</item>
+    </plurals>
+    <string name="det_local_added">Added %1$s</string>
+    <!-- %1$s is a count such as 3 screenshots, %2$d how many to uncheck -->
+    <string name="det_cap_uncheck">A game holds %1$s at most — uncheck %2$d to apply</string>
+    <!-- Actions in the Options menu -->
+    <string name="det_action_apply_changes">Apply Changes</string>
+    <string name="det_action_retry_failed">Retry Failed Downloads</string>
+    <string name="det_action_remove_failed">Remove Failed Downloads</string>
+    <string name="det_action_reorder">Reorder Stored Artwork</string>
+    <string name="det_action_crop">Adjust Crop / Position</string>
+    <string name="det_action_crop_before">Crop Before Applying</string>
+    <string name="det_action_restore_previous">Restore Previous</string>
+    <string name="det_action_reset_default">Reset to Scraped Default</string>
+    <string name="det_action_clear">Clear Artwork</string>
+    <string name="det_action_file_info">View File Information</string>
+    <string name="det_action_change_match">Change Match</string>
+    <string name="det_action_forget_match">Forget Match</string>
+    <!-- Small tags beside a source that cannot be used: no artwork of this type, or no API key -->
+    <string name="det_source_badge_na">n/a</string>
+    <string name="det_source_badge_no_key">no key</string>
+    <!-- %1$s is a source name, %2$s an uppercase tab name -->
+    <string name="det_source_no_artwork">%1$s has no %2$s artwork</string>
+    <string name="det_source_igdb_needs">IGDB needs a Client ID and Secret — add them in Settings ▸ Artwork</string>
+    <!-- %1$s is a source name -->
+    <string name="det_source_needs_key">%1$s needs an API key — add one in Settings ▸ Artwork</string>
+    <!-- Source chip with a status tag: %1$s is the source, %2$s the tag -->
+    <string name="det_source_with_badge">%1$s · %2$s</string>
+    <!-- %1$s is a provider name -->
+    <string name="det_match_cant_search">%1$s can\'t be searched by title — there are no alternatives to choose from.</string>
+    <string name="det_match_no_answer">%1$s didn\'t answer. Press Search to try again.</string>
+    <string name="det_matched_as">Matched as %1$s</string>
+    <string name="det_msg_reorder_failed">Could not reorder artwork</string>
+    <string name="det_msg_remove_failed">Some artwork could not be removed</string>
+    <string name="det_msg_no_previous">No previous version to restore</string>
+    <!-- %1$s is a tab name such as BOX ART -->
+    <string name="det_msg_restored">%1$s restored to previous</string>
+    <string name="det_msg_redownload_failed">Could not re-download the scraped default</string>
+    <string name="det_msg_reset">%1$s reset to scraped default</string>
+    <string name="det_msg_crop_download_failed">Could not download that pick to crop</string>
+    <string name="det_msg_crop_not_image">That pick is not an image this can crop</string>
+    <string name="det_msg_crop_open_failed">Could not open the original to crop</string>
+    <string name="det_msg_crop_failed">Crop failed</string>
+    <string name="det_msg_crop_save_failed">Could not save the cropped artwork</string>
+    <string name="det_msg_cropped">%1$s cropped</string>
+    <string name="det_msg_apply_rejected">Could not apply — download or file was rejected</string>
+    <!-- %1$s is a tab name, %2$s a provider name -->
+    <string name="det_msg_updated_from">%1$s updated from %2$s</string>
+    <string name="det_msg_cleared">%1$s cleared</string>
+    <!-- Small captions on picture tiles from TheGamesDB and IGDB -->
+    <string name="det_tgdb_box_art">box art</string>
+    <string name="det_tgdb_fanart">fanart</string>
+    <string name="det_tgdb_clear_logo">clear logo</string>
+    <string name="det_tgdb_box_art_crop">box art · crop to tile</string>
+    <string name="det_tgdb_hero_crop">hero · crop to tile</string>
+    <string name="det_igdb_cover">cover</string>
+    <string name="det_igdb_artwork">artwork</string>
+    <string name="det_igdb_cover_crop">cover · crop to tile</string>
+    <string name="det_igdb_artwork_crop">artwork · crop to tile</string>
+
+    <!-- Artwork Studio screen -->
+    <string name="det_studio_title">Artwork Studio</string>
+    <!-- %1$s is the platform code in capitals, e.g. WINDOWS -->
+    <string name="det_studio_title_platform">Artwork Studio · %1$s</string>
+    <string name="det_studio_artwork_word">artwork</string>
+    <string name="det_clear_title">Clear Artwork?</string>
+    <!-- %1$s is a tab name such as BOX ART, %2$s the game\'s title -->
+    <string name="det_clear_message">The %1$s artwork for %2$s is deleted, along with its backup and the original copy. This can\'t be undone.</string>
+    <string name="det_clear">Clear</string>
+    <string name="det_forget_title">Forget Match?</string>
+    <!-- %1$s is the provider\'s name, %2$s the game\'s title -->
+    <string name="det_forget_message">%1$s will be asked about %2$s afresh. Your artwork and metadata are left alone.</string>
+    <string name="det_forget_the_provider">The provider</string>
+    <string name="det_forget">Forget</string>
+    <!-- Button: clear the search text back to the game\'s own title -->
+    <string name="det_studio_reset">Reset</string>
+    <!-- Small label in the search box when it holds the game\'s own title -->
+    <string name="det_studio_game_title_chip">game title</string>
+    <string name="det_studio_game_title_placeholder">Game title</string>
+    <string name="det_studio_pdf_stored">PDF stored</string>
+    <string name="det_studio_icon_video_stored">Icon video stored</string>
+    <string name="det_studio_video_stored">Video stored</string>
+    <string name="det_studio_no_artwork">No artwork set</string>
+    <!-- Mature-content filter toggle chip -->
+    <string name="det_mature_on">Mature on</string>
+    <string name="det_mature_off">Mature off</string>
+    <!-- %1$s is the title the source matched the game to -->
+    <string name="det_studio_matched_as">Matched as %1$s</string>
+    <!-- %1$s is a provider name -->
+    <string name="det_studio_matching_on">Matching on %1$s…</string>
+    <string name="det_studio_no_answer">%1$s didn\'t answer</string>
+    <string name="det_studio_no_match">No %1$s match</string>
+    <string name="det_studio_confirmed">Confirmed</string>
+    <!-- Small buttons in capitals beside the match line -->
+    <string name="det_studio_forget_btn">FORGET</string>
+    <string name="det_studio_change_match_btn">CHANGE MATCH</string>
+    <string name="det_studio_add_files">"+  Add files from this device"</string>
+    <string name="det_studio_choose_file">"+  Choose a file from this device"</string>
+    <string name="det_studio_none_videos">No videos stored yet</string>
+    <string name="det_studio_none_screenshots">No screenshots stored yet</string>
+    <!-- %1$s is a tab name such as BOX ART -->
+    <string name="det_studio_replaces_this">The file you choose replaces this %1$s</string>
+    <!-- %1$d is how many results the filters hid -->
+    <string name="det_studio_filters_hide_all">Nothing matches these filters · %1$d hidden</string>
+    <string name="det_studio_no_results">No results</string>
+    <string name="det_studio_ss_looking">Looking for this game on ScreenScraper…</string>
+    <string name="det_studio_ss_no_answer">ScreenScraper didn\'t answer. Use Change Match to search again.</string>
+    <string name="det_studio_ss_no_match">No ScreenScraper match for this game. Use Change Match to pick one.</string>
+    <string name="det_studio_ss_nothing">ScreenScraper has nothing of this type for this game</string>
+    <!-- Label on a video tile -->
+    <string name="det_studio_tile_video">▶ VIDEO</string>
+    <!-- Controller prompts in the footer -->
+    <string name="det_studio_prompt_browse">Browse / Pick File</string>
+    <string name="det_studio_prompt_check">Check</string>
+    <string name="det_studio_prompt_preview_apply">Preview / Apply</string>
+    <string name="det_studio_downloading_manual">Downloading manual…</string>
+    <!-- %1$s is a provider name -->
+    <string name="det_studio_video_snap_from">Video snap from %1$s</string>
+    <!-- Buttons in the preview. Ⓐ and Ⓑ stand for the controller\'s A and B buttons -->
+    <string name="det_studio_candidate_apply">"Ⓐ  APPLY"</string>
+    <string name="det_studio_candidate_cancel">"Ⓑ  CANCEL"</string>
+    <string name="det_studio_close_btn">"Ⓑ  CLOSE"</string>
+    <string name="det_studio_manual_page_cd">Manual page</string>
+    <!-- Change Match panel -->
+    <!-- %1$s is a provider name -->
+    <string name="det_cm_title">Change match on %1$s</string>
+    <string name="det_cm_help">Tells the provider which game this is. Your artwork and metadata are left alone.</string>
+    <string name="det_cm_other_platforms">Includes other platforms. Check the platform before you pick.</string>
+    <string name="det_cm_searching_every">Searching every platform. ScreenScraper can take about 10 seconds…</string>
+    <string name="det_cm_no_games">No games found. Try a shorter title, or the title without its edition.</string>
+    <string name="det_cm_no_media">no media</string>
+    <!-- %1$d is how many pictures the release has -->
+    <string name="det_cm_media">%1$d media</string>
+    <!-- Controller hint line. A, X and B are controller buttons -->
+    <string name="det_cm_hint">"Up/Down  Move  •  A  Select  •  X  Edit title  •  B  Back"</string>
+    <!-- Search panel -->
+    <string name="det_sq_title">Search artwork providers</string>
+    <string name="det_sq_help">Changes what the providers are asked for. It never renames the game.</string>
+    <string name="det_sq_use_title">Use game title</string>
+    <!-- File information panel -->
+    <string name="det_fi_title">FILE INFORMATION</string>
+    <string name="det_fi_no_record">No stored record for this slot (available once the artwork lives in a linked library).</string>
+    <string name="det_fi_type">Type</string>
+    <string name="det_fi_provider">Provider</string>
+    <string name="det_fi_source">Source</string>
+    <string name="det_fi_pinned">Pinned</string>
+    <string name="det_fi_pinned_yes">Yes (locked)</string>
+    <string name="det_fi_dimensions">Dimensions</string>
+    <string name="det_fi_size">Size</string>
+    <string name="det_fi_cropped">Cropped</string>
+    <string name="det_fi_previous">Previous version</string>
+    <string name="det_fi_path">Path</string>
+    <string name="det_fi_origin">Origin</string>
+    <string name="det_yes">Yes</string>
+    <string name="det_no">No</string>
+    <!-- Crop editor. Ⓐ, Ⓑ and Ⓨ stand for the controller\'s A, B and Y buttons -->
+    <string name="det_crop_title">ADJUST CROP / POSITION</string>
+    <!-- %1$s is the crop shape name in capitals -->
+    <string name="det_crop_title_shape">"ADJUST CROP / POSITION  ·  %1$s"</string>
+    <string name="det_crop_baking">Baking…</string>
+    <string name="det_crop_apply">"Ⓐ  APPLY CROP"</string>
+    <string name="det_crop_options_btn">"Ⓨ  OPTIONS"</string>
+    <string name="det_crop_hint">"drag to move the image   ·   pinch to zoom   ·   D-Pad move   ·   LB / RB zoom"</string>
+</resources>

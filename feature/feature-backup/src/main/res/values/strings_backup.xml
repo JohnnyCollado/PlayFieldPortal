@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Slice H2: feature-backup (backup and restore results) -->
+<resources>
+    <!-- Backup failures -->
+    <string name="bak_no_folder">No backup folder set. Choose one under Settings → Backup &amp; Restore → Backup Folder.</string>
+    <string name="bak_too_large">This backup would be too large to restore (it can hold up to 20,000 files and 2 GB). Remove unused artwork or media and try again.</string>
+    <string name="bak_write_failed">Could not write to the backup folder. Choose the backup folder again in Settings ▸ System ▸ Backup &amp; Restore.</string>
+    <string name="bak_unknown_error">Unknown error</string>
+
+    <!-- Restore failures -->
+    <string name="bak_open_failed">Could not open backup file</string>
+    <string name="bak_missing_manifest">Backup is missing manifest</string>
+    <!-- %1$d is the backup file's format version, %2$d the newest version this app can read -->
+    <string name="bak_format_too_new">Backup format v%1$d is newer than this app supports (v%2$d)</string>
+    <string name="bak_no_uri">No URI provided</string>
+
+    <!-- Notification titles -->
+    <string name="bak_task_created">Backup created</string>
+    <string name="bak_task_failed">Backup failed</string>
+    <string name="bak_task_restored">Backup restored</string>
+    <string name="bak_task_restore_failed">Restore failed</string>
+    <!-- Heading of the list of items that were restored, in the notification detail -->
+    <string name="bak_results_restored">Restored</string>
+    <!-- Notification message: how many items in the backup were turned away -->
+    <plurals name="bak_items_skipped">
+        <item quantity="one">%d item skipped</item>
+        <item quantity="other">%d items skipped</item>
+    </plurals>
+
+    <!-- Items turned away during restore. The text before the first colon is shown as the item's name. -->
+    <!-- %1$s is a file path inside the backup -->
+    <string name="bak_refused_out_of_root">Refused \'%1$s\': not inside a restorable folder</string>
+    <string name="bak_refused_profiles_unparseable">Refused emulator profiles: file could not be parsed</string>
+    <!-- %1$s is an emulator profile name, %2$s the reason it was refused -->
+    <string name="bak_refused_profile">Refused emulator profile \'%1$s\': %2$s</string>
+</resources>

@@ -63,6 +63,10 @@ import com.playfieldportal.feature.xmb.viewmodel.PanelSelection
 import com.playfieldportal.feature.xmb.viewmodel.notificationPanelPrompts
 import com.playfieldportal.feature.xmb.viewmodel.panelSelection
 import kotlinx.coroutines.delay
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.playfieldportal.feature.xmb.R
+import com.playfieldportal.core.ui.text.asString
 
 /**
  * The Vita-style notification list: an inset panel dropped from the status strip, holding what is
@@ -136,7 +140,7 @@ fun NotificationPanel(
             ) {
                 itemsIndexed(rows) { index, row ->
                     when (row) {
-                        is NotificationRow.Header -> SectionHeader(row.title)
+                        is NotificationRow.Header -> SectionHeader(row.title.asString())
                         is NotificationRow.Running -> RunningRow(
                             task = row.task,
                             isSelected = index == state.cursor && row.isSelectable,
@@ -161,7 +165,7 @@ fun NotificationPanel(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.MoreHoriz,
-                    contentDescription = "Notification options",
+                    contentDescription = stringResource(R.string.xmbu_notif_options_description),
                     tint = Color.White.copy(alpha = 0.72f),
                     modifier = Modifier
                         .clip(CircleShape)
@@ -209,7 +213,7 @@ private fun SectionHeader(title: String) {
 @Composable
 private fun EmptyRow() {
     Text(
-        text = EMPTY_PANEL_MESSAGE,
+        text = stringResource(R.string.xmbu_notif_empty),
         color = themedSubText(Color.White.copy(alpha = 0.55f)),
         fontSize = 13.sp,
         modifier = Modifier
@@ -251,8 +255,8 @@ private fun RunningRow(task: BackgroundTaskInfo, isSelected: Boolean, onTap: () 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = when {
-                        stopping -> "${task.label.trimEnd('…', '.', ' ')} — Stopping…"
-                        task.detail != null -> "${task.label} — ${task.detail}"
+                        stopping -> stringResource(R.string.xmbu_notif_task_stopping, task.label.trimEnd('…', '.', ' '))
+                        task.detail != null -> stringResource(R.string.xmbu_notif_task_detail, task.label, task.detail.orEmpty())
                         else -> task.label
                     },
                     color = themedText(Color.White.copy(alpha = if (stopping) 0.55f else if (isSelected) 0.95f else 0.92f)),
@@ -385,7 +389,10 @@ private fun HistoryRow(
         }
         Spacer(Modifier.width(10.dp))
         Text(
-            text = notificationTimestamp(notification.createdAt, now),
+            text = notificationTimestamp(
+                notification.createdAt, uiResources(), now,
+                is24Hour = android.text.format.DateFormat.is24HourFormat(LocalContext.current),
+            ),
             color = themedSubText(Color.White.copy(alpha = 0.60f)),
             fontSize = 11.sp,
             maxLines = 1,

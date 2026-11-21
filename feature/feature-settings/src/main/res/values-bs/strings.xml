@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Postavke</string>
+    <string name="sound_title">Zvuk</string>
+    <string name="sound_group_master">Glavno</string>
+    <string name="sound_group_levels">Nivoi</string>
+    <string name="sound_group_sounds">Zvukovi</string>
+    <string name="sound_master_volume">Glavna jačina zvuka</string>
+    <string name="sound_master_volume_help">Određuje jačinu svih zvukova launchera. Na 0 je launcher bez zvuka.</string>
+    <string name="sound_ambience_help">Ponavlja se dok pregledate. OGG se ponavlja bez prekida; MP3 može kliknuti.</string>
+    <string name="sound_rejected_title">Taj zvuk nije moguće koristiti</string>
+    <string name="sound_reset_confirm_title">Vratiti zvuk na zadane postavke?</string>
+    <string name="sound_reset_confirm_message">Svaki zvuk menija vraća se na priloženi PFP uzorak, a svaki nivo, uključujući glavni, vraća se na najviši. Vaša ambijentalna numera te mediji za Boot Video i Game Boot ostaju nepromijenjeni.</string>
+    <string name="sound_reset_confirm_action">Vrati</string>
+    <string name="sound_reset_row">Vrati zvuk na zadane postavke</string>
+    <string name="sound_reset_row_help">Vraća svaki zvuk menija na priloženi PFP uzorak i svaki nivo na najviši. Zadržava vašu ambijentalnu numeru.</string>
+    <string name="sound_channel_navigation">Navigacija</string>
+    <string name="sound_channel_back">Nazad / Otkaži</string>
+    <string name="sound_channel_confirm">Potvrdi / Primijeni</string>
+    <string name="sound_channel_error">Greška / Nevažeće</string>
+    <string name="sound_channel_notification">Obavještenje</string>
+    <string name="sound_channel_boot">Sekvenca pokretanja</string>
+    <string name="sound_channel_ambience">Ambijent</string>
+    <string name="sound_slot_navigation">Navigacija</string>
+    <string name="sound_slot_back">Nazad / Otkaži</string>
+    <string name="sound_slot_confirm">Potvrdi / Primijeni</string>
+    <string name="sound_slot_error">Greška / Nevažeće</string>
+    <string name="sound_slot_notification">Obavještenje</string>
+    <string name="sound_slot_ambience">Ambijentalna numera</string>
+</resources>

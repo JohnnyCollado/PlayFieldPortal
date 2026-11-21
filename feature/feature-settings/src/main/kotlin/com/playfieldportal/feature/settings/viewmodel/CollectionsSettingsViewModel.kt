@@ -20,6 +20,8 @@ import com.playfieldportal.core.domain.model.cardCategories
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameCollection
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.settings.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -43,9 +45,9 @@ class CollectionsSettingsViewModel @Inject constructor(
         customIconStore.observeStoredKeys()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
-    private val _iconMessage = MutableStateFlow<String?>(null)
+    private val _iconMessage = MutableStateFlow<UiText?>(null)
     /** Why the last image did not land (the store's own words), or null. */
-    val iconMessage: StateFlow<String?> = _iconMessage.asStateFlow()
+    val iconMessage: StateFlow<UiText?> = _iconMessage.asStateFlow()
 
     private val _themeIcons = MutableStateFlow<List<CardThemeIcon>>(emptyList())
     /** The applied theme's icons, offered as a card icon; empty when the theme has none. */
@@ -102,7 +104,7 @@ class CollectionsSettingsViewModel @Inject constructor(
         val key = UserCardIconKeys.keyFor(collectionId) ?: return
         viewModelScope.launch {
             val result = customIconStore.import(key, uri, mime)
-            _iconMessage.value = if (result.ok) null else result.message ?: "That image could not be used."
+            _iconMessage.value = if (result.ok) null else result.message?.let { UiText.raw(it) } ?: UiText.res(R.string.lib_coll_image_unusable)
         }
     }
 

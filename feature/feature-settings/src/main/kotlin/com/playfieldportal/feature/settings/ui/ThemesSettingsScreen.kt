@@ -4,6 +4,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.combinedClickable
 import com.playfieldportal.core.ui.components.PfpChoiceOption
 import com.playfieldportal.core.ui.components.PfpModalSpec
+import android.content.res.Resources
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -48,6 +49,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -74,6 +78,8 @@ import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import com.playfieldportal.core.ui.sound.MenuSound
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.feature.settings.viewmodel.ThemeApplyConfirmation
 import com.playfieldportal.feature.settings.viewmodel.ThemesSettingsUiState
 import com.playfieldportal.feature.settings.viewmodel.ThemesSettingsViewModel
@@ -137,6 +143,10 @@ private fun ThemesSettingsContent(
     onDismissLockScreenOffer: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    // Read the configuration so a language change recomposes this and rebuilds the menu text below.
+    LocalConfiguration.current
+    val resources = LocalContext.current.resources
+
     val ptfPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { onImportPtfTheme(it) } }
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { onCreateThemeFromPhoto(it) } }
     val pfpPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { onImportPfpTheme(it) } }
@@ -147,8 +157,8 @@ private fun ThemesSettingsContent(
         if (showSaveNameDialog) {
             PfpModalSpec.TextEntry(
                 key = "save_current_look",
-                title = "Save Current Look as Theme",
-                placeholder = "Theme name",
+                title = stringResource(R.string.setd_save_look_title),
+                placeholder = stringResource(R.string.setd_theme_name_placeholder),
                 onConfirm = { name ->
                     showSaveNameDialog = false
                     onSaveCurrentLook(name)
@@ -165,6 +175,7 @@ private fun ThemesSettingsContent(
     val renameModal = rememberSettingsModal(
         pendingRename?.let { theme ->
             renameThemeSpec(
+                resources,
                 theme,
                 onConfirm = { name -> pendingRename = null; onRenameSavedTheme(theme.id, name) },
                 onCancel = { pendingRename = null },
@@ -177,6 +188,7 @@ private fun ThemesSettingsContent(
     val deleteModal = rememberSettingsModal(
         pendingDelete?.let { theme ->
             deleteThemeConfirmSpec(
+                resources,
                 theme,
                 onConfirm = { pendingDelete = null; onDeleteSavedTheme(theme.id) },
                 onCancel = { pendingDelete = null },
@@ -192,21 +204,21 @@ private fun ThemesSettingsContent(
             if (confirm.hasChoices) {
                 PfpModalSpec.Choice(
                     key = confirm,
-                    title = confirm.title,
-                    message = confirm.message,
-                    options = confirm.options.map { PfpChoiceOption(it) },
-                    confirmLabel = confirm.applyLabel,
-                    cancelLabel = confirm.cancelLabel,
+                    title = confirm.title.asString(),
+                    message = confirm.message.asString(),
+                    options = confirm.options.map { PfpChoiceOption(it.asString()) },
+                    confirmLabel = confirm.applyLabel.asString(),
+                    cancelLabel = confirm.cancelLabel.asString(),
                     onConfirm = onConfirmApply,
                     onCancel = onCancelApply,
                 )
             } else {
                 PfpModalSpec.Confirm(
                     key = confirm,
-                    title = confirm.title,
-                    message = confirm.message,
-                    confirmLabel = confirm.applyLabel,
-                    cancelLabel = confirm.cancelLabel,
+                    title = confirm.title.asString(),
+                    message = confirm.message.asString(),
+                    confirmLabel = confirm.applyLabel.asString(),
+                    cancelLabel = confirm.cancelLabel.asString(),
                     onConfirm = { onConfirmApply(ThemeApplyConfirmation.APPLY_ONLY) },
                     onCancel = onCancelApply,
                 )
@@ -219,11 +231,10 @@ private fun ThemesSettingsContent(
         state.lockScreenOffer?.let { offer ->
             PfpModalSpec.Confirm(
                 key = "lock:${offer.themeId}",
-                title = "Set Lock Screen?",
-                message = "\"${offer.themeName}\" has a lock screen image. Use it as the device's lock screen? " +
-                    "Resetting the theme puts the lock screen back.",
-                confirmLabel = "Set Lock Screen",
-                cancelLabel = "Not Now",
+                title = stringResource(R.string.setd_lock_offer_title),
+                message = stringResource(R.string.setd_lock_offer_message, offer.themeName),
+                confirmLabel = stringResource(R.string.setd_lock_offer_confirm),
+                cancelLabel = stringResource(R.string.setd_lock_offer_cancel),
                 openOnCancel = true,
                 onConfirm = onConfirmLockScreenOffer,
                 onCancel = onDismissLockScreenOffer,
@@ -254,6 +265,7 @@ private fun ThemesSettingsContent(
         itemMenu.show(
             theme.name,
             savedThemeMenuRows(
+                resources,
                 theme,
                 onShare = onShareSavedTheme,
                 onRequestRename = { pendingRename = it },
@@ -265,8 +277,8 @@ private fun ThemesSettingsContent(
 
     Box(modifier = modifier) {
         SettingsScaffold(
-            title    = "Settings",
-            subtitle = "Themes",
+            title    = stringResource(R.string.settings_title),
+            subtitle = stringResource(R.string.setd_themes_title),
             onBack   = onBack,
             modifier = Modifier.fillMaxSize(),
             modalOpen = saveNameModal.open || renameModal.open || deleteModal.open || applyModal.open || lockOfferModal.open ||
@@ -328,25 +340,25 @@ private fun ThemesSettingsContent(
                     .fillMaxSize()
                     .verticalScroll(scrollState),
             ) {
-                SettingsGroup("Appearance")
+                SettingsGroup(stringResource(R.string.setd_group_appearance))
                 SettingsRow(
-                    label    = "Color scheme",
+                    label    = stringResource(R.string.setd_color_scheme),
                     sublabel = if (state.accentOverrideArgb != null) {
-                        "Custom theme color active — picking a preset replaces it"
-                    } else "PSP-style background colors — preview live",
+                        stringResource(R.string.setd_color_scheme_custom_active)
+                    } else stringResource(R.string.setd_color_scheme_sublabel),
                     onClick  = onOpenColorSchemePicker,
                 )
 
                 state.accentOverrideArgb?.let { accent ->
                     SettingsRow(
-                        label    = "Custom theme color",
-                        sublabel = "From an imported theme — tap to remove and return to the color scheme",
+                        label    = stringResource(R.string.setd_custom_theme_color),
+                        sublabel = stringResource(R.string.setd_custom_theme_color_sublabel),
                         onClick  = onClearAccentOverride,
                         trailing = { ColorDot(argb = accent) },
                     )
                 }
 
-                SettingsGroup("Icon color")
+                SettingsGroup(stringResource(R.string.setd_group_icon_color))
                 FocusableStrip(
                     focusRequester = iconStripRequester,
                     onFocusChange = { focused ->
@@ -368,18 +380,18 @@ private fun ThemesSettingsContent(
                     )
                 }
 
-                SettingsGroup("Icons")
+                SettingsGroup(stringResource(R.string.setd_group_icons))
                 SettingsValueRow(
-                    label    = "Customize XMB icons",
-                    value    = state.customIconsValue,
-                    sublabel = "Crossbar, items, consoles and physical media — in XMB order, live over the XMB",
+                    label    = stringResource(R.string.setd_customize_icons),
+                    value    = state.customIconsValue.asString(),
+                    sublabel = stringResource(R.string.setd_customize_icons_sublabel),
                     onClick  = onOpenCustomIcons,
                 )
 
-                SettingsGroup("My themes")
+                SettingsGroup(stringResource(R.string.setd_group_my_themes))
                 SettingsRow(
-                    label    = "New theme from photo",
-                    sublabel = "Pick a picture — wallpaper and color are set from it",
+                    label    = stringResource(R.string.setd_new_from_photo),
+                    sublabel = stringResource(R.string.setd_new_from_photo_sublabel),
                     onClick  = if (state.isInstalling) null else ({ photoPicker.launch(arrayOf("image/*")) }),
                 )
 
@@ -409,29 +421,32 @@ private fun ThemesSettingsContent(
                     }
                 }
 
-                SettingsGroup("Active theme")
-                SettingsValueRow(label = "Current theme", value = state.activeThemeName)
+                SettingsGroup(stringResource(R.string.setd_group_active_theme))
+                SettingsValueRow(
+                    label = stringResource(R.string.setd_current_theme),
+                    value = state.activeThemeName ?: stringResource(R.string.setd_theme_default_name),
+                )
                 SettingsRow(
-                    label    = "Reset to default",
-                    sublabel = "Remove the applied wallpaper, theme colors, and custom icons",
+                    label    = stringResource(R.string.setd_reset_to_default),
+                    sublabel = stringResource(R.string.setd_reset_to_default_sublabel),
                     onClick  = onResetTheme,
                     destructive = true,
                 )
 
-                SettingsGroup("Install")
+                SettingsGroup(stringResource(R.string.setd_group_install))
                 SettingsRow(
-                    label    = "Save current look as theme",
-                    sublabel = "Bundle your icons, wallpaper, colors and motion into a shareable .pfptheme",
+                    label    = stringResource(R.string.setd_save_look_row),
+                    sublabel = stringResource(R.string.setd_save_look_row_sublabel),
                     onClick  = { showSaveNameDialog = true },
                 )
                 SettingsRow(
-                    label    = "Import PSP theme (.ptf)",
-                    sublabel = "Uses the theme's wallpaper, color and matching icons",
+                    label    = stringResource(R.string.setd_import_ptf),
+                    sublabel = stringResource(R.string.setd_import_ptf_sublabel),
                     onClick  = if (state.isInstalling) null else ({ ptfPicker.launch(arrayOf("*/*")) }),
                 )
                 SettingsRow(
-                    label    = "Import theme (.pfptheme)",
-                    sublabel = "A theme shared from PlayFieldPortal",
+                    label    = stringResource(R.string.setd_import_pfptheme),
+                    sublabel = stringResource(R.string.setd_import_pfptheme_sublabel),
                     onClick  = if (state.isInstalling) null else ({ pfpPicker.launch(arrayOf("*/*")) }),
                 )
 
@@ -448,7 +463,7 @@ private fun ThemesSettingsContent(
 
         picker?.let { open ->
             HsvColorPickerDialog(
-                title = "Custom Icon Color",
+                title = stringResource(R.string.setd_custom_icon_color_title),
                 state = open,
                 onStateChange = { picker = it },
                 accent = SettingsAccent,
@@ -476,40 +491,43 @@ private fun ThemesSettingsContent(
  * Update Theme File appears only for a theme saved in an older format; a current one has nothing to update.
  */
 internal fun savedThemeMenuRows(
+    resources: Resources,
     theme: PfpThemeStore.SavedTheme,
     onShare: (String) -> Unit,
     onRequestRename: (PfpThemeStore.SavedTheme) -> Unit,
     onRequestDelete: (PfpThemeStore.SavedTheme) -> Unit,
     onUpdate: (String) -> Unit = {},
 ): List<SettingsMenuItem> = buildList {
-    add(SettingsMenuItem("Share") { onShare(theme.id) })
-    add(SettingsMenuItem("Rename Theme") { onRequestRename(theme) })
-    if (theme.isOlderFormat) add(SettingsMenuItem("Update Theme File") { onUpdate(theme.id) })
-    add(SettingsMenuItem("Delete Theme", destructive = true) { onRequestDelete(theme) })
+    add(SettingsMenuItem(resources.getString(R.string.setd_theme_share)) { onShare(theme.id) })
+    add(SettingsMenuItem(resources.getString(R.string.setd_theme_rename)) { onRequestRename(theme) })
+    if (theme.isOlderFormat) add(SettingsMenuItem(resources.getString(R.string.setd_theme_update_file)) { onUpdate(theme.id) })
+    add(SettingsMenuItem(resources.getString(R.string.setd_theme_delete), destructive = true) { onRequestDelete(theme) })
 }
 
 internal fun renameThemeSpec(
+    resources: Resources,
     theme: PfpThemeStore.SavedTheme,
     onConfirm: (String) -> Unit,
     onCancel: () -> Unit,
 ): PfpModalSpec.TextEntry = PfpModalSpec.TextEntry(
     key = "rename_theme_${theme.id}",
-    title = "Rename Theme",
+    title = resources.getString(R.string.setd_theme_rename),
     initial = theme.name,
-    placeholder = "Theme name",
+    placeholder = resources.getString(R.string.setd_theme_name_placeholder),
     onConfirm = onConfirm,
     onCancel = onCancel,
 )
 
 internal fun deleteThemeConfirmSpec(
+    resources: Resources,
     theme: PfpThemeStore.SavedTheme,
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
 ): PfpModalSpec.Confirm = PfpModalSpec.Confirm(
     key = "delete_theme_${theme.id}",
-    title = "Delete Theme?",
-    message = "\"${theme.name}\" will be deleted. This can't be undone.",
-    confirmLabel = "Delete",
+    title = resources.getString(R.string.setd_theme_delete_title),
+    message = resources.getString(R.string.setd_theme_delete_message, theme.name),
+    confirmLabel = resources.getString(R.string.setd_theme_delete_confirm),
     destructive = true,
     onConfirm = onConfirm,
     onCancel = onCancel,
@@ -624,16 +642,16 @@ internal fun SavedThemeCardRow(
                     theme.previewPath?.let { path -> AsyncImage(model = path, contentDescription = theme.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
                     theme.accentArgb?.let { accent -> Box(modifier = Modifier.padding(6.dp).size(14.dp).clip(CircleShape).background(Color(accent and 0xFFFFFFFFL)).border(1.dp, Color(0x88FFFFFF), CircleShape).align(Alignment.TopEnd)) }
                     if (theme.isOlderFormat) {
-                        Text(text = "Older format", color = Color.White, fontSize = 10.sp, maxLines = 1, modifier = Modifier.padding(6.dp).align(Alignment.BottomStart).clip(RoundedCornerShape(4.dp)).background(Color(0xCC000000)).padding(horizontal = 6.dp, vertical = 2.dp))
+                        Text(text = stringResource(R.string.setd_theme_older_format), color = Color.White, fontSize = 10.sp, maxLines = 1, modifier = Modifier.padding(6.dp).align(Alignment.BottomStart).clip(RoundedCornerShape(4.dp)).background(Color(0xCC000000)).padding(horizontal = 6.dp, vertical = 2.dp))
                     }
                 }
                 Text(text = theme.name, color = if (cardFocused) SettingsAccent else SettingsSubtext, fontSize = 12.sp, maxLines = 1, modifier = Modifier.padding(top = 4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(text = "Share", color = SettingsAccent, fontSize = 12.sp, modifier = Modifier.clickable { menuSounds.play(MenuSound.SELECT); onShare(theme.id) }.padding(horizontal = 10.dp, vertical = 8.dp))
+                    Text(text = stringResource(R.string.setd_theme_share), color = SettingsAccent, fontSize = 12.sp, modifier = Modifier.clickable { menuSounds.play(MenuSound.SELECT); onShare(theme.id) }.padding(horizontal = 10.dp, vertical = 8.dp))
                     if (theme.isOlderFormat) {
-                        Text(text = "Update", color = SettingsAccent, fontSize = 12.sp, modifier = Modifier.clickable { menuSounds.play(MenuSound.CONFIRM); onUpdate(theme.id) }.padding(horizontal = 10.dp, vertical = 8.dp))
+                        Text(text = stringResource(R.string.setd_theme_update), color = SettingsAccent, fontSize = 12.sp, modifier = Modifier.clickable { menuSounds.play(MenuSound.CONFIRM); onUpdate(theme.id) }.padding(horizontal = 10.dp, vertical = 8.dp))
                     }
-                    Text(text = "Delete Theme", color = SettingsAccent, fontSize = 12.sp, modifier = Modifier.clickable { menuSounds.play(MenuSound.CONFIRM); onDelete(theme.id) }.padding(horizontal = 10.dp, vertical = 8.dp))
+                    Text(text = stringResource(R.string.setd_theme_delete), color = SettingsAccent, fontSize = 12.sp, modifier = Modifier.clickable { menuSounds.play(MenuSound.CONFIRM); onDelete(theme.id) }.padding(horizontal = 10.dp, vertical = 8.dp))
                 }
             }
         }

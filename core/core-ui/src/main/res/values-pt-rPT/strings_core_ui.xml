@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared button and prompt labels -->
+    <string name="core_cancel">Cancelar</string>
+    <string name="core_ok">OK</string>
+
+    <!-- Button label that saves the entered text -->
+    <string name="core_save">Guardar</string>
+    <string name="core_apply">Aplicar</string>
+    <string name="core_select">Selecionar</string>
+    <string name="core_close">Fechar</string>
+    <string name="core_back">Voltar</string>
+
+    <!-- Modals (text entry) -->
+    <string name="core_modal_name_label">Nome</string>
+    <string name="core_modal_counter">%1$d / %2$d</string>
+
+    <!-- Convert-to-achievement-tracking picker -->
+    <string name="core_steam_convert_title">Instalar acompanhamento de proezas?</string>
+    <string name="core_steam_convert_selected_count">%1$d de %2$d</string>
+    <string name="core_steam_convert_found_count">%1$d encontrados</string>
+    <string name="core_steam_convert_hints">"Cima/Baixo  Linhas  •  Select  Marcar  •  △  Todos/Nenhum  •  Start  Instalar  •  B  Cancelar"</string>
+    <string name="core_steam_convert_loading">A ler a lista de proezas de cada jogo na Steam…</string>
+    <string name="core_steam_convert_install">Instalar (%1$d)</string>
+
+    <!-- Button that unticks every game -->
+    <string name="core_steam_convert_none">Nenhum</string>
+
+    <!-- Button that ticks every game -->
+    <string name="core_steam_convert_all">Todos</string>
+    <string name="core_steam_convert_skip_sync">Saltar e sincronizar</string>
+
+    <!-- Keep the file names exactly as written -->
+    <string name="core_steam_convert_write_notice">Na pasta de cada jogo marcado, o PFP grava achievements.json, stats.json e configs.user.ini, cria uma pasta saves e muda o nome de steam_api64.dll para steam_api64_o.dll para que o emulador incluído possa carregar através dele.</string>
+    <string name="core_steam_convert_backup_warning">Faça backup dos ficheiros de save de qualquer jogo que já tenha jogado antes de o converter — o emulador vai passar a ler do novo local de saves.</string>
+
+    <!-- Shiba player card -->
+    <string name="core_shiba_xp">%1$s XP</string>
+    <string name="core_shiba_progress_next_bone">%1$s / %2$s para o próximo Osso</string>
+    <string name="core_shiba_progress_next_level">%1$s / %2$s para o nível %3$d</string>
+    <string name="core_shiba_level_abbrev">NV</string>
+
+    <!-- Colour picker -->
+    <string name="core_hsv_hex">Hex</string>
+    <string name="core_hsv_hue">Matiz</string>
+    <string name="core_hsv_saturation">Saturação</string>
+    <string name="core_hsv_brightness">Brilho</string>
+
+    <!-- Controller hints under the picker -->
+    <string name="core_hsv_hint_move">Mover</string>
+    <string name="core_hsv_hint_type_hex">Escrever hex</string>
+    <string name="core_hsv_hint_adjust">Ajustar</string>
+    <string name="core_hsv_sample_text">Texto de exemplo</string>
+
+    <!-- Preset colour names -->
+    <string name="core_color_default">Predefinição</string>
+    <string name="core_color_pink">Rosa</string>
+    <string name="core_color_gold">Dourado</string>
+    <string name="core_color_aqua">Água</string>
+    <string name="core_color_sky_blue">Azul-celeste</string>
+    <string name="core_color_green">Verde</string>
+    <string name="core_color_coral">Coral</string>
+    <string name="core_color_slate">Ardósia</string>
+
+    <!-- Swatch that opens the full colour picker -->
+    <string name="core_color_custom">Personalizada</string>
+
+    <!-- Notification detail sheets -->
+    <string name="core_sheet_copied">Copiado</string>
+    <string name="core_sheet_copy_details">Copiar detalhes</string>
+    <string name="core_sheet_copy_list">Copiar lista</string>
+    <string name="core_sheet_filter">Filtrar</string>
+    <string name="core_sheet_what_happened">O que aconteceu</string>
+    <string name="core_sheet_diagnostic_open">"▾  Detalhes de diagnóstico"</string>
+    <string name="core_sheet_diagnostic_closed">"▸  Detalhes de diagnóstico"</string>
+    <string name="core_sheet_diagnostic_heading">Diagnóstico</string>
+    <string name="core_sheet_summary_chip">%1$d %2$s</string>
+
+    <!-- Results filter tab that shows every item -->
+    <string name="core_sheet_filter_all">Todos</string>
+    <string name="core_sheet_more">Mais %1$d</string>
+    <string name="core_sheet_what_you_can_do">O que pode fazer</string>
+    <string name="core_vk_prompt_type">Escrever</string>
+    <string name="core_vk_prompt_delete">Apagar</string>
+    <string name="core_vk_prompt_cursor">Cursor</string>
+
+    <!-- Controller hint: toggle Caps Lock -->
+    <string name="core_vk_prompt_caps">Maiúsc.</string>
+    <string name="core_vk_key_space">Espaço</string>
+    <string name="core_vk_key_shift">Shift</string>
+    <string name="core_vk_key_backspace">Retrocesso</string>
+
+    <!-- Key that finishes typing -->
+    <string name="core_vk_key_done">Concluído</string>
+
+    <!-- Screen-reader state of the Shift key -->
+    <string name="core_vk_shift_off">Desativado</string>
+    <string name="core_vk_shift_once">Ativado para a próxima letra</string>
+    <string name="core_vk_shift_held">Ativado enquanto premido</string>
+    <string name="core_vk_shift_locked">Caps Lock ativado</string>
+
+    <!-- Background tasks -->
+    <string name="core_task_failed">Falha na tarefa</string>
+    <string name="core_task_done">Concluído</string>
+
+    <!-- Detail screens -->
+    <string name="core_detail_favorite_badge">FAVORITO</string>
+    <string name="core_detail_video_badge">VÍDEO</string>
+    <string name="core_detail_confirm_collapse">Confirme para recolher</string>
+    <string name="core_detail_confirm_read_more">Confirme para ler mais</string>
+
+    <!-- Rotate-to-landscape prompt -->
+    <string name="core_rotate_title">Rode para a horizontal</string>
+    <string name="core_rotate_message">O PlayField Portal funciona na horizontal. Rode o dispositivo para continuar.</string>
+    <string name="core_rotate_switch_launcher">Mudar de launcher</string>
+</resources>

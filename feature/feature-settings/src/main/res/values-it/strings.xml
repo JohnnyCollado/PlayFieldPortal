@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Impostazioni</string>
+    <string name="sound_title">Audio</string>
+    <string name="sound_group_master">Generale</string>
+    <string name="sound_group_levels">Livelli</string>
+    <string name="sound_group_sounds">Suoni</string>
+    <string name="sound_master_volume">Volume generale</string>
+    <string name="sound_master_volume_help">Regola tutti i suoni del launcher. A 0 il launcher è muto.</string>
+    <string name="sound_ambience_help">Si ripete mentre navighi. L\'OGG si ripete senza interruzioni; l\'MP3 può produrre un clic.</string>
+    <string name="sound_rejected_title">Impossibile usare questo suono</string>
+    <string name="sound_reset_confirm_title">Ripristinare l\'audio predefinito?</string>
+    <string name="sound_reset_confirm_message">Ogni suono del menu torna al campione PFP incluso e ogni livello, generale compreso, torna al massimo. La traccia d\'ambiente e i contenuti di Boot Video e Game Boot non vengono modificati.</string>
+    <string name="sound_reset_confirm_action">Ripristina</string>
+    <string name="sound_reset_row">Ripristina audio predefinito</string>
+    <string name="sound_reset_row_help">Riporta ogni suono del menu al campione PFP incluso e ogni livello al massimo. Mantiene la traccia d\'ambiente.</string>
+    <string name="sound_channel_navigation">Navigazione</string>
+    <string name="sound_channel_back">Indietro / Annulla</string>
+    <string name="sound_channel_confirm">Conferma / Applica</string>
+    <string name="sound_channel_error">Errore / Non valido</string>
+    <string name="sound_channel_notification">Notifica</string>
+    <string name="sound_channel_boot">Sequenza di avvio</string>
+    <string name="sound_channel_ambience">Ambiente</string>
+    <string name="sound_slot_navigation">Navigazione</string>
+    <string name="sound_slot_back">Indietro / Annulla</string>
+    <string name="sound_slot_confirm">Conferma / Applica</string>
+    <string name="sound_slot_error">Errore / Non valido</string>
+    <string name="sound_slot_notification">Notifica</string>
+    <string name="sound_slot_ambience">Traccia d\'ambiente</string>
+</resources>

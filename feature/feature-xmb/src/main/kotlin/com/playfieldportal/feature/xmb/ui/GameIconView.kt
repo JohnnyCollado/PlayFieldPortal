@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui
 
+import com.playfieldportal.core.ui.text.asString
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.foundation.Image
@@ -55,6 +56,14 @@ private val SquircleShape = RoundedCornerShape(14.dp)
 private val IconBorder             = Color(0x55FFFFFF)
 private val ShineColor              = Color(0x18FFFFFF)
 
+/**
+ * A decoration for the box an icon is actually drawn in: whatever its display mode makes it (the
+ * ICON0 tile, a box front at its own aspect, a cartridge, an app icon). The list hands a frame down
+ * through this while a row is being moved, so the frame fits the drawn icon and not the slot the
+ * row reserves for it. Applied before any clip, so it may draw outside the icon. Empty by default.
+ */
+val LocalIconFrame = androidx.compose.runtime.compositionLocalOf<Modifier> { Modifier }
+
 // ── Entry point — routes to the right icon composable ─────────────────────────
 
 @Composable
@@ -64,6 +73,7 @@ fun GameIcon(
     // Drawing height for the natural-aspect modes; the game picker's shelf grid draws smaller.
     naturalArtHeight: Dp = NATURAL_ART_HEIGHT,
 ) {
+    val title = item.titleUi.asString()
     when {
         // Non-game app rows keep their treatment (decorated tile or launcher squircle).
         // REAL games never land here — every platform, including package-backed
@@ -72,12 +82,12 @@ fun GameIcon(
         item.isAndroidApp && !item.isRealGame && item.iconUri != null -> PspIcon0Icon(
             artworkUri  = item.iconUri,
             accentColor = item.accentColor?.let { Color(it) },
-            title       = item.title,
+            title       = title,
             modifier    = modifier,
         )
         item.isAndroidApp && !item.isRealGame -> AndroidAppIcon(
             packageName = item.packageName,
-            title       = item.title,
+            title       = title,
             modifier    = modifier,
         )
 
@@ -98,7 +108,7 @@ fun GameIcon(
                         PhysicalMediaIcon(
                             platformId  = item.platformId,
                             accentColor = item.accentColor?.let { Color(it) },
-                            title       = item.title,
+                            title       = title,
                             modifier    = artModifier,
                         )
                     }
@@ -113,7 +123,7 @@ fun GameIcon(
                         BoxArtPlaceholderIcon(
                             platformId  = item.platformId,
                             accentColor = item.accentColor?.let { Color(it) },
-                            title       = item.title,
+                            title       = title,
                             modifier    = artModifier,
                         )
                     }
@@ -125,7 +135,7 @@ fun GameIcon(
                         // cartridge shots are transparent silhouettes and render frameless.
                         framed      = resolved.uri == item.boxArtUri,
                         accentColor = item.accentColor?.let { Color(it) },
-                        title       = item.title,
+                        title       = title,
                         modifier    = artModifier,
                     )
                 }
@@ -137,7 +147,7 @@ fun GameIcon(
                         PspIcon0Icon(
                             artworkUri  = resolved.uri,
                             accentColor = item.accentColor?.let { Color(it) },
-                            title       = item.title,
+                            title       = title,
                             modifier    = Modifier.fillMaxSize(),
                         )
                         if (video != null) {
@@ -207,6 +217,7 @@ private fun BoxArtPlaceholderIcon(
         Box(
             modifier = Modifier
                 .aspectRatio(boxArtAspectFor(platformId))
+                .then(LocalIconFrame.current)
                 .clip(PspShape)
                 .background(
                     Brush.verticalGradient(listOf(accent.copy(alpha = 0.6f), Color(0xFF0A0A0F)))
@@ -267,6 +278,7 @@ private fun NaturalAspectArtIcon(
             ratio != null -> Box(
                 modifier = Modifier
                     .aspectRatio(ratio)   // largest natural-aspect rect inside the slot
+                    .then(LocalIconFrame.current)
                     .then(
                         if (framed) Modifier
                             .clip(PspShape)
@@ -308,6 +320,7 @@ fun PspIcon0Icon(
 
     Box(
         modifier = modifier
+            .then(LocalIconFrame.current)
             .clip(PspShape)
             .background(Color(0xFF0A0A0F))   // backing behind the art
             .border(1.dp, IconBorder, PspShape),
@@ -380,7 +393,7 @@ fun PhysicalMediaIcon(
     }
 
     Box(
-        modifier         = modifier,
+        modifier         = modifier.then(LocalIconFrame.current),
         contentAlignment = Alignment.Center,
     ) {
         if (override != null) {
@@ -441,6 +454,7 @@ fun AndroidAppIcon(
     Box(
         modifier = Modifier
             .size(52.dp)
+            .then(LocalIconFrame.current)
             .clip(if (plate != null) SquircleShape else RoundedCornerShape(6.dp))
             .then(if (plate != null) Modifier.background(plate) else Modifier),
         contentAlignment = Alignment.Center,

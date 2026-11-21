@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Initial Setup wizard (first-run setup), its summary lines, and the scans it starts. -->
+
+    <!-- Wizard chrome -->
+    <string name="setup_title">Thiết lập ban đầu</string>
+    <string name="setup_prompt_enter">Vào</string>
+    <string name="setup_prompt_change">Thay đổi</string>
+    <string name="setup_prompt_back">Quay lại</string>
+    <string name="setup_prompt_skip">Bỏ qua</string>
+    <string name="setup_row_edit">Sửa</string>
+    <string name="setup_row_remove">Xóa</string>
+    <string name="setup_message_dismiss_hint">Chọn để đóng — hoặc xác nhận trên hàng này</string>
+
+    <!-- Page names, used as "Next: ..." on the previous page -->
+    <string name="setup_step_welcome">Chào mừng</string>
+    <string name="setup_step_controller">Tay cầm</string>
+    <string name="setup_step_rom_roots">Thư mục ROM</string>
+    <string name="setup_step_music">Nhạc</string>
+    <string name="setup_step_video">Video</string>
+    <string name="setup_step_photo">Ảnh</string>
+    <string name="setup_step_artwork">Ảnh minh họa</string>
+    <string name="setup_step_services">Dịch vụ trực tuyến</string>
+    <string name="setup_step_achievements">Dịch vụ thành tựu</string>
+    <string name="setup_step_local_achievements">Thành tựu cục bộ</string>
+    <string name="setup_step_retroarch">RetroArch</string>
+    <string name="setup_step_emulators">Trình giả lập</string>
+    <string name="setup_step_windows">Trò chơi Windows</string>
+    <string name="setup_step_hints">Gợi ý &amp; cảm ứng</string>
+    <string name="setup_step_home_app">Ứng dụng màn hình chính</string>
+    <string name="setup_step_finish">Hoàn tất</string>
+
+    <!-- Page headings -->
+    <string name="setup_heading_welcome">Chào mừng đến với Play Field Portal.</string>
+    <string name="setup_heading_controller">Chọn tay cầm của bạn.</string>
+    <string name="setup_heading_rom_roots">Chọn thư mục ROM của bạn.</string>
+    <string name="setup_heading_music">Chọn thư mục nhạc của bạn.</string>
+    <string name="setup_heading_video">Chọn thư mục video của bạn.</string>
+    <string name="setup_heading_photo">Chọn thư mục ảnh của bạn.</string>
+    <string name="setup_heading_artwork">Chọn thư mục ảnh minh họa của bạn.</string>
+    <string name="setup_heading_services">Kết nối các nguồn ảnh minh họa.</string>
+    <string name="setup_heading_achievements">Kết nối các dịch vụ thành tựu.</string>
+    <string name="setup_heading_local_achievements">Liên kết thư mục dữ liệu trình giả lập.</string>
+    <string name="setup_heading_retroarch">Liên kết thư mục core của RetroArch.</string>
+    <string name="setup_heading_emulators">Kiểm tra trình giả lập.</string>
+    <string name="setup_heading_windows">Thiết lập trò chơi Windows.</string>
+    <string name="setup_heading_hints">Chọn cách launcher hỗ trợ bạn.</string>
+    <string name="setup_heading_home_app">Đặt Play Field Portal làm màn hình chính.</string>
+    <string name="setup_heading_finish">Bạn đã sẵn sàng!</string>
+
+    <!-- Page hints (the line under a heading) -->
+    <string name="setup_hint_welcome">Hầu hết các bước là tùy chọn. Bạn cần chọn một thư mục ảnh minh họa.</string>
+    <string name="setup_hint_controller">Đặt biểu tượng nút và nút xác nhận, để mọi lời nhắc từ đây trở đi khớp với tay cầm của bạn.</string>
+    <string name="setup_hint_rom_roots">Thêm một hoặc nhiều thư mục ROM — trò chơi của mỗi hệ máy nằm trong một thư mục con bên trong.</string>
+    <string name="setup_hint_media_roots">Thêm nhiều thư mục gốc để bao quát bộ nhớ trong và thẻ SD.</string>
+    <string name="setup_hint_artwork">Bắt buộc. Ảnh của bạn nằm ở đây, bên ngoài ứng dụng, nên vẫn còn sau khi cài lại.</string>
+    <string name="setup_hint_services">Tất cả đều tùy chọn và miễn phí. SteamGridDB, TheGamesDB, IGDB và ScreenScraper tải ảnh minh họa và siêu dữ liệu trò chơi.</string>
+    <string name="setup_hint_achievements">RetroAchievements và Steam theo dõi thành tựu dưới dạng Shiba Coins.</string>
+    <string name="setup_hint_local_achievements">Cúp và thành tựu mà trình giả lập lưu trên thiết bị này. Một lần cấp quyền cho mỗi trình giả lập sẽ liên kết mọi trò chơi.</string>
+    <string name="setup_hint_retroarch">Cho launcher biết chính xác bạn có những core nào, để chỉ đề xuất những core đó.</string>
+    <string name="setup_hint_emulators">Mặc định của mỗi hệ máy, chọn từ những gì đã cài. Hãy đổi nếu thấy sai.</string>
+    <string name="setup_hint_windows">Đã cài trình giả lập Windows — hãy chọn nơi chứa trò chơi PC của bạn.</string>
+    <string name="setup_hint_hints">Gợi ý nút hiện dần khi bạn dừng lại, và biến mất ngay khi bạn nhấn bất kỳ nút nào.</string>
+    <string name="setup_hint_home_app">Khi đó nút Home sẽ đưa bạn về đây thay vì launcher mặc định.</string>
+    <string name="setup_hint_finish">Mọi thứ bên dưới có thể chỉnh lại bất cứ lúc nào trong Cài đặt.</string>
+
+    <!-- Continue row (bottom of every page) -->
+    <string name="setup_continue">Tiếp tục</string>
+    <string name="setup_continue_next">Tiếp: %1$s</string>
+    <string name="setup_continue_blocked">Hãy chọn thư mục trước</string>
+
+    <!-- Welcome page -->
+    <string name="setup_welcome_intro">Phần thiết lập nhanh này chỉ cho launcher các thư mục media của bạn và kết nối các dịch vụ trực tuyến dùng cho ảnh minh họa và thành tựu.</string>
+    <string name="setup_welcome_start">Bắt đầu</string>
+    <string name="setup_welcome_start_sub">Chọn tay cầm trước</string>
+    <string name="setup_welcome_skip">Bỏ qua thiết lập</string>
+    <string name="setup_welcome_skip_sub">Vào thẳng launcher — chạy Trình hướng dẫn thiết lập từ Cài đặt ▸ Hệ thống bất cứ lúc nào</string>
+
+    <!-- Folder rows shared by the ROM, Music, Video and Photo pages -->
+    <string name="setup_root_access_lost">Mất quyền truy cập — dùng ✎ để cấp lại quyền</string>
+
+    <!-- ROM roots page -->
+    <string name="setup_rom_empty">Chưa có thư mục ROM. Hãy thêm thư mục chứa trò chơi của các hệ máy — mỗi hệ máy một thư mục con, được quét tự động.</string>
+    <string name="setup_rom_add">Thêm thư mục ROM</string>
+    <string name="setup_rom_add_sub">Cấp quyền cho thư mục ROM có mỗi hệ máy một thư mục con</string>
+    <string name="setup_rom_rescan">Quét lại thư mục ROM</string>
+    <string name="setup_rom_rescan_sub">Tự phát hiện hệ máy và quét trò chơi</string>
+    <string name="setup_rom_root_linked">Đã liên kết — thư mục hệ máy được đọc từ đây</string>
+    <string name="setup_rom_create_folders">Tạo thư mục chuẩn</string>
+    <string name="setup_rom_create_folders_sub">Mỗi hệ máy một thư mục con, dành cho trò chơi của bạn</string>
+
+    <!-- Music roots page -->
+    <string name="setup_music_empty">Chưa có thư mục gốc nhạc. Hãy thêm thư mục chứa nhạc — nhiều thư mục gốc có thể bao quát bộ nhớ trong và thẻ SD.</string>
+    <string name="setup_music_add">Thêm thư mục gốc nhạc</string>
+    <string name="setup_music_add_sub">Cấp quyền cho thư mục gốc (vd: /Music) — thêm nhiều thư mục để bao quát nhiều vị trí</string>
+    <string name="setup_music_root_linked">Thư viện nhạc nằm ở đây</string>
+    <string name="setup_music_rescan">Quét lại thư viện nhạc</string>
+
+    <!-- Video roots page -->
+    <string name="setup_video_empty">Chưa có thư mục gốc video. Hãy thêm thư mục chứa video — nhiều thư mục gốc có thể bao quát bộ nhớ trong và thẻ SD.</string>
+    <string name="setup_video_add">Thêm thư mục gốc video</string>
+    <string name="setup_video_add_sub">Cấp quyền cho thư mục gốc (vd: /Videos) — thêm nhiều thư mục để bao quát nhiều vị trí</string>
+    <string name="setup_video_root_linked">Thư viện video nằm ở đây</string>
+    <string name="setup_video_rescan">Quét lại thư viện video</string>
+
+    <!-- Photo roots page -->
+    <string name="setup_photo_empty">Chưa có thư mục gốc ảnh. Hãy thêm thư mục chứa ảnh — nhiều thư mục gốc có thể bao quát bộ nhớ trong và thẻ SD.</string>
+    <string name="setup_photo_add">Thêm thư mục gốc ảnh</string>
+    <string name="setup_photo_add_sub">Cấp quyền cho thư mục gốc (vd: /Photos) — thêm nhiều thư mục để bao quát nhiều vị trí</string>
+    <string name="setup_photo_root_linked">Thư viện ảnh nằm ở đây</string>
+    <string name="setup_photo_rescan">Quét lại thư viện ảnh</string>
+
+    <string name="setup_media_rescan_sub">Cập nhật thư viện từ mọi thư mục gốc</string>
+
+    <!-- Artwork page -->
+    <string name="setup_artwork_empty">Hãy chọn một thư mục có thể ghi. Launcher sẽ tự thiết lập thư viện ảnh minh họa bên trong — trò chơi sẽ có ảnh khi được thêm vào.</string>
+    <string name="setup_artwork_unavailable">Không khả dụng. Hãy liên kết lại để tiếp tục tải ảnh minh họa mới</string>
+    <string name="setup_artwork_folder_sub">Thư viện ảnh minh họa — dùng ✎ để chọn thư mục khác</string>
+    <string name="setup_artwork_choose">Chọn thư mục ảnh minh họa</string>
+    <string name="setup_artwork_choose_sub">Một thư mục chứa thư viện ảnh minh họa</string>
+    <string name="setup_artwork_import_title">Nhập ảnh minh họa ngay?</string>
+    <string name="setup_artwork_import_sub_one">Sao chép %1$s từ thư mục import/ vào thư viện</string>
+    <plurals name="setup_artwork_import_sub_many">
+        <item quantity="other">Sao chép %1$d thư mục nguồn từ thư mục import/ vào thư viện</item>
+    </plurals>
+    <string name="setup_artwork_import_row">Nhập ảnh minh họa</string>
+    <string name="setup_artwork_import_none_sub">Chưa có gì để nhập — hãy thêm thư mục media của một launcher vào import/</string>
+
+    <!-- Online services page -->
+    <string name="setup_services_intro">Mọi tài khoản đều tùy chọn và miễn phí. SteamGridDB, TheGamesDB, IGDB và ScreenScraper tải ảnh minh họa và siêu dữ liệu trò chơi cho thư viện của bạn.</string>
+    <string name="setup_field_api_key">Khóa API</string>
+    <string name="setup_field_api_key_saved">Khóa API (đã lưu)</string>
+    <string name="setup_field_web_api_key">Web API key</string>
+    <string name="setup_field_web_api_key_saved">Web API key (đã lưu)</string>
+    <string name="setup_field_client_id">Client ID</string>
+    <string name="setup_field_client_id_saved">Client ID (đã lưu)</string>
+    <string name="setup_field_client_secret">Client Secret</string>
+    <string name="setup_field_client_secret_saved">Client Secret (đã lưu)</string>
+    <string name="setup_field_username">Tên người dùng</string>
+    <string name="setup_field_username_saved">Tên người dùng (đã lưu)</string>
+    <string name="setup_field_password">Mật khẩu</string>
+    <string name="setup_field_password_saved">Mật khẩu (đã lưu)</string>
+    <string name="setup_field_steam_id">SteamID64 hoặc tên tùy chỉnh</string>
+    <string name="setup_field_steam_id_saved">SteamID64 hoặc tên tùy chỉnh (đã lưu)</string>
+    <string name="setup_placeholder_tap_to_replace">Chọn để thay</string>
+    <string name="setup_placeholder_secret_saved">•••••••• (chọn để thay)</string>
+    <string name="setup_placeholder_sgdb_key">Dán khóa SteamGridDB của bạn</string>
+    <string name="setup_placeholder_tgdb_key">Dán khóa TheGamesDB của bạn</string>
+    <string name="setup_placeholder_twitch_client_id">Twitch Client ID</string>
+    <string name="setup_placeholder_twitch_client_secret">Twitch Client Secret</string>
+    <string name="setup_placeholder_ss_username">Tên người dùng ScreenScraper</string>
+    <string name="setup_placeholder_ss_password">Mật khẩu ScreenScraper</string>
+    <string name="setup_placeholder_ra_username">Tên người dùng RA của bạn</string>
+    <string name="setup_placeholder_ra_key">Dán RA Web API key của bạn</string>
+    <string name="setup_placeholder_steam_id">7656119… hoặc tên URL tùy chỉnh</string>
+    <string name="setup_placeholder_steam_key">Dán Steam Web API key của bạn</string>
+    <string name="setup_connect_sgdb">Kết nối SteamGridDB</string>
+    <string name="setup_connect_tgdb">Kết nối TheGamesDB</string>
+    <string name="setup_connect_igdb">Kết nối IGDB</string>
+    <string name="setup_connect_ss">Kết nối ScreenScraper</string>
+    <string name="setup_connect_ra">Kết nối RetroAchievements</string>
+    <string name="setup_connect_steam">Kết nối Steam</string>
+    <string name="setup_test_credentials">Kiểm tra thông tin xác thực</string>
+    <string name="setup_test_account">Kiểm tra tài khoản</string>
+    <string name="setup_connected_as">Đã kết nối với tên</string>
+
+    <!-- Achievement services page -->
+    <string name="setup_achievements_intro">Tùy chọn và miễn phí. RetroAchievements và Steam theo dõi thành tựu dưới dạng Shiba Coins.</string>
+
+    <!-- Controller page -->
+    <string name="setup_controller_type">Loại tay cầm</string>
+    <string name="setup_controller_type_sub">Thay đổi biểu tượng nút trong mọi lời nhắc</string>
+    <string name="setup_controller_ab_swap">Hoán đổi xác nhận và quay lại</string>
+    <string name="setup_controller_xy_swap">Hoán đổi tùy chọn và sắp xếp</string>
+    <string name="setup_controller_xy_swap_sub">Chỉ menu launcher — điều khiển trình giả lập không bị ảnh hưởng</string>
+    <string name="setup_on">Bật</string>
+    <string name="setup_off">Tắt</string>
+    <string name="setup_controller_summary">%1$s · %2$s để xác nhận</string>
+    <string name="setup_button_circle">Circle</string>
+    <string name="setup_button_cross">Cross</string>
+    <string name="setup_confirm_swap_off">Tắt — %1$s xác nhận, %2$s quay lại</string>
+    <string name="setup_confirm_swap_on">Bật — %1$s xác nhận, %2$s quay lại</string>
+
+    <!-- Local achievements page -->
+    <string name="setup_local_vita_header">PS Vita · Vita3K</string>
+    <string name="setup_local_vita_set">Đặt thư mục dữ liệu Vita3K</string>
+    <string name="setup_local_vita_set_sub">Cấp quyền cho thư mục ux0 (hoặc thư mục chứa nó)</string>
+    <string name="setup_local_vita_folder_sub">Thư mục dữ liệu Vita3K — dùng ✎ để chọn thư mục khác</string>
+    <string name="setup_local_ps3_header">PS3 · ARMSX3</string>
+    <string name="setup_local_ps3_set">Đặt thư mục dữ liệu ARMSX3</string>
+    <string name="setup_local_ps3_set_sub">Cấp quyền cho PS3/config/dev_hdd0 — hoặc bất kỳ thư mục nào bên trên hay bên dưới nó</string>
+    <string name="setup_local_ps3_folder_sub">Thư mục dữ liệu ARMSX3 — dùng ✎ để chọn thư mục khác</string>
+    <string name="setup_local_x360_header">Xbox 360 · X360 Mobile</string>
+    <string name="setup_local_x360_set">Đặt thư mục dữ liệu X360 Mobile</string>
+    <string name="setup_local_x360_set_sub">Chọn X360 Mobile trong menu bên của trình chọn thư mục, rồi cho phép truy cập</string>
+    <string name="setup_local_x360_folder_sub">Thư mục dữ liệu X360 Mobile — dùng ✎ để chọn thư mục khác</string>
+    <string name="setup_local_xendroid_header">Xbox 360 · XenDroid</string>
+    <string name="setup_local_xendroid_set">Đặt thư mục dữ liệu XenDroid</string>
+    <string name="setup_local_xendroid_set_sub">Cấp quyền cho Android/data/xendroid.compose — hoặc bất kỳ thư mục nào bên trên hay bên dưới nó</string>
+    <string name="setup_local_xendroid_folder_sub">Thư mục dữ liệu XenDroid — dùng ✎ để chọn thư mục khác</string>
+
+    <!-- RetroArch page -->
+    <string name="setup_retroarch_cores_folder">Thư mục core</string>
+    <plurals name="setup_retroarch_cores_detected">
+        <item quantity="other">Đã phát hiện %1$d core</item>
+    </plurals>
+    <string name="setup_retroarch_linked">Đã liên kết</string>
+    <string name="setup_retroarch_relink">Liên kết lại thư mục</string>
+    <string name="setup_retroarch_relink_sub">Chọn lại thư mục của RetroArch</string>
+    <string name="setup_retroarch_recheck">Kiểm tra lại core</string>
+    <string name="setup_retroarch_recheck_sub">Sau khi cài core mới</string>
+    <string name="setup_retroarch_unlink">Hủy liên kết RetroArch</string>
+    <string name="setup_retroarch_unlink_sub">Quay về đề xuất mọi core được tuyển chọn</string>
+    <string name="setup_retroarch_intro">RetroArch đã được cài. Hãy liên kết thư mục của nó để khi khởi động trò chơi chỉ đề xuất những core bạn thực sự có — nếu không, mọi core được tuyển chọn sẽ hiển thị (chưa xác minh).</string>
+    <string name="setup_retroarch_link">Liên kết thư mục RetroArch</string>
+    <string name="setup_retroarch_link_sub">Chọn cây thư mục com.retroarch</string>
+
+    <!-- Emulators page -->
+    <string name="setup_emulators_empty">Chưa có hệ máy nào có trò chơi. Sau khi quét thư mục ROM, mỗi hệ máy sẽ hiện ở đây cùng trình giả lập sẽ khởi động — có thể đổi bất cứ lúc nào trong Cài đặt ▸ Trình giả lập.</string>
+    <string name="setup_emulators_none">Không</string>
+
+    <!-- Windows games page -->
+    <string name="setup_windows_intro">Hãy chọn thư mục chứa mỗi trò chơi một thư mục con. PFP quét nó để tìm trò chơi Windows; không có gì trong đó bị thay đổi.</string>
+    <string name="setup_windows_detected">Đã phát hiện</string>
+    <string name="setup_windows_set">Đặt thư mục trò chơi Windows</string>
+    <string name="setup_windows_change">Đổi thư mục trò chơi Windows</string>
+    <string name="setup_windows_set_sub">Cấp quyền cho thư mục cài đặt trò chơi của bạn</string>
+
+    <!-- Hints and touch page -->
+    <string name="setup_hints_enabled">Gợi ý nút</string>
+    <string name="setup_hints_enabled_sub">Thẻ gợi ý khi rảnh trên XMB, trong Cài đặt và trên màn hình media</string>
+    <string name="setup_hints_delay">Độ trễ gợi ý</string>
+    <string name="setup_hints_delay_sub">Thời gian dừng trước khi gợi ý xuất hiện (1–5 giây)</string>
+    <plurals name="setup_hints_delay_seconds">
+        <item quantity="other">%1$d giây</item>
+    </plurals>
+    <string name="setup_hints_delay_fraction">%1$s giây</string>
+    <string name="setup_hints_touch">Nút cảm ứng</string>
+    <string name="setup_hints_touch_sub">Nút Ngăn ứng dụng trên màn hình — Tự động sẽ hiện nút sau khi bạn chạm màn hình</string>
+    <string name="setup_touch_auto">Tự động</string>
+    <string name="setup_touch_always_show">Luôn hiện</string>
+    <string name="setup_touch_always_hide">Luôn ẩn</string>
+    <string name="setup_hints_summary_on">Bật · %1$s</string>
+
+    <!-- Home app page -->
+    <string name="setup_home_intro">Android sẽ yêu cầu bạn chọn ứng dụng màn hình chính và xác nhận. Bạn có thể đổi lại bất cứ lúc nào trong cài đặt Ứng dụng mặc định của Android.</string>
+    <string name="setup_home_current">Ứng dụng màn hình chính hiện tại</string>
+    <string name="setup_home_set">Đặt làm ứng dụng màn hình chính</string>
+    <string name="setup_home_set_sub">Mở trình chọn ứng dụng màn hình chính của Android</string>
+    <string name="setup_home_is_pfp">Play Field Portal</string>
+    <string name="setup_home_not_pfp">Không phải Play Field Portal</string>
+
+    <!-- Finish page -->
+    <string name="setup_finish_nothing">Chưa cấu hình gì — mọi thư mục và dịch vụ có thể được thêm bất cứ lúc nào từ Cài đặt.</string>
+    <string name="setup_finish_summary">Tóm tắt</string>
+    <string name="setup_summary_controller">Tay cầm</string>
+    <string name="setup_summary_rom">Thư viện ROM</string>
+    <string name="setup_summary_music">Nhạc</string>
+    <string name="setup_summary_video">Video</string>
+    <string name="setup_summary_photo">Ảnh</string>
+    <string name="setup_summary_artwork">Thư viện ảnh minh họa</string>
+    <string name="setup_summary_vita">Thư mục dữ liệu Vita</string>
+    <string name="setup_summary_ps3">Thư mục dữ liệu PS3</string>
+    <string name="setup_summary_x360">Thư mục dữ liệu X360 Mobile</string>
+    <string name="setup_summary_xendroid">Thư mục dữ liệu XenDroid</string>
+    <string name="setup_summary_windows">Trò chơi Windows</string>
+    <string name="setup_summary_hints">Gợi ý nút</string>
+    <string name="setup_summary_home">Ứng dụng màn hình chính</string>
+    <string name="setup_not_set">Chưa đặt</string>
+    <string name="setup_connected">Đã kết nối</string>
+    <string name="setup_retroarch_not_linked">Chưa liên kết</string>
+    <plurals name="setup_retroarch_cores_count">
+        <item quantity="other">%1$d core</item>
+    </plurals>
+    <string name="setup_roots_more">%1$s +%2$d thư mục khác</string>
+    <string name="setup_finish_xmb_header">Bố cục XMB</string>
+    <string name="setup_finish_autofit">Tự động căn bố cục XMB (tỷ lệ PSP) — có thể đổi bất cứ lúc nào trong Cài đặt</string>
+    <string name="setup_finish_open_lm">Mở Trình quản lý thư viện</string>
+    <string name="setup_finish_open_lm_sub">Thêm hệ máy và quét các thư mục ROM bạn vừa đặt</string>
+    <string name="setup_finish_go_library">Đến thư viện của bạn</string>
+    <string name="setup_finish_go_library_sub">Chuyển thẳng tới Tất cả trò chơi</string>
+    <string name="setup_finish_done">Hoàn tất</string>
+    <string name="setup_finish_done_sub">Đến launcher</string>
+
+    <!-- Messages the wizard shows or sends to the notification tray -->
+    <string name="setup_status_testing">Đang kiểm tra…</string>
+    <plurals name="setup_msg_rom_folders_created">
+        <item quantity="other">Đã tạo %1$d thư mục hệ máy. Hãy sao chép trò chơi vào các thư mục tương ứng.</item>
+    </plurals>
+    <plurals name="setup_msg_rom_folders_created_existing">
+        <item quantity="other">Đã tạo %1$d thư mục hệ máy (%2$d đã có sẵn). Hãy sao chép trò chơi vào các thư mục tương ứng.</item>
+    </plurals>
+    <string name="setup_msg_artwork_failed">Không thể thiết lập thư viện ảnh minh họa trong thư mục đó. Hãy chọn thư mục có thể ghi.</string>
+    <string name="setup_msg_artwork_reconnected">Đã kết nối lại thư viện ảnh minh họa hiện có.</string>
+    <string name="setup_msg_artwork_created">Đã tạo thư viện ảnh minh họa.</string>
+    <plurals name="setup_msg_artwork_games_linked">
+        <item quantity="other">Đã liên kết %1$d trò chơi từ các tệp có sẵn trong thư mục.</item>
+    </plurals>
+    <string name="setup_msg_artwork_import_hint">Đặt media của các launcher khác vào thư mục import/ của nó để gom về đây.</string>
+    <string name="setup_msg_import_none_yet">Chưa có gì để nhập — hãy đặt tệp vào thư mục import/ trong thư mục ảnh minh họa.</string>
+    <string name="setup_msg_import_unreadable">Không thể đọc nguồn nhập đó.</string>
+    <string name="setup_msg_import_empty">Không có gì để nhập — mọi thứ đã có sẵn.</string>
+    <string name="setup_msg_import_started">Đang nhập \"%1$s\" — tiến trình hiện trong thông báo; chi tiết có trong Cài đặt ▸ Nhập ảnh minh họa.</string>
+    <string name="setup_msg_retroarch_linked">Đã liên kết RetroArch — các core đã cài giờ được đề xuất trong Trình giả lập.</string>
+    <string name="setup_msg_retroarch_rechecked">Đã kiểm tra lại core RetroArch.</string>
+    <string name="setup_msg_retroarch_unlinked">Đã xóa liên kết RetroArch — sẽ không đề xuất core RetroArch nào cho đến khi bạn liên kết lại.</string>
+    <string name="setup_msg_vita_set">Đã đặt thư mục dữ liệu Vita3K. Có thể quét các trò chơi đã cài từ Memory Card PS Vita trong Trình quản lý thư viện.</string>
+    <string name="setup_msg_vita_released">Đã bỏ thư mục dữ liệu Vita3K — các tệp trên bộ nhớ không bị động đến.</string>
+    <string name="setup_msg_ps3_set">Đã đặt thư mục dữ liệu PS3. Hãy chạy Tự động khớp trong Cài đặt ▸ Thành tựu ▸ Cập nhật thành tựu để liên kết cúp PS3.</string>
+    <string name="setup_msg_ps3_released">Đã bỏ thư mục dữ liệu PS3 — các tệp trên bộ nhớ không bị động đến.</string>
+    <string name="setup_msg_x360_set">Đã đặt thư mục dữ liệu %1$s. Hãy chạy Tự động khớp trong Cài đặt ▸ Thành tựu ▸ Cập nhật thành tựu để liên kết thành tựu Xbox 360.</string>
+    <string name="setup_msg_x360_released">Đã bỏ thư mục dữ liệu %1$s — các tệp trên bộ nhớ không bị động đến.</string>
+    <string name="setup_msg_sgdb_connected">Đã kết nối SteamGridDB</string>
+    <string name="setup_msg_tgdb_connected">Đã kết nối TheGamesDB</string>
+    <string name="setup_msg_igdb_connected">Đã kết nối IGDB</string>
+    <string name="setup_msg_ss_connected">Đã kết nối ScreenScraper</string>
+    <string name="setup_msg_ra_connected">Đã kết nối RetroAchievements</string>
+
+    <string name="setup_rom_scan_no_root">Hãy thêm thư mục ROM trước trong Cài đặt ▸ Thư viện ▸ Trình quản lý thư viện.</string>
+    <string name="setup_rom_scan_none">Đã quét %1$s trong %2$s; không tìm thấy ROM mới. Hãy sao chép trò chơi vào thư mục hệ máy tương ứng rồi thử lại.</string>
+    <string name="setup_rom_scan_loaded">Đã tải %1$s, %2$s từ %3$s.</string>
+    <string name="setup_rom_scan_systems_new">%1$s (%2$s)</string>
+    <plurals name="setup_rom_scan_folders">
+        <item quantity="other">%1$d thư mục</item>
+    </plurals>
+    <plurals name="setup_rom_scan_systems">
+        <item quantity="other">%1$d hệ máy</item>
+    </plurals>
+    <plurals name="setup_rom_scan_new_consoles">
+        <item quantity="other">%1$d hệ máy mới</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roms">
+        <item quantity="other">%1$d ROM</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roots">
+        <item quantity="other">%1$d thư mục ROM</item>
+    </plurals>
+    <plurals name="setup_rom_scan_skipped">
+        <item quantity="other">Đã bỏ qua %1$d thư mục (không đọc được thư viện).</item>
+    </plurals>
+
+    <!-- Media library scans started by the wizard and Settings -->
+    <string name="setup_media_add_root_first">Hãy thêm thư mục gốc trước.</string>
+    <string name="setup_media_not_ready">Bộ nhớ của thư mục này chưa sẵn sàng. Hãy thử lại sau giây lát.</string>
+    <string name="setup_media_scan_failed_title">Quét %1$s thất bại</string>
+    <string name="setup_media_scan_finished_title">Đã quét xong %1$s</string>
+    <string name="setup_media_scan_stopped_title">Đã dừng quét %1$s</string>
+    <string name="setup_media_scanning_title">Đang quét %1$s</string>
+    <string name="setup_media_stop_note">Thư mục sẽ được quét lại vào lần sau.</string>
+    <string name="setup_media_stopped">Đã dừng trước khi hoàn tất</string>
+    <plurals name="setup_media_tracks">
+        <item quantity="other">%1$d bài hát</item>
+    </plurals>
+    <plurals name="setup_media_photos">
+        <item quantity="other">%1$d ảnh</item>
+    </plurals>
+    <plurals name="setup_media_videos">
+        <item quantity="other">%1$d video</item>
+    </plurals>
+    <plurals name="setup_media_roots">
+        <item quantity="other">%1$d thư mục gốc</item>
+    </plurals>
+    <string name="setup_media_found">Tìm thấy %1$s trong %2$s.</string>
+</resources>

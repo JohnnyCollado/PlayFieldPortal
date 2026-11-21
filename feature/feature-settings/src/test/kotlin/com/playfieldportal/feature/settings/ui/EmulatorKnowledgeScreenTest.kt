@@ -31,6 +31,7 @@ import com.playfieldportal.core.domain.model.emulatorkb.EmulatorKbValidation
 import com.playfieldportal.core.domain.model.emulatorkb.KbItem
 import com.playfieldportal.core.domain.model.emulatorkb.KbSource
 import com.playfieldportal.core.domain.model.emulatorkb.SignerState
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.components.PfpModalTags
 import com.playfieldportal.core.ui.theme.PFPTheme
 import com.playfieldportal.feature.launcher.kb.KbUserFile
@@ -134,7 +135,7 @@ class EmulatorKnowledgeScreenTest {
 
     @Test
     fun `every row is reachable with the D-pad in the mockup order`() {
-        showScreen(EmulatorKnowledgeUiState(statusText = "Official v2026.10.02 · verified", userFiles = listOf(file)))
+        showScreen(EmulatorKnowledgeUiState(statusText = UiText.raw("Official v2026.10.02 · verified"), userFiles = listOf(file)))
         // The status card is read-only, so the cursor opens on the first actionable row.
         assertFocusedRow("Check for updates")
         listOf("Automatic updates", "Import a knowledge file").forEach { row ->
@@ -217,8 +218,8 @@ class EmulatorKnowledgeScreenTest {
     fun `error text, check result and gained file types are shown`() {
         showScreen(
             EmulatorKnowledgeUiState(
-                errorText = "Could not reach the update server",
-                checkResult = "Already up to date",
+                errorText = UiText.raw("Could not reach the update server"),
+                checkResult = UiText.raw("Already up to date"),
                 gainedFileTypes = listOf(PlatformGain("psx", listOf("chd"))),
             ),
         )
@@ -475,7 +476,7 @@ class EmulatorKnowledgeScreenTest {
 
     @Test
     fun `an export notice is shown and dismissed`() {
-        showScreen(EmulatorKnowledgeUiState(exportNotice = KbExportNotice("Exported", "Exported 2 emulators")))
+        showScreen(EmulatorKnowledgeUiState(exportNotice = KbExportNotice(UiText.raw("Exported"), UiText.raw("Exported 2 emulators"))))
         composeRule.onNodeWithTag(PfpModalTags.CARD).assertIsDisplayed()
         composeRule.onNodeWithText("Exported 2 emulators").assertIsDisplayed()
         press(GamepadAction.SELECT)

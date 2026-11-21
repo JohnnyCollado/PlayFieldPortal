@@ -1,0 +1,890 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Settings ▸ Hidden Items -->
+    <string name="lib_hidden_items_title">Itens ocultos</string>
+    <string name="lib_hidden_items_group">Itens ocultos</string>
+    <string name="lib_hidden_items_help">Apps e jogos que você ocultou, agrupados por item com os lugares de onde cada um está oculto. Oculte itens pelo menu Opções deles; reexiba-os aqui.</string>
+    <string name="lib_hidden_items_empty">Nada está oculto.</string>
+    <string name="lib_hidden_unhide">Reexibir</string>
+    <string name="lib_hidden_all_locations">Todos os lugares</string>
+    <string name="lib_hidden_unhide_all">Reexibir tudo</string>
+    <string name="lib_hidden_everywhere">Em todo lugar</string>
+
+    <!-- Default music / video player picker -->
+    <string name="lib_player_use_this">Usar este player</string>
+    <string name="lib_player_close">Fechar</string>
+
+    <!-- Settings ▸ Categories -->
+    <string name="lib_cat_title">Categorias</string>
+    <string name="lib_cat_scaffold_title">Categoria</string>
+    <string name="lib_cat_group_manage">Gerenciar</string>
+    <string name="lib_cat_create">Criar categoria</string>
+    <string name="lib_cat_create_sub">Adicionar uma nova categoria à barra da XMB</string>
+    <string name="lib_cat_group_xmb">Categorias da XMB</string>
+    <string name="lib_cat_row_hidden">"%1$s  (Oculta)"</string>
+    <string name="lib_cat_row_sub_builtin">"Ícone: %1$s  ·  Integrada"</string>
+    <string name="lib_cat_row_sub_custom">"Ícone: %1$s  ·  Personalizada"</string>
+    <string name="lib_cat_home_game">Jogo</string>
+    <string name="lib_cat_home_app_store">Loja de apps</string>
+    <string name="lib_cat_created_image_failed">Categoria criada, mas não foi possível salvar a imagem dela</string>
+
+    <!-- Name entry dialog -->
+    <string name="lib_cat_rename_title">Renomear categoria</string>
+    <string name="lib_cat_new_title">Nova categoria</string>
+    <string name="lib_cat_name_placeholder">Nome da categoria</string>
+    <string name="lib_cat_save">Salvar</string>
+    <string name="lib_cat_next">Próximo</string>
+
+    <!-- Delete dialog -->
+    <string name="lib_cat_delete_title">Excluir categoria</string>
+
+    <!-- Button in the delete dialog. -->
+    <string name="lib_cat_delete">Excluir</string>
+    <string name="lib_cat_delete_games_message">\"%1$s\" será excluída. Os jogos dela continuam na sua biblioteca.</string>
+    <string name="lib_cat_delete_apps_message">\"%1$s\" será excluída. Os apps dela não são desinstalados.</string>
+    <plurals name="lib_cat_delete_cards_games_message">
+        <item quantity="one">\"%1$s\" será excluída. Os jogos dela continuam na sua biblioteca. O que deve acontecer com o %2$d memory card personalizado dela?</item>
+        <item quantity="many">\"%1$s\" será excluída. Os jogos dela continuam na sua biblioteca. O que deve acontecer com os %2$d memory cards personalizados dela?</item>
+        <item quantity="other">\"%1$s\" será excluída. Os jogos dela continuam na sua biblioteca. O que deve acontecer com os %2$d memory cards personalizados dela?</item>
+    </plurals>
+    <plurals name="lib_cat_delete_cards_apps_message">
+        <item quantity="one">\"%1$s\" será excluída. Os apps dela não são desinstalados. O que deve acontecer com o %2$d memory card personalizado dela?</item>
+        <item quantity="many">\"%1$s\" será excluída. Os apps dela não são desinstalados. O que deve acontecer com os %2$d memory cards personalizados dela?</item>
+        <item quantity="other">\"%1$s\" será excluída. Os apps dela não são desinstalados. O que deve acontecer com os %2$d memory cards personalizados dela?</item>
+    </plurals>
+    <string name="lib_cat_delete_move_cards">Mover cartões personalizados para %1$s</string>
+    <string name="lib_cat_delete_cards_too">Excluir os cartões personalizados também</string>
+
+    <!-- Pick icon -->
+    <string name="lib_cat_choose_icon">Escolher ícone</string>
+    <string name="lib_cat_change_icon_title">Alterar ícone</string>
+    <string name="lib_cat_group_device">Do seu dispositivo</string>
+    <string name="lib_cat_choose_image">Escolher imagem…</string>
+    <string name="lib_cat_choose_image_sub">PNG, JPG, WEBP, BMP, HEIC ou GIF · GIFs animados são reproduzidos</string>
+    <string name="lib_cat_your_image_row">Sua imagem</string>
+    <string name="lib_cat_image_animated_in_use">Animada · em uso</string>
+    <string name="lib_cat_image_in_use">Em uso</string>
+    <string name="lib_cat_your_image">Sua imagem</string>
+    <string name="lib_cat_replace_image">Substituir imagem…</string>
+    <string name="lib_cat_replace_image_sub">Escolha outro arquivo</string>
+    <string name="lib_cat_remove_image">Remover imagem</string>
+    <string name="lib_cat_remove_image_sub">Voltar ao ícone integrado (%1$s)</string>
+    <string name="lib_cat_group_builtin">Integrados · %1$s</string>
+    <string name="lib_cat_icon_fallback">Ícone</string>
+
+    <!-- Pick type -->
+    <string name="lib_cat_content_type">Tipo de conteúdo</string>
+    <string name="lib_cat_type_group">Tipo de categoria</string>
+    <string name="lib_cat_type_gaming">Jogos</string>
+    <string name="lib_cat_type_gaming_sub">Para jogos e memory cards personalizados</string>
+    <string name="lib_cat_type_non_gaming">Outros</string>
+    <string name="lib_cat_type_non_gaming_sub">Para apps como Vídeo, Música, Fotos</string>
+
+    <!-- Category detail -->
+    <string name="lib_cat_group_edit">Editar</string>
+    <string name="lib_cat_rename">Renomear categoria</string>
+    <string name="lib_cat_change_icon">Alterar ícone</string>
+    <string name="lib_cat_show_on_bar_sub">Ocultar ou mostrar esta categoria na XMB</string>
+    <string name="lib_cat_type">Tipo</string>
+    <string name="lib_cat_type_apps">Apps</string>
+    <string name="lib_cat_type_gaming_note">Contém jogos e memory cards personalizados. Definido quando a categoria é criada.</string>
+    <string name="lib_cat_type_apps_note">Contém apps e memory cards personalizados. Definido quando a categoria é criada.</string>
+    <string name="lib_cat_group_order">Ordem</string>
+    <string name="lib_cat_move">Mover</string>
+    <string name="lib_cat_move_sub">Deslize-a pela XMB com esquerda e direita e confirme para posicioná-la</string>
+    <string name="lib_cat_move_disabled_sub">Ative Mostrar na barra para mover esta categoria</string>
+    <string name="lib_cat_group_danger">Zona de perigo</string>
+    <string name="lib_cat_delete_row">Excluir categoria</string>
+    <string name="lib_cat_delete_row_sub">Remove esta categoria personalizada. Jogos e apps continuam na sua biblioteca.</string>
+
+    <!-- Settings ▸ Custom Memory Cards -->
+    <string name="lib_coll_title">Memory cards personalizados</string>
+    <string name="lib_coll_group_manage">Gerenciar</string>
+    <string name="lib_coll_new">Novo memory card personalizado</string>
+    <string name="lib_coll_new_sub">Para jogos ou apps, ex.: RPGs, Jogando agora, Apps de trabalho</string>
+    <string name="lib_coll_group_yours">Seus memory cards personalizados</string>
+    <string name="lib_coll_none">Nenhum memory card personalizado ainda</string>
+    <string name="lib_coll_none_sub">Crie um acima ou use Adicionar ao cartão no menu Opções de um jogo ou app.</string>
+    <plurals name="lib_coll_games_count">
+        <item quantity="one">%d jogo</item>
+        <item quantity="many">%d jogos</item>
+        <item quantity="other">%d jogos</item>
+    </plurals>
+    <plurals name="lib_coll_apps_count">
+        <item quantity="one">%d app</item>
+        <item quantity="many">%d apps</item>
+        <item quantity="other">%d apps</item>
+    </plurals>
+
+    <!-- Name entry dialog -->
+    <string name="lib_coll_new_title">Novo memory card personalizado</string>
+    <string name="lib_coll_rename_title">Renomear memory card personalizado</string>
+    <string name="lib_coll_name_placeholder">Nome do cartão</string>
+    <string name="lib_coll_save">Salvar</string>
+    <string name="lib_coll_next">Próximo</string>
+    <string name="lib_coll_delete_title">Excluir cartão personalizado</string>
+    <string name="lib_coll_delete_apps_message">\"%1$s\" será excluído. Os apps nele continuam instalados.</string>
+    <string name="lib_coll_delete_games_message">\"%1$s\" será excluído. Os jogos nele continuam na sua biblioteca.</string>
+    <string name="lib_coll_delete">Excluir</string>
+
+    <!-- Menu on a game inside a custom card -->
+    <string name="lib_coll_menu_view_details">Ver detalhes do jogo</string>
+    <string name="lib_coll_menu_remove">Remover do cartão</string>
+
+    <!-- Card detail -->
+    <string name="lib_coll_group_card">Memory card personalizado</string>
+    <string name="lib_coll_rename">Renomear</string>
+    <string name="lib_coll_change_icon">Alterar ícone</string>
+    <string name="lib_coll_default_icon">Padrão (Memory Card)</string>
+    <string name="lib_coll_move_up">Mover para cima</string>
+    <string name="lib_coll_move_down">Mover para baixo</string>
+    <string name="lib_coll_delete_row">Excluir cartão personalizado</string>
+    <string name="lib_coll_delete_row_apps_sub">Remove o cartão; os apps dele continuam instalados</string>
+    <string name="lib_coll_delete_row_games_sub">Remove o cartão; os jogos dele continuam na sua biblioteca</string>
+    <string name="lib_coll_group_apps">Apps (%1$d)</string>
+    <string name="lib_coll_group_games">Jogos (%1$d)</string>
+    <string name="lib_coll_no_apps">Nenhum app neste cartão</string>
+    <string name="lib_coll_no_apps_sub">Adicione apps com Adicionar ao cartão no menu Opções deles.</string>
+    <string name="lib_coll_no_games">Nenhum jogo neste cartão</string>
+    <string name="lib_coll_no_games_sub">Adicione jogos com Adicionar ao cartão no menu Opções deles.</string>
+
+    <!-- Category picker for a new card -->
+    <string name="lib_coll_card_kind_game">Cartão de jogos</string>
+    <string name="lib_coll_card_kind_app">Cartão de apps</string>
+    <string name="lib_coll_pick_category_title">Adicionar à categoria</string>
+    <string name="lib_coll_pick_category_message">Em qual coluna \"%1$s\" deve aparecer?</string>
+    <string name="lib_coll_create">Criar</string>
+
+    <!-- Card icon step -->
+    <string name="lib_coll_icon_title">Ícone do cartão · %1$s</string>
+    <string name="lib_coll_group_device">Do seu dispositivo</string>
+    <string name="lib_coll_group_theme">Do tema aplicado</string>
+    <string name="lib_coll_animated">Animado</string>
+    <string name="lib_coll_group_builtin">Integrados</string>
+    <string name="lib_coll_image_unusable">Não foi possível usar essa imagem.</string>
+
+    <!-- Settings ▸ Emulators -->
+    <string name="lib_emu_title">Emuladores</string>
+    <string name="lib_emu_subtitle_installed">Emulador · Instalados</string>
+    <string name="lib_emu_subtitle_custom">Emulador · Personalizados</string>
+    <string name="lib_emu_subtitle_retroarch">Emulador · RetroArch</string>
+    <string name="lib_emu_add_title">Adicionar emulador</string>
+    <string name="lib_emu_detecting">Detectando…</string>
+    <string name="lib_emu_inspecting">Inspecionando apps instalados…</string>
+    <string name="lib_emu_reset_title">Restaurar configuração dos emuladores?</string>
+    <string name="lib_emu_reset_message">Isso vai apagar todas as configurações de inicialização de emuladores detectadas automaticamente e personalizadas e restaurar os padrões incluídos.\n\nSua biblioteca de jogos, caminhos de ROMs, artes, metadados e dados salvos não são afetados.</string>
+
+    <!-- Button in the reset confirmation. -->
+    <string name="lib_emu_reset">Restaurar</string>
+    <string name="lib_emu_group_installed">Instalados</string>
+    <string name="lib_emu_none_installed">Nenhum emulador compatível detectado neste dispositivo</string>
+    <string name="lib_emu_group_available">Disponíveis (não instalados)</string>
+    <string name="lib_emu_all_installed">Todos os emuladores conhecidos estão instalados</string>
+    <string name="lib_emu_group_custom">Perfis personalizados</string>
+    <string name="lib_emu_none_custom">Nenhum perfil personalizado ainda</string>
+    <string name="lib_emu_add_custom">Adicionar emulador personalizado</string>
+    <string name="lib_emu_add_custom_sub">Escolha um app — detectamos automaticamente as configurações de inicialização dele</string>
+    <string name="lib_emu_group_ra_detection">Detecção de cores do RetroArch</string>
+    <string name="lib_emu_ra_scanning">Procurando cores instalados no RetroArch…</string>
+    <plurals name="lib_emu_ra_linked">
+        <item quantity="one">Vinculado — %d core detectado. Só os cores instalados são oferecidos, então um core ausente não pode causar tela preta.</item>
+        <item quantity="many">Vinculado — %d cores detectados. Só os cores instalados são oferecidos, então um core ausente não pode causar tela preta.</item>
+        <item quantity="other">Vinculado — %d cores detectados. Só os cores instalados são oferecidos, então um core ausente não pode causar tela preta.</item>
+    </plurals>
+    <string name="lib_emu_ra_access_lost">Vinculado, mas o acesso foi perdido (ex.: após reinstalar). Vincule o RetroArch de novo para detectar os cores outra vez.</string>
+    <string name="lib_emu_ra_not_linked">Não vinculado. O PFP não consegue ver quais cores do RetroArch estão instalados, então oferece todos — iniciar um que não está instalado mostra uma tela preta. Vincule o RetroArch para detectar os cores instalados.</string>
+    <string name="lib_emu_ra_relink">Vincular pasta do RetroArch de novo</string>
+    <string name="lib_emu_ra_link">Vincular RetroArch para detectar cores</string>
+    <string name="lib_emu_ra_link_sub">No seletor, escolha a pasta do RetroArch (conceda acesso) para que o PFP possa ler os cores instalados</string>
+    <string name="lib_emu_group_cores">Cores disponíveis</string>
+    <string name="lib_emu_ra_no_cores">Nenhum core do RetroArch detectado ainda.</string>
+    <string name="lib_emu_ra_core_available">Disponível no RetroArch</string>
+    <string name="lib_emu_ra_rescan">Verificar cores instalados de novo</string>
+    <string name="lib_emu_ra_rescan_sub">Execute depois de baixar mais cores no Core Downloader do RetroArch</string>
+    <string name="lib_emu_ra_unlink">Desvincular RetroArch</string>
+    <string name="lib_emu_ra_unlink_sub">Voltar a oferecer todos os cores sem verificação</string>
+    <string name="lib_emu_group_maintenance">Manutenção</string>
+    <string name="lib_emu_reset_row">Restaurar configuração dos emuladores</string>
+    <string name="lib_emu_reset_row_sub">Apaga as configurações de inicialização e restaura os padrões. Seus jogos, artes e saves não são afetados.</string>
+
+    <!-- Add emulator wizard -->
+    <string name="lib_emu_pick_app">Escolher um app</string>
+    <string name="lib_emu_group_apps">Apps instalados</string>
+    <string name="lib_emu_no_apps">Nenhum app que possa ser iniciado foi encontrado.</string>
+
+    <!-- Test launch -->
+    <string name="lib_emu_test_title">Testar inicialização</string>
+    <string name="lib_emu_test_pick_rom">Escolher uma ROM</string>
+    <string name="lib_emu_test_group_roms">Suas ROMs</string>
+    <string name="lib_emu_test_no_roms">Nenhuma ROM verificada para testar. Verifique um console primeiro, ou apenas salve e teste na biblioteca.</string>
+    <string name="lib_emu_preview_group">Visualização do intent</string>
+    <string name="lib_emu_preview_package">Pacote</string>
+    <string name="lib_emu_preview_activity">Activity</string>
+    <string name="lib_emu_preview_activity_default">(resolvida pelo pacote)</string>
+    <string name="lib_emu_preview_action">Ação</string>
+    <string name="lib_emu_preview_mime">MIME</string>
+    <string name="lib_emu_preview_uri_mode">Modo de URI</string>
+    <string name="lib_emu_preview_rom">ROM</string>
+    <string name="lib_emu_preview_extras">Extras</string>
+    <string name="lib_emu_preview_flags">Flags</string>
+    <string name="lib_emu_none">(nenhum)</string>
+    <string name="lib_emu_uri_mode_raw_path">caminho bruto (o emulador abre o arquivo sozinho)</string>
+    <string name="lib_emu_uri_mode_saf">content:// (FileProvider, leitura concedida)</string>
+    <string name="lib_emu_uri_mode_file">file:// (content:// na API 24+)</string>
+    <string name="lib_emu_action_unsupported">(não compatível)</string>
+    <string name="lib_emu_action_shortcut">(atalho)</string>
+    <string name="lib_emu_result_group">Resultado</string>
+    <string name="lib_emu_actions_group">Ações</string>
+    <string name="lib_emu_launch_now">Iniciar agora</string>
+    <string name="lib_emu_launch_now_sub">Enviar o intent para o app</string>
+    <string name="lib_emu_pick_other_rom">Escolher outra ROM</string>
+    <string name="lib_emu_test_rom_unloadable">Não foi possível carregar essa ROM.</string>
+    <string name="lib_emu_test_resolves_ok">Resolvido — aperte Iniciar agora para testar.</string>
+    <string name="lib_emu_test_launched">Iniciado — confira o emulador.</string>
+    <string name="lib_emu_error_activity_not_found">Essa tela do app não foi encontrada, ou o app não permite abri-la de fora. Verifique o nome da tela ou tente o método de inicialização \"Abrir a ROM com o app\".</string>
+    <string name="lib_emu_error_permission_denied">Permissão negada — o app rejeitou o URI da ROM. Tente alternar entre SAF (content://) e URI de arquivo.</string>
+    <string name="lib_emu_error_rom_not_accepted">%1$s O app não aceitou este tipo MIME / modo de URI — tente o outro modo de URI.</string>
+    <string name="lib_emu_error_unknown">A inicialização falhou por um motivo desconhecido.</string>
+    <string name="lib_emu_error_name_required">O nome é obrigatório</string>
+    <string name="lib_emu_error_package_required">O nome do pacote é obrigatório</string>
+    <string name="lib_emu_row_sub">"%1$s  ·  %2$s"</string>
+    <string name="lib_emu_row_sub_retroarch_core">"%1$s  ·  %2$s  ·  core do RetroArch"</string>
+    <string name="lib_emu_row_sub_auto">"%1$s  ·  %2$s  ·  detectado automaticamente"</string>
+
+    <!-- Small badges beside a profile row. -->
+    <string name="lib_emu_badge_unavailable">Indisponível</string>
+    <string name="lib_emu_badge_auto">Auto</string>
+    <string name="lib_emu_badge_edited">Editado</string>
+    <string name="lib_emu_edit">Editar</string>
+
+    <!-- Emulator profile editor -->
+    <string name="lib_prof_new">Novo perfil</string>
+    <string name="lib_prof_edit">Editar perfil</string>
+    <string name="lib_prof_group_templates">Modelos recomendados</string>
+    <string name="lib_emu_template_view_content">Abrir a ROM com o app (link content://)</string>
+    <string name="lib_emu_template_view_content_desc">A maioria dos emuladores modernos (Eden, Azahar, PPSSPP) · ACTION_VIEW</string>
+    <string name="lib_emu_template_view_file">Abrir a ROM com o app (caminho de arquivo)</string>
+    <string name="lib_emu_template_view_file_desc">Emuladores mais antigos que leem um caminho de arquivo bruto · ACTION_VIEW</string>
+    <string name="lib_emu_template_component">Abrir uma tela do app com um caminho de inicialização</string>
+    <string name="lib_emu_template_component_desc">Estilo DuckStation / AetherSX2 · COMPONENT</string>
+    <string name="lib_emu_template_retroarch">Core do RetroArch (ROM + LIBRETRO)</string>
+    <string name="lib_emu_template_retroarch_desc">Defina o caminho do core em LIBRETRO</string>
+    <string name="lib_prof_group_required">Obrigatório</string>
+    <string name="lib_prof_display_name">Nome de exibição</string>
+    <string name="lib_prof_display_name_hint">ex.: Meu emulador</string>
+    <string name="lib_prof_package">Nome do pacote</string>
+    <string name="lib_prof_package_hint">ex.: com.example.emulator</string>
+    <string name="lib_prof_group_launch">Método de inicialização</string>
+    <string name="lib_prof_type_view">Abrir a ROM com o app — a maioria dos emuladores (PPSSPP, Dolphin, DuckStation…). Termo do Android: ACTION_VIEW</string>
+    <string name="lib_prof_type_component">Abrir uma tela do app — RetroArch e apps que precisam de uma tela específica. Termo do Android: COMPONENT</string>
+    <string name="lib_prof_type_shortcut">Atalho da tela inicial — Winlator, GameHub e launchers personalizados</string>
+    <string name="lib_prof_type_custom">Não compatível — comandos personalizados são recusados na inicialização</string>
+    <string name="lib_prof_group_optional">Opcional</string>
+    <string name="lib_prof_activity">Tela do app (Activity class)</string>
+    <string name="lib_prof_activity_hint">ex.: com.example.emulator.MainActivity (deixe em branco para o padrão)</string>
+    <string name="lib_prof_platforms">Plataformas compatíveis</string>
+    <string name="lib_prof_platforms_hint">psx,psp,ps2  (IDs de plataforma separados por vírgula)</string>
+    <string name="lib_prof_mime">Tipo MIME</string>
+    <string name="lib_prof_mime_hint">ex.: application/octet-stream</string>
+    <string name="lib_prof_notes">Observações</string>
+    <string name="lib_prof_notes_hint">Observações opcionais para este perfil</string>
+    <string name="lib_prof_group_uri">Flags de URI</string>
+    <string name="lib_prof_use_file_uri">Usar URI de arquivo</string>
+    <string name="lib_prof_use_file_uri_sub">Passa o caminho da ROM como URI file:// (maioria dos emuladores)</string>
+    <string name="lib_prof_use_saf_uri">Usar URI SAF</string>
+    <string name="lib_prof_use_saf_uri_sub">Passa o URI SAF content:// em vez do caminho do arquivo</string>
+    <string name="lib_prof_group_advanced">Avançado</string>
+    <string name="lib_prof_intent_help">Como funcionam os intents personalizados</string>
+    <string name="lib_prof_intent_help_hide">Aperte para ocultar o guia dos campos</string>
+    <string name="lib_prof_intent_help_show">Passe o cursor ou aperte para mostrar o guia dos campos</string>
+    <string name="lib_prof_intent_action">Ação do intent</string>
+    <string name="lib_prof_intent_action_hint">ex.: me.magnum.melonds.LAUNCH_ROM (em branco = padrão)</string>
+    <string name="lib_prof_intent_extras">Extras do intent</string>
+    <string name="lib_prof_intent_extras_hint">chave=valor por linha. Tokens {rom_path}, {rom_uri}, {core_path}. true/false = booleano.</string>
+    <string name="lib_prof_intent_flags">Flags do intent</string>
+    <string name="lib_prof_intent_flags_hint">CLEAR_TASK, CLEAR_TOP, NEW_TASK (separados por vírgula)</string>
+    <string name="lib_prof_intent_category">Categoria do intent</string>
+    <string name="lib_prof_intent_category_hint">ex.: android.intent.category.LEANBACK_LAUNCHER</string>
+    <string name="lib_prof_core_path">Caminho do core do RetroArch</string>
+    <string name="lib_prof_extensions">Extensões compatíveis</string>
+    <string name="lib_prof_extensions_hint">iso,cso,chd  (informativo)</string>
+    <string name="lib_prof_group_test">Teste</string>
+    <string name="lib_prof_test">Testar inicialização com uma ROM</string>
+    <string name="lib_prof_test_sub">Escolha uma ROM verificada, visualize o intent e tente iniciar</string>
+    <string name="lib_prof_group_actions">Ações</string>
+    <string name="lib_prof_saving">Salvando…</string>
+    <string name="lib_prof_save">Salvar perfil</string>
+    <string name="lib_prof_save_new_sub">Adicionar aos perfis personalizados</string>
+    <string name="lib_prof_save_edit_sub">Atualizar este perfil</string>
+    <string name="lib_prof_delete">Excluir perfil</string>
+    <string name="lib_prof_delete_sub">Remove este perfil personalizado permanentemente</string>
+
+    <!-- Label on the delete row (a button). -->
+    <string name="lib_prof_delete_button">Excluir</string>
+    <string name="lib_help_launch_method">Método de inicialização</string>
+    <string name="lib_help_launch_view">Abrir a ROM com o app — a ROM é entregue como um link de arquivo (ACTION_VIEW). Maioria dos emuladores.</string>
+    <string name="lib_help_launch_component">Abrir uma tela do app — inicia uma tela específica do app com configurações extras (COMPONENT). RetroArch, DuckStation.</string>
+    <string name="lib_help_action">Ação do intent</string>
+    <string name="lib_help_action_line">A ação que a activity do emulador espera. Em branco = padrão (VIEW / MAIN).</string>
+    <string name="lib_help_action_examples">"ex.: me.magnum.melonds.LAUNCH_ROM   ou   android.nfc.action.TECH_DISCOVERED"</string>
+    <string name="lib_help_extras">"Extras do intent  (um chave=valor por linha)"</string>
+    <string name="lib_help_extras_tokens">Os tokens são substituídos na inicialização:</string>
+    <string name="lib_help_extras_rom_uri">"   {rom_uri} — URI content://  (recomendado; funciona com armazenamento com escopo)"</string>
+    <string name="lib_help_extras_rom_path">"   {rom_path} — caminho bruto do arquivo      {core_path}   {package}   {platform}"</string>
+    <string name="lib_help_extras_boolean">Um valor true ou false é enviado como extra booleano.</string>
+    <string name="lib_help_extras_examples">"ex.:   bootPath={rom_uri}      resumeState=false"</string>
+    <string name="lib_help_flags">Flags do intent</string>
+    <string name="lib_help_flags_line">"Separadas por vírgula:  CLEAR_TASK, CLEAR_TOP, NEW_TASK"</string>
+    <string name="lib_help_category">Categoria do intent</string>
+    <string name="lib_help_category_line">ex.: android.intent.category.LEANBACK_LAUNCHER</string>
+    <string name="lib_help_tip">Dica</string>
+    <string name="lib_help_tip_line1">Prefira {rom_uri} com \"Usar URI SAF\" ativado — o emulador recebe acesso de leitura</string>
+    <string name="lib_help_tip_line2">só àquela ROM, sem precisar de permissão para todo o armazenamento.</string>
+    <string name="lib_assign_title">Padrões por sistema</string>
+    <string name="lib_assign_task_label">Atribuição de emuladores</string>
+    <string name="lib_assign_default_set">%1$s: emulador padrão definido como %2$s</string>
+    <string name="lib_assign_using_recommended">%1$s: usando o emulador recomendado</string>
+    <plurals name="lib_assign_overrides_cleared">
+        <item quantity="one">%1$s: %2$d exceção por jogo apagada — esses jogos agora seguem o padrão da plataforma</item>
+        <item quantity="many">%1$s: %2$d exceções por jogo apagadas — esses jogos agora seguem o padrão da plataforma</item>
+        <item quantity="other">%1$s: %2$d exceções por jogo apagadas — esses jogos agora seguem o padrão da plataforma</item>
+    </plurals>
+    <string name="lib_assign_group_consoles">Consoles com jogos</string>
+    <string name="lib_assign_none">Nenhum console com jogos ainda — verifique um console primeiro e depois defina aqui o emulador e o core padrão dele.</string>
+    <string name="lib_assign_overridden">%1$d com exceção</string>
+
+    <!-- Warning badges (capitals on purpose). -->
+    <string name="lib_assign_badge_core_missing">CORE AUSENTE</string>
+    <string name="lib_assign_badge_no_emulator">SEM EMULADOR</string>
+    <string name="lib_assign_badge_active">ATIVO</string>
+    <string name="lib_assign_badge_default">PADRÃO</string>
+    <string name="lib_assign_badge_recommended">RECOMENDADO</string>
+    <string name="lib_assign_default_is">Padrão: %1$s</string>
+    <string name="lib_assign_no_emulator">Sem emulador</string>
+    <string name="lib_assign_core_is">Core: %1$s</string>
+    <plurals name="lib_assign_game_count">
+        <item quantity="one">%d jogo</item>
+        <item quantity="many">%d jogos</item>
+        <item quantity="other">%d jogos</item>
+    </plurals>
+
+    <!-- Clear-overrides dialog. -->
+    <plurals name="lib_assign_clear_title">
+        <item quantity="one">Apagar %d exceção?</item>
+        <item quantity="many">Apagar %d exceções?</item>
+        <item quantity="other">Apagar %d exceções?</item>
+    </plurals>
+    <string name="lib_assign_clear_message">Estes jogos de %1$s têm o próprio emulador fixado e ignoram o padrão desta plataforma. Apague as exceções para que todos os jogos de %1$s usem o padrão.</string>
+
+    <!-- Button in the dialog. -->
+    <string name="lib_assign_clear">Apagar</string>
+    <string name="lib_assign_group_current">Padrão atual</string>
+    <string name="lib_assign_emulator">Emulador</string>
+    <string name="lib_assign_none_value">Nenhum</string>
+    <string name="lib_assign_ra_core">Core do RetroArch</string>
+    <string name="lib_assign_group_choose">Escolher o padrão</string>
+    <string name="lib_assign_automatic">Automático (recomendado)</string>
+    <string name="lib_assign_automatic_sub">Primeiro emulador instalado — um independente antes dos cores do RetroArch</string>
+    <string name="lib_assign_no_candidates">Nenhum emulador instalado consegue rodar esta plataforma. Instale um — ou vincule o RetroArch e deixe a detecção de cores gerar perfis — e as inicializações se resolvem automaticamente.</string>
+    <string name="lib_assign_group_overrides">Exceções por jogo</string>
+    <string name="lib_assign_overrides_label">Jogos com emulador personalizado</string>
+    <string name="lib_assign_overrides_value">%1$d de %2$d</string>
+    <string name="lib_assign_overrides_none">Nenhum — todos os jogos seguem o padrão acima</string>
+    <string name="lib_assign_overrides_some">Estes jogos iniciam com o próprio emulador fixado e ignoram o padrão</string>
+    <plurals name="lib_assign_clear_all">
+        <item quantity="one">Apagar %d exceção</item>
+        <item quantity="many">Apagar todas as %d exceções</item>
+        <item quantity="other">Apagar todas as %d exceções</item>
+    </plurals>
+    <string name="lib_assign_clear_all_sub">Fazer esses jogos voltarem a seguir o padrão da plataforma</string>
+    <string name="lib_assign_source_card">Padrão do console — definido aqui ou no Gerenciador da biblioteca</string>
+    <string name="lib_assign_source_platform">Padrão da plataforma</string>
+    <string name="lib_assign_source_game">Exceção por jogo</string>
+    <string name="lib_assign_source_auto">Automático — primeiro emulador instalado</string>
+    <string name="lib_assign_source_stored_missing">O padrão salvo (%1$s) não está instalado ou não consegue rodar esta plataforma</string>
+    <string name="lib_assign_source_platform_missing">O padrão da plataforma não está instalado ou não consegue rodar esta plataforma</string>
+    <string name="lib_assign_source_none">Nenhum emulador instalado para esta plataforma</string>
+    <string name="lib_kb_title">Conhecimento de emuladores</string>
+    <string name="lib_kb_status_builtin">Só integrado</string>
+    <string name="lib_kb_status_not_configured">Integrado · atualizações não configuradas</string>
+    <string name="lib_kb_status_official">Oficial</string>
+    <string name="lib_kb_status_official_version">Oficial v%1$s</string>
+    <string name="lib_kb_status_verified">verificado</string>
+    <plurals name="lib_kb_emulators_count">
+        <item quantity="one">%d emulador</item>
+        <item quantity="many">%d emuladores</item>
+        <item quantity="other">%d emuladores</item>
+    </plurals>
+    <plurals name="lib_kb_consoles_count">
+        <item quantity="one">%d console</item>
+        <item quantity="many">%d consoles</item>
+        <item quantity="other">%d consoles</item>
+    </plurals>
+    <plurals name="lib_kb_console_updates_count">
+        <item quantity="one">%d atualização de console</item>
+        <item quantity="many">%d atualizações de consoles</item>
+        <item quantity="other">%d atualizações de consoles</item>
+    </plurals>
+    <string name="lib_kb_checked_today">verificado hoje às %1$s</string>
+    <string name="lib_kb_checked_yesterday">verificado ontem às %1$s</string>
+    <string name="lib_kb_checked_on">verificado em %1$s às %2$s</string>
+    <string name="lib_kb_import_label">Importar %1$s</string>
+    <string name="lib_kb_update_label">Atualizar %1$s</string>
+    <string name="lib_kb_import_and_update_label">Importar %1$s e %2$s</string>
+    <string name="lib_kb_export_label">Exportar %1$s</string>
+    <string name="lib_kb_group_status">Status</string>
+    <string name="lib_kb_new_file_types">Novos tipos de arquivo</string>
+    <string name="lib_kb_new_file_types_sub">%1$s Verifique sua biblioteca de novo para reconhecê-los.</string>
+    <string name="lib_kb_group_updates">Atualizações</string>
+    <string name="lib_kb_check">Verificar atualizações</string>
+    <string name="lib_kb_check_sub">Só arquivos assinados pelo PlayFieldPortal</string>
+    <string name="lib_kb_checking">Verificando…</string>
+    <string name="lib_kb_not_available">Indisponível nesta versão</string>
+    <string name="lib_kb_auto_update">Atualizações automáticas</string>
+    <string name="lib_kb_auto_update_sub">No máximo uma vez por dia</string>
+    <string name="lib_kb_check_failed">Não foi possível concluir a verificação.</string>
+    <string name="lib_kb_group_files">Arquivos</string>
+    <string name="lib_kb_import">Importar um arquivo de conhecimento</string>
+    <string name="lib_kb_import_sub">Um .json neste dispositivo, revisado antes</string>
+    <string name="lib_kb_group_your_files">Seus arquivos</string>
+    <string name="lib_kb_file_unreadable_sub">Não pode ser lido · não assinado</string>
+    <plurals name="lib_kb_file_sub">
+        <item quantity="one">%d emulador · não assinado</item>
+        <item quantity="many">%d emuladores · não assinado</item>
+        <item quantity="other">%d emuladores · não assinado</item>
+    </plurals>
+    <string name="lib_kb_remove_file">Remover %1$s</string>
+    <string name="lib_kb_badge_custom">Personalizado</string>
+    <string name="lib_kb_badge_unreadable">Ilegível</string>
+    <string name="lib_kb_export">Exportar seus emuladores</string>
+    <string name="lib_kb_export_sub">Compartilhe seus emuladores personalizados e editados em um único .json</string>
+    <string name="lib_kb_group_reset">Restaurar</string>
+    <string name="lib_kb_reset_row">Restaurar para o integrado</string>
+    <string name="lib_kb_reset_row_sub">Descarta as atualizações e seus arquivos</string>
+    <string name="lib_kb_remove_title">Remover arquivo?</string>
+    <string name="lib_kb_remove_message">\"%1$s\" será removido deste dispositivo. O conhecimento de emuladores integrado e oficial não é afetado.</string>
+
+    <!-- Button -->
+    <string name="lib_kb_remove">Remover</string>
+    <string name="lib_kb_remove_failed_title">Não foi possível remover o arquivo</string>
+    <string name="lib_kb_remove_failed_message">Não foi possível remover o arquivo.</string>
+
+    <!-- Reset dialog -->
+    <string name="lib_kb_reset_title">Restaurar para o integrado?</string>
+    <string name="lib_kb_reset_message">As atualizações baixadas e seus arquivos importados serão descartados. O conhecimento de emuladores que vem com o PlayField Portal é mantido.</string>
+
+    <!-- Button -->
+    <string name="lib_kb_reset">Restaurar</string>
+    <string name="lib_kb_reset_failed_title">Não foi possível restaurar</string>
+    <string name="lib_kb_reset_failed_message">Não foi possível restaurar o conhecimento de emuladores.</string>
+
+    <!-- Import problems -->
+    <string name="lib_kb_import_failed_title">Não foi possível importar esse arquivo</string>
+    <string name="lib_kb_import_too_large">Esse arquivo é grande demais para ser um arquivo de conhecimento de emuladores.</string>
+    <string name="lib_kb_import_unreadable">Não foi possível ler esse arquivo.</string>
+    <string name="lib_kb_import_rejected">Esse arquivo não pode ser usado (%1$s).</string>
+    <string name="lib_kb_import_nothing">Esse arquivo não tem nada para importar neste dispositivo.</string>
+    <string name="lib_kb_import_save_failed">Não foi possível salvar o arquivo neste dispositivo.</string>
+    <string name="lib_kb_import_refresh_failed">O arquivo foi salvo, mas a atualização da detecção de emuladores falhou.</string>
+
+    <!-- Import review -->
+    <string name="lib_kb_review_title">Revisar %1$s</string>
+    <string name="lib_kb_review_unsigned">Não assinado · de um arquivo neste dispositivo</string>
+    <string name="lib_kb_review_unsigned_sub">Importe só arquivos em que você confia: eles dizem ao PFP qual app abre seus jogos.</string>
+    <string name="lib_kb_badge_unsigned">Não assinado</string>
+    <string name="lib_kb_group_new">Novos emuladores</string>
+    <string name="lib_kb_review_add">Adicionar %1$s</string>
+    <string name="lib_kb_group_existing">Já neste dispositivo</string>
+    <string name="lib_kb_review_override">Substituir %1$s</string>
+    <string name="lib_kb_badge_overrides_official">Substitui o oficial</string>
+    <string name="lib_kb_badge_your_edit">Sua edição</string>
+    <string name="lib_kb_group_consoles">Consoles</string>
+    <string name="lib_kb_review_update">Atualizar %1$s</string>
+    <string name="lib_kb_review_extensions">+ extensões: %1$s</string>
+    <string name="lib_kb_group_blocked">Bloqueados</string>
+    <string name="lib_kb_review_entry">Entrada %1$d</string>
+    <string name="lib_kb_review_unchanged">%1$d já atualizados</string>
+    <string name="lib_kb_group_finish">Concluir</string>
+    <string name="lib_kb_cancel">Cancelar</string>
+    <string name="lib_kb_prompt_toggle">Alternar</string>
+    <string name="lib_kb_prompt_cancel">Cancelar</string>
+    <string name="lib_kb_opens_game_file">Abre o arquivo do jogo</string>
+    <string name="lib_kb_opens_own_activity">Abre pela própria activity</string>
+    <string name="lib_kb_opens_shortcut">Abre por um atalho</string>
+    <string name="lib_kb_opens_custom_command">Abre com um comando personalizado</string>
+    <string name="lib_kb_intent_view">Abre o arquivo da ROM</string>
+    <string name="lib_kb_intent_component">Abre uma tela específica</string>
+    <string name="lib_kb_intent_shortcut">Abre por um atalho</string>
+
+    <!-- Export picker -->
+    <string name="lib_kb_export_title_sub">Salvo como um único .json que você pode compartilhar</string>
+    <string name="lib_kb_export_select_all">Selecionar tudo</string>
+    <string name="lib_kb_export_selected">%1$d de %2$d selecionados</string>
+    <string name="lib_kb_group_custom">Emuladores personalizados</string>
+    <string name="lib_kb_group_edited">Emuladores oficiais editados</string>
+    <string name="lib_kb_export_changes_only">Só suas alterações · %1$s</string>
+    <string name="lib_kb_export_privacy">Só as configurações de inicialização são salvas. Nenhuma lista de jogos, caminho de ROM ou dado de conta.</string>
+    <string name="lib_kb_group_cant_share">Não podem ser compartilhados</string>
+    <string name="lib_kb_export_nothing_title">Nada para exportar</string>
+    <string name="lib_kb_export_none_message">Você ainda não tem emuladores personalizados ou editados para compartilhar.</string>
+    <string name="lib_kb_export_none_shareable">Nenhum dos seus emuladores pode ser compartilhado</string>
+    <string name="lib_kb_export_none_shareable_why">Nenhum dos seus emuladores pode ser compartilhado: %1$s</string>
+    <string name="lib_kb_exported_title">Exportado</string>
+    <plurals name="lib_kb_exported_message">
+        <item quantity="one">%d emulador exportado</item>
+        <item quantity="many">%d emuladores exportados</item>
+        <item quantity="other">%d emuladores exportados</item>
+    </plurals>
+    <string name="lib_kb_export_failed_title">Não foi possível exportar</string>
+    <string name="lib_kb_export_failed_message">Não foi possível salvar o arquivo.</string>
+
+    <!-- Windows ▸ Game List -->
+    <string name="lib_win_title">Jogos do Windows</string>
+    <plurals name="lib_win_game_count">
+        <item quantity="one">%d jogo</item>
+        <item quantity="many">%d jogos</item>
+        <item quantity="other">%d jogos</item>
+    </plurals>
+    <string name="lib_win_empty">Nenhum jogo do Windows ainda — importe alguns em Importar jogos de PC primeiro.</string>
+    <string name="lib_win_working">Processando…</string>
+    <string name="lib_win_current">Atual</string>
+    <string name="lib_win_link_folder">Vincular pasta</string>
+    <string name="lib_win_change_folder">Alterar pasta vinculada</string>
+    <string name="lib_win_label_non_steam">Fora da Steam (próprio)</string>
+    <string name="lib_win_label_local">Local</string>
+    <string name="lib_win_auto_value">Auto: %1$s</string>
+    <string name="lib_win_auto_option">Automático (%1$s)</string>
+    <string name="lib_win_auto">Automático</string>
+    <string name="lib_win_not_set">Não definido</string>
+    <string name="lib_win_label_save_failed">Não foi possível salvar o rótulo.</string>
+    <string name="lib_win_label_steam_not_found">Rotulado como Steam, mas nenhum jogo correspondente foi encontrado na Steam, então nada foi vinculado.</string>
+    <string name="lib_win_folder_unreadable">Não foi possível ler essa pasta. Escolha-a de novo ou monte outra vez o armazenamento onde ela está.</string>
+    <string name="lib_win_several_matches">Vários jogos da Steam correspondem a \"%1$s\". Termine de vincular esta pasta na página Shiba Coins do jogo, onde você pode escolher o certo.</string>
+    <string name="lib_win_kit_title">Nenhuma lista de conquistas em \"%1$s\"</string>
+    <string name="lib_win_kit_message_installer">Esta pasta ainda não tem dados de conquistas do emulador. Vincule-a como está ou instale primeiro o kit do emulador nela.</string>
+    <string name="lib_win_kit_message_no_installer">Esta pasta ainda não tem dados de conquistas do emulador. Vincule-a como está ou ative Instalar Goldberg e converter jogos em Configurações ▸ Conquistas ▸ Windows local para instalar o kit.</string>
+    <string name="lib_win_kit_link_only">Só vincular</string>
+    <string name="lib_win_kit_install_and_link">Instalar kit e vincular</string>
+
+    <!-- Button: links the folder. -->
+    <string name="lib_win_kit_link">Vincular</string>
+    <string name="lib_pc_scan_no_root">Adicione primeiro uma pasta de ROMs — o PFP cria &lt;pasta de ROMs&gt;/windows/import para os jogos exportados.</string>
+    <string name="lib_pc_scan_folder_unreadable">Não foi possível ler essa pasta. Escolha a pasta para onde seu launcher exporta os jogos.</string>
+    <string name="lib_pc_scan_none_found">Nenhum jogo de PC exportado encontrado na pasta selecionada.</string>
+    <plurals name="lib_pc_scan_imported">
+        <item quantity="one">%1$d jogo de PC importado.</item>
+        <item quantity="many">%1$d jogos de PC importados.</item>
+        <item quantity="other">%1$d jogos de PC importados.</item>
+    </plurals>
+    <plurals name="lib_pc_scan_imported_skipped">
+        <item quantity="one">%1$d jogo de PC importado, %2$d ignorados (nenhum launcher correspondente instalado).</item>
+        <item quantity="many">%1$d jogos de PC importados, %2$d ignorados (nenhum launcher correspondente instalado).</item>
+        <item quantity="other">%1$d jogos de PC importados, %2$d ignorados (nenhum launcher correspondente instalado).</item>
+    </plurals>
+    <plurals name="lib_pc_scan_restored">
+        <item quantity="one">%1$d restaurados e %2$d jogo associado a partir de arquivos .pfpgame.</item>
+        <item quantity="many">%1$d restaurados e %2$d jogos associados a partir de arquivos .pfpgame.</item>
+        <item quantity="other">%1$d restaurados e %2$d jogos associados a partir de arquivos .pfpgame.</item>
+    </plurals>
+    <plurals name="lib_pc_scan_restore_skipped">
+        <item quantity="one">%d arquivo .pfpgame ignorado: launcher não instalado, ambíguo ou atalho fixado fora da biblioteca.</item>
+        <item quantity="many">%d arquivos .pfpgame ignorados: launcher não instalado, ambíguos ou atalho fixado fora da biblioteca.</item>
+        <item quantity="other">%d arquivos .pfpgame ignorados: launcher não instalado, ambíguos ou atalho fixado fora da biblioteca.</item>
+    </plurals>
+    <plurals name="lib_pc_scan_restore_untrusted">
+        <item quantity="one">%d arquivo .pfpgame ignorado por ser ilegível ou não confiável.</item>
+        <item quantity="many">%d arquivos .pfpgame ignorados por serem ilegíveis ou não confiáveis.</item>
+        <item quantity="other">%d arquivos .pfpgame ignorados por serem ilegíveis ou não confiáveis.</item>
+    </plurals>
+    <plurals name="lib_pc_scan_relinked">
+        <item quantity="one">Artes exportadas reconectadas pelo nome (%d jogo atualizado).</item>
+        <item quantity="many">Artes exportadas reconectadas pelo nome (%d jogos atualizados).</item>
+        <item quantity="other">Artes exportadas reconectadas pelo nome (%d jogos atualizados).</item>
+    </plurals>
+    <string name="lib_pc_scan_relink_no_folder">Vincule a pasta de artes e verifique de novo para reconectar as artes exportadas.</string>
+    <string name="lib_pc_scan_relink_failed">Falha ao reconectar as artes exportadas — veja o log.</string>
+    <plurals name="lib_pc_scan_pins_reconciled">
+        <item quantity="one">%d atalho fixado sincronizado.</item>
+        <item quantity="many">%d atalhos fixados sincronizados.</item>
+        <item quantity="other">%d atalhos fixados sincronizados.</item>
+    </plurals>
+    <string name="lib_pc_export_game_gone">Esse jogo não está mais na biblioteca.</string>
+    <string name="lib_pc_export_pc_only">Só jogos de PC podem ser exportados.</string>
+    <string name="lib_pc_export_no_launcher">%1$s não tem um launcher para trazê-lo de volta, então não pode ser exportado.</string>
+    <string name="lib_pc_export_one_done">%1$s exportado para windows/import como %2$s.</string>
+    <string name="lib_pc_export_one_failed">Não foi possível gravar %1$s em windows/import.</string>
+    <string name="lib_pc_export_no_root">Adicione primeiro uma pasta de ROMs — o PFP exporta os jogos de PC para &lt;pasta de ROMs&gt;/windows/import.</string>
+    <string name="lib_pc_export_no_folder">Não foi possível abrir &lt;windows&gt;/import. Vincule a pasta de ROMs de novo e tente outra vez.</string>
+    <string name="lib_pc_export_nothing_needed">Nenhum jogo de PC precisa de arquivo de exportação: exportações de launchers e atalhos fixados sem artes voltam sozinhos.</string>
+    <plurals name="lib_pc_export_bulk_done">
+        <item quantity="one">%d jogo de PC exportado para windows/import</item>
+        <item quantity="many">%d jogos de PC exportados para windows/import</item>
+        <item quantity="other">%d jogos de PC exportados para windows/import</item>
+    </plurals>
+    <string name="lib_pc_export_bulk_skipped">%1$d não precisam de arquivo</string>
+    <string name="lib_pc_export_bulk_failed">%1$d não puderam ser gravados</string>
+
+    <!-- Settings ▸ Library Manager -->
+    <string name="lib_lm_title">Gerenciador da biblioteca</string>
+    <string name="lib_lm_library_title">Biblioteca</string>
+    <string name="lib_lm_root_group">Acesso à pasta de ROMs</string>
+    <string name="lib_lm_root_add">Adicionar pasta de ROMs</string>
+    <string name="lib_lm_root_add_sub">Conceda acesso a uma pasta de ROMs (ex.: /Roms) — ou a um segundo local, como um cartão SD</string>
+    <string name="lib_lm_root_scan">Verificar pastas de ROMs</string>
+    <string name="lib_lm_root_scan_sub">Encontra as pastas de consoles dentro das suas pastas de ROMs e adiciona os jogos delas</string>
+    <string name="lib_lm_group_consoles">Consoles</string>
+    <string name="lib_lm_no_consoles">Nenhum console configurado. Adicione um console para criar um Memory Card que aparece em Jogos.</string>
+    <string name="lib_lm_card_hidden">"%1$s  (Oculto)"</string>
+    <string name="lib_lm_pinned">FIXADO</string>
+    <string name="lib_lm_group_manage">Gerenciar</string>
+    <string name="lib_lm_add_console">Adicionar console</string>
+    <string name="lib_lm_add_console_sub">Escolha uma plataforma — os jogos dela ficam na pasta correspondente dentro da sua pasta de ROMs principal</string>
+    <string name="lib_lm_setup_folders">Configurar pastas de ROMs (ES-DE)</string>
+    <string name="lib_lm_setup_folders_sub">Escolha uma pasta vazia — o PFP cria as pastas de sistema padrão do ES-DE (gba, snes, psx…) para você copiar os jogos. Sem adivinhar nomes de pastas</string>
+    <string name="lib_lm_scan_all">Verificar todos os consoles</string>
+    <string name="lib_lm_scanning_count">Verificando %1$d…</string>
+    <string name="lib_lm_configure_first">Configure uma pasta de ROMs primeiro</string>
+    <string name="lib_lm_scan_all_sub">Verifica a pasta de cada console ativado</string>
+    <string name="lib_lm_rescan_all">Verificar tudo de novo (marcar ausentes)</string>
+    <string name="lib_lm_rescan_all_sub">Também marca como ausentes os jogos cujo arquivo de ROM sumiu. Eles continuam na sua biblioteca</string>
+    <string name="lib_lm_rescan_confirm">Confirmar: verificar de novo e marcar jogos ausentes?</string>
+    <string name="lib_lm_rescan_confirm_sub">Marca como ausentes os jogos cujo arquivo de ROM sumiu; favoritos, tempo de jogo e artes são mantidos. Isso pode demorar com uma biblioteca grande</string>
+    <string name="lib_lm_cancel">Cancelar</string>
+
+    <!-- Add console flow -->
+    <string name="lib_lm_add_console_title">Adicionar console</string>
+    <string name="lib_lm_choose_platform">Escolher plataforma</string>
+    <string name="lib_lm_group_platforms">Plataformas compatíveis</string>
+    <string name="lib_lm_assign_emulator">Atribuir emulador</string>
+    <string name="lib_lm_emulator">Emulador</string>
+    <string name="lib_lm_no_emulators">Nenhum emulador instalado detectado para esta plataforma. Você pode atribuir um depois na tela de detalhes do console.</string>
+    <string name="lib_lm_decide_later">Decidir depois</string>
+    <string name="lib_lm_scan_now_title">Verificar agora?</string>
+    <string name="lib_lm_new_console">Novo console</string>
+    <string name="lib_lm_rom_directory">Pasta de ROMs</string>
+    <string name="lib_lm_not_set">Não definida</string>
+
+    <!-- Button -->
+    <string name="lib_lm_scan_now">Verificar agora</string>
+    <string name="lib_lm_scan_now_sub">Cria o Memory Card e verifica a pasta dele imediatamente</string>
+    <string name="lib_lm_add_no_scan">Adicionar sem verificar</string>
+    <string name="lib_lm_add_no_scan_sub">Cria o Memory Card agora e verifica depois</string>
+
+    <!-- Console (Memory Card) detail -->
+    <string name="lib_lm_rename_title">Renomear Memory Card</string>
+    <string name="lib_lm_rename_placeholder">Nome do Memory Card</string>
+    <string name="lib_lm_remove_card_title">Remover %1$s?</string>
+    <string name="lib_lm_remove_card_message">Isso remove o console e os jogos verificados dele da biblioteca. Os arquivos de ROM continuam no seu dispositivo.</string>
+    <string name="lib_lm_remove_app_message">Isso remove o app desta biblioteca. O app continua instalado.</string>
+
+    <!-- Button -->
+    <string name="lib_lm_remove">Remover</string>
+    <string name="lib_lm_group_library">Biblioteca</string>
+    <string name="lib_lm_games_directory">Pasta de jogos</string>
+    <string name="lib_lm_windows_no_root">Adicione uma pasta de ROMs — o PFP cria e usa &lt;pasta de ROMs&gt;/windows automaticamente</string>
+    <string name="lib_lm_games">Jogos</string>
+    <string name="lib_lm_group_actions">Ações</string>
+    <string name="lib_lm_game_list">Jogos do Windows</string>
+    <string name="lib_lm_game_list_sub">Rotule cada jogo do Windows como Steam, Fora da Steam ou Local e vincule as pastas locais</string>
+    <string name="lib_lm_import_pc">Importar jogos de PC</string>
+    <string name="lib_lm_import_pc_sub">Jogos exportados, Adicionar por ID e status dos launchers</string>
+    <string name="lib_lm_vita_folder">Pasta de dados do Vita3K</string>
+    <string name="lib_lm_vita_folder_set">Lendo os títulos instalados desta pasta ux0</string>
+    <string name="lib_lm_vita_folder_unset">Escolha a pasta ux0 do Vita3K (ex.: Roms/vita/ux0) para o PFP encontrar os jogos</string>
+    <string name="lib_lm_scan_vita">Procurar jogos de Vita</string>
+    <string name="lib_lm_scan_vita_sub">Lê os títulos instalados em ux0/app na sua pasta de dados do Vita3K</string>
+    <string name="lib_lm_group_apps">Apps</string>
+    <string name="lib_lm_add_apps">Adicionar apps</string>
+    <string name="lib_lm_add_apps_sub">Escolha apps instalados para adicionar a esta biblioteca</string>
+    <string name="lib_lm_no_apps">Nenhum app ainda — use Adicionar apps para escolher apps instalados para esta biblioteca.</string>
+    <string name="lib_lm_rom_directory_default">Verifica a pasta deste console dentro da sua pasta de ROMs principal</string>
+    <string name="lib_lm_none">Nenhum</string>
+    <string name="lib_lm_set_emulator">Definir emulador</string>
+    <string name="lib_lm_current">Atual</string>
+    <string name="lib_lm_group_files">Arquivos compatíveis</string>
+    <string name="lib_lm_no_extensions">Nenhuma extensão definida — adicione pelo menos uma para que a verificação reconheça as ROMs deste console.</string>
+    <string name="lib_lm_remove_extension">Remover extensão</string>
+    <string name="lib_lm_remove_from_library">Remover da biblioteca</string>
+    <string name="lib_lm_add_extension">Adicionar extensão</string>
+    <string name="lib_lm_extension_hint">ex.: iso, chd, zip</string>
+    <string name="lib_lm_extension_helper">Comparada sem diferenciar maiúsculas e minúsculas na verificação.</string>
+    <string name="lib_lm_prompt_type">Digitar</string>
+    <string name="lib_lm_add_extension_named">Adicionar \".%1$s\"</string>
+    <string name="lib_lm_scan_console">Verificar este console</string>
+    <string name="lib_lm_scanning_ellipsis">Verificando…</string>
+    <string name="lib_lm_rom_dir_unconfigured">Pasta de ROMs não configurada</string>
+    <string name="lib_lm_scan_console_sub">Verifica só a pasta deste console</string>
+    <string name="lib_lm_group_achievements">Conquistas</string>
+    <string name="lib_lm_ps3_folder">Pasta de dados do PS3</string>
+    <string name="lib_lm_ps3_folder_set_sub">Lendo troféus desta pasta PS3 do ARMSX3</string>
+    <string name="lib_lm_ps3_folder_unset">Escolha a pasta PS3 do ARMSX3 para o PFP ler os troféus</string>
+    <string name="lib_lm_ps3_hint">Conceda acesso à pasta PS3 do ARMSX3 (a que contém config/dev_hdd0) e execute Associar automaticamente em Configurações ▸ Conquistas ▸ Atualizar conquistas. Os IDs dos troféus vêm do disco de cada jogo, então um jogo pode ser vinculado antes mesmo de você iniciá-lo.</string>
+    <string name="lib_lm_x360_folder">Pasta de dados do X360 Mobile</string>
+    <string name="lib_lm_x360_folder_set_sub">Lendo conquistas dos perfis do X360 Mobile</string>
+    <string name="lib_lm_x360_folder_unset">Escolha X360 Mobile no menu lateral do seletor de pastas</string>
+    <string name="lib_lm_xendroid_folder">Pasta de dados do XenDroid</string>
+    <string name="lib_lm_xendroid_folder_set_sub">Lendo conquistas dos perfis do XenDroid</string>
+    <string name="lib_lm_xendroid_folder_unset">Escolha Android/data/xendroid.compose</string>
+    <string name="lib_lm_x360_hint">Conceda acesso à pasta de dados do emulador em que você joga e execute Associar automaticamente em Configurações ▸ Conquistas ▸ Atualizar conquistas. Os Title IDs vêm do arquivo de cada jogo, então um jogo pode ser vinculado antes mesmo de você iniciá-lo.</string>
+    <string name="lib_lm_rename_card">Renomear Memory Card</string>
+    <string name="lib_lm_show_in_games_sub">Ativar ou ocultar este Memory Card</string>
+    <string name="lib_lm_move_up">Mover para cima</string>
+    <string name="lib_lm_move_down">Mover para baixo</string>
+    <string name="lib_lm_group_danger">Zona de perigo</string>
+    <string name="lib_lm_remove_card">Remover Memory Card</string>
+    <string name="lib_lm_remove_card_sub">Remove este console e os jogos dele. Os arquivos de ROM continuam no seu dispositivo.</string>
+    <string name="lib_lm_card_sub">"%1$s  ·  %2$s"</string>
+    <string name="lib_lm_no_rom_directory">Sem pasta de ROMs</string>
+    <plurals name="lib_lm_game_count">
+        <item quantity="one">%d jogo</item>
+        <item quantity="many">%d jogos</item>
+        <item quantity="other">%d jogos</item>
+    </plurals>
+    <string name="lib_lm_tap_dismiss">Selecione para dispensar</string>
+
+    <!-- Import PC games -->
+    <string name="lib_lm_import_pc_title">Importar jogos de PC</string>
+    <string name="lib_lm_group_home">Captura de Adicionar à tela inicial</string>
+    <string name="lib_lm_home_label">Play Field Portal como tela inicial</string>
+    <string name="lib_lm_home_active">Ativo</string>
+    <string name="lib_lm_home_set">Definir…</string>
+    <string name="lib_lm_home_active_sub">Usar \"Adicionar à tela inicial\" em um launcher compatível importa o jogo aqui automaticamente</string>
+    <string name="lib_lm_home_set_sub">Defina o PFP como app de início para que a opção \"Adicionar à tela inicial\" de um launcher importe o jogo para o PFP</string>
+    <string name="lib_lm_group_exported">Jogos exportados</string>
+    <string name="lib_lm_scan_import">Verificar pasta de importação</string>
+    <string name="lib_lm_scan_import_sub">Toda verificação já lê &lt;pasta de ROMs&gt;/windows/import sozinha. Esta linha é uma escolha única para uma pasta em outro lugar — o PFP procura nela exportações do GameNative / Winlator (.steam · .epic · .gog · .amazon · .pcgame · .desktop) e as exportações .pfpgame do próprio PFP e as importa</string>
+    <string name="lib_lm_export_manual">Exportar jogos manuais</string>
+    <string name="lib_lm_export_manual_sub">Grava um arquivo .pfpgame em &lt;windows&gt;/import para cada jogo adicionado por ID ou capturado, e para cada atalho fixado com artes, para que uma instalação nova possa trazê-los de volta com as artes</string>
+    <string name="lib_lm_group_local">Windows local</string>
+    <string name="lib_lm_batch_match">Associar jogos locais em lote</string>
+    <string name="lib_lm_batch_match_sub">Escolha a pasta que CONTÉM as pastas dos seus jogos. Cada uma que já está na sua biblioteca do Windows é identificada, lembrada e vinculada; as demais não são alteradas</string>
+    <string name="lib_lm_matched_local">Jogos locais associados (%1$d)</string>
+    <string name="lib_lm_none_yet">Nenhum ainda</string>
+    <string name="lib_lm_matched_local_empty">Nada apontado ainda — use Associar em lote acima ou Associar automaticamente um jogo na página Shiba Coins dele</string>
+    <string name="lib_lm_matched_local_forget_note">Esquecer remove só a anotação do PFP sobre onde fica uma pasta; as moedas obtidas continuam</string>
+    <string name="lib_lm_goldberg">Instalador do Goldberg</string>
+    <string name="lib_lm_on">Ativado</string>
+    <string name="lib_lm_off">Desativado</string>
+    <string name="lib_lm_goldberg_sub">Permite que o PFP grave uma lista de conquistas em uma pasta de jogo e troque pelo emulador da Steam incluído. É a mesma opção de Configurações ▸ Conquistas ▸ Windows local</string>
+    <string name="lib_lm_goldberg_backup">Faça backup dos arquivos de save de qualquer jogo que você já jogou antes de convertê-lo — o emulador passa a ler de um novo local de saves, e o PFP não consegue restaurar o antigo para você.</string>
+    <string name="lib_lm_group_launchers">Launchers de PC</string>
+    <string name="lib_lm_not_installed">Não instalado</string>
+    <string name="lib_lm_add_by_id">Adicionar por ID…</string>
+    <string name="lib_lm_add_by_id_sub">Adicione um jogo pelo ID dele — ou use a opção Adicionar à tela inicial do próprio app</string>
+    <string name="lib_lm_installed">Instalado</string>
+    <string name="lib_lm_no_add_by_id">Sem suporte para adicionar por ID — exporte o jogo para &lt;windows&gt;/import</string>
+    <string name="lib_lm_group_unknown">Emuladores de Windows desconhecidos</string>
+    <string name="lib_lm_unknown_choose">Escolher…</string>
+    <string name="lib_lm_show_hidden">Mostrar apps ocultos</string>
+    <plurals name="lib_lm_show_hidden_sub">
+        <item quantity="one">%d app marcado como Não é um launcher — traga-o de volta para escolher de novo</item>
+        <item quantity="many">%d apps marcados como Não é um launcher — traga-os de volta para escolher de novo</item>
+        <item quantity="other">%d apps marcados como Não é um launcher — traga-os de volta para escolher de novo</item>
+    </plurals>
+    <string name="lib_lm_group_found">Jogos encontrados (%1$d)</string>
+    <string name="lib_lm_no_found">Nenhum jogo de PC capturado ainda.</string>
+    <string name="lib_lm_import">Importar</string>
+    <string name="lib_lm_import_all">Importar todos</string>
+    <string name="lib_lm_import_all_sub">Move todos os jogos encontrados para o Memory Card Jogos do Windows</string>
+    <string name="lib_lm_forget">Esquecer</string>
+
+    <!-- Add a game by its ID -->
+    <string name="lib_lm_add_game_title">Adicionar jogo do %1$s</string>
+    <string name="lib_lm_group_game">Jogo</string>
+    <string name="lib_lm_game_id">ID do jogo</string>
+    <string name="lib_lm_game_name">Nome do jogo</string>
+    <string name="lib_lm_source">Fonte</string>
+    <string name="lib_lm_source_sub">Aperte para trocar de loja</string>
+    <string name="lib_lm_group_add">Adicionar</string>
+    <string name="lib_lm_test_launch">Testar inicialização</string>
+    <string name="lib_lm_test_launch_sub">Abre o jogo no %1$s para conferir o ID</string>
+    <string name="lib_lm_add_game">Adicionar jogo</string>
+    <string name="lib_lm_add_game_sub">Adicionar à sua biblioteca do Windows</string>
+    <string name="lib_lm_add_game_blocked">Defina primeiro um ID e um nome para o jogo</string>
+    <string name="lib_lm_all_platforms_added">Todas as plataformas compatíveis já têm um Memory Card.</string>
+    <string name="lib_lm_android_added_title">Biblioteca Android adicionada</string>
+    <string name="lib_lm_android_added_message">Abra-a em Jogos → Encontrar jogos para adicionar apps.</string>
+    <string name="lib_lm_need_rom_root">Configure primeiro uma pasta de ROMs — conceda acesso a ela em Acesso à pasta de ROMs e adicione os consoles.</string>
+    <string name="lib_lm_ps3_folder_set">Pasta de dados do PS3 definida. Execute Associar automaticamente em Configurações ▸ Conquistas ▸ Atualizar conquistas para vincular os troféus do PS3.</string>
+    <string name="lib_lm_x360_folder_set">Pasta de dados do %1$s definida. Execute Associar automaticamente em Configurações ▸ Conquistas ▸ Atualizar conquistas para vincular as conquistas do Xbox 360.</string>
+    <string name="lib_lm_invalid_game_id">Digite um ID de jogo válido — um número ou um ID local_… copiado da página do jogo no launcher.</string>
+    <string name="lib_lm_test_launch_failed">Falha no teste de inicialização: %1$s. O launcher pode bloquear inicializações externas.</string>
+    <string name="lib_lm_enter_game_name">Digite o nome do jogo — ele aparece ao lado do ID no %1$s.</string>
+
+    <!-- Task heading in the notification list. -->
+    <string name="lib_lm_windows_games">Jogos do Windows</string>
+    <string name="lib_lm_pc_game_added">\"%1$s\" adicionado a Jogos do Windows.</string>
+    <string name="lib_lm_pc_add_failed">Não foi possível adicionar o jogo: %1$s</string>
+    <string name="lib_lm_pc_import_failed">Não foi possível importar \"%1$s\": %2$s</string>
+    <string name="lib_lm_game_not_found">Jogo não encontrado</string>
+    <string name="lib_lm_scanning">Verificando %1$s</string>
+    <string name="lib_lm_scanning_vita">Verificando PS Vita</string>
+    <string name="lib_lm_scanning_windows">Verificando Jogos do Windows</string>
+    <string name="lib_lm_scanning_rom_root">Verificando pasta de ROMs</string>
+    <string name="lib_lm_stop_note_games">Os jogos encontrados até agora são mantidos.</string>
+    <string name="lib_lm_rom_root_stop_note">Os sistemas já verificados mantêm os jogos novos.</string>
+    <string name="lib_lm_matching_stop_note">Os jogos já associados continuam vinculados.</string>
+    <string name="lib_lm_stopped">Interrompido antes de terminar</string>
+    <string name="lib_lm_scan_stopped">Verificação de %1$s interrompida</string>
+    <string name="lib_lm_scan_finished">Verificação de %1$s concluída</string>
+    <string name="lib_lm_scan_failed">Falha na verificação de %1$s</string>
+    <string name="lib_lm_scan_skipped">Verificação de %1$s ignorada</string>
+    <string name="lib_lm_vita_finished">Verificação do PS Vita concluída</string>
+    <string name="lib_lm_vita_failed">Falha na verificação do PS Vita</string>
+    <string name="lib_lm_vita_failed_message">Falha na verificação do Vita</string>
+    <string name="lib_lm_vita_stopped">Verificação do PS Vita interrompida</string>
+    <string name="lib_lm_windows_scan_stopped">Verificação de Jogos do Windows interrompida</string>
+    <string name="lib_lm_windows_scan_failed">Falha na verificação de Jogos do Windows</string>
+    <string name="lib_lm_windows_scan_finished">Verificação de Jogos do Windows concluída</string>
+    <string name="lib_lm_pc_scan_failed_message">Falha na verificação de PC</string>
+    <string name="lib_lm_rom_root_stopped">Verificação da pasta de ROMs interrompida</string>
+    <string name="lib_lm_rom_root_finished">Verificação da pasta de ROMs concluída</string>
+    <string name="lib_lm_matching">Associando jogos locais do Windows</string>
+    <string name="lib_lm_match_stopped">Associação de conquistas do Windows interrompida</string>
+    <string name="lib_lm_match_failed">Falha na associação de conquistas do Windows</string>
+    <string name="lib_lm_match_failed_message">Falha na associação em lote</string>
+    <string name="lib_lm_match_finished">Associação de conquistas do Windows concluída</string>
+    <string name="lib_lm_convert_label">Conversão Goldberg</string>
+    <string name="lib_lm_convert_linked">%1$d vinculados a jogos da biblioteca.</string>
+    <plurals name="lib_lm_converted">
+        <item quantity="one">%d jogo convertido</item>
+        <item quantity="many">%d jogos convertidos</item>
+        <item quantity="other">%d jogos convertidos</item>
+    </plurals>
+    <string name="lib_lm_convert_no_achievements">%1$d não tinham conquistas</string>
+    <string name="lib_lm_convert_no_key">%1$d precisam de uma chave da Steam Web API</string>
+    <string name="lib_lm_convert_failed">%1$d falharam</string>
+    <string name="lib_lm_convert_play_note">Jogue cada jogo pelo emulador para começar a ganhar moedas.</string>
+    <string name="lib_lm_export_label">Exportar jogos manuais</string>
+    <string name="lib_lm_export_failed">Falha na exportação — veja o log.</string>
+    <string name="lib_lm_rom_root_ready">Pasta de ROMs pronta</string>
+    <plurals name="lib_lm_folders_created">
+        <item quantity="one">%d pasta criada</item>
+        <item quantity="many">%d pastas criadas</item>
+        <item quantity="other">%d pastas criadas</item>
+    </plurals>
+    <string name="lib_lm_folders_existing">%1$d já existiam</string>
+    <string name="lib_lm_rom_root_next">Copie seus jogos para as pastas correspondentes e escolha Verificar pastas de ROMs.</string>
+    <plurals name="lib_lm_import_all_done">
+        <item quantity="one">%d jogo de PC importado para Jogos do Windows.</item>
+        <item quantity="many">%d jogos de PC importados para Jogos do Windows.</item>
+        <item quantity="other">%d jogos de PC importados para Jogos do Windows.</item>
+    </plurals>
+    <plurals name="lib_lm_import_all_none">
+        <item quantity="one">O %d jogo de PC não pôde ser importado.</item>
+        <item quantity="many">Nenhum dos %d jogos de PC pôde ser importado.</item>
+        <item quantity="other">Nenhum dos %d jogos de PC pôde ser importado.</item>
+    </plurals>
+    <plurals name="lib_lm_import_all_some">
+        <item quantity="one">%1$d jogo de PC importado para Jogos do Windows. %2$d não puderam ser importados.</item>
+        <item quantity="many">%1$d jogos de PC importados para Jogos do Windows. %2$d não puderam ser importados.</item>
+        <item quantity="other">%1$d jogos de PC importados para Jogos do Windows. %2$d não puderam ser importados.</item>
+    </plurals>
+    <string name="lib_lm_local_appid">appid %1$s</string>
+    <string name="lib_lm_local_from_marker">de steam_appid.txt</string>
+    <string name="lib_lm_local_from_stored">da associação salva com a Steam</string>
+    <string name="lib_lm_local_by_title">associado pelo título</string>
+    <string name="lib_lm_local_tracking">acompanhando</string>
+    <string name="lib_lm_local_no_list">ainda sem lista de conquistas</string>
+</resources>

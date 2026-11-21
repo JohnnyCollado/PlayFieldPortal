@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- QR login screen -->
+    <string name="soc_qr_preparing">Příprava přihlášení…</string>
+    <string name="soc_qr_connected">Připojeno</string>
+    <string name="soc_qr_expired">Platnost kódu vypršela.</string>
+    <string name="soc_qr_declined">Přihlášení bylo odmítnuto.</string>
+    <string name="soc_qr_error">Přihlášení se nezdařilo. %1$s</string>
+    <string name="soc_qr_content_description">QR kód pro přihlášení k Discordu</string>
+    <string name="soc_qr_title">Přihlásit se přes Discord</string>
+    <string name="soc_qr_copied">Zkopírováno!</string>
+    <string name="soc_qr_tap_to_copy">Výběrem kódu jej zkopírujete</string>
+    <string name="soc_qr_instructions">Naskenujte kód fotoaparátem telefonu nebo přejděte na discord.com/activate a vložte jej.</string>
+    <string name="soc_qr_expires_in">Vyprší za %1$ds</string>
+    <string name="soc_qr_expired_short">Vypršelo</string>
+    <string name="soc_qr_cancel">Zrušit</string>
+    <string name="soc_qr_try_again">Zkusit znovu</string>
+</resources>

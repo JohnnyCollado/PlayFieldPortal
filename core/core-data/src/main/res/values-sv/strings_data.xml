@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Voice microphone sensitivity (Discord) -->
+    <string name="data_mic_sensitivity_auto">Auto</string>
+    <string name="data_mic_sensitivity_high">Hög</string>
+    <string name="data_mic_sensitivity_low">Låg · filtrerar klick</string>
+    <string name="data_mic_sensitivity_minimal">Minimal · bara högt tal</string>
+
+    <!-- Discord sign-in errors -->
+    <string name="data_discord_offline">Du är offline. Anslut till internet och försök igen.</string>
+    <string name="data_discord_unreachable">Det gick inte att nå Discord</string>
+    <string name="data_discord_signin_network_error">Nätverksfel vid inloggning</string>
+
+    <!-- Music and video players -->
+    <string name="data_music_no_player">Ingen musikspelare kunde öppna spåret. Installera en spelare eller välj en i Inställningar → Musik.</string>
+    <string name="data_video_no_player_open">Ingen videospelare kunde öppna filen. Installera en spelare eller välj en i Inställningar → Video.</string>
+    <string name="data_video_chooser_title">Spela upp video med …</string>
+    <string name="data_video_none_installed">Ingen videospelare är installerad.</string>
+    <string name="data_video_bad_location">Videons plats är ogiltig.</string>
+    <string name="data_video_unreachable">Videofilen hittades inte eller så förlorades åtkomsten. Prova att söka igenom biblioteket igen.</string>
+    <string name="data_video_player_cannot_open">%1$s kan inte öppna videon eller är inte installerad.</string>
+    <string name="data_video_that_player">Den spelaren</string>
+    <string name="data_video_none_installed_for_file">Ingen videospelare är installerad som kan öppna filen.</string>
+
+    <!-- Lock screen image -->
+    <string name="data_lockscreen_unreadable">Bilden kunde inte läsas</string>
+    <string name="data_lockscreen_rejected">Enheten godtog inte en bild för låsskärmen</string>
+
+    <!-- PSP theme import (.ptf) -->
+    <string name="data_ptf_unreadable">Det gick inte att läsa filen (eller så är den för stor)</string>
+    <string name="data_ptf_not_ptf">Inte en PSP-temafil (.ptf)</string>
+    <string name="data_ptf_unparseable">Temafilen kunde inte tolkas</string>
+    <string name="data_ptf_wallpaper_missing">Temat har ingen bakgrundsbild</string>
+    <string name="data_ptf_wallpaper_unsupported">Temat komprimerar sin bakgrund med en metod som inte stöds</string>
+    <string name="data_ptf_wallpaper_damaged">Temats bakgrund är skadad och kunde inte avkodas</string>
+    <string name="data_ptf_save_failed">Det gick inte att spara temat</string>
+
+    <!-- Custom media names -->
+    <string name="data_custom_video">Egen video</string>
+    <string name="data_custom_sound">Eget ljud</string>
+
+    <!-- Controllers -->
+    <string name="data_controller_fallback_name">Handkontroll</string>
+</resources>

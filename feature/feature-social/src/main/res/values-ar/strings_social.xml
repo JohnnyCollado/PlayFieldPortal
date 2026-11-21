@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- QR login screen -->
+    <string name="soc_qr_preparing">جارٍ تجهيز تسجيل الدخول…</string>
+    <string name="soc_qr_connected">متصل</string>
+    <string name="soc_qr_expired">انتهت صلاحية الرمز.</string>
+    <string name="soc_qr_declined">تم رفض تسجيل الدخول.</string>
+    <string name="soc_qr_error">تعذّر تسجيل الدخول. %1$s</string>
+    <string name="soc_qr_content_description">رمز QR لتسجيل الدخول إلى Discord</string>
+    <string name="soc_qr_title">تسجيل الدخول باستخدام Discord</string>
+    <string name="soc_qr_copied">تم النسخ!</string>
+    <string name="soc_qr_tap_to_copy">حدّد الرمز لنسخه</string>
+    <string name="soc_qr_instructions">امسح الرمز بكاميرا هاتفك، أو انتقل إلى discord.com/activate والصق الرمز.</string>
+    <string name="soc_qr_expires_in">تنتهي الصلاحية خلال %1$d ث</string>
+    <string name="soc_qr_expired_short">منتهي الصلاحية</string>
+    <string name="soc_qr_cancel">إلغاء</string>
+    <string name="soc_qr_try_again">إعادة المحاولة</string>
+</resources>

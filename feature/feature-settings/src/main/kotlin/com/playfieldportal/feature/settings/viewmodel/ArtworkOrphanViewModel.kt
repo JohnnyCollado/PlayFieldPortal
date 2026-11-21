@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import com.playfieldportal.feature.settings.R
+import com.playfieldportal.core.domain.text.UiText
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.database.entity.ArtworkOrphanFileEntity
@@ -39,7 +41,7 @@ data class ArtworkOrphanUiState(
      */
     val results: List<OrphanCandidateUi>? = null,
     val searching: Boolean = false,
-    val notice: String? = null,
+    val notice: UiText? = null,
 )
 
 /**
@@ -128,8 +130,8 @@ class ArtworkOrphanViewModel @Inject constructor(
                 selected = null,
                 query = "",
                 results = null,
-                notice = if (ok) "Artwork linked — it will stay linked through future scans."
-                else "Couldn't link that file — run Scan & Relink and try again.",
+                notice = if (ok) UiText.res(R.string.sets_orphan_linked)
+                else UiText.res(R.string.sets_orphan_link_failed),
             )
         }
     }

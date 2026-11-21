@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
+import com.playfieldportal.core.ui.components.PfpBusyRing
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -35,6 +37,7 @@ import com.playfieldportal.feature.artwork.match.MatchProvider
 import com.playfieldportal.feature.artwork.match.MetadataApplyPolicy
 import com.playfieldportal.feature.artwork.match.MetadataField
 import com.playfieldportal.feature.artwork.match.MetadataFieldRow
+import com.playfieldportal.feature.xmb.R
 import kotlin.math.roundToInt
 
 // ── Current-vs-Incoming metadata preview (C16 task 3.2) ──────────────────────
@@ -76,14 +79,14 @@ fun MetadataPreviewPanel(
                 .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("Update Metadata", color = themedText(TextPrimary), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.det_meta_title), color = themedText(TextPrimary), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Text(
                 when {
-                    ui.nothingFound -> "Select or B  Close"
+                    ui.nothingFound -> stringResource(R.string.det_meta_hint_nothing)
                     ui.isManual ->
-                        "Up/Down  Rows  •  Left/Right  Policy  •  L1/R1  Source  •  Select  Edit / Apply  •  B  Cancel"
+                        stringResource(R.string.det_meta_hint_manual)
                     else ->
-                        "Up/Down  Rows  •  Left/Right  Policy  •  L1/R1  Source  •  Select  Toggle / Apply  •  B  Cancel"
+                        stringResource(R.string.det_meta_hint_rows)
                 },
                 color = themedSubText(TextMuted.copy(alpha = 0.5f)),
                 fontSize = 10.sp,
@@ -91,7 +94,7 @@ fun MetadataPreviewPanel(
 
             if (ui.loading) {
                 Box(Modifier.fillMaxWidth().padding(vertical = 28.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = focusEdge)
+                    PfpBusyRing(color = focusEdge)
                 }
                 return@Column
             }
@@ -102,13 +105,13 @@ fun MetadataPreviewPanel(
             // gets the Manual column below.)
             if (ui.nothingFound) {
                 Text(
-                    if (ui.failed) "The metadata sources didn't answer." else "This game couldn't be read.",
+                    if (ui.failed) stringResource(R.string.det_meta_failed_title) else stringResource(R.string.det_meta_unreadable_title),
                     color = themedText(TextPrimary), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(top = 8.dp),
                 )
                 Text(
-                    if (ui.failed) "Nothing was changed. Check the connection and try again."
-                    else "Nothing was changed. Try reopening this game.",
+                    if (ui.failed) stringResource(R.string.det_meta_failed_detail)
+                    else stringResource(R.string.det_meta_unreadable_detail),
                     color = themedSubText(TextMuted), fontSize = 12.sp,
                 )
                 Box(
@@ -122,7 +125,7 @@ fun MetadataPreviewPanel(
                         .padding(vertical = 12.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("Close", color = themedText(TextPrimary), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.det_close), color = themedText(TextPrimary), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 }
                 return@Column
             }
@@ -131,7 +134,7 @@ fun MetadataPreviewPanel(
             // below is exactly what that game needs.
             if (ui.noProviderFound) {
                 Text(
-                    "No source recognised this game — fill the fields you want by hand.",
+                    stringResource(R.string.det_meta_no_source),
                     color = themedSubText(TextMuted),
                     fontSize = 11.sp,
                 )
@@ -160,7 +163,7 @@ fun MetadataPreviewPanel(
             ChipRow {
                 MetadataApplyPolicy.entries.forEach { policy ->
                     Chip(
-                        label = policy.label,
+                        label = stringResource(policy.labelRes),
                         selected = policy == ui.policy,
                         focusFill = focusFill,
                         focusEdge = focusEdge,
@@ -170,10 +173,10 @@ fun MetadataPreviewPanel(
             }
 
             Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp)) {
-                Text("Field", color = themedSubText(TextMuted), fontSize = 11.sp, modifier = Modifier.width(FieldColumn))
-                Text("Current", color = themedSubText(TextMuted), fontSize = 11.sp, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.det_meta_col_field), color = themedSubText(TextMuted), fontSize = 11.sp, modifier = Modifier.width(FieldColumn))
+                Text(stringResource(R.string.det_meta_col_current), color = themedSubText(TextMuted), fontSize = 11.sp, modifier = Modifier.weight(1f))
                 Text(
-                    if (ui.isManual) "Your value" else "Incoming",
+                    if (ui.isManual) stringResource(R.string.det_meta_col_yours) else stringResource(R.string.det_meta_col_incoming),
                     color = themedSubText(TextMuted), fontSize = 11.sp, modifier = Modifier.weight(1f),
                 )
             }
@@ -223,11 +226,10 @@ fun MetadataPreviewPanel(
 
             val applyFocused = ui.focus >= ui.applyIndex
             val applyLabel = when {
-                ui.applying -> "Applying…"
-                ui.policy == MetadataApplyPolicy.KEEP_CURRENT -> "Keep Current & Close"
-                willWrite.isEmpty() -> "Nothing to Change"
-                willWrite.size == 1 -> "Apply 1 Change"
-                else -> "Apply ${willWrite.size} Changes"
+                ui.applying -> stringResource(R.string.det_meta_applying)
+                ui.policy == MetadataApplyPolicy.KEEP_CURRENT -> stringResource(R.string.det_meta_keep_close)
+                willWrite.isEmpty() -> stringResource(R.string.det_meta_nothing_to_change)
+                else -> pluralStringResource(R.plurals.det_meta_apply_changes, willWrite.size, willWrite.size)
             }
             Box(
                 modifier = Modifier
@@ -312,7 +314,7 @@ private fun FieldRow(
                     modifier = Modifier.padding(end = 6.dp),
                 )
             }
-            Text(row.field.label, color = themedText(TextPrimary), fontSize = 12.sp, maxLines = 1)
+            Text(stringResource(row.field.labelRes), color = themedText(TextPrimary), fontSize = 12.sp, maxLines = 1)
         }
         Text(
             formatMetadataValue(row.current) ?: "—",
@@ -374,7 +376,7 @@ private fun ManualRow(
                     modifier = Modifier.padding(end = 6.dp),
                 )
             }
-            Text(row.field.label, color = themedText(TextPrimary), fontSize = 12.sp, maxLines = 1)
+            Text(stringResource(row.field.labelRes), color = themedText(TextPrimary), fontSize = 12.sp, maxLines = 1)
         }
         Text(
             formatMetadataValue(row.current) ?: "—",
@@ -386,7 +388,7 @@ private fun ManualRow(
         )
         Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                row.text.ifBlank { "Tap to type" },
+                row.text.ifBlank { stringResource(R.string.det_meta_tap_to_type) },
                 color = when {
                     writes -> ChangeGreen
                     row.text.isBlank() -> themedSubText(TextMuted.copy(alpha = 0.5f))

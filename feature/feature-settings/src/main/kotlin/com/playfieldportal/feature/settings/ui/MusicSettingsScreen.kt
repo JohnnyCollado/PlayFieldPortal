@@ -1,5 +1,8 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.settings.R
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.net.Uri
@@ -85,20 +88,20 @@ fun MusicSettingsContent(
     val removeGate = rememberRootRemoveGate()
     val playerModal = rememberSettingsModal(
         removeGate.spec ?: if (!state.showPlayerPicker) null else playerPickerSpec(
-            title = "Default Music Player",
+            title = stringResource(R.string.sets_music_player_title),
             options = listOf(
-                PlayerOption(MusicIntentResolver.BUILTIN, "Play Field Portal"),
-                PlayerOption(null, "System Default"),
+                PlayerOption(MusicIntentResolver.BUILTIN, stringResource(R.string.sets_player_builtin)),
+                PlayerOption(null, stringResource(R.string.sets_player_system_default)),
             ) + state.availablePlayers.map { PlayerOption(it.packageName, it.label) },
             current = state.defaultPlayer,
-            emptyNote = if (state.availablePlayers.isEmpty()) "No other music players found on this device." else null,
+            emptyNote = if (state.availablePlayers.isEmpty()) stringResource(R.string.sets_music_player_none) else null,
             onChoose = onChoosePlayer,
             onClose = onDismissPlayerPicker,
         ),
     )
     SettingsScaffold(
-        title    = "Settings",
-        subtitle = "Music",
+        title    = stringResource(R.string.settings_title),
+        subtitle = stringResource(R.string.sets_music_title),
         onBack   = onBack,
         modifier = modifier,
         modalOpen = playerModal.open,
@@ -112,22 +115,23 @@ fun MusicSettingsContent(
                 .verticalScroll(scrollState),
         ) {
             RootAccessSection(
-                groupTitle  = "Root folders",
+                groupTitle  = stringResource(R.string.sets_roots_group),
                 rootKind    = "Music",
+                rootKindRes = R.string.sets_root_kind_music,
                 roots       = state.roots,
-                addLabel    = "Add music root",
-                addSublabel = "Grant a root folder (e.g. /Music) — add several to span locations",
+                addLabel    = stringResource(R.string.sets_music_add_root),
+                addSublabel = stringResource(R.string.sets_music_add_root_help),
                 onAddRoot   = onAddRoot,
                 onRelinkRoot = onRelinkRoot,
                 onRemoveRoot = { row -> removeGate.request(row.name) { onRemoveRoot(row) } },
             )
 
             SettingsRow(
-                label    = "Rescan music library",
+                label    = stringResource(R.string.sets_music_rescan),
                 sublabel = when {
-                    state.scanning            -> "Scanning…"
-                    state.scanMessage != null -> state.scanMessage
-                    else                      -> "Update the libraries from every root folder"
+                    state.scanning            -> stringResource(R.string.sets_scanning)
+                    state.scanMessage != null -> state.scanMessage.asString()
+                    else                      -> stringResource(R.string.sets_rescan_help)
                 },
                 focusKey = "music_rescan",
                 onClick  = if (state.scanning || !state.hasRoots) null else onRescan,
@@ -141,12 +145,12 @@ fun MusicSettingsContent(
                 )
             }
 
-            SettingsGroup("Playback")
+            SettingsGroup(stringResource(R.string.sets_playback_group))
 
             SettingsValueRow(
-                label    = "Default music player",
-                sublabel = "App that opens music tracks",
-                value    = state.defaultPlayerLabel,
+                label    = stringResource(R.string.sets_music_player),
+                sublabel = stringResource(R.string.sets_music_player_help),
+                value    = state.defaultPlayerLabel.asString(),
                 focusKey = "music_default_player",
                 onClick  = onOpenPlayerPicker,
             )

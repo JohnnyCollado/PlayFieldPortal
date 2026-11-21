@@ -39,7 +39,14 @@ object IconEditorLayout {
     private class Run(val label: String, val columnKeys: List<String>, val keys: List<String>)
 
     private val RUNS = listOf(
-        Run("Settings", listOf("catbar_settings"), listOf("item_settings")),
+        Run(
+            "Settings", listOf("catbar_settings"),
+            listOf(
+                "item_settings", "item_settings_section_library", "item_settings_section_emulators",
+                "item_settings_section_interface", "item_settings_section_achievements",
+                "item_settings_section_media", "item_settings_section_system",
+            ),
+        ),
         Run(
             "Photo", listOf("catbar_photos"),
             listOf("item_camera", "item_photo_albums", "item_photo_folder", "item_photo_file", "item_photo_apps", "item_memcard_photos"),

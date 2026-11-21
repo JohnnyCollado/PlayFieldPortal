@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared button and prompt labels -->
+    <string name="core_cancel">取消</string>
+    <string name="core_ok">确定</string>
+    <string name="core_save">保存</string>
+    <string name="core_apply">应用</string>
+    <string name="core_select">选择</string>
+    <string name="core_close">关闭</string>
+    <string name="core_back">返回</string>
+
+    <!-- Modals (text entry) -->
+    <string name="core_modal_name_label">名称</string>
+    <string name="core_modal_counter">%1$d / %2$d</string>
+
+    <!-- Convert-to-achievement-tracking picker -->
+    <string name="core_steam_convert_title">安装成就追踪？</string>
+    <string name="core_steam_convert_selected_count">%1$d / %2$d</string>
+    <string name="core_steam_convert_found_count">找到 %1$d 个</string>
+    <string name="core_steam_convert_hints">"上/下  行  •  Select  切换  •  △  全选/全不选  •  Start  安装  •  B  取消"</string>
+    <string name="core_steam_convert_loading">正在从 Steam 读取每个游戏的成就列表…</string>
+    <string name="core_steam_convert_install">安装（%1$d）</string>
+    <string name="core_steam_convert_none">全不选</string>
+    <string name="core_steam_convert_all">全选</string>
+    <string name="core_steam_convert_skip_sync">跳过并同步</string>
+    <string name="core_steam_convert_write_notice">PFP 会在每个已勾选游戏的文件夹中写入 achievements.json、stats.json 和 configs.user.ini，创建 saves 文件夹，并将 steam_api64.dll 重命名为 steam_api64_o.dll，以便内置模拟器通过它加载。</string>
+    <string name="core_steam_convert_backup_warning">转换前，请先备份你已玩过的游戏的存档文件。模拟器将从新的存档位置读取。</string>
+
+    <!-- Shiba player card -->
+    <string name="core_shiba_xp">%1$s XP</string>
+    <string name="core_shiba_progress_next_bone">%1$s / %2$s，距下一根骨头</string>
+    <string name="core_shiba_progress_next_level">%1$s / %2$s，距 %3$d 级</string>
+    <string name="core_shiba_level_abbrev">LV</string>
+
+    <!-- Colour picker -->
+    <string name="core_hsv_hex">十六进制</string>
+    <string name="core_hsv_hue">色相</string>
+    <string name="core_hsv_saturation">饱和度</string>
+    <string name="core_hsv_brightness">亮度</string>
+    <string name="core_hsv_hint_move">移动</string>
+    <string name="core_hsv_hint_type_hex">输入色值</string>
+    <string name="core_hsv_hint_adjust">调整</string>
+    <string name="core_hsv_sample_text">示例文本</string>
+    <string name="core_color_default">默认</string>
+    <string name="core_color_pink">粉色</string>
+    <string name="core_color_gold">金色</string>
+    <string name="core_color_aqua">水绿色</string>
+    <string name="core_color_sky_blue">天蓝色</string>
+    <string name="core_color_green">绿色</string>
+    <string name="core_color_coral">珊瑚色</string>
+    <string name="core_color_slate">石板灰</string>
+    <string name="core_color_custom">自定义</string>
+
+    <!-- Notification detail sheets -->
+    <string name="core_sheet_copied">已复制</string>
+    <string name="core_sheet_copy_details">复制详情</string>
+    <string name="core_sheet_copy_list">复制列表</string>
+    <string name="core_sheet_filter">筛选</string>
+    <string name="core_sheet_what_happened">发生了什么</string>
+    <string name="core_sheet_diagnostic_open">"▾  诊断详情"</string>
+    <string name="core_sheet_diagnostic_closed">"▸  诊断详情"</string>
+    <string name="core_sheet_diagnostic_heading">诊断</string>
+    <string name="core_sheet_summary_chip">%2$s %1$d</string>
+    <string name="core_sheet_filter_all">全部</string>
+    <string name="core_sheet_more">另外 %1$d 项</string>
+    <string name="core_sheet_what_you_can_do">你可以这样做</string>
+
+    <!-- On-screen keyboard -->
+    <string name="core_vk_prompt_type">输入</string>
+    <string name="core_vk_prompt_delete">删除</string>
+    <string name="core_vk_prompt_cursor">光标</string>
+    <string name="core_vk_prompt_caps">大写</string>
+    <string name="core_vk_key_space">空格</string>
+    <string name="core_vk_key_shift">Shift</string>
+    <string name="core_vk_key_backspace">退格</string>
+    <string name="core_vk_key_done">完成</string>
+    <string name="core_vk_shift_off">关闭</string>
+    <string name="core_vk_shift_once">下一个字母大写</string>
+    <string name="core_vk_shift_held">按住时开启</string>
+    <string name="core_vk_shift_locked">大写锁定已开启</string>
+
+    <!-- Background tasks -->
+    <string name="core_task_failed">任务失败</string>
+    <string name="core_task_done">完成</string>
+
+    <!-- Detail screens -->
+    <string name="core_detail_favorite_badge">收藏夹</string>
+    <string name="core_detail_video_badge">视频</string>
+    <string name="core_detail_confirm_collapse">确认以收起</string>
+    <string name="core_detail_confirm_read_more">确认以展开全文</string>
+
+    <!-- Rotate-to-landscape prompt -->
+    <string name="core_rotate_title">请旋转至横屏</string>
+    <string name="core_rotate_message">PlayField Portal 以横屏运行。请将设备横置以继续。</string>
+    <string name="core_rotate_switch_launcher">切换启动器</string>
+</resources>

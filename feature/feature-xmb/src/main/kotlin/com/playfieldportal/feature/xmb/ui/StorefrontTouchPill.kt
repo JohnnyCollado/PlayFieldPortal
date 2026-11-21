@@ -26,6 +26,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.theme.StorefrontColors
+import androidx.compose.ui.res.stringResource
+import com.playfieldportal.feature.xmb.R
 
 // ── The pickers' header buttons, on the helper-button standard (ARCHITECTURE.md ▸ Conventions) ──
 //
@@ -78,7 +80,7 @@ internal fun StorefrontTouchPill(
 @Composable
 internal fun StorefrontSearchPill(onClick: () -> Unit, colors: StorefrontColors) {
     StorefrontTouchPill(
-        label = "Search",
+        label = stringResource(R.string.xmbu_common_search),
         leadingGlyph = "",
         onClick = onClick,
         colors = colors,

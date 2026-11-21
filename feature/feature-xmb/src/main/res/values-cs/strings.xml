@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="xmb_icons_reset_removed_themed">Výběr odstraněn — nyní se zobrazuje ikona použitého motivu.</string>
+    <string name="xmb_icons_reset_themed_slot">Není co obnovit — tato ikona pochází z použitého motivu.</string>
+    <string name="xmb_icons_reset_builtin_slot">Není co obnovit — tento slot už používá vestavěnou ikonu.</string>
+    <string name="xmb_icons_reset_all_none">Není co obnovit — nevybrali jste žádné ikony.</string>
+    <string name="xmb_icons_reset_all_themed">Výběry vymazány — nyní se zobrazují ikony použitého motivu.</string>
+</resources>

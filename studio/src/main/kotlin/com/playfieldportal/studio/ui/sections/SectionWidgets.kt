@@ -46,7 +46,7 @@ import com.playfieldportal.studio.ui.PRESET_ACCENTS
 object DeviceHints {
     const val ADJUST_LAYOUT = "Settings › Interface › Display › Adjust XMB Layout"
     const val SOUND = "Settings › Interface › Sound"
-    const val BOOT = "Settings › Interface › Display › Show Boot Sequence / GameBoot"
+    const val BOOT = "Settings › Interface › Display › Show Boot Sequence / Game Boot"
     const val WAVE_FREEZE = "Battery Saver and Thermal Throttle (Settings › Interface › Display) freeze the animated wave on the device."
 }
 

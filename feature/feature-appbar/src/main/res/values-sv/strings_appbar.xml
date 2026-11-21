@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App context menu: group headings -->
+    <string name="apps_menu_group_library">Bibliotek</string>
+    <string name="apps_menu_group_arrange">Ordna</string>
+    <string name="apps_menu_group_manage">Hantera</string>
+    <!-- App context menu: rows -->
+    <string name="apps_menu_launch">Starta</string>
+    <string name="apps_menu_edit_details">Redigera appinformation</string>
+    <string name="apps_menu_mark_game">Markera som spel</string>
+    <string name="apps_menu_unmark_game">Avmarkera som spel</string>
+    <string name="apps_menu_favorite">Favorit</string>
+    <string name="apps_menu_add_to_card">Lägg till på kort</string>
+    <string name="apps_menu_pin_to_top">Fäst överst</string>
+    <string name="apps_menu_move">Flytta</string>
+    <string name="apps_menu_move_to_category">Flytta till kategori</string>
+    <string name="apps_menu_add_to_category">Lägg till i kategori</string>
+    <string name="apps_menu_remove_from_category">Ta bort från kategori</string>
+    <string name="apps_menu_rename_shortcut">Byt namn på genväg</string>
+    <string name="apps_menu_hide_from">Dölj från %1$s</string>
+    <string name="apps_menu_hide_everywhere">Dölj överallt</string>
+    <string name="apps_menu_app_info">Appinfo</string>
+    <string name="apps_menu_uninstall">Avinstallera</string>
+    <string name="apps_value_on">På</string>
+    <string name="apps_value_off">Av</string>
+    <!-- Uninstall confirmation -->
+    <string name="apps_uninstall_title">Avinstallera %1$s?</string>
+    <string name="apps_uninstall_message">%1$s tas bort från enheten. Android ber dig bekräfta.</string>
+    <!-- Category tabs and header title -->
+    <string name="apps_filter_all">Alla appar</string>
+    <string name="apps_filter_games">Spel</string>
+    <string name="apps_filter_emulators">Emulatorer</string>
+    <string name="apps_filter_recent">Senast använda</string>
+    <!-- Header search -->
+    <string name="apps_search_placeholder">Sök …</string>
+    <string name="apps_search_button">Sök</string>
+    <!-- Empty states -->
+    <string name="apps_empty_no_match">Inga appar matchar sökningen</string>
+    <string name="apps_empty_no_games">Inga spel hittades</string>
+    <string name="apps_empty_no_emulators">Inga emulatorer är installerade</string>
+    <string name="apps_empty_usage_access">Åtkomst till användningsdata krävs</string>
+    <string name="apps_empty_no_recent">Inga nyligen använda appar ännu</string>
+    <string name="apps_empty_no_apps">Inga appar är installerade</string>
+    <string name="apps_hint_try_search">Prova ett annat sökord</string>
+    <string name="apps_hint_games">Appar som är markerade som spel i Play Butik visas här</string>
+    <string name="apps_hint_emulators">Installera RetroArch, PPSSPP eller en annan emulator</string>
+    <string name="apps_hint_usage_access">Ge åtkomst så att PFP kan sortera appar efter senaste användning</string>
+    <string name="apps_open_usage_access">Öppna Användningsåtkomst</string>
+    <!-- Controller hint bar -->
+    <string name="apps_hint_prev">Föreg.</string>
+    <string name="apps_hint_next">Nästa</string>
+    <string name="apps_hint_back">Tillbaka</string>
+    <string name="apps_hint_launch">Starta</string>
+    <string name="apps_hint_options">Alternativ</string>
+    <string name="apps_hint_search">Sök</string>
+    <string name="apps_drawer_title">Applåda</string>
+    <string name="apps_drawer_subtitle">Appar på den här enheten</string>
+</resources>

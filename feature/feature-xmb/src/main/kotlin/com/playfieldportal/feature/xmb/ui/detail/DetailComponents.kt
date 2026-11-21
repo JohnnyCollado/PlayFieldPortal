@@ -8,13 +8,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
 
@@ -61,4 +67,31 @@ internal fun DetailBreadcrumb(
             }
         }
     }
+}
+
+/**
+ * One helper-footer hint whose label is still a [UiText]: the pages build their footers outside a
+ * composable, so the label is resolved only when the footer is drawn ([toPromptItems]).
+ */
+internal data class DetailPrompt(val actions: List<GamepadAction>, val label: UiText) {
+    constructor(action: GamepadAction, label: UiText) : this(listOf(action), label)
+}
+
+/** The footer's items in the current language. */
+@Composable
+@ReadOnlyComposable
+internal fun List<DetailPrompt>.toPromptItems(): List<ControllerPromptItem> {
+    val resources = detailResources()
+    return map { ControllerPromptItem(it.actions, it.label.resolve(resources)) }
+}
+
+/**
+ * The resources a non-composable spec builder resolves its text with. Reading the configuration
+ * makes the caller recompose on a language change, as `stringResource` does.
+ */
+@Composable
+@ReadOnlyComposable
+internal fun detailResources(): android.content.res.Resources {
+    LocalConfiguration.current
+    return LocalContext.current.resources
 }

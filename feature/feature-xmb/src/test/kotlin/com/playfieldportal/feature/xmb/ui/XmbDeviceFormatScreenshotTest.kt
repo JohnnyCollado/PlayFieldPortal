@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui
 
+import com.playfieldportal.core.domain.text.UiText
 import android.app.Application
 import android.graphics.Bitmap
 import androidx.activity.ComponentActivity
@@ -159,7 +160,7 @@ class XmbDeviceFormatScreenshotTest {
     )
 
     private val appPickerState = AppPickerState(
-        title = "Add Apps",
+        title = UiText.raw("Add Apps"),
         target = AppPickerTarget.AndroidGames(platformId = "android"),
         apps = (1..28).map { i ->
             AppPickerEntry(

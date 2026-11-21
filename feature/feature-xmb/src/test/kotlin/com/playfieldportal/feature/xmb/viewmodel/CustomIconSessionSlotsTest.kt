@@ -103,14 +103,14 @@ class CustomIconSessionSlotsTest {
     fun `down jumps to the next column's first slot`() {
         val s = session(IconEditorTab.ITEMS, slotIndex = 2) // inside Game (4 slots)
         assertEquals(4, s.columnJump(+1)) // Settings starts at 4
-        assertEquals(5, s.copy(slotIndex = 4).columnJump(+1)) // Music after one Settings slot
+        assertEquals(11, s.copy(slotIndex = 4).columnJump(+1)) // Music after Settings' seven slots
     }
 
     @Test
     fun `up goes to the start of this column, then the previous one`() {
         val s = session(IconEditorTab.ITEMS)
-        assertEquals(5, s.copy(slotIndex = 7).columnJump(-1)) // mid-Music back to Music's start
-        assertEquals(4, s.copy(slotIndex = 5).columnJump(-1)) // Music's start back to Settings
+        assertEquals(11, s.copy(slotIndex = 13).columnJump(-1)) // mid-Music back to Music's start
+        assertEquals(4, s.copy(slotIndex = 11).columnJump(-1)) // Music's start back to Settings
     }
 
     @Test

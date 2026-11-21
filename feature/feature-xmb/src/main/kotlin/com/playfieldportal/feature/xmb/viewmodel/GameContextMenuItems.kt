@@ -2,6 +2,8 @@ package com.playfieldportal.feature.xmb.viewmodel
 
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.xmb.R
 
 /**
  * The XMB game row's context menu, from the state it depends on. Kept out of [XMBViewModel] so
@@ -32,58 +34,58 @@ internal fun gameContextMenuItems(
     currentCategory: Category?,
     categories: List<Category>,
     inMissingBucket: Boolean,
-    hideLabel: String?,
+    hideLabel: UiText?,
     pinned: Boolean? = null,
     canMove: Boolean = false,
     umd: UmdMenuState = UmdMenuState.NONE,
     canSelectMultiple: Boolean = false,
-    emulatorLabel: String = "Default",
-    iconDisplayLabel: String? = null,
-    launcherLabel: String? = null,
+    emulatorLabel: UiText = UiText.res(R.string.xmbm_default),
+    iconDisplayLabel: UiText? = null,
+    launcherLabel: UiText? = null,
 ): List<XMBContextMenuItem> = buildList {
-    group("Play") {
+    group(UiText.res(R.string.xmbm_group_play)) {
         // The explicit path to the edit surface, essential when direct launch makes confirm skip
         // straight into the game. Launch/title/note editing lives in Game Detail; the one-tap
         // actions below (favorites, Fetch Artwork, emulator) don't need the full screen.
-        add(XMBContextMenuItem("game_details", "View Game Details"))
+        add(XMBContextMenuItem("game_details", UiText.res(R.string.xmbm_game_view_details)))
         // Multi-disc sets: pick which disc is preferred — the only way to reach a non-primary
         // disc when direct launch skips Game Detail's picker. It only records the choice; the
         // launch stays an explicit confirm on the row.
-        if (discCount > 1) add(XMBContextMenuItem("choose_disc", "Choose Disc", opensMenu = true))
+        if (discCount > 1) add(XMBContextMenuItem("choose_disc", UiText.res(R.string.xmbm_game_choose_disc), opensMenu = true))
         // Android games can never have achievements — no Shiba Coins entry for them. Neither for
         // an app_shortcut row (an app demoted by "Unmark as Game"): it is a games-table entry but
         // still an app, so isRealGame is what separates them from a package-backed PC game.
         if (item.isRealGame && item.platformId != XMBViewModel.ANDROID_PLATFORM_ID) {
-            add(XMBContextMenuItem("view_shiba_coins", "View Shiba Coins"))
+            add(XMBContextMenuItem("view_shiba_coins", UiText.res(R.string.xmbm_game_view_shiba_coins)))
         }
         // Emulator choice only applies to ROM-backed games; package-backed gaming apps
         // launch via their package/shortcut handle.
         if (!item.isAndroidApp) {
-            add(XMBContextMenuItem("change_emulator", "Change Emulator", value = emulatorLabel, opensMenu = true))
+            add(XMBContextMenuItem("change_emulator", UiText.res(R.string.xmbm_game_change_emulator), value = emulatorLabel, opensMenu = true))
         }
         // The column's UMD slot: put this game in it, or take it out.
         addAll(umdMenuItems(umd))
     }
 
-    group("Library") {
+    group(UiText.res(R.string.xmbm_group_library)) {
         // No "Edit App Details" here: package-backed GAME entries (PC shortcuts, Android
         // gaming apps) are games — art/title/note editing lives in Game Detail and the
         // game rows below, never the slim standard-app editor.
         // One name and one id whichever way it is set; the value says the state.
         add(XMBContextMenuItem(
             id     = "favorite_toggle",
-            label  = "Favorite",
-            value  = if (item.isFavorite) "On" else "Off",
+            label  = UiText.res(R.string.xmbm_favorite),
+            value  = onOff(item.isFavorite),
             silent = true,
         ))
-        add(XMBContextMenuItem("add_to_collection", "Add to Card", opensMenu = true))
+        add(XMBContextMenuItem("add_to_collection", UiText.res(R.string.xmbm_game_add_to_card), opensMenu = true))
         // Only offer removal when viewing the game from inside a custom memory card.
-        if (inCollection) add(XMBContextMenuItem("remove_from_collection", "Remove from Card"))
+        if (inCollection) add(XMBContextMenuItem("remove_from_collection", UiText.res(R.string.xmbm_game_remove_from_card)))
         // Mark several games, then add them all to a custom memory card in one go.
-        if (canSelectMultiple) add(XMBContextMenuItem("select_multiple", "Select Multiple"))
+        if (canSelectMultiple) add(XMBContextMenuItem("select_multiple", UiText.res(R.string.xmbm_game_select_multiple)))
     }
 
-    group("Arrange") {
+    group(UiText.res(R.string.xmbm_group_arrange)) {
         // Where the row sits in the list it is shown in.
         addAll(arrangeMenuItems(pinned, canMove))
 
@@ -96,39 +98,39 @@ internal fun gameContextMenuItems(
                 it.isGamingCategory && it.id != BuiltInCategory.GAMES && it.id != currentCategory.id
             }
             if (currentCategory.id == BuiltInCategory.GAMES) {
-                if (hasOtherCustomCategory) add(XMBContextMenuItem("add_category", "Add to Category", opensMenu = true))
+                if (hasOtherCustomCategory) add(XMBContextMenuItem("add_category", UiText.res(R.string.xmbm_game_add_to_category), opensMenu = true))
             } else {
-                if (hasOtherCustomCategory) add(XMBContextMenuItem("move_category", "Move to Category", opensMenu = true))
-                add(XMBContextMenuItem("remove_category", "Remove from Category"))
+                if (hasOtherCustomCategory) add(XMBContextMenuItem("move_category", UiText.res(R.string.xmbm_game_move_to_category), opensMenu = true))
+                add(XMBContextMenuItem("remove_category", UiText.res(R.string.xmbm_game_remove_from_category)))
             }
         }
     }
 
-    group("Customize") {
-        add(XMBContextMenuItem("icon_display", "Icon Display", value = iconDisplayLabel, opensMenu = true))
+    group(UiText.res(R.string.xmbm_group_customize)) {
+        add(XMBContextMenuItem("icon_display", UiText.res(R.string.xmbm_icon_display), value = iconDisplayLabel, opensMenu = true))
         // Re-scrape this game's artwork in the background. Not for missing-ROM entries: with the
         // file gone there is no hash to match on, only the title.
-        if (!inMissingBucket) add(XMBContextMenuItem("fetch_artwork", "Fetch Artwork"))
+        if (!inMissingBucket) add(XMBContextMenuItem("fetch_artwork", UiText.res(R.string.xmbm_game_fetch_artwork)))
     }
 
     // Emulated PC (Local Steam) games can have their Goldberg achievement data installed on
     // demand — gated per-game at dispatch on the installer toggle being on.
     if (item.platformId == XMBViewModel.WINDOWS_PLATFORM_ID) {
-        group("PC") {
+        group(UiText.res(R.string.xmbm_group_pc)) {
             // Which installed PC launcher runs the game; its own unless the user picked another.
-            launcherLabel?.let { add(XMBContextMenuItem("launch_with", "Launch With", value = it, opensMenu = true)) }
-            add(XMBContextMenuItem("install_goldberg", "Install Goldberg Achievements"))
+            launcherLabel?.let { add(XMBContextMenuItem("launch_with", UiText.res(R.string.xmbm_game_launch_with), value = it, opensMenu = true)) }
+            add(XMBContextMenuItem("install_goldberg", UiText.res(R.string.xmbm_game_install_goldberg)))
             // Writes this game's .pfpgame file so a fresh install can bring it back with its
             // artwork (C18 task X.7). Offered on every PC game; the exporter explains a refusal.
-            add(XMBContextMenuItem("export_game", "Export Game"))
+            add(XMBContextMenuItem("export_game", UiText.res(R.string.xmbm_game_export)))
         }
     }
 
-    group("Manage") {
-        add(XMBContextMenuItem("manage_collections", "Manage Custom Cards"))
-        add(XMBContextMenuItem("file_location", "Show File Location"))
+    group(UiText.res(R.string.xmbm_group_manage)) {
+        add(XMBContextMenuItem("manage_collections", UiText.res(R.string.xmbm_manage_custom_cards)))
+        add(XMBContextMenuItem("file_location", UiText.res(R.string.xmbm_game_file_location)))
         // Per-location hide for the spot this game is shown in (recoverable in Hidden Items).
-        hideLabel?.let { add(XMBContextMenuItem("hide_here", "Hide from $it")) }
+        hideLabel?.let { add(XMBContextMenuItem("hide_here", UiText.res(R.string.xmbm_game_hide_from, it))) }
         // Android-library apps are user-curated, so let the user remove one like any game,
         // or demote it to a standard app without losing its art/collections.
         if (inMissingBucket) {
@@ -137,21 +139,21 @@ internal fun gameContextMenuItems(
             // file untouched), but labelled for what it means here: this bucket is the entry's
             // last visible trace, so removing it ends the line rather than dropping it from one
             // view. Everything else is recoverable by putting the file back.
-            add(XMBContextMenuItem("remove_missing", "Remove permanently", isDestructive = true))
+            add(XMBContextMenuItem("remove_missing", UiText.res(R.string.xmbm_game_remove_permanently), isDestructive = true))
         } else if (item.isAndroidApp && !item.isRealGame) {
             // An app-style row — a standard app, or one demoted by "Unmark as Game" onto the
             // app_shortcut sentinel — is not a game, so offer the way in. It has to be here and
             // not only in the app lists: a demoted row keeps its card memberships, so a custom
             // card is where it is most often seen.
-            add(XMBContextMenuItem("mark_game", "Mark as Game"))
-            if (!inCollection) add(XMBContextMenuItem("remove_app_row", "Remove from Library", isDestructive = true))
+            add(XMBContextMenuItem("mark_game", UiText.res(R.string.xmbm_game_mark_as_game)))
+            if (!inCollection) add(XMBContextMenuItem("remove_app_row", UiText.res(R.string.xmbm_remove_from_library), isDestructive = true))
         } else if (item.platformId == XMBViewModel.ANDROID_PLATFORM_ID && item.packageName != null && !inCollection) {
-            add(XMBContextMenuItem("unmark_game", "Unmark as Game"))
-            add(XMBContextMenuItem("remove_app", "Remove from Library", isDestructive = true))
+            add(XMBContextMenuItem("unmark_game", UiText.res(R.string.xmbm_game_unmark_as_game)))
+            add(XMBContextMenuItem("remove_app", UiText.res(R.string.xmbm_remove_from_library), isDestructive = true))
         } else if (!inCollection) {
             // Every other game gets full delete too (confirmed first). Deleting a scanned ROM
             // entry leaves the file untouched — the next scan re-discovers it.
-            add(XMBContextMenuItem("remove_game", "Remove from Library", isDestructive = true))
+            add(XMBContextMenuItem("remove_game", UiText.res(R.string.xmbm_remove_from_library), isDestructive = true))
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui
 
+import com.playfieldportal.core.ui.text.asString
 import android.animation.ValueAnimator
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedContent
@@ -18,6 +19,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,6 +38,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.ProvidedValue
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,6 +58,8 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -75,9 +81,13 @@ import com.playfieldportal.core.domain.model.NotificationKind
 import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.toNotificationAction
 import com.playfieldportal.core.ui.components.PfpChoiceOption
+import com.playfieldportal.core.ui.components.LocalPfpBackdropBlur
+import com.playfieldportal.core.ui.components.PfpBackdropBlurState
 import com.playfieldportal.core.ui.components.PfpModalSpec
 import com.playfieldportal.core.ui.components.XmbTouchButton
 import com.playfieldportal.core.ui.components.rememberPfpModalHost
+import com.playfieldportal.core.ui.detail.ProvidePfpBackdropBlur
+import com.playfieldportal.core.ui.detail.pfpBackdropBlurLayer
 import com.playfieldportal.core.ui.preview.DevicePreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.core.ui.theme.DefaultPFPColors
@@ -106,6 +116,8 @@ import com.playfieldportal.feature.xmb.viewmodel.XmbConfirm
 import com.playfieldportal.feature.xmb.viewmodel.xmbConfirmCopy
 import com.playfieldportal.feature.xmb.viewmodel.rowKey
 import com.playfieldportal.feature.xmb.viewmodel.viewCursorKey
+import android.content.res.Resources
+import com.playfieldportal.feature.xmb.R
 
 // Uniform canvas-scale baseline = the handheld reference height in dp (AYN Thor landscape,
 // 1080×1920 / 369dpi ⇒ 1080 / (369/160) ≈ 468dp). The scale resolves so the post-scale layout
@@ -192,7 +204,7 @@ fun XMBShellContainer(
                 addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             shareContext.startActivity(
-                android.content.Intent.createChooser(send, "Share theme")
+                android.content.Intent.createChooser(send, shareContext.getString(R.string.xmbu_share_theme))
                     .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
             )
         }
@@ -452,7 +464,7 @@ fun XMBShellContainer(
             rows = picker.rows.map {
                 com.playfieldportal.core.ui.achievement.LocalSteamConvertRow(
                     folderName = it.folderName,
-                    note = it.note,
+                    note = it.note.asString(),
                     selected = it.selected,
                     unselectable = it.unselectable,
                 )
@@ -645,6 +657,10 @@ fun XMBShell(
     // PFP's on-screen keyboard: provided to every field below, drawn over everything.
     virtualKeyboard: com.playfieldportal.core.ui.keyboard.VirtualKeyboardController? = null,
 ) {
+    // The backdrop blur behind prompts and the options panel (Android 12+). The shell's content is
+    // drawn in two blurred layers (XmbBlurredLayer) with the options panel between them; the panel
+    // and the shared modal host sit outside both, so they raise this state and are never blurred.
+    val blurState = remember { PfpBackdropBlurState() }
     PFPTheme(colors = uiState.themeColors) {
       // The applied theme's custom icon slots ride alongside the palette: every themeable
       // glyph (crossbar, item rows, status strip) checks this map before its built-in art.
@@ -655,11 +671,16 @@ fun XMBShell(
           // the deeply nested tile composables never need them plumbed through params.
           LocalIconDisplayMode provides uiState.iconDisplayMode,
           LocalIconDisplayModeByPlatform provides uiState.iconDisplayModeByPlatform,
-          LocalFocusedGameVideo provides uiState.focusedGameVideo,
+          // Display ▸ Motion: under Static the focused game's video snap does not play.
+          LocalFocusedGameVideo provides uiState.focusedGameVideo.takeIf {
+              com.playfieldportal.core.ui.motion.LocalImageMotion.current !=
+                  com.playfieldportal.core.domain.model.ImageMotion.STATIC
+          },
           // The icon-legibility treatment: PortalIcon + the theme-override glyph branches read
           // it ambiently, so every XMB silhouette glyph gets the matte from one provider.
           com.playfieldportal.core.ui.icons.LocalIconLegibility provides uiState.iconLegibility,
           com.playfieldportal.core.ui.keyboard.LocalVirtualKeyboard provides virtualKeyboard,
+          LocalPfpBackdropBlur provides blurState,
       ) {
         // XMB-ONLY canvas scale. On screens taller than the handheld baseline (tablets), the
         // XMB cross is magnified so the tuned layout fills the screen. The override scope ends
@@ -724,6 +745,9 @@ fun XMBShell(
                 respectBatterySaver  = uiState.respectBatterySaver,
                 thermalThrottleAware = uiState.thermalThrottleAware,
             )
+            // The blur is a GPU cost: it obeys the same budget (battery saver / thermal throttle, unless
+            // the user opted out in Display > Performance), and Settings / detail pages follow it.
+            SideEffect { blurState.enabled = !powerThrottled }
             // The icon-animation budget: focused-row GIFs play only when the wave isn't
             // throttled (battery saver / thermal — the same budget the background obeys) and
             // no blocking overlay covers the XMB (reuses hasBlockingOverlay rather than
@@ -741,7 +765,8 @@ fun XMBShell(
                 MotionWallpaperPolicy.Inputs(
                     hasMotion = uiState.motionWallpaperPath != null,
                     hasPoster = uiState.customWallpaperPath != null,
-                    style = uiState.waveStyle,
+                    // Display ▸ Motion: Static holds a motion wallpaper on its poster too.
+                    style = uiState.waveStyle.under(com.playfieldportal.core.ui.motion.LocalImageMotion.current),
                     covered = waveCovered || previewCovering,
                     throttled = powerThrottled,
                     appVisible = appVisible,
@@ -752,9 +777,11 @@ fun XMBShell(
             // "wallpaper set → frozen wave" clause is no longer needed as such).
             // Out of front (paused under a dialog-style app) freezes it as well: Compose only stops
             // the frame clock at ON_STOP, so a paused launcher would otherwise keep redrawing.
+            // Display ▸ Motion sits above the wave's own style: Static holds it still.
+            val allowedWaveStyle = uiState.waveStyle.under(com.playfieldportal.core.ui.motion.LocalImageMotion.current)
             val effectiveWaveStyle = if (waveCovered || powerThrottled || !appVisible) {
-                uiState.waveStyle.frozen
-            } else uiState.waveStyle
+                allowedWaveStyle.frozen
+            } else allowedWaveStyle
             // GameBoot must NOT read effectiveWaveStyle. `waveCovered` means "something opaque is
             // covering the wave, so don't burn a frame rate nothing can see" — and during a
             // launch the thing covering it IS GameBoot (activeGameId is set on every Game Detail
@@ -770,6 +797,18 @@ fun XMBShell(
                 powerThrottled = powerThrottled,
                 systemAnimationsOn = ValueAnimator.areAnimatorsEnabled(),
             )
+            // Everything below the XMB cross is a separate screen or overlay: it resets to the
+            // device's base density (see the provider in each half) and carries the hint flags.
+            val unscaledLocals = arrayOf<ProvidedValue<*>>(
+                LocalDensity provides Density(baseDensity.density, baseDensity.fontScale),
+                // The media screens' prompt rows idle in and blink out like the crossbar's pill.
+                LocalMediaHintVisible provides uiState.showMediaHint,
+                // The detail screens' footers keep the same contract.
+                com.playfieldportal.core.ui.detail.LocalDetailHintVisible provides uiState.showDetailHint,
+            )
+            // Layer A: the wave, the cross and every screen below the options panel. Blurred while a
+            // prompt or the panel is up. Closed just before the panel (see "end: layer A").
+            XmbBlurredLayer(blurState) {
             XmbBackground(
                 waveStyle           = effectiveWaveStyle,
                 customWallpaperPath = uiState.customWallpaperPath,
@@ -900,7 +939,7 @@ fun XMBShell(
             }
 
             XmbPspStatusStrip(
-                sortLabel = uiState.sortLabel,
+                sortLabel = uiState.sortLabel?.asString(),
                 showTouchControls = uiState.resolvedShowTouchButton,
                 onSortTapped = onXmbSortTapped,
                 unreadNotifications = uiState.unreadNotifications,
@@ -926,15 +965,20 @@ fun XMBShell(
                         onEdgeBack = onTouchBack,
                         stepScale = uiState.touchSensitivity.stepScale,
                         // Drilled in, the horizontal axis has nothing else to do — category
-                        // stepping is locked — so a leftward swipe backs out one level, the same
-                        // drill-out onTouchBack performs from the left edge.
+                        // stepping is locked — so a swipe toward the end edge (the way the child
+                        // list arrived) backs out one level, the same drill-out onTouchBack
+                        // performs from the left edge.
                         swipeBackEnabled = uiState.isInSubItem,
                         onSwipeBack = onTouchBack,
+                        rtl = LocalLayoutDirection.current == LayoutDirection.Rtl,
                     ),
             ) {
                 // What the rows need to know about arranging: the lifted row's position line while
                 // a Move is in progress, and which games are marked in multi-select.
+                val movingConfig = LocalConfiguration.current
+                val movingRes = uiResources()
                 val rowDecor = remember(
+                    movingConfig,
                     uiState.moveSession != null,
                     uiState.selectedItemIndex,
                     uiState.currentItems,
@@ -944,7 +988,7 @@ fun XMBShell(
                     val movingLabel = if (uiState.moveSession == null) null else {
                         val movable = uiState.currentItems.filter { it.rowKey() != null }
                         val position = movable.indexOf(uiState.currentItems.getOrNull(uiState.selectedItemIndex)) + 1
-                        "Moving · $position of ${movable.size}"
+                        movingRes.getString(R.string.xmbu_move_position, position, movable.size)
                     }
                     XmbRowDecor(movingLabel, uiState.markMode, uiState.markedGameIds)
                 }
@@ -981,6 +1025,7 @@ fun XMBShell(
                     // Active first-level item anchors just below the caticon bar, landing the selected
                     // item ~50% of height — matching the real PSP XMB (verified against the theme).
                     val anchorTop = barTop + catBarHeight
+
                     val startPad = columnBaseInset + hShift
 
                     if (uiState.drillTitle != null) {
@@ -1121,7 +1166,7 @@ fun XMBShell(
             ) {
                 ContextMenuHint(
                     showSort = uiState.canSortCurrentList,
-                    sortLabel = uiState.sortActionLabel,
+                    sortLabel = uiState.sortActionLabel.asString(),
                     showOptions = uiState.focusedItemHasContextMenu,
                     // Always true here: the hint only renders on the main XMB with no overlay up,
                     // which is exactly where START opens the panel.
@@ -1176,13 +1221,7 @@ fun XMBShell(
             // drawer, music, pickers, dialogs, detail screens) — not part of the XMB cross.
             // Reset to the device's base density so the XMB-only canvas scale above stops at
             // the cross: scaling the XMB never rescales any of these.
-            CompositionLocalProvider(
-                LocalDensity provides Density(baseDensity.density, baseDensity.fontScale),
-                // The media screens' prompt rows idle in and blink out like the crossbar's pill.
-                LocalMediaHintVisible provides uiState.showMediaHint,
-                // The detail screens' footers keep the same contract.
-                com.playfieldportal.core.ui.detail.LocalDetailHintVisible provides uiState.showDetailHint,
-            ) {
+            CompositionLocalProvider(*unscaledLocals) {
 
             // The Settings screen is suppressed while the color-scheme picker is open so
             // the live wave preview shows through behind the picker (PSP-style).
@@ -1342,6 +1381,12 @@ fun XMBShell(
                 )
             }
 
+            } // end: base-density reset (layer A)
+            } // end: layer A
+
+            // The options panel: between the two blurred layers, so it blurs what is under it and is
+            // drawn in neither. It raises blurState (LocalPfpBackdropBlur above).
+            CompositionLocalProvider(*unscaledLocals) {
             uiState.activeContextMenu?.let { menu ->
                 ContextMenuOverlay(
                     menu = menu,
@@ -1349,6 +1394,10 @@ fun XMBShell(
                     onDismiss = onContextMenuDismiss,
                 )
             }
+
+            // Layer B: the pickers, editors and detail screens drawn over the panel. Blurred too, so
+            // a prompt over one of them blurs it; same z-order as before the split.
+            XmbBlurredLayer(blurState) {
 
             // The list steps aside for the fine-tune picker, which docks in the same place.
             uiState.colorSchemePicker?.takeIf { uiState.customColorPicker == null }?.let { picker ->
@@ -1661,6 +1710,7 @@ fun XMBShell(
                     modifier = Modifier.fillMaxSize(),
                 )
             }
+            } // end: layer B
             } // end: base-density reset — non-XMB screens render unscaled
         } // end: XMB canvas Box
             } // end: CompositionLocalProvider (XMB-only canvas scale)
@@ -1690,6 +1740,7 @@ fun XMBShell(
                     confirmCallbacks = confirmCallbacks,
                     sourceChooserCallbacks = sourceChooserCallbacks,
                     launchRecoveryCallbacks = LaunchRecoveryCallbacks(onAction = onLaunchRecoveryAction),
+                    res = uiResources(),
                 ),
                 // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
                 showHints = !uiState.resolvedShowTouchButton,
@@ -1707,6 +1758,21 @@ fun XMBShell(
       } // end: CompositionLocalProvider (LocalXmbIcons)
     }
 
+}
+
+/**
+ * A layer of the shell's own content that is blurred while a prompt or the options panel, drawn in a
+ * sibling above it, asks for it ([state] is the shell's, with its Performance / Thermal switch).
+ *
+ * Prompts that screens inside this layer raise themselves (a picker's confirm, a music-browser menu)
+ * go to a separate state nobody blurs with: blurring the layer would blur the prompt too. Settings
+ * and detail pages inside it start their own blur from that state's switch.
+ */
+@Composable
+internal fun XmbBlurredLayer(state: PfpBackdropBlurState, content: @Composable BoxScope.() -> Unit) {
+    ProvidePfpBackdropBlur(enabled = state.enabled) {
+        Box(Modifier.fillMaxSize().pfpBackdropBlurLayer(state), content = content)
+    }
 }
 
 /**
@@ -1734,13 +1800,14 @@ internal fun shellModalSpec(
     artworkFolderCallbacks: ArtworkFolderCallbacks = ArtworkFolderCallbacks(),
     sourceChooserCallbacks: SourceChooserCallbacks = SourceChooserCallbacks(),
     launchRecoveryCallbacks: LaunchRecoveryCallbacks = LaunchRecoveryCallbacks(),
+    res: Resources,
 ): PfpModalSpec? {
     // A menu's confirm first of all: it is raised from a menu opened over everything else, including
     // the notification panel (Clear All), and the view model forwards its presses before the panel's.
-    uiState.pendingConfirm?.let { return xmbConfirmSpec(it, confirmCallbacks) }
+    uiState.pendingConfirm?.let { return xmbConfirmSpec(it, confirmCallbacks, res) }
     // The notification panel's layers come first: they sit over the panel, which sits over all of
     // the states below, and the view model forwards the panel's presses before it reaches them.
-    notificationModalSpec(uiState, notificationCallbacks)?.let { return it }
+    notificationModalSpec(uiState, notificationCallbacks, res)?.let { return it }
     val renameApp = uiState.renameAppTarget
     val collection = uiState.collectionNameDialog
     val playlist = uiState.playlistNameDialog
@@ -1750,7 +1817,7 @@ internal fun shellModalSpec(
     return when {
         renameApp != null -> PfpModalSpec.TextEntry(
             key = "rename_app:$renameApp",
-            title = "Rename Shortcut",
+            title = res.getString(R.string.xmbu_shell_rename_shortcut),
             initial = uiState.renameAppCurrent.orEmpty(),
             // Blank reverts to the real app label.
             allowBlank = true,
@@ -1763,9 +1830,9 @@ internal fun shellModalSpec(
             val editsGameText = collection.editTitleGameId != null || collection.editNoteGameId != null
             PfpModalSpec.TextEntry(
                 key = collection,
-                title = collection.title,
+                title = collection.title.resolve(res),
                 initial = collection.initialText,
-                placeholder = if (editsGameText) "" else "e.g. RPGs, Currently Playing",
+                placeholder = if (editsGameText) "" else res.getString(R.string.xmbu_collection_new_placeholder),
                 allowBlank = editsGameText,
                 onConfirm = onConfirmCollectionName,
                 onCancel = onCancelCollectionName,
@@ -1773,61 +1840,60 @@ internal fun shellModalSpec(
         }
         playlist != null -> PfpModalSpec.TextEntry(
             key = playlist,
-            title = playlist.title,
+            title = playlist.title.resolve(res),
             initial = playlist.initialText,
-            placeholder = "Playlist name",
+            placeholder = res.getString(R.string.xmbu_shell_playlist_name),
             onConfirm = onConfirmPlaylistName,
             onCancel = onCancelPlaylistName,
         )
         saveTheme != null -> PfpModalSpec.TextEntry(
             key = saveTheme,
-            title = saveTheme.title,
+            title = saveTheme.title.resolve(res),
             initial = saveTheme.initialText,
-            placeholder = "Theme name",
+            placeholder = res.getString(R.string.xmbu_shell_theme_name),
             onConfirm = onConfirmSaveAsTheme,
             onCancel = onDismissSaveAsTheme,
         )
         // Pick in the icon editor: the applied theme's icons, or an image from the device.
         sourceChooser != null -> PfpModalSpec.Choice(
             key = sourceChooser,
-            title = sourceChooser.title,
-            message = sourceChooser.message,
+            title = sourceChooser.title.resolve(res),
+            message = sourceChooser.message.resolve(res),
             options = listOf(
-                PfpChoiceOption("From the applied theme", sourceChooser.themeDetail),
-                PfpChoiceOption("From your device", "PNG or GIF"),
+                PfpChoiceOption(res.getString(R.string.xmbu_shell_source_theme), sourceChooser.themeDetail.resolve(res)),
+                PfpChoiceOption(res.getString(R.string.xmbu_shell_source_device), res.getString(R.string.xmbu_shell_source_device_detail)),
             ),
-            confirmLabel = "Continue",
+            confirmLabel = res.getString(R.string.xmbu_shell_continue),
             onConfirm = { index -> if (index == 0) sourceChooserCallbacks.onTheme() else sourceChooserCallbacks.onDevice() },
             onCancel = sourceChooserCallbacks.onCancel,
         )
         info != null -> PfpModalSpec.Notice(
             key = info,
-            title = info.title,
-            message = info.message,
-            buttonLabel = "Close",
+            title = info.title.resolve(res),
+            message = info.message.resolve(res),
+            buttonLabel = res.getString(R.string.xmbu_common_close),
             onDismiss = onDismissInfoDialog,
         )
         uiState.playlistImportQueue != null ->
-            playlistImportSpec(uiState.playlistImportQueue, playlistImportCallbacks)
+            playlistImportSpec(uiState.playlistImportQueue, playlistImportCallbacks, res)
         // A failed launch's repair choices, after the playlist import and before the artwork
         // folder prompt — the order the view model forwards presses in.
-        uiState.launchRecovery != null -> launchRecoverySpec(uiState.launchRecovery, launchRecoveryCallbacks)
+        uiState.launchRecovery != null -> launchRecoverySpec(uiState.launchRecovery, launchRecoveryCallbacks, res)
         // The required artwork folder: unavailable, move, choose, or another install's library.
         // Ahead of the shortcut review and the Windows prompt, in the order the view model
         // forwards presses (XMBViewModel.dispatchGamepadAction).
-        uiState.artworkFolderPrompt != null -> artworkFolderSpec(uiState.artworkFolderPrompt, artworkFolderCallbacks)
+        uiState.artworkFolderPrompt != null -> artworkFolderSpec(uiState.artworkFolderPrompt, artworkFolderCallbacks, res)
         // A legacy INSTALL_SHORTCUT request: the Add / Ignore that used to be asked in the shade.
         // Opens on Ignore, so a stray double press never adds a shortcut another app asked for.
         uiState.shortcutReview != null -> {
             val request = uiState.shortcutReview
             PfpModalSpec.Confirm(
                 key = "shortcut:${request.id}",
-                title = "Add Shortcut?",
+                title = res.getString(R.string.xmbu_shell_shortcut_title),
                 // hostLabel is what the shortcut opens; the request's sender is unknown.
-                message = "An app asked to add a shortcut \"${request.name}\" that opens " +
-                    "${request.hostLabel}. Only add it if you just made this shortcut yourself.",
-                confirmLabel = "Add",
-                cancelLabel = "Ignore",
+                message = res.getString(R.string.xmbu_shell_shortcut_message, request.name, request.hostLabel),
+                confirmLabel = res.getString(R.string.xmbu_shell_shortcut_add),
+                cancelLabel = res.getString(R.string.xmbu_shell_shortcut_ignore),
                 openOnCancel = true,
                 onConfirm = { notificationCallbacks.onShortcutAdd(request.id) },
                 onCancel = { notificationCallbacks.onShortcutIgnore(request.id) },
@@ -1837,12 +1903,10 @@ internal fun shellModalSpec(
         // had a directory; offer to finish setup now or later.
         uiState.showWindowsSetupPrompt -> PfpModalSpec.Confirm(
             key = "windows_setup",
-            title = "Finish your Windows Library",
-            message = "A PC game was added, but the Windows Games library has no folder " +
-                "yet. Set it up in Library Manager so game folders and " +
-                "achievements can be scanned.",
-            confirmLabel = "Set Up",
-            cancelLabel = "Later",
+            title = res.getString(R.string.xmbu_shell_windows_title),
+            message = res.getString(R.string.xmbu_shell_windows_message),
+            confirmLabel = res.getString(R.string.xmbu_shell_windows_set_up),
+            cancelLabel = res.getString(R.string.xmbu_common_later),
             onConfirm = onWindowsSetupConfirm,
             onCancel = onWindowsSetupDismiss,
         )
@@ -1864,22 +1928,23 @@ data class LaunchRecoveryCallbacks(
 internal fun launchRecoverySpec(
     recovery: com.playfieldportal.feature.launcher.LaunchRecoveryRequest,
     callbacks: LaunchRecoveryCallbacks,
+    res: Resources,
 ): PfpModalSpec {
     val actions = buildList {
-        add(com.playfieldportal.feature.launcher.LaunchRecoveryAction.RETRY to PfpChoiceOption("Retry"))
-        add(com.playfieldportal.feature.launcher.LaunchRecoveryAction.CHANGE_EMULATOR to PfpChoiceOption("Change Emulator"))
+        add(com.playfieldportal.feature.launcher.LaunchRecoveryAction.RETRY to PfpChoiceOption(res.getString(R.string.xmbu_recovery_retry)))
+        add(com.playfieldportal.feature.launcher.LaunchRecoveryAction.CHANGE_EMULATOR to PfpChoiceOption(res.getString(R.string.xmbu_recovery_change_emulator)))
         if (recovery.resolved != null) {
-            add(com.playfieldportal.feature.launcher.LaunchRecoveryAction.PER_SYSTEM_DEFAULTS to PfpChoiceOption("Change per-system default"))
+            add(com.playfieldportal.feature.launcher.LaunchRecoveryAction.PER_SYSTEM_DEFAULTS to PfpChoiceOption(res.getString(R.string.xmbu_recovery_change_default)))
         }
-        add(com.playfieldportal.feature.launcher.LaunchRecoveryAction.COPY_DIAGNOSTIC to PfpChoiceOption("Copy diagnostics"))
+        add(com.playfieldportal.feature.launcher.LaunchRecoveryAction.COPY_DIAGNOSTIC to PfpChoiceOption(res.getString(R.string.xmbu_recovery_copy_diagnostics)))
     }
     return PfpModalSpec.Choice(
         key = "launch_recovery:${recovery.gameId}",
-        title = "Couldn't launch ${recovery.gameTitle}",
+        title = res.getString(R.string.xmbu_recovery_title, recovery.gameTitle),
         message = listOfNotNull(recovery.message, recovery.historyLine).joinToString("\n\n"),
         options = actions.map { it.second },
-        confirmLabel = "Select",
-        cancelLabel = "Dismiss",
+        confirmLabel = res.getString(R.string.xmbu_recovery_select),
+        cancelLabel = res.getString(R.string.xmbu_recovery_dismiss),
         onConfirm = { index -> actions.getOrNull(index)?.let { callbacks.onAction(it.first) } },
         onCancel = { callbacks.onAction(com.playfieldportal.feature.launcher.LaunchRecoveryAction.DISMISS) },
     )
@@ -1899,44 +1964,35 @@ data class ArtworkFolderCallbacks(
 )
 
 /** An artwork folder prompt as the shared Confirm modal, in the approved copy. */
-private fun artworkFolderSpec(prompt: ArtworkFolderPrompt, callbacks: ArtworkFolderCallbacks): PfpModalSpec {
+private fun artworkFolderSpec(prompt: ArtworkFolderPrompt, callbacks: ArtworkFolderCallbacks, res: Resources): PfpModalSpec {
     val confirmLabel: String
     val cancelLabel: String
     val title: String
     val message: String
     when (prompt) {
         is ArtworkFolderPrompt.Unavailable -> {
-            title = "Artwork folder unavailable"
-            message = "PFP can't reach ${prompt.name}. New artwork is paused until you relink it. " +
-                "Art you already have still shows."
-            confirmLabel = "Relink folder"
-            cancelLabel = "Not now"
+            title = res.getString(R.string.xmbu_artfolder_unavailable_title)
+            message = res.getString(R.string.xmbu_artfolder_unavailable_message, prompt.name)
+            confirmLabel = res.getString(R.string.xmbu_artfolder_relink)
+            cancelLabel = res.getString(R.string.xmbu_artfolder_not_now)
         }
         is ArtworkFolderPrompt.MoveArtwork -> {
-            title = "Move your artwork to a folder you own"
-            message = if (prompt.internalFiles == 1) {
-                "1 image is stored inside the app and would be lost if you uninstall. " +
-                    "Pick a folder and PFP moves it there."
-            } else {
-                "${prompt.internalFiles} images are stored inside the app and would be lost if " +
-                    "you uninstall. Pick a folder and PFP moves them there."
-            }
-            confirmLabel = "Choose artwork folder"
-            cancelLabel = "Later"
+            title = res.getString(R.string.xmbu_artfolder_move_title)
+            message = res.getQuantityString(R.plurals.xmbu_artfolder_move_message, prompt.internalFiles, prompt.internalFiles)
+            confirmLabel = res.getString(R.string.xmbu_artfolder_choose)
+            cancelLabel = res.getString(R.string.xmbu_common_later)
         }
         ArtworkFolderPrompt.ChooseFolder -> {
-            title = "Choose an artwork folder"
-            message = "New artwork is saved to a folder you own. Pick one and PFP saves art there."
-            confirmLabel = "Choose artwork folder"
-            cancelLabel = "Later"
+            title = res.getString(R.string.xmbu_artfolder_choose_title)
+            message = res.getString(R.string.xmbu_artfolder_choose_message)
+            confirmLabel = res.getString(R.string.xmbu_artfolder_choose)
+            cancelLabel = res.getString(R.string.xmbu_common_later)
         }
         is ArtworkFolderPrompt.ForeignLibrary -> {
-            title = "This folder holds another artwork library"
-            val files = if (prompt.fileCount == 1) "1 file" else "${prompt.fileCount} files"
-            message = "${prompt.name} was set up by a different install ($files). " +
-                "Use it and PFP relinks your games to its art, or pick another folder."
-            confirmLabel = "Use this library"
-            cancelLabel = "Choose another folder"
+            title = res.getString(R.string.xmbu_artfolder_foreign_title)
+            message = res.getQuantityString(R.plurals.xmbu_artfolder_foreign_message, prompt.fileCount, prompt.name, prompt.fileCount)
+            confirmLabel = res.getString(R.string.xmbu_artfolder_use_library)
+            cancelLabel = res.getString(R.string.xmbu_artfolder_choose_another)
         }
     }
     return PfpModalSpec.Confirm(
@@ -1971,13 +2027,13 @@ data class XmbConfirmCallbacks(
 )
 
 /** A menu confirm as the shared Confirm modal: opens on Cancel, red unless the copy says not. */
-private fun xmbConfirmSpec(confirm: XmbConfirm, callbacks: XmbConfirmCallbacks): PfpModalSpec {
+private fun xmbConfirmSpec(confirm: XmbConfirm, callbacks: XmbConfirmCallbacks, res: Resources): PfpModalSpec {
     val copy = xmbConfirmCopy(confirm)
     return PfpModalSpec.Confirm(
         key = confirm,
-        title = copy.title,
-        message = copy.message,
-        confirmLabel = copy.confirmLabel,
+        title = copy.title.resolve(res),
+        message = copy.message.resolve(res),
+        confirmLabel = copy.confirmLabel.resolve(res),
         destructive = copy.destructive,
         // Every kind opens on Cancel, Remove from Category included (AD-12).
         openOnCancel = true,
@@ -1997,7 +2053,7 @@ data class PlaylistImportCallbacks(
  * One import report as the shared Results sheet. Open Playlist only when the import created a
  * playlist; the position ("1 of 3") is supplied here because the report does not know its batch.
  */
-private fun playlistImportSpec(queue: PlaylistImportQueue, callbacks: PlaylistImportCallbacks): PfpModalSpec {
+private fun playlistImportSpec(queue: PlaylistImportQueue, callbacks: PlaylistImportCallbacks, res: Resources): PfpModalSpec {
     val report = queue.current
     val severity = when {
         report.error != null -> NotificationSeverity.ERROR
@@ -2006,12 +2062,12 @@ private fun playlistImportSpec(queue: PlaylistImportQueue, callbacks: PlaylistIm
     }
     return PfpModalSpec.Results(
         key = "playlist_import:${queue.position}:${report.fileName}",
-        title = report.title,
-        meta = if (queue.total > 1) "${queue.position} of ${queue.total}" else null,
-        detail = report.toResults(),
+        title = report.title.resolve(res),
+        meta = if (queue.total > 1) res.getString(R.string.xmbu_shell_import_position, queue.position, queue.total) else null,
+        detail = report.toResults(res),
         accent = severityColor(severity),
         icon = notificationGlyph(NotificationKind.SYSTEM),
-        actionLabel = if (report.playlistId != null) "Open Playlist" else null,
+        actionLabel = if (report.playlistId != null) res.getString(R.string.xmbu_shell_open_playlist) else null,
         onAction = { callbacks.onOpen(report) },
         itemActionLabel = { null },
         onItemAction = {},
@@ -2021,15 +2077,15 @@ private fun playlistImportSpec(queue: PlaylistImportQueue, callbacks: PlaylistIm
 }
 
 /** The notification panel's open sheet or Stop confirm, if either is up. */
-private fun notificationModalSpec(uiState: XMBUiState, callbacks: NotificationModalCallbacks): PfpModalSpec? {
+private fun notificationModalSpec(uiState: XMBUiState, callbacks: NotificationModalCallbacks, res: Resources): PfpModalSpec? {
     val panel = uiState.notificationPanel ?: return null
     panel.stopConfirm?.let { stop ->
         return PfpModalSpec.Confirm(
             key = "stop:${stop.taskId}",
-            title = stop.title,
-            message = stop.message,
-            confirmLabel = "Stop",
-            cancelLabel = "Keep Running",
+            title = stop.title.resolve(res),
+            message = stop.message.resolve(res),
+            confirmLabel = res.getString(R.string.xmbu_shell_stop),
+            cancelLabel = res.getString(R.string.xmbu_shell_keep_running),
             // Not destructive, but a double ✕ must never stop work by accident.
             openOnCancel = true,
             onConfirm = { callbacks.onConfirmStop(stop.taskId) },
@@ -2038,10 +2094,10 @@ private fun notificationModalSpec(uiState: XMBUiState, callbacks: NotificationMo
     }
     val id = panel.sheetNotificationId ?: return null
     val row = uiState.notifications.firstOrNull { it.id == id } ?: return null
-    val meta = notificationKindLabel(row.kind) + " · " + notificationTimestamp(row.createdAt)
+    val meta = notificationKindLabel(row.kind, res) + " · " + notificationTimestamp(row.createdAt, res)
     val accent = severityColor(row.severity)
     val icon = notificationGlyph(row.kind)
-    val actionLabel = notificationActionLabel(row.action)
+    val actionLabel = notificationActionLabel(row.action, res)
     return when (val detail = row.detail) {
         is NotificationDetail.Notes -> PfpModalSpec.Notes(
             key = "notes:${row.id}:${row.createdAt}",
@@ -2064,7 +2120,7 @@ private fun notificationModalSpec(uiState: XMBUiState, callbacks: NotificationMo
             icon = icon,
             actionLabel = actionLabel,
             onAction = { callbacks.onSheetAction(row.id) },
-            itemActionLabel = { item -> item.action?.let { notificationActionLabel(it.toNotificationAction()) } },
+            itemActionLabel = { item -> item.action?.let { notificationActionLabel(it.toNotificationAction(), res) } },
             onItemAction = { item -> item.action?.let(callbacks.onSheetItemAction) },
             onCopy = callbacks.onCopyText,
             onClose = callbacks.onCloseSheet,

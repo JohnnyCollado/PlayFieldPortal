@@ -102,7 +102,7 @@ class SystemUpdateViewModelTest {
     fun `a newer release is offered for install`() = runTest {
         val state = state(newVm())
 
-        assertEquals("1.3.3 · Full", state.installedLabel)
+        assertEquals("1.3.3 · Full", state.installedLabel.resolve(context))
         assertEquals("1.3.4", state.availableVersion)
         assertTrue(state.canInstall)
     }
@@ -115,7 +115,7 @@ class SystemUpdateViewModelTest {
 
         assertNull(state.availableVersion)
         assertFalse(state.canInstall)
-        assertEquals("Up to date", state.latestLabel)
+        assertEquals("Up to date", state.latestLabel.resolve(context))
     }
 
     @Test
@@ -135,7 +135,7 @@ class SystemUpdateViewModelTest {
         val changelog = state(newVm()).changelog
 
         assertEquals(listOf("1.3.4", "1.3.3", "1.3.2"), changelog.map { it.version })
-        assertEquals(listOf("New", "Installed", null), changelog.map { it.tag })
+        assertEquals(listOf("New", "Installed", null), changelog.map { it.tag?.resolve(context) })
         assertEquals(listOf(true, false, false), changelog.map { it.expanded })
         assertEquals(listOf("Improved system performance"), changelog.first().summary)
     }
@@ -166,7 +166,7 @@ class SystemUpdateViewModelTest {
 
         coVerify(exactly = 1) { checker.check(manual = true) }
         assertFalse(state(vm).isChecking)
-        assertEquals("Couldn't reach GitHub. Try again later.", state(vm).checkMessage)
+        assertEquals("Couldn't reach GitHub. Try again later.", state(vm).checkMessage?.resolve(context))
     }
 
     @Test
@@ -175,7 +175,7 @@ class SystemUpdateViewModelTest {
         val vm = newVm()
 
         vm.checkNow()
-        assertEquals("You have the latest version.", state(vm).checkMessage)
+        assertEquals("You have the latest version.", state(vm).checkMessage?.resolve(context))
 
         // The next day's automatic check: its answer is on the rows above, so the old message
         // must not sit beside it saying something else.
@@ -240,6 +240,6 @@ class SystemUpdateViewModelTest {
 
         val download = state(vm).download
         assertIs<UpdateDownload.Failed>(download)
-        assertEquals("The download is not a newer version of this app, so it was not installed.", download.message)
+        assertEquals("The download is not a newer version of this app, so it was not installed.", download.message.resolve(context))
     }
 }

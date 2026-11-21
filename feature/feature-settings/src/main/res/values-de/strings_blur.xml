@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blur_title">Hintergrundunschärfe</string>
+    <string name="blur_sublabel">Wie stark der Bildschirm hinter Abfragen und dem Optionsmenü weichgezeichnet wird. Auf null stellen, um es auszuschalten.</string>
+    <string name="blur_unavailable">Erfordert Android 12 oder neuer.</string>
+</resources>

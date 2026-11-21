@@ -12,13 +12,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
+import com.playfieldportal.core.ui.components.PfpBusyRing
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -26,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.feature.settings.viewmodel.AppVisibilityViewModel
 import com.playfieldportal.feature.settings.viewmodel.HiddenEntry
 import com.playfieldportal.feature.settings.viewmodel.HiddenItemGroup
@@ -39,14 +42,14 @@ fun AppVisibilitySettingsScreen(
     val state by viewModel.uiState.collectAsState()
 
     SettingsScaffold(
-        title    = "Settings",
-        subtitle = "Hidden Items",
+        title    = stringResource(R.string.settings_title),
+        subtitle = stringResource(R.string.lib_hidden_items_title),
         onBack   = onBack,
         modifier = modifier,
     ) {
         if (state.loading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = SettingsAccent)
+                PfpBusyRing(color = SettingsAccent)
             }
             return@SettingsScaffold
         }
@@ -58,11 +61,10 @@ fun AppVisibilitySettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState),
         ) {
-            SettingsGroup("Hidden items")
+            SettingsGroup(stringResource(R.string.lib_hidden_items_group))
 
             Text(
-                text = "Apps and games you've hidden, grouped by item with the places each is hidden " +
-                    "from. Hide items from their Options menu; unhide them here.",
+                text = stringResource(R.string.lib_hidden_items_help),
                 color = SettingsSubtext,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(start = 48.dp, end = 48.dp, bottom = 8.dp),
@@ -70,7 +72,7 @@ fun AppVisibilitySettingsScreen(
 
             if (state.groups.isEmpty()) {
                 Text(
-                    text = "Nothing is hidden.",
+                    text = stringResource(R.string.lib_hidden_items_empty),
                     color = SettingsSubtext,
                     fontSize = 13.sp,
                     modifier = Modifier.fillMaxWidth().padding(48.dp),
@@ -122,15 +124,15 @@ private fun HiddenItemCard(
         // to the scaffold's focus navigation).
         group.entries.forEach { entry ->
             SettingsValueRow(
-                label   = entry.locationLabel,
-                value   = "Unhide",
+                label   = entry.locationLabel.asString(),
+                value   = stringResource(R.string.lib_hidden_unhide),
                 onClick = { onUnhide(entry) },
             )
         }
         if (group.entries.size > 1) {
             SettingsValueRow(
-                label   = "All locations",
-                value   = "Unhide all",
+                label   = stringResource(R.string.lib_hidden_all_locations),
+                value   = stringResource(R.string.lib_hidden_unhide_all),
                 onClick = onUnhideAll,
             )
         }

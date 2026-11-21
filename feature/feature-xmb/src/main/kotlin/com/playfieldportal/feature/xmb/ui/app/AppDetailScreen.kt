@@ -30,7 +30,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
+import com.playfieldportal.core.ui.components.PfpBusyRing
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -73,7 +73,6 @@ import com.playfieldportal.feature.xmb.ui.collection.collectionNameModalSpec
 import com.playfieldportal.core.ui.components.PfpModalSpec
 import com.playfieldportal.core.ui.components.rememberPfpModalHost
 import com.playfieldportal.feature.xmb.ui.detail.ArtworkType
-import com.playfieldportal.feature.xmb.ui.detail.displayLabel
 import com.playfieldportal.core.ui.detail.DetailRowSpacing
 import com.playfieldportal.core.ui.detail.PfpDetailBreadcrumb
 import com.playfieldportal.core.ui.detail.detailPalette
@@ -87,6 +86,11 @@ import com.playfieldportal.core.ui.detail.PfpDetailLaunchButton
 import com.playfieldportal.core.ui.detail.PfpDetailQuickAction
 import com.playfieldportal.core.ui.detail.PfpDetailScaffold
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import androidx.compose.ui.res.stringResource
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.xmb.R
+import com.playfieldportal.feature.xmb.ui.uiResources
+import android.content.res.Resources
 
 // Neutral dark surfaces stay fixed; accent/focus colors come from the active theme via
 // menuCursorFill()/menuCursorEdge() so this screen follows the chosen color scheme.
@@ -140,6 +144,7 @@ fun AppDetailScreen(
             onCancelCreateCollection = viewModel::cancelCreateCollection,
             onConfirmReset = viewModel::confirmReset,
             onCancelReset = viewModel::cancelReset,
+            res = uiResources(),
         ),
         // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
         showHints = !showTouchControls,
@@ -159,7 +164,7 @@ fun AppDetailScreen(
 
     if (state.isLoading) {
         PfpDetailBackground(modifier = modifier.fillMaxSize()) {
-            CircularProgressIndicator(Modifier.align(Alignment.Center), color = detailPalette().focus)
+            PfpBusyRing(Modifier.align(Alignment.Center), color = detailPalette().focus)
         }
         return
     }
@@ -178,14 +183,14 @@ fun AppDetailScreen(
             .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false); onTouchInput() } },
         header = {
             PfpDetailBreadcrumb(
-                title = "Apps",
-                subtitle = "Android App",
+                title = stringResource(R.string.xmbu_app_breadcrumb_apps),
+                subtitle = stringResource(R.string.xmbu_app_breadcrumb_android_app),
                 onBack = viewModel::close,
             )
         },
         footer = {
             PfpDetailHelperFooter(
-                items = appDetailHelperItems(state.mainFocus),
+                items = appDetailHelperItems(state.mainFocus, uiResources()),
                 // A shared modal draws its own hints under its card.
                 visible = !showTouchControls && !modal.open,
             )
@@ -194,8 +199,8 @@ fun AppDetailScreen(
         AnimatedVisibility(state.showOptions, enter = fadeIn(), exit = fadeOut()) {
             val options = viewModel.menuRows(state.menuGroup)
             PspContextMenuOverlay(
-                title = if (state.menuGroup == AppDetailMenuGroup.ARTWORK) "Artwork" else "Options",
-                rows = appDetailMenuRows(options, state.game?.isFavorite == true),
+                title = stringResource(if (state.menuGroup == AppDetailMenuGroup.ARTWORK) R.string.xmbu_common_artwork else R.string.xmbu_common_options),
+                rows = appDetailMenuRows(options, state.game?.isFavorite == true, uiResources()),
                 selectedIndex = state.optionsIndex,
                 onRowActivated = { viewModel.activateOption(options[it]) },
                 onDismiss = viewModel::closeMenus,
@@ -265,7 +270,7 @@ fun AppDetailScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 PfpDetailLaunchButton(
-                    label     = "Launch",
+                    label     = stringResource(R.string.xmbu_common_launch),
                     icon      = Icons.Filled.PlayArrow,
                     focused   = state.mainFocus == 0,
                     fill      = Color(0xFFF2F2F2),
@@ -274,27 +279,27 @@ fun AppDetailScreen(
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     PfpDetailQuickAction(
-                        label     = "Options",
+                        label     = stringResource(R.string.xmbu_common_options),
                         // The app-wide Options glyph, as Game Detail's (ARCHITECTURE.md ▸ Conventions).
                         icon      = Icons.Filled.MoreVert,
                         focused   = state.mainFocus == 1,
                         available = true,
                         onClick   = viewModel::openOptions,
-                        contentDescription = "Options",
+                        contentDescription = stringResource(R.string.xmbu_common_options),
                         modifier  = Modifier.weight(1f),
                     )
                     PfpDetailQuickAction(
-                        label     = "Artwork",
+                        label     = stringResource(R.string.xmbu_common_artwork),
                         icon      = Icons.Filled.Brush,
                         focused   = state.mainFocus == 2,
                         available = true,
                         onClick   = viewModel::openArtworkMenu,
-                        contentDescription = "Edit artwork",
+                        contentDescription = stringResource(R.string.xmbu_app_edit_artwork_description),
                         modifier  = Modifier.weight(1f),
                     )
                 }
                 state.artworkMessage?.let {
-                    Text(it, color = detailPalette().focus, fontSize = 12.sp)
+                    Text(it.asString(), color = detailPalette().focus, fontSize = 12.sp)
                 }
             }
         }
@@ -308,10 +313,13 @@ fun AppDetailScreen(
  * same three actions in every context, with Select naming the focused button — but it still
  * reserves its row, so nothing shifts when it fades for touch input.
  */
-internal fun appDetailHelperItems(mainFocus: Int): List<ControllerPromptItem> = listOf(
-    ControllerPromptItem(GamepadAction.SELECT, when (mainFocus) { 0 -> "Launch"; 1 -> "Options"; else -> "Artwork" }),
-    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
-    ControllerPromptItem(GamepadAction.BACK, "Back"),
+internal fun appDetailHelperItems(mainFocus: Int, res: Resources): List<ControllerPromptItem> = listOf(
+    ControllerPromptItem(
+        GamepadAction.SELECT,
+        res.getString(when (mainFocus) { 0 -> R.string.xmbu_common_launch; 1 -> R.string.xmbu_common_options; else -> R.string.xmbu_common_artwork }),
+    ),
+    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, res.getString(R.string.xmbu_common_options)),
+    ControllerPromptItem(GamepadAction.BACK, res.getString(R.string.xmbu_common_back)),
 )
 
 // ── App icon preview (PSP rect if custom, native drawable otherwise) ───────────
@@ -340,7 +348,7 @@ private fun AppIconPreview(
                 packageName = packageName.orEmpty(),
                 modifier    = Modifier.size(48.dp),
             )
-            else -> Text("No Icon", color = TextMuted, fontSize = 11.sp)
+            else -> Text(stringResource(R.string.xmbu_app_no_icon), color = TextMuted, fontSize = 11.sp)
         }
     }
 }
@@ -397,13 +405,13 @@ private fun AppArtworkPicker(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    "Change ${state.artworkPickerType.displayLabel}",
+                    stringResource(R.string.xmbu_app_art_change, state.artworkPickerType.noun().asString()),
                     color      = themedText(TextPrimary),
                     fontSize   = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
                 TextButton(onClick = onClose) {
-                    Text("Close", color = themedSubText(TextMuted), fontSize = 12.sp)
+                    Text(stringResource(R.string.xmbu_common_close), color = themedSubText(TextMuted), fontSize = 12.sp)
                 }
             }
 
@@ -413,22 +421,18 @@ private fun AppArtworkPicker(
                         verticalAlignment     = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        CircularProgressIndicator(
-                            modifier    = Modifier.size(16.dp),
-                            color       = menuCursorEdge(),
-                            strokeWidth = 2.dp,
-                        )
-                        Text("Saving…", color = themedSubText(TextMuted), fontSize = 12.sp)
+                        PfpBusyRing(size = 16.dp, color = menuCursorEdge())
+                        Text(stringResource(R.string.xmbu_app_art_saving), color = themedSubText(TextMuted), fontSize = 12.sp)
                     }
                 }
                 state.artworkPickerLoading -> {
                     Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(Modifier.size(24.dp), color = menuCursorEdge(), strokeWidth = 2.dp)
+                        PfpBusyRing(size = 24.dp, color = menuCursorEdge())
                     }
                 }
                 state.artworkPickerError != null -> {
                     Text("SteamGridDB", color = themedSubText(TextMuted), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                    Text(state.artworkPickerError, color = Color(0xFFFF6B6B), fontSize = 12.sp)
+                    Text(state.artworkPickerError.asString(), color = Color(0xFFFF6B6B), fontSize = 12.sp)
                 }
                 state.artworkPickerItems.isNotEmpty() -> {
                     Text("SteamGridDB", color = themedSubText(TextMuted), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
@@ -469,14 +473,14 @@ private fun AppArtworkPicker(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 PickerChip(
-                    label     = "Pick Local File",
+                    label     = stringResource(R.string.xmbu_app_art_pick_local),
                     onClick   = onPickLocal,
                     modifier  = Modifier.weight(1f),
                 )
                 PickerChip(
                     label     = when (state.artworkPickerType) {
-                        ArtworkType.ICON -> "Restore Native Icon"
-                        else             -> "Remove Custom Art"
+                        ArtworkType.ICON -> stringResource(R.string.xmbu_app_art_restore_icon)
+                        else             -> stringResource(R.string.xmbu_app_art_remove_custom)
                     },
                     destructive = true,
                     onClick     = onClear,
@@ -485,7 +489,7 @@ private fun AppArtworkPicker(
             }
 
             Text(
-                "◄ ►  Browse   A  Pick   B  Back",
+                stringResource(R.string.xmbu_app_art_picker_hint),
                 color    = themedSubText(TextMuted.copy(alpha = 0.5f)),
                 fontSize = 10.sp,
             )
@@ -508,12 +512,13 @@ internal fun appDetailModalSpec(
     onCancelCreateCollection: () -> Unit,
     onConfirmReset: () -> Unit,
     onCancelReset: () -> Unit,
+    res: Resources,
 ): PfpModalSpec? {
     val app = state.game ?: return null
     return when {
         state.isEditingName -> PfpModalSpec.TextEntry(
             key = "display_name:${app.id}",
-            title = "Edit Title",
+            title = res.getString(R.string.xmbu_common_edit_title),
             initial = app.displayTitle,
             placeholder = app.scrapedTitle ?: app.title,
             allowBlank = true,
@@ -521,14 +526,13 @@ internal fun appDetailModalSpec(
             onCancel = onCancelName,
         )
         state.collectionPicker.showCreateDialog ->
-            collectionNameModalSpec(onCreate = onCreateCollection, onCancel = onCancelCreateCollection)
+            collectionNameModalSpec(onCreate = onCreateCollection, onCancel = onCancelCreateCollection, res = res)
         // Opens on Cancel, so a stray Confirm press on the controller dismisses.
         state.confirmReset -> PfpModalSpec.Confirm(
             key = "reset_artwork:${app.id}",
-            title = "Reset All Artwork?",
-            message = "The custom icon and background for ${app.displayTitle} are removed and the " +
-                "app's own icon comes back.",
-            confirmLabel = "Reset",
+            title = res.getString(R.string.xmbu_app_reset_title),
+            message = res.getString(R.string.xmbu_app_reset_message, app.displayTitle),
+            confirmLabel = res.getString(R.string.xmbu_common_reset),
             destructive = true,
             onConfirm = onConfirmReset,
             onCancel = onCancelReset,

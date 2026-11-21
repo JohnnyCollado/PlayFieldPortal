@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.appbar
 
+import com.playfieldportal.core.domain.text.UiText
+
 /** Ids of the rows [appMenuItems] draws. Handlers key on these; wording changes never touch them. */
 object AppMenuIds {
     const val LAUNCH = "launch"
@@ -25,10 +27,10 @@ object AppMenuIds {
 /** One row of an app's context menu, host-neutral: the XMB and the App Drawer each map it to their own row type. */
 data class AppMenuEntry(
     val id: String,
-    val label: String,
-    val value: String? = null,
+    val label: UiText,
+    val value: UiText? = null,
     /** A group name drawn above this row — set on the first row of each group. */
-    val header: String? = null,
+    val header: UiText? = null,
     /** Activating the row opens a list: the panel draws › and the cue is SELECT. */
     val opensMenu: Boolean = false,
     val isDestructive: Boolean = false,
@@ -59,36 +61,36 @@ data class AppMenuContext(
  * the A press that opens the app. Uninstall is last and red, and not offered for system apps.
  */
 fun appMenuItems(context: AppMenuContext): List<AppMenuEntry> = buildList {
-    group("Library") {
-        if (context.byTouch) add(AppMenuEntry(AppMenuIds.LAUNCH, "Launch"))
-        add(AppMenuEntry(AppMenuIds.EDIT_DETAILS, "Edit App Details"))
+    group(UiText.res(R.string.apps_menu_group_library)) {
+        if (context.byTouch) add(AppMenuEntry(AppMenuIds.LAUNCH, UiText.res(R.string.apps_menu_launch)))
+        add(AppMenuEntry(AppMenuIds.EDIT_DETAILS, UiText.res(R.string.apps_menu_edit_details)))
         // Promotes the app into the Android Memory Card as a real game.
-        if (context.isGame) add(AppMenuEntry(AppMenuIds.UNMARK_GAME, "Unmark as Game"))
-        else add(AppMenuEntry(AppMenuIds.MARK_GAME, "Mark as Game"))
+        if (context.isGame) add(AppMenuEntry(AppMenuIds.UNMARK_GAME, UiText.res(R.string.apps_menu_unmark_game)))
+        else add(AppMenuEntry(AppMenuIds.MARK_GAME, UiText.res(R.string.apps_menu_mark_game)))
         // One name and one id whichever way it is set; the value says the state.
-        add(AppMenuEntry(AppMenuIds.FAVORITE, "Favorite", value = if (context.isFavorite) "On" else "Off", silent = true))
-        add(AppMenuEntry(AppMenuIds.ADD_TO_CARD, "Add to Card", opensMenu = true))
+        add(AppMenuEntry(AppMenuIds.FAVORITE, UiText.res(R.string.apps_menu_favorite), value = onOff(context.isFavorite), silent = true))
+        add(AppMenuEntry(AppMenuIds.ADD_TO_CARD, UiText.res(R.string.apps_menu_add_to_card), opensMenu = true))
     }
 
-    group("Arrange") {
+    group(UiText.res(R.string.apps_menu_group_arrange)) {
         if (context.categoryId != null) {
-            add(AppMenuEntry(if (context.pinned) AppMenuIds.UNPIN else AppMenuIds.PIN, "Pin to Top", value = if (context.pinned) "On" else "Off"))
-            if (context.canMove) add(AppMenuEntry(AppMenuIds.MOVE_ROW, "Move"))
+            add(AppMenuEntry(if (context.pinned) AppMenuIds.UNPIN else AppMenuIds.PIN, UiText.res(R.string.apps_menu_pin_to_top), value = onOff(context.pinned)))
+            if (context.canMove) add(AppMenuEntry(AppMenuIds.MOVE_ROW, UiText.res(R.string.apps_menu_move)))
         }
-        add(AppMenuEntry(AppMenuIds.MOVE_CATEGORY, "Move to Category", opensMenu = true))
-        add(AppMenuEntry(AppMenuIds.ADD_CATEGORY, "Add to Category", opensMenu = true))
-        if (context.categoryId != null) add(AppMenuEntry(AppMenuIds.REMOVE_CATEGORY, "Remove from Category"))
+        add(AppMenuEntry(AppMenuIds.MOVE_CATEGORY, UiText.res(R.string.apps_menu_move_to_category), opensMenu = true))
+        add(AppMenuEntry(AppMenuIds.ADD_CATEGORY, UiText.res(R.string.apps_menu_add_to_category), opensMenu = true))
+        if (context.categoryId != null) add(AppMenuEntry(AppMenuIds.REMOVE_CATEGORY, UiText.res(R.string.apps_menu_remove_from_category)))
     }
 
-    group("Manage") {
-        add(AppMenuEntry(AppMenuIds.RENAME, "Rename Shortcut"))
+    group(UiText.res(R.string.apps_menu_group_manage)) {
+        add(AppMenuEntry(AppMenuIds.RENAME, UiText.res(R.string.apps_menu_rename_shortcut)))
         // Per-location hide (recoverable in Settings ▸ Hidden Items) + global hide-everywhere.
         if (context.categoryId != null && context.categoryName != null) {
-            add(AppMenuEntry(AppMenuIds.HIDE_FROM, "Hide from ${context.categoryName}"))
+            add(AppMenuEntry(AppMenuIds.HIDE_FROM, UiText.res(R.string.apps_menu_hide_from, context.categoryName)))
         }
-        add(AppMenuEntry(AppMenuIds.HIDE_EVERYWHERE, "Hide Everywhere"))
-        add(AppMenuEntry(AppMenuIds.APP_INFO, "App Info"))
-        if (!context.isSystemApp) add(AppMenuEntry(AppMenuIds.UNINSTALL, "Uninstall", isDestructive = true))
+        add(AppMenuEntry(AppMenuIds.HIDE_EVERYWHERE, UiText.res(R.string.apps_menu_hide_everywhere)))
+        add(AppMenuEntry(AppMenuIds.APP_INFO, UiText.res(R.string.apps_menu_app_info)))
+        if (!context.isSystemApp) add(AppMenuEntry(AppMenuIds.UNINSTALL, UiText.res(R.string.apps_menu_uninstall), isDestructive = true))
     }
 }
 
@@ -111,11 +113,13 @@ fun appDrawerMenuItems(isFavorite: Boolean, isGame: Boolean, isSystemApp: Boolea
     )
     return order.mapNotNull { id -> shared.firstOrNull { it.id == id } }.map { entry ->
         val plain = entry.copy(header = null)
-        if (entry.id == markId) plain.copy(label = "Mark as Game", value = if (isGame) "On" else "Off") else plain
+        if (entry.id == markId) plain.copy(label = UiText.res(R.string.apps_menu_mark_game), value = onOff(isGame)) else plain
     }
 }
 
-private fun MutableList<AppMenuEntry>.group(header: String, rows: MutableList<AppMenuEntry>.() -> Unit) {
+private fun onOff(on: Boolean): UiText = UiText.res(if (on) R.string.apps_value_on else R.string.apps_value_off)
+
+private fun MutableList<AppMenuEntry>.group(header: UiText, rows: MutableList<AppMenuEntry>.() -> Unit) {
     val entries = mutableListOf<AppMenuEntry>().apply(rows)
     entries.forEachIndexed { index, entry -> add(if (index == 0) entry.copy(header = header) else entry) }
 }

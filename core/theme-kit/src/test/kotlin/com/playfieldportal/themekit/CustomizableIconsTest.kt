@@ -89,11 +89,12 @@ class CustomizableIconsTest {
     // -- TS-06: 29 new icons/ slots in 5 new groups (the plan's "36" miscounts; 52 + 29 + 47 = 128) --
 
     @Test
-    fun `registry totals 169 slots, 81 of them icons slots`() {
+    fun `registry totals 175 slots, 87 of them icons slots`() {
         // 171 / 82 until catbar_favorites retired onto sysicon_favorites, then 170 until
-        // sysicon_allgames retired onto item_memcard_games (IconSlots.RETIRED).
-        assertEquals(81, IconSlots.ALL.size)
-        assertEquals(169, CustomizableIcons.ALL.size)
+        // sysicon_allgames retired onto item_memcard_games (IconSlots.RETIRED); then 169 / 81 plus
+        // the six Settings section icons (175 / 87).
+        assertEquals(87, IconSlots.ALL.size)
+        assertEquals(175, CustomizableIcons.ALL.size)
     }
 
     // -- Physical media: one slot per console that ships on a disc, cart or UMD --
@@ -126,7 +127,8 @@ class CustomizableIconsTest {
         val umd = IconSlots.byKey("item_umd")!!
         assertEquals(IconSlot.Group.ITEMS, umd.group)
         assertEquals("UMD slot", umd.displayName)
-        assertEquals("item_umd", IconSlots.ALL.last().key)
+        // Appended after every earlier key; only the six Settings section icons come later.
+        assertEquals(IconSlots.ALL.size - 7, IconSlots.ALL.indexOfFirst { it.key == "item_umd" })
         assertTrue(CustomizableIcons.isValidKey("item_umd"))
     }
 
@@ -148,7 +150,7 @@ class CustomizableIconsTest {
     fun `group counts follow the plan`() {
         fun n(g: IconSlot.Group) = CustomizableIcons.group(g).size
         assertEquals(9, n(IconSlot.Group.CATEGORY_BAR))
-        assertEquals(37, n(IconSlot.Group.ITEMS))
+        assertEquals(43, n(IconSlot.Group.ITEMS))
         assertEquals(10, n(IconSlot.Group.STATUS))
         assertEquals(4, n(IconSlot.Group.SHIBA))
         assertEquals(6, n(IconSlot.Group.MEDIA))
@@ -186,6 +188,24 @@ class CustomizableIconsTest {
             keys(IconSlot.Group.NOTIFICATIONS),
         )
         assertEquals(listOf("menu_check", "menu_back"), keys(IconSlot.Group.MENUS))
+    }
+
+    @Test
+    fun `the six Settings section icons are item slots appended last, in section order`() {
+        val keys = listOf("library", "emulators", "interface", "achievements", "media", "system")
+            .map { "item_settings_section_$it" }
+        assertEquals(keys, IconSlots.ALL.takeLast(6).map { it.key })
+        for (key in keys) {
+            val slot = IconSlots.byKey(key)!!
+            assertEquals(IconSlot.Group.ITEMS, slot.group)
+            assertEquals(256, slot.templateSizePx)
+            assertTrue(CustomizableIcons.isValidKey(key))
+        }
+        assertEquals(
+            listOf("Settings: Library", "Settings: Emulators", "Settings: Interface",
+                "Settings: Achievements", "Settings: Media", "Settings: System"),
+            IconSlots.ALL.takeLast(6).map { it.displayName },
+        )
     }
 
     @Test

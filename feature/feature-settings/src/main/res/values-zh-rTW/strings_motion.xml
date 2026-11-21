@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="motion_title">動態</string>
+    <string name="motion_summary">自行運動的內容有多少。</string>
+    <string name="motion_detail_animated">全部運動</string>
+    <string name="motion_detail_reduced">僅所選項目</string>
+    <string name="motion_detail_static">不自行運動</string>
+    <string name="motion_sub_animated">所有能動的內容都會動：封面、圖示、桌布、背景和光暈。最耗電。</string>
+    <string name="motion_sub_reduced">只有所選項目會動：它的封面、影片片段和光暈。背景持續運動。</string>
+    <string name="motion_sub_static">沒有內容自行運動。瀏覽選單時選單仍會滑動。</string>
+    <string name="motion_holds_background">當「動態」為「靜態」時保持靜止。</string>
+    <string name="motion_holds_glow">當「動態」為「靜態」時保持靜止。</string>
+</resources>

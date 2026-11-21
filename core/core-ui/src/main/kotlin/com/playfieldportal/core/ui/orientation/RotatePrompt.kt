@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.ScreenOrientationMode
+import com.playfieldportal.core.ui.R
 import com.playfieldportal.core.ui.components.ControllerPrompt
 import com.playfieldportal.core.ui.theme.deriveStorefrontColors
 
@@ -111,9 +113,9 @@ fun RotateToLandscapeScreen(
         verticalArrangement = Arrangement.spacedBy(18.dp, Alignment.CenterVertically),
     ) {
         RotateGlyph(color = sf.textPrimary)
-        Text("Rotate to landscape", color = sf.textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Light)
+        Text(stringResource(R.string.core_rotate_title), color = sf.textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Light)
         Text(
-            "PlayField Portal runs in landscape. Turn your device sideways to continue.",
+            stringResource(R.string.core_rotate_message),
             color = sf.textSecondary,
             fontSize = 13.sp,
             textAlign = TextAlign.Center,
@@ -129,7 +131,7 @@ fun RotateToLandscapeScreen(
         ) {
             Text("⌂", color = sf.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.width(8.dp))
-            Text("Switch Launcher", color = sf.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Text(stringResource(R.string.core_rotate_switch_launcher), color = sf.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
             if (showControllerGlyph) {
                 Spacer(Modifier.width(8.dp))
                 ControllerPrompt(action = GamepadAction.SELECT, label = "", glyphSize = 18.dp, spacing = 0.dp)

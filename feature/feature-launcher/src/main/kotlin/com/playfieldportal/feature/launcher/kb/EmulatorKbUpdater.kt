@@ -11,6 +11,8 @@ import com.playfieldportal.core.data.kb.KbDownload
 import com.playfieldportal.core.domain.model.emulatorkb.EmulatorKbDecode
 import com.playfieldportal.core.domain.model.emulatorkb.EmulatorKbDecoder
 import com.playfieldportal.core.domain.model.emulatorkb.EmulatorKbValidator
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.launcher.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -34,21 +36,21 @@ import java.nio.file.StandardCopyOption
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** How an update check ended. [message] is shown to the user as is. */
+/** How an update check ended. [message] is shown to the user as is (resolve it where it is drawn). */
 @Serializable
-enum class KbUpdateResult(val message: String) {
-    Installed("Updated"),
-    NotConfigured("Updates are not set up in this build"),
-    Offline("Couldn't reach the update server"),
-    TooLarge("The update file is too large"),
-    SignatureInvalid("The update's signature is not valid"),
-    NeedsAppUpdate("This update needs a newer version of the app"),
-    OlderThanInstalled("The update is older than the one already installed"),
-    InvalidContent("The update file has invalid content"),
-    StorageFailed("The update could not be saved"),
+enum class KbUpdateResult(val message: UiText) {
+    Installed(UiText.res(R.string.launch_kb_installed)),
+    NotConfigured(UiText.res(R.string.launch_kb_not_configured)),
+    Offline(UiText.res(R.string.launch_kb_offline)),
+    TooLarge(UiText.res(R.string.launch_kb_too_large)),
+    SignatureInvalid(UiText.res(R.string.launch_kb_signature_invalid)),
+    NeedsAppUpdate(UiText.res(R.string.launch_kb_needs_app_update)),
+    OlderThanInstalled(UiText.res(R.string.launch_kb_older)),
+    InvalidContent(UiText.res(R.string.launch_kb_invalid_content)),
+    StorageFailed(UiText.res(R.string.launch_kb_storage_failed)),
 
     /** An automatic check that was not due or is switched off. Never persisted as a status. */
-    Skipped("No check was needed"),
+    Skipped(UiText.res(R.string.launch_kb_skipped)),
 }
 
 /**

@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shiba rank titles -->
+    <string name="dom_shiba_rank_pup">子犬</string>
+    <string name="dom_shiba_rank_ruffian">暴れん坊</string>
+    <string name="dom_shiba_rank_lone_ron_inu">孤高の浪犬</string>
+    <string name="dom_shiba_rank_inu_master">犬の達人</string>
+    <string name="dom_shiba_rank_legendary_hachiko">伝説のハチ公</string>
+
+    <!-- App editions -->
+    <string name="dom_edition_full">Full</string>
+    <string name="dom_edition_lite">Lite</string>
+
+    <!-- Audio channels (volume rows) -->
+    <string name="dom_audio_channel_navigation">ナビゲーション</string>
+    <string name="dom_audio_channel_back">戻る / キャンセル</string>
+    <string name="dom_audio_channel_confirm">決定 / 適用</string>
+    <string name="dom_audio_channel_error">エラー / 無効</string>
+    <string name="dom_audio_channel_category">カテゴリー</string>
+    <string name="dom_audio_channel_options">オプション</string>
+    <string name="dom_audio_channel_notification">通知</string>
+    <string name="dom_audio_channel_boot">起動シーケンス</string>
+    <string name="dom_audio_channel_gameboot">Game Boot</string>
+    <string name="dom_audio_channel_ambience">環境音</string>
+
+    <!-- Customisable media slots -->
+    <string name="dom_media_slot_navigation">ナビゲーション</string>
+    <string name="dom_media_slot_back">戻る / キャンセル</string>
+    <string name="dom_media_slot_confirm">決定 / 適用</string>
+    <string name="dom_media_slot_error">エラー / 無効</string>
+    <string name="dom_media_slot_category">カテゴリー</string>
+    <string name="dom_media_slot_options">オプション</string>
+    <string name="dom_media_slot_notification">通知</string>
+    <string name="dom_media_slot_boot_video">起動アニメーション</string>
+    <string name="dom_media_slot_gameboot_video">Game Boot アニメーション</string>
+    <string name="dom_media_slot_ambience_audio">環境音トラック</string>
+
+    <!-- Game tile display modes -->
+    <string name="dom_icon_display_icon0">カスタムアイコン</string>
+    <string name="dom_icon_display_box_art">パッケージアート</string>
+    <string name="dom_icon_display_physical_media">ディスク / カートリッジ</string>
+    <string name="dom_icon_display_box_3d">3D パッケージアート</string>
+
+    <!-- Icon legibility styles -->
+    <string name="dom_icon_legibility_none">なし</string>
+    <string name="dom_icon_legibility_offset_shadow">ずらし影（暗）</string>
+    <string name="dom_icon_legibility_offset_shadow_light">ずらし影（明）</string>
+    <string name="dom_icon_legibility_contour_dark">縁取り（暗）</string>
+    <string name="dom_icon_legibility_contour_light">縁取り（明）</string>
+    <string name="dom_icon_legibility_contour_auto">縁取り（自動）</string>
+
+    <!-- Animated image playback -->
+    <string name="dom_image_motion_animated">アニメーション</string>
+    <string name="dom_image_motion_reduced">控えめ</string>
+    <string name="dom_image_motion_static">静止</string>
+
+    <!-- Text legibility styles -->
+    <string name="dom_text_legibility_none">なし</string>
+    <string name="dom_text_legibility_shadow">ドロップシャドウ</string>
+    <string name="dom_text_legibility_outline">アウトライン</string>
+    <string name="dom_text_legibility_plate">背景プレート</string>
+    <string name="dom_text_legibility_auto">自動</string>
+
+    <!-- Touch gestures -->
+    <string name="dom_touch_gesture_tap">タップ</string>
+    <string name="dom_touch_gesture_long_press">長押し</string>
+    <string name="dom_touch_gesture_swipe_left">左にスワイプ</string>
+    <string name="dom_touch_gesture_swipe_right">右にスワイプ</string>
+    <string name="dom_touch_gesture_swipe_down">下にスワイプ</string>
+
+    <!-- UMD slot display modes -->
+    <string name="dom_umd_slot_off">オフ</string>
+    <string name="dom_umd_slot_inserted">挿入中</string>
+    <string name="dom_umd_slot_inserted_and_recent">挿入中と最近</string>
+
+    <!-- Item list motion styles -->
+    <string name="dom_list_motion_rewind">巻き戻し</string>
+    <string name="dom_list_motion_glide">スライド</string>
+
+    <!-- Confirm / Back button layouts -->
+    <string name="dom_confirm_back_standard">標準（A = 決定、B = 戻る）</string>
+    <string name="dom_confirm_back_reversed">反転（B = 決定、A = 戻る）</string>
+
+    <!-- X / Y button layouts -->
+    <string name="dom_xy_layout_standard">標準（Y = オプション、X = 並べ替え）</string>
+    <string name="dom_xy_layout_swapped">入れ替え（X = オプション、Y = 並べ替え）</string>
+
+    <!-- Controller prompt styles -->
+    <string name="dom_controller_type_xbox">Xbox</string>
+    <string name="dom_controller_type_nintendo">Nintendo</string>
+    <string name="dom_controller_type_playstation">PlayStation</string>
+
+    <!-- Held-navigation scroll speeds -->
+    <string name="dom_scroll_speed_relaxed">ゆっくり</string>
+    <string name="dom_scroll_speed_standard">標準</string>
+    <string name="dom_scroll_speed_fast">速い</string>
+
+    <!-- Colour schemes -->
+    <string name="dom_color_scheme_original">オリジナル（月替わり）</string>
+    <string name="dom_color_scheme_classic_blue">クラシックブルー</string>
+    <string name="dom_color_scheme_sunset_orange">サンセットオレンジ</string>
+    <string name="dom_color_scheme_fresh_green">フレッシュグリーン</string>
+    <string name="dom_color_scheme_royal_purple">ロイヤルパープル</string>
+    <string name="dom_color_scheme_crimson_red">クリムゾンレッド</string>
+    <string name="dom_color_scheme_silver">シルバー</string>
+    <string name="dom_color_scheme_sakura_pink">桜ピンク</string>
+    <string name="dom_color_scheme_golden_amber">ゴールデンアンバー</string>
+    <string name="dom_color_scheme_aqua_teal">アクアティール</string>
+    <string name="dom_color_scheme_midnight_navy">ミッドナイトネイビー</string>
+    <string name="dom_color_scheme_charcoal">チャコール</string>
+
+    <!-- Controller actions -->
+    <string name="dom_action_navigate_up">上に移動</string>
+    <string name="dom_action_navigate_down">下に移動</string>
+    <string name="dom_action_navigate_left">左に移動（前のカテゴリー）</string>
+    <string name="dom_action_navigate_right">右に移動（次のカテゴリー）</string>
+    <string name="dom_action_select">選択 / 起動</string>
+    <string name="dom_action_back">戻る / 閉じる</string>
+    <string name="dom_action_open_context_menu">オプション / コンテキストメニュー</string>
+    <string name="dom_action_change_sort">並び順を変更</string>
+    <string name="dom_action_prev_category">前のタブ（アプリドロワー）</string>
+    <string name="dom_action_next_category">次のタブ（アプリドロワー）</string>
+    <string name="dom_action_home">Start（通知 / ピッカーで決定）</string>
+    <string name="dom_action_shift">Shift（キーボード）</string>
+    <string name="dom_action_caps_lock">Caps Lock（キーボード）</string>
+    <string name="dom_action_category_menu">カテゴリーメニュー</string>
+
+    <!-- Controller button names -->
+    <string name="dom_key_a">A / ×</string>
+    <string name="dom_key_b">B / ○</string>
+    <string name="dom_key_x">X / □</string>
+    <string name="dom_key_y">Y / △</string>
+    <string name="dom_key_dpad_up">方向キー上</string>
+    <string name="dom_key_dpad_down">方向キー下</string>
+    <string name="dom_key_dpad_left">方向キー左</string>
+    <string name="dom_key_dpad_right">方向キー右</string>
+    <string name="dom_key_dpad_center">方向キー中央</string>
+    <string name="dom_key_l1">L1</string>
+    <string name="dom_key_r1">R1</string>
+    <string name="dom_key_l2">L2</string>
+    <string name="dom_key_r2">R2</string>
+    <string name="dom_key_start">Start</string>
+    <string name="dom_key_select">Select</string>
+    <string name="dom_key_enter">Enter</string>
+    <string name="dom_key_back">Back</string>
+    <string name="dom_key_unknown">キー %1$d</string>
+
+    <!-- Colour naming -->
+    <string name="dom_hue_orange">オレンジ</string>
+    <string name="dom_hue_yellow">黄</string>
+    <string name="dom_hue_green">緑</string>
+    <string name="dom_hue_teal">青緑</string>
+    <string name="dom_hue_blue">青</string>
+    <string name="dom_hue_purple">紫</string>
+    <string name="dom_hue_pink">ピンク</string>
+    <string name="dom_hue_red">赤</string>
+    <string name="dom_hue_orange_cap">オレンジ</string>
+    <string name="dom_hue_yellow_cap">黄</string>
+    <string name="dom_hue_green_cap">緑</string>
+    <string name="dom_hue_teal_cap">青緑</string>
+    <string name="dom_hue_blue_cap">青</string>
+    <string name="dom_hue_purple_cap">紫</string>
+    <string name="dom_hue_pink_cap">ピンク</string>
+    <string name="dom_hue_red_cap">赤</string>
+    <string name="dom_hue_lean">%1$s（%2$s寄り）</string>
+    <string name="dom_hue_lean_cap">%1$s（%2$s寄り）</string>
+    <string name="dom_color_dark">暗い%1$s</string>
+    <string name="dom_color_very_dark">とても暗い%1$s</string>
+    <string name="dom_color_muted">くすんだ%1$s</string>
+    <string name="dom_color_dark_muted">暗くくすんだ%1$s</string>
+    <string name="dom_color_very_dark_muted">とても暗くくすんだ%1$s</string>
+    <string name="dom_color_grey">グレー（%1$s）</string>
+    <string name="dom_saturation_grey">グレー</string>
+    <string name="dom_saturation_muted">くすみ</string>
+    <string name="dom_saturation_vivid">鮮やか</string>
+    <string name="dom_saturation_intense">強烈</string>
+    <string name="dom_brightness_very_dark">とても暗い</string>
+    <string name="dom_brightness_dark">暗い</string>
+    <string name="dom_brightness_medium">中間</string>
+    <string name="dom_brightness_bright">明るい</string>
+    <string name="dom_tint_standard">標準</string>
+    <string name="dom_tint_orange">オレンジ寄り</string>
+    <string name="dom_tint_yellow">黄寄り</string>
+    <string name="dom_tint_green">緑寄り</string>
+    <string name="dom_tint_teal">青緑寄り</string>
+    <string name="dom_tint_blue">青寄り</string>
+    <string name="dom_tint_purple">紫寄り</string>
+    <string name="dom_tint_pink">ピンク寄り</string>
+    <string name="dom_tint_red">赤寄り</string>
+    <string name="dom_tint_much_orange">かなりオレンジ寄り</string>
+    <string name="dom_tint_much_yellow">かなり黄寄り</string>
+    <string name="dom_tint_much_green">かなり緑寄り</string>
+    <string name="dom_tint_much_teal">かなり青緑寄り</string>
+    <string name="dom_tint_much_blue">かなり青寄り</string>
+    <string name="dom_tint_much_purple">かなり紫寄り</string>
+    <string name="dom_tint_much_pink">かなりピンク寄り</string>
+    <string name="dom_tint_much_red">かなり赤寄り</string>
+    <string name="dom_tint_cooler">寒色寄り</string>
+    <string name="dom_tint_warmer">暖色寄り</string>
+    <string name="dom_tint_much_cooler">かなり寒色寄り</string>
+    <string name="dom_tint_much_warmer">かなり暖色寄り</string>
+    <string name="dom_depth_much_lighter">かなり明るく</string>
+    <string name="dom_depth_lighter">明るく</string>
+    <string name="dom_depth_deeper">濃く</string>
+    <string name="dom_depth_much_deeper">かなり濃く</string>
+
+    <!-- File limit messages -->
+    <string name="dom_limit_motion_unsupported_format">サポートされていない形式です。MP4、WebM、GIF、WebP を使用してください</string>
+    <string name="dom_limit_motion_too_large_resolution">ビデオの解像度が大きすぎます。1080p 以下にしてください</string>
+    <string name="dom_limit_motion_too_long">クリップが長すぎます。60 秒以下にしてください</string>
+    <string name="dom_limit_motion_too_large_bytes">ファイルが大きすぎます。60 MB 未満にしてください</string>
+    <string name="dom_limit_motion_undecodable">そのビデオを読み込めませんでした。別のファイルをお試しください</string>
+    <string name="dom_limit_media_unsupported_audio">サポートされていない形式です。MP3、WAV、OGG、M4A のオーディオを使用してください</string>
+    <string name="dom_limit_media_unsupported_video">サポートされていない形式です。MP4 または WebM のビデオを使用してください</string>
+    <string name="dom_limit_media_too_large_sound">ファイルが大きすぎます</string>
+    <string name="dom_limit_media_too_large_video">ファイルが大きすぎます。ビデオは 25 MB 未満にしてください</string>
+    <string name="dom_limit_media_undecodable">そのファイルを読み込めませんでした。別のファイルをお試しください</string>
+    <string name="dom_limit_media_no_duration">そのファイルの長さを読み取れませんでした。別のファイルを試すか、MP3/WAV/OGG/M4A に変換してください</string>
+    <string name="dom_limit_media_too_long">そのクリップは長すぎます。%1$s 以下にしてください</string>
+
+    <!-- Error codes -->
+    <string name="dom_error_ln_1001_title">このプラットフォームにエミュレーターが割り当てられていません</string>
+    <string name="dom_error_ln_1001_why">このプラットフォームのゲームをどのアプリで実行するか、PlayFieldPortal が把握していません。</string>
+    <string name="dom_error_ln_1001_action">設定 › エミュレーターの割り当てで、このプラットフォーム用のエミュレーターを選択してください。</string>
+    <string name="dom_error_ln_1002_title">選択した RetroArch コアがインストールされていません</string>
+    <string name="dom_error_ln_1002_why">このデバイスにないコアを読み込むよう RetroArch に指示されました。</string>
+    <string name="dom_error_ln_1002_action">RetroArch のオンラインアップデーターからコアをインストールするか、エミュレーターの割り当てで別のコアを選択してください。</string>
+    <string name="dom_error_ln_2001_title">ゲームファイルが見つからないか、読み込めません</string>
+    <string name="dom_error_ln_2001_why">ファイルが移動、名前変更、削除されたか、ファイルのある SD カードが取り外された可能性があります。</string>
+    <string name="dom_error_ln_2001_action">ファイルがまだ存在することを確認してから、そのメモリーカードを再スキャンしてください。</string>
+    <string name="dom_error_ln_4001_title">エミュレーターが見つかりませんでした</string>
+    <string name="dom_error_ln_4001_why">このゲームに割り当てられたエミュレーターがインストールされていないか、PlayFieldPortal が開く画面を Android が見つけられませんでした。</string>
+    <string name="dom_error_ln_4001_action">エミュレーターをインストールするか、設定 › エミュレーターの割り当てで別のエミュレーターを選択してください。</string>
+    <string name="dom_error_ln_4002_title">Android がエミュレーターの起動を許可しませんでした</string>
+    <string name="dom_error_ln_4002_why">Android が PlayFieldPortal によるこのエミュレーターの起動を拒否しました。</string>
+    <string name="dom_error_ln_4002_action">一度エミュレーターを単独で開いてから、もう一度お試しください。繰り返し発生する場合は、エミュレーターを更新してください。</string>
+    <string name="dom_error_ln_4003_title">エミュレーターが前面に表示されませんでした</string>
+    <string name="dom_error_ln_4003_why">エミュレーターが起動直後に終了したか、ゲームの読み込み前に Android によって停止された可能性があります。</string>
+    <string name="dom_error_ln_4003_action">一度エミュレーターを単独で開いて起動するか確認し、新しいバージョンがあれば更新してください。繰り返し発生する場合は、設定 › エミュレーターの割り当てで別のエミュレーターを選択してください。</string>
+    <string name="dom_error_ln_9001_title">エミュレーターを開けませんでした</string>
+    <string name="dom_error_ln_9001_why">エミュレーターの起動中に予期しない問題が発生しました。</string>
+    <string name="dom_error_ln_9001_action">もう一度お試しください。繰り返し発生する場合は、詳細をコピーして報告してください。</string>
+    <string name="dom_error_sc_1001_title">このメモリーカードにフォルダが設定されていません</string>
+    <string name="dom_error_sc_1001_why">このメモリーカードにはまだスキャン先がありません。</string>
+    <string name="dom_error_sc_1001_action">メモリーカードのオプションからフォルダを選択して、スキャンしてください。</string>
+    <string name="dom_error_sc_1002_title">スキャンはすでに実行中です</string>
+    <string name="dom_error_sc_1002_why">このメモリーカードはすでにスキャン中だったため、2 回目のスキャンはスキップされました。</string>
+    <string name="dom_error_sc_1002_action">実行中のスキャンが完了するまでお待ちください。完了すると結果がここに表示されます。</string>
+    <string name="dom_error_sc_2001_title">フォルダへのアクセスが失われました</string>
+    <string name="dom_error_sc_2001_why">PlayFieldPortal はこのフォルダの読み取り権限を失いました。</string>
+    <string name="dom_error_sc_2001_action">メモリーカードのオプションからフォルダを選択し直してアクセスを許可してから、スキャンしてください。</string>
+    <string name="dom_error_sc_2002_title">フォルダが存在しません</string>
+    <string name="dom_error_sc_2002_why">フォルダが移動または削除されました。SD カード上にある場合は、カードが取り外された可能性があります。</string>
+    <string name="dom_error_sc_2002_action">SD カードを挿入してもう一度スキャンするか、メモリーカードのオプションから新しいフォルダを選択してください。</string>
+    <string name="dom_error_sc_2003_title">不明なシステムフォルダ</string>
+    <string name="dom_error_sc_2003_why">メインの ROM フォルダ内のこのフォルダは、PlayFieldPortal が認識するシステムと一致しません。</string>
+    <string name="dom_error_sc_2003_action">フォルダ名をサポートされているシステム名に変更するか、ゲームを対応するフォルダに移動してください。</string>
+    <string name="dom_error_sc_2004_title">ファイルを認識できません</string>
+    <string name="dom_error_sc_2004_why">このファイルの種類は、このプラットフォームのゲームでは使用されません。</string>
+    <string name="dom_error_sc_2004_action">ファイルがこのプラットフォームのゲームか確認してください。アーカイブやパッチは意図的にスキップされます。</string>
+    <string name="dom_error_sc_9001_title">スキャン中に予期しないエラーが発生しました</string>
+    <string name="dom_error_sc_9001_why">スキャン中に予期しない問題が発生しました。</string>
+    <string name="dom_error_sc_9001_action">もう一度スキャンしてください。繰り返し発生する場合は、詳細をコピーして報告してください。</string>
+    <string name="dom_error_ar_1001_title">アートワークフォルダを利用できません</string>
+    <string name="dom_error_ar_1001_why">PFP がアートワークフォルダにアクセスできないため、新しいアートワークは一時停止しています。</string>
+    <string name="dom_error_ar_1001_action">設定 › アートワークでフォルダをリンクし直してください。</string>
+    <string name="dom_error_ar_2001_title">アートワークファイルを保存できませんでした</string>
+    <string name="dom_error_ar_2001_why">ストレージがいっぱいか、アートワークフォルダに書き込めませんでした。</string>
+    <string name="dom_error_ar_2001_action">空き容量を確保してから、もう一度お試しください。</string>
+    <string name="dom_error_ar_2002_title">ファイルをコピーできませんでした</string>
+    <string name="dom_error_ar_2002_why">コピーが途中で失敗したか、コピー先に書き込めませんでした。</string>
+    <string name="dom_error_ar_2002_action">コピー先に空き容量があることを確認してから、もう一度実行してください。</string>
+    <string name="dom_error_ar_2003_title">インポート内に不明なシステムフォルダがあります</string>
+    <string name="dom_error_ar_2003_why">インポート内のこのフォルダは、PlayFieldPortal が認識するシステムと一致しません。</string>
+    <string name="dom_error_ar_2003_action">フォルダ名をサポートされているシステム名に変更して、もう一度インポートしてください。</string>
+    <string name="dom_error_ar_3001_title">アートワークのソースに接続できませんでした</string>
+    <string name="dom_error_ar_3001_why">デバイスがオフラインか、ソースから応答がありませんでした。</string>
+    <string name="dom_error_ar_3001_action">接続を確認して、しばらくしてからもう一度お試しください。</string>
+    <string name="dom_error_ar_3002_title">ソースがリクエストを拒否しました</string>
+    <string name="dom_error_ar_3002_why">ソースがリクエストを制限しているか、必要なアカウントまたはキーが拒否されました。</string>
+    <string name="dom_error_ar_3002_action">しばらく待ってからもう一度試すか、設定でソースのアカウントを確認してください。</string>
+    <string name="dom_error_ar_3003_title">このゲームに一致するものが見つかりませんでした</string>
+    <string name="dom_error_ar_3003_why">ソースにこのゲームのタイトルと一致するエントリーがありません。</string>
+    <string name="dom_error_ar_3003_action">ゲームのタイトルを確認するか、アートワークスタジオで手動でアートワークを選択してください。</string>
+    <string name="dom_error_ar_9001_title">取得中に予期しないエラーが発生しました</string>
+    <string name="dom_error_ar_9001_why">取得中に予期しない問題が発生しました。</string>
+    <string name="dom_error_ar_9001_action">もう一度お試しください。繰り返し発生する場合は、詳細をコピーして報告してください。</string>
+    <string name="dom_error_ac_1001_title">このゲームに一致する実績セットがありません</string>
+    <string name="dom_error_ac_1001_why">接続されているどのサービスにも、このタイトルのゲームの実績がありません。</string>
+    <string name="dom_error_ac_1001_action">ゲームの実績ページから手動で照合してください。</string>
+    <string name="dom_error_ac_2001_title">Windows の実績フォルダを読み込めません</string>
+    <string name="dom_error_ac_2001_why">このゲームのローカル実績用に選択したフォルダを開けませんでした。</string>
+    <string name="dom_error_ac_2001_action">ゲームの実績ページからゲームのフォルダを選択し直してください。</string>
+    <string name="dom_error_ac_3001_title">デバイスがオフラインです</string>
+    <string name="dom_error_ac_3001_why">インターネットに接続していないと実績を更新できません。</string>
+    <string name="dom_error_ac_3001_action">インターネットに接続してください。更新は自動的に再実行されます。</string>
+    <string name="dom_error_ac_3002_title">サインインの有効期限が切れました</string>
+    <string name="dom_error_ac_3002_why">接続されているサービスが PlayFieldPortal のサインインを受け付けなくなりました。</string>
+    <string name="dom_error_ac_3002_action">設定 › 実績でサービスに再接続してください。</string>
+    <string name="dom_error_ac_3003_title">Steam のゲームの詳細が非公開です</string>
+    <string name="dom_error_ac_3003_why">Steam はゲームの詳細が公開されている場合にのみ実績を共有します。</string>
+    <string name="dom_error_ac_3003_action">Steam のプライバシー設定でゲームの詳細を「公開」に設定してから、もう一度更新してください。</string>
+    <string name="dom_error_ac_3004_title">このゲームを更新できませんでした</string>
+    <string name="dom_error_ac_3004_why">このゲームについてサービスから応答がなかったか、エラーが返されました。</string>
+    <string name="dom_error_ac_3004_action">しばらくしてから、もう一度更新してください。</string>
+    <string name="dom_error_md_2001_title">メディアフォルダを読み込めません</string>
+    <string name="dom_error_md_2001_why">PlayFieldPortal がこのフォルダにアクセスできなくなったか、フォルダが存在しません。</string>
+    <string name="dom_error_md_2001_action">メディアの設定でフォルダを選択し直してから、スキャンしてください。</string>
+    <string name="dom_error_md_9001_title">メディアのスキャン中に予期しないエラーが発生しました</string>
+    <string name="dom_error_md_9001_why">スキャン中に予期しない問題が発生しました。</string>
+    <string name="dom_error_md_9001_action">もう一度スキャンしてください。繰り返し発生する場合は、詳細をコピーして報告してください。</string>
+    <string name="dom_error_bk_1001_title">復元で項目がスキップされました</string>
+    <string name="dom_error_bk_1001_why">この項目は安全に復元できなかったため、そのままにしました。</string>
+    <string name="dom_error_bk_1001_action">他には影響ありません。必要な場合は、この項目を手動で設定し直してください。</string>
+    <string name="dom_error_bk_2001_title">バックアップファイルを書き込めませんでした</string>
+    <string name="dom_error_bk_2001_why">ストレージがいっぱいか、バックアップフォルダに書き込めませんでした。</string>
+    <string name="dom_error_bk_2001_action">空き容量を確保するか、別のバックアップ先を選択してから、もう一度お試しください。</string>
+    <string name="dom_error_bk_2002_title">バックアップファイルを読み込めないか、破損しています</string>
+    <string name="dom_error_bk_2002_why">このファイルは PlayFieldPortal のバックアップではないか、途中で切れています。</string>
+    <string name="dom_error_bk_2002_action">別のバックアップファイルを選択してください。</string>
+    <string name="dom_error_sy_9001_title">問題が発生しました</string>
+    <string name="dom_error_sy_9001_why">予期しない問題が発生しました。</string>
+    <string name="dom_error_sy_9001_action">もう一度お試しください。繰り返し発生する場合は、詳細をコピーして報告してください。</string>
+</resources>

@@ -2,16 +2,24 @@ package com.playfieldportal.feature.xmb.viewmodel
 
 import com.playfieldportal.core.domain.model.FeatureFlags
 import com.playfieldportal.feature.settings.ui.SETTINGS_SCREEN_ROUTES
+import com.playfieldportal.themekit.CustomizableIcons
+import com.playfieldportal.themekit.IconSlot
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * Structure tests for the Settings hierarchy: the root
  * list, every L1 section's L2 rows, route resolution, and migration compatibility. Back behavior
  * itself is exercised through the shared drill plumbing (same path as Music/Video/Photo/Social).
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class SettingsHierarchyTest {
 
     // ── Root ─────────────────────────────────────────────────────────────────
@@ -37,6 +45,26 @@ class SettingsHierarchyTest {
         SettingsSection.entries.forEach { section ->
             assertFalse("Section id must not be a screen route: ${section.id}", section.id in SETTINGS_SCREEN_ROUTES)
         }
+    }
+
+    // ── Section icons ────────────────────────────────────────────────────────
+
+    @Test fun `each section has its own registered icon slot, the rows inside keep the wrench`() {
+        val keys = SettingsSection.entries.map { it.iconSlotKey }
+        assertEquals(keys.size, keys.toSet().size)
+        SettingsSection.entries.forEach { section ->
+            assertEquals("item_${section.id}", section.iconSlotKey)
+            assertEquals(section.iconSlotKey, settingsSectionIconSlotKey(section.id))
+            val slot = CustomizableIcons.byKey(section.iconSlotKey)
+            assertTrue("${section.iconSlotKey} must be a registered slot", slot != null)
+            assertEquals(IconSlot.Group.ITEMS, slot!!.group)
+            // The rows inside the section draw the shared wrench (item_settings): no slot of their own.
+            settingsSectionItems(section).forEach { row ->
+                assertNull(row.id, settingsSectionIconSlotKey(row.id))
+            }
+        }
+        // Android Settings is not a section: it keeps the wrench too.
+        assertNull(settingsSectionIconSlotKey("settings_android_system"))
     }
 
     // ── Section contents ─────────────────────────────────────────────────────
@@ -89,7 +117,7 @@ class SettingsHierarchyTest {
 
     @Test fun `the System subtitle does not mention backup while Backup and Restore is off`() {
         assertFalse(FeatureFlags.BACKUP_RESTORE)
-        assertFalse(SettingsSection.SYSTEM.subtitle.contains("backup", ignoreCase = true))
+        assertFalse(SettingsSection.SYSTEM.subtitle.en().contains("backup", ignoreCase = true))
     }
 
     @Test fun `a notification cannot open the backup screen while Backup and Restore is off`() {
@@ -115,8 +143,8 @@ class SettingsHierarchyTest {
     @Test fun `every section row carries a title and subtitle`() {
         (XMBViewModel.SETTINGS_ROOT_ITEMS + SettingsSection.entries.flatMap { settingsSectionItems(it) })
             .forEach { row ->
-                assertTrue("Missing title for ${row.id}", !row.title.isNullOrBlank())
-                assertTrue("Missing subtitle for ${row.id}", !row.subtitle.isNullOrBlank())
+                assertTrue("Missing title for ${row.id}", row.titleUi.en().isNotBlank())
+                assertTrue("Missing subtitle for ${row.id}", row.subtitleUi?.en().isNullOrBlank() == false)
             }
     }
 
@@ -139,19 +167,19 @@ class SettingsHierarchyTest {
 
     // ── Hidden Games move ────────────────────────────────────────────────────
 
-    @Test fun `Hidden Games is present under Library via its dedicated route`() {
+    @Test fun `Hidden Items is present under Library via its dedicated route`() {
         val libraryIds = settingsSectionItems(SettingsSection.LIBRARY).map { it.id }
-        assertTrue("Hidden Games missing from Library", libraryIds.contains("settings_app_visibility"))
+        assertTrue("Hidden Items missing from Library", libraryIds.contains("settings_app_visibility"))
         assertTrue("settings_app_visibility route missing", SETTINGS_SCREEN_ROUTES.contains("settings_app_visibility"))
     }
 
     @Test fun `Update Achievements route is present and distinct`() {
         assertTrue("Update Achievements route missing", SETTINGS_SCREEN_ROUTES.contains("settings_achievements_update"))
         assertEquals("Update Achievements", settingsSectionItems(SettingsSection.ACHIEVEMENTS)
-            .first { it.id == "settings_achievements_update" }.title)
+            .first { it.id == "settings_achievements_update" }.titleUi.en())
     }
 
-    @Test fun `Hidden Games is not reachable from Display settings`() {
+    @Test fun `Hidden Items is not reachable from Display settings`() {
         // Display keeps no link: its only remaining ids are the combined screen routes, none of
         // which is the app-visibility route.
         val interfaceIds = settingsSectionItems(SettingsSection.INTERFACE).map { it.id }
@@ -171,14 +199,14 @@ class SettingsHierarchyTest {
         // and every focus key under it. There is no assignable boot sound (survey U26), so the
         // subtitle names menu sounds, levels and ambience.
         val row = settingsSectionItems(SettingsSection.INTERFACE).first { it.id == "settings_audio" }
-        assertEquals("Sound", row.title)
-        assertEquals("Menu sounds, levels & ambience", row.subtitle)
+        assertEquals("Sound", row.titleUi.en())
+        assertEquals("Menu sounds, levels & ambience", row.subtitleUi.enOrNull())
     }
 
     // Survey U7 (docs/audits/codebase-survey-2026-10-22.md): there is no in-app viewer; the screen
     // opens or shares the saved log files.
     @Test fun `the Logs row says it opens or shares logs`() {
         val row = settingsSectionItems(SettingsSection.SYSTEM).first { it.id == "settings_logs" }
-        assertEquals("Open or share session logs", row.subtitle)
+        assertEquals("Open or share session logs", row.subtitleUi.enOrNull())
     }
 }

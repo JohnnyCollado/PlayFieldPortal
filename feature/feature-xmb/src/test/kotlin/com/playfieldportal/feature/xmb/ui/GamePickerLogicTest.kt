@@ -14,6 +14,12 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.core.domain.text.labelRes
 
 /**
  * Pins the library-shelf game picker's rules (GamePickerLogic): which shelves exist, the two
@@ -22,7 +28,13 @@ import org.junit.Test
  * toggling, the single picker-wide view, add/remove counts that match
  * XMBViewModel.confirmGamePicker, and the menu sound for each input.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class GamePickerLogicTest {
+
+    private val res get() = RuntimeEnvironment.getApplication().resources
+    private fun GamePickerState.menuRows() = menuRows { res.getString(it) }
+    private fun text(t: UiText) = t.resolve(res)
 
     private fun game(id: Long, platform: String, type: GameContentType = GameContentType.GAME) =
         Game(id = id, title = "Game $id", platformId = platform, contentType = type)
@@ -78,7 +90,7 @@ class GamePickerLogicTest {
             listOf(IN_CATEGORY_SHELF_KEY, platformShelfKey("ps2"), platformShelfKey("snes"), CARDS_SHELF_KEY),
             shelves.map { it.key },
         )
-        assertEquals("In RPGs", shelves[0].title)
+        assertEquals("In RPGs", text(shelves[0].title))
         // GBA has no games, so it has no shelf.
         assertTrue(shelves.none { it.key == platformShelfKey("gba") })
     }
@@ -227,7 +239,7 @@ class GamePickerLogicTest {
 
     @Test
     fun `a mixed shelf flows each box at its own width`() {
-        val mixed = GameShelf("mixed", "Mixed", listOf(game(1, "snes"), game(2, "psp"), game(3, "psp"), game(4, "snes"), game(5, "psp")))
+        val mixed = GameShelf("mixed", UiText.raw("Mixed"), listOf(game(1, "snes"), game(2, "psp"), game(3, "psp"), game(4, "snes"), game(5, "psp")))
         val s = GamePickerState(shelves = listOf(mixed), focusZone = PickerZone.GRID, viewMode = IconDisplayMode.BOX_ART, shelfWidthDp = 300f)
         // SNES ≈ 123 + PSP 64 + PSP 64 (+ gaps) fits 300; the next SNES spills.
         assertEquals(listOf(0..2, 3..4), s.shelfRows())
@@ -235,7 +247,7 @@ class GamePickerLogicTest {
 
     @Test
     fun `on a mixed shelf up and down land on the tile nearest the cursor's centre`() {
-        val mixed = GameShelf("mixed", "Mixed", listOf(game(1, "snes"), game(2, "psp"), game(3, "psp"), game(4, "snes"), game(5, "psp")))
+        val mixed = GameShelf("mixed", UiText.raw("Mixed"), listOf(game(1, "snes"), game(2, "psp"), game(3, "psp"), game(4, "snes"), game(5, "psp")))
         val s = GamePickerState(shelves = listOf(mixed), focusZone = PickerZone.GRID, viewMode = IconDisplayMode.BOX_ART, shelfWidthDp = 300f)
         // Rows: SNES PSP PSP / SNES PSP. From the second PSP (past the shorter row's end) down is the last PSP.
         val at2 = s.copy(focusByShelf = mapOf("mixed" to 2))
@@ -395,10 +407,10 @@ class GamePickerLogicTest {
 
     @Test
     fun `the change label names only the parts that are not zero`() {
-        assertEquals("No changes", pendingChangeLabel(adds = 0, removals = 0))
-        assertEquals("2 to add", pendingChangeLabel(adds = 2, removals = 0))
-        assertEquals("1 to remove", pendingChangeLabel(adds = 0, removals = 1))
-        assertEquals("2 to add · 1 to remove", pendingChangeLabel(adds = 2, removals = 1))
+        assertEquals("No changes", text(pendingChangeLabel(adds = 0, removals = 0)))
+        assertEquals("2 to add", text(pendingChangeLabel(adds = 2, removals = 0)))
+        assertEquals("1 to remove", text(pendingChangeLabel(adds = 0, removals = 1)))
+        assertEquals("2 to add · 1 to remove", text(pendingChangeLabel(adds = 2, removals = 1)))
     }
 
     // ── Y: the options menu (View ›, Select All) ────────────────────────────
@@ -408,7 +420,7 @@ class GamePickerLogicTest {
         val s = onPs2().openMenu()
         val rows = s.menuRows()
         assertEquals(listOf("View", "Select All"), rows.map { it.label })
-        assertEquals(IconDisplayMode.ICON0.label, rows[0].value)
+        assertEquals(res.getString(IconDisplayMode.ICON0.labelRes), rows[0].value)
         assertTrue(rows[0].opensMenu)
         assertEquals("Off", rows[1].value)
     }
@@ -417,7 +429,7 @@ class GamePickerLogicTest {
     fun `View lists every mode with the current one checked, and picking one applies it and closes`() {
         val view = onPs2().openMenu().activateMenuRow()
         assertEquals(PickerMenuLevel.VIEW, view.menu?.level)
-        assertEquals(IconDisplayMode.entries.map { it.label }, view.menuRows().map { it.label })
+        assertEquals(IconDisplayMode.entries.map { res.getString(it.labelRes) }, view.menuRows().map { it.label })
         assertEquals(listOf(true) + List(IconDisplayMode.entries.size - 1) { false }, view.menuRows().map { it.checked })
         val picked = view.copy(menu = view.menu!!.copy(selectedIndex = IconDisplayMode.BOX_ART.ordinal)).activateMenuRow()
         assertEquals(IconDisplayMode.BOX_ART, picked.viewMode)
@@ -493,7 +505,7 @@ class GamePickerLogicTest {
 
     @Test
     fun `touch prompts name the tap the shelves and tiles bind`() {
-        assertEquals(listOf(TouchPromptItem(TouchGesture.TAP, "Open / Toggle")), gamePickerTouchPrompts())
+        assertEquals(listOf(TouchPromptItem(TouchGesture.TAP, "Open / Toggle")), gamePickerTouchPrompts(res))
     }
 
     @Test

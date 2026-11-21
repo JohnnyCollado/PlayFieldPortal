@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.achievements.provider.vita
 
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.achievements.R
 import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
@@ -34,21 +36,21 @@ class VitaGameScanner @Inject constructor(
     private val trophyDiscovery: VitaTrophyDiscovery,
     private val achievements: AchievementController,
 ) {
-    data class VitaScanResult(val added: Int, val updated: Int, val found: Int, val message: String)
+    data class VitaScanResult(val added: Int, val updated: Int, val found: Int, val message: UiText)
 
     suspend fun scan(): VitaScanResult = withContext(Dispatchers.IO) {
         val treeUri = vita3KLibrary.ux0TreeUri()?.let { runCatching { Uri.parse(it) }.getOrNull() }
-            ?: return@withContext VitaScanResult(0, 0, 0, "Set your Vita3K data folder (ux0) first.")
+            ?: return@withContext VitaScanResult(0, 0, 0, UiText.res(R.string.ach_vita_set_folder))
 
         val rootDocId = runCatching { DocumentsContract.getTreeDocumentId(treeUri) }.getOrNull()
-            ?: return@withContext VitaScanResult(0, 0, 0, "That Vita3K folder link is invalid — re-grant it.")
+            ?: return@withContext VitaScanResult(0, 0, 0, UiText.res(R.string.ach_vita_link_invalid))
 
         // The grant may be ux0 itself or a parent that contains it (e.g. Roms/vita), so find the
         // folder that actually holds app/.
         val ux0DocId = resolveUx0Base(treeUri, rootDocId)
-            ?: return@withContext VitaScanResult(0, 0, 0, "Couldn't find ux0/app in the granted folder — pick your Vita3K ux0 folder (or the folder that contains it).")
+            ?: return@withContext VitaScanResult(0, 0, 0, UiText.res(R.string.ach_vita_no_ux0))
         val appDocId = findChildDir(treeUri, ux0DocId, "app")
-            ?: return@withContext VitaScanResult(0, 0, 0, "No app/ folder under ux0 — check the granted folder.")
+            ?: return@withContext VitaScanResult(0, 0, 0, UiText.res(R.string.ach_vita_no_app))
 
         val titleFolders = context.contentResolver.querySafChildren(treeUri, appDocId)
             .filter { it.isDirectory && looksLikeTitleId(it.name) }
@@ -100,9 +102,10 @@ class VitaGameScanner @Inject constructor(
         }
 
         val message = when {
-            titleFolders.isEmpty() -> "No installed Vita games found under ux0/app. Install a game in Vita3K first."
-            added == 0 && updated == 0 -> "No new Vita games — ${titleFolders.size} already in your library."
-            else -> "Imported $added Vita game(s)" + (if (updated > 0) ", updated $updated" else "") + "."
+            titleFolders.isEmpty() -> UiText.res(R.string.ach_vita_none_installed)
+            added == 0 && updated == 0 -> UiText.plural(R.plurals.ach_vita_no_new, titleFolders.size, titleFolders.size)
+            else -> if (updated > 0) UiText.plural(R.plurals.ach_vita_imported_updated, added, added, updated)
+            else UiText.plural(R.plurals.ach_vita_imported, added, added)
         }
         Timber.i("Vita scan — ${titleFolders.size} installed, $added added, $updated updated")
         VitaScanResult(added, updated, titleFolders.size, message)

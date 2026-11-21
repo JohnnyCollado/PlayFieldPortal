@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Scan error messages -->
+    <string name="scan_error_card_not_found">找不到记忆卡。</string>
+    <string name="scan_error_scan_failed">扫描失败，请查看日志。</string>
+    <string name="scan_error_library_unreadable">无法读取库。</string>
+    <string name="scan_error_save_failed">无法保存扫描到的游戏。</string>
+    <string name="scan_error_rom_dir_not_found">找不到 ROM 目录：%1$s</string>
+    <string name="scan_error_folder_link_invalid">此库的文件夹链接无效。请重新添加该文件夹。</string>
+    <string name="scan_error_root_unreadable">无法读取某个 ROM 文件夹。如果它位于 SD 卡上，请检查 SD 卡是否已插入。</string>
+    <string name="scan_error_permission_lost">权限已丢失，请重新选择文件夹。</string>
+    <string name="scan_error_partial_read">部分文件夹无法读取，因此未做任何更改。请稍后重试。</string>
+
+    <!-- One-line scan outcome -->
+    <string name="scan_outcome_line">%1$s：%2$s</string>
+    <string name="scan_outcome_no_source">未配置 ROM 文件夹。</string>
+    <string name="scan_outcome_busy">扫描已在进行中。</string>
+    <string name="scan_outcome_failed">扫描失败。</string>
+    <string name="scan_outcome_no_new">没有新 ROM</string>
+    <string name="scan_outcome_no_new_none_missing">没有新 ROM，无缺失</string>
+    <string name="scan_outcome_no_new_marked_missing">没有新 ROM，%1$d 个标记为缺失</string>
+    <plurals name="scan_outcome_added">
+        <item quantity="other">已添加 %1$d 个新 ROM</item>
+    </plurals>
+    <plurals name="scan_outcome_added_none_missing">
+        <item quantity="other">已添加 %1$d 个新 ROM，无缺失</item>
+    </plurals>
+    <plurals name="scan_outcome_added_marked_missing">
+        <item quantity="other">已添加 %1$d 个新 ROM，%2$d 个标记为缺失</item>
+    </plurals>
+    <string name="scan_with_error_note">%1$s（%2$s）</string>
+
+    <!-- Per-card line in the scan results list -->
+    <string name="scan_badge_no_new">无新增</string>
+    <string name="scan_reason_no_new">没有新游戏</string>
+    <string name="scan_reason_no_new_marked_missing">没有新游戏，%1$d 个标记为缺失</string>
+    <plurals name="scan_reason_added">
+        <item quantity="other">已添加 %1$d 个新游戏</item>
+    </plurals>
+    <plurals name="scan_reason_added_marked_missing">
+        <item quantity="other">已添加 %1$d 个新游戏，%2$d 个标记为缺失</item>
+    </plurals>
+</resources>

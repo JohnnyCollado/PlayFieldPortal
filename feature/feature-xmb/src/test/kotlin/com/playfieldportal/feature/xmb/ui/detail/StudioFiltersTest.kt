@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import com.playfieldportal.feature.xmb.R
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.domain.model.GameRegion
 import com.playfieldportal.feature.artwork.api.SgdbArtType
 import com.playfieldportal.feature.artwork.store.ArtworkKind
@@ -155,13 +157,13 @@ class StudioFiltersTest {
 
     @Test
     fun `ScreenScraper media codes read as names, and an unknown code stays as it is`() {
-        assertEquals("Box Art 2D", ssMediaLabel("box-2D"))
-        assertEquals("Mix v2", ssMediaLabel("mixrbv2"))
-        assertEquals("Screenshot", ssMediaLabel("ss"))
-        assertEquals("newtype", ssMediaLabel("newtype"))
+        assertEquals(UiText.res(R.string.det_ssmedia_box_2d), ssMediaLabel("box-2D"))
+        assertEquals(UiText.res(R.string.det_ssmedia_mix_v2), ssMediaLabel("mixrbv2"))
+        assertEquals(UiText.res(R.string.det_ssmedia_screenshot), ssMediaLabel("ss"))
+        assertEquals(UiText.raw("newtype"), ssMediaLabel("newtype"))
         // Every code the Studio can browse has a name of its own.
         SS_TYPES_FOR_KIND.values.flatten().distinct().forEach { code ->
-            assertNotEquals("$code has no readable name", code, ssMediaLabel(code))
+            assertNotEquals("$code has no readable name", UiText.raw(code), ssMediaLabel(code))
         }
     }
 
@@ -174,9 +176,15 @@ class StudioFiltersTest {
             filters = StudioFilters(ssMedia = mapOf(ArtworkKind.ICON to "box-2D")),
         )
         val root = studioFilterRows(state, StudioFilterGroup.FILTERS, types, emptyList())
-        assertEquals("Box Art 2D", root.first { it.label == "Media" }.value)
+        assertEquals(UiText.res(R.string.det_ssmedia_box_2d), root.first { it.label == UiText.res(R.string.det_filter_media) }.value)
         val list = studioFilterRows(state, StudioFilterGroup.MEDIA, types, emptyList())
-        assertEquals(listOf("All", "Mix v2", "Box Art 2D"), list.map { it.label })
+        assertEquals(
+            listOf(
+                UiText.res(R.string.det_filter_all), UiText.res(R.string.det_ssmedia_mix_v2),
+                UiText.res(R.string.det_ssmedia_box_2d),
+            ),
+            list.map { it.label },
+        )
         assertEquals(listOf(false, false, true), list.map { it.checked })
     }
 }

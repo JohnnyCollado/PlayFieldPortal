@@ -1,5 +1,7 @@
 package com.playfieldportal.launcher
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.playfieldportal.core.data.datastore.pfpDataStore
 import android.annotation.SuppressLint
 import android.content.ComponentName
 import android.content.Intent
@@ -236,7 +238,30 @@ class MainActivity : ComponentActivity() {
                         onDispose { hold.release() }
                     }
                 }
+                // Display ▸ Background blur: how strongly the screen blurs behind prompts and the
+                // options panel. Read once here so every host draws the same strength.
+                val backdropBlurStrength by remember {
+                    pfpDataStore.data.map { prefs ->
+                        com.playfieldportal.core.domain.model.BackdropBlur.coerce(
+                            prefs[androidx.datastore.preferences.core.floatPreferencesKey(
+                                com.playfieldportal.core.domain.model.BackdropBlur.PREFERENCE_KEY,
+                            )],
+                        )
+                    }
+                }.collectAsStateWithLifecycle(com.playfieldportal.core.domain.model.BackdropBlur.DEFAULT_STRENGTH)
+                // Display ▸ Focus glow: the light round the focused icon (Off / Steady / Pulsing).
+                val focusGlowMode by remember {
+                    pfpDataStore.data.map { prefs ->
+                        com.playfieldportal.core.domain.model.FocusGlowMode.fromStored(
+                            prefs[androidx.datastore.preferences.core.stringPreferencesKey(
+                                com.playfieldportal.core.domain.model.FocusGlowMode.PREFERENCE_KEY,
+                            )],
+                        )
+                    }
+                }.collectAsStateWithLifecycle(com.playfieldportal.core.domain.model.FocusGlowMode.DEFAULT)
                 CompositionLocalProvider(
+                    com.playfieldportal.core.ui.components.LocalPfpBackdropBlurStrength provides backdropBlurStrength,
+                    com.playfieldportal.core.ui.components.LocalFocusGlowMode provides focusGlowMode,
                     LocalMenuSounds provides menuSounds,
                     com.playfieldportal.core.ui.motion.LocalImageMotion provides imageMotion,
                     com.playfieldportal.core.ui.motion.LocalMotionAllowed provides appVisible,
@@ -245,6 +270,8 @@ class MainActivity : ComponentActivity() {
                     // live bindings supplied here, so none of them can contradict the pad.
                     ProvideControllerPrompts {
                         Box(Modifier.fillMaxSize()) {
+                            // Gives the optional haptic ticks (Controller settings) a view to play on.
+                            com.playfieldportal.core.ui.sound.HapticViewHost(menuSoundPlayer)
                             // AppXmbHost is defined per build variant: the debug source set wraps the shell so
                             // long-pressing Settings opens DebugMenuScreen; the release source set calls
                             // XMBShellContainer directly, keeping debug code out of the APK.
@@ -339,7 +366,7 @@ class MainActivity : ComponentActivity() {
     // held upright can leave for the everyday launcher without a controller.
     private fun openLauncherChooser() {
         val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
-        val chooser = Intent.createChooser(home, "Switch launcher")
+        val chooser = Intent.createChooser(home, getString(R.string.app_switch_launcher_chooser))
             .putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, arrayOf(ComponentName(this, MainActivity::class.java)))
         runCatching { startActivity(chooser) }
             .onFailure { Timber.w(it, "Could not open the launcher chooser") }

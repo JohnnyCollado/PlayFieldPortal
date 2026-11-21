@@ -19,10 +19,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.playfieldportal.core.ui.text.asString
 import com.playfieldportal.feature.launcher.DetectableApp
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.feature.settings.viewmodel.ADD_CUSTOM_EMULATOR_FOCUS_KEY
 import com.playfieldportal.feature.settings.viewmodel.EmulatorsSettingsViewModel
 import com.playfieldportal.feature.settings.viewmodel.ProfileListItem
@@ -112,8 +116,8 @@ fun EmulatorsSettingsScreen(
 
     // Brief loading windows: scanning apps, or inspecting the chosen app.
     if (state.isInspecting) {
-        SettingsScaffold(title = "Add Emulator", subtitle = "Detecting…", onBack = viewModel::cancelWizard, modifier = modifier) {
-            EmulatorHint("Inspecting installed apps…")
+        SettingsScaffold(title = stringResource(R.string.lib_emu_add_title), subtitle = stringResource(R.string.lib_emu_detecting), onBack = viewModel::cancelWizard, modifier = modifier) {
+            EmulatorHint(stringResource(R.string.lib_emu_inspecting))
         }
         return
     }
@@ -122,11 +126,9 @@ fun EmulatorsSettingsScreen(
         if (state.showResetConfirm) {
             PfpModalSpec.Confirm(
                 key = "reset_emulator_config",
-                title = "Reset Emulator Configuration?",
-                message = "This will clear all auto-detected and custom emulator launch settings, " +
-                    "then restore bundled defaults.\n\n" +
-                    "Your game library, ROM paths, artwork, metadata, and save data are not affected.",
-                confirmLabel = "Reset",
+                title = stringResource(R.string.lib_emu_reset_title),
+                message = stringResource(R.string.lib_emu_reset_message),
+                confirmLabel = stringResource(R.string.lib_emu_reset),
                 destructive = true,
                 onConfirm = viewModel::confirmResetEmulatorConfig,
                 onCancel = viewModel::cancelResetEmulatorConfig,
@@ -137,13 +139,15 @@ fun EmulatorsSettingsScreen(
     )
 
     SettingsScaffold(
-        title    = "Settings",
-        subtitle = when (section) {
-            EmulatorSettingsSection.INSTALLED -> "Emulator · Installed"
-            EmulatorSettingsSection.CUSTOM -> "Emulator · Custom"
-            EmulatorSettingsSection.RETROARCH -> "Emulator · RetroArch"
-            null -> "Emulators"
-        },
+        title    = stringResource(R.string.settings_title),
+        subtitle = stringResource(
+            when (section) {
+                EmulatorSettingsSection.INSTALLED -> R.string.lib_emu_subtitle_installed
+                EmulatorSettingsSection.CUSTOM -> R.string.lib_emu_subtitle_custom
+                EmulatorSettingsSection.RETROARCH -> R.string.lib_emu_subtitle_retroarch
+                null -> R.string.lib_emu_title
+            },
+        ),
         onBack          = onBack,
         modifier        = modifier,
         restoreFocusKey = state.returnFocusKey,
@@ -159,10 +163,10 @@ fun EmulatorsSettingsScreen(
         ) {
             if (section == null || section == EmulatorSettingsSection.INSTALLED) {
                 val installedNonRetroArch = state.installedProfiles.filterNot(::isRetroArchProfile)
-                SettingsGroup("Installed")
+                SettingsGroup(stringResource(R.string.lib_emu_group_installed))
 
                 if (installedNonRetroArch.isEmpty()) {
-                    EmulatorHint("No supported emulators detected on this device")
+                    EmulatorHint(stringResource(R.string.lib_emu_none_installed))
                 } else {
                     installedNonRetroArch.forEach { profile ->
                         EmulatorProfileRow(
@@ -175,10 +179,10 @@ fun EmulatorsSettingsScreen(
 
             if (section == null || section == EmulatorSettingsSection.INSTALLED) {
                 val availableNonRetroArch = state.availableProfiles.filterNot(::isRetroArchProfile)
-                SettingsGroup("Available (not installed)")
+                SettingsGroup(stringResource(R.string.lib_emu_group_available))
 
                 if (availableNonRetroArch.isEmpty()) {
-                    EmulatorHint("Every known emulator is installed")
+                    EmulatorHint(stringResource(R.string.lib_emu_all_installed))
                 } else {
                     availableNonRetroArch.forEach { profile ->
                         EmulatorProfileRow(profile = profile, onEdit = null)
@@ -187,10 +191,10 @@ fun EmulatorsSettingsScreen(
             }
 
             if (section == null || section == EmulatorSettingsSection.CUSTOM) {
-                SettingsGroup("Custom profiles")
+                SettingsGroup(stringResource(R.string.lib_emu_group_custom))
 
             if (state.customProfiles.isEmpty()) {
-                EmulatorHint("No custom profiles yet")
+                EmulatorHint(stringResource(R.string.lib_emu_none_custom))
             } else {
                 state.customProfiles.forEach { profile ->
                     EmulatorProfileRow(
@@ -201,65 +205,65 @@ fun EmulatorsSettingsScreen(
             }
 
             SettingsRow(
-                label    = "Add custom emulator",
-                sublabel = "Pick an app — we auto-detect its launch settings",
+                label    = stringResource(R.string.lib_emu_add_custom),
+                sublabel = stringResource(R.string.lib_emu_add_custom_sub),
                 focusKey = ADD_CUSTOM_EMULATOR_FOCUS_KEY,
                 onClick  = { viewModel.startAddEmulatorWizard() },
             )
             }
 
             if (section == null || section == EmulatorSettingsSection.RETROARCH) {
-            SettingsGroup("RetroArch core detection")
+            SettingsGroup(stringResource(R.string.lib_emu_group_ra_detection))
 
             EmulatorHint(
                 when {
                     state.isDetectingCores ->
-                        "Scanning RetroArch for installed cores…"
+                        stringResource(R.string.lib_emu_ra_scanning)
                     state.retroArchLinked && state.retroArchCoreCount != null ->
-                        "Linked — ${state.retroArchCoreCount} core(s) detected. Only installed cores are offered, so a missing core can't cause a black screen."
+                        pluralStringResource(R.plurals.lib_emu_ra_linked, state.retroArchCoreCount!!, state.retroArchCoreCount!!)
                     state.retroArchLinked ->
-                        "Linked, but access was lost (e.g. after reinstall). Re-link RetroArch to detect cores again."
+                        stringResource(R.string.lib_emu_ra_access_lost)
                     else ->
-                        "Not linked. PFP can't see which RetroArch cores are installed, so it offers them all — launching one that isn't installed shows a black screen. Link RetroArch to detect installed cores."
+                        stringResource(R.string.lib_emu_ra_not_linked)
                 }
             )
 
             SettingsRow(
-                label    = if (state.retroArchLinked) "Re-link RetroArch Folder" else "Link RetroArch to Detect Cores",
-                sublabel = "In the picker, choose RetroArch's folder (grant access) so PFP can read its installed cores",
+                label    = stringResource(if (state.retroArchLinked) R.string.lib_emu_ra_relink else R.string.lib_emu_ra_link),
+                sublabel = stringResource(R.string.lib_emu_ra_link_sub),
                 focusKey = "retroarch_link",
                 onClick  = { retroArchPicker.launch(null) },
             )
 
-            SettingsGroup("Available cores")
+            SettingsGroup(stringResource(R.string.lib_emu_group_cores))
             if (state.retroArchCores.isEmpty()) {
-                EmulatorHint("No RetroArch cores detected yet.")
+                EmulatorHint(stringResource(R.string.lib_emu_ra_no_cores))
             } else {
                 state.retroArchCores.forEach { core ->
-                    SettingsRow(label = core, sublabel = "Available in RetroArch")
+                    SettingsRow(label = core, sublabel = stringResource(R.string.lib_emu_ra_core_available))
                 }
             }
 
             if (state.retroArchLinked) {
                 SettingsRow(
-                    label    = "Re-scan installed cores",
-                    sublabel = "Run after downloading more cores in RetroArch's Core Downloader",
+                    label    = stringResource(R.string.lib_emu_ra_rescan),
+                    sublabel = stringResource(R.string.lib_emu_ra_rescan_sub),
                     onClick  = { viewModel.redetectRetroArchCores() },
                 )
                 SettingsRow(
-                    label    = "Unlink RetroArch",
-                    sublabel = "Go back to offering all cores unverified",
+                    label    = stringResource(R.string.lib_emu_ra_unlink),
+                    sublabel = stringResource(R.string.lib_emu_ra_unlink_sub),
                     onClick  = { viewModel.unlinkRetroArch() },
                 )
             }
 
             }
 
-            if (showsEmulatorMaintenance(section)) SettingsGroup("Maintenance")
+            if (showsEmulatorMaintenance(section)) SettingsGroup(stringResource(R.string.lib_emu_group_maintenance))
 
             if (showsEmulatorMaintenance(section)) SettingsRow(
-                label    = "Reset emulator configuration",
-                sublabel = "Clear launch settings and restore defaults. Your games, artwork, and saves are not affected.",
+                label    = stringResource(R.string.lib_emu_reset_row),
+                sublabel = stringResource(R.string.lib_emu_reset_row_sub),
                 focusKey = "reset_emulator_config",
                 onClick  = { viewModel.requestResetEmulatorConfig() },
                 destructive = true,
@@ -278,8 +282,8 @@ private fun WizardPickAppStep(
     modifier: Modifier = Modifier,
 ) {
     SettingsScaffold(
-        title    = "Add Emulator",
-        subtitle = "Pick an App",
+        title    = stringResource(R.string.lib_emu_add_title),
+        subtitle = stringResource(R.string.lib_emu_pick_app),
         onBack   = onBack,
         modifier = modifier,
     ) {
@@ -292,9 +296,9 @@ private fun WizardPickAppStep(
                 .fillMaxSize()
                 .verticalScroll(scrollState),
         ) {
-            SettingsGroup("Installed apps")
+            SettingsGroup(stringResource(R.string.lib_emu_group_apps))
             if (apps.isEmpty()) {
-                EmulatorHint("No launchable apps found.")
+                EmulatorHint(stringResource(R.string.lib_emu_no_apps))
             } else {
                 apps.forEach { app ->
                     SettingsRow(
@@ -319,7 +323,7 @@ private fun TestLaunchFlow(
 ) {
     // Step A — pick a ROM from the scanned library.
     if (test.selectedRom == null) {
-        SettingsScaffold(title = "Test Launch", subtitle = "Pick a ROM", onBack = onBack, modifier = modifier) {
+        SettingsScaffold(title = stringResource(R.string.lib_emu_test_title), subtitle = stringResource(R.string.lib_emu_test_pick_rom), onBack = onBack, modifier = modifier) {
             // Registered like the list screen above: the scaffold needs a scroll owner here for its
             // chrome drag-to-scroll and for controller keep-in-view.
             val scrollState = rememberScrollState()
@@ -327,9 +331,9 @@ private fun TestLaunchFlow(
             Column(
                 modifier = Modifier.fillMaxSize().verticalScroll(scrollState),
             ) {
-                SettingsGroup("Your ROMs")
+                SettingsGroup(stringResource(R.string.lib_emu_test_group_roms))
                 if (test.roms.isEmpty()) {
-                    EmulatorHint("No scanned ROMs to test with. Scan a console first, or just save and try in the library.")
+                    EmulatorHint(stringResource(R.string.lib_emu_test_no_roms))
                 } else {
                     test.roms.forEach { rom ->
                         SettingsRow(
@@ -345,7 +349,7 @@ private fun TestLaunchFlow(
     }
 
     // Step B — intent preview + launch + result.
-    SettingsScaffold(title = "Test Launch", subtitle = test.selectedRom.title, onBack = onBack, modifier = modifier) {
+    SettingsScaffold(title = stringResource(R.string.lib_emu_test_title), subtitle = test.selectedRom.title, onBack = onBack, modifier = modifier) {
         // Registered like the list screen above: the scaffold needs a scroll owner here for its
         // chrome drag-to-scroll and for controller keep-in-view.
         val scrollState = rememberScrollState()
@@ -354,31 +358,31 @@ private fun TestLaunchFlow(
             modifier = Modifier.fillMaxSize().verticalScroll(scrollState),
         ) {
             test.preview?.let { p ->
-                SettingsGroup("Intent preview")
-                PreviewLine("Package", p.packageName)
-                PreviewLine("Activity", p.activity ?: "(resolved by package)")
-                PreviewLine("Action", p.action)
-                PreviewLine("MIME", p.mimeType ?: "(none)")
-                PreviewLine("URI mode", p.uriMode)
-                PreviewLine("ROM", p.romRef)
-                if (p.extras.isNotEmpty()) PreviewLine("Extras", p.extras.joinToString("\n"))
-                if (p.flags.isNotEmpty()) PreviewLine("Flags", p.flags.joinToString(", "))
+                SettingsGroup(stringResource(R.string.lib_emu_preview_group))
+                PreviewLine(stringResource(R.string.lib_emu_preview_package), p.packageName)
+                PreviewLine(stringResource(R.string.lib_emu_preview_activity), p.activity ?: stringResource(R.string.lib_emu_preview_activity_default))
+                PreviewLine(stringResource(R.string.lib_emu_preview_action), p.action.asString())
+                PreviewLine(stringResource(R.string.lib_emu_preview_mime), p.mimeType ?: stringResource(R.string.lib_emu_none))
+                PreviewLine(stringResource(R.string.lib_emu_preview_uri_mode), p.uriMode.asString())
+                PreviewLine(stringResource(R.string.lib_emu_preview_rom), p.romRef.asString())
+                if (p.extras.isNotEmpty()) PreviewLine(stringResource(R.string.lib_emu_preview_extras), p.extras.joinToString("\n"))
+                if (p.flags.isNotEmpty()) PreviewLine(stringResource(R.string.lib_emu_preview_flags), p.flags.joinToString(", "))
             }
 
             test.resultMessage?.let { msg ->
-                SettingsGroup("Result")
+                SettingsGroup(stringResource(R.string.lib_emu_result_group))
                 Text(
-                    text     = msg,
+                    text     = msg.asString(),
                     color    = if (test.isError) UnavailableColor else ModifiedBadgeColor,
                     modifier = Modifier.padding(horizontal = 48.dp, vertical = 8.dp),
                 )
             }
 
-            SettingsGroup("Actions")
+            SettingsGroup(stringResource(R.string.lib_emu_actions_group))
             if (test.canLaunch) {
-                SettingsRow(label = "Launch now", sublabel = "Send the intent to the app", onClick = onLaunch)
+                SettingsRow(label = stringResource(R.string.lib_emu_launch_now), sublabel = stringResource(R.string.lib_emu_launch_now_sub), onClick = onLaunch)
             }
-            SettingsRow(label = "Pick a different ROM", onClick = onPickOther)
+            SettingsRow(label = stringResource(R.string.lib_emu_pick_other_rom), onClick = onPickOther)
         }
     }
 }
@@ -406,16 +410,16 @@ private fun EmulatorProfileRow(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (!profile.isAvailable) {
-                    Badge("Unavailable", UnavailableColor)
+                    Badge(stringResource(R.string.lib_emu_badge_unavailable), UnavailableColor)
                 }
                 if (profile.isAutoGenerated && !profile.userModified) {
-                    Badge("Auto", AutoBadgeColor)
+                    Badge(stringResource(R.string.lib_emu_badge_auto), AutoBadgeColor)
                 }
                 if (profile.userModified) {
-                    Badge("Edited", ModifiedBadgeColor)
+                    Badge(stringResource(R.string.lib_emu_badge_edited), ModifiedBadgeColor)
                 }
                 if (onEdit != null) {
-                    Text("Edit", color = SettingsAccent)
+                    Text(stringResource(R.string.lib_emu_edit), color = SettingsAccent)
                 }
             }
         },
@@ -439,14 +443,16 @@ private fun isRetroArchProfile(profile: ProfileListItem): Boolean =
         profile.packageName.contains("retroarch", ignoreCase = true) ||
         profile.name.contains("retroarch", ignoreCase = true)
 
-private fun buildSublabel(profile: ProfileListItem): String {
-    val base = "${profile.packageName}  ·  ${profile.intentType}"
-    return when {
-        profile.autoSource == "retroarch-core" -> "$base  ·  RetroArch core"
-        profile.isAutoGenerated                -> "$base  ·  auto-detected"
-        else                                   -> base
-    }
-}
+@Composable
+private fun buildSublabel(profile: ProfileListItem): String = stringResource(
+    when {
+        profile.autoSource == "retroarch-core" -> R.string.lib_emu_row_sub_retroarch_core
+        profile.isAutoGenerated                -> R.string.lib_emu_row_sub_auto
+        else                                   -> R.string.lib_emu_row_sub
+    },
+    profile.packageName,
+    profile.intentType,
+)
 
 @Composable
 private fun EmulatorHint(text: String) {

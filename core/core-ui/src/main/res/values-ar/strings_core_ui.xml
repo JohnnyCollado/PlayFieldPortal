@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared button and prompt labels -->
+    <!-- Button label that dismisses a dialog without acting -->
+    <string name="core_cancel">إلغاء</string>
+    <string name="core_ok">حسنًا</string>
+    <string name="core_save">حفظ</string>
+    <string name="core_apply">تطبيق</string>
+    <string name="core_select">تحديد</string>
+    <string name="core_close">إغلاق</string>
+    <string name="core_back">رجوع</string>
+
+    <!-- Modals (text entry) -->
+    <!-- Default caption above a text field in a name-entry dialog -->
+    <string name="core_modal_name_label">الاسم</string>
+    <string name="core_modal_counter">%1$d / %2$d</string>
+
+    <!-- Convert-to-achievement-tracking picker -->
+    <string name="core_steam_convert_title">هل تريد تثبيت تتبّع الإنجازات؟</string>
+    <string name="core_steam_convert_selected_count">%1$d من %2$d</string>
+    <string name="core_steam_convert_found_count">تم العثور على %1$d</string>
+    <string name="core_steam_convert_hints">"Up/Down  الصفوف  •  Select  تبديل  •  △  الكل/لا شيء  •  Start  تثبيت  •  B  إلغاء"</string>
+    <string name="core_steam_convert_loading">جارٍ قراءة قائمة إنجازات كل لعبة من Steam…</string>
+    <string name="core_steam_convert_install">تثبيت (%1$d)</string>
+    <string name="core_steam_convert_none">لا شيء</string>
+    <string name="core_steam_convert_all">الكل</string>
+    <string name="core_steam_convert_skip_sync">تخطٍّ ومزامنة</string>
+    <string name="core_steam_convert_write_notice">في مجلد كل لعبة محددة، يكتب PFP الملفات achievements.json وstats.json وconfigs.user.ini، وينشئ مجلد saves، ويعيد تسمية steam_api64.dll إلى steam_api64_o.dll حتى يتمكن المحاكي المرفق من التحميل من خلاله.</string>
+    <string name="core_steam_convert_backup_warning">انسخ احتياطيًا ملفات الحفظ لأي لعبة لعبتها من قبل قبل تحويلها، إذ سيبدأ المحاكي بالقراءة من موقع الحفظ الجديد.</string>
+
+    <!-- Shiba player card -->
+    <!-- Experience points total; %1$s is an already formatted number such as 1,250 -->
+    <string name="core_shiba_xp">%1$s XP</string>
+    <string name="core_shiba_progress_next_bone">%1$s / %2$s حتى العظمة التالية</string>
+    <string name="core_shiba_progress_next_level">%1$s / %2$s حتى المستوى %3$d</string>
+    <string name="core_shiba_level_abbrev">م</string>
+
+    <!-- Colour picker -->
+    <!-- Caption above the hexadecimal colour code field -->
+    <string name="core_hsv_hex">Hex</string>
+    <string name="core_hsv_hue">تدرّج اللون</string>
+    <string name="core_hsv_saturation">التشبّع</string>
+    <string name="core_hsv_brightness">السطوع</string>
+    <string name="core_hsv_hint_move">تحريك</string>
+    <string name="core_hsv_hint_type_hex">كتابة Hex</string>
+    <string name="core_hsv_hint_adjust">ضبط</string>
+    <string name="core_hsv_sample_text">نص نموذجي</string>
+    <string name="core_color_default">الافتراضي</string>
+    <string name="core_color_pink">وردي</string>
+    <string name="core_color_gold">ذهبي</string>
+    <string name="core_color_aqua">مائي</string>
+    <string name="core_color_sky_blue">أزرق سماوي</string>
+    <string name="core_color_green">أخضر</string>
+    <string name="core_color_coral">مرجاني</string>
+    <string name="core_color_slate">أردوازي</string>
+    <string name="core_color_custom">مخصص</string>
+
+    <!-- Notification detail sheets -->
+    <!-- Controller hint after copying: the details were copied to the clipboard -->
+    <string name="core_sheet_copied">تم النسخ</string>
+    <string name="core_sheet_copy_details">نسخ التفاصيل</string>
+    <string name="core_sheet_copy_list">نسخ القائمة</string>
+    <string name="core_sheet_filter">تصفية</string>
+    <string name="core_sheet_what_happened">ماذا حدث</string>
+    <string name="core_sheet_diagnostic_open">"▾  تفاصيل التشخيص"</string>
+    <string name="core_sheet_diagnostic_closed">"▸  تفاصيل التشخيص"</string>
+    <string name="core_sheet_diagnostic_heading">التشخيص</string>
+    <string name="core_sheet_summary_chip">%1$d %2$s</string>
+    <string name="core_sheet_filter_all">الكل</string>
+    <string name="core_sheet_more">+%1$d أخرى</string>
+    <string name="core_sheet_what_you_can_do">ما يمكنك فعله</string>
+
+    <!-- On-screen keyboard (function keys and controller prompts; the letter rows are not translated) -->
+    <!-- Controller hint: type the highlighted key -->
+    <string name="core_vk_prompt_type">كتابة</string>
+    <string name="core_vk_prompt_delete">حذف</string>
+    <string name="core_vk_prompt_cursor">المؤشر</string>
+    <string name="core_vk_prompt_caps">الأحرف الكبيرة</string>
+    <string name="core_vk_key_space">مسافة</string>
+    <string name="core_vk_key_shift">Shift</string>
+    <string name="core_vk_key_backspace">مسح للخلف</string>
+    <string name="core_vk_key_done">تم</string>
+    <string name="core_vk_shift_off">متوقف</string>
+    <string name="core_vk_shift_once">مفعّل للحرف التالي</string>
+    <string name="core_vk_shift_held">مفعّل أثناء الضغط</string>
+    <string name="core_vk_shift_locked">قفل الأحرف الكبيرة مفعّل</string>
+
+    <!-- Background tasks -->
+    <!-- Fallback notification title when a task failed and gave no title -->
+    <string name="core_task_failed">فشلت المهمة</string>
+    <string name="core_task_done">تم</string>
+
+    <!-- Detail screens -->
+    <!-- Small badge on a favourite game's banner; shown in capitals -->
+    <string name="core_detail_favorite_badge">مفضّلة</string>
+    <string name="core_detail_video_badge">فيديو</string>
+    <string name="core_detail_confirm_collapse">أكّد للطي</string>
+    <string name="core_detail_confirm_read_more">أكّد لقراءة المزيد</string>
+
+    <!-- Rotate-to-landscape prompt -->
+    <string name="core_rotate_title">أدِر إلى الوضع الأفقي</string>
+    <string name="core_rotate_message">يعمل PlayField Portal في الوضع الأفقي. أدِر جهازك جانبيًا للمتابعة.</string>
+    <string name="core_rotate_switch_launcher">تبديل المشغّل</string>
+</resources>

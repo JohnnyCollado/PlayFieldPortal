@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings > Sound: two more assignable sounds. Each follows Navigation until set. -->
+    <!-- Name of the sound that plays when a category changes (row and level slider). -->
+    <string name="fb_sound_slot_category">Danh mục</string>
+    <string name="fb_sound_channel_category">Danh mục</string>
+    <!-- Name of the sound that plays when an options menu opens (row and level slider). -->
+    <string name="fb_sound_slot_options">Tùy chọn</string>
+    <string name="fb_sound_channel_options">Tùy chọn</string>
+
+    <!-- Settings > Controller: haptic feedback switch. -->
+    <string name="fb_haptic_feedback">Phản hồi xúc giác</string>
+    <string name="fb_haptic_feedback_help">Rung nhẹ ở mỗi bước và rung mạnh hơn khi xác nhận, trên thiết bị này và trên tay cầm có hỗ trợ rung.</string>
+</resources>

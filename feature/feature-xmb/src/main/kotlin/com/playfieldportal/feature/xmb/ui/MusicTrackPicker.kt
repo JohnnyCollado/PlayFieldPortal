@@ -59,6 +59,9 @@ import com.playfieldportal.core.ui.theme.LocalPfpTextColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.menuCursorFill
 import com.playfieldportal.feature.xmb.viewmodel.MusicTrackPickerState
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import com.playfieldportal.feature.xmb.R
 
 // Composable getters rather than constants, so the resolved palette (and any user font colour)
 // reaches every row here without an edit at the call sites — same treatment as the browser.
@@ -131,7 +134,8 @@ fun MusicTrackPicker(
     }
 
     val pfpColors = LocalPFPColors.current
-    val addLabel = if (state.selected.isEmpty()) "Done" else "Add ${state.selected.size}"
+    val addLabel = if (state.selected.isEmpty()) stringResource(R.string.xmbu_common_done)
+    else pluralStringResource(R.plurals.xmbu_track_picker_add_count, state.selected.size, state.selected.size)
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -152,7 +156,7 @@ fun MusicTrackPicker(
                 // Back is the ◀ breadcrumb in both input modes (ARCHITECTURE.md ▸ Conventions).
                 PickerBreadcrumb(onClick = onDismiss, color = PickerSubtext)
                 Text(
-                    "Add to ${state.playlistName}",
+                    stringResource(R.string.xmbu_track_picker_title, state.playlistName),
                     color = PickerText,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Light,
@@ -173,11 +177,11 @@ fun MusicTrackPicker(
                 horizontalArrangement = Arrangement.spacedBy(18.dp),
                 modifier = Modifier.padding(top = 2.dp, bottom = 12.dp),
             ) {
-                Text("${state.selected.size} selected", color = PickerSubtext, fontSize = 12.sp)
+                Text(pluralStringResource(R.plurals.xmbu_track_picker_selected, state.selected.size, state.selected.size), color = PickerSubtext, fontSize = 12.sp)
                 // One input family on screen at a time (ARCHITECTURE.md ▸ Conventions).
                 if (showTouchControls) {
                     TouchPromptBar(
-                        items = listOf(TouchPromptItem(TouchGesture.TAP, "Toggle")),
+                        items = listOf(TouchPromptItem(TouchGesture.TAP, stringResource(R.string.xmbu_common_toggle))),
                         labelColor = PickerSubtext,
                         labelStyle = TextStyle(fontSize = 12.sp),
                         glyphSize = 16.dp,
@@ -186,9 +190,9 @@ fun MusicTrackPicker(
                 } else {
                     ControllerPromptBar(
                         items = listOf(
-                            ControllerPromptItem(GamepadAction.SELECT, "Toggle"),
-                            ControllerPromptItem(GamepadAction.HOME, "Add"),
-                            ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+                            ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.xmbu_common_toggle)),
+                            ControllerPromptItem(GamepadAction.HOME, stringResource(R.string.xmbu_track_picker_add)),
+                            ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.xmbu_common_cancel)),
                         ),
                         labelColor = PickerSubtext,
                         labelStyle = TextStyle(fontSize = 12.sp),
@@ -202,7 +206,7 @@ fun MusicTrackPicker(
 
             if (state.tracks.isEmpty()) {
                 Text(
-                    "No more tracks to add — every scanned song is already in this playlist.",
+                    stringResource(R.string.xmbu_track_picker_empty),
                     color = PickerSubtext,
                     fontSize = 14.sp,
                 )
@@ -221,7 +225,8 @@ fun MusicTrackPicker(
                         modifier = Modifier.clickable { onConfirm() },
                     ) {
                         Text(
-                            text = if (state.selected.isEmpty()) "Done" else "Add ${state.selected.size} track(s)",
+                            text = if (state.selected.isEmpty()) stringResource(R.string.xmbu_common_done)
+                            else pluralStringResource(R.plurals.xmbu_track_picker_add_tracks, state.selected.size, state.selected.size),
                             color = PickerText,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold,

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blur_title">배경 흐림</string>
+    <string name="blur_sublabel">메시지와 옵션 메뉴 뒤의 화면을 흐리게 하는 강도입니다. 0으로 설정하면 꺼집니다.</string>
+    <string name="blur_unavailable">Android 12 이상이 필요합니다.</string>
+</resources>

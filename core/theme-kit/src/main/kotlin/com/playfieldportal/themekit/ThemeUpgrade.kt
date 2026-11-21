@@ -75,7 +75,7 @@ object ThemeUpgrade {
             if (sounds > 0) add(count(sounds, "menu sound"))
             if ("ambience_audio" in bundle.media) add("Ambience track")
             if ("boot_video" in bundle.media) add("Boot animation")
-            if ("gameboot_video" in bundle.media) add("GameBoot animation")
+            if ("gameboot_video" in bundle.media) add("Game Boot animation")
             if (m.layout != null) add("Custom layout")
             if (bundle.passthrough.isNotEmpty()) add("${count(bundle.passthrough.size, "unrecognized file")} kept as-is")
             if (bundle.manifestExtras.isNotEmpty()) {

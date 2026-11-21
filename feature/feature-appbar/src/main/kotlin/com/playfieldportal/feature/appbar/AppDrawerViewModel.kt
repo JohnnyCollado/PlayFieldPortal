@@ -29,11 +29,11 @@ const val GRID_COLUMNS = 6
 private const val ANDROID_PLATFORM_ID = "android"
 private const val APP_SHORTCUT_PLATFORM_ID = "app_shortcut"
 
-enum class AppFilter(val label: String) {
-    ALL("All Apps"),
-    GAMES("Games"),
-    EMULATORS("Emulators"),
-    RECENT("Recently Used"),
+enum class AppFilter(val labelRes: Int) {
+    ALL(R.string.apps_filter_all),
+    GAMES(R.string.apps_filter_games),
+    EMULATORS(R.string.apps_filter_emulators),
+    RECENT(R.string.apps_filter_recent),
 }
 
 /**
@@ -288,7 +288,7 @@ class AppDrawerViewModel @Inject constructor(
             }
             val index = state.menuIndex
             when (val outcome = PspMenuNav.handle(
-                action, index, actions.size, depth = 0, actions.getOrNull(index)?.toPspMenuRow()?.cue ?: PspMenuCue.CONFIRM, MenuSoundSink { menuSound.play(it) },
+                action, index, actions.size, depth = 0, actions.getOrNull(index)?.toPspMenuRow { "" }?.cue ?: PspMenuCue.CONFIRM, MenuSoundSink { menuSound.play(it) },
             )) {
                 is PspMenuOutcome.Moved -> _uiState.update { s -> s.copy(menuIndex = outcome.index) }
                 PspMenuOutcome.Activate -> actions.getOrNull(index)?.let(::onMenuAction)

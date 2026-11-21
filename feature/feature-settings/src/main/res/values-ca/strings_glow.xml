@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_title">Lluentor de selecció</string>
+    <string name="glow_sub_off">Sense lluentor al voltant de la icona seleccionada.</string>
+    <string name="glow_sub_steady">Una llum suau al voltant de la icona seleccionada. Es manté fixa.</string>
+    <string name="glow_sub_pulsing">La llum al voltant de la icona seleccionada creix i s\'atenua lentament. Es manté fixa mentre «Moviment» estigui en «Estàtic».</string>
+    <string name="glow_value_off">Desactivat</string>
+    <string name="glow_value_steady">Fix</string>
+    <string name="glow_value_pulsing">Polsant</string>
+</resources>

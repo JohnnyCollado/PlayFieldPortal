@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ach_upd_running">Uppdaterar installerade prestationer</string>
+    <string name="ach_upd_running_stop_note">Prestationer som redan har uppdaterats behålls.</string>
+    <string name="ach_upd_progress">Kontrollerar %1$d av %2$d spel</string>
+    <string name="ach_upd_stopped">Uppdateringen av prestationer stoppades</string>
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="one">%d spel kontrollerat; sparat förlopp behålls</item>
+        <item quantity="other">%d spel kontrollerade; sparat förlopp behålls</item>
+    </plurals>
+    <string name="ach_upd_some_failed">Vissa prestationer kunde inte uppdateras</string>
+    <plurals name="ach_upd_failed_message">
+        <item quantity="one">%1$d av %2$d spel behöver ett nytt försök</item>
+        <item quantity="other">%1$d av %2$d spel behöver ett nytt försök</item>
+    </plurals>
+    <string name="ach_upd_results_done">Uppdaterat</string>
+    <string name="ach_upd_updated">Prestationerna har uppdaterats</string>
+    <plurals name="ach_upd_updated_message">
+        <item quantity="one">%1$d spel uppdaterat · %2$d oförändrade</item>
+        <item quantity="other">%1$d spel uppdaterade · %2$d oförändrade</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">Prestationerna är aktuella</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="one">%d installerat spel kontrollerat</item>
+        <item quantity="other">%d installerade spel kontrollerade</item>
+    </plurals>
+    <string name="ach_upd_paused">Uppdateringen av prestationer har pausats</string>
+    <string name="ach_upd_fact_service">Tjänst</string>
+    <string name="ach_upd_pause_offline">Anslut till internet</string>
+    <string name="ach_upd_pause_reconnect">Återanslut %1$s</string>
+    <string name="ach_upd_pause_steam_private">Speldetaljer på Steam är inte tillgängliga</string>
+    <!-- Auto-match notifications -->
+    <string name="ach_match_running">Matchar spel automatiskt</string>
+    <string name="ach_match_running_stop_note">Spel som redan har matchats förblir länkade.</string>
+    <string name="ach_match_stopped_note">Spel som redan har matchats förblir länkade</string>
+    <string name="ach_match_stopped">Automatisk matchning stoppades</string>
+    <string name="ach_match_recognized">Spel identifierade</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="one">%d installerat spel matchades. Uppdaterar dess prestationer.</item>
+        <item quantity="other">%d installerade spel matchades. Uppdaterar deras prestationer.</item>
+    </plurals>
+    <!-- Clearing achievement records -->
+    <string name="ach_clear_done">Prestationsdata rensades</string>
+    <string name="ach_clear_done_message">Installerade spel måste synkas igen för att visa prestationer</string>
+    <string name="ach_clear_failed">Det gick inte att rensa prestationer</string>
+    <string name="ach_clear_failed_message">Inget togs bort. Försök igen från Inställningar ▸ Prestationer</string>
+    <string name="ach_ls_unavail_store">butiken kunde inte tillfrågas</string>
+    <string name="ach_ls_unavail_steam">Steam är inte tillgängligt just nu</string>
+    <string name="ach_ls_steam_unreachable">Det gick inte att nå Steam</string>
+    <string name="ach_ls_steam_rate_limited">Steam begränsar antalet förfrågningar</string>
+    <string name="ach_ls_steam_error">Steam returnerade ett fel</string>
+    <string name="ach_ls_steam_needs_key">Steam behöver din Web API-nyckel</string>
+    <!-- Local Steam: linking a picked game folder -->
+    <string name="ach_link_no_match">Steam har inget spel som matchar \"%1$s\". Byt namn på mappen till spelets namn på Steam eller länka den först från Speldetaljer ▸ Matcha spel.</string>
+    <string name="ach_link_unavailable">%1$s, så mappens app-id kunde inte fastställas. Inget ändrades – försök igen när du är online.</string>
+    <string name="ach_link_marker_failed">Det gick inte att skapa steam_appid.txt i mappen – PFP kanske bara har läsbehörighet till den.</string>
+    <string name="ach_link_not_recorded">Den valda matchningen kunde inte sparas.</string>
+    <string name="ach_link_installer_off">Aktivera Installera Goldberg och konvertera spel i inställningarna för prestationer innan PFP skriver i en spelmapp.</string>
+    <string name="ach_link_no_app_id">Mappen anger inte längre något app-id – välj den igen.</string>
+    <string name="ach_link_need_key">Lägg till din Steam Web API-nyckel i Inställningar ▸ Prestationer ▸ Inloggningsuppgifter för tjänster – listan över prestationer hämtas med den.</string>
+    <string name="ach_link_no_achievements">Steam listar inga prestationer för app-id %1$s, så det finns inget att spåra.</string>
+    <string name="ach_link_kit_failed">Det gick inte att skriva prestationspaketet: %1$s</string>
+    <string name="ach_link_read_back_failed">Mappen kunde inte läsas in igen. Om den ligger på flyttbar lagring monterar du den igen och väljer den på nytt.</string>
+    <string name="ach_link_not_steam_build">Ingen Steam-biblioteksfil (steam_api64.dll) någonstans i mappen, så det är inte en Steam-version och det finns inget för emulatorn att spåra. Välj mappen där spelets .exe ligger.</string>
+    <string name="ach_pick_checking">Kontrollerar Steam …</string>
+    <plurals name="ach_pick_coins">
+        <item quantity="one">%1$d mynt  ·  appid %2$s</item>
+        <item quantity="other">%1$d mynt  ·  appid %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">Ingen lista på Steam  ·  appid %1$s</string>
+    <string name="ach_pick_needs_key">Kräver din Steam Web API-nyckel  ·  appid %1$s</string>
+    <string name="ach_pick_no_answer">Steam svarade inte  ·  appid %1$s</string>
+    <!-- Local Steam: batch match summary -->
+    <string name="ach_batch_already_running">En gruppmatchning pågår redan.</string>
+    <string name="ach_batch_no_folders">Inga spelmappar där. Välj mappen som INNEHÅLLER dina spelmappar, inte ett enskilt spels mapp.</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="one">Hittade %d mapp, men den är inte en Steam-version – inget steam_api-bibliotek, så det finns inget för emulatorn att spåra.</item>
+        <item quantity="other">Hittade %d mappar, men ingen av dem är en Steam-version – inget steam_api-bibliotek, så det finns inget för emulatorn att spåra.</item>
+    </plurals>
+    <string name="ach_batch_linked">%1$d länkade till spel i biblioteket</string>
+    <string name="ach_batch_tracked">%1$d spåras fristående</string>
+    <string name="ach_batch_converting">%1$d väntar på konvertering</string>
+    <plurals name="ach_batch_matched">
+        <item quantity="one">Matchade %1$d av %2$d mapp.</item>
+        <item quantity="other">Matchade %1$d av %2$d mappar.</item>
+    </plurals>
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="one">Matchade %1$d av %2$d mapp: %3$s.</item>
+        <item quantity="other">Matchade %1$d av %2$d mappar: %3$s.</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="one">%1$d kunde inte identifieras utifrån namnet – öppna spelets Shiba Coins-sida och välj Automatisk matchning för att välja mappen.</item>
+        <item quantity="other">%1$d kunde inte identifieras utifrån namnen – öppna varje spels Shiba Coins-sida och välj Automatisk matchning för att välja mappen.</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="one">%1$d finns inte i ditt bibliotek – lägg först till det på Windows-kortet och matcha sedan igen.</item>
+        <item quantity="other">%1$d finns inte i ditt bibliotek – lägg först till dem på Windows-kortet och matcha sedan igen.</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="one">%1$d är inte en Steam-version.</item>
+        <item quantity="other">%1$d är inte Steam-versioner.</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="one">%1$d misslyckades – se loggen.</item>
+        <item quantity="other">%1$d misslyckades – se loggen.</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">Mappen kunde inte öppnas.</string>
+    <string name="ach_batch_fail_read_back">%1$s: kunde inte läsas in igen efter identifiering.</string>
+    <string name="ach_batch_fail_reason">%1$s: %2$s.</string>
+    <string name="ach_batch_fail_marker">%1$s: steam_appid.txt kunde inte skapas.</string>
+    <!-- Vita3K library scan results -->
+    <string name="ach_vita_set_folder">Ange först din datamapp för Vita3K (ux0).</string>
+    <string name="ach_vita_link_invalid">Länken till Vita3K-mappen är ogiltig – ge åtkomst igen.</string>
+    <string name="ach_vita_no_ux0">Hittade inte ux0/app i den valda mappen – välj din ux0-mapp för Vita3K (eller mappen som innehåller den).</string>
+    <string name="ach_vita_no_app">Ingen app/-mapp under ux0 – kontrollera den valda mappen.</string>
+    <string name="ach_vita_none_installed">Inga installerade Vita-spel hittades under ux0/app. Installera först ett spel i Vita3K.</string>
+    <plurals name="ach_vita_no_new">
+        <item quantity="one">Inga nya Vita-spel – %d finns redan i ditt bibliotek.</item>
+        <item quantity="other">Inga nya Vita-spel – %d finns redan i ditt bibliotek.</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="one">Importerade %d Vita-spel.</item>
+        <item quantity="other">Importerade %d Vita-spel.</item>
+    </plurals>
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="one">Importerade %1$d Vita-spel, uppdaterade %2$d.</item>
+        <item quantity="other">Importerade %1$d Vita-spel, uppdaterade %2$d.</item>
+    </plurals>
+</resources>

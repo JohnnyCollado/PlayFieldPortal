@@ -18,13 +18,21 @@ import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 
 /**
  * The viewer's Options menu follows the shared PSP-panel rules: the cursor stops at the first and
  * last row instead of wrapping, Triangle and Back close it, and each press sounds its cue.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class PhotoViewerOptionsTest {
+
+    private val res get() = RuntimeEnvironment.getApplication().resources
 
     private lateinit var menuSound: MenuSoundPlayer
     private lateinit var viewModel: PhotoViewerViewModel
@@ -73,7 +81,7 @@ class PhotoViewerOptionsTest {
             actions.indexOf(PhotoViewerAction.SET_WALLPAPER) + 1,
             actions.indexOf(PhotoViewerAction.SET_LOCKSCREEN),
         )
-        assertEquals("Manage", PhotoViewerAction.SET_LOCKSCREEN.group)
+        assertEquals(PhotoViewerGroup.MANAGE, PhotoViewerAction.SET_LOCKSCREEN.group)
 
         viewModel.activate(PhotoViewerAction.SET_LOCKSCREEN)
 
@@ -106,7 +114,7 @@ class PhotoViewerOptionsTest {
         verify(exactly = 1) { menuSound.play(MenuSound.CONFIRM, any()) }
     }
 
-    private fun labels() = photoOptionRows(viewModel.uiState.value).map { it.label }
+    private fun labels() = photoOptionRows(viewModel.uiState.value, res).map { it.label }
 
     @Test
     fun `an unzoomed photo hides Zoom Out and Reset Zoom`() {
@@ -134,7 +142,7 @@ class PhotoViewerOptionsTest {
 
     @Test
     fun `rows group under View and Manage and Remove is red and last`() {
-        val rows = photoOptionRows(viewModel.uiState.value)
+        val rows = photoOptionRows(viewModel.uiState.value, res)
 
         assertEquals(listOf("View" to 0, "Manage" to 3), rows.mapIndexedNotNull { i, r -> r.header?.let { it to i } })
         assertTrue(rows.last().isDestructive)

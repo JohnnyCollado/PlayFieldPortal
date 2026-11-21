@@ -1,0 +1,749 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Selector d'aplicacions -->
+    <string name="xmbm_picker_touch_toggle">Marca</string>
+    <plurals name="xmbm_picker_remove_from_card">
+        <item quantity="one">Vols treure %d aplicació d\'aquesta targeta?</item>
+        <item quantity="many">Vols treure %d aplicacions d\'aquesta targeta?</item>
+        <item quantity="other">Vols treure %d aplicacions d\'aquesta targeta?</item>
+    </plurals>
+    <plurals name="xmbm_picker_remove_from_library">
+        <item quantity="one">Vols treure %d aplicació d\'aquesta biblioteca?</item>
+        <item quantity="many">Vols treure %d aplicacions d\'aquesta biblioteca?</item>
+        <item quantity="other">Vols treure %d aplicacions d\'aquesta biblioteca?</item>
+    </plurals>
+
+    <!-- Menú de categoria -->
+    <string name="xmbm_catmenu_rename">Canvia el nom de la categoria</string>
+    <string name="xmbm_catmenu_change_icon">Canvia la icona</string>
+    <string name="xmbm_catmenu_show_on_bar">Mostra a la barra</string>
+    <string name="xmbm_catmenu_new_card">Targeta personalitzada nova</string>
+    <string name="xmbm_catmenu_manage">Gestiona les categories</string>
+
+    <!-- Files de menú compartides -->
+    <string name="xmbm_common_on">Activat</string>
+    <string name="xmbm_common_off">Desactivat</string>
+    <string name="xmbm_sort">Ordena</string>
+    <string name="xmbm_move">Mou</string>
+    <string name="xmbm_resume">Reprèn</string>
+    <string name="xmbm_open">Obre</string>
+    <string name="xmbm_pin_to_top">Fixa a dalt</string>
+    <string name="xmbm_icon_display">Visualització d\'icones</string>
+    <string name="xmbm_manage_custom_cards">Gestiona les targetes personalitzades</string>
+    <string name="xmbm_play_in_background">Reprodueix en segon pla</string>
+    <string name="xmbm_add_to_playlist">Afegeix a una llista de reproducció</string>
+    <string name="xmbm_remove_from_library">Treu de la biblioteca</string>
+    <string name="xmbm_remove_from_this_playlist">Treu d\'aquesta llista</string>
+    <string name="xmbm_rename_playlist">Canvia el nom de la llista</string>
+    <string name="xmbm_delete_playlist">Suprimeix la llista</string>
+    <string name="xmbm_manage_in_settings">Gestiona a Configuració</string>
+    <string name="xmbm_favorite">Preferit</string>
+    <string name="xmbm_visualizer">Visualitzador</string>
+    <string name="xmbm_stop_and_close">Atura i tanca</string>
+    <string name="xmbm_pause">Pausa</string>
+    <string name="xmbm_add_games">Afegeix jocs</string>
+    <string name="xmbm_add_apps">Afegeix aplicacions</string>
+    <string name="xmbm_pinned">Fixat</string>
+    <string name="xmbm_update_metadata">Actualitza les metadades</string>
+    <string name="xmbm_fetch_missing_artwork">Obtén les imatges que falten</string>
+    <string name="xmbm_library_manager">Gestor de biblioteques</string>
+    <string name="xmbm_default">Per defecte</string>
+    <string name="xmbm_favorites">Preferits</string>
+    <string name="xmbm_all_games">Tots els jocs</string>
+    <string name="xmbm_playlists">Llistes de reproducció</string>
+    <string name="xmbm_create_new_playlist">Crea una llista de reproducció</string>
+
+    <!-- Selector d'origen de la icona -->
+    <string name="xmbm_srcchooser_title">Tria una icona per a %1$s</string>
+    <string name="xmbm_srcchooser_message">Fes servir una del tema aplicat o una imatge del dispositiu.</string>
+    <plurals name="xmbm_srcchooser_theme_detail">
+        <item quantity="one">%2$s · %1$d icona</item>
+        <item quantity="many">%2$s · %1$d icones</item>
+        <item quantity="other">%2$s · %1$d icones</item>
+    </plurals>
+    <string name="xmbm_themegrid_title">%1$s · icona per a %2$s</string>
+
+    <!-- Menús del tauler de notificacions i del navegador de música -->
+    <string name="xmbm_notifmenu_mark_all_read">Marca-ho tot com a llegit</string>
+    <string name="xmbm_notifmenu_clear_read">Esborra les llegides</string>
+    <string name="xmbm_notifmenu_clear_all">Esborra-ho tot</string>
+    <string name="xmbm_social_account">Compte</string>
+    <string name="xmbm_playlist_create_title">Crea una llista</string>
+    <string name="xmbm_playlist_create_music_sub">Comença una llista de reproducció nova</string>
+    <string name="xmbm_playlist_create_video_sub">Comença una llista de vídeos nova</string>
+    <string name="xmbm_playlist_import_title">Importa una llista</string>
+    <string name="xmbm_playlist_import_sub">D\'un fitxer .m3u, .m3u8, .pls o .xspf</string>
+
+    <!-- Encapçalaments de grup -->
+    <string name="xmbm_group_play">Joc</string>
+    <string name="xmbm_group_library">Biblioteca</string>
+    <string name="xmbm_group_arrange">Organitza</string>
+    <string name="xmbm_group_customize">Personalitza</string>
+    <string name="xmbm_group_pc">PC</string>
+    <string name="xmbm_group_manage">Gestiona</string>
+    <string name="xmbm_group_games">Jocs</string>
+    <string name="xmbm_group_update">Actualització</string>
+    <string name="xmbm_group_display">Visualització</string>
+
+    <!-- Ordenació i organització -->
+    <string name="xmbm_sort_default">Per defecte</string>
+    <string name="xmbm_sort_default_order">Ordre per defecte</string>
+    <string name="xmbm_sort_global_value">Global: %1$s</string>
+    <string name="xmbm_sort_use_global">Utilitza la configuració global (%1$s)</string>
+    <string name="xmbm_sort_az">A–Z</string>
+    <string name="xmbm_sort_recently_used">Utilitzades recentment</string>
+    <string name="xmbm_umd_insert">Insereix com a UMD</string>
+    <string name="xmbm_umd_eject">Expulsa l\'UMD</string>
+    <string name="xmbm_card_rename">Canvia el nom de la targeta</string>
+    <string name="xmbm_card_move_to_category">Mou a una categoria</string>
+    <string name="xmbm_card_delete">Suprimeix la targeta personalitzada</string>
+    <string name="xmbm_card_in_category">A %1$s</string>
+    <string name="xmbm_card_other_categories">Altres categories</string>
+    <string name="xmbm_card_new_here">Targeta personalitzada nova aquí…</string>
+    <string name="xmbm_sort_all_lists">Totes les llistes</string>
+    <plurals name="xmbm_memcard_sub_games">
+        <item quantity="one">Memory Card · %d joc</item>
+        <item quantity="many">Memory Card · %d jocs</item>
+        <item quantity="other">Memory Card · %d jocs</item>
+    </plurals>
+    <plurals name="xmbm_memcard_sub_games_pinned">
+        <item quantity="one">Memory Card · Fixada · %d joc</item>
+        <item quantity="many">Memory Card · Fixada · %d jocs</item>
+        <item quantity="other">Memory Card · Fixada · %d jocs</item>
+    </plurals>
+
+    <!-- Menús de la Memory Card -->
+    <string name="xmbm_card_find_games">Troba jocs</string>
+    <string name="xmbm_card_scan_roms">Busca jocs</string>
+    <string name="xmbm_card_import_pc">Importa jocs de PC</string>
+    <string name="xmbm_card_match_achievements">Associa els assoliments</string>
+    <string name="xmbm_card_hide">Amaga la targeta</string>
+    <string name="xmbm_card_remove">Treu la targeta</string>
+    <string name="xmbm_card_scan_all">Escaneja totes les targetes</string>
+    <string name="xmbm_card_relink_artwork">Torna a enllaçar les imatges</string>
+    <string name="xmbm_card_global_sort">Ordenació global</string>
+    <string name="xmbm_scan_none_new">No s\'ha trobat cap joc nou</string>
+    <plurals name="xmbm_scan_new_games">
+        <item quantity="one">%d joc nou</item>
+        <item quantity="many">%d jocs nous</item>
+        <item quantity="other">%d jocs nous</item>
+    </plurals>
+    <plurals name="xmbm_scan_cards_scanned">
+        <item quantity="one">%d Memory Card escanejada</item>
+        <item quantity="many">%d Memory Cards escanejades</item>
+        <item quantity="other">%d Memory Cards escanejades</item>
+    </plurals>
+    <plurals name="xmbm_scan_cards_failed">
+        <item quantity="one">No s\'ha pogut escanejar %d targeta</item>
+        <item quantity="many">No s\'han pogut escanejar %d targetes</item>
+        <item quantity="other">No s\'han pogut escanejar %d targetes</item>
+    </plurals>
+
+    <!-- Menú del joc -->
+    <string name="xmbm_game_view_details">Mostra el detall del joc</string>
+    <string name="xmbm_game_choose_disc">Tria el disc</string>
+    <string name="xmbm_game_view_shiba_coins">Mostra les Shiba Coins</string>
+    <string name="xmbm_game_change_emulator">Canvia l\'emulador</string>
+    <string name="xmbm_game_add_to_card">Afegeix a una targeta</string>
+    <string name="xmbm_game_remove_from_card">Treu de la targeta</string>
+    <string name="xmbm_game_select_multiple">Selecciona\'n diversos</string>
+    <string name="xmbm_game_add_to_category">Afegeix a una categoria</string>
+    <string name="xmbm_game_move_to_category">Mou a una categoria</string>
+    <string name="xmbm_game_remove_from_category">Treu de la categoria</string>
+    <string name="xmbm_game_fetch_artwork">Obtén imatges</string>
+    <string name="xmbm_game_launch_with">Inicia amb</string>
+    <string name="xmbm_game_install_goldberg">Instal·la els assoliments de Goldberg</string>
+    <string name="xmbm_game_export">Exporta el joc</string>
+    <string name="xmbm_game_file_location">Mostra la ubicació del fitxer</string>
+    <string name="xmbm_game_hide_from">Amaga de %1$s</string>
+    <string name="xmbm_game_remove_permanently">Treu permanentment</string>
+    <string name="xmbm_game_mark_as_game">Marca com a joc</string>
+    <string name="xmbm_game_unmark_as_game">Desmarca com a joc</string>
+
+    <!-- Menús de mitjans -->
+    <string name="xmbm_play">Reprodueix</string>
+    <string name="xmbm_media_view_information">Mostra la informació</string>
+    <string name="xmbm_media_add_tracks">Afegeix pistes</string>
+    <string name="xmbm_media_view_details">Mostra els detalls</string>
+    <string name="xmbm_media_scan_library">Escaneja la biblioteca</string>
+    <string name="xmbm_media_scan_album">Escaneja l\'àlbum</string>
+    <string name="xmbm_media_set_wallpaper">Defineix com a fons del launcher</string>
+    <string name="xmbm_media_set_lockscreen">Defineix com a pantalla de bloqueig</string>
+    <string name="xmbm_media_scan_section">Escaneja %1$s</string>
+    <string name="xmbm_info_artist">Artista: %1$s</string>
+    <string name="xmbm_info_album">Àlbum: %1$s</string>
+    <string name="xmbm_info_duration">Durada: %1$s</string>
+    <string name="xmbm_info_type">Tipus: %1$s</string>
+    <string name="xmbm_info_size">Mida: %1$s</string>
+    <string name="xmbm_info_location">Ubicació: %1$s</string>
+    <string name="xmbm_info_file">Fitxer: %1$s</string>
+
+    <!-- Diàlegs de confirmació -->
+    <string name="xmbm_confirm_remove_library_title">Vols treure \"%1$s\" de la biblioteca?</string>
+    <string name="xmbm_confirm_remove_game_msg">El fitxer no se suprimeix. Un escaneig posterior el tornarà a afegir si encara és en una carpeta escanejada.</string>
+    <string name="xmbm_confirm_remove">Treu</string>
+    <string name="xmbm_confirm_remove_missing_title">Vols treure \"%1$s\" permanentment?</string>
+    <string name="xmbm_confirm_remove_missing_msg">El seu fitxer ja no hi és, així que aquesta entrada no es podrà restaurar.</string>
+    <string name="xmbm_confirm_remove_permanently">Treu permanentment</string>
+    <string name="xmbm_confirm_delete_card_title">Vols suprimir \"%1$s\"?</string>
+    <string name="xmbm_confirm_delete_card_msg">Els seus jocs es queden a la biblioteca.</string>
+    <string name="xmbm_confirm_delete_card_button">Suprimeix la targeta personalitzada</string>
+    <string name="xmbm_confirm_remove_category_title">Vols treure\'l de %1$s?</string>
+    <string name="xmbm_confirm_remove_category_msg">\"%1$s\" també surt de: %2$s.</string>
+    <string name="xmbm_confirm_remove_android_msg">L\'aplicació continua instal·lada. Troba jocs la pot tornar a afegir.</string>
+    <string name="xmbm_confirm_remove_card_title">Vols treure la targeta \"%1$s\"?</string>
+    <string name="xmbm_confirm_remove_card_android_msg">Els seus jocs també surten de la biblioteca. Les aplicacions continuen instal·lades, i Troba jocs les pot tornar a afegir.</string>
+    <string name="xmbm_confirm_remove_card_msg">Els seus jocs també surten de la biblioteca. Els fitxers de ROM es queden al disc, i un escaneig els pot recuperar.</string>
+    <string name="xmbm_confirm_remove_card_button">Treu la targeta</string>
+    <string name="xmbm_confirm_remove_app_row_msg">L\'aplicació continua instal·lada i a les seves categories d\'aplicacions.</string>
+    <string name="xmbm_confirm_remove_track_msg">El fitxer no se suprimeix. Un escaneig posterior el tornarà a afegir si encara és en una carpeta de música.</string>
+    <string name="xmbm_confirm_remove_video_msg">El fitxer no se suprimeix. Un escaneig posterior el tornarà a afegir si encara és en una biblioteca de vídeo.</string>
+    <string name="xmbm_confirm_remove_photo_msg">El fitxer no se suprimeix. Un escaneig posterior el tornarà a afegir si encara és en un àlbum.</string>
+    <string name="xmbm_confirm_delete_music_playlist_msg">Les seves pistes es queden a la biblioteca.</string>
+    <string name="xmbm_confirm_delete_video_playlist_msg">Els seus vídeos es queden a la biblioteca.</string>
+    <string name="xmbm_confirm_delete_playlist_button">Suprimeix la llista</string>
+    <string name="xmbm_confirm_uninstall_title">Vols desinstal·lar \"%1$s\"?</string>
+    <string name="xmbm_confirm_uninstall_msg">L\'aplicació i les seves dades s\'eliminen d\'aquest dispositiu.</string>
+    <string name="xmbm_confirm_uninstall_button">Desinstal·la</string>
+    <string name="xmbm_confirm_clear_notifs_title">Vols esborrar totes les notificacions?</string>
+    <string name="xmbm_confirm_clear_notifs_msg">Les tasques en curs no es veuen afectades.</string>
+    <string name="xmbm_confirm_clear_all_button">Esborra-ho tot</string>
+
+    <!-- Tauler de notificacions -->
+    <string name="xmbm_stop_confirm_title">Vols aturar \"%1$s\"?</string>
+    <string name="xmbm_stop_confirm_kept_default">Es conserva la feina feta fins ara.</string>
+    <string name="xmbm_stop_confirm_progress">S\'han fet %1$d de %2$d.</string>
+    <string name="xmbm_panel_prompt_open">Obre</string>
+    <string name="xmbm_panel_prompt_stop">Atura</string>
+    <string name="xmbm_panel_prompt_options">Opcions</string>
+    <string name="xmbm_panel_prompt_close">Tanca</string>
+
+    <!-- Notificacions d'obtenció d'imatges -->
+    <string name="xmbm_fetchart_running">S\'estan obtenint imatges: %1$s</string>
+    <string name="xmbm_fetchart_failed">L\'obtenció d\'imatges ha fallat</string>
+    <string name="xmbm_fetchart_failed_title">No s\'han pogut obtenir imatges per a %1$s</string>
+    <string name="xmbm_fetchart_paused_title">Imatges en pausa per a %1$s</string>
+    <string name="xmbm_fetchart_done_title">S\'han actualitzat les imatges de %1$s</string>
+
+    <!-- Importació de llistes -->
+    <string name="xmbm_plimport_cant_open">No s\'ha pogut obrir el fitxer</string>
+    <string name="xmbm_plimport_too_large">El fitxer supera els %1$d MiB</string>
+    <string name="xmbm_plimport_cant_read">No s\'ha pogut llegir el fitxer</string>
+    <string name="xmbm_plimport_default_name">llista</string>
+    <string name="xmbm_plimport_not_playlist">No és un fitxer de llista de reproducció</string>
+    <string name="xmbm_plimport_unexpected">Error inesperat</string>
+    <string name="xmbm_plimport_title_error">No s\'ha pogut importar \"%1$s\"</string>
+    <string name="xmbm_plimport_title_ok">S\'ha importat \"%1$s\"</string>
+    <string name="xmbm_plimport_title_none">No s\'ha importat res de \"%1$s\"</string>
+    <string name="xmbm_plimport_reason_web">no és un fitxer local</string>
+    <string name="xmbm_plimport_reason_type">tipus de mitjà incorrecte</string>
+    <string name="xmbm_plimport_reason_dup">ja és a la llista</string>
+    <string name="xmbm_plimport_reason_ambiguous">més d\'una coincidència</string>
+    <string name="xmbm_plimport_reason_missing">no és a la biblioteca</string>
+    <string name="xmbm_plimport_sum_found">%1$d trobats</string>
+    <string name="xmbm_plimport_sum_missing">%1$d no són a la biblioteca</string>
+    <string name="xmbm_plimport_sum_skipped">%1$d omesos</string>
+    <string name="xmbm_plimport_sum_dropped">%1$d ignorats per sobre del límit de %2$d entrades</string>
+    <string name="xmbm_plimport_label_found">Trobats</string>
+    <string name="xmbm_plimport_label_missing">No són a la biblioteca</string>
+    <string name="xmbm_plimport_label_skipped">Omesos</string>
+
+    <!-- Menú de configuració -->
+    <string name="xmbm_setsec_library_title">Biblioteca</string>
+    <string name="xmbm_setsec_library_sub">Fonts, targetes, imatges i elements amagats</string>
+    <string name="xmbm_setsec_emulators_title">Emuladors</string>
+    <string name="xmbm_setsec_emulators_sub">Perfils d\'inici i nuclis de RetroArch</string>
+    <string name="xmbm_setsec_interface_title">Interfície</string>
+    <string name="xmbm_setsec_interface_sub">Categories, temes, pantalla i comandament</string>
+    <string name="xmbm_setsec_achievements_title">Assoliments</string>
+    <string name="xmbm_setsec_achievements_sub">RetroAchievements i Steam</string>
+    <string name="xmbm_setsec_media_title">Mitjans</string>
+    <string name="xmbm_setsec_media_sub">Configuració de música, vídeo i fotos</string>
+    <string name="xmbm_setsec_system_title">Sistema</string>
+    <string name="xmbm_setsec_system_sub">Quant a, actualitzacions, registres, còpia de seguretat, configuració i crèdits</string>
+    <string name="xmbm_setsec_system_sub_nobackup">Quant a, actualitzacions, registres, configuració i crèdits</string>
+    <string name="xmbm_set_library_title">Gestor de biblioteques</string>
+    <string name="xmbm_set_library_sub">Fonts de ROM i escaneig</string>
+    <string name="xmbm_set_windows_games_title">Jocs de Windows</string>
+    <string name="xmbm_set_windows_games_sub">Jocs de PC, llançadors i importacions</string>
+    <string name="xmbm_set_collections_title">Memory Cards personalitzades</string>
+    <string name="xmbm_set_collections_sub">Crea i gestiona Memory Cards personalitzades</string>
+    <string name="xmbm_set_artwork_title">Imatges</string>
+    <string name="xmbm_set_artwork_sub">Fonts d\'imatges i memòria cau</string>
+    <string name="xmbm_set_app_visibility_title">Elements amagats</string>
+    <string name="xmbm_set_app_visibility_sub">Revisa les aplicacions i els jocs que has amagat</string>
+    <string name="xmbm_set_emulators_installed_title">Instal·lats</string>
+    <string name="xmbm_set_emulators_installed_sub">Perfils d\'emulador detectats</string>
+    <string name="xmbm_set_emulators_custom_title">Emuladors personalitzats</string>
+    <string name="xmbm_set_emulators_custom_sub">Perfils personalitzats i Afegeix un emulador personalitzat</string>
+    <string name="xmbm_set_emulators_retroarch_title">RetroArch</string>
+    <string name="xmbm_set_emulators_retroarch_sub">Detecció i enllaç de nuclis</string>
+    <string name="xmbm_set_emulators_assign_title">Predeterminats per sistema</string>
+    <string name="xmbm_set_emulators_assign_sub">Emulador i nucli predeterminats per consola, i personalitzacions per joc</string>
+    <string name="xmbm_set_emulators_knowledge_title">Coneixement d\'emuladors</string>
+    <string name="xmbm_set_emulators_knowledge_sub">Actualitzacions, els teus fitxers i restabliment a l\'integrat</string>
+    <string name="xmbm_set_display_title">Pantalla</string>
+    <string name="xmbm_set_display_sub">Ona, fons, arrencada i icones</string>
+    <string name="xmbm_set_audio_title">So</string>
+    <string name="xmbm_set_audio_sub">Sons del menú, nivells i ambient</string>
+    <string name="xmbm_set_notifications_title">Notificacions</string>
+    <string name="xmbm_set_notifications_sub">Historial i conservació del tauler</string>
+    <string name="xmbm_set_categories_title">Categories</string>
+    <string name="xmbm_set_categories_sub">Gestiona les categories de l\'XMB</string>
+    <string name="xmbm_set_themes_title">Temes</string>
+    <string name="xmbm_set_themes_sub">Aspecte, colors i icones de l\'XMB</string>
+    <string name="xmbm_set_controller_title">Comandament</string>
+    <string name="xmbm_set_controller_sub">Assignació de botons</string>
+    <string name="xmbm_set_achievements_player_card_title">Targeta de jugador</string>
+    <string name="xmbm_set_achievements_player_card_sub">Nivells, rangs i estat de sincronització</string>
+    <string name="xmbm_set_achievements_credentials_title">Credencials dels proveïdors</string>
+    <string name="xmbm_set_achievements_credentials_sub">Comptes de RetroAchievements i Steam</string>
+    <string name="xmbm_set_achievements_local_windows_title">Windows local</string>
+    <string name="xmbm_set_achievements_local_windows_sub">Seguiment de jocs locals de Windows (emulació de Steam)</string>
+    <string name="xmbm_set_achievements_update_title">Actualitza els assoliments</string>
+    <string name="xmbm_set_achievements_update_sub">Sincronitza i associa automàticament els jocs seguits</string>
+    <string name="xmbm_set_music_title">Música</string>
+    <string name="xmbm_set_music_sub">Carpetes de música i reproductor predeterminat</string>
+    <string name="xmbm_set_video_title">Vídeo</string>
+    <string name="xmbm_set_video_sub">Biblioteques de vídeo, escaneig i reproducció</string>
+    <string name="xmbm_set_photo_title">Fotos</string>
+    <string name="xmbm_set_photo_sub">Biblioteques de fotos i escaneig</string>
+    <string name="xmbm_set_about_title">Quant a</string>
+    <string name="xmbm_set_about_sub">Play Field Portal</string>
+    <string name="xmbm_set_system_update_title">Actualització del sistema</string>
+    <string name="xmbm_set_system_update_sub">Versions noves i registre de canvis</string>
+    <string name="xmbm_set_logs_title">Registres</string>
+    <string name="xmbm_set_logs_sub">Obre o comparteix els registres de sessió</string>
+    <string name="xmbm_set_backup_title">Còpia de seguretat i restauració</string>
+    <string name="xmbm_set_backup_sub">Exportació i importació</string>
+    <string name="xmbm_set_setup_title">Assistent de configuració</string>
+    <string name="xmbm_set_setup_sub">Configuració guiada de carpetes i comptes</string>
+    <string name="xmbm_set_credits_title">Crèdits</string>
+    <string name="xmbm_set_credits_sub">Imatges i atribucions</string>
+
+    <!-- Seccions de mitjans -->
+    <string name="xmbm_media_music">Música</string>
+    <string name="xmbm_media_videos">Vídeos</string>
+    <string name="xmbm_media_photos">Fotos</string>
+    <string name="xmbm_sort_pill">Ordre: %1$s</string>
+    <string name="xmbm_filter">Filtra</string>
+    <string name="xmbm_sortmode_title">Títol</string>
+    <string name="xmbm_sortmode_artist">Artista</string>
+    <string name="xmbm_sortmode_album">Àlbum</string>
+    <string name="xmbm_sortmode_recent_played">Jugats recentment</string>
+    <string name="xmbm_sortmode_date_added">Data d\'addició</string>
+    <string name="xmbm_sortmode_custom">Personalitzat</string>
+    <string name="xmbm_filter_search">Cerca</string>
+    <string name="xmbm_filter_none">Cap</string>
+    <string name="xmbm_filter_term">\"%1$s\"</string>
+    <string name="xmbm_filter_clear">Esborra la cerca</string>
+
+    <!-- Notificacions de jocs locals de Windows -->
+    <string name="xmbm_lwm_running">S\'estan associant els jocs locals de Windows…</string>
+    <string name="xmbm_lwm_stop_note">Els jocs ja associats continuen enllaçats.</string>
+    <string name="xmbm_task_stopped">S\'ha aturat abans d\'acabar</string>
+    <string name="xmbm_lwm_stopped_title">S\'ha aturat l\'associació d\'assoliments de Windows</string>
+    <string name="xmbm_lwm_failed">L\'associació per lots ha fallat</string>
+    <string name="xmbm_lwm_failed_title">L\'associació d\'assoliments de Windows ha fallat</string>
+    <string name="xmbm_lwm_done_title">S\'ha acabat l\'associació d\'assoliments de Windows</string>
+    <string name="xmbm_schema_label">Esquemes d\'assoliments</string>
+    <string name="xmbm_convert_no_ach" formatted="false">%d no tenien assoliments</string>
+    <string name="xmbm_convert_no_key" formatted="false">%d necessiten una clau de Web API de Steam</string>
+    <string name="xmbm_convert_failed" formatted="false">%d han fallat</string>
+    <string name="xmbm_convert_tail">Juga a cada joc per començar a aconseguir monedes.</string>
+    <string name="xmbm_convert_linked" formatted="false">%d enllaçats a jocs de la biblioteca.</string>
+    <string name="xmbm_diag_copied">S\'ha copiat el diagnòstic al porta-retalls</string>
+    <string name="xmbm_artwork_folder_label">Carpeta d\'imatges</string>
+    <string name="xmbm_artwork_folder_failed">No s\'ha pogut configurar aquesta carpeta. Tria una carpeta on PFP pugui escriure.</string>
+    <plurals name="xmbm_convert_converted">
+        <item quantity="one">S\'ha convertit %d joc</item>
+        <item quantity="many">S\'han convertit %d jocs</item>
+        <item quantity="other">S\'han convertit %d jocs</item>
+    </plurals>
+
+    <!-- Files de jocs i aplicacions -->
+    <string name="xmbm_additem_apps_sub">Tria aplicacions instal·lades per afegir-les a aquesta secció</string>
+    <string name="xmbm_additem_games_sub">Tria jocs i Memory Cards personalitzades per afegir-los a aquesta categoria</string>
+    <string name="xmbm_catcard_title">Memory Card de %1$s</string>
+    <string name="xmbm_total_games">Total de jocs %1$d</string>
+    <string name="xmbm_catcard_loose">Solt</string>
+    <string name="xmbm_empty_category_title">Encara no hi ha jocs en aquesta categoria</string>
+    <string name="xmbm_empty_category_sub">Torna enrere i tria Afegeix jocs.</string>
+    <plurals name="xmbm_customcard_games">
+        <item quantity="one">Personalitzada · %d joc</item>
+        <item quantity="many">Personalitzada · %d jocs</item>
+        <item quantity="other">Personalitzada · %d jocs</item>
+    </plurals>
+    <plurals name="xmbm_customcard_games_pinned">
+        <item quantity="one">Personalitzada · Fixada · %d joc</item>
+        <item quantity="many">Personalitzada · Fixada · %d jocs</item>
+        <item quantity="other">Personalitzada · Fixada · %d jocs</item>
+    </plurals>
+    <plurals name="xmbm_customcard_apps">
+        <item quantity="one">Personalitzada · %d aplicació</item>
+        <item quantity="many">Personalitzada · %d aplicacions</item>
+        <item quantity="other">Personalitzada · %d aplicacions</item>
+    </plurals>
+    <plurals name="xmbm_customcard_apps_pinned">
+        <item quantity="one">Personalitzada · Fixada · %d aplicació</item>
+        <item quantity="many">Personalitzada · Fixada · %d aplicacions</item>
+        <item quantity="other">Personalitzada · Fixada · %d aplicacions</item>
+    </plurals>
+
+    <!-- Files de música -->
+    <string name="xmbm_music_now_playing">S\'està reproduint</string>
+    <string name="xmbm_music_playlist_title">Llista de reproducció</string>
+    <string name="xmbm_music_playlist_sub">Crea i reprodueix les teves llistes de pistes</string>
+    <string name="xmbm_music_apps_title">Aplicacions de música</string>
+    <string name="xmbm_music_apps_sub">Obre les aplicacions de música instal·lades</string>
+    <string name="xmbm_music_add_folder_title">Afegeix una carpeta de música</string>
+    <string name="xmbm_music_add_folder_sub">Defineix la carpeta arrel de música a Configuració per començar</string>
+    <string name="xmbm_music_add_apps_title">Afegeix aplicacions de música</string>
+    <string name="xmbm_picker_show_here_sub">Tria aplicacions instal·lades per mostrar-les aquí</string>
+    <string name="xmbm_music_add_tracks_title">Afegeix pistes</string>
+    <string name="xmbm_music_add_tracks_sub">Tria cançons per afegir-les a aquesta llista</string>
+    <string name="xmbm_music_empty_title">No s\'ha trobat música</string>
+    <string name="xmbm_music_empty_sub">Afegeix una carpeta de música a Configuració → Música</string>
+    <string name="xmbm_playlist_empty_title">Aquesta llista és buida</string>
+    <string name="xmbm_playlist_empty_sub">Afegeix pistes a sota o des del menú d\'opcions d\'una cançó.</string>
+
+    <!-- Llocs on amagar -->
+    <string name="xmbm_hide_custom_card">Targeta personalitzada</string>
+    <string name="xmbm_hide_android">Android</string>
+    <string name="xmbm_music_apps_name">Aplicacions de música</string>
+    <string name="xmbm_video_apps_name">Aplicacions de vídeo</string>
+
+    <!-- Files de vídeo -->
+    <string name="xmbm_video_collections_title">Col·leccions</string>
+    <string name="xmbm_video_collections_sub">Vistos recentment, preferits i llistes de reproducció</string>
+    <string name="xmbm_video_libraries_title">Biblioteques de vídeo</string>
+    <string name="xmbm_video_apps_sub">Obre les aplicacions de vídeo instal·lades</string>
+    <string name="xmbm_video_add_title">Afegeix vídeos</string>
+    <string name="xmbm_video_add_sub">Defineix la carpeta arrel de vídeo a Configuració per començar</string>
+    <string name="xmbm_video_recent_title">Vistos recentment</string>
+    <string name="xmbm_video_recent_sub">Continua on ho vas deixar</string>
+    <string name="xmbm_video_favorites_sub">Els teus vídeos marcats amb estrella</string>
+    <string name="xmbm_video_playlists_sub">Crea i reprodueix les teves llistes</string>
+    <string name="xmbm_video_nolibs_title">Encara no hi ha biblioteques de vídeo</string>
+    <string name="xmbm_video_nolibs_sub">Defineix una carpeta arrel a Configuració → Vídeo</string>
+    <string name="xmbm_video_add_apps_title">Afegeix aplicacions de vídeo</string>
+    <string name="xmbm_video_none_title">No s\'ha trobat cap vídeo</string>
+    <string name="xmbm_video_none_sub">Afegeix una biblioteca de vídeo a Configuració → Vídeo</string>
+    <string name="xmbm_video_nowatched_title">Encara no has vist res</string>
+    <string name="xmbm_video_nowatched_sub">Els vídeos que reprodueixis apareixeran aquí</string>
+    <string name="xmbm_video_nofav_title">Encara no hi ha preferits</string>
+    <string name="xmbm_video_nofav_sub">Marca un vídeo amb estrella des del seu menú ⚙ Opcions</string>
+    <string name="xmbm_video_playlist_empty_sub">Afegeix vídeos des del menú ⚙ Opcions d\'un vídeo</string>
+    <string name="xmbm_video_new_playlist">Llista de vídeos nova</string>
+    <string name="xmbm_music_new_playlist">Llista de reproducció nova</string>
+    <plurals name="xmbm_video_libraries_count">
+        <item quantity="one">%d biblioteca</item>
+        <item quantity="many">%d biblioteques</item>
+        <item quantity="other">%d biblioteques</item>
+    </plurals>
+
+    <!-- Files de fotos -->
+    <string name="xmbm_photo_camera_title">Càmera</string>
+    <string name="xmbm_photo_camera_sub">Obre la càmera</string>
+    <string name="xmbm_photo_albums_title">Àlbums</string>
+    <string name="xmbm_photo_apps_title">Aplicacions de fotos</string>
+    <string name="xmbm_photo_apps_sub">Obre les aplicacions de fotos instal·lades</string>
+    <string name="xmbm_photo_add_title">Afegeix una biblioteca de fotos</string>
+    <string name="xmbm_photo_add_sub">Defineix la carpeta arrel de fotos a Configuració per començar</string>
+    <string name="xmbm_photo_add_apps_title">Afegeix aplicacions de fotos</string>
+    <string name="xmbm_photo_noalbums_title">Encara no hi ha àlbums</string>
+    <string name="xmbm_photo_noalbums_sub">Defineix una carpeta arrel a Configuració → Fotos</string>
+    <string name="xmbm_photo_none_title">No s\'ha trobat cap foto</string>
+    <string name="xmbm_photo_none_sub">Afegeix una biblioteca de fotos i escaneja-la</string>
+    <string name="xmbm_photo_noalbumphotos_title">No hi ha fotos en aquest àlbum</string>
+    <string name="xmbm_photo_noalbumphotos_sub">Escaneja\'l des del seu menú ⚙ Opcions o a Configuració → Fotos</string>
+    <plurals name="xmbm_photo_albums_count">
+        <item quantity="one">%d àlbum</item>
+        <item quantity="many">%d àlbums</item>
+        <item quantity="other">%d àlbums</item>
+    </plurals>
+
+    <!-- Navegador de música -->
+    <string name="xmbm_no_matches_title">Cap coincidència</string>
+    <string name="xmbm_no_matches_sub">Prova una altra cerca.</string>
+    <string name="xmbm_queue_all_music">Tota la música</string>
+    <string name="xmbm_video_all">Tots els vídeos</string>
+    <string name="xmbm_photo_all">Totes les fotos</string>
+    <string name="xmbm_missing">Absents</string>
+    <string name="xmbm_social_friends">Amics</string>
+    <string name="xmbm_social_voice">Veu</string>
+    <string name="xmbm_social_voice_settings">Configuració de veu</string>
+    <string name="xmbm_social_invites">Invitacions</string>
+    <string name="xmbm_social_invite_friends">Convida amics</string>
+    <string name="xmbm_social_activity_settings">Configuració de l\'activitat</string>
+    <string name="xmbm_social_discord_settings">Configuració de Discord</string>
+    <string name="xmbm_android_settings_title">Configuració d\'Android</string>
+    <string name="xmbm_android_settings_sub">Obre la configuració del dispositiu</string>
+    <string name="xmbm_filter_chip">Filtre: %1$s</string>
+    <string name="xmbm_filter_chip_term">Filtre: \"%1$s\" · %2$s</string>
+
+    <!-- Files buides -->
+    <string name="xmbm_empty_games_assigned_title">No hi ha jocs assignats.</string>
+    <string name="xmbm_empty_games_assigned_sub">Afegeix jocs a aquesta categoria.</string>
+    <string name="xmbm_empty_videos_apps">No s\'ha trobat cap aplicació de vídeo.</string>
+    <string name="xmbm_empty_network_apps">No s\'ha trobat cap navegador.</string>
+    <string name="xmbm_empty_store_apps">No s\'ha trobat cap botiga d\'aplicacions.</string>
+    <string name="xmbm_empty_music_apps">No s\'ha trobat cap aplicació de música.</string>
+    <string name="xmbm_empty_photo_apps">No s\'ha trobat cap aplicació de fotos.</string>
+    <string name="xmbm_empty_apps_assigned">No hi ha aplicacions assignades.</string>
+    <string name="xmbm_empty_install_apps">Instal·la algunes aplicacions per començar.</string>
+    <string name="xmbm_noconsoles_title">No hi ha consoles configurades</string>
+    <string name="xmbm_noconsoles_sub">Obre el Gestor de biblioteques per afegir una Memory Card</string>
+    <string name="xmbm_gap_press_confirm">Prem Confirma per obrir Configuració i solucionar-ho.</string>
+    <string name="xmbm_nogames_imported_title">Encara no s\'ha importat cap joc</string>
+    <string name="xmbm_nogames_imported_sub">Obre una Memory Card per escanejar la biblioteca.</string>
+    <string name="xmbm_emptycard_title">Aquesta Memory Card personalitzada és buida</string>
+    <string name="xmbm_emptycard_sub">Afegeix jocs de qualsevol consola amb el menú d\'opcions (△).</string>
+    <string name="xmbm_emptyfav_title">Encara no hi ha preferits</string>
+    <string name="xmbm_emptyfav_sub">Marca un joc com a preferit des del seu menú d\'opcions (△).</string>
+    <string name="xmbm_emptymissing_title">No en falta cap</string>
+    <string name="xmbm_emptymissing_sub">En l\'últim escaneig es van trobar els fitxers de tots els jocs.</string>
+    <string name="xmbm_findgames_sub">Tria aplicacions instal·lades per afegir-les a aquesta biblioteca</string>
+    <string name="xmbm_empty_romdir">Directori de ROM no configurat</string>
+    <string name="xmbm_empty_scan_console">Prem ▲ per escanejar aquesta consola</string>
+    <string name="xmbm_empty_folder_title">No s\'ha trobat cap joc en aquesta carpeta</string>
+    <plurals name="xmbm_games_count">
+        <item quantity="one">%d joc</item>
+        <item quantity="many">%d jocs</item>
+        <item quantity="other">%d jocs</item>
+    </plurals>
+
+    <!-- Cerca de jocs i centre de Shiba Coins -->
+    <string name="xmbm_nomatch_title">Cap joc no coincideix amb \"%1$s\"</string>
+    <string name="xmbm_nomatch_sub">Obre el menú Filtra per canviar-ho o esborrar-ho.</string>
+    <string name="xmbm_ach_untracked">Sense seguiment</string>
+    <string name="xmbm_ach_connect_title">Connecta els comptes</string>
+    <string name="xmbm_ach_connect_sub">Configura Shiba Coins i associa automàticament la biblioteca</string>
+    <string name="xmbm_ach_all_tracked">Tots els jocs seguits</string>
+    <string name="xmbm_ach_matching_progress">S\'està associant…  %1$d / %2$d</string>
+    <string name="xmbm_ach_syncing_progress">S\'estan sincronitzant les monedes…  %1$d / %2$d</string>
+    <string name="xmbm_ach_summary">%1$s / %2$s monedes  •  %3$d seguits  •  %4$d dominats</string>
+    <string name="xmbm_ach_level_badge">Nv %1$d</string>
+    <plurals name="xmbm_ach_games_count">
+        <item quantity="one">%d joc</item>
+        <item quantity="many">%d jocs</item>
+        <item quantity="other">%d jocs</item>
+    </plurals>
+
+    <!-- Menús de jocs -->
+    <string name="xmbm_icon_global_value">Global: %1$s</string>
+    <string name="xmbm_icon_use_global">Utilitza la configuració global (%1$s)</string>
+    <string name="xmbm_ach_player_card">Targeta de jugador</string>
+    <string name="xmbm_ach_auto_matching_busy">S\'està associant automàticament…</string>
+    <string name="xmbm_ach_auto_matching">Associació automàtica</string>
+    <string name="xmbm_ach_updating_busy">S\'està actualitzant…</string>
+    <string name="xmbm_ach_update_installed">Actualitza els assoliments instal·lats</string>
+    <string name="xmbm_move_card_to">Mou la targeta personalitzada a</string>
+    <string name="xmbm_move_to">Mou a…</string>
+    <string name="xmbm_add_to">Afegeix a…</string>
+    <string name="xmbm_move_game_to">Mou el joc a</string>
+    <string name="xmbm_add_game_to">Afegeix el joc a</string>
+    <string name="xmbm_picker_add_apps_named">Afegeix aplicacions · %1$s</string>
+    <string name="xmbm_picker_add_android_apps">Afegeix aplicacions d\'Android</string>
+    <string name="xmbm_icon_use_default">Utilitza el predeterminat (%1$s)</string>
+    <string name="xmbm_emu_use_platform_default">Utilitza el predeterminat de la plataforma</string>
+    <string name="xmbm_emu_choose">Tria l\'emulador</string>
+    <string name="xmbm_launchwith_imported_from">Importat de</string>
+    <string name="xmbm_disc_n">Disc %1$d</string>
+    <string name="xmbm_disc_unnumbered">Llista</string>
+    <string name="xmbm_card_new_title">Memory Card personalitzada nova</string>
+    <string name="xmbm_card_rename_title">Canvia el nom de la Memory Card personalitzada</string>
+    <plurals name="xmbm_marked_add_to_card">
+        <item quantity="one">Afegeix %d joc a una targeta</item>
+        <item quantity="many">Afegeix %d jocs a una targeta</item>
+        <item quantity="other">Afegeix %d jocs a una targeta</item>
+    </plurals>
+
+    <!-- Diàlegs d'informació del joc -->
+    <string name="xmbm_info_package">Paquet: %1$s</string>
+    <string name="xmbm_info_no_location">No hi ha cap ubicació de fitxer registrada</string>
+    <string name="xmbm_info_export_failed">L\'exportació ha fallat — consulta el registre.</string>
+    <string name="xmbm_goldberg_off">La instal·lació d\'assoliments de Goldberg està desactivada. Activa \"Instal·la Goldberg i converteix jocs\" a Configuració ▸ Assoliments ▸ Windows local i torna-ho a provar.</string>
+    <string name="xmbm_goldberg_no_setup">No s\'ha trobat cap configuració d\'emulació de Steam (steam_settings) per a aquest joc.</string>
+    <string name="xmbm_goldberg_has_schema">%1$s ja té dades d\'assoliments.</string>
+    <string name="xmbm_goldberg_installed">S\'han instal·lat els assoliments de Goldberg. Juga-hi a través de l\'emulador per començar a aconseguir monedes.</string>
+    <string name="xmbm_goldberg_none">Aquest joc no té assoliments per instal·lar.</string>
+    <string name="xmbm_goldberg_no_key">Primer afegeix la teva clau de Web API de Steam a la configuració d\'Assoliments.</string>
+    <string name="xmbm_goldberg_failed">No s\'han pogut instal·lar els assoliments d\'aquest joc.</string>
+
+    <!-- Notificacions d'escaneig i d'imatges -->
+    <string name="xmbm_scan_running">S\'està escanejant %1$s…</string>
+    <string name="xmbm_scan_stop_note">Es conserven els jocs trobats fins ara.</string>
+    <string name="xmbm_scan_stopped_title">S\'ha aturat l\'escaneig de %1$s</string>
+    <string name="xmbm_scan_failed_title">L\'escaneig de %1$s ha fallat</string>
+    <string name="xmbm_scan_finished_title">S\'ha acabat l\'escaneig de %1$s</string>
+    <string name="xmbm_scan_skipped_title">S\'ha omès l\'escaneig de %1$s</string>
+    <string name="xmbm_pcscan_failed">L\'escaneig de PC ha fallat</string>
+    <string name="xmbm_pcscan_no_new">No s\'ha trobat cap joc de PC nou</string>
+    <string name="xmbm_scanall_running">S\'estan escanejant totes les Memory Cards…</string>
+    <string name="xmbm_scanall_stop_note">Les targetes ja escanejades conserven els jocs nous.</string>
+    <string name="xmbm_scanall_nothing">Cap Memory Card no té una carpeta per escanejar</string>
+    <string name="xmbm_scanall_nothing_title">No hi ha res a escanejar</string>
+    <string name="xmbm_scanall_stopped_title">S\'ha aturat l\'escaneig de totes les Memory Cards</string>
+    <string name="xmbm_scanall_failed_title">L\'escaneig de totes les Memory Cards ha fallat</string>
+    <string name="xmbm_scanall_finished_title">S\'ha acabat l\'escaneig de totes les Memory Cards</string>
+    <string name="xmbm_scrape_running">S\'estan obtenint les imatges que falten: %1$s</string>
+    <string name="xmbm_scrape_stop_note">Es conserven les imatges ja obtingudes.</string>
+    <string name="xmbm_scrape_paused_title">Obtenció d\'imatges en pausa: %1$s</string>
+    <string name="xmbm_scrape_none_missing">No falten imatges a cap joc</string>
+    <string name="xmbm_scrape_finished_title">S\'ha acabat l\'obtenció d\'imatges: %1$s</string>
+    <string name="xmbm_scrape_stopped_title">S\'ha aturat l\'obtenció d\'imatges: %1$s</string>
+    <string name="xmbm_scrape_failed_title">L\'obtenció d\'imatges ha fallat: %1$s</string>
+    <string name="xmbm_meta_running">S\'estan actualitzant les metadades: %1$s</string>
+    <string name="xmbm_meta_stop_note">Els jocs ja actualitzats conserven els seus detalls.</string>
+    <string name="xmbm_meta_no_games_library">No hi ha jocs a la biblioteca</string>
+    <string name="xmbm_meta_no_games_card">No hi ha jocs en aquesta targeta</string>
+    <string name="xmbm_meta_finished_title">S\'ha acabat l\'actualització de metadades: %1$s</string>
+    <string name="xmbm_meta_stopped_title">S\'ha aturat l\'actualització de metadades: %1$s</string>
+    <string name="xmbm_meta_failed">L\'actualització de metadades ha fallat</string>
+    <string name="xmbm_meta_failed_title">L\'actualització de metadades ha fallat: %1$s</string>
+    <plurals name="xmbm_scanall_stopped_after">
+        <item quantity="one">Aturat després de %1$d de %2$d targeta</item>
+        <item quantity="many">Aturat després de %1$d de %2$d targetes</item>
+        <item quantity="other">Aturat després de %1$d de %2$d targetes</item>
+    </plurals>
+    <plurals name="xmbm_scrape_updated">
+        <item quantity="one">%1$d de %2$d joc actualitzat</item>
+        <item quantity="many">%1$d de %2$d jocs actualitzats</item>
+        <item quantity="other">%1$d de %2$d jocs actualitzats</item>
+    </plurals>
+    <plurals name="xmbm_stopped_after_games">
+        <item quantity="one">Aturat després de %d joc</item>
+        <item quantity="many">Aturat després de %d jocs</item>
+        <item quantity="other">Aturat després de %d jocs</item>
+    </plurals>
+
+    <!-- Tauler de notificacions i sol·licituds de drecera -->
+    <string name="xmbm_shortcut_request_title">Sol·licitud de drecera</string>
+    <string name="xmbm_shortcut_request_handled">Aquesta sol·licitud ja s\'ha gestionat.</string>
+    <string name="xmbm_notifications_title">Notificacions</string>
+
+    <!-- Files socials de Discord -->
+    <string name="xmbm_social_signin_title">Inicia la sessió amb Discord</string>
+    <string name="xmbm_social_signin_sub">Escaneja un codi QR amb el telèfon</string>
+    <string name="xmbm_social_connected">Connectat a Discord</string>
+    <string name="xmbm_social_online">En línia</string>
+    <string name="xmbm_social_offline">Fora de línia</string>
+    <string name="xmbm_social_connecting">S\'està connectant…</string>
+    <string name="xmbm_social_idle">Absent</string>
+    <string name="xmbm_social_dnd">No molestis</string>
+    <string name="xmbm_social_streaming">En directe</string>
+    <string name="xmbm_social_friends_unknown">Mira qui està en línia</string>
+    <string name="xmbm_social_friends_none_online">Cap amic en línia</string>
+    <string name="xmbm_social_voice_sub">Parla en una sala compartida</string>
+    <string name="xmbm_social_activity_sub">Comparteix a què estàs jugant</string>
+    <string name="xmbm_social_discord_sub">Compte i tancament de sessió</string>
+    <string name="xmbm_social_share_title">Comparteix l\'activitat</string>
+    <string name="xmbm_social_share_on">Activat · els amics poden veure que ets a Playfield Portal</string>
+    <string name="xmbm_social_share_off">Desactivat · no es comparteix res amb els amics</string>
+    <string name="xmbm_social_generic_title">Mode genèric</string>
+    <string name="xmbm_social_generic_on">Activat · mostra \"un joc\" en lloc del nom de l\'aplicació</string>
+    <string name="xmbm_social_generic_off">Desactivat · mostra el nom de l\'aplicació</string>
+    <string name="xmbm_social_signout_title">Tanca la sessió</string>
+    <string name="xmbm_social_signout_named">Desconnecta %1$s</string>
+    <string name="xmbm_social_signout_sub">Desconnecta aquest compte de Discord</string>
+    <string name="xmbm_social_you_offline">No tens connexió</string>
+    <string name="xmbm_social_friends_reconnect">Torna a connectar-te per veure els amics</string>
+    <string name="xmbm_social_no_friends">No hi ha amics per mostrar</string>
+    <string name="xmbm_social_in_lobby">En una sala de veu · Demana unir-t\'hi</string>
+    <string name="xmbm_social_playing">Jugant a %1$s</string>
+    <string name="xmbm_social_voice_reconnect">Torna a connectar-te per fer servir la veu</string>
+    <string name="xmbm_social_invites_none">No hi ha invitacions pendents</string>
+    <string name="xmbm_social_create_lobby">Crea una sala</string>
+    <string name="xmbm_social_create_lobby_sub">Obre una sala privada i convida-hi amics</string>
+    <string name="xmbm_social_someone">Algú</string>
+    <string name="xmbm_social_participant_you">%1$s (tu)</string>
+    <string name="xmbm_social_muted">Silenciat</string>
+    <string name="xmbm_social_speaking">Parlant</string>
+    <string name="xmbm_social_waiting_others">S\'està esperant que s\'hi uneixin altres</string>
+    <string name="xmbm_social_invite_friends_sub">Porta amics a aquesta sala</string>
+    <string name="xmbm_social_unmute">Activa el so</string>
+    <string name="xmbm_social_mute">Silencia</string>
+    <string name="xmbm_social_mic_off">El micròfon està desactivat</string>
+    <string name="xmbm_social_mic_on">El micròfon està activat</string>
+    <string name="xmbm_social_leave_voice">Surt de la veu</string>
+    <string name="xmbm_social_leave_voice_sub">Desconnecta\'t de la sala</string>
+    <string name="xmbm_social_no_invites">No hi ha invitacions</string>
+    <string name="xmbm_social_no_invites_sub">Aquí apareixen les invitacions i les sol·licituds per unir-se</string>
+    <string name="xmbm_social_wants_to_join">%1$s vol unir-s\'hi</string>
+    <string name="xmbm_social_join_lobby">Uneix-te a la sala de %1$s</string>
+    <string name="xmbm_social_select_approve">Selecciona per aprovar</string>
+    <string name="xmbm_social_select_join">Selecciona per unir-t\'hi</string>
+    <string name="xmbm_social_invite_offline">Torna a connectar-te per convidar amics</string>
+    <string name="xmbm_social_invited">Convidat ✓</string>
+    <string name="xmbm_social_already_lobby">Ja és en una sala</string>
+    <string name="xmbm_social_select_invite">Selecciona per convidar</string>
+    <string name="xmbm_social_voice_settings_sub">Sensibilitat del micròfon, filtre de soroll, volum</string>
+    <string name="xmbm_social_vs_toggle_on">Activat · %1$s</string>
+    <string name="xmbm_social_vs_sens_title">Sensibilitat del micròfon</string>
+    <string name="xmbm_social_vs_sens_value">%1$s · més baixa filtra els clics</string>
+    <string name="xmbm_social_vs_noise_title">Cancel·lació de soroll</string>
+    <string name="xmbm_social_vs_noise_on">Krisp elimina el soroll de fons i els clics dels botons</string>
+    <string name="xmbm_social_vs_echo_title">Cancel·lació de l\'eco</string>
+    <string name="xmbm_social_vs_echo_on">evita la retroalimentació de l\'altaveu</string>
+    <string name="xmbm_social_vs_agc_title">Control automàtic de guany</string>
+    <string name="xmbm_social_vs_agc_on">anivella el volum del micròfon</string>
+    <string name="xmbm_social_vs_input_title">Volum del micròfon</string>
+    <string name="xmbm_social_vs_balance_title">Balanç d\'àudio</string>
+    <string name="xmbm_social_vs_balance_bar">Joc ◀%1$s▶ Veu</string>
+    <string name="xmbm_social_vs_ptt_title">Prem per parlar</string>
+    <string name="xmbm_social_vs_ptt_on">mantén premut per parlar — si no, el micròfon es queda tancat</string>
+    <string name="xmbm_social_vs_overlay_title">Botó flotant per parlar</string>
+    <string name="xmbm_social_vs_overlay_needs">Desactivat · necessita \"Mostra sobre altres aplicacions\"</string>
+    <string name="xmbm_social_vs_overlay_on">Activat · botó flotant per mantenir premut i parlar</string>
+    <string name="xmbm_social_vs_overlay_hidden">Desactivat · amagat (fes servir un botó del comandament)</string>
+    <string name="xmbm_social_vs_pttbtn_title">Botó PTT</string>
+    <string name="xmbm_social_vs_pttbtn_press">Prem un botó del comandament…</string>
+    <string name="xmbm_social_vs_pttbtn_set">%1$s  ·  mantén premut per parlar mentre ets a Playfield Portal</string>
+    <string name="xmbm_social_vs_pttbtn_unset">No definit · selecciona per assignar un botó del comandament</string>
+    <string name="xmbm_social_hint_cancel">cancel·la</string>
+    <string name="xmbm_ptt_not_set">No definit</string>
+    <string name="xmbm_ptt_l3">L3 (clic de la palanca esquerra)</string>
+    <string name="xmbm_ptt_r3">R3 (clic de la palanca dreta)</string>
+    <string name="xmbm_ptt_select">Select</string>
+    <string name="xmbm_ptt_start">Start</string>
+    <plurals name="xmbm_social_friends_online">
+        <item quantity="one">%d en línia</item>
+        <item quantity="many">%d en línia</item>
+        <item quantity="other">%d en línia</item>
+    </plurals>
+    <plurals name="xmbm_social_invites_waiting">
+        <item quantity="one">%d en espera</item>
+        <item quantity="many">%d en espera</item>
+        <item quantity="other">%d en espera</item>
+    </plurals>
+
+    <!-- Missatges d'inici, dreceres i temes -->
+    <string name="xmbm_missing_reason">No s\'ha trobat el fitxer en l\'últim escaneig</string>
+    <string name="xmbm_social_reconnect">Torna a connectar</string>
+    <string name="xmbm_launch_failed">No s\'ha pogut iniciar: %1$s</string>
+    <string name="xmbm_launch_could_not">No s\'ha pogut iniciar %1$s</string>
+    <string name="xmbm_launch_no_emulator">No hi ha cap emulador configurat per a %1$s. Assigna\'n un a Configuració ▸ Emuladors ▸ Predeterminats per sistema.</string>
+    <string name="xmbm_shortcut_fav_added">S\'ha afegit als preferits</string>
+    <string name="xmbm_shortcut_fav_removed">S\'ha tret dels preferits</string>
+    <string name="xmbm_shortcut_fav_failed">No s\'han pogut actualitzar els preferits: %1$s</string>
+    <string name="xmbm_shortcut_create_failed">No s\'ha pogut crear la drecera: %1$s</string>
+    <string name="xmbm_scheme_original_sub">Canvia amb el mes</string>
+    <string name="xmbm_scheme_fixed_sub">Color predefinit fix</string>
+    <string name="xmbm_scheme_custom">Personalitzat</string>
+    <string name="xmbm_scheme_custom_sub">Ajusta qualsevol color amb controls lliscants</string>
+    <string name="xmbm_theme_current">Tema actual</string>
+    <string name="xmbm_theme_save_title">Desa l\'aspecte actual com a tema</string>
+    <string name="xmbm_theme_save_failed">No s\'ha pogut desar el tema</string>
+    <string name="xmbm_theme_saved">Tema desat — %1$s</string>
+    <string name="xmbm_gameboot_preview_title">Previsualització</string>
+    <string name="xmbm_drawer_all_title">Totes les aplicacions</string>
+    <string name="xmbm_drawer_all_sub">Navega per totes les aplicacions instal·lades</string>
+    <string name="xmbm_drawer_games_title">Jocs</string>
+    <string name="xmbm_drawer_games_sub">Aplicacions classificades com a jocs</string>
+    <string name="xmbm_drawer_emulators_title">Emuladors</string>
+    <string name="xmbm_drawer_emulators_sub">RetroArch, PPSSPP, Dolphin i més</string>
+    <string name="xmbm_drawer_recent_title">Utilitzades recentment</string>
+    <string name="xmbm_drawer_recent_sub">Aplicacions que has fet servir darrerament</string>
+    <string name="xmbm_shortcut_unsafe">No és segur iniciar la drecera capturada</string>
+</resources>

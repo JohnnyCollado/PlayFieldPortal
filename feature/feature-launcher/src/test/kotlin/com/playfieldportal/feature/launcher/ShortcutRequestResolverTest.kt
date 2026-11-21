@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.launcher
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.data.repository.CollectionRepository
 import com.playfieldportal.core.data.repository.PendingShortcutRequest
 import com.playfieldportal.core.data.repository.PendingShortcutRequestStore
@@ -14,11 +16,14 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 /**
  * The shortcut confirmation that used to live in the shade's Add / Ignore buttons: a request waits
  * in the store with an unread tray row, and the user's choice in the launcher resolves both.
  */
+@RunWith(RobolectricTestRunner::class)
 class ShortcutRequestResolverTest {
 
     private val store = mockk<PendingShortcutRequestStore>(relaxed = true)
@@ -26,7 +31,9 @@ class ShortcutRequestResolverTest {
     private val collections = mockk<CollectionRepository>(relaxed = true)
     private val importer = mockk<PcShortcutImporter>(relaxed = true)
     private val tasks = mockk<BackgroundTaskCenter>(relaxed = true)
-    private val resolver = ShortcutRequestResolver(store, games, collections, importer, tasks)
+    private val resolver = ShortcutRequestResolver(
+        store, games, collections, importer, tasks, ApplicationProvider.getApplicationContext<Context>(),
+    )
 
     private val request = PendingShortcutRequest(
         id = "1a2b", name = "Gmail", intentUri = "intent:#Intent;end", hostPackage = "com.android.chrome",

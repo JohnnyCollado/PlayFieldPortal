@@ -20,12 +20,15 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.UiMediaSlot
 import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import com.playfieldportal.core.ui.sound.MenuSound
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.feature.settings.viewmodel.AudioSettingsViewModel
 import com.playfieldportal.feature.settings.viewmodel.PFP_DEFAULT_LABEL
 import com.playfieldportal.themekit.UiMediaLimits
@@ -41,10 +44,6 @@ private val AUDIO_PICKER_MIME = UiMediaLimits.AUDIO_MIME.toTypedArray()
  * coarse enough that holding LEFT crosses the range without a hundred repeats.
  */
 private const val LEVEL_STEPS = 19
-
-/** Named once: the ambience row's sublabel is also quoted in the implementation plan. */
-private const val AMBIENCE_HELP =
-    "Loops while you browse. OGG loops seamlessly; MP3 may click."
 
 private fun formatLevel(value: Float): String = "${Math.round(value * 100)}%"
 
@@ -120,22 +119,23 @@ fun AudioSettingsScreen(
     // The face-button shortcuts are consumed by the interceptor, so they voice themselves.
     val menuSounds = LocalMenuSounds.current
 
-    val message = state.message
+    val message = state.message?.asString()
     val modal = rememberSettingsModal(
         when {
             message != null -> PfpModalSpec.Notice(
                 key = "sound_rejected:$message",
-                title = "Couldn't use that sound",
+                title = stringResource(R.string.sound_rejected_title),
                 message = message,
                 onDismiss = viewModel::dismissMessage,
             )
             state.confirmResetVisible -> PfpModalSpec.Confirm(
                 key = "reset_sound",
-                title = "Reset Sound to Defaults?",
+                title = stringResource(R.string.sound_reset_confirm_title),
                 // Matches confirmReset: menu sounds cleared, every level back to full (survey U5).
-                message = "Every menu sound returns to the bundled PFP sample, and every level — master " +
-                    "included — returns to full. Your ambience track, Boot Video and GameBoot media are not affected.",
-                confirmLabel = "Reset",
+                message = stringResource(R.string.sound_reset_confirm_message),
+                confirmLabel = stringResource(R.string.sound_reset_confirm_action),
+                // A reset is destructive: open on Cancel so a stray press changes nothing.
+                destructive = true,
                 onConfirm = viewModel::confirmReset,
                 onCancel = viewModel::dismissReset,
             )
@@ -145,8 +145,8 @@ fun AudioSettingsScreen(
 
     Box(modifier = modifier) {
         SettingsScaffold(
-            title = "Settings",
-            subtitle = "Sound",
+            title = stringResource(R.string.settings_title),
+            subtitle = stringResource(R.string.sound_title),
             onBack = onBack,
             helperFooterItems = focusedSlot?.let { slot ->
                 MediaRowShortcuts.promptsFor(state.xyLayout, isAssigned = slot in state.assignedSlots)
@@ -197,11 +197,11 @@ fun AudioSettingsScreen(
                     .fillMaxSize()
                     .verticalScroll(scrollState),
             ) {
-                SettingsGroup("Master")
+                SettingsGroup(stringResource(R.string.sound_group_master))
 
                 SettingsSliderRow(
-                    label = "Master volume",
-                    sublabel = "Scales every launcher sound. At 0 the launcher is silent.",
+                    label = stringResource(R.string.sound_master_volume),
+                    sublabel = stringResource(R.string.sound_master_volume_help),
                     focusKey = "audio_master",
                     value = state.masterLevel,
                     onValueChange = { viewModel.setMasterLevel(it) },
@@ -210,14 +210,14 @@ fun AudioSettingsScreen(
                     valueFormatter = ::formatLevel,
                 )
 
-                SettingsGroup("Levels")
+                SettingsGroup(stringResource(R.string.sound_group_levels))
 
                 // The LEVELS list is not the assignments list: Boot Sequence and GameBoot appear
                 // here with no row below, because a level is something you can set for a sound you
                 // cannot replace. Ambience is in both, being the only assignable continuous sound.
                 AudioSettingsViewModel.LEVEL_CHANNELS.forEach { channel ->
                     SettingsSliderRow(
-                        label = channel.displayName,
+                        label = stringResource(channel.labelRes()),
                         focusKey = "audio_level_${channel.key}",
                         value = state.channelLevels[channel] ?: 1f,
                         onValueChange = { viewModel.setChannelLevel(channel, it) },
@@ -227,7 +227,7 @@ fun AudioSettingsScreen(
                     )
                 }
 
-                SettingsGroup("Sounds")
+                SettingsGroup(stringResource(R.string.sound_group_sounds))
 
                 // Keep the assignment rows composed while an import is in flight. Removing
                 // them here unregisters their FocusRequesters; the navigation engine then
@@ -244,13 +244,13 @@ fun AudioSettingsScreen(
                     val label = state.soundLabels[slot] ?: PFP_DEFAULT_LABEL
                     val isAmbience = slot == UiMediaSlot.AMBIENCE_AUDIO
                     MediaAssignmentRow(
-                        label = slot.displayName,
+                        label = slot.soundLabelRes()?.let { stringResource(it) } ?: slot.displayName,
                         // Ambience accepts every audio container the gate allows, which is a
                         // decision rather than an oversight: turning away a user's MP3 outright is
                         // worse than a faint loop seam, so the trade-off is named here instead.
-                        sublabel = if (isAmbience) AMBIENCE_HELP else null,
+                        sublabel = if (isAmbience) stringResource(R.string.sound_ambience_help) else null,
                         focusKey = "audio_${slot.key}",
-                        value = label,
+                        value = label.asString(),
                         isAssigned = slot in state.assignedSlots,
                         onPick = { pickFor(slot) },
                         // Ambience is already playing behind this screen, so it has nothing to
@@ -269,8 +269,8 @@ fun AudioSettingsScreen(
                 SettingsGroup("")
 
                 SettingsRow(
-                    label = "Reset sound to defaults",
-                    sublabel = "Return every menu sound to the bundled PFP sample and every level to full. Keeps your ambience track.",
+                    label = stringResource(R.string.sound_reset_row),
+                    sublabel = stringResource(R.string.sound_reset_row_help),
                     onFocusChangedExternal = { if (it) focusedSlot = null },
                     onClick = { viewModel.requestReset() },
                     destructive = true,

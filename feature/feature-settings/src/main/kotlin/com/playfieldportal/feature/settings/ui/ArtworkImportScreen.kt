@@ -17,9 +17,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.playfieldportal.core.ui.text.asString
 import com.playfieldportal.feature.artwork.api.ArtworkFolderPickerUris
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.feature.settings.viewmodel.ArtworkImportUiState
 import com.playfieldportal.feature.settings.viewmodel.ArtworkImportViewModel
 import java.util.Locale
@@ -50,8 +54,8 @@ fun ArtworkImportScreen(
     ) { uri: Uri? -> uri?.let { viewModel.startExport(it) } }
 
     SettingsScaffold(
-        title    = "Settings",
-        subtitle = "Artwork Folder & Import",
+        title    = stringResource(R.string.settings_title),
+        subtitle = stringResource(R.string.setd_import_title),
         onBack   = onBack,
         modifier = modifier,
     ) {
@@ -63,16 +67,18 @@ fun ArtworkImportScreen(
                 .verticalScroll(scrollState),
         ) {
             // ── Artwork folder ────────────────────────────────────────────────
-            SettingsGroup("Artwork folder")
+            SettingsGroup(stringResource(R.string.setd_import_group_folder))
 
             SettingsRow(
-                label    = if (state.folderLinked) "Change artwork folder" else "Choose artwork folder",
+                label    = stringResource(if (state.folderLinked) R.string.setd_import_change_folder else R.string.setd_import_choose_folder),
                 sublabel = when {
-                    !state.folderLinked -> "Not set — tap to choose where PFP keeps artwork"
-                    unavailable         -> "Unavailable. Relink to resume new artwork"
+                    !state.folderLinked -> stringResource(R.string.setd_import_folder_not_set)
+                    unavailable         -> stringResource(R.string.setd_artwork_folder_unavailable_sublabel)
                     else                -> state.folderDisplay
                 },
-                labelTrailing = if (unavailable) ({ KnowledgeBadge("Unavailable", WarningAmber) }) else null,
+                labelTrailing = if (unavailable) ({
+                    KnowledgeBadge(stringResource(R.string.setd_unavailable), WarningAmber)
+                }) else null,
                 // A dead folder reopens the picker on itself; every other pick starts at the device root.
                 onClick  = {
                     val start = state.folderTreeUri?.takeIf { unavailable }
@@ -83,21 +89,19 @@ fun ArtworkImportScreen(
 
             // ── Import sources ────────────────────────────────────────────────
             if (state.folderLinked && state.grantAlive) {
-                SettingsGroup("Import existing artwork")
+                SettingsGroup(stringResource(R.string.setd_import_group_existing))
 
                 if (state.sources.isEmpty() && !state.scanning) {
                     SettingsRow(
-                        label    = "No launchers found",
-                        sublabel = "Copy or move another launcher's media into the folder first, " +
-                            "e.g. import/ES-DE/downloaded_media. Moving frees space but removes " +
-                            "the artwork from that launcher.",
+                        label    = stringResource(R.string.setd_import_no_launchers),
+                        sublabel = stringResource(R.string.setd_import_no_launchers_sublabel),
                     )
                 }
 
                 state.sources.forEach { source ->
                     SettingsRow(
                         label    = source.label,
-                        sublabel = "${source.systems} system folders recognized — tap to preview import",
+                        sublabel = pluralStringResource(R.plurals.setd_import_source_systems, source.systems, source.systems),
                         onClick  = if (state.planning || state.importRunning) null
                         else ({ viewModel.buildPreview(source) }),
                     )
@@ -106,20 +110,19 @@ fun ArtworkImportScreen(
                 state.unrecognized.forEach { name ->
                     SettingsRow(
                         label    = name,
-                        sublabel = "Unrecognized layout — expected ES-DE downloaded_media structure",
+                        sublabel = stringResource(R.string.setd_import_unrecognized),
                     )
                 }
 
                 SettingsRow(
-                    label    = if (state.scanning) "Scanning…" else "Rescan Import Folder",
-                    sublabel = "Re-check import/ for launcher folders",
+                    label    = stringResource(if (state.scanning) R.string.setd_import_scanning else R.string.setd_import_rescan),
+                    sublabel = stringResource(R.string.setd_import_rescan_sublabel),
                     onClick  = if (state.scanning) null else ({ viewModel.rescan() }),
                 )
 
                 SettingsRow(
-                    label    = if (state.relinking) "Scanning Library…" else "Scan & Relink Library",
-                    sublabel = "Reconnects artwork in the folder to your games, refreshes moved or " +
-                        "changed files, and cleans up references to deleted ones",
+                    label    = stringResource(if (state.relinking) R.string.setd_import_relinking else R.string.setd_import_relink),
+                    sublabel = stringResource(R.string.setd_import_relink_sublabel),
                     onClick  = if (state.relinking || state.importRunning) null else ({ viewModel.relinkLibrary() }),
                 )
 
@@ -127,119 +130,116 @@ fun ArtworkImportScreen(
                 // so the row is a to-do list rather than a permanent piece of furniture.
                 if (state.orphanCount > 0) {
                     SettingsRow(
-                        label    = "Unmatched Artwork (${state.orphanCount})",
-                        sublabel = "Files in your folder that matched no game — link them by hand",
+                        label    = stringResource(R.string.setd_import_unmatched, state.orphanCount),
+                        sublabel = stringResource(R.string.setd_import_unmatched_sublabel),
                         onClick  = onOpenOrphans,
                     )
                 }
 
                 // ── Internal-storage migration (M-F2) ────────────────────────
                 if (state.internalFiles > 0 || state.migrationRunning) {
-                    SettingsGroup("App storage")
+                    SettingsGroup(stringResource(R.string.setd_import_group_storage))
                     if (state.migrationRunning) {
                         SettingsRow(
-                            label    = "Moving artwork into your folder…",
+                            label    = stringResource(R.string.setd_import_moving),
                             sublabel = if (state.migrationTotal > 0)
-                                "${state.migrationDone} / ${state.migrationTotal} — runs in the background"
-                            else "Runs in the background — you can leave this screen",
+                                stringResource(R.string.setd_import_moving_progress, state.migrationDone, state.migrationTotal)
+                            else stringResource(R.string.setd_import_moving_background),
                         )
                         SettingsRow(
-                            label    = "Cancel move",
-                            sublabel = "Already-moved artwork stays in the folder",
+                            label    = stringResource(R.string.setd_import_cancel_move),
+                            sublabel = stringResource(R.string.setd_import_cancel_move_sublabel),
                             onClick  = { viewModel.cancelInternalMigration() },
                         )
                     } else {
                         SettingsRow(
-                            label    = "Move into folder",
-                            sublabel = "${state.internalFiles} artwork files (${formatBytes(state.internalBytes)}) " +
-                                "were saved before this folder was linked and live in app storage. " +
-                                "Moving them makes them portable and frees app space. Locked and " +
-                                "hand-picked artwork already in the folder is never overwritten.",
+                            label    = stringResource(R.string.setd_import_move_in),
+                            sublabel = pluralStringResource(
+                                R.plurals.setd_import_move_in_sublabel,
+                                state.internalFiles,
+                                state.internalFiles,
+                                formatBytes(state.internalBytes),
+                            ),
                             onClick  = if (state.importRunning) null else ({ viewModel.startInternalMigration() }),
                         )
                     }
                 }
 
-                SettingsGroup("Export")
+                SettingsGroup(stringResource(R.string.setd_import_group_export))
 
                 SettingsRow(
-                    label    = "Export for ES-DE",
-                    sublabel = "Copies your artwork into a folder you pick (e.g. ES-DE's " +
-                        "downloaded_media) — incremental, your library is never modified",
+                    label    = stringResource(R.string.setd_import_export),
+                    sublabel = stringResource(R.string.setd_import_export_sublabel),
                     onClick  = if (state.importRunning) null else ({ exportPicker.launch(null) }),
                 )
             }
 
             // ── Preview ───────────────────────────────────────────────────────
             if (state.planning) {
-                SettingsGroup("Import preview")
-                SettingsRow(label = "Building preview…", sublabel = "Matching artwork to your games")
+                SettingsGroup(stringResource(R.string.setd_import_group_preview))
+                SettingsRow(label = stringResource(R.string.setd_import_building), sublabel = stringResource(R.string.setd_import_building_sublabel))
             }
 
             state.plan?.let { plan ->
-                SettingsGroup("Import Preview — ${plan.sourceLabel}")
+                SettingsGroup(stringResource(R.string.setd_import_preview_group, plan.sourceLabel))
 
-                SettingsValueRow(label = "Games matched",     value = plan.games.size.toString())
-                SettingsValueRow(label = "Files to import",   value = plan.itemCount.toString())
+                SettingsValueRow(label = stringResource(R.string.setd_import_games_matched),     value = plan.games.size.toString())
+                SettingsValueRow(label = stringResource(R.string.setd_import_files_to_import),   value = plan.itemCount.toString())
                 plan.countsByKind().entries.sortedBy { it.key }.forEach { (kind, count) ->
-                    SettingsValueRow(label = "   ${kindLabel(kind)}", value = count.toString())
+                    SettingsValueRow(label = "   " + kindLabel(kind), value = count.toString())
                 }
-                SettingsValueRow(label = "Estimated size",    value = formatBytes(plan.totalBytes))
+                SettingsValueRow(label = stringResource(R.string.setd_import_estimated_size),    value = formatBytes(plan.totalBytes))
                 SettingsValueRow(
-                    label    = "Game details found",
+                    label    = stringResource(R.string.setd_import_details_found),
                     sublabel = if (plan.metadataUpdates.isEmpty())
-                        "Copy ES-DE's gamelists folder into the launcher's import folder to bring " +
-                            "descriptions, developers and release years along"
-                    else "Descriptions and details from gamelist.xml — never overwrites existing data",
+                        stringResource(R.string.setd_import_details_none_sublabel)
+                    else stringResource(R.string.setd_import_details_some_sublabel),
                     value    = plan.metadataUpdates.size.toString(),
                 )
-                SettingsValueRow(label = "Already present",   value = plan.skippedExistingCount.toString())
-                SettingsValueRow(label = "Needs review",      value = plan.ambiguous.size.toString())
-                SettingsValueRow(label = "Unmatched artwork", value = plan.unmatchedCount.toString())
+                SettingsValueRow(label = stringResource(R.string.setd_import_already_present),   value = plan.skippedExistingCount.toString())
+                SettingsValueRow(label = stringResource(R.string.setd_import_needs_review),      value = plan.ambiguous.size.toString())
+                SettingsValueRow(label = stringResource(R.string.setd_import_unmatched_artwork), value = plan.unmatchedCount.toString())
 
                 if (plan.unknownSystemFolders.isNotEmpty()) {
                     SettingsRow(
-                        label    = "Skipped system folders",
+                        label    = stringResource(R.string.setd_import_skipped_folders),
                         sublabel = plan.unknownSystemFolders.joinToString(", "),
                     )
                 }
 
                 if (plan.platformsWithoutGames.isNotEmpty()) {
                     SettingsRow(
-                        label    = "No games in library",
-                        sublabel = "Artwork found for ${plan.platformsWithoutGames.joinToString(", ")} " +
-                            "but your library has no games on these systems — add the games first, " +
-                            "then re-run the import.",
+                        label    = stringResource(R.string.setd_import_no_games),
+                        sublabel = stringResource(R.string.setd_import_no_games_sublabel, plan.platformsWithoutGames.joinToString(", ")),
                     )
                 }
 
                 SettingsToggleRow(
-                    label    = "Move files (faster, frees space)",
-                    sublabel = "Moves artwork out of the launcher's folder instead of copying. " +
-                        "The other launcher loses these files.",
+                    label    = stringResource(R.string.setd_import_move_files),
+                    sublabel = stringResource(R.string.setd_import_move_files_sublabel),
                     checked  = state.moveFiles,
                     onToggle = { viewModel.toggleMoveFiles(it) },
                 )
 
                 // ── Ambiguous review ─────────────────────────────────────────
                 if (plan.ambiguous.isNotEmpty()) {
-                    SettingsGroup("Review Ambiguous Matches (${plan.ambiguous.size})")
+                    SettingsGroup(stringResource(R.string.setd_import_review_group, plan.ambiguous.size))
                     plan.ambiguous.forEachIndexed { index, entry ->
                         SettingsRow(
                             label    = entry.candidate.displayName,
-                            sublabel = "${entry.gameTitles.size} possible games — tap to choose",
+                            sublabel = pluralStringResource(R.plurals.setd_import_possible_games, entry.gameTitles.size, entry.gameTitles.size),
                             onClick  = { viewModel.toggleAmbiguous(index) },
                         )
                         if (state.expandedAmbiguousIndex == index) {
                             entry.gameIds.forEachIndexed { gi, gameId ->
                                 SettingsRow(
-                                    label   = "   ${entry.gameTitles.getOrElse(gi) { "Game #$gameId" }}",
-                                    sublabel = "Assign this artwork to this game",
+                                    label   = "   " + (entry.gameTitles.getOrNull(gi) ?: stringResource(R.string.setd_import_game_number, gameId)),
+                                    sublabel = stringResource(R.string.setd_import_assign_sublabel),
                                     onClick = { viewModel.assignAmbiguous(index, gameId) },
                                 )
                             }
                             SettingsRow(
-                                label   = "   Skip this file",
+                                label   = "   " + stringResource(R.string.setd_import_skip_file),
                                 onClick = { viewModel.skipAmbiguous(index) },
                             )
                         }
@@ -248,18 +248,21 @@ fun ArtworkImportScreen(
 
                 if (!state.importRunning) {
                     SettingsRow(
-                        label    = "Start import",
-                        sublabel = if (state.moveFiles) "Moves ${plan.itemCount} files into the artwork library"
-                        else "Copies ${plan.itemCount} files into the artwork library",
+                        label    = stringResource(R.string.setd_import_start),
+                        sublabel = pluralStringResource(
+                            if (state.moveFiles) R.plurals.setd_import_start_move else R.plurals.setd_import_start_copy,
+                            plan.itemCount,
+                            plan.itemCount,
+                        ),
                         onClick  = if (plan.itemCount > 0) ({ viewModel.startImport() }) else null,
                     )
-                    SettingsRow(label = "Cancel preview", onClick = { viewModel.dismissPreview() })
+                    SettingsRow(label = stringResource(R.string.setd_import_cancel_preview), onClick = { viewModel.dismissPreview() })
                 }
             }
 
             // ── Running import ────────────────────────────────────────────────
             if (state.importRunning) {
-                SettingsGroup("Importing")
+                SettingsGroup(stringResource(R.string.setd_import_group_importing))
                 Column(modifier = Modifier.padding(horizontal = 48.dp, vertical = 10.dp)) {
                     LinearProgressIndicator(
                         // Coerced: a per-game failure counts its remaining items in bulk, which
@@ -274,53 +277,58 @@ fun ArtworkImportScreen(
                     )
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        text  = "${state.importDone} / ${state.importTotal}  —  ${state.importLabel}",
+                        text  = stringResource(R.string.setd_scrape_progress, state.importDone, state.importTotal, state.importLabel),
                         color = SettingsText,
                     )
                     Text(
-                        text  = "Runs in the background — you can leave this screen.",
+                        text  = stringResource(R.string.setd_scrape_background),
                         color = SettingsSubtext,
                     )
                 }
                 SettingsRow(
-                    label    = "Cancel import",
-                    sublabel = "Already-imported artwork is kept",
+                    label    = stringResource(R.string.setd_import_cancel),
+                    sublabel = stringResource(R.string.setd_import_cancel_sublabel),
                     onClick  = { viewModel.cancelImport() },
                 )
             }
 
             // ── Reports ───────────────────────────────────────────────────────
             if (state.reports.isNotEmpty()) {
-                SettingsGroup("Import report")
+                SettingsGroup(stringResource(R.string.setd_import_group_report))
                 state.reports.forEach { report ->
-                    SettingsRow(label = report.title, sublabel = report.detail)
+                    SettingsRow(label = report.title.asString(), sublabel = report.detail.asString())
                 }
                 SettingsRow(
-                    label    = "Clear reports",
+                    label    = stringResource(R.string.setd_import_clear_reports),
                     onClick  = { viewModel.clearReports() },
                 )
             }
 
             // ── Notices ───────────────────────────────────────────────────────
             state.notice?.let {
-                SettingsRow(label = it, sublabel = "Tap to dismiss", onClick = { viewModel.dismissError() })
+                SettingsRow(label = it.asString(), sublabel = stringResource(R.string.setd_tap_to_dismiss), onClick = { viewModel.dismissError() })
             }
             state.error?.let {
-                SettingsRow(label = "Error", sublabel = "$it  (tap to dismiss)", onClick = { viewModel.dismissError() })
+                SettingsRow(
+                    label = stringResource(R.string.setd_error),
+                    sublabel = stringResource(R.string.setd_error_tap_to_dismiss, it.asString()),
+                    onClick = { viewModel.dismissError() },
+                )
             }
         }
     }
 }
 
+@Composable
 private fun kindLabel(kind: String): String = when (kind) {
-    "ICON" -> "Covers"
-    "HERO" -> "Mix Images"
-    "BACKGROUND" -> "Fanart"
-    "LOGO" -> "Marquees"
-    "SCREENSHOT" -> "Screenshots"
-    "TITLESCREEN" -> "Title Screens"
-    "PHYSICAL_MEDIA" -> "Physical Media"
-    "MANUAL" -> "Manuals"
+    "ICON" -> stringResource(R.string.setd_kind_icon)
+    "HERO" -> stringResource(R.string.setd_kind_hero)
+    "BACKGROUND" -> stringResource(R.string.setd_kind_background)
+    "LOGO" -> stringResource(R.string.setd_kind_logo)
+    "SCREENSHOT" -> stringResource(R.string.setd_kind_screenshot)
+    "TITLESCREEN" -> stringResource(R.string.setd_kind_titlescreen)
+    "PHYSICAL_MEDIA" -> stringResource(R.string.setd_kind_physical_media)
+    "MANUAL" -> stringResource(R.string.setd_kind_manual)
     else -> kind.lowercase(Locale.ROOT).replaceFirstChar { it.uppercase(Locale.ROOT) }
 }
 

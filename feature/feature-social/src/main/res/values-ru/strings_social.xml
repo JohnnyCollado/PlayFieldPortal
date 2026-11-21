@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- QR login screen -->
+    <string name="soc_qr_preparing">Подготовка входа…</string>
+    <string name="soc_qr_connected">Подключено</string>
+    <string name="soc_qr_expired">Срок действия кода истёк.</string>
+    <string name="soc_qr_declined">Вход отклонён.</string>
+    <string name="soc_qr_error">Не удалось войти. %1$s</string>
+    <string name="soc_qr_content_description">QR-код для входа в Discord</string>
+    <string name="soc_qr_title">Войти через Discord</string>
+    <string name="soc_qr_copied">Скопировано!</string>
+    <string name="soc_qr_tap_to_copy">Выберите код, чтобы скопировать</string>
+    <string name="soc_qr_instructions">Отсканируйте камерой телефона или откройте discord.com/activate и вставьте код.</string>
+    <string name="soc_qr_expires_in">Истекает через %1$d с</string>
+    <string name="soc_qr_expired_short">Истёк</string>
+
+    <!-- Button -->
+    <string name="soc_qr_cancel">Отмена</string>
+
+    <!-- Button -->
+    <string name="soc_qr_try_again">Повторить</string>
+</resources>

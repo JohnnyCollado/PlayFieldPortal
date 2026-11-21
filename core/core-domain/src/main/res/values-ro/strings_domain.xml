@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shiba rank titles -->
+    <string name="dom_shiba_rank_pup">Cățeluș</string>
+    <string name="dom_shiba_rank_ruffian">Bătăuș</string>
+    <string name="dom_shiba_rank_lone_ron_inu">Ron-inu singuratic</string>
+    <string name="dom_shiba_rank_inu_master">Maestru Inu</string>
+    <string name="dom_shiba_rank_legendary_hachiko">Hachiko legendar</string>
+
+    <!-- App editions -->
+    <string name="dom_edition_full">Completă</string>
+    <string name="dom_edition_lite">Lite</string>
+
+    <!-- Audio channels -->
+    <string name="dom_audio_channel_navigation">Navigare</string>
+    <string name="dom_audio_channel_back">Înapoi / anulare</string>
+    <string name="dom_audio_channel_confirm">Confirmare / aplicare</string>
+    <string name="dom_audio_channel_error">Eroare / nevalid</string>
+    <string name="dom_audio_channel_category">Categorie</string>
+    <string name="dom_audio_channel_options">Opțiuni</string>
+    <string name="dom_audio_channel_notification">Notificare</string>
+    <string name="dom_audio_channel_boot">Secvență de pornire</string>
+    <string name="dom_audio_channel_gameboot">Game Boot</string>
+    <string name="dom_audio_channel_ambience">Ambianță</string>
+
+    <!-- Media slots -->
+    <string name="dom_media_slot_navigation">Navigare</string>
+    <string name="dom_media_slot_back">Înapoi / Anulare</string>
+    <string name="dom_media_slot_confirm">Confirmare / Aplicare</string>
+    <string name="dom_media_slot_error">Eroare / Nevalid</string>
+    <string name="dom_media_slot_category">Categorie</string>
+    <string name="dom_media_slot_options">Opțiuni</string>
+    <string name="dom_media_slot_notification">Notificare</string>
+    <string name="dom_media_slot_boot_video">Animație de pornire</string>
+    <string name="dom_media_slot_gameboot_video">Animație Game Boot</string>
+    <string name="dom_media_slot_ambience_audio">Piesă de ambianță</string>
+
+    <!-- Icon display -->
+    <string name="dom_icon_display_icon0">Pictogramă personalizată</string>
+    <string name="dom_icon_display_box_art">Copertă</string>
+    <string name="dom_icon_display_physical_media">Suport fizic</string>
+    <string name="dom_icon_display_box_3d">Copertă 3D</string>
+
+    <!-- Icon legibility -->
+    <string name="dom_icon_legibility_none">Niciunul</string>
+    <string name="dom_icon_legibility_offset_shadow">Umbră decalată (închisă)</string>
+    <string name="dom_icon_legibility_offset_shadow_light">Umbră decalată (deschisă)</string>
+    <string name="dom_icon_legibility_contour_dark">Contur (închis)</string>
+    <string name="dom_icon_legibility_contour_light">Contur (deschis)</string>
+    <string name="dom_icon_legibility_contour_auto">Contur (automat)</string>
+
+    <!-- Image motion -->
+    <string name="dom_image_motion_animated">Animat</string>
+    <string name="dom_image_motion_reduced">Redus</string>
+    <string name="dom_image_motion_static">Static</string>
+
+    <!-- Text legibility -->
+    <string name="dom_text_legibility_none">Niciunul</string>
+    <string name="dom_text_legibility_shadow">Umbră</string>
+    <string name="dom_text_legibility_outline">Contur</string>
+    <string name="dom_text_legibility_plate">Fundal de contrast</string>
+    <string name="dom_text_legibility_auto">Automat</string>
+
+    <!-- Touch gestures -->
+    <string name="dom_touch_gesture_tap">Atingere</string>
+    <string name="dom_touch_gesture_long_press">Apăsare lungă</string>
+    <string name="dom_touch_gesture_swipe_left">Glisare la stânga</string>
+    <string name="dom_touch_gesture_swipe_right">Glisare la dreapta</string>
+    <string name="dom_touch_gesture_swipe_down">Glisare în jos</string>
+
+    <!-- UMD slot -->
+    <string name="dom_umd_slot_off">Dezactivat</string>
+    <string name="dom_umd_slot_inserted">Introdus</string>
+    <string name="dom_umd_slot_inserted_and_recent">Introdus și recent</string>
+
+    <!-- List motion -->
+    <string name="dom_list_motion_rewind">Derulare înapoi</string>
+    <string name="dom_list_motion_glide">Alunecare</string>
+
+    <!-- Confirm / back layout -->
+    <string name="dom_confirm_back_standard">Standard (A = Confirmă, B = Înapoi)</string>
+    <string name="dom_confirm_back_reversed">Inversat (B = Confirmă, A = Înapoi)</string>
+
+    <string name="dom_xy_layout_standard">Standard (Y = Opțiuni, X = Sortare)</string>
+    <string name="dom_xy_layout_swapped">Inversat (X = Opțiuni, Y = Sortare)</string>
+
+    <string name="dom_controller_type_xbox">Xbox</string>
+    <string name="dom_controller_type_nintendo">Nintendo</string>
+    <string name="dom_controller_type_playstation">PlayStation</string>
+
+    <string name="dom_scroll_speed_relaxed">Lentă</string>
+    <string name="dom_scroll_speed_standard">Standard</string>
+    <string name="dom_scroll_speed_fast">Rapidă</string>
+
+    <!-- Colour schemes -->
+    <string name="dom_color_scheme_original">Original (lunar)</string>
+    <string name="dom_color_scheme_classic_blue">Albastru clasic</string>
+    <string name="dom_color_scheme_sunset_orange">Portocaliu apus</string>
+    <string name="dom_color_scheme_fresh_green">Verde proaspăt</string>
+    <string name="dom_color_scheme_royal_purple">Mov regal</string>
+    <string name="dom_color_scheme_crimson_red">Roșu carmin</string>
+    <string name="dom_color_scheme_silver">Argintiu</string>
+    <string name="dom_color_scheme_sakura_pink">Roz sakura</string>
+    <string name="dom_color_scheme_golden_amber">Chihlimbar auriu</string>
+    <string name="dom_color_scheme_aqua_teal">Turcoaz</string>
+    <string name="dom_color_scheme_midnight_navy">Bleumarin miez de noapte</string>
+    <string name="dom_color_scheme_charcoal">Cărbune</string>
+
+    <!-- Controller actions -->
+    <string name="dom_action_navigate_up">Navigare în sus</string>
+    <string name="dom_action_navigate_down">Navigare în jos</string>
+    <string name="dom_action_navigate_left">Navigare la stânga (categoria anterioară)</string>
+    <string name="dom_action_navigate_right">Navigare la dreapta (categoria următoare)</string>
+    <string name="dom_action_select">Selectează / Pornește</string>
+    <string name="dom_action_back">Înapoi / Închide</string>
+    <string name="dom_action_open_context_menu">Opțiuni / Meniu contextual</string>
+    <string name="dom_action_change_sort">Schimbă ordinea de sortare</string>
+    <string name="dom_action_prev_category">Fila anterioară (sertar aplicații)</string>
+    <string name="dom_action_next_category">Fila următoare (sertar aplicații)</string>
+    <string name="dom_action_home">Start (notificări / confirmare în selectoare)</string>
+    <string name="dom_action_shift">Shift (tastatură)</string>
+    <string name="dom_action_caps_lock">Caps Lock (tastatură)</string>
+    <string name="dom_action_category_menu">Meniul categoriei</string>
+
+    <!-- Key names -->
+    <string name="dom_key_a">A / Cruce</string>
+    <string name="dom_key_b">B / Cerc</string>
+    <string name="dom_key_x">X / Pătrat</string>
+    <string name="dom_key_y">Y / Triunghi</string>
+    <string name="dom_key_dpad_up">D-Pad sus</string>
+    <string name="dom_key_dpad_down">D-Pad jos</string>
+    <string name="dom_key_dpad_left">D-Pad stânga</string>
+    <string name="dom_key_dpad_right">D-Pad dreapta</string>
+    <string name="dom_key_dpad_center">D-Pad centru</string>
+    <string name="dom_key_l1">L1</string>
+    <string name="dom_key_r1">R1</string>
+    <string name="dom_key_l2">L2</string>
+    <string name="dom_key_r2">R2</string>
+    <string name="dom_key_start">Start</string>
+    <string name="dom_key_select">Select</string>
+    <string name="dom_key_enter">Enter</string>
+    <string name="dom_key_back">Back</string>
+    <string name="dom_key_unknown">Tasta %1$d</string>
+
+    <!-- Colour naming -->
+    <string name="dom_hue_orange">portocaliu</string>
+    <string name="dom_hue_yellow">galben</string>
+    <string name="dom_hue_green">verde</string>
+    <string name="dom_hue_teal">turcoaz</string>
+    <string name="dom_hue_blue">albastru</string>
+    <string name="dom_hue_purple">mov</string>
+    <string name="dom_hue_pink">roz</string>
+    <string name="dom_hue_red">roșu</string>
+    <string name="dom_hue_orange_cap">Portocaliu</string>
+    <string name="dom_hue_yellow_cap">Galben</string>
+    <string name="dom_hue_green_cap">Verde</string>
+    <string name="dom_hue_teal_cap">Turcoaz</string>
+    <string name="dom_hue_blue_cap">Albastru</string>
+    <string name="dom_hue_purple_cap">Mov</string>
+    <string name="dom_hue_pink_cap">Roz</string>
+    <string name="dom_hue_red_cap">Roșu</string>
+    <string name="dom_hue_lean">%1$s, spre %2$s</string>
+    <string name="dom_hue_lean_cap">%1$s, spre %2$s</string>
+    <string name="dom_color_dark">Nuanță închisă de %1$s</string>
+    <string name="dom_color_very_dark">Nuanță foarte închisă de %1$s</string>
+    <string name="dom_color_muted">Nuanță estompată de %1$s</string>
+    <string name="dom_color_dark_muted">Nuanță estompată închisă de %1$s</string>
+    <string name="dom_color_very_dark_muted">Nuanță estompată foarte închisă de %1$s</string>
+    <string name="dom_color_grey">Gri (%1$s)</string>
+    <string name="dom_saturation_grey">Gri</string>
+    <string name="dom_saturation_muted">Estompat</string>
+    <string name="dom_saturation_vivid">Viu</string>
+    <string name="dom_saturation_intense">Intens</string>
+    <string name="dom_brightness_very_dark">Foarte închis</string>
+    <string name="dom_brightness_dark">Închis</string>
+    <string name="dom_brightness_medium">Mediu</string>
+    <string name="dom_brightness_bright">Deschis</string>
+    <string name="dom_tint_standard">Standard</string>
+    <string name="dom_tint_orange">Mai portocaliu</string>
+    <string name="dom_tint_yellow">Mai galben</string>
+    <string name="dom_tint_green">Mai verde</string>
+    <string name="dom_tint_teal">Mai turcoaz</string>
+    <string name="dom_tint_blue">Mai albastru</string>
+    <string name="dom_tint_purple">Mai mov</string>
+    <string name="dom_tint_pink">Mai roz</string>
+    <string name="dom_tint_red">Mai roșu</string>
+    <string name="dom_tint_much_orange">Mult mai portocaliu</string>
+    <string name="dom_tint_much_yellow">Mult mai galben</string>
+    <string name="dom_tint_much_green">Mult mai verde</string>
+    <string name="dom_tint_much_teal">Mult mai turcoaz</string>
+    <string name="dom_tint_much_blue">Mult mai albastru</string>
+    <string name="dom_tint_much_purple">Mult mai mov</string>
+    <string name="dom_tint_much_pink">Mult mai roz</string>
+    <string name="dom_tint_much_red">Mult mai roșu</string>
+    <string name="dom_tint_cooler">Mai rece</string>
+    <string name="dom_tint_warmer">Mai cald</string>
+    <string name="dom_tint_much_cooler">Mult mai rece</string>
+    <string name="dom_tint_much_warmer">Mult mai cald</string>
+    <string name="dom_depth_much_lighter">Mult mai deschis</string>
+    <string name="dom_depth_lighter">Mai deschis</string>
+    <string name="dom_depth_deeper">Mai închis</string>
+    <string name="dom_depth_much_deeper">Mult mai închis</string>
+
+    <!-- File limit messages -->
+    <string name="dom_limit_motion_unsupported_format">Format neacceptat — folosește MP4, WebM, GIF sau WebP</string>
+    <string name="dom_limit_motion_too_large_resolution">Videoclipul este prea mare — maximum 1080p</string>
+    <string name="dom_limit_motion_too_long">Clipul este prea lung — maximum 60 de secunde</string>
+    <string name="dom_limit_motion_too_large_bytes">Fișierul este prea mare — sub 60 MB</string>
+    <string name="dom_limit_motion_undecodable">Videoclipul nu a putut fi citit — încearcă alt fișier</string>
+    <string name="dom_limit_media_unsupported_audio">Format neacceptat — folosește audio MP3, WAV, OGG sau M4A</string>
+    <string name="dom_limit_media_unsupported_video">Format neacceptat — folosește video MP4 sau WebM</string>
+    <string name="dom_limit_media_too_large_sound">Fișierul este prea mare</string>
+    <string name="dom_limit_media_too_large_video">Fișierul este prea mare — videoclipurile trebuie să aibă sub 25 MB</string>
+    <string name="dom_limit_media_undecodable">Fișierul nu a putut fi citit — încearcă altul</string>
+    <string name="dom_limit_media_no_duration">Durata fișierului nu a putut fi citită — încearcă alt fișier sau convertește-l în MP3/WAV/OGG/M4A</string>
+    <string name="dom_limit_media_too_long">Clipul este prea lung — maximum %1$s</string>
+
+    <!-- Error codes: launch -->
+    <string name="dom_error_ln_1001_title">Niciun emulator nu este atribuit acestei platforme</string>
+    <string name="dom_error_ln_1001_why">PlayFieldPortal nu știe ce aplicație trebuie să ruleze jocurile pentru această platformă.</string>
+    <string name="dom_error_ln_1001_action">Alege un emulator pentru această platformă în Setări › Atribuire emulatoare.</string>
+    <string name="dom_error_ln_1002_title">Core-ul RetroArch selectat nu este instalat</string>
+    <string name="dom_error_ln_1002_why">RetroArch a primit cererea de a încărca un core care nu se află pe acest dispozitiv.</string>
+    <string name="dom_error_ln_1002_action">Instalează core-ul din Online Updater al RetroArch sau alege alt core în Atribuire emulatoare.</string>
+    <string name="dom_error_ln_2001_title">Fișierul jocului lipsește sau nu poate fi citit</string>
+    <string name="dom_error_ln_2001_why">Este posibil ca fișierul să fi fost mutat, redenumit sau șters ori ca cardul SD pe care se afla să fi fost scos.</string>
+    <string name="dom_error_ln_2001_action">Verifică dacă fișierul mai există, apoi rescanează cardul de memorie.</string>
+    <string name="dom_error_ln_4001_title">Emulatorul nu a fost găsit</string>
+    <string name="dom_error_ln_4001_why">Emulatorul atribuit acestui joc nu este instalat sau Android nu a găsit ecranul pe care îl deschide PlayFieldPortal.</string>
+    <string name="dom_error_ln_4001_action">Instalează emulatorul sau alege altul în Setări › Atribuire emulatoare.</string>
+    <string name="dom_error_ln_4002_title">Android nu a permis deschiderea emulatorului</string>
+    <string name="dom_error_ln_4002_why">Android a refuzat permisiunea ca PlayFieldPortal să pornească acest emulator.</string>
+    <string name="dom_error_ln_4002_action">Deschide o dată emulatorul separat, apoi încearcă din nou. Dacă problema persistă, actualizează emulatorul.</string>
+    <string name="dom_error_ln_4003_title">Emulatorul nu a ajuns niciodată în prim-plan</string>
+    <string name="dom_error_ln_4003_why">Cel mai probabil emulatorul s-a închis la pornire sau Android l-a oprit înainte ca jocul să se încarce.</string>
+    <string name="dom_error_ln_4003_action">Deschide o dată emulatorul separat pentru a verifica dacă pornește și actualizează-l dacă există o versiune mai nouă. Dacă problema persistă, alege alt emulator în Setări › Atribuire emulatoare.</string>
+    <string name="dom_error_ln_9001_title">Emulatorul nu a putut fi deschis</string>
+    <string name="dom_error_ln_9001_why">Ceva neașteptat a mers prost la pornirea emulatorului.</string>
+    <string name="dom_error_ln_9001_action">Încearcă din nou. Dacă problema persistă, copiază detaliile și raportează-o.</string>
+
+    <!-- Error codes: scan -->
+    <string name="dom_error_sc_1001_title">Niciun dosar setat pentru acest card de memorie</string>
+    <string name="dom_error_sc_1001_why">Acest card de memorie nu are încă unde să scaneze.</string>
+    <string name="dom_error_sc_1001_action">Alege un dosar din Opțiunile cardului de memorie, apoi scanează-l.</string>
+    <string name="dom_error_sc_1002_title">O scanare rulează deja</string>
+    <string name="dom_error_sc_1002_why">Acest card de memorie era deja în curs de scanare, așa că a doua scanare a fost omisă.</string>
+    <string name="dom_error_sc_1002_action">Așteaptă să se termine scanarea în curs. Rezultatul ei apare aici când e gata.</string>
+    <string name="dom_error_sc_2001_title">Accesul la dosar s-a pierdut</string>
+    <string name="dom_error_sc_2001_why">PlayFieldPortal a pierdut permisiunea de a citi acest dosar.</string>
+    <string name="dom_error_sc_2001_action">Alege din nou dosarul din Opțiunile cardului de memorie pentru a acorda accesul, apoi scanează-l.</string>
+    <string name="dom_error_sc_2002_title">Dosarul nu mai există</string>
+    <string name="dom_error_sc_2002_why">Dosarul a fost mutat sau șters. Dacă este pe un card SD, este posibil ca acesta să fi fost scos.</string>
+    <string name="dom_error_sc_2002_action">Introdu cardul SD și scanează din nou sau alege un dosar nou din Opțiunile cardului de memorie.</string>
+    <string name="dom_error_sc_2003_title">Dosar de sistem necunoscut</string>
+    <string name="dom_error_sc_2003_why">Acest dosar din dosarul ROM principal nu corespunde unui sistem cunoscut de PlayFieldPortal.</string>
+    <string name="dom_error_sc_2003_action">Redenumește dosarul cu numele unui sistem acceptat sau mută-i jocurile într-unul.</string>
+    <string name="dom_error_sc_2004_title">Fișier nerecunoscut</string>
+    <string name="dom_error_sc_2004_why">Tipul acestui fișier nu este folosit de jocurile acestei platforme.</string>
+    <string name="dom_error_sc_2004_action">Verifică dacă fișierul este un joc pentru această platformă. Arhivele și patch-urile sunt omise intenționat.</string>
+    <string name="dom_error_sc_9001_title">Scanarea a eșuat neașteptat</string>
+    <string name="dom_error_sc_9001_why">Ceva neașteptat a mers prost în timpul scanării.</string>
+    <string name="dom_error_sc_9001_action">Încearcă din nou scanarea. Dacă problema persistă, copiază detaliile și raportează-o.</string>
+
+    <!-- Error codes: artwork -->
+    <string name="dom_error_ar_1001_title">Dosarul de artwork nu este disponibil</string>
+    <string name="dom_error_ar_1001_why">PFP nu poate accesa dosarul de artwork, așa că artwork-ul nou este întrerupt.</string>
+    <string name="dom_error_ar_1001_action">Leagă din nou dosarul în Setări › Artwork.</string>
+    <string name="dom_error_ar_2001_title">Fișierul de artwork nu a putut fi salvat</string>
+    <string name="dom_error_ar_2001_why">Spațiul de stocare era plin sau nu s-a putut scrie în dosarul de artwork.</string>
+    <string name="dom_error_ar_2001_action">Eliberează spațiu și încearcă din nou.</string>
+    <string name="dom_error_ar_2002_title">Un fișier nu a putut fi copiat</string>
+    <string name="dom_error_ar_2002_why">Copierea a eșuat la jumătate sau nu s-a putut scrie la destinație.</string>
+    <string name="dom_error_ar_2002_action">Verifică dacă există spațiu liber la destinație, apoi rulează din nou.</string>
+    <string name="dom_error_ar_2003_title">Dosar de sistem necunoscut în import</string>
+    <string name="dom_error_ar_2003_why">Acest dosar din import nu corespunde unui sistem cunoscut de PlayFieldPortal.</string>
+    <string name="dom_error_ar_2003_action">Redenumește dosarul cu numele unui sistem acceptat și importă din nou.</string>
+    <string name="dom_error_ar_3001_title">Sursa de artwork nu a putut fi accesată</string>
+    <string name="dom_error_ar_3001_why">Dispozitivul este offline sau sursa nu a răspuns.</string>
+    <string name="dom_error_ar_3001_action">Verifică conexiunea și încearcă din nou mai târziu.</string>
+    <string name="dom_error_ar_3002_title">Sursa a respins cererea</string>
+    <string name="dom_error_ar_3002_why">Sursa limitează cererile sau contul ori cheia necesară a fost refuzată.</string>
+    <string name="dom_error_ar_3002_action">Așteaptă puțin și încearcă din nou sau verifică contul sursei în Setări.</string>
+    <string name="dom_error_ar_3003_title">Nu s-a găsit nicio potrivire pentru acest joc</string>
+    <string name="dom_error_ar_3003_why">Sursa nu are nicio intrare care să corespundă titlului acestui joc.</string>
+    <string name="dom_error_ar_3003_action">Verifică titlul jocului sau alege manual artwork-ul în Artwork Studio.</string>
+    <string name="dom_error_ar_9001_title">Descărcarea a eșuat neașteptat</string>
+    <string name="dom_error_ar_9001_why">Ceva neașteptat a mers prost în timpul descărcării.</string>
+    <string name="dom_error_ar_9001_action">Încearcă din nou. Dacă problema persistă, copiază detaliile și raportează-o.</string>
+
+    <!-- Error codes: achievements -->
+    <string name="dom_error_ac_1001_title">Niciun set de realizări nu corespunde acestui joc</string>
+    <string name="dom_error_ac_1001_why">Niciunul dintre serviciile conectate nu are realizări pentru un joc cu acest titlu.</string>
+    <string name="dom_error_ac_1001_action">Potrivește manual jocul din pagina sa de realizări.</string>
+    <string name="dom_error_ac_2001_title">Dosarul de realizări Windows nu poate fi citit</string>
+    <string name="dom_error_ac_2001_why">Dosarul ales pentru realizările locale ale acestui joc nu a putut fi deschis.</string>
+    <string name="dom_error_ac_2001_action">Alege din nou dosarul jocului din pagina sa de realizări.</string>
+    <string name="dom_error_ac_3001_title">Dispozitivul este offline</string>
+    <string name="dom_error_ac_3001_why">Realizările nu se pot actualiza fără conexiune la internet.</string>
+    <string name="dom_error_ac_3001_action">Conectează-te la internet. Actualizarea va rula din nou automat.</string>
+    <string name="dom_error_ac_3002_title">Conectarea a expirat</string>
+    <string name="dom_error_ac_3002_why">Serviciul conectat nu mai acceptă conectarea PlayFieldPortal.</string>
+    <string name="dom_error_ac_3002_action">Reconectează serviciul în Setări › Realizări.</string>
+    <string name="dom_error_ac_3003_title">Detaliile jocurilor Steam sunt private</string>
+    <string name="dom_error_ac_3003_why">Steam partajează realizările doar când Detaliile jocurilor sunt publice.</string>
+    <string name="dom_error_ac_3003_action">Setează Detaliile jocurilor la Public în setările de confidențialitate Steam, apoi actualizează din nou.</string>
+    <string name="dom_error_ac_3004_title">Acest joc nu s-a putut actualiza</string>
+    <string name="dom_error_ac_3004_why">Serviciul nu a răspuns pentru acest joc sau a răspuns cu o eroare.</string>
+    <string name="dom_error_ac_3004_action">Încearcă din nou actualizarea mai târziu.</string>
+
+    <!-- Error codes: media -->
+    <string name="dom_error_md_2001_title">Dosarul media nu poate fi citit</string>
+    <string name="dom_error_md_2001_why">PlayFieldPortal a pierdut accesul la acest dosar sau dosarul nu mai există.</string>
+    <string name="dom_error_md_2001_action">Alege din nou dosarul în setările media, apoi scanează.</string>
+    <string name="dom_error_md_9001_title">Scanarea media a eșuat neașteptat</string>
+    <string name="dom_error_md_9001_why">Ceva neașteptat a mers prost în timpul scanării.</string>
+    <string name="dom_error_md_9001_action">Încearcă din nou scanarea. Dacă problema persistă, copiază detaliile și raportează-o.</string>
+
+    <!-- Error codes: backup -->
+    <string name="dom_error_bk_1001_title">Restaurarea a omis un element</string>
+    <string name="dom_error_bk_1001_why">Acest element nu a putut fi restaurat în siguranță, așa că a fost lăsat neschimbat.</string>
+    <string name="dom_error_bk_1001_action">Nimic altceva nu este afectat. Configurează manual acest element din nou dacă ai nevoie de el.</string>
+    <string name="dom_error_bk_2001_title">Fișierul de backup nu a putut fi scris</string>
+    <string name="dom_error_bk_2001_why">Spațiul de stocare era plin sau nu s-a putut scrie în dosarul de backup.</string>
+    <string name="dom_error_bk_2001_action">Eliberează spațiu sau alege altă locație de backup, apoi încearcă din nou.</string>
+    <string name="dom_error_bk_2002_title">Fișierul de backup nu poate fi citit sau este deteriorat</string>
+    <string name="dom_error_bk_2002_why">Fișierul nu este un backup PlayFieldPortal sau este incomplet.</string>
+    <string name="dom_error_bk_2002_action">Alege alt fișier de backup.</string>
+
+    <!-- Error codes: system -->
+    <string name="dom_error_sy_9001_title">Ceva nu a mers bine</string>
+    <string name="dom_error_sy_9001_why">Ceva neașteptat a mers prost.</string>
+    <string name="dom_error_sy_9001_action">Încearcă din nou. Dacă problema persistă, copiază detaliile și raportează-o.</string>
+</resources>

@@ -3,6 +3,8 @@ package com.playfieldportal.feature.themes
 import android.content.Context
 import com.playfieldportal.core.data.database.dao.ThemeDao
 import com.playfieldportal.core.data.database.entity.ThemeEntity
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.themes.R
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -108,9 +110,9 @@ class XmbThemeLoaderTest {
         val result = loader.loadFromStream(stream)
 
         assertTrue(result is ThemeLoadResult.InvalidFormat)
-        assertTrue(
-            "Reason should mention theme.json",
-            (result as ThemeLoadResult.InvalidFormat).reason.contains("theme.json"),
+        assertEquals(
+            UiText.res(R.string.thm_error_manifest_missing),
+            (result as ThemeLoadResult.InvalidFormat).reason,
         )
     }
 
@@ -137,7 +139,7 @@ class XmbThemeLoaderTest {
         val result = loader.loadFromStream(stream)
 
         assertTrue(result is ThemeLoadResult.InvalidFormat)
-        assertTrue((result as ThemeLoadResult.InvalidFormat).reason.contains("wave_color"))
+        assertEquals(UiText.res(R.string.thm_error_color_invalid, "wave_color", "#ZZZZZZ"), (result as ThemeLoadResult.InvalidFormat).reason)
     }
 
     @Test
@@ -149,7 +151,7 @@ class XmbThemeLoaderTest {
         val result = loader.loadFromStream(stream)
 
         assertTrue(result is ThemeLoadResult.InvalidFormat)
-        assertTrue((result as ThemeLoadResult.InvalidFormat).reason.contains("accent_color"))
+        assertEquals(UiText.res(R.string.thm_error_color_invalid, "accent_color", "NOTHEX"), (result as ThemeLoadResult.InvalidFormat).reason)
     }
 
     @Test
@@ -161,7 +163,7 @@ class XmbThemeLoaderTest {
         val result = loader.loadFromStream(stream)
 
         assertTrue(result is ThemeLoadResult.InvalidFormat)
-        assertTrue((result as ThemeLoadResult.InvalidFormat).reason.contains("text_color"))
+        assertEquals(UiText.res(R.string.thm_error_color_invalid, "text_color", "???"), (result as ThemeLoadResult.InvalidFormat).reason)
     }
 
     @Test
@@ -288,7 +290,7 @@ class XmbThemeLoaderTest {
         val result = loader.loadFromStream(stream)
 
         assertTrue("Expected InvalidFormat, got $result", result is ThemeLoadResult.InvalidFormat)
-        assertTrue((result as ThemeLoadResult.InvalidFormat).reason.contains("id"))
+        assertEquals(UiText.res(R.string.thm_error_id_invalid, "../../evil"), (result as ThemeLoadResult.InvalidFormat).reason)
         coVerify(exactly = 0) { themeDao.upsert(any()) }
     }
 

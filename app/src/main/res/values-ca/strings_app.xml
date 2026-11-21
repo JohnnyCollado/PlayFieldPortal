@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_switch_launcher_chooser">Canvia de launcher</string>
+    <string name="app_shortcut_fallback_name">Drecera</string>
+    <string name="app_shortcut_fallback_host">Una altra aplicació</string>
+</resources>

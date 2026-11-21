@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Boutons et invites partagés -->
+    <string name="core_cancel">Annuler</string>
+    <string name="core_ok">OK</string>
+    <string name="core_save">Enregistrer</string>
+    <string name="core_apply">Appliquer</string>
+    <string name="core_select">Sélectionner</string>
+    <string name="core_close">Fermer</string>
+    <string name="core_back">Retour</string>
+
+    <!-- Fenêtres de saisie -->
+    <string name="core_modal_name_label">Nom</string>
+    <string name="core_modal_counter">%1$d / %2$d</string>
+
+    <!-- Conversion vers le suivi des succès -->
+    <string name="core_steam_convert_title">Installer le suivi des succès ?</string>
+    <string name="core_steam_convert_selected_count">%1$d sur %2$d</string>
+    <string name="core_steam_convert_found_count">%1$d trouvé(s)</string>
+    <string name="core_steam_convert_hints">"Haut/Bas  Lignes  •  Select  Cocher  •  △  Tout/Aucun  •  Start  Installer  •  B  Annuler"</string>
+    <string name="core_steam_convert_loading">Lecture de la liste des succès de chaque jeu depuis Steam…</string>
+    <string name="core_steam_convert_install">Installer (%1$d)</string>
+    <string name="core_steam_convert_none">Aucun</string>
+    <string name="core_steam_convert_all">Tout</string>
+    <string name="core_steam_convert_skip_sync">Ignorer et synchroniser</string>
+    <string name="core_steam_convert_write_notice">Dans le dossier de chaque jeu coché, PFP écrit achievements.json, stats.json et configs.user.ini, crée un dossier saves et renomme steam_api64.dll en steam_api64_o.dll pour que l\'émulateur fourni puisse se charger à travers lui.</string>
+    <string name="core_steam_convert_backup_warning">Sauvegardez les fichiers de sauvegarde de tout jeu auquel vous avez déjà joué avant de le convertir — l\'émulateur lira désormais depuis le nouvel emplacement de sauvegarde.</string>
+
+    <!-- Carte joueur Shiba -->
+    <string name="core_shiba_xp">%1$s XP</string>
+    <string name="core_shiba_progress_next_bone">%1$s / %2$s avant votre prochain Os</string>
+    <string name="core_shiba_progress_next_level">%1$s / %2$s avant le niveau %3$d</string>
+    <string name="core_shiba_level_abbrev">NIV</string>
+
+    <!-- Sélecteur de couleur -->
+    <string name="core_hsv_hex">Hex</string>
+    <string name="core_hsv_hue">Teinte</string>
+    <string name="core_hsv_saturation">Saturation</string>
+    <string name="core_hsv_brightness">Luminosité</string>
+    <string name="core_hsv_hint_move">Déplacer</string>
+    <string name="core_hsv_hint_type_hex">Saisir hex</string>
+    <string name="core_hsv_hint_adjust">Ajuster</string>
+    <string name="core_hsv_sample_text">Exemple de texte</string>
+    <string name="core_color_default">Par défaut</string>
+    <string name="core_color_pink">Rose</string>
+    <string name="core_color_gold">Or</string>
+    <string name="core_color_aqua">Aqua</string>
+    <string name="core_color_sky_blue">Bleu ciel</string>
+    <string name="core_color_green">Vert</string>
+    <string name="core_color_coral">Corail</string>
+    <string name="core_color_slate">Ardoise</string>
+    <string name="core_color_custom">Personnalisé</string>
+
+    <!-- Fiches de notification -->
+    <string name="core_sheet_copied">Copié</string>
+    <string name="core_sheet_copy_details">Copier les détails</string>
+    <string name="core_sheet_copy_list">Copier la liste</string>
+    <string name="core_sheet_filter">Filtrer</string>
+    <string name="core_sheet_what_happened">Ce qui s\'est passé</string>
+    <string name="core_sheet_diagnostic_open">"▾  Détails de diagnostic"</string>
+    <string name="core_sheet_diagnostic_closed">"▸  Détails de diagnostic"</string>
+    <string name="core_sheet_diagnostic_heading">Diagnostic</string>
+    <string name="core_sheet_summary_chip">%1$d %2$s</string>
+    <string name="core_sheet_filter_all">Tout</string>
+    <string name="core_sheet_more">+%1$d de plus</string>
+    <string name="core_sheet_what_you_can_do">Ce que vous pouvez faire</string>
+
+    <!-- Clavier à l'écran -->
+    <string name="core_vk_prompt_type">Saisir</string>
+    <string name="core_vk_prompt_delete">Effacer</string>
+    <string name="core_vk_prompt_cursor">Curseur</string>
+    <string name="core_vk_prompt_caps">Maj</string>
+    <string name="core_vk_key_space">Espace</string>
+    <string name="core_vk_key_shift">Maj</string>
+    <string name="core_vk_key_backspace">Retour arrière</string>
+    <string name="core_vk_key_done">OK</string>
+    <string name="core_vk_shift_off">Désactivé</string>
+    <string name="core_vk_shift_once">Activé pour la lettre suivante</string>
+    <string name="core_vk_shift_held">Activé tant que maintenu</string>
+    <string name="core_vk_shift_locked">Verrouillage majuscules activé</string>
+
+    <!-- Tâches en arrière-plan -->
+    <string name="core_task_failed">Échec de la tâche</string>
+    <string name="core_task_done">Terminé</string>
+
+    <!-- Écrans de détail -->
+    <string name="core_detail_favorite_badge">FAVORI</string>
+    <string name="core_detail_video_badge">VIDÉO</string>
+    <string name="core_detail_confirm_collapse">Confirmer pour réduire</string>
+    <string name="core_detail_confirm_read_more">Confirmer pour lire la suite</string>
+
+    <!-- Invite de rotation en paysage -->
+    <string name="core_rotate_title">Passez en mode paysage</string>
+    <string name="core_rotate_message">PlayField Portal fonctionne en mode paysage. Tournez votre appareil sur le côté pour continuer.</string>
+    <string name="core_rotate_switch_launcher">Changer de launcher</string>
+</resources>

@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ===== Shared Shiba page text ===== -->
+
+    <!-- Controller hint labels in a page's footer. Each names the action the button performs. -->
+    <string name="shiba_prompt_select">تحديد</string>
+    <string name="shiba_prompt_close">إغلاق</string>
+    <string name="shiba_prompt_done">تم</string>
+    <string name="shiba_prompt_back">رجوع</string>
+    <string name="shiba_prompt_options">الخيارات</string>
+    <string name="shiba_prompt_search">بحث</string>
+    <string name="shiba_prompt_type">كتابة</string>
+    <string name="shiba_prompt_change_view">تغيير العرض</string>
+    <string name="shiba_prompt_switch_source">تبديل المصدر</string>
+    <string name="shiba_prompt_view_game">عرض اللعبة</string>
+    <string name="shiba_prompt_view_achievements">عرض الإنجازات</string>
+    <string name="shiba_prompt_attempt_match">محاولة المطابقة</string>
+    <string name="shiba_prompt_search_online">البحث عبر الإنترنت</string>
+    <string name="shiba_prompt_auto_match">مطابقة تلقائية</string>
+    <string name="shiba_prompt_pick_game_folder">اختيار مجلد اللعبة</string>
+    <string name="shiba_prompt_reveal">كشف</string>
+    <string name="shiba_prompt_hide">إخفاء</string>
+    <string name="shiba_prompt_navigate">تنقل</string>
+
+    <!-- Buttons in the Auto-Match panels. -->
+    <string name="shiba_action_yes">نعم</string>
+    <string name="shiba_action_no">لا</string>
+    <string name="shiba_action_cancel">إلغاء</string>
+    <string name="shiba_action_close">إغلاق</string>
+    <string name="shiba_action_link">ربط</string>
+
+    <!-- Title of the Options context menu on the Shiba pages and Video Detail. -->
+    <string name="shiba_options_title">الخيارات</string>
+    <string name="shiba_options_sort">الفرز</string>
+    <string name="shiba_options_provider">المزوّد</string>
+    <string name="shiba_options_update_installed">تحديث إنجازات الألعاب المثبّتة</string>
+    <string name="shiba_options_updating">جارٍ التحديث…</string>
+
+    <string name="shiba_sort_newest">الأحدث</string>
+    <string name="shiba_sort_rarest">الأندر</string>
+    <string name="shiba_sort_tier">الفئة</string>
+    <string name="shiba_sort_earned">المكتسبة</string>
+    <string name="shiba_filter_all">الكل</string>
+
+    <!-- Coin tier names. -->
+    <string name="shiba_tier_bronze">برونزية</string>
+    <string name="shiba_tier_silver">فضية</string>
+    <string name="shiba_tier_gold">ذهبية</string>
+    <string name="shiba_tier_platinum">بلاتينية</string>
+
+    <!-- Header statistics labels; shown in capitals. -->
+    <string name="shiba_stat_shiba_level">مستوى SHIBA</string>
+    <string name="shiba_stat_next_level">المستوى التالي</string>
+    <string name="shiba_stat_total_coins">إجمالي العملات</string>
+    <string name="shiba_stat_total">الإجمالي</string>
+
+    <!-- %1$s is a platform name such as Super Nintendo; the game is no longer on this device. -->
+    <string name="shiba_platform_not_installed">%1$s · غير مثبّتة</string>
+
+    <!-- Relative times. %1$d is a number of minutes or hours. -->
+    <string name="shiba_time_just_now">الآن</string>
+    <string name="shiba_time_minutes_ago">قبل %1$d د</string>
+    <string name="shiba_time_hours_ago">قبل %1$d س</string>
+    <string name="shiba_time_yesterday">أمس</string>
+    <plurals name="shiba_time_days_ago">
+        <item quantity="zero">اليوم</item>
+        <item quantity="one">قبل يوم واحد</item>
+        <item quantity="two">قبل يومين</item>
+        <item quantity="few">قبل %1$d أيام</item>
+        <item quantity="many">قبل %1$d يومًا</item>
+        <item quantity="other">قبل %1$d يوم</item>
+    </plurals>
+
+    <!-- Placeholder in the Search field of the achievements library. -->
+    <string name="shiba_search_games_placeholder">البحث في الألعاب…</string>
+
+    <!-- ===== Player Status ===== -->
+
+    <string name="shiba_player_status_title">حالة اللاعب</string>
+    <string name="shiba_player_status_no_rarest">لا يوجد أندر إنجاز بعد.</string>
+    <string name="shiba_player_status_rarest_unlocked">الأندر المفتوح</string>
+    <string name="shiba_player_status_rarity_caption">من اللاعبين يملكونه</string>
+    <string name="shiba_player_status_game_and_time">%1$s · %2$s</string>
+    <plurals name="shiba_status_checking_games">
+        <item quantity="zero">جارٍ فحص %1$d من %2$d لعبة…</item>
+        <item quantity="one">جارٍ فحص %1$d من %2$d لعبة…</item>
+        <item quantity="two">جارٍ فحص %1$d من %2$d لعبة…</item>
+        <item quantity="few">جارٍ فحص %1$d من %2$d ألعاب…</item>
+        <item quantity="many">جارٍ فحص %1$d من %2$d لعبة…</item>
+        <item quantity="other">جارٍ فحص %1$d من %2$d لعبة…</item>
+    </plurals>
+    <string name="shiba_status_updating_achievements">جارٍ تحديث إنجازات الألعاب المثبّتة…</string>
+
+    <!-- ===== Achievements library (Tracked / Untracked Games) ===== -->
+
+    <string name="shiba_library_view_tracked">الألعاب المتتبَّعة</string>
+    <string name="shiba_library_view_untracked">الألعاب غير المتتبَّعة</string>
+    <string name="shiba_library_breadcrumb">الإنجازات / %1$s</string>
+    <plurals name="shiba_library_game_count">
+        <item quantity="zero">لا ألعاب</item>
+        <item quantity="one">لعبة واحدة</item>
+        <item quantity="two">لعبتان</item>
+        <item quantity="few">%1$d ألعاب</item>
+        <item quantity="many">%1$d لعبة</item>
+        <item quantity="other">%1$d لعبة</item>
+    </plurals>
+    <string name="shiba_library_empty_no_match">لا توجد ألعاب تطابق \"%1$s\".</string>
+    <string name="shiba_library_empty_tracked">لا توجد ألعاب متتبَّعة بعد.</string>
+    <string name="shiba_library_empty_untracked">كل لعبة مؤهلة متتبَّعة.</string>
+    <string name="shiba_library_sort_title_asc">العنوان أ–ي</string>
+    <string name="shiba_library_sort_title_desc">العنوان ي–أ</string>
+    <string name="shiba_library_sort_progress_asc">التقدّم من الأدنى</string>
+    <string name="shiba_library_sort_progress_desc">التقدّم من الأعلى</string>
+    <string name="shiba_library_sort_platform_asc">المنصة أ–ي</string>
+    <string name="shiba_library_sort_platform_desc">المنصة ي–أ</string>
+    <string name="shiba_library_search_online">البحث عبر الإنترنت</string>
+    <string name="shiba_library_search_online_subtitle">ابحث عن لعبة غير موجودة على هذا الجهاز</string>
+    <string name="shiba_library_awaiting_sync">بانتظار المزامنة</string>
+
+    <!-- ===== A game's Shiba Coins page ===== -->
+
+    <string name="shiba_coins_search_placeholder">البحث في العملات…</string>
+    <string name="shiba_coins_stat_completion">الاكتمال</string>
+    <string name="shiba_coins_stat_earned">المكتسبة</string>
+    <string name="shiba_coins_tab_all">الكل %1$d</string>
+    <string name="shiba_coins_tab_earned">المكتسبة %1$d</string>
+    <string name="shiba_coins_tab_locked">المقفلة %1$d</string>
+    <string name="shiba_coins_synced">تمت المزامنة %1$s</string>
+    <string name="shiba_coins_not_linked">غير مرتبطة</string>
+    <string name="shiba_coins_never_synced">لم تتم المزامنة أبدًا</string>
+    <string name="shiba_coins_owned_on_steam">مملوكة على Steam</string>
+    <string name="shiba_coins_tracked_locally">متتبَّعة محليًا</string>
+
+    <!-- Empty-list messages. %1$s is what the user typed in Search. -->
+    <string name="shiba_coins_empty_no_match">لا توجد عملات تطابق \"%1$s\".</string>
+    <string name="shiba_coins_empty_none_earned">لم تُكتسب أي عملات بعد.</string>
+    <string name="shiba_coins_empty_all_earned">تم اكتساب كل العملات.</string>
+    <string name="shiba_coins_empty_default">لا توجد عملات لعرضها.</string>
+
+    <!-- Options menu rows. -->
+    <string name="shiba_coins_options_update">تحديث الإنجازات</string>
+    <string name="shiba_coins_options_change_match">تغيير المطابقة</string>
+    <string name="shiba_coins_options_unlink">إلغاء ربط اللعبة</string>
+
+    <!-- Unlink confirmation. %1$s is the game title. -->
+    <string name="shiba_coins_unlink_title">هل تريد إلغاء ربط اللعبة؟</string>
+    <string name="shiba_coins_unlink_message">لم تعد %1$s مطابَقة، لذا تتوقف عملاتها عن الظهور. تبقى العملات المخزّنة مؤقتًا محفوظة وتعود عند مطابقتها مجددًا.</string>
+    <string name="shiba_coins_unlink_confirm">إلغاء الربط</string>
+
+    <!-- Coin rows. A hidden coin hides its real title until the user reveals it. -->
+    <string name="shiba_coin_hidden_title">عملة مخفية</string>
+    <string name="shiba_coin_hidden_hint">واصل اللعب — أو اضغط «تأكيد» للكشف</string>
+    <string name="shiba_coin_description_secret">يُبقي Steam وصف هذه العملة سرًا</string>
+    <string name="shiba_coin_metric_of_players">من اللاعبين</string>
+    <string name="shiba_coin_status_earned">مكتسبة</string>
+    <string name="shiba_coin_status_locked">مقفلة</string>
+    <string name="shiba_platinum_crown_title">التاج البلاتيني</string>
+    <string name="shiba_platinum_crown_description">اكتسب كل العملات الأخرى في اللعبة</string>
+    <string name="shiba_platinum_crown_metric">عملة مكتسبة</string>
+
+    <!-- Auto-Match panel for a game that is not linked yet. -->
+    <string name="shiba_link_not_linked_yet_game">هذه اللعبة غير مرتبطة بعد</string>
+    <string name="shiba_link_not_linked_yet">غير مرتبطة بعد</string>
+    <string name="shiba_link_steam_body">تسأل المطابقة التلقائية ما إذا كانت هذه نسخة Steam أصلية، ثم تطابقها مع Steam أو تفحص مجلدات ألعابك بحثًا عن بيانات محاكي Steam.</string>
+    <string name="shiba_link_retro_body">يتعرّف RetroAchievements على الألعاب ببصمة ROM. تحسب المطابقة التلقائية بصمة هذه ROM وتبحث عنها — ولا يمكن ربط سوى نسخة موثّقة مسجّلة على RetroAchievements.</string>
+    <string name="shiba_link_local_steam_body">اختر مجلد هذه اللعبة وسيقرأ PFP معرّف تطبيق Steam الخاص بها — من steam_appid.txt إن وُجد، أو بمطابقة العنوان إن لم يوجد. ويتذكّر المجلد، فلا حاجة إلى البحث عنه مجددًا.</string>
+    <string name="shiba_link_vita_body">تُربط جوائز PS Vita تلقائيًا من Vita3K. عيّن مجلد بيانات Vita3K في المكتبة وافحص لربط هذه اللعبة.</string>
+    <string name="shiba_link_ps3_body">تُربط جوائز PS3 من قرص اللعبة نفسه — عيّن مجلد بيانات PS3 في المكتبة واستخدم المطابقة التلقائية.</string>
+    <string name="shiba_link_x360_body">تُربط إنجازات Xbox 360 من معرّف عنوان اللعبة نفسها — عيّن مجلد بيانات X360 Mobile أو XenDroid في المكتبة واستخدم المطابقة التلقائية.</string>
+    <string name="shiba_link_auto_match">مطابقة تلقائية</string>
+    <string name="shiba_link_matching">جارٍ المطابقة…</string>
+    <string name="shiba_link_pick_game_folder">اختيار مجلد اللعبة</string>
+
+    <string name="shiba_link_copy_title">هل هذه نسخة Steam أصلية؟</string>
+    <string name="shiba_link_copy_body">تُطابَق النسخة الأصلية مع حسابك على Steam. وأي نسخة أخرى تُتتبَّع من مجلد اللعبة نفسه، الذي سيطلب منك PFP الإشارة إليه.</string>
+
+    <string name="shiba_link_folder_title">في أي مجلد توجد هذه اللعبة؟</string>
+    <string name="shiba_link_folder_body">اختر مجلد اللعبة نفسه — الذي يوجد فيه ملف .exe. يقرأ PFP منه معرّف تطبيق Steam ويتتبّع ما يكتبه المحاكي من إنجازات مفتوحة. يمكن أن توجد ألعاب Windows في أي مكان؛ ويتذكّر PFP مكان هذه اللعبة فلا يحتاج إلى البحث عنها أبدًا.</string>
+
+    <string name="shiba_link_identify_title_steam">جارٍ البحث عن المطابقة في Steam…</string>
+    <string name="shiba_link_identify_title_appid">جارٍ تحديد معرّف تطبيق Steam…</string>
+    <string name="shiba_link_identify_body_steam">جارٍ البحث في Steam عن عنوان هذه اللعبة. اختر اللعبة الصحيحة لربطها مجددًا.</string>
+    <string name="shiba_link_identify_body_appid">جارٍ قراءة steam_appid.txt من المجلد، ومطابقة عنوان اللعبة مع Steam إن لم يكن موجودًا بعد.</string>
+
+    <string name="shiba_link_kit_title">لا يحتوي ذلك المجلد على قائمة إنجازات بعد</string>
+    <string name="shiba_link_kit_body_generic">يحتاج المحاكي إلى قائمة إنجازات قبل أن يتمكن من تسجيل ما يُفتح منها.</string>
+    <string name="shiba_link_kit_body">\"%1$s\" هو تطبيق Steam بالمعرّف %2$s، لكن المحاكي ليس لديه قائمة إنجازات للتسجيل عليها. «التثبيت والربط» يكتب achievements.json وstats.json وconfigs.user.ini في المجلد، وينشئ مجلد saves، ويعيد تسمية steam_api64.dll إلى steam_api64_o.dll ليُحمَّل المحاكي المرفق من خلاله — انسخ ملفات حفظ هذه اللعبة احتياطيًا أولاً. «الربط فقط» يتتبّعها عند 0%% ولا يكتب أي شيء آخر.</string>
+    <string name="shiba_link_kit_installer_off">يحتاج «التثبيت والربط» إلى تفعيل «تثبيت Goldberg وتحويل الألعاب» في إعدادات الإنجازات.</string>
+    <string name="shiba_link_kit_install">التثبيت والربط</string>
+    <string name="shiba_link_kit_link_only">الربط فقط</string>
+
+    <string name="shiba_link_no_emu_title">لا يوجد ما يمكن تتبّعه في ذلك المجلد</string>
+    <string name="shiba_link_no_emu_default">لا يحتوي ذلك المجلد على بيانات محاكي Steam.</string>
+    <string name="shiba_link_try_another_folder">تجربة مجلد آخر</string>
+
+    <string name="shiba_link_appid_title">لم يتم العثور على مطابقة تلقائية</string>
+    <string name="shiba_link_appid_body">أدخِل معرّف تطبيق Steam للعبة:</string>
+    <string name="shiba_link_appid_field">معرّف تطبيق Steam</string>
+
+    <!-- Messages shown on the page after linking or syncing. -->
+    <string name="shiba_coins_folder_unreadable">تعذّرت قراءة ذلك المجلد. اختره مجددًا، أو أعِد تركيب وحدة التخزين الموجود عليها.</string>
+    <string name="shiba_coins_linked_to">تم الربط بـ %1$s (appid %2$s).</string>
+    <string name="shiba_coins_nothing_written">لم تتم كتابة أي شيء. عيّن مطابقة Steam للعبة من تفاصيل اللعبة ▸ مطابقة اللعبة، ثم استخدم المطابقة التلقائية مجددًا — سيستخدم PFP ذلك المعرّف.</string>
+    <string name="shiba_coins_appid_not_number">معرّف تطبيق Steam رقم — راجع steamdb.info لمزيد من المعلومات عن اللعبة</string>
+    <string name="shiba_coins_appid_no_match">معرّف التطبيق %1$s غير مطابق — راجع steamdb.info لمزيد من المعلومات عن اللعبة</string>
+    <string name="shiba_coins_sync_not_linked">اربط هذه اللعبة بمعرّف مزوّد أولاً</string>
+    <string name="shiba_coins_sync_not_installed">هذه اللعبة غير مثبّتة — تُعرض إنجازاتها المحفوظة</string>
+    <string name="shiba_coins_sync_missing_credentials">أضِف مفتاحك من الإعدادات ▸ الإنجازات ▸ بيانات اعتماد المزوّدين</string>
+    <string name="shiba_coins_sync_profile_private">تفاصيل الألعاب في ملفك الشخصي على Steam خاصة</string>
+    <string name="shiba_coins_sync_not_found">لم يتم العثور على إنجازات لهذه اللعبة</string>
+    <string name="shiba_coins_sync_failed">فشلت المزامنة: %1$s</string>
+
+    <!-- ===== Video Detail ===== -->
+
+    <string name="shiba_video_play">تشغيل</string>
+    <string name="shiba_video_resume">استئناف</string>
+    <string name="shiba_video_restart">البدء من البداية</string>
+    <string name="shiba_video_resume_at">الاستئناف عند %1$s</string>
+    <string name="shiba_video_group_library">المكتبة</string>
+    <string name="shiba_video_group_customize">التخصيص</string>
+    <string name="shiba_video_group_manage">الإدارة</string>
+    <string name="shiba_video_favorite">المفضلة</string>
+    <string name="shiba_video_favorite_on">مفعّل</string>
+    <string name="shiba_video_favorite_off">متوقف</string>
+    <string name="shiba_video_add_to_playlist">إضافة إلى قائمة تشغيل</string>
+    <string name="shiba_video_create_playlist">إنشاء قائمة تشغيل جديدة</string>
+    <string name="shiba_video_edit_title">تعديل العنوان</string>
+    <string name="shiba_video_change_thumbnail">تغيير الصورة المصغّرة</string>
+    <string name="shiba_video_view_information">عرض المعلومات</string>
+    <string name="shiba_video_show_location">إظهار موقع الملف</string>
+    <string name="shiba_video_remove">إزالة من المكتبة</string>
+    <string name="shiba_video_remove_message">ستتم إزالة \"%1$s\" من هذه المكتبة. لن يُحذف الملف من القرص.</string>
+    <string name="shiba_video_remove_confirm">إزالة</string>
+    <string name="shiba_video_new_playlist_title">قائمة تشغيل جديدة</string>
+    <string name="shiba_video_new_playlist_placeholder">اسم قائمة التشغيل</string>
+    <string name="shiba_video_new_playlist_create">إنشاء</string>
+    <string name="shiba_video_launching">جارٍ التشغيل…</string>
+    <string name="shiba_video_player_ask">مشغّل خارجي</string>
+    <string name="shiba_video_player_fallback">مشغّل خارجي</string>
+    <string name="shiba_video_launch_error_title">يتعذّر تشغيل الفيديو</string>
+    <string name="shiba_video_added_favorite">تمت الإضافة إلى المفضلة</string>
+    <string name="shiba_video_removed_favorite">تمت الإزالة من المفضلة</string>
+    <string name="shiba_video_import_failed">تعذّر استيراد الصورة</string>
+    <string name="shiba_video_thumbnail_updated">تم تحديث الصورة المصغّرة</string>
+    <string name="shiba_video_location_in">في: %1$s</string>
+    <string name="shiba_video_info_duration">المدة: %1$s</string>
+    <string name="shiba_video_info_resolution">الدقة: %1$s</string>
+    <string name="shiba_video_info_format">التنسيق: %1$s</string>
+    <string name="shiba_video_info_type">النوع: %1$s</string>
+    <string name="shiba_video_info_size">الحجم: %1$s</string>
+    <string name="shiba_video_info_location">الموقع: %1$s</string>
+    <string name="shiba_video_info_file">الملف: %1$s</string>
+
+    <!-- ===== Manual viewer ===== -->
+
+    <string name="shiba_manual_failed">تعذّر عرض هذا الدليل.</string>
+    <string name="shiba_manual_page_description">%1$s — صفحة الدليل %2$d</string>
+    <string name="shiba_manual_footer_hint">"◀ ▶  الصفحة   •   ▲ ▼  التمرير   •   B  إغلاق"</string>
+</resources>

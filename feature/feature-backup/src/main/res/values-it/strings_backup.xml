@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Backup failures -->
+    <string name="bak_no_folder">Nessuna cartella di backup impostata. Scegline una in Impostazioni → Backup e ripristino → Cartella di backup.</string>
+    <string name="bak_too_large">Questo backup sarebbe troppo grande da ripristinare (può contenere fino a 20.000 file e 2 GB). Rimuovi immagini o contenuti multimediali inutilizzati e riprova.</string>
+    <string name="bak_write_failed">Impossibile scrivere nella cartella di backup. Scegli di nuovo la cartella di backup in Impostazioni ▸ Sistema ▸ Backup e ripristino.</string>
+    <string name="bak_unknown_error">Errore sconosciuto</string>
+
+    <!-- Restore failures -->
+    <string name="bak_open_failed">Impossibile aprire il file di backup</string>
+    <string name="bak_missing_manifest">Nel backup manca il manifest</string>
+    <string name="bak_format_too_new">Il formato di backup v%1$d è più recente di quello supportato da questa app (v%2$d)</string>
+    <string name="bak_no_uri">Nessun URI fornito</string>
+
+    <!-- Notification titles -->
+    <string name="bak_task_created">Backup creato</string>
+    <string name="bak_task_failed">Backup non riuscito</string>
+    <string name="bak_task_restored">Backup ripristinato</string>
+    <string name="bak_task_restore_failed">Ripristino non riuscito</string>
+    <string name="bak_results_restored">Ripristinati</string>
+    <plurals name="bak_items_skipped">
+        <item quantity="one">%d elemento saltato</item>
+        <item quantity="many">%d elementi saltati</item>
+        <item quantity="other">%d elementi saltati</item>
+    </plurals>
+
+    <!-- Items turned away during restore -->
+    <string name="bak_refused_out_of_root">Rifiutato \'%1$s\': non si trova in una cartella ripristinabile</string>
+    <string name="bak_refused_profiles_unparseable">Profili emulatore rifiutati: impossibile analizzare il file</string>
+    <string name="bak_refused_profile">Profilo emulatore \'%1$s\' rifiutato: %2$s</string>
+</resources>

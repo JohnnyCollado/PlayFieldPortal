@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Localization slice G1: app module -->
+<resources>
+    <string name="app_switch_launcher_chooser">Đổi launcher</string>
+    <string name="app_shortcut_fallback_name">Lối tắt</string>
+    <string name="app_shortcut_fallback_host">Ứng dụng khác</string>
+</resources>

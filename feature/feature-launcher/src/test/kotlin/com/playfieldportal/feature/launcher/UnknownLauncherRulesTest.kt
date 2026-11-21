@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.launcher
 
+import com.playfieldportal.core.domain.text.UiText
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -20,13 +21,13 @@ class UnknownLauncherRulesTest {
 
     @Test
     fun `an ambiguous egggame could be GameHub or BannerHub`() {
-        assertEquals("could be GameHub or BannerHub", reason("com.xiaoji.egggame", "GameHub", LauncherIdentity.Ambiguous))
+        assertEquals(UiText.res(R.string.launch_unknown_gamehub_or_bannerhub), reason("com.xiaoji.egggame", "GameHub", LauncherIdentity.Ambiguous))
     }
 
     @Test
     fun `an ambiguous spoof-name variant could be GameHub Lite or BannerHub`() {
         assertEquals(
-            "could be GameHub Lite or BannerHub",
+            UiText.res(R.string.launch_unknown_gamehublite_or_bannerhub),
             reason("com.ludashi.aibench", "AI Bench", LauncherIdentity.Ambiguous),
         )
     }
@@ -41,7 +42,7 @@ class UnknownLauncherRulesTest {
             "com.example.gh" to "GameHub Pro",
             "com.example.bh" to "BannerHub Nightly",
         ).forEach { (pkg, label) ->
-            assertEquals("not in PFP's list", reason(pkg, label), pkg)
+            assertEquals(UiText.res(R.string.launch_unknown_not_in_list), reason(pkg, label), pkg)
         }
     }
 
@@ -130,7 +131,10 @@ class UnknownLauncherRulesTest {
     @Test
     fun `choice labels read like the design`() {
         assertEquals(
-            listOf("Not a launcher", "GameHub", "GameHub Lite", "BannerHub", "Winlator", "GameNative"),
+            listOf(
+                UiText.res(R.string.launch_choice_not_a_launcher), UiText.raw("GameHub"), UiText.raw("GameHub Lite"),
+                UiText.raw("BannerHub"), UiText.raw("Winlator"), UiText.raw("GameNative"),
+            ),
             LauncherChoice.entries.map { it.label },
         )
     }

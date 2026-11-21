@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blur_title">背景のぼかし</string>
+    <string name="blur_sublabel">メッセージやオプションメニューの背後で画面をぼかす強さです。0 にするとオフになります。</string>
+    <string name="blur_unavailable">Android 12 以降が必要です。</string>
+</resources>

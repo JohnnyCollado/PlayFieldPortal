@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="art_error_unexpected">Nieoczekiwany błąd</string>
+    <string name="art_no_folder_linked">Nie połączono folderu grafik</string>
+    <string name="art_paused_message">Grafiki wstrzymane. Połącz ponownie folder grafik, aby zapisywać nowe grafiki.</string>
+    <string name="art_error_game_not_found">Nie znaleziono gry</string>
+    <string name="art_error_not_found_any_source">Nie znaleziono w żadnym źródle</string>
+    <string name="art_found_via">Znaleziono przez %1$s</string>
+    <string name="art_results_label_updated">Zaktualizowano</string>
+    <string name="art_results_label_imported">Zaimportowano</string>
+
+    <string name="art_progress_hashing">Obliczanie skrótu ROM-u…</string>
+    <string name="art_progress_searching">Wyszukiwanie…</string>
+    <string name="art_asset_hero">Baner główny</string>
+    <string name="art_asset_background">Tło</string>
+    <string name="art_asset_logo">Logo</string>
+    <string name="art_asset_box_art">Okładka</string>
+    <string name="art_asset_physical_media">Nośnik fizyczny</string>
+    <string name="art_asset_3d_box">Pudełko 3D</string>
+    <string name="art_asset_screenshot">Zrzut ekranu</string>
+    <string name="art_asset_manual">Instrukcja</string>
+    <string name="art_asset_video">Wideo</string>
+    <string name="art_asset_icon_video">Wideo ikony</string>
+    <string name="art_asset_icon_video_converting">Wideo ikony (konwersja)</string>
+    <string name="art_source_storefronts">Sklepy</string>
+
+    <string name="art_field_title">Tytuł</string>
+    <string name="art_field_description">Opis</string>
+    <string name="art_field_developer">Producent</string>
+    <string name="art_field_publisher">Wydawca</string>
+    <string name="art_field_year">Rok</string>
+    <string name="art_field_release_date">Data wydania</string>
+    <string name="art_field_genre">Gatunek</string>
+    <string name="art_field_age_rating">Klasyfikacja wiekowa</string>
+    <string name="art_field_franchise">Seria</string>
+    <string name="art_field_rating">Ocena</string>
+
+    <string name="art_policy_replace_all">Zastąp wszystko</string>
+    <string name="art_policy_fill_missing">Tylko uzupełnij braki</string>
+    <string name="art_policy_choose_fields">Wybierz pola</string>
+    <string name="art_policy_keep_current">Zachowaj obecne</string>
+
+    <string name="art_scrape_label_all">Ponowne pobieranie dla wszystkich gier</string>
+    <string name="art_scrape_label_missing">Pobieranie brakujących grafik</string>
+    <string name="art_scrape_stop_note">Już pobrane grafiki zostaną zachowane.</string>
+    <string name="art_scrape_paused_all_title">Wstrzymano ponowne pobieranie grafik</string>
+    <string name="art_scrape_paused_title">Wstrzymano pobieranie grafik</string>
+    <string name="art_scrape_finished_all_title">Zakończono ponowne pobieranie grafik</string>
+    <string name="art_scrape_finished_title">Zakończono pobieranie grafik</string>
+    <string name="art_scrape_stopped_title">Zatrzymano pobieranie grafik</string>
+    <string name="art_scrape_failed_title">Pobieranie grafik nie powiodło się</string>
+    <string name="art_scrape_result">Udane: %1$d, nieudane: %2$d z %3$d</string>
+    <plurals name="art_scrape_stopped_after">
+        <item quantity="one">Zatrzymano po %1$d grze — dotąd pobrane grafiki zostają</item>
+        <item quantity="few">Zatrzymano po %1$d grach — dotąd pobrane grafiki zostają</item>
+        <item quantity="many">Zatrzymano po %1$d grach — dotąd pobrane grafiki zostają</item>
+        <item quantity="other">Zatrzymano po %1$d gry — dotąd pobrane grafiki zostają</item>
+    </plurals>
+
+    <string name="art_relink_label">Ponowne łączenie grafik</string>
+    <plurals name="art_relink_label_consoles">
+        <item quantity="one">Ponowne łączenie grafik dla %1$d konsoli</item>
+        <item quantity="few">Ponowne łączenie grafik dla %1$d konsol</item>
+        <item quantity="many">Ponowne łączenie grafik dla %1$d konsol</item>
+        <item quantity="other">Ponowne łączenie grafik dla %1$d konsoli</item>
+    </plurals>
+    <string name="art_relink_stop_note">Już połączone grafiki pozostaną połączone.</string>
+    <string name="art_relink_finished_title">Zakończono ponowne łączenie grafik</string>
+    <string name="art_relink_stopped_title">Zatrzymano ponowne łączenie grafik</string>
+    <string name="art_relink_stopped_note">Dotąd połączone grafiki zostają zachowane</string>
+    <string name="art_relink_failed_title">Ponowne łączenie grafik nie powiodło się</string>
+    <plurals name="art_relink_games_linked">
+        <item quantity="one">Połączono %1$d grę</item>
+        <item quantity="few">Połączono %1$d gry</item>
+        <item quantity="many">Połączono %1$d gier</item>
+        <item quantity="other">Połączono %1$d gry</item>
+    </plurals>
+    <plurals name="art_relink_files">
+        <item quantity="one">%1$d pliku</item>
+        <item quantity="few">%1$d plików</item>
+        <item quantity="many">%1$d plików</item>
+        <item quantity="other">%1$d pliku</item>
+    </plurals>
+    <string name="art_relink_result">%1$s z %2$s</string>
+    <string name="art_relink_result_unmatched">%1$s · niedopasowane: %2$d</string>
+
+    <string name="art_export_label">Eksportowanie grafik do ES-DE</string>
+    <string name="art_export_stop_note">Już wyeksportowane pliki pozostaną na miejscu.</string>
+    <string name="art_export_error_no_destination">Brak folderu docelowego</string>
+    <string name="art_export_error_access_lost">Utracono dostęp do folderu grafik</string>
+    <string name="art_export_dest_not_created">Nie można utworzyć folderu docelowego.</string>
+    <plurals name="art_export_files_badge">
+        <item quantity="one">%1$d plik</item>
+        <item quantity="few">%1$d pliki</item>
+        <item quantity="many">%1$d plików</item>
+        <item quantity="other">%1$d pliku</item>
+    </plurals>
+    <string name="art_export_failed_title">Eksport grafik nie powiódł się</string>
+    <string name="art_export_stopped_title">Zatrzymano eksport grafik</string>
+    <string name="art_export_finished_title">Zakończono eksport grafik</string>
+    <plurals name="art_export_stopped_note">
+        <item quantity="one">Wcześniej wyeksportowano %1$d plik</item>
+        <item quantity="few">Wcześniej wyeksportowano %1$d pliki</item>
+        <item quantity="many">Wcześniej wyeksportowano %1$d plików</item>
+        <item quantity="other">Wcześniej wyeksportowano %1$d pliku</item>
+    </plurals>
+    <string name="art_export_result">Skopiowane: %1$d, już obecne: %2$d, nieudane: %3$d</string>
+
+    <string name="art_import_plan_not_found">Nie znaleziono planu importu</string>
+    <string name="art_import_plan_unreadable">Nie można odczytać planu importu</string>
+    <string name="art_import_label">Importowanie grafik — %1$s</string>
+    <string name="art_import_stop_note">Już zaimportowane grafiki zostaną zachowane.</string>
+    <string name="art_import_failed_title">Import grafik nie powiódł się</string>
+    <string name="art_import_cancelled">Anulowano import grafik</string>
+    <string name="art_import_done">Zaimportowano grafiki</string>
+    <plurals name="art_import_needs_review">
+        <item quantity="one">Zaimportowano grafiki, %1$d element wymaga przejrzenia</item>
+        <item quantity="few">Zaimportowano grafiki, %1$d elementy wymagają przejrzenia</item>
+        <item quantity="many">Zaimportowano grafiki, %1$d elementów wymaga przejrzenia</item>
+        <item quantity="other">Zaimportowano grafiki, %1$d elementu wymaga przejrzenia</item>
+    </plurals>
+    <string name="art_import_headline">%1$s: %2$s</string>
+    <string name="art_import_counts">Zaimportowane: %1$d, pominięte: %2$d, nieudane: %3$d, niejednoznaczne: %4$d, niedopasowane: %5$d.</string>
+    <string name="art_import_results_summary">Zaimportowane: %1$d, pominięte: %2$d</string>
+
+    <string name="art_move_label">Przenoszenie grafik do folderu</string>
+    <string name="art_move_failed_title">Przenoszenie grafik nie powiodło się</string>
+    <string name="art_move_stopped_title">Zatrzymano przenoszenie grafik</string>
+    <string name="art_move_finished_title">Zakończono przenoszenie grafik</string>
+    <plurals name="art_move_stopped_note">
+        <item quantity="one">Wcześniej przeniesiono %1$d plik</item>
+        <item quantity="few">Wcześniej przeniesiono %1$d pliki</item>
+        <item quantity="many">Wcześniej przeniesiono %1$d plików</item>
+        <item quantity="other">Wcześniej przeniesiono %1$d pliku</item>
+    </plurals>
+    <string name="art_move_result">Przeniesione: %1$d, już obecne: %2$d, nieudane: %3$d</string>
+</resources>

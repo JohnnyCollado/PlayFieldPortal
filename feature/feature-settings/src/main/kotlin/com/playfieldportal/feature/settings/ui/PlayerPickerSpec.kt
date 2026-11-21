@@ -1,7 +1,10 @@
 package com.playfieldportal.feature.settings.ui
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import com.playfieldportal.core.ui.components.PfpChoiceOption
 import com.playfieldportal.core.ui.components.PfpModalSpec
+import com.playfieldportal.feature.settings.R
 
 /** One choice in a default-player picker: the stored value (a package, a sentinel, or null) and its label. */
 internal data class PlayerOption(val value: String?, val label: String)
@@ -12,6 +15,7 @@ internal data class PlayerOption(val value: String?, val label: String)
  * routing (survey P6, docs/audits/codebase-survey-2026-10-22.md); the shared modal works by pad and
  * touch alike. [emptyNote] is shown when no other player app is installed.
  */
+@Composable
 internal fun playerPickerSpec(
     title: String,
     options: List<PlayerOption>,
@@ -24,8 +28,8 @@ internal fun playerPickerSpec(
     title = title,
     message = emptyNote.orEmpty(),
     options = options.map { PfpChoiceOption(it.label) },
-    confirmLabel = "Use This Player",
-    cancelLabel = "Close",
+    confirmLabel = stringResource(R.string.lib_player_use_this),
+    cancelLabel = stringResource(R.string.lib_player_close),
     initialSelected = options.indexOfFirst { it.value == current }.coerceAtLeast(0),
     onConfirm = { index -> options.getOrNull(index)?.let { onChoose(it.value) } },
     onCancel = onClose,

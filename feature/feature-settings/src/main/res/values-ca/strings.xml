@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Configuració</string>
+    <string name="sound_title">So</string>
+    <string name="sound_group_master">General</string>
+    <string name="sound_group_levels">Nivells</string>
+    <string name="sound_group_sounds">Sons</string>
+    <string name="sound_master_volume">Volum general</string>
+    <string name="sound_master_volume_help">Ajusta tots els sons del launcher. A 0, el launcher queda en silenci.</string>
+    <string name="sound_ambience_help">Es repeteix mentre navegues. L\'OGG es repeteix sense talls; l\'MP3 pot fer un clic.</string>
+    <string name="sound_rejected_title">No s\'ha pogut utilitzar aquest so</string>
+    <string name="sound_reset_confirm_title">Vols restablir el so als valors per defecte?</string>
+    <string name="sound_reset_confirm_message">Cada so del menú torna a la mostra de PFP inclosa i cada nivell, inclòs el general, torna al màxim. La pista d\'ambient i els mitjans de Boot Video i Game Boot no es veuen afectats.</string>
+    <string name="sound_reset_confirm_action">Restableix</string>
+    <string name="sound_reset_row">Restableix el so als valors per defecte</string>
+    <string name="sound_reset_row_help">Torna cada so del menú a la mostra de PFP inclosa i cada nivell al màxim. Conserva la pista d\'ambient.</string>
+    <string name="sound_channel_navigation">Navegació</string>
+    <string name="sound_channel_back">Enrere / Cancel·la</string>
+    <string name="sound_channel_confirm">Confirma / Aplica</string>
+    <string name="sound_channel_error">Error / No vàlid</string>
+    <string name="sound_channel_notification">Notificació</string>
+    <string name="sound_channel_boot">Seqüència d\'arrencada</string>
+    <string name="sound_channel_ambience">Ambient</string>
+    <string name="sound_slot_navigation">Navegació</string>
+    <string name="sound_slot_back">Enrere / Cancel·la</string>
+    <string name="sound_slot_confirm">Confirma / Aplica</string>
+    <string name="sound_slot_error">Error / No vàlid</string>
+    <string name="sound_slot_notification">Notificació</string>
+    <string name="sound_slot_ambience">Pista d\'ambient</string>
+</resources>

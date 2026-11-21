@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bak_no_folder">尚未設定備份資料夾。請在「設定 → 備份與還原 → 備份資料夾」中選擇一個。</string>
+    <string name="bak_too_large">這份備份過大，無法還原（最多可容納 20,000 個檔案和 2 GB）。請移除未使用的圖片或媒體後再試一次。</string>
+    <string name="bak_write_failed">無法寫入備份資料夾。請在「設定 ▸ 系統 ▸ 備份與還原」中重新選擇備份資料夾。</string>
+    <string name="bak_unknown_error">未知的錯誤</string>
+
+    <!-- Restore failures -->
+    <string name="bak_open_failed">無法開啟備份檔案</string>
+    <string name="bak_missing_manifest">備份缺少資訊清單</string>
+    <string name="bak_format_too_new">備份格式 v%1$d 比這個應用程式支援的版本（v%2$d）更新</string>
+    <string name="bak_no_uri">未提供 URI</string>
+
+    <!-- Notification titles -->
+    <string name="bak_task_created">已建立備份</string>
+    <string name="bak_task_failed">備份失敗</string>
+    <string name="bak_task_restored">已還原備份</string>
+    <string name="bak_task_restore_failed">還原失敗</string>
+    <string name="bak_results_restored">已還原</string>
+    <plurals name="bak_items_skipped">
+        <item quantity="other">已略過 %d 個項目</item>
+    </plurals>
+
+    <!-- Items turned away during restore. The text before the first colon is shown as the item's name. -->
+    <string name="bak_refused_out_of_root">已拒絕「%1$s」: 不在可還原的資料夾內</string>
+    <string name="bak_refused_profiles_unparseable">已拒絕模擬器設定檔: 無法解析檔案</string>
+    <string name="bak_refused_profile">已拒絕模擬器設定檔「%1$s」: %2$s</string>
+</resources>

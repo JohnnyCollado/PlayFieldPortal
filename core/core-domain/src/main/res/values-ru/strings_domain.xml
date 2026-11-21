@@ -1,0 +1,523 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shiba rank titles -->
+    <string name="dom_shiba_rank_pup">Щенок</string>
+    <string name="dom_shiba_rank_ruffian">Хулиган</string>
+    <string name="dom_shiba_rank_lone_ron_inu">Одинокий Рон-ину</string>
+    <string name="dom_shiba_rank_inu_master">Мастер-ину</string>
+    <string name="dom_shiba_rank_legendary_hachiko">Легендарный Хатико</string>
+
+    <!-- App editions -->
+    <string name="dom_edition_full">Full</string>
+    <string name="dom_edition_lite">Lite</string>
+
+    <!-- Audio channels (volume rows) -->
+    <string name="dom_audio_channel_navigation">Навигация</string>
+    <string name="dom_audio_channel_back">Назад / Отмена</string>
+    <string name="dom_audio_channel_confirm">Подтвердить / Применить</string>
+    <string name="dom_audio_channel_error">Ошибка / Недопустимо</string>
+    <string name="dom_audio_channel_category">Категория</string>
+    <string name="dom_audio_channel_options">Параметры</string>
+    <string name="dom_audio_channel_notification">Уведомление</string>
+    <string name="dom_audio_channel_boot">Последовательность запуска</string>
+    <string name="dom_audio_channel_gameboot">Game Boot</string>
+    <string name="dom_audio_channel_ambience">Фоновый звук</string>
+
+    <!-- Customisable media slots -->
+    <string name="dom_media_slot_navigation">Навигация</string>
+    <string name="dom_media_slot_back">Назад / Отмена</string>
+    <string name="dom_media_slot_confirm">Подтвердить / Применить</string>
+    <string name="dom_media_slot_error">Ошибка / Недопустимо</string>
+    <string name="dom_media_slot_category">Категория</string>
+    <string name="dom_media_slot_options">Параметры</string>
+    <string name="dom_media_slot_notification">Уведомление</string>
+    <string name="dom_media_slot_boot_video">Анимация загрузки</string>
+    <string name="dom_media_slot_gameboot_video">Анимация Game Boot</string>
+    <string name="dom_media_slot_ambience_audio">Фоновая дорожка</string>
+
+    <!-- Game tile display modes -->
+    <string name="dom_icon_display_icon0">Свой значок</string>
+    <string name="dom_icon_display_box_art">Обложка</string>
+    <string name="dom_icon_display_physical_media">Носитель</string>
+    <string name="dom_icon_display_box_3d">3D-обложка</string>
+
+    <!-- Icon legibility styles -->
+    <string name="dom_icon_legibility_none">Нет</string>
+    <string name="dom_icon_legibility_offset_shadow">Смещённая тень (тёмная)</string>
+    <string name="dom_icon_legibility_offset_shadow_light">Смещённая тень (светлая)</string>
+    <string name="dom_icon_legibility_contour_dark">Контур (тёмный)</string>
+    <string name="dom_icon_legibility_contour_light">Контур (светлый)</string>
+    <string name="dom_icon_legibility_contour_auto">Контур (авто)</string>
+
+    <!-- Animated image playback -->
+    <string name="dom_image_motion_animated">Анимация</string>
+    <string name="dom_image_motion_reduced">Меньше</string>
+    <string name="dom_image_motion_static">Статично</string>
+
+    <!-- Text legibility styles -->
+    <string name="dom_text_legibility_none">Нет</string>
+    <string name="dom_text_legibility_shadow">Тень</string>
+    <string name="dom_text_legibility_outline">Обводка</string>
+    <string name="dom_text_legibility_plate">Контрастная подложка</string>
+    <string name="dom_text_legibility_auto">Автоматически</string>
+
+    <!-- Touch gestures -->
+    <string name="dom_touch_gesture_tap">Нажатие</string>
+    <string name="dom_touch_gesture_long_press">Удержание</string>
+    <string name="dom_touch_gesture_swipe_left">Свайп влево</string>
+    <string name="dom_touch_gesture_swipe_right">Свайп вправо</string>
+    <string name="dom_touch_gesture_swipe_down">Свайп вниз</string>
+
+    <!-- UMD slot display modes -->
+    <string name="dom_umd_slot_off">Выкл.</string>
+    <string name="dom_umd_slot_inserted">Вставленный</string>
+    <string name="dom_umd_slot_inserted_and_recent">Вставленный и недавний</string>
+
+    <!-- Item list motion styles -->
+    <string name="dom_list_motion_rewind">Перемотка</string>
+    <string name="dom_list_motion_glide">Скольжение</string>
+
+    <!-- Confirm / Back button layouts -->
+    <string name="dom_confirm_back_standard">Стандарт (A = Подтвердить, B = Назад)</string>
+    <string name="dom_confirm_back_reversed">Обратная (B = Подтвердить, A = Назад)</string>
+
+    <!-- X / Y button layouts -->
+    <string name="dom_xy_layout_standard">Стандарт (Y = Параметры, X = Сортировка)</string>
+    <string name="dom_xy_layout_swapped">Обратная (X = Параметры, Y = Сортировка)</string>
+
+    <!-- Controller prompt styles -->
+    <string name="dom_controller_type_xbox">Xbox</string>
+    <string name="dom_controller_type_nintendo">Nintendo</string>
+    <string name="dom_controller_type_playstation">PlayStation</string>
+
+    <!-- Held-navigation scroll speeds -->
+    <string name="dom_scroll_speed_relaxed">Медленно</string>
+    <string name="dom_scroll_speed_standard">Стандарт</string>
+    <string name="dom_scroll_speed_fast">Быстро</string>
+
+    <!-- Colour schemes -->
+    <string name="dom_color_scheme_original">Оригинал (по месяцам)</string>
+    <string name="dom_color_scheme_classic_blue">Классический синий</string>
+    <string name="dom_color_scheme_sunset_orange">Закатный оранжевый</string>
+    <string name="dom_color_scheme_fresh_green">Свежий зелёный</string>
+    <string name="dom_color_scheme_royal_purple">Королевский пурпур</string>
+    <string name="dom_color_scheme_crimson_red">Багровый</string>
+    <string name="dom_color_scheme_silver">Серебро</string>
+    <string name="dom_color_scheme_sakura_pink">Розовая сакура</string>
+    <string name="dom_color_scheme_golden_amber">Золотой янтарь</string>
+    <string name="dom_color_scheme_aqua_teal">Морская волна</string>
+    <string name="dom_color_scheme_midnight_navy">Полночный синий</string>
+    <string name="dom_color_scheme_charcoal">Графит</string>
+
+    <!-- Controller actions -->
+    <string name="dom_action_navigate_up">Вверх</string>
+    <string name="dom_action_navigate_down">Вниз</string>
+    <string name="dom_action_navigate_left">Влево (пред. категория)</string>
+    <string name="dom_action_navigate_right">Вправо (след. категория)</string>
+    <string name="dom_action_select">Выбрать / Запустить</string>
+    <string name="dom_action_back">Назад / Закрыть</string>
+    <string name="dom_action_open_context_menu">Параметры / Контекстное меню</string>
+    <string name="dom_action_change_sort">Изменить сортировку</string>
+    <string name="dom_action_prev_category">Пред. вкладка (меню приложений)</string>
+    <string name="dom_action_next_category">След. вкладка (меню приложений)</string>
+    <string name="dom_action_home">Start (уведомления / подтверждение в списках)</string>
+    <string name="dom_action_shift">Shift (клавиатура)</string>
+    <string name="dom_action_caps_lock">Caps Lock (клавиатура)</string>
+    <string name="dom_action_category_menu">Меню категорий</string>
+
+    <!-- Controller button names -->
+    <string name="dom_key_a">A / Крест</string>
+    <string name="dom_key_b">B / Круг</string>
+    <string name="dom_key_x">X / Квадрат</string>
+    <string name="dom_key_y">Y / Треугольник</string>
+    <string name="dom_key_dpad_up">Крестовина вверх</string>
+    <string name="dom_key_dpad_down">Крестовина вниз</string>
+    <string name="dom_key_dpad_left">Крестовина влево</string>
+    <string name="dom_key_dpad_right">Крестовина вправо</string>
+    <string name="dom_key_dpad_center">Центр крестовины</string>
+    <string name="dom_key_l1">L1</string>
+    <string name="dom_key_r1">R1</string>
+    <string name="dom_key_l2">L2</string>
+    <string name="dom_key_r2">R2</string>
+    <string name="dom_key_start">Start</string>
+    <string name="dom_key_select">Select</string>
+    <string name="dom_key_enter">Enter</string>
+    <string name="dom_key_back">Назад</string>
+    <string name="dom_key_unknown">Клавиша %1$d</string>
+    <string name="dom_hue_orange">оранжевый</string>
+    <string name="dom_hue_yellow">жёлтый</string>
+    <string name="dom_hue_green">зелёный</string>
+    <string name="dom_hue_teal">бирюзовый</string>
+    <string name="dom_hue_blue">синий</string>
+    <string name="dom_hue_purple">фиолетовый</string>
+    <string name="dom_hue_pink">розовый</string>
+    <string name="dom_hue_red">красный</string>
+    <string name="dom_hue_orange_cap">Оранжевый</string>
+    <string name="dom_hue_yellow_cap">Жёлтый</string>
+    <string name="dom_hue_green_cap">Зелёный</string>
+    <string name="dom_hue_teal_cap">Бирюзовый</string>
+    <string name="dom_hue_blue_cap">Синий</string>
+    <string name="dom_hue_purple_cap">Фиолетовый</string>
+    <string name="dom_hue_pink_cap">Розовый</string>
+    <string name="dom_hue_red_cap">Красный</string>
+    <string name="dom_hue_lean">%1$s с уклоном в %2$s</string>
+    <string name="dom_hue_lean_cap">%1$s с уклоном в %2$s</string>
+    <string name="dom_color_dark">Тёмный %1$s</string>
+    <string name="dom_color_very_dark">Очень тёмный %1$s</string>
+    <string name="dom_color_muted">Приглушённый %1$s</string>
+    <string name="dom_color_dark_muted">Тёмный приглушённый %1$s</string>
+    <string name="dom_color_very_dark_muted">Очень тёмный приглушённый %1$s</string>
+    <string name="dom_color_grey">%1$s серый</string>
+    <string name="dom_saturation_grey">Серый</string>
+    <string name="dom_saturation_muted">Приглушённый</string>
+    <string name="dom_saturation_vivid">Яркий</string>
+    <string name="dom_saturation_intense">Насыщенный</string>
+    <string name="dom_brightness_very_dark">Очень тёмный</string>
+    <string name="dom_brightness_dark">Тёмный</string>
+    <string name="dom_brightness_medium">Средний</string>
+    <string name="dom_brightness_bright">Светлый</string>
+    <string name="dom_tint_standard">Стандарт</string>
+    <string name="dom_tint_orange">Оранжевее</string>
+    <string name="dom_tint_yellow">Желтее</string>
+    <string name="dom_tint_green">Зеленее</string>
+    <string name="dom_tint_teal">Бирюзовее</string>
+    <string name="dom_tint_blue">Синее</string>
+    <string name="dom_tint_purple">Фиолетовее</string>
+    <string name="dom_tint_pink">Розовее</string>
+    <string name="dom_tint_red">Краснее</string>
+    <string name="dom_tint_much_orange">Намного оранжевее</string>
+    <string name="dom_tint_much_yellow">Намного желтее</string>
+    <string name="dom_tint_much_green">Намного зеленее</string>
+    <string name="dom_tint_much_teal">Намного бирюзовее</string>
+    <string name="dom_tint_much_blue">Намного синее</string>
+    <string name="dom_tint_much_purple">Намного фиолетовее</string>
+    <string name="dom_tint_much_pink">Намного розовее</string>
+    <string name="dom_tint_much_red">Намного краснее</string>
+    <string name="dom_tint_cooler">Холоднее</string>
+    <string name="dom_tint_warmer">Теплее</string>
+    <string name="dom_tint_much_cooler">Намного холоднее</string>
+    <string name="dom_tint_much_warmer">Намного теплее</string>
+    <string name="dom_depth_much_lighter">Намного светлее</string>
+    <string name="dom_depth_lighter">Светлее</string>
+    <string name="dom_depth_deeper">Глубже</string>
+    <string name="dom_depth_much_deeper">Намного глубже</string>
+    <string name="dom_limit_motion_unsupported_format">Формат не поддерживается — используйте MP4, WebM, GIF или WebP</string>
+    <string name="dom_limit_motion_too_large_resolution">Слишком большое видео — не выше 1080p</string>
+    <string name="dom_limit_motion_too_long">Слишком длинный клип — не более 60 секунд</string>
+    <string name="dom_limit_motion_too_large_bytes">Слишком большой файл — менее 60 МБ</string>
+    <string name="dom_limit_motion_undecodable">Не удалось прочитать видео — попробуйте другой файл</string>
+    <string name="dom_limit_media_unsupported_audio">Формат не поддерживается — используйте аудио MP3, WAV, OGG или M4A</string>
+    <string name="dom_limit_media_unsupported_video">Формат не поддерживается — используйте видео MP4 или WebM</string>
+    <string name="dom_limit_media_too_large_sound">Слишком большой файл</string>
+    <string name="dom_limit_media_too_large_video">Слишком большой файл — видео должно быть меньше 25 МБ</string>
+    <string name="dom_limit_media_undecodable">Не удалось прочитать файл — попробуйте другой</string>
+    <string name="dom_limit_media_no_duration">Не удалось определить длительность — выберите другой файл или конвертируйте его в MP3/WAV/OGG/M4A</string>
+    <string name="dom_limit_media_too_long">Слишком длинный клип — не более %1$s</string>
+
+    <!-- Error code LN-1001: title of the error. -->
+    <string name="dom_error_ln_1001_title">Для этой платформы не назначен эмулятор</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_1001_why">PlayFieldPortal не знает, каким приложением запускать игры этой платформы.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_1001_action">Выберите эмулятор для этой платформы в разделе «Настройки › Назначение эмуляторов».</string>
+
+    <!-- Error code LN-1002: title of the error. -->
+    <string name="dom_error_ln_1002_title">Выбранное ядро RetroArch не установлено</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_1002_why">RetroArch попросили загрузить ядро, которого нет на устройстве.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_1002_action">Установите ядро через Online Updater в RetroArch или выберите другое ядро в разделе «Назначение эмуляторов».</string>
+
+    <!-- Error code LN-2001: title of the error. -->
+    <string name="dom_error_ln_2001_title">Файл игры отсутствует или не читается</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_2001_why">Возможно, файл перемещён, переименован или удалён либо извлечена SD-карта, на которой он хранится.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_2001_action">Проверьте, что файл на месте, затем пересканируйте его карту памяти.</string>
+
+    <!-- Error code LN-4001: title of the error. -->
+    <string name="dom_error_ln_4001_title">Эмулятор не найден</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_4001_why">Назначенный этой игре эмулятор не установлен, или Android не нашёл экран, который открывает PlayFieldPortal.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_4001_action">Установите эмулятор или выберите другой в разделе «Настройки › Назначение эмуляторов».</string>
+
+    <!-- Error code LN-4002: title of the error. -->
+    <string name="dom_error_ln_4002_title">Android не разрешил открыть эмулятор</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_4002_why">Android отказал PlayFieldPortal в разрешении запустить этот эмулятор.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_4002_action">Откройте эмулятор отдельно один раз и повторите попытку. Если ошибка повторяется, обновите эмулятор.</string>
+
+    <!-- Error code LN-4003: title of the error. -->
+    <string name="dom_error_ln_4003_title">Эмулятор не вышел на передний план</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_4003_why">Скорее всего, эмулятор закрылся при запуске или Android остановил его до загрузки игры.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_4003_action">Откройте эмулятор отдельно и проверьте, что он запускается; обновите его, если есть новая версия. Если ошибка повторяется, выберите другой эмулятор в разделе «Настройки › Назначение эмуляторов».</string>
+
+    <!-- Error code LN-9001: title of the error. -->
+    <string name="dom_error_ln_9001_title">Не удалось открыть эмулятор</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_9001_why">При запуске эмулятора произошла непредвиденная ошибка.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_9001_action">Повторите попытку. Если ошибка повторяется, скопируйте сведения и сообщите о ней.</string>
+
+    <!-- Error code SC-1001: title of the error. -->
+    <string name="dom_error_sc_1001_title">Для этой карты памяти не задана папка</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_1001_why">Этой карте памяти пока нечего сканировать.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_1001_action">Выберите папку в параметрах карты памяти и запустите сканирование.</string>
+
+    <!-- Error code SC-1002: title of the error. -->
+    <string name="dom_error_sc_1002_title">Сканирование уже идёт</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_1002_why">Эта карта памяти уже сканировалась, поэтому повторное сканирование пропущено.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_1002_action">Дождитесь окончания текущего сканирования. Результат появится здесь.</string>
+
+    <!-- Error code SC-2001: title of the error. -->
+    <string name="dom_error_sc_2001_title">Доступ к папке потерян</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_2001_why">PlayFieldPortal потерял разрешение на чтение этой папки.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_2001_action">Выберите папку снова в параметрах карты памяти, чтобы выдать доступ, и запустите сканирование.</string>
+
+    <!-- Error code SC-2002: title of the error. -->
+    <string name="dom_error_sc_2002_title">Папка больше не существует</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_2002_why">Папку переместили или удалили. Если она на SD-карте, карту могли извлечь.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_2002_action">Вставьте SD-карту и повторите сканирование или выберите новую папку в параметрах карты памяти.</string>
+
+    <!-- Error code SC-2003: title of the error. -->
+    <string name="dom_error_sc_2003_title">Неизвестная папка системы</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_2003_why">Эта папка в основной папке ROM не соответствует ни одной известной PlayFieldPortal системе.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_2003_action">Переименуйте папку в название поддерживаемой системы или перенесите игры в такую папку.</string>
+
+    <!-- Error code SC-2004: title of the error. -->
+    <string name="dom_error_sc_2004_title">Файл не распознан</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_2004_why">Игры этой платформы не используют такой тип файлов.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_2004_action">Проверьте, что файл — игра для этой платформы. Архивы и патчи пропускаются намеренно.</string>
+
+    <!-- Error code SC-9001: title of the error. -->
+    <string name="dom_error_sc_9001_title">Непредвиденная ошибка сканирования</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_9001_why">Во время сканирования произошла непредвиденная ошибка.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_9001_action">Повторите сканирование. Если ошибка повторяется, скопируйте сведения и сообщите о ней.</string>
+
+    <!-- Error code AR-1001: title of the error. -->
+    <string name="dom_error_ar_1001_title">Папка обложек недоступна</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_1001_why">PFP не может получить доступ к папке обложек, поэтому новые обложки приостановлены.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_1001_action">Привяжите папку заново в разделе «Настройки › Обложки».</string>
+
+    <!-- Error code AR-2001: title of the error. -->
+    <string name="dom_error_ar_2001_title">Не удалось сохранить файл обложки</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_2001_why">Память заполнена, или в папку обложек нельзя записывать.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_2001_action">Освободите место и повторите попытку.</string>
+
+    <!-- Error code AR-2002: title of the error. -->
+    <string name="dom_error_ar_2002_title">Не удалось скопировать файл</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_2002_why">Копирование прервалось, или в папку назначения нельзя записывать.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_2002_action">Проверьте, что в месте назначения есть свободное место, и запустите снова.</string>
+
+    <!-- Error code AR-2003: title of the error. -->
+    <string name="dom_error_ar_2003_title">Неизвестная папка системы в импорте</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_2003_why">Эта папка в импорте не соответствует ни одной известной PlayFieldPortal системе.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_2003_action">Переименуйте папку в название поддерживаемой системы и импортируйте снова.</string>
+
+    <!-- Error code AR-3001: title of the error. -->
+    <string name="dom_error_ar_3001_title">Источник обложек недоступен</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_3001_why">Устройство не в сети, или источник не ответил.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_3001_action">Проверьте подключение и повторите позже.</string>
+
+    <!-- Error code AR-3002: title of the error. -->
+    <string name="dom_error_ar_3002_title">Источник отклонил запрос</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_3002_why">Источник ограничивает запросы, или нужный ему аккаунт либо ключ был отклонён.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_3002_action">Подождите и повторите или проверьте аккаунт источника в настройках.</string>
+
+    <!-- Error code AR-3003: title of the error. -->
+    <string name="dom_error_ar_3003_title">Совпадений для этой игры не найдено</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_3003_why">В источнике нет записи, совпадающей с названием игры.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_3003_action">Проверьте название игры или выберите обложку вручную в Artwork Studio.</string>
+
+    <!-- Error code AR-9001: title of the error. -->
+    <string name="dom_error_ar_9001_title">Непредвиденная ошибка загрузки</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_9001_why">Во время загрузки произошла непредвиденная ошибка.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_9001_action">Повторите попытку. Если ошибка повторяется, скопируйте сведения и сообщите о ней.</string>
+
+    <!-- Error code AC-1001: title of the error. -->
+    <string name="dom_error_ac_1001_title">Для этой игры не найден набор достижений</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ac_1001_why">Ни у одного подключённого сервиса нет достижений для игры с таким названием.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ac_1001_action">Сопоставьте игру вручную на странице её достижений.</string>
+
+    <!-- Error code AC-2001: title of the error. -->
+    <string name="dom_error_ac_2001_title">Не удаётся прочитать папку достижений Windows</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ac_2001_why">Не удалось открыть папку, выбранную для локальных достижений этой игры.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ac_2001_action">Выберите папку игры заново на странице её достижений.</string>
+
+    <!-- Error code AC-3001: title of the error. -->
+    <string name="dom_error_ac_3001_title">Устройство не в сети</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ac_3001_why">Без подключения к интернету достижения не обновляются.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ac_3001_action">Подключитесь к интернету. Обновление запустится само.</string>
+
+    <!-- Error code AC-3002: title of the error. -->
+    <string name="dom_error_ac_3002_title">Срок входа истёк</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ac_3002_why">Подключённый сервис больше не принимает вход PlayFieldPortal.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ac_3002_action">Переподключите сервис в разделе «Настройки › Достижения».</string>
+
+    <!-- Error code AC-3003: title of the error. -->
+    <string name="dom_error_ac_3003_title">Сведения об играх Steam скрыты</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ac_3003_why">Steam передаёт достижения, только если сведения об играх открыты.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ac_3003_action">Сделайте сведения об играх открытыми в настройках приватности Steam и обновите снова.</string>
+
+    <!-- Error code AC-3004: title of the error. -->
+    <string name="dom_error_ac_3004_title">Не удалось обновить эту игру</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_ac_3004_why">Сервис не ответил по этой игре или вернул ошибку.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ac_3004_action">Повторите обновление позже.</string>
+
+    <!-- Error code MD-2001: title of the error. -->
+    <string name="dom_error_md_2001_title">Не удаётся прочитать папку медиа</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_md_2001_why">PlayFieldPortal потерял доступ к этой папке, или её больше нет.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_md_2001_action">Выберите папку снова в настройках медиа и запустите сканирование.</string>
+
+    <!-- Error code MD-9001: title of the error. -->
+    <string name="dom_error_md_9001_title">Непредвиденная ошибка сканирования медиа</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_md_9001_why">Во время сканирования произошла непредвиденная ошибка.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_md_9001_action">Повторите сканирование. Если ошибка повторяется, скопируйте сведения и сообщите о ней.</string>
+
+    <!-- Error code BK-1001: title of the error. -->
+    <string name="dom_error_bk_1001_title">Элемент пропущен при восстановлении</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_bk_1001_why">Этот элемент нельзя было безопасно восстановить, поэтому он оставлен без изменений.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_bk_1001_action">Остальное не затронуто. При необходимости настройте этот элемент вручную.</string>
+
+    <!-- Error code BK-2001: title of the error. -->
+    <string name="dom_error_bk_2001_title">Не удалось записать файл резервной копии</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_bk_2001_why">Память заполнена, или в папку резервных копий нельзя записывать.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_bk_2001_action">Освободите место или выберите другое расположение копий и повторите попытку.</string>
+
+    <!-- Error code BK-2002: title of the error. -->
+    <string name="dom_error_bk_2002_title">Файл копии не читается или повреждён</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_bk_2002_why">Это не резервная копия PlayFieldPortal, или файл обрезан.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_bk_2002_action">Выберите другой файл копии.</string>
+
+    <!-- Error code SY-9001: title of the error. -->
+    <string name="dom_error_sy_9001_title">Что-то пошло не так</string>
+
+    <!-- Why the error happened. -->
+    <string name="dom_error_sy_9001_why">Произошла непредвиденная ошибка.</string>
+
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sy_9001_action">Повторите попытку. Если ошибка повторяется, скопируйте сведения и сообщите о ней.</string>
+</resources>

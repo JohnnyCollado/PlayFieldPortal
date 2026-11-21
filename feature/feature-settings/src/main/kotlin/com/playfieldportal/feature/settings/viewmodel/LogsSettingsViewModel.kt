@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import com.playfieldportal.feature.settings.R
+import com.playfieldportal.core.domain.text.UiText
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,6 +11,8 @@ import com.playfieldportal.core.domain.model.NotificationKind
 import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.XYLayout
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
+import com.playfieldportal.core.ui.text.PfpDateFormat
+import com.playfieldportal.core.ui.text.PfpDateStyle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +25,7 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
@@ -29,7 +34,7 @@ data class LogFileItem(
     val name: String,
     val size: String,
     /** "Started today, 3:18 AM" — read from the file name; null for a name the tree didn't write. */
-    val startedLabel: String?,
+    val startedLabel: UiText?,
     /** The newest file — the one this session is still writing into. */
     val isCurrent: Boolean,
     val bytes: Long,
@@ -42,7 +47,7 @@ data class LogsSettingsUiState(
     val loaded: Boolean = false,
     val logFiles: List<LogFileItem> = emptyList(),
     /** "5 files · 650 KB", shown beside Clear All Logs. */
-    val totalSummary: String = "No files",
+    val totalSummary: UiText = UiText.res(R.string.sets_logs_no_files),
     /** "650 KB" — the total alone, for the Clear All Logs confirmation. */
     val totalSize: String = "",
     val confirmClearVisible: Boolean = false,
@@ -107,12 +112,17 @@ class LogsSettingsViewModel @Inject constructor(
                     if (f.delete()) bytes else null
                 }
             }
-            val summary = "Deleted ${filesLabel(deletedSizes.size)} (${formatSize(deletedSizes.sum())})"
+            val summary = context.resources.getQuantityString(
+                R.plurals.sets_logs_deleted,
+                deletedSizes.size,
+                deletedSizes.size,
+                formatSize(deletedSizes.sum()),
+            )
             Timber.i("Logs cleared")
             // The outcome goes to the tray, not the screen — the list below simply re-reads.
             tasks.report(
                 id = "logs_clear",
-                label = "Logs",
+                label = context.getString(R.string.sets_logs_title),
                 message = summary,
                 severity = NotificationSeverity.SUCCESS,
                 kind = NotificationKind.SYSTEM,
@@ -135,7 +145,7 @@ class LogsSettingsViewModel @Inject constructor(
                 LogFileItem(
                     name = f.name,
                     size = formatSize(f.length()),
-                    startedLabel = startedLabel(f.name, now),
+                    startedLabel = startedLabel(context, f.name, now),
                     isCurrent = index == 0,
                     bytes = f.length(),
                 )
@@ -147,21 +157,20 @@ class LogsSettingsViewModel @Inject constructor(
         // PfpFileLoggingTree names each session file "pfp-yyyyMMdd-HHmmss.log".
         private val FILE_NAME = Regex("""pfp-(\d{8})-(\d{6})\.log""")
         private val NAME_STAMP = DateTimeFormatter.ofPattern("yyyyMMddHHmmss", Locale.US)
-        private val TIME = DateTimeFormatter.ofPattern("h:mm a", Locale.US)
-        private val DATE = DateTimeFormatter.ofPattern("MMM d", Locale.US)
 
         /** "Started today, 3:18 AM" / "Started yesterday, …" / "Started Sep 1, …". */
-        fun startedLabel(fileName: String, now: LocalDateTime): String? {
+        fun startedLabel(context: Context, fileName: String, now: LocalDateTime): UiText? {
             val match = FILE_NAME.matchEntire(fileName) ?: return null
             val started = runCatching {
                 LocalDateTime.parse(match.groupValues[1] + match.groupValues[2], NAME_STAMP)
             }.getOrNull() ?: return null
-            val day = when (started.toLocalDate()) {
-                now.toLocalDate() -> "today"
-                now.toLocalDate().minusDays(1) -> "yesterday"
-                else -> started.format(DATE)
+            val startedAt = started.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            val time = PfpDateFormat.format(context, PfpDateStyle.Time, startedAt)
+            return when (started.toLocalDate()) {
+                now.toLocalDate() -> UiText.res(R.string.sets_logs_started_today, time)
+                now.toLocalDate().minusDays(1) -> UiText.res(R.string.sets_logs_started_yesterday, time)
+                else -> UiText.res(R.string.sets_logs_started_on, PfpDateFormat.format(context, PfpDateStyle.ShortDate, startedAt), time)
             }
-            return "Started $day, ${started.format(TIME)}"
         }
 
         /** Whole KB (a small file reads "<1 KB", never "0 KB"), one decimal of MB above that. */
@@ -171,9 +180,8 @@ class LogsSettingsViewModel @Inject constructor(
             else -> String.format(Locale.US, "%.1f MB", bytes / (1024.0 * 1024.0))
         }
 
-        private fun filesLabel(count: Int) = if (count == 1) "1 file" else "$count files"
-
-        private fun summaryOf(count: Int, bytes: Long): String =
-            if (count == 0) "No files" else "${filesLabel(count)} · ${formatSize(bytes)}"
+        private fun summaryOf(count: Int, bytes: Long): UiText =
+            if (count == 0) UiText.res(R.string.sets_logs_no_files)
+            else UiText.plural(R.plurals.sets_logs_summary, count, count, formatSize(bytes))
     }
 }

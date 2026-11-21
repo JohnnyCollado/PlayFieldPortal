@@ -6,6 +6,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 
 /**
  * The shape of the Options menu: eight rows in four groups, with the editing tools one level down.
@@ -13,7 +17,12 @@ import org.junit.Test
  * Pure state, so it needs no ViewModel. What it pins is which panel an action lives in and which
  * entries are offered at all — the things a user navigates by.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class GameDetailOptionsMenuTest {
+
+    private val res get() = RuntimeEnvironment.getApplication().resources
+
 
     private val rom = GameDetailUiState(
         isLoading = false,
@@ -21,6 +30,12 @@ class GameDetailOptionsMenuTest {
     )
 
     private val withManual = rom.copy(hasManual = true)
+
+    private fun detailMenuRows(state: GameDetailUiState, emulatorName: String?) = detailMenuRows(state, emulatorName, res)
+
+    private fun gameDetailHelperItems(state: GameDetailUiState) = gameDetailHelperItems(state, res)
+
+    private fun DetailAction.label() = res.getString(labelRes)
 
     private val windows = GameDetailUiState(
         isLoading = false,
@@ -99,12 +114,12 @@ class GameDetailOptionsMenuTest {
 
     @Test
     fun `the renamed rows read as agreed`() {
-        assertEquals("Store Match", DetailAction.STOREFRONT.label)
-        assertEquals("Show File Location", DetailAction.LOCATION.label)
-        assertEquals("Add to Card", DetailAction.COLLECTIONS.label)
-        assertEquals("Remove from Library", DetailAction.REMOVE.label)
-        assertEquals("Fetching Artwork…", DetailAction.FETCH_ARTWORK.dynamicLabel(refreshing = true))
-        assertEquals("Artwork Studio", DetailAction.ARTWORK.label)
+        assertEquals("Store Match", DetailAction.STOREFRONT.label())
+        assertEquals("Show File Location", DetailAction.LOCATION.label())
+        assertEquals("Add to Card", DetailAction.COLLECTIONS.label())
+        assertEquals("Remove from Library", DetailAction.REMOVE.label())
+        assertEquals("Fetching Artwork…", DetailAction.FETCH_ARTWORK.dynamicLabel(refreshing = true, res = res))
+        assertEquals("Artwork Studio", DetailAction.ARTWORK.label())
     }
 
     // -- Rows as drawn ---------------------------------------------------------

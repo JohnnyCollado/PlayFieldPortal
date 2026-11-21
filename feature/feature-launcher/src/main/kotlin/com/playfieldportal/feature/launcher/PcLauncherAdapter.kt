@@ -3,6 +3,7 @@ package com.playfieldportal.feature.launcher
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
+import com.playfieldportal.core.domain.text.UiText
 
 /**
  * Builds the explicit launch [Intent] that boots a specific game in a PC launcher, from a game id
@@ -14,7 +15,7 @@ import android.content.pm.PackageManager
 interface PcLauncherAdapter {
     val type: PcLauncherType
     /** Hint shown in the Add-by-ID dialog for where to find the id. */
-    val idPrompt: String
+    val idPrompt: UiText
     /** True when only positive integer ids are accepted (GameHub also takes `local_<uuid>`). */
     val requiresIntegerId: Boolean
     /** Optional game-source choices (e.g. GameNative's STEAM/EPIC/GOG/AMAZON); empty = none. */
@@ -43,8 +44,7 @@ private class GameHubFamilyAdapter(
     override val type: PcLauncherType,
     private val generationOf: (String) -> GameHubGeneration,
 ) : PcLauncherAdapter {
-    override val idPrompt =
-        "Game ID — on the game's page: tap Copy next to Local Game ID, or ⋮ → Banner Tools → Show Game ID"
+    override val idPrompt = UiText.res(R.string.launch_id_prompt_gamehub)
     override val requiresIntegerId = false
     override val sources = emptyList<String>()
 
@@ -88,7 +88,7 @@ private class GameHubFamilyAdapter(
 // app_id (int > 0), game_source (STEAM/EPIC/GOG/AMAZON), optional container_config JSON.
 private class GameNativeAdapter : PcLauncherAdapter {
     override val type = PcLauncherType.GAMENATIVE
-    override val idPrompt = "Steam App ID (or store app id) for the installed game"
+    override val idPrompt = UiText.res(R.string.launch_id_prompt_gamenative)
     override val requiresIntegerId = true
     override val sources = listOf("STEAM", "EPIC", "GOG", "AMAZON")
 

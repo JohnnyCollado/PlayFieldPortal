@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Backup failures -->
+    <string name="bak_no_folder">Nu este setat niciun dosar de backup. Alege unul în Setări → Backup și restaurare → Dosar de backup.</string>
+    <string name="bak_too_large">Acest backup ar fi prea mare pentru a fi restaurat (poate conține până la 20.000 de fișiere și 2 GB). Elimină artwork-ul sau fișierele media nefolosite și încearcă din nou.</string>
+    <string name="bak_write_failed">Nu s-a putut scrie în dosarul de backup. Alege din nou dosarul de backup în Setări ▸ Sistem ▸ Backup și restaurare.</string>
+    <string name="bak_unknown_error">Eroare necunoscută</string>
+
+    <!-- Restore failures -->
+    <string name="bak_open_failed">Fișierul de backup nu a putut fi deschis</string>
+    <string name="bak_missing_manifest">Backupului îi lipsește manifestul</string>
+    <string name="bak_format_too_new">Formatul de backup v%1$d este mai nou decât acceptă această aplicație (v%2$d)</string>
+    <string name="bak_no_uri">Nu a fost furnizat niciun URI</string>
+
+    <!-- Notification titles -->
+    <string name="bak_task_created">Backup creat</string>
+    <string name="bak_task_failed">Backupul a eșuat</string>
+    <string name="bak_task_restored">Backup restaurat</string>
+    <string name="bak_task_restore_failed">Restaurarea a eșuat</string>
+    <string name="bak_results_restored">Restaurate</string>
+    <plurals name="bak_items_skipped">
+        <item quantity="one">%d element omis</item>
+        <item quantity="few">%d elemente omise</item>
+        <item quantity="other">%d de elemente omise</item>
+    </plurals>
+
+    <!-- Items turned away during restore -->
+    <string name="bak_refused_out_of_root">Refuzat \'%1$s\': nu se află într-un dosar restaurabil</string>
+    <string name="bak_refused_profiles_unparseable">Profiluri de emulator refuzate: fișierul nu a putut fi analizat</string>
+    <string name="bak_refused_profile">Profil de emulator refuzat \'%1$s\': %2$s</string>
+</resources>

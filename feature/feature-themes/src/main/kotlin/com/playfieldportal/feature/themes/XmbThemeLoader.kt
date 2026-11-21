@@ -6,6 +6,8 @@ import com.playfieldportal.core.archive.BoundedZipReader
 import com.playfieldportal.core.archive.ZipLimits
 import com.playfieldportal.core.data.database.dao.ThemeDao
 import com.playfieldportal.core.data.database.entity.ThemeEntity
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.themes.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -34,7 +36,7 @@ private val THEME_ZIP_LIMITS = ZipLimits(
 
 sealed class ThemeLoadResult {
     data class Success(val themeId: String) : ThemeLoadResult()
-    data class InvalidFormat(val reason: String) : ThemeLoadResult()
+    data class InvalidFormat(val reason: UiText) : ThemeLoadResult()
     data class UnsupportedVersion(val found: Int, val supported: Int) : ThemeLoadResult()
     data class IoError(val cause: Throwable) : ThemeLoadResult()
 }
@@ -71,12 +73,12 @@ class XmbThemeLoader @Inject constructor(
             val entries = readZipEntries(stream)
 
             val manifestBytes = entries["theme.json"]
-                ?: return@withContext ThemeLoadResult.InvalidFormat("Missing required theme.json in archive")
+                ?: return@withContext ThemeLoadResult.InvalidFormat(UiText.res(R.string.thm_error_manifest_missing))
 
             val manifest = try {
                 json.decodeFromString(XmbThemeManifest.serializer(), manifestBytes.decodeToString())
             } catch (e: Exception) {
-                return@withContext ThemeLoadResult.InvalidFormat("Invalid theme.json: ${e.message}")
+                return@withContext ThemeLoadResult.InvalidFormat(UiText.res(R.string.thm_error_manifest_invalid, "${e.message}"))
             }
 
             if (manifest.formatVersion > THEME_FORMAT_VERSION) {
@@ -90,21 +92,21 @@ class XmbThemeLoader @Inject constructor(
             // a crafted id (e.g. "../../databases/pfp_database") can't escape filesDir.
             if (!SAFE_THEME_ID.matches(manifest.id)) {
                 return@withContext ThemeLoadResult.InvalidFormat(
-                    "Invalid theme id '${manifest.id}' — use letters, numbers, '.', '_' or '-' (max 64)"
+                    UiText.res(R.string.thm_error_id_invalid, manifest.id)
                 )
             }
 
             val waveColor = parseHexColor(manifest.waveColor)
                 ?: return@withContext ThemeLoadResult.InvalidFormat(
-                    "Invalid wave_color '${manifest.waveColor}' — expected #RRGGBB or #AARRGGBB"
+                    UiText.res(R.string.thm_error_color_invalid, "wave_color", manifest.waveColor)
                 )
             val accentColor = parseHexColor(manifest.accentColor)
                 ?: return@withContext ThemeLoadResult.InvalidFormat(
-                    "Invalid accent_color '${manifest.accentColor}' — expected #RRGGBB or #AARRGGBB"
+                    UiText.res(R.string.thm_error_color_invalid, "accent_color", manifest.accentColor)
                 )
             val textColor = parseHexColor(manifest.textColor)
                 ?: return@withContext ThemeLoadResult.InvalidFormat(
-                    "Invalid text_color '${manifest.textColor}' — expected #RRGGBB or #AARRGGBB"
+                    UiText.res(R.string.thm_error_color_invalid, "text_color", manifest.textColor)
                 )
 
             val themeDir = File(context.filesDir, "themes/${manifest.id}")

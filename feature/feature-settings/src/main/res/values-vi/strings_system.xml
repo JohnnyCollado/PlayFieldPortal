@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Localization slice C2: the remaining Settings screens (Backup, Controller, Credits, About, Logs, Music, Video, Photo, Notifications, System Update, shared rows and modals). -->
+
+    <!-- Shared by several Settings screens. -->
+    <string name="sets_on">Bật</string>
+    <string name="sets_off">Tắt</string>
+    <string name="sets_prompt_back">Quay lại</string>
+    <string name="sets_prompt_enter">Vào</string>
+    <string name="sets_prompt_switch">Chuyển</string>
+    <string name="sets_prompt_options">Tùy chọn</string>
+
+    <!-- Settings ▸ Backup & Restore -->
+    <string name="sets_backup_title">Sao lưu &amp; khôi phục</string>
+    <string name="sets_backup_group_backup">Sao lưu</string>
+    <string name="sets_backup_last_backup">Lần sao lưu gần nhất</string>
+    <string name="sets_backup_never">Chưa bao giờ</string>
+    <string name="sets_backup_folder">Thư mục sao lưu</string>
+    <string name="sets_backup_folder_saving_to">Lưu vào: %1$s (chọn để đổi)</string>
+    <string name="sets_backup_folder_not_set">Chưa đặt — chọn mục này để chỉ định nơi lưu bản sao lưu</string>
+    <string name="sets_backup_now">Sao lưu ngay</string>
+    <string name="sets_backup_now_help">Lưu thư viện, cài đặt và lịch sử chơi</string>
+    <string name="sets_backup_choose_folder_first">Hãy chọn thư mục sao lưu trước</string>
+    <string name="sets_backup_choose_folder_first_error">Hãy chọn thư mục sao lưu trước.</string>
+    <string name="sets_backup_group_saved">Bản sao lưu đã lưu</string>
+    <string name="sets_backup_group_included">Nội dung bao gồm</string>
+    <string name="sets_backup_included_library">Thư viện trò chơi</string>
+    <string name="sets_backup_included_history">Lịch sử chơi</string>
+    <string name="sets_backup_included_categories">Danh mục tùy chỉnh</string>
+    <string name="sets_backup_included_settings">Cài đặt &amp; khóa API</string>
+    <string name="sets_backup_included_profiles">Hồ sơ trình giả lập</string>
+    <string name="sets_backup_rom_files">Tệp ROM</string>
+    <string name="sets_backup_not_included">✗  (không bao gồm)</string>
+    <string name="sets_backup_group_restore">Khôi phục</string>
+    <string name="sets_backup_restore_from_file">Khôi phục từ tệp</string>
+    <string name="sets_backup_restore_from_file_help">Duyệt tới tệp .pfpbackup</string>
+    <string name="sets_backup_after_restoring">Sau khi khôi phục</string>
+    <string name="sets_backup_after_restoring_help">Các thư mục của bạn sẽ trở lại, nhưng quyền truy cập của Android thì không. Hãy liên kết lại từng thư mục gốc trong mục Quyền truy cập thư mục gốc của từng phần (Thư viện, Nhạc, Video, Ảnh) — mỗi thư mục một bước; liên kết lại một thư mục gốc sẽ khôi phục mọi thứ bên trong cùng lúc.</string>
+    <string name="sets_backup_working">Đang xử lý…</string>
+    <string name="sets_backup_error">Lỗi</string>
+    <string name="sets_backup_creating">Đang tạo bản sao lưu…</string>
+    <string name="sets_backup_restoring">Đang khôi phục bản sao lưu…</string>
+    <string name="sets_backup_unknown_error">Lỗi không xác định</string>
+    <string name="sets_backup_delete_failed">Không thể xóa %1$s.</string>
+    <string name="sets_backup_menu_restore">Khôi phục</string>
+    <string name="sets_backup_menu_share">Chia sẻ</string>
+    <string name="sets_backup_menu_delete">Xóa bản sao lưu</string>
+    <string name="sets_backup_delete_title">Xóa bản sao lưu?</string>
+    <string name="sets_backup_delete_message">\"%1$s\" sẽ bị xóa. Không thể hoàn tác.</string>
+    <string name="sets_backup_delete_confirm">Xóa</string>
+    <string name="sets_backup_restore_title">Khôi phục bản sao lưu?</string>
+    <string name="sets_backup_restore_message_named">\"%1$s\" sẽ thay thế thư viện, cài đặt và lịch sử chơi hiện tại của bạn. Không thể hoàn tác.</string>
+    <string name="sets_backup_restore_message_picked">Bản sao lưu này sẽ thay thế thư viện, cài đặt và lịch sử chơi hiện tại của bạn. Không thể hoàn tác.</string>
+    <string name="sets_backup_restore_confirm">Khôi phục</string>
+    <string name="sets_backup_share_chooser">Chia sẻ bản sao lưu</string>
+
+    <!-- Settings ▸ Credits -->
+    <string name="sets_credits_group_xmb">Thiết kế XMB — Sony</string>
+    <string name="sets_credits_xmb_inspired">Giao diện và cảm giác của launcher này lấy cảm hứng từ XMB (XrossMediaBar), giao diện Sony tạo cho PlayStation Portable và PlayStation 3 — bố cục thanh chéo, làn sóng uốn lượn và cách điều hướng đều là sự tôn vinh dành cho nó.</string>
+    <string name="sets_credits_xmb_trademarks">\"XrossMediaBar\", \"XMB\", \"PSP\" và \"PlayStation\" là thương hiệu của Sony Interactive Entertainment Inc. Play Field Portal là dự án độc lập, phi thương mại của người hâm mộ — không liên kết, không được Sony xác nhận hay tài trợ. Ảnh giao diện đi kèm lấy từ chủ đề cộng đồng \"XMB Menu for ES-DE\" (ghi công bên dưới) và vẫn thuộc quyền sở hữu của các tác giả tương ứng. Không có âm thanh nào của Sony đi kèm: mọi âm thanh menu được ghi công riêng bên dưới.</string>
+    <string name="sets_credits_group_icon">Biểu tượng &amp; logo ứng dụng</string>
+    <string name="sets_credits_icon_designed">Biểu tượng và logo ứng dụng Play Field Portal được thiết kế bởi johakovi. Xin chân thành cảm ơn tác phẩm đã tạo nên bản sắc cho launcher.</string>
+    <string name="sets_credits_label_design">Thiết kế</string>
+    <string name="sets_credits_group_artwork">Ảnh minh họa hệ thống &amp; hệ máy</string>
+    <string name="sets_credits_artwork_from">Các biểu tượng hệ thống, hệ máy và danh mục dùng trong launcher này lấy từ chủ đề \"XMB Menu for ES-DE\" — bản tái hiện XMB của PSP do cộng đồng thực hiện.</string>
+    <string name="sets_credits_artwork_rights">Mọi quyền đối với các ảnh này thuộc về người tạo ra chúng — Anthony Caccese, dựa trên tác phẩm gốc của InitialDin. Các biểu tượng được sử dụng ở đây với lòng biết ơn và vẫn thuộc quyền sở hữu của các tác giả tương ứng.</string>
+    <string name="sets_credits_label_project">Dự án</string>
+    <string name="sets_credits_label_authors">Tác giả</string>
+    <string name="sets_credits_label_source">Nguồn</string>
+    <string name="sets_credits_group_buttons">Biểu tượng nút tay cầm</string>
+    <string name="sets_credits_buttons_from">Mọi lời nhắc nút trên màn hình — nút mặt PlayStation, Xbox và Nintendo, D-pad, nút vai, cò, cần analog và nút hệ thống — đều lấy từ bộ biểu tượng nút của Zacksly, sử dụng theo giấy phép Creative Commons Attribution 3.0.</string>
+    <string name="sets_credits_buttons_unmodified">Hình ảnh không bị chỉnh sửa: chỉ tên tệp được đổi thành tên tài nguyên Android, và chỉ những biểu tượng launcher hiển thị mới được đi kèm.</string>
+    <string name="sets_credits_label_author">Tác giả</string>
+    <string name="sets_credits_label_website">Trang web</string>
+    <string name="sets_credits_label_support">Ủng hộ</string>
+    <string name="sets_credits_label_packs">Bộ</string>
+    <string name="sets_credits_label_license">Giấy phép</string>
+    <string name="sets_credits_group_sounds">Âm thanh menu</string>
+    <string name="sets_credits_sounds_built">Các âm thanh menu đi kèm — điều hướng, quay lại, xác nhận, lỗi, khởi động, thông báo và tiếng chuông khởi động — được tạo từ âm thanh miễn phí bản quyền đăng trên Pixabay, đã chỉnh sửa cho launcher: cắt, đổi cao độ, cân lại mức và chuyển đổi. Cảm ơn những người tạo ra các tác phẩm làm nên bộ âm thanh này.</string>
+    <string name="sets_credits_sounds_license">Giấy phép nội dung Pixabay không yêu cầu ghi công; dù vậy, chúng tôi vẫn ghi công ở đây để cảm ơn. Nếu bạn là một trong những người tạo ra và muốn thay đổi ghi công hoặc gỡ một tài nguyên, vui lòng liên hệ.</string>
+    <string name="sets_credits_group_metadata">Ảnh minh họa &amp; siêu dữ liệu trò chơi</string>
+    <string name="sets_credits_metadata_fetched">Ảnh hộp, hộp 3D, ảnh băng/đĩa, banner hero, logo, biểu tượng, sách hướng dẫn, video snap và siêu dữ liệu trò chơi được tải theo yêu cầu của bạn từ các nhà cung cấp bên thứ ba và vẫn thuộc quyền sở hữu của chủ sở hữu tương ứng.</string>
+    <string name="sets_credits_label_primary_scraper">Nguồn chính</string>
+    <string name="sets_credits_value_screenscraper">ScreenScraper — screenscraper.fr, cơ sở dữ liệu media trò chơi do cộng đồng duy trì</string>
+    <string name="sets_credits_label_artwork">Ảnh minh họa</string>
+    <string name="sets_credits_label_metadata">Siêu dữ liệu</string>
+    <string name="sets_credits_group_achievements">Thành tựu — Shiba Coins</string>
+    <string name="sets_credits_achievements_from">Dữ liệu thành tựu cho hệ thống Shiba Coins đến từ các dịch vụ và dự án sau, và vẫn thuộc quyền sở hữu của chủ sở hữu tương ứng.</string>
+    <string name="sets_credits_value_retroachievements">retroachievements.org — bộ thành tựu và dữ liệu mở khóa do cộng đồng tạo cho trò chơi retro, qua RetroAchievements Web API chính thức và client api-kotlin</string>
+    <string name="sets_credits_value_steam">Powered by Steam — lược đồ thành tựu và dữ liệu mở khóa qua Steam Web API, dùng khóa của chính bạn. Steam và logo Steam là thương hiệu của Valve Corporation. steampowered.com</string>
+    <string name="sets_credits_goldberg_bundles">Tính năng theo dõi thành tựu cục bộ cho trò chơi PC giả lập Steam đi kèm Goldberg Steam Emulator — cụ thể là gbe_fork, bản fork cộng đồng do Detanup01 và những người đóng góp duy trì, dựa trên Goldberg Emulator gốc của Mr. Goldberg.</string>
+    <string name="sets_credits_goldberg_license">Trình giả lập này là phần mềm tự do theo giấy phép GNU Lesser General Public License v3.0 (LGPL-3.0). Play Field Portal đi kèm bản dựng không chỉnh sửa của steam_api64.dll; mã nguồn tương ứng đầy đủ và toàn văn giấy phép có tại các liên kết bên dưới.</string>
+    <string name="sets_credits_value_gbe">gbe_fork — Detanup01 và những người đóng góp</string>
+    <string name="sets_credits_label_original_project">Dự án gốc</string>
+    <string name="sets_credits_value_goldberg_original">Goldberg Emulator của Mr. Goldberg — gitlab.com/Mr_Goldberg/goldberg_emulator</string>
+    <string name="sets_credits_group_support">Ủng hộ dự án</string>
+    <string name="sets_credits_support_thanks">Cảm ơn tất cả mọi người đã ủng hộ. Tôi tạo ra dự án này như một bức thư tình gửi PSP và cộng đồng tuyệt vời cũng yêu thích nó, nên dự án sẽ mãi miễn phí. Dù vậy, nếu bạn trân trọng những gì tôi làm và muốn bày tỏ theo cách khác, bạn có thể mời tôi một chiếc taco. Tất nhiên, ủng hộ luôn là tùy chọn và không bao giờ bắt buộc. Yêu mọi người, và chúc mừng ngày 15 tháng 6.</string>
+    <string name="sets_credits_label_buy_taco">Mời tôi một chiếc Taco</string>
+    <string name="sets_credits_group_notes">Ghi chú</string>
+    <string name="sets_credits_notes_text">Nếu bạn là chủ sở hữu quyền và muốn thay đổi ghi công hoặc gỡ bất kỳ tài nguyên nào, vui lòng liên hệ và yêu cầu sẽ được xử lý nhanh chóng.</string>
+    <string name="sets_credits_title">Ghi công</string>
+    <string name="sets_credits_no_browser">Không có ứng dụng nào mở được liên kết web. Hãy truy cập %1$s bằng trình duyệt.</string>
+
+    <!-- Settings ▸ Logs -->
+    <string name="sets_logs_title">Nhật ký</string>
+    <string name="sets_logs_prompt_share">Chia sẻ</string>
+    <string name="sets_logs_prompt_open">Mở</string>
+    <string name="sets_logs_prompt_clear">Xóa</string>
+    <string name="sets_logs_clear_title">Xóa mọi nhật ký?</string>
+    <plurals name="sets_logs_clear_message">
+        <item quantity="other">Toàn bộ %1$d tệp nhật ký (%2$s) sẽ bị xóa. Nếu bạn sắp báo cáo sự cố, hãy chia sẻ nhật ký trước. Nhật ký đã xóa không thể khôi phục.</item>
+    </plurals>
+    <string name="sets_logs_clear_confirm">Xóa</string>
+    <string name="sets_logs_group_files">Tệp nhật ký</string>
+    <string name="sets_logs_empty">Chưa có tệp nhật ký</string>
+    <string name="sets_logs_empty_help">Mỗi lần mở ứng dụng sẽ bắt đầu một nhật ký mới. Chọn để kiểm tra lại.</string>
+    <string name="sets_logs_group_manage">Quản lý</string>
+    <string name="sets_logs_clear_row">Xóa mọi nhật ký</string>
+    <string name="sets_logs_clear_row_help">Xóa mọi nhật ký đã lưu. Phiên này tiếp tục ghi vào một tệp mới.</string>
+    <string name="sets_logs_clear_row_none">Không có gì để xóa</string>
+    <string name="sets_logs_group_about">Về nhật ký</string>
+    <string name="sets_logs_saved">Những gì được lưu</string>
+    <string name="sets_logs_saved_help">Chỉ giữ các phiên gần nhất (tối đa khoảng 2 MB). Mật khẩu, token, tên tài khoản và email được loại bỏ trước khi ghi.</string>
+    <string name="sets_logs_share_file">Chia sẻ %1$s</string>
+    <string name="sets_logs_current">HIỆN TẠI</string>
+    <string name="sets_logs_open_with">Mở nhật ký bằng</string>
+    <string name="sets_logs_share_subject">Nhật ký Play Field Portal — %1$s</string>
+    <string name="sets_logs_share_chooser">Chia sẻ tệp nhật ký</string>
+    <string name="sets_logs_no_files">Không có tệp</string>
+    <plurals name="sets_logs_summary">
+        <item quantity="other">%1$d tệp · %2$s</item>
+    </plurals>
+    <plurals name="sets_logs_deleted">
+        <item quantity="other">Đã xóa %1$d tệp (%2$s)</item>
+    </plurals>
+    <string name="sets_logs_started_today">Bắt đầu hôm nay, %1$s</string>
+    <string name="sets_logs_started_yesterday">Bắt đầu hôm qua, %1$s</string>
+    <string name="sets_logs_started_on">Bắt đầu %1$s, %2$s</string>
+
+    <!-- Root folders (shared by Music, Video, Photo) -->
+    <string name="sets_roots_group">Thư mục gốc</string>
+    <string name="sets_scanning">Đang quét…</string>
+    <string name="sets_rescan_help">Cập nhật thư viện từ mọi thư mục gốc</string>
+    <string name="sets_playback_group">Phát lại</string>
+    <string name="sets_root_kind_music">Nhạc</string>
+    <string name="sets_root_kind_video">Video</string>
+    <string name="sets_root_kind_photo">Ảnh</string>
+    <string name="sets_root_kind_rom">ROM</string>
+    <string name="sets_root_fallback_music">Nhạc</string>
+    <string name="sets_root_fallback_video">Video</string>
+    <string name="sets_root_fallback_photo">Ảnh</string>
+    <string name="sets_root_none">Chưa cấu hình thư mục gốc %1$s</string>
+    <string name="sets_root_none_help">Thêm một thư mục bên dưới để bắt đầu quản lý thư viện</string>
+    <string name="sets_root_access_lost">Mất quyền truy cập — dùng Sửa để cấp lại quyền</string>
+    <string name="sets_root_consoles">Hệ máy: %1$s</string>
+    <string name="sets_root_kind_root">Thư mục gốc %1$s</string>
+    <string name="sets_label_edit_folder">Sửa thư mục</string>
+    <string name="sets_label_remove_folder">Xóa thư mục</string>
+    <string name="sets_label_options_hint">Gợi ý tùy chọn</string>
+    <string name="sets_label_show_on_bar">Hiện trên thanh</string>
+    <string name="sets_label_show_in_games">Hiện trong Trò chơi</string>
+    <string name="sets_label_pin_to_top">Ghim lên đầu</string>
+    <string name="sets_root_edit_short">Sửa</string>
+    <string name="sets_root_remove_short">Xóa</string>
+    <string name="sets_root_remove_title">Xóa thư mục này?</string>
+    <string name="sets_root_remove_message">PFP sẽ ngừng dùng \"%1$s\", và những gì tìm thấy ở đó sẽ rời khỏi thư viện. Không có tệp nào bị xóa khỏi bộ nhớ của bạn.</string>
+    <string name="sets_root_remove_confirm">Xóa</string>
+    <string name="sets_player_builtin">Play Field Portal</string>
+    <string name="sets_player_system_default">Mặc định hệ thống</string>
+
+    <!-- Settings ▸ Music -->
+    <string name="sets_music_title">Nhạc</string>
+    <string name="sets_music_player_title">Trình phát nhạc mặc định</string>
+    <string name="sets_music_player_none">Không tìm thấy trình phát nhạc nào khác trên thiết bị này.</string>
+    <string name="sets_music_add_root">Thêm thư mục gốc nhạc</string>
+    <string name="sets_music_add_root_help">Cấp quyền cho thư mục gốc (vd: /Music) — thêm nhiều thư mục để bao quát nhiều vị trí</string>
+    <string name="sets_music_rescan">Quét lại thư viện nhạc</string>
+    <string name="sets_music_player">Trình phát nhạc mặc định</string>
+    <string name="sets_music_player_help">Ứng dụng mở bài hát</string>
+
+    <!-- Settings ▸ Video -->
+    <string name="sets_video_title">Video</string>
+    <string name="sets_video_player_title">Trình phát video mặc định</string>
+    <string name="sets_video_player_none">Không tìm thấy trình phát video bên ngoài nào trên thiết bị này.</string>
+    <string name="sets_video_add_root">Thêm thư mục gốc video</string>
+    <string name="sets_video_add_root_help">Cấp quyền cho thư mục gốc (vd: /Movies) — thêm nhiều thư mục để bao quát nhiều vị trí</string>
+    <string name="sets_video_rescan">Quét lại thư viện video</string>
+    <string name="sets_video_player">Trình phát video mặc định</string>
+    <string name="sets_video_player_help">Play Field Portal phát trong ứng dụng; hoặc chọn một ứng dụng / hỏi mỗi lần.</string>
+
+    <!-- Settings ▸ Photo -->
+    <string name="sets_photo_title">Ảnh</string>
+    <string name="sets_photo_add_root">Thêm thư mục gốc ảnh</string>
+    <string name="sets_photo_add_root_help">Cấp quyền cho thư mục gốc (vd: /Pictures) — thêm nhiều thư mục để bao quát nhiều vị trí</string>
+    <string name="sets_photo_rescan">Quét lại thư viện ảnh</string>
+    <string name="sets_photo_group_maintenance">Bảo trì</string>
+    <string name="sets_photo_clear_cache">Xóa bộ nhớ đệm hình thu nhỏ</string>
+    <string name="sets_photo_clear_cache_help">Xóa các hình thu nhỏ đã tạo. Quét lại sẽ tạo lại chúng.</string>
+    <plurals name="sets_photo_cache_cleared">
+        <item quantity="other">Đã xóa %1$d hình thu nhỏ trong bộ nhớ đệm. Quét lại để tạo lại.</item>
+    </plurals>
+
+    <!-- Settings ▸ Interface ▸ Notifications -->
+    <string name="sets_notif_title">Thông báo</string>
+    <string name="sets_notif_record">Ghi lại thông báo</string>
+    <string name="sets_notif_record_help">Lưu lịch sử quét, ảnh minh họa, tải dữ liệu và thành tựu. Tắt sẽ ngừng ghi mục mới; tác vụ đang chạy vẫn hiển thị tiến trình.</string>
+    <string name="sets_notif_group_history">Lịch sử</string>
+    <string name="sets_notif_keep_for">Giữ mục trong</string>
+    <string name="sets_notif_keep_for_help">Các mục cũ hơn sẽ bị bỏ vào lần ghi tiếp theo. Dù sao cũng áp dụng giới hạn 200 mục, và mục đã đọc bị bỏ trước.</string>
+    <string name="sets_notif_never">Không bao giờ</string>
+    <plurals name="sets_notif_days">
+        <item quantity="other">%1$d ngày</item>
+    </plurals>
+    <string name="sets_notif_mark_read">Đánh dấu tất cả đã đọc</string>
+    <string name="sets_notif_mark_read_help">Xóa số chưa đọc trên thanh trạng thái</string>
+    <plurals name="sets_notif_unread">
+        <item quantity="other">%1$d chưa đọc</item>
+    </plurals>
+    <string name="sets_notif_none_unread">Không có mục chưa đọc</string>
+    <string name="sets_notif_clear_all">Xóa tất cả</string>
+    <string name="sets_notif_clear_all_help">Làm trống lịch sử. Tác vụ đang chạy không bị ảnh hưởng.</string>
+    <plurals name="sets_notif_stored">
+        <item quantity="other">Đã lưu %1$d</item>
+    </plurals>
+
+    <!-- Settings ▸ System ▸ System Update -->
+    <string name="sets_update_title">Cập nhật hệ thống</string>
+    <string name="sets_update_group_update">Cập nhật</string>
+    <string name="sets_update_installed">Phiên bản đã cài</string>
+    <string name="sets_update_latest">Phiên bản mới nhất</string>
+    <string name="sets_update_check">Kiểm tra cập nhật</string>
+    <string name="sets_update_checking">Đang kiểm tra…</string>
+    <string name="sets_update_notifications">Thông báo cập nhật</string>
+    <string name="sets_update_notifications_help">Nhắc tôi trong Thông báo khi có phiên bản mới, tối đa một lần mỗi ngày</string>
+    <string name="sets_update_group_changelog">Nhật ký thay đổi</string>
+    <string name="sets_update_no_releases">Chưa tải bản phát hành nào</string>
+    <string name="sets_update_no_releases_help">Kiểm tra cập nhật để tải nhật ký thay đổi</string>
+    <string name="sets_update_install">Tải xuống và cài đặt %1$s</string>
+    <string name="sets_update_cannot_install">Bản dựng này không thể cài cập nhật từ đây</string>
+    <string name="sets_update_handed_over">Xác nhận trong trình cài đặt Android để hoàn tất</string>
+    <string name="sets_update_downloading">Đang tải xuống…</string>
+    <string name="sets_update_install_help">Android sẽ yêu cầu bạn xác nhận trước khi cài đặt</string>
+    <string name="sets_update_no_summary">Không có tóm tắt cho phiên bản này</string>
+    <string name="sets_update_full_notes">Ghi chú phát hành đầy đủ</string>
+    <string name="sets_update_full_notes_help">Mở GitHub trong trình duyệt</string>
+    <string name="sets_edition_full">Đầy đủ</string>
+    <string name="sets_edition_lite">Lite</string>
+    <string name="sets_update_installed_label">%1$s · %2$s</string>
+    <string name="sets_update_unknown_version">Không rõ</string>
+    <string name="sets_update_available">Đã có %1$s</string>
+    <string name="sets_update_not_checked">Chưa kiểm tra</string>
+    <string name="sets_update_up_to_date">Đã cập nhật</string>
+    <string name="sets_update_never_checked">Chưa từng kiểm tra</string>
+    <string name="sets_update_checked">Đã kiểm tra %1$s</string>
+    <string name="sets_update_tag_new">Mới</string>
+    <string name="sets_update_tag_installed">Đã cài</string>
+    <string name="sets_update_msg_available">Đã có phiên bản mới.</string>
+    <string name="sets_update_msg_latest">Bạn đang dùng phiên bản mới nhất.</string>
+    <string name="sets_update_msg_offline">Không thể kết nối GitHub. Hãy thử lại sau.</string>
+    <string name="sets_update_msg_invalid">GitHub gửi phản hồi không mong muốn. Hãy thử lại sau.</string>
+    <string name="sets_update_no_apk">Phiên bản %1$s chưa có bản tải xuống %2$s. Hãy thử lại sau.</string>
+    <string name="sets_update_download_failed">Không thể tải bản cập nhật. Hãy kiểm tra kết nối và thử lại.</string>
+    <string name="sets_update_not_newer">Bản tải xuống không phải phiên bản mới hơn của ứng dụng này, nên không được cài.</string>
+    <string name="sets_update_no_installer">Không thể mở trình cài đặt của Android trên thiết bị này.</string>
+    <string name="sets_update_reminder_installed">Đã cài phiên bản %1$s.</string>
+    <string name="sets_update_reminder_available">Đã có phiên bản %1$s.</string>
+
+    <!-- Settings ▸ About -->
+    <string name="sets_about_label_version">Phiên bản</string>
+    <string name="sets_about_label_build">Bản dựng</string>
+    <string name="sets_about_label_edition">Ấn bản</string>
+    <string name="sets_about_label_min_android">Android tối thiểu</string>
+    <string name="sets_about_label_target">Mục tiêu</string>
+    <string name="sets_about_group_open_source">Mã nguồn mở</string>
+    <string name="sets_about_value_compose">Framework giao diện</string>
+    <string name="sets_about_value_room">Cơ sở dữ liệu cục bộ</string>
+    <string name="sets_about_value_hilt">Dependency injection</string>
+    <string name="sets_about_value_ktor">Client mạng</string>
+    <string name="sets_about_value_coil">Tải hình ảnh</string>
+    <string name="sets_about_value_media3">Video snap &amp; phát lại</string>
+    <string name="sets_about_value_workmanager">Tác vụ nền</string>
+    <string name="sets_about_value_timber">Ghi nhật ký</string>
+    <string name="sets_about_group_credits">Ghi công</string>
+    <string name="sets_about_label_art_media">Ảnh minh họa &amp; media</string>
+    <string name="sets_about_label_metadata">Siêu dữ liệu</string>
+    <string name="sets_about_label_inspired">Lấy cảm hứng từ</string>
+    <string name="sets_about_label_see_also">Xem thêm</string>
+    <string name="sets_about_value_see_also">Cài đặt ▸ Ghi công</string>
+    <string name="sets_about_group_legal">Pháp lý</string>
+    <string name="sets_about_legal_independent">Play Field Portal là dự án độc lập của người hâm mộ, không liên kết với Sony Interactive Entertainment.</string>
+    <string name="sets_about_legal_trademarks">PlayStation, PSP và XMB là thương hiệu của Sony Interactive Entertainment Inc.</string>
+    <string name="sets_about_title">Giới thiệu</string>
+    <string name="sets_about_unknown">không rõ</string>
+
+    <string name="sets_orphan_linked">Đã liên kết ảnh minh họa — liên kết sẽ được giữ qua các lần quét sau.</string>
+    <string name="sets_orphan_link_failed">Không thể liên kết tệp đó — hãy chạy Quét &amp; liên kết lại rồi thử lại.</string>
+
+    <!-- Settings ▸ Sound: parts resolved outside the screen -->
+    <!-- Row value when the user picked a sound but its file name is not known. -->
+    <string name="sets_audio_custom_sound">Âm thanh tùy chỉnh</string>
+    <string name="sets_audio_import_failed">Không thể nhập âm thanh đó. Hãy thử tệp khác.</string>
+
+    <string name="sets_ptf_wallpaper_only">Đã nhập \"%1$s\" — chỉ hình nền</string>
+    <plurals name="sets_ptf_icons">
+        <item quantity="other">Đã nhập \"%1$s\" — hình nền và %2$d biểu tượng</item>
+    </plurals>
+    <plurals name="sets_ptf_icons_tint">
+        <item quantity="other">Đã nhập \"%1$s\" — hình nền và %2$d biểu tượng, khớp màu %3$d%%</item>
+    </plurals>
+    <string name="sets_ptf_cxmb_unsupported">Không hỗ trợ chủ đề CXMB (.ctf) — chỉ hỗ trợ chủ đề .ptf chính thức</string>
+
+    <string name="sets_svc_steam_connected">Đã kết nối Steam</string>
+    <string name="sets_svc_steam_resolved">Đã kết nối Steam — đã xác định \"%1$s\"</string>
+    <string name="sets_svc_steam_unresolved">Đã lưu khóa, nhưng không xác định được \"%1$s\". Hãy nhập SteamID64 của bạn.</string>
+    <string name="sets_svc_valid">Hợp lệ</string>
+    <string name="sets_svc_igdb_invalid">Không hợp lệ — hãy kiểm tra Client ID và Secret</string>
+    <string name="sets_svc_screenscraper_invalid">Không hợp lệ — hãy kiểm tra tên người dùng và mật khẩu</string>
+    <plurals name="sets_svc_screenscraper_valid_threads">
+        <item quantity="other">Hợp lệ — %1$s luồng</item>
+    </plurals>
+    <plurals name="sets_svc_screenscraper_valid_both">
+        <item quantity="other">Hợp lệ — %1$s luồng, %2$s yêu cầu/ngày</item>
+    </plurals>
+    <string name="sets_svc_screenscraper_valid_requests">Hợp lệ, %1$s yêu cầu/ngày</string>
+
+    <!-- Settings ▸ Controller -->
+    <string name="sets_controller_title">Tay cầm</string>
+    <string name="sets_controller_group_ab">Xác nhận và quay lại</string>
+    <string name="sets_controller_ab_help">Quyết định nút nào xác nhận và nút nào quay lại. Áp dụng cho mọi menu của launcher.</string>
+    <string name="sets_controller_group_xy">Tùy chọn và sắp xếp</string>
+    <string name="sets_controller_xy_help">Hoán đổi thao tác X và Y chỉ trong giao diện launcher. Không ảnh hưởng điều khiển trình giả lập.</string>
+    <string name="sets_controller_group_type">Loại tay cầm</string>
+    <string name="sets_controller_type_help">Thay đổi biểu tượng và nhãn nút hiển thị trong lời nhắc trợ giúp.</string>
+    <string name="sets_controller_type">Loại</string>
+    <string name="sets_controller_type_sub">Ảnh hưởng thanh trợ giúp ở cuối launcher</string>
+    <string name="sets_controller_group_scroll">Tốc độ cuộn</string>
+    <string name="sets_controller_scroll_help">Tốc độ cuộn danh sách khi giữ một hướng. Giữ lâu hơn sẽ tăng tốc; nghiêng cần hết cỡ sẽ cuộn ở tốc độ tối đa.</string>
+    <string name="sets_controller_scroll_sub">Áp dụng khi giữ D-pad và cần analog để điều hướng</string>
+    <string name="sets_controller_group_navigation">Điều hướng</string>
+    <string name="sets_controller_left_backs_out">Trái để thoát ra</string>
+    <string name="sets_controller_left_backs_out_help">Nhấn TRÁI để rời thư mục hoặc bảng bật ra — chỉ ở nơi TRÁI không làm gì khác</string>
+    <string name="sets_controller_group_keyboard">Bàn phím</string>
+    <string name="sets_controller_virtual_keyboard">Bàn phím ảo</string>
+    <string name="sets_controller_virtual_keyboard_help">Gõ bằng tay cầm trên bàn phím riêng của PFP. Khi tắt, hoặc khi bạn dùng cảm ứng, bàn phím hệ thống sẽ mở thay thế</string>
+    <string name="sets_controller_group_reset">Đặt lại</string>
+    <string name="sets_controller_reset">Đặt lại mọi cài đặt tay cầm</string>
+    <string name="sets_controller_reset_help">Khôi phục thiết lập hoán đổi và loại tay cầm mặc định</string>
+</resources>

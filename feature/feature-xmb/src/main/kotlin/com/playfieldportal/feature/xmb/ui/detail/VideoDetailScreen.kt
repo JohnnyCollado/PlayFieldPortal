@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import android.content.res.Resources
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -30,7 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material3.CircularProgressIndicator
+import com.playfieldportal.core.ui.components.PfpBusyRing
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,6 +52,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -74,6 +76,8 @@ import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.xmb.video.VideoPlayerScreen
 
 // Neutral dark surfaces stay fixed; accent colors come from the active theme so this screen
@@ -124,6 +128,7 @@ fun VideoDetailScreen(
     // reaches the page.
     val modal = rememberPfpModalHost(
         spec = videoDetailModalSpec(
+            resources = detailResources(),
             state = state,
             onSaveTitle = viewModel::saveTitle,
             onCancelTitle = viewModel::cancelTitleEdit,
@@ -166,7 +171,7 @@ fun VideoDetailScreen(
 
     if (state.isLoading) {
         Box(modifier.fillMaxSize().background(PageBg)) {
-            CircularProgressIndicator(Modifier.align(Alignment.Center), color = menuCursorEdge())
+            PfpBusyRing(Modifier.align(Alignment.Center), color = menuCursorEdge())
         }
         return
     }
@@ -229,7 +234,7 @@ fun VideoDetailScreen(
             Text(video.displayTitle, color = themedText(TextPrimary), fontSize = 26.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
             Text(metadataLine(video), color = themedSubText(TextMuted), fontSize = 13.sp)
             if (video.resumePositionMs > 0) {
-                Text("Resume at ${fmtTime(video.resumePositionMs)}", color = menuCursorEdge(), fontSize = 12.sp)
+                Text(stringResource(R.string.shiba_video_resume_at, fmtTime(video.resumePositionMs)), color = menuCursorEdge(), fontSize = 12.sp)
             }
 
             Spacer(Modifier.height(6.dp))
@@ -240,7 +245,7 @@ fun VideoDetailScreen(
                 // green fill; Start from Beginning sits below it in the neutral style.
                 val isLead = action == VideoDetailAction.PLAY || action == VideoDetailAction.RESUME
                 DetailButton(
-                    label = action.label,
+                    label = action.label.asString(),
                     icon = when (action) {
                         VideoDetailAction.RESUME  -> Icons.Filled.Replay
                         VideoDetailAction.RESTART -> Icons.Filled.SkipPrevious
@@ -253,7 +258,7 @@ fun VideoDetailScreen(
                 )
             }
             state.actionMessage?.let {
-                Text(it, color = menuCursorEdge(), fontSize = 12.sp)
+                Text(it.asString(), color = menuCursorEdge(), fontSize = 12.sp)
                 LaunchedEffect(it) { kotlinx.coroutines.delay(2500); viewModel.dismissMessage() }
             }
         }
@@ -264,7 +269,7 @@ fun VideoDetailScreen(
         // Back pill + kebab is the same header the photo viewer uses, so the media screens match.
         if (!state.playing && showTouchControls) {
             XmbHeaderPill(
-                label = "Back",
+                label = stringResource(R.string.shiba_prompt_back),
                 leadingGlyph = "◀",
                 onClick = { if (state.showOptions) viewModel.closeOptions() else onBack() },
                 background = XmbMediaPillScrim,
@@ -297,14 +302,14 @@ fun VideoDetailScreen(
                         // Only honest with something to move between: an unwatched video has a
                         // single primary button and the D-pad does nothing.
                         ControllerPromptItem
-                            .fixed(listOf(ControllerIcon.DPAD_UP, ControllerIcon.DPAD_DOWN), "Navigate")
+                            .fixed(listOf(ControllerIcon.DPAD_UP, ControllerIcon.DPAD_DOWN), stringResource(R.string.shiba_prompt_navigate))
                             .takeIf { state.primaryActions.size > 1 },
                         ControllerPromptItem(
                             GamepadAction.SELECT,
-                            state.primaryActions.getOrNull(state.mainFocus)?.label ?: "Select",
+                            state.primaryActions.getOrNull(state.mainFocus)?.label?.asString() ?: stringResource(R.string.shiba_prompt_select),
                         ),
-                        ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
-                        ControllerPromptItem(GamepadAction.BACK, "Back"),
+                        ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, stringResource(R.string.shiba_prompt_options)),
+                        ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.shiba_prompt_back)),
                     ),
                     labelColor = themedSubText(TextMuted),
                     labelStyle = TextStyle(fontSize = 12.sp),
@@ -317,8 +322,17 @@ fun VideoDetailScreen(
 
         if (state.showOptions) {
             PspContextMenuOverlay(
-                title = "Options",
-                rows = videoOptionRows(state),
+                title = stringResource(R.string.shiba_options_title),
+                rows = videoOptionRows(state).map { row ->
+                    PspMenuRow(
+                        label = row.label.asString(),
+                        isDestructive = row.isDestructive,
+                        value = row.value?.asString(),
+                        opensMenu = row.opensMenu,
+                        silent = row.silent,
+                        header = row.header?.asString(),
+                    )
+                },
                 selectedIndex = state.optionsIndex,
                 onRowActivated = { viewModel.activate(state.optionsActions[it]) },
                 onDismiss = viewModel::closeOptions,
@@ -327,9 +341,9 @@ fun VideoDetailScreen(
 
         if (state.showPlaylistPicker) {
             PspContextMenuOverlay(
-                title = "Add to Playlist",
+                title = stringResource(R.string.shiba_video_add_to_playlist),
                 rows = state.playlistOptions.map { PspMenuRow(label = it.name, checked = it.checked) } +
-                    PspMenuRow(label = "Create New Playlist"),
+                    PspMenuRow(label = stringResource(R.string.shiba_video_create_playlist)),
                 selectedIndex = state.playlistPickerIndex,
                 onRowActivated = viewModel::onPlaylistRowClick,
                 onDismiss = viewModel::closePlaylistPicker,
@@ -387,11 +401,11 @@ private fun ExternalLaunchOverlay(launch: com.playfieldportal.feature.xmb.ui.det
                 )
                 Spacer(Modifier.height(20.dp))
             }
-            CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp)
+            PfpBusyRing(color = Color.White)
             Spacer(Modifier.height(16.dp))
-            Text("Launching…", color = themedText(Color.White), fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.shiba_video_launching), color = themedText(Color.White), fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(4.dp))
-            Text(launch.playerLabel, color = themedSubText(Color.White.copy(alpha = 0.7f)), fontSize = 14.sp)
+            Text(launch.playerLabel.asString(), color = themedSubText(Color.White.copy(alpha = 0.7f)), fontSize = 14.sp)
         }
     }
 }
@@ -435,6 +449,7 @@ private fun DetailButton(
  * Internal and free of composition so the mapping from UI state to modal can be tested directly.
  */
 internal fun videoDetailModalSpec(
+    resources: Resources,
     state: VideoDetailUiState,
     onSaveTitle: (String) -> Unit,
     onCancelTitle: () -> Unit,
@@ -450,37 +465,37 @@ internal fun videoDetailModalSpec(
     return when {
         launchError != null -> PfpModalSpec.Notice(
             key = "launch_error:$launchError",
-            title = "Can't play video",
+            title = resources.getString(R.string.shiba_video_launch_error_title),
             message = launchError,
             onDismiss = onDismissLaunchError,
         )
         state.confirmRemove -> PfpModalSpec.Confirm(
             key = "remove:${video.id}",
-            title = "Remove from Library",
-            message = "\"${video.displayTitle}\" will be removed from this library. The file on disk is not deleted.",
-            confirmLabel = "Remove",
+            title = resources.getString(R.string.shiba_video_remove),
+            message = resources.getString(R.string.shiba_video_remove_message, video.displayTitle),
+            confirmLabel = resources.getString(R.string.shiba_video_remove_confirm),
             destructive = true,
             onConfirm = onConfirmRemove,
             onCancel = onCancelRemove,
         )
         state.creatingPlaylist -> PfpModalSpec.TextEntry(
             key = "new_playlist:${video.id}",
-            title = "New Playlist",
-            placeholder = "Playlist name",
-            confirmLabel = "Create",
+            title = resources.getString(R.string.shiba_video_new_playlist_title),
+            placeholder = resources.getString(R.string.shiba_video_new_playlist_placeholder),
+            confirmLabel = resources.getString(R.string.shiba_video_new_playlist_create),
             onConfirm = onCreatePlaylist,
             onCancel = onCancelCreatePlaylist,
         )
         state.infoVisible -> PfpModalSpec.Notice(
             key = "info:${video.id}",
             title = video.displayTitle,
-            message = videoInfoLines(video).joinToString("\n"),
-            buttonLabel = "Close",
+            message = videoInfoLines(resources, video).joinToString("\n"),
+            buttonLabel = resources.getString(R.string.shiba_action_close),
             onDismiss = onDismissInfo,
         )
         state.isEditingTitle -> PfpModalSpec.TextEntry(
             key = "rename_title:${video.id}",
-            title = "Edit Title",
+            title = resources.getString(R.string.shiba_video_edit_title),
             initial = video.displayTitle,
             // Blank goes back to the file name, which is what the empty field shows.
             placeholder = video.displayName,
@@ -493,14 +508,14 @@ internal fun videoDetailModalSpec(
 }
 
 // What is known about the file, one fact per line; unknown values are left out.
-private fun videoInfoLines(video: Video): List<String> = buildList {
-    add("Duration: ${fmtTime(video.durationMs ?: 0)}")
-    video.resolutionLabel?.let { add("Resolution: $it") }
-    video.codec?.let { add("Format: $it") }
-    video.mimeType?.let { add("Type: $it") }
-    video.sizeBytes?.let { add("Size: ${fmtSize(it)}") }
-    video.relativePath?.let { add("Location: $it") }
-    add("File: ${video.displayName}")
+private fun videoInfoLines(resources: Resources, video: Video): List<String> = buildList {
+    add(resources.getString(R.string.shiba_video_info_duration, fmtTime(video.durationMs ?: 0)))
+    video.resolutionLabel?.let { add(resources.getString(R.string.shiba_video_info_resolution, it)) }
+    video.codec?.let { add(resources.getString(R.string.shiba_video_info_format, it)) }
+    video.mimeType?.let { add(resources.getString(R.string.shiba_video_info_type, it)) }
+    video.sizeBytes?.let { add(resources.getString(R.string.shiba_video_info_size, fmtSize(it))) }
+    video.relativePath?.let { add(resources.getString(R.string.shiba_video_info_location, it)) }
+    add(resources.getString(R.string.shiba_video_info_file, video.displayName))
 }
 
 private fun metadataLine(video: Video): String = buildList {

@@ -1,0 +1,594 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared labels used on several of these screens. -->
+    <string name="setd_apply">套用</string>
+    <string name="setd_cancel">取消</string>
+    <string name="setd_select">選取</string>
+    <string name="setd_close">關閉</string>
+    <string name="setd_tap_to_dismiss">選取即可關閉</string>
+    <string name="setd_unavailable">無法使用</string>
+    <string name="setd_loading">正在載入…</string>
+    <string name="setd_error">錯誤</string>
+    <string name="setd_error_tap_to_dismiss">"%1$s（選取即可關閉）"</string>
+    <string name="setd_testing">正在測試…</string>
+    <string name="setd_key_replace_placeholder">"••••••••（選取即可取代）"</string>
+    <string name="setd_pfp_default">PFP 預設</string>
+    <string name="setd_from_theme">來自主題</string>
+    <string name="setd_custom_video">自訂影片</string>
+    <string name="setd_custom_sound">自訂音效</string>
+
+    <!-- ===== Display ===== -->
+    <string name="setd_display_title">顯示</string>
+    <string name="setd_group_appearance">外觀</string>
+    <string name="setd_group_lock_screen">鎖定畫面</string>
+    <string name="setd_group_xmb_layout">XMB 版面配置</string>
+    <string name="setd_group_boot_sequence">開機序列</string>
+    <string name="setd_group_game_boot">Game Boot</string>
+    <string name="setd_group_orientation">螢幕方向</string>
+    <string name="setd_group_interface">介面</string>
+    <string name="setd_group_performance">效能</string>
+    <string name="setd_group_games">遊戲</string>
+
+    <!-- Wallpaper -->
+    <string name="setd_wallpaper_title">桌布</string>
+    <string name="setd_wallpaper_choose">選擇桌布</string>
+    <string name="setd_wallpaper_choose_motion_set">已設定動態桌布：以循環播放的影片取代波浪</string>
+    <string name="setd_wallpaper_choose_custom_set">已設定自訂桌布：取代波浪</string>
+    <string name="setd_wallpaper_choose_none">選擇圖片或短片（PNG、JPG、WEBP、MP4、WEBM、GIF），用來取代波浪</string>
+    <string name="setd_wallpaper_preview">預覽桌布</string>
+    <string name="setd_wallpaper_preview_sublabel">以全螢幕檢視所選的桌布</string>
+    <string name="setd_wallpaper_reset_row">重設桌布</string>
+    <string name="setd_wallpaper_reset_row_sublabel">移除自訂桌布並還原預設背景</string>
+    <string name="setd_wallpaper_preview_cd">桌布預覽</string>
+    <string name="setd_wallpaper_unsupported">不支援的格式，請使用 PNG、JPG、WEBP、MP4、WEBM 或 GIF</string>
+    <string name="setd_wallpaper_applied">已套用桌布</string>
+    <string name="setd_wallpaper_unreadable">無法讀取該檔案，請改用其他檔案</string>
+    <string name="setd_wallpaper_motion_applied">已套用動態桌布</string>
+    <string name="setd_wallpaper_reset">已將桌布重設為預設值</string>
+    <string name="setd_wallpaper_none">尚未選擇桌布</string>
+
+    <!-- Lock screen image -->
+    <string name="setd_lock_choose">選擇鎖定畫面圖片</string>
+    <string name="setd_lock_choose_busy">正在設定鎖定畫面…</string>
+    <string name="setd_lock_choose_from_theme">由所套用的主題設定。選擇圖片即可改用你自己的</string>
+    <string name="setd_lock_choose_set">你的圖片已顯示在鎖定畫面上</string>
+    <string name="setd_lock_choose_none">為裝置鎖定畫面選擇圖片（PNG、JPG、WEBP）</string>
+    <string name="setd_lock_use_wallpaper">使用啟動器桌布</string>
+    <string name="setd_lock_use_wallpaper_motion">使用動態桌布的靜止畫面</string>
+    <string name="setd_lock_use_wallpaper_still">使用 XMB 後方的桌布</string>
+    <string name="setd_lock_reset_row">重設鎖定畫面</string>
+    <string name="setd_lock_reset_row_sublabel">還原為裝置的預設鎖定畫面</string>
+    <string name="setd_lock_tray_label">鎖定畫面</string>
+    <string name="setd_lock_unreadable">無法讀取該圖片</string>
+    <string name="setd_lock_no_wallpaper">啟動器沒有可用的桌布圖片</string>
+    <string name="setd_lock_reset_done">已將鎖定畫面重設為裝置預設值</string>
+    <string name="setd_lock_reset_failed">裝置未重設鎖定畫面，仍顯示目前的圖片。</string>
+    <string name="setd_lock_set_done">已設定鎖定畫面圖片</string>
+
+    <!-- Pick-one options: each opens a dialog. Title and summary, then the choices. -->
+    <string name="setd_opt_wave_style_title">波浪樣式</string>
+    <string name="setd_opt_wave_style_summary">背景波浪的活躍程度。</string>
+    <string name="setd_opt_background_motion_title">背景動態</string>
+    <string name="setd_opt_background_motion_summary">動態桌布的活躍程度。</string>
+    <string name="setd_motion_animated">運動</string>
+    <string name="setd_motion_animated_detail">完整動態效果</string>
+    <string name="setd_motion_reduced">運動，較暗</string>
+    <string name="setd_wave_reduced_detail">較暗、較平靜</string>
+    <string name="setd_bgmotion_reduced_detail">較慢、較平靜</string>
+    <string name="setd_motion_static">靜止</string>
+    <string name="setd_wave_static_detail">靜止</string>
+    <string name="setd_bgmotion_static_detail">靜止圖片</string>
+    <string name="setd_motion_reduced_static">靜止，較暗</string>
+    <string name="setd_opt_icon_legibility_title">圖示辨識度</string>
+    <string name="setd_opt_icon_legibility_summary">XMB 圖示與背景區隔的方式。</string>
+    <string name="setd_icon_legibility_light_detail">適用於深色圖示</string>
+    <string name="setd_icon_legibility_auto_detail">依圖示顏色而定</string>
+    <string name="setd_opt_item_list_motion_title">項目清單動態</string>
+    <string name="setd_opt_item_list_motion_summary">逐項移動時項目清單的移動方式。「回捲」會讓聚焦的項目滑到類別圖示後方，向上移動時反向播放；「滑行」會讓整個清單一起移動。</string>
+    <string name="setd_opt_umd_slot_title">UMD 插槽</string>
+    <string name="setd_opt_umd_slot_summary">UMD 插槽中顯示哪款遊戲。</string>
+    <string name="setd_umd_inserted_detail">僅限你插入的遊戲</string>
+    <string name="setd_umd_recent_detail">否則顯示上次遊玩的遊戲</string>
+    <string name="setd_opt_text_legibility_title">文字辨識度</string>
+    <string name="setd_opt_text_legibility_summary">尚未套用。會與你的主題和備份一起儲存，供日後更新使用。</string>
+    <string name="setd_opt_orientation_title">螢幕方向</string>
+    <string name="setd_opt_orientation_summary">PFP 是否隨裝置旋轉。「跟隨裝置」會在直向時顯示旋轉提示（供 Tasker / 切換啟動器使用）。</string>
+    <string name="setd_orientation_landscape">橫向</string>
+    <string name="setd_orientation_landscape_detail">PFP 保持橫向</string>
+    <string name="setd_orientation_follow">跟隨裝置</string>
+    <string name="setd_orientation_follow_detail">隨裝置旋轉</string>
+    <string name="setd_opt_touch_nav_title">觸控導覽按鈕</string>
+    <string name="setd_opt_touch_nav_summary">螢幕上的應用程式匣 / 返回按鈕。</string>
+    <string name="setd_touch_nav_auto">自動</string>
+    <string name="setd_touch_nav_auto_detail">僅在使用觸控時</string>
+    <string name="setd_touch_nav_show">一律顯示</string>
+    <string name="setd_touch_nav_hide">一律隱藏</string>
+    <string name="setd_touch_nav_hide_detail">僅限控制器</string>
+    <string name="setd_opt_touch_sens_title">觸控靈敏度</string>
+    <string name="setd_opt_touch_sens_summary">每移動一個 XMB 項目所需的滑動距離。</string>
+    <string name="setd_touch_sens_low">低</string>
+    <string name="setd_touch_sens_low_detail">較穩定</string>
+    <string name="setd_touch_sens_normal">一般</string>
+    <string name="setd_touch_sens_high">高</string>
+    <string name="setd_touch_sens_high_detail">較快速瀏覽</string>
+
+    <!-- Appearance toggles -->
+    <string name="setd_solid_icons">未聚焦圖示不透明</string>
+    <string name="setd_solid_icons_sublabel">以完全不透明的方式繪製未選取的圖示，仍可透過大小和標籤辨識選取項目</string>
+    <string name="setd_text_shadow">文字陰影</string>
+    <string name="setd_text_shadow_sublabel">在列說明文字後方加上陰影，讓文字在明亮的桌布區域上仍清晰易讀</string>
+
+    <!-- Font colour -->
+    <string name="setd_font_colour">字型顏色</string>
+    <string name="setd_font_colour_sublabel">整個介面中標籤和內文的顏色</string>
+    <string name="setd_font_colour_theme_default">主題預設</string>
+    <string name="setd_sub_font_colour">副字型顏色</string>
+    <string name="setd_sub_font_colour_sublabel">副標題、子標籤和數值的顏色。未設定時跟隨字型顏色</string>
+    <string name="setd_sub_font_colour_same">與字型顏色相同</string>
+    <string name="setd_sub_font_colour_reset">重設副字型顏色</string>
+    <string name="setd_sub_font_colour_reset_sublabel">改回跟隨字型顏色</string>
+    <string name="setd_font_colour_reset">重設字型顏色</string>
+    <string name="setd_font_colour_reset_sublabel">改回目前主題提供的顏色</string>
+    <string name="setd_picker_font_title">字型顏色</string>
+    <string name="setd_picker_sub_font_title">副字型顏色</string>
+    <string name="setd_contrast_title">字型顏色可能不易閱讀</string>
+    <string name="setd_text_contrast_notice">這個顏色在此背景上的對比度為 %1$s，低於 4.5:1 的可讀性準則。使用這個顏色的文字可能不易閱讀。</string>
+    <string name="setd_contrast_ok">確定</string>
+    <string name="setd_contrast_dont_warn">不要再提醒我</string>
+
+    <!-- XMB layout -->
+    <string name="setd_xmb_layout_intro">在實際介面上即時調整這個螢幕的 XMB 位置：縮放 XMB，並上下左右移動十字選單列。每種螢幕尺寸（掌機、折疊機、平板）都會保留各自的調整。</string>
+    <string name="setd_xmb_adjust">調整 XMB 版面配置</string>
+    <string name="setd_xmb_adjust_sublabel">即時編輯器：用方向鍵或滑桿縮放並重新定位十字選單列</string>
+    <string name="setd_psp_row">原汁原味的 PSP XMB</string>
+    <string name="setd_psp_row_applied">已套用至這個螢幕。若用「調整 XMB 版面配置」變更過版面，可再次使用</string>
+    <string name="setd_psp_row_apply">將 PSP 原本的比例套用至這個螢幕</string>
+    <string name="setd_psp_confirm_title">要套用原汁原味的 PSP XMB 嗎？</string>
+    <string name="setd_psp_confirm_message">將這個螢幕的 XMB 縮放比例和十字選單列位置設為 PSP 原本的比例。這個螢幕尺寸目前的版面配置會被取代，其他螢幕尺寸則保留各自的設定。</string>
+
+    <!-- Boot sequence -->
+    <string name="setd_boot_show">顯示開機序列</string>
+    <string name="setd_boot_show_sublabel">每次啟動時播放 PSP 風格的開機動畫</string>
+    <string name="setd_boot_resume">恢復時顯示開機序列</string>
+    <string name="setd_boot_resume_sublabel">從遊戲返回時也播放</string>
+    <string name="setd_boot_video">開機影片</string>
+    <string name="setd_boot_video_sublabel">播放你自己的影片，取代 PFP 標誌動畫 %1$s</string>
+    <string name="setd_gameboot">Game Boot</string>
+    <string name="setd_gameboot_sublabel">"在確認遊戲到模擬器開啟之間播放的簡短片段：內建五秒，使用自己的片段最多十秒，可按確認或返回略過。  關閉時會靜默啟動，沒有動畫也沒有聲音。"</string>
+    <string name="setd_gameboot_video">Game Boot 影片</string>
+    <string name="setd_gameboot_video_sublabel">以你自己的片段取代內建序列，片段會播放自己的聲音，音量依「聲音 ▸ 音量等級」中的 Game Boot 等級 %1$s</string>
+    <plurals name="setd_video_cap">
+        <item quantity="other">（MP4 或 WebM，最長 %1$d 秒）</item>
+    </plurals>
+
+    <!-- Media rows (shared with the Sound screen). -->
+    <string name="setd_media_preview">預覽</string>
+    <string name="setd_media_default">預設</string>
+    <string name="setd_media_use_default_prompt">使用預設</string>
+    <string name="setd_media_preview_cd">預覽%1$s</string>
+    <string name="setd_media_use_default_cd">為%1$s使用 PFP 預設值</string>
+
+    <!-- Interface / performance / games -->
+    <string name="setd_options_hint_sublabel">在有內容選單的 XMB 項目上顯示閒置時的「選項」標籤</string>
+    <string name="setd_hint_delay">提示延遲</string>
+    <string name="setd_hint_delay_sublabel">閒置 %1$s 後顯示（1–5 秒）</string>
+    <string name="setd_thermal">溫度節流感知</string>
+    <string name="setd_thermal_sublabel">裝置回報溫度過高時，凍結背景（波浪或動態桌布）</string>
+    <string name="setd_battery_saver">省電模式</string>
+    <string name="setd_battery_saver_sublabel">省電模式啟用時，凍結背景（波浪或動態桌布）</string>
+    <string name="setd_direct_launch">直接啟動遊戲</string>
+    <string name="setd_direct_launch_sublabel">按確認會立即啟動遊戲，而不是開啟遊戲詳細資料；如需編輯，請在遊戲的「選項」選單中使用「檢視遊戲詳細資料」</string>
+
+    <!-- Words around media rows in Settings: dropped-clip report from a theme. -->
+    <string name="setd_slot_boot_video">開機影片</string>
+    <string name="setd_slot_gameboot_video">Game Boot 影片</string>
+    <string name="setd_slot_sound_name">%1$s音效</string>
+    <string name="setd_dropped_header">未從這個主題安裝：</string>
+    <string name="setd_dropped_item">%1$s：%2$s</string>
+
+    <!-- ===== Themes ===== -->
+    <string name="setd_themes_title">主題</string>
+    <string name="setd_color_scheme">配色</string>
+    <string name="setd_color_scheme_custom_active">自訂主題顏色已啟用，選擇預設配色會將其取代</string>
+    <string name="setd_color_scheme_sublabel">PSP 風格的背景顏色，可即時預覽</string>
+    <string name="setd_custom_theme_color">自訂主題顏色</string>
+    <string name="setd_custom_theme_color_sublabel">來自匯入的主題。選取即可移除並改回配色</string>
+    <string name="setd_group_icon_color">圖示顏色</string>
+    <string name="setd_custom_icon_color_title">自訂圖示顏色</string>
+    <string name="setd_group_icons">圖示</string>
+    <string name="setd_customize_icons">自訂 XMB 圖示</string>
+    <string name="setd_customize_icons_sublabel">十字選單列、項目、主機和實體媒體，依 XMB 順序在 XMB 上即時顯示</string>
+    <string name="setd_custom_icons_none">無自訂</string>
+    <string name="setd_custom_icons_count">%1$d 個自訂</string>
+    <string name="setd_group_my_themes">我的主題</string>
+    <string name="setd_new_from_photo">從相片建立新主題</string>
+    <string name="setd_new_from_photo_sublabel">選擇一張圖片，系統會依此設定桌布和顏色</string>
+    <string name="setd_group_active_theme">使用中的主題</string>
+    <string name="setd_current_theme">目前的主題</string>
+    <string name="setd_theme_default_name">預設</string>
+    <string name="setd_reset_to_default">重設為預設值</string>
+    <string name="setd_reset_to_default_sublabel">移除所套用的桌布、主題顏色和自訂圖示</string>
+    <string name="setd_group_install">安裝</string>
+    <string name="setd_save_look_row">將目前外觀儲存為主題</string>
+    <string name="setd_save_look_row_sublabel">將你的圖示、桌布、顏色和動態打包成可分享的 .pfptheme</string>
+    <string name="setd_save_look_title">將目前外觀儲存為主題</string>
+    <string name="setd_theme_name_placeholder">主題名稱</string>
+    <string name="setd_import_ptf">匯入 PSP 主題（.ptf）</string>
+    <string name="setd_import_ptf_sublabel">使用主題的桌布、顏色和相符的圖示</string>
+    <string name="setd_import_pfptheme">匯入主題（.pfptheme）</string>
+    <string name="setd_import_pfptheme_sublabel">從 PlayFieldPortal 分享的主題</string>
+
+    <!-- Saved theme cards and menu. -->
+    <string name="setd_theme_older_format">舊格式</string>
+    <string name="setd_theme_share">分享</string>
+    <string name="setd_theme_update">更新</string>
+    <string name="setd_theme_update_file">更新主題檔案</string>
+    <string name="setd_theme_rename">重新命名主題</string>
+    <string name="setd_theme_delete">刪除主題</string>
+    <string name="setd_theme_delete_title">要刪除主題嗎？</string>
+    <string name="setd_theme_delete_message">「%1$s」將被刪除。這項操作無法復原。</string>
+    <string name="setd_theme_delete_confirm">刪除</string>
+    <string name="setd_theme_share_chooser">分享主題</string>
+
+    <!-- Apply-theme question. -->
+    <string name="setd_apply_theme_title">要套用「%1$s」嗎？</string>
+    <string name="setd_apply_base_message">這會變更啟動器的顏色、圖示和背景。</string>
+    <string name="setd_apply_use_themes">使用主題的</string>
+    <string name="setd_apply_keep_mine">保留我的</string>
+    <string name="setd_apply_turn_on">開啟</string>
+    <string name="setd_apply_leave_off">保持關閉</string>
+    <string name="setd_apply_replace_icons">這個主題有自己的%1$s圖示，但你已設定的圖示會優先顯示。要改用主題的嗎？這些項目中你的設定將被移除。</string>
+    <string name="setd_apply_replace_media">這個主題有自己的%1$s，但你已設定的會優先播放。要改用主題的嗎？這些項目中你的設定將被移除。</string>
+    <string name="setd_apply_boot_off">開機序列已關閉。開啟後即可播放主題的開機影片。</string>
+    <string name="setd_apply_gameboot_off">Game Boot 已關閉。開啟後即可播放主題的 Game Boot 影片。</string>
+    <string name="setd_apply_lock_screen">這個主題也包含鎖定畫面圖片，套用後會詢問你是否使用。</string>
+    <string name="setd_lock_offer_title">要設定鎖定畫面嗎？</string>
+    <string name="setd_lock_offer_message">「%1$s」包含鎖定畫面圖片。要將其設為裝置的鎖定畫面嗎？重設主題時會還原鎖定畫面。</string>
+    <string name="setd_lock_offer_confirm">設定鎖定畫面</string>
+    <string name="setd_lock_offer_cancel">暫時不要</string>
+
+    <!-- Notification-tray messages about themes. -->
+    <string name="setd_theme_reset_done">已重設主題，恢復為預設外觀</string>
+    <string name="setd_theme_created">已建立「%1$s」</string>
+    <string name="setd_theme_created_derived">已建立「%1$s」，顏色取自相片</string>
+    <string name="setd_theme_image_unreadable">無法讀取該圖片</string>
+    <string name="setd_theme_apply_failed">無法套用主題</string>
+    <string name="setd_theme_lock_unreadable">無法讀取這個主題的鎖定畫面圖片</string>
+    <string name="setd_theme_lock_set">已從「%1$s」設定鎖定畫面</string>
+    <string name="setd_theme_saved">已儲存「%1$s」</string>
+    <string name="setd_theme_save_failed">無法儲存主題</string>
+    <string name="setd_theme_fallback_name">主題</string>
+    <string name="setd_theme_updated">已將「%1$s」更新為目前的主題格式</string>
+    <string name="setd_theme_update_failed">無法更新「%1$s」，原始檔案保持不變</string>
+    <string name="setd_theme_export_failed">無法匯出主題</string>
+    <string name="setd_theme_imported">已匯入「%1$s」</string>
+    <string name="setd_theme_import_unreadable">無法開啟該檔案</string>
+    <string name="setd_theme_import_too_large">該主題過大，無法匯入</string>
+    <string name="setd_theme_import_out_of_memory">記憶體不足，無法匯入該主題：其動態桌布過大</string>
+    <string name="setd_theme_import_not_a_bundle">不是有效的 .pfptheme 檔案</string>
+    <string name="setd_theme_import_damaged_wallpaper">該主題的桌布已損毀</string>
+    <string name="setd_theme_import_not_saved">無法儲存匯入的主題</string>
+
+    <!-- ===== Artwork ===== -->
+    <string name="setd_artwork_title">圖片</string>
+    <string name="setd_group_artwork_library">圖片庫</string>
+    <string name="setd_artwork_folder_row">圖片資料夾與匯入</string>
+    <string name="setd_artwork_folder_sublabel">選擇圖片的儲存位置，並從 ES-DE 匯入現有圖片</string>
+    <string name="setd_artwork_folder_unavailable_sublabel">無法使用。請重新連結以繼續取得新圖片</string>
+    <string name="setd_group_artwork_status">收藏庫圖片狀態</string>
+    <string name="setd_status_total">遊戲總數</string>
+    <string name="setd_status_complete">完整</string>
+    <string name="setd_status_missing">缺少</string>
+    <string name="setd_status_stale">過時 / 無效</string>
+    <string name="setd_refresh_status">重新整理狀態</string>
+    <string name="setd_refresh_checking">正在檢查檔案…</string>
+    <string name="setd_refresh_sublabel">重新檢查磁碟上的圖片</string>
+    <string name="setd_group_scrape">抓取圖片</string>
+    <string name="setd_scrape_progress">"%1$d / %2$d：%3$s"</string>
+    <string name="setd_scrape_counts">%1$d 款成功 · %2$d 款失敗</string>
+    <string name="setd_scrape_background">在背景執行，你可以離開這個畫面。</string>
+    <string name="setd_scrape_starting">正在開始…</string>
+    <string name="setd_scrape_cancel">取消抓取</string>
+    <string name="setd_scrape_cancel_sublabel">目前的遊戲完成後停止，已取得的圖片會保留</string>
+    <string name="setd_scrape_all">重新抓取所有遊戲</string>
+    <string name="setd_scrape_all_sublabel">清除並重新取得每款遊戲的圖片</string>
+    <string name="setd_scrape_missing">僅抓取缺少圖片的遊戲</string>
+    <string name="setd_scrape_missing_sublabel">只取得圖片缺少或無效的遊戲，保留有效的圖片</string>
+    <string name="setd_scrape_done_all">已重新抓取所有遊戲：共 %3$d 款，%1$d 款成功，%2$d 款失敗</string>
+    <string name="setd_scrape_done_missing">已抓取缺少圖片的遊戲：共 %3$d 款，%1$d 款成功，%2$d 款失敗</string>
+    <string name="setd_scrape_cancelled">已取消抓取，已取得的圖片會保留</string>
+    <string name="setd_scrape_failed">抓取失敗：%1$s</string>
+    <string name="setd_scrape_unknown_error">未知的錯誤</string>
+    <string name="setd_rescrape_title">要重新抓取所有遊戲嗎？</string>
+    <string name="setd_rescrape_confirm">全部重新抓取</string>
+    <plurals name="setd_rescrape_message">
+        <item quantity="other">這會清除並重新抓取全部 %1$d 款遊戲的圖片，現有圖片將被取代。要繼續嗎？</item>
+    </plurals>
+    <string name="setd_group_source_priority">來源優先順序</string>
+    <string name="setd_source_primary">主要</string>
+    <string name="setd_source_fallback">備用 %1$d</string>
+    <string name="setd_source_screenscraper_hash">ScreenScraper（ROM 雜湊值）</string>
+    <string name="setd_source_steamgriddb_artwork">SteamGridDB（圖片）</string>
+    <string name="setd_group_art_preferences">圖片偏好設定</string>
+    <string name="setd_icon_display">遊戲圖示顯示方式</string>
+    <string name="setd_icon_display_sublabel">所有主機的預設值。可從各主機或各遊戲的「選項」選單個別覆寫</string>
+    <string name="setd_animated_icons">動態圖示</string>
+    <string name="setd_animated_icons_sublabel">停留在遊戲上一段時間後，在其圖示中播放影片片段（自訂圖示模式；電量低時略過）</string>
+    <string name="setd_snap_delay">影片片段延遲</string>
+    <string name="setd_snap_delay_sublabel">停留在遊戲上 %1$s 後播放影片片段（1–5 秒）。延遲越長，瀏覽時越不會突然跳出</string>
+    <string name="setd_crop_preview">裁剪預覽</string>
+    <string name="setd_crop_preview_sublabel">裁剪圖片時在角落顯示完成後的圖塊（在裁剪編輯器中也可按 Ⓨ 切換）</string>
+    <string name="setd_prefer_sgdb_heroes">優先使用 SteamGridDB 主視覺圖</string>
+    <string name="setd_prefer_sgdb_heroes_sublabel">主視覺圖 / 橫幅圖片優先嘗試 SteamGridDB</string>
+    <string name="setd_download_heroes">下載主視覺圖</string>
+    <string name="setd_download_heroes_sublabel">在遊戲詳細資料檢視中顯示的寬幅橫幅圖片</string>
+    <string name="setd_download_logos">下載透明標誌</string>
+    <string name="setd_download_logos_sublabel">疊加在主視覺圖上的透明標誌 PNG</string>
+    <string name="setd_download_manuals">下載遊戲說明書</string>
+    <string name="setd_download_manuals_sublabel">來自 ScreenScraper 的 PDF 說明書，可從遊戲的「選項」選單開啟</string>
+    <string name="setd_download_video_snaps">下載影片片段</string>
+    <string name="setd_download_video_snaps_sublabel">來自 ScreenScraper 的簡短遊戲畫面片段，檔案較大</string>
+    <string name="setd_artwork_region">圖片地區（%1$s）</string>
+    <string name="setd_artwork_region_sublabel">當遊戲有多個版本時，優先使用哪個地區的盒裝封面和標誌</string>
+    <string name="setd_region_no_preference">無偏好</string>
+
+    <!-- Provider keys. -->
+    <string name="setd_api_key">API 金鑰</string>
+    <string name="setd_api_key_saved">API 金鑰（已儲存）</string>
+    <string name="setd_group_sgdb_api">SteamGridDB API</string>
+    <string name="setd_sgdb_key_placeholder">貼上你的 SteamGridDB 金鑰</string>
+    <string name="setd_sgdb_key_helper">在 steamgriddb.com/api 免費取得金鑰</string>
+    <string name="setd_save_api_key">儲存 API 金鑰</string>
+    <string name="setd_remove_api_key">移除 API 金鑰</string>
+    <string name="setd_remove_api_key_sublabel">將停用 SteamGridDB 圖片</string>
+    <string name="setd_group_tgdb_api">TheGamesDB API</string>
+    <string name="setd_tgdb_key_placeholder">貼上你的 TheGamesDB 金鑰</string>
+    <string name="setd_tgdb_key_helper">在 thegamesdb.net 向 TheGamesDB 申請金鑰</string>
+    <string name="setd_save_tgdb_key">儲存 TheGamesDB 金鑰</string>
+    <string name="setd_remove_tgdb_key">移除 TheGamesDB 金鑰</string>
+    <string name="setd_remove_tgdb_key_sublabel">將不再使用 TheGamesDB 作為來源</string>
+    <string name="setd_group_igdb">IGDB 憑證（選用）</string>
+    <string name="setd_igdb_client_id">用戶端 ID</string>
+    <string name="setd_igdb_client_id_saved">用戶端 ID（已儲存）</string>
+    <string name="setd_igdb_client_id_placeholder">Twitch 用戶端 ID</string>
+    <string name="setd_igdb_client_secret">用戶端密鑰</string>
+    <string name="setd_igdb_client_secret_placeholder">Twitch 用戶端密鑰</string>
+    <string name="setd_igdb_helper">在 dev.twitch.tv 建立應用程式，可提升新世代遊戲的備用來源涵蓋範圍</string>
+    <string name="setd_test_credentials">測試憑證</string>
+    <string name="setd_save_credentials">儲存憑證</string>
+    <string name="setd_clear_igdb">清除 IGDB 憑證</string>
+    <string name="setd_clear_igdb_sublabel">將不再使用 IGDB 作為備用來源</string>
+    <string name="setd_ss_status">狀態</string>
+    <string name="setd_ss_status_active_sublabel">以雜湊值為基礎的抓取功能已啟用（內建開發人員金鑰組）</string>
+    <string name="setd_ss_status_inactive_sublabel">這個版本無法使用 ScreenScraper：未內附開發人員金鑰組</string>
+    <string name="setd_ss_active">啟用</string>
+    <string name="setd_ss_inactive">未啟用</string>
+    <string name="setd_group_ss_account">ScreenScraper 帳戶（選用）</string>
+    <string name="setd_ss_username_saved">使用者名稱（已儲存：%1$s）</string>
+    <string name="setd_ss_username">使用者名稱</string>
+    <string name="setd_ss_tap_to_replace">選取即可取代</string>
+    <string name="setd_ss_username_placeholder">ScreenScraper 使用者名稱</string>
+    <string name="setd_ss_password">密碼</string>
+    <string name="setd_ss_password_placeholder">ScreenScraper 密碼</string>
+    <string name="setd_ss_password_helper">在 screenscraper.fr 註冊免費帳戶，可提高抓取速率上限和每日配額。以加密方式儲存在這部裝置上（Android Keystore）。</string>
+    <string name="setd_test_account">測試帳戶</string>
+    <string name="setd_save_account">儲存帳戶</string>
+    <string name="setd_clear_ss_account">清除 ScreenScraper 帳戶</string>
+    <string name="setd_clear_ss_account_sublabel">抓取會以匿名速率上限繼續進行</string>
+    <string name="setd_secret_sgdb_key">SteamGridDB 金鑰</string>
+    <string name="setd_secret_tgdb_key">TheGamesDB 金鑰</string>
+    <string name="setd_secret_igdb_secret">IGDB 用戶端密鑰</string>
+    <string name="setd_secret_ss_password">ScreenScraper 密碼</string>
+    <string name="setd_secret_unprotected">已儲存%1$s，但這部裝置的安全金鑰儲存區無法使用，因此以未加密方式儲存。日後清除並重新輸入時會再試一次。</string>
+
+    <!-- Cache -->
+    <string name="setd_group_cache">快取</string>
+    <string name="setd_cache_size">已儲存的圖片大小</string>
+    <string name="setd_cache_size_sublabel">圖片快取 + 儲存在這部裝置上的圖片（不包含你的圖片資料夾）</string>
+    <string name="setd_clear_ss_cache">清除 ScreenScraper 網址快取</string>
+    <string name="setd_clear_ss_cache_sublabel">清除快取的圖片網址，下次抓取時會逐一向 ScreenScraper 重新查詢。不會造成影響，也不會刪除圖片</string>
+    <string name="setd_ss_cache_cleared">已清除 ScreenScraper 網址快取</string>
+    <string name="setd_clear_all_artwork">清除所有圖片</string>
+    <string name="setd_clear_all_artwork_sublabel">重新開始：移除快取圖片、已儲存的圖片和每款遊戲的圖片連結。圖片資料夾中的檔案會保留，可透過重新連結或重新抓取來還原</string>
+
+    <!-- ===== Artwork Folder & Import ===== -->
+    <string name="setd_import_title">圖片資料夾與匯入</string>
+    <string name="setd_import_group_folder">圖片資料夾</string>
+    <string name="setd_import_change_folder">變更圖片資料夾</string>
+    <string name="setd_import_choose_folder">選擇圖片資料夾</string>
+    <string name="setd_import_folder_not_set">未設定。選取這個項目即可指定 PFP 存放圖片的位置</string>
+    <string name="setd_import_group_existing">匯入現有圖片</string>
+    <string name="setd_import_no_launchers">找不到任何啟動器</string>
+    <string name="setd_import_no_launchers_sublabel">請先將其他啟動器的媒體複製或移動到資料夾中，例如 import/ES-DE/downloaded_media。移動可釋出空間，但會將圖片從該啟動器中移除。</string>
+    <plurals name="setd_import_source_systems">
+        <item quantity="other">已辨識 %1$d 個系統資料夾。選取即可預覽匯入</item>
+    </plurals>
+    <string name="setd_import_unrecognized">無法辨識的結構，預期為 ES-DE 的 downloaded_media 結構</string>
+    <string name="setd_import_scanning">正在掃描…</string>
+    <string name="setd_import_rescan">重新掃描匯入資料夾</string>
+    <string name="setd_import_rescan_sublabel">重新檢查 import/ 中的啟動器資料夾</string>
+    <string name="setd_import_relinking">正在掃描收藏庫…</string>
+    <string name="setd_import_relink">掃描並重新連結收藏庫</string>
+    <string name="setd_import_relink_sublabel">將資料夾中的圖片重新連結到你的遊戲、重新整理已移動或變更的檔案，並清除已刪除檔案的參照</string>
+    <string name="setd_import_unmatched">未配對的圖片（%1$d）</string>
+    <string name="setd_import_unmatched_sublabel">資料夾中未與任何遊戲配對的檔案，請手動連結</string>
+    <string name="setd_import_group_storage">應用程式儲存空間</string>
+    <string name="setd_import_moving">正在將圖片移至你的資料夾…</string>
+    <string name="setd_import_moving_progress">%1$d / %2$d，在背景執行</string>
+    <string name="setd_import_moving_background">在背景執行，你可以離開這個畫面</string>
+    <string name="setd_import_cancel_move">取消移動</string>
+    <string name="setd_import_cancel_move_sublabel">已移動的圖片會留在資料夾中</string>
+    <string name="setd_import_move_in">移至資料夾</string>
+    <plurals name="setd_import_move_in_sublabel">
+        <item quantity="other">%1$d 個圖片檔案（%2$s）是在連結這個資料夾前儲存的，目前位於應用程式儲存空間中。將其移動後即可攜帶使用，並釋出應用程式空間。資料夾中已鎖定和手動挑選的圖片永遠不會被覆寫。</item>
+    </plurals>
+    <string name="setd_import_group_export">匯出</string>
+    <string name="setd_import_export">匯出至 ES-DE</string>
+    <string name="setd_import_export_sublabel">將你的圖片複製到你選擇的資料夾（例如 ES-DE 的 downloaded_media），採增量方式，絕不會修改你的收藏庫</string>
+    <string name="setd_import_group_preview">匯入預覽</string>
+    <string name="setd_import_building">正在建立預覽…</string>
+    <string name="setd_import_building_sublabel">正在將圖片與你的遊戲配對</string>
+    <string name="setd_import_preview_group">匯入預覽：%1$s</string>
+    <string name="setd_import_games_matched">已配對的遊戲</string>
+    <string name="setd_import_files_to_import">要匯入的檔案</string>
+    <string name="setd_import_estimated_size">預估大小</string>
+    <string name="setd_import_details_found">找到的遊戲詳細資料</string>
+    <string name="setd_import_details_none_sublabel">將 ES-DE 的 gamelists 資料夾複製到啟動器的匯入資料夾，即可一併匯入說明、開發商和發行年份</string>
+    <string name="setd_import_details_some_sublabel">來自 gamelist.xml 的說明和詳細資料，絕不會覆寫現有資料</string>
+    <string name="setd_import_already_present">已存在</string>
+    <string name="setd_import_needs_review">需要檢查</string>
+    <string name="setd_import_unmatched_artwork">未配對的圖片</string>
+    <string name="setd_import_skipped_folders">已略過的系統資料夾</string>
+    <string name="setd_import_no_games">收藏庫中沒有遊戲</string>
+    <string name="setd_import_no_games_sublabel">找到了 %1$s 的圖片，但你的收藏庫中沒有這些系統的遊戲。請先新增遊戲，再重新執行匯入。</string>
+    <string name="setd_import_move_files">移動檔案（較快，可釋出空間）</string>
+    <string name="setd_import_move_files_sublabel">將圖片從啟動器的資料夾中移出，而不是複製。另一個啟動器將失去這些檔案。</string>
+    <string name="setd_import_review_group">檢查不明確的配對（%1$d）</string>
+    <plurals name="setd_import_possible_games">
+        <item quantity="other">%1$d 款可能的遊戲。選取這個項目即可挑選</item>
+    </plurals>
+    <string name="setd_import_game_number">遊戲 #%1$d</string>
+    <string name="setd_import_assign_sublabel">將這張圖片指派給這款遊戲</string>
+    <string name="setd_import_skip_file">略過這個檔案</string>
+    <string name="setd_import_start">開始匯入</string>
+    <plurals name="setd_import_start_move">
+        <item quantity="other">將 %1$d 個檔案移至圖片庫</item>
+    </plurals>
+    <plurals name="setd_import_start_copy">
+        <item quantity="other">將 %1$d 個檔案複製到圖片庫</item>
+    </plurals>
+    <string name="setd_import_cancel_preview">取消預覽</string>
+    <string name="setd_import_group_importing">匯入中</string>
+    <string name="setd_import_cancel">取消匯入</string>
+    <string name="setd_import_cancel_sublabel">已匯入的圖片會保留</string>
+    <string name="setd_import_group_report">匯入報告</string>
+    <string name="setd_import_clear_reports">清除報告</string>
+    <string name="setd_kind_icon">封面</string>
+    <string name="setd_kind_hero">混合圖片</string>
+    <string name="setd_kind_background">粉絲圖</string>
+    <string name="setd_kind_logo">跑馬燈圖</string>
+    <string name="setd_kind_screenshot">螢幕擷圖</string>
+    <string name="setd_kind_titlescreen">標題畫面</string>
+    <string name="setd_kind_physical_media">實體媒體</string>
+    <string name="setd_kind_manual">說明書</string>
+    <string name="setd_import_link_failed">無法在該資料夾中建立圖片庫，資料夾可能是唯讀的。</string>
+    <string name="setd_import_library_reconnected">已重新連結現有的 PFP 圖片庫。</string>
+    <string name="setd_import_library_created">已建立圖片庫。</string>
+    <plurals name="setd_import_games_linked">
+        <item quantity="other">已從資料夾中現有的 %2$d 個檔案連結 %1$d 款遊戲。</item>
+    </plurals>
+    <string name="setd_import_place_media">請將其他啟動器的媒體放在 import/ 下。</string>
+    <plurals name="setd_import_internal_files">
+        <item quantity="other">仍有 %1$d 個圖片檔案位於應用程式儲存空間中，請參閱下方的「移至資料夾」。</item>
+    </plurals>
+    <plurals name="setd_import_upgraded">
+        <item quantity="other">圖片庫已升級為新結構，已重新整理 %1$d 個檔案。</item>
+    </plurals>
+    <string name="setd_import_scan_failed">無法掃描匯入資料夾。</string>
+    <string name="setd_import_source_unreadable">無法讀取這個來源。</string>
+    <string name="setd_import_preview_failed">預覽失敗，請查看記錄。</string>
+    <string name="setd_import_nothing">沒有可匯入的內容，所有項目都已存在。</string>
+    <string name="setd_import_export_started">已開始匯出。進度會顯示在通知中，結果會出現在「匯入報告」下。</string>
+    <plurals name="setd_relink_files">
+        <item quantity="other">掃描：%1$d 個檔案</item>
+    </plurals>
+    <plurals name="setd_relink_linked">
+        <item quantity="other">已連結 %1$d 款遊戲</item>
+    </plurals>
+    <string name="setd_relink_orphans">%1$d 個未配對，請參閱「未配對的圖片」</string>
+    <string name="setd_relink_failed">收藏庫掃描失敗，請查看記錄。</string>
+    <string name="setd_relink_cancelled">已取消收藏庫掃描。</string>
+    <string name="setd_report_title">%1$s：%2$s</string>
+    <string name="setd_report_unreadable">無法讀取報告</string>
+    <string name="setd_report_imported">已匯入 %1$d 個</string>
+    <string name="setd_report_skipped">已略過 %1$d 個</string>
+    <string name="setd_report_failed">%1$d 個失敗</string>
+    <plurals name="setd_report_game_details">
+        <item quantity="other">%1$d 筆遊戲詳細資料</item>
+    </plurals>
+    <string name="setd_report_need_review">%1$d 個需要檢查</string>
+    <string name="setd_report_unmatched">%1$d 個未配對</string>
+    <string name="setd_report_cancelled">已取消</string>
+
+    <!-- ===== Unmatched Artwork ===== -->
+    <string name="setd_orphan_title">未配對的圖片</string>
+    <string name="setd_orphan_link_title">連結「%1$s」</string>
+    <string name="setd_orphan_none">沒有未配對的項目</string>
+    <string name="setd_orphan_none_sublabel">資料夾中的每個圖片檔案都已連結至遊戲。新增檔案後，請執行「掃描並重新連結」再次檢查。</string>
+    <plurals name="setd_orphan_count">
+        <item quantity="other">%1$d 個檔案未與任何遊戲配對</item>
+    </plurals>
+    <string name="setd_orphan_group_file">檔案</string>
+    <string name="setd_orphan_group_search">搜尋你的遊戲</string>
+    <string name="setd_orphan_title_field">標題</string>
+    <string name="setd_orphan_searching">正在搜尋…</string>
+    <string name="setd_orphan_search">搜尋</string>
+    <string name="setd_orphan_search_sublabel">只搜尋你自己的 %1$s 遊戲，不會下載任何內容</string>
+    <string name="setd_orphan_no_search">尚未搜尋</string>
+    <string name="setd_orphan_no_search_sublabel">編輯上方的標題並按「搜尋」，即可查看相符的遊戲</string>
+    <string name="setd_orphan_no_match">沒有相符的遊戲</string>
+    <string name="setd_orphan_no_match_sublabel">請嘗試較短的標題，通常一個獨特的字詞就夠了</string>
+    <plurals name="setd_orphan_matches">
+        <item quantity="other">%1$d 個相符項目，請選擇所屬遊戲</item>
+    </plurals>
+
+    <!-- ===== Achievements ===== -->
+    <string name="setd_ach_subtitle_credentials">成就 · 提供者憑證</string>
+    <string name="setd_ach_subtitle_local_windows">成就 · 本機 Windows</string>
+    <string name="setd_ach_subtitle_update">成就 · 更新成就</string>
+    <string name="setd_ach_subtitle_coins">Shiba Coins</string>
+    <string name="setd_ach_enable">啟用 Shiba Coins</string>
+    <string name="setd_ach_enable_sublabel">以 Shiba Coins 的形式追蹤 RetroAchievements 和 Steam 的成就</string>
+    <string name="setd_ach_connected_as">已連結的帳戶</string>
+    <string name="setd_ach_username">使用者名稱</string>
+    <string name="setd_ach_ra_username_placeholder">你的 RA 使用者名稱</string>
+    <string name="setd_ach_web_api_key">Web API 金鑰</string>
+    <string name="setd_ach_web_api_key_saved">Web API 金鑰（已儲存）</string>
+    <string name="setd_ach_ra_key_placeholder">貼上你的 RA Web API 金鑰</string>
+    <string name="setd_ach_ra_key_helper">retroachievements.org → Settings → Keys → Web API Key</string>
+    <string name="setd_ach_ra_connect">連結 RetroAchievements</string>
+    <string name="setd_ach_ra_disconnect">中斷 RetroAchievements 連結</string>
+    <string name="setd_ach_ra_disconnect_sublabel">從這部裝置移除你的使用者名稱和金鑰</string>
+    <string name="setd_ach_steam_id">SteamID64 或個人檔案名稱</string>
+    <string name="setd_ach_steam_id_placeholder">76561… 或你的自訂名稱</string>
+    <string name="setd_ach_steam_id_helper">連結時，自訂名稱會解析為 SteamID64</string>
+    <string name="setd_ach_steam_key_placeholder">貼上你的 Steam Web API 金鑰</string>
+    <string name="setd_ach_steam_key_helper">steamcommunity.com/dev：你個人檔案的遊戲詳細資料必須設為公開</string>
+    <string name="setd_ach_steam_connect">連結 Steam</string>
+    <string name="setd_ach_steam_disconnect">中斷 Steam 連結</string>
+    <string name="setd_ach_steam_disconnect_sublabel">從這部裝置移除你的 SteamID 和金鑰</string>
+    <string name="setd_ach_ra_connected">已連結 RetroAchievements</string>
+    <string name="setd_ach_ra_disconnected">已中斷 RetroAchievements 連結</string>
+    <string name="setd_ach_steam_disconnected">已中斷 Steam 連結</string>
+    <string name="setd_ach_group_local_steam">本機 Steam（模擬）</string>
+    <string name="setd_ach_track_local">追蹤本機 Steam 遊戲（模擬）</string>
+    <string name="setd_ach_track_local_sublabel">尋找模擬器遊戲、產生其成就資料，並同步解鎖狀態</string>
+    <string name="setd_ach_goldberg">安裝 Goldberg 並轉換遊戲</string>
+    <string name="setd_ach_goldberg_sublabel">掃描時，提議將成就資料寫入偵測到的遊戲，讓模擬器能追蹤成就</string>
+    <string name="setd_ach_backup_title">請先備份你的存檔</string>
+    <string name="setd_ach_backup_confirm">我已備份，啟用</string>
+    <string name="setd_ach_local_steam_message">同步前，請開啟你的 Windows 模擬器，並備份你已設定好的所有 Steam 模擬遊戲的存檔。\n\n追蹤這些遊戲後，同步時會改寫每款遊戲的模擬器設定並取代其 Steam 檔案，以便記錄解鎖狀態。在此功能推出前就已設定並遊玩過的遊戲，可能因此無法存取現有的存檔。\n\n這項功能也會使用你自己的 Steam Web API 金鑰讀取成就資料，使用風險請自行承擔。Steam 追蹤完全是選用的；如果你不想承擔這些風險，請保持關閉。\n\n請先備份，再開啟這項功能並更新已安裝遊戲的成就。</string>
+    <string name="setd_ach_goldberg_message">轉換任何遊戲前，請開啟你的 Windows 模擬器，並備份你已設定好的所有 Steam 模擬遊戲的存檔。\n\n轉換會改寫每款遊戲的模擬器設定並取代其 Steam 檔案，以便記錄解鎖狀態。在此功能推出前就已設定並遊玩過的遊戲，可能因此無法存取現有的存檔。\n\n這項功能也會使用你自己的 Steam Web API 金鑰讀取成就資料，使用風險請自行承擔。如果你不想承擔這些風險，請保持關閉。\n\n請先備份，再開啟這項功能並掃描你的遊戲。</string>
+    <string name="setd_ach_group_update">更新</string>
+    <string name="setd_ach_last_updated">上次更新</string>
+    <string name="setd_ach_never">從未</string>
+    <string name="setd_ach_auto_updates">自動更新</string>
+    <string name="setd_ach_updates_paused">更新已暫停，直到你重新同步</string>
+    <string name="setd_ach_updating">正在更新成就…</string>
+    <string name="setd_ach_update_installed">更新已安裝遊戲的成就</string>
+    <string name="setd_ach_update_after_match">自動配對完成後會自動執行</string>
+    <string name="setd_ach_update_resume">重新同步這部裝置上的遊戲，並恢復自動更新</string>
+    <string name="setd_ach_update_check">檢查這部裝置上的遊戲是否有新成就</string>
+    <string name="setd_ach_group_auto_match">自動配對</string>
+    <string name="setd_ach_matching">正在配對遊戲…</string>
+    <string name="setd_ach_auto_match">自動配對遊戲</string>
+    <string name="setd_ach_auto_match_sublabel">將這部裝置上的遊戲連結至 RetroAchievements（ROM 雜湊值）和 Steam</string>
+    <string name="setd_ach_group_reset">重設</string>
+    <string name="setd_ach_clearing">正在清除成就…</string>
+    <string name="setd_ach_clear_row">清除所有追蹤的成就</string>
+    <string name="setd_ach_clear_row_sublabel">移除 Play Field Portal 中記錄的所有成就。你的遊戲和提供者連結會保留。</string>
+    <string name="setd_ach_clear_title">要清除所有追蹤的成就嗎？</string>
+    <string name="setd_ach_clear_message">這會移除 Play Field Portal 中記錄的所有成就，包括已獲得的進度和已不再安裝之遊戲的記錄。你的遊戲和提供者連結會保留。遊戲必須重新同步才能再次顯示成就。</string>
+    <string name="setd_ach_clear_confirm">清除成就</string>
+</resources>

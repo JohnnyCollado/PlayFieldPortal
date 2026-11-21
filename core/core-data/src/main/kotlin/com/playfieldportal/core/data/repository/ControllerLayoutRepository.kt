@@ -11,8 +11,14 @@ import com.playfieldportal.core.domain.model.ControllerLayoutPrefs
 import com.playfieldportal.core.domain.model.gamepadMappingsFor
 import com.playfieldportal.core.domain.model.ScrollSpeed
 import com.playfieldportal.core.domain.model.XYLayout
+import com.playfieldportal.core.ui.sound.HapticPreference
+import dagger.Binds
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
@@ -25,12 +31,16 @@ private val KEY_DISPLAY_TYPE = stringPreferencesKey("controller_display_type")
 private val KEY_SCROLL_SPEED = stringPreferencesKey("controller_scroll_speed")
 private val KEY_LEFT_BACKS_OUT = booleanPreferencesKey("controller_left_backs_out")
 private val KEY_VIRTUAL_KEYBOARD = booleanPreferencesKey("controller_virtual_keyboard")
+private val KEY_HAPTIC_FEEDBACK = booleanPreferencesKey("controller_haptic_feedback")
 
 @Singleton
 class ControllerLayoutRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val mappingRepository: ControllerMappingRepository,
-) {
+) : HapticPreference {
+
+    override val enabled: Flow<Boolean> =
+        context.pfpDataStore.data.map { it[KEY_HAPTIC_FEEDBACK] ?: false }.distinctUntilChanged()
 
     val prefs: Flow<ControllerLayoutPrefs> = context.pfpDataStore.data.map { store ->
         ControllerLayoutPrefs(
@@ -49,6 +59,7 @@ class ControllerLayoutRepository @Inject constructor(
             // Absent key reads as the default (on) — no migration needed for existing installs.
             leftBacksOut = store[KEY_LEFT_BACKS_OUT] ?: true,
             virtualKeyboard = store[KEY_VIRTUAL_KEYBOARD] ?: true,
+            hapticFeedback = store[KEY_HAPTIC_FEEDBACK] ?: false,
         )
     }
 
@@ -114,6 +125,13 @@ class ControllerLayoutRepository @Inject constructor(
         Timber.i("VirtualKeyboard set: $enabled")
     }
 
+    // ── Haptic feedback ───────────────────────────────────────────────────────
+
+    suspend fun setHapticFeedback(enabled: Boolean) {
+        context.pfpDataStore.edit { it[KEY_HAPTIC_FEEDBACK] = enabled }
+        Timber.i("HapticFeedback set: $enabled")
+    }
+
     // ── Reset ─────────────────────────────────────────────────────────────────
 
     suspend fun resetAllPrefs() {
@@ -124,8 +142,17 @@ class ControllerLayoutRepository @Inject constructor(
             store.remove(KEY_SCROLL_SPEED)
             store.remove(KEY_LEFT_BACKS_OUT)
             store.remove(KEY_VIRTUAL_KEYBOARD)
+            store.remove(KEY_HAPTIC_FEEDBACK)
         }
         mappingRepository.resetToDefaults()
         Timber.i("Controller layout prefs reset to defaults")
     }
+}
+
+/** Hilt binding: core-ui sees [HapticPreference]; the preference lives with the controller settings. */
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class HapticPreferenceModule {
+    @Binds
+    abstract fun bindHapticPreference(impl: ControllerLayoutRepository): HapticPreference
 }

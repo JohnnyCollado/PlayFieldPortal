@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Backup failures -->
+    <string name="bak_no_folder">バックアップフォルダが設定されていません。設定 → バックアップと復元 → バックアップフォルダで選択してください。</string>
+    <string name="bak_too_large">このバックアップは大きすぎて復元できません（最大 20,000 ファイル、2 GB まで）。使っていないアートワークやメディアを削除してから、もう一度お試しください。</string>
+    <string name="bak_write_failed">バックアップフォルダに書き込めませんでした。設定 ▸ システム ▸ バックアップと復元で、バックアップフォルダをもう一度選択してください。</string>
+    <string name="bak_unknown_error">不明なエラー</string>
+
+    <!-- Restore failures -->
+    <string name="bak_open_failed">バックアップファイルを開けませんでした</string>
+    <string name="bak_missing_manifest">バックアップにマニフェストがありません</string>
+    <string name="bak_format_too_new">バックアップ形式 v%1$d は、このアプリが対応するバージョン（v%2$d）より新しいものです</string>
+    <string name="bak_no_uri">URI が指定されていません</string>
+
+    <!-- Notification titles -->
+    <string name="bak_task_created">バックアップを作成しました</string>
+    <string name="bak_task_failed">バックアップに失敗しました</string>
+    <string name="bak_task_restored">バックアップを復元しました</string>
+    <string name="bak_task_restore_failed">復元に失敗しました</string>
+    <string name="bak_results_restored">復元済み</string>
+    <plurals name="bak_items_skipped">
+        <item quantity="other">%d 件をスキップしました</item>
+    </plurals>
+
+    <!-- Items turned away during restore (text before the first colon is the item name) -->
+    <string name="bak_refused_out_of_root">「%1$s」を拒否: 復元可能なフォルダ内にありません</string>
+    <string name="bak_refused_profiles_unparseable">エミュレータープロファイルを拒否: ファイルを解析できませんでした</string>
+    <string name="bak_refused_profile">エミュレータープロファイル「%1$s」を拒否: %2$s</string>
+</resources>

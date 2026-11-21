@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blur_title">Замућење позадине</string>
+    <string name="blur_sublabel">Колико се јако екран замућује иза упита и менија опција. Поставите на нулу да бисте искључили.</string>
+    <string name="blur_unavailable">Потребан је Android 12 или новији.</string>
+</resources>

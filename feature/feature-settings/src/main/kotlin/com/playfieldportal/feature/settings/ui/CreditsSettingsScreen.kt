@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.feature.settings.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
@@ -42,8 +44,8 @@ fun CreditsSettingsScreen(
     val menuSounds = LocalMenuSounds.current
 
     SettingsScaffold(
-        title = "Settings",
-        subtitle = "Credits",
+        title = stringResource(R.string.settings_title),
+        subtitle = stringResource(R.string.sets_credits_title),
         onBack = onBack,
         modifier = modifier,
         onInterceptAction = { action ->
@@ -73,149 +75,117 @@ fun CreditsSettingsScreen(
                 .verticalScroll(scrollState)
                 .padding(horizontal = 48.dp),
         ) {
-            SettingsGroup("XMB design — Sony")
+            SettingsGroup(stringResource(R.string.sets_credits_group_xmb))
 
             CreditParagraph(
-                "The look and feel of this launcher is inspired by the XMB (XrossMediaBar), the " +
-                    "interface Sony created for the PlayStation Portable and PlayStation 3 — the " +
-                    "cross-bar layout, the flowing wave, and the navigation model are all homages to it."
+                stringResource(R.string.sets_credits_xmb_inspired)
             )
             CreditParagraph(
-                "\"XrossMediaBar\", \"XMB\", \"PSP\" and \"PlayStation\" are trademarks of Sony " +
-                    "Interactive Entertainment Inc. Play Field Portal is an independent, non-commercial " +
-                    "fan project — not affiliated with, endorsed by, or sponsored by Sony. Bundled UI " +
-                    "artwork comes from the community \"XMB Menu for ES-DE\" theme (credited below) " +
-                    "and remains the property of its respective authors. No Sony audio is bundled: " +
-                    "every menu sound is credited separately below."
+                stringResource(R.string.sets_credits_xmb_trademarks)
             )
 
             Spacer(Modifier.height(16.dp))
-            SettingsGroup("App icon & logo")
+            SettingsGroup(stringResource(R.string.sets_credits_group_icon))
 
             CreditParagraph(
-                "The Play Field Portal app icon and logo were designed by johakovi. Huge thanks for the " +
-                    "artwork that gives the launcher its identity."
+                stringResource(R.string.sets_credits_icon_designed)
             )
-            CreditLine("Design", "johakovi")
+            CreditLine(stringResource(R.string.sets_credits_label_design), "johakovi")
             link("Reddit", "u/silverloc96", CreditLinks.JOHAKOVI_REDDIT)
 
             Spacer(Modifier.height(16.dp))
-            SettingsGroup("System & console artwork")
+            SettingsGroup(stringResource(R.string.sets_credits_group_artwork))
 
             CreditParagraph(
-                "The system, console and category icons used throughout this launcher are from " +
-                    "the \"XMB Menu for ES-DE\" theme — a community recreation of the PSP XMB."
+                stringResource(R.string.sets_credits_artwork_from)
             )
             CreditParagraph(
-                "All rights to this artwork belong to its creators — Anthony Caccese, building on the " +
-                    "original work by InitialDin. The icons are used here with gratitude and remain the " +
-                    "property of their respective authors."
+                stringResource(R.string.sets_credits_artwork_rights)
             )
-            CreditLine("Project", "XMB Menu for ES-DE")
-            CreditLine("Authors", "Anthony Caccese · InitialDin")
-            link("Source", "github.com/anthonycaccese/xmb-menu-es-de", CreditLinks.XMB_THEME)
+            CreditLine(stringResource(R.string.sets_credits_label_project), "XMB Menu for ES-DE")
+            CreditLine(stringResource(R.string.sets_credits_label_authors), "Anthony Caccese · InitialDin")
+            link(stringResource(R.string.sets_credits_label_source), "github.com/anthonycaccese/xmb-menu-es-de", CreditLinks.XMB_THEME)
 
             Spacer(Modifier.height(16.dp))
-            SettingsGroup("Controller button icons")
+            SettingsGroup(stringResource(R.string.sets_credits_group_buttons))
 
             CreditParagraph(
-                "Every on-screen button prompt — the PlayStation, Xbox and Nintendo face buttons, " +
-                    "D-pads, bumpers, triggers, sticks and system buttons — is drawn from Zacksly's " +
-                    "button icon packs, used under the Creative Commons Attribution 3.0 license."
+                stringResource(R.string.sets_credits_buttons_from)
             )
             CreditParagraph(
-                "The artwork is unmodified: only the file names were changed to Android resource " +
-                    "names, and just the icons the launcher renders are bundled."
+                stringResource(R.string.sets_credits_buttons_unmodified)
             )
-            CreditLine("Author", "Zacksly")
-            link("Website", "zacksly.itch.io", CreditLinks.ZACKSLY_SITE)
-            link("Support", "patreon.com/zacksly", CreditLinks.ZACKSLY_PATREON)
+            CreditLine(stringResource(R.string.sets_credits_label_author), "Zacksly")
+            link(stringResource(R.string.sets_credits_label_website), "zacksly.itch.io", CreditLinks.ZACKSLY_SITE)
+            link(stringResource(R.string.sets_credits_label_support), "patreon.com/zacksly", CreditLinks.ZACKSLY_PATREON)
             CreditLine(
-                "Packs",
+                stringResource(R.string.sets_credits_label_packs),
                 "PS5 Button Icons and Controls · Xbox Series Button Icons and Controls · " +
                     "Switch 2 Button Icons and Controls"
             )
-            link("License", "CC BY 3.0 — creativecommons.org/licenses/by/3.0", CreditLinks.CC_BY_3)
+            link(stringResource(R.string.sets_credits_label_license), "CC BY 3.0 — creativecommons.org/licenses/by/3.0", CreditLinks.CC_BY_3)
 
             Spacer(Modifier.height(16.dp))
-            SettingsGroup("Menu sounds")
+            SettingsGroup(stringResource(R.string.sets_credits_group_sounds))
 
             CreditParagraph(
-                "The bundled menu sounds — navigation, back, confirm, error, launch, notification " +
-                    "and the boot chime — are built from royalty-free audio published on Pixabay, " +
-                    "edited for the launcher: trimmed, re-pitched, re-levelled and converted. Thanks " +
-                    "to the creators whose work the set is built from."
+                stringResource(R.string.sets_credits_sounds_built)
             )
             CreditParagraph(
-                "The Pixabay Content License does not require attribution; it is given here with " +
-                    "thanks anyway. If you are one of these creators and would like the credit " +
-                    "changed or an asset removed, please reach out."
+                stringResource(R.string.sets_credits_sounds_license)
             )
-            link("Source", "Pixabay — pixabay.com", CreditLinks.PIXABAY)
-            link("License", "Pixabay Content License — pixabay.com/service/license-summary", CreditLinks.PIXABAY_LICENSE)
+            link(stringResource(R.string.sets_credits_label_source), "Pixabay — pixabay.com", CreditLinks.PIXABAY)
+            link(stringResource(R.string.sets_credits_label_license), "Pixabay Content License — pixabay.com/service/license-summary", CreditLinks.PIXABAY_LICENSE)
             link("Luca di Alessandro", "pixabay.com/users/lucadialessandro-25927643", CreditLinks.PIXABAY_LUCA)
             link("SoundReality", "pixabay.com/users/soundreality-31074404", CreditLinks.PIXABAY_SOUNDREALITY)
             link("Musheran", "pixabay.com/users/musheran-40634446", CreditLinks.PIXABAY_MUSHERAN)
             link("Universfield", "pixabay.com/users/universfield-28281460", CreditLinks.PIXABAY_UNIVERSFIELD)
 
             Spacer(Modifier.height(16.dp))
-            SettingsGroup("Game artwork & metadata")
+            SettingsGroup(stringResource(R.string.sets_credits_group_metadata))
 
             CreditParagraph(
-                "Box art, 3D boxes, cartridge/disc shots, hero banners, logos, icons, manuals, " +
-                    "video snaps and game metadata are fetched at your request from third-party " +
-                    "providers and remain the property of their respective owners."
+                stringResource(R.string.sets_credits_metadata_fetched)
             )
-            link("Primary scraper", "ScreenScraper — screenscraper.fr, community-maintained game media database", CreditLinks.SCREENSCRAPER)
-            link("Artwork", "SteamGridDB — steamgriddb.com", CreditLinks.STEAMGRIDDB)
-            CreditLine("Metadata", "TheGamesDB · IGDB")
+            link(stringResource(R.string.sets_credits_label_primary_scraper), stringResource(R.string.sets_credits_value_screenscraper), CreditLinks.SCREENSCRAPER)
+            link(stringResource(R.string.sets_credits_label_artwork), "SteamGridDB — steamgriddb.com", CreditLinks.STEAMGRIDDB)
+            CreditLine(stringResource(R.string.sets_credits_label_metadata), "TheGamesDB · IGDB")
 
             Spacer(Modifier.height(16.dp))
-            SettingsGroup("Achievements — Shiba Coins")
+            SettingsGroup(stringResource(R.string.sets_credits_group_achievements))
 
             CreditParagraph(
-                "Achievement data for the Shiba Coins system comes from the following services and " +
-                    "projects, and remains the property of their respective owners."
+                stringResource(R.string.sets_credits_achievements_from)
             )
-            link("RetroAchievements", "retroachievements.org — community-made achievement sets and unlock data for retro games, via the official RetroAchievements Web API and api-kotlin client", CreditLinks.RETROACHIEVEMENTS)
-            link("Steam", "Powered by Steam — achievement schemas and unlock data via the Steam Web API, using your own key. Steam and the Steam logo are trademarks of Valve Corporation. steampowered.com", CreditLinks.STEAM)
+            link("RetroAchievements", stringResource(R.string.sets_credits_value_retroachievements), CreditLinks.RETROACHIEVEMENTS)
+            link("Steam", stringResource(R.string.sets_credits_value_steam), CreditLinks.STEAM)
 
             Spacer(Modifier.height(16.dp))
             SettingsGroup("Goldberg Steam Emulator (gbe_fork)")
 
             CreditParagraph(
-                "Local achievement tracking for Steam-emulated PC games bundles the Goldberg Steam " +
-                    "Emulator — specifically gbe_fork, the community fork maintained by Detanup01 and " +
-                    "contributors, building on the original Goldberg Emulator by Mr. Goldberg."
+                stringResource(R.string.sets_credits_goldberg_bundles)
             )
             CreditParagraph(
-                "The emulator is free software licensed under the GNU Lesser General Public License " +
-                    "v3.0 (LGPL-3.0). Play Field Portal bundles an unmodified build of its " +
-                    "steam_api64.dll; the complete corresponding source code and the full license text " +
-                    "are available at the links below."
+                stringResource(R.string.sets_credits_goldberg_license)
             )
-            CreditLine("Project", "gbe_fork — Detanup01 and contributors")
-            link("Source", "github.com/Detanup01/gbe_fork", CreditLinks.GBE_FORK)
-            link("Original project", "Goldberg Emulator by Mr. Goldberg — gitlab.com/Mr_Goldberg/goldberg_emulator", CreditLinks.GOLDBERG)
-            link("License", "LGPL-3.0 — gnu.org/licenses/lgpl-3.0.html", CreditLinks.LGPL_3)
+            CreditLine(stringResource(R.string.sets_credits_label_project), stringResource(R.string.sets_credits_value_gbe))
+            link(stringResource(R.string.sets_credits_label_source), "github.com/Detanup01/gbe_fork", CreditLinks.GBE_FORK)
+            link(stringResource(R.string.sets_credits_label_original_project), stringResource(R.string.sets_credits_value_goldberg_original), CreditLinks.GOLDBERG)
+            link(stringResource(R.string.sets_credits_label_license), "LGPL-3.0 — gnu.org/licenses/lgpl-3.0.html", CreditLinks.LGPL_3)
 
             Spacer(Modifier.height(16.dp))
-            SettingsGroup("Support the project")
+            SettingsGroup(stringResource(R.string.sets_credits_group_support))
 
             CreditParagraph(
-                "Thank you all for your support. I created this as a love letter to the PSP and the " +
-                    "amazing community that loves it as well, so this project will forever remain " +
-                    "free. With that said, if you appreciate what I do and would like to show that " +
-                    "appreciation in another way, you can buy me a taco. Of course, donations are " +
-                    "always optional and never required. Love y'all, and Happy June 15th."
+                stringResource(R.string.sets_credits_support_thanks)
             )
-            link("Buy me a Taco", "buymeacoffee.com/johnnycolli", CreditLinks.BUY_ME_A_TACO)
+            link(stringResource(R.string.sets_credits_label_buy_taco), "buymeacoffee.com/johnnycolli", CreditLinks.BUY_ME_A_TACO)
 
             Spacer(Modifier.height(16.dp))
-            SettingsGroup("Notes")
+            SettingsGroup(stringResource(R.string.sets_credits_group_notes))
             CreditParagraph(
-                "If you are a rights holder and would like attribution changed or any asset removed, " +
-                    "please reach out and it will be addressed promptly."
+                stringResource(R.string.sets_credits_notes_text)
             )
             Spacer(Modifier.height(24.dp))
         }

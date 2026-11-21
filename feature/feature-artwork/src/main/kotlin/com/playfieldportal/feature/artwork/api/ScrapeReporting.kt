@@ -7,9 +7,21 @@ import com.playfieldportal.core.domain.model.ResultItem
 import com.playfieldportal.core.domain.model.ResultOutcome
 import com.playfieldportal.core.domain.model.ResultsLabels
 import com.playfieldportal.core.domain.model.toDetailAction
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.artwork.R
 
 // How an artwork or metadata pass reads in the notification panel (the notification details plan
 // §10): one Results item per game, "Updated" or "Failed" with the reason and its code.
+
+/** [classifyScrapeFailure] for a [UiText]: our own texts by which one they are, raw words by their content. */
+fun classifyScrapeFailureText(message: UiText?): PfpErrorCode = when (message) {
+    is UiText.Res -> when (message.id) {
+        R.string.art_error_not_found_any_source, R.string.art_error_game_not_found -> PfpErrorCode.AR_3003
+        else -> PfpErrorCode.AR_9001
+    }
+    is UiText.Raw -> classifyScrapeFailure(message.value)
+    else -> PfpErrorCode.AR_9001
+}
 
 /** A provider's or exception's words read for their cause. */
 fun classifyScrapeFailure(message: String?): PfpErrorCode {
@@ -25,19 +37,23 @@ fun classifyScrapeFailure(message: String?): PfpErrorCode {
     }
 }
 
-fun GameScrapeOutcome.toResultItem(): ResultItem {
+/** [resolve] puts a text into the user's language; callers pass `{ it.resolve(context) }`. */
+fun GameScrapeOutcome.toResultItem(resolve: (UiText) -> String): ResultItem {
     val open = NotificationAction.OpenGame(gameId).toDetailAction()
     if (success) return ResultItem(primary = title, outcome = ResultOutcome.DONE, action = open)
-    val code = classifyScrapeFailure(message)
+    val code = classifyScrapeFailureText(message)
     return ResultItem(
         primary = title,
         outcome = ResultOutcome.FAILED,
-        reason = message?.takeIf { it.isNotBlank() } ?: code.why,
+        reason = message?.let(resolve)?.takeIf { it.isNotBlank() } ?: code.why,
         code = code.id,
         action = open,
     )
 }
 
 /** One item per game, failures first, successes labelled "Updated". */
-fun scrapeResults(outcomes: List<GameScrapeOutcome>): NotificationDetail.Results =
-    NotificationDetail.results(outcomes.map { it.toResultItem() }, labels = ResultsLabels(done = "Updated"))
+fun scrapeResults(outcomes: List<GameScrapeOutcome>, resolve: (UiText) -> String): NotificationDetail.Results =
+    NotificationDetail.results(
+        outcomes.map { it.toResultItem(resolve) },
+        labels = ResultsLabels(done = resolve(UiText.res(R.string.art_results_label_updated))),
+    )

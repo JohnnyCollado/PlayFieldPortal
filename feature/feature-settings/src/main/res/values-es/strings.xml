@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Ajustes</string>
+    <string name="sound_title">Sonido</string>
+    <string name="sound_group_master">General</string>
+    <string name="sound_group_levels">Niveles</string>
+    <string name="sound_group_sounds">Sonidos</string>
+    <string name="sound_master_volume">Volumen general</string>
+    <string name="sound_master_volume_help">Ajusta todos los sonidos del launcher. En 0, el launcher queda en silencio.</string>
+    <string name="sound_ambience_help">Se repite mientras navegas. OGG se repite sin cortes; MP3 puede hacer un clic.</string>
+    <string name="sound_rejected_title">No se pudo usar ese sonido</string>
+    <string name="sound_reset_confirm_title">¿Restablecer el sonido a los valores predeterminados?</string>
+    <string name="sound_reset_confirm_message">Cada sonido del menú vuelve a la muestra de PFP incluida y cada nivel, incluido el general, vuelve al máximo. Tu pista de ambiente y los medios de Boot Video y Game Boot no se ven afectados.</string>
+    <string name="sound_reset_confirm_action">Restablecer</string>
+    <string name="sound_reset_row">Restablecer sonido a los valores predeterminados</string>
+    <string name="sound_reset_row_help">Devuelve cada sonido del menú a la muestra de PFP incluida y cada nivel al máximo. Conserva tu pista de ambiente.</string>
+    <string name="sound_channel_navigation">Navegación</string>
+    <string name="sound_channel_back">Atrás / Cancelar</string>
+    <string name="sound_channel_confirm">Confirmar / Aplicar</string>
+    <string name="sound_channel_error">Error / No válido</string>
+    <string name="sound_channel_notification">Notificación</string>
+    <string name="sound_channel_boot">Secuencia de arranque</string>
+    <string name="sound_channel_ambience">Ambiente</string>
+    <string name="sound_slot_navigation">Navegación</string>
+    <string name="sound_slot_back">Atrás / Cancelar</string>
+    <string name="sound_slot_confirm">Confirmar / Aplicar</string>
+    <string name="sound_slot_error">Error / No válido</string>
+    <string name="sound_slot_notification">Notificación</string>
+    <string name="sound_slot_ambience">Pista de ambiente</string>
+</resources>

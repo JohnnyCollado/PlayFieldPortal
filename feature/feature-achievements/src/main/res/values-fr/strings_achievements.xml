@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notifications de mise à jour des succès -->
+    <string name="ach_upd_running">Mise à jour des succès installés</string>
+    <string name="ach_upd_running_stop_note">Les succès déjà mis à jour sont conservés.</string>
+    <string name="ach_upd_progress">Vérification de %1$d jeux sur %2$d</string>
+    <string name="ach_upd_stopped">Mise à jour des succès arrêtée</string>
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="one">%d jeu vérifié ; progression enregistrée conservée</item>
+        <item quantity="many">%d jeux vérifiés ; progression enregistrée conservée</item>
+        <item quantity="other">%d jeux vérifiés ; progression enregistrée conservée</item>
+    </plurals>
+    <string name="ach_upd_some_failed">Certains succès n\'ont pas pu être mis à jour</string>
+    <plurals name="ach_upd_failed_message">
+        <item quantity="one">%1$d jeu sur %2$d doit être réessayé</item>
+        <item quantity="many">%1$d jeux sur %2$d doivent être réessayés</item>
+        <item quantity="other">%1$d jeux sur %2$d doivent être réessayés</item>
+    </plurals>
+    <string name="ach_upd_results_done">Mis à jour</string>
+    <string name="ach_upd_updated">Succès mis à jour</string>
+    <plurals name="ach_upd_updated_message">
+        <item quantity="one">%1$d jeu mis à jour · %2$d inchangé(s)</item>
+        <item quantity="many">%1$d jeux mis à jour · %2$d inchangé(s)</item>
+        <item quantity="other">%1$d jeux mis à jour · %2$d inchangé(s)</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">Les succès sont à jour</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="one">%d jeu installé vérifié</item>
+        <item quantity="many">%d jeux installés vérifiés</item>
+        <item quantity="other">%d jeux installés vérifiés</item>
+    </plurals>
+    <string name="ach_upd_paused">Mise à jour des succès en pause</string>
+    <string name="ach_upd_fact_service">Service</string>
+    <string name="ach_upd_pause_offline">Connectez-vous à Internet</string>
+    <string name="ach_upd_pause_reconnect">Reconnectez %1$s</string>
+    <string name="ach_upd_pause_steam_private">Les détails des jeux Steam ne sont pas disponibles</string>
+
+    <!-- Notifications d'association automatique -->
+    <string name="ach_match_running">Association automatique des jeux</string>
+    <string name="ach_match_running_stop_note">Les jeux déjà associés restent liés.</string>
+    <string name="ach_match_stopped_note">Les jeux déjà associés restent liés</string>
+    <string name="ach_match_stopped">Association automatique arrêtée</string>
+    <string name="ach_match_recognized">Jeux reconnus</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="one">%d jeu installé associé. Mise à jour de ses succès.</item>
+        <item quantity="many">%d jeux installés associés. Mise à jour de leurs succès.</item>
+        <item quantity="other">%d jeux installés associés. Mise à jour de leurs succès.</item>
+    </plurals>
+
+    <!-- Effacement des données de succès -->
+    <string name="ach_clear_done">Données de succès effacées</string>
+    <string name="ach_clear_done_message">Les jeux installés doivent être resynchronisés pour afficher à nouveau les succès</string>
+    <string name="ach_clear_failed">Impossible d\'effacer les succès</string>
+    <string name="ach_clear_failed_message">Rien n\'a été supprimé. Réessayez depuis Paramètres ▸ Succès</string>
+
+    <!-- Local Steam : raisons -->
+    <string name="ach_ls_unavail_store">la boutique n\'a pas pu être interrogée</string>
+    <string name="ach_ls_unavail_steam">Steam n\'est pas disponible pour le moment</string>
+    <string name="ach_ls_steam_unreachable">Impossible de joindre Steam</string>
+    <string name="ach_ls_steam_rate_limited">Steam limite le nombre de requêtes</string>
+    <string name="ach_ls_steam_error">Steam a renvoyé une erreur</string>
+    <string name="ach_ls_steam_needs_key">Steam a besoin de votre clé Web API</string>
+
+    <!-- Local Steam : liaison d'un dossier de jeu -->
+    <string name="ach_link_no_match">Steam n\'a aucun jeu correspondant à \"%1$s\". Renommez le dossier avec le nom Steam du jeu, ou liez-le d\'abord depuis Détails du jeu ▸ Associer le jeu.</string>
+    <string name="ach_link_unavailable">%1$s, l\'app id de ce dossier n\'a donc pas pu être déterminé. Rien n\'a été modifié — réessayez une fois de nouveau en ligne.</string>
+    <string name="ach_link_marker_failed">Impossible de créer steam_appid.txt dans ce dossier — PFP n\'y a peut-être qu\'un accès en lecture.</string>
+    <string name="ach_link_not_recorded">L\'association choisie n\'a pas pu être enregistrée.</string>
+    <string name="ach_link_installer_off">Activez Installer Goldberg et convertir les jeux dans les paramètres des succès avant que PFP n\'écrive dans un dossier de jeu.</string>
+    <string name="ach_link_no_app_id">Ce dossier ne déclare plus d\'app id — choisissez-le à nouveau.</string>
+    <string name="ach_link_need_key">Ajoutez votre clé Steam Web API dans Paramètres ▸ Succès ▸ Identifiants des fournisseurs — la liste des succès en dépend.</string>
+    <string name="ach_link_no_achievements">Steam ne liste aucun succès pour l\'app id %1$s, il n\'y a donc rien à suivre.</string>
+    <string name="ach_link_kit_failed">Impossible d\'écrire le kit de succès : %1$s</string>
+    <string name="ach_link_read_back_failed">Impossible de relire ce dossier. S\'il se trouve sur un stockage amovible, remontez-le et choisissez-le à nouveau.</string>
+    <string name="ach_link_not_steam_build">Aucun fichier de bibliothèque Steam (steam_api64.dll) dans ce dossier : ce n\'est pas une version Steam et l\'émulateur n\'a rien à suivre. Choisissez le dossier qui contient le .exe du jeu.</string>
+
+    <!-- Local Steam : lignes du sélecteur de conversion -->
+    <string name="ach_pick_checking">Vérification sur Steam…</string>
+    <plurals name="ach_pick_coins">
+        <item quantity="one">%1$d pièce  ·  appid %2$s</item>
+        <item quantity="many">%1$d pièces  ·  appid %2$s</item>
+        <item quantity="other">%1$d pièces  ·  appid %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">Aucune liste sur Steam  ·  appid %1$s</string>
+    <string name="ach_pick_needs_key">Clé Steam Web API requise  ·  appid %1$s</string>
+    <string name="ach_pick_no_answer">Steam n\'a pas répondu  ·  appid %1$s</string>
+
+    <!-- Local Steam : résumé de l'association groupée -->
+    <string name="ach_batch_already_running">Une association groupée est déjà en cours.</string>
+    <string name="ach_batch_no_folders">Aucun dossier de jeu ici. Choisissez le dossier qui CONTIENT vos dossiers de jeux, pas le dossier d\'un seul jeu.</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="one">%d dossier trouvé, mais ce n\'est pas une version Steam — aucune bibliothèque steam_api, l\'émulateur n\'a donc rien à suivre.</item>
+        <item quantity="many">%d dossiers trouvés, mais aucun n\'est une version Steam — aucune bibliothèque steam_api, l\'émulateur n\'a donc rien à suivre.</item>
+        <item quantity="other">%d dossiers trouvés, mais aucun n\'est une version Steam — aucune bibliothèque steam_api, l\'émulateur n\'a donc rien à suivre.</item>
+    </plurals>
+    <string name="ach_batch_linked">%1$d lié(s) à des jeux de la bibliothèque</string>
+    <string name="ach_batch_tracked">%1$d suivi(s) séparément</string>
+    <string name="ach_batch_converting">%1$d en attente de conversion</string>
+    <plurals name="ach_batch_matched">
+        <item quantity="one">%1$d dossier associé sur %2$d.</item>
+        <item quantity="many">%1$d dossiers associés sur %2$d.</item>
+        <item quantity="other">%1$d dossiers associés sur %2$d.</item>
+    </plurals>
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="one">%1$d dossier associé sur %2$d : %3$s.</item>
+        <item quantity="many">%1$d dossiers associés sur %2$d : %3$s.</item>
+        <item quantity="other">%1$d dossiers associés sur %2$d : %3$s.</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="one">%1$d n\'a pas pu être identifié d\'après son nom — ouvrez la page Shiba Coins du jeu et lancez Auto-Match pour choisir son dossier.</item>
+        <item quantity="many">%1$d n\'ont pas pu être identifiés d\'après leur nom — ouvrez la page Shiba Coins de chaque jeu et lancez Auto-Match pour choisir son dossier.</item>
+        <item quantity="other">%1$d n\'ont pas pu être identifiés d\'après leur nom — ouvrez la page Shiba Coins de chaque jeu et lancez Auto-Match pour choisir son dossier.</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="one">%1$d n\'est pas dans votre bibliothèque — ajoutez-le d\'abord à la carte Windows, puis relancez l\'association.</item>
+        <item quantity="many">%1$d ne sont pas dans votre bibliothèque — ajoutez-les d\'abord à la carte Windows, puis relancez l\'association.</item>
+        <item quantity="other">%1$d ne sont pas dans votre bibliothèque — ajoutez-les d\'abord à la carte Windows, puis relancez l\'association.</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="one">%1$d n\'est pas une version Steam.</item>
+        <item quantity="many">%1$d ne sont pas des versions Steam.</item>
+        <item quantity="other">%1$d ne sont pas des versions Steam.</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="one">%1$d a échoué — consultez le journal.</item>
+        <item quantity="many">%1$d ont échoué — consultez le journal.</item>
+        <item quantity="other">%1$d ont échoué — consultez le journal.</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">Impossible d\'ouvrir ce dossier.</string>
+    <string name="ach_batch_fail_read_back">%1$s : impossible de le relire après l\'identification.</string>
+    <string name="ach_batch_fail_reason">%1$s : %2$s.</string>
+    <string name="ach_batch_fail_marker">%1$s : impossible de créer steam_appid.txt.</string>
+
+    <!-- Analyse de la bibliothèque Vita3K -->
+    <string name="ach_vita_set_folder">Définissez d\'abord votre dossier de données Vita3K (ux0).</string>
+    <string name="ach_vita_link_invalid">Le lien vers ce dossier Vita3K n\'est pas valide — accordez à nouveau l\'accès.</string>
+    <string name="ach_vita_no_ux0">ux0/app introuvable dans le dossier autorisé — choisissez votre dossier ux0 de Vita3K (ou le dossier qui le contient).</string>
+    <string name="ach_vita_no_app">Aucun dossier app/ dans ux0 — vérifiez le dossier autorisé.</string>
+    <string name="ach_vita_none_installed">Aucun jeu Vita installé trouvé dans ux0/app. Installez d\'abord un jeu dans Vita3K.</string>
+    <plurals name="ach_vita_no_new">
+        <item quantity="one">Aucun nouveau jeu Vita — %d déjà dans votre bibliothèque.</item>
+        <item quantity="many">Aucun nouveau jeu Vita — %d déjà dans votre bibliothèque.</item>
+        <item quantity="other">Aucun nouveau jeu Vita — %d déjà dans votre bibliothèque.</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="one">%d jeu Vita importé.</item>
+        <item quantity="many">%d jeux Vita importés.</item>
+        <item quantity="other">%d jeux Vita importés.</item>
+    </plurals>
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="one">%1$d jeu Vita importé, %2$d mis à jour.</item>
+        <item quantity="many">%1$d jeux Vita importés, %2$d mis à jour.</item>
+        <item quantity="other">%1$d jeux Vita importés, %2$d mis à jour.</item>
+    </plurals>
+</resources>

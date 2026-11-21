@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Voice microphone sensitivity (Discord) -->
+    <string name="data_mic_sensitivity_auto">Automaticky</string>
+    <string name="data_mic_sensitivity_high">Vysoká</string>
+    <string name="data_mic_sensitivity_low">Nízká · filtruje cvakání</string>
+    <string name="data_mic_sensitivity_minimal">Minimální · jen hlasitá řeč</string>
+
+    <!-- Discord sign-in errors -->
+    <string name="data_discord_offline">Jste offline. Připojte se k internetu a zkuste to znovu.</string>
+    <string name="data_discord_unreachable">Nelze se spojit s Discordem</string>
+    <string name="data_discord_signin_network_error">Chyba sítě při přihlašování</string>
+
+    <!-- Music and video players -->
+    <string name="data_music_no_player">Tuto skladbu nedokázal otevřít žádný hudební přehrávač. Nainstalujte přehrávač nebo jej vyberte v Nastavení → Hudba.</string>
+    <string name="data_video_no_player_open">Tento soubor nedokázal otevřít žádný přehrávač videa. Nainstalujte přehrávač nebo jej vyberte v Nastavení → Video.</string>
+    <string name="data_video_chooser_title">Přehrát video pomocí…</string>
+    <string name="data_video_none_installed">Není nainstalován žádný přehrávač videa.</string>
+    <string name="data_video_bad_location">Umístění tohoto videa je neplatné.</string>
+    <string name="data_video_unreachable">Tento soubor videa nebyl nalezen nebo byl ztracen přístup. Zkuste knihovnu znovu prohledat.</string>
+    <string name="data_video_player_cannot_open">%1$s nemůže otevřít toto video nebo není nainstalován.</string>
+    <string name="data_video_that_player">Tento přehrávač</string>
+    <string name="data_video_none_installed_for_file">Není nainstalován žádný přehrávač videa, který by otevřel tento soubor.</string>
+
+    <!-- Lock screen image -->
+    <string name="data_lockscreen_unreadable">Obrázek nelze přečíst</string>
+    <string name="data_lockscreen_rejected">Toto zařízení nepřijalo obrázek pro zamykací obrazovku</string>
+
+    <!-- PSP theme import (.ptf) -->
+    <string name="data_ptf_unreadable">Soubor nelze přečíst (nebo je příliš velký)</string>
+    <string name="data_ptf_not_ptf">Nejde o soubor motivu PSP (.ptf)</string>
+    <string name="data_ptf_unparseable">Soubor motivu nelze zpracovat</string>
+    <string name="data_ptf_wallpaper_missing">Motiv neobsahuje obrázek tapety</string>
+    <string name="data_ptf_wallpaper_unsupported">Tento motiv komprimuje tapetu nepodporovanou metodou</string>
+    <string name="data_ptf_wallpaper_damaged">Tapeta motivu je poškozená a nelze ji dekódovat</string>
+    <string name="data_ptf_save_failed">Motiv nelze uložit</string>
+
+    <!-- Custom media names -->
+    <string name="data_custom_video">Vlastní video</string>
+    <string name="data_custom_sound">Vlastní zvuk</string>
+
+    <!-- Controllers -->
+    <string name="data_controller_fallback_name">Ovladač</string>
+</resources>

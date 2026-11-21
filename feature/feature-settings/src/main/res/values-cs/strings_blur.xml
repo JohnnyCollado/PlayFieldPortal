@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blur_title">Rozostření pozadí</string>
+    <string name="blur_sublabel">Jak silně se obrazovka rozostří za výzvami a nabídkou možností. Nastavením na nulu se vypne.</string>
+    <string name="blur_unavailable">Vyžaduje Android 12 nebo novější.</string>
+</resources>

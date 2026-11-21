@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blur_title">تمويه الخلفية</string>
+    <string name="blur_sublabel">مدى تمويه الشاشة خلف الرسائل وقائمة الخيارات. اضبطه على صفر لإيقافه.</string>
+    <string name="blur_unavailable">يتطلب Android 12 أو أحدث.</string>
+</resources>

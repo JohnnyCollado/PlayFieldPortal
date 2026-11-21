@@ -53,13 +53,19 @@ enum class MenuSound {
      * file that used to be registered as the Back sound.
      */
     ERROR,
+    /**
+     * A context / options menu opened. Played by the options panels themselves when they appear;
+     * unassigned it sounds as the SELECT it replaces (Navigation's sample at Navigation's level).
+     */
+    OPTIONS,
     ;
 
     /** The user-customizable slot this event resolves through (Interface ▸ Sound).
      *
-     * SCROLL, SELECT and SYSTEM_BROWSE all land on [UiMediaSlot.SOUND_SCROLL]: the merged
-     * Navigation row is one sample covering three events — a default, not a law (75+ call sites
-     * still distinguish the events, and `MenuSound` itself is unchanged).
+     * SCROLL and SELECT land on [UiMediaSlot.SOUND_SCROLL]: the merged Navigation row is one
+     * sample covering both events — a default, not a law (75+ call sites still distinguish the
+     * events). SYSTEM_BROWSE and OPTIONS have rows of their own ([UiMediaSlot.SOUND_CATEGORY],
+     * [UiMediaSlot.SOUND_OPTIONS]) that fall back to Navigation's sound while unassigned.
      *
      * There is deliberately no LAUNCH event. Opening an app is silent, and opening a game is
      * scored by the GameBoot presentation or by nothing at all — see
@@ -68,8 +74,9 @@ enum class MenuSound {
     val slot: UiMediaSlot
         get() = when (this) {
             SCROLL -> UiMediaSlot.SOUND_SCROLL
-            SYSTEM_BROWSE -> UiMediaSlot.SOUND_SCROLL
+            SYSTEM_BROWSE -> UiMediaSlot.SOUND_CATEGORY
             SELECT -> UiMediaSlot.SOUND_SCROLL
+            OPTIONS -> UiMediaSlot.SOUND_OPTIONS
             CONFIRM -> UiMediaSlot.SOUND_CONFIRM
             BACK -> UiMediaSlot.SOUND_BACK
             NOTIFICATION -> UiMediaSlot.SOUND_NOTIFICATION
@@ -82,13 +89,15 @@ enum class MenuSound {
      * Deliberately parallel to [slot] rather than derived from it: the two happen to agree today
      * — one row, one sample, one level — and writing the mapping out keeps them free to diverge
      * without a silent behaviour change. Navigation's three events share one channel for the same
-     * reason they share one slot.
+     * reason they share one slot. Category and Options follow Navigation's level until set
+     * ([AudioChannel.fallback]).
      */
     val channel: AudioChannel
         get() = when (this) {
             SCROLL -> AudioChannel.NAVIGATION
-            SYSTEM_BROWSE -> AudioChannel.NAVIGATION
+            SYSTEM_BROWSE -> AudioChannel.CATEGORY
             SELECT -> AudioChannel.NAVIGATION
+            OPTIONS -> AudioChannel.OPTIONS
             CONFIRM -> AudioChannel.CONFIRM
             BACK -> AudioChannel.BACK
             NOTIFICATION -> AudioChannel.NOTIFICATION
@@ -117,6 +126,7 @@ class MenuSoundPlayer @Inject constructor(
     @ApplicationContext private val context: Context,
     private val uiMedia: UiMediaPaths,
     private val levels: AudioLevels,
+    private val haptics: HapticFeedbackPlayer,
 ) {
     /**
      * Resolved gain per channel, cached from [AudioLevels] because [play] is called from the
@@ -144,8 +154,8 @@ class MenuSoundPlayer @Inject constructor(
         )
         .build()
 
-    // Slot -> SoundPool sample id for the BUNDLED defaults, one load per DISTINCT slot —
-    // Navigation's three events share the sfx_cursor sample by construction. Written once in init.
+    // Slot -> SoundPool sample id for the BUNDLED defaults, one load per DISTINCT sample —
+    // Navigation, Category and Options share the sfx_cursor sample by construction. Written once in init.
     private val defaultIds = HashMap<UiMediaSlot, Int>()
 
     // Slot -> sample id for the USER's imported sounds. Replaced wholesale on reload, so
@@ -168,9 +178,10 @@ class MenuSoundPlayer @Inject constructor(
         }
         // One bundled load per DISTINCT event slot. The slot→res mapping lives in
         // UiMediaDefaults.bundledDefaultRes() so the boot pipeline cannot drift from it.
+        val idByRes = HashMap<Int, Int>()
         for (slot in MenuSound.entries.map { it.slot }.distinct()) {
             val res = slot.bundledDefaultRes() ?: continue
-            defaultIds[slot] = pool.load(context, res, 1)
+            defaultIds[slot] = idByRes.getOrPut(res) { pool.load(context, res, 1) }
         }
 
         // Reload custom samples whenever the store's stamp bumps — an import, a clear, or a
@@ -201,12 +212,15 @@ class MenuSoundPlayer @Inject constructor(
      * `maxStreams = 4` already gives "interrupt rather than queue".
      */
     fun play(sound: MenuSound, ignoreMute: Boolean = false) {
+        // Haptics are independent of the audio mute (master at 0 silences sounds, not the hand)
+        // and have their own switch; the Preview button must not buzz.
+        if (!ignoreMute) haptics.onSound(sound)
         // ignoreMute is the Sound screen's Preview: auditioning a sound you just picked has to be
         // audible even with master at zero, which is now the mute. Preview plays at full so what
         // you hear is the SAMPLE, not the sample times two sliders you may be about to change.
         val gain = if (ignoreMute) 1f else gains[sound.channel] ?: 1f
         if (gain <= 0f) return
-        val id = customIds[sound.slot]?.takeIf { it in loaded } ?: defaultIds[sound.slot] ?: return
+        val id = resolveSampleId(sound.slot, customIds, defaultIds, loaded) ?: return
         // Skip if the sample hasn't finished decoding yet — better silent than a click/glitch.
         // A custom sample that never loaded has already fallen through to the default above.
         if (id !in loaded) return
@@ -232,6 +246,11 @@ class MenuSoundPlayer @Inject constructor(
             runCatching { pool.unload(id) }
         }
     }
+
+    /** Registers the host view the device's haptic ticks are delivered through (no permission needed). */
+    fun attachHapticView(view: android.view.View) = haptics.attachView(view)
+
+    fun detachHapticView(view: android.view.View) = haptics.detachView(view)
 
     /** Immediate reload, for the settings screen right after an import commits. */
     fun refreshCustomSamples() {

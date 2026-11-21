@@ -1,11 +1,14 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import androidx.annotation.StringRes
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.artwork.match.MatchConfidence
 import com.playfieldportal.feature.artwork.match.MatchSignal
 import com.playfieldportal.feature.artwork.match.ScoredStorefrontCandidate
 import com.playfieldportal.feature.artwork.match.Storefront
 import com.playfieldportal.feature.artwork.match.StorefrontCandidate
 import com.playfieldportal.feature.artwork.match.StorefrontMatchRepository
+import com.playfieldportal.feature.xmb.R
 
 // ── Storefront picker state (C23 T6, Phases 10 and 18) ───────────────────────
 // Screen-shaped, not provider-shaped: every enum and every score has already become a string by
@@ -17,7 +20,7 @@ data class StorefrontCandidateRow(
     val storeLabel: String,
     val storeId: String,
     /** `appid 379720` — the store's own word for its id, so the number is never bare. */
-    val idLabel: String,
+    val idLabel: UiText,
     val title: String,
     /** `2016  ·  id Software  ·  Bethesda Softworks`, or null when the store said none of it. */
     val subtitle: String?,
@@ -25,7 +28,7 @@ data class StorefrontCandidateRow(
     val thumbUrl: String? = null,
     val score: Int,
     /** Chip text for the signals worth showing on the row itself. */
-    val strongSignals: List<String>,
+    val strongSignals: List<UiText>,
     /** The full ledger, including what was NOT compared — see [SignalLine]. */
     val signalLines: List<SignalLine>,
     /** Kept so confirming a choice hands the resolver the candidate it gave us. */
@@ -132,19 +135,19 @@ data class StorefrontMatchUi(
 }
 
 /** What a Rematch row can do. Order is the Left/Right order on a controller. */
-enum class RematchAction(val label: String) {
-    SEARCH("Search"),
-    REPLACE("Replace"),
-    REMOVE("Remove"),
+enum class RematchAction(@StringRes val labelRes: Int) {
+    SEARCH(R.string.det_rematch_search),
+    REPLACE(R.string.det_rematch_replace),
+    REMOVE(R.string.det_rematch_remove),
 }
 
 data class StorefrontRematchRow(
     val store: Storefront,
     val storeLabel: String,
     /** `DOOM (2016)  ·  appid 379720`, or `Not linked`. */
-    val detail: String,
+    val detail: UiText,
     /** The quiet second line: when it was last checked, or why a store cannot be searched. */
-    val note: String?,
+    val note: UiText?,
     val userConfirmed: Boolean,
     /** False for a store with no provider — its actions render dimmed and do nothing. */
     val enabled: Boolean,
@@ -215,13 +218,13 @@ fun storefrontRowOf(scored: ScoredStorefrontCandidate): StorefrontCandidateRow {
         if (MatchSignal.RELEASE_YEAR !in scored.signals &&
             MatchSignal.RELEASE_YEAR_CONFLICT !in scored.signals
         ) {
-            add(absentLine("Release year", candidate.releaseYear != null))
+            add(absentLine(R.string.det_signal_field_release_year, candidate.releaseYear != null))
         }
         if (MatchSignal.DEVELOPER !in scored.signals) {
-            add(absentLine("Developer", !candidate.developer.isNullOrBlank()))
+            add(absentLine(R.string.det_signal_field_developer, !candidate.developer.isNullOrBlank()))
         }
         if (MatchSignal.PUBLISHER !in scored.signals) {
-            add(absentLine("Publisher", !candidate.publisher.isNullOrBlank()))
+            add(absentLine(R.string.det_signal_field_publisher, !candidate.publisher.isNullOrBlank()))
         }
     }
 
@@ -250,29 +253,37 @@ fun storefrontRowOf(scored: ScoredStorefrontCandidate): StorefrontCandidateRow {
  * means the store did say something and it did not agree with the local row — which is a weaker
  * statement than a conflict, and is deliberately not scored as one.
  */
-private fun absentLine(field: String, storeHasIt: Boolean): SignalLine = SignalLine(
-    label = if (storeHasIt) "$field — no match against your copy" else "$field — the store didn't say",
+private fun absentLine(@StringRes field: Int, storeHasIt: Boolean): SignalLine = SignalLine(
+    label = UiText.res(
+        if (storeHasIt) R.string.det_signal_absent_no_match else R.string.det_signal_absent_silent,
+        UiText.res(field),
+    ),
     points = "—",
     counted = false,
 )
 
 /** The store's own word for its identifier, so a bare number never appears on screen. */
-fun Storefront.idLabel(id: String): String = when (this) {
-    Storefront.STEAM -> "appid $id"
-    Storefront.GOG -> "product $id"
-    Storefront.EPIC -> "catalog $id"
-}
+fun Storefront.idLabel(id: String): UiText = UiText.res(
+    when (this) {
+        Storefront.STEAM -> R.string.det_store_id_steam
+        Storefront.GOG -> R.string.det_store_id_gog
+        Storefront.EPIC -> R.string.det_store_id_epic
+    },
+    id,
+)
 
-private fun MatchSignal.chipLabel(): String = when (this) {
-    MatchSignal.AUTHORITATIVE_ID -> "Store id"
-    MatchSignal.EXACT_TITLE -> "Exact title"
-    MatchSignal.DEVELOPER -> "Developer matches"
-    MatchSignal.PUBLISHER -> "Publisher matches"
-    MatchSignal.RELEASE_YEAR -> "Year matches"
-    MatchSignal.EDITION_STRIPPED_TITLE -> "Same game, other edition"
-    MatchSignal.PARTIAL_TITLE -> "Partial title"
-    MatchSignal.RELEASE_YEAR_CONFLICT -> "Year disagrees"
-}
+private fun MatchSignal.chipLabel(): UiText = UiText.res(
+    when (this) {
+        MatchSignal.AUTHORITATIVE_ID -> R.string.det_signal_chip_store_id
+        MatchSignal.EXACT_TITLE -> R.string.det_signal_chip_exact_title
+        MatchSignal.DEVELOPER -> R.string.det_signal_chip_developer
+        MatchSignal.PUBLISHER -> R.string.det_signal_chip_publisher
+        MatchSignal.RELEASE_YEAR -> R.string.det_signal_chip_year
+        MatchSignal.EDITION_STRIPPED_TITLE -> R.string.det_signal_chip_other_edition
+        MatchSignal.PARTIAL_TITLE -> R.string.det_signal_chip_partial_title
+        MatchSignal.RELEASE_YEAR_CONFLICT -> R.string.det_signal_chip_year_conflict
+    },
+)
 
 /** A repository row as a Rematch line. */
 fun storefrontRematchRowOf(row: StorefrontMatchRepository.RematchRow): StorefrontRematchRow {
@@ -286,15 +297,18 @@ fun storefrontRematchRowOf(row: StorefrontMatchRepository.RematchRow): Storefron
         store = row.store,
         storeLabel = row.store.label,
         detail = identity?.let { record ->
-            listOfNotNull(record.resolvedTitle, row.store.idLabel(record.storeId)).joinToString("  ·  ")
-        } ?: "Not linked",
+            UiText.Joined(
+                listOfNotNull(record.resolvedTitle?.let { UiText.raw(it) }, row.store.idLabel(record.storeId)),
+                "  ·  ",
+            )
+        } ?: UiText.res(R.string.det_rematch_not_linked),
         note = when {
             // Stated as what is true today rather than as a promise: a store PFP has no way to
             // search may never gain one.
-            !row.searchable -> "Can't be searched — this store has no public catalog to ask"
-            identity == null -> "Nothing stored for this store"
+            !row.searchable -> UiText.res(R.string.det_rematch_note_not_searchable)
+            identity == null -> UiText.res(R.string.det_rematch_note_nothing_stored)
             identity.userConfirmed -> null
-            else -> "Matched automatically"
+            else -> UiText.res(R.string.det_rematch_note_auto)
         },
         userConfirmed = identity?.userConfirmed == true,
         enabled = row.searchable,

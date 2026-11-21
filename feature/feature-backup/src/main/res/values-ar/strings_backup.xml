@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Backup failures -->
+    <string name="bak_no_folder">لم يتم تعيين مجلد للنسخ الاحتياطي. اختر واحدًا من الإعدادات ← النسخ الاحتياطي والاستعادة ← مجلد النسخ الاحتياطي.</string>
+    <string name="bak_too_large">ستكون هذه النسخة الاحتياطية أكبر من أن تُستعاد (الحد الأقصى 20,000 ملف و2 GB). أزِل الصور الفنية أو الوسائط غير المستخدمة وحاول مجددًا.</string>
+    <string name="bak_write_failed">تعذّرت الكتابة في مجلد النسخ الاحتياطي. اختر مجلد النسخ الاحتياطي مجددًا من الإعدادات ▸ النظام ▸ النسخ الاحتياطي والاستعادة.</string>
+    <string name="bak_unknown_error">خطأ غير معروف</string>
+
+    <!-- Restore failures -->
+    <string name="bak_open_failed">تعذّر فتح ملف النسخة الاحتياطية</string>
+    <string name="bak_missing_manifest">النسخة الاحتياطية تفتقد ملف البيان</string>
+    <string name="bak_format_too_new">تنسيق النسخة الاحتياطية v%1$d أحدث مما يدعمه هذا التطبيق (v%2$d)</string>
+    <string name="bak_no_uri">لم يتم توفير URI</string>
+
+    <!-- Notification titles -->
+    <string name="bak_task_created">تم إنشاء النسخة الاحتياطية</string>
+    <string name="bak_task_failed">فشل النسخ الاحتياطي</string>
+    <string name="bak_task_restored">تمت استعادة النسخة الاحتياطية</string>
+    <string name="bak_task_restore_failed">فشلت الاستعادة</string>
+    <string name="bak_results_restored">تمت الاستعادة</string>
+    <plurals name="bak_items_skipped">
+        <item quantity="zero">لم يتم تخطي أي عنصر</item>
+        <item quantity="one">تم تخطي عنصر واحد</item>
+        <item quantity="two">تم تخطي عنصرين</item>
+        <item quantity="few">تم تخطي %d عناصر</item>
+        <item quantity="many">تم تخطي %d عنصرًا</item>
+        <item quantity="other">تم تخطي %d عنصر</item>
+    </plurals>
+
+    <!-- Items turned away during restore. The text before the first colon is shown as the item's name. -->
+    <!-- %1$s is a file path inside the backup -->
+    <string name="bak_refused_out_of_root">مرفوض \'%1$s\': ليس داخل مجلد قابل للاستعادة</string>
+    <string name="bak_refused_profiles_unparseable">ملفات تعريف المحاكيات مرفوضة: تعذّر تحليل الملف</string>
+    <string name="bak_refused_profile">ملف تعريف المحاكي مرفوض \'%1$s\': %2$s</string>
+</resources>

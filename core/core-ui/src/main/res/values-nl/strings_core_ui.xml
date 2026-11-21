@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared button and prompt labels -->
+    <string name="core_cancel">Annuleren</string>
+    <string name="core_ok">OK</string>
+    <string name="core_save">Opslaan</string>
+    <string name="core_apply">Toepassen</string>
+    <string name="core_select">Selecteren</string>
+    <string name="core_close">Sluiten</string>
+    <string name="core_back">Terug</string>
+
+    <!-- Modals (text entry) -->
+    <string name="core_modal_name_label">Naam</string>
+    <string name="core_modal_counter">%1$d / %2$d</string>
+
+    <!-- Convert-to-achievement-tracking picker -->
+    <string name="core_steam_convert_title">Prestatietracking installeren?</string>
+    <string name="core_steam_convert_selected_count">%1$d van %2$d</string>
+    <string name="core_steam_convert_found_count">%1$d gevonden</string>
+    <string name="core_steam_convert_hints">"Omhoog/omlaag  Rijen  •  Select  Wisselen  •  △  Alle/geen  •  Start  Installeren  •  B  Annuleren"</string>
+    <string name="core_steam_convert_loading">Prestatielijst van elk spel ophalen bij Steam…</string>
+    <string name="core_steam_convert_install">Installeren (%1$d)</string>
+    <string name="core_steam_convert_none">Geen</string>
+    <string name="core_steam_convert_all">Alle</string>
+    <string name="core_steam_convert_skip_sync">Overslaan en synchroniseren</string>
+    <string name="core_steam_convert_write_notice">In de map van elk aangevinkt spel schrijft PFP achievements.json, stats.json en configs.user.ini, maakt een map saves aan en hernoemt steam_api64.dll naar steam_api64_o.dll zodat de meegeleverde emulator erdoorheen kan laden.</string>
+    <string name="core_steam_convert_backup_warning">Maak een back-up van de opslagbestanden van elk spel dat je al hebt gespeeld voordat je het converteert — de emulator gaat vanaf de nieuwe opslaglocatie lezen.</string>
+
+    <!-- Shiba player card -->
+    <string name="core_shiba_xp">%1$s XP</string>
+    <string name="core_shiba_progress_next_bone">%1$s / %2$s tot je volgende Bone</string>
+    <string name="core_shiba_progress_next_level">%1$s / %2$s tot level %3$d</string>
+    <string name="core_shiba_level_abbrev">LV</string>
+
+    <!-- Colour picker -->
+    <string name="core_hsv_hex">Hex</string>
+    <string name="core_hsv_hue">Tint</string>
+    <string name="core_hsv_saturation">Verzadiging</string>
+    <string name="core_hsv_brightness">Helderheid</string>
+    <string name="core_hsv_hint_move">Verplaatsen</string>
+    <string name="core_hsv_hint_type_hex">Hex typen</string>
+    <string name="core_hsv_hint_adjust">Aanpassen</string>
+    <string name="core_hsv_sample_text">Voorbeeldtekst</string>
+    <string name="core_color_default">Standaard</string>
+    <string name="core_color_pink">Roze</string>
+    <string name="core_color_gold">Goud</string>
+    <string name="core_color_aqua">Aqua</string>
+    <string name="core_color_sky_blue">Hemelsblauw</string>
+    <string name="core_color_green">Groen</string>
+    <string name="core_color_coral">Koraal</string>
+    <string name="core_color_slate">Leisteen</string>
+    <string name="core_color_custom">Aangepast</string>
+
+    <!-- Notification detail sheets -->
+    <string name="core_sheet_copied">Gekopieerd</string>
+    <string name="core_sheet_copy_details">Details kopiëren</string>
+    <string name="core_sheet_copy_list">Lijst kopiëren</string>
+    <string name="core_sheet_filter">Filter</string>
+    <string name="core_sheet_what_happened">Wat er is gebeurd</string>
+    <string name="core_sheet_diagnostic_open">"▾  Diagnostische details"</string>
+    <string name="core_sheet_diagnostic_closed">"▸  Diagnostische details"</string>
+    <string name="core_sheet_diagnostic_heading">Diagnose</string>
+    <string name="core_sheet_summary_chip">%1$d %2$s</string>
+    <string name="core_sheet_filter_all">Alle</string>
+    <string name="core_sheet_more">+%1$d meer</string>
+    <string name="core_sheet_what_you_can_do">Wat je kunt doen</string>
+
+    <!-- On-screen keyboard -->
+    <string name="core_vk_prompt_type">Typen</string>
+    <string name="core_vk_prompt_delete">Wissen</string>
+    <string name="core_vk_prompt_cursor">Cursor</string>
+    <string name="core_vk_prompt_caps">Hoofdl.</string>
+    <string name="core_vk_key_space">Spatie</string>
+    <string name="core_vk_key_shift">Shift</string>
+    <string name="core_vk_key_backspace">Backspace</string>
+    <string name="core_vk_key_done">Klaar</string>
+    <string name="core_vk_shift_off">Uit</string>
+    <string name="core_vk_shift_once">Aan voor de volgende letter</string>
+    <string name="core_vk_shift_held">Aan zolang ingedrukt</string>
+    <string name="core_vk_shift_locked">Caps Lock aan</string>
+
+    <!-- Background tasks -->
+    <string name="core_task_failed">Taak mislukt</string>
+    <string name="core_task_done">Klaar</string>
+
+    <!-- Detail screens -->
+    <string name="core_detail_favorite_badge">FAVORIET</string>
+    <string name="core_detail_video_badge">VIDEO</string>
+    <string name="core_detail_confirm_collapse">Bevestig om in te klappen</string>
+    <string name="core_detail_confirm_read_more">Bevestig om meer te lezen</string>
+
+    <!-- Rotate-to-landscape prompt -->
+    <string name="core_rotate_title">Draai naar liggend</string>
+    <string name="core_rotate_message">PlayField Portal werkt in liggende stand. Draai je apparaat om verder te gaan.</string>
+    <string name="core_rotate_switch_launcher">Andere launcher kiezen</string>
+</resources>

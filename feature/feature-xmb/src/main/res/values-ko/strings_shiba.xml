@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ===== Shared Shiba page text ===== -->
+    <string name="shiba_prompt_select">선택</string>
+    <string name="shiba_prompt_close">닫기</string>
+    <string name="shiba_prompt_done">완료</string>
+    <string name="shiba_prompt_back">뒤로</string>
+    <string name="shiba_prompt_options">옵션</string>
+    <string name="shiba_prompt_search">검색</string>
+    <string name="shiba_prompt_type">입력</string>
+    <string name="shiba_prompt_change_view">보기 변경</string>
+    <string name="shiba_prompt_switch_source">소스 전환</string>
+    <string name="shiba_prompt_view_game">게임 보기</string>
+    <string name="shiba_prompt_view_achievements">도전 과제 보기</string>
+    <string name="shiba_prompt_attempt_match">매칭 시도</string>
+    <string name="shiba_prompt_search_online">온라인 검색</string>
+    <string name="shiba_prompt_auto_match">자동 매칭</string>
+    <string name="shiba_prompt_pick_game_folder">게임 폴더 선택</string>
+    <string name="shiba_prompt_reveal">공개</string>
+    <string name="shiba_prompt_hide">숨기기</string>
+    <string name="shiba_prompt_navigate">탐색</string>
+    <!-- Buttons in the Auto-Match panels. -->
+    <string name="shiba_action_yes">예</string>
+    <string name="shiba_action_no">아니요</string>
+    <string name="shiba_action_cancel">취소</string>
+    <string name="shiba_action_close">닫기</string>
+    <!-- Button that links a game to the Steam app id the user typed. -->
+    <string name="shiba_action_link">연결</string>
+    <string name="shiba_options_title">옵션</string>
+    <string name="shiba_options_sort">정렬</string>
+    <string name="shiba_options_provider">제공자</string>
+    <string name="shiba_options_update_installed">설치된 게임의 도전 과제 업데이트</string>
+    <string name="shiba_options_updating">업데이트 중…</string>
+    <string name="shiba_sort_newest">최신순</string>
+    <string name="shiba_sort_rarest">희귀도순</string>
+    <string name="shiba_sort_tier">등급순</string>
+    <string name="shiba_sort_earned">획득순</string>
+    <!-- Provider filter choice meaning every achievement provider. -->
+    <string name="shiba_filter_all">전체</string>
+    <!-- Coin tier names. -->
+    <string name="shiba_tier_bronze">브론즈</string>
+    <string name="shiba_tier_silver">실버</string>
+    <string name="shiba_tier_gold">골드</string>
+    <string name="shiba_tier_platinum">플래티넘</string>
+    <!-- Header statistics labels; shown in capitals. -->
+    <string name="shiba_stat_shiba_level">SHIBA 레벨</string>
+    <string name="shiba_stat_next_level">다음 레벨</string>
+    <string name="shiba_stat_total_coins">총 코인</string>
+    <string name="shiba_stat_total">합계</string>
+    <string name="shiba_platform_not_installed">%1$s · 설치되지 않음</string>
+    <string name="shiba_time_just_now">방금 전</string>
+    <string name="shiba_time_minutes_ago">%1$d분 전</string>
+    <string name="shiba_time_hours_ago">%1$d시간 전</string>
+    <string name="shiba_time_yesterday">어제</string>
+    <plurals name="shiba_time_days_ago">
+        <item quantity="other">%1$d일 전</item>
+    </plurals>
+    <!-- Placeholder in the Search field of the achievements library. -->
+    <string name="shiba_search_games_placeholder">게임 검색…</string>
+    <!-- ===== Player Status ===== -->
+    <string name="shiba_player_status_title">플레이어 상태</string>
+    <string name="shiba_player_status_no_rarest">아직 가장 희귀한 도전 과제가 없습니다.</string>
+    <string name="shiba_player_status_rarest_unlocked">가장 희귀한 달성 항목</string>
+    <string name="shiba_player_status_rarity_caption">플레이어 보유율</string>
+    <string name="shiba_player_status_game_and_time">%1$s · %2$s</string>
+    <plurals name="shiba_status_checking_games">
+        <item quantity="other">게임 %2$d개 중 %1$d개 확인 중…</item>
+    </plurals>
+    <string name="shiba_status_updating_achievements">설치된 게임의 도전 과제 업데이트 중…</string>
+    <!-- ===== Achievements library (Tracked / Untracked Games) ===== -->
+    <string name="shiba_library_view_tracked">추적 중인 게임</string>
+    <string name="shiba_library_view_untracked">추적하지 않는 게임</string>
+    <string name="shiba_library_breadcrumb">도전 과제 / %1$s</string>
+    <plurals name="shiba_library_game_count">
+        <item quantity="other">게임 %1$d개</item>
+    </plurals>
+    <string name="shiba_library_empty_no_match">\"%1$s\"와(과) 일치하는 게임이 없습니다.</string>
+    <string name="shiba_library_empty_tracked">추적 중인 게임이 아직 없습니다.</string>
+    <string name="shiba_library_empty_untracked">추적 가능한 모든 게임을 추적하고 있습니다.</string>
+    <!-- Sort choices: field and direction in one label. -->
+    <string name="shiba_library_sort_title_asc">제목 가–하</string>
+    <string name="shiba_library_sort_title_desc">제목 하–가</string>
+    <string name="shiba_library_sort_progress_asc">진행률 낮은 순</string>
+    <string name="shiba_library_sort_progress_desc">진행률 높은 순</string>
+    <string name="shiba_library_sort_platform_asc">플랫폼 가–하</string>
+    <string name="shiba_library_sort_platform_desc">플랫폼 하–가</string>
+    <string name="shiba_library_search_online">온라인 검색</string>
+    <string name="shiba_library_search_online_subtitle">이 기기에 없는 게임 찾아보기</string>
+    <string name="shiba_library_awaiting_sync">동기화 대기 중</string>
+    <!-- ===== A game's Shiba Coins page ===== -->
+    <string name="shiba_coins_search_placeholder">코인 검색…</string>
+    <!-- Header statistics labels; shown in capitals. -->
+    <string name="shiba_coins_stat_completion">달성률</string>
+    <string name="shiba_coins_stat_earned">획득</string>
+    <string name="shiba_coins_tab_all">전체 %1$d</string>
+    <string name="shiba_coins_tab_earned">획득 %1$d</string>
+    <string name="shiba_coins_tab_locked">잠김 %1$d</string>
+    <string name="shiba_coins_synced">%1$s 동기화됨</string>
+    <string name="shiba_coins_not_linked">연결되지 않음</string>
+    <string name="shiba_coins_never_synced">동기화한 적 없음</string>
+    <string name="shiba_coins_owned_on_steam">Steam에서 보유</string>
+    <string name="shiba_coins_tracked_locally">로컬에서 추적</string>
+    <string name="shiba_coins_empty_no_match">\"%1$s\"와(과) 일치하는 코인이 없습니다.</string>
+    <string name="shiba_coins_empty_none_earned">아직 획득한 코인이 없습니다.</string>
+    <string name="shiba_coins_empty_all_earned">모든 코인을 획득했습니다.</string>
+    <string name="shiba_coins_empty_default">표시할 코인이 없습니다.</string>
+    <!-- Options menu rows. -->
+    <string name="shiba_coins_options_update">도전 과제 업데이트</string>
+    <string name="shiba_coins_options_change_match">매칭 변경</string>
+    <string name="shiba_coins_options_unlink">게임 연결 해제</string>
+    <string name="shiba_coins_unlink_title">게임 연결을 해제할까요?</string>
+    <string name="shiba_coins_unlink_message">%1$s의 매칭이 해제되어 코인이 더 이상 표시되지 않습니다. 이미 캐시된 코인은 저장된 상태로 남아 있으며 다시 매칭하면 돌아옵니다.</string>
+    <!-- Button that confirms unlinking the game. -->
+    <string name="shiba_coins_unlink_confirm">연결 해제</string>
+    <string name="shiba_coin_hidden_title">숨겨진 코인</string>
+    <string name="shiba_coin_hidden_hint">계속 플레이하거나 확인을 눌러 공개하세요</string>
+    <string name="shiba_coin_description_secret">Steam에서 이 코인의 설명을 비공개로 두었습니다</string>
+    <string name="shiba_coin_metric_of_players">플레이어 보유율</string>
+    <string name="shiba_coin_status_earned">획득함</string>
+    <string name="shiba_coin_status_locked">잠김</string>
+    <string name="shiba_platinum_crown_title">플래티넘 크라운</string>
+    <string name="shiba_platinum_crown_description">이 게임의 다른 모든 코인 획득</string>
+    <string name="shiba_platinum_crown_metric">획득한 코인</string>
+    <!-- Auto-Match panel for a game that is not linked yet. -->
+    <string name="shiba_link_not_linked_yet_game">이 게임은 아직 연결되지 않았습니다</string>
+    <string name="shiba_link_not_linked_yet">아직 연결되지 않음</string>
+    <string name="shiba_link_steam_body">자동 매칭은 정품 Steam 사본인지 묻고, Steam에서 확인하거나 게임 폴더에서 Steam 에뮬레이터 데이터를 스캔합니다.</string>
+    <string name="shiba_link_retro_body">RetroAchievements는 ROM 해시로 게임을 식별합니다. 자동 매칭이 이 ROM의 해시를 계산해 조회하며, RetroAchievements에 등록된 검증된 덤프만 연결할 수 있습니다.</string>
+    <string name="shiba_link_local_steam_body">이 게임의 폴더를 선택하면 PFP가 Steam 앱 ID를 읽습니다. steam_appid.txt가 있으면 그 파일에서, 없으면 제목을 매칭하여 찾습니다. 폴더를 기억하므로 다시 찾을 필요가 없습니다.</string>
+    <string name="shiba_link_vita_body">PS Vita 트로피는 Vita3K에서 자동으로 연결됩니다. 라이브러리에서 Vita3K 데이터 폴더를 설정하고 스캔하여 이 게임을 연결하세요.</string>
+    <string name="shiba_link_ps3_body">PS3 트로피는 게임 디스크 자체에서 연결됩니다 — 라이브러리에서 PS3 데이터 폴더를 설정하고 자동 매칭하세요.</string>
+    <string name="shiba_link_x360_body">Xbox 360 도전 과제는 게임의 타이틀 ID로 연결됩니다 — 라이브러리에서 X360 Mobile 또는 XenDroid 데이터 폴더를 설정하고 자동 매칭하세요.</string>
+    <string name="shiba_link_auto_match">자동 매칭</string>
+    <string name="shiba_link_matching">매칭 중…</string>
+    <string name="shiba_link_pick_game_folder">게임 폴더 선택</string>
+    <string name="shiba_link_copy_title">정품 Steam 사본인가요?</string>
+    <string name="shiba_link_copy_body">정품 사본은 Steam 계정과 매칭됩니다. 그 외에는 게임 자체 폴더에서 추적하며, PFP가 해당 폴더를 지정하도록 요청합니다.</string>
+    <string name="shiba_link_folder_title">이 게임은 어느 폴더에 있나요?</string>
+    <string name="shiba_link_folder_body">게임 자체 폴더(.exe가 있는 폴더)를 선택하세요. PFP가 여기에서 Steam 앱 ID를 읽고 에뮬레이터가 기록하는 달성 내역을 추적합니다. Windows 게임은 어디에 있어도 되며, PFP가 이 게임의 위치를 기억하므로 다시 찾을 필요가 없습니다.</string>
+    <string name="shiba_link_identify_title_steam">Steam 매칭 찾는 중…</string>
+    <string name="shiba_link_identify_title_appid">Steam 앱 ID 확인 중…</string>
+    <string name="shiba_link_identify_body_steam">Steam에서 이 게임의 제목을 검색하는 중입니다. 올바른 항목을 선택해 다시 연결하세요.</string>
+    <string name="shiba_link_identify_body_appid">폴더에서 steam_appid.txt를 읽고, 없으면 게임 제목을 Steam과 매칭합니다.</string>
+    <string name="shiba_link_kit_title">해당 폴더에 아직 도전 과제 목록이 없습니다</string>
+    <string name="shiba_link_kit_body_generic">에뮬레이터가 달성 내역을 기록하려면 도전 과제 목록이 필요합니다.</string>
+    <string name="shiba_link_kit_body">\"%1$s\"은(는) Steam 앱 ID %2$s이지만 에뮬레이터에 기록할 도전 과제 목록이 없습니다. 설치 후 연결은 폴더에 achievements.json, stats.json, configs.user.ini를 쓰고 saves 폴더를 만들며, 번들된 에뮬레이터가 이를 거쳐 로드하도록 steam_api64.dll의 이름을 steam_api64_o.dll로 바꿉니다 — 먼저 이 게임의 세이브를 백업하세요. 연결만 하기는 0%%로 추적하며 그 외에는 아무것도 쓰지 않습니다.</string>
+    <string name="shiba_link_kit_installer_off">설치 후 연결을 사용하려면 도전 과제 설정에서 Goldberg 설치 및 게임 변환을 켜야 합니다.</string>
+    <string name="shiba_link_kit_install">설치 후 연결</string>
+    <string name="shiba_link_kit_link_only">연결만 하기</string>
+    <string name="shiba_link_no_emu_title">해당 폴더에 추적할 항목이 없습니다</string>
+    <string name="shiba_link_no_emu_default">해당 폴더에 Steam 에뮬레이터 데이터가 없습니다.</string>
+    <string name="shiba_link_try_another_folder">다른 폴더 시도</string>
+    <string name="shiba_link_appid_title">자동으로 매칭된 항목이 없습니다</string>
+    <string name="shiba_link_appid_body">게임의 Steam 앱 ID를 입력하세요:</string>
+    <!-- Label of the text field for the Steam app id. -->
+    <string name="shiba_link_appid_field">Steam 앱 ID</string>
+    <!-- Messages shown on the page after linking or syncing. -->
+    <string name="shiba_coins_folder_unreadable">해당 폴더를 읽을 수 없습니다. 다시 선택하거나 폴더가 있는 저장소를 다시 마운트하세요.</string>
+    <string name="shiba_coins_linked_to">%1$s에 연결됨 (appid %2$s).</string>
+    <string name="shiba_coins_nothing_written">아무것도 쓰지 않았습니다. 게임 세부 정보 ▸ 게임 매칭에서 게임의 Steam 매칭을 설정한 후 다시 자동 매칭하세요 — PFP가 그 ID를 사용합니다.</string>
+    <string name="shiba_coins_appid_not_number">Steam 앱 ID는 숫자입니다 — 게임에 대한 자세한 정보는 steamdb.info에서 확인하세요</string>
+    <string name="shiba_coins_appid_no_match">앱 ID %1$s이(가) 일치하지 않습니다 — 게임에 대한 자세한 정보는 steamdb.info에서 확인하세요</string>
+    <string name="shiba_coins_sync_not_linked">먼저 이 게임을 제공자 ID에 연결하세요</string>
+    <string name="shiba_coins_sync_not_installed">이 게임은 설치되어 있지 않습니다 — 저장된 도전 과제가 표시됩니다</string>
+    <string name="shiba_coins_sync_missing_credentials">설정 ▸ 도전 과제 ▸ 제공자 인증 정보에서 키를 추가하세요</string>
+    <string name="shiba_coins_sync_profile_private">Steam 프로필의 게임 세부 정보가 비공개입니다</string>
+    <string name="shiba_coins_sync_not_found">이 게임의 도전 과제를 찾을 수 없습니다</string>
+    <string name="shiba_coins_sync_failed">동기화 실패: %1$s</string>
+    <!-- ===== Video Detail ===== -->
+    <string name="shiba_video_play">재생</string>
+    <string name="shiba_video_resume">이어서 재생</string>
+    <string name="shiba_video_restart">처음부터 재생</string>
+    <string name="shiba_video_resume_at">%1$s부터 이어서 재생</string>
+    <!-- Options menu groups; each is a heading above its rows. -->
+    <string name="shiba_video_group_library">라이브러리</string>
+    <string name="shiba_video_group_customize">사용자 지정</string>
+    <string name="shiba_video_group_manage">관리</string>
+    <string name="shiba_video_favorite">즐겨찾기</string>
+    <!-- Value drawn beside the Favorite row. -->
+    <string name="shiba_video_favorite_on">켜짐</string>
+    <string name="shiba_video_favorite_off">꺼짐</string>
+    <string name="shiba_video_add_to_playlist">재생목록에 추가</string>
+    <string name="shiba_video_create_playlist">새 재생목록 만들기</string>
+    <string name="shiba_video_edit_title">제목 편집</string>
+    <string name="shiba_video_change_thumbnail">썸네일 변경</string>
+    <string name="shiba_video_view_information">정보 보기</string>
+    <string name="shiba_video_show_location">파일 위치 표시</string>
+    <string name="shiba_video_remove">라이브러리에서 제거</string>
+    <string name="shiba_video_remove_message">\"%1$s\"이(가) 이 라이브러리에서 제거됩니다. 디스크의 파일은 삭제되지 않습니다.</string>
+    <!-- Button that confirms removing the video from the library. -->
+    <string name="shiba_video_remove_confirm">제거</string>
+    <string name="shiba_video_new_playlist_title">새 재생목록</string>
+    <string name="shiba_video_new_playlist_placeholder">재생목록 이름</string>
+    <!-- Button that creates the playlist. -->
+    <string name="shiba_video_new_playlist_create">만들기</string>
+    <string name="shiba_video_launching">실행 중…</string>
+    <string name="shiba_video_player_ask">외부 플레이어</string>
+    <string name="shiba_video_player_fallback">외부 플레이어</string>
+    <string name="shiba_video_launch_error_title">동영상을 재생할 수 없습니다</string>
+    <!-- Brief messages after an action. -->
+    <string name="shiba_video_added_favorite">즐겨찾기에 추가됨</string>
+    <string name="shiba_video_removed_favorite">즐겨찾기에서 제거됨</string>
+    <string name="shiba_video_import_failed">이미지를 가져올 수 없습니다</string>
+    <string name="shiba_video_thumbnail_updated">썸네일 업데이트됨</string>
+    <string name="shiba_video_location_in">위치: %1$s</string>
+    <string name="shiba_video_info_duration">길이: %1$s</string>
+    <string name="shiba_video_info_resolution">해상도: %1$s</string>
+    <string name="shiba_video_info_format">형식: %1$s</string>
+    <string name="shiba_video_info_type">유형: %1$s</string>
+    <string name="shiba_video_info_size">크기: %1$s</string>
+    <string name="shiba_video_info_location">위치: %1$s</string>
+    <string name="shiba_video_info_file">파일: %1$s</string>
+    <!-- ===== Manual viewer ===== -->
+    <string name="shiba_manual_failed">이 설명서를 표시할 수 없습니다.</string>
+    <string name="shiba_manual_page_description">%1$s — 설명서 %2$d페이지</string>
+    <string name="shiba_manual_footer_hint">"◀ ▶  페이지   •   ▲ ▼  스크롤   •   B  닫기"</string>
+</resources>

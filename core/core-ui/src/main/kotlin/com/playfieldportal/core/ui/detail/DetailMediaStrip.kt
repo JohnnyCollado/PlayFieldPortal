@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -20,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.R
 
 // ── Media preview tiles ───────────────────────────────────────────────────────
 //
@@ -82,7 +84,7 @@ fun PfpDetailMediaTile(
             PfpPlayMark(color = Color.White.copy(alpha = if (focused) 1f else 0.9f), size = 40.dp)
             // A named plate, so "this is playable" never rests on the play glyph's colour alone.
             Text(
-                text = "VIDEO",
+                text = stringResource(R.string.core_detail_video_badge),
                 color = Color.White,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.SemiBold,

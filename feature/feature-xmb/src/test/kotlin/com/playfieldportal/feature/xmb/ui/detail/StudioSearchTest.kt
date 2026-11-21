@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.artwork.api.SsCachedMedia
 import com.playfieldportal.feature.artwork.store.StudioArtworkSlot
 import com.playfieldportal.feature.artwork.store.ArtworkKind
@@ -219,7 +221,7 @@ class StudioSearchTest {
             listOf(SsCachedMedia("ss", "wor", ssUrl("ss(wor)")), SsCachedMedia("ss", "wor", ssUrl("ss(wor)"))),
         )
 
-        assertEquals(listOf("ss · WOR"), tiles.map { it.label })
+        assertEquals(listOf(UiText.raw("ss · WOR")), tiles.map { it.label })
     }
 
     @Test
@@ -231,7 +233,7 @@ class StudioSearchTest {
         )
 
         assertEquals(1, tiles.size)
-        assertEquals("screenmarquee · WOR/UK/US", tiles.single().label)
+        assertEquals(UiText.raw("screenmarquee · WOR/UK/US"), tiles.single().label)
         assertEquals("3:screenmarquee(wor)", tiles.single().providerAssetId)
         // The Region filter reads every region the one tile stands for.
         assertEquals(StudioArtFacets(mediaType = "screenmarquee", regions = listOf("wor", "uk", "us")), tiles.single().facets)
@@ -250,7 +252,7 @@ class StudioSearchTest {
             ),
         )
 
-        assertEquals(listOf("ss · WOR", "ss · JP", "sstitle · WOR"), tiles.map { it.label })
+        assertEquals(listOf("ss · WOR", "ss · JP", "sstitle · WOR").map(UiText::raw), tiles.map { it.label })
     }
 
     // ── What a slot already holds (found on device during task 5.2) ───────────
@@ -320,7 +322,7 @@ class StudioSearchTest {
         assertEquals(listOf("content://s0", "content://s1"), tiles.map { it.url })
         assertEquals(listOf("content://s0", "content://s1"), tiles.map { it.thumb })
         assertTrue(tiles.all { it.provider == LOCAL_ART })
-        assertEquals("where each file came from", listOf("ScreenScraper", "Local file"), tiles.map { it.label })
+        assertEquals("where each file came from", listOf("ScreenScraper", "Local file").map(UiText::raw), tiles.map { it.label })
     }
 
     @Test
@@ -395,7 +397,12 @@ class StudioSearchTest {
         for (kind in listOf(ArtworkKind.VIDEO, ArtworkKind.ICON1)) {
             val tiles = steamTiles(kind, steam)
             assertEquals(listOf("full.m3u8", "micro.mp4", "teaser.m3u8"), tiles.map { it.url })
-            assertEquals(listOf("Launch", "Launch · short", "Teaser"), tiles.map { it.label })
+            assertEquals(
+                listOf(
+                    UiText.raw("Launch"), UiText.res(R.string.det_steam_art_trailer_short, "Launch"), UiText.raw("Teaser"),
+                ),
+                tiles.map { it.label },
+            )
             assertTrue(tiles.all { it.isVideo })
             assertEquals("poster", tiles.first().thumb)
             // The full stream and its short cut are different files.

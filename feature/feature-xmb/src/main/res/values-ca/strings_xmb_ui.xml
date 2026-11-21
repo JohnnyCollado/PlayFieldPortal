@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notificació de reproducció de música -->
+    <string name="xmbu_music_channel_name">Reproducció de música</string>
+    <string name="xmbu_music_channel_description">Controls del que s\'està reproduint</string>
+    <string name="xmbu_music_notif_previous">Anterior</string>
+    <string name="xmbu_music_notif_play_pause">Reprodueix/Pausa</string>
+    <string name="xmbu_music_notif_next">Següent</string>
+    <string name="xmbu_music_notif_stop">Atura</string>
+    <string name="xmbu_ptt_hold">"🎙  MANTÉN"</string>
+    <string name="xmbu_clipfail_boot_label">Seqüència d\'arrencada</string>
+    <string name="xmbu_clipfail_gameboot_label">Game Boot</string>
+    <string name="xmbu_clipfail_boot_message">El teu vídeo d\'arrencada no s\'ha pogut reproduir en aquest dispositiu, així que s\'ha reproduït la seqüència integrada. Torna a exportar el tema des del Theme Studio (converteix el vídeo) o tria un altre clip a la configuració de Pantalla.</string>
+    <string name="xmbu_clipfail_gameboot_message">El teu vídeo de Game Boot no s\'ha pogut reproduir en aquest dispositiu, així que s\'ha reproduït la seqüència integrada. Torna a exportar el tema des del Theme Studio (converteix el vídeo) o tria un altre clip a la configuració de Pantalla.</string>
+
+    <!-- Paraules comunes -->
+    <string name="xmbu_common_options">Opcions</string>
+    <string name="xmbu_common_back">Enrere</string>
+    <string name="xmbu_common_cancel">Cancel·la</string>
+    <string name="xmbu_common_done">Fet</string>
+    <string name="xmbu_common_close">Tanca</string>
+    <string name="xmbu_common_reset">Restableix</string>
+    <string name="xmbu_common_remove">Treu</string>
+    <string name="xmbu_common_open">Obre</string>
+    <string name="xmbu_common_toggle">Commuta</string>
+    <string name="xmbu_common_search">Cerca</string>
+    <string name="xmbu_common_artwork">Imatges</string>
+    <string name="xmbu_common_edit_title">Edita el títol</string>
+    <string name="xmbu_common_add_to_card">Afegeix a una targeta</string>
+    <string name="xmbu_common_on">Activat</string>
+    <string name="xmbu_common_off">Desactivat</string>
+    <string name="xmbu_common_move">Mou</string>
+    <string name="xmbu_common_navigate">Navega</string>
+    <string name="xmbu_common_play">Reprodueix</string>
+    <string name="xmbu_common_pause">Pausa</string>
+    <string name="xmbu_common_prev_next">Anterior / Següent</string>
+    <string name="xmbu_common_seek">Avança/Retrocedeix</string>
+    <string name="xmbu_common_confirm">Confirma</string>
+    <string name="xmbu_common_close_search">Tanca la cerca</string>
+    <string name="xmbu_common_ellipsis_search">Cerca…</string>
+
+    <!-- Detall de l'aplicació -->
+    <string name="xmbu_app_opt_favorite">Preferit</string>
+    <string name="xmbu_app_opt_app_info">Informació de l\'aplicació</string>
+    <string name="xmbu_app_opt_hide">Amaga a tot arreu</string>
+    <string name="xmbu_app_opt_change_icon">Canvia la icona</string>
+    <string name="xmbu_app_opt_change_background">Canvia el fons</string>
+    <string name="xmbu_app_opt_reset_artwork">Restableix totes les imatges</string>
+    <string name="xmbu_app_art_type_icon">Icona del joc</string>
+    <string name="xmbu_app_art_type_hero">Bàner de capçalera</string>
+    <string name="xmbu_app_art_type_background">Fons</string>
+    <string name="xmbu_app_art_no_api_key">No s\'ha configurat la clau d\'API de SteamGridDB — afegeix-ne una a la configuració d\'Imatges</string>
+    <string name="xmbu_app_art_search_failed">La cerca ha fallat: %1$s</string>
+    <string name="xmbu_app_art_no_results">No hi ha resultats per a \"%1$s\" a SteamGridDB</string>
+    <string name="xmbu_app_art_load_failed">No s\'han pogut carregar les imatges: %1$s</string>
+    <string name="xmbu_app_art_none_found">No s\'ha trobat cap imatge de tipus %1$s a SteamGridDB</string>
+    <string name="xmbu_app_art_download_failed">No s\'ha pogut baixar: %1$s</string>
+    <string name="xmbu_app_art_import_failed">No s\'ha pogut importar: %1$s</string>
+    <string name="xmbu_app_art_updated">S\'ha actualitzat: %1$s</string>
+    <string name="xmbu_app_art_reset">S\'ha restablert: %1$s</string>
+    <string name="xmbu_app_art_all_reset">S\'han restablert totes les imatges</string>
+    <string name="xmbu_app_no_launchable_package">Aquesta aplicació no té cap paquet que es pugui iniciar</string>
+    <string name="xmbu_common_launch">Inicia</string>
+    <string name="xmbu_app_breadcrumb_apps">Aplicacions</string>
+    <string name="xmbu_app_breadcrumb_android_app">Aplicació d\'Android</string>
+    <string name="xmbu_app_edit_artwork_description">Edita les imatges</string>
+    <string name="xmbu_app_no_icon">Sense icona</string>
+    <string name="xmbu_app_art_change">Canvia: %1$s</string>
+    <string name="xmbu_app_art_saving">S\'està desant…</string>
+    <string name="xmbu_app_art_pick_local">Tria un fitxer local</string>
+    <string name="xmbu_app_art_restore_icon">Restaura la icona original</string>
+    <string name="xmbu_app_art_remove_custom">Treu la imatge personalitzada</string>
+    <string name="xmbu_app_art_picker_hint">"◄ ►  Navega   A  Tria   B  Enrere"</string>
+    <string name="xmbu_app_reset_title">Vols restablir totes les imatges?</string>
+    <string name="xmbu_app_reset_message">S\'eliminen la icona i el fons personalitzats de %1$s i torna la icona pròpia de l\'aplicació.</string>
+
+    <!-- Selector d'afegir a una targeta -->
+    <string name="xmbu_collection_picker_hint">"Amunt/Avall  Navega  •  Select  Marca  •  B  Tanca"</string>
+    <string name="xmbu_collection_picker_new_row">"＋  Memory Card personalitzada nova"</string>
+    <string name="xmbu_collection_picker_empty">Encara no hi ha cap Memory Card personalitzada — crea\'n una per començar.</string>
+    <string name="xmbu_collection_new_title">Memory Card personalitzada nova</string>
+    <string name="xmbu_collection_new_placeholder">p. ex. RPG, Jugant ara</string>
+    <string name="xmbu_collection_new_create">Crea</string>
+    <string name="xmbu_common_sort">Ordena</string>
+    <string name="xmbu_common_notifications">Notificacions</string>
+
+    <!-- Selector d'aplicacions -->
+    <string name="xmbu_app_picker_empty">No hi ha aplicacions instal·lades</string>
+    <string name="xmbu_app_picker_no_match">Cap aplicació instal·lada no coincideix amb \"%1$s\"</string>
+    <string name="xmbu_app_picker_choose">Tria</string>
+
+    <!-- Mode d'organització -->
+    <string name="xmbu_arrange_place">Col·loca</string>
+    <string name="xmbu_arrange_mark">Marca</string>
+    <string name="xmbu_arrange_move_left">Mou a l\'esquerra</string>
+    <string name="xmbu_arrange_move_right">Mou a la dreta</string>
+    <string name="xmbu_arrange_move_up">Mou amunt</string>
+    <string name="xmbu_arrange_move_down">Mou avall</string>
+
+    <!-- Esquema de colors -->
+    <string name="xmbu_color_scheme_title">Esquema de colors</string>
+    <string name="xmbu_color_scheme_tint">Matís</string>
+    <string name="xmbu_color_scheme_depth">Intensitat</string>
+    <string name="xmbu_color_scheme_contrast_top">"%1$s Text a dalt  %2$s"</string>
+    <string name="xmbu_color_scheme_contrast_bottom">"%1$s Text a baix  %2$s"</string>
+    <string name="xmbu_color_scheme_custom_title">Color personalitzat</string>
+
+    <!-- Personalitza les icones de l'XMB -->
+    <string name="xmbu_icons_title">Personalitza les icones de l\'XMB</string>
+    <string name="xmbu_icons_source_user">La teva tria</string>
+    <string name="xmbu_icons_source_theme">Del tema</string>
+    <string name="xmbu_icons_source_default">Per defecte</string>
+    <string name="xmbu_icons_source_with_column">%1$s · columna %2$s</string>
+    <string name="xmbu_icons_column">Columna</string>
+    <string name="xmbu_icons_tab">Pestanya</string>
+    <string name="xmbu_icons_pick">Tria</string>
+    <string name="xmbu_icons_reset_all">Restableix-ho tot</string>
+    <string name="xmbu_icons_save_as_theme">Desa com a tema</string>
+    <string name="xmbu_icons_save_as_theme_button">Desa com a tema…</string>
+    <string name="xmbu_game_search_placeholder">Cerca jocs…</string>
+
+    <!-- Selector de jocs -->
+    <string name="xmbu_picker_in_this_category">En aquesta categoria</string>
+    <string name="xmbu_picker_in_category">A %1$s</string>
+    <string name="xmbu_picker_custom_cards">Memory Cards personalitzades</string>
+    <string name="xmbu_picker_no_changes">Sense canvis</string>
+    <string name="xmbu_picker_menu_view">Vista</string>
+    <string name="xmbu_picker_menu_select_all">Selecciona-ho tot</string>
+    <string name="xmbu_picker_open_toggle">Obre / Marca</string>
+    <string name="xmbu_picker_no_games">Encara no hi ha jocs a la biblioteca</string>
+    <string name="xmbu_picker_add_games">Afegeix jocs</string>
+    <string name="xmbu_picker_view_mode">Vista: %1$s</string>
+    <string name="xmbu_picker_removing_prefix">"Es treu · "</string>
+    <string name="xmbu_picker_search_placeholder">Cerca en aquest prestatge…</string>
+    <string name="xmbu_picker_shelves">Prestatges</string>
+    <string name="xmbu_picker_shelf">Prestatge</string>
+
+    <!-- Navegador de música -->
+    <string name="xmbu_music_breadcrumb_playlists">"Música  ›  Llistes de reproducció"</string>
+    <string name="xmbu_music_breadcrumb_music">Música</string>
+    <string name="xmbu_music_breadcrumb_all_tracks">Totes les pistes</string>
+    <string name="xmbu_music_resume">Reprèn: %1$s</string>
+    <string name="xmbu_music_now_playing">S\'està reproduint</string>
+    <string name="xmbu_music_nothing_playing">No s\'està reproduint res</string>
+    <string name="xmbu_music_visualizer">Visualitzador</string>
+    <string name="xmbu_media_previous_track">Pista anterior</string>
+    <string name="xmbu_media_next_track">Pista següent</string>
+    <string name="xmbu_media_previous_video">Vídeo anterior</string>
+    <string name="xmbu_media_next_video">Vídeo següent</string>
+    <string name="xmbu_media_back_10">Enrere 10 segons</string>
+    <string name="xmbu_media_forward_10">Endavant 10 segons</string>
+    <string name="xmbu_media_playing">S\'està reproduint</string>
+    <string name="xmbu_media_paused">En pausa</string>
+    <string name="xmbu_track_picker_title">Afegeix a %1$s</string>
+    <string name="xmbu_track_picker_add">Afegeix</string>
+    <string name="xmbu_track_picker_empty">No hi ha més pistes per afegir — totes les cançons escanejades ja són en aquesta llista.</string>
+
+    <!-- Tauler de notificacions -->
+    <string name="xmbu_notif_options_description">Opcions de notificació</string>
+    <string name="xmbu_notif_task_stopping">%1$s — S\'està aturant…</string>
+    <string name="xmbu_notif_task_detail">%1$s — %2$s</string>
+    <string name="xmbu_notif_kind_scan">Escaneig</string>
+    <string name="xmbu_notif_kind_metadata">Metadades</string>
+    <string name="xmbu_notif_kind_achievements">Assoliments</string>
+    <string name="xmbu_notif_kind_system">Sistema</string>
+    <string name="xmbu_notif_kind_download">Baixada</string>
+    <string name="xmbu_notif_kind_feed">Novetats</string>
+    <string name="xmbu_notif_action_go_to_game">Ves al joc</string>
+    <string name="xmbu_notif_action_open_card">Obre la Memory Card</string>
+    <string name="xmbu_notif_action_open_settings">Obre la configuració</string>
+    <string name="xmbu_notif_action_open_category">Obre la categoria</string>
+    <string name="xmbu_notif_action_review">Revisa</string>
+    <string name="xmbu_time_just_now">Ara mateix</string>
+    <string name="xmbu_share_theme">Comparteix el tema</string>
+    <string name="xmbu_move_position">S\'està movent · %1$d de %2$d</string>
+    <string name="xmbu_common_later">Més tard</string>
+
+    <!-- Diàlegs de l'XMB -->
+    <string name="xmbu_shell_rename_shortcut">Canvia el nom de la drecera</string>
+    <string name="xmbu_shell_playlist_name">Nom de la llista</string>
+    <string name="xmbu_shell_theme_name">Nom del tema</string>
+    <string name="xmbu_shell_source_theme">Del tema aplicat</string>
+    <string name="xmbu_shell_source_device">Del teu dispositiu</string>
+    <string name="xmbu_shell_source_device_detail">PNG o GIF</string>
+    <string name="xmbu_shell_continue">Continua</string>
+    <string name="xmbu_shell_shortcut_title">Vols afegir la drecera?</string>
+    <string name="xmbu_shell_shortcut_message">Una aplicació ha demanat afegir una drecera \"%1$s\" que obre %2$s. Afegeix-la només si acabes de crear tu aquesta drecera.</string>
+    <string name="xmbu_shell_shortcut_add">Afegeix</string>
+    <string name="xmbu_shell_shortcut_ignore">Ignora</string>
+    <string name="xmbu_shell_windows_title">Acaba la biblioteca de Windows</string>
+    <string name="xmbu_shell_windows_message">S\'ha afegit un joc de PC, però la biblioteca de Jocs de Windows encara no té carpeta. Configura-la al Gestor de biblioteques perquè es puguin escanejar les carpetes dels jocs i els assoliments.</string>
+    <string name="xmbu_shell_windows_set_up">Configura</string>
+    <string name="xmbu_shell_import_position">%1$d de %2$d</string>
+    <string name="xmbu_shell_open_playlist">Obre la llista</string>
+    <string name="xmbu_shell_stop">Atura</string>
+    <string name="xmbu_shell_keep_running">Continua</string>
+
+    <!-- Diàleg de recuperació d'inici -->
+    <string name="xmbu_recovery_retry">Torna-ho a provar</string>
+    <string name="xmbu_recovery_change_emulator">Canvia l\'emulador</string>
+    <string name="xmbu_recovery_change_default">Canvia el predeterminat del sistema</string>
+    <string name="xmbu_recovery_copy_diagnostics">Copia el diagnòstic</string>
+    <string name="xmbu_recovery_title">No s\'ha pogut iniciar %1$s</string>
+    <string name="xmbu_recovery_select">Selecciona</string>
+    <string name="xmbu_recovery_dismiss">Descarta</string>
+
+    <!-- Carpeta d'imatges -->
+    <string name="xmbu_artfolder_unavailable_title">La carpeta d\'imatges no està disponible</string>
+    <string name="xmbu_artfolder_unavailable_message">PFP no pot accedir a %1$s. Les imatges noves estan en pausa fins que la tornis a enllaçar. Les imatges que ja tens es continuen mostrant.</string>
+    <string name="xmbu_artfolder_relink">Torna a enllaçar la carpeta</string>
+    <string name="xmbu_artfolder_not_now">Ara no</string>
+    <string name="xmbu_artfolder_move_title">Mou les imatges a una carpeta teva</string>
+    <string name="xmbu_artfolder_choose">Tria la carpeta d\'imatges</string>
+    <string name="xmbu_artfolder_choose_title">Tria una carpeta d\'imatges</string>
+    <string name="xmbu_artfolder_choose_message">Les imatges noves es desen en una carpeta teva. Tria\'n una i PFP hi desarà les imatges.</string>
+    <string name="xmbu_artfolder_foreign_title">Aquesta carpeta conté una altra biblioteca d\'imatges</string>
+    <string name="xmbu_artfolder_use_library">Utilitza aquesta biblioteca</string>
+    <string name="xmbu_artfolder_choose_another">Tria una altra carpeta</string>
+
+    <!-- Barra d'estat -->
+    <string name="xmbu_status_controller_connected">Comandament connectat</string>
+    <string name="xmbu_status_battery">Bateria</string>
+    <string name="xmbu_status_battery_charging">Bateria, carregant</string>
+    <string name="xmbu_status_battery_plugged">Bateria, connectada</string>
+
+    <!-- Ajusta la disposició de l'XMB -->
+    <string name="xmbu_layout_title">Ajusta la disposició de l\'XMB</string>
+    <string name="xmbu_layout_readout">"Escala %1$sx    Horitzontal %2$d%%    Vertical %3$d%%"</string>
+    <string name="xmbu_layout_scale">Escala</string>
+    <string name="xmbu_layout_horizontal">Horitzontal</string>
+    <string name="xmbu_layout_vertical">Vertical</string>
+    <string name="xmbu_layout_sliders">Controls lliscants</string>
+    <string name="xmbu_layout_hide_sliders">Amaga els controls</string>
+    <string name="xmbu_layout_save">Desa</string>
+    <string name="xmbu_icon_grid_use">Utilitza aquesta icona</string>
+    <string name="xmbu_status_cellular_signal">Senyal mòbil</string>
+    <string name="xmbu_notif_header_running">EN CURS</string>
+    <string name="xmbu_notif_header_earlier">ANTERIORS</string>
+    <string name="xmbu_notif_empty">No hi ha notificacions</string>
+
+    <!-- Reproductor de vídeo -->
+    <string name="xmbu_video_fit">Ajusta</string>
+    <string name="xmbu_video_zoom">Zoom</string>
+    <string name="xmbu_video_fill">Omple</string>
+    <string name="xmbu_video_speed">Velocitat de reproducció</string>
+    <string name="xmbu_video_subtitles">Subtítols</string>
+    <string name="xmbu_video_audio_track">Pista d\'àudio</string>
+    <string name="xmbu_video_screen_mode">Mode de pantalla</string>
+    <string name="xmbu_video_none">Cap</string>
+    <string name="xmbu_video_default">Per defecte</string>
+    <string name="xmbu_video_track">Pista</string>
+    <string name="xmbu_video_err_not_found">No s\'ha trobat el vídeo.</string>
+    <string name="xmbu_video_err_permission">S\'ha denegat el permís per a aquest fitxer.</string>
+    <string name="xmbu_video_err_decode">Aquest vídeo no es pot descodificar en aquest dispositiu.</string>
+    <string name="xmbu_video_err_unable">No es pot reproduir aquest vídeo.</string>
+    <string name="xmbu_video_go_back">Torna enrere</string>
+    <string name="xmbu_video_status">%1$s× · %2$s</string>
+
+    <!-- Visualitzador de fotos -->
+    <string name="xmbu_photo_rotate_left">Gira a l\'esquerra</string>
+    <string name="xmbu_photo_rotate_right">Gira a la dreta</string>
+    <string name="xmbu_photo_zoom_in">Amplia</string>
+    <string name="xmbu_photo_zoom_out">Redueix</string>
+    <string name="xmbu_photo_reset_zoom">Restableix el zoom</string>
+    <string name="xmbu_photo_set_wallpaper">Defineix com a fons del launcher</string>
+    <string name="xmbu_photo_set_lock_screen">Defineix com a pantalla de bloqueig</string>
+    <string name="xmbu_photo_view_info">Mostra la informació</string>
+    <string name="xmbu_photo_show_location">Mostra la ubicació del fitxer</string>
+    <string name="xmbu_photo_remove">Treu de la biblioteca</string>
+    <string name="xmbu_photo_group_view">Visualització</string>
+    <string name="xmbu_photo_group_manage">Gestiona</string>
+    <string name="xmbu_photo_in_folder">A: %1$s</string>
+    <string name="xmbu_photo_wallpaper_unreadable">No s\'ha pogut definir el fons — no s\'ha pogut llegir la imatge</string>
+    <string name="xmbu_photo_wallpaper_applied">S\'ha aplicat el fons de pantalla</string>
+    <string name="xmbu_photo_unreadable">No s\'ha pogut llegir aquesta foto</string>
+    <string name="xmbu_photo_lock_screen_set">S\'ha definit la pantalla de bloqueig</string>
+    <string name="xmbu_photo_hide_controls">Amaga els controls</string>
+    <string name="xmbu_photo_show_controls">Mostra els controls</string>
+    <string name="xmbu_photo_wallpaper_title">Vols definir-la com a fons del launcher?</string>
+    <string name="xmbu_photo_wallpaper_note">Substitueix el fons d\'ona de l\'XMB.</string>
+    <string name="xmbu_photo_apply">Aplica</string>
+    <string name="xmbu_photo_applying">S\'està aplicant…</string>
+    <string name="xmbu_photo_remove_message">\"%1$s\" es traurà d\'aquesta biblioteca. La foto del disc no se suprimeix.</string>
+    <string name="xmbu_photo_lock_message">\"%1$s\" serà la imatge de la pantalla de bloqueig del dispositiu, retallada per ajustar-se a la pantalla.</string>
+    <string name="xmbu_photo_set">Defineix</string>
+    <string name="xmbu_photo_info_resolution">Resolució: %1$s</string>
+    <string name="xmbu_photo_info_taken">Presa: %1$s</string>
+    <string name="xmbu_photo_info_modified">Modificada: %1$s</string>
+    <string name="xmbu_photo_info_size">Mida: %1$s</string>
+    <string name="xmbu_photo_info_type">Tipus: %1$s</string>
+    <string name="xmbu_photo_info_location">Ubicació: %1$s</string>
+    <string name="xmbu_photo_info_file">Fitxer: %1$s</string>
+
+    <!-- Visualitzador de música -->
+    <string name="xmbu_visualizer_portal">Portal</string>
+    <string name="xmbu_visualizer_ripple">Ones</string>
+    <string name="xmbu_visualizer_off">Desactivat</string>
+    <string name="xmbu_visualizer_off_tile">NO</string>
+
+    <plurals name="xmbu_app_picker_selected">
+        <item quantity="one">%d seleccionada</item>
+        <item quantity="many">%d seleccionades</item>
+        <item quantity="other">%d seleccionades</item>
+    </plurals>
+    <plurals name="xmbu_arrange_marked">
+        <item quantity="one">%d marcat</item>
+        <item quantity="many">%d marcats</item>
+        <item quantity="other">%d marcats</item>
+    </plurals>
+    <plurals name="xmbu_picker_to_add">
+        <item quantity="one">%d per afegir</item>
+        <item quantity="many">%d per afegir</item>
+        <item quantity="other">%d per afegir</item>
+    </plurals>
+    <plurals name="xmbu_picker_to_remove">
+        <item quantity="one">%d per treure</item>
+        <item quantity="many">%d per treure</item>
+        <item quantity="other">%d per treure</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_games">
+        <item quantity="one">%1$d joc · %2$d marcats</item>
+        <item quantity="many">%1$d jocs · %2$d marcats</item>
+        <item quantity="other">%1$d jocs · %2$d marcats</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_cards">
+        <item quantity="one">%d targeta · si en tries una, es mou aquí</item>
+        <item quantity="many">%d targetes · si en tries una, es mou aquí</item>
+        <item quantity="other">%d targetes · si en tries una, es mou aquí</item>
+    </plurals>
+    <plurals name="xmbu_picker_card_games">
+        <item quantity="one">%d joc</item>
+        <item quantity="many">%d jocs</item>
+        <item quantity="other">%d jocs</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_add_count">
+        <item quantity="one">Afegeix %d</item>
+        <item quantity="many">Afegeix-ne %d</item>
+        <item quantity="other">Afegeix-ne %d</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_selected">
+        <item quantity="one">%d seleccionada</item>
+        <item quantity="many">%d seleccionades</item>
+        <item quantity="other">%d seleccionades</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_add_tracks">
+        <item quantity="one">Afegeix %d pista</item>
+        <item quantity="many">Afegeix %d pistes</item>
+        <item quantity="other">Afegeix %d pistes</item>
+    </plurals>
+    <plurals name="xmbu_time_minutes_ago">
+        <item quantity="one">Fa %d minut</item>
+        <item quantity="many">Fa %d minuts</item>
+        <item quantity="other">Fa %d minuts</item>
+    </plurals>
+    <plurals name="xmbu_time_hours_ago">
+        <item quantity="one">Fa %d hora</item>
+        <item quantity="many">Fa %d hores</item>
+        <item quantity="other">Fa %d hores</item>
+    </plurals>
+    <plurals name="xmbu_artfolder_move_message">
+        <item quantity="one">%d imatge està desada dins de l\'aplicació i es perdria si la desinstal·les. Tria una carpeta i PFP l\'hi mourà.</item>
+        <item quantity="many">%d imatges estan desades dins de l\'aplicació i es perdrien si la desinstal·les. Tria una carpeta i PFP les hi mourà.</item>
+        <item quantity="other">%d imatges estan desades dins de l\'aplicació i es perdrien si la desinstal·les. Tria una carpeta i PFP les hi mourà.</item>
+    </plurals>
+    <plurals name="xmbu_artfolder_foreign_message">
+        <item quantity="one">%1$s es va configurar en una altra instal·lació (%2$d fitxer). Fes-la servir i PFP tornarà a enllaçar els teus jocs amb les seves imatges, o tria una altra carpeta.</item>
+        <item quantity="many">%1$s es va configurar en una altra instal·lació (%2$d fitxers). Fes-la servir i PFP tornarà a enllaçar els teus jocs amb les seves imatges, o tria una altra carpeta.</item>
+        <item quantity="other">%1$s es va configurar en una altra instal·lació (%2$d fitxers). Fes-la servir i PFP tornarà a enllaçar els teus jocs amb les seves imatges, o tria una altra carpeta.</item>
+    </plurals>
+    <plurals name="xmbu_status_notifications_unread">
+        <item quantity="one">Notificacions, %d sense llegir</item>
+        <item quantity="many">Notificacions, %d sense llegir</item>
+        <item quantity="other">Notificacions, %d sense llegir</item>
+    </plurals>
+</resources>

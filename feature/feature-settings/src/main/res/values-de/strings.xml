@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Einstellungen</string>
+    <string name="sound_title">Ton</string>
+    <string name="sound_group_master">Gesamt</string>
+    <string name="sound_group_levels">Lautstärken</string>
+    <string name="sound_group_sounds">Klänge</string>
+    <string name="sound_master_volume">Gesamtlautstärke</string>
+    <string name="sound_master_volume_help">Regelt alle Töne des Launchers. Bei 0 ist der Launcher stumm.</string>
+    <string name="sound_ambience_help">Läuft in Schleife, während du stöberst. OGG läuft nahtlos; bei MP3 kann es knacken.</string>
+    <string name="sound_rejected_title">Dieser Ton konnte nicht verwendet werden</string>
+    <string name="sound_reset_confirm_title">Ton auf Standard zurücksetzen?</string>
+    <string name="sound_reset_confirm_message">Jeder Menüton wird wieder auf das mitgelieferte PFP-Sample gesetzt und jede Lautstärke – auch die Gesamtlautstärke – auf voll. Dein Ambiente-Titel sowie die Medien für Boot Video und Game Boot bleiben unverändert.</string>
+    <string name="sound_reset_confirm_action">Zurücksetzen</string>
+    <string name="sound_reset_row">Ton auf Standard zurücksetzen</string>
+    <string name="sound_reset_row_help">Setzt jeden Menüton auf das mitgelieferte PFP-Sample und jede Lautstärke auf voll zurück. Dein Ambiente-Titel bleibt erhalten.</string>
+    <string name="sound_channel_navigation">Navigation</string>
+    <string name="sound_channel_back">Zurück / Abbrechen</string>
+    <string name="sound_channel_confirm">Bestätigen / Anwenden</string>
+    <string name="sound_channel_error">Fehler / Ungültig</string>
+    <string name="sound_channel_notification">Benachrichtigung</string>
+    <string name="sound_channel_boot">Startsequenz</string>
+    <string name="sound_channel_ambience">Ambiente</string>
+    <string name="sound_slot_navigation">Navigation</string>
+    <string name="sound_slot_back">Zurück / Abbrechen</string>
+    <string name="sound_slot_confirm">Bestätigen / Anwenden</string>
+    <string name="sound_slot_error">Fehler / Ungültig</string>
+    <string name="sound_slot_notification">Benachrichtigung</string>
+    <string name="sound_slot_ambience">Ambiente-Titel</string>
+</resources>

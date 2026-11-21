@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- QR login screen -->
+    <string name="soc_qr_preparing">Förbereder inloggning …</string>
+    <string name="soc_qr_connected">Ansluten</string>
+    <string name="soc_qr_expired">Koden har gått ut.</string>
+    <string name="soc_qr_declined">Inloggningen nekades.</string>
+    <string name="soc_qr_error">Det gick inte att logga in. %1$s</string>
+    <string name="soc_qr_content_description">QR-kod för inloggning på Discord</string>
+    <string name="soc_qr_title">Logga in med Discord</string>
+    <string name="soc_qr_copied">Kopierat!</string>
+    <string name="soc_qr_tap_to_copy">Välj koden för att kopiera</string>
+    <string name="soc_qr_instructions">Skanna med telefonens kamera eller gå till discord.com/activate och klistra in koden.</string>
+    <string name="soc_qr_expires_in">Går ut om %1$d s</string>
+    <string name="soc_qr_expired_short">Har gått ut</string>
+    <string name="soc_qr_cancel">Avbryt</string>
+    <string name="soc_qr_try_again">Försök igen</string>
+</resources>

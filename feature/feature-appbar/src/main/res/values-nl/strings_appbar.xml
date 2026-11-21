@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App context menu: group headings -->
+    <string name="apps_menu_group_library">Bibliotheek</string>
+    <string name="apps_menu_group_arrange">Ordenen</string>
+    <string name="apps_menu_group_manage">Beheren</string>
+
+    <!-- App context menu: rows -->
+    <string name="apps_menu_launch">Starten</string>
+    <string name="apps_menu_edit_details">App-gegevens bewerken</string>
+    <string name="apps_menu_mark_game">Markeren als spel</string>
+    <string name="apps_menu_unmark_game">Niet meer als spel markeren</string>
+    <string name="apps_menu_favorite">Favoriet</string>
+    <string name="apps_menu_add_to_card">Toevoegen aan kaart</string>
+    <string name="apps_menu_pin_to_top">Bovenaan vastzetten</string>
+    <string name="apps_menu_move">Verplaatsen</string>
+    <string name="apps_menu_move_to_category">Verplaatsen naar categorie</string>
+    <string name="apps_menu_add_to_category">Toevoegen aan categorie</string>
+    <string name="apps_menu_remove_from_category">Verwijderen uit categorie</string>
+    <string name="apps_menu_rename_shortcut">Snelkoppeling hernoemen</string>
+    <string name="apps_menu_hide_from">Verbergen in %1$s</string>
+    <string name="apps_menu_hide_everywhere">Overal verbergen</string>
+    <string name="apps_menu_app_info">App-info</string>
+    <string name="apps_menu_uninstall">Verwijderen</string>
+    <string name="apps_value_on">Aan</string>
+    <string name="apps_value_off">Uit</string>
+
+    <!-- Uninstall confirmation -->
+    <string name="apps_uninstall_title">%1$s verwijderen?</string>
+    <string name="apps_uninstall_message">Hiermee verwijder je %1$s van je apparaat. Android vraagt je om te bevestigen.</string>
+
+    <!-- Category tabs and header title -->
+    <string name="apps_filter_all">Alle apps</string>
+    <string name="apps_filter_games">Spellen</string>
+    <string name="apps_filter_emulators">Emulators</string>
+    <string name="apps_filter_recent">Recent gebruikt</string>
+
+    <!-- Header search -->
+    <string name="apps_search_placeholder">Zoeken…</string>
+    <string name="apps_search_button">Zoeken</string>
+
+    <!-- Empty states -->
+    <string name="apps_empty_no_match">Geen apps gevonden voor je zoekopdracht</string>
+    <string name="apps_empty_no_games">Geen spellen gevonden</string>
+    <string name="apps_empty_no_emulators">Geen emulators geïnstalleerd</string>
+    <string name="apps_empty_usage_access">Gebruikstoegang nodig</string>
+    <string name="apps_empty_no_recent">Nog geen recent gebruikte apps</string>
+    <string name="apps_empty_no_apps">Geen apps geïnstalleerd</string>
+    <string name="apps_hint_try_search">Probeer een andere zoekterm</string>
+    <string name="apps_hint_games">Apps die in de Play Store als spel zijn gemarkeerd, verschijnen hier</string>
+    <string name="apps_hint_emulators">Installeer RetroArch, PPSSPP of een andere emulator</string>
+    <string name="apps_hint_usage_access">Geef toegang zodat PFP apps kan sorteren op laatst gebruikt</string>
+    <string name="apps_open_usage_access">Gebruikstoegang openen</string>
+
+    <!-- Controller hint bar -->
+    <string name="apps_hint_prev">Vorige</string>
+    <string name="apps_hint_next">Volgende</string>
+    <string name="apps_hint_back">Terug</string>
+    <string name="apps_hint_launch">Starten</string>
+    <string name="apps_hint_options">Opties</string>
+    <string name="apps_hint_search">Zoeken</string>
+    <string name="apps_drawer_title">App-lade</string>
+    <string name="apps_drawer_subtitle">Apps op dit apparaat</string>
+</resources>

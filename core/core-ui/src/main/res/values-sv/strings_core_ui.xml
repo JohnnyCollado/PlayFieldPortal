@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared button and prompt labels -->
+    <string name="core_cancel">Avbryt</string>
+    <string name="core_ok">OK</string>
+    <string name="core_save">Spara</string>
+    <string name="core_apply">Verkställ</string>
+    <string name="core_select">Välj</string>
+    <string name="core_close">Stäng</string>
+    <string name="core_back">Tillbaka</string>
+    <!-- Modals (text entry) -->
+    <string name="core_modal_name_label">Namn</string>
+    <string name="core_modal_counter">%1$d / %2$d</string>
+    <!-- Convert-to-achievement-tracking picker -->
+    <string name="core_steam_convert_title">Installera spårning av prestationer?</string>
+    <string name="core_steam_convert_selected_count">%1$d av %2$d</string>
+    <string name="core_steam_convert_found_count">%1$d hittade</string>
+    <string name="core_steam_convert_hints">"Upp/Ned  Rader  •  Select  Markera  •  △  Alla/Inga  •  Start  Installera  •  B  Avbryt"</string>
+    <string name="core_steam_convert_loading">Läser varje spels lista över prestationer från Steam …</string>
+    <string name="core_steam_convert_install">Installera (%1$d)</string>
+    <string name="core_steam_convert_none">Inga</string>
+    <string name="core_steam_convert_all">Alla</string>
+    <string name="core_steam_convert_skip_sync">Hoppa över och synka</string>
+    <string name="core_steam_convert_write_notice">I mappen för varje markerat spel skriver PFP achievements.json, stats.json och configs.user.ini, skapar en mapp för sparfiler och byter namn på steam_api64.dll till steam_api64_o.dll så att den medföljande emulatorn kan laddas genom den.</string>
+    <string name="core_steam_convert_backup_warning">Säkerhetskopiera sparfilerna för spel du redan har spelat innan du konverterar dem – emulatorn börjar läsa från den nya sparplatsen.</string>
+    <!-- Shiba player card -->
+    <string name="core_shiba_xp">%1$s XP</string>
+    <string name="core_shiba_progress_next_bone">%1$s / %2$s till nästa ben</string>
+    <string name="core_shiba_progress_next_level">%1$s / %2$s till nivå %3$d</string>
+    <string name="core_shiba_level_abbrev">LV</string>
+    <!-- Colour picker -->
+    <string name="core_hsv_hex">Hex</string>
+    <string name="core_hsv_hue">Nyans</string>
+    <string name="core_hsv_saturation">Mättnad</string>
+    <string name="core_hsv_brightness">Ljusstyrka</string>
+    <string name="core_hsv_hint_move">Flytta</string>
+    <string name="core_hsv_hint_type_hex">Skriv hex</string>
+    <string name="core_hsv_hint_adjust">Justera</string>
+    <string name="core_hsv_sample_text">Exempeltext</string>
+    <!-- Preset colour names -->
+    <string name="core_color_default">Standard</string>
+    <string name="core_color_pink">Rosa</string>
+    <string name="core_color_gold">Guld</string>
+    <string name="core_color_aqua">Akvamarin</string>
+    <string name="core_color_sky_blue">Himmelsblå</string>
+    <string name="core_color_green">Grön</string>
+    <string name="core_color_coral">Korall</string>
+    <string name="core_color_slate">Skiffer</string>
+    <string name="core_color_custom">Anpassad</string>
+    <!-- Notification detail sheets -->
+    <string name="core_sheet_copied">Kopierat</string>
+    <string name="core_sheet_copy_details">Kopiera detaljer</string>
+    <string name="core_sheet_copy_list">Kopiera lista</string>
+    <string name="core_sheet_filter">Filter</string>
+    <string name="core_sheet_what_happened">Vad hände</string>
+    <string name="core_sheet_diagnostic_open">"▾  Diagnostikinformation"</string>
+    <string name="core_sheet_diagnostic_closed">"▸  Diagnostikinformation"</string>
+    <string name="core_sheet_diagnostic_heading">Diagnostik</string>
+    <string name="core_sheet_summary_chip">%1$d %2$s</string>
+    <string name="core_sheet_filter_all">Alla</string>
+    <string name="core_sheet_more">+%1$d till</string>
+    <string name="core_sheet_what_you_can_do">Vad du kan göra</string>
+    <string name="core_vk_prompt_type">Skriv</string>
+    <string name="core_vk_prompt_delete">Radera</string>
+    <string name="core_vk_prompt_cursor">Markör</string>
+    <string name="core_vk_prompt_caps">Versaler</string>
+    <string name="core_vk_key_space">Blanksteg</string>
+    <string name="core_vk_key_shift">Skift</string>
+    <string name="core_vk_key_backspace">Backsteg</string>
+    <string name="core_vk_key_done">Klar</string>
+    <string name="core_vk_shift_off">Av</string>
+    <string name="core_vk_shift_once">På för nästa bokstav</string>
+    <string name="core_vk_shift_held">På medan den hålls ned</string>
+    <string name="core_vk_shift_locked">Caps Lock på</string>
+    <!-- Background tasks -->
+    <string name="core_task_failed">Uppgiften misslyckades</string>
+    <string name="core_task_done">Klart</string>
+    <!-- Detail screens -->
+    <string name="core_detail_favorite_badge">FAVORIT</string>
+    <string name="core_detail_video_badge">VIDEO</string>
+    <string name="core_detail_confirm_collapse">Bekräfta för att fälla ihop</string>
+    <string name="core_detail_confirm_read_more">Bekräfta för att läsa mer</string>
+    <!-- Rotate-to-landscape prompt -->
+    <string name="core_rotate_title">Vrid till liggande läge</string>
+    <string name="core_rotate_message">PlayField Portal körs i liggande läge. Vrid enheten på sidan för att fortsätta.</string>
+    <string name="core_rotate_switch_launcher">Byt startprogram</string>
+</resources>

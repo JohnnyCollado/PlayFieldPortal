@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ===== Shared Shiba page text ===== -->
+
+    <string name="shiba_prompt_select">Chọn</string>
+    <string name="shiba_prompt_close">Đóng</string>
+    <string name="shiba_prompt_done">Xong</string>
+    <string name="shiba_prompt_back">Quay lại</string>
+    <string name="shiba_prompt_options">Tùy chọn</string>
+    <string name="shiba_prompt_search">Tìm kiếm</string>
+    <string name="shiba_prompt_type">Nhập</string>
+    <string name="shiba_prompt_change_view">Đổi chế độ xem</string>
+    <string name="shiba_prompt_switch_source">Đổi nguồn</string>
+    <string name="shiba_prompt_view_game">Xem trò chơi</string>
+    <string name="shiba_prompt_view_achievements">Xem thành tựu</string>
+    <string name="shiba_prompt_attempt_match">Thử khớp</string>
+    <string name="shiba_prompt_search_online">Tìm trực tuyến</string>
+    <string name="shiba_prompt_auto_match">Tự động khớp</string>
+    <string name="shiba_prompt_pick_game_folder">Chọn thư mục trò chơi</string>
+    <string name="shiba_prompt_reveal">Hiện</string>
+    <string name="shiba_prompt_hide">Ẩn</string>
+    <string name="shiba_prompt_navigate">Điều hướng</string>
+
+    <string name="shiba_action_yes">Có</string>
+    <string name="shiba_action_no">Không</string>
+    <string name="shiba_action_cancel">Hủy</string>
+    <string name="shiba_action_close">Đóng</string>
+    <string name="shiba_action_link">Liên kết</string>
+
+    <!-- Title of the Options context menu on the Shiba pages and Video Detail. -->
+    <string name="shiba_options_title">Tùy chọn</string>
+    <string name="shiba_options_sort">Sắp xếp</string>
+    <string name="shiba_options_provider">Nhà cung cấp</string>
+    <string name="shiba_options_update_installed">Cập nhật thành tựu đã cài</string>
+    <string name="shiba_options_updating">Đang cập nhật…</string>
+
+    <string name="shiba_sort_newest">Mới nhất</string>
+    <string name="shiba_sort_rarest">Hiếm nhất</string>
+    <string name="shiba_sort_tier">Hạng</string>
+    <string name="shiba_sort_earned">Đã đạt</string>
+    <string name="shiba_filter_all">Tất cả</string>
+
+    <!-- Coin tier names. -->
+    <string name="shiba_tier_bronze">Đồng</string>
+    <string name="shiba_tier_silver">Bạc</string>
+    <string name="shiba_tier_gold">Vàng</string>
+    <string name="shiba_tier_platinum">Bạch kim</string>
+
+    <string name="shiba_stat_shiba_level">CẤP SHIBA</string>
+    <string name="shiba_stat_next_level">CẤP TIẾP THEO</string>
+    <string name="shiba_stat_total_coins">TỔNG SỐ XU</string>
+    <string name="shiba_stat_total">TỔNG</string>
+
+    <string name="shiba_platform_not_installed">%1$s · Chưa cài</string>
+
+    <string name="shiba_time_just_now">Vừa xong</string>
+    <string name="shiba_time_minutes_ago">%1$d phút trước</string>
+    <string name="shiba_time_hours_ago">%1$d giờ trước</string>
+    <string name="shiba_time_yesterday">Hôm qua</string>
+    <plurals name="shiba_time_days_ago">
+        <item quantity="other">%1$d ngày trước</item>
+    </plurals>
+
+    <string name="shiba_search_games_placeholder">Tìm trò chơi…</string>
+
+    <!-- ===== Player Status ===== -->
+
+    <string name="shiba_player_status_title">Trạng thái người chơi</string>
+    <string name="shiba_player_status_no_rarest">Chưa có thành tựu hiếm nhất.</string>
+    <string name="shiba_player_status_rarest_unlocked">HIẾM NHẤT ĐÃ MỞ KHÓA</string>
+    <string name="shiba_player_status_rarity_caption">người chơi có thành tựu này</string>
+    <string name="shiba_player_status_game_and_time">%1$s · %2$s</string>
+    <plurals name="shiba_status_checking_games">
+        <item quantity="other">Đang kiểm tra %1$d / %2$d trò chơi…</item>
+    </plurals>
+    <string name="shiba_status_updating_achievements">Đang cập nhật thành tựu đã cài…</string>
+
+    <!-- ===== Achievements library (Tracked / Untracked Games) ===== -->
+
+    <string name="shiba_library_view_tracked">Trò chơi được theo dõi</string>
+    <string name="shiba_library_view_untracked">Trò chơi chưa theo dõi</string>
+    <string name="shiba_library_breadcrumb">Thành tựu / %1$s</string>
+    <plurals name="shiba_library_game_count">
+        <item quantity="other">%1$d trò chơi</item>
+    </plurals>
+    <string name="shiba_library_empty_no_match">Không có trò chơi nào khớp với \"%1$s\".</string>
+    <string name="shiba_library_empty_tracked">Chưa có trò chơi nào được theo dõi.</string>
+    <string name="shiba_library_empty_untracked">Mọi trò chơi đủ điều kiện đều đã được theo dõi.</string>
+    <string name="shiba_library_sort_title_asc">Tiêu đề A–Z</string>
+    <string name="shiba_library_sort_title_desc">Tiêu đề Z–A</string>
+    <string name="shiba_library_sort_progress_asc">Tiến trình thấp nhất trước</string>
+    <string name="shiba_library_sort_progress_desc">Tiến trình cao nhất trước</string>
+    <string name="shiba_library_sort_platform_asc">Nền tảng A–Z</string>
+    <string name="shiba_library_sort_platform_desc">Nền tảng Z–A</string>
+    <string name="shiba_library_search_online">Tìm trực tuyến</string>
+    <string name="shiba_library_search_online_subtitle">Tra cứu trò chơi không có trên thiết bị này</string>
+    <string name="shiba_library_awaiting_sync">Đang chờ đồng bộ</string>
+
+    <!-- ===== A game's Shiba Coins page ===== -->
+
+    <string name="shiba_coins_search_placeholder">Tìm xu…</string>
+    <string name="shiba_coins_stat_completion">HOÀN THÀNH</string>
+    <string name="shiba_coins_stat_earned">ĐÃ ĐẠT</string>
+    <string name="shiba_coins_tab_all">Tất cả %1$d</string>
+    <string name="shiba_coins_tab_earned">Đã đạt %1$d</string>
+    <string name="shiba_coins_tab_locked">Đang khóa %1$d</string>
+    <string name="shiba_coins_synced">Đã đồng bộ %1$s</string>
+    <string name="shiba_coins_not_linked">Chưa liên kết</string>
+    <string name="shiba_coins_never_synced">Chưa từng đồng bộ</string>
+    <string name="shiba_coins_owned_on_steam">Sở hữu trên Steam</string>
+    <string name="shiba_coins_tracked_locally">Theo dõi cục bộ</string>
+
+    <string name="shiba_coins_empty_no_match">Không có xu nào khớp với \"%1$s\".</string>
+    <string name="shiba_coins_empty_none_earned">Chưa đạt xu nào.</string>
+    <string name="shiba_coins_empty_all_earned">Đã đạt mọi xu.</string>
+    <string name="shiba_coins_empty_default">Không có xu nào để hiển thị.</string>
+
+    <!-- Options menu rows. -->
+    <string name="shiba_coins_options_update">Cập nhật thành tựu</string>
+    <string name="shiba_coins_options_change_match">Đổi kết quả khớp</string>
+    <string name="shiba_coins_options_unlink">Hủy liên kết trò chơi</string>
+
+    <string name="shiba_coins_unlink_title">Hủy liên kết trò chơi?</string>
+    <string name="shiba_coins_unlink_message">%1$s sẽ không còn được khớp, nên xu của nó không hiển thị nữa. Các xu đã lưu đệm vẫn được giữ và sẽ hiện lại khi bạn khớp lại.</string>
+    <string name="shiba_coins_unlink_confirm">Hủy liên kết</string>
+
+    <!-- Coin rows. A hidden coin hides its real title until the user reveals it. -->
+    <string name="shiba_coin_hidden_title">Xu ẩn</string>
+    <string name="shiba_coin_hidden_hint">Tiếp tục chơi — hoặc nhấn Xác nhận để hiện</string>
+    <string name="shiba_coin_description_secret">Steam giữ bí mật mô tả của mục này</string>
+    <string name="shiba_coin_metric_of_players">người chơi</string>
+    <string name="shiba_coin_status_earned">Đã đạt</string>
+    <string name="shiba_coin_status_locked">Đang khóa</string>
+    <string name="shiba_platinum_crown_title">Vương miện Bạch kim</string>
+    <string name="shiba_platinum_crown_description">Đạt mọi xu khác trong trò chơi</string>
+    <string name="shiba_platinum_crown_metric">xu đã đạt</string>
+
+    <!-- Auto-Match panel for a game that is not linked yet. -->
+    <string name="shiba_link_not_linked_yet_game">Trò chơi này chưa được liên kết</string>
+    <string name="shiba_link_not_linked_yet">Chưa liên kết</string>
+    <string name="shiba_link_steam_body">Tự động khớp sẽ hỏi đây có phải bản Steam hợp lệ không, rồi đối chiếu với Steam hoặc quét các thư mục trò chơi để tìm dữ liệu Steam-emu.</string>
+    <string name="shiba_link_retro_body">RetroAchievements nhận diện trò chơi bằng mã băm ROM. Tự động khớp sẽ băm ROM này rồi tra cứu — chỉ bản dump đã xác minh và được đăng ký trên RetroAchievements mới liên kết được.</string>
+    <string name="shiba_link_local_steam_body">Chọn thư mục của trò chơi này và PFP sẽ đọc Steam app id — từ steam_appid.txt nếu có, hoặc bằng cách khớp tiêu đề nếu không. PFP ghi nhớ thư mục, nên không cần tìm lại.</string>
+    <string name="shiba_link_vita_body">Cúp PS Vita tự động liên kết từ Vita3K. Hãy đặt thư mục dữ liệu Vita3K trong thư viện và quét để liên kết trò chơi này.</string>
+    <string name="shiba_link_ps3_body">Cúp PS3 liên kết từ chính đĩa của trò chơi — hãy đặt Thư mục dữ liệu PS3 trong thư viện rồi dùng Tự động khớp.</string>
+    <string name="shiba_link_x360_body">Thành tựu Xbox 360 liên kết từ title ID của trò chơi — hãy đặt Thư mục dữ liệu X360 Mobile hoặc XenDroid trong thư viện rồi dùng Tự động khớp.</string>
+    <string name="shiba_link_auto_match">Tự động khớp</string>
+    <string name="shiba_link_matching">Đang khớp…</string>
+    <string name="shiba_link_pick_game_folder">Chọn thư mục trò chơi</string>
+
+    <string name="shiba_link_copy_title">Đây có phải bản Steam hợp lệ không?</string>
+    <string name="shiba_link_copy_body">Bản hợp lệ sẽ được đối chiếu với tài khoản Steam của bạn. Mọi bản khác được theo dõi từ thư mục của trò chơi, PFP sẽ yêu cầu bạn chỉ ra thư mục đó.</string>
+
+    <string name="shiba_link_folder_title">Trò chơi này nằm trong thư mục nào?</string>
+    <string name="shiba_link_folder_body">Hãy chọn thư mục của trò chơi — thư mục chứa tệp .exe. PFP đọc Steam app id từ đó và theo dõi các thành tựu mà trình giả lập ghi vào đó. Trò chơi Windows của bạn có thể nằm ở bất kỳ đâu; PFP ghi nhớ vị trí của trò chơi này để không bao giờ phải tìm lại.</string>
+
+    <string name="shiba_link_identify_title_steam">Đang tìm kết quả khớp trên Steam…</string>
+    <string name="shiba_link_identify_title_appid">Đang xác định Steam app id…</string>
+    <string name="shiba_link_identify_body_steam">Đang tìm tiêu đề trò chơi này trên Steam. Hãy chọn đúng kết quả để liên kết lại.</string>
+    <string name="shiba_link_identify_body_appid">Đang đọc steam_appid.txt từ thư mục và khớp tiêu đề trò chơi với Steam nếu chưa có.</string>
+
+    <string name="shiba_link_kit_title">Thư mục đó chưa có danh sách thành tựu</string>
+    <string name="shiba_link_kit_body_generic">Trình giả lập cần danh sách thành tựu trước khi có thể ghi nhận mở khóa.</string>
+    <string name="shiba_link_kit_body">\"%1$s\" là Steam app id %2$s, nhưng trình giả lập chưa có danh sách thành tựu để ghi nhận. Cài &amp; liên kết sẽ ghi achievements.json, stats.json và configs.user.ini vào thư mục, tạo thư mục saves và đổi tên steam_api64.dll thành steam_api64_o.dll để trình giả lập đi kèm tải qua nó — hãy sao lưu dữ liệu lưu của trò chơi này trước. Chỉ liên kết sẽ theo dõi ở mức 0%% và không ghi thêm gì.</string>
+    <string name="shiba_link_kit_installer_off">Cài &amp; liên kết cần bật Cài Goldberg &amp; chuyển đổi trò chơi trong cài đặt Thành tựu.</string>
+    <string name="shiba_link_kit_install">Cài &amp; liên kết</string>
+    <string name="shiba_link_kit_link_only">Chỉ liên kết</string>
+
+    <string name="shiba_link_no_emu_title">Không có gì để theo dõi trong thư mục đó</string>
+    <string name="shiba_link_no_emu_default">Thư mục đó không chứa dữ liệu Steam-emulator.</string>
+    <string name="shiba_link_try_another_folder">Thử thư mục khác</string>
+
+    <string name="shiba_link_appid_title">Không tìm thấy kết quả khớp tự động</string>
+    <string name="shiba_link_appid_body">Nhập Steam app id của trò chơi:</string>
+    <string name="shiba_link_appid_field">Steam app id</string>
+
+    <string name="shiba_coins_folder_unreadable">Không thể đọc thư mục đó. Hãy chọn lại, hoặc gắn lại bộ nhớ chứa nó.</string>
+    <string name="shiba_coins_linked_to">Đã liên kết với %1$s (appid %2$s).</string>
+    <string name="shiba_coins_nothing_written">Chưa ghi gì. Hãy đặt kết quả khớp Steam cho trò chơi từ Chi tiết trò chơi ▸ Khớp trò chơi, rồi Tự động khớp lại — PFP sẽ dùng id đó.</string>
+    <string name="shiba_coins_appid_not_number">Steam app id là một con số — xem steamdb.info để biết thêm thông tin về trò chơi</string>
+    <string name="shiba_coins_appid_no_match">App id %1$s không khớp — xem steamdb.info để biết thêm thông tin về trò chơi</string>
+    <string name="shiba_coins_sync_not_linked">Hãy liên kết trò chơi này với id nhà cung cấp trước</string>
+    <string name="shiba_coins_sync_not_installed">Trò chơi này chưa được cài — đang hiển thị thành tựu đã lưu</string>
+    <string name="shiba_coins_sync_missing_credentials">Thêm khóa của bạn trong Cài đặt ▸ Thành tựu ▸ Thông tin xác thực nhà cung cấp</string>
+    <string name="shiba_coins_sync_profile_private">Chi tiết trò chơi trong hồ sơ Steam của bạn đang ở chế độ riêng tư</string>
+    <string name="shiba_coins_sync_not_found">Không tìm thấy thành tựu nào cho trò chơi này</string>
+    <string name="shiba_coins_sync_failed">Đồng bộ thất bại: %1$s</string>
+
+    <!-- ===== Video Detail ===== -->
+
+    <string name="shiba_video_play">Phát</string>
+    <string name="shiba_video_resume">Tiếp tục</string>
+    <string name="shiba_video_restart">Phát từ đầu</string>
+    <string name="shiba_video_resume_at">Tiếp tục tại %1$s</string>
+    <string name="shiba_video_group_library">Thư viện</string>
+    <string name="shiba_video_group_customize">Tùy chỉnh</string>
+    <string name="shiba_video_group_manage">Quản lý</string>
+    <string name="shiba_video_favorite">Yêu thích</string>
+    <string name="shiba_video_favorite_on">Bật</string>
+    <string name="shiba_video_favorite_off">Tắt</string>
+    <string name="shiba_video_add_to_playlist">Thêm vào danh sách phát</string>
+    <string name="shiba_video_create_playlist">Tạo danh sách phát mới</string>
+    <string name="shiba_video_edit_title">Sửa tiêu đề</string>
+    <string name="shiba_video_change_thumbnail">Đổi hình thu nhỏ</string>
+    <string name="shiba_video_view_information">Xem thông tin</string>
+    <string name="shiba_video_show_location">Hiện vị trí tệp</string>
+    <string name="shiba_video_remove">Xóa khỏi thư viện</string>
+    <string name="shiba_video_remove_message">\"%1$s\" sẽ bị xóa khỏi thư viện này. Tệp trên bộ nhớ không bị xóa.</string>
+    <string name="shiba_video_remove_confirm">Xóa</string>
+    <string name="shiba_video_new_playlist_title">Danh sách phát mới</string>
+    <string name="shiba_video_new_playlist_placeholder">Tên danh sách phát</string>
+    <string name="shiba_video_new_playlist_create">Tạo</string>
+    <string name="shiba_video_launching">Đang khởi động…</string>
+    <string name="shiba_video_player_ask">trình phát bên ngoài</string>
+    <string name="shiba_video_player_fallback">trình phát bên ngoài</string>
+    <string name="shiba_video_launch_error_title">Không thể phát video</string>
+    <string name="shiba_video_added_favorite">Đã thêm vào Yêu thích</string>
+    <string name="shiba_video_removed_favorite">Đã xóa khỏi Yêu thích</string>
+    <string name="shiba_video_import_failed">Không thể nhập hình ảnh</string>
+    <string name="shiba_video_thumbnail_updated">Đã cập nhật hình thu nhỏ</string>
+    <string name="shiba_video_location_in">Trong: %1$s</string>
+    <string name="shiba_video_info_duration">Thời lượng: %1$s</string>
+    <string name="shiba_video_info_resolution">Độ phân giải: %1$s</string>
+    <string name="shiba_video_info_format">Định dạng: %1$s</string>
+    <string name="shiba_video_info_type">Loại: %1$s</string>
+    <string name="shiba_video_info_size">Kích thước: %1$s</string>
+    <string name="shiba_video_info_location">Vị trí: %1$s</string>
+    <string name="shiba_video_info_file">Tệp: %1$s</string>
+
+    <!-- ===== Manual viewer ===== -->
+
+    <string name="shiba_manual_failed">Không thể hiển thị sách hướng dẫn này.</string>
+    <string name="shiba_manual_page_description">%1$s — trang hướng dẫn %2$d</string>
+    <string name="shiba_manual_footer_hint">"◀ ▶  Trang   •   ▲ ▼  Cuộn   •   B  Đóng"</string>
+</resources>

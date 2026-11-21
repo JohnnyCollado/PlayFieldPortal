@@ -1,5 +1,6 @@
 package com.playfieldportal.core.ui.achievement
 
+import com.playfieldportal.core.domain.text.labelRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -20,12 +21,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.achievement.CoinWallet
 import com.playfieldportal.core.domain.achievement.ShibaLevel
+import com.playfieldportal.core.ui.R
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
@@ -68,7 +71,7 @@ fun ShibaPlayerCard(
                 Spacer(Modifier.width(8.dp))
                 // Rank standing: "<Rank> • <bones> [bone glyph]"; the bone group appears only once
                 // at least one Bone is minted.
-                Text(wallet.rank.label, color = themedText(TextPrimary), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(wallet.rank.labelRes), color = themedText(TextPrimary), fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 if (wallet.bones > 0) {
                     Spacer(Modifier.width(8.dp))
                     Text("•  ${wallet.bones}", color = accent, fontSize = 14.sp, fontWeight = FontWeight.Bold)
@@ -76,7 +79,7 @@ fun ShibaPlayerCard(
                     BoneGlyph(tint = accent, size = 14.dp)
                 }
                 Spacer(Modifier.weight(1f))
-                Text("${"%,d".format(wallet.totalCoins)} XP", color = themedSubText(TextMuted), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                Text(stringResource(R.string.core_shiba_xp, "%,d".format(wallet.totalCoins)), color = themedSubText(TextMuted), fontSize = 12.sp, fontWeight = FontWeight.Medium)
             }
 
             Spacer(Modifier.height(10.dp))
@@ -92,11 +95,14 @@ fun ShibaPlayerCard(
 
             Spacer(Modifier.height(6.dp))
             // At the top of a cycle the next level IS the next Bone — say so instead of "level 101".
-            val nextLabel =
-                if (wallet.level == ShibaLevel.LEVELS_PER_BONE) "your next Bone"
-                else "level ${wallet.level + 1}"
+            val coinsInto = "%,d".format(progress.coinsIntoLevel)
+            val coinsFor = "%,d".format(progress.coinsForNextLevel)
             Text(
-                text = "${"%,d".format(progress.coinsIntoLevel)} / ${"%,d".format(progress.coinsForNextLevel)} to $nextLabel",
+                text = if (wallet.level == ShibaLevel.LEVELS_PER_BONE) {
+                    stringResource(R.string.core_shiba_progress_next_bone, coinsInto, coinsFor)
+                } else {
+                    stringResource(R.string.core_shiba_progress_next_level, coinsInto, coinsFor, wallet.level + 1)
+                },
                 color = themedSubText(TextMuted),
                 fontSize = 11.sp,
             )
@@ -125,7 +131,7 @@ fun ShibaLevelMedallion(
             .border(2.dp * scale.coerceAtLeast(0.75f), accent, CircleShape),
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("LV", color = TextMuted, fontSize = 9.sp * scale, lineHeight = 10.sp * scale, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.core_shiba_level_abbrev), color = TextMuted, fontSize = 9.sp * scale, lineHeight = 10.sp * scale, fontWeight = FontWeight.Bold)
             Text("$level", color = TextPrimary, fontSize = 20.sp * scale, lineHeight = 22.sp * scale, fontWeight = FontWeight.Bold)
         }
     }

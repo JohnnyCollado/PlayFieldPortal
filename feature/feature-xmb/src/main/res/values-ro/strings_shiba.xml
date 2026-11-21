@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ===== Shared Shiba page text ===== -->
+    <string name="shiba_prompt_select">Selectează</string>
+    <string name="shiba_prompt_close">Închide</string>
+    <string name="shiba_prompt_done">Gata</string>
+    <string name="shiba_prompt_back">Înapoi</string>
+    <string name="shiba_prompt_options">Opțiuni</string>
+    <string name="shiba_prompt_search">Caută</string>
+    <string name="shiba_prompt_type">Tastează</string>
+    <string name="shiba_prompt_change_view">Schimbă vizualizarea</string>
+    <string name="shiba_prompt_switch_source">Schimbă sursa</string>
+    <string name="shiba_prompt_view_game">Vezi jocul</string>
+    <string name="shiba_prompt_view_achievements">Vezi realizările</string>
+    <string name="shiba_prompt_attempt_match">Încearcă potrivirea</string>
+    <string name="shiba_prompt_search_online">Caută online</string>
+    <string name="shiba_prompt_auto_match">Potrivire automată</string>
+    <string name="shiba_prompt_pick_game_folder">Alege dosarul jocului</string>
+    <string name="shiba_prompt_reveal">Dezvăluie</string>
+    <string name="shiba_prompt_hide">Ascunde</string>
+    <string name="shiba_prompt_navigate">Navighează</string>
+
+    <string name="shiba_action_yes">Da</string>
+    <string name="shiba_action_no">Nu</string>
+    <string name="shiba_action_cancel">Anulează</string>
+    <string name="shiba_action_close">Închide</string>
+    <string name="shiba_action_link">Leagă</string>
+
+    <string name="shiba_options_title">Opțiuni</string>
+    <string name="shiba_options_sort">Sortare</string>
+    <string name="shiba_options_provider">Furnizor</string>
+    <string name="shiba_options_update_installed">Actualizează realizările instalate</string>
+    <string name="shiba_options_updating">Se actualizează…</string>
+
+    <string name="shiba_sort_newest">Cele mai noi</string>
+    <string name="shiba_sort_rarest">Cele mai rare</string>
+    <string name="shiba_sort_tier">Nivel</string>
+    <string name="shiba_sort_earned">Obținute</string>
+    <string name="shiba_filter_all">Toți</string>
+
+    <!-- Coin tier names -->
+    <string name="shiba_tier_bronze">Bronz</string>
+    <string name="shiba_tier_silver">Argint</string>
+    <string name="shiba_tier_gold">Aur</string>
+    <string name="shiba_tier_platinum">Platină</string>
+
+    <string name="shiba_stat_shiba_level">NIVEL SHIBA</string>
+    <string name="shiba_stat_next_level">NIVELUL URMĂTOR</string>
+    <string name="shiba_stat_total_coins">TOTAL MONEDE</string>
+    <string name="shiba_stat_total">TOTAL</string>
+
+    <string name="shiba_platform_not_installed">%1$s · Neinstalat</string>
+
+    <!-- Relative times -->
+    <string name="shiba_time_just_now">Chiar acum</string>
+    <string name="shiba_time_minutes_ago">acum %1$d min</string>
+    <string name="shiba_time_hours_ago">acum %1$d h</string>
+    <string name="shiba_time_yesterday">Ieri</string>
+    <plurals name="shiba_time_days_ago">
+        <item quantity="one">acum %1$d zi</item>
+        <item quantity="few">acum %1$d zile</item>
+        <item quantity="other">acum %1$d de zile</item>
+    </plurals>
+
+    <string name="shiba_search_games_placeholder">Caută jocuri…</string>
+
+    <!-- ===== Player Status ===== -->
+    <string name="shiba_player_status_title">Starea jucătorului</string>
+    <string name="shiba_player_status_no_rarest">Încă nicio realizare rară.</string>
+    <string name="shiba_player_status_rarest_unlocked">CEA MAI RARĂ DEBLOCATĂ</string>
+    <string name="shiba_player_status_rarity_caption">dintre jucători o au</string>
+    <string name="shiba_player_status_game_and_time">%1$s · %2$s</string>
+    <plurals name="shiba_status_checking_games">
+        <item quantity="one">Se verifică %1$d din %2$d joc…</item>
+        <item quantity="few">Se verifică %1$d din %2$d jocuri…</item>
+        <item quantity="other">Se verifică %1$d din %2$d de jocuri…</item>
+    </plurals>
+    <string name="shiba_status_updating_achievements">Se actualizează realizările instalate…</string>
+
+    <!-- ===== Achievements library ===== -->
+    <string name="shiba_library_view_tracked">Jocuri urmărite</string>
+    <string name="shiba_library_view_untracked">Jocuri neurmărite</string>
+    <string name="shiba_library_breadcrumb">Realizări / %1$s</string>
+    <plurals name="shiba_library_game_count">
+        <item quantity="one">%1$d joc</item>
+        <item quantity="few">%1$d jocuri</item>
+        <item quantity="other">%1$d de jocuri</item>
+    </plurals>
+    <string name="shiba_library_empty_no_match">Niciun joc nu corespunde cu „%1$s”.</string>
+    <string name="shiba_library_empty_tracked">Încă nu există jocuri urmărite.</string>
+    <string name="shiba_library_empty_untracked">Fiecare joc eligibil este urmărit.</string>
+    <string name="shiba_library_sort_title_asc">Titlu A–Z</string>
+    <string name="shiba_library_sort_title_desc">Titlu Z–A</string>
+    <string name="shiba_library_sort_progress_asc">Progres, cel mai mic primul</string>
+    <string name="shiba_library_sort_progress_desc">Progres, cel mai mare primul</string>
+    <string name="shiba_library_sort_platform_asc">Platformă A–Z</string>
+    <string name="shiba_library_sort_platform_desc">Platformă Z–A</string>
+    <string name="shiba_library_search_online">Caută online</string>
+    <string name="shiba_library_search_online_subtitle">Caută un joc care nu se află pe acest dispozitiv</string>
+    <string name="shiba_library_awaiting_sync">În așteptarea sincronizării</string>
+
+    <!-- ===== A game's Shiba Coins page ===== -->
+    <string name="shiba_coins_search_placeholder">Caută monede…</string>
+    <string name="shiba_coins_stat_completion">FINALIZARE</string>
+    <string name="shiba_coins_stat_earned">OBȚINUTE</string>
+    <string name="shiba_coins_tab_all">Toate %1$d</string>
+    <string name="shiba_coins_tab_earned">Obținute %1$d</string>
+    <string name="shiba_coins_tab_locked">Blocate %1$d</string>
+    <string name="shiba_coins_synced">Sincronizat %1$s</string>
+    <string name="shiba_coins_not_linked">Nelegat</string>
+    <string name="shiba_coins_never_synced">Niciodată sincronizat</string>
+    <string name="shiba_coins_owned_on_steam">Deținut pe Steam</string>
+    <string name="shiba_coins_tracked_locally">Urmărit local</string>
+
+    <string name="shiba_coins_empty_no_match">Nicio monedă nu corespunde cu „%1$s”.</string>
+    <string name="shiba_coins_empty_none_earned">Încă nu ai obținut nicio monedă.</string>
+    <string name="shiba_coins_empty_all_earned">Toate monedele au fost obținute.</string>
+    <string name="shiba_coins_empty_default">Nicio monedă de afișat.</string>
+
+    <string name="shiba_coins_options_update">Actualizează realizările</string>
+    <string name="shiba_coins_options_change_match">Schimbă potrivirea</string>
+    <string name="shiba_coins_options_unlink">Dezleagă jocul</string>
+
+    <string name="shiba_coins_unlink_title">Dezlegi jocul?</string>
+    <string name="shiba_coins_unlink_message">%1$s nu mai este potrivit, așa că monedele lui nu mai sunt afișate. Monedele deja salvate în cache rămân stocate și revin când îl potrivești din nou.</string>
+    <string name="shiba_coins_unlink_confirm">Dezleagă</string>
+
+    <!-- Coin rows -->
+    <string name="shiba_coin_hidden_title">Monedă ascunsă</string>
+    <string name="shiba_coin_hidden_hint">Continuă să joci — sau apasă Confirmă pentru a o dezvălui</string>
+    <string name="shiba_coin_description_secret">Steam păstrează secretă descrierea acesteia</string>
+    <string name="shiba_coin_metric_of_players">dintre jucători</string>
+    <string name="shiba_coin_status_earned">Obținută</string>
+    <string name="shiba_coin_status_locked">Blocată</string>
+    <string name="shiba_platinum_crown_title">Coroana de platină</string>
+    <string name="shiba_platinum_crown_description">Obține toate celelalte monede din joc</string>
+    <string name="shiba_platinum_crown_metric">monede obținute</string>
+
+    <!-- Auto-Match panel -->
+    <string name="shiba_link_not_linked_yet_game">Acest joc nu este încă legat</string>
+    <string name="shiba_link_not_linked_yet">Încă nelegat</string>
+    <string name="shiba_link_steam_body">Potrivirea automată întreabă dacă aceasta este o copie Steam legitimă, apoi o identifică pe Steam sau îți scanează dosarele de jocuri pentru date de emulator Steam.</string>
+    <string name="shiba_link_retro_body">RetroAchievements identifică jocurile după hash-ul ROM. Potrivirea automată calculează hash-ul acestui ROM și îl caută — doar o copie verificată, înregistrată pe RetroAchievements, poate fi legată.</string>
+    <string name="shiba_link_local_steam_body">Alege dosarul acestui joc, iar PFP îi citește ID-ul de aplicație Steam — din steam_appid.txt când există sau prin potrivirea titlului când nu există. Dosarul este memorat, așa că nu mai trebuie căutat din nou.</string>
+    <string name="shiba_link_vita_body">Trofeele PS Vita se leagă automat din Vita3K. Setează dosarul de date Vita3K în bibliotecă și scanează pentru a lega acest joc.</string>
+    <string name="shiba_link_ps3_body">Trofeele PS3 se leagă de pe discul jocului — setează dosarul de date PS3 în bibliotecă și folosește Potrivire automată.</string>
+    <string name="shiba_link_x360_body">Realizările Xbox 360 se leagă prin ID-ul de titlu al jocului — setează dosarul de date X360 Mobile sau XenDroid în bibliotecă și folosește Potrivire automată.</string>
+    <string name="shiba_link_auto_match">Potrivire automată</string>
+    <string name="shiba_link_matching">Se potrivește…</string>
+    <string name="shiba_link_pick_game_folder">Alege dosarul jocului</string>
+
+    <string name="shiba_link_copy_title">Este aceasta o copie Steam legitimă?</string>
+    <string name="shiba_link_copy_body">O copie legitimă se potrivește cu contul tău Steam. Orice altceva este urmărit din dosarul propriu al jocului, pe care PFP îți va cere să-l indici.</string>
+
+    <string name="shiba_link_folder_title">În ce dosar se află acest joc?</string>
+    <string name="shiba_link_folder_body">Alege dosarul propriu al jocului — cel în care se află fișierul .exe. PFP citește din el ID-ul de aplicație Steam și urmărește deblocările pe care emulatorul le scrie acolo. Jocurile Windows pot fi oriunde; PFP memorează unde se află acesta, așa că nu trebuie să-l caute niciodată.</string>
+
+    <string name="shiba_link_identify_title_steam">Se caută potrivirea Steam…</string>
+    <string name="shiba_link_identify_title_appid">Se determină ID-ul de aplicație Steam…</string>
+    <string name="shiba_link_identify_body_steam">Se caută pe Steam titlul acestui joc. Alege-l pe cel corect pentru a-l lega din nou.</string>
+    <string name="shiba_link_identify_body_appid">Se citește steam_appid.txt din dosar și se potrivește titlul jocului cu Steam dacă fișierul nu există încă.</string>
+
+    <string name="shiba_link_kit_title">Acel dosar nu are încă o listă de realizări</string>
+    <string name="shiba_link_kit_body_generic">Emulatorul are nevoie de o listă de realizări înainte de a putea înregistra deblocări.</string>
+    <string name="shiba_link_kit_body">„%1$s” are ID-ul de aplicație Steam %2$s, dar emulatorul nu are o listă de realizări față de care să înregistreze. Instalează și leagă scrie achievements.json, stats.json și configs.user.ini în dosar, creează un dosar saves și redenumește steam_api64.dll în steam_api64_o.dll, astfel încât emulatorul inclus să se încarce prin el — fă mai întâi backup la salvările acestui joc. Doar leagă îl urmărește la 0%% și nu mai scrie nimic.</string>
+    <string name="shiba_link_kit_installer_off">Instalează și leagă necesită Instalează Goldberg și convertește jocurile în setările Realizări.</string>
+    <string name="shiba_link_kit_install">Instalează și leagă</string>
+    <string name="shiba_link_kit_link_only">Doar leagă</string>
+
+    <string name="shiba_link_no_emu_title">Nimic de urmărit în acel dosar</string>
+    <string name="shiba_link_no_emu_default">Acel dosar nu conține date de emulator Steam.</string>
+    <string name="shiba_link_try_another_folder">Încearcă alt dosar</string>
+
+    <string name="shiba_link_appid_title">Nu s-a găsit nicio potrivire automată</string>
+    <string name="shiba_link_appid_body">Introdu ID-ul de aplicație Steam al jocului:</string>
+    <string name="shiba_link_appid_field">ID aplicație Steam</string>
+
+    <!-- Messages after linking or syncing -->
+    <string name="shiba_coins_folder_unreadable">Acel dosar nu a putut fi citit. Alege-l din nou sau remontează stocarea pe care se află.</string>
+    <string name="shiba_coins_linked_to">Legat la %1$s (appid %2$s).</string>
+    <string name="shiba_coins_nothing_written">Nu s-a scris nimic. Setează potrivirea Steam a jocului din Detalii joc ▸ Potrivește jocul, apoi folosește din nou Potrivire automată — PFP va folosi acel ID.</string>
+    <string name="shiba_coins_appid_not_number">Un ID de aplicație Steam este un număr — verifică steamdb.info pentru mai multe informații despre joc</string>
+    <string name="shiba_coins_appid_no_match">ID-ul de aplicație %1$s nu corespunde — verifică steamdb.info pentru mai multe informații despre joc</string>
+    <string name="shiba_coins_sync_not_linked">Leagă mai întâi acest joc de un ID de furnizor</string>
+    <string name="shiba_coins_sync_not_installed">Acest joc nu este instalat — sunt afișate realizările salvate</string>
+    <string name="shiba_coins_sync_missing_credentials">Adaugă cheia în Setări ▸ Realizări ▸ Date de autentificare furnizori</string>
+    <string name="shiba_coins_sync_profile_private">Detaliile jocurilor din profilul tău Steam sunt private</string>
+    <string name="shiba_coins_sync_not_found">Nu s-au găsit realizări pentru acest joc</string>
+    <string name="shiba_coins_sync_failed">Sincronizarea a eșuat: %1$s</string>
+
+    <!-- ===== Video Detail ===== -->
+    <string name="shiba_video_play">Redă</string>
+    <string name="shiba_video_resume">Reia</string>
+    <string name="shiba_video_restart">Începe de la început</string>
+    <string name="shiba_video_resume_at">Reia de la %1$s</string>
+    <string name="shiba_video_group_library">Bibliotecă</string>
+    <string name="shiba_video_group_customize">Personalizare</string>
+    <string name="shiba_video_group_manage">Gestionare</string>
+    <string name="shiba_video_favorite">Preferat</string>
+    <string name="shiba_video_favorite_on">Activat</string>
+    <string name="shiba_video_favorite_off">Dezactivat</string>
+    <string name="shiba_video_add_to_playlist">Adaugă în playlist</string>
+    <string name="shiba_video_create_playlist">Creează un playlist nou</string>
+    <string name="shiba_video_edit_title">Editează titlul</string>
+    <string name="shiba_video_change_thumbnail">Schimbă miniatura</string>
+    <string name="shiba_video_view_information">Vezi informațiile</string>
+    <string name="shiba_video_show_location">Afișează locația fișierului</string>
+    <string name="shiba_video_remove">Elimină din bibliotecă</string>
+    <string name="shiba_video_remove_message">„%1$s” va fi eliminat din această bibliotecă. Fișierul de pe disc nu este șters.</string>
+    <string name="shiba_video_remove_confirm">Elimină</string>
+    <string name="shiba_video_new_playlist_title">Playlist nou</string>
+    <string name="shiba_video_new_playlist_placeholder">Numele playlistului</string>
+    <string name="shiba_video_new_playlist_create">Creează</string>
+    <string name="shiba_video_launching">Se pornește…</string>
+    <string name="shiba_video_player_ask">un player extern</string>
+    <string name="shiba_video_player_fallback">player extern</string>
+    <string name="shiba_video_launch_error_title">Videoclipul nu poate fi redat</string>
+    <string name="shiba_video_added_favorite">Adăugat la Preferate</string>
+    <string name="shiba_video_removed_favorite">Eliminat din Preferate</string>
+    <string name="shiba_video_import_failed">Imaginea nu a putut fi importată</string>
+    <string name="shiba_video_thumbnail_updated">Miniatura a fost actualizată</string>
+    <string name="shiba_video_location_in">În: %1$s</string>
+    <string name="shiba_video_info_duration">Durată: %1$s</string>
+    <string name="shiba_video_info_resolution">Rezoluție: %1$s</string>
+    <string name="shiba_video_info_format">Format: %1$s</string>
+    <string name="shiba_video_info_type">Tip: %1$s</string>
+    <string name="shiba_video_info_size">Dimensiune: %1$s</string>
+    <string name="shiba_video_info_location">Locație: %1$s</string>
+    <string name="shiba_video_info_file">Fișier: %1$s</string>
+
+    <!-- ===== Manual viewer ===== -->
+    <string name="shiba_manual_failed">Acest manual nu a putut fi afișat.</string>
+    <string name="shiba_manual_page_description">%1$s — pagina %2$d din manual</string>
+    <string name="shiba_manual_footer_hint">"◀ ▶  Pagină   •   ▲ ▼  Derulare   •   B  Închide"</string>
+
+</resources>

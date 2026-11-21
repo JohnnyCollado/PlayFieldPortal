@@ -1,0 +1,595 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared labels used on several of these screens. -->
+    <string name="setd_apply">Áp dụng</string>
+    <string name="setd_cancel">Hủy</string>
+    <string name="setd_select">Chọn</string>
+    <string name="setd_close">Đóng</string>
+    <string name="setd_tap_to_dismiss">Chọn để đóng</string>
+    <string name="setd_unavailable">Không khả dụng</string>
+    <string name="setd_loading">Đang tải…</string>
+    <string name="setd_error">Lỗi</string>
+    <string name="setd_error_tap_to_dismiss">"%1$s (chọn để đóng)"</string>
+    <string name="setd_testing">Đang kiểm tra…</string>
+    <string name="setd_key_replace_placeholder">"•••••••• (chọn để thay)"</string>
+    <string name="setd_pfp_default">Mặc định PFP</string>
+    <string name="setd_from_theme">Từ chủ đề</string>
+    <string name="setd_custom_video">Video tùy chỉnh</string>
+    <string name="setd_custom_sound">Âm thanh tùy chỉnh</string>
+
+    <!-- ===== Display ===== -->
+    <string name="setd_display_title">Hiển thị</string>
+    <string name="setd_group_appearance">Giao diện</string>
+    <string name="setd_group_lock_screen">Màn hình khóa</string>
+    <string name="setd_group_xmb_layout">Bố cục XMB</string>
+    <string name="setd_group_boot_sequence">Trình tự khởi động</string>
+    <string name="setd_group_game_boot">Game Boot</string>
+    <string name="setd_group_orientation">Hướng màn hình</string>
+    <string name="setd_group_interface">Giao diện người dùng</string>
+    <string name="setd_group_performance">Hiệu năng</string>
+    <string name="setd_group_games">Trò chơi</string>
+
+    <!-- Wallpaper -->
+    <string name="setd_wallpaper_title">Hình nền</string>
+    <string name="setd_wallpaper_choose">Chọn hình nền</string>
+    <string name="setd_wallpaper_choose_motion_set">Đã đặt hình nền động — một video lặp thay thế sóng</string>
+    <string name="setd_wallpaper_choose_custom_set">Đã đặt hình nền tùy chỉnh — thay thế sóng</string>
+    <string name="setd_wallpaper_choose_none">Chọn hình ảnh hoặc video ngắn (PNG, JPG, WEBP, MP4, WEBM, GIF) — thay thế sóng</string>
+    <string name="setd_wallpaper_preview">Xem trước hình nền</string>
+    <string name="setd_wallpaper_preview_sublabel">Xem hình nền đã chọn ở chế độ toàn màn hình</string>
+    <string name="setd_wallpaper_reset_row">Đặt lại hình nền</string>
+    <string name="setd_wallpaper_reset_row_sublabel">Xóa hình nền tùy chỉnh và khôi phục nền mặc định</string>
+    <string name="setd_wallpaper_preview_cd">Xem trước hình nền</string>
+    <string name="setd_wallpaper_unsupported">Định dạng không được hỗ trợ — hãy dùng PNG, JPG, WEBP, MP4, WEBM hoặc GIF</string>
+    <string name="setd_wallpaper_applied">Đã áp dụng hình nền</string>
+    <string name="setd_wallpaper_unreadable">Không đọc được tệp đó — hãy thử tệp khác</string>
+    <string name="setd_wallpaper_motion_applied">Đã áp dụng hình nền động</string>
+    <string name="setd_wallpaper_reset">Đã đặt lại hình nền về mặc định</string>
+    <string name="setd_wallpaper_none">Chưa chọn hình nền</string>
+
+    <!-- Lock screen image -->
+    <string name="setd_lock_choose">Chọn hình màn hình khóa</string>
+    <string name="setd_lock_choose_busy">Đang đặt màn hình khóa…</string>
+    <string name="setd_lock_choose_from_theme">Được đặt bởi chủ đề đang áp dụng — chọn hình ảnh để dùng hình của bạn</string>
+    <string name="setd_lock_choose_set">Hình của bạn đang ở màn hình khóa</string>
+    <string name="setd_lock_choose_none">Chọn hình ảnh (PNG, JPG, WEBP) cho màn hình khóa của thiết bị</string>
+    <string name="setd_lock_use_wallpaper">Dùng hình nền launcher</string>
+    <string name="setd_lock_use_wallpaper_motion">Dùng khung hình tĩnh của hình nền động</string>
+    <string name="setd_lock_use_wallpaper_still">Dùng hình nền phía sau XMB</string>
+    <string name="setd_lock_reset_row">Đặt lại màn hình khóa</string>
+    <string name="setd_lock_reset_row_sublabel">Trở về màn hình khóa mặc định của thiết bị</string>
+    <string name="setd_lock_tray_label">Màn hình khóa</string>
+    <string name="setd_lock_unreadable">Không thể đọc hình ảnh đó</string>
+    <string name="setd_lock_no_wallpaper">Launcher không có hình nền nào để dùng</string>
+    <string name="setd_lock_reset_done">Đã đặt lại màn hình khóa về mặc định của thiết bị</string>
+    <string name="setd_lock_reset_failed">Thiết bị không đặt lại màn hình khóa. Màn hình vẫn hiển thị hình hiện tại.</string>
+    <string name="setd_lock_set_done">Đã đặt hình màn hình khóa</string>
+
+    <!-- Pick-one options: each opens a dialog. Title and summary, then the choices. -->
+    <string name="setd_opt_wave_style_title">Kiểu sóng</string>
+    <string name="setd_opt_wave_style_summary">Mức độ sống động của sóng nền.</string>
+    <string name="setd_opt_background_motion_title">Chuyển động nền</string>
+    <string name="setd_opt_background_motion_summary">Mức độ sống động của hình nền động.</string>
+    <string name="setd_motion_animated">Chuyển động</string>
+    <string name="setd_motion_animated_detail">Chuyển động đầy đủ</string>
+    <string name="setd_motion_reduced">Chuyển động, mờ</string>
+    <string name="setd_wave_reduced_detail">Mờ hơn, êm hơn</string>
+    <string name="setd_bgmotion_reduced_detail">Chậm hơn, êm hơn</string>
+    <string name="setd_motion_static">Tĩnh</string>
+    <string name="setd_wave_static_detail">Đứng yên</string>
+    <string name="setd_bgmotion_static_detail">Ảnh tĩnh</string>
+    <string name="setd_motion_reduced_static">Tĩnh, mờ</string>
+    <string name="setd_opt_icon_legibility_title">Độ rõ biểu tượng</string>
+    <string name="setd_opt_icon_legibility_summary">Cách biểu tượng XMB tách khỏi nền.</string>
+    <string name="setd_icon_legibility_light_detail">Cho biểu tượng tối</string>
+    <string name="setd_icon_legibility_auto_detail">Theo màu biểu tượng</string>
+    <string name="setd_opt_item_list_motion_title">Chuyển động danh sách mục</string>
+    <string name="setd_opt_item_list_motion_summary">Cách danh sách mục di chuyển khi bạn duyệt qua. Tua lại trượt mục đang chọn ra sau biểu tượng danh mục và phát ngược khi đi lên; Lướt di chuyển toàn bộ danh sách cùng lúc.</string>
+    <string name="setd_opt_umd_slot_title">Khe UMD</string>
+    <string name="setd_opt_umd_slot_summary">Trò chơi nào nằm trong khe UMD.</string>
+    <string name="setd_umd_inserted_detail">Chỉ trò chơi bạn đã lắp</string>
+    <string name="setd_umd_recent_detail">Nếu không thì trò chơi chơi gần nhất</string>
+    <string name="setd_opt_text_legibility_title">Độ rõ văn bản</string>
+    <string name="setd_opt_text_legibility_summary">Chưa được áp dụng. Được lưu cùng chủ đề và bản sao lưu cho bản cập nhật sau.</string>
+    <string name="setd_opt_orientation_title">Hướng màn hình</string>
+    <string name="setd_opt_orientation_summary">PFP có xoay theo thiết bị hay không. Theo thiết bị sẽ hiện lời nhắc xoay ở chế độ dọc (dành cho Tasker / chuyển launcher).</string>
+    <string name="setd_orientation_landscape">Ngang</string>
+    <string name="setd_orientation_landscape_detail">PFP luôn nằm ngang</string>
+    <string name="setd_orientation_follow">Theo thiết bị</string>
+    <string name="setd_orientation_follow_detail">Xoay theo thiết bị</string>
+    <string name="setd_opt_touch_nav_title">Nút điều hướng cảm ứng</string>
+    <string name="setd_opt_touch_nav_summary">Nút Ngăn ứng dụng / Quay lại trên màn hình.</string>
+    <string name="setd_touch_nav_auto">Tự động</string>
+    <string name="setd_touch_nav_auto_detail">Chỉ khi dùng cảm ứng</string>
+    <string name="setd_touch_nav_show">Luôn hiện</string>
+    <string name="setd_touch_nav_hide">Luôn ẩn</string>
+    <string name="setd_touch_nav_hide_detail">Chỉ dùng tay cầm</string>
+    <string name="setd_opt_touch_sens_title">Độ nhạy cảm ứng</string>
+    <string name="setd_opt_touch_sens_summary">Độ dài một lần vuốt cho mỗi bước XMB.</string>
+    <string name="setd_touch_sens_low">Thấp</string>
+    <string name="setd_touch_sens_low_detail">Ổn định hơn</string>
+    <string name="setd_touch_sens_normal">Bình thường</string>
+    <string name="setd_touch_sens_high">Cao</string>
+    <string name="setd_touch_sens_high_detail">Lướt nhanh hơn</string>
+
+    <!-- Appearance toggles -->
+    <string name="setd_solid_icons">Biểu tượng không chọn đậm nét</string>
+    <string name="setd_solid_icons_sublabel">Vẽ biểu tượng không được chọn với độ mờ đục tối đa — mục được chọn vẫn nhận ra qua kích thước và nhãn</string>
+    <string name="setd_text_shadow">Bóng chữ</string>
+    <string name="setd_text_shadow_sublabel">Đổ bóng sau văn bản trợ giúp của hàng — giúp dễ đọc trên vùng sáng của hình nền</string>
+
+    <!-- Font colour -->
+    <string name="setd_font_colour">Màu chữ</string>
+    <string name="setd_font_colour_sublabel">Màu cho nhãn và văn bản chính trên toàn giao diện</string>
+    <string name="setd_font_colour_theme_default">Mặc định của chủ đề</string>
+    <string name="setd_sub_font_colour">Màu chữ phụ</string>
+    <string name="setd_sub_font_colour_sublabel">Màu cho phụ đề, nhãn phụ và giá trị. Theo Màu chữ cho đến khi được đặt</string>
+    <string name="setd_sub_font_colour_same">Giống Màu chữ</string>
+    <string name="setd_sub_font_colour_reset">Đặt lại màu chữ phụ</string>
+    <string name="setd_sub_font_colour_reset_sublabel">Quay lại theo Màu chữ</string>
+    <string name="setd_font_colour_reset">Đặt lại màu chữ</string>
+    <string name="setd_font_colour_reset_sublabel">Quay lại màu do chủ đề hiện tại cung cấp</string>
+    <string name="setd_picker_font_title">Màu chữ</string>
+    <string name="setd_picker_sub_font_title">Màu chữ phụ</string>
+    <string name="setd_contrast_title">Màu chữ có thể khó đọc</string>
+    <string name="setd_text_contrast_notice">Màu này có độ tương phản %1$s so với nền này, dưới mức khuyến nghị 4.5:1. Văn bản dùng màu này có thể khó đọc.</string>
+    <string name="setd_contrast_ok">OK</string>
+    <string name="setd_contrast_dont_warn">Không cảnh báo lại</string>
+
+    <!-- XMB layout -->
+    <string name="setd_xmb_layout_intro">Định vị XMB trực tiếp cho màn hình này — thu phóng, và dịch thanh ngang lên/xuống và trái/phải — ngay trên giao diện thật. Mỗi kích thước màn hình (máy cầm tay, máy gập, máy tính bảng) giữ cách chỉnh riêng.</string>
+    <string name="setd_xmb_adjust">Điều chỉnh bố cục XMB</string>
+    <string name="setd_xmb_adjust_sublabel">Trình chỉnh trực tiếp — thu phóng + định vị lại thanh ngang bằng D-pad hoặc thanh trượt</string>
+    <string name="setd_psp_row">XMB PSP chuẩn từng li</string>
+    <string name="setd_psp_row_applied">Đã áp dụng cho màn hình này. Nếu đổi bố cục bằng Điều chỉnh bố cục XMB, hãy chọn lại mục này để dùng tiếp</string>
+    <string name="setd_psp_row_apply">Áp dụng tỷ lệ gốc của PSP cho màn hình này</string>
+    <string name="setd_psp_confirm_title">Áp dụng XMB PSP chuẩn từng li?</string>
+    <string name="setd_psp_confirm_message">Đặt tỷ lệ XMB và vị trí thanh ngang của màn hình này theo tỷ lệ gốc của PSP. Bố cục hiện tại cho kích thước màn hình này sẽ bị thay thế; các kích thước khác giữ nguyên.</string>
+
+    <!-- Boot sequence -->
+    <string name="setd_boot_show">Hiện trình tự khởi động</string>
+    <string name="setd_boot_show_sublabel">Hoạt ảnh khởi động kiểu PSP mỗi lần mở</string>
+    <string name="setd_boot_resume">Hiện trình tự khởi động khi quay lại</string>
+    <string name="setd_boot_resume_sublabel">Cũng phát khi quay lại từ trò chơi</string>
+    <string name="setd_boot_video">Video khởi động</string>
+    <string name="setd_boot_video_sublabel">Phát video của bạn thay cho hoạt ảnh logo PFP %1$s</string>
+    <string name="setd_gameboot">Game Boot</string>
+    <string name="setd_gameboot_sublabel">"Một đoạn trình diễn ngắn giữa lúc xác nhận trò chơi và lúc trình giả lập mở — năm giây có sẵn, tối đa mười giây với clip của bạn — bỏ qua bằng Xác nhận hoặc Quay lại.  Tắt là khởi động im lặng — không hoạt ảnh, không âm thanh."</string>
+    <string name="setd_gameboot_video">Video Game Boot</string>
+    <string name="setd_gameboot_video_sublabel">Thay trình tự có sẵn bằng clip của bạn, phát kèm âm thanh riêng, ở mức Game Boot trong Âm thanh ▸ Mức âm lượng %1$s</string>
+    <plurals name="setd_video_cap">
+        <item quantity="other">(MP4 hoặc WebM, tối đa %1$d giây)</item>
+    </plurals>
+
+    <!-- Media rows (shared with the Sound screen). -->
+    <!-- Short action label under a media row, and the controller prompt for the same action. -->
+    <string name="setd_media_preview">Xem trước</string>
+    <string name="setd_media_default">Mặc định</string>
+    <string name="setd_media_use_default_prompt">Dùng mặc định</string>
+    <string name="setd_media_preview_cd">Xem trước %1$s</string>
+    <string name="setd_media_use_default_cd">Dùng mặc định PFP cho %1$s</string>
+
+    <!-- Interface / performance / games -->
+    <string name="setd_options_hint_sublabel">Hiện nhãn “Tùy chọn” khi rảnh trên các mục XMB có menu ngữ cảnh</string>
+    <string name="setd_hint_delay">Độ trễ gợi ý</string>
+    <string name="setd_hint_delay_sublabel">Hiện sau %1$s không thao tác (1–5 giây)</string>
+    <string name="setd_thermal">Nhận biết giảm hiệu năng do nhiệt</string>
+    <string name="setd_thermal_sublabel">Đóng băng nền (sóng hoặc hình nền động) khi thiết bị báo đang nóng</string>
+    <string name="setd_battery_saver">Chế độ tiết kiệm pin</string>
+    <string name="setd_battery_saver_sublabel">Đóng băng nền (sóng hoặc hình nền động) khi Trình tiết kiệm pin đang bật</string>
+    <string name="setd_direct_launch">Khởi động trò chơi trực tiếp</string>
+    <string name="setd_direct_launch_sublabel">Xác nhận sẽ khởi động trò chơi ngay thay vì mở Chi tiết trò chơi — dùng \"Xem chi tiết trò chơi\" trong menu Tùy chọn của trò chơi để chỉnh sửa</string>
+
+    <!-- Words around media rows in Settings: dropped-clip report from a theme. -->
+    <string name="setd_slot_boot_video">Video khởi động</string>
+    <string name="setd_slot_gameboot_video">Video Game Boot</string>
+    <string name="setd_slot_sound_name">Âm thanh %1$s</string>
+    <string name="setd_dropped_header">Không được cài từ chủ đề này:</string>
+    <string name="setd_dropped_item">%1$s — %2$s</string>
+
+    <!-- ===== Themes ===== -->
+    <string name="setd_themes_title">Chủ đề</string>
+    <string name="setd_color_scheme">Bảng màu</string>
+    <string name="setd_color_scheme_custom_active">Đang dùng màu chủ đề tùy chỉnh — chọn màu có sẵn sẽ thay thế nó</string>
+    <string name="setd_color_scheme_sublabel">Màu nền kiểu PSP — xem trước trực tiếp</string>
+    <string name="setd_custom_theme_color">Màu chủ đề tùy chỉnh</string>
+    <string name="setd_custom_theme_color_sublabel">Từ chủ đề đã nhập — chọn để xóa và quay về bảng màu</string>
+    <string name="setd_group_icon_color">Màu biểu tượng</string>
+    <string name="setd_custom_icon_color_title">Màu biểu tượng tùy chỉnh</string>
+    <string name="setd_group_icons">Biểu tượng</string>
+    <string name="setd_customize_icons">Tùy chỉnh biểu tượng XMB</string>
+    <string name="setd_customize_icons_sublabel">Thanh ngang, mục, hệ máy và đĩa/băng vật lý — theo thứ tự XMB, trực tiếp trên XMB</string>
+    <string name="setd_custom_icons_none">Không có tùy chỉnh</string>
+    <string name="setd_custom_icons_count">%1$d tùy chỉnh</string>
+    <string name="setd_group_my_themes">Chủ đề của tôi</string>
+    <string name="setd_new_from_photo">Chủ đề mới từ ảnh</string>
+    <string name="setd_new_from_photo_sublabel">Chọn một bức ảnh — hình nền và màu được đặt từ ảnh đó</string>
+    <string name="setd_group_active_theme">Chủ đề đang dùng</string>
+    <string name="setd_current_theme">Chủ đề hiện tại</string>
+    <string name="setd_theme_default_name">Mặc định</string>
+    <string name="setd_reset_to_default">Đặt lại về mặc định</string>
+    <string name="setd_reset_to_default_sublabel">Xóa hình nền, màu chủ đề và biểu tượng tùy chỉnh đã áp dụng</string>
+    <string name="setd_group_install">Cài đặt</string>
+    <string name="setd_save_look_row">Lưu giao diện hiện tại thành chủ đề</string>
+    <string name="setd_save_look_row_sublabel">Gói biểu tượng, hình nền, màu sắc và chuyển động thành tệp .pfptheme có thể chia sẻ</string>
+    <string name="setd_save_look_title">Lưu giao diện hiện tại thành chủ đề</string>
+    <string name="setd_theme_name_placeholder">Tên chủ đề</string>
+    <string name="setd_import_ptf">Nhập chủ đề PSP (.ptf)</string>
+    <string name="setd_import_ptf_sublabel">Dùng hình nền, màu và các biểu tượng tương ứng của chủ đề</string>
+    <string name="setd_import_pfptheme">Nhập chủ đề (.pfptheme)</string>
+    <string name="setd_import_pfptheme_sublabel">Chủ đề được chia sẻ từ PlayFieldPortal</string>
+
+    <!-- Saved theme cards and menu. -->
+    <string name="setd_theme_older_format">Định dạng cũ</string>
+    <string name="setd_theme_share">Chia sẻ</string>
+    <string name="setd_theme_update">Cập nhật</string>
+    <string name="setd_theme_update_file">Cập nhật tệp chủ đề</string>
+    <string name="setd_theme_rename">Đổi tên chủ đề</string>
+    <string name="setd_theme_delete">Xóa chủ đề</string>
+    <string name="setd_theme_delete_title">Xóa chủ đề?</string>
+    <string name="setd_theme_delete_message">\"%1$s\" sẽ bị xóa. Không thể hoàn tác.</string>
+    <string name="setd_theme_delete_confirm">Xóa</string>
+    <string name="setd_theme_share_chooser">Chia sẻ chủ đề</string>
+
+    <!-- Apply-theme question. -->
+    <string name="setd_apply_theme_title">Áp dụng \"%1$s\"?</string>
+    <string name="setd_apply_base_message">Thao tác này thay đổi màu sắc, biểu tượng và nền của launcher.</string>
+    <string name="setd_apply_use_themes">Dùng của chủ đề</string>
+    <string name="setd_apply_keep_mine">Giữ của tôi</string>
+    <string name="setd_apply_turn_on">Bật</string>
+    <string name="setd_apply_leave_off">Để tắt</string>
+    <string name="setd_apply_replace_icons">Chủ đề này có biểu tượng riêng cho %1$s, nhưng biểu tượng của bạn đã được đặt và đang hiển thị thay thế. Dùng của chủ đề? Biểu tượng của bạn sẽ bị xóa cho các mục này.</string>
+    <string name="setd_apply_replace_media">Chủ đề này có %1$s riêng, nhưng của bạn đã được đặt và đang phát thay thế. Dùng của chủ đề? Của bạn sẽ bị xóa cho các mục này.</string>
+    <string name="setd_apply_boot_off">Trình tự khởi động đang tắt — hãy bật để phát Video khởi động của chủ đề.</string>
+    <string name="setd_apply_gameboot_off">Game Boot đang tắt — hãy bật để phát Video Game Boot của chủ đề.</string>
+    <string name="setd_apply_lock_screen">Chủ đề cũng có hình màn hình khóa — bạn sẽ được hỏi sau khi áp dụng.</string>
+    <string name="setd_lock_offer_title">Đặt màn hình khóa?</string>
+    <string name="setd_lock_offer_message">\"%1$s\" có hình màn hình khóa. Dùng làm màn hình khóa của thiết bị? Đặt lại chủ đề sẽ khôi phục màn hình khóa.</string>
+    <string name="setd_lock_offer_confirm">Đặt màn hình khóa</string>
+    <string name="setd_lock_offer_cancel">Để sau</string>
+
+    <!-- Notification-tray messages about themes. -->
+    <string name="setd_theme_reset_done">Đã đặt lại chủ đề — trở về giao diện mặc định</string>
+    <string name="setd_theme_created">Đã tạo \"%1$s\"</string>
+    <string name="setd_theme_created_derived">Đã tạo \"%1$s\" — màu lấy từ ảnh</string>
+    <string name="setd_theme_image_unreadable">Không thể đọc hình ảnh đó</string>
+    <string name="setd_theme_apply_failed">Không thể áp dụng chủ đề</string>
+    <string name="setd_theme_lock_unreadable">Không thể đọc hình màn hình khóa của chủ đề này</string>
+    <string name="setd_theme_lock_set">Đã đặt màn hình khóa từ \"%1$s\"</string>
+    <string name="setd_theme_saved">Đã lưu \"%1$s\"</string>
+    <string name="setd_theme_save_failed">Không thể lưu chủ đề</string>
+    <string name="setd_theme_fallback_name">chủ đề</string>
+    <string name="setd_theme_updated">Đã cập nhật \"%1$s\" lên định dạng chủ đề hiện tại</string>
+    <string name="setd_theme_update_failed">Không thể cập nhật \"%1$s\" — tệp gốc được giữ nguyên</string>
+    <string name="setd_theme_export_failed">Không thể xuất chủ đề</string>
+    <string name="setd_theme_imported">Đã nhập \"%1$s\"</string>
+    <string name="setd_theme_import_unreadable">Không thể mở tệp đó</string>
+    <string name="setd_theme_import_too_large">Chủ đề đó quá lớn để nhập</string>
+    <string name="setd_theme_import_out_of_memory">Không đủ bộ nhớ để nhập chủ đề đó — hình nền động của nó quá lớn</string>
+    <string name="setd_theme_import_not_a_bundle">Không phải tệp .pfptheme hợp lệ</string>
+    <string name="setd_theme_import_damaged_wallpaper">Hình nền của chủ đề đó bị hỏng</string>
+    <string name="setd_theme_import_not_saved">Không thể lưu chủ đề đã nhập</string>
+
+    <!-- ===== Artwork ===== -->
+    <string name="setd_artwork_title">Ảnh minh họa</string>
+    <string name="setd_group_artwork_library">Thư viện ảnh minh họa</string>
+    <string name="setd_artwork_folder_row">Thư mục ảnh minh họa &amp; nhập</string>
+    <string name="setd_artwork_folder_sublabel">Chọn nơi lưu ảnh minh họa và nhập ảnh minh họa có sẵn từ ES-DE</string>
+    <string name="setd_artwork_folder_unavailable_sublabel">Không khả dụng. Hãy liên kết lại để tiếp tục tải ảnh minh họa mới</string>
+    <string name="setd_group_artwork_status">Trạng thái ảnh minh họa thư viện</string>
+    <string name="setd_status_total">Tổng số trò chơi</string>
+    <string name="setd_status_complete">Đầy đủ</string>
+    <string name="setd_status_missing">Còn thiếu</string>
+    <string name="setd_status_stale">Lỗi thời / Không hợp lệ</string>
+    <string name="setd_refresh_status">Làm mới trạng thái</string>
+    <string name="setd_refresh_checking">Đang kiểm tra tệp…</string>
+    <string name="setd_refresh_sublabel">Kiểm tra lại ảnh minh họa trên bộ nhớ</string>
+    <string name="setd_group_scrape">Tải ảnh minh họa</string>
+    <string name="setd_scrape_progress">"%1$d / %2$d  —  %3$s"</string>
+    <string name="setd_scrape_counts">%1$d thành công · %2$d thất bại</string>
+    <string name="setd_scrape_background">Chạy trong nền — bạn có thể rời màn hình này.</string>
+    <string name="setd_scrape_starting">Đang bắt đầu…</string>
+    <string name="setd_scrape_cancel">Hủy tải</string>
+    <string name="setd_scrape_cancel_sublabel">Dừng sau trò chơi hiện tại — ảnh minh họa đã tải được giữ lại</string>
+    <string name="setd_scrape_all">Tải lại cho mọi trò chơi</string>
+    <string name="setd_scrape_all_sublabel">Xóa và tải lại ảnh minh họa cho mọi trò chơi</string>
+    <string name="setd_scrape_missing">Chỉ tải trò chơi còn thiếu</string>
+    <string name="setd_scrape_missing_sublabel">Chỉ tải cho trò chơi thiếu hoặc có ảnh không hợp lệ — giữ ảnh hợp lệ</string>
+    <string name="setd_scrape_done_all">Đã tải lại mọi trò chơi: %1$d thành công, %2$d thất bại trên %3$d</string>
+    <string name="setd_scrape_done_missing">Đã tải trò chơi còn thiếu: %1$d thành công, %2$d thất bại trên %3$d</string>
+    <string name="setd_scrape_cancelled">Đã hủy tải — ảnh minh họa đã tải được giữ lại</string>
+    <string name="setd_scrape_failed">Tải thất bại: %1$s</string>
+    <string name="setd_scrape_unknown_error">lỗi không xác định</string>
+    <string name="setd_rescrape_title">Tải lại cho mọi trò chơi?</string>
+    <string name="setd_rescrape_confirm">Tải lại tất cả</string>
+    <plurals name="setd_rescrape_message">
+        <item quantity="other">Thao tác này sẽ xóa và tải lại ảnh minh họa cho toàn bộ %1$d trò chơi. Ảnh minh họa hiện có sẽ bị thay thế. Tiếp tục?</item>
+    </plurals>
+    <string name="setd_group_source_priority">Thứ tự ưu tiên nguồn</string>
+    <string name="setd_source_primary">Chính</string>
+    <string name="setd_source_fallback">Dự phòng %1$d</string>
+    <string name="setd_source_screenscraper_hash">ScreenScraper (mã băm ROM)</string>
+    <string name="setd_source_steamgriddb_artwork">SteamGridDB (ảnh minh họa)</string>
+    <string name="setd_group_art_preferences">Tùy chọn ảnh</string>
+    <string name="setd_icon_display">Hiển thị biểu tượng trò chơi</string>
+    <string name="setd_icon_display_sublabel">Mặc định cho mọi hệ máy — ghi đè theo hệ máy hoặc theo trò chơi từ menu Tùy chọn của chúng</string>
+    <string name="setd_animated_icons">Biểu tượng động</string>
+    <string name="setd_animated_icons_sublabel">Phát video snap của trò chơi trong biểu tượng khi dừng lại trên nó (chế độ Biểu tượng tùy chỉnh; bỏ qua khi pin yếu)</string>
+    <string name="setd_snap_delay">Độ trễ video snap</string>
+    <string name="setd_snap_delay_sublabel">Dừng trên trò chơi %1$s trước khi video snap phát (1–5 giây) — độ trễ cao hơn tránh giật khi duyệt</string>
+    <string name="setd_crop_preview">Xem trước khi cắt</string>
+    <string name="setd_crop_preview_sublabel">Hiện ô hoàn chỉnh ở góc khi cắt ảnh minh họa (Ⓨ cũng bật/tắt nó trong trình cắt)</string>
+    <string name="setd_prefer_sgdb_heroes">Ưu tiên hero từ SteamGridDB</string>
+    <string name="setd_prefer_sgdb_heroes_sublabel">Thử SteamGridDB trước cho ảnh hero/banner</string>
+    <string name="setd_download_heroes">Tải ảnh hero</string>
+    <string name="setd_download_heroes_sublabel">Ảnh banner rộng hiển thị trong chi tiết trò chơi</string>
+    <string name="setd_download_logos">Tải clear logo</string>
+    <string name="setd_download_logos_sublabel">Logo PNG trong suốt phủ lên ảnh hero</string>
+    <string name="setd_download_manuals">Tải sách hướng dẫn trò chơi</string>
+    <string name="setd_download_manuals_sublabel">Sách hướng dẫn PDF từ ScreenScraper — mở từ menu Tùy chọn của trò chơi</string>
+    <string name="setd_download_video_snaps">Tải video snap</string>
+    <string name="setd_download_video_snaps_sublabel">Clip gameplay ngắn từ ScreenScraper — tệp lớn</string>
+    <string name="setd_artwork_region">Khu vực ảnh minh họa (%1$s)</string>
+    <string name="setd_artwork_region_sublabel">Ưu tiên ảnh hộp và logo của khu vực nào khi trò chơi có nhiều bản</string>
+    <string name="setd_region_no_preference">Không ưu tiên</string>
+
+    <!-- Provider keys. -->
+    <string name="setd_api_key">Khóa API</string>
+    <string name="setd_api_key_saved">Khóa API (đã lưu)</string>
+    <string name="setd_group_sgdb_api">SteamGridDB API</string>
+    <string name="setd_sgdb_key_placeholder">Dán khóa SteamGridDB của bạn</string>
+    <string name="setd_sgdb_key_helper">Nhận khóa miễn phí tại steamgriddb.com/api</string>
+    <string name="setd_save_api_key">Lưu khóa API</string>
+    <string name="setd_remove_api_key">Xóa khóa API</string>
+    <string name="setd_remove_api_key_sublabel">Ảnh minh họa SteamGridDB sẽ bị tắt</string>
+    <string name="setd_group_tgdb_api">TheGamesDB API</string>
+    <string name="setd_tgdb_key_placeholder">Dán khóa TheGamesDB của bạn</string>
+    <string name="setd_tgdb_key_helper">Yêu cầu khóa từ TheGamesDB tại thegamesdb.net</string>
+    <string name="setd_save_tgdb_key">Lưu khóa TheGamesDB</string>
+    <string name="setd_remove_tgdb_key">Xóa khóa TheGamesDB</string>
+    <string name="setd_remove_tgdb_key_sublabel">TheGamesDB sẽ bị bỏ qua làm nguồn</string>
+    <string name="setd_group_igdb">Thông tin xác thực IGDB (tùy chọn)</string>
+    <string name="setd_igdb_client_id">Client ID</string>
+    <string name="setd_igdb_client_id_saved">Client ID (đã lưu)</string>
+    <string name="setd_igdb_client_id_placeholder">Twitch Client ID</string>
+    <string name="setd_igdb_client_secret">Client secret</string>
+    <string name="setd_igdb_client_secret_placeholder">Twitch Client Secret</string>
+    <string name="setd_igdb_helper">Tạo ứng dụng tại dev.twitch.tv — tăng độ bao phủ dự phòng cho trò chơi hiện đại</string>
+    <string name="setd_test_credentials">Kiểm tra thông tin xác thực</string>
+    <string name="setd_save_credentials">Lưu thông tin xác thực</string>
+    <string name="setd_clear_igdb">Xóa thông tin xác thực IGDB</string>
+    <string name="setd_clear_igdb_sublabel">IGDB sẽ bị bỏ qua làm nguồn dự phòng</string>
+    <string name="setd_ss_status">Trạng thái</string>
+    <string name="setd_ss_status_active_sublabel">Tải dữ liệu theo mã băm đang hoạt động (cặp khóa nhà phát triển có sẵn)</string>
+    <string name="setd_ss_status_inactive_sublabel">ScreenScraper không khả dụng trong bản dựng này — không có cặp khóa nhà phát triển đi kèm</string>
+    <string name="setd_ss_active">Đang hoạt động</string>
+    <string name="setd_ss_inactive">Không hoạt động</string>
+    <string name="setd_group_ss_account">Tài khoản ScreenScraper (tùy chọn)</string>
+    <string name="setd_ss_username_saved">Tên người dùng (đã lưu: %1$s)</string>
+    <string name="setd_ss_username">Tên người dùng</string>
+    <string name="setd_ss_tap_to_replace">Chọn để thay</string>
+    <string name="setd_ss_username_placeholder">Tên người dùng ScreenScraper</string>
+    <string name="setd_ss_password">Mật khẩu</string>
+    <string name="setd_ss_password_placeholder">Mật khẩu ScreenScraper</string>
+    <string name="setd_ss_password_helper">Tài khoản miễn phí tại screenscraper.fr — nâng giới hạn tốc độ và hạn mức hằng ngày. Được lưu mã hóa trên thiết bị này (Android Keystore).</string>
+    <string name="setd_test_account">Kiểm tra tài khoản</string>
+    <string name="setd_save_account">Lưu tài khoản</string>
+    <string name="setd_clear_ss_account">Xóa tài khoản ScreenScraper</string>
+    <string name="setd_clear_ss_account_sublabel">Việc tải tiếp tục với giới hạn tốc độ ẩn danh</string>
+    <string name="setd_secret_sgdb_key">Khóa SteamGridDB</string>
+    <string name="setd_secret_tgdb_key">Khóa TheGamesDB</string>
+    <string name="setd_secret_igdb_secret">Client secret IGDB</string>
+    <string name="setd_secret_ss_password">Mật khẩu ScreenScraper</string>
+    <string name="setd_secret_unprotected">%1$s đã được lưu, nhưng kho khóa bảo mật của thiết bị này không khả dụng, nên nó được lưu không mã hóa. Xóa và nhập lại sau sẽ thử lại.</string>
+
+    <!-- Cache -->
+    <string name="setd_group_cache">Bộ nhớ đệm</string>
+    <string name="setd_cache_size">Dung lượng ảnh minh họa đã lưu</string>
+    <string name="setd_cache_size_sublabel">Bộ nhớ đệm hình ảnh + ảnh minh họa lưu trên thiết bị này (không tính thư mục ảnh minh họa của bạn)</string>
+    <string name="setd_clear_ss_cache">Xóa bộ nhớ đệm URL ScreenScraper</string>
+    <string name="setd_clear_ss_cache_sublabel">Quên các URL ảnh minh họa đã lưu đệm — lần tải tiếp sẽ hỏi lại ScreenScraper cho từng trò chơi. Vô hại; không bao giờ xóa ảnh minh họa</string>
+    <string name="setd_ss_cache_cleared">Đã xóa bộ nhớ đệm URL ScreenScraper</string>
+    <string name="setd_clear_all_artwork">Xóa mọi ảnh minh họa</string>
+    <string name="setd_clear_all_artwork_sublabel">Làm lại từ đầu: xóa hình ảnh đệm, ảnh minh họa đã lưu và mọi liên kết ảnh của trò chơi. Tệp trong thư mục ảnh minh họa được giữ lại — Liên kết lại hoặc tải lại để khôi phục</string>
+
+    <!-- ===== Artwork Folder & Import ===== -->
+    <string name="setd_import_title">Thư mục ảnh minh họa &amp; nhập</string>
+    <string name="setd_import_group_folder">Thư mục ảnh minh họa</string>
+    <string name="setd_import_change_folder">Đổi thư mục ảnh minh họa</string>
+    <string name="setd_import_choose_folder">Chọn thư mục ảnh minh họa</string>
+    <string name="setd_import_folder_not_set">Chưa đặt — chọn mục này để chỉ định nơi PFP lưu ảnh minh họa</string>
+    <string name="setd_import_group_existing">Nhập ảnh minh họa có sẵn</string>
+    <string name="setd_import_no_launchers">Không tìm thấy launcher nào</string>
+    <string name="setd_import_no_launchers_sublabel">Hãy sao chép hoặc di chuyển media của launcher khác vào thư mục trước, vd: import/ES-DE/downloaded_media. Di chuyển giúp giải phóng dung lượng nhưng xóa ảnh minh họa khỏi launcher đó.</string>
+    <plurals name="setd_import_source_systems">
+        <item quantity="other">Nhận diện được %1$d thư mục hệ máy — chọn để xem trước khi nhập</item>
+    </plurals>
+    <string name="setd_import_unrecognized">Bố cục không nhận diện được — cần cấu trúc downloaded_media của ES-DE</string>
+    <string name="setd_import_scanning">Đang quét…</string>
+    <string name="setd_import_rescan">Quét lại thư mục nhập</string>
+    <string name="setd_import_rescan_sublabel">Kiểm tra lại import/ để tìm thư mục launcher</string>
+    <string name="setd_import_relinking">Đang quét thư viện…</string>
+    <string name="setd_import_relink">Quét &amp; liên kết lại thư viện</string>
+    <string name="setd_import_relink_sublabel">Kết nối lại ảnh minh họa trong thư mục với trò chơi, làm mới tệp đã di chuyển hoặc thay đổi, và dọn tham chiếu tới tệp đã xóa</string>
+    <string name="setd_import_unmatched">Ảnh minh họa chưa khớp (%1$d)</string>
+    <string name="setd_import_unmatched_sublabel">Các tệp trong thư mục không khớp với trò chơi nào — hãy tự liên kết</string>
+    <string name="setd_import_group_storage">Bộ nhớ ứng dụng</string>
+    <string name="setd_import_moving">Đang chuyển ảnh minh họa vào thư mục của bạn…</string>
+    <string name="setd_import_moving_progress">%1$d / %2$d — chạy trong nền</string>
+    <string name="setd_import_moving_background">Chạy trong nền — bạn có thể rời màn hình này</string>
+    <string name="setd_import_cancel_move">Hủy chuyển</string>
+    <string name="setd_import_cancel_move_sublabel">Ảnh minh họa đã chuyển vẫn ở trong thư mục</string>
+    <string name="setd_import_move_in">Chuyển vào thư mục</string>
+    <plurals name="setd_import_move_in_sublabel">
+        <item quantity="other">%1$d tệp ảnh minh họa (%2$s) đã được lưu trước khi liên kết thư mục này và đang nằm trong bộ nhớ ứng dụng. Chuyển chúng đi sẽ giúp dễ mang theo và giải phóng dung lượng ứng dụng. Ảnh minh họa đã khóa hoặc tự chọn trong thư mục sẽ không bao giờ bị ghi đè.</item>
+    </plurals>
+    <string name="setd_import_group_export">Xuất</string>
+    <string name="setd_import_export">Xuất cho ES-DE</string>
+    <string name="setd_import_export_sublabel">Sao chép ảnh minh họa vào thư mục bạn chọn (vd: downloaded_media của ES-DE) — tăng dần, thư viện của bạn không bao giờ bị sửa đổi</string>
+    <string name="setd_import_group_preview">Xem trước khi nhập</string>
+    <string name="setd_import_building">Đang tạo bản xem trước…</string>
+    <string name="setd_import_building_sublabel">Đang khớp ảnh minh họa với trò chơi</string>
+    <string name="setd_import_preview_group">Xem trước khi nhập — %1$s</string>
+    <string name="setd_import_games_matched">Trò chơi đã khớp</string>
+    <string name="setd_import_files_to_import">Tệp sẽ nhập</string>
+    <string name="setd_import_estimated_size">Dung lượng ước tính</string>
+    <string name="setd_import_details_found">Thông tin trò chơi tìm thấy</string>
+    <string name="setd_import_details_none_sublabel">Sao chép thư mục gamelists của ES-DE vào thư mục nhập của launcher để kèm theo mô tả, nhà phát triển và năm phát hành</string>
+    <string name="setd_import_details_some_sublabel">Mô tả và thông tin từ gamelist.xml — không bao giờ ghi đè dữ liệu hiện có</string>
+    <string name="setd_import_already_present">Đã có sẵn</string>
+    <string name="setd_import_needs_review">Cần xem lại</string>
+    <string name="setd_import_unmatched_artwork">Ảnh minh họa chưa khớp</string>
+    <string name="setd_import_skipped_folders">Thư mục hệ máy bị bỏ qua</string>
+    <string name="setd_import_no_games">Thư viện không có trò chơi</string>
+    <string name="setd_import_no_games_sublabel">Tìm thấy ảnh minh họa cho %1$s nhưng thư viện của bạn không có trò chơi nào trên các hệ máy này — hãy thêm trò chơi trước, rồi chạy lại việc nhập.</string>
+    <string name="setd_import_move_files">Di chuyển tệp (nhanh hơn, giải phóng dung lượng)</string>
+    <string name="setd_import_move_files_sublabel">Di chuyển ảnh minh họa ra khỏi thư mục của launcher thay vì sao chép. Launcher kia sẽ mất các tệp này.</string>
+    <string name="setd_import_review_group">Xem lại kết quả khớp không rõ ràng (%1$d)</string>
+    <plurals name="setd_import_possible_games">
+        <item quantity="other">%1$d trò chơi có thể khớp — chọn mục này để chỉ định</item>
+    </plurals>
+    <string name="setd_import_game_number">Trò chơi #%1$d</string>
+    <string name="setd_import_assign_sublabel">Gán ảnh minh họa này cho trò chơi này</string>
+    <string name="setd_import_skip_file">Bỏ qua tệp này</string>
+    <string name="setd_import_start">Bắt đầu nhập</string>
+    <plurals name="setd_import_start_move">
+        <item quantity="other">Di chuyển %1$d tệp vào thư viện ảnh minh họa</item>
+    </plurals>
+    <plurals name="setd_import_start_copy">
+        <item quantity="other">Sao chép %1$d tệp vào thư viện ảnh minh họa</item>
+    </plurals>
+    <string name="setd_import_cancel_preview">Hủy xem trước</string>
+    <string name="setd_import_group_importing">Đang nhập</string>
+    <string name="setd_import_cancel">Hủy nhập</string>
+    <string name="setd_import_cancel_sublabel">Ảnh minh họa đã nhập được giữ lại</string>
+    <string name="setd_import_group_report">Báo cáo nhập</string>
+    <string name="setd_import_clear_reports">Xóa báo cáo</string>
+    <string name="setd_kind_icon">Bìa</string>
+    <string name="setd_kind_hero">Ảnh mix</string>
+    <string name="setd_kind_background">Fanart</string>
+    <string name="setd_kind_logo">Marquee</string>
+    <string name="setd_kind_screenshot">Ảnh chụp</string>
+    <string name="setd_kind_titlescreen">Màn hình tiêu đề</string>
+    <string name="setd_kind_physical_media">Đĩa/băng vật lý</string>
+    <string name="setd_kind_manual">Sách hướng dẫn</string>
+    <string name="setd_import_link_failed">Không thể thiết lập thư viện ảnh minh họa trong thư mục đó — có thể thư mục chỉ cho phép đọc.</string>
+    <string name="setd_import_library_reconnected">Đã kết nối lại thư viện ảnh minh họa PFP hiện có.</string>
+    <string name="setd_import_library_created">Đã tạo thư viện ảnh minh họa.</string>
+    <plurals name="setd_import_games_linked">
+        <item quantity="other">Đã liên kết %1$d trò chơi từ %2$d tệp có sẵn trong thư mục.</item>
+    </plurals>
+    <string name="setd_import_place_media">Đặt media của các launcher khác vào import/.</string>
+    <plurals name="setd_import_internal_files">
+        <item quantity="other">%1$d tệp ảnh minh họa vẫn nằm trong bộ nhớ ứng dụng — xem Chuyển vào thư mục bên dưới.</item>
+    </plurals>
+    <plurals name="setd_import_upgraded">
+        <item quantity="other">Đã nâng cấp thư viện ảnh minh họa lên bố cục mới — sắp xếp lại %1$d tệp.</item>
+    </plurals>
+    <string name="setd_import_scan_failed">Không thể quét thư mục nhập.</string>
+    <string name="setd_import_source_unreadable">Không thể đọc nguồn này.</string>
+    <string name="setd_import_preview_failed">Xem trước thất bại — xem nhật ký.</string>
+    <string name="setd_import_nothing">Không có gì để nhập — mọi thứ đã có sẵn.</string>
+    <string name="setd_import_export_started">Đã bắt đầu xuất — tiến trình hiện trong thông báo; kết quả nằm trong Báo cáo nhập.</string>
+    <plurals name="setd_relink_files">
+        <item quantity="other">Quét: %1$d tệp</item>
+    </plurals>
+    <plurals name="setd_relink_linked">
+        <item quantity="other">Đã liên kết %1$d trò chơi</item>
+    </plurals>
+    <string name="setd_relink_orphans">%1$d chưa khớp — xem Ảnh minh họa chưa khớp</string>
+    <string name="setd_relink_failed">Quét thư viện thất bại — xem nhật ký.</string>
+    <string name="setd_relink_cancelled">Đã hủy quét thư viện.</string>
+    <string name="setd_report_title">%1$s — %2$s</string>
+    <string name="setd_report_unreadable">Không đọc được báo cáo</string>
+    <string name="setd_report_imported">%1$d đã nhập</string>
+    <string name="setd_report_skipped">%1$d bỏ qua</string>
+    <string name="setd_report_failed">%1$d thất bại</string>
+    <plurals name="setd_report_game_details">
+        <item quantity="other">%1$d thông tin trò chơi</item>
+    </plurals>
+    <string name="setd_report_need_review">%1$d cần xem lại</string>
+    <string name="setd_report_unmatched">%1$d chưa khớp</string>
+    <string name="setd_report_cancelled">đã hủy</string>
+
+    <!-- ===== Unmatched Artwork ===== -->
+    <string name="setd_orphan_title">Ảnh minh họa chưa khớp</string>
+    <string name="setd_orphan_link_title">Liên kết “%1$s”</string>
+    <string name="setd_orphan_none">Không có gì chưa khớp</string>
+    <string name="setd_orphan_none_sublabel">Mọi tệp ảnh minh họa trong thư mục đều đã liên kết với trò chơi. Hãy chạy Quét &amp; liên kết lại sau khi thêm tệp để kiểm tra lại.</string>
+    <plurals name="setd_orphan_count">
+        <item quantity="other">%1$d tệp không khớp với trò chơi nào</item>
+    </plurals>
+    <string name="setd_orphan_group_file">Tệp</string>
+    <string name="setd_orphan_group_search">Tìm trong trò chơi của bạn</string>
+    <string name="setd_orphan_title_field">Tiêu đề</string>
+    <string name="setd_orphan_searching">Đang tìm kiếm…</string>
+    <string name="setd_orphan_search">Tìm kiếm</string>
+    <string name="setd_orphan_search_sublabel">Chỉ tìm trong các trò chơi %1$s của bạn — không tải gì xuống</string>
+    <string name="setd_orphan_no_search">Chưa tìm kiếm</string>
+    <string name="setd_orphan_no_search_sublabel">Sửa tiêu đề bên trên rồi nhấn Tìm kiếm để xem trò chơi khớp</string>
+    <string name="setd_orphan_no_match">Không có trò chơi khớp</string>
+    <string name="setd_orphan_no_match_sublabel">Hãy thử tiêu đề ngắn hơn — một từ đặc trưng thường hiệu quả</string>
+    <plurals name="setd_orphan_matches">
+        <item quantity="other">%1$d kết quả khớp — hãy chọn trò chơi sở hữu</item>
+    </plurals>
+
+    <!-- ===== Achievements ===== -->
+    <string name="setd_ach_subtitle_credentials">Thành tựu · Thông tin xác thực nhà cung cấp</string>
+    <string name="setd_ach_subtitle_local_windows">Thành tựu · Windows cục bộ</string>
+    <string name="setd_ach_subtitle_update">Thành tựu · Cập nhật thành tựu</string>
+    <string name="setd_ach_subtitle_coins">Shiba Coins</string>
+    <string name="setd_ach_enable">Bật Shiba Coins</string>
+    <string name="setd_ach_enable_sublabel">Theo dõi thành tựu dưới dạng Shiba Coins trên RetroAchievements và Steam</string>
+    <string name="setd_ach_connected_as">Đã kết nối với tên</string>
+    <string name="setd_ach_username">Tên người dùng</string>
+    <string name="setd_ach_ra_username_placeholder">Tên người dùng RA của bạn</string>
+    <string name="setd_ach_web_api_key">Web API key</string>
+    <string name="setd_ach_web_api_key_saved">Web API key (đã lưu)</string>
+    <string name="setd_ach_ra_key_placeholder">Dán RA Web API key của bạn</string>
+    <string name="setd_ach_ra_key_helper">retroachievements.org → Settings → Keys → Web API Key</string>
+    <string name="setd_ach_ra_connect">Kết nối RetroAchievements</string>
+    <string name="setd_ach_ra_disconnect">Ngắt kết nối RetroAchievements</string>
+    <string name="setd_ach_ra_disconnect_sublabel">Xóa tên người dùng và khóa của bạn khỏi thiết bị này</string>
+    <string name="setd_ach_steam_id">SteamID64 hoặc tên hồ sơ</string>
+    <string name="setd_ach_steam_id_placeholder">76561… hoặc tên tùy chỉnh</string>
+    <string name="setd_ach_steam_id_helper">Tên tùy chỉnh sẽ được chuyển thành SteamID64 khi bạn kết nối</string>
+    <string name="setd_ach_steam_key_placeholder">Dán Steam Web API key của bạn</string>
+    <string name="setd_ach_steam_key_helper">steamcommunity.com/dev — Chi tiết trò chơi trong hồ sơ của bạn phải ở chế độ Công khai</string>
+    <string name="setd_ach_steam_connect">Kết nối Steam</string>
+    <string name="setd_ach_steam_disconnect">Ngắt kết nối Steam</string>
+    <string name="setd_ach_steam_disconnect_sublabel">Xóa SteamID và khóa của bạn khỏi thiết bị này</string>
+    <string name="setd_ach_ra_connected">Đã kết nối RetroAchievements</string>
+    <string name="setd_ach_ra_disconnected">Đã ngắt kết nối RetroAchievements</string>
+    <string name="setd_ach_steam_disconnected">Đã ngắt kết nối Steam</string>
+    <string name="setd_ach_group_local_steam">Steam cục bộ (giả lập)</string>
+    <string name="setd_ach_track_local">Theo dõi trò chơi Steam cục bộ (giả lập)</string>
+    <string name="setd_ach_track_local_sublabel">Tìm trò chơi giả lập, tạo dữ liệu thành tựu và đồng bộ mở khóa</string>
+    <string name="setd_ach_goldberg">Cài Goldberg &amp; chuyển đổi trò chơi</string>
+    <string name="setd_ach_goldberg_sublabel">Khi quét, đề nghị ghi dữ liệu thành tựu vào các trò chơi phát hiện được để trình giả lập có thể theo dõi</string>
+    <string name="setd_ach_backup_title">Hãy sao lưu tệp lưu trước</string>
+    <string name="setd_ach_backup_confirm">Tôi đã sao lưu — bật</string>
+    <string name="setd_ach_local_steam_message">Trước khi đồng bộ, hãy mở trình giả lập Windows và sao lưu tệp lưu của mọi trò chơi giả lập Steam bạn đã thiết lập.\n\nTheo dõi các trò chơi này cho phép việc đồng bộ ghi lại cấu hình trình giả lập của từng trò chơi và thay tệp Steam của nó để ghi nhận mở khóa. Nếu không, trò chơi bạn đã thiết lập và chơi trước tính năng này có thể mất quyền truy cập vào dữ liệu lưu hiện có.\n\nTính năng này cũng dùng Steam Web API key của chính bạn để đọc dữ liệu thành tựu — bạn tự chịu rủi ro khi dùng. Theo dõi Steam hoàn toàn là tùy chọn; hãy để tắt nếu bạn không muốn chấp nhận những rủi ro này.\n\nHãy sao lưu trước, rồi bật tính năng này và Cập nhật thành tựu đã cài.</string>
+    <string name="setd_ach_goldberg_message">Trước khi chuyển đổi bất kỳ trò chơi nào, hãy mở trình giả lập Windows và sao lưu tệp lưu của mọi trò chơi giả lập Steam bạn đã thiết lập.\n\nChuyển đổi sẽ ghi lại cấu hình trình giả lập của từng trò chơi và thay tệp Steam của nó để ghi nhận mở khóa. Nếu không, trò chơi bạn đã thiết lập và chơi trước tính năng này có thể mất quyền truy cập vào dữ liệu lưu hiện có.\n\nTính năng này cũng dùng Steam Web API key của chính bạn để đọc dữ liệu thành tựu — bạn tự chịu rủi ro khi dùng. Hãy để tắt nếu bạn không muốn chấp nhận những rủi ro này.\n\nHãy sao lưu trước, rồi bật tính năng này và quét trò chơi.</string>
+    <string name="setd_ach_group_update">Cập nhật</string>
+    <string name="setd_ach_last_updated">Cập nhật lần cuối</string>
+    <string name="setd_ach_never">Chưa bao giờ</string>
+    <string name="setd_ach_auto_updates">Tự động cập nhật</string>
+    <string name="setd_ach_updates_paused">Tạm dừng cập nhật cho đến khi bạn đồng bộ lại</string>
+    <string name="setd_ach_updating">Đang cập nhật thành tựu…</string>
+    <string name="setd_ach_update_installed">Cập nhật thành tựu đã cài</string>
+    <string name="setd_ach_update_after_match">Tự chạy khi tự động khớp hoàn tất</string>
+    <string name="setd_ach_update_resume">Đồng bộ lại trò chơi trên thiết bị này và tiếp tục cập nhật tự động</string>
+    <string name="setd_ach_update_check">Kiểm tra thành tựu mới cho trò chơi trên thiết bị này</string>
+    <string name="setd_ach_group_auto_match">Tự động khớp</string>
+    <string name="setd_ach_matching">Đang khớp trò chơi…</string>
+    <string name="setd_ach_auto_match">Tự động khớp trò chơi</string>
+    <string name="setd_ach_auto_match_sublabel">Liên kết trò chơi trên thiết bị này với RetroAchievements (mã băm ROM) và Steam</string>
+    <string name="setd_ach_group_reset">Đặt lại</string>
+    <string name="setd_ach_clearing">Đang xóa thành tựu…</string>
+    <string name="setd_ach_clear_row">Xóa mọi thành tựu đã theo dõi</string>
+    <string name="setd_ach_clear_row_sublabel">Xóa mọi thành tựu được ghi nhận trong Play Field Portal. Trò chơi và kết nối nhà cung cấp được giữ lại.</string>
+    <string name="setd_ach_clear_title">Xóa mọi thành tựu đã theo dõi?</string>
+    <string name="setd_ach_clear_message">Thao tác này sẽ xóa mọi thành tựu được ghi nhận trong Play Field Portal, kể cả tiến trình đã đạt và dữ liệu của trò chơi không còn được cài. Trò chơi và kết nối nhà cung cấp được giữ lại. Cần đồng bộ lại trò chơi để hiển thị lại thành tựu.</string>
+    <string name="setd_ach_clear_confirm">Xóa thành tựu</string>
+</resources>

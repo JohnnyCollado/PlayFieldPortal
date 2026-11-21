@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ===== Shared Shiba page text ===== -->
+    <string name="shiba_prompt_select">Selecionar</string>
+    <string name="shiba_prompt_close">Fechar</string>
+    <string name="shiba_prompt_done">Concluído</string>
+    <string name="shiba_prompt_back">Voltar</string>
+    <string name="shiba_prompt_options">Opções</string>
+    <string name="shiba_prompt_search">Pesquisar</string>
+    <string name="shiba_prompt_type">Digitar</string>
+    <string name="shiba_prompt_change_view">Mudar visualização</string>
+    <string name="shiba_prompt_switch_source">Trocar fonte</string>
+    <string name="shiba_prompt_view_game">Ver jogo</string>
+    <string name="shiba_prompt_view_achievements">Ver conquistas</string>
+    <string name="shiba_prompt_attempt_match">Tentar associar</string>
+    <string name="shiba_prompt_search_online">Pesquisar on-line</string>
+    <string name="shiba_prompt_auto_match">Associar automaticamente</string>
+    <string name="shiba_prompt_pick_game_folder">Escolher pasta do jogo</string>
+    <string name="shiba_prompt_reveal">Revelar</string>
+    <string name="shiba_prompt_hide">Ocultar</string>
+    <string name="shiba_prompt_navigate">Navegar</string>
+
+    <!-- Buttons in the Auto-Match panels. -->
+    <string name="shiba_action_yes">Sim</string>
+    <string name="shiba_action_no">Não</string>
+    <string name="shiba_action_cancel">Cancelar</string>
+    <string name="shiba_action_close">Fechar</string>
+    <string name="shiba_action_link">Vincular</string>
+    <string name="shiba_options_title">Opções</string>
+    <string name="shiba_options_sort">Ordenar</string>
+    <string name="shiba_options_provider">Provedor</string>
+    <string name="shiba_options_update_installed">Atualizar conquistas instaladas</string>
+    <string name="shiba_options_updating">Atualizando…</string>
+    <string name="shiba_sort_newest">Mais recentes</string>
+    <string name="shiba_sort_rarest">Mais raras</string>
+    <string name="shiba_sort_tier">Nível</string>
+    <string name="shiba_sort_earned">Obtidas</string>
+    <string name="shiba_filter_all">Todos</string>
+
+    <!-- Coin tier names. -->
+    <string name="shiba_tier_bronze">Bronze</string>
+    <string name="shiba_tier_silver">Prata</string>
+    <string name="shiba_tier_gold">Ouro</string>
+    <string name="shiba_tier_platinum">Platina</string>
+    <string name="shiba_stat_shiba_level">NÍVEL SHIBA</string>
+    <string name="shiba_stat_next_level">PRÓXIMO NÍVEL</string>
+    <string name="shiba_stat_total_coins">TOTAL DE MOEDAS</string>
+    <string name="shiba_stat_total">TOTAL</string>
+    <string name="shiba_platform_not_installed">%1$s · Não instalado</string>
+    <string name="shiba_time_just_now">Agora mesmo</string>
+    <string name="shiba_time_minutes_ago">há %1$d min</string>
+    <string name="shiba_time_hours_ago">há %1$d h</string>
+    <string name="shiba_time_yesterday">Ontem</string>
+    <plurals name="shiba_time_days_ago">
+        <item quantity="one">há %1$d dia</item>
+        <item quantity="many">há %1$d dias</item>
+        <item quantity="other">há %1$d dias</item>
+    </plurals>
+    <string name="shiba_search_games_placeholder">Pesquisar jogos…</string>
+
+    <!-- ===== Player Status ===== -->
+    <string name="shiba_player_status_title">Status do jogador</string>
+    <string name="shiba_player_status_no_rarest">Nenhuma conquista rara ainda.</string>
+    <string name="shiba_player_status_rarest_unlocked">MAIS RARA DESBLOQUEADA</string>
+    <string name="shiba_player_status_rarity_caption">dos jogadores têm esta</string>
+    <string name="shiba_player_status_game_and_time">%1$s · %2$s</string>
+    <plurals name="shiba_status_checking_games">
+        <item quantity="one">Verificando %1$d de %2$d jogo…</item>
+        <item quantity="many">Verificando %1$d de %2$d jogos…</item>
+        <item quantity="other">Verificando %1$d de %2$d jogos…</item>
+    </plurals>
+    <string name="shiba_status_updating_achievements">Atualizando conquistas instaladas…</string>
+    <string name="shiba_library_view_tracked">Jogos acompanhados</string>
+    <string name="shiba_library_view_untracked">Jogos não acompanhados</string>
+    <string name="shiba_library_breadcrumb">Conquistas / %1$s</string>
+    <plurals name="shiba_library_game_count">
+        <item quantity="one">%1$d jogo</item>
+        <item quantity="many">%1$d jogos</item>
+        <item quantity="other">%1$d jogos</item>
+    </plurals>
+    <string name="shiba_library_empty_no_match">Nenhum jogo corresponde a \"%1$s\".</string>
+    <string name="shiba_library_empty_tracked">Nenhum jogo acompanhado ainda.</string>
+    <string name="shiba_library_empty_untracked">Todos os jogos elegíveis são acompanhados.</string>
+    <string name="shiba_library_sort_title_asc">Título A–Z</string>
+    <string name="shiba_library_sort_title_desc">Título Z–A</string>
+    <string name="shiba_library_sort_progress_asc">Progresso: menor primeiro</string>
+    <string name="shiba_library_sort_progress_desc">Progresso: maior primeiro</string>
+    <string name="shiba_library_sort_platform_asc">Plataforma A–Z</string>
+    <string name="shiba_library_sort_platform_desc">Plataforma Z–A</string>
+    <string name="shiba_library_search_online">Pesquisar on-line</string>
+    <string name="shiba_library_search_online_subtitle">Procure um jogo que não está neste dispositivo</string>
+    <string name="shiba_library_awaiting_sync">Aguardando sincronização</string>
+    <string name="shiba_coins_search_placeholder">Pesquisar moedas…</string>
+    <string name="shiba_coins_stat_completion">CONCLUSÃO</string>
+    <string name="shiba_coins_stat_earned">OBTIDAS</string>
+    <string name="shiba_coins_tab_all">Todas %1$d</string>
+    <string name="shiba_coins_tab_earned">Obtidas %1$d</string>
+    <string name="shiba_coins_tab_locked">Bloqueadas %1$d</string>
+    <string name="shiba_coins_synced">Sincronizado %1$s</string>
+    <string name="shiba_coins_not_linked">Não vinculado</string>
+    <string name="shiba_coins_never_synced">Nunca sincronizado</string>
+    <string name="shiba_coins_owned_on_steam">Na sua conta Steam</string>
+    <string name="shiba_coins_tracked_locally">Acompanhado localmente</string>
+    <string name="shiba_coins_empty_no_match">Nenhuma moeda corresponde a \"%1$s\".</string>
+    <string name="shiba_coins_empty_none_earned">Nenhuma moeda obtida ainda.</string>
+    <string name="shiba_coins_empty_all_earned">Todas as moedas foram obtidas.</string>
+    <string name="shiba_coins_empty_default">Nenhuma moeda para mostrar.</string>
+
+    <!-- Options menu rows. -->
+    <string name="shiba_coins_options_update">Atualizar conquistas</string>
+    <string name="shiba_coins_options_change_match">Mudar associação</string>
+    <string name="shiba_coins_options_unlink">Desvincular jogo</string>
+    <string name="shiba_coins_unlink_title">Desvincular jogo?</string>
+    <string name="shiba_coins_unlink_message">%1$s não está mais associado, então as moedas dele deixam de aparecer. As moedas já em cache continuam armazenadas e voltam quando você associá-lo de novo.</string>
+
+    <!-- Button that confirms unlinking the game. -->
+    <string name="shiba_coins_unlink_confirm">Desvincular</string>
+    <string name="shiba_coin_hidden_title">Moeda oculta</string>
+    <string name="shiba_coin_hidden_hint">Continue jogando — ou aperte Confirmar para revelar</string>
+    <string name="shiba_coin_description_secret">A Steam mantém a descrição desta em segredo</string>
+    <string name="shiba_coin_metric_of_players">dos jogadores</string>
+    <string name="shiba_coin_status_earned">Obtida</string>
+    <string name="shiba_coin_status_locked">Bloqueada</string>
+    <string name="shiba_platinum_crown_title">Coroa de Platina</string>
+    <string name="shiba_platinum_crown_description">Obtenha todas as outras moedas do jogo</string>
+    <string name="shiba_platinum_crown_metric">moedas obtidas</string>
+    <string name="shiba_link_not_linked_yet_game">Este jogo ainda não está vinculado</string>
+    <string name="shiba_link_not_linked_yet">Ainda não vinculado</string>
+    <string name="shiba_link_steam_body">A associação automática pergunta se esta é uma cópia legítima da Steam e depois a resolve na Steam ou procura nas pastas dos seus jogos dados de Steam emulada.</string>
+    <string name="shiba_link_retro_body">O RetroAchievements identifica jogos pelo hash da ROM. A associação automática calcula o hash desta ROM e o procura — só um dump verificado registrado no RetroAchievements pode ser vinculado.</string>
+    <string name="shiba_link_local_steam_body">Escolha a pasta deste jogo e o PFP lê o app id da Steam dele — do steam_appid.txt quando ele existe, ou associando o título quando não existe. Ele lembra a pasta, então nada precisa procurá-la de novo.</string>
+    <string name="shiba_link_vita_body">Os troféus do PS Vita são vinculados automaticamente pelo Vita3K. Defina sua pasta de dados do Vita3K na biblioteca e verifique para vincular este jogo.</string>
+    <string name="shiba_link_ps3_body">Os troféus do PS3 são vinculados pelo disco do próprio jogo — defina a pasta de dados do PS3 na biblioteca e use Associar automaticamente.</string>
+    <string name="shiba_link_x360_body">As conquistas do Xbox 360 são vinculadas pelo title ID do próprio jogo — defina a pasta de dados do X360 Mobile ou do XenDroid na biblioteca e use Associar automaticamente.</string>
+    <string name="shiba_link_auto_match">Associar automaticamente</string>
+    <string name="shiba_link_matching">Associando…</string>
+    <string name="shiba_link_pick_game_folder">Escolher pasta do jogo</string>
+    <string name="shiba_link_copy_title">Esta é uma cópia legítima da Steam?</string>
+    <string name="shiba_link_copy_body">Uma cópia legítima é associada à sua conta Steam. Qualquer outra é acompanhada pela própria pasta do jogo, que o PFP vai pedir que você indique.</string>
+    <string name="shiba_link_folder_title">Em qual pasta está este jogo?</string>
+    <string name="shiba_link_folder_body">Escolha a pasta do próprio jogo — a que contém o .exe dele. O PFP lê o app id da Steam dela e acompanha os desbloqueios que o emulador grava lá. Seus jogos do Windows podem ficar em qualquer lugar; o PFP lembra onde este está para nunca precisar procurar.</string>
+    <string name="shiba_link_identify_title_steam">Procurando a correspondência na Steam…</string>
+    <string name="shiba_link_identify_title_appid">Descobrindo o app id da Steam…</string>
+    <string name="shiba_link_identify_body_steam">Pesquisando o título deste jogo na Steam. Escolha o certo para vinculá-lo de novo.</string>
+    <string name="shiba_link_identify_body_appid">Lendo o steam_appid.txt da pasta e, se ainda não houver um, associando o título do jogo na Steam.</string>
+    <string name="shiba_link_kit_title">Essa pasta ainda não tem lista de conquistas</string>
+    <string name="shiba_link_kit_body_generic">O emulador precisa de uma lista de conquistas antes de poder registrar desbloqueios.</string>
+    <string name="shiba_link_kit_body">\"%1$s\" é o app id %2$s da Steam, mas o emulador não tem uma lista de conquistas para registrar. Instalar e vincular grava achievements.json, stats.json e configs.user.ini na pasta, cria uma pasta saves e renomeia steam_api64.dll para steam_api64_o.dll para que o emulador incluído carregue por meio dele — faça backup dos saves deste jogo antes. Só vincular acompanha o jogo em 0%% e não grava mais nada.</string>
+    <string name="shiba_link_kit_installer_off">Instalar e vincular precisa de Instalar Goldberg e converter jogos nas configurações de conquistas.</string>
+    <string name="shiba_link_kit_install">Instalar e vincular</string>
+    <string name="shiba_link_kit_link_only">Só vincular</string>
+    <string name="shiba_link_no_emu_title">Nada para acompanhar nessa pasta</string>
+    <string name="shiba_link_no_emu_default">Essa pasta não tem dados de emulador da Steam.</string>
+    <string name="shiba_link_try_another_folder">Tentar outra pasta</string>
+    <string name="shiba_link_appid_title">Nenhuma correspondência automática encontrada</string>
+    <string name="shiba_link_appid_body">Digite o app id da Steam do jogo:</string>
+    <string name="shiba_link_appid_field">App id da Steam</string>
+    <string name="shiba_coins_folder_unreadable">Não foi possível ler essa pasta. Escolha-a de novo ou monte outra vez o armazenamento onde ela está.</string>
+    <string name="shiba_coins_linked_to">Vinculado a %1$s (appid %2$s).</string>
+    <string name="shiba_coins_nothing_written">Nada foi gravado. Defina a correspondência do jogo na Steam em Detalhes do jogo ▸ Associar jogo e use Associar automaticamente de novo — o PFP vai usar esse id.</string>
+    <string name="shiba_coins_appid_not_number">Um app id da Steam é um número — veja steamdb.info para mais informações sobre o jogo</string>
+    <string name="shiba_coins_appid_no_match">O app id %1$s não corresponde — veja steamdb.info para mais informações sobre o jogo</string>
+    <string name="shiba_coins_sync_not_linked">Vincule este jogo primeiro a um id de provedor</string>
+    <string name="shiba_coins_sync_not_installed">Este jogo não está instalado — as conquistas salvas dele são exibidas</string>
+    <string name="shiba_coins_sync_missing_credentials">Adicione sua chave em Configurações ▸ Conquistas ▸ Credenciais de provedores</string>
+    <string name="shiba_coins_sync_profile_private">Os Detalhes de jogos do seu perfil Steam são privados</string>
+    <string name="shiba_coins_sync_not_found">Nenhuma conquista encontrada para este jogo</string>
+    <string name="shiba_coins_sync_failed">Falha na sincronização: %1$s</string>
+
+    <!-- ===== Video Detail ===== -->
+    <string name="shiba_video_play">Reproduzir</string>
+    <string name="shiba_video_resume">Retomar</string>
+    <string name="shiba_video_restart">Começar do início</string>
+    <string name="shiba_video_resume_at">Retomar em %1$s</string>
+    <string name="shiba_video_group_library">Biblioteca</string>
+    <string name="shiba_video_group_customize">Personalizar</string>
+    <string name="shiba_video_group_manage">Gerenciar</string>
+    <string name="shiba_video_favorite">Favorito</string>
+
+    <!-- Value drawn beside the Favorite row. -->
+    <string name="shiba_video_favorite_on">Ativado</string>
+    <string name="shiba_video_favorite_off">Desativado</string>
+    <string name="shiba_video_add_to_playlist">Adicionar à playlist</string>
+    <string name="shiba_video_create_playlist">Criar nova playlist</string>
+    <string name="shiba_video_edit_title">Editar título</string>
+    <string name="shiba_video_change_thumbnail">Alterar miniatura</string>
+    <string name="shiba_video_view_information">Ver informações</string>
+    <string name="shiba_video_show_location">Mostrar local do arquivo</string>
+    <string name="shiba_video_remove">Remover da biblioteca</string>
+    <string name="shiba_video_remove_message">\"%1$s\" será removido desta biblioteca. O arquivo no disco não é excluído.</string>
+    <string name="shiba_video_remove_confirm">Remover</string>
+    <string name="shiba_video_new_playlist_title">Nova playlist</string>
+    <string name="shiba_video_new_playlist_placeholder">Nome da playlist</string>
+
+    <!-- Button that creates the playlist. -->
+    <string name="shiba_video_new_playlist_create">Criar</string>
+    <string name="shiba_video_launching">Iniciando…</string>
+    <string name="shiba_video_player_ask">um player externo</string>
+    <string name="shiba_video_player_fallback">player externo</string>
+    <string name="shiba_video_launch_error_title">Não é possível reproduzir o vídeo</string>
+
+    <!-- Brief messages after an action. -->
+    <string name="shiba_video_added_favorite">Adicionado aos Favoritos</string>
+    <string name="shiba_video_removed_favorite">Removido dos Favoritos</string>
+    <string name="shiba_video_import_failed">Não foi possível importar a imagem</string>
+    <string name="shiba_video_thumbnail_updated">Miniatura atualizada</string>
+    <string name="shiba_video_location_in">Em: %1$s</string>
+    <string name="shiba_video_info_duration">Duração: %1$s</string>
+    <string name="shiba_video_info_resolution">Resolução: %1$s</string>
+    <string name="shiba_video_info_format">Formato: %1$s</string>
+    <string name="shiba_video_info_type">Tipo: %1$s</string>
+    <string name="shiba_video_info_size">Tamanho: %1$s</string>
+    <string name="shiba_video_info_location">Local: %1$s</string>
+    <string name="shiba_video_info_file">Arquivo: %1$s</string>
+
+    <!-- ===== Manual viewer ===== -->
+    <string name="shiba_manual_failed">Não foi possível exibir este manual.</string>
+    <string name="shiba_manual_page_description">%1$s — página %2$d do manual</string>
+    <string name="shiba_manual_footer_hint">"◀ ▶  Página   •   ▲ ▼  Rolar   •   B  Fechar"</string>
+</resources>

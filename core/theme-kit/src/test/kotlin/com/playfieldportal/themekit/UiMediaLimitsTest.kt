@@ -28,6 +28,8 @@ class UiMediaLimitsTest {
     @Test fun `sound slots accept exactly at their hard max and reject one ms over`() {
         for (spec in listOf(
             UiMediaLimits.NAVIGATION,
+            UiMediaLimits.CATEGORY,
+            UiMediaLimits.OPTIONS,
             UiMediaLimits.CONFIRM,
             UiMediaLimits.BACK,
             UiMediaLimits.ERROR,
@@ -143,7 +145,7 @@ class UiMediaLimitsTest {
         // exists anywhere in the gate (a 0.2 s click is a legitimate Navigation sound).
         assertNull(UiMediaLimits.validate(UiMediaLimits.NAVIGATION, probe(durationMs = 0L)))
         for (spec in listOf(
-            UiMediaLimits.NAVIGATION, UiMediaLimits.CONFIRM,
+            UiMediaLimits.NAVIGATION, UiMediaLimits.CONFIRM, UiMediaLimits.CATEGORY, UiMediaLimits.OPTIONS,
             UiMediaLimits.BACK, UiMediaLimits.ERROR, UiMediaLimits.NOTIFICATION,
         )) {
             assertEquals(0L, spec.recommendedMinMs, "$spec: audio must carry no floor")

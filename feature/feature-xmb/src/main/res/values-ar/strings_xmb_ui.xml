@@ -1,0 +1,464 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Music playback notification -->
+    <string name="xmbu_music_channel_name">تشغيل الموسيقى</string>
+    <string name="xmbu_music_channel_description">عناصر التحكم في المقطع قيد التشغيل</string>
+    <string name="xmbu_music_notif_previous">السابق</string>
+    <string name="xmbu_music_notif_play_pause">تشغيل/إيقاف مؤقت</string>
+    <string name="xmbu_music_notif_next">التالي</string>
+    <string name="xmbu_music_notif_stop">إيقاف</string>
+
+    <!-- Floating push-to-talk overlay button shown over a running game; the text starts with a microphone emoji and two spaces (quoted to keep both spaces) -->
+    <string name="xmbu_ptt_hold">"🎙  اضغط مطولاً"</string>
+
+    <!-- Tray notification when a custom boot / Game Boot video cannot play -->
+    <string name="xmbu_clipfail_boot_label">تسلسل الإقلاع</string>
+    <string name="xmbu_clipfail_gameboot_label">Game Boot</string>
+    <string name="xmbu_clipfail_boot_message">تعذّر تشغيل فيديو الإقلاع على هذا الجهاز، لذا شُغّل التسلسل المدمج بدلاً منه. أعِد تصدير السمة من Theme Studio (فهو يحوّل الفيديو)، أو اختر مقطعًا آخر من إعدادات العرض.</string>
+    <string name="xmbu_clipfail_gameboot_message">تعذّر تشغيل فيديو Game Boot على هذا الجهاز، لذا شُغّل التسلسل المدمج بدلاً منه. أعِد تصدير السمة من Theme Studio (فهو يحوّل الفيديو)، أو اختر مقطعًا آخر من إعدادات العرض.</string>
+
+    <!-- Common words reused across the XMB shell screens (buttons, footer prompts, menu titles) -->
+    <string name="xmbu_common_options">الخيارات</string>
+    <string name="xmbu_common_back">رجوع</string>
+    <string name="xmbu_common_cancel">إلغاء</string>
+    <string name="xmbu_common_done">تم</string>
+    <string name="xmbu_common_close">إغلاق</string>
+    <string name="xmbu_common_reset">إعادة الضبط</string>
+    <string name="xmbu_common_remove">إزالة</string>
+    <string name="xmbu_common_open">فتح</string>
+    <string name="xmbu_common_toggle">تبديل</string>
+    <string name="xmbu_common_search">بحث</string>
+    <string name="xmbu_common_artwork">الصور الفنية</string>
+    <string name="xmbu_common_edit_title">تعديل العنوان</string>
+    <string name="xmbu_common_add_to_card">إضافة إلى بطاقة</string>
+    <string name="xmbu_common_on">مفعّل</string>
+    <string name="xmbu_common_off">متوقف</string>
+    <string name="xmbu_common_move">نقل</string>
+    <string name="xmbu_common_navigate">تنقل</string>
+    <string name="xmbu_common_play">تشغيل</string>
+    <string name="xmbu_common_pause">إيقاف مؤقت</string>
+    <string name="xmbu_common_prev_next">السابق / التالي</string>
+    <string name="xmbu_common_seek">انتقال</string>
+    <string name="xmbu_common_confirm">تأكيد</string>
+    <string name="xmbu_common_close_search">إغلاق البحث</string>
+    <string name="xmbu_common_ellipsis_search">بحث…</string>
+
+    <!-- App Detail: Options menu rows -->
+    <string name="xmbu_app_opt_favorite">المفضلة</string>
+    <string name="xmbu_app_opt_app_info">معلومات التطبيق</string>
+    <string name="xmbu_app_opt_hide">إخفاء في كل مكان</string>
+    <string name="xmbu_app_opt_change_icon">تغيير الأيقونة</string>
+    <string name="xmbu_app_opt_change_background">تغيير الخلفية</string>
+    <string name="xmbu_app_opt_reset_artwork">إعادة ضبط كل الصور الفنية</string>
+
+    <!-- App Detail: artwork kind names, used inside the messages below -->
+    <string name="xmbu_app_art_type_icon">أيقونة اللعبة</string>
+    <string name="xmbu_app_art_type_hero">اللافتة الرئيسية</string>
+    <string name="xmbu_app_art_type_background">الخلفية</string>
+
+    <!-- App Detail: artwork picker messages. %1$s is an artwork kind name (Game Icon, Hero Banner, Background) -->
+    <string name="xmbu_app_art_no_api_key">لم يتم ضبط مفتاح SteamGridDB API — أضِف واحدًا في إعدادات الصور الفنية</string>
+    <string name="xmbu_app_art_search_failed">فشل البحث: %1$s</string>
+    <string name="xmbu_app_art_no_results">لا توجد نتائج لـ \"%1$s\" على SteamGridDB</string>
+    <string name="xmbu_app_art_load_failed">فشل تحميل الصور الفنية: %1$s</string>
+    <string name="xmbu_app_art_none_found">لم يُعثر على %1$s في SteamGridDB</string>
+    <string name="xmbu_app_art_download_failed">تعذّر تنزيل %1$s</string>
+    <string name="xmbu_app_art_import_failed">تعذّر استيراد %1$s</string>
+    <string name="xmbu_app_art_updated">تم تحديث %1$s</string>
+    <string name="xmbu_app_art_reset">تمت إعادة ضبط %1$s</string>
+    <string name="xmbu_app_art_all_reset">تمت إعادة ضبط كل الصور الفنية</string>
+    <string name="xmbu_app_no_launchable_package">لا توجد لهذا التطبيق حزمة قابلة للتشغيل</string>
+    <string name="xmbu_common_launch">تشغيل</string>
+
+    <!-- App Detail screen -->
+    <string name="xmbu_app_breadcrumb_apps">التطبيقات</string>
+    <string name="xmbu_app_breadcrumb_android_app">تطبيق Android</string>
+    <string name="xmbu_app_edit_artwork_description">تعديل الصور الفنية</string>
+    <string name="xmbu_app_no_icon">لا أيقونة</string>
+    <string name="xmbu_app_art_change">تغيير %1$s</string>
+    <string name="xmbu_app_art_saving">جارٍ الحفظ…</string>
+    <string name="xmbu_app_art_pick_local">اختيار ملف محلي</string>
+    <string name="xmbu_app_art_restore_icon">استعادة الأيقونة الأصلية</string>
+    <string name="xmbu_app_art_remove_custom">إزالة الصورة المخصصة</string>
+    <string name="xmbu_app_art_picker_hint">"◄ ►  تصفّح   A  اختيار   B  رجوع"</string>
+    <string name="xmbu_app_reset_title">هل تريد إعادة ضبط كل الصور الفنية؟</string>
+    <string name="xmbu_app_reset_message">ستُزال الأيقونة والخلفية المخصصتان لـ %1$s وتعود أيقونة التطبيق الأصلية.</string>
+
+    <!-- Add to Card (collection) picker panel -->
+    <!-- Controller hint line: "B" is the name of a controller button -->
+    <string name="xmbu_collection_picker_hint">"Up/Down  تنقل  •  Select  تبديل  •  B  إغلاق"</string>
+    <string name="xmbu_collection_picker_new_row">"＋  بطاقة ذاكرة مخصصة جديدة"</string>
+    <string name="xmbu_collection_picker_empty">لا توجد بطاقات ذاكرة مخصصة بعد — أنشئ واحدة للبدء.</string>
+    <string name="xmbu_collection_new_title">بطاقة ذاكرة مخصصة جديدة</string>
+    <string name="xmbu_collection_new_placeholder">مثل: ألعاب RPG، ألعبها حاليًا</string>
+    <string name="xmbu_collection_new_create">إنشاء</string>
+    <string name="xmbu_common_sort">الفرز</string>
+    <string name="xmbu_common_notifications">الإشعارات</string>
+
+    <!-- App picker (Add Apps / Remove Apps) -->
+    <string name="xmbu_app_picker_empty">لا توجد تطبيقات مثبّتة</string>
+    <string name="xmbu_app_picker_no_match">لا توجد تطبيقات مثبّتة تطابق \"%1$s\"</string>
+    <string name="xmbu_app_picker_choose">اختيار</string>
+
+    <!-- Arrange mode bars (moving a card or marking games) -->
+    <!-- Button / footer prompt: drop the item being moved at its new position -->
+    <string name="xmbu_arrange_place">وضع</string>
+    <string name="xmbu_arrange_mark">تحديد</string>
+    <string name="xmbu_arrange_move_left">نقل لليسار</string>
+    <string name="xmbu_arrange_move_right">نقل لليمين</string>
+    <string name="xmbu_arrange_move_up">نقل لأعلى</string>
+    <string name="xmbu_arrange_move_down">نقل لأسفل</string>
+
+    <!-- Color Scheme picker overlay -->
+    <string name="xmbu_color_scheme_title">نظام الألوان</string>
+    <string name="xmbu_color_scheme_tint">الصبغة</string>
+    <string name="xmbu_color_scheme_depth">العمق</string>
+    <string name="xmbu_color_scheme_contrast_top">"%1$s النص في الأعلى  %2$s"</string>
+    <string name="xmbu_color_scheme_contrast_bottom">"%1$s النص في الأسفل  %2$s"</string>
+    <string name="xmbu_color_scheme_custom_title">لون مخصص</string>
+
+    <!-- Customize XMB Icons overlay -->
+    <string name="xmbu_icons_title">تخصيص أيقونات XMB</string>
+    <string name="xmbu_icons_source_user">اختيارك</string>
+    <string name="xmbu_icons_source_theme">من السمة</string>
+    <string name="xmbu_icons_source_default">الافتراضي</string>
+    <string name="xmbu_icons_source_with_column">%1$s · عمود %2$s</string>
+    <string name="xmbu_icons_column">العمود</string>
+    <string name="xmbu_icons_tab">علامة التبويب</string>
+    <string name="xmbu_icons_pick">اختيار</string>
+    <string name="xmbu_icons_reset_all">إعادة ضبط الكل</string>
+    <string name="xmbu_icons_save_as_theme">حفظ كسمة</string>
+    <string name="xmbu_icons_save_as_theme_button">حفظ كسمة…</string>
+
+    <!-- Search box -->
+    <string name="xmbu_game_search_placeholder">البحث في الألعاب…</string>
+
+    <!-- Game picker (Add Games to a category) -->
+    <string name="xmbu_picker_in_this_category">في هذه الفئة</string>
+    <string name="xmbu_picker_in_category">في %1$s</string>
+    <string name="xmbu_picker_custom_cards">بطاقات الذاكرة المخصصة</string>
+    <string name="xmbu_picker_no_changes">لا تغييرات</string>
+    <string name="xmbu_picker_menu_view">العرض</string>
+    <string name="xmbu_picker_menu_select_all">تحديد الكل</string>
+    <string name="xmbu_picker_open_toggle">فتح / تبديل</string>
+    <string name="xmbu_picker_no_games">لا توجد ألعاب في مكتبتك بعد</string>
+    <string name="xmbu_picker_add_games">إضافة ألعاب</string>
+    <string name="xmbu_picker_view_mode">العرض: %1$s</string>
+    <string name="xmbu_picker_removing_prefix">"جارٍ الإزالة · "</string>
+    <string name="xmbu_picker_search_placeholder">البحث في هذا الرف…</string>
+    <string name="xmbu_picker_shelves">الرفوف</string>
+    <string name="xmbu_picker_shelf">الرف</string>
+
+    <!-- Music browser -->
+    <string name="xmbu_music_breadcrumb_playlists">"الموسيقى  ›  قوائم التشغيل"</string>
+    <string name="xmbu_music_breadcrumb_music">الموسيقى</string>
+    <string name="xmbu_music_breadcrumb_all_tracks">كل المقاطع</string>
+    <string name="xmbu_music_resume">استئناف: %1$s</string>
+
+    <!-- Music player -->
+    <string name="xmbu_music_now_playing">قيد التشغيل الآن</string>
+    <string name="xmbu_music_nothing_playing">لا شيء قيد التشغيل</string>
+    <string name="xmbu_music_visualizer">المؤثرات المرئية</string>
+
+    <!-- Media transport buttons (music and video players): spoken descriptions -->
+    <string name="xmbu_media_previous_track">المقطع السابق</string>
+    <string name="xmbu_media_next_track">المقطع التالي</string>
+    <string name="xmbu_media_previous_video">الفيديو السابق</string>
+    <string name="xmbu_media_next_video">الفيديو التالي</string>
+    <string name="xmbu_media_back_10">الرجوع 10 ثوانٍ</string>
+    <string name="xmbu_media_forward_10">التقديم 10 ثوانٍ</string>
+    <string name="xmbu_media_playing">قيد التشغيل</string>
+    <string name="xmbu_media_paused">متوقف مؤقتًا</string>
+
+    <!-- Music track picker (add songs to a playlist) -->
+    <!-- %1$s is the playlist name -->
+    <string name="xmbu_track_picker_title">إضافة إلى %1$s</string>
+    <string name="xmbu_track_picker_add">إضافة</string>
+    <string name="xmbu_track_picker_empty">لا توجد مقاطع أخرى لإضافتها — كل الأغاني المفحوصة موجودة بالفعل في قائمة التشغيل هذه.</string>
+
+    <!-- Notification panel and notification detail sheets -->
+    <string name="xmbu_notif_options_description">خيارات الإشعارات</string>
+    <string name="xmbu_notif_task_stopping">%1$s — جارٍ الإيقاف…</string>
+    <string name="xmbu_notif_task_detail">%1$s — %2$s</string>
+    <string name="xmbu_notif_kind_scan">فحص</string>
+    <string name="xmbu_notif_kind_metadata">البيانات الوصفية</string>
+    <string name="xmbu_notif_kind_achievements">الإنجازات</string>
+    <string name="xmbu_notif_kind_system">النظام</string>
+    <string name="xmbu_notif_kind_download">التنزيل</string>
+    <string name="xmbu_notif_kind_feed">الموجز</string>
+    <string name="xmbu_notif_action_go_to_game">الانتقال إلى اللعبة</string>
+    <string name="xmbu_notif_action_open_card">فتح بطاقة الذاكرة</string>
+    <string name="xmbu_notif_action_open_settings">فتح الإعدادات</string>
+    <string name="xmbu_notif_action_open_category">فتح الفئة</string>
+    <string name="xmbu_notif_action_review">مراجعة</string>
+    <string name="xmbu_time_just_now">الآن</string>
+
+    <!-- XMB shell: share sheet title when sharing a saved icon theme -->
+    <string name="xmbu_share_theme">مشاركة السمة</string>
+    <string name="xmbu_move_position">جارٍ النقل · %1$d من %2$d</string>
+    <string name="xmbu_common_later">لاحقًا</string>
+
+    <!-- XMB shell dialogs -->
+    <string name="xmbu_shell_rename_shortcut">إعادة تسمية الاختصار</string>
+    <string name="xmbu_shell_playlist_name">اسم قائمة التشغيل</string>
+    <string name="xmbu_shell_theme_name">اسم السمة</string>
+    <string name="xmbu_shell_source_theme">من السمة المطبّقة</string>
+    <string name="xmbu_shell_source_device">من جهازك</string>
+    <string name="xmbu_shell_source_device_detail">PNG أو GIF</string>
+    <string name="xmbu_shell_continue">متابعة</string>
+    <string name="xmbu_shell_shortcut_title">هل تريد إضافة الاختصار؟</string>
+    <string name="xmbu_shell_shortcut_message">طلب تطبيق إضافة اختصار \"%1$s\" يفتح %2$s. لا تُضِفه إلا إذا كنت قد أنشأت هذا الاختصار بنفسك للتو.</string>
+    <string name="xmbu_shell_shortcut_add">إضافة</string>
+    <string name="xmbu_shell_shortcut_ignore">تجاهل</string>
+    <string name="xmbu_shell_windows_title">أكمِل إعداد مكتبة Windows</string>
+    <string name="xmbu_shell_windows_message">تمت إضافة لعبة PC، لكن مكتبة ألعاب Windows ليس لها مجلد بعد. أعِدّها في مدير المكتبة حتى يمكن فحص مجلدات الألعاب والإنجازات.</string>
+    <string name="xmbu_shell_windows_set_up">إعداد</string>
+    <string name="xmbu_shell_import_position">%1$d من %2$d</string>
+    <string name="xmbu_shell_open_playlist">فتح قائمة التشغيل</string>
+    <string name="xmbu_shell_stop">إيقاف</string>
+    <string name="xmbu_shell_keep_running">متابعة التشغيل</string>
+
+    <!-- Launch recovery dialog (a game failed to start) -->
+    <string name="xmbu_recovery_retry">إعادة المحاولة</string>
+    <string name="xmbu_recovery_change_emulator">تغيير المحاكي</string>
+    <string name="xmbu_recovery_change_default">تغيير الافتراضي لكل نظام</string>
+    <string name="xmbu_recovery_copy_diagnostics">نسخ بيانات التشخيص</string>
+    <string name="xmbu_recovery_title">تعذّر تشغيل %1$s</string>
+    <string name="xmbu_recovery_select">تحديد</string>
+    <string name="xmbu_recovery_dismiss">تجاهل</string>
+
+    <!-- Artwork folder prompts. "PFP" is the app name -->
+    <string name="xmbu_artfolder_unavailable_title">مجلد الصور الفنية غير متاح</string>
+    <string name="xmbu_artfolder_unavailable_message">لا يستطيع PFP الوصول إلى %1$s. تتوقف الصور الفنية الجديدة مؤقتًا حتى تعيد ربطه. وتظل الصور الموجودة لديك ظاهرة.</string>
+    <string name="xmbu_artfolder_relink">إعادة ربط المجلد</string>
+    <string name="xmbu_artfolder_not_now">ليس الآن</string>
+    <string name="xmbu_artfolder_move_title">انقل صورك الفنية إلى مجلد تملكه</string>
+    <string name="xmbu_artfolder_choose">اختيار مجلد الصور الفنية</string>
+    <string name="xmbu_artfolder_choose_title">اختر مجلدًا للصور الفنية</string>
+    <string name="xmbu_artfolder_choose_message">تُحفظ الصور الفنية الجديدة في مجلد تملكه. اختر واحدًا وسيحفظ PFP الصور فيه.</string>
+    <string name="xmbu_artfolder_foreign_title">يحتوي هذا المجلد على مكتبة صور فنية أخرى</string>
+    <string name="xmbu_artfolder_use_library">استخدام هذه المكتبة</string>
+    <string name="xmbu_artfolder_choose_another">اختيار مجلد آخر</string>
+
+    <!-- Status strip: spoken descriptions of the icons -->
+    <string name="xmbu_status_controller_connected">وحدة التحكم متصلة</string>
+    <string name="xmbu_status_battery">البطارية</string>
+    <string name="xmbu_status_battery_charging">البطارية، قيد الشحن</string>
+    <string name="xmbu_status_battery_plugged">البطارية، موصولة بالشاحن</string>
+
+    <!-- Adjust XMB Layout overlay -->
+    <string name="xmbu_layout_title">ضبط تخطيط XMB</string>
+    <string name="xmbu_layout_readout">"الحجم %1$s×    أفقي %2$d%%    عمودي %3$d%%"</string>
+    <string name="xmbu_layout_scale">الحجم</string>
+    <string name="xmbu_layout_horizontal">أفقي</string>
+    <string name="xmbu_layout_vertical">عمودي</string>
+    <string name="xmbu_layout_sliders">أشرطة التمرير</string>
+    <string name="xmbu_layout_hide_sliders">إخفاء أشرطة التمرير</string>
+    <string name="xmbu_layout_save">حفظ</string>
+
+    <!-- Theme icon picker -->
+    <string name="xmbu_icon_grid_use">استخدام هذه الأيقونة</string>
+    <string name="xmbu_status_cellular_signal">إشارة شبكة الجوال</string>
+
+    <!-- Notification panel section headers (shown in capitals) and empty state -->
+    <string name="xmbu_notif_header_running">قيد التشغيل</string>
+    <string name="xmbu_notif_header_earlier">سابقًا</string>
+    <string name="xmbu_notif_empty">لا توجد إشعارات</string>
+
+    <!-- Video player -->
+    <!-- Screen modes: how the picture fills the screen (fit with bars, crop to zoom, stretch to fill) -->
+    <string name="xmbu_video_fit">ملاءمة</string>
+    <string name="xmbu_video_zoom">تكبير</string>
+    <string name="xmbu_video_fill">ملء</string>
+    <string name="xmbu_video_speed">سرعة التشغيل</string>
+    <string name="xmbu_video_subtitles">الترجمة</string>
+    <string name="xmbu_video_audio_track">المسار الصوتي</string>
+    <string name="xmbu_video_screen_mode">وضع الشاشة</string>
+    <string name="xmbu_video_none">لا شيء</string>
+    <string name="xmbu_video_default">الافتراضي</string>
+    <string name="xmbu_video_track">مسار</string>
+    <string name="xmbu_video_err_not_found">لم يتم العثور على الفيديو.</string>
+    <string name="xmbu_video_err_permission">تم رفض الإذن لهذا الملف.</string>
+    <string name="xmbu_video_err_decode">لا يمكن فك ترميز هذا الفيديو على هذا الجهاز.</string>
+    <string name="xmbu_video_err_unable">يتعذّر تشغيل هذا الفيديو.</string>
+    <string name="xmbu_video_go_back">رجوع</string>
+    <string name="xmbu_video_status">%1$s× · %2$s</string>
+
+    <!-- Photo viewer -->
+    <!-- Options menu rows -->
+    <string name="xmbu_photo_rotate_left">تدوير لليسار</string>
+    <string name="xmbu_photo_rotate_right">تدوير لليمين</string>
+    <string name="xmbu_photo_zoom_in">تكبير</string>
+    <string name="xmbu_photo_zoom_out">تصغير</string>
+    <string name="xmbu_photo_reset_zoom">إعادة ضبط التكبير</string>
+    <string name="xmbu_photo_set_wallpaper">تعيين كخلفية للمشغّل</string>
+    <string name="xmbu_photo_set_lock_screen">تعيين كشاشة قفل</string>
+    <string name="xmbu_photo_view_info">عرض المعلومات</string>
+    <string name="xmbu_photo_show_location">إظهار موقع الملف</string>
+    <string name="xmbu_photo_remove">إزالة من المكتبة</string>
+    <string name="xmbu_photo_group_view">العرض</string>
+    <string name="xmbu_photo_group_manage">الإدارة</string>
+    <string name="xmbu_photo_in_folder">في: %1$s</string>
+    <string name="xmbu_photo_wallpaper_unreadable">تعذّر تعيين الخلفية — تعذّرت قراءة الصورة</string>
+    <string name="xmbu_photo_wallpaper_applied">تم تطبيق الخلفية</string>
+    <string name="xmbu_photo_unreadable">تعذّرت قراءة تلك الصورة</string>
+    <string name="xmbu_photo_lock_screen_set">تم تعيين شاشة القفل</string>
+    <string name="xmbu_photo_hide_controls">إخفاء عناصر التحكم</string>
+    <string name="xmbu_photo_show_controls">إظهار عناصر التحكم</string>
+    <string name="xmbu_photo_wallpaper_title">هل تريد تعيينها كخلفية للمشغّل؟</string>
+    <string name="xmbu_photo_wallpaper_note">تحل محل خلفية موجة XMB.</string>
+    <string name="xmbu_photo_apply">تطبيق</string>
+    <string name="xmbu_photo_applying">جارٍ التطبيق…</string>
+    <string name="xmbu_photo_remove_message">ستتم إزالة \"%1$s\" من هذه المكتبة. لن تُحذف الصورة من القرص.</string>
+    <string name="xmbu_photo_lock_message">ستصبح \"%1$s\" صورة شاشة قفل الجهاز، مقصوصة لتلائم الشاشة.</string>
+    <string name="xmbu_photo_set">تعيين</string>
+    <string name="xmbu_photo_info_resolution">الدقة: %1$s</string>
+    <string name="xmbu_photo_info_taken">تاريخ الالتقاط: %1$s</string>
+    <string name="xmbu_photo_info_modified">تاريخ التعديل: %1$s</string>
+    <string name="xmbu_photo_info_size">الحجم: %1$s</string>
+    <string name="xmbu_photo_info_type">النوع: %1$s</string>
+    <string name="xmbu_photo_info_location">الموقع: %1$s</string>
+    <string name="xmbu_photo_info_file">الملف: %1$s</string>
+
+    <!-- Music visualizer picker -->
+    <string name="xmbu_visualizer_portal">البوابة</string>
+    <string name="xmbu_visualizer_ripple">التموّج</string>
+    <string name="xmbu_visualizer_off">متوقف</string>
+    <string name="xmbu_visualizer_off_tile">متوقف</string>
+
+    <!-- App picker header: how many apps are ticked -->
+    <plurals name="xmbu_app_picker_selected">
+        <item quantity="zero">لم يُحدَّد شيء</item>
+        <item quantity="one">تم تحديد واحد</item>
+        <item quantity="two">تم تحديد اثنين</item>
+        <item quantity="few">تم تحديد %d</item>
+        <item quantity="many">تم تحديد %d</item>
+        <item quantity="other">تم تحديد %d</item>
+    </plurals>
+
+    <!-- Arrange mode: how many games are marked -->
+    <plurals name="xmbu_arrange_marked">
+        <item quantity="zero">لا شيء محدد</item>
+        <item quantity="one">واحد محدد</item>
+        <item quantity="two">اثنان محددان</item>
+        <item quantity="few">%d محددة</item>
+        <item quantity="many">%d محددًا</item>
+        <item quantity="other">%d محدد</item>
+    </plurals>
+
+    <!-- Game picker header: pending changes -->
+    <plurals name="xmbu_picker_to_add">
+        <item quantity="zero">لا شيء للإضافة</item>
+        <item quantity="one">واحد للإضافة</item>
+        <item quantity="two">اثنان للإضافة</item>
+        <item quantity="few">%d للإضافة</item>
+        <item quantity="many">%d للإضافة</item>
+        <item quantity="other">%d للإضافة</item>
+    </plurals>
+    <plurals name="xmbu_picker_to_remove">
+        <item quantity="zero">لا شيء للإزالة</item>
+        <item quantity="one">واحد للإزالة</item>
+        <item quantity="two">اثنان للإزالة</item>
+        <item quantity="few">%d للإزالة</item>
+        <item quantity="many">%d للإزالة</item>
+        <item quantity="other">%d للإزالة</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_games">
+        <item quantity="zero">لا ألعاب · %2$d محددة</item>
+        <item quantity="one">لعبة واحدة · %2$d محددة</item>
+        <item quantity="two">لعبتان · %2$d محددة</item>
+        <item quantity="few">%1$d ألعاب · %2$d محددة</item>
+        <item quantity="many">%1$d لعبة · %2$d محددة</item>
+        <item quantity="other">%1$d لعبة · %2$d محددة</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_cards">
+        <item quantity="zero">لا بطاقات</item>
+        <item quantity="one">بطاقة واحدة · اختيارها ينقلها إلى هنا</item>
+        <item quantity="two">بطاقتان · اختيار إحداهما ينقلها إلى هنا</item>
+        <item quantity="few">%d بطاقات · اختيار إحداها ينقلها إلى هنا</item>
+        <item quantity="many">%d بطاقة · اختيار إحداها ينقلها إلى هنا</item>
+        <item quantity="other">%d بطاقة · اختيار إحداها ينقلها إلى هنا</item>
+    </plurals>
+    <plurals name="xmbu_picker_card_games">
+        <item quantity="zero">لا ألعاب</item>
+        <item quantity="one">لعبة واحدة</item>
+        <item quantity="two">لعبتان</item>
+        <item quantity="few">%d ألعاب</item>
+        <item quantity="many">%d لعبة</item>
+        <item quantity="other">%d لعبة</item>
+    </plurals>
+
+    <!-- Music track picker -->
+    <!-- Header button: add the ticked tracks (%d = how many are ticked) -->
+    <plurals name="xmbu_track_picker_add_count">
+        <item quantity="zero">إضافة</item>
+        <item quantity="one">إضافة واحد</item>
+        <item quantity="two">إضافة اثنين</item>
+        <item quantity="few">إضافة %d</item>
+        <item quantity="many">إضافة %d</item>
+        <item quantity="other">إضافة %d</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_selected">
+        <item quantity="zero">لم يُحدَّد شيء</item>
+        <item quantity="one">تم تحديد واحد</item>
+        <item quantity="two">تم تحديد اثنين</item>
+        <item quantity="few">تم تحديد %d</item>
+        <item quantity="many">تم تحديد %d</item>
+        <item quantity="other">تم تحديد %d</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_add_tracks">
+        <item quantity="zero">لا مقاطع للإضافة</item>
+        <item quantity="one">إضافة مقطع واحد</item>
+        <item quantity="two">إضافة مقطعين</item>
+        <item quantity="few">إضافة %d مقاطع</item>
+        <item quantity="many">إضافة %d مقطعًا</item>
+        <item quantity="other">إضافة %d مقطع</item>
+    </plurals>
+
+    <!-- Notification age -->
+    <plurals name="xmbu_time_minutes_ago">
+        <item quantity="zero">الآن</item>
+        <item quantity="one">قبل دقيقة واحدة</item>
+        <item quantity="two">قبل دقيقتين</item>
+        <item quantity="few">قبل %d دقائق</item>
+        <item quantity="many">قبل %d دقيقة</item>
+        <item quantity="other">قبل %d دقيقة</item>
+    </plurals>
+    <plurals name="xmbu_time_hours_ago">
+        <item quantity="zero">الآن</item>
+        <item quantity="one">قبل ساعة واحدة</item>
+        <item quantity="two">قبل ساعتين</item>
+        <item quantity="few">قبل %d ساعات</item>
+        <item quantity="many">قبل %d ساعة</item>
+        <item quantity="other">قبل %d ساعة</item>
+    </plurals>
+
+    <!-- Artwork folder prompts. %d is the number of images stored inside the app -->
+    <plurals name="xmbu_artfolder_move_message">
+        <item quantity="zero">لا توجد صور مخزّنة داخل التطبيق.</item>
+        <item quantity="one">توجد صورة واحدة مخزّنة داخل التطبيق وستُفقد إذا ألغيت التثبيت. اختر مجلدًا وسينقلها PFP إليه.</item>
+        <item quantity="two">توجد صورتان مخزّنتان داخل التطبيق وستُفقدان إذا ألغيت التثبيت. اختر مجلدًا وسينقلهما PFP إليه.</item>
+        <item quantity="few">توجد %d صور مخزّنة داخل التطبيق وستُفقد إذا ألغيت التثبيت. اختر مجلدًا وسينقلها PFP إليه.</item>
+        <item quantity="many">توجد %d صورة مخزّنة داخل التطبيق وستُفقد إذا ألغيت التثبيت. اختر مجلدًا وسينقلها PFP إليه.</item>
+        <item quantity="other">توجد %d صورة مخزّنة داخل التطبيق وستُفقد إذا ألغيت التثبيت. اختر مجلدًا وسينقلها PFP إليه.</item>
+    </plurals>
+    <plurals name="xmbu_artfolder_foreign_message">
+        <item quantity="zero">‏%1$s أُعدّ بواسطة تثبيت مختلف (%2$d ملف). استخدمه وسيعيد PFP ربط ألعابك بصوره، أو اختر مجلدًا آخر.</item>
+        <item quantity="one">‏%1$s أُعدّ بواسطة تثبيت مختلف (ملف واحد). استخدمه وسيعيد PFP ربط ألعابك بصوره، أو اختر مجلدًا آخر.</item>
+        <item quantity="two">‏%1$s أُعدّ بواسطة تثبيت مختلف (ملفان). استخدمه وسيعيد PFP ربط ألعابك بصوره، أو اختر مجلدًا آخر.</item>
+        <item quantity="few">‏%1$s أُعدّ بواسطة تثبيت مختلف (%2$d ملفات). استخدمه وسيعيد PFP ربط ألعابك بصوره، أو اختر مجلدًا آخر.</item>
+        <item quantity="many">‏%1$s أُعدّ بواسطة تثبيت مختلف (%2$d ملفًا). استخدمه وسيعيد PFP ربط ألعابك بصوره، أو اختر مجلدًا آخر.</item>
+        <item quantity="other">‏%1$s أُعدّ بواسطة تثبيت مختلف (%2$d ملف). استخدمه وسيعيد PFP ربط ألعابك بصوره، أو اختر مجلدًا آخر.</item>
+    </plurals>
+
+    <!-- Status strip: spoken description of the notification bell when some are unread -->
+    <plurals name="xmbu_status_notifications_unread">
+        <item quantity="zero">الإشعارات، لا شيء غير مقروء</item>
+        <item quantity="one">الإشعارات، واحد غير مقروء</item>
+        <item quantity="two">الإشعارات، اثنان غير مقروءين</item>
+        <item quantity="few">الإشعارات، %d غير مقروءة</item>
+        <item quantity="many">الإشعارات، %d غير مقروء</item>
+        <item quantity="other">الإشعارات، %d غير مقروء</item>
+    </plurals>
+</resources>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Menú contextual: encapçalaments -->
+    <string name="apps_menu_group_library">Biblioteca</string>
+    <string name="apps_menu_group_arrange">Organitza</string>
+    <string name="apps_menu_group_manage">Gestiona</string>
+
+    <!-- Menú contextual: files -->
+    <string name="apps_menu_launch">Inicia</string>
+    <string name="apps_menu_edit_details">Edita els detalls de l\'aplicació</string>
+    <string name="apps_menu_mark_game">Marca com a joc</string>
+    <string name="apps_menu_unmark_game">Desmarca com a joc</string>
+    <string name="apps_menu_favorite">Preferit</string>
+    <string name="apps_menu_add_to_card">Afegeix a una targeta</string>
+    <string name="apps_menu_pin_to_top">Fixa a dalt</string>
+    <string name="apps_menu_move">Mou</string>
+    <string name="apps_menu_move_to_category">Mou a una categoria</string>
+    <string name="apps_menu_add_to_category">Afegeix a una categoria</string>
+    <string name="apps_menu_remove_from_category">Treu de la categoria</string>
+    <string name="apps_menu_rename_shortcut">Canvia el nom de la drecera</string>
+    <string name="apps_menu_hide_from">Amaga de %1$s</string>
+    <string name="apps_menu_hide_everywhere">Amaga a tot arreu</string>
+    <string name="apps_menu_app_info">Informació de l\'aplicació</string>
+    <string name="apps_menu_uninstall">Desinstal·la</string>
+    <string name="apps_value_on">Activat</string>
+    <string name="apps_value_off">Desactivat</string>
+
+    <!-- Confirmació de desinstal·lació -->
+    <string name="apps_uninstall_title">Vols desinstal·lar %1$s?</string>
+    <string name="apps_uninstall_message">Això elimina %1$s del dispositiu. Android et demanarà que ho confirmis.</string>
+
+    <!-- Pestanyes de categoria -->
+    <string name="apps_filter_all">Totes les aplicacions</string>
+    <string name="apps_filter_games">Jocs</string>
+    <string name="apps_filter_emulators">Emuladors</string>
+    <string name="apps_filter_recent">Utilitzades recentment</string>
+
+    <!-- Cerca -->
+    <string name="apps_search_placeholder">Cerca…</string>
+    <string name="apps_search_button">Cerca</string>
+
+    <!-- Estats buits -->
+    <string name="apps_empty_no_match">Cap aplicació no coincideix amb la cerca</string>
+    <string name="apps_empty_no_games">No s\'ha trobat cap joc</string>
+    <string name="apps_empty_no_emulators">No hi ha cap emulador instal·lat</string>
+    <string name="apps_empty_usage_access">Cal l\'accés a l\'ús</string>
+    <string name="apps_empty_no_recent">Encara no hi ha aplicacions utilitzades recentment</string>
+    <string name="apps_empty_no_apps">No hi ha cap aplicació instal·lada</string>
+    <string name="apps_hint_try_search">Prova un altre terme de cerca</string>
+    <string name="apps_hint_games">Aquí apareixen les aplicacions marcades com a jocs a Google Play Store</string>
+    <string name="apps_hint_emulators">Instal·la RetroArch, PPSSPP o un altre emulador</string>
+    <string name="apps_hint_usage_access">Concedeix l\'accés perquè PFP pugui ordenar les aplicacions per l\'últim ús</string>
+    <string name="apps_open_usage_access">Obre l\'accés a l\'ús</string>
+
+    <!-- Barra d'indicacions del comandament -->
+    <string name="apps_hint_prev">Anterior</string>
+    <string name="apps_hint_next">Següent</string>
+    <string name="apps_hint_back">Enrere</string>
+    <string name="apps_hint_launch">Inicia</string>
+    <string name="apps_hint_options">Opcions</string>
+    <string name="apps_hint_search">Cerca</string>
+    <string name="apps_drawer_title">Calaix d\'aplicacions</string>
+    <string name="apps_drawer_subtitle">Aplicacions d\'aquest dispositiu</string>
+</resources>

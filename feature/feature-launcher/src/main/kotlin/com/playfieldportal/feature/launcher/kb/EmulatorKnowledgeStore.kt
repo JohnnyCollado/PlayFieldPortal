@@ -13,6 +13,7 @@ import com.playfieldportal.core.domain.model.emulatorkb.EmulatorKbValidation
 import com.playfieldportal.core.domain.model.emulatorkb.EmulatorKbValidator
 import com.playfieldportal.core.domain.model.emulatorkb.UserKbLayer
 import com.playfieldportal.feature.launcher.ProfileIoDispatcher
+import com.playfieldportal.feature.launcher.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -119,7 +120,7 @@ class EmulatorKnowledgeStore @Inject constructor(
      * bytes. Throws [IOException] when it cannot be written or 32 files are already imported.
      */
     suspend fun addUserFile(displayName: String, doc: EmulatorKbDocument): String = locked {
-        if (users.size >= MAX_USER_FILES) throw IOException("At most $MAX_USER_FILES knowledge files can be imported; remove one first")
+        if (users.size >= MAX_USER_FILES) throw IOException(context.getString(R.string.launch_kb_too_many_files, MAX_USER_FILES))
         val result = validate(doc)
         result.refusedEmulators.forEach { Timber.w("User knowledge entry %s refused: %s", it.id, it.reason) }
         val id = UUID.randomUUID().toString()

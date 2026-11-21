@@ -78,7 +78,9 @@ class UmdSlotReadTest {
         val withLogo = XMBItem("g", "Patapon", logoUri = "logo.png", gameId = 8L, isRealGame = true)
         assertFalse(xmbRowShowsTitle(withLogo, isSelected = true, umdShowsGame = false, moving = false))
         assertFalse(xmbRowShowsTitle(withLogo.copy(logoUri = null), isSelected = false, umdShowsGame = false, moving = false))
-        assertTrue(xmbRowShowsTitle(withLogo, isSelected = false, umdShowsGame = false, moving = true))
+        // A game being moved is its icon alone, logo or not: the frame says it is lifted.
+        assertFalse(xmbRowShowsTitle(withLogo, isSelected = true, umdShowsGame = false, moving = true))
+        assertFalse(xmbRowShowsTitle(withLogo.copy(logoUri = null), isSelected = true, umdShowsGame = false, moving = true))
     }
 
     // ── Unmarked apps (the app_shortcut sentinel) ─────────────────────────────

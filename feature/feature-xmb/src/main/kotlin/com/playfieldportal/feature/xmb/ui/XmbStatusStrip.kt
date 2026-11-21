@@ -1,5 +1,9 @@
 package com.playfieldportal.feature.xmb.ui
 
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.drawBehind
 import androidx.lifecycle.compose.LifecycleStartEffect
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -46,11 +50,15 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.components.ShadowTwin
+import com.playfieldportal.core.ui.components.shadowTwinColor
+import com.playfieldportal.core.ui.components.shadowTwinTextStyle
 import com.playfieldportal.core.ui.icons.CustomIcon
 import com.playfieldportal.core.ui.icons.CustomIconSurface
 import com.playfieldportal.core.ui.icons.LocalXmbIcons
@@ -63,6 +71,8 @@ import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 
 // ── Status bar colours ────────────────────────────────────────────────────────
 
@@ -71,7 +81,6 @@ import java.util.Locale
 // 0xAA, an unlit bar faint), except the date, which takes it at full weight to match the time. The Sub colour never reaches the strip;
 // a theme's own status art still draws as authored, and low battery stays red.
 private val StripPrimary = Color(0xFFEEEEEE)
-private val StripMuted   = Color(0xAAEEEEEE)
 private val StripSep     = Color(0x55FFFFFF)
 
 // ── Centralized asset mapping ─────────────────────────────────────────────────
@@ -190,6 +199,68 @@ private fun batteryCapacity(context: Context): Int =
 // (The left group's old comment promised a "[bg-task badge]" slot that was never implemented and
 // is not what this plan used; the notification button is the right group's, not the left's.)
 
+/**
+ * A touch pill's surface (the filter chip and the bell): a raised glass capsule tinted with the user's
+ * colour scheme, with a soft shadow round it, a lit top, a darker foot and a pale rim, so it reads as
+ * pressable among the strip's passive readouts. Approved 21 Nov 2026.
+ */
+/**
+ * How solid a touch pill's body is (1 = opaque). 35%: tinted glass in the scheme's colour that lets a
+ * wallpaper show through, chosen by the owner on 21 Nov 2026 over 95% and 55%. A render can override it.
+ */
+val LocalStripPillOpacity = androidx.compose.runtime.compositionLocalOf { 0.35f }
+
+@Composable
+private fun Modifier.stripPill(onClick: () -> Unit): Modifier {
+    val opacity = LocalStripPillOpacity.current
+        val capsule = RoundedCornerShape(50)
+        // The bubble is made of the user's own colour scheme: the middle of its background
+        // gradient, lit at the top, deepened at the foot, with a pale rim of the same hue. The text
+        // on it keeps the user's font colour like everything else in the strip.
+        val scheme = LocalPFPColors.current
+        val base = androidx.compose.ui.graphics.lerp(scheme.backgroundTop, scheme.backgroundBottom, 0.5f)
+        val lit = androidx.compose.ui.graphics.lerp(base, Color.White, 0.45f)
+        val foot = androidx.compose.ui.graphics.lerp(base, Color.Black, 0.22f)
+        val rim = androidx.compose.ui.graphics.lerp(base, Color.White, 0.78f)
+        return this
+            .drawBehind {
+                drawIntoCanvas { canvas ->
+                    val paint = android.graphics.Paint().apply {
+                        color = 0x99000814.toInt()
+                        maskFilter = android.graphics.BlurMaskFilter(3.dp.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL)
+                    }
+                    val r = size.height / 2f
+                    val native = canvas.nativeCanvas
+                    // The shadow is only drawn outside the pill, so a see-through body shows what is
+                    // behind it and not its own shadow.
+                    val body = android.graphics.Path().apply {
+                        addRoundRect(0f, 0f, size.width, size.height, r, r, android.graphics.Path.Direction.CW)
+                    }
+                    native.save()
+                    native.clipOutPath(body)
+                    native.drawRoundRect(0f, 1.5.dp.toPx(), size.width, size.height + 1.5.dp.toPx(), r, r, paint)
+                    native.restore()
+                }
+            }
+            .clip(capsule)
+            .background(
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    0f to lit.copy(alpha = opacity),
+                    0.48f to base.copy(alpha = opacity),
+                    1f to foot.copy(alpha = opacity),
+                ),
+            )
+            .border(1.dp, rim, capsule)
+            .clickable(onClick = onClick)
+            // A fixed, slim height with the content centred in it by the caller's row, rather than
+            // a height that follows the text plus padding: the pill is the same on every row of text.
+            .height(StripPillHeight)
+            .padding(horizontal = 11.dp)
+}
+
+// A slim capsule inside the 28dp strip (it was about 23dp tall).
+private val StripPillHeight = 19.dp
+
 @Composable
 fun XmbPspStatusStrip(
     sortLabel: String? = null,
@@ -285,144 +356,165 @@ fun XmbPspStatusStrip(
         onStopOrDispose { context.unregisterReceiver(clockReceiver) }
     }
 
+    // Every status icon except battery is conditional: shown only when that hardware is
+    // present/active (controller connected, Bluetooth on, Wi-Fi connected, cellular service),
+    // and Wi-Fi/Signal reflect live strength. Battery is always shown.
+    val sys = rememberSystemStatus()
+    // Low-battery red is a warning to plug in, so any time on power clears it. An unknown
+    // level is never a warning: it draws the full icon with no number beside it.
+    val level = batteryLevel
+    val lowBattery = level != null && level <= 20 && power == BatteryPowerState.UNPLUGGED
+
+    // ── The strip's pieces, each drawn once and placed by the order below ─────────────────────
+
+    // Current sort mode, shown only on sortable lists. Touch: a tappable pill that cycles the sort
+    // order; controller: a plain label (X / Square cycles it).
+    val sortPiece: @Composable () -> Unit = {
+        if (sortLabel != null) {
+            if (showTouchControls) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.stripPill(onSortTapped),
+                ) {
+                    StripText("⇅", color = themedText(StripPrimary), fontWeight = FontWeight.Medium)
+                    StripText(sortLabel, color = themedText(StripPrimary), fontWeight = FontWeight.Medium)
+                }
+            } else {
+                StripText(sortLabel, color = themedText(StripPrimary), fontWeight = FontWeight.Medium)
+            }
+        }
+    }
+    // One colour and one weight for every word and icon in the strip.
+    val datePiece: @Composable () -> Unit = {
+        StripText(dateString, color = themedText(StripPrimary), fontWeight = FontWeight.Medium)
+    }
+    val timePiece: @Composable () -> Unit = {
+        StripText(timeString, color = themedText(StripPrimary), fontWeight = FontWeight.Medium)
+    }
+    val bellPiece: @Composable () -> Unit = {
+        NotificationButton(
+            unread = unreadNotifications,
+            running = notificationsRunning,
+            tappable = showTouchControls,
+            onTap = onNotificationsTapped,
+        )
+    }
+    val controllerPiece: @Composable () -> Unit = {
+        if (sys.controllerConnected) {
+            val override = statusSlotOverride("status_controller")
+            if (override != null) {
+                CustomIconSurface(override, stringResource(R.string.xmbu_status_controller_connected), Modifier.size(15.dp))
+            } else {
+                StripVectorIcon(
+                    imageVector        = Icons.Filled.SportsEsports,
+                    contentDescription = stringResource(R.string.xmbu_status_controller_connected),
+                    tint               = themedText(StripPrimary),
+                    modifier           = Modifier.size(15.dp),
+                )
+            }
+        }
+    }
+    val bluetoothPiece: @Composable () -> Unit = {
+        if (sys.bluetoothOn) {
+            StatusIcon(
+                XmbStatusIcons.bluetooth, "Bluetooth", Modifier.size(width = 9.dp, height = 13.dp),
+                slotKey = "status_bluetooth",
+            )
+        }
+    }
+    // A themed Wi-Fi / Signal icon replaces the live meter outright (a static glyph carries
+    // no level); with no override the meter draws exactly as before.
+    val wifiPiece: @Composable () -> Unit = {
+        sys.wifiLevel?.let { wifi ->
+            val override = statusSlotOverride("status_wifi")
+            if (override != null) {
+                CustomIconSurface(override, "Wi-Fi", Modifier.size(width = 16.dp, height = 13.dp))
+            } else {
+                WifiMeter(wifi, Modifier.size(width = 16.dp, height = 13.dp))
+            }
+        }
+    }
+    val signalPiece: @Composable () -> Unit = {
+        sys.cellularLevel?.let { cellular ->
+            val override = statusSlotOverride("status_signal")
+            if (override != null) {
+                CustomIconSurface(override, stringResource(R.string.xmbu_status_cellular_signal), Modifier.size(width = 14.dp, height = 13.dp))
+            } else {
+                SignalBars(cellular, Modifier.size(width = 14.dp, height = 13.dp))
+            }
+        }
+    }
+    val batteryIconPiece: @Composable () -> Unit = {
+        val iconLevel = level ?: 100
+        val batterySlot = if (power == BatteryPowerState.CHARGING) chargingFrameSlotKey(iconLevel) else
+            XmbStatusIcons.batterySlotKey(iconLevel, charging = false)
+        StatusIcon(
+            res         = requireNotNull(XmbStatusIcons.forSlotKey(batterySlot)) {
+                "$batterySlot is not a status-strip slot"
+            },
+            description = when (power) {
+                BatteryPowerState.CHARGING  -> stringResource(R.string.xmbu_status_battery_charging)
+                BatteryPowerState.PLUGGED   -> stringResource(R.string.xmbu_status_battery_plugged)
+                BatteryPowerState.UNPLUGGED -> stringResource(R.string.xmbu_status_battery)
+            },
+            modifier    = Modifier.size(width = 24.dp, height = 11.dp),
+            tint        = if (lowBattery) LowBatteryTint else themedText(StripPrimary),
+            slotKey     = batterySlot,
+        )
+    }
+    // The bolt and the percentage sit tight together as one "⚡40%" readout, rather than
+    // taking the group's 7.dp gap as if the bolt were another status icon.
+    val batteryPercentPiece: @Composable () -> Unit = {
+        Row(
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            if (power != BatteryPowerState.UNPLUGGED) {
+                // Material's bolt, like the bell and controller glyphs in this strip. Not a
+                // themeable slot.
+                StripVectorIcon(
+                    imageVector        = Icons.Filled.Bolt,
+                    contentDescription = null,
+                    tint               = themedText(StripPrimary),
+                    modifier           = Modifier.size(11.dp),
+                )
+            }
+            if (level != null) {
+                StripText(
+                    text       = "$level%",
+                    color      = if (lowBattery) LowBatteryTint else themedText(StripPrimary),
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        }
+    }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
             .height(XmbStatusStripHeight)
             .padding(horizontal = XmbStatusStripSidePadding),
         verticalAlignment    = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+        // The whole strip is packed against the end edge in reading order, the way the PSP anchors
+        // its clock and battery (approved 21 Nov 2026). End, not right: it mirrors in RTL.
+        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
     ) {
-        // ── Left: date  ┊  time  [bg task badge] ──────────────────────────
-        Row(
-            verticalAlignment     = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            // The date matches the time once a Main colour is set (full weight); left alone it keeps
-            // the strip's quieter built-in grey.
-            Text(dateString, color = LocalPFPColors.current.textOr(StripMuted, weight = 1f), fontSize = StripFontSize, fontWeight = FontWeight.Normal)
-            StripSeparator()
-            Text(timeString, color = themedText(StripPrimary), fontSize = StripFontSize, fontWeight = FontWeight.Medium)
-            // Current sort mode — shown only on sortable lists. Touch: a tappable chip that cycles
-            // the sort order; controller: a plain label (X / Square cycles it).
-            if (sortLabel != null) {
-                StripSeparator()
-                if (showTouchControls) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier
-                            .clip(PillShape)
-                            .background(PillFill)
-                            .clickable(onClick = onSortTapped)
-                            .padding(horizontal = 8.dp, vertical = 2.dp),
-                    ) {
-                        Text("⇅", color = themedText(StripPrimary), fontSize = StripFontSize, fontWeight = FontWeight.Medium)
-                        Text(sortLabel, color = themedText(StripPrimary), fontSize = StripFontSize, fontWeight = FontWeight.Medium)
-                    }
-                } else {
-                    Text(sortLabel, color = themedText(StripPrimary), fontSize = StripFontSize, fontWeight = FontWeight.Medium)
-                }
-            }
+        val icons = Arrangement.spacedBy(7.dp)
+        val words = Arrangement.spacedBy(6.dp)
+        // Chosen 21 Nov 2026: the clock and battery sit in the end corner, as on the PSP, where nothing
+        // can push them; everything that comes and goes (the filter, the controller, the radios) is
+        // before them, with the two touch buttons side by side at the start.
+        //   filter, bell, controller, radios  ┊  date ┊ time, battery, percent
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = icons) {
+            sortPiece(); bellPiece(); controllerPiece(); bluetoothPiece(); signalPiece(); wifiPiece()
         }
-
-        // ── Right: [controller] [BT] [WiFi] [Signal] [Battery] ─────────────
-        // Every status icon except battery is conditional: shown only when that hardware is
-        // present/active (controller connected, Bluetooth on, Wi-Fi connected, cellular service),
-        // and Wi-Fi/Signal reflect live strength. Battery is always shown.
-        val sys = rememberSystemStatus()
-        Row(
-            verticalAlignment     = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
-        ) {
-            NotificationButton(
-                unread = unreadNotifications,
-                running = notificationsRunning,
-                tappable = showTouchControls,
-                onTap = onNotificationsTapped,
-            )
-            if (sys.controllerConnected) {
-                val override = statusSlotOverride("status_controller")
-                if (override != null) {
-                    CustomIconSurface(override, "Controller connected", Modifier.size(15.dp))
-                } else {
-                    Icon(
-                        imageVector        = Icons.Filled.SportsEsports,
-                        contentDescription = "Controller connected",
-                        tint               = themedText(StripMuted),
-                        modifier           = Modifier.size(15.dp),
-                    )
-                }
-            }
-            if (sys.bluetoothOn) {
-                StatusIcon(
-                    XmbStatusIcons.bluetooth, "Bluetooth", Modifier.size(width = 9.dp, height = 13.dp),
-                    slotKey = "status_bluetooth",
-                )
-            }
-            // A themed Wi-Fi / Signal icon replaces the live meter outright (a static glyph carries
-            // no level); with no override the meter draws exactly as before.
-            sys.wifiLevel?.let { level ->
-                val override = statusSlotOverride("status_wifi")
-                if (override != null) {
-                    CustomIconSurface(override, "Wi-Fi", Modifier.size(width = 16.dp, height = 13.dp))
-                } else {
-                    WifiMeter(level, Modifier.size(width = 16.dp, height = 13.dp))
-                }
-            }
-            sys.cellularLevel?.let { level ->
-                val override = statusSlotOverride("status_signal")
-                if (override != null) {
-                    CustomIconSurface(override, "Cellular signal", Modifier.size(width = 14.dp, height = 13.dp))
-                } else {
-                    SignalBars(level, Modifier.size(width = 14.dp, height = 13.dp))
-                }
-            }
-            // Low-battery red is a warning to plug in, so any time on power clears it. An unknown
-            // level is never a warning: it draws the full icon with no number beside it.
-            val level = batteryLevel
-            val lowBattery = level != null && level <= 20 && power == BatteryPowerState.UNPLUGGED
-            val iconLevel = level ?: 100
-            val batterySlot = if (power == BatteryPowerState.CHARGING) chargingFrameSlotKey(iconLevel) else
-                XmbStatusIcons.batterySlotKey(iconLevel, charging = false)
-            StatusIcon(
-                res         = requireNotNull(XmbStatusIcons.forSlotKey(batterySlot)) {
-                    "$batterySlot is not a status-strip slot"
-                },
-                description = when (power) {
-                    BatteryPowerState.CHARGING  -> "Battery, charging"
-                    BatteryPowerState.PLUGGED   -> "Battery, plugged in"
-                    BatteryPowerState.UNPLUGGED -> "Battery"
-                },
-                modifier    = Modifier.size(width = 24.dp, height = 11.dp),
-                tint        = if (lowBattery) LowBatteryTint else themedText(StripMuted),
-                slotKey     = batterySlot,
-            )
-            // The bolt and the percentage sit tight together as one "⚡40%" readout, rather than
-            // taking the group's 7.dp gap as if the bolt were another status icon.
-            Row(
-                verticalAlignment     = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                if (power != BatteryPowerState.UNPLUGGED) {
-                    // Material's bolt, like the bell and controller glyphs in this strip. Not a
-                    // themeable slot.
-                    Icon(
-                        imageVector        = Icons.Filled.Bolt,
-                        contentDescription = null,
-                        tint               = themedText(StripPrimary),
-                        modifier           = Modifier.size(11.dp),
-                    )
-                }
-                if (level != null) {
-                    Text(
-                        text       = "$level%",
-                        color      = if (lowBattery) LowBatteryTint else themedText(StripPrimary),
-                        fontSize   = StripFontSize,
-                        fontWeight = FontWeight.Medium,
-                    )
-                }
-            }
+        StripSeparator()
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = words) {
+            datePiece(); StripSeparator(); timePiece()
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = icons) {
+            batteryIconPiece(); batteryPercentPiece()
         }
     }
 }
@@ -438,8 +530,8 @@ fun XmbPspStatusStrip(
  *
  * The controller half of the affordance is the idle hint pill, which names START ▸ Notifications.
  *
- * Never hidden in either mode. At zero unread with nothing running the bell sits dimmed at
- * [StripMuted] — present and quiet. Hiding it would remove the only thing advertising that the
+ * Never hidden in either mode. At zero unread with nothing running the bell is still there, in
+ * the strip's one tone. Hiding it would remove the only thing advertising that the
  * panel exists, and a user on a HOME-screen device has no shade habit to fall back on.
  *
  * The glyph is Material's bell unless a theme or the user supplies `status_notifications` art, which
@@ -455,19 +547,14 @@ private fun NotificationButton(
     // The count wins when both apply: "3 unread" is more actionable than "something is running",
     // and the running state is already spelled out by a live bar inside the panel.
     val active = unread > 0 || running
-    val tint = themedText(if (active) StripPrimary else StripMuted)
-    // Idle sits a step under the sort chip's 0x24 so a bell with nothing to say recedes without
-    // losing its shape; active matches the chip exactly.
-    val fill = if (active) PillFill else PillFillIdle
+    // One tone for the whole strip: the bell does not dim when it has nothing to say. The count and
+    // the activity dot are what say something happened.
+    val tint = themedText(StripPrimary)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier = if (tappable) {
-            Modifier
-                .clip(PillShape)
-                .background(fill)
-                .clickable(onClick = onTap)
-                .padding(horizontal = 8.dp, vertical = 2.dp)
+            Modifier.stripPill(onTap)
         } else {
             // No surface and no click target: it sits with the other status icons, spaced by the
             // group's own 7.dp rather than carrying the chip's internal padding.
@@ -475,12 +562,12 @@ private fun NotificationButton(
         },
     ) {
         Box(contentAlignment = Alignment.TopEnd) {
-            val description = if (unread > 0) "Notifications, $unread unread" else "Notifications"
+            val description = if (unread > 0) pluralStringResource(R.plurals.xmbu_status_notifications_unread, unread, unread) else stringResource(R.string.xmbu_common_notifications)
             val override = statusSlotOverride("status_notifications")
             if (override != null) {
                 CustomIconSurface(override, description, Modifier.size(13.dp))
             } else {
-                Icon(
+                StripVectorIcon(
                     imageVector        = Icons.Filled.Notifications,
                     contentDescription = description,
                     tint               = tint,
@@ -499,10 +586,9 @@ private fun NotificationButton(
             }
         }
         if (unread > 0) {
-            Text(
+            StripText(
                 text       = unread.toString(),
                 color      = themedText(StripPrimary),
-                fontSize   = StripFontSize,
                 fontWeight = FontWeight.Medium,
             )
         }
@@ -523,6 +609,13 @@ private val MeterInactive = Color(0x40EEEEEE)
 private fun SignalBars(level: Int, modifier: Modifier = Modifier) {
     val active = themedText(MeterActive)
     val inactive = themedText(MeterInactive)
+    ShadowTwin(twin = { SignalBarsCanvas(level, shadowTwinColor(active), shadowTwinColor(inactive), modifier) }) {
+        SignalBarsCanvas(level, active, inactive, modifier)
+    }
+}
+
+@Composable
+private fun SignalBarsCanvas(level: Int, active: Color, inactive: Color, modifier: Modifier) {
     Canvas(modifier = modifier) {
         val bars = 4
         val gap = size.width * 0.14f
@@ -546,6 +639,13 @@ private fun SignalBars(level: Int, modifier: Modifier = Modifier) {
 private fun WifiMeter(level: Int, modifier: Modifier = Modifier) {
     val active = themedText(MeterActive)
     val inactive = themedText(MeterInactive)
+    ShadowTwin(twin = { WifiMeterCanvas(level, shadowTwinColor(active), shadowTwinColor(inactive), modifier) }) {
+        WifiMeterCanvas(level, active, inactive, modifier)
+    }
+}
+
+@Composable
+private fun WifiMeterCanvas(level: Int, active: Color, inactive: Color, modifier: Modifier) {
     Canvas(modifier = modifier) {
         val cx = size.width / 2f
         val cy = size.height * 0.92f
@@ -613,7 +713,7 @@ private fun StatusIcon(
     @DrawableRes res: Int,
     description: String,
     modifier: Modifier = Modifier,
-    tint: Color = themedText(StripMuted),
+    tint: Color = themedText(StripPrimary),
     // Themeable slot: a theme's custom status icon renders as-authored (untinted), like
     // every other icon slot. Null = not themeable (meters drawn on Canvas have no slot).
     slotKey: String? = null,
@@ -627,12 +727,60 @@ private fun StatusIcon(
         )
         return
     }
-    Image(
-        painter            = painterResource(res),
-        contentDescription = description,
-        colorFilter        = ColorFilter.tint(tint),
-        modifier           = modifier,
+    ShadowTwin(
+        twin = {
+            Image(
+                painter            = painterResource(res),
+                contentDescription = null,
+                colorFilter        = ColorFilter.tint(shadowTwinColor(tint)),
+                modifier           = modifier,
+            )
+        },
+    ) {
+        Image(
+            painter            = painterResource(res),
+            contentDescription = description,
+            colorFilter        = ColorFilter.tint(tint),
+            modifier           = modifier,
+        )
+    }
+}
+
+/** A strip label: the strip's size, with the text's shadow twin. */
+@Composable
+private fun StripText(text: String, color: Color, fontWeight: FontWeight) {
+    Text(
+        text       = text,
+        color      = color,
+        fontSize   = StripFontSize,
+        fontWeight = fontWeight,
+        // A line box exactly as tall as it says, with the letters centred in it and no extra font
+        // padding above them. Without this the letters sit low in their box, which shows as soon as
+        // the text is centred in something slim (the touch pills).
+        style      = shadowTwinTextStyle(color).copy(
+            lineHeight = StripLineHeight,
+            lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
+                trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.None,
+            ),
+            platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+        ),
     )
+}
+
+/** A Material glyph with its shadow twin; the twin is silent, so semantics match a plain Icon. */
+@Composable
+private fun StripVectorIcon(
+    imageVector: ImageVector,
+    contentDescription: String?,
+    tint: Color,
+    modifier: Modifier = Modifier,
+) {
+    ShadowTwin(
+        twin = { Icon(imageVector, contentDescription = null, tint = shadowTwinColor(tint), modifier = modifier) },
+    ) {
+        Icon(imageVector, contentDescription = contentDescription, tint = tint, modifier = modifier)
+    }
 }
 
 @Composable
@@ -662,12 +810,10 @@ internal val XmbStatusStripHeight = 28.dp
  */
 internal val XmbStatusStripSidePadding = 20.dp
 private val StripFontSize = 12.sp
+private val StripLineHeight = 14.sp
 
 // The strip's pill: one shape and one fill, shared by the sort chip and the notification button so
 // the two tappable things in this bar cannot drift into looking like different kinds of control.
-private val PillShape    = RoundedCornerShape(6.dp)
-private val PillFill     = Color(0x24FFFFFF)
-private val PillFillIdle = Color(0x14FFFFFF)
 private val LowBatteryTint = Color(0xFFFF6B6B)
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Initial Setup wizard -->
+
+    <!-- Wizard chrome -->
+    <string name="setup_title">初始设置</string>
+    <string name="setup_prompt_enter">进入</string>
+    <string name="setup_prompt_change">更改</string>
+    <string name="setup_prompt_back">返回</string>
+    <string name="setup_prompt_skip">跳过</string>
+    <string name="setup_row_edit">编辑</string>
+    <string name="setup_row_remove">移除</string>
+    <string name="setup_message_dismiss_hint">选择即可关闭，或在此行上确认</string>
+
+    <!-- Page names -->
+    <string name="setup_step_welcome">欢迎</string>
+    <string name="setup_step_controller">控制器</string>
+    <string name="setup_step_rom_roots">ROM 文件夹</string>
+    <string name="setup_step_music">音乐</string>
+    <string name="setup_step_video">视频</string>
+    <string name="setup_step_photo">照片</string>
+    <string name="setup_step_artwork">图片</string>
+    <string name="setup_step_services">在线服务</string>
+    <string name="setup_step_achievements">成就服务</string>
+    <string name="setup_step_local_achievements">本地成就</string>
+    <string name="setup_step_retroarch">RetroArch</string>
+    <string name="setup_step_emulators">模拟器</string>
+    <string name="setup_step_windows">Windows 游戏</string>
+    <string name="setup_step_hints">提示与触控</string>
+    <string name="setup_step_home_app">主屏幕应用</string>
+    <string name="setup_step_finish">完成</string>
+
+    <!-- Page headings -->
+    <string name="setup_heading_welcome">欢迎使用 Play Field Portal。</string>
+    <string name="setup_heading_controller">选择你的控制器。</string>
+    <string name="setup_heading_rom_roots">选择你的 ROM 文件夹。</string>
+    <string name="setup_heading_music">选择你的音乐文件夹。</string>
+    <string name="setup_heading_video">选择你的视频文件夹。</string>
+    <string name="setup_heading_photo">选择你的照片文件夹。</string>
+    <string name="setup_heading_artwork">选择你的图片文件夹。</string>
+    <string name="setup_heading_services">连接你的图片来源。</string>
+    <string name="setup_heading_achievements">连接你的成就服务。</string>
+    <string name="setup_heading_local_achievements">关联你的模拟器数据文件夹。</string>
+    <string name="setup_heading_retroarch">关联 RetroArch 的核心文件夹。</string>
+    <string name="setup_heading_emulators">检查你的模拟器。</string>
+    <string name="setup_heading_windows">设置 Windows 游戏。</string>
+    <string name="setup_heading_hints">选择启动器为你提供帮助的方式。</string>
+    <string name="setup_heading_home_app">将 Play Field Portal 设为主屏幕。</string>
+    <string name="setup_heading_finish">一切就绪！</string>
+
+    <!-- Page hints -->
+    <string name="setup_hint_welcome">大多数步骤都是可选的。你需要选择一个图片文件夹。</string>
+    <string name="setup_hint_controller">设置按键图标以及确认键，让之后的每个提示都与你的手柄一致。</string>
+    <string name="setup_hint_rom_roots">添加一个或多个 ROM 文件夹，每个主机的游戏放在其中的子文件夹内。</string>
+    <string name="setup_hint_media_roots">添加多个根文件夹，可同时涵盖内部存储和 SD 卡。</string>
+    <string name="setup_hint_artwork">必填。你的图片存放在应用之外的此处，因此重新安装后也不会丢失。</string>
+    <string name="setup_hint_services">全部可选且免费。SteamGridDB、TheGamesDB、IGDB 和 ScreenScraper 可获取游戏图片和元数据。</string>
+    <string name="setup_hint_achievements">RetroAchievements 和 Steam 会以 Shiba Coins 的形式追踪成就。</string>
+    <string name="setup_hint_local_achievements">你的模拟器保存在此设备上的奖杯和成就。每个模拟器授权一次即可关联所有游戏。</string>
+    <string name="setup_hint_retroarch">让启动器准确了解你拥有哪些核心，从而只提供这些核心。</string>
+    <string name="setup_hint_emulators">每个主机的默认模拟器，根据已安装的应用选出。如有不对，可随时更改。</string>
+    <string name="setup_hint_windows">已安装 Windows 模拟器，请选择你的 PC 游戏所在的位置。</string>
+    <string name="setup_hint_hints">停顿时按键提示会淡入，按下任意键后立即消失。</string>
+    <string name="setup_hint_home_app">之后按主屏幕键会回到这里，而不是系统自带的启动器。</string>
+    <string name="setup_hint_finish">以下所有内容都可以随时在设置中调整。</string>
+
+    <!-- Continue row -->
+    <string name="setup_continue">继续</string>
+    <string name="setup_continue_next">下一步：%1$s</string>
+    <string name="setup_continue_blocked">请先选择文件夹</string>
+
+    <!-- Welcome page -->
+    <string name="setup_welcome_intro">此快速设置会为启动器指定你的媒体文件夹，并连接用于图片和成就的在线服务。</string>
+    <string name="setup_welcome_start">开始</string>
+    <string name="setup_welcome_start_sub">先选择你的控制器</string>
+    <string name="setup_welcome_skip">跳过设置</string>
+    <string name="setup_welcome_skip_sub">直接进入启动器。可随时在“设置 ▸ 系统”中运行设置向导</string>
+
+    <!-- Folder rows -->
+    <string name="setup_root_access_lost">访问权限已丢失，请使用 ✎ 重新授权</string>
+
+    <!-- ROM roots page -->
+    <string name="setup_rom_empty">还没有 ROM 文件夹。请添加存放主机游戏的文件夹：每个主机一个子文件夹，会自动扫描。</string>
+    <string name="setup_rom_add">添加 ROM 文件夹</string>
+    <string name="setup_rom_add_sub">授权一个 ROM 文件夹，其中每个主机一个子文件夹</string>
+    <string name="setup_rom_rescan">重新扫描 ROM 文件夹</string>
+    <string name="setup_rom_rescan_sub">自动检测主机并扫描其游戏</string>
+    <string name="setup_rom_root_linked">已关联：从这里读取主机文件夹</string>
+    <string name="setup_rom_create_folders">创建标准文件夹</string>
+    <string name="setup_rom_create_folders_sub">每个主机一个子文件夹，按你的游戏命名</string>
+
+    <!-- Music roots page -->
+    <string name="setup_music_empty">还没有音乐根文件夹。请添加存放音乐的文件夹：多个根文件夹可同时涵盖内部存储和 SD 卡。</string>
+    <string name="setup_music_add">添加音乐根文件夹</string>
+    <string name="setup_music_add_sub">授权一个根文件夹（例如 /Music），可添加多个以涵盖不同位置</string>
+    <string name="setup_music_root_linked">音乐库位于此处</string>
+    <string name="setup_music_rescan">重新扫描音乐库</string>
+
+    <!-- Video roots page -->
+    <string name="setup_video_empty">还没有视频根文件夹。请添加存放视频的文件夹：多个根文件夹可同时涵盖内部存储和 SD 卡。</string>
+    <string name="setup_video_add">添加视频根文件夹</string>
+    <string name="setup_video_add_sub">授权一个根文件夹（例如 /Videos），可添加多个以涵盖不同位置</string>
+    <string name="setup_video_root_linked">视频库位于此处</string>
+    <string name="setup_video_rescan">重新扫描视频库</string>
+
+    <!-- Photo roots page -->
+    <string name="setup_photo_empty">还没有照片根文件夹。请添加存放照片的文件夹：多个根文件夹可同时涵盖内部存储和 SD 卡。</string>
+    <string name="setup_photo_add">添加照片根文件夹</string>
+    <string name="setup_photo_add_sub">授权一个根文件夹（例如 /Photos），可添加多个以涵盖不同位置</string>
+    <string name="setup_photo_root_linked">照片库位于此处</string>
+    <string name="setup_photo_rescan">重新扫描照片库</string>
+
+    <string name="setup_media_rescan_sub">从所有根文件夹更新媒体库</string>
+
+    <!-- Artwork page -->
+    <string name="setup_artwork_empty">请选择一个可写入的文件夹。启动器会在其中自动建立图片库，添加游戏时即会获取图片。</string>
+    <string name="setup_artwork_unavailable">不可用。请重新关联以恢复获取新图片</string>
+    <string name="setup_artwork_folder_sub">图片库。使用 ✎ 可选择其他文件夹</string>
+    <string name="setup_artwork_choose">选择图片文件夹</string>
+    <string name="setup_artwork_choose_sub">图片库存放在一个文件夹中</string>
+    <string name="setup_artwork_import_title">现在导入图片？</string>
+    <string name="setup_artwork_import_sub_one">将 %1$s 从该文件夹的 import/ 复制到图片库</string>
+    <plurals name="setup_artwork_import_sub_many">
+        <item quantity="other">将 %1$d 个来源文件夹从该文件夹的 import/ 复制到图片库</item>
+    </plurals>
+    <string name="setup_artwork_import_row">图片导入</string>
+    <string name="setup_artwork_import_none_sub">暂无可导入的内容。请将某个启动器的媒体文件夹放到 import/ 下</string>
+
+    <!-- Online services page -->
+    <string name="setup_services_intro">所有帐号均为可选且免费。SteamGridDB、TheGamesDB、IGDB 和 ScreenScraper 可为你的库获取游戏图片和元数据。</string>
+    <string name="setup_field_api_key">API 密钥</string>
+    <string name="setup_field_api_key_saved">API 密钥（已保存）</string>
+    <string name="setup_field_web_api_key">Web API 密钥</string>
+    <string name="setup_field_web_api_key_saved">Web API 密钥（已保存）</string>
+    <string name="setup_field_client_id">客户端 ID</string>
+    <string name="setup_field_client_id_saved">客户端 ID（已保存）</string>
+    <string name="setup_field_client_secret">客户端密钥</string>
+    <string name="setup_field_client_secret_saved">客户端密钥（已保存）</string>
+    <string name="setup_field_username">用户名</string>
+    <string name="setup_field_username_saved">用户名（已保存）</string>
+    <string name="setup_field_password">密码</string>
+    <string name="setup_field_password_saved">密码（已保存）</string>
+    <string name="setup_field_steam_id">SteamID64 或自定义名称</string>
+    <string name="setup_field_steam_id_saved">SteamID64 或自定义名称（已保存）</string>
+    <string name="setup_placeholder_tap_to_replace">选择即可替换</string>
+    <string name="setup_placeholder_secret_saved">••••••••（选择即可替换）</string>
+    <string name="setup_placeholder_sgdb_key">粘贴你的 SteamGridDB 密钥</string>
+    <string name="setup_placeholder_tgdb_key">粘贴你的 TheGamesDB 密钥</string>
+    <string name="setup_placeholder_twitch_client_id">Twitch 客户端 ID</string>
+    <string name="setup_placeholder_twitch_client_secret">Twitch 客户端密钥</string>
+    <string name="setup_placeholder_ss_username">ScreenScraper 用户名</string>
+    <string name="setup_placeholder_ss_password">ScreenScraper 密码</string>
+    <string name="setup_placeholder_ra_username">你的 RA 用户名</string>
+    <string name="setup_placeholder_ra_key">粘贴你的 RA Web API 密钥</string>
+    <string name="setup_placeholder_steam_id">7656119… 或你的自定义网址名称</string>
+    <string name="setup_placeholder_steam_key">粘贴你的 Steam Web API 密钥</string>
+    <string name="setup_connect_sgdb">连接 SteamGridDB</string>
+    <string name="setup_connect_tgdb">连接 TheGamesDB</string>
+    <string name="setup_connect_igdb">连接 IGDB</string>
+    <string name="setup_connect_ss">连接 ScreenScraper</string>
+    <string name="setup_connect_ra">连接 RetroAchievements</string>
+    <string name="setup_connect_steam">连接 Steam</string>
+    <string name="setup_test_credentials">测试凭据</string>
+    <string name="setup_test_account">测试帐号</string>
+    <string name="setup_connected_as">已连接为</string>
+
+    <!-- Achievement services page -->
+    <string name="setup_achievements_intro">可选且免费。RetroAchievements 和 Steam 会以 Shiba Coins 的形式追踪成就。</string>
+
+    <!-- Controller page -->
+    <string name="setup_controller_type">控制器类型</string>
+    <string name="setup_controller_type_sub">更改所有提示中的按键图标</string>
+    <string name="setup_controller_ab_swap">互换确认和返回</string>
+    <string name="setup_controller_xy_swap">互换选项和排序</string>
+    <string name="setup_controller_xy_swap_sub">仅限启动器菜单，模拟器的操作不受影响</string>
+    <string name="setup_on">开</string>
+    <string name="setup_off">关</string>
+    <string name="setup_controller_summary">%1$s · %2$s 确认</string>
+    <string name="setup_button_circle">圆圈</string>
+    <string name="setup_button_cross">叉</string>
+    <string name="setup_confirm_swap_off">关：%1$s 确认，%2$s 返回</string>
+    <string name="setup_confirm_swap_on">开：%1$s 确认，%2$s 返回</string>
+
+    <!-- Local achievements page -->
+    <string name="setup_local_vita_header">PS Vita · Vita3K</string>
+    <string name="setup_local_vita_set">设置 Vita3K 数据文件夹</string>
+    <string name="setup_local_vita_set_sub">授权 ux0 文件夹（或包含它的文件夹）</string>
+    <string name="setup_local_vita_folder_sub">Vita3K 数据文件夹。使用 ✎ 可选择其他文件夹</string>
+    <string name="setup_local_ps3_header">PS3 · ARMSX3</string>
+    <string name="setup_local_ps3_set">设置 ARMSX3 数据文件夹</string>
+    <string name="setup_local_ps3_set_sub">授权 PS3/config/dev_hdd0，或其上层、下层的任意文件夹</string>
+    <string name="setup_local_ps3_folder_sub">ARMSX3 数据文件夹。使用 ✎ 可选择其他文件夹</string>
+    <string name="setup_local_x360_header">Xbox 360 · X360 Mobile</string>
+    <string name="setup_local_x360_set">设置 X360 Mobile 数据文件夹</string>
+    <string name="setup_local_x360_set_sub">在文件夹选择器的侧边菜单中选择 X360 Mobile，然后允许访问</string>
+    <string name="setup_local_x360_folder_sub">X360 Mobile 数据文件夹。使用 ✎ 可选择其他文件夹</string>
+    <string name="setup_local_xendroid_header">Xbox 360 · XenDroid</string>
+    <string name="setup_local_xendroid_set">设置 XenDroid 数据文件夹</string>
+    <string name="setup_local_xendroid_set_sub">授权 Android/data/xendroid.compose，或其上层、下层的任意文件夹</string>
+    <string name="setup_local_xendroid_folder_sub">XenDroid 数据文件夹。使用 ✎ 可选择其他文件夹</string>
+
+    <!-- RetroArch page -->
+    <string name="setup_retroarch_cores_folder">核心文件夹</string>
+    <plurals name="setup_retroarch_cores_detected">
+        <item quantity="other">检测到 %1$d 个核心</item>
+    </plurals>
+    <string name="setup_retroarch_linked">已关联</string>
+    <string name="setup_retroarch_relink">重新关联文件夹</string>
+    <string name="setup_retroarch_relink_sub">重新选择 RetroArch 的文件夹</string>
+    <string name="setup_retroarch_recheck">重新检查核心</string>
+    <string name="setup_retroarch_recheck_sub">在安装新核心后使用</string>
+    <string name="setup_retroarch_unlink">取消关联 RetroArch</string>
+    <string name="setup_retroarch_unlink_sub">恢复为提供所有精选核心</string>
+    <string name="setup_retroarch_intro">已安装 RetroArch。关联其文件夹后，启动游戏时只会提供你实际拥有的核心；否则将显示所有精选核心（未经验证）。</string>
+    <string name="setup_retroarch_link">关联 RetroArch 文件夹</string>
+    <string name="setup_retroarch_link_sub">选择 com.retroarch 文档树</string>
+
+    <!-- Emulators page -->
+    <string name="setup_emulators_empty">还没有包含游戏的主机。ROM 文件夹扫描完成后，每个主机都会与其将启动的模拟器一起显示在这里。可随时在“设置 ▸ 模拟器”中更改。</string>
+    <string name="setup_emulators_none">无</string>
+
+    <!-- Windows games page -->
+    <string name="setup_windows_intro">请选择每个游戏各占一个子文件夹的那个文件夹。PFP 会扫描其中的 Windows 游戏，不会更改其中的任何内容。</string>
+    <string name="setup_windows_detected">已检测到</string>
+    <string name="setup_windows_set">设置 Windows 游戏文件夹</string>
+    <string name="setup_windows_change">更改 Windows 游戏文件夹</string>
+    <string name="setup_windows_set_sub">授权你的游戏所安装的文件夹</string>
+
+    <!-- Hints and touch page -->
+    <string name="setup_hints_enabled">按键提示</string>
+    <string name="setup_hints_enabled_sub">XMB、设置和媒体界面上的闲置提示标签</string>
+    <string name="setup_hints_delay">提示延迟</string>
+    <string name="setup_hints_delay_sub">停顿多久后显示提示（1–5 秒）</string>
+    <plurals name="setup_hints_delay_seconds">
+        <item quantity="other">%1$d 秒</item>
+    </plurals>
+    <string name="setup_hints_delay_fraction">%1$s 秒</string>
+    <string name="setup_hints_touch">触控按钮</string>
+    <string name="setup_hints_touch_sub">屏幕上的应用抽屉按钮。“自动”会在你触摸屏幕后显示</string>
+    <string name="setup_touch_auto">自动</string>
+    <string name="setup_touch_always_show">始终显示</string>
+    <string name="setup_touch_always_hide">始终隐藏</string>
+    <string name="setup_hints_summary_on">开 · %1$s</string>
+
+    <!-- Home app page -->
+    <string name="setup_home_intro">Android 会请你选择并确认主屏幕应用。你可以随时在 Android 的默认应用设置中切换回来。</string>
+    <string name="setup_home_current">当前主屏幕应用</string>
+    <string name="setup_home_set">设为主屏幕应用</string>
+    <string name="setup_home_set_sub">打开 Android 的主屏幕应用选择器</string>
+    <string name="setup_home_is_pfp">Play Field Portal</string>
+    <string name="setup_home_not_pfp">不是 Play Field Portal</string>
+
+    <!-- Finish page -->
+    <string name="setup_finish_nothing">尚未进行任何配置。所有文件夹和服务都可以随时在设置中添加。</string>
+    <string name="setup_finish_summary">摘要</string>
+    <string name="setup_summary_controller">控制器</string>
+    <string name="setup_summary_rom">ROM 库</string>
+    <string name="setup_summary_music">音乐</string>
+    <string name="setup_summary_video">视频</string>
+    <string name="setup_summary_photo">照片</string>
+    <string name="setup_summary_artwork">图片库</string>
+    <string name="setup_summary_vita">Vita 数据文件夹</string>
+    <string name="setup_summary_ps3">PS3 数据文件夹</string>
+    <string name="setup_summary_x360">X360 Mobile 数据文件夹</string>
+    <string name="setup_summary_xendroid">XenDroid 数据文件夹</string>
+    <string name="setup_summary_windows">Windows 游戏</string>
+    <string name="setup_summary_hints">按键提示</string>
+    <string name="setup_summary_home">主屏幕应用</string>
+    <string name="setup_not_set">未设置</string>
+    <string name="setup_connected">已连接</string>
+    <string name="setup_retroarch_not_linked">未关联</string>
+    <plurals name="setup_retroarch_cores_count">
+        <item quantity="other">%1$d 个核心</item>
+    </plurals>
+    <string name="setup_roots_more">%1$s 等另外 %2$d 个</string>
+    <string name="setup_finish_xmb_header">XMB 布局</string>
+    <string name="setup_finish_autofit">自动适配 XMB 布局（PSP 比例），可随时在设置中更改</string>
+    <string name="setup_finish_open_lm">打开库管理器</string>
+    <string name="setup_finish_open_lm_sub">添加主机并扫描你刚设置的 ROM 文件夹</string>
+    <string name="setup_finish_go_library">前往你的库</string>
+    <string name="setup_finish_go_library_sub">直接跳转到所有游戏</string>
+    <string name="setup_finish_done">完成</string>
+    <string name="setup_finish_done_sub">前往启动器</string>
+
+    <!-- Messages the wizard shows or sends to the notification tray -->
+    <string name="setup_status_testing">正在测试…</string>
+    <plurals name="setup_msg_rom_folders_created">
+        <item quantity="other">已创建 %1$d 个主机文件夹。请将游戏复制到对应的文件夹中。</item>
+    </plurals>
+    <plurals name="setup_msg_rom_folders_created_existing">
+        <item quantity="other">已创建 %1$d 个主机文件夹（%2$d 个已存在）。请将游戏复制到对应的文件夹中。</item>
+    </plurals>
+    <string name="setup_msg_artwork_failed">无法在该文件夹中建立图片库。请选择一个可写入的文件夹。</string>
+    <string name="setup_msg_artwork_reconnected">已重新连接现有的图片库。</string>
+    <string name="setup_msg_artwork_created">已创建图片库。</string>
+    <plurals name="setup_msg_artwork_games_linked">
+        <item quantity="other">已根据文件夹中现有的文件关联 %1$d 个游戏。</item>
+    </plurals>
+    <string name="setup_msg_artwork_import_hint">将其他启动器的媒体放到其 import/ 文件夹下，即可汇集到这里。</string>
+    <string name="setup_msg_import_none_yet">暂无可导入的内容。请将文件放到图片文件夹的 import/ 目录下。</string>
+    <string name="setup_msg_import_unreadable">无法读取该导入来源。</string>
+    <string name="setup_msg_import_empty">无需导入：所有内容均已存在。</string>
+    <string name="setup_msg_import_started">正在导入“%1$s”。进度显示在通知中，详情可在“设置 ▸ 图片导入”中查看。</string>
+    <string name="setup_msg_retroarch_linked">已关联 RetroArch。现在“模拟器”中会提供已安装的核心。</string>
+    <string name="setup_msg_retroarch_rechecked">已重新检查 RetroArch 核心。</string>
+    <string name="setup_msg_retroarch_unlinked">已移除 RetroArch 关联。在重新关联之前，不会提供任何 RetroArch 核心。</string>
+    <string name="setup_msg_vita_set">已设置 Vita3K 数据文件夹。可在库管理器中通过 PS Vita 记忆卡扫描已安装的游戏。</string>
+    <string name="setup_msg_vita_released">已释放 Vita3K 数据文件夹，磁盘上的文件未受影响。</string>
+    <string name="setup_msg_ps3_set">已设置 PS3 数据文件夹。请在“设置 ▸ 成就 ▸ 更新成就”中运行自动匹配，以关联 PS3 奖杯。</string>
+    <string name="setup_msg_ps3_released">已释放 PS3 数据文件夹，磁盘上的文件未受影响。</string>
+    <string name="setup_msg_x360_set">已设置 %1$s 数据文件夹。请在“设置 ▸ 成就 ▸ 更新成就”中运行自动匹配，以关联 Xbox 360 成就。</string>
+    <string name="setup_msg_x360_released">已释放 %1$s 数据文件夹，磁盘上的文件未受影响。</string>
+    <string name="setup_msg_sgdb_connected">已连接 SteamGridDB</string>
+    <string name="setup_msg_tgdb_connected">已连接 TheGamesDB</string>
+    <string name="setup_msg_igdb_connected">已连接 IGDB</string>
+    <string name="setup_msg_ss_connected">已连接 ScreenScraper</string>
+    <string name="setup_msg_ra_connected">已连接 RetroAchievements</string>
+
+    <!-- ROM root scan report -->
+    <string name="setup_rom_scan_no_root">请先在“设置 ▸ 库 ▸ 库管理器”中添加 ROM 文件夹。</string>
+    <string name="setup_rom_scan_none">已扫描 %2$s中的 %1$s，未找到新的 ROM。请将游戏复制到对应的系统文件夹中后重试。</string>
+    <string name="setup_rom_scan_loaded">已从 %3$s中载入 %1$s，共 %2$s。</string>
+    <string name="setup_rom_scan_systems_new">%1$s（%2$s）</string>
+    <plurals name="setup_rom_scan_folders">
+        <item quantity="other">%1$d 个文件夹</item>
+    </plurals>
+    <plurals name="setup_rom_scan_systems">
+        <item quantity="other">%1$d 个系统</item>
+    </plurals>
+    <plurals name="setup_rom_scan_new_consoles">
+        <item quantity="other">%1$d 个新主机</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roms">
+        <item quantity="other">%1$d 个 ROM</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roots">
+        <item quantity="other">%1$d 个 ROM 文件夹</item>
+    </plurals>
+    <plurals name="setup_rom_scan_skipped">
+        <item quantity="other">已跳过 %1$d 个文件夹（无法读取库）。</item>
+    </plurals>
+
+    <!-- Media library scans -->
+    <string name="setup_media_add_root_first">请先添加根文件夹。</string>
+    <string name="setup_media_not_ready">此文件夹所在的存储设备尚未就绪。请稍后重试。</string>
+    <string name="setup_media_scan_failed_title">%1$s 扫描失败</string>
+    <string name="setup_media_scan_finished_title">%1$s 扫描完成</string>
+    <string name="setup_media_scan_stopped_title">%1$s 扫描已停止</string>
+    <string name="setup_media_scanning_title">正在扫描 %1$s</string>
+    <string name="setup_media_stop_note">下次会重新扫描该文件夹。</string>
+    <string name="setup_media_stopped">在完成前已停止</string>
+    <plurals name="setup_media_tracks">
+        <item quantity="other">%1$d 首曲目</item>
+    </plurals>
+    <plurals name="setup_media_photos">
+        <item quantity="other">%1$d 张照片</item>
+    </plurals>
+    <plurals name="setup_media_videos">
+        <item quantity="other">%1$d 个视频</item>
+    </plurals>
+    <plurals name="setup_media_roots">
+        <item quantity="other">%1$d 个根文件夹</item>
+    </plurals>
+    <string name="setup_media_found">在 %2$s中找到 %1$s。</string>
+</resources>

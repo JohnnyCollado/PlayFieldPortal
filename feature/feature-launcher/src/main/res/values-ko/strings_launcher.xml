@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="launch_err_custom_command">사용자 지정 명령 프로필은 더 이상 지원되지 않습니다. 이 에뮬레이터의 실행 방식을 \"앱으로 ROM 열기\" 또는 \"앱 화면 열기\"로 전환하세요.</string>
+    <string name="launch_err_shortcut_unsupported">이 화면에서는 바로 가기 실행을 지원하지 않습니다</string>
+    <string name="launch_err_no_package">%1$s에 기록된 Android 패키지가 없습니다</string>
+    <string name="launch_err_app_not_launchable">Android 앱이 설치되어 있지 않거나 실행할 수 없습니다: %1$s</string>
+    <string name="launch_err_emulator_not_installed">에뮬레이터가 설치되어 있지 않습니다: %1$s (%2$s)</string>
+    <string name="launch_err_wrong_build">%1$s (%2$s)은(는) 예상한 빌드가 아닙니다. 서명 인증서가 일치하지 않습니다. 공식 배포처에서 에뮬레이터를 다시 설치하세요.</string>
+    <string name="launch_err_no_activity_for_path">%1$s에 기록된 실행 액티비티가 없어 파일 경로를 전달할 수 없습니다. 지식 항목을 다시 가져오거나 에뮬레이터를 다시 감지하세요.</string>
+    <string name="launch_err_activity_required">이 실행 방식에는 앱 화면 이름이 필요합니다 - 프로필: %1$s</string>
+    <string name="launch_err_activity_gone">%1$s에서 더 이상 실행 액티비티(%2$s)를 제공하지 않습니다. 에뮬레이터를 업데이트하거나 이 플랫폼에 다른 에뮬레이터를 선택하세요.</string>
+    <string name="launch_err_no_launch_id">%1$s에 기록된 실행 ID가 없습니다. 라이브러리를 다시 스캔하세요.</string>
+    <string name="launch_err_rom_link_invalid">이 게임의 ROM 연결이 잘못되었습니다. 라이브러리를 다시 스캔하세요.</string>
+    <string name="launch_err_lost_access">Play Field Portal이 이 게임 파일에 접근할 수 없게 되었습니다. 저장소를 다시 연결하고 라이브러리를 다시 스캔하세요.</string>
+    <string name="launch_err_rom_path_required">%1$s을(를) 시작하려면 ROM 경로가 필요합니다</string>
+    <string name="launch_err_rom_not_found">ROM 파일을 찾을 수 없습니다: %1$s</string>
+    <string name="launch_err_no_core">\'%2$s\' 프로필에 \'%1$s\' 플랫폼용 RetroArch 코어가 설정되어 있지 않습니다. RetroArch → 코어 다운로더에서 이 시스템용 코어를 설치하세요.</string>
+    <string name="launch_err_cannot_open_rom_type">%1$s에서 이 ROM 형식을 열 수 없습니다. 에뮬레이터를 다시 설치하거나 Android 설정에서 앱 권한을 확인하세요.</string>
+    <string name="launch_err_no_file_path">%1$s은(는) 이 기기에 파일 경로가 없어 %2$s에 시작할 게임을 알려줄 수 없습니다.</string>
+    <string name="launch_err_not_in_rom_folder">%1$s은(는) 설정된 ROM 폴더 안에 있지 않아 %2$s에 전달할 수 없습니다. 설정에서 이 메모리 카드에 지정된 폴더를 확인하세요.</string>
+    <string name="launch_err_configured_missing">%1$s 에뮬레이터가 설치되어 있지 않거나 사용할 수 없습니다: %2$s</string>
+    <string name="launch_err_core_not_installed">%2$s 설정은 %1$s이지만 해당 코어가 RetroArch에 설치되어 있지 않습니다. 코어를 설치하거나 다른 에뮬레이터를 선택하세요.</string>
+    <string name="launch_err_no_longer_available">%2$s 설정은 %1$s이지만 더 이상 사용할 수 없습니다. 다른 에뮬레이터를 선택하세요.</string>
+    <string name="launch_err_not_configured_for_platform">%1$s이(가) %2$s용으로 설정되어 있지 않습니다</string>
+    <string name="launch_err_no_emulator_for_platform">%1$s용으로 설정된 에뮬레이터가 없습니다. 이 게임의 에뮬레이터를 선택하거나 플랫폼 기본값을 설정하세요.</string>
+    <string name="launch_source_per_game">게임별 지정</string>
+    <string name="launch_source_per_game_lower">게임별 지정</string>
+    <string name="launch_source_memory_card">메모리 카드 기본값</string>
+    <string name="launch_source_memory_card_lower">메모리 카드 기본값</string>
+    <string name="launch_source_platform">플랫폼 기본값</string>
+    <string name="launch_source_platform_lower">플랫폼 기본값</string>
+    <string name="launch_source_recommended">권장</string>
+    <string name="launch_source_recommended_lower">권장</string>
+    <string name="launch_phrase_per_game">게임별 지정</string>
+    <string name="launch_phrase_memory_card">메모리 카드</string>
+    <string name="launch_phrase_platform">플랫폼 기본값</string>
+    <!-- Launch hand-off failures -->
+    <string name="launch_err_emulator_not_found">에뮬레이터를 찾을 수 없습니다. 설치되어 있나요?</string>
+    <string name="launch_err_permission_denied">에뮬레이터 실행 권한이 거부되었습니다</string>
+    <string name="launch_err_open_emulator">에뮬레이터를 열 수 없습니다: %1$s</string>
+    <string name="launch_never_foreground">실행 후 에뮬레이터가 화면에 나타나지 않았습니다.</string>
+    <string name="launch_never_appeared">에뮬레이터가 나타나지 않았습니다. 설치되어 있고 최신 버전인지 확인한 후 다시 시작해 보세요.</string>
+    <plurals name="launch_history_failed">
+        <item quantity="other">이 게임의 최근 시작 %2$d회 중 %1$d회가 실패했습니다.</item>
+    </plurals>
+    <!-- Launch failure notification -->
+    <string name="launch_rec_title">%1$s을(를) 시작할 수 없습니다</string>
+    <string name="launch_rec_could_not_start">에뮬레이터를 시작할 수 없습니다</string>
+    <string name="launch_rec_never_foreground">에뮬레이터가 화면에 나타나지 않았습니다</string>
+    <!-- Labels of the facts listed in the notification detail -->
+    <string name="launch_fact_emulator">에뮬레이터</string>
+    <string name="launch_fact_core">코어</string>
+    <string name="launch_fact_platform">플랫폼</string>
+    <string name="launch_fact_recent">최근 시작</string>
+    <string name="launch_fact_recent_value">최근 %2$d회 중 %1$d회 실패</string>
+    <string name="launch_shortcut_request_title">바로 가기 요청: %1$s (%2$s 열기)</string>
+    <string name="launch_shortcut_request_message">이 바로 가기를 방금 직접 만든 경우에만 추가하세요.</string>
+    <string name="launch_shortcut_added_title">바로 가기 추가됨: %1$s</string>
+    <string name="launch_shortcut_ignored_title">바로 가기 무시됨: %1$s</string>
+    <string name="launch_shortcut_from">%1$s에서 보냄</string>
+    <string name="launch_windows_added_title">\"%1$s\"이(가) Windows 게임에 추가되었습니다</string>
+    <string name="launch_windows_added_message">Windows 라이브러리 설정을 마치면 폴더를 스캔합니다</string>
+    <!-- First-run setup prompts -->
+    <string name="launch_setup_add_rom_folder">ROM 폴더를 추가하여 라이브러리를 시작하세요</string>
+    <string name="launch_setup_add_console_card">스캔할 콘솔 메모리 카드를 추가하세요</string>
+    <string name="launch_setup_install_emulator">게임을 플레이하려면 에뮬레이터를 설치하세요</string>
+    <!-- Emulator detection notes for an app being added -->
+    <string name="launch_inspect_known">%1$s의 기본 제공 프로필로 자동 입력했습니다. 플랫폼을 확인하고 저장하세요.</string>
+    <string name="launch_inspect_best_guess">이 앱이 ROM 파일을 여는 방식을 바탕으로 추정했습니다. 플랫폼을 설정한 후 저장하기 전에 ROM으로 테스트하세요.</string>
+    <string name="launch_inspect_minimal">이 앱이 ROM을 받는 방식을 감지할 수 없습니다. 액티비티 / 인텐트 설정을 직접 입력한 후 ROM으로 테스트하세요.</string>
+    <!-- Emulator knowledge file updates -->
+    <string name="launch_kb_too_many_files">지식 파일은 최대 %1$d개까지 가져올 수 있습니다. 먼저 하나를 삭제하세요</string>
+    <string name="launch_kb_installed">업데이트됨</string>
+    <string name="launch_kb_not_configured">이 빌드에는 업데이트가 설정되어 있지 않습니다</string>
+    <string name="launch_kb_offline">업데이트 서버에 연결할 수 없습니다</string>
+    <string name="launch_kb_too_large">업데이트 파일이 너무 큽니다</string>
+    <string name="launch_kb_signature_invalid">업데이트의 서명이 유효하지 않습니다</string>
+    <string name="launch_kb_needs_app_update">이 업데이트를 적용하려면 앱을 최신 버전으로 업데이트해야 합니다</string>
+    <string name="launch_kb_older">이미 설치된 것보다 오래된 업데이트입니다</string>
+    <string name="launch_kb_invalid_content">업데이트 파일의 내용이 올바르지 않습니다</string>
+    <string name="launch_kb_storage_failed">업데이트를 저장할 수 없습니다</string>
+    <string name="launch_kb_skipped">확인할 필요가 없었습니다</string>
+    <string name="launch_unknown_gamehub_or_bannerhub">GameHub 또는 BannerHub일 수 있음</string>
+    <string name="launch_unknown_gamehublite_or_bannerhub">GameHub Lite 또는 BannerHub일 수 있음</string>
+    <string name="launch_unknown_not_in_list">PFP 목록에 없음</string>
+    <string name="launch_choice_not_a_launcher">런처 아님</string>
+    <string name="launch_id_prompt_gamehub">게임 ID — 게임 페이지에서 로컬 게임 ID 옆의 복사를 탭하거나 ⋮ → Banner Tools → 게임 ID 표시를 선택하세요</string>
+    <string name="launch_id_prompt_gamenative">설치된 게임의 Steam 앱 ID(또는 스토어 앱 ID)</string>
+</resources>

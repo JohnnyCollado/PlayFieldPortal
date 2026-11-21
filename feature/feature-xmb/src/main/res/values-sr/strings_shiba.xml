@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Slice E2: Shiba Coins, Shiba library, Player Status, Video Detail and the manual viewer (feature-xmb ui/detail). -->
+
+    <!-- ===== Shared Shiba page text ===== -->
+
+    <!-- Controller hint labels in a page's footer. Each names the action the button performs. -->
+    <string name="shiba_prompt_select">Изабери</string>
+    <string name="shiba_prompt_close">Затвори</string>
+    <string name="shiba_prompt_done">Готово</string>
+    <string name="shiba_prompt_back">Назад</string>
+    <string name="shiba_prompt_options">Опције</string>
+    <string name="shiba_prompt_search">Претражи</string>
+    <string name="shiba_prompt_type">Унеси</string>
+    <string name="shiba_prompt_change_view">Промени приказ</string>
+    <string name="shiba_prompt_switch_source">Промени извор</string>
+    <string name="shiba_prompt_view_game">Прикажи игру</string>
+    <string name="shiba_prompt_view_achievements">Прикажи достигнућа</string>
+    <string name="shiba_prompt_attempt_match">Покушај повезивање</string>
+    <string name="shiba_prompt_search_online">Претражи на мрежи</string>
+    <string name="shiba_prompt_auto_match">Аутоматско повезивање</string>
+    <string name="shiba_prompt_pick_game_folder">Изабери фасциклу игре</string>
+    <string name="shiba_prompt_reveal">Откриј</string>
+    <string name="shiba_prompt_hide">Сакриј</string>
+    <string name="shiba_prompt_navigate">Навигација</string>
+
+    <!-- Buttons in the Auto-Match panels. -->
+    <string name="shiba_action_yes">Да</string>
+    <string name="shiba_action_no">Не</string>
+    <string name="shiba_action_cancel">Откажи</string>
+    <string name="shiba_action_close">Затвори</string>
+    <!-- Button that links a game to the Steam app id the user typed. -->
+    <string name="shiba_action_link">Повежи</string>
+
+    <!-- Title of the Options context menu on the Shiba pages and Video Detail. -->
+    <string name="shiba_options_title">Опције</string>
+    <!-- Options rows that open a list; the row's current choice is drawn beside it. -->
+    <string name="shiba_options_sort">Сортирање</string>
+    <string name="shiba_options_provider">Добављач</string>
+    <string name="shiba_options_update_installed">Ажурирај инсталирана достигнућа</string>
+    <string name="shiba_options_updating">Ажурирање…</string>
+
+    <string name="shiba_sort_newest">Најновије</string>
+    <string name="shiba_sort_rarest">Најређе</string>
+    <string name="shiba_sort_tier">Ранг</string>
+    <string name="shiba_sort_earned">Освојено</string>
+    <!-- Provider filter choice meaning every achievement provider. -->
+    <string name="shiba_filter_all">Све</string>
+
+    <!-- Coin tier names. -->
+    <string name="shiba_tier_bronze">Бронза</string>
+    <string name="shiba_tier_silver">Сребро</string>
+    <string name="shiba_tier_gold">Злато</string>
+    <string name="shiba_tier_platinum">Платина</string>
+
+    <!-- Header statistics labels; shown in capitals. -->
+    <string name="shiba_stat_shiba_level">SHIBA НИВО</string>
+    <string name="shiba_stat_next_level">СЛЕДЕЋИ НИВО</string>
+    <string name="shiba_stat_total_coins">УКУПНО НОВЧИЋА</string>
+    <string name="shiba_stat_total">УКУПНО</string>
+
+    <!-- %1$s is a platform name such as Super Nintendo; the game is no longer on this device. -->
+    <string name="shiba_platform_not_installed">%1$s · Није инсталирано</string>
+
+    <!-- Relative times. %1$d is a number of minutes or hours. -->
+    <string name="shiba_time_just_now">Управо сада</string>
+    <string name="shiba_time_minutes_ago">Пре %1$d мин</string>
+    <string name="shiba_time_hours_ago">Пре %1$d ч</string>
+    <string name="shiba_time_yesterday">Јуче</string>
+    <plurals name="shiba_time_days_ago">
+        <item quantity="one">Пре %1$d дан</item>
+        <item quantity="few">Пре %1$d дана</item>
+        <item quantity="other">Пре %1$d дана</item>
+    </plurals>
+
+    <!-- Placeholder in the Search field of the achievements library. -->
+    <string name="shiba_search_games_placeholder">Претражи игре…</string>
+
+    <!-- ===== Player Status ===== -->
+
+    <string name="shiba_player_status_title">Статус играча</string>
+    <string name="shiba_player_status_no_rarest">Још нема најређег достигнућа.</string>
+    <string name="shiba_player_status_rarest_unlocked">НАЈРЕЂЕ ОТКЉУЧАНО</string>
+    <!-- Caption under a percentage, e.g. "2.1%" of players have this achievement. -->
+    <string name="shiba_player_status_rarity_caption">играча има ово</string>
+    <!-- %1$s is a game title, %2$s how long ago a coin was earned (e.g. "5 min ago"). -->
+    <string name="shiba_player_status_game_and_time">%1$s · %2$s</string>
+    <!-- Progress line while updating achievements: %1$d games checked so far out of %2$d. -->
+    <plurals name="shiba_status_checking_games">
+        <item quantity="one">Провера %1$d од %2$d игре…</item>
+        <item quantity="few">Провера %1$d од %2$d игре…</item>
+        <item quantity="other">Провера %1$d од %2$d игара…</item>
+    </plurals>
+    <string name="shiba_status_updating_achievements">Ажурирање инсталираних достигнућа…</string>
+
+    <!-- ===== Achievements library (Tracked / Untracked Games) ===== -->
+
+    <string name="shiba_library_view_tracked">Праћене игре</string>
+    <string name="shiba_library_view_untracked">Непраћене игре</string>
+    <!-- Page title; %1$s is "Tracked Games" or "Untracked Games". -->
+    <string name="shiba_library_breadcrumb">Достигнућа / %1$s</string>
+    <plurals name="shiba_library_game_count">
+        <item quantity="one">%1$d игра</item>
+        <item quantity="few">%1$d игре</item>
+        <item quantity="other">%1$d игара</item>
+    </plurals>
+    <!-- %1$s is what the user typed in Search. -->
+    <string name="shiba_library_empty_no_match">Ниједна игра не одговара упиту „%1$s“.</string>
+    <string name="shiba_library_empty_tracked">Још нема праћених игара.</string>
+    <string name="shiba_library_empty_untracked">Свака одговарајућа игра се прати.</string>
+    <!-- Sort choices: field and direction in one label. -->
+    <string name="shiba_library_sort_title_asc">Наслов А–Ш</string>
+    <string name="shiba_library_sort_title_desc">Наслов Ш–А</string>
+    <string name="shiba_library_sort_progress_asc">Напредак, најмањи прво</string>
+    <string name="shiba_library_sort_progress_desc">Напредак, највећи прво</string>
+    <string name="shiba_library_sort_platform_asc">Платформа А–Ш</string>
+    <string name="shiba_library_sort_platform_desc">Платформа Ш–А</string>
+    <!-- The pinned row that leaves the device to look a game up on a provider. -->
+    <string name="shiba_library_search_online">Претражи на мрежи</string>
+    <string name="shiba_library_search_online_subtitle">Потражите игру која није на овом уређају</string>
+    <!-- Shown on a matched game whose achievements have not been downloaded yet. -->
+    <string name="shiba_library_awaiting_sync">Чека синхронизацију</string>
+
+    <!-- ===== A game's Shiba Coins page ===== -->
+
+    <string name="shiba_coins_search_placeholder">Претражи новчиће…</string>
+    <!-- Header statistics labels; shown in capitals. -->
+    <string name="shiba_coins_stat_completion">ЗАВРШЕНОСТ</string>
+    <string name="shiba_coins_stat_earned">ОСВОЈЕНО</string>
+    <!-- View tabs beside Search; %1$d is how many coins that view holds. -->
+    <string name="shiba_coins_tab_all">Све %1$d</string>
+    <string name="shiba_coins_tab_earned">Освојено %1$d</string>
+    <string name="shiba_coins_tab_locked">Закључано %1$d</string>
+    <!-- Header line: %1$s is how long ago the coins were last synced (e.g. "5 min ago"). -->
+    <string name="shiba_coins_synced">Синхронизовано %1$s</string>
+    <string name="shiba_coins_not_linked">Није повезано</string>
+    <string name="shiba_coins_never_synced">Никад синхронизовано</string>
+    <string name="shiba_coins_owned_on_steam">У власништву на Steam-у</string>
+    <string name="shiba_coins_tracked_locally">Прати се локално</string>
+
+    <!-- Empty-list messages. %1$s is what the user typed in Search. -->
+    <string name="shiba_coins_empty_no_match">Ниједан новчић не одговара упиту „%1$s“.</string>
+    <string name="shiba_coins_empty_none_earned">Још нема освојених новчића.</string>
+    <string name="shiba_coins_empty_all_earned">Сви новчићи су освојени.</string>
+    <string name="shiba_coins_empty_default">Нема новчића за приказ.</string>
+
+    <!-- Options menu rows. -->
+    <string name="shiba_coins_options_update">Ажурирај достигнућа</string>
+    <string name="shiba_coins_options_change_match">Промени повезивање</string>
+    <string name="shiba_coins_options_unlink">Прекини везу игре</string>
+
+    <!-- Unlink confirmation. %1$s is the game title. -->
+    <string name="shiba_coins_unlink_title">Прекинути везу игре?</string>
+    <string name="shiba_coins_unlink_message">%1$s више није повезана, па њени новчићи престају да се приказују. Већ кеширани новчићи остају сачувани и враћају се када је поново повежете.</string>
+    <!-- Button that confirms unlinking the game. -->
+    <string name="shiba_coins_unlink_confirm">Прекини везу</string>
+
+    <!-- Coin rows. A hidden coin hides its real title until the user reveals it. -->
+    <string name="shiba_coin_hidden_title">Скривени новчић</string>
+    <string name="shiba_coin_hidden_hint">Наставите да играте — или притисните „Потврди“ да откријете</string>
+    <string name="shiba_coin_description_secret">Steam чува опис овог новчића у тајности</string>
+    <!-- Caption under a rarity percentage: the share of players who have this coin. -->
+    <string name="shiba_coin_metric_of_players">играча</string>
+    <string name="shiba_coin_status_earned">Освојено</string>
+    <string name="shiba_coin_status_locked">Закључано</string>
+    <string name="shiba_platinum_crown_title">Платинаста круна</string>
+    <string name="shiba_platinum_crown_description">Освојите све остале новчиће у игри</string>
+    <!-- Caption under "3 / 10": coins earned out of all coins. -->
+    <string name="shiba_platinum_crown_metric">освојених новчића</string>
+
+    <!-- Auto-Match panel for a game that is not linked yet. -->
+    <string name="shiba_link_not_linked_yet_game">Ова игра још није повезана</string>
+    <string name="shiba_link_not_linked_yet">Још није повезано</string>
+    <string name="shiba_link_steam_body">Аутоматско повезивање пита да ли је ово легитимна Steam копија, па је повезује преко Steam-а или тражи податке Steam емулатора у фасциклама игара.</string>
+    <string name="shiba_link_retro_body">RetroAchievements препознаје игре по хешу ROM-а. Аутоматско повезивање израчунава хеш овог ROM-а и тражи га — повезати се може само проверени дамп регистрован на RetroAchievements.</string>
+    <string name="shiba_link_local_steam_body">Изаберите фасциклу ове игре и PFP ће прочитати њен Steam ID апликације — из steam_appid.txt ако постоји, или повезивањем по наслову ако не постоји. Памти фасциклу, па ништа не мора поново да је тражи.</string>
+    <string name="shiba_link_vita_body">PS Vita трофеји се аутоматски повезују из Vita3K. Подесите фасциклу са подацима за Vita3K у библиотеци и скенирајте да бисте повезали ову игру.</string>
+    <string name="shiba_link_ps3_body">PS3 трофеји се повезују са диска игре — подесите фасциклу са PS3 подацима у библиотеци и покрените аутоматско повезивање.</string>
+    <string name="shiba_link_x360_body">Xbox 360 достигнућа се повезују преко ID-ја наслова игре — подесите фасциклу са подацима за X360 Mobile или XenDroid у библиотеци и покрените аутоматско повезивање.</string>
+    <!-- Buttons of the panel. Auto-Match = link the game automatically. -->
+    <string name="shiba_link_auto_match">Аутоматско повезивање</string>
+    <string name="shiba_link_matching">Повезивање…</string>
+    <string name="shiba_link_pick_game_folder">Изабери фасциклу игре</string>
+
+    <string name="shiba_link_copy_title">Да ли је ово легитимна Steam копија?</string>
+    <string name="shiba_link_copy_body">Легитимна копија се повезује са вашим Steam налогом. Све остало се прати из фасцикле игре, коју ће PFP тражити да изаберете.</string>
+
+    <string name="shiba_link_folder_title">У којој фасцикли је ова игра?</string>
+    <string name="shiba_link_folder_body">Изаберите фасциклу саме игре — ону у којој је њена .exe датотека. PFP из ње чита Steam ID апликације и прати откључавања која емулатор тамо уписује. Ваше Windows игре могу бити било где; PFP памти где је ова, па никада не мора да је тражи.</string>
+
+    <string name="shiba_link_identify_title_steam">Тражење подударања на Steam-у…</string>
+    <string name="shiba_link_identify_title_appid">Утврђивање Steam ID-ја апликације…</string>
+    <string name="shiba_link_identify_body_steam">Тражење наслова ове игре на Steam-у. Изаберите праву да бисте је поново повезали.</string>
+    <string name="shiba_link_identify_body_appid">Читање steam_appid.txt из фасцикле и повезивање наслова игре са Steam-ом ако га још нема.</string>
+
+    <string name="shiba_link_kit_title">Та фасцикла још нема листу достигнућа</string>
+    <string name="shiba_link_kit_body_generic">Емулатору је потребна листа достигнућа пре него што може да бележи откључавања.</string>
+    <!-- %1$s is the name of the game folder, %2$s its Steam app id. "Install &amp; Link" and "Link Only" are the names of the two buttons. -->
+    <string name="shiba_link_kit_body">„%1$s“ има Steam ID апликације %2$s, али емулатор нема листу достигнућа према којој би бележио. „Инсталирај и повежи“ уписује achievements.json, stats.json и configs.user.ini у фасциклу, прави фасциклу saves и преименује steam_api64.dll у steam_api64_o.dll како би се приложени емулатор учитавао преко ње — прво направите резервну копију сачуваних позиција ове игре. „Само повежи“ је прати на 0%% и ништа више не уписује.</string>
+    <string name="shiba_link_kit_installer_off">„Инсталирај и повежи“ захтева укључено „Инсталирај Goldberg и конвертуј игре“ у подешавањима достигнућа.</string>
+    <string name="shiba_link_kit_install">Инсталирај и повежи</string>
+    <string name="shiba_link_kit_link_only">Само повежи</string>
+
+    <string name="shiba_link_no_emu_title">У тој фасцикли нема шта да се прати</string>
+    <string name="shiba_link_no_emu_default">Та фасцикла не садржи податке Steam емулатора.</string>
+    <string name="shiba_link_try_another_folder">Пробај другу фасциклу</string>
+
+    <string name="shiba_link_appid_title">Није пронађено аутоматско подударање</string>
+    <string name="shiba_link_appid_body">Унесите Steam ID апликације игре:</string>
+    <!-- Label of the text field for the Steam app id. -->
+    <string name="shiba_link_appid_field">Steam ID апликације</string>
+
+    <!-- Messages shown on the page after linking or syncing. -->
+    <string name="shiba_coins_folder_unreadable">Читање те фасцикле није успело. Изаберите је поново или поново монтирајте меморију на којој се налази.</string>
+    <!-- %1$s is the folder name, %2$s the Steam app id. -->
+    <string name="shiba_coins_linked_to">Повезано са %1$s (appid %2$s).</string>
+    <string name="shiba_coins_nothing_written">Ништа није уписано. Подесите Steam подударање игре у Детаљи игре ▸ Повежи игру, па поново покрените аутоматско повезивање — PFP ће користити тај ID.</string>
+    <string name="shiba_coins_appid_not_number">Steam ID апликације је број — више информација о игри потражите на steamdb.info</string>
+    <!-- %1$s is the app id the user typed. -->
+    <string name="shiba_coins_appid_no_match">ID апликације %1$s се не поклапа — више информација о игри потражите на steamdb.info</string>
+    <string name="shiba_coins_sync_not_linked">Прво повежите ову игру са ID-јем добављача</string>
+    <string name="shiba_coins_sync_not_installed">Ова игра није инсталирана — приказују се њена сачувана достигнућа</string>
+    <string name="shiba_coins_sync_missing_credentials">Додајте свој кључ у Подешавања ▸ Достигнућа ▸ Акредитиви добављача</string>
+    <string name="shiba_coins_sync_profile_private">Детаљи игара на вашем Steam профилу су приватни</string>
+    <string name="shiba_coins_sync_not_found">За ову игру нису пронађена достигнућа</string>
+    <!-- %1$s is the reason the provider gave. -->
+    <string name="shiba_coins_sync_failed">Синхронизација није успела: %1$s</string>
+
+    <!-- ===== Video Detail ===== -->
+
+    <string name="shiba_video_play">Пусти</string>
+    <string name="shiba_video_resume">Настави</string>
+    <string name="shiba_video_restart">Почни од почетка</string>
+    <!-- %1$s is a time such as 1:23:45. -->
+    <string name="shiba_video_resume_at">Настави од %1$s</string>
+    <!-- Options menu groups; each is a heading above its rows. -->
+    <string name="shiba_video_group_library">Библиотека</string>
+    <string name="shiba_video_group_customize">Прилагођавање</string>
+    <string name="shiba_video_group_manage">Управљање</string>
+    <string name="shiba_video_favorite">Омиљено</string>
+    <!-- Value drawn beside the Favorite row. -->
+    <string name="shiba_video_favorite_on">Укључено</string>
+    <string name="shiba_video_favorite_off">Искључено</string>
+    <string name="shiba_video_add_to_playlist">Додај на плејлисту</string>
+    <string name="shiba_video_create_playlist">Направи нову плејлисту</string>
+    <string name="shiba_video_edit_title">Измени наслов</string>
+    <string name="shiba_video_change_thumbnail">Промени сличицу</string>
+    <string name="shiba_video_view_information">Прикажи информације</string>
+    <string name="shiba_video_show_location">Прикажи локацију датотеке</string>
+    <string name="shiba_video_remove">Уклони из библиотеке</string>
+    <!-- %1$s is the video title. -->
+    <string name="shiba_video_remove_message">„%1$s“ ће бити уклоњен из ове библиотеке. Датотека на диску се не брише.</string>
+    <!-- Button that confirms removing the video from the library. -->
+    <string name="shiba_video_remove_confirm">Уклони</string>
+    <string name="shiba_video_new_playlist_title">Нова плејлиста</string>
+    <string name="shiba_video_new_playlist_placeholder">Назив плејлисте</string>
+    <!-- Button that creates the playlist. -->
+    <string name="shiba_video_new_playlist_create">Направи</string>
+    <string name="shiba_video_launching">Покретање…</string>
+    <!-- Shown while the app hands over to another app to play the video. -->
+    <string name="shiba_video_player_ask">спољни плејер</string>
+    <string name="shiba_video_player_fallback">спољни плејер</string>
+    <string name="shiba_video_launch_error_title">Видео не може да се пусти</string>
+    <!-- Brief messages after an action. -->
+    <string name="shiba_video_added_favorite">Додато у Омиљено</string>
+    <string name="shiba_video_removed_favorite">Уклоњено из Омиљеног</string>
+    <string name="shiba_video_import_failed">Увоз слике није успео</string>
+    <string name="shiba_video_thumbnail_updated">Сличица је ажурирана</string>
+    <!-- %1$s is a folder path. -->
+    <string name="shiba_video_location_in">У: %1$s</string>
+    <!-- Information dialog, one fact per line. %1$s is the value. -->
+    <string name="shiba_video_info_duration">Трајање: %1$s</string>
+    <string name="shiba_video_info_resolution">Резолуција: %1$s</string>
+    <string name="shiba_video_info_format">Формат: %1$s</string>
+    <string name="shiba_video_info_type">Тип: %1$s</string>
+    <string name="shiba_video_info_size">Величина: %1$s</string>
+    <string name="shiba_video_info_location">Локација: %1$s</string>
+    <string name="shiba_video_info_file">Датотека: %1$s</string>
+
+    <!-- ===== Manual viewer ===== -->
+
+    <string name="shiba_manual_failed">Ово упутство није могуће приказати.</string>
+    <!-- Accessibility description of a manual page. %1$s is the game title, %2$d the page number. -->
+    <string name="shiba_manual_page_description">%1$s — страница упутства %2$d</string>
+    <!-- Controller hint line. ◀ ▶ = left/right on the D-pad, ▲ ▼ = up/down, "B" is the pad's B button. Spacing is deliberate and kept by the quotes. -->
+    <string name="shiba_manual_footer_hint">"◀ ▶  Страница   •   ▲ ▼  Померање   •   B  Затвори"</string>
+</resources>

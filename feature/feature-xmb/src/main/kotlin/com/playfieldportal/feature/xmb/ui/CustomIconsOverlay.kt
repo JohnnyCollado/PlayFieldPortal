@@ -59,6 +59,8 @@ import com.playfieldportal.feature.xmb.viewmodel.CustomIconSession
 import com.playfieldportal.feature.xmb.viewmodel.UserCategoryIconSlot
 import com.playfieldportal.themekit.IconColumnRun
 import com.playfieldportal.themekit.IconSlot
+import androidx.compose.ui.res.stringResource
+import com.playfieldportal.feature.xmb.R
 
 /**
  * Live "Customize XMB Icons" editor, drawn OVER the real XMB (which keeps rendering — and
@@ -168,7 +170,7 @@ fun CustomIconsOverlay(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                text = "Customize XMB Icons",
+                text = stringResource(R.string.xmbu_icons_title),
                 color = themedText(Color.White),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
@@ -213,12 +215,12 @@ fun CustomIconsOverlay(
                     Column {
                         Text(focused.displayName, color = themedText(Color.White), fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         val source = when (icons.tierOf(focused.key)) {
-                            com.playfieldportal.core.ui.icons.IconTier.USER -> "Your pick"
-                            com.playfieldportal.core.ui.icons.IconTier.THEME -> "From theme"
-                            null -> "Default"
+                            com.playfieldportal.core.ui.icons.IconTier.USER -> stringResource(R.string.xmbu_icons_source_user)
+                            com.playfieldportal.core.ui.icons.IconTier.THEME -> stringResource(R.string.xmbu_icons_source_theme)
+                            null -> stringResource(R.string.xmbu_icons_source_default)
                         }
                         Text(
-                            text = runs.getOrNull(session.focusedRunIndex)?.let { "$source · ${it.label} column" } ?: source,
+                            text = runs.getOrNull(session.focusedRunIndex)?.let { stringResource(R.string.xmbu_icons_source_with_column, source, it.label) } ?: source,
                             color = themedSubText(Color(0xFFB9C6DC), SECONDARY_TEXT_WEIGHT),
                             fontSize = 12.sp,
                         )
@@ -289,22 +291,22 @@ fun CustomIconsOverlay(
             if (!showTouchControls) ControllerPromptBar(
                 items = listOfNotNull(
                     if (runs.isEmpty()) {
-                        ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Move")
+                        ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, stringResource(R.string.xmbu_common_move))
                     } else {
-                        ControllerPromptItem.fixed(listOf(ControllerIcon.DPAD_LEFT, ControllerIcon.DPAD_RIGHT), "Move")
+                        ControllerPromptItem.fixed(listOf(ControllerIcon.DPAD_LEFT, ControllerIcon.DPAD_RIGHT), stringResource(R.string.xmbu_common_move))
                     },
                     runs.takeIf { it.isNotEmpty() }?.let {
-                        ControllerPromptItem.fixed(listOf(ControllerIcon.DPAD_UP, ControllerIcon.DPAD_DOWN), "Column")
+                        ControllerPromptItem.fixed(listOf(ControllerIcon.DPAD_UP, ControllerIcon.DPAD_DOWN), stringResource(R.string.xmbu_icons_column))
                     },
                     ControllerPromptItem(
                         listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY),
-                        "Tab",
+                        stringResource(R.string.xmbu_icons_tab),
                     ),
-                    ControllerPromptItem(GamepadAction.SELECT, "Pick"),
-                    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Reset"),
-                    ControllerPromptItem(GamepadAction.CHANGE_SORT, "Reset All"),
-                    ControllerPromptItem(GamepadAction.HOME, "Save as Theme"),
-                    ControllerPromptItem(GamepadAction.BACK, "Done"),
+                    ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.xmbu_icons_pick)),
+                    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, stringResource(R.string.xmbu_common_reset)),
+                    ControllerPromptItem(GamepadAction.CHANGE_SORT, stringResource(R.string.xmbu_icons_reset_all)),
+                    ControllerPromptItem(GamepadAction.HOME, stringResource(R.string.xmbu_icons_save_as_theme)),
+                    ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.xmbu_common_done)),
                 ),
                 labelColor = themedSubText(Color(0x99B9C6DC)),
                 labelStyle = TextStyle(fontSize = 11.sp),
@@ -321,7 +323,7 @@ fun CustomIconsOverlay(
                 Button(
                     onClick = requestPick,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3A82F6)),
-                ) { Text("Pick") }
+                ) { Text(stringResource(R.string.xmbu_icons_pick)) }
                 // Reset clears the USER tier only, so it can act only on a slot the user has
                 // picked — greying it everywhere else is what stops "Reset" reading as broken
                 // on a slot whose icon comes from the theme (or from the built-in set). The
@@ -330,11 +332,11 @@ fun CustomIconsOverlay(
                 OutlinedButton(
                     onClick = { focused?.let { onResetSlot(it.key) } },
                     enabled = focused != null && icons.tierOf(focused.key) == com.playfieldportal.core.ui.icons.IconTier.USER,
-                ) { Text("Reset") }
-                OutlinedButton(onClick = onResetAll, enabled = icons.userKeys.isNotEmpty()) { Text("Reset All") }
-                OutlinedButton(onClick = onSaveAsTheme) { Text("Save as Theme…") }
+                ) { Text(stringResource(R.string.xmbu_common_reset)) }
+                OutlinedButton(onClick = onResetAll, enabled = icons.userKeys.isNotEmpty()) { Text(stringResource(R.string.xmbu_icons_reset_all)) }
+                OutlinedButton(onClick = onSaveAsTheme) { Text(stringResource(R.string.xmbu_icons_save_as_theme_button)) }
                 Box(Modifier.width(1.dp)) // spacer flex
-                OutlinedButton(onClick = onDone) { Text("Done") }
+                OutlinedButton(onClick = onDone) { Text(stringResource(R.string.xmbu_common_done)) }
             }
         }
     }

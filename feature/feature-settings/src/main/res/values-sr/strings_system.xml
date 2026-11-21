@@ -1,0 +1,426 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Localization slice C2: the remaining Settings screens (Backup, Controller, Credits, About, Logs, Music, Video, Photo, Notifications, System Update, shared rows and modals). -->
+
+    <!-- Shared by several Settings screens. -->
+    <string name="sets_on">Укључено</string>
+    <string name="sets_off">Искључено</string>
+    <!-- Controller footer prompt: the button that goes back one screen. -->
+    <string name="sets_prompt_back">Назад</string>
+    <!-- Controller footer prompts. Each names what the button does on the focused row. -->
+    <string name="sets_prompt_enter">Уђи</string>
+    <string name="sets_prompt_switch">Промени</string>
+    <string name="sets_prompt_options">Опције</string>
+
+    <!-- Settings ▸ Backup & Restore -->
+    <string name="sets_backup_title">Резервна копија и враћање</string>
+    <string name="sets_backup_group_backup">Резервна копија</string>
+    <string name="sets_backup_last_backup">Последња резервна копија</string>
+    <string name="sets_backup_never">Никад</string>
+    <string name="sets_backup_folder">Фасцикла за резервне копије</string>
+    <!-- %1$s is the name of the chosen backup folder. -->
+    <string name="sets_backup_folder_saving_to">Чува се у: %1$s  (изаберите да промените)</string>
+    <string name="sets_backup_folder_not_set">Није подешено — изаберите да одредите где се чувају резервне копије</string>
+    <!-- Row label: starts a backup immediately. -->
+    <string name="sets_backup_now">Направи резервну копију сада</string>
+    <string name="sets_backup_now_help">Чува библиотеку, подешавања и историју играња</string>
+    <string name="sets_backup_choose_folder_first">Прво изаберите фасциклу за резервне копије</string>
+    <string name="sets_backup_choose_folder_first_error">Прво изаберите фасциклу за резервне копије.</string>
+    <string name="sets_backup_group_saved">Сачуване резервне копије</string>
+    <string name="sets_backup_group_included">Шта је обухваћено</string>
+    <string name="sets_backup_included_library">Библиотека игара</string>
+    <string name="sets_backup_included_history">Историја играња</string>
+    <string name="sets_backup_included_categories">Прилагођене категорије</string>
+    <string name="sets_backup_included_settings">Подешавања и API кључеви</string>
+    <string name="sets_backup_included_profiles">Профили емулатора</string>
+    <string name="sets_backup_rom_files">ROM датотеке</string>
+    <string name="sets_backup_not_included">✗  (није обухваћено)</string>
+    <string name="sets_backup_group_restore">Враћање</string>
+    <string name="sets_backup_restore_from_file">Врати из датотеке</string>
+    <string name="sets_backup_restore_from_file_help">Пронађите датотеку .pfpbackup</string>
+    <string name="sets_backup_after_restoring">Након враћања</string>
+    <string name="sets_backup_after_restoring_help">Ваше фасцикле се враћају, али приступ Android-а њима не. Поново повежите сваку коренску фасциклу у делу „Приступ коренској фасцикли“ одговарајућег одељка (Библиотека, Музика, Видео, Фотографије) — по један корак; поновно повезивање коренске фасцикле одједном враћа све у њој.</string>
+    <string name="sets_backup_working">Обрада…</string>
+    <string name="sets_backup_error">Грешка</string>
+    <string name="sets_backup_creating">Прављење резервне копије…</string>
+    <string name="sets_backup_restoring">Враћање резервне копије…</string>
+    <string name="sets_backup_unknown_error">Непозната грешка</string>
+    <!-- %1$s is a backup file name. -->
+    <string name="sets_backup_delete_failed">Брисање није успело: %1$s.</string>
+    <!-- Context-menu rows for a saved backup. -->
+    <string name="sets_backup_menu_restore">Врати</string>
+    <string name="sets_backup_menu_share">Дели</string>
+    <string name="sets_backup_menu_delete">Избриши резервну копију</string>
+    <string name="sets_backup_delete_title">Избрисати резервну копију?</string>
+    <!-- %1$s is a backup file name. -->
+    <string name="sets_backup_delete_message">„%1$s“ ће бити избрисана. Ово не може да се опозове.</string>
+    <string name="sets_backup_delete_confirm">Избриши</string>
+    <string name="sets_backup_restore_title">Вратити резервну копију?</string>
+    <!-- %1$s is a backup file name. -->
+    <string name="sets_backup_restore_message_named">„%1$s“ ће заменити тренутну библиотеку, подешавања и историју играња. Ово не може да се опозове.</string>
+    <string name="sets_backup_restore_message_picked">Ова резервна копија ће заменити тренутну библиотеку, подешавања и историју играња. Ово не може да се опозове.</string>
+    <string name="sets_backup_restore_confirm">Врати</string>
+    <!-- Title of the Android share sheet when sharing a backup file. -->
+    <string name="sets_backup_share_chooser">Дели резервну копију</string>
+
+    <!-- Settings ▸ Credits -->
+    <string name="sets_credits_group_xmb">XMB дизајн — Sony</string>
+    <string name="sets_credits_xmb_inspired">Изглед и осећај овог лаунчера инспирисани су XMB-ом (XrossMediaBar), интерфејсом који је Sony направио за PlayStation Portable и PlayStation 3 — распоред у облику крста, таласаста позадина и модел навигације представљају омаж њему.</string>
+    <string name="sets_credits_xmb_trademarks">„XrossMediaBar“, „XMB“, „PSP“ и „PlayStation“ су жигови компаније Sony Interactive Entertainment Inc. Play Field Portal је независан, некомерцијалан пројекат фанова — није повезан са компанијом Sony, нити га она подржава или спонзорише. Приложена графика интерфејса потиче из теме заједнице „XMB Menu for ES-DE“ (наведене испод) и остаје власништво њених аутора. Нису приложени никакви Sony звуци: сваки звук менија наведен је засебно испод.</string>
+    <string name="sets_credits_group_icon">Иконица и лого апликације</string>
+    <string name="sets_credits_icon_designed">Иконицу и лого апликације Play Field Portal дизајнирао је johakovi. Велико хвала за графику која лаунчеру даје идентитет.</string>
+    <!-- Row label: the role of the person credited (designer of the app icon). -->
+    <string name="sets_credits_label_design">Дизајн</string>
+    <string name="sets_credits_group_artwork">Графика система и конзола</string>
+    <string name="sets_credits_artwork_from">Иконице система, конзола и категорија које се користе у овом лаунчеру потичу из теме „XMB Menu for ES-DE“ — рекреације PSP XMB-а коју је направила заједница.</string>
+    <string name="sets_credits_artwork_rights">Сва права на ову графику припадају њеним ауторима — Anthony Caccese, на основу оригиналног рада аутора InitialDin. Иконице се овде користе са захвалношћу и остају власништво својих аутора.</string>
+    <string name="sets_credits_label_project">Пројекат</string>
+    <string name="sets_credits_label_authors">Аутори</string>
+    <string name="sets_credits_label_source">Извор</string>
+    <string name="sets_credits_group_buttons">Иконице дугмади контролера</string>
+    <string name="sets_credits_buttons_from">Сваки приказ дугмета на екрану — дугмад на лицу PlayStation, Xbox и Nintendo контролера, D-Pad, бочна дугмад, окидачи, палице и системска дугмад — потиче из Zacksly пакета иконица дугмади, који се користе под лиценцом Creative Commons Attribution 3.0.</string>
+    <string name="sets_credits_buttons_unmodified">Графика није мењана: само су називи датотека промењени у називе Android ресурса, а приложене су само иконице које лаунчер приказује.</string>
+    <string name="sets_credits_label_author">Аутор</string>
+    <string name="sets_credits_label_website">Веб-сајт</string>
+    <string name="sets_credits_label_support">Подршка</string>
+    <string name="sets_credits_label_packs">Пакети</string>
+    <string name="sets_credits_label_license">Лиценца</string>
+    <string name="sets_credits_group_sounds">Звуци менија</string>
+    <string name="sets_credits_sounds_built">Приложени звуци менија — навигација, назад, потврда, грешка, покретање, обавештење и звук покретања — направљени су од звука без ауторских накнада објављеног на Pixabay-у, обрађеног за лаунчер: скраћеног, са промењеном висином тона, уједначеном јачином и конвертованог. Хвала ауторима на чијем раду је скуп заснован.</string>
+    <string name="sets_credits_sounds_license">Pixabay лиценца за садржај не захтева навођење аутора; ипак је овде наведено уз захвалност. Ако сте један од ових аутора и желите да се навођење промени или да се неки материјал уклони, јавите се.</string>
+    <string name="sets_credits_group_metadata">Графика и метаподаци игара</string>
+    <string name="sets_credits_metadata_fetched">Омоти, 3D кутије, слике кертриџа/диска, херој банери, логотипи, иконице, упутства, видео исечци и метаподаци игара преузимају се на ваш захтев од спољних добављача и остају власништво својих власника.</string>
+    <string name="sets_credits_label_primary_scraper">Главни извор података</string>
+    <string name="sets_credits_value_screenscraper">ScreenScraper — screenscraper.fr, база медија игара коју одржава заједница</string>
+    <string name="sets_credits_label_artwork">Графика</string>
+    <string name="sets_credits_label_metadata">Метаподаци</string>
+    <string name="sets_credits_group_achievements">Достигнућа — Shiba Coins</string>
+    <string name="sets_credits_achievements_from">Подаци о достигнућима за систем Shiba Coins потичу од следећих услуга и пројеката и остају власништво својих власника.</string>
+    <string name="sets_credits_value_retroachievements">retroachievements.org — скупови достигнућа и подаци о откључавању за ретро игре које прави заједница, преко званичног RetroAchievements Web API-ја и клијента api-kotlin</string>
+    <string name="sets_credits_value_steam">Powered by Steam — шеме достигнућа и подаци о откључавању преко Steam Web API-ја, уз ваш сопствени кључ. Steam и Steam лого су жигови компаније Valve Corporation. steampowered.com</string>
+    <string name="sets_credits_goldberg_bundles">Локално праћење достигнућа за PC игре са емулацијом Steam-а укључује Goldberg Steam Emulator — конкретно gbe_fork, огранак заједнице који одржавају Detanup01 и сарадници, заснован на оригиналном Goldberg Emulator-у аутора Mr. Goldberg.</string>
+    <string name="sets_credits_goldberg_license">Емулатор је слободан софтвер под лиценцом GNU Lesser General Public License v3.0 (LGPL-3.0). Play Field Portal укључује неизмењену верзију датотеке steam_api64.dll; комплетан одговарајући изворни код и пун текст лиценце доступни су на везама испод.</string>
+    <string name="sets_credits_value_gbe">gbe_fork — Detanup01 и сарадници</string>
+    <string name="sets_credits_label_original_project">Оригинални пројекат</string>
+    <string name="sets_credits_value_goldberg_original">Goldberg Emulator, аутор Mr. Goldberg — gitlab.com/Mr_Goldberg/goldberg_emulator</string>
+    <string name="sets_credits_group_support">Подржите пројекат</string>
+    <string name="sets_credits_support_thanks">Хвала свима на подршци. Ово сам направио као љубавно писмо PSP-у и дивној заједници која га такође воли, тако да ће овај пројекат заувек остати бесплатан. Уз то, ако цените оно што радим и желите да то покажете на други начин, можете ми купити тако. Наравно, донације су увек опционалне и никада обавезне. Волим вас све и срећан 15. јун.</string>
+    <!-- Link row label. A light-hearted pun on donating ("buy me a coffee"); keep the playful tone. -->
+    <string name="sets_credits_label_buy_taco">Купи ми тако</string>
+    <string name="sets_credits_group_notes">Напомене</string>
+    <string name="sets_credits_notes_text">Ако сте носилац права и желите да се навођење промени или да се неки материјал уклони, јавите се и то ће бити брзо решено.</string>
+    <string name="sets_credits_title">Заслуге</string>
+    <!-- %1$s is a web address. Shown in the notification tray when no app can open web links. -->
+    <string name="sets_credits_no_browser">Ниједна апликација не може да отвори веб-везе. Посетите %1$s у прегледачу.</string>
+
+    <!-- Settings ▸ Logs -->
+    <string name="sets_logs_title">Дневници</string>
+    <!-- Controller footer prompts: each names what the highlighted button does here. -->
+    <string name="sets_logs_prompt_share">Дели</string>
+    <string name="sets_logs_prompt_open">Отвори</string>
+    <string name="sets_logs_prompt_clear">Обриши</string>
+    <string name="sets_logs_clear_title">Обрисати све дневнике?</string>
+    <!-- %1$d is how many log files exist; %2$s is their total size, e.g. "650 KB". -->
+    <plurals name="sets_logs_clear_message">
+        <item quantity="one">%1$d датотека дневника (%2$s) биће избрисана. Ако намеравате да пријавите проблем, прво поделите дневник. Обрисани дневник не може да се врати.</item>
+        <item quantity="few">Све %1$d датотеке дневника (%2$s) биће избрисане. Ако намеравате да пријавите проблем, прво поделите дневник. Обрисани дневник не може да се врати.</item>
+        <item quantity="other">Свих %1$d датотека дневника (%2$s) биће избрисано. Ако намеравате да пријавите проблем, прво поделите дневник. Обрисани дневник не може да се врати.</item>
+    </plurals>
+    <string name="sets_logs_clear_confirm">Обриши</string>
+    <string name="sets_logs_group_files">Датотеке дневника</string>
+    <string name="sets_logs_empty">Још нема датотека дневника</string>
+    <string name="sets_logs_empty_help">Нови дневник почиње при сваком покретању апликације. Изаберите да поново проверите.</string>
+    <string name="sets_logs_group_manage">Управљање</string>
+    <string name="sets_logs_clear_row">Обриши све дневнике</string>
+    <string name="sets_logs_clear_row_help">Брише све сачуване дневнике. Ова сесија наставља да бележи у нову датотеку.</string>
+    <string name="sets_logs_clear_row_none">Нема шта да се обрише</string>
+    <string name="sets_logs_group_about">О дневницима</string>
+    <string name="sets_logs_saved">Шта се чува</string>
+    <string name="sets_logs_saved_help">Задржавају се само најновије сесије (највише око 2 MB). Лозинке, токени, називи налога и имејл адресе уклањају се пре било каквог уписа.</string>
+    <!-- %1$s is a log file name. Button label / accessibility text on the share action. -->
+    <string name="sets_logs_share_file">Дели %1$s</string>
+    <!-- Small badge on the log file this session is writing into. -->
+    <string name="sets_logs_current">ТРЕНУТНИ</string>
+    <!-- Title of the Android "open with" chooser. -->
+    <string name="sets_logs_open_with">Отвори дневник помоћу</string>
+    <!-- %1$s is a log file name. Subject line of the shared email/message. -->
+    <string name="sets_logs_share_subject">Play Field Portal дневник — %1$s</string>
+    <string name="sets_logs_share_chooser">Дели датотеку дневника</string>
+    <string name="sets_logs_no_files">Нема датотека</string>
+    <!-- %1$d is the number of log files; %2$s is their total size, e.g. "650 KB". -->
+    <plurals name="sets_logs_summary">
+        <item quantity="one">%1$d датотека · %2$s</item>
+        <item quantity="few">%1$d датотеке · %2$s</item>
+        <item quantity="other">%1$d датотека · %2$s</item>
+    </plurals>
+    <!-- %1$d is how many log files were deleted; %2$s is their total size. -->
+    <plurals name="sets_logs_deleted">
+        <item quantity="one">Избрисана је %1$d датотека (%2$s)</item>
+        <item quantity="few">Избрисане су %1$d датотеке (%2$s)</item>
+        <item quantity="other">Избрисано је %1$d датотека (%2$s)</item>
+    </plurals>
+    <!-- %1$s is a time of day, e.g. "3:18 AM". -->
+    <string name="sets_logs_started_today">Започето данас, %1$s</string>
+    <string name="sets_logs_started_yesterday">Започето јуче, %1$s</string>
+    <!-- %1$s is a date like "Sep 1"; %2$s is a time of day. -->
+    <string name="sets_logs_started_on">Започето %1$s, %2$s</string>
+
+    <!-- Root folders (shared by Music, Video, Photo) -->
+    <string name="sets_roots_group">Коренске фасцикле</string>
+    <string name="sets_scanning">Скенирање…</string>
+    <string name="sets_rescan_help">Ажурирај библиотеке из свих коренских фасцикли</string>
+    <string name="sets_playback_group">Репродукција</string>
+    <!-- The kind of media a root folder holds. Inserted into sentences such as "No %1$s roots configured". -->
+    <string name="sets_root_kind_music">Музика</string>
+    <string name="sets_root_kind_video">Видео</string>
+    <string name="sets_root_kind_photo">Фотографије</string>
+    <string name="sets_root_kind_rom">ROM</string>
+    <!-- Names shown for a root folder whose real name cannot be read. -->
+    <string name="sets_root_fallback_music">Музика</string>
+    <string name="sets_root_fallback_video">Видео снимци</string>
+    <string name="sets_root_fallback_photo">Фотографије</string>
+    <!-- %1$s is a media kind (Music, Video, Photo or ROM). -->
+    <string name="sets_root_none">Нису подешене коренске фасцикле (%1$s)</string>
+    <string name="sets_root_none_help">Додајте фасциклу испод да бисте почели да управљате библиотеком</string>
+    <string name="sets_root_access_lost">Приступ је изгубљен — користите „Измени“ да поново доделите приступ</string>
+    <!-- %1$s is a comma-separated list of console names. -->
+    <string name="sets_root_consoles">Конзоле: %1$s</string>
+    <!-- %1$s is a media kind (Music, Video, Photo or ROM). -->
+    <string name="sets_root_kind_root">Коренска фасцикла (%1$s)</string>
+    <!-- Glossary labels for the buttons on a root-folder row; the same words are used in the setup wizard. -->
+    <string name="sets_label_edit_folder">Измени фасциклу</string>
+    <string name="sets_label_remove_folder">Уклони фасциклу</string>
+    <string name="sets_label_options_hint">Савет за опције</string>
+    <string name="sets_label_show_on_bar">Прикажи на траци</string>
+    <string name="sets_label_show_in_games">Прикажи у играма</string>
+    <string name="sets_label_pin_to_top">Закачи на врх</string>
+    <!-- Short captions on the two inline buttons of a root-folder row. -->
+    <string name="sets_root_edit_short">Измени</string>
+    <string name="sets_root_remove_short">Уклони</string>
+    <string name="sets_root_remove_title">Уклонити ову фасциклу?</string>
+    <!-- %1$s is the folder's name or path. -->
+    <string name="sets_root_remove_message">PFP ће престати да користи „%1$s“, а оно што је тамо пронађено биће уклоњено из библиотеке. Ниједна датотека неће бити избрисана из меморије.</string>
+    <string name="sets_root_remove_confirm">Уклони</string>
+    <!-- Default-player pickers -->
+    <string name="sets_player_builtin">Play Field Portal</string>
+    <string name="sets_player_system_default">Подразумевано у систему</string>
+
+    <!-- Settings ▸ Music -->
+    <string name="sets_music_title">Музика</string>
+    <string name="sets_music_player_title">Подразумевани музички плејер</string>
+    <string name="sets_music_player_none">На овом уређају нису пронађени други музички плејери.</string>
+    <string name="sets_music_add_root">Додај фасциклу са музиком</string>
+    <string name="sets_music_add_root_help">Доделите коренску фасциклу (нпр. /Music) — додајте више њих за различите локације</string>
+    <string name="sets_music_rescan">Поново скенирај музичку библиотеку</string>
+    <string name="sets_music_player">Подразумевани музички плејер</string>
+    <string name="sets_music_player_help">Апликација која отвара музичке нумере</string>
+
+    <!-- Settings ▸ Video -->
+    <string name="sets_video_title">Видео</string>
+    <string name="sets_video_player_title">Подразумевани видео плејер</string>
+    <string name="sets_video_player_none">На овом уређају нису пронађени спољни видео плејери.</string>
+    <string name="sets_video_add_root">Додај фасциклу са видео снимцима</string>
+    <string name="sets_video_add_root_help">Доделите коренску фасциклу (нпр. /Movies) — додајте више њих за различите локације</string>
+    <string name="sets_video_rescan">Поново скенирај видео библиотеку</string>
+    <string name="sets_video_player">Подразумевани видео плејер</string>
+    <string name="sets_video_player_help">Play Field Portal репродукује у апликацији; или изаберите апликацију / нека вас пита сваки пут.</string>
+
+    <!-- Settings ▸ Photo -->
+    <string name="sets_photo_title">Фотографије</string>
+    <string name="sets_photo_add_root">Додај фасциклу са фотографијама</string>
+    <string name="sets_photo_add_root_help">Доделите коренску фасциклу (нпр. /Pictures) — додајте више њих за различите локације</string>
+    <string name="sets_photo_rescan">Поново скенирај библиотеку фотографија</string>
+    <string name="sets_photo_group_maintenance">Одржавање</string>
+    <string name="sets_photo_clear_cache">Обриши кеш сличица</string>
+    <string name="sets_photo_clear_cache_help">Брише генерисане сличице. Поновно скенирање их поново генерише.</string>
+    <!-- %1$d is how many cached thumbnails were deleted. -->
+    <plurals name="sets_photo_cache_cleared">
+        <item quantity="one">Обрисана је %1$d кеширана сличица. Поново скенирајте да бисте је генерисали.</item>
+        <item quantity="few">Обрисане су %1$d кеширане сличице. Поново скенирајте да бисте их генерисали.</item>
+        <item quantity="other">Обрисано је %1$d кешираних сличица. Поново скенирајте да бисте их генерисали.</item>
+    </plurals>
+
+    <!-- Settings ▸ Interface ▸ Notifications -->
+    <string name="sets_notif_title">Обавештења</string>
+    <string name="sets_notif_record">Бележи обавештења</string>
+    <string name="sets_notif_record_help">Чува историју скенирања, графике, преузимања података и рада на достигнућима. Искључено зауставља нове уносе; послови у току и даље приказују напредак.</string>
+    <string name="sets_notif_group_history">Историја</string>
+    <string name="sets_notif_keep_for">Чувај уносе</string>
+    <string name="sets_notif_keep_for_help">Старији уноси се бришу следећи пут када се нешто забележи. У сваком случају важи ограничење од 200 уноса, а прочитани уноси се бришу први.</string>
+    <string name="sets_notif_never">Никад</string>
+    <!-- %1$d is a number of days. -->
+    <plurals name="sets_notif_days">
+        <item quantity="one">%1$d дан</item>
+        <item quantity="few">%1$d дана</item>
+        <item quantity="other">%1$d дана</item>
+    </plurals>
+    <string name="sets_notif_mark_read">Означи све као прочитано</string>
+    <string name="sets_notif_mark_read_help">Брише број непрочитаних на статусној траци</string>
+    <!-- %1$d is how many notifications are unread. -->
+    <plurals name="sets_notif_unread">
+        <item quantity="one">%1$d непрочитано</item>
+        <item quantity="few">%1$d непрочитана</item>
+        <item quantity="other">%1$d непрочитаних</item>
+    </plurals>
+    <string name="sets_notif_none_unread">Нема непрочитаних</string>
+    <string name="sets_notif_clear_all">Обриши све</string>
+    <string name="sets_notif_clear_all_help">Празни историју. Послови који су још у току нису погођени.</string>
+    <!-- %1$d is how many notifications are stored in the history. -->
+    <plurals name="sets_notif_stored">
+        <item quantity="one">%1$d сачуван</item>
+        <item quantity="few">%1$d сачувана</item>
+        <item quantity="other">%1$d сачуваних</item>
+    </plurals>
+
+    <!-- Settings ▸ System ▸ System Update -->
+    <string name="sets_update_title">Ажурирање система</string>
+    <string name="sets_update_group_update">Ажурирање</string>
+    <string name="sets_update_installed">Инсталирана верзија</string>
+    <string name="sets_update_latest">Најновија верзија</string>
+    <string name="sets_update_check">Провери ажурирања</string>
+    <string name="sets_update_checking">Провера…</string>
+    <string name="sets_update_notifications">Обавештења о ажурирањима</string>
+    <string name="sets_update_notifications_help">Подсети ме у Обавештењима када изађе нова верзија, највише једном дневно</string>
+    <string name="sets_update_group_changelog">Списак измена</string>
+    <string name="sets_update_no_releases">Још нису учитана издања</string>
+    <string name="sets_update_no_releases_help">Проверите ажурирања да бисте учитали списак измена</string>
+    <!-- %1$s is a version number such as 1.3.4. Row label. -->
+    <string name="sets_update_install">Преузми и инсталирај %1$s</string>
+    <string name="sets_update_cannot_install">Ова верзија не може да инсталира ажурирања одавде</string>
+    <string name="sets_update_handed_over">Потврдите у Android инсталатеру да бисте завршили</string>
+    <string name="sets_update_downloading">Преузимање…</string>
+    <string name="sets_update_install_help">Android ће тражити потврду пре него што се било шта инсталира</string>
+    <string name="sets_update_no_summary">Нема резимеа за ову верзију</string>
+    <string name="sets_update_full_notes">Комплетне белешке о издању</string>
+    <string name="sets_update_full_notes_help">Отвара GitHub у прегледачу</string>
+    <!-- Which build of the app: the full one or the lite one without the Discord SDK. -->
+    <string name="sets_edition_full">Full</string>
+    <string name="sets_edition_lite">Lite</string>
+    <!-- %1$s is the installed version number (or "Unknown"); %2$s is the edition (Full or Lite). -->
+    <string name="sets_update_installed_label">%1$s · %2$s</string>
+    <string name="sets_update_unknown_version">Непознато</string>
+    <!-- %1$s is a version number. -->
+    <string name="sets_update_available">Доступно: %1$s</string>
+    <string name="sets_update_not_checked">Још није проверено</string>
+    <string name="sets_update_up_to_date">Ажурно</string>
+    <string name="sets_update_never_checked">Никад проверено</string>
+    <!-- %1$s is a date and time such as "Nov 3, 14:20". -->
+    <string name="sets_update_checked">Проверено %1$s</string>
+    <!-- Small badges on changelog entries. -->
+    <string name="sets_update_tag_new">Ново</string>
+    <string name="sets_update_tag_installed">Инсталирано</string>
+    <string name="sets_update_msg_available">Доступна је нова верзија.</string>
+    <string name="sets_update_msg_latest">Имате најновију верзију.</string>
+    <string name="sets_update_msg_offline">Повезивање са GitHub-ом није успело. Покушајте поново касније.</string>
+    <string name="sets_update_msg_invalid">GitHub је послао неочекиван одговор. Покушајте поново касније.</string>
+    <!-- %1$s is a version number; %2$s is the edition (Full or Lite). -->
+    <string name="sets_update_no_apk">Верзија %1$s још нема преузимање за %2$s. Покушајте поново касније.</string>
+    <string name="sets_update_download_failed">Преузимање ажурирања није успело. Проверите везу и покушајте поново.</string>
+    <string name="sets_update_not_newer">Преузета датотека није новија верзија ове апликације, па није инсталирана.</string>
+    <string name="sets_update_no_installer">Android инсталатер није могуће отворити на овом уређају.</string>
+    <!-- %1$s is a version number. Notification text. -->
+    <string name="sets_update_reminder_installed">Верзија %1$s је инсталирана.</string>
+    <string name="sets_update_reminder_available">Верзија %1$s је доступна.</string>
+
+    <!-- Settings ▸ About -->
+    <string name="sets_about_label_version">Верзија</string>
+    <string name="sets_about_label_build">Верзија програма</string>
+    <string name="sets_about_label_edition">Издање</string>
+    <string name="sets_about_label_min_android">Мин. Android</string>
+    <!-- Label: the Android version the app is built to target. -->
+    <string name="sets_about_label_target">Циљни</string>
+    <string name="sets_about_group_open_source">Отворени код</string>
+    <string name="sets_about_value_compose">UI радни оквир</string>
+    <string name="sets_about_value_room">Локална база података</string>
+    <string name="sets_about_value_hilt">Убацивање зависности</string>
+    <string name="sets_about_value_ktor">Мрежни клијент</string>
+    <string name="sets_about_value_coil">Учитавање слика</string>
+    <string name="sets_about_value_media3">Видео исечци и репродукција</string>
+    <string name="sets_about_value_workmanager">Задаци у позадини</string>
+    <string name="sets_about_value_timber">Бележење</string>
+    <string name="sets_about_group_credits">Заслуге</string>
+    <string name="sets_about_label_art_media">Графика и медији</string>
+    <string name="sets_about_label_metadata">Метаподаци</string>
+    <string name="sets_about_label_inspired">Инспирисано</string>
+    <string name="sets_about_label_see_also">Погледајте и</string>
+    <!-- Points the reader to another Settings screen; keep the ▸ separator. -->
+    <string name="sets_about_value_see_also">Подешавања ▸ Заслуге</string>
+    <string name="sets_about_group_legal">Правне информације</string>
+    <string name="sets_about_legal_independent">Play Field Portal је независан пројекат фанова и није повезан са компанијом Sony Interactive Entertainment.</string>
+    <string name="sets_about_legal_trademarks">PlayStation, PSP и XMB су жигови компаније Sony Interactive Entertainment Inc.</string>
+    <string name="sets_about_title">О апликацији</string>
+    <!-- Shown when the installed version or build number cannot be read. -->
+    <string name="sets_about_unknown">непознато</string>
+
+    <!-- Artwork orphans (notice shown after linking a file to a game) -->
+    <string name="sets_orphan_linked">Графика је повезана — остаће повезана и при будућим скенирањима.</string>
+    <string name="sets_orphan_link_failed">Повезивање те датотеке није успело — покрените „Скенирај и поново повежи“ и покушајте поново.</string>
+
+    <!-- Settings ▸ Sound: parts resolved outside the screen -->
+    <!-- Row value when the user picked a sound but its file name is not known. -->
+    <string name="sets_audio_custom_sound">Прилагођени звук</string>
+    <string name="sets_audio_import_failed">Тај звук није могуће увести. Покушајте са другом датотеком.</string>
+
+    <!-- Importing a PSP theme (.ptf): the notification text. %1$s is the theme\'s name. -->
+    <string name="sets_ptf_wallpaper_only">Увезено „%1$s“ — само позадина</string>
+    <!-- %1$s is the theme\'s name; %2$d is how many icons came across. -->
+    <plurals name="sets_ptf_icons">
+        <item quantity="one">Увезено „%1$s“ — позадина и %2$d иконица</item>
+        <item quantity="few">Увезено „%1$s“ — позадина и %2$d иконице</item>
+        <item quantity="other">Увезено „%1$s“ — позадина и %2$d иконица</item>
+    </plurals>
+    <!-- %1$s is the theme\'s name; %2$d is how many icons came across; %3$d is how well the icon tint matched, as a percentage. -->
+    <plurals name="sets_ptf_icons_tint">
+        <item quantity="one">Увезено „%1$s“ — позадина и %2$d иконица, подударање нијансе %3$d%%</item>
+        <item quantity="few">Увезено „%1$s“ — позадина и %2$d иконице, подударање нијансе %3$d%%</item>
+        <item quantity="other">Увезено „%1$s“ — позадина и %2$d иконица, подударање нијансе %3$d%%</item>
+    </plurals>
+    <string name="sets_ptf_cxmb_unsupported">CXMB (.ctf) теме нису подржане — само званичне .ptf теме</string>
+
+    <!-- Connecting services (Steam, IGDB, ScreenScraper): the status line shown after a check. -->
+    <string name="sets_svc_steam_connected">Steam је повезан</string>
+    <!-- %1$s is the name the user typed (a Steam custom-URL name). -->
+    <string name="sets_svc_steam_resolved">Steam је повезан — пронађен је „%1$s“</string>
+    <string name="sets_svc_steam_unresolved">Кључ је сачуван, али „%1$s“ није могуће пронаћи. Унесите свој SteamID64.</string>
+    <string name="sets_svc_valid">Важеће</string>
+    <string name="sets_svc_igdb_invalid">Неважеће — проверите ID клијента и тајну</string>
+    <string name="sets_svc_screenscraper_invalid">Неважеће — проверите корисничко име и лозинку</string>
+    <!-- %1$s is how many download threads the account may use. -->
+    <plurals name="sets_svc_screenscraper_valid_threads">
+        <item quantity="one">Важеће — %1$s нит</item>
+        <item quantity="few">Важеће — %1$s нити</item>
+        <item quantity="other">Важеће — %1$s нити</item>
+    </plurals>
+    <!-- %1$s is the thread limit; %2$s is the daily request limit. -->
+    <plurals name="sets_svc_screenscraper_valid_both">
+        <item quantity="one">Важеће — %1$s нит, %2$s захтева дневно</item>
+        <item quantity="few">Важеће — %1$s нити, %2$s захтева дневно</item>
+        <item quantity="other">Важеће — %1$s нити, %2$s захтева дневно</item>
+    </plurals>
+    <!-- %1$s is the daily request limit. -->
+    <string name="sets_svc_screenscraper_valid_requests">Важеће, %1$s захтева дневно</string>
+
+    <!-- Settings ▸ Controller -->
+    <string name="sets_controller_title">Контролер</string>
+    <!-- Group title and row label for swapping the confirm and back buttons. -->
+    <string name="sets_controller_group_ab">Потврда и назад</string>
+    <string name="sets_controller_ab_help">Одређује које дугме потврђује, а које враћа назад. Важи за све меније лаунчера.</string>
+    <string name="sets_controller_group_xy">Опције и сортирање</string>
+    <string name="sets_controller_xy_help">Замењује радње X и Y само у интерфејсу лаунчера. Не утиче на контроле емулатора.</string>
+    <string name="sets_controller_group_type">Тип контролера</string>
+    <string name="sets_controller_type_help">Мења које се иконице и ознаке дугмади приказују у саветима.</string>
+    <string name="sets_controller_type">Тип</string>
+    <string name="sets_controller_type_sub">Утиче на траку са саветима на дну лаунчера</string>
+    <string name="sets_controller_group_scroll">Брзина померања</string>
+    <string name="sets_controller_scroll_help">Колико брзо се листе померају док држите смер. Дуже држање убрзава; пун нагиб палице помера највећом брзином.</string>
+    <string name="sets_controller_scroll_sub">Важи за држање D-Pad-а и навигацију палицом</string>
+    <string name="sets_controller_group_navigation">Навигација</string>
+    <string name="sets_controller_left_backs_out">Лево враћа назад</string>
+    <string name="sets_controller_left_backs_out_help">Притисните ЛЕВО да напустите фасциклу или искачући панел — само где ЛЕВО не ради ништа друго</string>
+    <string name="sets_controller_group_keyboard">Тастатура</string>
+    <string name="sets_controller_virtual_keyboard">Виртуелна тастатура</string>
+    <string name="sets_controller_virtual_keyboard_help">Куцајте контролером на PFP тастатури. Када је искључено или када користите додир, отвара се системска тастатура</string>
+    <string name="sets_controller_group_reset">Враћање</string>
+    <string name="sets_controller_reset">Врати сва подешавања контролера</string>
+    <string name="sets_controller_reset_help">Враћа подразумеване поставке замене и типа</string>
+</resources>

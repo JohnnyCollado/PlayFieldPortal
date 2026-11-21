@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Music playback notification -->
+    <string name="xmbu_music_channel_name">Воспроизведение музыки</string>
+    <string name="xmbu_music_channel_description">Управление текущим треком</string>
+    <string name="xmbu_music_notif_previous">Предыдущий</string>
+    <string name="xmbu_music_notif_play_pause">Пуск/пауза</string>
+    <string name="xmbu_music_notif_next">Следующий</string>
+    <string name="xmbu_music_notif_stop">Стоп</string>
+    <string name="xmbu_ptt_hold">"🎙  ДЕРЖАТЬ"</string>
+    <string name="xmbu_clipfail_boot_label">Последовательность запуска</string>
+    <string name="xmbu_clipfail_gameboot_label">Game Boot</string>
+    <string name="xmbu_clipfail_boot_message">Ваше видео загрузки не воспроизводится на этом устройстве, поэтому показана встроенная заставка. Экспортируйте тему заново из Theme Studio (видео будет конвертировано) или выберите другой клип в настройках экрана.</string>
+    <string name="xmbu_clipfail_gameboot_message">Ваше видео Game Boot не воспроизводится на этом устройстве, поэтому показана встроенная заставка. Экспортируйте тему заново из Theme Studio (видео будет конвертировано) или выберите другой клип в настройках экрана.</string>
+    <string name="xmbu_common_options">Параметры</string>
+    <string name="xmbu_common_back">Назад</string>
+    <string name="xmbu_common_cancel">Отмена</string>
+    <string name="xmbu_common_done">Готово</string>
+    <string name="xmbu_common_close">Закрыть</string>
+    <string name="xmbu_common_reset">Сбросить</string>
+    <string name="xmbu_common_remove">Удалить</string>
+    <string name="xmbu_common_open">Открыть</string>
+    <string name="xmbu_common_toggle">Отметить</string>
+    <string name="xmbu_common_search">Поиск</string>
+    <string name="xmbu_common_artwork">Обложки</string>
+    <string name="xmbu_common_edit_title">Изменить название</string>
+    <string name="xmbu_common_add_to_card">Добавить на карту</string>
+    <string name="xmbu_common_on">Вкл.</string>
+    <string name="xmbu_common_off">Выкл.</string>
+    <string name="xmbu_common_move">Переместить</string>
+    <string name="xmbu_common_navigate">Навигация</string>
+    <string name="xmbu_common_play">Пуск</string>
+    <string name="xmbu_common_pause">Пауза</string>
+    <string name="xmbu_common_prev_next">Пред. / След.</string>
+    <string name="xmbu_common_seek">Перемотка</string>
+    <string name="xmbu_common_confirm">Подтвердить</string>
+    <string name="xmbu_common_close_search">Закрыть поиск</string>
+    <string name="xmbu_common_ellipsis_search">Поиск…</string>
+
+    <!-- App Detail: Options menu rows -->
+    <string name="xmbu_app_opt_favorite">Избранное</string>
+    <string name="xmbu_app_opt_app_info">О приложении</string>
+    <string name="xmbu_app_opt_hide">Скрыть везде</string>
+    <string name="xmbu_app_opt_change_icon">Сменить значок</string>
+    <string name="xmbu_app_opt_change_background">Сменить фон</string>
+    <string name="xmbu_app_opt_reset_artwork">Сбросить все обложки</string>
+    <string name="xmbu_app_art_type_icon">Значок игры</string>
+    <string name="xmbu_app_art_type_hero">Баннер</string>
+    <string name="xmbu_app_art_type_background">Фон</string>
+    <string name="xmbu_app_art_no_api_key">Ключ API SteamGridDB не настроен — добавьте его в настройках обложек</string>
+    <string name="xmbu_app_art_search_failed">Ошибка поиска: %1$s</string>
+    <string name="xmbu_app_art_no_results">Для «%1$s» в SteamGridDB ничего не найдено</string>
+    <string name="xmbu_app_art_load_failed">Не удалось загрузить обложки: %1$s</string>
+    <string name="xmbu_app_art_none_found">В SteamGridDB не найдено: %1$s</string>
+    <string name="xmbu_app_art_download_failed">Не удалось скачать: %1$s</string>
+    <string name="xmbu_app_art_import_failed">Не удалось импортировать: %1$s</string>
+    <string name="xmbu_app_art_updated">Обновлено: %1$s</string>
+    <string name="xmbu_app_art_reset">Сброшено: %1$s</string>
+    <string name="xmbu_app_art_all_reset">Все обложки сброшены</string>
+    <string name="xmbu_app_no_launchable_package">У этого приложения нет запускаемого пакета</string>
+    <string name="xmbu_common_launch">Запустить</string>
+
+    <!-- App Detail screen -->
+    <string name="xmbu_app_breadcrumb_apps">Приложения</string>
+    <string name="xmbu_app_breadcrumb_android_app">Приложение Android</string>
+    <string name="xmbu_app_edit_artwork_description">Изменить обложки</string>
+    <string name="xmbu_app_no_icon">Нет значка</string>
+    <string name="xmbu_app_art_change">Сменить: %1$s</string>
+    <string name="xmbu_app_art_saving">Сохранение…</string>
+    <string name="xmbu_app_art_pick_local">Выбрать файл</string>
+    <string name="xmbu_app_art_restore_icon">Вернуть родной значок</string>
+    <string name="xmbu_app_art_remove_custom">Убрать свою обложку</string>
+    <string name="xmbu_app_art_picker_hint">"◄ ►  Просмотр   A  Выбрать   B  Назад"</string>
+    <string name="xmbu_app_reset_title">Сбросить все обложки?</string>
+    <string name="xmbu_app_reset_message">Свой значок и фон %1$s будут удалены, и вернётся родной значок приложения.</string>
+
+    <!-- Add to Card (collection) picker panel -->
+    <string name="xmbu_collection_picker_hint">"Вверх/Вниз  Навигация  •  Select  Отметить  •  B  Закрыть"</string>
+    <string name="xmbu_collection_picker_new_row">"＋  Новая своя карта памяти"</string>
+    <string name="xmbu_collection_picker_empty">Своих карт памяти пока нет — создайте первую.</string>
+    <string name="xmbu_collection_new_title">Новая своя карта памяти</string>
+    <string name="xmbu_collection_new_placeholder">например, RPG, «Сейчас играю»</string>
+
+    <!-- Button that confirms the new card name -->
+    <string name="xmbu_collection_new_create">Создать</string>
+    <string name="xmbu_common_sort">Сортировка</string>
+    <string name="xmbu_common_notifications">Уведомления</string>
+
+    <!-- App picker (Add Apps / Remove Apps) -->
+    <string name="xmbu_app_picker_empty">Нет установленных приложений</string>
+    <string name="xmbu_app_picker_no_match">Нет установленных приложений по запросу «%1$s»</string>
+    <string name="xmbu_app_picker_choose">Выбор</string>
+    <string name="xmbu_arrange_place">Поставить</string>
+
+    <!-- Footer prompt: tick the focused game -->
+    <string name="xmbu_arrange_mark">Отметить</string>
+    <string name="xmbu_arrange_move_left">Влево</string>
+    <string name="xmbu_arrange_move_right">Вправо</string>
+    <string name="xmbu_arrange_move_up">Вверх</string>
+    <string name="xmbu_arrange_move_down">Вниз</string>
+
+    <!-- Color Scheme picker overlay -->
+    <string name="xmbu_color_scheme_title">Цветовая схема</string>
+    <string name="xmbu_color_scheme_tint">Оттенок</string>
+    <string name="xmbu_color_scheme_depth">Глубина</string>
+    <string name="xmbu_color_scheme_contrast_top">"%1$s Текст сверху  %2$s"</string>
+    <string name="xmbu_color_scheme_contrast_bottom">"%1$s Текст снизу  %2$s"</string>
+    <string name="xmbu_color_scheme_custom_title">Свой цвет</string>
+
+    <!-- Customize XMB Icons overlay -->
+    <string name="xmbu_icons_title">Настройка значков XMB</string>
+    <string name="xmbu_icons_source_user">Ваш выбор</string>
+    <string name="xmbu_icons_source_theme">Из темы</string>
+    <string name="xmbu_icons_source_default">Стандартный</string>
+    <string name="xmbu_icons_source_with_column">%1$s · столбец «%2$s»</string>
+    <string name="xmbu_icons_column">Столбец</string>
+    <string name="xmbu_icons_tab">Вкладка</string>
+    <string name="xmbu_icons_pick">Выбрать</string>
+    <string name="xmbu_icons_reset_all">Сбросить все</string>
+    <string name="xmbu_icons_save_as_theme">Сохранить тему</string>
+    <string name="xmbu_icons_save_as_theme_button">Сохранить как тему…</string>
+
+    <!-- Search box -->
+    <string name="xmbu_game_search_placeholder">Поиск игр…</string>
+
+    <!-- Game picker (Add Games to a category) -->
+    <string name="xmbu_picker_in_this_category">В этой категории</string>
+    <string name="xmbu_picker_in_category">В «%1$s»</string>
+    <string name="xmbu_picker_custom_cards">Свои карты памяти</string>
+    <string name="xmbu_picker_no_changes">Без изменений</string>
+    <string name="xmbu_picker_menu_view">Вид</string>
+    <string name="xmbu_picker_menu_select_all">Выбрать все</string>
+    <string name="xmbu_picker_open_toggle">Открыть / Отметить</string>
+    <string name="xmbu_picker_no_games">В библиотеке пока нет игр</string>
+    <string name="xmbu_picker_add_games">Добавить игры</string>
+    <string name="xmbu_picker_view_mode">Вид: %1$s</string>
+    <string name="xmbu_picker_removing_prefix">"Удаление · "</string>
+    <string name="xmbu_picker_search_placeholder">Поиск на этой полке…</string>
+    <string name="xmbu_picker_shelves">Полки</string>
+    <string name="xmbu_picker_shelf">Полка</string>
+
+    <!-- Music browser -->
+    <string name="xmbu_music_breadcrumb_playlists">"Музыка  ›  Плейлисты"</string>
+    <string name="xmbu_music_breadcrumb_music">Музыка</string>
+    <string name="xmbu_music_breadcrumb_all_tracks">Все треки</string>
+    <string name="xmbu_music_resume">Продолжить: %1$s</string>
+
+    <!-- Music player -->
+    <string name="xmbu_music_now_playing">Сейчас играет</string>
+    <string name="xmbu_music_nothing_playing">Ничего не играет</string>
+    <string name="xmbu_music_visualizer">Визуализация</string>
+    <string name="xmbu_media_previous_track">Предыдущий трек</string>
+    <string name="xmbu_media_next_track">Следующий трек</string>
+    <string name="xmbu_media_previous_video">Предыдущее видео</string>
+    <string name="xmbu_media_next_video">Следующее видео</string>
+    <string name="xmbu_media_back_10">Назад на 10 секунд</string>
+    <string name="xmbu_media_forward_10">Вперёд на 10 секунд</string>
+    <string name="xmbu_media_playing">Воспроизводится</string>
+    <string name="xmbu_media_paused">Пауза</string>
+    <string name="xmbu_track_picker_title">Добавить в «%1$s»</string>
+
+    <!-- Controller prompt: add the ticked tracks -->
+    <string name="xmbu_track_picker_add">Добавить</string>
+    <string name="xmbu_track_picker_empty">Больше нечего добавить — все просканированные треки уже в этом плейлисте.</string>
+    <string name="xmbu_notif_options_description">Параметры уведомлений</string>
+    <string name="xmbu_notif_task_stopping">%1$s — остановка…</string>
+    <string name="xmbu_notif_task_detail">%1$s — %2$s</string>
+    <string name="xmbu_notif_kind_scan">Сканирование</string>
+    <string name="xmbu_notif_kind_metadata">Метаданные</string>
+    <string name="xmbu_notif_kind_achievements">Достижения</string>
+    <string name="xmbu_notif_kind_system">Система</string>
+    <string name="xmbu_notif_kind_download">Загрузка</string>
+    <string name="xmbu_notif_kind_feed">Лента</string>
+    <string name="xmbu_notif_action_go_to_game">К игре</string>
+    <string name="xmbu_notif_action_open_card">Открыть карту памяти</string>
+    <string name="xmbu_notif_action_open_settings">Открыть настройки</string>
+    <string name="xmbu_notif_action_open_category">Открыть категорию</string>
+    <string name="xmbu_notif_action_review">Проверить</string>
+    <string name="xmbu_time_just_now">Только что</string>
+    <string name="xmbu_share_theme">Поделиться темой</string>
+    <string name="xmbu_move_position">Перемещение · %1$d из %2$d</string>
+    <string name="xmbu_common_later">Позже</string>
+
+    <!-- XMB shell dialogs -->
+    <string name="xmbu_shell_rename_shortcut">Переименовать ярлык</string>
+    <string name="xmbu_shell_playlist_name">Название плейлиста</string>
+    <string name="xmbu_shell_theme_name">Название темы</string>
+    <string name="xmbu_shell_source_theme">Из применённой темы</string>
+    <string name="xmbu_shell_source_device">С устройства</string>
+    <string name="xmbu_shell_source_device_detail">PNG или GIF</string>
+    <string name="xmbu_shell_continue">Продолжить</string>
+    <string name="xmbu_shell_shortcut_title">Добавить ярлык?</string>
+    <string name="xmbu_shell_shortcut_message">Приложение просит добавить ярлык «%1$s», который открывает %2$s. Добавляйте, только если вы сами только что создали этот ярлык.</string>
+    <string name="xmbu_shell_shortcut_add">Добавить</string>
+
+    <!-- Button: refuse to add the shortcut -->
+    <string name="xmbu_shell_shortcut_ignore">Игнорировать</string>
+    <string name="xmbu_shell_windows_title">Завершите настройку библиотеки Windows</string>
+    <string name="xmbu_shell_windows_message">Игра для ПК добавлена, но у библиотеки «Игры Windows» ещё нет папки. Настройте её в менеджере библиотеки, чтобы сканировать папки игр и достижения.</string>
+    <string name="xmbu_shell_windows_set_up">Настроить</string>
+    <string name="xmbu_shell_import_position">%1$d из %2$d</string>
+    <string name="xmbu_shell_open_playlist">Открыть плейлист</string>
+    <string name="xmbu_shell_stop">Остановить</string>
+    <string name="xmbu_shell_keep_running">Продолжить</string>
+    <string name="xmbu_recovery_retry">Повторить</string>
+    <string name="xmbu_recovery_change_emulator">Сменить эмулятор</string>
+    <string name="xmbu_recovery_change_default">Сменить эмулятор системы</string>
+    <string name="xmbu_recovery_copy_diagnostics">Копировать диагностику</string>
+    <string name="xmbu_recovery_title">Не удалось запустить %1$s</string>
+    <string name="xmbu_recovery_select">Выбрать</string>
+    <string name="xmbu_recovery_dismiss">Закрыть</string>
+    <string name="xmbu_artfolder_unavailable_title">Папка обложек недоступна</string>
+    <string name="xmbu_artfolder_unavailable_message">PFP не может получить доступ к %1$s. Новые обложки приостановлены, пока вы не привяжете папку заново. Уже имеющиеся обложки показываются.</string>
+    <string name="xmbu_artfolder_relink">Привязать заново</string>
+    <string name="xmbu_artfolder_not_now">Не сейчас</string>
+    <string name="xmbu_artfolder_move_title">Перенесите обложки в свою папку</string>
+    <string name="xmbu_artfolder_choose">Выбрать папку обложек</string>
+    <string name="xmbu_artfolder_choose_title">Выберите папку обложек</string>
+    <string name="xmbu_artfolder_choose_message">Новые обложки сохраняются в вашу папку. Выберите её, и PFP будет сохранять обложки туда.</string>
+    <string name="xmbu_artfolder_foreign_title">В этой папке другая библиотека обложек</string>
+    <string name="xmbu_artfolder_use_library">Использовать её</string>
+    <string name="xmbu_artfolder_choose_another">Выбрать другую папку</string>
+    <string name="xmbu_status_controller_connected">Контроллер подключён</string>
+    <string name="xmbu_status_battery">Батарея</string>
+    <string name="xmbu_status_battery_charging">Батарея, заряжается</string>
+    <string name="xmbu_status_battery_plugged">Батарея, подключено питание</string>
+
+    <!-- Adjust XMB Layout overlay -->
+    <string name="xmbu_layout_title">Настройка макета XMB</string>
+    <string name="xmbu_layout_readout">"Масштаб %1$sx    По горизонтали %2$d%%    По вертикали %3$d%%"</string>
+    <string name="xmbu_layout_scale">Масштаб</string>
+    <string name="xmbu_layout_horizontal">По горизонтали</string>
+    <string name="xmbu_layout_vertical">По вертикали</string>
+    <string name="xmbu_layout_sliders">Ползунки</string>
+    <string name="xmbu_layout_hide_sliders">Скрыть ползунки</string>
+    <string name="xmbu_layout_save">Сохранить</string>
+
+    <!-- Theme icon picker -->
+    <string name="xmbu_icon_grid_use">Использовать значок</string>
+    <string name="xmbu_status_cellular_signal">Сотовая сеть</string>
+    <string name="xmbu_notif_header_running">ВЫПОЛНЯЕТСЯ</string>
+    <string name="xmbu_notif_header_earlier">РАНЕЕ</string>
+    <string name="xmbu_notif_empty">Нет уведомлений</string>
+
+    <!-- Video player -->
+    <string name="xmbu_video_fit">Вписать</string>
+    <string name="xmbu_video_zoom">Увеличить</string>
+    <string name="xmbu_video_fill">Заполнить</string>
+
+    <!-- Options panel rows -->
+    <string name="xmbu_video_speed">Скорость</string>
+    <string name="xmbu_video_subtitles">Субтитры</string>
+    <string name="xmbu_video_audio_track">Аудиодорожка</string>
+    <string name="xmbu_video_screen_mode">Режим экрана</string>
+    <string name="xmbu_video_none">Нет</string>
+    <string name="xmbu_video_default">По умолчанию</string>
+    <string name="xmbu_video_track">Дорожка</string>
+    <string name="xmbu_video_err_not_found">Видео не найдено.</string>
+    <string name="xmbu_video_err_permission">Нет доступа к этому файлу.</string>
+    <string name="xmbu_video_err_decode">Это видео нельзя декодировать на устройстве.</string>
+    <string name="xmbu_video_err_unable">Не удаётся воспроизвести видео.</string>
+    <string name="xmbu_video_go_back">Назад</string>
+    <string name="xmbu_video_status">%1$s× · %2$s</string>
+
+    <!-- Photo viewer -->
+
+    <!-- Options menu rows -->
+    <string name="xmbu_photo_rotate_left">Повернуть влево</string>
+    <string name="xmbu_photo_rotate_right">Повернуть вправо</string>
+    <string name="xmbu_photo_zoom_in">Увеличить</string>
+    <string name="xmbu_photo_zoom_out">Уменьшить</string>
+    <string name="xmbu_photo_reset_zoom">Сбросить масштаб</string>
+    <string name="xmbu_photo_set_wallpaper">Сделать обоями лаунчера</string>
+    <string name="xmbu_photo_set_lock_screen">На экран блокировки</string>
+    <string name="xmbu_photo_view_info">Информация</string>
+    <string name="xmbu_photo_show_location">Расположение файла</string>
+    <string name="xmbu_photo_remove">Удалить из библиотеки</string>
+
+    <!-- Group headers inside the Options menu -->
+    <string name="xmbu_photo_group_view">Просмотр</string>
+    <string name="xmbu_photo_group_manage">Управление</string>
+    <string name="xmbu_photo_in_folder">В: %1$s</string>
+    <string name="xmbu_photo_wallpaper_unreadable">Не удалось установить обои — изображение не читается</string>
+    <string name="xmbu_photo_wallpaper_applied">Обои применены</string>
+    <string name="xmbu_photo_unreadable">Не удалось прочитать фото</string>
+    <string name="xmbu_photo_lock_screen_set">Экран блокировки задан</string>
+    <string name="xmbu_photo_hide_controls">Скрыть управление</string>
+    <string name="xmbu_photo_show_controls">Показать управление</string>
+    <string name="xmbu_photo_wallpaper_title">Сделать обоями лаунчера?</string>
+    <string name="xmbu_photo_wallpaper_note">Заменит фоновую волну XMB.</string>
+    <string name="xmbu_photo_apply">Применить</string>
+    <string name="xmbu_photo_applying">Применение…</string>
+    <string name="xmbu_photo_remove_message">«%1$s» будет удалено из библиотеки. Фото на диске не удаляется.</string>
+    <string name="xmbu_photo_lock_message">«%1$s» станет изображением экрана блокировки, обрезанным по размеру экрана.</string>
+
+    <!-- Confirm button of the lock screen dialog -->
+    <string name="xmbu_photo_set">Задать</string>
+    <string name="xmbu_photo_info_resolution">Разрешение: %1$s</string>
+    <string name="xmbu_photo_info_taken">Снято: %1$s</string>
+    <string name="xmbu_photo_info_modified">Изменено: %1$s</string>
+    <string name="xmbu_photo_info_size">Размер: %1$s</string>
+    <string name="xmbu_photo_info_type">Тип: %1$s</string>
+    <string name="xmbu_photo_info_location">Расположение: %1$s</string>
+    <string name="xmbu_photo_info_file">Файл: %1$s</string>
+
+    <!-- Music visualizer picker -->
+    <string name="xmbu_visualizer_portal">Портал</string>
+    <string name="xmbu_visualizer_ripple">Рябь</string>
+    <string name="xmbu_visualizer_off">Выкл.</string>
+    <string name="xmbu_visualizer_off_tile">ВЫКЛ</string>
+    <plurals name="xmbu_app_picker_selected">
+        <item quantity="one">Выбрано: %d</item>
+        <item quantity="few">Выбрано: %d</item>
+        <item quantity="many">Выбрано: %d</item>
+        <item quantity="other">Выбрано: %d</item>
+    </plurals>
+
+    <!-- Arrange mode: how many games are marked -->
+    <plurals name="xmbu_arrange_marked">
+        <item quantity="one">Отмечено: %d</item>
+        <item quantity="few">Отмечено: %d</item>
+        <item quantity="many">Отмечено: %d</item>
+        <item quantity="other">Отмечено: %d</item>
+    </plurals>
+
+    <!-- Game picker header: pending changes -->
+    <plurals name="xmbu_picker_to_add">
+        <item quantity="one">Добавить: %d</item>
+        <item quantity="few">Добавить: %d</item>
+        <item quantity="many">Добавить: %d</item>
+        <item quantity="other">Добавить: %d</item>
+    </plurals>
+    <plurals name="xmbu_picker_to_remove">
+        <item quantity="one">Удалить: %d</item>
+        <item quantity="few">Удалить: %d</item>
+        <item quantity="many">Удалить: %d</item>
+        <item quantity="other">Удалить: %d</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_games">
+        <item quantity="one">%1$d игра · отмечено: %2$d</item>
+        <item quantity="few">%1$d игры · отмечено: %2$d</item>
+        <item quantity="many">%1$d игр · отмечено: %2$d</item>
+        <item quantity="other">%1$d игры · отмечено: %2$d</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_cards">
+        <item quantity="one">%d карта · выбранная переносится сюда</item>
+        <item quantity="few">%d карты · выбранная переносится сюда</item>
+        <item quantity="many">%d карт · выбранная переносится сюда</item>
+        <item quantity="other">%d карты · выбранная переносится сюда</item>
+    </plurals>
+    <plurals name="xmbu_picker_card_games">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+
+    <!-- Music track picker -->
+    <plurals name="xmbu_track_picker_add_count">
+        <item quantity="one">Добавить %d</item>
+        <item quantity="few">Добавить %d</item>
+        <item quantity="many">Добавить %d</item>
+        <item quantity="other">Добавить %d</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_selected">
+        <item quantity="one">Выбрано: %d</item>
+        <item quantity="few">Выбрано: %d</item>
+        <item quantity="many">Выбрано: %d</item>
+        <item quantity="other">Выбрано: %d</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_add_tracks">
+        <item quantity="one">Добавить %d трек</item>
+        <item quantity="few">Добавить %d трека</item>
+        <item quantity="many">Добавить %d треков</item>
+        <item quantity="other">Добавить %d трека</item>
+    </plurals>
+
+    <!-- Notification age -->
+    <plurals name="xmbu_time_minutes_ago">
+        <item quantity="one">%d минуту назад</item>
+        <item quantity="few">%d минуты назад</item>
+        <item quantity="many">%d минут назад</item>
+        <item quantity="other">%d минуты назад</item>
+    </plurals>
+    <plurals name="xmbu_time_hours_ago">
+        <item quantity="one">%d час назад</item>
+        <item quantity="few">%d часа назад</item>
+        <item quantity="many">%d часов назад</item>
+        <item quantity="other">%d часа назад</item>
+    </plurals>
+    <plurals name="xmbu_artfolder_move_message">
+        <item quantity="one">%d изображение хранится внутри приложения и пропадёт при удалении. Выберите папку, и PFP перенесёт его туда.</item>
+        <item quantity="few">%d изображения хранятся внутри приложения и пропадут при удалении. Выберите папку, и PFP перенесёт их туда.</item>
+        <item quantity="many">%d изображений хранятся внутри приложения и пропадут при удалении. Выберите папку, и PFP перенесёт их туда.</item>
+        <item quantity="other">%d изображения хранятся внутри приложения и пропадут при удалении. Выберите папку, и PFP перенесёт их туда.</item>
+    </plurals>
+    <plurals name="xmbu_artfolder_foreign_message">
+        <item quantity="one">%1$s настроена другой установкой (%2$d файл). Используйте её, и PFP привяжет ваши игры к её обложкам, или выберите другую папку.</item>
+        <item quantity="few">%1$s настроена другой установкой (%2$d файла). Используйте её, и PFP привяжет ваши игры к её обложкам, или выберите другую папку.</item>
+        <item quantity="many">%1$s настроена другой установкой (%2$d файлов). Используйте её, и PFP привяжет ваши игры к её обложкам, или выберите другую папку.</item>
+        <item quantity="other">%1$s настроена другой установкой (%2$d файла). Используйте её, и PFP привяжет ваши игры к её обложкам, или выберите другую папку.</item>
+    </plurals>
+    <plurals name="xmbu_status_notifications_unread">
+        <item quantity="one">Уведомления, непрочитанных: %d</item>
+        <item quantity="few">Уведомления, непрочитанных: %d</item>
+        <item quantity="many">Уведомления, непрочитанных: %d</item>
+        <item quantity="other">Уведомления, непрочитанных: %d</item>
+    </plurals>
+</resources>

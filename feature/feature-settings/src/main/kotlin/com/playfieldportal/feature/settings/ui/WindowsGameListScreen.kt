@@ -24,6 +24,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,6 +33,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.playfieldportal.core.domain.model.WindowsGameLabel
 import com.playfieldportal.core.ui.components.PfpChoiceOption
 import com.playfieldportal.core.ui.components.PfpModalSpec
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.feature.settings.viewmodel.KitChoice
 import com.playfieldportal.feature.settings.viewmodel.WindowsGameListUiState
 import com.playfieldportal.feature.settings.viewmodel.WindowsGameListViewModel
@@ -38,9 +42,6 @@ import com.playfieldportal.feature.settings.viewmodel.WindowsGameRow
 import com.playfieldportal.feature.settings.viewmodel.labelPickerItems
 import com.playfieldportal.feature.settings.viewmodel.labelValueText
 import com.playfieldportal.feature.settings.viewmodel.showsFolderAction
-
-private const val FOLDER_ACTION_LINK = "Link Folder"
-private const val FOLDER_ACTION_RELINK = "Change Linked Folder"
 
 /**
  * Windows ▸ Game List: one row per Windows game with its label and, for Local games, a folder
@@ -98,10 +99,11 @@ private fun WindowsGameListContent(
     val itemMenu = rememberSettingsItemMenu()
     val modal = rememberSettingsModal(
         state.kitChoice?.let { kitChoiceSpec(it, onLinkOnly, onInstallKitAndLink, onDismissKitChoice) }
-            ?: state.notice?.let { message ->
+            ?: state.notice?.let { notice ->
+                val message = notice.asString()
                 PfpModalSpec.Notice(
                     key = "notice:$message",
-                    title = "Game List",
+                    title = stringResource(R.string.lib_win_title),
                     message = message,
                     onDismiss = onDismissNotice,
                 )
@@ -109,8 +111,8 @@ private fun WindowsGameListContent(
     )
 
     SettingsScaffold(
-        title = "Game List",
-        subtitle = "${state.rows.size} games",
+        title = stringResource(R.string.lib_win_title),
+        subtitle = pluralStringResource(R.plurals.lib_win_game_count, state.rows.size, state.rows.size),
         onBack = onBack,
         modifier = modifier,
         modalOpen = modal.open,
@@ -121,7 +123,7 @@ private fun WindowsGameListContent(
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
             if (state.loaded && state.rows.isEmpty()) {
                 Text(
-                    text = "No Windows games yet — import some from Import PC Games first.",
+                    text = stringResource(R.string.lib_win_empty),
                     color = SettingsSubtext,
                     modifier = Modifier.padding(horizontal = 48.dp, vertical = 12.dp),
                 )
@@ -144,6 +146,10 @@ private fun GameListRow(
     onPickFolder: (Long) -> Unit,
 ) {
     val showFolder = showsFolderAction(row)
+    // Read here: the picker menu is built in a click handler, which cannot read resources.
+    val currentLabel = stringResource(R.string.lib_win_current)
+    val folderLabel = stringResource(if (row.folderLinked) R.string.lib_win_change_folder else R.string.lib_win_link_folder)
+    val resources = rememberSettingsResources()
     SettingsRow(
         label = row.title,
         // The linked folder, muted under the title; only a Local game carries one.
@@ -152,7 +158,7 @@ private fun GameListRow(
         enabled = !row.busy,
         trailing = {
             Text(
-                text = if (row.busy) "Working…" else labelValueText(row),
+                text = if (row.busy) stringResource(R.string.lib_win_working) else labelValueText(row).asString(),
                 color = SettingsText,
                 fontSize = 13.sp,
                 style = TextStyle(shadow = SettingsTextShadow),
@@ -162,18 +168,17 @@ private fun GameListRow(
             itemMenu.show(
                 row.title,
                 labelPickerItems(row).map { item ->
-                    SettingsMenuItem(item.text, value = "Current".takeIf { item.isCurrent }) {
+                    SettingsMenuItem(item.text.resolve(resources), value = currentLabel.takeIf { item.isCurrent }) {
                         onSetLabel(row.gameId, item.label)
                     }
                 },
             )
         },
-        actions = if (showFolder) listOf(folderAction(row) { onPickFolder(row.gameId) }) else emptyList(),
+        actions = if (showFolder) listOf(folderAction(row, folderLabel) { onPickFolder(row.gameId) }) else emptyList(),
     )
 }
 
-private fun folderAction(row: WindowsGameRow, onClick: () -> Unit): SettingsRowAction {
-    val label = if (row.folderLinked) FOLDER_ACTION_RELINK else FOLDER_ACTION_LINK
+private fun folderAction(row: WindowsGameRow, label: String, onClick: () -> Unit): SettingsRowAction {
     return SettingsRowAction(
         label, onClick,
         actionFocusBackgroundColor = lerp(SettingsAccent, Color.Black, 0.50f),
@@ -201,6 +206,7 @@ private fun folderAction(row: WindowsGameRow, onClick: () -> Unit): SettingsRowA
 }
 
 // A picked folder that carries no achievement list: link as is, or write the emulator kit first.
+@Composable
 internal fun kitChoiceSpec(
     choice: KitChoice,
     onLinkOnly: () -> Unit,
@@ -208,22 +214,18 @@ internal fun kitChoiceSpec(
     onCancel: () -> Unit,
 ): PfpModalSpec {
     val options = buildList {
-        add(PfpChoiceOption("Link only"))
-        if (choice.installerEnabled) add(PfpChoiceOption("Install kit & link"))
+        add(PfpChoiceOption(stringResource(R.string.lib_win_kit_link_only)))
+        if (choice.installerEnabled) add(PfpChoiceOption(stringResource(R.string.lib_win_kit_install_and_link)))
     }
     return PfpModalSpec.Choice(
         key = choice,
-        title = "No achievement list in \"${choice.folderName}\"",
+        title = stringResource(R.string.lib_win_kit_title, choice.folderName),
         // Only offer the kit when its option is there (survey U34).
-        message = if (choice.installerEnabled) {
-            "This folder has no emulator achievement data yet. Link it as is, or install the " +
-                "emulator kit into it first."
-        } else {
-            "This folder has no emulator achievement data yet. Link it as is, or turn on Install " +
-                "Goldberg & Convert Games in Settings ▸ Achievements ▸ Local Windows to install the kit."
-        },
+        message = stringResource(
+            if (choice.installerEnabled) R.string.lib_win_kit_message_installer else R.string.lib_win_kit_message_no_installer,
+        ),
         options = options,
-        confirmLabel = "Link",
+        confirmLabel = stringResource(R.string.lib_win_kit_link),
         onConfirm = { index -> if (index == 1) onInstallKitAndLink() else onLinkOnly() },
         onCancel = onCancel,
     )

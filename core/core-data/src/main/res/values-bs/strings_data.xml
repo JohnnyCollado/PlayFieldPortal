@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Voice microphone sensitivity (Discord) -->
+    <string name="data_mic_sensitivity_auto">Automatski</string>
+    <string name="data_mic_sensitivity_high">Visoka</string>
+    <string name="data_mic_sensitivity_low">Niska · filtrira klikove</string>
+    <string name="data_mic_sensitivity_minimal">Minimalna · samo glasan govor</string>
+
+    <!-- Discord sign-in errors -->
+    <string name="data_discord_offline">Niste povezani s internetom. Ponovo se povežite i pokušajte opet.</string>
+    <string name="data_discord_unreachable">Nije moguće povezati se s Discordom</string>
+    <string name="data_discord_signin_network_error">Mrežna greška pri prijavi</string>
+
+    <!-- Music and video players -->
+    <string name="data_music_no_player">Nijedan muzički player ne može otvoriti ovu pjesmu. Instalirajte player ili ga odaberite u Postavke → Muzika.</string>
+    <string name="data_video_no_player_open">Nijedan video player ne može otvoriti ovu datoteku. Instalirajte player ili ga odaberite u Postavke → Video.</string>
+    <string name="data_video_chooser_title">Reproduciraj videozapis pomoću…</string>
+    <string name="data_video_none_installed">Nije instaliran nijedan video player.</string>
+    <string name="data_video_bad_location">Lokacija ovog videozapisa nije važeća.</string>
+    <string name="data_video_unreachable">Ova videodatoteka nije pronađena ili je pristup izgubljen. Pokušajte ponovo skenirati biblioteku.</string>
+    <string name="data_video_player_cannot_open">%1$s ne može otvoriti ovaj videozapis ili nije instaliran.</string>
+    <string name="data_video_that_player">Taj player</string>
+    <string name="data_video_none_installed_for_file">Nije instaliran nijedan video player koji može otvoriti ovu datoteku.</string>
+
+    <!-- Lock screen image -->
+    <string name="data_lockscreen_unreadable">Tu sliku nije moguće pročitati</string>
+    <string name="data_lockscreen_rejected">Ovaj uređaj nije prihvatio sliku zaključanog ekrana</string>
+
+    <!-- PSP theme import (.ptf) -->
+    <string name="data_ptf_unreadable">Datoteku nije moguće pročitati (ili je prevelika)</string>
+    <string name="data_ptf_not_ptf">Nije datoteka PSP teme (.ptf)</string>
+    <string name="data_ptf_unparseable">Datoteku teme nije moguće raščlaniti</string>
+    <string name="data_ptf_wallpaper_missing">Tema nema sliku pozadine</string>
+    <string name="data_ptf_wallpaper_unsupported">Ova tema sažima pozadinu metodom koja nije podržana</string>
+    <string name="data_ptf_wallpaper_damaged">Pozadina teme je oštećena i nije je moguće dekodirati</string>
+    <string name="data_ptf_save_failed">Temu nije moguće sačuvati</string>
+
+    <!-- Custom media names -->
+    <string name="data_custom_video">Prilagođeni videozapis</string>
+    <string name="data_custom_sound">Prilagođeni zvuk</string>
+
+    <!-- Controllers -->
+    <string name="data_controller_fallback_name">Kontroler</string>
+</resources>

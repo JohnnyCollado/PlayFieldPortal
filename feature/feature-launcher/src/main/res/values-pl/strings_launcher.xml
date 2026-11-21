@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="launch_err_custom_command">Profile z własnym poleceniem nie są już obsługiwane. Przełącz ten emulator na metodę uruchamiania „Otwórz ROM w aplikacji” lub „Otwórz ekran aplikacji”.</string>
+    <string name="launch_err_shortcut_unsupported">Uruchamianie skrótu nie jest obsługiwane na tym ekranie</string>
+    <string name="launch_err_no_package">Brak zapisanego pakietu Androida dla %1$s</string>
+    <string name="launch_err_app_not_launchable">Aplikacja Androida nie jest zainstalowana lub nie można jej uruchomić: %1$s</string>
+    <string name="launch_err_emulator_not_installed">Emulator nie jest zainstalowany: %1$s (%2$s)</string>
+    <string name="launch_err_wrong_build">%1$s (%2$s) to nie oczekiwana wersja: certyfikat podpisu się nie zgadza. Zainstaluj emulator ponownie z oficjalnego źródła.</string>
+    <string name="launch_err_no_activity_for_path">%1$s nie ma zapisanej aktywności uruchamiania, więc nie można mu przekazać ścieżki pliku. Zaimportuj ponownie jego wpis bazy wiedzy lub wykryj emulator ponownie.</string>
+    <string name="launch_err_activity_required">Ta metoda uruchamiania wymaga nazwy ekranu aplikacji - profil: %1$s</string>
+    <string name="launch_err_activity_gone">%1$s nie udostępnia już swojej aktywności uruchamiania (%2$s). Zaktualizuj emulator lub wybierz inny emulator dla tej platformy.</string>
+    <string name="launch_err_no_launch_id">Brak zapisanego identyfikatora uruchamiania dla %1$s. Przeskanuj ponownie jego bibliotekę.</string>
+    <string name="launch_err_rom_link_invalid">Łącze do ROM-u tej gry jest nieprawidłowe. Przeskanuj ponownie jej bibliotekę.</string>
+    <string name="launch_err_lost_access">Play Field Portal utracił dostęp do pliku tej gry. Podłącz ponownie pamięć i przeskanuj jej bibliotekę.</string>
+    <string name="launch_err_rom_path_required">Do uruchomienia %1$s wymagana jest ścieżka ROM-u</string>
+    <string name="launch_err_rom_not_found">Nie znaleziono pliku ROM: %1$s</string>
+    <string name="launch_err_no_core">Brak skonfigurowanego rdzenia RetroArch dla platformy \'%1$s\' w profilu \'%2$s\'. Otwórz RetroArch → Core Downloader, aby zainstalować rdzeń dla tego systemu.</string>
+    <string name="launch_err_cannot_open_rom_type">%1$s nie może otworzyć tego typu ROM-u. Spróbuj zainstalować emulator ponownie lub sprawdź jego uprawnienia w ustawieniach Androida.</string>
+    <string name="launch_err_no_file_path">%1$s nie ma ścieżki pliku na tym urządzeniu, więc nie można wskazać %2$s, którą grę uruchomić.</string>
+    <string name="launch_err_not_in_rom_folder">%1$s nie znajduje się w skonfigurowanym folderze ROM-ów, więc nie można go przekazać do %2$s. Sprawdź folder ustawiony dla tej karty pamięci w Ustawieniach.</string>
+
+    <string name="launch_err_configured_missing">Emulator (%1$s) nie jest zainstalowany ani dostępny: %2$s</string>
+    <string name="launch_err_core_not_installed">%1$s jest ustawiony jako %2$s, ale ten rdzeń nie jest zainstalowany w RetroArch. Zainstaluj go lub wybierz inny emulator.</string>
+    <string name="launch_err_no_longer_available">%1$s jest ustawiony jako %2$s, ale nie jest już dostępny. Wybierz inny emulator.</string>
+    <string name="launch_err_not_configured_for_platform">%1$s nie jest skonfigurowany dla %2$s</string>
+    <string name="launch_err_no_emulator_for_platform">Brak skonfigurowanego emulatora dla %1$s. Wybierz emulator dla tej gry lub ustaw domyślny dla platformy.</string>
+
+    <string name="launch_source_per_game">Ustawienie dla gry</string>
+    <string name="launch_source_per_game_lower">ustawienie dla gry</string>
+    <string name="launch_source_memory_card">Domyślny dla karty pamięci</string>
+    <string name="launch_source_memory_card_lower">domyślny dla karty pamięci</string>
+    <string name="launch_source_platform">Domyślny dla platformy</string>
+    <string name="launch_source_platform_lower">domyślny dla platformy</string>
+    <string name="launch_source_recommended">Zalecany</string>
+    <string name="launch_source_recommended_lower">zalecany</string>
+    <string name="launch_phrase_per_game">ustawienie dla gry</string>
+    <string name="launch_phrase_memory_card">emulator karty pamięci</string>
+    <string name="launch_phrase_platform">domyślny dla platformy</string>
+
+    <string name="launch_err_emulator_not_found">Nie znaleziono emulatora. Czy jest zainstalowany?</string>
+    <string name="launch_err_permission_denied">Odmowa uprawnień przy uruchamianiu emulatora</string>
+    <string name="launch_err_open_emulator">Nie można otworzyć emulatora: %1$s</string>
+    <string name="launch_never_foreground">Emulator nie pojawił się na pierwszym planie po uruchomieniu.</string>
+    <string name="launch_never_appeared">Emulator się nie pojawił. Sprawdź, czy jest zainstalowany i aktualny, a potem spróbuj uruchomić ponownie.</string>
+    <plurals name="launch_history_failed">
+        <item quantity="one">Nieudane uruchomienia tej gry: %1$d z ostatnich %2$d.</item>
+        <item quantity="few">Nieudane uruchomienia tej gry: %1$d z ostatnich %2$d.</item>
+        <item quantity="many">Nieudane uruchomienia tej gry: %1$d z ostatnich %2$d.</item>
+        <item quantity="other">Nieudane uruchomienia tej gry: %1$d z ostatnich %2$d.</item>
+    </plurals>
+
+    <string name="launch_rec_title">Nie udało się uruchomić %1$s</string>
+    <string name="launch_rec_could_not_start">Nie można uruchomić emulatora</string>
+    <string name="launch_rec_never_foreground">Emulator nie pojawił się na pierwszym planie</string>
+    <string name="launch_fact_emulator">Emulator</string>
+    <string name="launch_fact_core">Rdzeń</string>
+    <string name="launch_fact_platform">Platforma</string>
+    <string name="launch_fact_recent">Ostatnie uruchomienia</string>
+    <string name="launch_fact_recent_value">Nieudane: %1$d z ostatnich %2$d</string>
+
+    <string name="launch_shortcut_request_title">Prośba o skrót: %1$s (otwiera %2$s)</string>
+    <string name="launch_shortcut_request_message">Dodaj go tylko, jeśli właśnie sam utworzono ten skrót.</string>
+    <string name="launch_shortcut_added_title">Dodano skrót: %1$s</string>
+    <string name="launch_shortcut_ignored_title">Zignorowano skrót: %1$s</string>
+    <string name="launch_shortcut_from">Od: %1$s</string>
+    <string name="launch_windows_added_title">Dodano „%1$s” do gier Windows</string>
+    <string name="launch_windows_added_message">Dokończ konfigurację biblioteki Windows, aby przeskanować jej folder</string>
+
+    <string name="launch_setup_add_rom_folder">Dodaj folder ROM-ów, aby utworzyć bibliotekę</string>
+    <string name="launch_setup_add_console_card">Dodaj kartę pamięci konsoli do skanowania</string>
+    <string name="launch_setup_install_emulator">Zainstaluj emulator, aby grać w gry</string>
+
+    <string name="launch_inspect_known">Uzupełniono automatycznie z wbudowanego profilu dla %1$s. Potwierdź platformy i zapisz.</string>
+    <string name="launch_inspect_best_guess">Najlepsze przypuszczenie na podstawie tego, jak ta aplikacja otwiera pliki ROM. Ustaw platformy, a przed zapisaniem przetestuj ROM.</string>
+    <string name="launch_inspect_minimal">Nie wykryto, jak ta aplikacja przyjmuje ROM-y. Uzupełnij ręcznie ustawienia aktywności / intencji, a potem przetestuj ROM.</string>
+
+    <string name="launch_kb_too_many_files">Można zaimportować maksymalnie %1$d plików wiedzy; najpierw usuń jeden</string>
+    <string name="launch_kb_installed">Zaktualizowano</string>
+    <string name="launch_kb_not_configured">Aktualizacje nie są skonfigurowane w tej wersji</string>
+    <string name="launch_kb_offline">Nie można połączyć się z serwerem aktualizacji</string>
+    <string name="launch_kb_too_large">Plik aktualizacji jest za duży</string>
+    <string name="launch_kb_signature_invalid">Podpis aktualizacji jest nieprawidłowy</string>
+    <string name="launch_kb_needs_app_update">Ta aktualizacja wymaga nowszej wersji aplikacji</string>
+    <string name="launch_kb_older">Aktualizacja jest starsza niż już zainstalowana</string>
+    <string name="launch_kb_invalid_content">Plik aktualizacji ma nieprawidłową zawartość</string>
+    <string name="launch_kb_storage_failed">Nie można zapisać aktualizacji</string>
+    <string name="launch_kb_skipped">Sprawdzanie nie było potrzebne</string>
+
+    <string name="launch_unknown_gamehub_or_bannerhub">może to być GameHub lub BannerHub</string>
+    <string name="launch_unknown_gamehublite_or_bannerhub">może to być GameHub Lite lub BannerHub</string>
+    <string name="launch_unknown_not_in_list">brak na liście PFP</string>
+    <string name="launch_choice_not_a_launcher">To nie launcher</string>
+    <string name="launch_id_prompt_gamehub">ID gry — na stronie gry: dotknij Kopiuj obok Local Game ID lub ⋮ → Banner Tools → Show Game ID</string>
+    <string name="launch_id_prompt_gamenative">Steam App ID (lub ID aplikacji ze sklepu) zainstalowanej gry</string>
+</resources>

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared -->
+    <string name="art_error_unexpected">Error inesperado</string>
+    <string name="art_no_folder_linked">No hay carpeta de ilustraciones vinculada</string>
+    <string name="art_paused_message">Ilustraciones en pausa. Vuelve a vincular tu carpeta de ilustraciones para guardar nuevas.</string>
+    <string name="art_error_game_not_found">Juego no encontrado</string>
+    <string name="art_error_not_found_any_source">No se encontró en ninguna fuente</string>
+    <string name="art_found_via">Encontrado mediante %1$s</string>
+    <string name="art_results_label_updated">Actualizados</string>
+    <string name="art_results_label_imported">Importados</string>
+
+    <!-- Live scrape progress -->
+    <string name="art_progress_hashing">Calculando el hash de la ROM…</string>
+    <string name="art_progress_searching">Buscando…</string>
+    <string name="art_asset_hero">Hero</string>
+    <string name="art_asset_background">Fondo</string>
+    <string name="art_asset_logo">Logo</string>
+    <string name="art_asset_box_art">Carátula</string>
+    <string name="art_asset_physical_media">Soporte físico</string>
+    <string name="art_asset_3d_box">Caja 3D</string>
+    <string name="art_asset_screenshot">Captura</string>
+    <string name="art_asset_manual">Manual</string>
+    <string name="art_asset_video">Video</string>
+    <string name="art_asset_icon_video">Video de icono</string>
+    <string name="art_asset_icon_video_converting">Video de icono (convirtiendo)</string>
+    <string name="art_source_storefronts">Tiendas</string>
+
+    <!-- Metadata fields -->
+    <string name="art_field_title">Título</string>
+    <string name="art_field_description">Descripción</string>
+    <string name="art_field_developer">Desarrollador</string>
+    <string name="art_field_publisher">Distribuidor</string>
+    <string name="art_field_year">Año</string>
+    <string name="art_field_release_date">Fecha de lanzamiento</string>
+    <string name="art_field_genre">Género</string>
+    <string name="art_field_age_rating">Clasificación por edad</string>
+    <string name="art_field_franchise">Franquicia</string>
+    <string name="art_field_rating">Valoración</string>
+
+    <!-- Ways to apply scraped metadata -->
+    <string name="art_policy_replace_all">Reemplazar todo</string>
+    <string name="art_policy_fill_missing">Solo completar lo que falta</string>
+    <string name="art_policy_choose_fields">Elegir campos</string>
+    <string name="art_policy_keep_current">Mantener actual</string>
+
+    <!-- Scrape (background task) -->
+    <string name="art_scrape_label_all">Volviendo a obtener todos los juegos</string>
+    <string name="art_scrape_label_missing">Obteniendo las ilustraciones que faltan</string>
+    <string name="art_scrape_stop_note">Se conservan las ilustraciones ya obtenidas.</string>
+    <string name="art_scrape_paused_all_title">Nueva obtención de ilustraciones en pausa</string>
+    <string name="art_scrape_paused_title">Obtención de ilustraciones en pausa</string>
+    <string name="art_scrape_finished_all_title">Nueva obtención de ilustraciones terminada</string>
+    <string name="art_scrape_finished_title">Obtención de ilustraciones terminada</string>
+    <string name="art_scrape_stopped_title">Obtención de ilustraciones detenida</string>
+    <string name="art_scrape_failed_title">Error al obtener ilustraciones</string>
+    <string name="art_scrape_result">%1$d correctos, %2$d fallidos de %3$d</string>
+    <plurals name="art_scrape_stopped_after">
+        <item quantity="one">Detenido tras %1$d juego: se conservan las ilustraciones obtenidas hasta ahora</item>
+        <item quantity="many">Detenido tras %1$d juegos: se conservan las ilustraciones obtenidas hasta ahora</item>
+        <item quantity="other">Detenido tras %1$d juegos: se conservan las ilustraciones obtenidas hasta ahora</item>
+    </plurals>
+
+    <!-- Relink (background task) -->
+    <string name="art_relink_label">Volviendo a vincular ilustraciones</string>
+    <plurals name="art_relink_label_consoles">
+        <item quantity="one">Volviendo a vincular ilustraciones de %1$d consola</item>
+        <item quantity="many">Volviendo a vincular ilustraciones de %1$d consolas</item>
+        <item quantity="other">Volviendo a vincular ilustraciones de %1$d consolas</item>
+    </plurals>
+    <string name="art_relink_stop_note">Las ilustraciones ya vinculadas siguen vinculadas.</string>
+    <string name="art_relink_finished_title">Revinculación de ilustraciones terminada</string>
+    <string name="art_relink_stopped_title">Revinculación de ilustraciones detenida</string>
+    <string name="art_relink_stopped_note">Se conservan las ilustraciones vinculadas hasta ahora</string>
+    <string name="art_relink_failed_title">Error al volver a vincular ilustraciones</string>
+    <plurals name="art_relink_games_linked">
+        <item quantity="one">%1$d juego vinculado</item>
+        <item quantity="many">%1$d juegos vinculados</item>
+        <item quantity="other">%1$d juegos vinculados</item>
+    </plurals>
+    <plurals name="art_relink_files">
+        <item quantity="one">%1$d archivo</item>
+        <item quantity="many">%1$d archivos</item>
+        <item quantity="other">%1$d archivos</item>
+    </plurals>
+    <string name="art_relink_result">%1$s de %2$s</string>
+    <string name="art_relink_result_unmatched">%1$s · %2$d sin asociar</string>
+
+    <!-- Export to ES-DE (background task) -->
+    <string name="art_export_label">Exportando ilustraciones para ES-DE</string>
+    <string name="art_export_stop_note">Los archivos ya exportados se quedan donde están.</string>
+    <string name="art_export_error_no_destination">No hay carpeta de destino</string>
+    <string name="art_export_error_access_lost">Se perdió el acceso a la carpeta de ilustraciones</string>
+    <string name="art_export_dest_not_created">No se pudo crear la carpeta de destino.</string>
+    <plurals name="art_export_files_badge">
+        <item quantity="one">%1$d archivo</item>
+        <item quantity="many">%1$d archivos</item>
+        <item quantity="other">%1$d archivos</item>
+    </plurals>
+    <string name="art_export_failed_title">Error al exportar ilustraciones</string>
+    <string name="art_export_stopped_title">Exportación de ilustraciones detenida</string>
+    <string name="art_export_finished_title">Exportación de ilustraciones terminada</string>
+    <plurals name="art_export_stopped_note">
+        <item quantity="one">Se exportó antes %1$d archivo</item>
+        <item quantity="many">Se exportaron antes %1$d archivos</item>
+        <item quantity="other">Se exportaron antes %1$d archivos</item>
+    </plurals>
+    <string name="art_export_result">%1$d copiados, %2$d ya presentes, %3$d fallidos</string>
+
+    <!-- Import (background task and its notification) -->
+    <string name="art_import_plan_not_found">No se encontró el plan de importación</string>
+    <string name="art_import_plan_unreadable">No se puede leer el plan de importación</string>
+    <string name="art_import_label">Importando ilustraciones: %1$s</string>
+    <string name="art_import_stop_note">Se conservan las ilustraciones ya importadas.</string>
+    <string name="art_import_failed_title">Error al importar ilustraciones</string>
+    <string name="art_import_cancelled">Importación de ilustraciones cancelada</string>
+    <string name="art_import_done">Ilustraciones importadas</string>
+    <plurals name="art_import_needs_review">
+        <item quantity="one">Ilustraciones importadas, %1$d elemento necesita revisión</item>
+        <item quantity="many">Ilustraciones importadas, %1$d elementos necesitan revisión</item>
+        <item quantity="other">Ilustraciones importadas, %1$d elementos necesitan revisión</item>
+    </plurals>
+    <string name="art_import_headline">%1$s: %2$s</string>
+    <string name="art_import_counts">%1$d importados, %2$d omitidos, %3$d fallidos, %4$d ambiguos, %5$d sin asociar.</string>
+    <string name="art_import_results_summary">%1$d importados, %2$d omitidos</string>
+
+    <!-- Move artwork into the linked folder (background task) -->
+    <string name="art_move_label">Moviendo las ilustraciones a tu carpeta</string>
+    <string name="art_move_failed_title">Error al mover ilustraciones</string>
+    <string name="art_move_stopped_title">Traslado de ilustraciones detenido</string>
+    <string name="art_move_finished_title">Traslado de ilustraciones terminado</string>
+    <plurals name="art_move_stopped_note">
+        <item quantity="one">Se movió antes %1$d archivo</item>
+        <item quantity="many">Se movieron antes %1$d archivos</item>
+        <item quantity="other">Se movieron antes %1$d archivos</item>
+    </plurals>
+    <string name="art_move_result">%1$d movidos, %2$d ya cubiertos, %3$d fallidos</string>
+</resources>

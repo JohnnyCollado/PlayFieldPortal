@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.menuCursorFill
 import com.playfieldportal.core.ui.theme.themedText
+import androidx.compose.ui.res.stringResource
+import com.playfieldportal.feature.xmb.R
 
 /**
  * The bottom filmstrip: `Off` first, then every field, each tile a **live** preview of the same
@@ -154,7 +156,7 @@ private fun VisualizerTile(
         ) {
             if (visualizerId == VisualizerIds.OFF) {
                 // Not a renderer, so there is nothing to preview: the tile says so in words.
-                Text("OFF", color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.xmbu_visualizer_off_tile), color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
             } else {
                 VisualizerField(
                     host = host,
@@ -167,7 +169,7 @@ private fun VisualizerTile(
         }
         Spacer(Modifier.height(4.dp))
         Text(
-            VisualizerIds.labelFor(visualizerId),
+            stringResource(VisualizerIds.labelRes(visualizerId)),
             color = themedText(Color.White.copy(alpha = if (selected || focused) 0.95f else 0.6f)),
             fontSize = 11.sp,
         )

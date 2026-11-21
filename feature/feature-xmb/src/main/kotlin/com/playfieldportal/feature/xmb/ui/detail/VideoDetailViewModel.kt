@@ -8,10 +8,11 @@ import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.Video
 import com.playfieldportal.core.domain.repository.VideoRepository
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.components.PspMenuCue
 import com.playfieldportal.core.ui.components.PspMenuNav
-import com.playfieldportal.core.ui.components.PspMenuRow
 import com.playfieldportal.core.ui.components.PspMenuOutcome
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.sound.MenuSoundPlayer
 import com.playfieldportal.core.ui.sound.MenuSoundSink
@@ -32,24 +33,24 @@ import javax.inject.Inject
 
 // A row in the video's Options menu — or one of the page's own Play buttons (group == null): the
 // menu sits beside those buttons, so it never repeats them, with or without a resume point.
-enum class VideoDetailAction(val label: String, val group: String? = null) {
-    PLAY("Play"),
-    RESUME("Resume"),
-    RESTART("Start from Beginning"),
-    FAVORITE("Favorite", group = "Library"),
-    PLAYLIST("Add to Playlist", group = "Library"),
-    RENAME("Edit Title", group = "Customize"),
-    THUMBNAIL("Change Thumbnail", group = "Customize"),
-    INFO("View Information", group = "Manage"),
-    LOCATION("Show File Location", group = "Manage"),
-    REMOVE("Remove from Library", group = "Manage"),
+enum class VideoDetailAction(val label: UiText, val group: UiText? = null) {
+    PLAY(UiText.res(R.string.shiba_video_play)),
+    RESUME(UiText.res(R.string.shiba_video_resume)),
+    RESTART(UiText.res(R.string.shiba_video_restart)),
+    FAVORITE(UiText.res(R.string.shiba_video_favorite), group = UiText.res(R.string.shiba_video_group_library)),
+    PLAYLIST(UiText.res(R.string.shiba_video_add_to_playlist), group = UiText.res(R.string.shiba_video_group_library)),
+    RENAME(UiText.res(R.string.shiba_video_edit_title), group = UiText.res(R.string.shiba_video_group_customize)),
+    THUMBNAIL(UiText.res(R.string.shiba_video_change_thumbnail), group = UiText.res(R.string.shiba_video_group_customize)),
+    INFO(UiText.res(R.string.shiba_video_view_information), group = UiText.res(R.string.shiba_video_group_manage)),
+    LOCATION(UiText.res(R.string.shiba_video_show_location), group = UiText.res(R.string.shiba_video_group_manage)),
+    REMOVE(UiText.res(R.string.shiba_video_remove), group = UiText.res(R.string.shiba_video_group_manage)),
 }
 
 // One playlist choice in the "Add to Playlist" picker; checked = the video is already a member.
 data class VideoPlaylistOption(val id: Long, val name: String, val checked: Boolean)
 
 // Shown while an external player is being launched (themed overlay), until PFP regains focus.
-data class ExternalLaunch(val thumbnailUri: String?, val playerLabel: String)
+data class ExternalLaunch(val thumbnailUri: String?, val playerLabel: UiText)
 
 data class VideoDetailUiState(
     val video: Video? = null,
@@ -62,7 +63,7 @@ data class VideoDetailUiState(
     val confirmRemove: Boolean = false,
     val isEditingTitle: Boolean = false,
     val infoVisible: Boolean = false,
-    val actionMessage: String? = null,
+    val actionMessage: UiText? = null,
     // Non-null triggers the system image picker for a custom thumbnail.
     val pickThumbnail: Boolean = false,
     // Add-to-playlist picker.
@@ -100,18 +101,28 @@ data class VideoDetailUiState(
         get() = VideoDetailAction.entries.filter { it.group != null }
 }
 
+/** One row of the video's Options menu, its text still to be resolved: the screen draws it as a PspMenuRow. */
+internal data class VideoOptionRow(
+    val label: UiText,
+    val isDestructive: Boolean,
+    val value: UiText?,
+    val opensMenu: Boolean,
+    val silent: Boolean,
+    val header: UiText?,
+)
+
 /**
  * The Options menu's rows (mockup 3). Favorite keeps one label and states its value beside it, and
  * stays silent; a group header goes on the first row of each group.
  */
-internal fun videoOptionRows(state: VideoDetailUiState): List<PspMenuRow> {
+internal fun videoOptionRows(state: VideoDetailUiState): List<VideoOptionRow> {
     val actions = state.optionsActions
     return actions.mapIndexed { index, action ->
-        PspMenuRow(
+        VideoOptionRow(
             label = action.label,
             isDestructive = action == VideoDetailAction.REMOVE,
             value = if (action == VideoDetailAction.FAVORITE) {
-                if (state.video?.isFavorite == true) "On" else "Off"
+                UiText.res(if (state.video?.isFavorite == true) R.string.shiba_video_favorite_on else R.string.shiba_video_favorite_off)
             } else null,
             opensMenu = action == VideoDetailAction.PLAYLIST,
             silent = action == VideoDetailAction.FAVORITE,
@@ -241,7 +252,8 @@ class VideoDetailViewModel @Inject constructor(
             VideoDetailAction.RENAME  -> startEditTitle()
             VideoDetailAction.THUMBNAIL -> _uiState.update { it.copy(pickThumbnail = true) }
             VideoDetailAction.INFO    -> _uiState.update { it.copy(infoVisible = true) }
-            VideoDetailAction.LOCATION -> showMessage(video.relativePath?.let { "In: $it" } ?: video.displayName)
+            VideoDetailAction.LOCATION ->
+                showMessage(video.relativePath?.let { UiText.res(R.string.shiba_video_location_in, it) } ?: UiText.raw(video.displayName))
             VideoDetailAction.REMOVE  -> _uiState.update { it.copy(confirmRemove = true) }
         }
     }
@@ -253,7 +265,7 @@ class VideoDetailViewModel @Inject constructor(
         viewModelScope.launch {
             val next = !v.isFavorite
             videoRepository.setFavorite(v.id, next)
-            _uiState.update { it.copy(video = it.video?.copy(isFavorite = next), actionMessage = if (next) "Added to Favorites" else "Removed from Favorites") }
+            _uiState.update { it.copy(video = it.video?.copy(isFavorite = next), actionMessage = UiText.res(if (next) R.string.shiba_video_added_favorite else R.string.shiba_video_removed_favorite)) }
         }
     }
 
@@ -327,7 +339,11 @@ class VideoDetailViewModel @Inject constructor(
                 _uiState.update { it.copy(showOptions = false, launchError = err) }
                 return@launch
             }
-            val label = if (ask) "an external player" else (intentResolver.playerLabel(pref) ?: "external player")
+            val label = if (ask) {
+                UiText.res(R.string.shiba_video_player_ask)
+            } else {
+                intentResolver.playerLabel(pref)?.let { UiText.raw(it) } ?: UiText.res(R.string.shiba_video_player_fallback)
+            }
             _uiState.update {
                 it.copy(showOptions = false, externalLaunch = ExternalLaunch(video.effectiveThumbnailUri, label))
             }
@@ -408,9 +424,9 @@ class VideoDetailViewModel @Inject constructor(
         val v = _uiState.value.video ?: return
         viewModelScope.launch {
             val path = copyThumbnail(uri, v.id)
-            if (path == null) { showMessage("Could not import image"); return@launch }
+            if (path == null) { showMessage(UiText.res(R.string.shiba_video_import_failed)); return@launch }
             videoRepository.setCustomThumbnail(v.id, path)
-            _uiState.update { it.copy(video = videoRepository.getVideo(v.id) ?: it.video, actionMessage = "Thumbnail updated") }
+            _uiState.update { it.copy(video = videoRepository.getVideo(v.id) ?: it.video, actionMessage = UiText.res(R.string.shiba_video_thumbnail_updated)) }
         }
     }
 
@@ -442,5 +458,5 @@ class VideoDetailViewModel @Inject constructor(
     }
 
     fun dismissMessage() = _uiState.update { it.copy(actionMessage = null) }
-    private fun showMessage(msg: String) = _uiState.update { it.copy(actionMessage = msg) }
+    private fun showMessage(msg: UiText) = _uiState.update { it.copy(actionMessage = msg) }
 }

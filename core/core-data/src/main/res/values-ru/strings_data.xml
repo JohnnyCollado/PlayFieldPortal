@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Voice microphone sensitivity (Discord) -->
+    <string name="data_mic_sensitivity_auto">Авто</string>
+    <string name="data_mic_sensitivity_high">Высокая</string>
+    <string name="data_mic_sensitivity_low">Низкая · без щелчков</string>
+    <string name="data_mic_sensitivity_minimal">Минимальная · только громкая речь</string>
+
+    <!-- Discord sign-in errors -->
+    <string name="data_discord_offline">Нет подключения. Подключитесь к интернету и повторите попытку.</string>
+    <string name="data_discord_unreachable">Не удалось связаться с Discord</string>
+    <string name="data_discord_signin_network_error">Ошибка сети при входе</string>
+
+    <!-- Music and video players -->
+    <string name="data_music_no_player">Ни один плеер не смог открыть этот трек. Установите плеер или выберите его в разделе «Настройки → Музыка».</string>
+    <string name="data_video_no_player_open">Ни один видеоплеер не смог открыть этот файл. Установите плеер или выберите его в разделе «Настройки → Видео».</string>
+    <string name="data_video_chooser_title">Воспроизвести видео с помощью…</string>
+    <string name="data_video_none_installed">Видеоплеер не установлен.</string>
+    <string name="data_video_bad_location">Неверное расположение видео.</string>
+    <string name="data_video_unreachable">Видеофайл не найден или доступ к нему потерян. Попробуйте заново просканировать библиотеку.</string>
+    <string name="data_video_player_cannot_open">%1$s не может открыть это видео или не установлен.</string>
+    <string name="data_video_that_player">Этот плеер</string>
+    <string name="data_video_none_installed_for_file">Нет видеоплеера, способного открыть этот файл.</string>
+
+    <!-- Lock screen image -->
+    <string name="data_lockscreen_unreadable">Не удалось прочитать изображение</string>
+    <string name="data_lockscreen_rejected">Устройство не приняло изображение для экрана блокировки</string>
+
+    <!-- PSP theme import (.ptf) -->
+    <string name="data_ptf_unreadable">Не удалось прочитать файл (или он слишком большой)</string>
+    <string name="data_ptf_not_ptf">Это не файл темы PSP (.ptf)</string>
+    <string name="data_ptf_unparseable">Не удалось разобрать файл темы</string>
+    <string name="data_ptf_wallpaper_missing">В теме нет обоев</string>
+    <string name="data_ptf_wallpaper_unsupported">Обои темы сжаты неподдерживаемым методом</string>
+    <string name="data_ptf_wallpaper_damaged">Обои темы повреждены и не декодируются</string>
+    <string name="data_ptf_save_failed">Не удалось сохранить тему</string>
+
+    <!-- Custom media names -->
+    <string name="data_custom_video">Своё видео</string>
+    <string name="data_custom_sound">Свой звук</string>
+
+    <!-- Controllers -->
+    <string name="data_controller_fallback_name">Контроллер</string>
+</resources>

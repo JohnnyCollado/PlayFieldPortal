@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -18,6 +19,8 @@ import com.playfieldportal.core.domain.model.emulatorkb.FieldChange
 import com.playfieldportal.core.domain.model.emulatorkb.ImportItem
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.components.PfpCheckbox
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.feature.settings.viewmodel.KbImportReview
 
 /** The warning badge colour Settings uses for "needs attention" states. */
@@ -26,9 +29,11 @@ internal val WarningAmber = Color(0xFFB7791F)
 /** Same ink as the wizard's checkbox rows. */
 private val CheckboxMark = Color(0xFF06224B)
 
-private val ReviewHelperItems = listOf(
-    ControllerPromptItem(GamepadAction.SELECT, "Toggle"),
-    ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+/** The footer prompts shared by the import review and the export picker. */
+@Composable
+internal fun knowledgeHelperItems() = listOf(
+    ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.lib_kb_prompt_toggle)),
+    ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.lib_kb_prompt_cancel)),
 )
 
 internal val platformNames: Map<String, String> by lazy { PlatformSeeder.DEFAULT_PLATFORMS.associate { it.id to it.name } }
@@ -54,26 +59,26 @@ internal fun EmulatorKnowledgeReview(
     val unchanged = items.count { it is ImportItem.Unchanged }
 
     SettingsScaffold(
-        title = "Settings",
-        subtitle = "Review ${review.displayName}",
+        title = stringResource(R.string.settings_title),
+        subtitle = stringResource(R.string.lib_kb_review_title, review.displayName),
         onBack = onCancel,
         modifier = modifier.fillMaxSize(),
-        helperFooterItems = ReviewHelperItems,
+        helperFooterItems = knowledgeHelperItems(),
     ) {
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(modifier = Modifier.fillMaxSize().verticalScroll(scrollState)) {
             SettingsRow(
-                label = "Not signed · from a file on this device",
-                sublabel = "Import only files you trust: these tell PFP which app opens your games.",
+                label = stringResource(R.string.lib_kb_review_unsigned),
+                sublabel = stringResource(R.string.lib_kb_review_unsigned_sub),
                 focusKey = "knowledge_review_unsigned",
-                labelTrailing = { KnowledgeBadge("Unsigned", WarningAmber) },
+                labelTrailing = { KnowledgeBadge(stringResource(R.string.lib_kb_badge_unsigned), WarningAmber) },
             )
             if (added.isNotEmpty()) {
-                SettingsGroup("New emulators")
+                SettingsGroup(stringResource(R.string.lib_kb_group_new))
                 added.forEach { item ->
                     ReviewCheckRow(
-                        label = "Add ${item.entry.name}",
+                        label = stringResource(R.string.lib_kb_review_add, item.entry.name),
                         sublabel = newEntrySummary(item.entry),
                         focusKey = "knowledge_review_${item.key}",
                         checked = item.selected,
@@ -82,27 +87,27 @@ internal fun EmulatorKnowledgeReview(
                 }
             }
             if (changed.isNotEmpty()) {
-                SettingsGroup("Already on this device")
+                SettingsGroup(stringResource(R.string.lib_kb_group_existing))
                 changed.forEach { item ->
                     ReviewCheckRow(
-                        label = "Override ${item.entry.name}",
+                        label = stringResource(R.string.lib_kb_review_override, item.entry.name),
                         sublabel = diffText(item.diff),
                         focusKey = "knowledge_review_${item.key}",
                         checked = item.selected,
                         onToggle = { onToggle(item.key) },
                         badges = {
-                            if (item.overridesOfficial) KnowledgeBadge("Overrides official", WarningAmber)
-                            if (item.userEdited) KnowledgeBadge("Your edit", SettingsAccent.copy(alpha = 0.55f))
+                            if (item.overridesOfficial) KnowledgeBadge(stringResource(R.string.lib_kb_badge_overrides_official), WarningAmber)
+                            if (item.userEdited) KnowledgeBadge(stringResource(R.string.lib_kb_badge_your_edit), SettingsAccent.copy(alpha = 0.55f))
                         },
                     )
                 }
             }
             if (consoles.isNotEmpty()) {
-                SettingsGroup("Consoles")
+                SettingsGroup(stringResource(R.string.lib_kb_group_consoles))
                 consoles.forEach { item ->
                     ReviewCheckRow(
-                        label = "Update ${platformNames[item.id] ?: item.id}",
-                        sublabel = "+ extensions: " + item.addedExtensions.joinToString(", "),
+                        label = stringResource(R.string.lib_kb_review_update, platformNames[item.id] ?: item.id),
+                        sublabel = stringResource(R.string.lib_kb_review_extensions, item.addedExtensions.joinToString(", ")),
                         focusKey = "knowledge_review_${item.key}",
                         checked = item.selected,
                         onToggle = { onToggle(item.key) },
@@ -110,10 +115,10 @@ internal fun EmulatorKnowledgeReview(
                 }
             }
             if (blocked.isNotEmpty()) {
-                SettingsGroup("Blocked")
+                SettingsGroup(stringResource(R.string.lib_kb_group_blocked))
                 blocked.forEachIndexed { index, item ->
                     SettingsRow(
-                        label = item.name ?: item.id ?: "Entry ${index + 1}",
+                        label = item.name ?: item.id ?: stringResource(R.string.lib_kb_review_entry, index + 1),
                         sublabel = item.reason,
                         focusKey = "knowledge_review_blocked_$index",
                     )
@@ -121,15 +126,15 @@ internal fun EmulatorKnowledgeReview(
             }
             if (unchanged > 0) {
                 SettingsRow(
-                    label = "$unchanged already up to date",
+                    label = stringResource(R.string.lib_kb_review_unchanged, unchanged),
                     focusKey = "knowledge_review_unchanged",
                     enabled = false,
                 )
             }
-            SettingsGroup("Finish")
-            SettingsRow(label = "Cancel", focusKey = "knowledge_import_cancel", onClick = onCancel)
+            SettingsGroup(stringResource(R.string.lib_kb_group_finish))
+            SettingsRow(label = stringResource(R.string.lib_kb_cancel), focusKey = "knowledge_import_cancel", onClick = onCancel)
             SettingsRow(
-                label = review.confirmLabel,
+                label = review.confirmLabel.asString(),
                 focusKey = "knowledge_import_confirm",
                 enabled = review.confirmEnabled,
                 onClick = onConfirm,
@@ -159,32 +164,37 @@ internal fun ReviewCheckRow(
 }
 
 /** "org.ppsspp.ppsspp · PlayStation Portable · Opens the game file"; every package name is listed. */
+@Composable
 internal fun newEntrySummary(entry: EmulatorKbEmulator): String = listOfNotNull(
     entry.packageNames.joinToString(", ").ifEmpty { null },
     entry.platformIds.joinToString(", ") { platformNames[it] ?: it }.ifEmpty { null },
-    when (entry.launch.intentType) {
-        IntentType.ACTION_VIEW -> "Opens the game file"
-        IntentType.COMPONENT -> "Opens through its own activity"
-        IntentType.SHORTCUT -> "Opens through a shortcut"
-        IntentType.CUSTOM_COMMAND -> "Opens with a custom command"
-    },
+    stringResource(
+        when (entry.launch.intentType) {
+            IntentType.ACTION_VIEW -> R.string.lib_kb_opens_game_file
+            IntentType.COMPONENT -> R.string.lib_kb_opens_own_activity
+            IntentType.SHORTCUT -> R.string.lib_kb_opens_shortcut
+            IntentType.CUSTOM_COMMAND -> R.string.lib_kb_opens_custom_command
+        },
+    ),
 ).joinToString(" · ")
 
 /** "- field: before" / "+ field: after" for every changed field; a review hides nothing. */
+@Composable
 internal fun diffText(diff: List<FieldChange>): String =
     diff.flatMap { listOf("- ${it.field}: ${readable(it.field, it.before)}", "+ ${it.field}: ${readable(it.field, it.after)}") }
         .joinToString("\n")
 
 private val IntentTypeText = mapOf(
-    "ACTION_VIEW" to "Opens the ROM file",
-    "COMPONENT" to "Opens a specific screen",
-    "SHORTCUT" to "Opens through a shortcut",
+    "ACTION_VIEW" to R.string.lib_kb_intent_view,
+    "COMPONENT" to R.string.lib_kb_intent_component,
+    "SHORTCUT" to R.string.lib_kb_intent_shortcut,
 )
 
 /** A diff value in words: intent types say what they do and console ids read as console names. */
+@Composable
 private fun readable(field: String, value: String): String = when (field) {
-    "Intent type" -> IntentTypeText[value] ?: value
+    "Intent type" -> IntentTypeText[value]?.let { stringResource(it) } ?: value
     "Platforms" -> value.split(", ").joinToString(", ") { platformNames[it] ?: it }
-    "Per-package launch" -> IntentTypeText.entries.fold(value) { text, (type, words) -> text.replace("type $type", "type $words") }
+    "Per-package launch" -> IntentTypeText.entries.fold(value) { text, (type, words) -> text.replace("type $type", "type ${stringResource(words)}") }
     else -> value
 }

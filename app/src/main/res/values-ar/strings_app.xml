@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Title of the system chooser listing other home apps (launchers) -->
+    <string name="app_switch_launcher_chooser">تبديل المشغّل</string>
+    <string name="app_shortcut_fallback_name">اختصار</string>
+    <string name="app_shortcut_fallback_host">تطبيق آخر</string>
+</resources>

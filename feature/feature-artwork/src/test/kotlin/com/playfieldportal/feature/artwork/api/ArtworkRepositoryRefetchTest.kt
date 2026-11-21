@@ -2,8 +2,10 @@ package com.playfieldportal.feature.artwork.api
 
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.entity.GameEntity
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.artwork.MetadataFetchResult
 import com.playfieldportal.feature.artwork.MetadataRepository
+import com.playfieldportal.feature.artwork.R
 import com.playfieldportal.feature.artwork.store.ArtworkStore
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -50,7 +52,7 @@ class ArtworkRepositoryRefetchTest {
         genre = null, steamGridDbId = null,
     )
 
-    private val found = MetadataFetchResult(success = true, source = "thegamesdb", message = "ok")
+    private val found = MetadataFetchResult(success = true, source = "thegamesdb", message = UiText.raw("ok"))
 
     @Test
     fun `evicts this game's old and new refs and nothing else`() = runTest {
@@ -103,13 +105,13 @@ class ArtworkRepositoryRefetchTest {
     fun `a scrape that finds nothing reports the scraper's message`() = runTest {
         coEvery { gameDao.getById(1L) } returns entity()
         coEvery { metadataRepository.fetchForGame(any(), any(), any(), any(), any(), any()) } returns
-            MetadataFetchResult(success = false, source = "none", message = "Not found on any source")
+            MetadataFetchResult(success = false, source = "none", message = UiText.res(R.string.art_error_not_found_any_source))
 
         val result = repo.refetchArtworkForGame(1L)
 
         assertFalse(result.success)
         assertFalse(result.alreadyRunning)
-        assertEquals("Not found on any source", result.errorMessage)
+        assertEquals(UiText.res(R.string.art_error_not_found_any_source), result.errorMessage)
     }
 
     @Test
@@ -119,7 +121,7 @@ class ArtworkRepositoryRefetchTest {
         val result = repo.refetchArtworkForGame(9L)
 
         assertFalse(result.success)
-        assertEquals("Game not found", result.errorMessage)
+        assertEquals(UiText.res(R.string.art_error_game_not_found), result.errorMessage)
         coVerify(exactly = 0) { metadataRepository.fetchForGame(any(), any(), any(), any(), any(), any()) }
     }
 
@@ -198,7 +200,7 @@ class ArtworkRepositoryRefetchTest {
     fun `Fetch Artwork surfaces a pause that happened mid-scrape`() = runTest {
         coEvery { gameDao.getById(1L) } returns entity()
         coEvery { metadataRepository.fetchForGame(any(), any(), any(), any(), any(), any()) } returns
-            MetadataFetchResult(success = true, source = "thegamesdb", message = "ok", paused = true)
+            MetadataFetchResult(success = true, source = "thegamesdb", message = UiText.raw("ok"), paused = true)
 
         val result = repo.refetchArtworkForGame(1L)
 

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- QR login screen -->
+    <string name="soc_qr_preparing">Priprema prijave…</string>
+    <string name="soc_qr_connected">Povezano</string>
+    <string name="soc_qr_expired">Kôd je istekao.</string>
+    <string name="soc_qr_declined">Prijava je odbijena.</string>
+    <string name="soc_qr_error">Prijava nije uspjela. %1$s</string>
+    <string name="soc_qr_content_description">QR kôd za prijavu na Discord</string>
+    <string name="soc_qr_title">Prijava putem Discorda</string>
+    <string name="soc_qr_copied">Kopirano!</string>
+    <string name="soc_qr_tap_to_copy">Odaberite kôd da biste ga kopirali</string>
+    <string name="soc_qr_instructions">Skenirajte kamerom telefona ili idite na discord.com/activate i zalijepite kôd.</string>
+    <string name="soc_qr_expires_in">Ističe za %1$ds</string>
+    <string name="soc_qr_expired_short">Isteklo</string>
+    <string name="soc_qr_cancel">Otkaži</string>
+    <string name="soc_qr_try_again">Pokušaj ponovo</string>
+</resources>

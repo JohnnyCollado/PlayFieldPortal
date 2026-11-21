@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="thm_error_manifest_missing">Falta el fitxer obligatori theme.json a l\'arxiu</string>
+    <string name="thm_error_manifest_invalid">theme.json no vàlid: %1$s</string>
+    <string name="thm_error_id_invalid">Identificador de tema \'%1$s\' no vàlid — utilitza lletres, números, \'.\', \'_\' o \'-\' (màx. 64)</string>
+    <string name="thm_error_color_invalid">%1$s \'%2$s\' no vàlid — s\'esperava #RRGGBB o #AARRGGBB</string>
+</resources>

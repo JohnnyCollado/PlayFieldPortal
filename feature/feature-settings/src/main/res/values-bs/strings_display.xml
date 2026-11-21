@@ -1,0 +1,624 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared labels used on several of these screens. -->
+    <string name="setd_apply">Primijeni</string>
+    <string name="setd_cancel">Otkaži</string>
+    <string name="setd_select">Odaberi</string>
+    <string name="setd_close">Zatvori</string>
+    <string name="setd_tap_to_dismiss">Odaberite za odbacivanje</string>
+    <string name="setd_unavailable">Nedostupno</string>
+    <string name="setd_loading">Učitavanje…</string>
+    <string name="setd_error">Greška</string>
+    <string name="setd_error_tap_to_dismiss">"%1$s  (odaberite za odbacivanje)"</string>
+    <string name="setd_testing">Provjera…</string>
+    <string name="setd_key_replace_placeholder">"••••••••  (odaberite za zamjenu)"</string>
+    <string name="setd_pfp_default">PFP zadano</string>
+    <string name="setd_from_theme">Iz teme</string>
+    <string name="setd_custom_video">Prilagođeni videozapis</string>
+    <string name="setd_custom_sound">Prilagođeni zvuk</string>
+
+    <!-- ===== Display ===== -->
+    <string name="setd_display_title">Ekran</string>
+    <string name="setd_group_appearance">Izgled</string>
+    <string name="setd_group_lock_screen">Zaključani ekran</string>
+    <string name="setd_group_xmb_layout">Raspored XMB-a</string>
+    <string name="setd_group_boot_sequence">Slijed pokretanja</string>
+    <string name="setd_group_game_boot">Game Boot</string>
+    <string name="setd_group_orientation">Orijentacija</string>
+    <string name="setd_group_interface">Interfejs</string>
+    <string name="setd_group_performance">Performanse</string>
+    <string name="setd_group_games">Igre</string>
+
+    <!-- Wallpaper -->
+    <string name="setd_wallpaper_title">Pozadina</string>
+    <string name="setd_wallpaper_choose">Odaberi pozadinu</string>
+    <string name="setd_wallpaper_choose_motion_set">Postavljena je pokretna pozadina — videozapis u petlji zamjenjuje val</string>
+    <string name="setd_wallpaper_choose_custom_set">Postavljena je prilagođena pozadina — zamjenjuje val</string>
+    <string name="setd_wallpaper_choose_none">Odaberite sliku ili kratki videozapis (PNG, JPG, WEBP, MP4, WEBM, GIF) — zamjenjuje val</string>
+    <string name="setd_wallpaper_preview">Pregled pozadine</string>
+    <string name="setd_wallpaper_preview_sublabel">Prikaz odabrane pozadine preko cijelog ekrana</string>
+    <string name="setd_wallpaper_reset_row">Vrati pozadinu</string>
+    <string name="setd_wallpaper_reset_row_sublabel">Ukloni prilagođenu pozadinu i vrati zadanu</string>
+    <string name="setd_wallpaper_preview_cd">Pregled pozadine</string>
+    <string name="setd_wallpaper_unsupported">Nepodržani format — upotrijebite PNG, JPG, WEBP, MP4, WEBM ili GIF</string>
+    <string name="setd_wallpaper_applied">Pozadina primijenjena</string>
+    <string name="setd_wallpaper_unreadable">Tu datoteku nije moguće pročitati — pokušajte s drugom</string>
+    <string name="setd_wallpaper_motion_applied">Pokretna pozadina primijenjena</string>
+    <string name="setd_wallpaper_reset">Pozadina vraćena na zadanu</string>
+    <string name="setd_wallpaper_none">Još nije odabrana pozadina</string>
+
+    <!-- Lock screen image -->
+    <string name="setd_lock_choose">Odaberi sliku zaključanog ekrana</string>
+    <string name="setd_lock_choose_busy">Postavljanje zaključanog ekrana…</string>
+    <string name="setd_lock_choose_from_theme">Postavila ju je primijenjena tema — odaberite sliku za vlastitu</string>
+    <string name="setd_lock_choose_set">Vaša je slika na zaključanom ekranu</string>
+    <string name="setd_lock_choose_none">Odaberite sliku (PNG, JPG, WEBP) za zaključani ekran uređaja</string>
+    <string name="setd_lock_use_wallpaper">Koristi pozadinu launchera</string>
+    <string name="setd_lock_use_wallpaper_motion">Koristi statični kadar pokretne pozadine</string>
+    <string name="setd_lock_use_wallpaper_still">Koristi pozadinu iza XMB-a</string>
+    <string name="setd_lock_reset_row">Vrati zaključani ekran</string>
+    <string name="setd_lock_reset_row_sublabel">Nazad na zadani zaključani ekran uređaja</string>
+    <string name="setd_lock_tray_label">Zaključani ekran</string>
+    <string name="setd_lock_unreadable">Tu sliku nije moguće pročitati</string>
+    <string name="setd_lock_no_wallpaper">Launcher nema sliku pozadine za upotrebu</string>
+    <string name="setd_lock_reset_done">Zaključani ekran vraćen na zadano za uređaj</string>
+    <string name="setd_lock_reset_failed">Uređaj nije vratio zaključani ekran. I dalje prikazuje trenutnu sliku.</string>
+    <string name="setd_lock_set_done">Slika zaključanog ekrana postavljena</string>
+
+    <!-- Pick-one options: each opens a dialog. Title and summary, then the choices. -->
+    <string name="setd_opt_wave_style_title">Stil vala</string>
+    <string name="setd_opt_wave_style_summary">Koliko je pozadinski val živahan.</string>
+    <string name="setd_opt_background_motion_title">Pokret pozadine</string>
+    <string name="setd_opt_background_motion_summary">Koliko je pokretna pozadina živahna.</string>
+    <string name="setd_motion_animated">U pokretu</string>
+    <string name="setd_motion_animated_detail">Puni pokret</string>
+    <string name="setd_motion_reduced">U pokretu, prigušeno</string>
+    <string name="setd_wave_reduced_detail">Tamnije, mirnije</string>
+    <string name="setd_bgmotion_reduced_detail">Sporije, mirnije</string>
+    <string name="setd_motion_static">Mirno</string>
+    <string name="setd_wave_static_detail">Zamrznuto</string>
+    <string name="setd_bgmotion_static_detail">Statična slika</string>
+    <string name="setd_motion_reduced_static">Mirno, prigušeno</string>
+    <string name="setd_opt_icon_legibility_title">Čitljivost ikona</string>
+    <string name="setd_opt_icon_legibility_summary">Kako se XMB ikone odvajaju od pozadine.</string>
+    <string name="setd_icon_legibility_light_detail">Za tamne ikone</string>
+    <string name="setd_icon_legibility_auto_detail">Prati boju ikone</string>
+    <string name="setd_opt_item_list_motion_title">Pokret spiska stavki</string>
+    <string name="setd_opt_item_list_motion_summary">Kako se spisak stavki pomiče dok prolazite kroz njega. Premotavanje uvlači fokusiranu stavku iza ikone kategorije i reproducira se unatrag prema gore; Klizanje pomiče cijeli spisak zajedno.</string>
+    <string name="setd_opt_umd_slot_title">UMD slot</string>
+    <string name="setd_opt_umd_slot_summary">Koja je igra u UMD slotu.</string>
+    <string name="setd_umd_inserted_detail">Samo igra koju ste umetnuli</string>
+    <string name="setd_umd_recent_detail">Inače zadnja igrana igra</string>
+    <string name="setd_opt_text_legibility_title">Čitljivost teksta</string>
+    <string name="setd_opt_text_legibility_summary">Još se ne primjenjuje. Čuva se s vašim temama i sigurnosnim kopijama za kasnije ažuriranje.</string>
+    <string name="setd_opt_orientation_title">Orijentacija ekrana</string>
+    <string name="setd_opt_orientation_summary">Okreće li se PFP s uređajem. Prati uređaj prikazuje uputstvo za okretanje u vertikalnom položaju (za Tasker / promjenu launchera).</string>
+    <string name="setd_orientation_landscape">Horizontalno</string>
+    <string name="setd_orientation_landscape_detail">PFP ostaje horizontalan</string>
+    <string name="setd_orientation_follow">Prati uređaj</string>
+    <string name="setd_orientation_follow_detail">Okreće se s uređajem</string>
+    <string name="setd_opt_touch_nav_title">Dugme za navigaciju dodirom</string>
+    <string name="setd_opt_touch_nav_summary">Dugme ladice aplikacija / Nazad na ekranu.</string>
+    <string name="setd_touch_nav_auto">Automatski</string>
+    <string name="setd_touch_nav_auto_detail">Samo dok koristite dodir</string>
+    <string name="setd_touch_nav_show">Uvijek prikaži</string>
+    <string name="setd_touch_nav_hide">Uvijek sakrij</string>
+    <string name="setd_touch_nav_hide_detail">Samo kontroler</string>
+    <string name="setd_opt_touch_sens_title">Osjetljivost na dodir</string>
+    <string name="setd_opt_touch_sens_summary">Koliko dug prelazak prstom odgovara jednom koraku XMB-a.</string>
+    <string name="setd_touch_sens_low">Niska</string>
+    <string name="setd_touch_sens_low_detail">Stabilnije</string>
+    <string name="setd_touch_sens_normal">Normalna</string>
+    <string name="setd_touch_sens_high">Visoka</string>
+    <string name="setd_touch_sens_high_detail">Brže pomicanje</string>
+
+    <!-- Appearance toggles -->
+    <string name="setd_solid_icons">Neprozirne nefokusirane ikone</string>
+    <string name="setd_solid_icons_sublabel">Prikazuj neodabrane ikone potpuno neprozirno — odabir se i dalje vidi po veličini i oznaci</string>
+    <string name="setd_text_shadow">Sjena teksta</string>
+    <string name="setd_text_shadow_sublabel">Sjena iza pomoćnog teksta redova — održava ga čitljivim preko svijetlih dijelova pozadine</string>
+
+    <!-- Font colour -->
+    <string name="setd_font_colour">Boja fonta</string>
+    <string name="setd_font_colour_sublabel">Boja oznaka i glavnog teksta u cijelom interfejsu</string>
+    <string name="setd_font_colour_theme_default">Zadano za temu</string>
+    <string name="setd_sub_font_colour">Boja sporednog fonta</string>
+    <string name="setd_sub_font_colour_sublabel">Boja podnaslova, podoznaka i vrijednosti. Prati boju fonta dok se ne postavi</string>
+    <string name="setd_sub_font_colour_same">Isto kao boja fonta</string>
+    <string name="setd_sub_font_colour_reset">Vrati boju sporednog fonta</string>
+    <string name="setd_sub_font_colour_reset_sublabel">Ponovo prati boju fonta</string>
+    <string name="setd_font_colour_reset">Vrati boju fonta</string>
+    <string name="setd_font_colour_reset_sublabel">Nazad na boju koju daje trenutna tema</string>
+    <string name="setd_picker_font_title">Boja fonta</string>
+    <string name="setd_picker_sub_font_title">Boja sporednog fonta</string>
+    <string name="setd_contrast_title">Boja fonta možda je teško čitljiva</string>
+    <string name="setd_text_contrast_notice">Ova boja ima kontrast %1$s na ovoj pozadini, ispod smjernice čitljivosti od 4.5:1. Tekst u njoj možda će biti teško čitljiv.</string>
+    <string name="setd_contrast_ok">U redu</string>
+    <string name="setd_contrast_dont_warn">Ne upozoravaj me ponovo</string>
+
+    <!-- XMB layout -->
+    <string name="setd_xmb_layout_intro">Postavite XMB uživo za ovaj ekran — promijenite mu veličinu i pomaknite križnu traku gore/dolje i lijevo/desno — preko stvarnog interfejsa. Svaka veličina ekrana (ručna konzola, preklopni uređaj, tablet) zadržava vlastite postavke.</string>
+    <string name="setd_xmb_adjust">Prilagodi raspored XMB-a</string>
+    <string name="setd_xmb_adjust_sublabel">Uređivač uživo — mijenjajte veličinu i položaj križne trake D-padom ili klizačima</string>
+    <string name="setd_psp_row">Biblijski tačan PSP XMB</string>
+    <string name="setd_psp_row_applied">Primijenjeno na ovaj ekran. Promijenite raspored putem Prilagodi raspored XMB-a da biste ga ponovo upotrijebili</string>
+    <string name="setd_psp_row_apply">Primijeni vlastite proporcije PSP-a na ovaj ekran</string>
+    <string name="setd_psp_confirm_title">Primijeniti biblijski tačan PSP XMB?</string>
+    <string name="setd_psp_confirm_message">Postavlja veličinu XMB-a i položaj križne trake ovog ekrana na vlastite proporcije PSP-a. Vaš trenutni raspored za ovu veličinu ekrana zamjenjuje se; ostale veličine ekrana zadržavaju svoje.</string>
+
+    <!-- Boot sequence -->
+    <string name="setd_boot_show">Prikaži slijed pokretanja</string>
+    <string name="setd_boot_show_sublabel">Animacija pokretanja u stilu PSP-a pri svakom pokretanju</string>
+    <string name="setd_boot_resume">Prikaži slijed pokretanja pri nastavku</string>
+    <string name="setd_boot_resume_sublabel">Reproduciraj i pri povratku iz igre</string>
+    <string name="setd_boot_video">Videozapis pokretanja</string>
+    <string name="setd_boot_video_sublabel">Reproduciraj vlastiti videozapis umjesto animacije logotipa PFP %1$s</string>
+    <string name="setd_gameboot">Game Boot</string>
+    <string name="setd_gameboot_sublabel">"Kratka prezentacija između potvrde igre i otvaranja emulatora — pet sekundi ugrađeno, do deset s vlastitim isječkom — može se preskočiti dugmetom Potvrdi ili Nazad.  Isključeno znači tiho pokretanje — bez animacije i zvuka."</string>
+    <string name="setd_gameboot_video">Game Boot videozapis</string>
+    <string name="setd_gameboot_video_sublabel">Zamijenite ugrađeni slijed vlastitim isječkom, koji se reproducira sa svojim zvukom, na nivou Game Boot u Zvuk ▸ Nivoi %1$s</string>
+    <plurals name="setd_video_cap">
+    <item quantity="one">(MP4 ili WebM, do %1$d sekunde)</item>
+    <item quantity="few">(MP4 ili WebM, do %1$d sekunde)</item>
+    <item quantity="other">(MP4 ili WebM, do %1$d sekundi)</item>
+</plurals>
+
+    <!-- Media rows (shared with the Sound screen). -->
+    <string name="setd_media_preview">Pregled</string>
+    <string name="setd_media_default">Zadano</string>
+    <string name="setd_media_use_default_prompt">Koristi zadano</string>
+    <string name="setd_media_preview_cd">Pregled: %1$s</string>
+    <string name="setd_media_use_default_cd">Koristi PFP zadano za %1$s</string>
+
+    <!-- Interface / performance / games -->
+    <string name="setd_options_hint_sublabel">Prikaži oznaku „Opcije” pri mirovanju iznad XMB stavki s kontekstnim menijem</string>
+    <string name="setd_hint_delay">Odgoda savjeta</string>
+    <string name="setd_hint_delay_sublabel">Prikaži nakon %1$s neaktivnosti (1–5 sekundi)</string>
+    <string name="setd_thermal">Svijest o toplinskom ograničenju</string>
+    <string name="setd_thermal_sublabel">Zamrzni pozadinu (val ili pokretnu pozadinu) dok uređaj javlja da se pregrijava</string>
+    <string name="setd_battery_saver">Način štednje baterije</string>
+    <string name="setd_battery_saver_sublabel">Zamrzni pozadinu (val ili pokretnu pozadinu) kad je aktivna Štednja baterije</string>
+    <string name="setd_direct_launch">Direktno pokretanje igara</string>
+    <string name="setd_direct_launch_sublabel">Potvrda odmah pokreće igru umjesto otvaranja Detalja igre — za uređivanje upotrijebite \"Prikaži detalje igre\" u meniju Opcije igre</string>
+
+    <!-- Words around media rows in Settings: dropped-clip report from a theme. -->
+    <string name="setd_slot_boot_video">Boot Video</string>
+    <string name="setd_slot_gameboot_video">Game Boot videozapis</string>
+    <string name="setd_slot_sound_name">Zvuk: %1$s</string>
+    <string name="setd_dropped_header">Nije instalirano iz ove teme:</string>
+    <string name="setd_dropped_item">%1$s — %2$s</string>
+
+    <!-- ===== Themes ===== -->
+    <string name="setd_themes_title">Teme</string>
+    <string name="setd_color_scheme">Shema boja</string>
+    <string name="setd_color_scheme_custom_active">Aktivna je prilagođena boja teme — odabir unaprijed postavljene je zamjenjuje</string>
+    <string name="setd_color_scheme_sublabel">Boje pozadine u stilu PSP-a — pregled uživo</string>
+    <string name="setd_custom_theme_color">Prilagođena boja teme</string>
+    <string name="setd_custom_theme_color_sublabel">Iz uvezene teme — odaberite za uklanjanje i povratak na shemu boja</string>
+    <string name="setd_group_icon_color">Boja ikona</string>
+    <string name="setd_custom_icon_color_title">Prilagođena boja ikona</string>
+    <string name="setd_group_icons">Ikone</string>
+    <string name="setd_customize_icons">Prilagodi XMB ikone</string>
+    <string name="setd_customize_icons_sublabel">Križna traka, stavke, konzole i fizički mediji — redoslijedom XMB-a, uživo preko XMB-a</string>
+    <string name="setd_custom_icons_none">Nema prilagođenih</string>
+    <string name="setd_custom_icons_count">Prilagođeno: %1$d</string>
+    <string name="setd_group_my_themes">Moje teme</string>
+    <string name="setd_new_from_photo">Nova tema iz fotografije</string>
+    <string name="setd_new_from_photo_sublabel">Odaberite sliku — pozadina i boja postavljaju se prema njoj</string>
+    <string name="setd_group_active_theme">Aktivna tema</string>
+    <string name="setd_current_theme">Trenutna tema</string>
+    <string name="setd_theme_default_name">Zadano</string>
+    <string name="setd_reset_to_default">Vrati na zadano</string>
+    <string name="setd_reset_to_default_sublabel">Ukloni primijenjenu pozadinu, boje teme i prilagođene ikone</string>
+    <string name="setd_group_install">Instalacija</string>
+    <string name="setd_save_look_row">Sačuvaj trenutni izgled kao temu</string>
+    <string name="setd_save_look_row_sublabel">Spojite ikone, pozadinu, boje i pokret u .pfptheme koji se može dijeliti</string>
+    <string name="setd_save_look_title">Sačuvaj trenutni izgled kao temu</string>
+    <string name="setd_theme_name_placeholder">Naziv teme</string>
+    <string name="setd_import_ptf">Uvezi PSP temu (.ptf)</string>
+    <string name="setd_import_ptf_sublabel">Koristi pozadinu, boju i odgovarajuće ikone teme</string>
+    <string name="setd_import_pfptheme">Uvezi temu (.pfptheme)</string>
+    <string name="setd_import_pfptheme_sublabel">Tema podijeljena iz PlayFieldPortala</string>
+
+    <!-- Saved theme cards and menu. -->
+    <string name="setd_theme_older_format">Stariji format</string>
+    <string name="setd_theme_share">Dijeli</string>
+    <string name="setd_theme_update">Ažuriraj</string>
+    <string name="setd_theme_update_file">Ažuriraj datoteku teme</string>
+    <string name="setd_theme_rename">Preimenuj temu</string>
+    <string name="setd_theme_delete">Izbriši temu</string>
+    <string name="setd_theme_delete_title">Izbrisati temu?</string>
+    <string name="setd_theme_delete_message">\"%1$s\" bit će izbrisana. To se ne može poništiti.</string>
+    <string name="setd_theme_delete_confirm">Izbriši</string>
+    <string name="setd_theme_share_chooser">Dijeli temu</string>
+
+    <!-- Apply-theme question. -->
+    <string name="setd_apply_theme_title">Primijeniti \"%1$s\"?</string>
+    <string name="setd_apply_base_message">Time se mijenjaju boje, ikone i pozadina launchera.</string>
+    <string name="setd_apply_use_themes">Koristi temine</string>
+    <string name="setd_apply_keep_mine">Zadrži moje</string>
+    <string name="setd_apply_turn_on">Uključi</string>
+    <string name="setd_apply_leave_off">Ostavi isključeno</string>
+    <string name="setd_apply_replace_icons">Ova tema ima vlastite ikone za %1$s, ali vaše su postavljene i prikazuju se umjesto njih. Koristiti ikone teme? Vaše se za njih uklanjaju.</string>
+    <string name="setd_apply_replace_media">Ova tema ima vlastito: %1$s, ali vaše je postavljeno i reproducira se umjesto toga. Koristiti temino? Vaše se za to uklanja.</string>
+    <string name="setd_apply_boot_off">Slijed pokretanja je isključen — uključite ga kako bi se reproducirao Boot Video teme.</string>
+    <string name="setd_apply_gameboot_off">Game Boot je isključen — uključite ga kako bi se reproducirao Game Boot videozapis teme.</string>
+    <string name="setd_apply_lock_screen">Ima i sliku zaključanog ekrana — o njoj ćete biti upitani nakon primjene.</string>
+    <string name="setd_lock_offer_title">Postaviti zaključani ekran?</string>
+    <string name="setd_lock_offer_message">\"%1$s\" ima sliku zaključanog ekrana. Koristiti je kao zaključani ekran uređaja? Vraćanjem teme vraća se i zaključani ekran.</string>
+    <string name="setd_lock_offer_confirm">Postavi zaključani ekran</string>
+    <string name="setd_lock_offer_cancel">Ne sada</string>
+
+    <!-- Notification-tray messages about themes. -->
+    <string name="setd_theme_reset_done">Tema vraćena — nazad na zadani izgled</string>
+    <string name="setd_theme_created">Stvoreno \"%1$s\"</string>
+    <string name="setd_theme_created_derived">Stvoreno \"%1$s\" — boja izvedena iz fotografije</string>
+    <string name="setd_theme_image_unreadable">Tu sliku nije moguće pročitati</string>
+    <string name="setd_theme_apply_failed">Temu nije moguće primijeniti</string>
+    <string name="setd_theme_lock_unreadable">Sliku zaključanog ekrana ove teme nije moguće pročitati</string>
+    <string name="setd_theme_lock_set">Zaključani ekran postavljen iz \"%1$s\"</string>
+    <string name="setd_theme_saved">Sačuvano \"%1$s\"</string>
+    <string name="setd_theme_save_failed">Temu nije moguće sačuvati</string>
+    <string name="setd_theme_fallback_name">tema</string>
+    <string name="setd_theme_updated">\"%1$s\" ažurirano na trenutni format teme</string>
+    <string name="setd_theme_update_failed">Nije moguće ažurirati \"%1$s\" — izvorna datoteka ostala je nepromijenjena</string>
+    <string name="setd_theme_export_failed">Temu nije moguće izvesti</string>
+    <string name="setd_theme_imported">Uvezeno \"%1$s\"</string>
+    <string name="setd_theme_import_unreadable">Tu datoteku nije moguće otvoriti</string>
+    <string name="setd_theme_import_too_large">Ta je tema prevelika za uvoz</string>
+    <string name="setd_theme_import_out_of_memory">Nema dovoljno memorije za uvoz te teme — njezina je pokretna pozadina prevelika</string>
+    <string name="setd_theme_import_not_a_bundle">Nije važeća datoteka .pfptheme</string>
+    <string name="setd_theme_import_damaged_wallpaper">Pozadina te teme je oštećena</string>
+    <string name="setd_theme_import_not_saved">Uvezenu temu nije moguće sačuvati</string>
+
+    <!-- ===== Artwork ===== -->
+    <string name="setd_artwork_title">Grafike</string>
+    <string name="setd_group_artwork_library">Biblioteka grafika</string>
+    <string name="setd_artwork_folder_row">Folder s grafikama i uvoz</string>
+    <string name="setd_artwork_folder_sublabel">Odaberite gdje se grafike pohranjuju i uvezite postojeće grafike iz ES-DE-a</string>
+    <string name="setd_artwork_folder_unavailable_sublabel">Nedostupno. Ponovo povežite za nastavak novih grafika</string>
+    <string name="setd_group_artwork_status">Status grafika u biblioteci</string>
+    <string name="setd_status_total">Ukupno igara</string>
+    <string name="setd_status_complete">Potpuno</string>
+    <string name="setd_status_missing">Nedostaje</string>
+    <string name="setd_status_stale">Zastarjelo / nevažeće</string>
+    <string name="setd_refresh_status">Osvježi status</string>
+    <string name="setd_refresh_checking">Provjera datoteka…</string>
+    <string name="setd_refresh_sublabel">Ponovo provjeri grafike na disku</string>
+    <string name="setd_group_scrape">Preuzimanje grafika</string>
+    <string name="setd_scrape_progress">"%1$d / %2$d  —  %3$s"</string>
+    <string name="setd_scrape_counts">Uspjelo: %1$d · nije uspjelo: %2$d</string>
+    <string name="setd_scrape_background">Radi u pozadini — možete napustiti ovaj ekran.</string>
+    <string name="setd_scrape_starting">Pokretanje…</string>
+    <string name="setd_scrape_cancel">Otkaži preuzimanje</string>
+    <string name="setd_scrape_cancel_sublabel">Zaustavlja se nakon trenutne igre — dosad preuzete grafike ostaju sačuvane</string>
+    <string name="setd_scrape_all">Ponovo preuzmi za sve igre</string>
+    <string name="setd_scrape_all_sublabel">Briše i ponovo preuzima grafike za svaku igru</string>
+    <string name="setd_scrape_missing">Preuzmi samo za igre bez grafika</string>
+    <string name="setd_scrape_missing_sublabel">Preuzima samo za igre s nedostajućim ili nevažećim grafikama — zadržava važeće</string>
+    <string name="setd_scrape_done_all">Ponovo preuzeto za sve igre: uspjelo %1$d, nije uspjelo %2$d od %3$d</string>
+    <string name="setd_scrape_done_missing">Preuzeto za igre bez grafika: uspjelo %1$d, nije uspjelo %2$d od %3$d</string>
+    <string name="setd_scrape_cancelled">Preuzimanje otkazano — dosad preuzete grafike ostaju sačuvane</string>
+    <string name="setd_scrape_failed">Preuzimanje nije uspjelo: %1$s</string>
+    <string name="setd_scrape_unknown_error">nepoznata greška</string>
+    <string name="setd_rescrape_title">Ponovo preuzeti za sve igre?</string>
+    <string name="setd_rescrape_confirm">Ponovo preuzmi sve</string>
+    <plurals name="setd_rescrape_message">
+    <item quantity="one">Time će se izbrisati i ponovo preuzeti grafike za %1$d igru. Postojeće grafike bit će zamijenjene. Nastaviti?</item>
+    <item quantity="few">Time će se izbrisati i ponovo preuzeti grafike za sve %1$d igre. Postojeće grafike bit će zamijenjene. Nastaviti?</item>
+    <item quantity="other">Time će se izbrisati i ponovo preuzeti grafike za svih %1$d igara. Postojeće grafike bit će zamijenjene. Nastaviti?</item>
+</plurals>
+    <string name="setd_group_source_priority">Prioritet izvora</string>
+    <string name="setd_source_primary">Primarni</string>
+    <string name="setd_source_fallback">Rezervni %1$d</string>
+    <string name="setd_source_screenscraper_hash">ScreenScraper (hash ROM-a)</string>
+    <string name="setd_source_steamgriddb_artwork">SteamGridDB (grafike)</string>
+    <string name="setd_group_art_preferences">Postavke grafika</string>
+    <string name="setd_icon_display">Prikaz ikona igara</string>
+    <string name="setd_icon_display_sublabel">Zadano za svaku konzolu — promijenite zasebno za konzolu ili igru u njihovim menijima Opcije</string>
+    <string name="setd_animated_icons">Animirane ikone</string>
+    <string name="setd_animated_icons_sublabel">Reproduciraj video isječak igre u njezinoj ikoni nakon zadržavanja na njoj (način Prilagođena ikona; preskače se pri slaboj bateriji)</string>
+    <string name="setd_snap_delay">Odgoda video isječka</string>
+    <string name="setd_snap_delay_sublabel">Zadržite se na igri %1$s prije reprodukcije njezina video isječka (1–5 sekundi) — duže odgode sprječavaju trzaje pri pregledanju</string>
+    <string name="setd_crop_preview">Pregled obrezivanja</string>
+    <string name="setd_crop_preview_sublabel">Prikaži gotovu pločicu u uglu pri obrezivanju grafike (Ⓨ je uključuje/isključuje i u uređivaču obrezivanja)</string>
+    <string name="setd_prefer_sgdb_heroes">Preferiraj SteamGridDB hero slike</string>
+    <string name="setd_prefer_sgdb_heroes_sublabel">Najprije pokušaj SteamGridDB za hero/natpis grafike</string>
+    <string name="setd_download_heroes">Preuzimaj hero slike</string>
+    <string name="setd_download_heroes_sublabel">Široke grafike natpisa prikazane u detaljima igre</string>
+    <string name="setd_download_logos">Preuzimaj prozirne logotipe</string>
+    <string name="setd_download_logos_sublabel">Prozirni PNG logotipi preko hero grafike</string>
+    <string name="setd_download_manuals">Preuzimaj priručnike igara</string>
+    <string name="setd_download_manuals_sublabel">PDF priručnici sa ScreenScrapera — otvaraju se iz menija Opcije igre</string>
+    <string name="setd_download_video_snaps">Preuzimaj video isječke</string>
+    <string name="setd_download_video_snaps_sublabel">Kratki isječci igranja sa ScreenScrapera — velike datoteke</string>
+    <string name="setd_artwork_region">Regija grafika (%1$s)</string>
+    <string name="setd_artwork_region_sublabel">Omoti i logotipi koje regije imaju prednost kad igra ima više njih</string>
+    <string name="setd_region_no_preference">Bez preferencije</string>
+
+    <!-- Provider keys. -->
+    <string name="setd_api_key">API ključ</string>
+    <string name="setd_api_key_saved">API ključ (sačuvan)</string>
+    <string name="setd_group_sgdb_api">SteamGridDB API</string>
+    <string name="setd_sgdb_key_placeholder">Zalijepite svoj SteamGridDB ključ</string>
+    <string name="setd_sgdb_key_helper">Besplatan ključ nabavite na steamgriddb.com/api</string>
+    <string name="setd_save_api_key">Sačuvaj API ključ</string>
+    <string name="setd_remove_api_key">Ukloni API ključ</string>
+    <string name="setd_remove_api_key_sublabel">Grafike sa SteamGridDB-a bit će onemogućene</string>
+    <string name="setd_group_tgdb_api">TheGamesDB API</string>
+    <string name="setd_tgdb_key_placeholder">Zalijepite svoj TheGamesDB ključ</string>
+    <string name="setd_tgdb_key_helper">Zatražite ključ od TheGamesDB-a na thegamesdb.net</string>
+    <string name="setd_save_tgdb_key">Sačuvaj TheGamesDB ključ</string>
+    <string name="setd_remove_tgdb_key">Ukloni TheGamesDB ključ</string>
+    <string name="setd_remove_tgdb_key_sublabel">TheGamesDB će se preskakati kao izvor</string>
+    <string name="setd_group_igdb">IGDB pristupni podaci (neobavezno)</string>
+    <string name="setd_igdb_client_id">Client ID</string>
+    <string name="setd_igdb_client_id_saved">Client ID (sačuvan)</string>
+    <string name="setd_igdb_client_id_placeholder">Twitch Client ID</string>
+    <string name="setd_igdb_client_secret">Client Secret</string>
+    <string name="setd_igdb_client_secret_placeholder">Twitch Client Secret</string>
+    <string name="setd_igdb_helper">Izradite aplikaciju na dev.twitch.tv — poboljšava rezervnu pokrivenost za moderne igre</string>
+    <string name="setd_test_credentials">Provjeri pristupne podatke</string>
+    <string name="setd_save_credentials">Sačuvaj pristupne podatke</string>
+    <string name="setd_clear_igdb">Izbriši IGDB pristupne podatke</string>
+    <string name="setd_clear_igdb_sublabel">IGDB će se preskakati kao rezervni izvor</string>
+    <string name="setd_ss_status">Status</string>
+    <string name="setd_ss_status_active_sublabel">Preuzimanje prema hashu je aktivno (ugrađeni par razvojnog programera)</string>
+    <string name="setd_ss_status_inactive_sublabel">ScreenScraper nije dostupan u ovoj verziji — nije priložen par razvojnog programera</string>
+    <string name="setd_ss_active">Aktivno</string>
+    <string name="setd_ss_inactive">Neaktivno</string>
+    <string name="setd_group_ss_account">Račun za ScreenScraper (neobavezno)</string>
+    <string name="setd_ss_username_saved">Korisničko ime (sačuvano: %1$s)</string>
+    <string name="setd_ss_username">Korisničko ime</string>
+    <string name="setd_ss_tap_to_replace">Odaberite za zamjenu</string>
+    <string name="setd_ss_username_placeholder">Korisničko ime za ScreenScraper</string>
+    <string name="setd_ss_password">Lozinka</string>
+    <string name="setd_ss_password_placeholder">Lozinka za ScreenScraper</string>
+    <string name="setd_ss_password_helper">Besplatan račun na screenscraper.fr — povećava ograničenje brzine i dnevnu kvotu. Pohranjeno šifrirano na ovom uređaju (Android Keystore).</string>
+    <string name="setd_test_account">Provjeri račun</string>
+    <string name="setd_save_account">Sačuvaj račun</string>
+    <string name="setd_clear_ss_account">Izbriši račun za ScreenScraper</string>
+    <string name="setd_clear_ss_account_sublabel">Preuzimanje se nastavlja uz anonimna ograničenja</string>
+    <string name="setd_secret_sgdb_key">SteamGridDB ključ</string>
+    <string name="setd_secret_tgdb_key">TheGamesDB ključ</string>
+    <string name="setd_secret_igdb_secret">IGDB Client Secret</string>
+    <string name="setd_secret_ss_password">Lozinka za ScreenScraper</string>
+    <string name="setd_secret_unprotected">%1$s je sačuvan, ali sigurno skladište ključeva ovog uređaja nije bilo dostupno pa je pohranjen nešifrirano. Brisanje i ponovni unos kasnije pokušat će ponovo.</string>
+
+    <!-- Cache -->
+    <string name="setd_group_cache">Predmemorija</string>
+    <string name="setd_cache_size">Veličina pohranjenih grafika</string>
+    <string name="setd_cache_size_sublabel">Predmemorija slika + grafike pohranjene na ovom uređaju (vaš folder s grafikama ne računa se)</string>
+    <string name="setd_clear_ss_cache">Očisti predmemoriju URL-ova ScreenScrapera</string>
+    <string name="setd_clear_ss_cache_sublabel">Zaboravi predmemorirane URL-ove grafika — sljedeće preuzimanje ponovo pita ScreenScraper za svaku igru. Bezopasno; nikad ne briše grafike</string>
+    <string name="setd_ss_cache_cleared">Predmemorija URL-ova ScreenScrapera očišćena</string>
+    <string name="setd_clear_all_artwork">Očisti sve grafike</string>
+    <string name="setd_clear_all_artwork_sublabel">Novi početak: uklanja predmemorirane slike, pohranjene grafike i linkove na grafike svih igara. Datoteke u vašem folderu s grafikama ostaju — za vraćanje ponovo povežite ili ponovo preuzmite</string>
+
+    <!-- ===== Artwork Folder & Import ===== -->
+    <string name="setd_import_title">Folder s grafikama i uvoz</string>
+    <string name="setd_import_group_folder">Folder s grafikama</string>
+    <string name="setd_import_change_folder">Promijeni folder s grafikama</string>
+    <string name="setd_import_choose_folder">Odaberi folder s grafikama</string>
+    <string name="setd_import_folder_not_set">Nije postavljeno — odaberite da biste odredili gdje PFP čuva grafike</string>
+    <string name="setd_import_group_existing">Uvoz postojećih grafika</string>
+    <string name="setd_import_no_launchers">Nisu pronađeni launcheri</string>
+    <string name="setd_import_no_launchers_sublabel">Najprije kopirajte ili premjestite medije drugog launchera u folder, npr. import/ES-DE/downloaded_media. Premještanje oslobađa prostor, ali uklanja grafike iz tog launchera.</string>
+    <plurals name="setd_import_source_systems">
+    <item quantity="one">Prepoznat %1$d folder sistema — odaberite za pregled uvoza</item>
+    <item quantity="few">Prepoznata %1$d foldera sistema — odaberite za pregled uvoza</item>
+    <item quantity="other">Prepoznato %1$d foldera sistema — odaberite za pregled uvoza</item>
+</plurals>
+    <string name="setd_import_unrecognized">Neprepoznat raspored — očekuje se struktura ES-DE downloaded_media</string>
+    <string name="setd_import_scanning">Skeniranje…</string>
+    <string name="setd_import_rescan">Ponovo skeniraj folder za uvoz</string>
+    <string name="setd_import_rescan_sublabel">Ponovo provjeri import/ za foldera launchera</string>
+    <string name="setd_import_relinking">Skeniranje biblioteke…</string>
+    <string name="setd_import_relink">Skeniraj i ponovo poveži biblioteku</string>
+    <string name="setd_import_relink_sublabel">Ponovo povezuje grafike u folderu s vašim igrama, osvježava premještene ili promijenjene datoteke i čisti reference na izbrisane</string>
+    <string name="setd_import_unmatched">Nepovezane grafike (%1$d)</string>
+    <string name="setd_import_unmatched_sublabel">Datoteke u vašem folderu koje ne odgovaraju nijednoj igri — povežite ih ručno</string>
+    <string name="setd_import_group_storage">Pohrana aplikacije</string>
+    <string name="setd_import_moving">Premještanje grafika u vaš folder…</string>
+    <string name="setd_import_moving_progress">%1$d / %2$d — radi u pozadini</string>
+    <string name="setd_import_moving_background">Radi u pozadini — možete napustiti ovaj ekran</string>
+    <string name="setd_import_cancel_move">Otkaži premještanje</string>
+    <string name="setd_import_cancel_move_sublabel">Već premještene grafike ostaju u folderu</string>
+    <string name="setd_import_move_in">Premjesti u folder</string>
+    <plurals name="setd_import_move_in_sublabel">
+    <item quantity="one">%1$d datoteka grafike (%2$s) sačuvana je prije povezivanja ovog foldera i nalazi se u pohrani aplikacije. Premještanjem postaje prenosiva i oslobađa se prostor aplikacije. Zaključane i ručno odabrane grafike koje su već u folderu nikad se ne prepisuju.</item>
+    <item quantity="few">%1$d datoteke grafika (%2$s) sačuvane su prije povezivanja ovog foldera i nalaze se u pohrani aplikacije. Premještanjem postaju prenosive i oslobađa se prostor aplikacije. Zaključane i ručno odabrane grafike koje su već u folderu nikad se ne prepisuju.</item>
+    <item quantity="other">%1$d datoteka grafika (%2$s) sačuvano je prije povezivanja ovog foldera i nalazi se u pohrani aplikacije. Premještanjem postaju prenosive i oslobađa se prostor aplikacije. Zaključane i ručno odabrane grafike koje su već u folderu nikad se ne prepisuju.</item>
+</plurals>
+    <string name="setd_import_group_export">Izvoz</string>
+    <string name="setd_import_export">Izvezi za ES-DE</string>
+    <string name="setd_import_export_sublabel">Kopira vaše grafike u folder koji odaberete (npr. downloaded_media ES-DE-a) — postupno, vaša biblioteka nikad se ne mijenja</string>
+    <string name="setd_import_group_preview">Pregled uvoza</string>
+    <string name="setd_import_building">Izrada pregleda…</string>
+    <string name="setd_import_building_sublabel">Povezivanje grafika s vašim igrama</string>
+    <string name="setd_import_preview_group">Pregled uvoza — %1$s</string>
+    <string name="setd_import_games_matched">Povezane igre</string>
+    <string name="setd_import_files_to_import">Datoteke za uvoz</string>
+    <string name="setd_import_estimated_size">Procijenjena veličina</string>
+    <string name="setd_import_details_found">Pronađeni detalji igara</string>
+    <string name="setd_import_details_none_sublabel">Kopirajte folder gamelists ES-DE-a u folder za uvoz launchera kako biste prenijeli opise, razvojne timove i godine izlaska</string>
+    <string name="setd_import_details_some_sublabel">Opisi i detalji iz gamelist.xml — nikad ne prepisuju postojeće podatke</string>
+    <string name="setd_import_already_present">Već postoji</string>
+    <string name="setd_import_needs_review">Treba pregled</string>
+    <string name="setd_import_unmatched_artwork">Nepovezane grafike</string>
+    <string name="setd_import_skipped_folders">Preskočeni folderi sistema</string>
+    <string name="setd_import_no_games">Nema igara u biblioteci</string>
+    <string name="setd_import_no_games_sublabel">Pronađene su grafike za %1$s, ali vaša biblioteka nema igara za te sisteme — najprije dodajte igre, a zatim ponovo pokrenite uvoz.</string>
+    <string name="setd_import_move_files">Premjesti datoteke (brže, oslobađa prostor)</string>
+    <string name="setd_import_move_files_sublabel">Premješta grafike iz foldera launchera umjesto kopiranja. Drugi launcher gubi te datoteke.</string>
+    <string name="setd_import_review_group">Pregled nejasnih podudaranja (%1$d)</string>
+    <plurals name="setd_import_possible_games">
+    <item quantity="one">%1$d moguća igra — odaberite za izbor</item>
+    <item quantity="few">%1$d moguće igre — odaberite za izbor</item>
+    <item quantity="other">%1$d mogućih igara — odaberite za izbor</item>
+</plurals>
+    <string name="setd_import_game_number">Igra br. %1$d</string>
+    <string name="setd_import_assign_sublabel">Dodijeli ovu grafiku ovoj igri</string>
+    <string name="setd_import_skip_file">Preskoči ovu datoteku</string>
+    <string name="setd_import_start">Pokreni uvoz</string>
+    <plurals name="setd_import_start_move">
+    <item quantity="one">Premješta %1$d datoteku u biblioteku grafika</item>
+    <item quantity="few">Premješta %1$d datoteke u biblioteku grafika</item>
+    <item quantity="other">Premješta %1$d datoteka u biblioteku grafika</item>
+</plurals>
+    <plurals name="setd_import_start_copy">
+    <item quantity="one">Kopira %1$d datoteku u biblioteku grafika</item>
+    <item quantity="few">Kopira %1$d datoteke u biblioteku grafika</item>
+    <item quantity="other">Kopira %1$d datoteka u biblioteku grafika</item>
+</plurals>
+    <string name="setd_import_cancel_preview">Otkaži pregled</string>
+    <string name="setd_import_group_importing">Uvoz</string>
+    <string name="setd_import_cancel">Otkaži uvoz</string>
+    <string name="setd_import_cancel_sublabel">Već uvezene grafike ostaju sačuvane</string>
+    <string name="setd_import_group_report">Izvještaj o uvozu</string>
+    <string name="setd_import_clear_reports">Očisti izvještaja</string>
+    <string name="setd_kind_icon">Omoti</string>
+    <string name="setd_kind_hero">Mix slike</string>
+    <string name="setd_kind_background">Fanart</string>
+    <string name="setd_kind_logo">Marquee</string>
+    <string name="setd_kind_screenshot">Snimci ekrana</string>
+    <string name="setd_kind_titlescreen">Naslovni ekrani</string>
+    <string name="setd_kind_physical_media">Fizički mediji</string>
+    <string name="setd_kind_manual">Priručnici</string>
+    <string name="setd_import_link_failed">U tom folderu nije moguće postaviti biblioteku grafika — možda je samo za čitanje.</string>
+    <string name="setd_import_library_reconnected">Postojeća PFP biblioteka grafika ponovo je povezana.</string>
+    <string name="setd_import_library_created">Biblioteka grafika stvorena.</string>
+    <plurals name="setd_import_games_linked">
+    <item quantity="one">%1$d igra povezana iz %2$d datoteka koje su već u folderu.</item>
+    <item quantity="few">%1$d igre povezane iz %2$d datoteka koje su već u folderu.</item>
+    <item quantity="other">%1$d igara povezano iz %2$d datoteka koje su već u folderu.</item>
+</plurals>
+    <string name="setd_import_place_media">Stavite medije drugih launchera u import/.</string>
+    <plurals name="setd_import_internal_files">
+    <item quantity="one">%1$d datoteka grafike još je u pohrani aplikacije — pogledajte Premjesti u folder u nastavku.</item>
+    <item quantity="few">%1$d datoteke grafika još su u pohrani aplikacije — pogledajte Premjesti u folder u nastavku.</item>
+    <item quantity="other">%1$d datoteka grafika još je u pohrani aplikacije — pogledajte Premjesti u folder u nastavku.</item>
+</plurals>
+    <plurals name="setd_import_upgraded">
+    <item quantity="one">Biblioteka grafika nadograđena na novi raspored — reorganizirana %1$d datoteka.</item>
+    <item quantity="few">Biblioteka grafika nadograđena na novi raspored — reorganizirane %1$d datoteke.</item>
+    <item quantity="other">Biblioteka grafika nadograđena na novi raspored — reorganizirano %1$d datoteka.</item>
+</plurals>
+    <string name="setd_import_scan_failed">Folder za uvoz nije moguće skenirati.</string>
+    <string name="setd_import_source_unreadable">Ovaj izvor nije moguće pročitati.</string>
+    <string name="setd_import_preview_failed">Pregled nije uspio — pogledajte zapisnike.</string>
+    <string name="setd_import_nothing">Nema ničega za uvoz — sve već postoji.</string>
+    <string name="setd_import_export_started">Izvoz je pokrenut — napredak je u obavještenju; rezultat se pojavljuje u Izvještaju o uvozu.</string>
+    <plurals name="setd_relink_files">
+    <item quantity="one">Skeniranje: %1$d datoteka</item>
+    <item quantity="few">Skeniranje: %1$d datoteke</item>
+    <item quantity="other">Skeniranje: %1$d datoteka</item>
+</plurals>
+    <plurals name="setd_relink_linked">
+    <item quantity="one">%1$d igra povezana</item>
+    <item quantity="few">%1$d igre povezane</item>
+    <item quantity="other">%1$d igara povezano</item>
+</plurals>
+    <string name="setd_relink_orphans">Nepovezano: %1$d — pogledajte Nepovezane grafike</string>
+    <string name="setd_relink_failed">Skeniranje biblioteke nije uspjelo — pogledajte zapisnike.</string>
+    <string name="setd_relink_cancelled">Skeniranje biblioteke otkazano.</string>
+    <string name="setd_report_title">%1$s — %2$s</string>
+    <string name="setd_report_unreadable">Izvještaj nije čitljivo</string>
+    <string name="setd_report_imported">uvezeno: %1$d</string>
+    <string name="setd_report_skipped">preskočeno: %1$d</string>
+    <string name="setd_report_failed">nije uspjelo: %1$d</string>
+    <plurals name="setd_report_game_details">
+    <item quantity="one">%1$d detalj igre</item>
+    <item quantity="few">%1$d detalja igara</item>
+    <item quantity="other">%1$d detalja igara</item>
+</plurals>
+    <string name="setd_report_need_review">treba pregled: %1$d</string>
+    <string name="setd_report_unmatched">nepovezano: %1$d</string>
+    <string name="setd_report_cancelled">otkazano</string>
+
+    <!-- ===== Unmatched Artwork ===== -->
+    <string name="setd_orphan_title">Nepovezane grafike</string>
+    <string name="setd_orphan_link_title">Poveži „%1$s”</string>
+    <string name="setd_orphan_none">Ništa nije nepovezano</string>
+    <string name="setd_orphan_none_sublabel">Svaka datoteka grafike u vašem folderu povezana je s igrom. Nakon dodavanja datoteka pokrenite Skeniraj i ponovo poveži za ponovnu provjeru.</string>
+    <plurals name="setd_orphan_count">
+    <item quantity="one">%1$d datoteka ne odgovara nijednoj igri</item>
+    <item quantity="few">%1$d datoteke ne odgovaraju nijednoj igri</item>
+    <item quantity="other">%1$d datoteka ne odgovara nijednoj igri</item>
+</plurals>
+    <string name="setd_orphan_group_file">Datoteka</string>
+    <string name="setd_orphan_group_search">Pretraži svoje igre</string>
+    <string name="setd_orphan_title_field">Naslov</string>
+    <string name="setd_orphan_searching">Pretraživanje…</string>
+    <string name="setd_orphan_search">Pretraži</string>
+    <string name="setd_orphan_search_sublabel">Traži samo među vašim igrama za %1$s — ništa se ne preuzima</string>
+    <string name="setd_orphan_no_search">Još nema pretraživanja</string>
+    <string name="setd_orphan_no_search_sublabel">Uredite naslov iznad i pritisnite Pretraži da biste vidjeli odgovarajuće igre</string>
+    <string name="setd_orphan_no_match">Nema odgovarajućih igara</string>
+    <string name="setd_orphan_no_match_sublabel">Pokušajte s kraćim naslovom — obično je dovoljna jedna prepoznatljiva riječ</string>
+    <plurals name="setd_orphan_matches">
+    <item quantity="one">%1$d podudaranje — odaberite vlasnika</item>
+    <item quantity="few">%1$d podudaranja — odaberite vlasnika</item>
+    <item quantity="other">%1$d podudaranja — odaberite vlasnika</item>
+</plurals>
+
+    <!-- ===== Achievements ===== -->
+    <string name="setd_ach_subtitle_credentials">Dostignuća · Pristupni podaci pružalaca</string>
+    <string name="setd_ach_subtitle_local_windows">Dostignuća · Lokalni Windows</string>
+    <string name="setd_ach_subtitle_update">Dostignuća · Ažuriraj dostignuća</string>
+    <string name="setd_ach_subtitle_coins">Shiba Coins</string>
+    <string name="setd_ach_enable">Omogući Shiba Coins</string>
+    <string name="setd_ach_enable_sublabel">Prati dostignuća kao Shiba Coins na RetroAchievementsu i Steamu</string>
+    <string name="setd_ach_connected_as">Povezano kao</string>
+    <string name="setd_ach_username">Korisničko ime</string>
+    <string name="setd_ach_ra_username_placeholder">Vaše RA korisničko ime</string>
+    <string name="setd_ach_web_api_key">Web API ključ</string>
+    <string name="setd_ach_web_api_key_saved">Web API ključ (sačuvan)</string>
+    <string name="setd_ach_ra_key_placeholder">Zalijepite svoj RA Web API ključ</string>
+    <string name="setd_ach_ra_key_helper">retroachievements.org → Settings → Keys → Web API Key</string>
+    <string name="setd_ach_ra_connect">Poveži RetroAchievements</string>
+    <string name="setd_ach_ra_disconnect">Prekini vezu s RetroAchievementsom</string>
+    <string name="setd_ach_ra_disconnect_sublabel">Uklanja vaše korisničko ime i ključ s ovog uređaja</string>
+    <string name="setd_ach_steam_id">SteamID64 ili naziv profila</string>
+    <string name="setd_ach_steam_id_placeholder">76561… ili vaš prilagođeni naziv</string>
+    <string name="setd_ach_steam_id_helper">Prilagođeni naziv pretvara se u SteamID64 pri povezivanju</string>
+    <string name="setd_ach_steam_key_placeholder">Zalijepite svoj Steam Web API ključ</string>
+    <string name="setd_ach_steam_key_helper">steamcommunity.com/dev — detalji o igrama na vašem profilu moraju biti javne</string>
+    <string name="setd_ach_steam_connect">Poveži Steam</string>
+    <string name="setd_ach_steam_disconnect">Prekini vezu sa Steamom</string>
+    <string name="setd_ach_steam_disconnect_sublabel">Uklanja vaš SteamID i ključ s ovog uređaja</string>
+    <string name="setd_ach_ra_connected">RetroAchievements povezan</string>
+    <string name="setd_ach_ra_disconnected">Veza s RetroAchievementsom prekinuta</string>
+    <string name="setd_ach_steam_disconnected">Veza sa Steamom prekinuta</string>
+    <string name="setd_ach_group_local_steam">Lokalni Steam (emulirani)</string>
+    <string name="setd_ach_track_local">Prati lokalne Steam igre (emulirane)</string>
+    <string name="setd_ach_track_local_sublabel">Pronađi igre emulatora, generiraj njihove podatke o dostignućima i sinhroniziraj otključavanja</string>
+    <string name="setd_ach_goldberg">Instaliraj Goldberg i pretvori igre</string>
+    <string name="setd_ach_goldberg_sublabel">Pri skeniranju ponudi zapisivanje podataka o dostignućima u prepoznate igre kako bi ih emulator mogao pratiti</string>
+    <string name="setd_ach_backup_title">Najprije napravite sigurnosnu kopiju sačuvanih podataka</string>
+    <string name="setd_ach_backup_confirm">Napravio/la sam kopiju — omogući</string>
+    <string name="setd_ach_local_steam_message">Prije sinhronizacije otvorite svoj Windows emulator i napravite sigurnosnu kopiju sačuvanih podataka za sve igre s emuliranim Steamom koje ste već postavili.\n\nPraćenje tih igara omogućava sinhronizaciji da prepiše konfiguraciju emulatora svake igre i zamijeni njezine Steam datoteke kako bi se otključavanja mogla bilježiti. Igra koju ste postavili i igrali prije ove funkcije inače bi mogla izgubiti pristup postojećim sačuvanim podacima.\n\nZa čitanje podataka o dostignućima koristi se i vaš vlastiti Steam Web API ključ — koristite ga na vlastitu odgovornost. Praćenje Steama potpuno je neobavezno; ostavite ovo isključeno ako ne želite prihvatiti te rizike.\n\nNajprije napravite kopiju, a zatim ovo uključite i ažurirajte instalirana dostignuća.</string>
+    <string name="setd_ach_goldberg_message">Prije pretvaranja bilo koje igre otvorite svoj Windows emulator i napravite sigurnosnu kopiju sačuvanih podataka za sve igre s emuliranim Steamom koje ste već postavili.\n\nPretvaranje prepisuje konfiguraciju emulatora svake igre i zamjenjuje njezine Steam datoteke kako bi se otključavanja mogla bilježiti. Igra koju ste postavili i igrali prije ove funkcije inače bi mogla izgubiti pristup postojećim sačuvanim podacima.\n\nZa čitanje podataka o dostignućima koristi se i vaš vlastiti Steam Web API ključ — koristite ga na vlastitu odgovornost. Ostavite ovo isključeno ako ne želite prihvatiti te rizike.\n\nNajprije napravite kopiju, a zatim ovo uključite i skenirajte igre.</string>
+    <string name="setd_ach_group_update">Ažuriranje</string>
+    <string name="setd_ach_last_updated">Zadnje ažuriranje</string>
+    <string name="setd_ach_never">Nikad</string>
+    <string name="setd_ach_auto_updates">Automatska ažuriranja</string>
+    <string name="setd_ach_updates_paused">Ažuriranja pauzirana do ponovne sinhronizacije</string>
+    <string name="setd_ach_updating">Ažuriranje dostignuća…</string>
+    <string name="setd_ach_update_installed">Ažuriraj instalirana dostignuća</string>
+    <string name="setd_ach_update_after_match">Pokreće se automatski kad automatsko povezivanje završi</string>
+    <string name="setd_ach_update_resume">Ponovo sinhronizira igre na ovom uređaju i nastavlja automatska ažuriranja</string>
+    <string name="setd_ach_update_check">Provjeri ima li igara na ovom uređaju s novim dostignućima</string>
+    <string name="setd_ach_group_auto_match">Automatsko povezivanje</string>
+    <string name="setd_ach_matching">Povezivanje igara…</string>
+    <string name="setd_ach_auto_match">Automatski poveži igre</string>
+    <string name="setd_ach_auto_match_sublabel">Poveži igre na ovom uređaju s RetroAchievementsom (hash ROM-a) i Steamom</string>
+    <string name="setd_ach_group_reset">Vraćanje</string>
+    <string name="setd_ach_clearing">Brisanje dostignuća…</string>
+    <string name="setd_ach_clear_row">Izbriši sva praćena dostignuća</string>
+    <string name="setd_ach_clear_row_sublabel">Uklanja svako dostignuće zabilježeno u Play Field Portalu. Vaše igre i veze s pružaocima ostaju.</string>
+    <string name="setd_ach_clear_title">Izbrisati sva praćena dostignuća?</string>
+    <string name="setd_ach_clear_message">Time će se ukloniti sva dostignuća zabilježena u Play Field Portalu, uključujući ostvareni napredak i zapise za igre koje više nisu instalirane. Vaše igre i veze s pružaocima ostat će. Igre će se morati ponovo sinhronizirati kako bi se njihova dostignuća opet prikazala.</string>
+    <string name="setd_ach_clear_confirm">Izbriši dostignuća</string>
+</resources>

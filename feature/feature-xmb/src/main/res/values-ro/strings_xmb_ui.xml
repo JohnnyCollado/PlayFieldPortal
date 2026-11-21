@@ -1,0 +1,406 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Music playback notification -->
+    <string name="xmbu_music_channel_name">Redare muzică</string>
+    <string name="xmbu_music_channel_description">Comenzi pentru redarea curentă</string>
+    <string name="xmbu_music_notif_previous">Anterioara</string>
+    <string name="xmbu_music_notif_play_pause">Redare/Pauză</string>
+    <string name="xmbu_music_notif_next">Următoarea</string>
+    <string name="xmbu_music_notif_stop">Oprește</string>
+
+    <string name="xmbu_ptt_hold">"🎙  ȚINE APĂSAT"</string>
+
+    <!-- Tray notification when a custom boot / Game Boot video cannot play -->
+    <string name="xmbu_clipfail_boot_label">Secvență de pornire</string>
+    <string name="xmbu_clipfail_gameboot_label">Game Boot</string>
+    <string name="xmbu_clipfail_boot_message">Videoclipul de pornire nu a putut fi redat pe acest dispozitiv, așa că s-a redat secvența integrată. Reexportă tema din Theme Studio (convertește videoclipul) sau alege alt clip în setările Afișaj.</string>
+    <string name="xmbu_clipfail_gameboot_message">Videoclipul Game Boot nu a putut fi redat pe acest dispozitiv, așa că s-a redat secvența integrată. Reexportă tema din Theme Studio (convertește videoclipul) sau alege alt clip în setările Afișaj.</string>
+
+    <!-- Common words -->
+    <string name="xmbu_common_options">Opțiuni</string>
+    <string name="xmbu_common_back">Înapoi</string>
+    <string name="xmbu_common_cancel">Anulează</string>
+    <string name="xmbu_common_done">Gata</string>
+    <string name="xmbu_common_close">Închide</string>
+    <string name="xmbu_common_reset">Resetează</string>
+    <string name="xmbu_common_remove">Elimină</string>
+    <string name="xmbu_common_open">Deschide</string>
+    <string name="xmbu_common_toggle">Comută</string>
+    <string name="xmbu_common_search">Caută</string>
+    <string name="xmbu_common_artwork">Artwork</string>
+    <string name="xmbu_common_edit_title">Editează titlul</string>
+    <string name="xmbu_common_add_to_card">Adaugă pe card</string>
+    <string name="xmbu_common_on">Activat</string>
+    <string name="xmbu_common_off">Dezactivat</string>
+    <string name="xmbu_common_move">Mută</string>
+    <string name="xmbu_common_navigate">Navighează</string>
+    <string name="xmbu_common_play">Redă</string>
+    <string name="xmbu_common_pause">Pauză</string>
+    <string name="xmbu_common_prev_next">Anterior / Următor</string>
+    <string name="xmbu_common_seek">Derulează</string>
+    <string name="xmbu_common_confirm">Confirmă</string>
+    <string name="xmbu_common_close_search">Închide căutarea</string>
+    <string name="xmbu_common_ellipsis_search">Caută…</string>
+
+    <!-- App Detail: Options menu rows -->
+    <string name="xmbu_app_opt_favorite">Preferat</string>
+    <string name="xmbu_app_opt_app_info">Informații aplicație</string>
+    <string name="xmbu_app_opt_hide">Ascunde peste tot</string>
+    <string name="xmbu_app_opt_change_icon">Schimbă pictograma</string>
+    <string name="xmbu_app_opt_change_background">Schimbă fundalul</string>
+    <string name="xmbu_app_opt_reset_artwork">Resetează tot artwork-ul</string>
+
+    <string name="xmbu_app_art_type_icon">Pictograma jocului</string>
+    <string name="xmbu_app_art_type_hero">Banner hero</string>
+    <string name="xmbu_app_art_type_background">Fundal</string>
+
+    <string name="xmbu_app_art_no_api_key">Cheia API SteamGridDB nu este configurată — adaug-o în Setări artwork</string>
+    <string name="xmbu_app_art_search_failed">Căutarea a eșuat: %1$s</string>
+    <string name="xmbu_app_art_no_results">Niciun rezultat pentru „%1$s” pe SteamGridDB</string>
+    <string name="xmbu_app_art_load_failed">Artwork-ul nu a putut fi încărcat: %1$s</string>
+    <string name="xmbu_app_art_none_found">Nu s-a găsit artwork de tip %1$s pe SteamGridDB</string>
+    <string name="xmbu_app_art_download_failed">Nu s-a putut descărca: %1$s</string>
+    <string name="xmbu_app_art_import_failed">Nu s-a putut importa: %1$s</string>
+    <string name="xmbu_app_art_updated">%1$s actualizat</string>
+    <string name="xmbu_app_art_reset">%1$s resetat</string>
+    <string name="xmbu_app_art_all_reset">Tot artwork-ul a fost resetat</string>
+    <string name="xmbu_app_no_launchable_package">Această aplicație nu are un pachet care poate fi pornit</string>
+    <string name="xmbu_common_launch">Pornește</string>
+
+    <!-- App Detail screen -->
+    <string name="xmbu_app_breadcrumb_apps">Aplicații</string>
+    <string name="xmbu_app_breadcrumb_android_app">Aplicație Android</string>
+    <string name="xmbu_app_edit_artwork_description">Editează artwork-ul</string>
+    <string name="xmbu_app_no_icon">Fără pictogramă</string>
+    <string name="xmbu_app_art_change">Schimbă: %1$s</string>
+    <string name="xmbu_app_art_saving">Se salvează…</string>
+    <string name="xmbu_app_art_pick_local">Alege un fișier local</string>
+    <string name="xmbu_app_art_restore_icon">Restabilește pictograma originală</string>
+    <string name="xmbu_app_art_remove_custom">Elimină artwork-ul personalizat</string>
+    <string name="xmbu_app_art_picker_hint">"◄ ►  Răsfoiește   A  Alege   B  Înapoi"</string>
+    <string name="xmbu_app_reset_title">Resetezi tot artwork-ul?</string>
+    <string name="xmbu_app_reset_message">Pictograma și fundalul personalizate pentru %1$s sunt eliminate și revine pictograma proprie a aplicației.</string>
+
+    <!-- Add to Card (collection) picker panel -->
+    <string name="xmbu_collection_picker_hint">"Sus/Jos  Navighează  •  Select  Comută  •  B  Închide"</string>
+    <string name="xmbu_collection_picker_new_row">"＋  Card de memorie personalizat nou"</string>
+    <string name="xmbu_collection_picker_empty">Încă nu există carduri de memorie personalizate — creează unul pentru a începe.</string>
+    <string name="xmbu_collection_new_title">Card de memorie personalizat nou</string>
+    <string name="xmbu_collection_new_placeholder">de ex. RPG-uri, În curs de joc</string>
+    <string name="xmbu_collection_new_create">Creează</string>
+    <string name="xmbu_common_sort">Sortare</string>
+    <string name="xmbu_common_notifications">Notificări</string>
+
+    <!-- App picker -->
+    <string name="xmbu_app_picker_empty">Nicio aplicație instalată</string>
+    <string name="xmbu_app_picker_no_match">Nicio aplicație instalată nu corespunde cu „%1$s”</string>
+    <string name="xmbu_app_picker_choose">Alege</string>
+
+    <!-- Arrange mode bars -->
+    <string name="xmbu_arrange_place">Plasează</string>
+    <string name="xmbu_arrange_mark">Marchează</string>
+    <string name="xmbu_arrange_move_left">Mută la stânga</string>
+    <string name="xmbu_arrange_move_right">Mută la dreapta</string>
+    <string name="xmbu_arrange_move_up">Mută în sus</string>
+    <string name="xmbu_arrange_move_down">Mută în jos</string>
+
+    <!-- Color Scheme picker overlay -->
+    <string name="xmbu_color_scheme_title">Schemă de culori</string>
+    <string name="xmbu_color_scheme_tint">Nuanță</string>
+    <string name="xmbu_color_scheme_depth">Profunzime</string>
+    <string name="xmbu_color_scheme_contrast_top">"%1$s Text sus  %2$s"</string>
+    <string name="xmbu_color_scheme_contrast_bottom">"%1$s Text jos  %2$s"</string>
+    <string name="xmbu_color_scheme_custom_title">Culoare personalizată</string>
+
+    <!-- Customize XMB Icons overlay -->
+    <string name="xmbu_icons_title">Personalizează pictogramele XMB</string>
+    <string name="xmbu_icons_source_user">Alegerea ta</string>
+    <string name="xmbu_icons_source_theme">Din temă</string>
+    <string name="xmbu_icons_source_default">Implicită</string>
+    <string name="xmbu_icons_source_with_column">%1$s · coloana %2$s</string>
+    <string name="xmbu_icons_column">Coloană</string>
+    <string name="xmbu_icons_tab">Filă</string>
+    <string name="xmbu_icons_pick">Alege</string>
+    <string name="xmbu_icons_reset_all">Resetează tot</string>
+    <string name="xmbu_icons_save_as_theme">Salvează ca temă</string>
+    <string name="xmbu_icons_save_as_theme_button">Salvează ca temă…</string>
+
+    <!-- Search box -->
+    <string name="xmbu_game_search_placeholder">Caută jocuri…</string>
+
+    <!-- Game picker -->
+    <string name="xmbu_picker_in_this_category">În această categorie</string>
+    <string name="xmbu_picker_in_category">În %1$s</string>
+    <string name="xmbu_picker_custom_cards">Carduri de memorie personalizate</string>
+    <string name="xmbu_picker_no_changes">Nicio modificare</string>
+    <string name="xmbu_picker_menu_view">Vizualizare</string>
+    <string name="xmbu_picker_menu_select_all">Selectează tot</string>
+    <string name="xmbu_picker_open_toggle">Deschide / Comută</string>
+    <string name="xmbu_picker_no_games">Încă nu ai jocuri în bibliotecă</string>
+    <string name="xmbu_picker_add_games">Adaugă jocuri</string>
+    <string name="xmbu_picker_view_mode">Vizualizare: %1$s</string>
+    <string name="xmbu_picker_removing_prefix">"Se elimină · "</string>
+    <string name="xmbu_picker_search_placeholder">Caută pe acest raft…</string>
+    <string name="xmbu_picker_shelves">Rafturi</string>
+    <string name="xmbu_picker_shelf">Raft</string>
+
+    <!-- Music browser -->
+    <string name="xmbu_music_breadcrumb_playlists">"Muzică  ›  Playlisturi"</string>
+    <string name="xmbu_music_breadcrumb_music">Muzică</string>
+    <string name="xmbu_music_breadcrumb_all_tracks">Toate piesele</string>
+    <string name="xmbu_music_resume">Reia: %1$s</string>
+
+    <!-- Music player -->
+    <string name="xmbu_music_now_playing">Se redă acum</string>
+    <string name="xmbu_music_nothing_playing">Nu se redă nimic</string>
+    <string name="xmbu_music_visualizer">Vizualizator</string>
+
+    <!-- Media transport buttons -->
+    <string name="xmbu_media_previous_track">Piesa anterioară</string>
+    <string name="xmbu_media_next_track">Piesa următoare</string>
+    <string name="xmbu_media_previous_video">Videoclipul anterior</string>
+    <string name="xmbu_media_next_video">Videoclipul următor</string>
+    <string name="xmbu_media_back_10">Înapoi 10 secunde</string>
+    <string name="xmbu_media_forward_10">Înainte 10 secunde</string>
+    <string name="xmbu_media_playing">Se redă</string>
+    <string name="xmbu_media_paused">Întrerupt</string>
+
+    <!-- Music track picker -->
+    <string name="xmbu_track_picker_title">Adaugă în %1$s</string>
+    <string name="xmbu_track_picker_add">Adaugă</string>
+    <string name="xmbu_track_picker_empty">Nu mai sunt piese de adăugat — fiecare melodie scanată este deja în acest playlist.</string>
+
+    <!-- Notification panel -->
+    <string name="xmbu_notif_options_description">Opțiuni pentru notificări</string>
+    <string name="xmbu_notif_task_stopping">%1$s — Se oprește…</string>
+    <string name="xmbu_notif_task_detail">%1$s — %2$s</string>
+    <string name="xmbu_notif_kind_scan">Scanare</string>
+    <string name="xmbu_notif_kind_metadata">Metadate</string>
+    <string name="xmbu_notif_kind_achievements">Realizări</string>
+    <string name="xmbu_notif_kind_system">Sistem</string>
+    <string name="xmbu_notif_kind_download">Descărcare</string>
+    <string name="xmbu_notif_kind_feed">Flux</string>
+    <string name="xmbu_notif_action_go_to_game">Mergi la joc</string>
+    <string name="xmbu_notif_action_open_card">Deschide cardul de memorie</string>
+    <string name="xmbu_notif_action_open_settings">Deschide Setări</string>
+    <string name="xmbu_notif_action_open_category">Deschide categoria</string>
+    <string name="xmbu_notif_action_review">Verifică</string>
+    <string name="xmbu_time_just_now">Chiar acum</string>
+
+    <!-- XMB shell -->
+    <string name="xmbu_share_theme">Distribuie tema</string>
+    <string name="xmbu_move_position">Se mută · %1$d din %2$d</string>
+    <string name="xmbu_common_later">Mai târziu</string>
+
+    <!-- XMB shell dialogs -->
+    <string name="xmbu_shell_rename_shortcut">Redenumește scurtătura</string>
+    <string name="xmbu_shell_playlist_name">Numele playlistului</string>
+    <string name="xmbu_shell_theme_name">Numele temei</string>
+    <string name="xmbu_shell_source_theme">Din tema aplicată</string>
+    <string name="xmbu_shell_source_device">De pe dispozitiv</string>
+    <string name="xmbu_shell_source_device_detail">PNG sau GIF</string>
+    <string name="xmbu_shell_continue">Continuă</string>
+    <string name="xmbu_shell_shortcut_title">Adaugi scurtătura?</string>
+    <string name="xmbu_shell_shortcut_message">O aplicație a cerut să adauge o scurtătură „%1$s” care deschide %2$s. Adaug-o doar dacă tocmai ai creat tu această scurtătură.</string>
+    <string name="xmbu_shell_shortcut_add">Adaugă</string>
+    <string name="xmbu_shell_shortcut_ignore">Ignoră</string>
+    <string name="xmbu_shell_windows_title">Termină configurarea Bibliotecii Windows</string>
+    <string name="xmbu_shell_windows_message">A fost adăugat un joc PC, dar biblioteca Jocuri Windows nu are încă un dosar. Configureaz-o în Managerul bibliotecii pentru ca dosarele jocurilor și realizările să poată fi scanate.</string>
+    <string name="xmbu_shell_windows_set_up">Configurează</string>
+    <string name="xmbu_shell_import_position">%1$d din %2$d</string>
+    <string name="xmbu_shell_open_playlist">Deschide playlistul</string>
+    <string name="xmbu_shell_stop">Oprește</string>
+    <string name="xmbu_shell_keep_running">Continuă să ruleze</string>
+
+    <!-- Launch recovery dialog -->
+    <string name="xmbu_recovery_retry">Reîncearcă</string>
+    <string name="xmbu_recovery_change_emulator">Schimbă emulatorul</string>
+    <string name="xmbu_recovery_change_default">Schimbă implicitul per sistem</string>
+    <string name="xmbu_recovery_copy_diagnostics">Copiază diagnosticul</string>
+    <string name="xmbu_recovery_title">%1$s nu a putut fi pornit</string>
+    <string name="xmbu_recovery_select">Selectează</string>
+    <string name="xmbu_recovery_dismiss">Închide</string>
+
+    <!-- Artwork folder prompts -->
+    <string name="xmbu_artfolder_unavailable_title">Dosarul de artwork nu este disponibil</string>
+    <string name="xmbu_artfolder_unavailable_message">PFP nu poate accesa %1$s. Artwork-ul nou este întrerupt până când îl legi din nou. Artwork-ul pe care îl ai deja se afișează în continuare.</string>
+    <string name="xmbu_artfolder_relink">Leagă din nou dosarul</string>
+    <string name="xmbu_artfolder_not_now">Nu acum</string>
+    <string name="xmbu_artfolder_move_title">Mută artwork-ul într-un dosar care îți aparține</string>
+    <string name="xmbu_artfolder_choose">Alege dosarul de artwork</string>
+    <string name="xmbu_artfolder_choose_title">Alege un dosar de artwork</string>
+    <string name="xmbu_artfolder_choose_message">Artwork-ul nou se salvează într-un dosar care îți aparține. Alege unul, iar PFP va salva artwork-ul acolo.</string>
+    <string name="xmbu_artfolder_foreign_title">Acest dosar conține o altă bibliotecă de artwork</string>
+    <string name="xmbu_artfolder_use_library">Folosește această bibliotecă</string>
+    <string name="xmbu_artfolder_choose_another">Alege alt dosar</string>
+
+    <!-- Status strip -->
+    <string name="xmbu_status_controller_connected">Controler conectat</string>
+    <string name="xmbu_status_battery">Baterie</string>
+    <string name="xmbu_status_battery_charging">Baterie, se încarcă</string>
+    <string name="xmbu_status_battery_plugged">Baterie, conectată la priză</string>
+
+    <!-- Adjust XMB Layout overlay -->
+    <string name="xmbu_layout_title">Ajustează aspectul XMB</string>
+    <string name="xmbu_layout_readout">"Scală %1$sx    Orizontal %2$d%%    Vertical %3$d%%"</string>
+    <string name="xmbu_layout_scale">Scală</string>
+    <string name="xmbu_layout_horizontal">Orizontal</string>
+    <string name="xmbu_layout_vertical">Vertical</string>
+    <string name="xmbu_layout_sliders">Glisoare</string>
+    <string name="xmbu_layout_hide_sliders">Ascunde glisoarele</string>
+    <string name="xmbu_layout_save">Salvează</string>
+
+    <!-- Theme icon picker -->
+    <string name="xmbu_icon_grid_use">Folosește această pictogramă</string>
+    <string name="xmbu_status_cellular_signal">Semnal celular</string>
+
+    <!-- Notification panel -->
+    <string name="xmbu_notif_header_running">ÎN CURS</string>
+    <string name="xmbu_notif_header_earlier">MAI DEVREME</string>
+    <string name="xmbu_notif_empty">Nicio notificare</string>
+
+    <!-- Video player -->
+    <string name="xmbu_video_fit">Încadrare</string>
+    <string name="xmbu_video_zoom">Zoom</string>
+    <string name="xmbu_video_fill">Umplere</string>
+    <string name="xmbu_video_speed">Viteza de redare</string>
+    <string name="xmbu_video_subtitles">Subtitrări</string>
+    <string name="xmbu_video_audio_track">Pistă audio</string>
+    <string name="xmbu_video_screen_mode">Mod ecran</string>
+    <string name="xmbu_video_none">Niciuna</string>
+    <string name="xmbu_video_default">Implicit</string>
+    <string name="xmbu_video_track">Pistă</string>
+    <string name="xmbu_video_err_not_found">Videoclipul nu a fost găsit.</string>
+    <string name="xmbu_video_err_permission">Permisiune refuzată pentru acest fișier.</string>
+    <string name="xmbu_video_err_decode">Acest videoclip nu poate fi decodat pe acest dispozitiv.</string>
+    <string name="xmbu_video_err_unable">Videoclipul nu poate fi redat.</string>
+    <string name="xmbu_video_go_back">Înapoi</string>
+    <string name="xmbu_video_status">%1$s× · %2$s</string>
+
+    <!-- Photo viewer -->
+    <string name="xmbu_photo_rotate_left">Rotește la stânga</string>
+    <string name="xmbu_photo_rotate_right">Rotește la dreapta</string>
+    <string name="xmbu_photo_zoom_in">Mărește</string>
+    <string name="xmbu_photo_zoom_out">Micșorează</string>
+    <string name="xmbu_photo_reset_zoom">Resetează zoomul</string>
+    <string name="xmbu_photo_set_wallpaper">Setează ca fundal al launcherului</string>
+    <string name="xmbu_photo_set_lock_screen">Setează ca ecran de blocare</string>
+    <string name="xmbu_photo_view_info">Vezi informațiile</string>
+    <string name="xmbu_photo_show_location">Afișează locația fișierului</string>
+    <string name="xmbu_photo_remove">Elimină din bibliotecă</string>
+    <string name="xmbu_photo_group_view">Vizualizare</string>
+    <string name="xmbu_photo_group_manage">Gestionare</string>
+    <string name="xmbu_photo_in_folder">În: %1$s</string>
+    <string name="xmbu_photo_wallpaper_unreadable">Fundalul nu a putut fi setat — imaginea nu a putut fi citită</string>
+    <string name="xmbu_photo_wallpaper_applied">Fundal aplicat</string>
+    <string name="xmbu_photo_unreadable">Fotografia nu a putut fi citită</string>
+    <string name="xmbu_photo_lock_screen_set">Ecranul de blocare a fost setat</string>
+    <string name="xmbu_photo_hide_controls">Ascunde comenzile</string>
+    <string name="xmbu_photo_show_controls">Afișează comenzile</string>
+    <string name="xmbu_photo_wallpaper_title">Setezi ca fundal al launcherului?</string>
+    <string name="xmbu_photo_wallpaper_note">Înlocuiește fundalul cu val al XMB.</string>
+    <string name="xmbu_photo_apply">Aplică</string>
+    <string name="xmbu_photo_applying">Se aplică…</string>
+    <string name="xmbu_photo_remove_message">„%1$s” va fi eliminată din această bibliotecă. Fotografia de pe disc nu este ștearsă.</string>
+    <string name="xmbu_photo_lock_message">„%1$s” devine imaginea ecranului de blocare al dispozitivului, decupată pentru a se potrivi ecranului.</string>
+    <string name="xmbu_photo_set">Setează</string>
+    <string name="xmbu_photo_info_resolution">Rezoluție: %1$s</string>
+    <string name="xmbu_photo_info_taken">Fotografiată: %1$s</string>
+    <string name="xmbu_photo_info_modified">Modificată: %1$s</string>
+    <string name="xmbu_photo_info_size">Dimensiune: %1$s</string>
+    <string name="xmbu_photo_info_type">Tip: %1$s</string>
+    <string name="xmbu_photo_info_location">Locație: %1$s</string>
+    <string name="xmbu_photo_info_file">Fișier: %1$s</string>
+
+    <!-- Music visualizer picker -->
+    <string name="xmbu_visualizer_portal">Portal</string>
+    <string name="xmbu_visualizer_ripple">Unde</string>
+    <string name="xmbu_visualizer_off">Dezactivat</string>
+    <string name="xmbu_visualizer_off_tile">OPRIT</string>
+
+    <plurals name="xmbu_app_picker_selected">
+        <item quantity="one">%d selectată</item>
+        <item quantity="few">%d selectate</item>
+        <item quantity="other">%d de selectate</item>
+    </plurals>
+
+    <plurals name="xmbu_arrange_marked">
+        <item quantity="one">%d marcat</item>
+        <item quantity="few">%d marcate</item>
+        <item quantity="other">%d de marcate</item>
+    </plurals>
+
+    <plurals name="xmbu_picker_to_add">
+        <item quantity="one">%d de adăugat</item>
+        <item quantity="few">%d de adăugat</item>
+        <item quantity="other">%d de adăugat</item>
+    </plurals>
+    <plurals name="xmbu_picker_to_remove">
+        <item quantity="one">%d de eliminat</item>
+        <item quantity="few">%d de eliminat</item>
+        <item quantity="other">%d de eliminat</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_games">
+        <item quantity="one">%1$d joc · %2$d bifate</item>
+        <item quantity="few">%1$d jocuri · %2$d bifate</item>
+        <item quantity="other">%1$d de jocuri · %2$d bifate</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_cards">
+        <item quantity="one">%d card · alegerea unuia îl mută aici</item>
+        <item quantity="few">%d carduri · alegerea unuia îl mută aici</item>
+        <item quantity="other">%d de carduri · alegerea unuia îl mută aici</item>
+    </plurals>
+    <plurals name="xmbu_picker_card_games">
+        <item quantity="one">%d joc</item>
+        <item quantity="few">%d jocuri</item>
+        <item quantity="other">%d de jocuri</item>
+    </plurals>
+
+    <!-- Music track picker -->
+    <plurals name="xmbu_track_picker_add_count">
+        <item quantity="one">Adaugă %d</item>
+        <item quantity="few">Adaugă %d</item>
+        <item quantity="other">Adaugă %d</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_selected">
+        <item quantity="one">%d selectată</item>
+        <item quantity="few">%d selectate</item>
+        <item quantity="other">%d de selectate</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_add_tracks">
+        <item quantity="one">Adaugă %d piesă</item>
+        <item quantity="few">Adaugă %d piese</item>
+        <item quantity="other">Adaugă %d de piese</item>
+    </plurals>
+
+    <!-- Notification age -->
+    <plurals name="xmbu_time_minutes_ago">
+        <item quantity="one">Acum %d minut</item>
+        <item quantity="few">Acum %d minute</item>
+        <item quantity="other">Acum %d de minute</item>
+    </plurals>
+    <plurals name="xmbu_time_hours_ago">
+        <item quantity="one">Acum %d oră</item>
+        <item quantity="few">Acum %d ore</item>
+        <item quantity="other">Acum %d de ore</item>
+    </plurals>
+
+    <!-- Artwork folder prompts -->
+    <plurals name="xmbu_artfolder_move_message">
+        <item quantity="one">%d imagine este stocată în aplicație și s-ar pierde la dezinstalare. Alege un dosar, iar PFP o va muta acolo.</item>
+        <item quantity="few">%d imagini sunt stocate în aplicație și s-ar pierde la dezinstalare. Alege un dosar, iar PFP le va muta acolo.</item>
+        <item quantity="other">%d de imagini sunt stocate în aplicație și s-ar pierde la dezinstalare. Alege un dosar, iar PFP le va muta acolo.</item>
+    </plurals>
+    <plurals name="xmbu_artfolder_foreign_message">
+        <item quantity="one">%1$s a fost configurat de o altă instalare (%2$d fișier). Folosește-l, iar PFP îți va lega din nou jocurile la artwork-ul lui, sau alege alt dosar.</item>
+        <item quantity="few">%1$s a fost configurat de o altă instalare (%2$d fișiere). Folosește-l, iar PFP îți va lega din nou jocurile la artwork-ul lui, sau alege alt dosar.</item>
+        <item quantity="other">%1$s a fost configurat de o altă instalare (%2$d de fișiere). Folosește-l, iar PFP îți va lega din nou jocurile la artwork-ul lui, sau alege alt dosar.</item>
+    </plurals>
+
+    <plurals name="xmbu_status_notifications_unread">
+        <item quantity="one">Notificări, %d necitită</item>
+        <item quantity="few">Notificări, %d necitite</item>
+        <item quantity="other">Notificări, %d de necitite</item>
+    </plurals>
+</resources>

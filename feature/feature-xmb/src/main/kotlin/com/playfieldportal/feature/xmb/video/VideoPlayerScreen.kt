@@ -80,11 +80,15 @@ import com.playfieldportal.feature.xmb.ui.media.TransportButton
 import com.playfieldportal.feature.xmb.ui.media.playPauseAction
 import kotlinx.coroutines.delay
 import timber.log.Timber
+import androidx.compose.ui.res.stringResource
+import android.content.res.Resources
+import com.playfieldportal.feature.xmb.R
+import com.playfieldportal.feature.xmb.ui.uiResources
 
 private val SCREEN_MODES = listOf(
-    AspectRatioFrameLayout.RESIZE_MODE_FIT to "Fit",
-    AspectRatioFrameLayout.RESIZE_MODE_ZOOM to "Zoom",
-    AspectRatioFrameLayout.RESIZE_MODE_FILL to "Fill",
+    AspectRatioFrameLayout.RESIZE_MODE_FIT to R.string.xmbu_video_fit,
+    AspectRatioFrameLayout.RESIZE_MODE_ZOOM to R.string.xmbu_video_zoom,
+    AspectRatioFrameLayout.RESIZE_MODE_FILL to R.string.xmbu_video_fill,
 )
 private const val SEEK_STEP_MS = 10_000L
 private const val CONTROLS_TIMEOUT_MS = 3_500L
@@ -152,11 +156,11 @@ fun VideoPlayerScreen(
                 override fun onPlayerError(error: PlaybackException) {
                     Timber.w(error, "Playback error for ${current.uri}")
                     errorMessage = when (error.errorCode) {
-                        PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND -> "Video not found."
-                        PlaybackException.ERROR_CODE_IO_NO_PERMISSION -> "Permission denied for this file."
+                        PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND -> context.getString(R.string.xmbu_video_err_not_found)
+                        PlaybackException.ERROR_CODE_IO_NO_PERMISSION -> context.getString(R.string.xmbu_video_err_permission)
                         PlaybackException.ERROR_CODE_DECODING_FAILED,
-                        PlaybackException.ERROR_CODE_DECODER_INIT_FAILED -> "This video can't be decoded on this device."
-                        else -> "Unable to play this video."
+                        PlaybackException.ERROR_CODE_DECODER_INIT_FAILED -> context.getString(R.string.xmbu_video_err_decode)
+                        else -> context.getString(R.string.xmbu_video_err_unable)
                     }
                 }
             })
@@ -171,7 +175,7 @@ fun VideoPlayerScreen(
     LaunchedEffect(index) {
         errorMessage = null
         val uri = runCatching { Uri.parse(current.uri) }.getOrNull()
-        if (uri == null) { errorMessage = "Video not found."; return@LaunchedEffect }
+        if (uri == null) { errorMessage = context.getString(R.string.xmbu_video_err_not_found); return@LaunchedEffect }
         player.setMediaItem(MediaItem.fromUri(uri))
         player.prepare()
         val seek = if (index == startIndex) initialSeek else 0L
@@ -223,15 +227,16 @@ fun VideoPlayerScreen(
     }
     fun playPause() { if (player.isPlaying) player.pause() else player.play(); poke() }
     fun closeOptions() { optionsOpen = false; optionsGroup = null; optionsRow = 0 }
+    val uiRes = uiResources()
     fun optionRows(): List<PspMenuRow> {
         tracksTick // read: re-derive when the player's tracks change
         val state = VideoOptionsState(
             speed = VIDEO_SPEEDS[speedIndex],
-            screenModeLabel = SCREEN_MODES[screenModeIndex].second,
-            subtitleChoices = trackChoices(player, C.TRACK_TYPE_TEXT, allowOff = true),
-            audioChoices = trackChoices(player, C.TRACK_TYPE_AUDIO, allowOff = false),
+            screenModeLabel = uiRes.getString(SCREEN_MODES[screenModeIndex].second),
+            subtitleChoices = trackChoices(player, C.TRACK_TYPE_TEXT, allowOff = true, uiRes),
+            audioChoices = trackChoices(player, C.TRACK_TYPE_AUDIO, allowOff = false, uiRes),
         )
-        return videoPlayerOptionRows(state, optionsGroup)
+        return videoPlayerOptionRows(state, optionsGroup, uiRes)
     }
     // Picking a row of an open list. Shared by the pad's SELECT and a tap, so touch cannot drift.
     fun applyChoice(group: VideoOptionGroup, choice: Int) {
@@ -340,7 +345,7 @@ fun VideoPlayerScreen(
                 durationMs = durationMs,
                 isPlaying = isPlaying,
                 speed = VIDEO_SPEEDS[speedIndex],
-                screenMode = SCREEN_MODES[screenModeIndex].second,
+                screenMode = stringResource(SCREEN_MODES[screenModeIndex].second),
                 hasPrev = index > 0,
                 hasNext = index < videos.lastIndex,
                 showTouchControls = showTouchControls,
@@ -357,7 +362,7 @@ fun VideoPlayerScreen(
 
         if (optionsOpen && errorMessage == null) {
             PspContextMenuOverlay(
-                title = optionsGroup?.let { OPTION_TITLES.getValue(it) } ?: "Options",
+                title = optionsGroup?.let { stringResource(OPTION_TITLES.getValue(it)) } ?: stringResource(R.string.xmbu_common_options),
                 rows = optionRows(),
                 selectedIndex = optionsRow,
                 onRowActivated = { row -> optionsPress(GamepadAction.SELECT, row) },
@@ -368,21 +373,21 @@ fun VideoPlayerScreen(
 }
 
 private val OPTION_TITLES = mapOf(
-    VideoOptionGroup.SPEED to "Playback Speed",
-    VideoOptionGroup.SUBTITLES to "Subtitles",
-    VideoOptionGroup.AUDIO to "Audio Track",
-    VideoOptionGroup.SCREEN_MODE to "Screen Mode",
+    VideoOptionGroup.SPEED to R.string.xmbu_video_speed,
+    VideoOptionGroup.SUBTITLES to R.string.xmbu_video_subtitles,
+    VideoOptionGroup.AUDIO to R.string.xmbu_video_audio_track,
+    VideoOptionGroup.SCREEN_MODE to R.string.xmbu_video_screen_mode,
 )
 
 /** The error state's way out: the Back pill the controls overlay uses under touch, else the pad prompt. */
 @Composable
 internal fun VideoErrorBackPrompt(showTouchControls: Boolean, onBack: () -> Unit) {
     if (showTouchControls) {
-        XmbHeaderPill(label = "Back", leadingGlyph = "◀", onClick = onBack, background = XmbMediaPillScrim)
+        XmbHeaderPill(label = stringResource(R.string.xmbu_common_back), leadingGlyph = "◀", onClick = onBack, background = XmbMediaPillScrim)
     } else {
         ControllerPrompt(
             actions = listOf(GamepadAction.SELECT, GamepadAction.BACK),
-            label = "Go back",
+            label = stringResource(R.string.xmbu_video_go_back),
             labelColor = Color(0xFFB0B0B0),
             labelStyle = TextStyle(fontSize = 13.sp),
             glyphSize = 18.dp,
@@ -426,7 +431,7 @@ private fun ControlsOverlay(
         Box(modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter).padding(24.dp)) {
             if (showTouchControls) {
                 XmbHeaderPill(
-                    label = "Back",
+                    label = stringResource(R.string.xmbu_common_back),
                     leadingGlyph = "◀",
                     onClick = onBack,
                     background = XmbMediaPillScrim,
@@ -469,16 +474,16 @@ private fun ControlsOverlay(
                 // Dimmed rather than dropped at the ends of the library, so the row keeps its
                 // shape and play never shifts out from under the thumb mid-video.
                 TransportButton(
-                    Icons.Filled.SkipPrevious, "Previous video", hasPrev, onPrevious,
+                    Icons.Filled.SkipPrevious, stringResource(R.string.xmbu_media_previous_video), hasPrev, onPrevious,
                     size = 44.dp, iconSize = 26.dp, action = TransportAction.PREVIOUS,
                 )
                 TransportButton(
-                    Icons.Filled.Replay10, "Back 10 seconds", true, onSeekBack,
+                    Icons.Filled.Replay10, stringResource(R.string.xmbu_media_back_10), true, onSeekBack,
                     size = 52.dp, iconSize = 30.dp, action = TransportAction.BACK_10,
                 )
                 TransportButton(
                     icon = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    contentDescription = stringResource(if (isPlaying) R.string.xmbu_common_pause else R.string.xmbu_common_play),
                     enabled = true,
                     onClick = onPlayPause,
                     size = 64.dp,
@@ -486,11 +491,11 @@ private fun ControlsOverlay(
                     action = playPauseAction(isPlaying),
                 )
                 TransportButton(
-                    Icons.Filled.Forward10, "Forward 10 seconds", true, onSeekForward,
+                    Icons.Filled.Forward10, stringResource(R.string.xmbu_media_forward_10), true, onSeekForward,
                     size = 52.dp, iconSize = 30.dp, action = TransportAction.FORWARD_10,
                 )
                 TransportButton(
-                    Icons.Filled.SkipNext, "Next video", hasNext, onNext,
+                    Icons.Filled.SkipNext, stringResource(R.string.xmbu_media_next_video), hasNext, onNext,
                     size = 44.dp, iconSize = 26.dp, action = TransportAction.NEXT,
                 )
             }
@@ -532,7 +537,7 @@ private fun ControlsOverlay(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     ControllerPromptBar(
-                        items = videoPlayerPromptItems(isPlaying, hasPrevNext = hasPrev || hasNext),
+                        items = videoPlayerPromptItems(isPlaying, hasPrevNext = hasPrev || hasNext, uiResources()),
                         labelColor = Color(0xFFCCCCCC),
                         labelStyle = TextStyle(fontSize = 12.sp),
                         glyphSize = 16.dp,
@@ -541,7 +546,7 @@ private fun ControlsOverlay(
                         modifier = Modifier.alpha(com.playfieldportal.core.ui.components.idleHintAlpha(com.playfieldportal.feature.xmb.ui.LocalMediaHintVisible.current)),
                     )
                     // Status, not a prompt - no button changes it from here.
-                    Text("${speed}\u00D7 \u00B7 $screenMode", color = Color(0xFFCCCCCC), fontSize = 12.sp)
+                    Text(stringResource(R.string.xmbu_video_status, speed.toString(), screenMode), color = Color(0xFFCCCCCC), fontSize = 12.sp)
                 }
             }
         }
@@ -556,7 +561,7 @@ private fun trackEntries(player: Player, trackType: Int): List<Pair<Tracks.Group
         .filter { it.type == trackType && it.isSupported }
         .flatMap { g -> (0 until g.length).filter { g.isTrackSupported(it) }.map { g to it } }
 
-private fun trackChoices(player: Player, trackType: Int, allowOff: Boolean): List<VideoTrackChoice> =
+private fun trackChoices(player: Player, trackType: Int, allowOff: Boolean, res: Resources): List<VideoTrackChoice> =
     videoTrackChoices(
         tracks = trackEntries(player, trackType).map { (g, t) ->
             val format = g.getTrackFormat(t)
@@ -564,6 +569,7 @@ private fun trackChoices(player: Player, trackType: Int, allowOff: Boolean): Lis
         },
         allowOff = allowOff,
         trackTypeDisabled = player.trackSelectionParameters.disabledTrackTypes.contains(trackType),
+        res = res,
     )
 
 /** Applies the [choice]th entry of [trackChoices] (same order: Off first when [allowOff]). */
@@ -586,14 +592,14 @@ private fun selectTrack(player: Player, trackType: Int, allowOff: Boolean, choic
  * seek, L1/R1 prev/next, Y options, B back), Back last as on every screen (ARCHITECTURE.md ▸
  * Conventions). Prev / Next is named only when there is a library to move through.
  */
-internal fun videoPlayerPromptItems(isPlaying: Boolean, hasPrevNext: Boolean): List<ControllerPromptItem> = listOfNotNull(
-    ControllerPromptItem(GamepadAction.SELECT, if (isPlaying) "Pause" else "Play"),
-    ControllerPromptItem(listOf(GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT), "Seek"),
+internal fun videoPlayerPromptItems(isPlaying: Boolean, hasPrevNext: Boolean, res: Resources): List<ControllerPromptItem> = listOfNotNull(
+    ControllerPromptItem(GamepadAction.SELECT, res.getString(if (isPlaying) R.string.xmbu_common_pause else R.string.xmbu_common_play)),
+    ControllerPromptItem(listOf(GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT), res.getString(R.string.xmbu_common_seek)),
     if (hasPrevNext) {
-        ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Prev / Next")
+        ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), res.getString(R.string.xmbu_common_prev_next))
     } else {
         null
     },
-    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
-    ControllerPromptItem(GamepadAction.BACK, "Back"),
+    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, res.getString(R.string.xmbu_common_options)),
+    ControllerPromptItem(GamepadAction.BACK, res.getString(R.string.xmbu_common_back)),
 )

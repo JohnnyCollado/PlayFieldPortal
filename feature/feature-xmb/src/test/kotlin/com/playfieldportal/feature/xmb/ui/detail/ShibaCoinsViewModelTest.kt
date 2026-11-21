@@ -9,12 +9,14 @@ import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.sound.MenuSoundPlayer
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
 import com.playfieldportal.feature.achievements.provider.steam.SteamCandidate
+import com.playfieldportal.feature.xmb.R
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -204,7 +206,7 @@ class ShibaCoinsViewModelTest {
         coVerify(exactly = 1) { achievements.unlink(gameId) }
         coVerify(exactly = 0) { achievements.unlink(otherGameId) }
         // And the other game's page is not told that an app id it never saw "doesn't match".
-        assertFalse(state.message.orEmpty().contains("doesn't match"))
+        assertFalse(state.message == UiText.res(R.string.shiba_coins_appid_no_match, "480490"))
     }
 
     @After
@@ -394,7 +396,7 @@ class ShibaCoinsViewModelTest {
         viewModel.setQuery("zzz")
 
         assertTrue(state.rows.isEmpty())
-        assertEquals("No coins match \"zzz\".", state.emptyMessage)
+        assertEquals(UiText.res(R.string.shiba_coins_empty_no_match, "zzz"), state.emptyMessage)
     }
 
     @Test

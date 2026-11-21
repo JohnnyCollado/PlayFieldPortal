@@ -249,7 +249,7 @@ class PanelsBTest {
 
     @Test
     fun `boot card without a clip is the built in one`() {
-        val card = bootCard("gameboot_video", "GameBoot", null)
+        val card = bootCard("gameboot_video", "Game Boot", null)
         assertFalse(card.hasVideo)
         assertNull(card.infoLine)
         assertNull(card.fileName)
@@ -258,11 +258,11 @@ class PanelsBTest {
 
     @Test
     fun `boot card leaves out what the probe could not read and flags an overlong clip`() {
-        val card = bootCard("gameboot_video", "GameBoot", BootFileInfo("mp4", 2048L, null, null, null))
+        val card = bootCard("gameboot_video", "Game Boot", BootFileInfo("mp4", 2048L, null, null, null))
         assertEquals("gameboot.mp4 · 2 KB", card.infoLine)
         assertTrue(bootCard("boot_video", "Boot", BootFileInfo("mp4", 10L, 16_000L, 640, 360)).overCap)
         assertFalse(bootCard("boot_video", "Boot", BootFileInfo("mp4", 10L, 12_000L, 640, 360)).overCap)
-        assertTrue(bootCard("gameboot_video", "GameBoot", BootFileInfo("mp4", 10L, 12_000L, 640, 360)).overCap)
+        assertTrue(bootCard("gameboot_video", "Game Boot", BootFileInfo("mp4", 10L, 12_000L, 640, 360)).overCap)
     }
 
     // ── VM: re-framing an existing video, and picking the poster frame ───────

@@ -1,5 +1,8 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.settings.R
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.net.Uri
@@ -84,20 +87,20 @@ fun VideoSettingsContent(
     val removeGate = rememberRootRemoveGate()
     val playerModal = rememberSettingsModal(
         removeGate.spec ?: if (!state.showPlayerPicker) null else playerPickerSpec(
-            title = "Default Video Player",
+            title = stringResource(R.string.sets_video_player_title),
             options = listOf(
-                PlayerOption("builtin", "Play Field Portal"),
-                PlayerOption("ask", "System Default"),
+                PlayerOption("builtin", stringResource(R.string.sets_player_builtin)),
+                PlayerOption("ask", stringResource(R.string.sets_player_system_default)),
             ) + state.availablePlayers.map { PlayerOption(it.packageName, it.label) },
             current = state.defaultPlayer ?: "builtin",
-            emptyNote = if (state.availablePlayers.isEmpty()) "No external video players found on this device." else null,
+            emptyNote = if (state.availablePlayers.isEmpty()) stringResource(R.string.sets_video_player_none) else null,
             onChoose = onChoosePlayer,
             onClose = onDismissPlayerPicker,
         ),
     )
     SettingsScaffold(
-        title    = "Settings",
-        subtitle = "Video",
+        title    = stringResource(R.string.settings_title),
+        subtitle = stringResource(R.string.sets_video_title),
         onBack   = onBack,
         modifier = modifier,
         modalOpen = playerModal.open,
@@ -111,22 +114,23 @@ fun VideoSettingsContent(
                 .verticalScroll(scrollState),
         ) {
             RootAccessSection(
-                groupTitle  = "Root folders",
+                groupTitle  = stringResource(R.string.sets_roots_group),
                 rootKind    = "Video",
+                rootKindRes = R.string.sets_root_kind_video,
                 roots       = state.roots,
-                addLabel    = "Add video root",
-                addSublabel = "Grant a root folder (e.g. /Movies) — add several to span locations",
+                addLabel    = stringResource(R.string.sets_video_add_root),
+                addSublabel = stringResource(R.string.sets_video_add_root_help),
                 onAddRoot   = onAddRoot,
                 onRelinkRoot = onRelinkRoot,
                 onRemoveRoot = { row -> removeGate.request(row.name) { onRemoveRoot(row) } },
             )
 
             SettingsRow(
-                label    = "Rescan video library",
+                label    = stringResource(R.string.sets_video_rescan),
                 sublabel = when {
-                    state.scanning            -> "Scanning…"
-                    state.scanMessage != null -> state.scanMessage
-                    else                      -> "Update the libraries from every root folder"
+                    state.scanning            -> stringResource(R.string.sets_scanning)
+                    state.scanMessage != null -> state.scanMessage.asString()
+                    else                      -> stringResource(R.string.sets_rescan_help)
                 },
                 focusKey = "video_rescan",
                 onClick  = if (state.scanning || !state.hasRoots) null else onRescan,
@@ -140,12 +144,12 @@ fun VideoSettingsContent(
                 )
             }
 
-            SettingsGroup("Playback")
+            SettingsGroup(stringResource(R.string.sets_playback_group))
 
             SettingsValueRow(
-                label    = "Default video player",
-                sublabel = "Play Field Portal plays in-app; or pick an app / be asked each time.",
-                value    = state.defaultPlayerLabel,
+                label    = stringResource(R.string.sets_video_player),
+                sublabel = stringResource(R.string.sets_video_player_help),
+                value    = state.defaultPlayerLabel.asString(),
                 focusKey = "video_default_player",
                 onClick  = onOpenPlayerPicker,
             )

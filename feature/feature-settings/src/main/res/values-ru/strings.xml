@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Настройки</string>
+    <string name="sound_title">Звук</string>
+    <string name="sound_group_master">Общая</string>
+    <string name="sound_group_levels">Уровни</string>
+    <string name="sound_group_sounds">Звуки</string>
+    <string name="sound_master_volume">Общая громкость</string>
+    <string name="sound_master_volume_help">Регулирует все звуки лаунчера. При 0 лаунчер беззвучен.</string>
+    <string name="sound_ambience_help">Повторяется, пока вы просматриваете меню. OGG зацикливается без шва; в MP3 возможен щелчок.</string>
+    <string name="sound_rejected_title">Не удалось использовать этот звук</string>
+    <string name="sound_reset_confirm_title">Сбросить звук до настроек по умолчанию?</string>
+    <string name="sound_reset_confirm_message">Каждый звук меню вернётся к встроенному образцу PFP, а каждый уровень, включая общий, — к максимуму. Фоновая дорожка и медиафайлы Boot Video и Game Boot не изменятся.</string>
+    <string name="sound_reset_confirm_action">Сбросить</string>
+    <string name="sound_reset_row">Сбросить звук до настроек по умолчанию</string>
+    <string name="sound_reset_row_help">Возвращает каждый звук меню к встроенному образцу PFP, а каждый уровень — к максимуму. Фоновая дорожка сохраняется.</string>
+    <string name="sound_channel_navigation">Навигация</string>
+    <string name="sound_channel_back">Назад / Отмена</string>
+    <string name="sound_channel_confirm">Подтвердить / Применить</string>
+    <string name="sound_channel_error">Ошибка / Недопустимо</string>
+    <string name="sound_channel_notification">Уведомление</string>
+    <string name="sound_channel_boot">Последовательность запуска</string>
+    <string name="sound_channel_ambience">Фоновый звук</string>
+    <string name="sound_slot_navigation">Навигация</string>
+    <string name="sound_slot_back">Назад / Отмена</string>
+    <string name="sound_slot_confirm">Подтвердить / Применить</string>
+    <string name="sound_slot_error">Ошибка / Недопустимо</string>
+    <string name="sound_slot_notification">Уведомление</string>
+    <string name="sound_slot_ambience">Фоновая дорожка</string>
+</resources>

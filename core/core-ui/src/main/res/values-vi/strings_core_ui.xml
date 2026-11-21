@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Localization slice G1: core-ui shared components -->
+<resources>
+
+    <string name="core_cancel">Hủy</string>
+    <string name="core_ok">OK</string>
+    <string name="core_save">Lưu</string>
+    <string name="core_apply">Áp dụng</string>
+    <string name="core_select">Chọn</string>
+    <string name="core_close">Đóng</string>
+    <string name="core_back">Quay lại</string>
+
+    <!-- Modals (text entry) -->
+    <string name="core_modal_name_label">Tên</string>
+    <string name="core_modal_counter">%1$d / %2$d</string>
+
+    <!-- Convert-to-achievement-tracking picker -->
+    <string name="core_steam_convert_title">Cài đặt theo dõi thành tựu?</string>
+    <string name="core_steam_convert_selected_count">%1$d / %2$d</string>
+    <string name="core_steam_convert_found_count">Tìm thấy %1$d</string>
+    <string name="core_steam_convert_hints">"Lên/Xuống  Hàng  •  Select  Bật/tắt  •  △  Tất cả/Không  •  Start  Cài đặt  •  B  Hủy"</string>
+    <string name="core_steam_convert_loading">Đang đọc danh sách thành tựu của từng trò chơi từ Steam…</string>
+    <string name="core_steam_convert_install">Cài đặt (%1$d)</string>
+    <string name="core_steam_convert_none">Không</string>
+    <string name="core_steam_convert_all">Tất cả</string>
+    <string name="core_steam_convert_skip_sync">Bỏ qua &amp; đồng bộ</string>
+    <string name="core_steam_convert_write_notice">Trong thư mục của mỗi trò chơi đã chọn, PFP ghi achievements.json, stats.json và configs.user.ini, tạo thư mục saves và đổi tên steam_api64.dll thành steam_api64_o.dll để trình giả lập đi kèm có thể tải qua nó.</string>
+    <string name="core_steam_convert_backup_warning">Hãy sao lưu tệp lưu của mọi trò chơi bạn đã chơi trước khi chuyển đổi — trình giả lập sẽ bắt đầu đọc từ vị trí lưu mới.</string>
+
+    <!-- Shiba player card -->
+    <string name="core_shiba_xp">%1$s XP</string>
+    <string name="core_shiba_progress_next_bone">%1$s / %2$s tới Xương tiếp theo</string>
+    <string name="core_shiba_progress_next_level">%1$s / %2$s tới cấp %3$d</string>
+    <string name="core_shiba_level_abbrev">CẤP</string>
+
+    <!-- Colour picker -->
+    <string name="core_hsv_hex">Hex</string>
+    <string name="core_hsv_hue">Sắc độ</string>
+    <string name="core_hsv_saturation">Độ bão hòa</string>
+    <string name="core_hsv_brightness">Độ sáng</string>
+    <string name="core_hsv_hint_move">Di chuyển</string>
+    <string name="core_hsv_hint_type_hex">Nhập mã hex</string>
+    <string name="core_hsv_hint_adjust">Điều chỉnh</string>
+    <string name="core_hsv_sample_text">Văn bản mẫu</string>
+    <string name="core_color_default">Mặc định</string>
+    <string name="core_color_pink">Hồng</string>
+    <string name="core_color_gold">Vàng kim</string>
+    <string name="core_color_aqua">Xanh ngọc</string>
+    <string name="core_color_sky_blue">Xanh da trời</string>
+    <string name="core_color_green">Xanh lá</string>
+    <string name="core_color_coral">San hô</string>
+    <string name="core_color_slate">Xám đá</string>
+    <string name="core_color_custom">Tùy chỉnh</string>
+
+    <!-- Notification detail sheets -->
+    <string name="core_sheet_copied">Đã sao chép</string>
+    <string name="core_sheet_copy_details">Sao chép chi tiết</string>
+    <string name="core_sheet_copy_list">Sao chép danh sách</string>
+    <string name="core_sheet_filter">Lọc</string>
+    <string name="core_sheet_what_happened">Chuyện gì đã xảy ra</string>
+    <string name="core_sheet_diagnostic_open">"▾  Chi tiết chẩn đoán"</string>
+    <string name="core_sheet_diagnostic_closed">"▸  Chi tiết chẩn đoán"</string>
+    <string name="core_sheet_diagnostic_heading">Chẩn đoán</string>
+    <string name="core_sheet_summary_chip">%1$d %2$s</string>
+    <string name="core_sheet_filter_all">Tất cả</string>
+    <string name="core_sheet_more">+%1$d mục nữa</string>
+    <string name="core_sheet_what_you_can_do">Bạn có thể làm gì</string>
+
+    <!-- On-screen keyboard -->
+    <string name="core_vk_prompt_type">Nhập</string>
+    <string name="core_vk_prompt_delete">Xóa</string>
+    <string name="core_vk_prompt_cursor">Con trỏ</string>
+    <string name="core_vk_prompt_caps">Chữ hoa</string>
+    <string name="core_vk_key_space">Dấu cách</string>
+    <string name="core_vk_key_shift">Shift</string>
+    <string name="core_vk_key_backspace">Xóa lùi</string>
+    <string name="core_vk_key_done">Xong</string>
+    <string name="core_vk_shift_off">Tắt</string>
+    <string name="core_vk_shift_once">Bật cho chữ tiếp theo</string>
+    <string name="core_vk_shift_held">Bật khi giữ</string>
+    <string name="core_vk_shift_locked">Đã bật Caps Lock</string>
+
+    <!-- Background tasks -->
+    <string name="core_task_failed">Tác vụ thất bại</string>
+    <string name="core_task_done">Xong</string>
+
+    <!-- Detail screens -->
+    <string name="core_detail_favorite_badge">YÊU THÍCH</string>
+    <string name="core_detail_video_badge">VIDEO</string>
+    <string name="core_detail_confirm_collapse">Xác nhận để thu gọn</string>
+    <string name="core_detail_confirm_read_more">Xác nhận để đọc thêm</string>
+
+    <!-- Rotate-to-landscape prompt -->
+    <string name="core_rotate_title">Xoay sang ngang</string>
+    <string name="core_rotate_message">PlayField Portal chạy ở chế độ ngang. Hãy xoay ngang thiết bị để tiếp tục.</string>
+    <string name="core_rotate_switch_launcher">Đổi launcher</string>
+</resources>

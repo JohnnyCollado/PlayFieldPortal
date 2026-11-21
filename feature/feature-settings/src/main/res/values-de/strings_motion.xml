@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="motion_title">Bewegung</string>
+    <string name="motion_summary">Wie viel sich von selbst bewegt.</string>
+    <string name="motion_detail_animated">Alles bewegt sich</string>
+    <string name="motion_detail_reduced">Nur das Ausgewählte</string>
+    <string name="motion_detail_static">Nichts von selbst</string>
+    <string name="motion_sub_animated">Alles, was sich bewegen kann, bewegt sich: Artwork, Symbole, Hintergrundbilder, der Hintergrund und das Leuchten. Verbraucht am meisten Akku.</string>
+    <string name="motion_sub_reduced">Nur das Ausgewählte bewegt sich: sein Artwork, sein Videoausschnitt und sein Leuchten. Der Hintergrund bewegt sich weiter.</string>
+    <string name="motion_sub_static">Nichts bewegt sich von selbst. Menüs gleiten weiterhin, wenn du dich durch sie bewegst.</string>
+    <string name="motion_holds_background">Angehalten, solange „Bewegung“ auf „Statisch“ steht.</string>
+    <string name="motion_holds_glow">Ruhig, solange „Bewegung“ auf „Statisch“ steht.</string>
+</resources>

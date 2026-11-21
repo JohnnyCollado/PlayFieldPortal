@@ -48,7 +48,7 @@ class GameLaunchLadderTest {
             )
         }
         val memory = mockk<AutoCoreMemory> { coEvery { rememberedProfileId(any()) } returns null }
-        return GameLaunchLadder(profiles, cards, platforms, memory)
+        return GameLaunchLadder(profiles, cards, platforms, memory, mockk(relaxed = true))
     }
 
     private val game = Game(title = "Halo 3", platformId = "x360", romPath = "/roms/x360/halo3.iso")

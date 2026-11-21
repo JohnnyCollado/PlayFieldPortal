@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App context menu: group headings -->
+    <string name="apps_menu_group_library">라이브러리</string>
+    <string name="apps_menu_group_arrange">정렬</string>
+    <string name="apps_menu_group_manage">관리</string>
+    <!-- App context menu: rows -->
+    <string name="apps_menu_launch">시작</string>
+    <string name="apps_menu_edit_details">앱 정보 편집</string>
+    <string name="apps_menu_mark_game">게임으로 표시</string>
+    <string name="apps_menu_unmark_game">게임 표시 해제</string>
+    <string name="apps_menu_favorite">즐겨찾기</string>
+    <string name="apps_menu_add_to_card">카드에 추가</string>
+    <string name="apps_menu_pin_to_top">맨 위에 고정</string>
+    <string name="apps_menu_move">이동</string>
+    <string name="apps_menu_move_to_category">카테고리로 이동</string>
+    <string name="apps_menu_add_to_category">카테고리에 추가</string>
+    <string name="apps_menu_remove_from_category">카테고리에서 제거</string>
+    <string name="apps_menu_rename_shortcut">바로 가기 이름 변경</string>
+    <string name="apps_menu_hide_from">%1$s에서 숨기기</string>
+    <string name="apps_menu_hide_everywhere">모든 곳에서 숨기기</string>
+    <string name="apps_menu_app_info">앱 정보</string>
+    <!-- Menu row and the confirm button of the uninstall dialog -->
+    <string name="apps_menu_uninstall">제거</string>
+    <string name="apps_value_on">켜짐</string>
+    <string name="apps_value_off">꺼짐</string>
+    <string name="apps_uninstall_title">%1$s을(를) 제거할까요?</string>
+    <string name="apps_uninstall_message">기기에서 %1$s을(를) 제거합니다. Android에서 확인을 요청합니다.</string>
+    <!-- Category tabs and header title -->
+    <string name="apps_filter_all">모든 앱</string>
+    <string name="apps_filter_games">게임</string>
+    <string name="apps_filter_emulators">에뮬레이터</string>
+    <string name="apps_filter_recent">최근 사용</string>
+    <!-- Header search -->
+    <string name="apps_search_placeholder">검색…</string>
+    <string name="apps_search_button">검색</string>
+    <!-- Empty states -->
+    <string name="apps_empty_no_match">검색과 일치하는 앱이 없습니다</string>
+    <string name="apps_empty_no_games">게임이 없습니다</string>
+    <string name="apps_empty_no_emulators">설치된 에뮬레이터가 없습니다</string>
+    <string name="apps_empty_usage_access">사용 기록 액세스 권한이 필요합니다</string>
+    <string name="apps_empty_no_recent">최근 사용한 앱이 아직 없습니다</string>
+    <string name="apps_empty_no_apps">설치된 앱이 없습니다</string>
+    <string name="apps_hint_try_search">다른 검색어를 입력해 보세요</string>
+    <string name="apps_hint_games">Play 스토어에서 게임으로 분류된 앱이 여기에 표시됩니다</string>
+    <string name="apps_hint_emulators">RetroArch, PPSSPP 등의 에뮬레이터를 설치하세요</string>
+    <string name="apps_hint_usage_access">PFP가 마지막 사용 시간순으로 앱을 정렬할 수 있도록 액세스를 허용하세요</string>
+    <!-- Button that opens Android's Usage Access settings -->
+    <string name="apps_open_usage_access">사용 기록 액세스 열기</string>
+    <!-- Controller hint bar: short labels beside a button glyph -->
+    <string name="apps_hint_prev">이전</string>
+    <string name="apps_hint_next">다음</string>
+    <string name="apps_hint_back">뒤로</string>
+    <string name="apps_hint_launch">시작</string>
+    <string name="apps_hint_options">옵션</string>
+    <string name="apps_hint_search">검색</string>
+    <string name="apps_drawer_title">앱 서랍</string>
+    <string name="apps_drawer_subtitle">이 기기의 앱</string>
+</resources>

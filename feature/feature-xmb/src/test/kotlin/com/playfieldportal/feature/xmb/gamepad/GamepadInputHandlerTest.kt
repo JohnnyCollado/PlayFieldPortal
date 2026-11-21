@@ -352,4 +352,41 @@ class GamepadInputHandlerTest {
         every { event.source } returns android.view.InputDevice.SOURCE_JOYSTICK
         return event
     }
+
+    // ── Repeat delay from stick deflection ───────────────────────────────
+
+    private val standard = RepeatTuning(initialDelayMs = 250, baseIntervalMs = 110, fastIntervalMs = 50, rampSteps = 5)
+
+    @Test
+    fun `repeatDelayFor with no stick follows the original linear ramp`() {
+        // step 0 = base; step >= rampSteps = fast; in between = base - (base - fast) * step / rampSteps
+        assertEquals(110L, repeatDelayFor(standard, 0f, 0))
+        assertEquals(98L, repeatDelayFor(standard, 0f, 1))
+        assertEquals(86L, repeatDelayFor(standard, 0f, 2))
+        assertEquals(74L, repeatDelayFor(standard, 0f, 3))
+        assertEquals(62L, repeatDelayFor(standard, 0f, 4))
+        assertEquals(50L, repeatDelayFor(standard, 0f, 5))
+        assertEquals(50L, repeatDelayFor(standard, 0f, 40))
+    }
+
+    @Test
+    fun `repeatDelayFor at full tilt is the fastest interval at any hold step`() {
+        listOf(1.0f, 0.95f, 0.9f).forEach { m ->
+            listOf(0, 1, 3, 10).forEach { step -> assertEquals(50L, repeatDelayFor(standard, m, step)) }
+        }
+    }
+
+    @Test
+    fun `repeatDelayFor never lengthens as the stick tilts further`() {
+        listOf(0, 2, 8).forEach { step ->
+            val delays = (50..100).map { repeatDelayFor(standard, it / 100f, step) }
+            assertEquals(delays.sortedDescending(), delays)
+        }
+    }
+
+    @Test
+    fun `repeatDelayFor steps slower for a light tilt than for a firm one`() {
+        assertTrue(repeatDelayFor(standard, 0.55f, 0) > standard.baseIntervalMs)
+        assertTrue(repeatDelayFor(standard, 0.55f, 0) > repeatDelayFor(standard, 0.75f, 0))
+    }
 }

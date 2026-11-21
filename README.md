@@ -818,8 +818,8 @@ gradient, cursor and icons all derive from it).
 - **My Themes** — your saved themes as cards: apply, **Share** (`.pfptheme`), or Remove. Applying
   asks first (*Apply "…"?*) and lists what would change. When the theme carries sounds, videos or
   icons you have already replaced with your own, you choose **Use the Theme's** (yours are removed
-  for those, and a switched-off Boot Sequence or GameBoot is turned on for the theme's video) or
-  **Keep Mine**; when the only question is a switched-off Boot Sequence or GameBoot, the choice is
+  for those, and a switched-off Boot Sequence or Game Boot is turned on for the theme's video) or
+  **Keep Mine**; when the only question is a switched-off Boot Sequence or Game Boot, the choice is
   **Turn On** or **Leave Off**. A theme with a lock screen image then offers **Set Lock Screen**
   (focused on **Not Now** — it is opt-in).
 - **Reset to Default** — removes the applied wallpaper, theme colors, custom icons, the theme's
@@ -904,10 +904,10 @@ ride along inside the `.pfptheme` file.
 ### 4.16 Sound, ambience & boot videos
 
 **Where:** *Settings › Interface › Sound* (volume, menu sounds, ambience) and
-*Settings › Interface › Display* (Boot Sequence, GameBoot) · **Network:** None.
+*Settings › Interface › Display* (Boot Sequence, Game Boot) · **Network:** None.
 
 **Volume.** *Sound* has a **Master volume** (0 is the launcher's mute) and a level for each
-launcher sound — the five menu sounds, Boot sequence, GameBoot and Ambience. Levels apply to
+launcher sound — the five menu sounds, Boot sequence, Game Boot and Ambience. Levels apply to
 launcher sounds only; the built-in music and video players play at system volume.
 
 **Menu sounds.** Each row has a **Preview** and can be returned to the PFP default:
@@ -928,22 +928,22 @@ while you browse; no assignment means no ambience. It stops for a game launch, t
 players, and any other app that takes audio focus. OGG loops seamlessly; MP3 may click at the loop
 point.
 
-**Boot and GameBoot videos** (*Settings › Interface › Display*)
+**Boot and Game Boot videos** (*Settings › Interface › Display*)
 
 - **Boot Sequence** — *Show Boot Sequence* (and *on Resume*), plus **Boot Video**: supply your own
   video (up to 15 seconds) and it replaces the PFP logo animation, with its own audio. Press **✕**
   or **○** to skip it.
-- **GameBoot** — the short presentation that plays as a game launches. Built in, it is a
-  five-second light sweep timed to its own sound; supply a **GameBoot Video** (up to 10 seconds) and
+- **Game Boot** — the short presentation that plays as a game launches. Built in, it is a
+  five-second light sweep timed to its own sound; supply a **Game Boot Video** (up to 10 seconds) and
   it replaces the whole thing, its own audio included. The light sweep is skipped (the five seconds
   still play) only while battery saver is on or the device is running hot (when *Battery Saver
-  Mode* / *Thermal Throttle Awareness* are on), or while Android's *Remove animations* is on — not by the Wave Style or Background Motion setting. Switching GameBoot off gives a silent
-  launch. If the presentation has not finished in time the game launches anyway — GameBoot can
+  Mode* / *Thermal Throttle Awareness* are on), or while Android's *Remove animations* is on — not by the Wave Style or Background Motion setting. Switching Game Boot off gives a silent
+  launch. If the presentation has not finished in time the game launches anyway — Game Boot can
   never hold your game hostage.
 
 Video can be MP4 or WebM, up to 25 MB.
 
-Boot Video, GameBoot Video and every sound row carry the same two controller shortcuts on the
+Boot Video, Game Boot Video and every sound row carry the same two controller shortcuts on the
 focused row, bound to physical buttons so an X/Y swap cannot move them: the **north** button
 (Y on Xbox/PlayStation pads, X on Nintendo) restores the PFP default, and the **west** button
 (X on Xbox/PlayStation, Y on Nintendo) plays a preview.
@@ -1304,7 +1304,7 @@ app exactly (source: `settingsSectionItems()` in
 | | RetroArch | Core detection and linking | [4.3](#43-emulators) |
 | | Per-System Defaults | Default emulator and core per console; clear per-game overrides | [4.3](#43-emulators) |
 | | Emulator knowledge | Status, updates, import/export of knowledge files, reset to built-in | [4.4](#44-emulator-knowledge-updates-import-export) |
-| **Interface** | Display | Wallpaper, wave, legibility, fonts, Lock Screen, UMD Slot, Adjust XMB Layout, Customize XMB Icons, Boot Sequence, GameBoot, touch, Options Hint, performance | [4.13](#413-themes--personalization)–[4.16](#416-sound-ambience--boot-videos), [4.19](#419-adjusting-the-layout-for-your-screen) |
+| **Interface** | Display | Wallpaper, wave, legibility, fonts, Lock Screen, UMD Slot, Adjust XMB Layout, Customize XMB Icons, Boot Sequence, Game Boot, touch, Options Hint, performance | [4.13](#413-themes--personalization)–[4.16](#416-sound-ambience--boot-videos), [4.19](#419-adjusting-the-layout-for-your-screen) |
 | | Sound | Master volume, levels, menu sounds, ambience | [4.16](#416-sound-ambience--boot-videos) |
 | | Notifications | Record Notifications, Keep Entries For, Mark All Read, Clear All | [4.17](#417-the-notification-panel) |
 | | Categories | Create, rename, re-icon, move, hide, delete categories | [4.12](#412-categories) |

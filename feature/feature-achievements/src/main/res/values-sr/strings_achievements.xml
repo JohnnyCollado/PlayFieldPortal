@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Slice H2: feature-achievements (achievement updates, Local Steam folders, Vita scan) -->
+    <!-- Achievement update notifications. "Games" are the installed games being checked. -->
+    <string name="ach_upd_running">Ажурирање инсталираних достигнућа</string>
+    <string name="ach_upd_running_stop_note">Већ ажурирана достигнућа се задржавају.</string>
+    <!-- %1$d games checked so far, %2$d games in total -->
+    <string name="ach_upd_progress">Провера %1$d од %2$d игара</string>
+    <string name="ach_upd_stopped">Ажурирање достигнућа је заустављено</string>
+    <!-- %d is how many games were checked before the run stopped -->
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="one">Проверена је %d игра; сачувани напредак је задржан</item>
+        <item quantity="few">Проверене су %d игре; сачувани напредак је задржан</item>
+        <item quantity="other">Проверено је %d игара; сачувани напредак је задржан</item>
+    </plurals>
+    <string name="ach_upd_some_failed">Нека достигнућа није било могуће ажурирати</string>
+    <!-- %1$d games failed, %2$d games in total -->
+    <plurals name="ach_upd_failed_message">
+        <item quantity="one">%1$d од %2$d игре треба поново покушати</item>
+        <item quantity="few">%1$d од %2$d игре треба поново покушати</item>
+        <item quantity="other">%1$d од %2$d игара треба поново покушати</item>
+    </plurals>
+    <!-- Heading for the games that did update, in the failure detail list -->
+    <string name="ach_upd_results_done">Ажурирано</string>
+    <string name="ach_upd_updated">Достигнућа су ажурирана</string>
+    <!-- %1$d games updated, %2$d games unchanged -->
+    <plurals name="ach_upd_updated_message">
+        <item quantity="one">Ажурирана %1$d игра · непромењено: %2$d</item>
+        <item quantity="few">Ажуриране %1$d игре · непромењено: %2$d</item>
+        <item quantity="other">Ажурирано %1$d игара · непромењено: %2$d</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">Достигнућа су ажурна</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="one">Проверена је %d инсталирана игра</item>
+        <item quantity="few">Проверене су %d инсталиране игре</item>
+        <item quantity="other">Проверено је %d инсталираних игара</item>
+    </plurals>
+    <string name="ach_upd_paused">Ажурирање достигнућа је паузирано</string>
+    <!-- Label of the fact naming the online service involved (RetroAchievements, Steam ...) -->
+    <string name="ach_upd_fact_service">Услуга</string>
+    <string name="ach_upd_pause_offline">Повежите се на интернет</string>
+    <!-- %1$s is a service name such as RetroAchievements or Steam -->
+    <string name="ach_upd_pause_reconnect">Поново повежите %1$s</string>
+    <string name="ach_upd_pause_steam_private">Детаљи игара на Steam-у нису доступни</string>
+
+    <!-- Auto-match notifications -->
+    <string name="ach_match_running">Аутоматско повезивање игара</string>
+    <string name="ach_match_running_stop_note">Већ повезане игре остају повезане.</string>
+    <string name="ach_match_stopped_note">Већ повезане игре остају повезане</string>
+    <string name="ach_match_stopped">Аутоматско повезивање је заустављено</string>
+    <string name="ach_match_recognized">Игре су препознате</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="one">Повезана је %d инсталирана игра. Ажурирају се њена достигнућа.</item>
+        <item quantity="few">Повезане су %d инсталиране игре. Ажурирају се њихова достигнућа.</item>
+        <item quantity="other">Повезано је %d инсталираних игара. Ажурирају се њихова достигнућа.</item>
+    </plurals>
+
+    <!-- Clearing achievement records -->
+    <string name="ach_clear_done">Записи о достигнућима су обрисани</string>
+    <string name="ach_clear_done_message">Инсталиране игре треба поново синхронизовати да би се достигнућа поново приказала</string>
+    <string name="ach_clear_failed">Брисање достигнућа није успело</string>
+    <string name="ach_clear_failed_message">Ништа није уклоњено. Покушајте поново у Подешавања ▸ Достигнућа</string>
+
+    <string name="ach_ls_unavail_store">продавници није могуће послати упит</string>
+    <string name="ach_ls_unavail_steam">Steam тренутно није доступан</string>
+    <string name="ach_ls_steam_unreachable">Повезивање са Steam-ом није успело</string>
+    <string name="ach_ls_steam_rate_limited">Steam ограничава број захтева</string>
+    <string name="ach_ls_steam_error">Steam је вратио грешку</string>
+    <string name="ach_ls_steam_needs_key">Steam захтева ваш Web API кључ</string>
+
+    <!-- Local Steam: linking a picked game folder -->
+    <!-- %1$s is the folder name -->
+    <string name="ach_link_no_match">Steam нема игру која одговара називу „%1$s“. Преименујте фасциклу у назив игре на Steam-у или је прво повежите у Детаљи игре ▸ Повежи игру.</string>
+    <!-- %1$s is a reason phrase from ach_ls_* -->
+    <string name="ach_link_unavailable">%1$s, па ID апликације за ову фасциклу није могуће утврдити. Ништа није промењено — покушајте поново када будете на мрежи.</string>
+    <string name="ach_link_marker_failed">Прављење датотеке steam_appid.txt у тој фасцикли није успело — PFP можда има само приступ за читање.</string>
+    <string name="ach_link_not_recorded">Изабрано повезивање није могуће сачувати.</string>
+    <string name="ach_link_installer_off">Укључите „Инсталирај Goldberg и конвертуј игре“ у подешавањима достигнућа пре него што PFP почне да уписује у фасциклу игре.</string>
+    <string name="ach_link_no_app_id">Та фасцикла више не наводи ID апликације — изаберите је поново.</string>
+    <string name="ach_link_need_key">Додајте свој Steam Web API кључ у Подешавања ▸ Достигнућа ▸ Акредитиви добављача — листа достигнућа долази преко њега.</string>
+    <!-- %1$s is a Steam app id -->
+    <string name="ach_link_no_achievements">Steam не наводи достигнућа за ID апликације %1$s, па нема шта да се прати.</string>
+    <!-- %1$s is a short technical reason -->
+    <string name="ach_link_kit_failed">Уписивање пакета достигнућа није успело: %1$s</string>
+    <string name="ach_link_read_back_failed">Ту фасциклу није могуће поново прочитати. Ако је на преносивој меморији, поново је монтирајте и изаберите.</string>
+    <string name="ach_link_not_steam_build">Нигде у тој фасцикли нема Steam библиотеке (steam_api64.dll), па то није Steam верзија и емулатор нема шта да прати. Изаберите фасциклу у којој се налази .exe датотека игре.</string>
+
+    <!-- Local Steam: convert picker rows. %2$s / %1$s is a Steam app id; the dots separate the two parts of the note. -->
+    <string name="ach_pick_checking">Провера на Steam-у…</string>
+    <!-- A "coin" is PFP's word for an achievement. %1$d is the number of coins, %2$s the app id -->
+    <plurals name="ach_pick_coins">
+        <item quantity="one">%1$d новчић  ·  appid %2$s</item>
+        <item quantity="few">%1$d новчића  ·  appid %2$s</item>
+        <item quantity="other">%1$d новчића  ·  appid %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">Нема листе на Steam-у  ·  appid %1$s</string>
+    <string name="ach_pick_needs_key">Потребан је ваш Steam Web API кључ  ·  appid %1$s</string>
+    <string name="ach_pick_no_answer">Steam није одговорио  ·  appid %1$s</string>
+
+    <!-- Local Steam: batch match summary -->
+    <string name="ach_batch_already_running">Групно повезивање је већ у току.</string>
+    <string name="ach_batch_no_folders">Тамо нема фасцикли игара. Изаберите фасциклу која САДРЖИ фасцикле игара, а не фасциклу једне игре.</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="one">Пронађена је %d фасцикла, али ниједна није Steam верзија — нема steam_api библиотеке, па емулатор нема шта да прати.</item>
+        <item quantity="few">Пронађене су %d фасцикле, али ниједна није Steam верзија — нема steam_api библиотеке, па емулатор нема шта да прати.</item>
+        <item quantity="other">Пронађено је %d фасцикли, али ниједна није Steam верзија — нема steam_api библиотеке, па емулатор нема шта да прати.</item>
+    </plurals>
+    <!-- Parts of the "Matched" sentence, joined with commas. %1$d is a number of folders -->
+    <string name="ach_batch_linked">Повезано са играма из библиотеке: %1$d</string>
+    <string name="ach_batch_tracked">Прати се самостално: %1$d</string>
+    <string name="ach_batch_converting">Чека конверзију: %1$d</string>
+    <!-- %1$d folders matched, %2$d folders found -->
+    <plurals name="ach_batch_matched">
+        <item quantity="one">Повезана је %1$d од %2$d фасцикле.</item>
+        <item quantity="few">Повезане су %1$d од %2$d фасцикле.</item>
+        <item quantity="other">Повезано је %1$d од %2$d фасцикли.</item>
+    </plurals>
+    <!-- %1$d folders matched, %2$d folders found, %3$s a comma-separated breakdown -->
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="one">Повезана је %1$d од %2$d фасцикле: %3$s.</item>
+        <item quantity="few">Повезане су %1$d од %2$d фасцикле: %3$s.</item>
+        <item quantity="other">Повезано је %1$d од %2$d фасцикли: %3$s.</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="one">%1$d није могуће препознати по називу — отворите страницу Shiba Coins те игре и покрените аутоматско повезивање да бисте изабрали фасциклу.</item>
+        <item quantity="few">%1$d није могуће препознати по називима — отворите страницу Shiba Coins сваке игре и покрените аутоматско повезивање да бисте изабрали фасциклу.</item>
+        <item quantity="other">%1$d није могуће препознати по називима — отворите страницу Shiba Coins сваке игре и покрените аутоматско повезивање да бисте изабрали фасциклу.</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="one">%1$d није у библиотеци — прво је додајте на картицу Windows, па поново повежите.</item>
+        <item quantity="few">%1$d нису у библиотеци — прво их додајте на картицу Windows, па поново повежите.</item>
+        <item quantity="other">%1$d није у библиотеци — прво их додајте на картицу Windows, па поново повежите.</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="one">%1$d није Steam верзија.</item>
+        <item quantity="few">%1$d нису Steam верзије.</item>
+        <item quantity="other">%1$d није Steam верзија.</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="one">%1$d није успела — погледајте дневник.</item>
+        <item quantity="few">%1$d нису успеле — погледајте дневник.</item>
+        <item quantity="other">%1$d није успело — погледајте дневник.</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">Ту фасциклу није могуће отворити.</string>
+    <!-- %1$s is a folder name -->
+    <string name="ach_batch_fail_read_back">%1$s: није могуће поново прочитати након препознавања.</string>
+    <!-- %1$s is a folder name, %2$s a reason phrase from ach_ls_* -->
+    <string name="ach_batch_fail_reason">%1$s: %2$s.</string>
+    <string name="ach_batch_fail_marker">%1$s: није могуће направити steam_appid.txt.</string>
+
+    <!-- Vita3K library scan results -->
+    <string name="ach_vita_set_folder">Прво подесите фасциклу са подацима за Vita3K (ux0).</string>
+    <string name="ach_vita_link_invalid">Веза са фасциклом Vita3K је неважећа — поново доделите приступ.</string>
+    <string name="ach_vita_no_ux0">У додељеној фасцикли није пронађен ux0/app — изаберите фасциклу ux0 за Vita3K (или фасциклу која је садржи).</string>
+    <string name="ach_vita_no_app">У ux0 нема фасцикле app/ — проверите додељену фасциклу.</string>
+    <string name="ach_vita_none_installed">У ux0/app нису пронађене инсталиране Vita игре. Прво инсталирајте игру у Vita3K.</string>
+    <!-- %d is how many installed games are already in the library -->
+    <plurals name="ach_vita_no_new">
+        <item quantity="one">Нема нових Vita игара — %d је већ у библиотеци.</item>
+        <item quantity="few">Нема нових Vita игара — %d су већ у библиотеци.</item>
+        <item quantity="other">Нема нових Vita игара — %d је већ у библиотеци.</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="one">Увезена је %d Vita игра.</item>
+        <item quantity="few">Увезене су %d Vita игре.</item>
+        <item quantity="other">Увезено је %d Vita игара.</item>
+    </plurals>
+    <!-- %1$d games imported, %2$d games updated -->
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="one">Увезена је %1$d Vita игра, ажурирано: %2$d.</item>
+        <item quantity="few">Увезене су %1$d Vita игре, ажурирано: %2$d.</item>
+        <item quantity="other">Увезено је %1$d Vita игара, ажурирано: %2$d.</item>
+    </plurals>
+</resources>

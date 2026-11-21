@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Slice H2: feature-social (Discord QR login) -->
+<resources>
+    <!-- QR login screen -->
+    <string name="soc_qr_preparing">Đang chuẩn bị đăng nhập…</string>
+    <string name="soc_qr_connected">Đã kết nối</string>
+    <string name="soc_qr_expired">Mã đã hết hạn.</string>
+    <string name="soc_qr_declined">Đăng nhập đã bị từ chối.</string>
+    <string name="soc_qr_error">Không thể đăng nhập. %1$s</string>
+    <string name="soc_qr_content_description">Mã QR đăng nhập Discord</string>
+    <string name="soc_qr_title">Đăng nhập bằng Discord</string>
+    <string name="soc_qr_copied">Đã sao chép!</string>
+    <string name="soc_qr_tap_to_copy">Chọn mã để sao chép</string>
+    <string name="soc_qr_instructions">Quét bằng camera điện thoại, hoặc truy cập discord.com/activate và dán mã.</string>
+    <string name="soc_qr_expires_in">Hết hạn sau %1$ds</string>
+    <string name="soc_qr_expired_short">Đã hết hạn</string>
+    <string name="soc_qr_cancel">Hủy</string>
+    <string name="soc_qr_try_again">Thử lại</string>
+</resources>

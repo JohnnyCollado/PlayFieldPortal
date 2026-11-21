@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App context menu: group headings -->
+    <string name="apps_menu_group_library">Biblioteca</string>
+    <string name="apps_menu_group_arrange">Organizar</string>
+    <string name="apps_menu_group_manage">Gestionar</string>
+
+    <!-- App context menu: rows -->
+    <string name="apps_menu_launch">Abrir</string>
+    <string name="apps_menu_edit_details">Editar detalles de la app</string>
+    <string name="apps_menu_mark_game">Marcar como juego</string>
+    <string name="apps_menu_unmark_game">Desmarcar como juego</string>
+    <string name="apps_menu_favorite">Favorito</string>
+    <string name="apps_menu_add_to_card">Añadir a tarjeta</string>
+    <string name="apps_menu_pin_to_top">Fijar arriba</string>
+    <string name="apps_menu_move">Mover</string>
+    <string name="apps_menu_move_to_category">Mover a categoría</string>
+    <string name="apps_menu_add_to_category">Añadir a categoría</string>
+    <string name="apps_menu_remove_from_category">Quitar de la categoría</string>
+    <string name="apps_menu_rename_shortcut">Renombrar acceso directo</string>
+    <string name="apps_menu_hide_from">Ocultar en %1$s</string>
+    <string name="apps_menu_hide_everywhere">Ocultar en todas partes</string>
+    <string name="apps_menu_app_info">Información de la app</string>
+    <string name="apps_menu_uninstall">Desinstalar</string>
+    <string name="apps_value_on">Sí</string>
+    <string name="apps_value_off">No</string>
+
+    <!-- Uninstall confirmation -->
+    <string name="apps_uninstall_title">¿Desinstalar %1$s?</string>
+    <string name="apps_uninstall_message">Esto elimina %1$s de tu dispositivo. Android te pedirá que lo confirmes.</string>
+
+    <!-- Category tabs and header title -->
+    <string name="apps_filter_all">Todas las apps</string>
+    <string name="apps_filter_games">Juegos</string>
+    <string name="apps_filter_emulators">Emuladores</string>
+    <string name="apps_filter_recent">Usadas recientemente</string>
+
+    <!-- Header search -->
+    <string name="apps_search_placeholder">Buscar…</string>
+    <string name="apps_search_button">Buscar</string>
+
+    <!-- Empty states -->
+    <string name="apps_empty_no_match">Ninguna app coincide con tu búsqueda</string>
+    <string name="apps_empty_no_games">No se encontraron juegos</string>
+    <string name="apps_empty_no_emulators">No hay emuladores instalados</string>
+    <string name="apps_empty_usage_access">Se necesita acceso a datos de uso</string>
+    <string name="apps_empty_no_recent">Aún no hay apps usadas recientemente</string>
+    <string name="apps_empty_no_apps">No hay apps instaladas</string>
+    <string name="apps_hint_try_search">Prueba con otro término de búsqueda</string>
+    <string name="apps_hint_games">Aquí aparecen las apps marcadas como juegos en Play Store</string>
+    <string name="apps_hint_emulators">Instala RetroArch, PPSSPP u otro emulador</string>
+    <string name="apps_hint_usage_access">Concede acceso para que PFP pueda ordenar las apps por último uso</string>
+    <string name="apps_open_usage_access">Abrir acceso a datos de uso</string>
+
+    <!-- Controller hint bar -->
+    <string name="apps_hint_prev">Anterior</string>
+    <string name="apps_hint_next">Siguiente</string>
+    <string name="apps_hint_back">Atrás</string>
+    <string name="apps_hint_launch">Abrir</string>
+    <string name="apps_hint_options">Opciones</string>
+    <string name="apps_hint_search">Buscar</string>
+    <string name="apps_drawer_title">Cajón de aplicaciones</string>
+    <string name="apps_drawer_subtitle">Aplicaciones de este dispositivo</string>
+</resources>

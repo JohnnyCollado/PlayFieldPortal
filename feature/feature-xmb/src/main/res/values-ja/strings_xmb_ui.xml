@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Music playback notification -->
+    <string name="xmbu_music_channel_name">音楽の再生</string>
+    <string name="xmbu_music_channel_description">再生中の操作</string>
+    <string name="xmbu_music_notif_previous">前へ</string>
+    <string name="xmbu_music_notif_play_pause">再生/一時停止</string>
+    <string name="xmbu_music_notif_next">次へ</string>
+    <string name="xmbu_music_notif_stop">停止</string>
+    <string name="xmbu_ptt_hold">"🎙  長押し"</string>
+    <string name="xmbu_clipfail_boot_label">起動シーケンス</string>
+    <string name="xmbu_clipfail_gameboot_label">Game Boot</string>
+    <string name="xmbu_clipfail_boot_message">起動ビデオをこのデバイスで再生できなかったため、内蔵のシーケンスを再生しました。Theme Studio からテーマを再エクスポートする（ビデオが変換されます）か、ディスプレイ設定で別のクリップを選択してください。</string>
+    <string name="xmbu_clipfail_gameboot_message">Game Boot ビデオをこのデバイスで再生できなかったため、内蔵のシーケンスを再生しました。Theme Studio からテーマを再エクスポートする（ビデオが変換されます）か、ディスプレイ設定で別のクリップを選択してください。</string>
+
+    <!-- Common words -->
+    <string name="xmbu_common_options">オプション</string>
+    <string name="xmbu_common_back">戻る</string>
+    <string name="xmbu_common_cancel">キャンセル</string>
+    <string name="xmbu_common_done">完了</string>
+    <string name="xmbu_common_close">閉じる</string>
+    <string name="xmbu_common_reset">リセット</string>
+    <string name="xmbu_common_remove">削除</string>
+    <string name="xmbu_common_open">開く</string>
+    <string name="xmbu_common_toggle">切り替え</string>
+    <string name="xmbu_common_search">検索</string>
+    <string name="xmbu_common_artwork">アートワーク</string>
+    <string name="xmbu_common_edit_title">タイトルを編集</string>
+    <string name="xmbu_common_add_to_card">カードに追加</string>
+    <string name="xmbu_common_on">オン</string>
+    <string name="xmbu_common_off">オフ</string>
+    <string name="xmbu_common_move">移動</string>
+    <string name="xmbu_common_navigate">移動</string>
+    <string name="xmbu_common_play">再生</string>
+    <string name="xmbu_common_pause">一時停止</string>
+    <string name="xmbu_common_prev_next">前へ / 次へ</string>
+    <string name="xmbu_common_seek">シーク</string>
+    <string name="xmbu_common_confirm">決定</string>
+    <string name="xmbu_common_close_search">検索を閉じる</string>
+    <string name="xmbu_common_ellipsis_search">検索…</string>
+
+    <!-- App Detail -->
+    <string name="xmbu_app_opt_favorite">お気に入り</string>
+    <string name="xmbu_app_opt_app_info">アプリ情報</string>
+    <string name="xmbu_app_opt_hide">すべての場所で非表示</string>
+    <string name="xmbu_app_opt_change_icon">アイコンを変更</string>
+    <string name="xmbu_app_opt_change_background">背景を変更</string>
+    <string name="xmbu_app_opt_reset_artwork">すべてのアートワークをリセット</string>
+    <string name="xmbu_app_art_type_icon">ゲームアイコン</string>
+    <string name="xmbu_app_art_type_hero">ヒーローバナー</string>
+    <string name="xmbu_app_art_type_background">背景</string>
+    <string name="xmbu_app_art_no_api_key">SteamGridDB の API キーが設定されていません。アートワークの設定で追加してください</string>
+    <string name="xmbu_app_art_search_failed">検索に失敗しました: %1$s</string>
+    <string name="xmbu_app_art_no_results">SteamGridDB で「%1$s」の検索結果はありません</string>
+    <string name="xmbu_app_art_load_failed">アートワークを読み込めませんでした: %1$s</string>
+    <string name="xmbu_app_art_none_found">SteamGridDB に%1$sのアートが見つかりません</string>
+    <string name="xmbu_app_art_download_failed">%1$sをダウンロードできませんでした</string>
+    <string name="xmbu_app_art_import_failed">%1$sをインポートできませんでした</string>
+    <string name="xmbu_app_art_updated">%1$sを更新しました</string>
+    <string name="xmbu_app_art_reset">%1$sをリセットしました</string>
+    <string name="xmbu_app_art_all_reset">すべてのアートワークをリセットしました</string>
+    <string name="xmbu_app_no_launchable_package">このアプリには起動可能なパッケージがありません</string>
+    <string name="xmbu_common_launch">起動</string>
+    <string name="xmbu_app_breadcrumb_apps">アプリ</string>
+    <string name="xmbu_app_breadcrumb_android_app">Android アプリ</string>
+    <string name="xmbu_app_edit_artwork_description">アートワークを編集</string>
+    <string name="xmbu_app_no_icon">アイコンなし</string>
+    <string name="xmbu_app_art_change">%1$sを変更</string>
+    <string name="xmbu_app_art_saving">保存中…</string>
+    <string name="xmbu_app_art_pick_local">ローカルファイルを選択</string>
+    <string name="xmbu_app_art_restore_icon">元のアイコンに戻す</string>
+    <string name="xmbu_app_art_remove_custom">カスタムアートを削除</string>
+    <string name="xmbu_app_art_picker_hint">"◄ ►  参照   A  選択   B  戻る"</string>
+    <string name="xmbu_app_reset_title">すべてのアートワークをリセットしますか？</string>
+    <string name="xmbu_app_reset_message">%1$s のカスタムアイコンと背景が削除され、アプリ本来のアイコンに戻ります。</string>
+
+    <!-- Add to Card picker -->
+    <string name="xmbu_collection_picker_hint">"上/下  移動  •  Select  切り替え  •  B  閉じる"</string>
+    <string name="xmbu_collection_picker_new_row">"＋  新しいカスタムメモリーカード"</string>
+    <string name="xmbu_collection_picker_empty">カスタムメモリーカードはまだありません。作成して始めましょう。</string>
+    <string name="xmbu_collection_new_title">新しいカスタムメモリーカード</string>
+    <string name="xmbu_collection_new_placeholder">例: RPG、プレイ中</string>
+    <string name="xmbu_collection_new_create">作成</string>
+    <string name="xmbu_common_sort">並べ替え</string>
+    <string name="xmbu_common_notifications">通知</string>
+
+    <!-- App picker -->
+    <string name="xmbu_app_picker_empty">インストール済みのアプリはありません</string>
+    <string name="xmbu_app_picker_no_match">「%1$s」に一致するインストール済みのアプリはありません</string>
+    <string name="xmbu_app_picker_choose">選択</string>
+
+    <!-- Arrange mode -->
+    <string name="xmbu_arrange_place">配置</string>
+    <string name="xmbu_arrange_mark">マーク</string>
+    <string name="xmbu_arrange_move_left">左へ移動</string>
+    <string name="xmbu_arrange_move_right">右へ移動</string>
+    <string name="xmbu_arrange_move_up">上へ移動</string>
+    <string name="xmbu_arrange_move_down">下へ移動</string>
+
+    <!-- Color Scheme picker -->
+    <string name="xmbu_color_scheme_title">カラースキーム</string>
+    <string name="xmbu_color_scheme_tint">色合い</string>
+    <string name="xmbu_color_scheme_depth">濃さ</string>
+    <string name="xmbu_color_scheme_contrast_top">"%1$s 上部のテキスト  %2$s"</string>
+    <string name="xmbu_color_scheme_contrast_bottom">"%1$s 下部のテキスト  %2$s"</string>
+    <string name="xmbu_color_scheme_custom_title">カスタムカラー</string>
+
+    <!-- Customize XMB Icons -->
+    <string name="xmbu_icons_title">XMB アイコンをカスタマイズ</string>
+    <string name="xmbu_icons_source_user">選択したアイコン</string>
+    <string name="xmbu_icons_source_theme">テーマから</string>
+    <string name="xmbu_icons_source_default">デフォルト</string>
+    <string name="xmbu_icons_source_with_column">%1$s · %2$s 列</string>
+    <string name="xmbu_icons_column">列</string>
+    <string name="xmbu_icons_tab">タブ</string>
+    <string name="xmbu_icons_pick">選択</string>
+    <string name="xmbu_icons_reset_all">すべてリセット</string>
+    <string name="xmbu_icons_save_as_theme">テーマとして保存</string>
+    <string name="xmbu_icons_save_as_theme_button">テーマとして保存…</string>
+
+    <!-- Search box -->
+    <string name="xmbu_game_search_placeholder">ゲームを検索…</string>
+
+    <!-- Game picker -->
+    <string name="xmbu_picker_in_this_category">このカテゴリー内</string>
+    <string name="xmbu_picker_in_category">%1$s 内</string>
+    <string name="xmbu_picker_custom_cards">カスタムメモリーカード</string>
+    <string name="xmbu_picker_no_changes">変更なし</string>
+    <string name="xmbu_picker_menu_view">表示</string>
+    <string name="xmbu_picker_menu_select_all">すべて選択</string>
+    <string name="xmbu_picker_open_toggle">開く / 切り替え</string>
+    <string name="xmbu_picker_no_games">ライブラリにはまだゲームがありません</string>
+    <string name="xmbu_picker_add_games">ゲームを追加</string>
+    <string name="xmbu_picker_view_mode">表示: %1$s</string>
+    <string name="xmbu_picker_removing_prefix">"削除予定 · "</string>
+    <string name="xmbu_picker_search_placeholder">この棚を検索…</string>
+    <string name="xmbu_picker_shelves">棚一覧</string>
+    <string name="xmbu_picker_shelf">棚</string>
+
+    <!-- Music browser -->
+    <string name="xmbu_music_breadcrumb_playlists">"音楽  ›  プレイリスト"</string>
+    <string name="xmbu_music_breadcrumb_music">音楽</string>
+    <string name="xmbu_music_breadcrumb_all_tracks">すべての曲</string>
+    <string name="xmbu_music_resume">続きから再生: %1$s</string>
+    <string name="xmbu_music_now_playing">再生中</string>
+    <string name="xmbu_music_nothing_playing">再生していません</string>
+    <string name="xmbu_music_visualizer">ビジュアライザー</string>
+    <string name="xmbu_media_previous_track">前の曲</string>
+    <string name="xmbu_media_next_track">次の曲</string>
+    <string name="xmbu_media_previous_video">前のビデオ</string>
+    <string name="xmbu_media_next_video">次のビデオ</string>
+    <string name="xmbu_media_back_10">10 秒戻る</string>
+    <string name="xmbu_media_forward_10">10 秒進む</string>
+    <string name="xmbu_media_playing">再生中</string>
+    <string name="xmbu_media_paused">一時停止中</string>
+    <string name="xmbu_track_picker_title">%1$s に追加</string>
+    <string name="xmbu_track_picker_add">追加</string>
+    <string name="xmbu_track_picker_empty">追加できる曲はありません。スキャン済みの曲はすべてこのプレイリストに入っています。</string>
+
+    <!-- Notification panel -->
+    <string name="xmbu_notif_options_description">通知のオプション</string>
+    <string name="xmbu_notif_task_stopping">%1$s — 停止中…</string>
+    <string name="xmbu_notif_task_detail">%1$s — %2$s</string>
+    <string name="xmbu_notif_kind_scan">スキャン</string>
+    <string name="xmbu_notif_kind_metadata">メタデータ</string>
+    <string name="xmbu_notif_kind_achievements">実績</string>
+    <string name="xmbu_notif_kind_system">システム</string>
+    <string name="xmbu_notif_kind_download">ダウンロード</string>
+    <string name="xmbu_notif_kind_feed">フィード</string>
+    <string name="xmbu_notif_action_go_to_game">ゲームへ移動</string>
+    <string name="xmbu_notif_action_open_card">メモリーカードを開く</string>
+    <string name="xmbu_notif_action_open_settings">設定を開く</string>
+    <string name="xmbu_notif_action_open_category">カテゴリーを開く</string>
+    <string name="xmbu_notif_action_review">確認</string>
+    <string name="xmbu_time_just_now">たった今</string>
+    <string name="xmbu_share_theme">テーマを共有</string>
+    <string name="xmbu_move_position">移動中 · %1$d / %2$d</string>
+    <string name="xmbu_common_later">後で</string>
+
+    <!-- XMB shell dialogs -->
+    <string name="xmbu_shell_rename_shortcut">ショートカット名を変更</string>
+    <string name="xmbu_shell_playlist_name">プレイリスト名</string>
+    <string name="xmbu_shell_theme_name">テーマ名</string>
+    <string name="xmbu_shell_source_theme">適用中のテーマから</string>
+    <string name="xmbu_shell_source_device">デバイスから</string>
+    <string name="xmbu_shell_source_device_detail">PNG または GIF</string>
+    <string name="xmbu_shell_continue">続ける</string>
+    <string name="xmbu_shell_shortcut_title">ショートカットを追加しますか？</string>
+    <string name="xmbu_shell_shortcut_message">アプリから、%2$s を開くショートカット「%1$s」の追加がリクエストされました。このショートカットをご自身で作成した場合のみ追加してください。</string>
+    <string name="xmbu_shell_shortcut_add">追加</string>
+    <string name="xmbu_shell_shortcut_ignore">無視</string>
+    <string name="xmbu_shell_windows_title">Windows ライブラリの設定を完了</string>
+    <string name="xmbu_shell_windows_message">PC ゲームが追加されましたが、Windows ゲームライブラリにはまだフォルダがありません。ゲームフォルダと実績をスキャンできるよう、ライブラリマネージャーで設定してください。</string>
+    <string name="xmbu_shell_windows_set_up">設定する</string>
+    <string name="xmbu_shell_import_position">%1$d / %2$d</string>
+    <string name="xmbu_shell_open_playlist">プレイリストを開く</string>
+    <string name="xmbu_shell_stop">停止</string>
+    <string name="xmbu_shell_keep_running">続行</string>
+
+    <!-- Launch recovery dialog -->
+    <string name="xmbu_recovery_retry">再試行</string>
+    <string name="xmbu_recovery_change_emulator">エミュレーターを変更</string>
+    <string name="xmbu_recovery_change_default">システムごとのデフォルトを変更</string>
+    <string name="xmbu_recovery_copy_diagnostics">診断情報をコピー</string>
+    <string name="xmbu_recovery_title">%1$s を起動できませんでした</string>
+    <string name="xmbu_recovery_select">選択</string>
+    <string name="xmbu_recovery_dismiss">閉じる</string>
+
+    <!-- Artwork folder prompts -->
+    <string name="xmbu_artfolder_unavailable_title">アートワークフォルダを利用できません</string>
+    <string name="xmbu_artfolder_unavailable_message">PFP は %1$s にアクセスできません。リンクし直すまで新しいアートワークは一時停止します。既存のアートは引き続き表示されます。</string>
+    <string name="xmbu_artfolder_relink">フォルダをリンクし直す</string>
+    <string name="xmbu_artfolder_not_now">今はしない</string>
+    <string name="xmbu_artfolder_move_title">アートワークをご自身のフォルダに移動</string>
+    <string name="xmbu_artfolder_choose">アートワークフォルダを選択</string>
+    <string name="xmbu_artfolder_choose_title">アートワークフォルダを選択してください</string>
+    <string name="xmbu_artfolder_choose_message">新しいアートワークはご自身のフォルダに保存されます。フォルダを選ぶと、PFP がそこにアートを保存します。</string>
+    <string name="xmbu_artfolder_foreign_title">このフォルダには別のアートワークライブラリがあります</string>
+    <string name="xmbu_artfolder_use_library">このライブラリを使用</string>
+    <string name="xmbu_artfolder_choose_another">別のフォルダを選択</string>
+
+    <!-- Status strip -->
+    <string name="xmbu_status_controller_connected">コントローラ接続中</string>
+    <string name="xmbu_status_battery">バッテリー</string>
+    <string name="xmbu_status_battery_charging">バッテリー、充電中</string>
+    <string name="xmbu_status_battery_plugged">バッテリー、電源接続中</string>
+
+    <!-- Adjust XMB Layout overlay -->
+    <string name="xmbu_layout_title">XMB レイアウトを調整</string>
+    <string name="xmbu_layout_readout">"サイズ %1$sx    横 %2$d%%    縦 %3$d%%"</string>
+    <string name="xmbu_layout_scale">サイズ</string>
+    <string name="xmbu_layout_horizontal">横</string>
+    <string name="xmbu_layout_vertical">縦</string>
+    <string name="xmbu_layout_sliders">スライダー</string>
+    <string name="xmbu_layout_hide_sliders">スライダーを隠す</string>
+    <string name="xmbu_layout_save">保存</string>
+    <string name="xmbu_icon_grid_use">このアイコンを使用</string>
+    <string name="xmbu_status_cellular_signal">モバイル通信の電波</string>
+    <string name="xmbu_notif_header_running">実行中</string>
+    <string name="xmbu_notif_header_earlier">以前</string>
+    <string name="xmbu_notif_empty">通知はありません</string>
+
+    <!-- Video player -->
+    <string name="xmbu_video_fit">フィット</string>
+    <string name="xmbu_video_zoom">ズーム</string>
+    <string name="xmbu_video_fill">引き伸ばし</string>
+    <string name="xmbu_video_speed">再生速度</string>
+    <string name="xmbu_video_subtitles">字幕</string>
+    <string name="xmbu_video_audio_track">音声トラック</string>
+    <string name="xmbu_video_screen_mode">画面モード</string>
+    <string name="xmbu_video_none">なし</string>
+    <string name="xmbu_video_default">デフォルト</string>
+    <string name="xmbu_video_track">トラック</string>
+    <string name="xmbu_video_err_not_found">ビデオが見つかりません。</string>
+    <string name="xmbu_video_err_permission">このファイルへのアクセスが拒否されました。</string>
+    <string name="xmbu_video_err_decode">このデバイスではこのビデオをデコードできません。</string>
+    <string name="xmbu_video_err_unable">このビデオを再生できません。</string>
+    <string name="xmbu_video_go_back">戻る</string>
+    <string name="xmbu_video_status">%1$s× · %2$s</string>
+
+    <!-- Photo viewer -->
+    <string name="xmbu_photo_rotate_left">左に回転</string>
+    <string name="xmbu_photo_rotate_right">右に回転</string>
+    <string name="xmbu_photo_zoom_in">拡大</string>
+    <string name="xmbu_photo_zoom_out">縮小</string>
+    <string name="xmbu_photo_reset_zoom">ズームをリセット</string>
+    <string name="xmbu_photo_set_wallpaper">ランチャーの壁紙に設定</string>
+    <string name="xmbu_photo_set_lock_screen">ロック画面に設定</string>
+    <string name="xmbu_photo_view_info">情報を表示</string>
+    <string name="xmbu_photo_show_location">ファイルの場所を表示</string>
+    <string name="xmbu_photo_remove">ライブラリから削除</string>
+    <string name="xmbu_photo_group_view">表示</string>
+    <string name="xmbu_photo_group_manage">管理</string>
+    <string name="xmbu_photo_in_folder">場所: %1$s</string>
+    <string name="xmbu_photo_wallpaper_unreadable">壁紙を設定できませんでした。画像を読み込めませんでした</string>
+    <string name="xmbu_photo_wallpaper_applied">壁紙を適用しました</string>
+    <string name="xmbu_photo_unreadable">その写真を読み込めませんでした</string>
+    <string name="xmbu_photo_lock_screen_set">ロック画面を設定しました</string>
+    <string name="xmbu_photo_hide_controls">操作パネルを隠す</string>
+    <string name="xmbu_photo_show_controls">操作パネルを表示</string>
+    <string name="xmbu_photo_wallpaper_title">ランチャーの壁紙に設定しますか？</string>
+    <string name="xmbu_photo_wallpaper_note">XMB のウェーブ背景が置き換えられます。</string>
+    <string name="xmbu_photo_apply">適用</string>
+    <string name="xmbu_photo_applying">適用中…</string>
+    <string name="xmbu_photo_remove_message">「%1$s」をこのライブラリから削除します。ディスク上の写真は削除されません。</string>
+    <string name="xmbu_photo_lock_message">「%1$s」を、画面に合わせてトリミングしてデバイスのロック画面の画像にします。</string>
+    <string name="xmbu_photo_set">設定</string>
+    <string name="xmbu_photo_info_resolution">解像度: %1$s</string>
+    <string name="xmbu_photo_info_taken">撮影日時: %1$s</string>
+    <string name="xmbu_photo_info_modified">更新日時: %1$s</string>
+    <string name="xmbu_photo_info_size">サイズ: %1$s</string>
+    <string name="xmbu_photo_info_type">種類: %1$s</string>
+    <string name="xmbu_photo_info_location">場所: %1$s</string>
+    <string name="xmbu_photo_info_file">ファイル: %1$s</string>
+
+    <!-- Music visualizer picker -->
+    <string name="xmbu_visualizer_portal">ポータル</string>
+    <string name="xmbu_visualizer_ripple">波紋</string>
+    <string name="xmbu_visualizer_off">オフ</string>
+    <string name="xmbu_visualizer_off_tile">OFF</string>
+
+    <plurals name="xmbu_app_picker_selected">
+        <item quantity="other">%d 件選択中</item>
+    </plurals>
+    <plurals name="xmbu_arrange_marked">
+        <item quantity="other">%d 件マーク済み</item>
+    </plurals>
+    <plurals name="xmbu_picker_to_add">
+        <item quantity="other">%d 件追加予定</item>
+    </plurals>
+    <plurals name="xmbu_picker_to_remove">
+        <item quantity="other">%d 件削除予定</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_games">
+        <item quantity="other">%1$d 本 · %2$d 本チェック済み</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_cards">
+        <item quantity="other">%d 枚のカード · 選択するとここに移動します</item>
+    </plurals>
+    <plurals name="xmbu_picker_card_games">
+        <item quantity="other">%d 本</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_add_count">
+        <item quantity="other">%d 件追加</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_selected">
+        <item quantity="other">%d 件選択中</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_add_tracks">
+        <item quantity="other">%d 曲を追加</item>
+    </plurals>
+    <plurals name="xmbu_time_minutes_ago">
+        <item quantity="other">%d 分前</item>
+    </plurals>
+    <plurals name="xmbu_time_hours_ago">
+        <item quantity="other">%d 時間前</item>
+    </plurals>
+    <plurals name="xmbu_artfolder_move_message">
+        <item quantity="other">%d 枚の画像がアプリ内に保存されており、アンインストールすると失われます。フォルダを選ぶと、PFP がそこに移動します。</item>
+    </plurals>
+    <plurals name="xmbu_artfolder_foreign_message">
+        <item quantity="other">%1$s は別のインストールで設定されたものです（%2$d ファイル）。使用すると PFP がゲームをそのアートにリンクし直します。別のフォルダを選ぶこともできます。</item>
+    </plurals>
+    <plurals name="xmbu_status_notifications_unread">
+        <item quantity="other">通知、未読 %d 件</item>
+    </plurals>
+</resources>

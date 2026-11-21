@@ -6,12 +6,14 @@ import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.WindowsGameLabel
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.achievements.provider.localsteam.AppIdSource
 import com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamFolderLinker
 import com.playfieldportal.feature.achievements.provider.steam.WindowsGameLabeler
 import com.playfieldportal.feature.achievements.provider.steam.WindowsGameLabeler.LabelOutcome
 import com.playfieldportal.feature.achievements.provider.steam.WindowsSteamGate
 import com.playfieldportal.feature.library.scanner.safDocumentIdToRawPath
+import com.playfieldportal.feature.settings.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -53,14 +55,14 @@ data class KitChoice(
 )
 
 /** One option in a row's label picker. [label] null is Auto. */
-data class LabelPickerItem(val label: WindowsGameLabel?, val text: String, val isCurrent: Boolean)
+data class LabelPickerItem(val label: WindowsGameLabel?, val text: UiText, val isCurrent: Boolean)
 
 data class WindowsGameListUiState(
     val rows: List<WindowsGameRow> = emptyList(),
     /** False until the first load finishes, so the screen doesn't flash its empty state. */
     val loaded: Boolean = false,
     /** A message for a Notice modal. */
-    val notice: String? = null,
+    val notice: UiText? = null,
     val kitChoice: KitChoice? = null,
     /** The screen should launch the folder picker; cleared by [WindowsGameListViewModel.onFolderPickLaunched]. */
     val requestFolderPick: Boolean = false,
@@ -69,23 +71,29 @@ data class WindowsGameListUiState(
 // ── Pure helpers ──────────────────────────────────────────────────────────────
 
 /** The right-aligned value on a row: the label, else the automatic guess, else "Not set". */
-internal fun labelValueText(row: WindowsGameRow): String = row.label?.displayName()
-    ?: row.autoLabel?.let { "Auto: ${it.displayName()}" }
-    ?: "Not set"
+internal fun labelValueText(row: WindowsGameRow): UiText = row.label?.displayName()
+    ?: row.autoLabel?.let { UiText.res(R.string.lib_win_auto_value, it.displayName()) }
+    ?: UiText.res(R.string.lib_win_not_set)
 
 /** The picker's four options, the row's current one marked. */
 internal fun labelPickerItems(row: WindowsGameRow): List<LabelPickerItem> = buildList {
-    add(LabelPickerItem(null, row.autoLabel?.let { "Auto (${it.displayName()})" } ?: "Auto", row.label == null))
+    add(
+        LabelPickerItem(
+            null,
+            row.autoLabel?.let { UiText.res(R.string.lib_win_auto_option, it.displayName()) } ?: UiText.res(R.string.lib_win_auto),
+            row.label == null,
+        ),
+    )
     WindowsGameLabel.entries.forEach { add(LabelPickerItem(it, it.displayName(), row.label == it)) }
 }
 
 /** Only a Local game has a folder to link. */
 internal fun showsFolderAction(row: WindowsGameRow): Boolean = row.label == WindowsGameLabel.LOCAL
 
-private fun WindowsGameLabel.displayName(): String = when (this) {
-    WindowsGameLabel.STEAM -> "Steam"
-    WindowsGameLabel.NON_STEAM -> "Non-Steam (owned)"
-    WindowsGameLabel.LOCAL -> "Local"
+private fun WindowsGameLabel.displayName(): UiText = when (this) {
+    WindowsGameLabel.STEAM -> UiText.raw("Steam")
+    WindowsGameLabel.NON_STEAM -> UiText.res(R.string.lib_win_label_non_steam)
+    WindowsGameLabel.LOCAL -> UiText.res(R.string.lib_win_label_local)
 }
 
 /**
@@ -131,9 +139,9 @@ class WindowsGameListViewModel @Inject constructor(
                 .getOrNull()
             refreshRow(gameId)
             if (outcome == null) {
-                notify("The label could not be saved.")
+                notify(UiText.res(R.string.lib_win_label_save_failed))
             } else if (outcome == LabelOutcome.SteamNotFound) {
-                notify("Labelled Steam, but no matching Steam game was found, so nothing was linked.")
+                notify(UiText.res(R.string.lib_win_label_steam_not_found))
             }
         }
     }
@@ -196,7 +204,7 @@ class WindowsGameListViewModel @Inject constructor(
     // The one place every LinkOutcome becomes state (D6). Linked is refreshed by the caller.
     private fun applyLinkOutcome(gameId: Long, treeUri: Uri, outcome: LocalSteamFolderLinker.LinkOutcome?) {
         when (outcome) {
-            null -> notify("That folder could not be read. Pick it again, or remount the storage it is on.")
+            null -> notify(UiText.res(R.string.lib_win_folder_unreadable))
             is LocalSteamFolderLinker.LinkOutcome.Linked -> Unit
             is LocalSteamFolderLinker.LinkOutcome.NeedsKit -> _uiState.update {
                 it.copy(
@@ -211,11 +219,10 @@ class WindowsGameListViewModel @Inject constructor(
                 )
             }
             is LocalSteamFolderLinker.LinkOutcome.NeedsConfirmation -> notify(
-                "Several Steam games match \"${outcome.folderName}\". Finish linking this folder on the " +
-                    "game's Shiba Coins page, where you can choose the right one."
+                UiText.res(R.string.lib_win_several_matches, outcome.folderName)
             )
-            is LocalSteamFolderLinker.LinkOutcome.NoEmuData -> notify(outcome.reason)
-            is LocalSteamFolderLinker.LinkOutcome.Failed -> notify(outcome.reason)
+            is LocalSteamFolderLinker.LinkOutcome.NoEmuData -> notify(outcome.text)
+            is LocalSteamFolderLinker.LinkOutcome.Failed -> notify(outcome.text)
         }
     }
 
@@ -241,7 +248,7 @@ class WindowsGameListViewModel @Inject constructor(
         state.copy(rows = state.rows.map { if (it.gameId == gameId) it.copy(busy = busy) else it })
     }
 
-    private fun notify(message: String) = _uiState.update { it.copy(notice = message) }
+    private fun notify(message: UiText) = _uiState.update { it.copy(notice = message) }
 
     private companion object {
         const val WINDOWS_PLATFORM_ID = "windows"

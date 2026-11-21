@@ -3,6 +3,7 @@ package com.playfieldportal.feature.settings.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.common.security.SecretProtection
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.artwork.MetadataApiKeyProvider
 import com.playfieldportal.feature.artwork.api.ArtworkFolderState
 import com.playfieldportal.feature.artwork.api.ArtworkImportManager
@@ -13,6 +14,7 @@ import com.playfieldportal.feature.artwork.api.IgdbApi
 import com.playfieldportal.feature.artwork.api.MetadataScrapeWorker
 import com.playfieldportal.feature.artwork.api.ScreenScraperApi
 import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
+import com.playfieldportal.feature.settings.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -34,17 +36,17 @@ data class ArtworkSettingsUiState(
         com.playfieldportal.core.data.repository.CropPreviewPreferences.DEFAULT_ENABLED,
     val hasIgdbCredentials: Boolean = false,
     val igdbClientId: String = "",
-    val igdbCredentialStatus: String? = null,
+    val igdbCredentialStatus: UiText? = null,
     // ScreenScraper: ssEnabled = the bundled developer pair exists and scraping works at all;
     // the user account is optional and only raises rate limits/quota. There is no user-entered
     // developer pair — the build ships one (obfuscated) and there is nothing to override it with.
     val ssEnabled: Boolean = false,
     val hasSsCredentials: Boolean = false,
     val ssUsername: String = "",
-    val ssCredentialStatus: String? = null,
+    val ssCredentialStatus: UiText? = null,
     // Set when a credential was saved but the Keystore refused to seal it, so it is on disk in
     // plaintext. Silently degrading was the old behaviour and the user was never told.
-    val unprotectedSecretWarning: String? = null,
+    val unprotectedSecretWarning: UiText? = null,
     val status: ArtworkStatus = ArtworkStatus(),
     val isLoadingStatus: Boolean = false,
     val isScraping: Boolean = false,
@@ -52,10 +54,10 @@ data class ArtworkSettingsUiState(
     val scrapeTotal: Int = 0,
     val scrapeSucceeded: Int = 0,
     val scrapeFailed: Int = 0,
-    val scrapeTitle: String = "",
+    val scrapeTitle: UiText = UiText.raw(""),
     val scrapeSource: String = "",
     val scrapeAsset: String = "",
-    val summary: String? = null,
+    val summary: UiText? = null,
     val confirmRescrapeAll: Boolean = false,
     val diskCacheSizeMb: String = "0 MB",
     // Global default for how game tiles are drawn on the XMB (per-game overrides live in each
@@ -163,7 +165,8 @@ class ArtworkSettingsViewModel @Inject constructor(
                     scrapeTotal     = p.getInt(MetadataScrapeWorker.KEY_TOTAL, 0),
                     scrapeSucceeded = p.getInt(MetadataScrapeWorker.KEY_SUCCEEDED, 0),
                     scrapeFailed    = p.getInt(MetadataScrapeWorker.KEY_FAILED, 0),
-                    scrapeTitle     = p.getString(MetadataScrapeWorker.KEY_TITLE) ?: "Starting…",
+                    scrapeTitle     = p.getString(MetadataScrapeWorker.KEY_TITLE)?.let { t -> UiText.raw(t) }
+                        ?: UiText.res(R.string.setd_scrape_starting),
                     scrapeSource    = p.getString(MetadataScrapeWorker.KEY_SOURCE) ?: "",
                     scrapeAsset     = p.getString(MetadataScrapeWorker.KEY_ASSET) ?: "",
                 )
@@ -176,17 +179,23 @@ class ArtworkSettingsViewModel @Inject constructor(
         val summary = when (finished?.state) {
             androidx.work.WorkInfo.State.SUCCEEDED -> {
                 val out = finished.outputData
-                val label = if (out.getString(MetadataScrapeWorker.KEY_MODE) == MetadataScrapeWorker.MODE_ALL)
-                    "Re-scraped all games" else "Scraped missing games"
-                "$label: ${out.getInt(MetadataScrapeWorker.KEY_SUCCEEDED, 0)} succeeded, " +
-                    "${out.getInt(MetadataScrapeWorker.KEY_FAILED, 0)} failed of " +
-                    "${out.getInt(MetadataScrapeWorker.KEY_TOTAL, 0)}"
+                UiText.res(
+                    if (out.getString(MetadataScrapeWorker.KEY_MODE) == MetadataScrapeWorker.MODE_ALL)
+                        R.string.setd_scrape_done_all else R.string.setd_scrape_done_missing,
+                    out.getInt(MetadataScrapeWorker.KEY_SUCCEEDED, 0),
+                    out.getInt(MetadataScrapeWorker.KEY_FAILED, 0),
+                    out.getInt(MetadataScrapeWorker.KEY_TOTAL, 0),
+                )
             }
-            androidx.work.WorkInfo.State.CANCELLED -> "Scrape cancelled — artwork fetched so far is kept"
-            else -> "Scrape failed: ${finished?.outputData?.getString(MetadataScrapeWorker.KEY_ERROR) ?: "unknown error"}"
+            androidx.work.WorkInfo.State.CANCELLED -> UiText.res(R.string.setd_scrape_cancelled)
+            else -> UiText.res(
+                R.string.setd_scrape_failed,
+                finished?.outputData?.getString(MetadataScrapeWorker.KEY_ERROR)?.let { e -> UiText.raw(e) }
+                    ?: UiText.res(R.string.setd_scrape_unknown_error),
+            )
         }
         _extra.update {
-            it.copy(isScraping = false, scrapeTitle = "", scrapeSource = "", scrapeAsset = "", summary = summary)
+            it.copy(isScraping = false, scrapeTitle = UiText.raw(""), scrapeSource = "", scrapeAsset = "", summary = summary)
         }
         refreshStatus()
     }
@@ -260,7 +269,7 @@ class ArtworkSettingsViewModel @Inject constructor(
     }
 
     fun saveApiKey(key: String) {
-        viewModelScope.launch { warnIfUnprotected("SteamGridDB key", sgdbKeyProvider.saveKey(key.trim())) }
+        viewModelScope.launch { warnIfUnprotected(UiText.res(R.string.setd_secret_sgdb_key), sgdbKeyProvider.saveKey(key.trim())) }
     }
 
     fun clearApiKey() {
@@ -274,7 +283,7 @@ class ArtworkSettingsViewModel @Inject constructor(
     }
 
     fun saveTgdbKey(key: String) {
-        viewModelScope.launch { warnIfUnprotected("TheGamesDB key", metadataKeyProvider.saveTgdbKey(key.trim())) }
+        viewModelScope.launch { warnIfUnprotected(UiText.res(R.string.setd_secret_tgdb_key), metadataKeyProvider.saveTgdbKey(key.trim())) }
     }
 
     fun clearTgdbKey() {
@@ -285,7 +294,7 @@ class ArtworkSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val protection = metadataKeyProvider.saveIgdbCredentials(clientId.trim(), clientSecret.trim())
             _extra.update { it.copy(igdbCredentialStatus = null) }
-            warnIfUnprotected("IGDB client secret", protection)
+            warnIfUnprotected(UiText.res(R.string.setd_secret_igdb_secret), protection)
         }
     }
 
@@ -298,7 +307,7 @@ class ArtworkSettingsViewModel @Inject constructor(
 
     fun testIgdbCredentials(clientId: String, clientSecret: String) {
         viewModelScope.launch {
-            _extra.update { it.copy(igdbCredentialStatus = "Testing…") }
+            _extra.update { it.copy(igdbCredentialStatus = UiText.res(R.string.setd_testing)) }
             val status = ServiceConnectors.testIgdb(igdbApi, clientId, clientSecret)
             _extra.update { it.copy(igdbCredentialStatus = status) }
         }
@@ -314,7 +323,7 @@ class ArtworkSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val protection = metadataKeyProvider.saveSsCredentials(username.trim(), password.trim())
             _extra.update { it.copy(ssCredentialStatus = null) }
-            warnIfUnprotected("ScreenScraper password", protection)
+            warnIfUnprotected(UiText.res(R.string.setd_secret_ss_password), protection)
         }
     }
 
@@ -327,7 +336,7 @@ class ArtworkSettingsViewModel @Inject constructor(
 
     fun testSsCredentials(username: String, password: String) {
         viewModelScope.launch {
-            _extra.update { it.copy(ssCredentialStatus = "Testing…") }
+            _extra.update { it.copy(ssCredentialStatus = UiText.res(R.string.setd_testing)) }
             val status = ServiceConnectors.testScreenScraper(screenScraperApi, username, password)
             _extra.update { it.copy(ssCredentialStatus = status) }
         }
@@ -349,13 +358,11 @@ class ArtworkSettingsViewModel @Inject constructor(
      * Surfaces a Keystore seal failure. The value was still saved — losing the user's typing is
      * worse than storing it unencrypted — but they get to know which of the two happened.
      */
-    private fun warnIfUnprotected(what: String, protection: SecretProtection) {
+    private fun warnIfUnprotected(what: UiText, protection: SecretProtection) {
         if (protection == SecretProtection.PROTECTED) return
         _extra.update {
             it.copy(
-                unprotectedSecretWarning =
-                    "$what was saved, but this device's secure keystore was unavailable, so it is " +
-                        "stored unencrypted. Clearing and re-entering it later will try again.",
+                unprotectedSecretWarning = UiText.res(R.string.setd_secret_unprotected, what),
             )
         }
     }
@@ -397,9 +404,11 @@ class ArtworkSettingsViewModel @Inject constructor(
             if (result.anyUnprotected) {
                 _extra.update {
                     it.copy(
-                        unprotectedSecretWarning =
+                        // Debug builds only: the credentials-file loader is not shipped, so not localised.
+                        unprotectedSecretWarning = UiText.raw(
                             "Some credentials were saved, but this device's secure keystore was unavailable, " +
                                 "so they are stored unencrypted.",
+                        ),
                     )
                 }
             }
@@ -426,7 +435,7 @@ class ArtworkSettingsViewModel @Inject constructor(
         _extra.update {
             it.copy(
                 isScraping = true, summary = null, scrapeCurrent = 0, scrapeTotal = 0,
-                scrapeSucceeded = 0, scrapeFailed = 0, scrapeTitle = "Starting…",
+                scrapeSucceeded = 0, scrapeFailed = 0, scrapeTitle = UiText.res(R.string.setd_scrape_starting),
                 scrapeSource = "", scrapeAsset = "",
             )
         }
@@ -439,7 +448,7 @@ class ArtworkSettingsViewModel @Inject constructor(
     fun clearSsUrlCache() {
         viewModelScope.launch {
             artworkRepository.clearSsMediaCache()
-            _extra.update { it.copy(summary = "ScreenScraper URL cache cleared") }
+            _extra.update { it.copy(summary = UiText.res(R.string.setd_ss_cache_cleared)) }
         }
     }
 
@@ -456,14 +465,6 @@ class ArtworkSettingsViewModel @Inject constructor(
         val entries = com.playfieldportal.core.domain.model.IconDisplayMode.entries
         val next = entries[(entries.indexOf(_extra.value.iconDisplayMode) + 1) % entries.size]
         viewModelScope.launch { iconDisplayPreferences.setMode(next) }
-    }
-
-    /** Animated → Reduced → Static → Animated. */
-    fun cycleImageMotion() {
-        val entries = com.playfieldportal.core.domain.model.ImageMotion.entries
-        val next = entries[(entries.indexOf(_extra.value.imageMotion) + 1) % entries.size]
-        _extra.update { it.copy(imageMotion = next) }
-        viewModelScope.launch { iconDisplayPreferences.setImageMotion(next) }
     }
 
     fun setAnimatedIcons(enabled: Boolean) {

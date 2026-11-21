@@ -57,8 +57,10 @@ class ThemeMediaCodecTest {
     // -- registry ------------------------------------------------------------------------
 
     @Test
-    fun `registry holds the eight media keys with their entry names`() {
-        assertEquals(8, ThemeMediaSlots.KEYS.size)
+    fun `registry holds the ten media keys with their entry names`() {
+        assertEquals(10, ThemeMediaSlots.KEYS.size)
+        assertEquals("sounds/sound_category.wav", ThemeMediaSlots.entryName("sound_category", "wav"))
+        assertEquals("sounds/sound_options.ogg", ThemeMediaSlots.entryName("sound_options", "ogg"))
         assertEquals("sounds/sound_scroll.ogg", ThemeMediaSlots.entryName("sound_scroll", "ogg"))
         assertEquals("ambience.mp3", ThemeMediaSlots.entryName("ambience_audio", "mp3"))
         assertEquals("boot.mp4", ThemeMediaSlots.entryName("boot_video", "mp4"))
@@ -260,7 +262,7 @@ class ThemeMediaCodecTest {
         assertTrue(report.kept.any { it.contains("5 menu sounds") }, report.kept.toString())
         assertTrue(report.kept.any { it.contains("Ambience") }, report.kept.toString())
         assertTrue(report.kept.any { it.contains("Boot animation") }, report.kept.toString())
-        assertTrue(report.kept.any { it.contains("GameBoot animation") }, report.kept.toString())
+        assertTrue(report.kept.any { it.contains("Game Boot animation") }, report.kept.toString())
         assertEquals(allMedia.keys, ThemeUpgrade.upgrade(read.bundle, "2026-10-02").media.keys)
     }
 

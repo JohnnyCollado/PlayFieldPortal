@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import com.playfieldportal.feature.settings.R
+import com.playfieldportal.core.domain.text.UiText
 import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
@@ -26,7 +28,7 @@ data class PhotoSettingsUiState(
     // ROM Root Access — a photo library can span internal storage plus an SD card).
     val roots: List<RootFolderRow> = emptyList(),
     val scanning: Boolean = false,
-    val scanMessage: String? = null,
+    val scanMessage: UiText? = null,
 ) {
     val hasRoots: Boolean get() = roots.isNotEmpty()
 }
@@ -97,18 +99,18 @@ class PhotoSettingsViewModel @Inject constructor(
      */
     fun rescan() {
         viewModelScope.launch {
-            _ui.value = _ui.value.copy(scanning = true, scanMessage = "Scanning…")
+            _ui.value = _ui.value.copy(scanning = true, scanMessage = UiText.res(R.string.sets_scanning))
             val message = scanRunner.scanAllRoots(MediaRootKind.PHOTO, force = true) { progress ->
-                _ui.value = _ui.value.copy(scanMessage = progress)
+                _ui.value = _ui.value.copy(scanMessage = UiText.raw(progress))
             }
-            _ui.value = _ui.value.copy(scanning = false, scanMessage = message)
+            _ui.value = _ui.value.copy(scanning = false, scanMessage = UiText.raw(message))
         }
     }
 
     fun clearThumbnailCache() {
         viewModelScope.launch {
             val removed = photoScanner.clearThumbnailCache()
-            _ui.value = _ui.value.copy(scanMessage = "Cleared $removed cached thumbnail(s). Rescan to regenerate.")
+            _ui.value = _ui.value.copy(scanMessage = UiText.plural(R.plurals.sets_photo_cache_cleared, removed))
         }
     }
 
@@ -120,5 +122,5 @@ class PhotoSettingsViewModel @Inject constructor(
         runCatching { DocumentFile.fromTreeUri(context, Uri.parse(treeUri))?.name }.getOrNull()
             ?.takeIf { it.isNotBlank() }
             ?: Uri.parse(treeUri).lastPathSegment?.substringAfterLast('/')?.substringAfterLast(':')
-            ?: "Photos"
+            ?: context.getString(R.string.sets_root_fallback_photo)
 }

@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared -->
+    <string name="art_error_unexpected">意外错误</string>
+    <string name="art_no_folder_linked">未关联图片文件夹</string>
+    <string name="art_paused_message">图片功能已暂停。请重新关联图片文件夹以保存新图片。</string>
+    <string name="art_error_game_not_found">找不到游戏</string>
+    <string name="art_error_not_found_any_source">所有来源中均未找到</string>
+    <string name="art_found_via">通过 %1$s 找到</string>
+    <string name="art_results_label_updated">已更新</string>
+    <string name="art_results_label_imported">已导入</string>
+
+    <!-- Live scrape progress -->
+    <string name="art_progress_hashing">正在计算 ROM 哈希值…</string>
+    <string name="art_progress_searching">正在搜索…</string>
+    <string name="art_asset_hero">主视觉图</string>
+    <string name="art_asset_background">背景</string>
+    <string name="art_asset_logo">标志</string>
+    <string name="art_asset_box_art">封面</string>
+    <string name="art_asset_physical_media">实体介质</string>
+    <string name="art_asset_3d_box">3D 包装盒</string>
+    <string name="art_asset_screenshot">截图</string>
+    <string name="art_asset_manual">说明书</string>
+    <string name="art_asset_video">视频</string>
+    <string name="art_asset_icon_video">图标视频</string>
+    <string name="art_asset_icon_video_converting">图标视频（转换中）</string>
+    <string name="art_source_storefronts">商店</string>
+
+    <!-- Metadata fields -->
+    <string name="art_field_title">标题</string>
+    <string name="art_field_description">简介</string>
+    <string name="art_field_developer">开发商</string>
+    <string name="art_field_publisher">发行商</string>
+    <string name="art_field_year">年份</string>
+    <string name="art_field_release_date">发行日期</string>
+    <string name="art_field_genre">类型</string>
+    <string name="art_field_age_rating">年龄分级</string>
+    <string name="art_field_franchise">系列</string>
+    <string name="art_field_rating">评分</string>
+
+    <!-- Ways to apply scraped metadata -->
+    <string name="art_policy_replace_all">全部替换</string>
+    <string name="art_policy_fill_missing">仅填补缺失项</string>
+    <string name="art_policy_choose_fields">选择字段</string>
+    <string name="art_policy_keep_current">保留当前内容</string>
+
+    <!-- Scrape (background task) -->
+    <string name="art_scrape_label_all">正在重新抓取所有游戏</string>
+    <string name="art_scrape_label_missing">正在抓取缺失的图片</string>
+    <string name="art_scrape_stop_note">已获取的图片会保留。</string>
+    <string name="art_scrape_paused_all_title">图片重新抓取已暂停</string>
+    <string name="art_scrape_paused_title">图片抓取已暂停</string>
+    <string name="art_scrape_finished_all_title">图片重新抓取已完成</string>
+    <string name="art_scrape_finished_title">图片抓取已完成</string>
+    <string name="art_scrape_stopped_title">图片抓取已停止</string>
+    <string name="art_scrape_failed_title">图片抓取失败</string>
+    <string name="art_scrape_result">共 %3$d 个，成功 %1$d 个，失败 %2$d 个</string>
+    <plurals name="art_scrape_stopped_after">
+        <item quantity="other">已在 %1$d 个游戏后停止，已获取的图片会保留</item>
+    </plurals>
+
+    <!-- Relink (background task) -->
+    <string name="art_relink_label">正在重新关联图片</string>
+    <plurals name="art_relink_label_consoles">
+        <item quantity="other">正在为 %1$d 个主机重新关联图片</item>
+    </plurals>
+    <string name="art_relink_stop_note">已关联的图片会保持关联。</string>
+    <string name="art_relink_finished_title">图片重新关联已完成</string>
+    <string name="art_relink_stopped_title">图片重新关联已停止</string>
+    <string name="art_relink_stopped_note">已关联的图片会保留</string>
+    <string name="art_relink_failed_title">图片重新关联失败</string>
+    <plurals name="art_relink_games_linked">
+        <item quantity="other">已关联 %1$d 个游戏</item>
+    </plurals>
+    <plurals name="art_relink_files">
+        <item quantity="other">%1$d 个文件</item>
+    </plurals>
+    <string name="art_relink_result">%2$s 中%1$s</string>
+    <string name="art_relink_result_unmatched">%1$s · %2$d 个未匹配</string>
+
+    <!-- Export to ES-DE (background task) -->
+    <string name="art_export_label">正在为 ES-DE 导出图片</string>
+    <string name="art_export_stop_note">已导出的文件会保留。</string>
+    <string name="art_export_error_no_destination">没有目标文件夹</string>
+    <string name="art_export_error_access_lost">已失去图片文件夹的访问权限</string>
+    <string name="art_export_dest_not_created">无法创建目标文件夹。</string>
+    <plurals name="art_export_files_badge">
+        <item quantity="other">%1$d 个文件</item>
+    </plurals>
+    <string name="art_export_failed_title">图片导出失败</string>
+    <string name="art_export_stopped_title">图片导出已停止</string>
+    <string name="art_export_finished_title">图片导出已完成</string>
+    <plurals name="art_export_stopped_note">
+        <item quantity="other">停止前已导出 %1$d 个文件</item>
+    </plurals>
+    <string name="art_export_result">已复制 %1$d 个，%2$d 个已存在，%3$d 个失败</string>
+
+    <!-- Import (background task and its notification) -->
+    <string name="art_import_plan_not_found">找不到导入计划</string>
+    <string name="art_import_plan_unreadable">无法读取导入计划</string>
+    <string name="art_import_label">正在导入图片：%1$s</string>
+    <string name="art_import_stop_note">已导入的图片会保留。</string>
+    <string name="art_import_failed_title">图片导入失败</string>
+    <string name="art_import_cancelled">图片导入已取消</string>
+    <string name="art_import_done">图片已导入</string>
+    <plurals name="art_import_needs_review">
+        <item quantity="other">图片已导入，%1$d 项需要检查</item>
+    </plurals>
+    <string name="art_import_headline">%1$s：%2$s</string>
+    <string name="art_import_counts">已导入 %1$d 个，跳过 %2$d 个，失败 %3$d 个，有歧义 %4$d 个，未匹配 %5$d 个。</string>
+    <string name="art_import_results_summary">已导入 %1$d 个，跳过 %2$d 个</string>
+
+    <!-- Move artwork into the linked folder (background task) -->
+    <string name="art_move_label">正在将图片移入你的文件夹</string>
+    <string name="art_move_failed_title">图片移动失败</string>
+    <string name="art_move_stopped_title">图片移动已停止</string>
+    <string name="art_move_finished_title">图片移动已完成</string>
+    <plurals name="art_move_stopped_note">
+        <item quantity="other">停止前已移动 %1$d 个文件</item>
+    </plurals>
+    <string name="art_move_result">已移动 %1$d 个，%2$d 个已存在，%3$d 个失败</string>
+</resources>

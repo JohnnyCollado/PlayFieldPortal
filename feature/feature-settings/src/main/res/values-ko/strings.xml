@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">설정</string>
+    <string name="sound_title">사운드</string>
+    <string name="sound_group_master">마스터</string>
+    <string name="sound_group_levels">레벨</string>
+    <string name="sound_group_sounds">사운드 지정</string>
+    <string name="sound_master_volume">마스터 음량</string>
+    <string name="sound_master_volume_help">런처의 모든 소리를 조절합니다. 0이면 런처에서 소리가 나지 않습니다.</string>
+    <string name="sound_ambience_help">탐색하는 동안 반복 재생됩니다. OGG는 끊김 없이 반복되지만 MP3는 잡음이 날 수 있습니다.</string>
+    <string name="sound_rejected_title">이 사운드를 사용할 수 없습니다</string>
+    <string name="sound_reset_confirm_title">사운드를 기본값으로 초기화할까요?</string>
+    <string name="sound_reset_confirm_message">모든 메뉴 사운드가 기본 제공 PFP 샘플로 돌아가고, 마스터를 포함한 모든 레벨이 최대로 돌아갑니다. 배경음 트랙과 Boot Video, Game Boot 미디어는 영향을 받지 않습니다.</string>
+    <string name="sound_reset_confirm_action">초기화</string>
+    <string name="sound_reset_row">사운드를 기본값으로 초기화</string>
+    <string name="sound_reset_row_help">모든 메뉴 사운드를 기본 제공 PFP 샘플로, 모든 레벨을 최대로 되돌립니다. 배경음 트랙은 유지됩니다.</string>
+    <string name="sound_channel_navigation">탐색</string>
+    <string name="sound_channel_back">뒤로 / 취소</string>
+    <string name="sound_channel_confirm">확인 / 적용</string>
+    <string name="sound_channel_error">오류 / 잘못된 입력</string>
+    <string name="sound_channel_notification">알림</string>
+    <string name="sound_channel_boot">부팅 시퀀스</string>
+    <string name="sound_channel_ambience">배경음</string>
+    <string name="sound_slot_navigation">탐색</string>
+    <string name="sound_slot_back">뒤로 / 취소</string>
+    <string name="sound_slot_confirm">확인 / 적용</string>
+    <string name="sound_slot_error">오류 / 잘못된 입력</string>
+    <string name="sound_slot_notification">알림</string>
+    <string name="sound_slot_ambience">배경음 트랙</string>
+</resources>

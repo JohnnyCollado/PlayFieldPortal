@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared by every Settings screen: the scaffold's title. -->
+    <string name="settings_title">設定</string>
+
+    <!-- Settings ▸ Sound -->
+    <string name="sound_title">聲音</string>
+    <string name="sound_group_master">總音量</string>
+    <string name="sound_group_levels">音量等級</string>
+    <string name="sound_group_sounds">音效</string>
+    <string name="sound_master_volume">主音量</string>
+    <string name="sound_master_volume_help">調整啟動器的所有聲音。設為 0 時啟動器會靜音。</string>
+    <string name="sound_ambience_help">瀏覽時循環播放。OGG 可無縫循環；MP3 可能會出現爆音。</string>
+    <string name="sound_rejected_title">無法使用該聲音</string>
+    <string name="sound_reset_confirm_title">要將聲音還原為預設值嗎？</string>
+    <string name="sound_reset_confirm_message">所有選單音效會還原為內建的 PFP 樣本，所有音量（包含主音量）會還原為最大。你的環境音軌以及 Boot Video 和 Game Boot 媒體不受影響。</string>
+    <string name="sound_reset_confirm_action">重設</string>
+    <string name="sound_reset_row">將聲音還原為預設值</string>
+    <string name="sound_reset_row_help">將所有選單音效還原為內建的 PFP 樣本，並將所有音量還原為最大。保留你的環境音軌。</string>
+
+    <!-- Level rows: one per AudioChannel. -->
+    <string name="sound_channel_navigation">導覽</string>
+    <string name="sound_channel_back">返回 / 取消</string>
+    <string name="sound_channel_confirm">確認 / 套用</string>
+    <string name="sound_channel_error">錯誤 / 無效</string>
+    <string name="sound_channel_notification">通知</string>
+    <string name="sound_channel_boot">啟動序列</string>
+    <string name="sound_channel_ambience">環境音</string>
+
+    <!-- Assignment rows: one per assignable UiMediaSlot. -->
+    <string name="sound_slot_navigation">導覽</string>
+    <string name="sound_slot_back">返回 / 取消</string>
+    <string name="sound_slot_confirm">確認 / 套用</string>
+    <string name="sound_slot_error">錯誤 / 無效</string>
+    <string name="sound_slot_notification">通知</string>
+    <string name="sound_slot_ambience">環境音軌</string>
+</resources>

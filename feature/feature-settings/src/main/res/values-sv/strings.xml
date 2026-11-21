@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Inställningar</string>
+    <string name="sound_title">Ljud</string>
+    <string name="sound_group_master">Allmänt</string>
+    <string name="sound_group_levels">Nivåer</string>
+    <string name="sound_group_sounds">Menyljud</string>
+    <string name="sound_master_volume">Huvudvolym</string>
+    <string name="sound_master_volume_help">Styr alla ljud i launchern. Vid 0 är launchern tyst.</string>
+    <string name="sound_ambience_help">Spelas i en slinga medan du bläddrar. OGG loopar sömlöst; MP3 kan ge ett klick.</string>
+    <string name="sound_rejected_title">Det gick inte att använda ljudet</string>
+    <string name="sound_reset_confirm_title">Återställ ljud till standard?</string>
+    <string name="sound_reset_confirm_message">Varje menyljud återgår till det medföljande PFP-ljudet och varje nivå, även huvudvolymen, återgår till full. Ditt bakgrundsspår och media för Boot Video och Game Boot påverkas inte.</string>
+    <string name="sound_reset_confirm_action">Återställ</string>
+    <string name="sound_reset_row">Återställ ljud till standard</string>
+    <string name="sound_reset_row_help">Återställer varje menyljud till det medföljande PFP-ljudet och varje nivå till full. Ditt bakgrundsspår behålls.</string>
+    <string name="sound_channel_navigation">Navigering</string>
+    <string name="sound_channel_back">Tillbaka / Avbryt</string>
+    <string name="sound_channel_confirm">Bekräfta / Verkställ</string>
+    <string name="sound_channel_error">Fel / Ogiltigt</string>
+    <string name="sound_channel_notification">Avisering</string>
+    <string name="sound_channel_boot">Startsekvens</string>
+    <string name="sound_channel_ambience">Bakgrundsljud</string>
+    <string name="sound_slot_navigation">Navigering</string>
+    <string name="sound_slot_back">Tillbaka / Avbryt</string>
+    <string name="sound_slot_confirm">Bekräfta / Verkställ</string>
+    <string name="sound_slot_error">Fel / Ogiltigt</string>
+    <string name="sound_slot_notification">Avisering</string>
+    <string name="sound_slot_ambience">Bakgrundsspår</string>
+</resources>

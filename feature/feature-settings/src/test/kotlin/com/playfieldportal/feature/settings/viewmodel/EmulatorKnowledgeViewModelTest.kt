@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.settings.viewmodel
 
 import android.net.Uri
+import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.data.kb.PlatformGain
 import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.core.domain.model.IntentType
@@ -18,6 +19,8 @@ import com.playfieldportal.core.domain.model.emulatorkb.ImportItem
 import com.playfieldportal.core.domain.model.emulatorkb.KbItem
 import com.playfieldportal.core.domain.model.emulatorkb.KbSource
 import com.playfieldportal.core.domain.model.emulatorkb.SignerState
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.core.ui.text.PfpDateStyle
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.launcher.kb.SignerProbe
 import com.playfieldportal.feature.launcher.kb.EmulatorKbUpdater
@@ -46,9 +49,15 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.io.IOException
+import java.time.Instant
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.util.TimeZone
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.CoroutineContext
@@ -62,8 +71,14 @@ import kotlin.test.assertTrue
  * one-press action, and a remove or reset is followed by a refresh so detection and platform
  * extensions follow the layers now in force.
  */
+// Robolectric: the state holds string-resource references, resolved here to the English wording.
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 @OptIn(ExperimentalCoroutinesApi::class)
 class EmulatorKnowledgeViewModelTest {
+
+    private fun UiText.en(): String = resolve(ApplicationProvider.getApplicationContext<android.content.Context>())
+    @JvmName("enOrNull") private fun UiText?.en(): String? = this?.en()
 
     private val dispatcher = StandardTestDispatcher()
     private val updater = mockk<EmulatorKbUpdater>(relaxed = true)
@@ -116,8 +131,18 @@ class EmulatorKnowledgeViewModelTest {
         every { signerProbe.probe(any(), any()) } returns SignerState.NotInstalled
         vm = EmulatorKnowledgeViewModel(
             updater, store, refresher, reader, writer, signerProbe, profiles,
-            setOf("psx"), "com.playfieldportal.launcher", { now }, TimeZone.getTimeZone("UTC"), planDispatcher,
+            setOf("psx"), "com.playfieldportal.launcher", { now }, TimeZone.getTimeZone("UTC"), ::fixedStamp, planDispatcher,
         )
+    }
+
+    /** The VM's date formatter is injected; tests pin it to the English 24-hour shapes the assertions read. */
+    private fun fixedStamp(style: PfpDateStyle, epochMillis: Long, zone: TimeZone): String {
+        val at = Instant.ofEpochMilli(epochMillis).atZone(zone.toZoneId())
+        return when (style) {
+            PfpDateStyle.Time -> at.format(DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH))
+            PfpDateStyle.ShortDate -> at.format(DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH))
+            else -> error("unexpected style $style")
+        }
     }
 
     @After fun tearDown() = Dispatchers.resetMain()
@@ -141,7 +166,7 @@ class EmulatorKnowledgeViewModelTest {
         advanceUntilIdle()
 
         val ui = vm.uiState.value
-        assertEquals("Official v2026.10.02 · verified · 87 emulators · checked today 09:14", ui.statusText)
+        assertEquals("Official v2026.10.02 · verified · 87 emulators · checked today 09:14", ui.statusText.en())
         assertNull(ui.errorText)
     }
 
@@ -150,11 +175,11 @@ class EmulatorKnowledgeViewModelTest {
         official()
         lastCheckAt.value = at(1, 23, 5)
         advanceUntilIdle()
-        assertEquals("Official v2026.10.02 · verified · 87 emulators · checked yesterday 23:05", vm.uiState.value.statusText)
+        assertEquals("Official v2026.10.02 · verified · 87 emulators · checked yesterday 23:05", vm.uiState.value.statusText.en())
 
         lastCheckAt.value = ZonedDateTime.of(2026, 9, 30, 8, 0, 0, 0, ZoneOffset.UTC).toInstant().toEpochMilli()
         advanceUntilIdle()
-        assertEquals("Official v2026.10.02 · verified · 87 emulators · checked 30 Sep 08:00", vm.uiState.value.statusText)
+        assertEquals("Official v2026.10.02 · verified · 87 emulators · checked 30 Sep 08:00", vm.uiState.value.statusText.en())
     }
 
     @Test
@@ -162,14 +187,14 @@ class EmulatorKnowledgeViewModelTest {
         official(emulators = 1)
         advanceUntilIdle()
 
-        assertEquals("Official v2026.10.02 · verified · 1 emulator", vm.uiState.value.statusText)
+        assertEquals("Official v2026.10.02 · verified · 1 emulator", vm.uiState.value.statusText.en())
     }
 
     @Test
     fun `no official file reads as built-in only`() = runTest(dispatcher) {
         advanceUntilIdle()
 
-        assertEquals("Built-in only", vm.uiState.value.statusText)
+        assertEquals("Built-in only", vm.uiState.value.statusText.en())
         assertNull(vm.uiState.value.errorText)
     }
 
@@ -178,7 +203,7 @@ class EmulatorKnowledgeViewModelTest {
         status.value = KbUpdateStatus(KbUpdateResult.NotConfigured)
         advanceUntilIdle()
 
-        assertEquals("Built-in · updates not configured", vm.uiState.value.statusText)
+        assertEquals("Built-in · updates not configured", vm.uiState.value.statusText.en())
         assertNull(vm.uiState.value.errorText)
     }
 
@@ -190,8 +215,8 @@ class EmulatorKnowledgeViewModelTest {
             advanceUntilIdle()
 
             val ui = vm.uiState.value
-            assertEquals("Official v2026.10.02 · verified · 87 emulators", ui.statusText, "result $failure")
-            assertEquals(failure.message, ui.errorText, "result $failure")
+            assertEquals("Official v2026.10.02 · verified · 87 emulators", ui.statusText.en(), "result $failure")
+            assertEquals(failure.message.en(), ui.errorText.en(), "result $failure")
         }
     }
 
@@ -200,8 +225,8 @@ class EmulatorKnowledgeViewModelTest {
         status.value = KbUpdateStatus(KbUpdateResult.Offline)
         advanceUntilIdle()
 
-        assertEquals("Built-in only", vm.uiState.value.statusText)
-        assertEquals(KbUpdateResult.Offline.message, vm.uiState.value.errorText)
+        assertEquals("Built-in only", vm.uiState.value.statusText.en())
+        assertEquals(KbUpdateResult.Offline.message.en(), vm.uiState.value.errorText.en())
     }
 
     @Test
@@ -209,7 +234,7 @@ class EmulatorKnowledgeViewModelTest {
         status.value = KbUpdateStatus(KbUpdateResult.Installed, version = 20261002, label = "2026.10.02", emulatorCount = 87)
         advanceUntilIdle()
 
-        assertEquals("Built-in only", vm.uiState.value.statusText)
+        assertEquals("Built-in only", vm.uiState.value.statusText.en())
     }
 
     @Test
@@ -226,7 +251,7 @@ class EmulatorKnowledgeViewModelTest {
         gate.complete(KbUpdateResult.Offline)
         advanceUntilIdle()
         assertFalse(vm.uiState.value.isChecking)
-        assertEquals(KbUpdateResult.Offline.message, vm.uiState.value.checkResult)
+        assertEquals(KbUpdateResult.Offline.message.en(), vm.uiState.value.checkResult.en())
     }
 
     @Test
@@ -249,7 +274,7 @@ class EmulatorKnowledgeViewModelTest {
         advanceUntilIdle()
         vm.checkNow()
         advanceUntilIdle()
-        assertEquals(KbUpdateResult.Installed.message, vm.uiState.value.checkResult)
+        assertEquals(KbUpdateResult.Installed.message.en(), vm.uiState.value.checkResult.en())
 
         val gate = CompletableDeferred<KbUpdateResult>()
         coEvery { updater.check(true) } coAnswers { gate.await() }
@@ -467,7 +492,7 @@ class EmulatorKnowledgeViewModelTest {
         importFile()
 
         assertNull(vm.uiState.value.review)
-        assertTrue(vm.uiState.value.importNotice!!.contains("too large"))
+        assertTrue(vm.uiState.value.importNotice.en()!!.contains("too large"))
         coVerify(exactly = 0) { store.addUserFile(any(), any()) }
     }
 
@@ -478,7 +503,7 @@ class EmulatorKnowledgeViewModelTest {
         importFile()
 
         assertNull(vm.uiState.value.review)
-        assertTrue(vm.uiState.value.importNotice!!.contains("read"))
+        assertTrue(vm.uiState.value.importNotice.en()!!.contains("read"))
     }
 
     @Test
@@ -488,7 +513,7 @@ class EmulatorKnowledgeViewModelTest {
         importFile()
 
         assertNull(vm.uiState.value.review)
-        assertTrue(vm.uiState.value.importNotice!!.contains("not a PlayFieldPortal emulator knowledge file"))
+        assertTrue(vm.uiState.value.importNotice.en()!!.contains("not a PlayFieldPortal emulator knowledge file"))
         vm.dismissImportNotice()
         assertNull(vm.uiState.value.importNotice)
     }
@@ -500,7 +525,7 @@ class EmulatorKnowledgeViewModelTest {
         importFile()
 
         assertNull(vm.uiState.value.review)
-        assertTrue(vm.uiState.value.importNotice!!.contains("nothing"))
+        assertTrue(vm.uiState.value.importNotice.en()!!.contains("nothing"))
     }
 
     @Test
@@ -528,7 +553,7 @@ class EmulatorKnowledgeViewModelTest {
 
         val review = vm.uiState.value.review!!
         assertTrue(review.confirmEnabled)
-        assertEquals("Update 1 console", review.confirmLabel)
+        assertEquals("Update 1 console", review.confirmLabel.en())
         val doc = slot<EmulatorKbDocument>()
         coEvery { store.addUserFile(any(), capture(doc)) } returns "file-id"
         vm.confirmImport()
@@ -542,13 +567,13 @@ class EmulatorKnowledgeViewModelTest {
         pick(fileJson(emulatorJson("one") + "," + emulatorJson("two"), """{"id":"psx","romExtensions":["bin","chd"]}"""))
         importFile()
 
-        assertEquals("Import 2 emulators", vm.uiState.value.review!!.confirmLabel)
+        assertEquals("Import 2 emulators", vm.uiState.value.review!!.confirmLabel.en())
         vm.toggleReviewItem("emulator:two")
-        assertEquals("Import 1 emulator", vm.uiState.value.review!!.confirmLabel)
+        assertEquals("Import 1 emulator", vm.uiState.value.review!!.confirmLabel.en())
         vm.toggleReviewItem("platform:psx")
-        assertEquals("Import 1 emulator and 1 console update", vm.uiState.value.review!!.confirmLabel)
+        assertEquals("Import 1 emulator and 1 console update", vm.uiState.value.review!!.confirmLabel.en())
         vm.toggleReviewItem("emulator:one")
-        assertEquals("Update 1 console", vm.uiState.value.review!!.confirmLabel)
+        assertEquals("Update 1 console", vm.uiState.value.review!!.confirmLabel.en())
     }
 
     @Test
@@ -602,7 +627,7 @@ class EmulatorKnowledgeViewModelTest {
         vm.confirmImport()
         advanceUntilIdle()
 
-        assertTrue(vm.uiState.value.importNotice!!.contains("save"))
+        assertTrue(vm.uiState.value.importNotice.en()!!.contains("save"))
         coVerify(exactly = 0) { refresher.run() }
     }
 
@@ -636,7 +661,7 @@ class EmulatorKnowledgeViewModelTest {
         val picker = vm.uiState.value.export!!
         assertEquals(listOf("a", "b"), picker.entries.map { it.id })
         assertEquals(setOf("a", "b"), picker.selectedIds)
-        assertEquals("Export 2 emulators", picker.confirmLabel)
+        assertEquals("Export 2 emulators", picker.confirmLabel.en())
         assertTrue(picker.exportEnabled)
     }
 
@@ -685,7 +710,7 @@ class EmulatorKnowledgeViewModelTest {
         vm.toggleExportItem("a")
 
         assertFalse(vm.uiState.value.export!!.exportEnabled)
-        assertEquals("Export 0 emulators", vm.uiState.value.export!!.confirmLabel)
+        assertEquals("Export 0 emulators", vm.uiState.value.export!!.confirmLabel.en())
         vm.exportTo(uri)
         advanceUntilIdle()
 
@@ -700,7 +725,7 @@ class EmulatorKnowledgeViewModelTest {
         advanceUntilIdle()
 
         assertNull(vm.uiState.value.export)
-        assertEquals("Exported 2 emulators", vm.uiState.value.exportNotice!!.message)
+        assertEquals("Exported 2 emulators", vm.uiState.value.exportNotice!!.message.en())
         assertEquals(listOf("custom_name_a", "custom_name_b"), writtenIds())
     }
 
@@ -724,7 +749,7 @@ class EmulatorKnowledgeViewModelTest {
         advanceUntilIdle()
 
         assertNull(vm.uiState.value.export)
-        assertTrue(vm.uiState.value.exportNotice!!.title.contains("Couldn't"))
+        assertTrue(vm.uiState.value.exportNotice!!.title.en()!!.contains("Couldn't"))
         vm.dismissExportNotice()
         assertNull(vm.uiState.value.exportNotice)
     }
@@ -857,14 +882,14 @@ class EmulatorKnowledgeViewModelTest {
         coEvery { store.removeUserFile("a") } throws IllegalStateException("boom")
         vm.removeFile("a")
         advanceUntilIdle()
-        assertTrue(vm.uiState.value.exportNotice!!.title.contains("remove"))
+        assertTrue(vm.uiState.value.exportNotice!!.title.en()!!.contains("remove"))
 
         vm.dismissExportNotice()
         coEvery { store.resetToBuiltIn() } throws IllegalStateException("boom")
         vm.requestReset()
         vm.confirmReset()
         advanceUntilIdle()
-        assertTrue(vm.uiState.value.exportNotice!!.title.contains("reset"))
+        assertTrue(vm.uiState.value.exportNotice!!.title.en()!!.contains("reset"))
     }
 
     @Test
@@ -873,8 +898,8 @@ class EmulatorKnowledgeViewModelTest {
 
         assertNull(vm.uiState.value.export)
         val notice = vm.uiState.value.exportNotice!!
-        assertEquals("Nothing to export", notice.title)
-        assertTrue(notice.message.startsWith("None of your emulators can be shared: "))
+        assertEquals("Nothing to export", notice.title.en())
+        assertTrue(notice.message.en()!!.startsWith("None of your emulators can be shared: "))
     }
 
     @Test
@@ -885,7 +910,7 @@ class EmulatorKnowledgeViewModelTest {
         every { updater.isConfigured } returns false
         val unconfigured = EmulatorKnowledgeViewModel(
             updater, store, refresher, reader, writer, signerProbe, profiles,
-            setOf("psx"), "com.playfieldportal.launcher", { now }, TimeZone.getTimeZone("UTC"), planDispatcher,
+            setOf("psx"), "com.playfieldportal.launcher", { now }, TimeZone.getTimeZone("UTC"), ::fixedStamp, planDispatcher,
         )
         assertFalse(unconfigured.uiState.value.updatesConfigured)
     }

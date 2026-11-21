@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launch refusals shown before an emulator starts. %1$s names a game or an emulator unless noted -->
+    <string name="launch_err_custom_command">لم تعد ملفات تعريف الأوامر المخصصة مدعومة. حوّل هذا المحاكي إلى طريقة التشغيل «فتح ROM بالتطبيق» أو «فتح شاشة في التطبيق».</string>
+    <string name="launch_err_shortcut_unsupported">التشغيل عبر الاختصار غير مدعوم من هذه الشاشة</string>
+    <string name="launch_err_no_package">لم تُسجَّل حزمة Android لـ %1$s</string>
+    <string name="launch_err_app_not_launchable">تطبيق Android غير مثبّت أو لا يمكن تشغيله: %1$s</string>
+    <string name="launch_err_emulator_not_installed">المحاكي غير مثبّت: %1$s (%2$s)</string>
+    <string name="launch_err_wrong_build">‏%1$s (%2$s) ليس الإصدار المتوقع: شهادة التوقيع الخاصة به غير مطابقة. أعِد تثبيت المحاكي من مصدره الرسمي.</string>
+    <string name="launch_err_no_activity_for_path">‏%1$s ليس له نشاط تشغيل مسجّل، لذا لا يمكن تمرير مسار ملف إليه. استورد إدخال المعرفة الخاص به مجددًا، أو أعِد اكتشاف المحاكي.</string>
+    <string name="launch_err_activity_required">يلزم اسم شاشة في التطبيق لطريقة التشغيل هذه - ملف التعريف: %1$s</string>
+    <string name="launch_err_activity_gone">لم يعد %1$s يوفّر نشاط التشغيل الخاص به (%2$s). حدّث المحاكي، أو اختر محاكيًا آخر لهذه المنصة.</string>
+    <string name="launch_err_no_launch_id">لم يُسجَّل معرّف تشغيل لـ %1$s. أعِد فحص مكتبتها.</string>
+    <string name="launch_err_rom_link_invalid">رابط ROM لهذه اللعبة غير صالح. أعِد فحص مكتبتها.</string>
+    <string name="launch_err_lost_access">فقد Play Field Portal الوصول إلى ملف هذه اللعبة. أعِد توصيل وحدة التخزين وأعِد فحص مكتبتها.</string>
+    <string name="launch_err_rom_path_required">يلزم مسار ROM لتشغيل %1$s</string>
+    <string name="launch_err_rom_not_found">لم يتم العثور على ملف ROM: %1$s</string>
+    <string name="launch_err_no_core">لم يتم ضبط نواة RetroArch للمنصة \'%1$s\' في ملف التعريف \'%2$s\'. افتح RetroArch ← Core Downloader لتثبيت نواة لهذا النظام.</string>
+    <string name="launch_err_cannot_open_rom_type">لا يستطيع %1$s فتح هذا النوع من ROM. جرّب إعادة تثبيت المحاكي، أو تحقّق من أذونات التطبيق في إعدادات Android.</string>
+    <string name="launch_err_no_file_path">لا يوجد مسار ملف لـ %1$s على هذا الجهاز، لذا لا يمكن إخبار %2$s بأي لعبة يجب تشغيلها.</string>
+    <string name="launch_err_not_in_rom_folder">‏%1$s ليست داخل مجلد ROM مضبوط، لذا لا يمكن تمريرها إلى %2$s. تحقّق من المجلد المعيّن لبطاقة الذاكرة هذه في الإعدادات.</string>
+
+    <!-- Emulator choice problems. %1$s is the emulator name, %2$s one of the launch_source_*_lower phrases -->
+    <!-- %1$s is a phrase from launch_phrase_*, %2$s the stored emulator id or package -->
+    <string name="launch_err_configured_missing">المحاكي %1$s غير مثبّت أو غير متاح: %2$s</string>
+    <string name="launch_err_core_not_installed">‏%1$s معيّن كـ%2$s، لكن هذه النواة غير مثبّتة في RetroArch. ثبّتها، أو اختر محاكيًا آخر.</string>
+    <string name="launch_err_no_longer_available">‏%1$s معيّن كـ%2$s، لكنه لم يعد متاحًا. اختر محاكيًا آخر.</string>
+    <string name="launch_err_not_configured_for_platform">‏%1$s غير مضبوط لـ %2$s</string>
+    <string name="launch_err_no_emulator_for_platform">لم يتم ضبط محاكٍ لـ %1$s. اختر محاكيًا لهذه اللعبة أو عيّن محاكيًا افتراضيًا للمنصة.</string>
+
+    <!-- Where an emulator choice came from (shown under the emulator on Game Detail), and the same in lowercase for use inside a sentence -->
+    <string name="launch_source_per_game">تجاوز خاص باللعبة</string>
+    <string name="launch_source_per_game_lower">تجاوز خاص باللعبة</string>
+    <string name="launch_source_memory_card">افتراضي بطاقة الذاكرة</string>
+    <string name="launch_source_memory_card_lower">افتراضي بطاقة الذاكرة</string>
+    <string name="launch_source_platform">افتراضي المنصة</string>
+    <string name="launch_source_platform_lower">افتراضي المنصة</string>
+    <string name="launch_source_recommended">موصى به</string>
+    <string name="launch_source_recommended_lower">موصى به</string>
+    <string name="launch_phrase_per_game">المخصّص لهذه اللعبة</string>
+    <string name="launch_phrase_memory_card">الخاص ببطاقة الذاكرة</string>
+    <string name="launch_phrase_platform">الافتراضي للمنصة</string>
+
+    <!-- Launch hand-off failures -->
+    <string name="launch_err_emulator_not_found">لم يتم العثور على المحاكي. هل هو مثبّت؟</string>
+    <string name="launch_err_permission_denied">تم رفض الإذن بتشغيل المحاكي</string>
+    <string name="launch_err_open_emulator">تعذّر فتح المحاكي: %1$s</string>
+    <string name="launch_never_foreground">لم يظهر المحاكي في الواجهة أبدًا بعد التشغيل.</string>
+    <string name="launch_never_appeared">لم يظهر المحاكي أبدًا. تأكّد من أنه مثبّت ومحدّث، ثم حاول التشغيل مجددًا.</string>
+    <plurals name="launch_history_failed">
+        <item quantity="zero">فشل %1$d من آخر %2$d عملية تشغيل لهذه اللعبة.</item>
+        <item quantity="one">فشل %1$d من آخر %2$d عملية تشغيل لهذه اللعبة.</item>
+        <item quantity="two">فشل %1$d من آخر %2$d عملية تشغيل لهذه اللعبة.</item>
+        <item quantity="few">فشلت %1$d من آخر %2$d عمليات تشغيل لهذه اللعبة.</item>
+        <item quantity="many">فشلت %1$d من آخر %2$d عملية تشغيل لهذه اللعبة.</item>
+        <item quantity="other">فشلت %1$d من آخر %2$d عملية تشغيل لهذه اللعبة.</item>
+    </plurals>
+
+    <!-- Launch failure notification -->
+    <!-- %1$s is a game title -->
+    <string name="launch_rec_title">تعذّر تشغيل %1$s</string>
+    <string name="launch_rec_could_not_start">تعذّر بدء تشغيل المحاكي</string>
+    <string name="launch_rec_never_foreground">لم يظهر المحاكي في الواجهة أبدًا</string>
+    <string name="launch_fact_emulator">المحاكي</string>
+    <string name="launch_fact_core">النواة</string>
+    <string name="launch_fact_platform">المنصة</string>
+    <string name="launch_fact_recent">عمليات التشغيل الأخيرة</string>
+    <string name="launch_fact_recent_value">فشل %1$d من آخر %2$d</string>
+
+    <!-- Shortcut requests. %1$s is the shortcut's name, %2$s the app it opens -->
+    <string name="launch_shortcut_request_title">طلب اختصار: %1$s (يفتح %2$s)</string>
+    <string name="launch_shortcut_request_message">لا تُضِفه إلا إذا كنت قد أنشأت هذا الاختصار بنفسك للتو.</string>
+    <string name="launch_shortcut_added_title">تمت إضافة الاختصار: %1$s</string>
+    <string name="launch_shortcut_ignored_title">تم تجاهل الاختصار: %1$s</string>
+    <string name="launch_shortcut_from">من %1$s</string>
+    <string name="launch_windows_added_title">تمت إضافة \"%1$s\" إلى ألعاب Windows</string>
+    <string name="launch_windows_added_message">أكمِل إعداد مكتبة Windows لفحص مجلدها</string>
+
+    <!-- First-run setup prompts -->
+    <string name="launch_setup_add_rom_folder">أضِف مجلد ROM لبدء مكتبتك</string>
+    <string name="launch_setup_add_console_card">أضِف بطاقة ذاكرة لجهاز ألعاب لفحصها</string>
+    <string name="launch_setup_install_emulator">ثبّت محاكيًا لتلعب ألعابك</string>
+
+    <!-- Emulator detection notes for an app being added -->
+    <!-- %1$s is the emulator name -->
+    <string name="launch_inspect_known">تم الملء تلقائيًا من ملف التعريف المدمج لـ %1$s. أكّد المنصة (أو المنصات) واحفظ.</string>
+    <string name="launch_inspect_best_guess">أفضل تخمين بناءً على طريقة فتح هذا التطبيق لملفات ROM. عيّن المنصة (أو المنصات)، ثم اختبر ROM قبل الحفظ.</string>
+    <string name="launch_inspect_minimal">تعذّر اكتشاف كيفية قبول هذا التطبيق لملفات ROM. املأ إعدادات activity / intent يدويًا، ثم اختبر ROM.</string>
+
+    <!-- Emulator knowledge file updates -->
+    <!-- %1$d is the maximum number of files -->
+    <string name="launch_kb_too_many_files">يمكن استيراد %1$d من ملفات المعرفة كحد أقصى؛ أزِل واحدًا أولاً</string>
+    <string name="launch_kb_installed">تم التحديث</string>
+    <string name="launch_kb_not_configured">التحديثات غير مُعدّة في هذا الإصدار</string>
+    <string name="launch_kb_offline">تعذّر الوصول إلى خادم التحديث</string>
+    <string name="launch_kb_too_large">ملف التحديث كبير جدًا</string>
+    <string name="launch_kb_signature_invalid">توقيع التحديث غير صالح</string>
+    <string name="launch_kb_needs_app_update">يحتاج هذا التحديث إلى إصدار أحدث من التطبيق</string>
+    <string name="launch_kb_older">هذا التحديث أقدم من المثبّت حاليًا</string>
+    <string name="launch_kb_invalid_content">يحتوي ملف التحديث على محتوى غير صالح</string>
+    <string name="launch_kb_storage_failed">تعذّر حفظ التحديث</string>
+    <string name="launch_kb_skipped">لم تكن هناك حاجة إلى التحقق</string>
+
+    <!-- Windows game launchers: why an unrecognised app is listed, and the choice offered for it -->
+    <string name="launch_unknown_gamehub_or_bannerhub">قد يكون GameHub أو BannerHub</string>
+    <string name="launch_unknown_gamehublite_or_bannerhub">قد يكون GameHub Lite أو BannerHub</string>
+    <string name="launch_unknown_not_in_list">غير موجود في قائمة PFP</string>
+    <string name="launch_choice_not_a_launcher">ليس مشغّل ألعاب</string>
+    <string name="launch_id_prompt_gamehub">معرّف اللعبة — في صفحة اللعبة: انقر «نسخ» بجانب Local Game ID، أو ⋮ ← Banner Tools ← Show Game ID</string>
+    <string name="launch_id_prompt_gamenative">معرّف Steam App ID (أو معرّف التطبيق في المتجر) للعبة المثبّتة</string>
+</resources>

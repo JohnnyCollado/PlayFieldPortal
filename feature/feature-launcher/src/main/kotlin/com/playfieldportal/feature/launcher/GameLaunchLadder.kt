@@ -3,7 +3,9 @@ package com.playfieldportal.feature.launcher
 import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.entity.PlatformEntity
 import com.playfieldportal.core.data.repository.MemoryCardRepository
+import android.content.Context
 import com.playfieldportal.core.domain.model.Game
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 /**
@@ -21,6 +23,8 @@ class GameLaunchLadder @Inject constructor(
     private val memoryCards: MemoryCardRepository,
     private val platforms: PlatformDao,
     private val autoCoreMemory: AutoCoreMemory,
+    // Resolves a refusal's text into the user's language, so callers keep reading `message`.
+    @ApplicationContext private val context: Context,
 ) {
 
     /** Resolves [game]; [platform] saves a lookup when the caller already holds its record. */
@@ -36,7 +40,7 @@ class GameLaunchLadder @Inject constructor(
             installed.filter { it.isAvailable && it.supportsPlatform(platformId) }
                 .byLaunchPreference()
                 .stabilizeCore(autoCoreMemory.rememberedProfileId(platformId))
-        return EmulatorLaunchResolver.resolve(
+        val result = EmulatorLaunchResolver.resolve(
             platformId           = platformId,
             installedProfiles    = installed,
             platformProfiles     = platformProfiles,
@@ -45,5 +49,7 @@ class GameLaunchLadder @Inject constructor(
             platformDefault      = (platform ?: platforms.getById(platformId))
                 ?.preferredEmulatorPackage?.takeIf { it.isNotBlank() },
         )
+        val refusal = result.exceptionOrNull() as? LaunchFailure ?: return result
+        return Result.failure(IllegalStateException(refusal.text.resolve(context), refusal))
     }
 }

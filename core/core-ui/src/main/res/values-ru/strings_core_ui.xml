@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared button and prompt labels -->
+    <string name="core_cancel">Отмена</string>
+    <string name="core_ok">ОК</string>
+
+    <!-- Button label that saves the entered text -->
+    <string name="core_save">Сохранить</string>
+    <string name="core_apply">Применить</string>
+    <string name="core_select">Выбрать</string>
+    <string name="core_close">Закрыть</string>
+    <string name="core_back">Назад</string>
+
+    <!-- Modals (text entry) -->
+    <string name="core_modal_name_label">Название</string>
+    <string name="core_modal_counter">%1$d / %2$d</string>
+
+    <!-- Convert-to-achievement-tracking picker -->
+    <string name="core_steam_convert_title">Установить отслеживание достижений?</string>
+    <string name="core_steam_convert_selected_count">%1$d из %2$d</string>
+    <string name="core_steam_convert_found_count">Найдено: %1$d</string>
+    <string name="core_steam_convert_hints">"Вверх/Вниз  Строки  •  Select  Отметить  •  △  Все/Ничего  •  Start  Установить  •  B  Отмена"</string>
+    <string name="core_steam_convert_loading">Загрузка списка достижений каждой игры из Steam…</string>
+    <string name="core_steam_convert_install">Установить (%1$d)</string>
+
+    <!-- Button that unticks every game -->
+    <string name="core_steam_convert_none">Ничего</string>
+
+    <!-- Button that ticks every game -->
+    <string name="core_steam_convert_all">Все</string>
+    <string name="core_steam_convert_skip_sync">Пропустить и синхр.</string>
+
+    <!-- Keep the file names exactly as written -->
+    <string name="core_steam_convert_write_notice">В папку каждой отмеченной игры PFP запишет achievements.json, stats.json и configs.user.ini, создаст папку saves и переименует steam_api64.dll в steam_api64_o.dll, чтобы встроенный эмулятор загружался через неё.</string>
+    <string name="core_steam_convert_backup_warning">Перед преобразованием сделайте копию сохранений игр, в которые вы уже играли: эмулятор начнёт читать их из нового места.</string>
+
+    <!-- Shiba player card -->
+    <string name="core_shiba_xp">%1$s XP</string>
+    <string name="core_shiba_progress_next_bone">%1$s / %2$s до следующей косточки</string>
+    <string name="core_shiba_progress_next_level">%1$s / %2$s до уровня %3$d</string>
+    <string name="core_shiba_level_abbrev">УР</string>
+
+    <!-- Colour picker -->
+    <string name="core_hsv_hex">Hex</string>
+    <string name="core_hsv_hue">Тон</string>
+    <string name="core_hsv_saturation">Насыщенность</string>
+    <string name="core_hsv_brightness">Яркость</string>
+
+    <!-- Controller hints under the picker -->
+    <string name="core_hsv_hint_move">Двигать</string>
+    <string name="core_hsv_hint_type_hex">Ввести hex</string>
+    <string name="core_hsv_hint_adjust">Настроить</string>
+    <string name="core_hsv_sample_text">Пример текста</string>
+
+    <!-- Preset colour names -->
+    <string name="core_color_default">По умолчанию</string>
+    <string name="core_color_pink">Розовый</string>
+    <string name="core_color_gold">Золотой</string>
+    <string name="core_color_aqua">Аква</string>
+    <string name="core_color_sky_blue">Голубой</string>
+    <string name="core_color_green">Зелёный</string>
+    <string name="core_color_coral">Коралловый</string>
+    <string name="core_color_slate">Сланцевый</string>
+
+    <!-- Swatch that opens the full colour picker -->
+    <string name="core_color_custom">Свой</string>
+
+    <!-- Notification detail sheets -->
+    <string name="core_sheet_copied">Скопировано</string>
+    <string name="core_sheet_copy_details">Копировать сведения</string>
+    <string name="core_sheet_copy_list">Копировать список</string>
+    <string name="core_sheet_filter">Фильтр</string>
+    <string name="core_sheet_what_happened">Что произошло</string>
+    <string name="core_sheet_diagnostic_open">"▾  Диагностика"</string>
+    <string name="core_sheet_diagnostic_closed">"▸  Диагностика"</string>
+    <string name="core_sheet_diagnostic_heading">Диагностика</string>
+    <string name="core_sheet_summary_chip">%2$s: %1$d</string>
+
+    <!-- Results filter tab that shows every item -->
+    <string name="core_sheet_filter_all">Все</string>
+    <string name="core_sheet_more">Ещё +%1$d</string>
+    <string name="core_sheet_what_you_can_do">Что можно сделать</string>
+    <string name="core_vk_prompt_type">Ввод</string>
+    <string name="core_vk_prompt_delete">Удалить</string>
+    <string name="core_vk_prompt_cursor">Курсор</string>
+
+    <!-- Controller hint: toggle Caps Lock -->
+    <string name="core_vk_prompt_caps">Caps</string>
+    <string name="core_vk_key_space">Пробел</string>
+    <string name="core_vk_key_shift">Shift</string>
+    <string name="core_vk_key_backspace">Backspace</string>
+
+    <!-- Key that finishes typing -->
+    <string name="core_vk_key_done">Готово</string>
+
+    <!-- Screen-reader state of the Shift key -->
+    <string name="core_vk_shift_off">Выкл.</string>
+    <string name="core_vk_shift_once">Для следующей буквы</string>
+    <string name="core_vk_shift_held">Пока удерживается</string>
+    <string name="core_vk_shift_locked">Caps Lock включён</string>
+
+    <!-- Background tasks -->
+    <string name="core_task_failed">Ошибка задачи</string>
+    <string name="core_task_done">Готово</string>
+
+    <!-- Detail screens -->
+    <string name="core_detail_favorite_badge">ИЗБРАННОЕ</string>
+    <string name="core_detail_video_badge">ВИДЕО</string>
+    <string name="core_detail_confirm_collapse">Подтвердите, чтобы свернуть</string>
+    <string name="core_detail_confirm_read_more">Подтвердите, чтобы читать далее</string>
+
+    <!-- Rotate-to-landscape prompt -->
+    <string name="core_rotate_title">Поверните горизонтально</string>
+    <string name="core_rotate_message">PlayField Portal работает в горизонтальной ориентации. Поверните устройство, чтобы продолжить.</string>
+    <string name="core_rotate_switch_launcher">Сменить лаунчер</string>
+</resources>

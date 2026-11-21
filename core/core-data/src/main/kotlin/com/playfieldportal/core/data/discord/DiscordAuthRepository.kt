@@ -1,9 +1,11 @@
 package com.playfieldportal.core.data.discord
 
+import com.playfieldportal.core.data.R
 import com.playfieldportal.core.data.network.NetworkMonitor
 import com.playfieldportal.core.domain.discord.DeviceLoginState
 import com.playfieldportal.core.domain.discord.DiscordConfig
 import com.playfieldportal.core.domain.discord.DiscordSessionActivator
+import com.playfieldportal.core.domain.text.UiText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -37,7 +39,7 @@ class DiscordAuthRepository @Inject constructor(
 
         // Fail fast and clearly when offline rather than timing out on the device-code request.
         if (!networkMonitor.isOnline()) {
-            emit(DeviceLoginState.Error("You're offline. Reconnect to the internet and try again."))
+            emit(DeviceLoginState.Error(UiText.res(R.string.data_discord_offline)))
             return@flow
         }
 
@@ -46,7 +48,7 @@ class DiscordAuthRepository @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            emit(DeviceLoginState.Error(e.message ?: "Could not reach Discord"))
+            emit(DeviceLoginState.Error(e.message?.let(UiText::raw) ?: UiText.res(R.string.data_discord_unreachable)))
             return@flow
         }
         emit(DeviceLoginState.AwaitingApproval(challenge))
@@ -65,7 +67,7 @@ class DiscordAuthRepository @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                emit(DeviceLoginState.Error(e.message ?: "Network error while signing in"))
+                emit(DeviceLoginState.Error(e.message?.let(UiText::raw) ?: UiText.res(R.string.data_discord_signin_network_error)))
                 return@flow
             }
 
@@ -74,7 +76,7 @@ class DiscordAuthRepository @Inject constructor(
                 TokenPollResult.SlowDown -> intervalSec += 5             // back off, per RFC 8628
                 TokenPollResult.Expired -> { emit(DeviceLoginState.Expired); return@flow }
                 TokenPollResult.Denied -> { emit(DeviceLoginState.Denied); return@flow }
-                is TokenPollResult.Error -> { emit(DeviceLoginState.Error(result.message)); return@flow }
+                is TokenPollResult.Error -> { emit(DeviceLoginState.Error(UiText.raw(result.message))); return@flow }
                 is TokenPollResult.Approved -> {
                     tokenStore.save(result.tokens)
                     sessionActivator.activate(result.tokens.accessToken)

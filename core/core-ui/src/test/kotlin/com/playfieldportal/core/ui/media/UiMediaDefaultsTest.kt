@@ -34,10 +34,17 @@ class UiMediaDefaultsTest {
         }
     }
 
-    @Test fun `navigation covers scroll select and system browse`() {
+    @Test fun `navigation covers scroll and select`() {
         assertEquals(UiMediaSlot.SOUND_SCROLL, MenuSound.SCROLL.slot)
         assertEquals(UiMediaSlot.SOUND_SCROLL, MenuSound.SELECT.slot)
-        assertEquals(UiMediaSlot.SOUND_SCROLL, MenuSound.SYSTEM_BROWSE.slot)
+    }
+
+    @Test fun `category and options have their own slots but share navigation's bundled sample`() {
+        assertEquals(UiMediaSlot.SOUND_CATEGORY, MenuSound.SYSTEM_BROWSE.slot)
+        assertEquals(UiMediaSlot.SOUND_OPTIONS, MenuSound.OPTIONS.slot)
+        // No new audio ships: unassigned, both sound exactly as they did on Navigation.
+        assertEquals(R.raw.sfx_cursor, UiMediaSlot.SOUND_CATEGORY.bundledDefaultRes())
+        assertEquals(R.raw.sfx_cursor, UiMediaSlot.SOUND_OPTIONS.bundledDefaultRes())
     }
 
     @Test fun `every other event keeps its own slot`() {

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">设置</string>
+    <string name="sound_title">声音</string>
+    <string name="sound_group_master">总音量</string>
+    <string name="sound_group_levels">音量级别</string>
+    <string name="sound_group_sounds">音效</string>
+    <string name="sound_master_volume">主音量</string>
+    <string name="sound_master_volume_help">调节启动器的所有声音。设为 0 时启动器静音。</string>
+    <string name="sound_ambience_help">浏览时循环播放。OGG 可无缝循环；MP3 可能出现爆音。</string>
+    <string name="sound_rejected_title">无法使用该声音</string>
+    <string name="sound_reset_confirm_title">将声音恢复为默认设置？</string>
+    <string name="sound_reset_confirm_message">所有菜单音效将恢复为内置的 PFP 样本，所有音量（包括主音量）将恢复为最大。你的环境音轨以及 Boot Video 和 Game Boot 媒体不受影响。</string>
+    <string name="sound_reset_confirm_action">重置</string>
+    <string name="sound_reset_row">将声音恢复为默认设置</string>
+    <string name="sound_reset_row_help">将所有菜单音效恢复为内置的 PFP 样本，并将所有音量恢复为最大。保留你的环境音轨。</string>
+    <string name="sound_channel_navigation">导航</string>
+    <string name="sound_channel_back">返回 / 取消</string>
+    <string name="sound_channel_confirm">确认 / 应用</string>
+    <string name="sound_channel_error">错误 / 无效</string>
+    <string name="sound_channel_notification">通知</string>
+    <string name="sound_channel_boot">启动序列</string>
+    <string name="sound_channel_ambience">环境音</string>
+    <string name="sound_slot_navigation">导航</string>
+    <string name="sound_slot_back">返回 / 取消</string>
+    <string name="sound_slot_confirm">确认 / 应用</string>
+    <string name="sound_slot_error">错误 / 无效</string>
+    <string name="sound_slot_notification">通知</string>
+    <string name="sound_slot_ambience">环境音轨</string>
+</resources>

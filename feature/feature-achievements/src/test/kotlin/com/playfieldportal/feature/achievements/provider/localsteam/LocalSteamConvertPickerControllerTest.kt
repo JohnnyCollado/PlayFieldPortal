@@ -1,6 +1,8 @@
 package com.playfieldportal.feature.achievements.provider.localsteam
 
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.achievements.R
 import io.mockk.coEvery
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import io.mockk.mockk
@@ -69,7 +71,7 @@ class LocalSteamConvertPickerControllerTest {
         val picker = controller.picker.value!!
         assertFalse(picker.loading)
         assertEquals(listOf(51, 7), picker.rows.map { it.achievementCount })
-        assertTrue(picker.rows[0].note.contains("51 coins"))
+        assertEquals(UiText.plural(R.plurals.ach_pick_coins, 51, 51, "1"), picker.rows[0].note)
     }
 
     @Test
@@ -86,7 +88,7 @@ class LocalSteamConvertPickerControllerTest {
         val picker = controller.picker.value!!
         assertTrue(picker.rows[1].unselectable)
         assertFalse(picker.rows[1].selected)
-        assertTrue(picker.rows[1].note.contains("No list on Steam"))
+        assertEquals(UiText.res(R.string.ach_pick_no_list, "2"), picker.rows[1].note)
         assertEquals(1, picker.selectedCount)
 
         // And it stays out of the run even if something tries to check it.
@@ -110,7 +112,7 @@ class LocalSteamConvertPickerControllerTest {
         val picker = controller.picker.value!!
         assertTrue(picker.rows.all { it.unselectable })
         assertFalse(picker.canConfirm)
-        assertTrue(picker.rows[0].note.contains("Steam Web API key"))
+        assertEquals(UiText.res(R.string.ach_pick_needs_key, "1"), picker.rows[0].note)
     }
 
     @Test

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">設定</string>
+    <string name="sound_title">サウンド</string>
+    <string name="sound_group_master">マスター</string>
+    <string name="sound_group_levels">レベル</string>
+    <string name="sound_group_sounds">各サウンド</string>
+    <string name="sound_master_volume">マスター音量</string>
+    <string name="sound_master_volume_help">ランチャーのすべての音量を調整します。0 にするとランチャーは無音になります。</string>
+    <string name="sound_ambience_help">ブラウズ中にループ再生されます。OGG は途切れずにループしますが、MP3 はノイズが入ることがあります。</string>
+    <string name="sound_rejected_title">このサウンドは使用できませんでした</string>
+    <string name="sound_reset_confirm_title">サウンドを初期設定に戻しますか？</string>
+    <string name="sound_reset_confirm_message">すべてのメニュー音が付属の PFP サンプルに戻り、マスターを含むすべてのレベルが最大に戻ります。環境音トラック、Boot Video、Game Boot のメディアには影響しません。</string>
+    <string name="sound_reset_confirm_action">リセット</string>
+    <string name="sound_reset_row">サウンドを初期設定に戻す</string>
+    <string name="sound_reset_row_help">すべてのメニュー音を付属の PFP サンプルに、すべてのレベルを最大に戻します。環境音トラックは保持されます。</string>
+    <string name="sound_channel_navigation">ナビゲーション</string>
+    <string name="sound_channel_back">戻る / キャンセル</string>
+    <string name="sound_channel_confirm">決定 / 適用</string>
+    <string name="sound_channel_error">エラー / 無効</string>
+    <string name="sound_channel_notification">通知</string>
+    <string name="sound_channel_boot">起動シーケンス</string>
+    <string name="sound_channel_ambience">環境音</string>
+    <string name="sound_slot_navigation">ナビゲーション</string>
+    <string name="sound_slot_back">戻る / キャンセル</string>
+    <string name="sound_slot_confirm">決定 / 適用</string>
+    <string name="sound_slot_error">エラー / 無効</string>
+    <string name="sound_slot_notification">通知</string>
+    <string name="sound_slot_ambience">環境音トラック</string>
+</resources>

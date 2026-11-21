@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Voice microphone sensitivity (Discord) -->
+    <string name="data_mic_sensitivity_auto">Automatisch</string>
+    <string name="data_mic_sensitivity_high">Hoog</string>
+    <string name="data_mic_sensitivity_low">Laag · filtert klikken</string>
+    <string name="data_mic_sensitivity_minimal">Minimaal · alleen luide spraak</string>
+
+    <!-- Discord sign-in errors -->
+    <string name="data_discord_offline">Je bent offline. Maak opnieuw verbinding met internet en probeer het nog eens.</string>
+    <string name="data_discord_unreachable">Kan Discord niet bereiken</string>
+    <string name="data_discord_signin_network_error">Netwerkfout tijdens inloggen</string>
+
+    <!-- Music and video players -->
+    <string name="data_music_no_player">Geen muziekspeler kon dit nummer openen. Installeer een speler of kies er een in Instellingen → Muziek.</string>
+    <string name="data_video_no_player_open">Geen videospeler kon dit bestand openen. Installeer een speler of kies er een in Instellingen → Video.</string>
+    <string name="data_video_chooser_title">Video afspelen met…</string>
+    <string name="data_video_none_installed">Er is geen videospeler geïnstalleerd.</string>
+    <string name="data_video_bad_location">De locatie van deze video is ongeldig.</string>
+    <string name="data_video_unreachable">Dit videobestand is niet gevonden of de toegang is verloren. Scan de bibliotheek opnieuw.</string>
+    <string name="data_video_player_cannot_open">%1$s kan deze video niet openen of is niet geïnstalleerd.</string>
+    <string name="data_video_that_player">Die speler</string>
+    <string name="data_video_none_installed_for_file">Er is geen videospeler geïnstalleerd om dit bestand te openen.</string>
+
+    <!-- Lock screen image -->
+    <string name="data_lockscreen_unreadable">Die afbeelding kan niet worden gelezen</string>
+    <string name="data_lockscreen_rejected">Dit apparaat accepteert geen afbeelding voor het vergrendelscherm</string>
+
+    <!-- PSP theme import (.ptf) -->
+    <string name="data_ptf_unreadable">Kan het bestand niet lezen (of het is te groot)</string>
+    <string name="data_ptf_not_ptf">Geen PSP-themabestand (.ptf)</string>
+    <string name="data_ptf_unparseable">Het themabestand kan niet worden verwerkt</string>
+    <string name="data_ptf_wallpaper_missing">Het thema heeft geen achtergrondafbeelding</string>
+    <string name="data_ptf_wallpaper_unsupported">Dit thema comprimeert de achtergrond met een methode die niet wordt ondersteund</string>
+    <string name="data_ptf_wallpaper_damaged">De achtergrond van het thema is beschadigd en kan niet worden gedecodeerd</string>
+    <string name="data_ptf_save_failed">Kan het thema niet opslaan</string>
+
+    <!-- Custom media names -->
+    <string name="data_custom_video">Eigen video</string>
+    <string name="data_custom_sound">Eigen geluid</string>
+
+    <!-- Controllers -->
+    <string name="data_controller_fallback_name">Controller</string>
+</resources>

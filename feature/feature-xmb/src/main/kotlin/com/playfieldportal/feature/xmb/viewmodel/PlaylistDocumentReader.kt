@@ -5,6 +5,8 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import com.playfieldportal.core.data.repository.SafeMedia
 import com.playfieldportal.core.domain.playlist.PlaylistFileParser
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.xmb.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -29,11 +31,13 @@ class PlaylistDocumentReader @Inject constructor(
         val name = displayName(uri)
         return try {
             val stream = context.contentResolver.openInputStream(uri)
-                ?: return PickedPlaylistFile.Unreadable(name, "Couldn't open the file")
+                ?: return PickedPlaylistFile.Unreadable(name, UiText.res(R.string.xmbm_plimport_cant_open))
             // Not InputStream.readNBytes(int): it is API 33 and minSdk is 29.
             val bytes = stream.use { with(SafeMedia) { it.readCapped(PlaylistFileParser.MAX_BYTES.toLong()) } }
             if (bytes == null) {
-                PickedPlaylistFile.Unreadable(name, "File is larger than ${PlaylistFileParser.MAX_BYTES / (1024 * 1024)} MiB")
+                PickedPlaylistFile.Unreadable(
+                    name, UiText.res(R.string.xmbm_plimport_too_large, PlaylistFileParser.MAX_BYTES / (1024 * 1024)),
+                )
             } else {
                 PickedPlaylistFile.Content(name, bytes)
             }
@@ -41,7 +45,9 @@ class PlaylistDocumentReader @Inject constructor(
             throw e
         } catch (e: Exception) {
             Timber.w(e, "Couldn't read playlist file $uri")
-            PickedPlaylistFile.Unreadable(name, e.message ?: "Couldn't read the file")
+            PickedPlaylistFile.Unreadable(
+                name, e.message?.let(UiText::raw) ?: UiText.res(R.string.xmbm_plimport_cant_read),
+            )
         }
     }
 
@@ -53,6 +59,6 @@ class PlaylistDocumentReader @Inject constructor(
         } catch (e: Exception) {
             null
         }
-        return queried?.takeIf { it.isNotBlank() } ?: uri.lastPathSegment ?: "playlist"
+        return queried?.takeIf { it.isNotBlank() } ?: uri.lastPathSegment ?: context.getString(R.string.xmbm_plimport_default_name)
     }
 }

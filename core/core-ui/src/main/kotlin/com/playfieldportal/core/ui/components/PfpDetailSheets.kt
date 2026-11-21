@@ -1,5 +1,6 @@
 package com.playfieldportal.core.ui.components
 
+import com.playfieldportal.core.domain.text.whatYouCanDoRes
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -36,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -48,6 +50,7 @@ import com.playfieldportal.core.domain.model.PfpErrorCode
 import com.playfieldportal.core.domain.model.ResultItem
 import com.playfieldportal.core.domain.model.ResultOutcome
 import com.playfieldportal.core.domain.model.ResultsLabels
+import com.playfieldportal.core.ui.R
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.sound.MenuSoundSink
 import com.playfieldportal.core.ui.theme.themedSubText
@@ -171,7 +174,7 @@ object PfpDetailSheetNav {
 /** Plain text for △ Copy Details / Copy List. */
 object DetailSheetText {
 
-    fun notes(title: String, notes: NotificationDetail.Notes): String = buildString {
+    fun notes(title: String, notes: NotificationDetail.Notes, diagnosticHeading: String): String = buildString {
         append(title)
         notes.code?.let { append(" (").append(it).append(')') }
         notes.summary?.let { append("\n\n").append(it) }
@@ -180,7 +183,7 @@ object DetailSheetText {
             append("\n")
             notes.facts.forEach { append('\n').append(it.label).append(": ").append(it.value) }
         }
-        notes.diagnostic?.let { append("\n\nDiagnostic\n").append(it) }
+        notes.diagnostic?.let { append("\n\n").append(diagnosticHeading).append('\n').append(it) }
     }
 
     fun results(title: String, items: List<ResultItem>, labels: ResultsLabels): String = buildString {
@@ -202,10 +205,7 @@ fun resultOutcomeColor(outcome: ResultOutcome): Color = when (outcome) {
     ResultOutcome.DONE -> Color(0xFF3FA27A)
 }
 
-private val NotesSheetWidth = 600.dp
-private val ResultsSheetWidth = 720.dp
 private val ResultsSheetHeight = 380.dp
-private val StripeWidth = 4.dp
 private val SelectedRow = Color.White.copy(alpha = 0.14f)
 
 /** Test tags for the parts of a detail sheet. */
@@ -236,14 +236,14 @@ internal fun PfpNotesSheet(
     onClose: () -> Unit,
 ) {
     val code = detail.code?.let(PfpErrorCode::fromId)
+    val copyLabel = stringResource(if (copied) R.string.core_sheet_copied else R.string.core_sheet_copy_details)
+    val closeLabel = stringResource(R.string.core_close)
     val hints = buildList {
         if (actionLabel != null) add(ControllerPromptItem(GamepadAction.SELECT, actionLabel))
-        add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, if (copied) "Copied" else "Copy Details"))
-        add(ControllerPromptItem(GamepadAction.BACK, "Close"))
+        add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, copyLabel))
+        add(ControllerPromptItem(GamepadAction.BACK, closeLabel))
     }
     DetailSheetScaffold(
-        width = NotesSheetWidth,
-        accent = accent,
         hints = hints,
         showHints = showHints,
         onClose = onClose,
@@ -264,7 +264,7 @@ internal fun PfpNotesSheet(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 val summary = detail.summary ?: code?.title
-                summary?.let { NoteBlock("What happened", it) }
+                summary?.let { NoteBlock(stringResource(R.string.core_sheet_what_happened), it) }
                 detail.sections.forEach { NoteBlock(it.heading, it.body) }
                 if (detail.facts.isNotEmpty()) {
                     Column(
@@ -287,7 +287,9 @@ internal fun PfpNotesSheet(
                 }
                 detail.diagnostic?.let { diagnostic ->
                     Text(
-                        text = (if (diagnosticOpen) "▾  " else "▸  ") + "Diagnostic details",
+                        text = stringResource(
+                            if (diagnosticOpen) R.string.core_sheet_diagnostic_open else R.string.core_sheet_diagnostic_closed,
+                        ),
                         color = themedSubText(Color.White.copy(alpha = 0.55f)),
                         fontSize = 12.sp,
                         modifier = Modifier.clickable(onClick = onToggleDiagnostic),
@@ -351,19 +353,20 @@ internal fun PfpResultsSheet(
 ) {
     val items = PfpDetailSheetNav.visible(detail, filter)
     val focused = items.getOrNull(cursor)
+    val copyLabel = stringResource(if (copied) R.string.core_sheet_copied else R.string.core_sheet_copy_list)
+    val filterLabel = stringResource(R.string.core_sheet_filter)
+    val closeLabel = stringResource(R.string.core_close)
     val hints = buildList {
         if (actionLabel != null) add(ControllerPromptItem(GamepadAction.SELECT, actionLabel))
-        add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, if (copied) "Copied" else "Copy List"))
-        add(ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Filter"))
-        add(ControllerPromptItem(GamepadAction.BACK, "Close"))
+        add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, copyLabel))
+        add(ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), filterLabel))
+        add(ControllerPromptItem(GamepadAction.BACK, closeLabel))
     }
     val listState = rememberLazyListState()
     LaunchedEffect(cursor, filter) { if (cursor in items.indices) listState.animateScrollToItem(cursor) }
 
     DetailSheetScaffold(
-        width = ResultsSheetWidth,
         height = ResultsSheetHeight,
-        accent = accent,
         hints = hints,
         showHints = showHints,
         onClose = onClose,
@@ -374,7 +377,7 @@ internal fun PfpResultsSheet(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ResultOutcome.entries.forEach { outcome ->
                 val n = detail.count(outcome)
-                if (n > 0) SummaryChip(outcome, "$n ${detail.labels.of(outcome)}")
+                if (n > 0) SummaryChip(outcome, stringResource(R.string.core_sheet_summary_chip, n, detail.labels.of(outcome)))
             }
         }
 
@@ -388,7 +391,7 @@ internal fun PfpResultsSheet(
                 PfpDetailSheetNav.filters(detail).forEach { tab ->
                     FilterTab(
                         label = when (tab) {
-                            ResultFilter.ALL -> "All"
+                            ResultFilter.ALL -> stringResource(R.string.core_sheet_filter_all)
                             ResultFilter.FAILED -> detail.labels.failed
                             ResultFilter.SKIPPED -> detail.labels.skipped
                             ResultFilter.DONE -> detail.labels.done
@@ -405,7 +408,8 @@ internal fun PfpResultsSheet(
         Row(Modifier.weight(1f)) {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.width(390.dp).fillMaxHeight().padding(end = 14.dp),
+                // The band is a share of the screen, so the list takes a share of the band.
+                modifier = Modifier.weight(1.2f).fillMaxHeight().padding(end = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 itemsIndexed(items) { index, item ->
@@ -413,7 +417,7 @@ internal fun PfpResultsSheet(
                 }
                 if (detail.truncated > 0 && filter == ResultFilter.ALL) {
                     item {
-                        Text("+${detail.truncated} more", color = themedSubText(Color.White.copy(alpha = 0.55f)), fontSize = 13.sp,
+                        Text(stringResource(R.string.core_sheet_more, detail.truncated), color = themedSubText(Color.White.copy(alpha = 0.55f)), fontSize = 13.sp,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp))
                     }
                 }
@@ -460,8 +464,8 @@ private fun ResultDetailPane(item: ResultItem, labels: ResultsLabels) {
     }
     if (code != null && item.outcome != ResultOutcome.DONE) {
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text("What you can do", color = themedText(Color.White.copy(alpha = 0.9f)), fontSize = 12.sp, fontWeight = FontWeight.Medium)
-            Text(code.whatYouCanDo, color = themedSubText(Color.White.copy(alpha = 0.70f)), fontSize = 13.sp, lineHeight = 20.sp)
+            Text(stringResource(R.string.core_sheet_what_you_can_do), color = themedText(Color.White.copy(alpha = 0.9f)), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+            Text(stringResource(code.whatYouCanDoRes), color = themedSubText(Color.White.copy(alpha = 0.70f)), fontSize = 13.sp, lineHeight = 20.sp)
         }
     }
 }
@@ -470,8 +474,6 @@ private fun ResultDetailPane(item: ResultItem, labels: ResultsLabels) {
 
 @Composable
 private fun DetailSheetScaffold(
-    width: Dp,
-    accent: Color,
     hints: List<ControllerPromptItem>,
     showHints: Boolean,
     onClose: () -> Unit,
@@ -479,42 +481,23 @@ private fun DetailSheetScaffold(
     height: Dp? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(ModalScrim)
-            .pointerInput(Unit) { detectTapGestures { onClose() } },
-        contentAlignment = Alignment.Center,
+    // The same frame as every other prompt: the tint, the band between two hairlines, the hint row.
+    // The severity shows in the header's icon ring (SheetHeader), since the band has no card edge
+    // to carry a stripe.
+    PfpPromptFrame(
+        onDismiss = onClose,
+        hints = hints,
+        showHints = showHints,
+        bandTag = tag,
     ) {
         Column(
-            modifier = Modifier.padding(vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .fillMaxWidth()
+                // Results asks for a steady height (up to what the band has); Notes fits its text.
+                .then(if (height != null) Modifier.height(height) else Modifier.weight(1f, fill = false)),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .testTag(tag)
-                    .weight(1f, fill = false)
-                    .width(width)
-                    .then(if (height != null) Modifier.heightIn(max = height) else Modifier)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(ModalSurface)
-                    .pointerInput(Unit) { detectTapGestures { } },
-            ) {
-                Column(
-                    modifier = Modifier
-                        .then(if (height != null) Modifier.height(height) else Modifier)
-                        .padding(start = 28.dp, end = 24.dp, top = 22.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    content = content,
-                )
-                // The approved severity stripe, down the card's left edge.
-                Box(Modifier.matchParentSize()) {
-                    Box(Modifier.width(StripeWidth).fillMaxHeight().background(accent))
-                }
-            }
-            if (showHints) ControllerHintBar(items = hints)
-        }
+            content = content,
+        )
     }
 }
 

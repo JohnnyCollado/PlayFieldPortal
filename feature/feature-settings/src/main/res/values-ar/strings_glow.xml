@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_title">توهج التحديد</string>
+    <string name="glow_sub_off">لا توهج حول الأيقونة المحددة.</string>
+    <string name="glow_sub_steady">ضوء خافت حول الأيقونة المحددة. يبقى ثابتًا.</string>
+    <string name="glow_sub_pulsing">الضوء حول الأيقونة المحددة يشتد ويخفت ببطء. يبقى ثابتًا ما دام «الحركة» مضبوطًا على «ثابتة».</string>
+    <string name="glow_value_off">إيقاف</string>
+    <string name="glow_value_steady">ثابت</string>
+    <string name="glow_value_pulsing">نابض</string>
+</resources>

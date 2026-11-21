@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui
 
+import com.playfieldportal.core.ui.text.asString
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -85,6 +86,8 @@ import com.playfieldportal.feature.xmb.viewmodel.MusicBrowserNowPlaying
 import com.playfieldportal.feature.xmb.viewmodel.MusicBrowserState
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 import com.playfieldportal.feature.xmb.viewmodel.XMBItemType
+import androidx.compose.ui.res.stringResource
+import com.playfieldportal.feature.xmb.R
 
 // Composable getters, not constants: they read the resolved palette out of LocalPfpTextColors,
 // so a user font colour (or a backdrop-driven clamp) repaints every row here with no edit at any
@@ -233,12 +236,12 @@ fun MusicBrowserScreen(
                 ) {
                     Text("◀", color = SecondaryText, fontSize = 18.sp, modifier = Modifier.padding(end = 16.dp))
                     Column {
-                        Text(state.title, color = PrimaryText, fontSize = 22.sp, fontWeight = FontWeight.Light)
+                        Text(state.title.asString(), color = PrimaryText, fontSize = 22.sp, fontWeight = FontWeight.Light)
                         Text(
                             when (state.view) {
-                                is com.playfieldportal.feature.xmb.viewmodel.MusicBrowserView.Playlist -> "Music  ›  Playlists"
-                                com.playfieldportal.feature.xmb.viewmodel.MusicBrowserView.Playlists -> "Music"
-                                com.playfieldportal.feature.xmb.viewmodel.MusicBrowserView.AllMusic -> "All Tracks"
+                                is com.playfieldportal.feature.xmb.viewmodel.MusicBrowserView.Playlist -> stringResource(R.string.xmbu_music_breadcrumb_playlists)
+                                com.playfieldportal.feature.xmb.viewmodel.MusicBrowserView.Playlists -> stringResource(R.string.xmbu_music_breadcrumb_music)
+                                com.playfieldportal.feature.xmb.viewmodel.MusicBrowserView.AllMusic -> stringResource(R.string.xmbu_music_breadcrumb_all_tracks)
                             },
                             color = SecondaryText, fontSize = 12.sp,
                         )
@@ -251,7 +254,7 @@ fun MusicBrowserScreen(
                     // stays a labelled pill rather than collapsing to a glyph.
                     state.sortPillLabel?.let { label ->
                         XmbHeaderPill(
-                            label = label,
+                            label = label.asString(),
                             leadingGlyph = "⇅",
                             onClick = onSortTapped,
                         )
@@ -272,7 +275,7 @@ fun MusicBrowserScreen(
                 onValueChange = searchEdit::onFieldValueChange,
                 singleLine = true,
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = SecondaryText) },
-                placeholder = { Text("Search", color = SecondaryText.dimmed(0.7f)) },
+                placeholder = { Text(stringResource(R.string.xmbu_common_search), color = SecondaryText.dimmed(0.7f)) },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = PrimaryText,
                     unfocusedTextColor = PrimaryText,
@@ -328,8 +331,8 @@ fun MusicBrowserScreen(
             if (showTouchControls) {
                 TouchPromptBar(
                     items = listOf(
-                        TouchPromptItem(TouchGesture.TAP, "Open"),
-                        TouchPromptItem(TouchGesture.LONG_PRESS, "Options"),
+                        TouchPromptItem(TouchGesture.TAP, stringResource(R.string.xmbu_common_open)),
+                        TouchPromptItem(TouchGesture.LONG_PRESS, stringResource(R.string.xmbu_common_options)),
                     ),
                     labelColor = SecondaryText.dimmed(0.7f),
                     labelStyle = TextStyle(fontSize = 12.sp),
@@ -339,16 +342,16 @@ fun MusicBrowserScreen(
             } else {
                 ControllerPromptBar(
                     items = listOf(
-                        ControllerPromptItem(GamepadAction.SELECT, "Open"),
+                        ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.xmbu_common_open)),
                         // X is Search on every view, where Sort was a no-op on the playlists list.
                         // Sort now lives in the Options menu, which is also where a pad user was
                         // already going for anything list-shaped.
                         ControllerPromptItem(
                             GamepadAction.CHANGE_SORT,
-                            if (state.searchActive) "Close Search" else "Search",
+                            stringResource(if (state.searchActive) R.string.xmbu_common_close_search else R.string.xmbu_common_search),
                         ),
-                        ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
-                        ControllerPromptItem(GamepadAction.BACK, "Back"),
+                        ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, stringResource(R.string.xmbu_common_options)),
+                        ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.xmbu_common_back)),
                     ),
                     labelColor = SecondaryText.dimmed(0.7f),
                     labelStyle = TextStyle(fontSize = 12.sp),
@@ -397,7 +400,7 @@ private fun NowPlayingStrip(
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Resume: ${now.title}",
+                text = stringResource(R.string.xmbu_music_resume, now.title),
                 color = PrimaryText,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -456,16 +459,17 @@ private fun BrowserRow(
         Spacer(Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = row.title,
+                text = row.titleUi.asString(),
                 color = if (row.type == XMBItemType.EMPTY) SecondaryText else PrimaryText,
                 fontSize = 16.sp,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (!row.subtitle.isNullOrBlank()) {
+            val subtitle = row.subtitleUi?.asString()
+            if (!subtitle.isNullOrBlank()) {
                 Text(
-                    text = row.subtitle,
+                    text = subtitle,
                     color = SecondaryText,
                     fontSize = 12.sp,
                     maxLines = 1,

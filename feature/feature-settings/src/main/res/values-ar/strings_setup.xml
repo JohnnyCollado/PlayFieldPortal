@@ -1,0 +1,450 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Initial Setup wizard (first-run setup), its summary lines, and the scans it starts. -->
+
+    <!-- Wizard chrome -->
+    <string name="setup_title">الإعداد الأولي</string>
+    <string name="setup_prompt_enter">دخول</string>
+    <string name="setup_prompt_change">تغيير</string>
+    <string name="setup_prompt_back">رجوع</string>
+    <string name="setup_prompt_skip">تخطٍّ</string>
+    <string name="setup_row_edit">تعديل</string>
+    <string name="setup_row_remove">إزالة</string>
+    <string name="setup_message_dismiss_hint">حدّد للإغلاق — أو أكّد على هذا الصف</string>
+
+    <!-- Page names, used as "Next: ..." on the previous page -->
+    <string name="setup_step_welcome">الترحيب</string>
+    <string name="setup_step_controller">وحدة التحكم</string>
+    <string name="setup_step_rom_roots">مجلدات ROM</string>
+    <string name="setup_step_music">الموسيقى</string>
+    <string name="setup_step_video">الفيديو</string>
+    <string name="setup_step_photo">الصور</string>
+    <string name="setup_step_artwork">الصور الفنية</string>
+    <string name="setup_step_services">الخدمات عبر الإنترنت</string>
+    <string name="setup_step_achievements">خدمات الإنجازات</string>
+    <string name="setup_step_local_achievements">الإنجازات المحلية</string>
+    <string name="setup_step_retroarch">RetroArch</string>
+    <string name="setup_step_emulators">المحاكيات</string>
+    <string name="setup_step_windows">ألعاب Windows</string>
+    <string name="setup_step_hints">التلميحات واللمس</string>
+    <string name="setup_step_home_app">التطبيق الرئيسي</string>
+    <string name="setup_step_finish">الإنهاء</string>
+
+    <!-- Page headings -->
+    <string name="setup_heading_welcome">مرحبًا بك في Play Field Portal.</string>
+    <string name="setup_heading_controller">اختر وحدة التحكم.</string>
+    <string name="setup_heading_rom_roots">اختر مجلدات ROM.</string>
+    <string name="setup_heading_music">اختر مجلدات الموسيقى.</string>
+    <string name="setup_heading_video">اختر مجلدات الفيديو.</string>
+    <string name="setup_heading_photo">اختر مجلدات الصور.</string>
+    <string name="setup_heading_artwork">اختر مجلد الصور الفنية.</string>
+    <string name="setup_heading_services">اربط مصادر الصور الفنية.</string>
+    <string name="setup_heading_achievements">اربط خدمات الإنجازات.</string>
+    <string name="setup_heading_local_achievements">اربط مجلدات بيانات المحاكيات.</string>
+    <string name="setup_heading_retroarch">اربط مجلد أنوية RetroArch.</string>
+    <string name="setup_heading_emulators">تحقّق من المحاكيات.</string>
+    <string name="setup_heading_windows">أعِدّ ألعاب Windows.</string>
+    <string name="setup_heading_hints">اختر كيف يساعدك المشغّل.</string>
+    <string name="setup_heading_home_app">اجعل Play Field Portal شاشتك الرئيسية.</string>
+    <string name="setup_heading_finish">كل شيء جاهز!</string>
+
+    <!-- Page hints (the line under a heading) -->
+    <string name="setup_hint_welcome">معظم الخطوات اختيارية. ستحتاج إلى اختيار مجلد للصور الفنية.</string>
+    <string name="setup_hint_controller">يضبط أيقونات الأزرار والزر الذي يؤكد، لتطابق كل التعليمات من الآن فصاعدًا وحدة التحكم.</string>
+    <string name="setup_hint_rom_roots">أضِف مجلد ROM واحدًا أو أكثر — توجد ألعاب كل جهاز في مجلد فرعي داخلها.</string>
+    <string name="setup_hint_media_roots">أضِف عدة مجلدات جذر لتشمل وحدة التخزين الداخلية وبطاقة SD.</string>
+    <string name="setup_hint_artwork">مطلوب. تُحفظ صورك الفنية هنا، خارج التطبيق، لتبقى بعد إعادة التثبيت.</string>
+    <string name="setup_hint_services">كلها اختيارية ومجانية. يجلب SteamGridDB وTheGamesDB وIGDB وScreenScraper الصور الفنية والبيانات الوصفية للألعاب.</string>
+    <string name="setup_hint_achievements">يتتبّع RetroAchievements وSteam الإنجازات كـ Shiba Coins.</string>
+    <string name="setup_hint_local_achievements">الجوائز والإنجازات التي تحفظها المحاكيات على هذا الجهاز. إذن واحد لكل محاكٍ يربط كل العناوين.</string>
+    <string name="setup_hint_retroarch">يتيح للمشغّل معرفة الأنوية الموجودة لديك بالضبط، فلا يعرض غيرها.</string>
+    <string name="setup_hint_emulators">المحاكي الافتراضي لكل جهاز، مختار مما هو مثبّت. غيّر أي اختيار يبدو خاطئًا.</string>
+    <string name="setup_hint_windows">هناك محاكي Windows مثبّت — اختر مكان ألعاب PC الخاصة بك.</string>
+    <string name="setup_hint_hints">تظهر تلميحات الأزرار تدريجيًا عند التوقف، وتختفي فور الضغط على أي شيء.</string>
+    <string name="setup_hint_home_app">عندها يعيدك زر الصفحة الرئيسية إلى هنا بدلاً من المشغّل الأصلي.</string>
+    <string name="setup_hint_finish">يمكن تعديل كل ما يلي في أي وقت من الإعدادات.</string>
+
+    <!-- Continue row (bottom of every page) -->
+    <string name="setup_continue">متابعة</string>
+    <string name="setup_continue_next">التالي: %1$s</string>
+    <string name="setup_continue_blocked">اختر مجلدًا أولاً</string>
+
+    <!-- Welcome page -->
+    <string name="setup_welcome_intro">يوجّه هذا الإعداد السريع المشغّل إلى مجلدات الوسائط ويربط الخدمات عبر الإنترنت المستخدمة للصور الفنية والإنجازات.</string>
+    <string name="setup_welcome_start">البدء</string>
+    <string name="setup_welcome_start_sub">اختر وحدة التحكم أولاً</string>
+    <string name="setup_welcome_skip">تخطي الإعداد</string>
+    <string name="setup_welcome_skip_sub">الانتقال مباشرةً إلى المشغّل — شغّل معالج الإعداد من الإعدادات ▸ النظام في أي وقت</string>
+
+    <!-- Folder rows shared by the ROM, Music, Video and Photo pages -->
+    <string name="setup_root_access_lost">فُقد الوصول — استخدم ✎ لمنح الإذن مجددًا</string>
+
+    <!-- ROM roots page -->
+    <string name="setup_rom_empty">لا توجد مجلدات ROM بعد. أضِف المجلد الذي توجد فيه ألعاب أجهزتك — مجلد فرعي لكل جهاز، يُفحص تلقائيًا.</string>
+    <string name="setup_rom_add">إضافة مجلد ROM</string>
+    <string name="setup_rom_add_sub">امنح الإذن لمجلد ROM يحتوي على مجلد فرعي لكل جهاز</string>
+    <string name="setup_rom_rescan">إعادة فحص مجلدات ROM</string>
+    <string name="setup_rom_rescan_sub">اكتشاف أجهزة الألعاب تلقائيًا وفحص ألعابها</string>
+    <string name="setup_rom_root_linked">مرتبط — تُقرأ مجلدات أجهزة الألعاب من هنا</string>
+    <string name="setup_rom_create_folders">إنشاء المجلدات القياسية</string>
+    <string name="setup_rom_create_folders_sub">مجلد فرعي لكل جهاز ألعاب، مسمّى لألعابك</string>
+
+    <!-- Music roots page -->
+    <string name="setup_music_empty">لا توجد مجلدات موسيقى جذر بعد. أضِف المجلد الذي توجد فيه موسيقاك — يمكن لعدة مجلدات جذر أن تشمل وحدة التخزين الداخلية وبطاقة SD.</string>
+    <string name="setup_music_add">إضافة مجلد موسيقى جذر</string>
+    <string name="setup_music_add_sub">امنح الإذن لمجلد جذر (مثل /Music) — أضِف عدة مجلدات لتشمل مواقع مختلفة</string>
+    <string name="setup_music_root_linked">مكتبة الموسيقى موجودة هنا</string>
+    <string name="setup_music_rescan">إعادة فحص مكتبة الموسيقى</string>
+
+    <!-- Video roots page -->
+    <string name="setup_video_empty">لا توجد مجلدات فيديو جذر بعد. أضِف المجلد الذي توجد فيه مقاطع الفيديو — يمكن لعدة مجلدات جذر أن تشمل وحدة التخزين الداخلية وبطاقة SD.</string>
+    <string name="setup_video_add">إضافة مجلد فيديو جذر</string>
+    <string name="setup_video_add_sub">امنح الإذن لمجلد جذر (مثل /Videos) — أضِف عدة مجلدات لتشمل مواقع مختلفة</string>
+    <string name="setup_video_root_linked">مكتبة الفيديو موجودة هنا</string>
+    <string name="setup_video_rescan">إعادة فحص مكتبة الفيديو</string>
+
+    <!-- Photo roots page -->
+    <string name="setup_photo_empty">لا توجد مجلدات صور جذر بعد. أضِف المجلد الذي توجد فيه صورك — يمكن لعدة مجلدات جذر أن تشمل وحدة التخزين الداخلية وبطاقة SD.</string>
+    <string name="setup_photo_add">إضافة مجلد صور جذر</string>
+    <string name="setup_photo_add_sub">امنح الإذن لمجلد جذر (مثل /Photos) — أضِف عدة مجلدات لتشمل مواقع مختلفة</string>
+    <string name="setup_photo_root_linked">مكتبة الصور موجودة هنا</string>
+    <string name="setup_photo_rescan">إعادة فحص مكتبة الصور</string>
+
+    <string name="setup_media_rescan_sub">تحديث المكتبات من كل مجلد جذر</string>
+
+    <!-- Artwork page -->
+    <string name="setup_artwork_empty">اختر مجلدًا قابلاً للكتابة. يُعدّ المشغّل مكتبة صور فنية داخله تلقائيًا — وتحصل الألعاب على صورها عند إضافتها.</string>
+    <string name="setup_artwork_unavailable">غير متاح. أعِد الربط لاستئناف الصور الفنية الجديدة</string>
+    <string name="setup_artwork_folder_sub">مكتبة الصور الفنية — استخدم ✎ لاختيار مجلد آخر</string>
+    <string name="setup_artwork_choose">اختيار مجلد الصور الفنية</string>
+    <string name="setup_artwork_choose_sub">مجلد واحد يستضيف مكتبة الصور الفنية</string>
+    <string name="setup_artwork_import_title">هل تريد استيراد الصور الفنية الآن؟</string>
+    <string name="setup_artwork_import_sub_one">نسخ %1$s من import/ في المجلد إلى المكتبة</string>
+    <plurals name="setup_artwork_import_sub_many">
+        <item quantity="zero">لا مجلدات مصدر لنسخها من import/</item>
+        <item quantity="one">نسخ مجلد مصدر واحد من import/ في المجلد إلى المكتبة</item>
+        <item quantity="two">نسخ مجلدَي مصدر من import/ في المجلد إلى المكتبة</item>
+        <item quantity="few">نسخ %1$d مجلدات مصدر من import/ في المجلد إلى المكتبة</item>
+        <item quantity="many">نسخ %1$d مجلدًا مصدرًا من import/ في المجلد إلى المكتبة</item>
+        <item quantity="other">نسخ %1$d مجلد مصدر من import/ في المجلد إلى المكتبة</item>
+    </plurals>
+    <string name="setup_artwork_import_row">استيراد الصور الفنية</string>
+    <string name="setup_artwork_import_none_sub">لا شيء لاستيراده بعد — أضِف مجلد وسائط واجهة ألعاب داخل import/</string>
+
+    <!-- Online services page -->
+    <string name="setup_services_intro">كل الحسابات اختيارية ومجانية. يجلب SteamGridDB وTheGamesDB وIGDB وScreenScraper الصور الفنية والبيانات الوصفية لألعاب مكتبتك.</string>
+    <string name="setup_field_api_key">مفتاح API</string>
+    <string name="setup_field_api_key_saved">مفتاح API (محفوظ)</string>
+    <string name="setup_field_web_api_key">مفتاح Web API</string>
+    <string name="setup_field_web_api_key_saved">مفتاح Web API (محفوظ)</string>
+    <string name="setup_field_client_id">Client ID</string>
+    <string name="setup_field_client_id_saved">Client ID (محفوظ)</string>
+    <string name="setup_field_client_secret">Client Secret</string>
+    <string name="setup_field_client_secret_saved">Client Secret (محفوظ)</string>
+    <string name="setup_field_username">اسم المستخدم</string>
+    <string name="setup_field_username_saved">اسم المستخدم (محفوظ)</string>
+    <string name="setup_field_password">كلمة المرور</string>
+    <string name="setup_field_password_saved">كلمة المرور (محفوظة)</string>
+    <string name="setup_field_steam_id">معرّف SteamID64 أو الاسم المخصص</string>
+    <string name="setup_field_steam_id_saved">معرّف SteamID64 أو الاسم المخصص (محفوظ)</string>
+    <string name="setup_placeholder_tap_to_replace">حدّد للاستبدال</string>
+    <string name="setup_placeholder_secret_saved">••••••••  (حدّد للاستبدال)</string>
+    <string name="setup_placeholder_sgdb_key">الصق مفتاح SteamGridDB</string>
+    <string name="setup_placeholder_tgdb_key">الصق مفتاح TheGamesDB</string>
+    <string name="setup_placeholder_twitch_client_id">Twitch Client ID</string>
+    <string name="setup_placeholder_twitch_client_secret">Twitch Client Secret</string>
+    <string name="setup_placeholder_ss_username">اسم مستخدم ScreenScraper</string>
+    <string name="setup_placeholder_ss_password">كلمة مرور ScreenScraper</string>
+    <string name="setup_placeholder_ra_username">اسم مستخدم RA الخاص بك</string>
+    <string name="setup_placeholder_ra_key">الصق مفتاح RA Web API الخاص بك</string>
+    <string name="setup_placeholder_steam_id">7656119… أو اسم عنوان URL المخصص</string>
+    <string name="setup_placeholder_steam_key">الصق مفتاح Steam Web API الخاص بك</string>
+    <string name="setup_connect_sgdb">ربط SteamGridDB</string>
+    <string name="setup_connect_tgdb">ربط TheGamesDB</string>
+    <string name="setup_connect_igdb">ربط IGDB</string>
+    <string name="setup_connect_ss">ربط ScreenScraper</string>
+    <string name="setup_connect_ra">ربط RetroAchievements</string>
+    <string name="setup_connect_steam">ربط Steam</string>
+    <string name="setup_test_credentials">اختبار بيانات الاعتماد</string>
+    <string name="setup_test_account">اختبار الحساب</string>
+    <string name="setup_connected_as">متصل باسم</string>
+
+    <!-- Achievement services page -->
+    <string name="setup_achievements_intro">اختيارية ومجانية. يتتبّع RetroAchievements وSteam الإنجازات كـ Shiba Coins.</string>
+
+    <!-- Controller page -->
+    <string name="setup_controller_type">نوع وحدة التحكم</string>
+    <string name="setup_controller_type_sub">يغيّر أيقونات الأزرار في كل التعليمات</string>
+    <string name="setup_controller_ab_swap">تبديل التأكيد والرجوع</string>
+    <string name="setup_controller_xy_swap">تبديل الخيارات والفرز</string>
+    <string name="setup_controller_xy_swap_sub">قوائم المشغّل فقط — لا تتأثر عناصر التحكم في المحاكي</string>
+    <string name="setup_on">مفعّل</string>
+    <string name="setup_off">متوقف</string>
+    <string name="setup_controller_summary">‏%1$s · %2$s للتأكيد</string>
+    <string name="setup_button_circle">Circle</string>
+    <string name="setup_button_cross">Cross</string>
+    <string name="setup_confirm_swap_off">متوقف — %1$s للتأكيد، و%2$s للرجوع</string>
+    <string name="setup_confirm_swap_on">مفعّل — %1$s للتأكيد، و%2$s للرجوع</string>
+
+    <!-- Local achievements page -->
+    <string name="setup_local_vita_header">PS Vita · Vita3K</string>
+    <string name="setup_local_vita_set">تعيين مجلد بيانات Vita3K</string>
+    <string name="setup_local_vita_set_sub">امنح الإذن لمجلد ux0 (أو المجلد الذي يحتويه)</string>
+    <string name="setup_local_vita_folder_sub">مجلد بيانات Vita3K — استخدم ✎ لاختيار مجلد آخر</string>
+    <string name="setup_local_ps3_header">PS3 · ARMSX3</string>
+    <string name="setup_local_ps3_set">تعيين مجلد بيانات ARMSX3</string>
+    <string name="setup_local_ps3_set_sub">امنح الإذن لـ PS3/config/dev_hdd0 — أو لأي مجلد أعلاه أو أسفله</string>
+    <string name="setup_local_ps3_folder_sub">مجلد بيانات ARMSX3 — استخدم ✎ لاختيار مجلد آخر</string>
+    <string name="setup_local_x360_header">Xbox 360 · X360 Mobile</string>
+    <string name="setup_local_x360_set">تعيين مجلد بيانات X360 Mobile</string>
+    <string name="setup_local_x360_set_sub">اختر X360 Mobile من القائمة الجانبية لمنتقي المجلدات، ثم اسمح بالوصول</string>
+    <string name="setup_local_x360_folder_sub">مجلد بيانات X360 Mobile — استخدم ✎ لاختيار مجلد آخر</string>
+    <string name="setup_local_xendroid_header">Xbox 360 · XenDroid</string>
+    <string name="setup_local_xendroid_set">تعيين مجلد بيانات XenDroid</string>
+    <string name="setup_local_xendroid_set_sub">امنح الإذن لـ Android/data/xendroid.compose — أو لأي مجلد أعلاه أو أسفله</string>
+    <string name="setup_local_xendroid_folder_sub">مجلد بيانات XenDroid — استخدم ✎ لاختيار مجلد آخر</string>
+
+    <!-- RetroArch page -->
+    <string name="setup_retroarch_cores_folder">مجلد الأنوية</string>
+    <plurals name="setup_retroarch_cores_detected">
+        <item quantity="zero">لم تُكتشف أي نواة</item>
+        <item quantity="one">تم اكتشاف نواة واحدة</item>
+        <item quantity="two">تم اكتشاف نواتين</item>
+        <item quantity="few">تم اكتشاف %1$d أنوية</item>
+        <item quantity="many">تم اكتشاف %1$d نواة</item>
+        <item quantity="other">تم اكتشاف %1$d نواة</item>
+    </plurals>
+    <string name="setup_retroarch_linked">مرتبط</string>
+    <string name="setup_retroarch_relink">إعادة ربط المجلد</string>
+    <string name="setup_retroarch_relink_sub">اختر مجلد RetroArch مجددًا</string>
+    <string name="setup_retroarch_recheck">إعادة فحص الأنوية</string>
+    <string name="setup_retroarch_recheck_sub">بعد تثبيت أنوية جديدة</string>
+    <string name="setup_retroarch_unlink">إلغاء ربط RetroArch</string>
+    <string name="setup_retroarch_unlink_sub">العودة إلى عرض كل الأنوية المنتقاة</string>
+    <string name="setup_retroarch_intro">تطبيق RetroArch مثبّت. اربط مجلده لتُعرض فقط الأنوية الموجودة لديك فعلاً عند تشغيل الألعاب — وإلا فستُعرض كل الأنوية المنتقاة (دون تحقق).</string>
+    <string name="setup_retroarch_link">ربط مجلد RetroArch</string>
+    <string name="setup_retroarch_link_sub">اختر شجرة المستندات com.retroarch</string>
+
+    <!-- Emulators page -->
+    <string name="setup_emulators_empty">لا توجد أجهزة ألعاب تحتوي على ألعاب بعد. بعد فحص مجلدات ROM، يظهر كل جهاز هنا مع المحاكي الذي سيشغّله — غيّره في أي وقت من الإعدادات ▸ المحاكيات.</string>
+    <string name="setup_emulators_none">لا شيء</string>
+
+    <!-- Windows games page -->
+    <string name="setup_windows_intro">اختر المجلد الذي يحتوي على مجلد فرعي لكل لعبة. يفحصه PFP بحثًا عن ألعاب Windows؛ ولا يُغيَّر شيء فيه.</string>
+    <string name="setup_windows_detected">تم الاكتشاف</string>
+    <string name="setup_windows_set">تعيين مجلد ألعاب Windows</string>
+    <string name="setup_windows_change">تغيير مجلد ألعاب Windows</string>
+    <string name="setup_windows_set_sub">امنح الإذن للمجلد المثبّتة فيه ألعابك</string>
+
+    <!-- Hints and touch page -->
+    <string name="setup_hints_enabled">تلميحات الأزرار</string>
+    <string name="setup_hints_enabled_sub">شارة التلميح عند الخمول في XMB والإعدادات وشاشات الوسائط</string>
+    <string name="setup_hints_delay">تأخير التلميح</string>
+    <string name="setup_hints_delay_sub">مدة التوقف قبل ظهور التلميحات (1–5 ثوانٍ)</string>
+    <plurals name="setup_hints_delay_seconds">
+        <item quantity="zero">%1$d ثانية</item>
+        <item quantity="one">ثانية واحدة</item>
+        <item quantity="two">ثانيتان</item>
+        <item quantity="few">%1$d ثوانٍ</item>
+        <item quantity="many">%1$d ثانية</item>
+        <item quantity="other">%1$d ثانية</item>
+    </plurals>
+    <string name="setup_hints_delay_fraction">%1$s ثانية</string>
+    <string name="setup_hints_touch">زر اللمس</string>
+    <string name="setup_hints_touch_sub">زر درج التطبيقات على الشاشة — «تلقائي» يُظهره بعد لمس الشاشة</string>
+    <string name="setup_touch_auto">تلقائي</string>
+    <string name="setup_touch_always_show">إظهار دائمًا</string>
+    <string name="setup_touch_always_hide">إخفاء دائمًا</string>
+    <string name="setup_hints_summary_on">مفعّل · %1$s</string>
+
+    <!-- Home app page -->
+    <string name="setup_home_intro">يطلب منك Android اختيار تطبيق رئيسي وتأكيده. يمكنك العودة في أي وقت من إعدادات «التطبيقات التلقائية» في Android.</string>
+    <string name="setup_home_current">التطبيق الرئيسي الحالي</string>
+    <string name="setup_home_set">تعيين كتطبيق رئيسي</string>
+    <string name="setup_home_set_sub">يفتح منتقي التطبيق الرئيسي في Android</string>
+    <string name="setup_home_is_pfp">Play Field Portal</string>
+    <string name="setup_home_not_pfp">ليس Play Field Portal</string>
+
+    <!-- Finish page -->
+    <string name="setup_finish_nothing">لم يتم ضبط أي شيء بعد — يمكن إضافة كل مجلد وخدمة في أي وقت من الإعدادات.</string>
+    <string name="setup_finish_summary">الملخص</string>
+    <string name="setup_summary_controller">وحدة التحكم</string>
+    <string name="setup_summary_rom">مكتبة ROM</string>
+    <string name="setup_summary_music">الموسيقى</string>
+    <string name="setup_summary_video">الفيديو</string>
+    <string name="setup_summary_photo">الصور</string>
+    <string name="setup_summary_artwork">مكتبة الصور الفنية</string>
+    <string name="setup_summary_vita">مجلد بيانات Vita</string>
+    <string name="setup_summary_ps3">مجلد بيانات PS3</string>
+    <string name="setup_summary_x360">مجلد بيانات X360 Mobile</string>
+    <string name="setup_summary_xendroid">مجلد بيانات XenDroid</string>
+    <string name="setup_summary_windows">ألعاب Windows</string>
+    <string name="setup_summary_hints">تلميحات الأزرار</string>
+    <string name="setup_summary_home">التطبيق الرئيسي</string>
+    <string name="setup_not_set">غير معيّن</string>
+    <string name="setup_connected">متصل</string>
+    <string name="setup_retroarch_not_linked">غير مرتبط</string>
+    <plurals name="setup_retroarch_cores_count">
+        <item quantity="zero">لا أنوية</item>
+        <item quantity="one">نواة واحدة</item>
+        <item quantity="two">نواتان</item>
+        <item quantity="few">%1$d أنوية</item>
+        <item quantity="many">%1$d نواة</item>
+        <item quantity="other">%1$d نواة</item>
+    </plurals>
+    <string name="setup_roots_more">%1$s +%2$d أخرى</string>
+    <string name="setup_finish_xmb_header">تخطيط XMB</string>
+    <string name="setup_finish_autofit">ملاءمة تخطيط XMB تلقائيًا (أبعاد PSP) — يمكن تغييره في أي وقت من الإعدادات</string>
+    <string name="setup_finish_open_lm">فتح مدير المكتبة</string>
+    <string name="setup_finish_open_lm_sub">أضِف أجهزة الألعاب وافحص مجلدات ROM التي عيّنتها للتو</string>
+    <string name="setup_finish_go_library">الانتقال إلى مكتبتك</string>
+    <string name="setup_finish_go_library_sub">الانتقال مباشرةً إلى كل الألعاب</string>
+    <string name="setup_finish_done">إنهاء</string>
+    <string name="setup_finish_done_sub">التوجّه إلى المشغّل</string>
+
+    <!-- Messages the wizard shows or sends to the notification tray -->
+    <string name="setup_status_testing">جارٍ الاختبار…</string>
+    <plurals name="setup_msg_rom_folders_created">
+        <item quantity="zero">لم يُنشأ أي مجلد لأجهزة الألعاب.</item>
+        <item quantity="one">تم إنشاء مجلد جهاز ألعاب واحد. انسخ ألعابك إلى المجلدات المطابقة.</item>
+        <item quantity="two">تم إنشاء مجلدَي أجهزة ألعاب. انسخ ألعابك إلى المجلدات المطابقة.</item>
+        <item quantity="few">تم إنشاء %1$d مجلدات لأجهزة الألعاب. انسخ ألعابك إلى المجلدات المطابقة.</item>
+        <item quantity="many">تم إنشاء %1$d مجلدًا لأجهزة الألعاب. انسخ ألعابك إلى المجلدات المطابقة.</item>
+        <item quantity="other">تم إنشاء %1$d مجلد لأجهزة الألعاب. انسخ ألعابك إلى المجلدات المطابقة.</item>
+    </plurals>
+    <plurals name="setup_msg_rom_folders_created_existing">
+        <item quantity="zero">لم يُنشأ أي مجلد لأجهزة الألعاب (%2$d موجودة مسبقًا).</item>
+        <item quantity="one">تم إنشاء مجلد جهاز ألعاب واحد (%2$d موجودة مسبقًا). انسخ ألعابك إلى المجلدات المطابقة.</item>
+        <item quantity="two">تم إنشاء مجلدَي أجهزة ألعاب (%2$d موجودة مسبقًا). انسخ ألعابك إلى المجلدات المطابقة.</item>
+        <item quantity="few">تم إنشاء %1$d مجلدات لأجهزة الألعاب (%2$d موجودة مسبقًا). انسخ ألعابك إلى المجلدات المطابقة.</item>
+        <item quantity="many">تم إنشاء %1$d مجلدًا لأجهزة الألعاب (%2$d موجودة مسبقًا). انسخ ألعابك إلى المجلدات المطابقة.</item>
+        <item quantity="other">تم إنشاء %1$d مجلد لأجهزة الألعاب (%2$d موجودة مسبقًا). انسخ ألعابك إلى المجلدات المطابقة.</item>
+    </plurals>
+    <string name="setup_msg_artwork_failed">تعذّر إعداد مكتبة صور فنية في ذلك المجلد. اختر مجلدًا قابلاً للكتابة.</string>
+    <string name="setup_msg_artwork_reconnected">تمت إعادة ربط مكتبة الصور الفنية الموجودة.</string>
+    <string name="setup_msg_artwork_created">تم إنشاء مكتبة الصور الفنية.</string>
+    <plurals name="setup_msg_artwork_games_linked">
+        <item quantity="zero">لم تُربط أي لعبة من الملفات الموجودة في المجلد.</item>
+        <item quantity="one">تم ربط لعبة واحدة من الملفات الموجودة في المجلد.</item>
+        <item quantity="two">تم ربط لعبتين من الملفات الموجودة في المجلد.</item>
+        <item quantity="few">تم ربط %1$d ألعاب من الملفات الموجودة في المجلد.</item>
+        <item quantity="many">تم ربط %1$d لعبة من الملفات الموجودة في المجلد.</item>
+        <item quantity="other">تم ربط %1$d لعبة من الملفات الموجودة في المجلد.</item>
+    </plurals>
+    <string name="setup_msg_artwork_import_hint">ضع وسائط الواجهات الأخرى داخل مجلد import/ الخاص به لجمعها هنا.</string>
+    <string name="setup_msg_import_none_yet">لا شيء لاستيراده بعد — ضع الملفات داخل مجلد import/ في مجلد الصور الفنية.</string>
+    <string name="setup_msg_import_unreadable">تعذّرت قراءة مصدر الاستيراد ذلك.</string>
+    <string name="setup_msg_import_empty">لا شيء لاستيراده — كل شيء موجود مسبقًا.</string>
+    <string name="setup_msg_import_started">جارٍ استيراد \"%1$s\" — يظهر التقدّم في الإشعارات؛ والتفاصيل في الإعدادات ▸ استيراد الصور الفنية.</string>
+    <string name="setup_msg_retroarch_linked">تم ربط RetroArch — تُعرض الآن الأنوية المثبّتة في المحاكيات.</string>
+    <string name="setup_msg_retroarch_rechecked">تمت إعادة فحص أنوية RetroArch.</string>
+    <string name="setup_msg_retroarch_unlinked">تمت إزالة ربط RetroArch — لن تُعرض أي أنوية RetroArch حتى تعيد الربط.</string>
+    <string name="setup_msg_vita_set">تم تعيين مجلد بيانات Vita3K. يمكن فحص العناوين المثبّتة من بطاقة ذاكرة PS Vita في مدير المكتبة.</string>
+    <string name="setup_msg_vita_released">تم تحرير مجلد بيانات Vita3K — لم تُمس الملفات على القرص.</string>
+    <string name="setup_msg_ps3_set">تم تعيين مجلد بيانات PS3. شغّل المطابقة التلقائية من الإعدادات ▸ الإنجازات ▸ تحديث الإنجازات لربط جوائز PS3.</string>
+    <string name="setup_msg_ps3_released">تم تحرير مجلد بيانات PS3 — لم تُمس الملفات على القرص.</string>
+    <string name="setup_msg_x360_set">تم تعيين مجلد بيانات %1$s. شغّل المطابقة التلقائية من الإعدادات ▸ الإنجازات ▸ تحديث الإنجازات لربط إنجازات Xbox 360.</string>
+    <string name="setup_msg_x360_released">تم تحرير مجلد بيانات %1$s — لم تُمس الملفات على القرص.</string>
+    <string name="setup_msg_sgdb_connected">تم ربط SteamGridDB</string>
+    <string name="setup_msg_tgdb_connected">تم ربط TheGamesDB</string>
+    <string name="setup_msg_igdb_connected">تم ربط IGDB</string>
+    <string name="setup_msg_ss_connected">تم ربط ScreenScraper</string>
+    <string name="setup_msg_ra_connected">تم ربط RetroAchievements</string>
+
+    <!-- ROM root scan report (also shown by Library Manager) -->
+    <string name="setup_rom_scan_no_root">أضِف مجلد ROM أولاً من الإعدادات ▸ المكتبة ▸ مدير المكتبة.</string>
+    <string name="setup_rom_scan_none">تم فحص %1$s عبر %2$s؛ لم يُعثر على ROM جديدة. انسخ الألعاب إلى مجلدات الأنظمة المطابقة وحاول مجددًا.</string>
+    <string name="setup_rom_scan_loaded">تم تحميل %1$s، و%2$s من %3$s.</string>
+    <string name="setup_rom_scan_systems_new">%1$s (%2$s)</string>
+    <plurals name="setup_rom_scan_folders">
+        <item quantity="zero">%1$d مجلد</item>
+        <item quantity="one">مجلد واحد</item>
+        <item quantity="two">مجلدين</item>
+        <item quantity="few">%1$d مجلدات</item>
+        <item quantity="many">%1$d مجلدًا</item>
+        <item quantity="other">%1$d مجلد</item>
+    </plurals>
+    <plurals name="setup_rom_scan_systems">
+        <item quantity="zero">%1$d نظام</item>
+        <item quantity="one">نظام واحد</item>
+        <item quantity="two">نظامين</item>
+        <item quantity="few">%1$d أنظمة</item>
+        <item quantity="many">%1$d نظامًا</item>
+        <item quantity="other">%1$d نظام</item>
+    </plurals>
+    <plurals name="setup_rom_scan_new_consoles">
+        <item quantity="zero">لا أجهزة جديدة</item>
+        <item quantity="one">جهاز جديد واحد</item>
+        <item quantity="two">جهازان جديدان</item>
+        <item quantity="few">%1$d أجهزة جديدة</item>
+        <item quantity="many">%1$d جهازًا جديدًا</item>
+        <item quantity="other">%1$d جهاز جديد</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roms">
+        <item quantity="zero">%1$d ROM</item>
+        <item quantity="one">ROM واحدة</item>
+        <item quantity="two">ROM اثنتين</item>
+        <item quantity="few">%1$d ROM</item>
+        <item quantity="many">%1$d ROM</item>
+        <item quantity="other">%1$d ROM</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roots">
+        <item quantity="zero">%1$d مجلد ROM</item>
+        <item quantity="one">مجلد ROM واحد</item>
+        <item quantity="two">مجلدَي ROM</item>
+        <item quantity="few">%1$d مجلدات ROM</item>
+        <item quantity="many">%1$d مجلد ROM</item>
+        <item quantity="other">%1$d مجلد ROM</item>
+    </plurals>
+    <plurals name="setup_rom_scan_skipped">
+        <item quantity="zero">لم يتم تخطي أي مجلد.</item>
+        <item quantity="one">تم تخطي مجلد واحد (المكتبة غير مقروءة).</item>
+        <item quantity="two">تم تخطي مجلدين (المكتبة غير مقروءة).</item>
+        <item quantity="few">تم تخطي %1$d مجلدات (المكتبة غير مقروءة).</item>
+        <item quantity="many">تم تخطي %1$d مجلدًا (المكتبة غير مقروءة).</item>
+        <item quantity="other">تم تخطي %1$d مجلد (المكتبة غير مقروءة).</item>
+    </plurals>
+
+    <!-- Media library scans started by the wizard and Settings -->
+    <string name="setup_media_add_root_first">أضِف مجلدًا جذرًا أولاً.</string>
+    <string name="setup_media_not_ready">وحدة تخزين هذا المجلد ليست جاهزة بعد. حاول مجددًا بعد قليل.</string>
+    <string name="setup_media_scan_failed_title">فشل فحص %1$s</string>
+    <string name="setup_media_scan_finished_title">انتهى فحص %1$s</string>
+    <string name="setup_media_scan_stopped_title">توقف فحص %1$s</string>
+    <string name="setup_media_scanning_title">جارٍ فحص %1$s</string>
+    <string name="setup_media_stop_note">سيُفحص المجلد مجددًا في المرة القادمة.</string>
+    <string name="setup_media_stopped">توقف قبل أن ينتهي</string>
+    <plurals name="setup_media_tracks">
+        <item quantity="zero">%1$d مقطع</item>
+        <item quantity="one">مقطع واحد</item>
+        <item quantity="two">مقطعين</item>
+        <item quantity="few">%1$d مقاطع</item>
+        <item quantity="many">%1$d مقطعًا</item>
+        <item quantity="other">%1$d مقطع</item>
+    </plurals>
+    <plurals name="setup_media_photos">
+        <item quantity="zero">%1$d صورة</item>
+        <item quantity="one">صورة واحدة</item>
+        <item quantity="two">صورتين</item>
+        <item quantity="few">%1$d صور</item>
+        <item quantity="many">%1$d صورة</item>
+        <item quantity="other">%1$d صورة</item>
+    </plurals>
+    <plurals name="setup_media_videos">
+        <item quantity="zero">%1$d فيديو</item>
+        <item quantity="one">فيديو واحد</item>
+        <item quantity="two">فيديوين</item>
+        <item quantity="few">%1$d فيديوهات</item>
+        <item quantity="many">%1$d فيديو</item>
+        <item quantity="other">%1$d فيديو</item>
+    </plurals>
+    <plurals name="setup_media_roots">
+        <item quantity="zero">%1$d مجلد جذر</item>
+        <item quantity="one">مجلد جذر واحد</item>
+        <item quantity="two">مجلدين جذر</item>
+        <item quantity="few">%1$d مجلدات جذر</item>
+        <item quantity="many">%1$d مجلدًا جذرًا</item>
+        <item quantity="other">%1$d مجلد جذر</item>
+    </plurals>
+    <string name="setup_media_found">تم العثور على %1$s عبر %2$s.</string>
+</resources>

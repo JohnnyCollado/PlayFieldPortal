@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared by several Settings screens. -->
+    <string name="sets_on">Uključeno</string>
+    <string name="sets_off">Isključeno</string>
+    <string name="sets_prompt_back">Natrag</string>
+    <string name="sets_prompt_enter">Uđi</string>
+    <string name="sets_prompt_switch">Prebaci</string>
+    <string name="sets_prompt_options">Opcije</string>
+
+    <!-- Settings ▸ Backup & Restore -->
+    <string name="sets_backup_title">Sigurnosno kopiranje i vraćanje</string>
+    <string name="sets_backup_group_backup">Sigurnosno kopiranje</string>
+    <string name="sets_backup_last_backup">Zadnja sigurnosna kopija</string>
+    <string name="sets_backup_never">Nikad</string>
+    <string name="sets_backup_folder">Mapa za sigurnosne kopije</string>
+    <string name="sets_backup_folder_saving_to">Sprema se u: %1$s  (odaberite za promjenu)</string>
+    <string name="sets_backup_folder_not_set">Nije postavljeno — odaberite da biste odredili gdje se spremaju sigurnosne kopije</string>
+    <string name="sets_backup_now">Napravi sigurnosnu kopiju sada</string>
+    <string name="sets_backup_now_help">Sprema biblioteku, postavke i povijest igranja</string>
+    <string name="sets_backup_choose_folder_first">Najprije odaberite mapu za sigurnosne kopije</string>
+    <string name="sets_backup_choose_folder_first_error">Najprije odaberite mapu za sigurnosne kopije.</string>
+    <string name="sets_backup_group_saved">Spremljene sigurnosne kopije</string>
+    <string name="sets_backup_group_included">Što je uključeno</string>
+    <string name="sets_backup_included_library">Biblioteka igara</string>
+    <string name="sets_backup_included_history">Povijest igranja</string>
+    <string name="sets_backup_included_categories">Prilagođene kategorije</string>
+    <string name="sets_backup_included_settings">Postavke i API ključevi</string>
+    <string name="sets_backup_included_profiles">Profili emulatora</string>
+    <string name="sets_backup_rom_files">ROM datoteke</string>
+    <string name="sets_backup_not_included">✗  (nije uključeno)</string>
+    <string name="sets_backup_group_restore">Vraćanje</string>
+    <string name="sets_backup_restore_from_file">Vrati iz datoteke</string>
+    <string name="sets_backup_restore_from_file_help">Potražite datoteku .pfpbackup</string>
+    <string name="sets_backup_after_restoring">Nakon vraćanja</string>
+    <string name="sets_backup_after_restoring_help">Vaše se mape vraćaju, ali Androidov pristup njima ne. Ponovno povežite svaku korijensku mapu u Pristupu korijenskim mapama njezina odjeljka (Biblioteka, Glazba, Video, Fotografije) — jedan korak po mapi; ponovnim povezivanjem korijenske mape odjednom se vraća sve u njoj.</string>
+    <string name="sets_backup_working">Obrada…</string>
+    <string name="sets_backup_error">Pogreška</string>
+    <string name="sets_backup_creating">Stvaranje sigurnosne kopije…</string>
+    <string name="sets_backup_restoring">Vraćanje sigurnosne kopije…</string>
+    <string name="sets_backup_unknown_error">Nepoznata pogreška</string>
+    <string name="sets_backup_delete_failed">Nije moguće izbrisati %1$s.</string>
+    <string name="sets_backup_menu_restore">Vrati</string>
+    <string name="sets_backup_menu_share">Dijeli</string>
+    <string name="sets_backup_menu_delete">Izbriši sigurnosnu kopiju</string>
+    <string name="sets_backup_delete_title">Izbrisati sigurnosnu kopiju?</string>
+    <string name="sets_backup_delete_message">\"%1$s\" bit će izbrisana. To se ne može poništiti.</string>
+    <string name="sets_backup_delete_confirm">Izbriši</string>
+    <string name="sets_backup_restore_title">Vratiti sigurnosnu kopiju?</string>
+    <string name="sets_backup_restore_message_named">\"%1$s\" zamijenit će vašu trenutačnu biblioteku, postavke i povijest igranja. To se ne može poništiti.</string>
+    <string name="sets_backup_restore_message_picked">Ova sigurnosna kopija zamijenit će vašu trenutačnu biblioteku, postavke i povijest igranja. To se ne može poništiti.</string>
+    <string name="sets_backup_restore_confirm">Vrati</string>
+    <string name="sets_backup_share_chooser">Dijeli sigurnosnu kopiju</string>
+
+    <!-- Settings ▸ Credits -->
+    <string name="sets_credits_group_xmb">Dizajn XMB-a — Sony</string>
+    <string name="sets_credits_xmb_inspired">Izgled i dojam ovog launchera nadahnuti su XMB-om (XrossMediaBar), sučeljem koje je Sony izradio za PlayStation Portable i PlayStation 3 — raspored s križnom trakom, valovita pozadina i model navigacije odaju mu počast.</string>
+    <string name="sets_credits_xmb_trademarks">\"XrossMediaBar\", \"XMB\", \"PSP\" i \"PlayStation\" zaštitni su znakovi tvrtke Sony Interactive Entertainment Inc. Play Field Portal neovisan je, nekomercijalan projekt obožavatelja — nije povezan sa Sonyjem niti ga Sony podržava ili sponzorira. Priložene grafike sučelja potječu iz teme zajednice \"XMB Menu for ES-DE\" (navedena u nastavku) i ostaju vlasništvo svojih autora. Nijedan Sonyjev zvuk nije priložen: svaki zvuk izbornika zasebno je naveden u nastavku.</string>
+    <string name="sets_credits_group_icon">Ikona aplikacije i logotip</string>
+    <string name="sets_credits_icon_designed">Ikonu i logotip aplikacije Play Field Portal dizajnirao je johakovi. Veliko hvala na grafici koja launcheru daje identitet.</string>
+    <string name="sets_credits_label_design">Dizajn</string>
+    <string name="sets_credits_group_artwork">Grafike sustava i konzola</string>
+    <string name="sets_credits_artwork_from">Ikone sustava, konzola i kategorija u ovom launcheru potječu iz teme \"XMB Menu for ES-DE\" — rekreacije PSP XMB-a koju je izradila zajednica.</string>
+    <string name="sets_credits_artwork_rights">Sva prava na ove grafike pripadaju njihovim autorima — Anthonyju Cacceseu, koji je nadogradio izvorni rad autora InitialDin. Ikone se ovdje koriste sa zahvalnošću i ostaju vlasništvo svojih autora.</string>
+    <string name="sets_credits_label_project">Projekt</string>
+    <string name="sets_credits_label_authors">Autori</string>
+    <string name="sets_credits_label_source">Izvor</string>
+    <string name="sets_credits_group_buttons">Ikone tipki kontrolera</string>
+    <string name="sets_credits_buttons_from">Svaka uputa s tipkom na zaslonu — tipke PlayStation, Xbox i Nintendo kontrolera, D-padovi, bočne tipke, okidači, palice i sistemske tipke — potječe iz Zackslyjevih paketa ikona tipki, korištenih pod licencom Creative Commons Attribution 3.0.</string>
+    <string name="sets_credits_buttons_unmodified">Grafike nisu mijenjane: samo su nazivi datoteka promijenjeni u nazive Android resursa, a priložene su samo ikone koje launcher prikazuje.</string>
+    <string name="sets_credits_label_author">Autor</string>
+    <string name="sets_credits_label_website">Web-mjesto</string>
+    <string name="sets_credits_label_support">Podrška</string>
+    <string name="sets_credits_label_packs">Paketi</string>
+    <string name="sets_credits_label_license">Licenca</string>
+    <string name="sets_credits_group_sounds">Zvukovi izbornika</string>
+    <string name="sets_credits_sounds_built">Priloženi zvukovi izbornika — navigacija, natrag, potvrda, pogreška, pokretanje, obavijest i zvuk pokretanja sustava — izrađeni su od besplatnog zvučnog materijala objavljenog na Pixabayu i obrađeni za launcher: skraćeni, ugođeni, ujednačeni i pretvoreni. Hvala autorima na čijem je radu skup izgrađen.</string>
+    <string name="sets_credits_sounds_license">Licenca za sadržaj Pixabaya ne zahtijeva navođenje autora; ovdje se ipak navodi sa zahvalnošću. Ako ste jedan od tih autora i želite promjenu navoda ili uklanjanje materijala, javite se.</string>
+    <string name="sets_credits_group_metadata">Grafike i metapodaci igara</string>
+    <string name="sets_credits_metadata_fetched">Omoti, 3D kutije, snimke uložaka/diskova, hero natpisi, logotipi, ikone, priručnici, video isječci i metapodaci igara preuzimaju se na vaš zahtjev od vanjskih pružatelja i ostaju vlasništvo svojih vlasnika.</string>
+    <string name="sets_credits_label_primary_scraper">Glavni izvor podataka</string>
+    <string name="sets_credits_value_screenscraper">ScreenScraper — screenscraper.fr, baza medija igara koju održava zajednica</string>
+    <string name="sets_credits_label_artwork">Grafike</string>
+    <string name="sets_credits_label_metadata">Metapodaci</string>
+    <string name="sets_credits_group_achievements">Postignuća — Shiba Coins</string>
+    <string name="sets_credits_achievements_from">Podaci o postignućima za sustav Shiba Coins dolaze od sljedećih usluga i projekata i ostaju vlasništvo svojih vlasnika.</string>
+    <string name="sets_credits_value_retroachievements">retroachievements.org — skupovi postignuća i podaci o otključavanju za retro igre koje izrađuje zajednica, putem službenog RetroAchievements Web API-ja i klijenta api-kotlin</string>
+    <string name="sets_credits_value_steam">Powered by Steam — sheme postignuća i podaci o otključavanju putem Steam Web API-ja, uz vaš vlastiti ključ. Steam i logotip Steam zaštitni su znakovi tvrtke Valve Corporation. steampowered.com</string>
+    <string name="sets_credits_goldberg_bundles">Lokalno praćenje postignuća za PC igre s emuliranim Steamom uključuje Goldberg Steam Emulator — konkretno gbe_fork, fork zajednice koji održavaju Detanup01 i suradnici, a temelji se na izvornom Goldberg Emulatoru autora Mr. Goldberg.</string>
+    <string name="sets_credits_goldberg_license">Emulator je slobodni softver licenciran pod licencom GNU Lesser General Public License v3.0 (LGPL-3.0). Play Field Portal uključuje nepromijenjenu verziju datoteke steam_api64.dll; potpuni odgovarajući izvorni kôd i cijeli tekst licence dostupni su na poveznicama u nastavku.</string>
+    <string name="sets_credits_value_gbe">gbe_fork — Detanup01 i suradnici</string>
+    <string name="sets_credits_label_original_project">Izvorni projekt</string>
+    <string name="sets_credits_value_goldberg_original">Goldberg Emulator autora Mr. Goldberg — gitlab.com/Mr_Goldberg/goldberg_emulator</string>
+    <string name="sets_credits_group_support">Podržite projekt</string>
+    <string name="sets_credits_support_thanks">Hvala svima na podršci. Ovo sam izradio kao ljubavno pismo PSP-u i nevjerojatnoj zajednici koja ga također voli, pa će ovaj projekt zauvijek ostati besplatan. Ipak, ako cijenite ono što radim i želite to pokazati na drugi način, možete me počastiti tacom. Naravno, donacije su uvijek neobavezne i nikad nisu potrebne. Volim vas sve, i sretan 15. lipnja.</string>
+    <string name="sets_credits_label_buy_taco">Počasti me tacom</string>
+    <string name="sets_credits_group_notes">Napomene</string>
+    <string name="sets_credits_notes_text">Ako ste nositelj prava i želite promjenu navoda ili uklanjanje bilo kojeg materijala, javite se i to će se brzo riješiti.</string>
+    <string name="sets_credits_title">Zasluge</string>
+    <string name="sets_credits_no_browser">Nijedna aplikacija ne može otvoriti web-poveznice. Posjetite %1$s u pregledniku.</string>
+
+    <!-- Settings ▸ Logs -->
+    <string name="sets_logs_title">Zapisnici</string>
+    <string name="sets_logs_prompt_share">Dijeli</string>
+    <string name="sets_logs_prompt_open">Otvori</string>
+    <string name="sets_logs_prompt_clear">Očisti</string>
+    <string name="sets_logs_clear_title">Očistiti sve zapisnike?</string>
+    <plurals name="sets_logs_clear_message">
+    <item quantity="one">Izbrisat će se %1$d datoteka zapisnika (%2$s). Ako namjeravate prijaviti problem, najprije podijelite zapisnik. Očišćeni zapisnik ne može se vratiti.</item>
+    <item quantity="few">Izbrisat će se sve %1$d datoteke zapisnika (%2$s). Ako namjeravate prijaviti problem, najprije podijelite zapisnik. Očišćeni zapisnik ne može se vratiti.</item>
+    <item quantity="other">Izbrisat će se svih %1$d datoteka zapisnika (%2$s). Ako namjeravate prijaviti problem, najprije podijelite zapisnik. Očišćeni zapisnik ne može se vratiti.</item>
+</plurals>
+    <string name="sets_logs_clear_confirm">Očisti</string>
+    <string name="sets_logs_group_files">Datoteke zapisnika</string>
+    <string name="sets_logs_empty">Još nema datoteka zapisnika</string>
+    <string name="sets_logs_empty_help">Novi zapisnik počinje pri svakom pokretanju aplikacije. Odaberite za ponovnu provjeru.</string>
+    <string name="sets_logs_group_manage">Upravljanje</string>
+    <string name="sets_logs_clear_row">Očisti sve zapisnike</string>
+    <string name="sets_logs_clear_row_help">Briše sve spremljene zapisnike. Ova sesija nastavlja bilježiti u novu datoteku.</string>
+    <string name="sets_logs_clear_row_none">Nema ničega za čišćenje</string>
+    <string name="sets_logs_group_about">O zapisnicima</string>
+    <string name="sets_logs_saved">Što se sprema</string>
+    <string name="sets_logs_saved_help">Čuvaju se samo najnovije sesije (najviše oko 2 MB). Zaporke, tokeni, nazivi računa i e-adrese uklanjaju se prije bilo kakvog zapisivanja.</string>
+    <string name="sets_logs_share_file">Dijeli %1$s</string>
+    <string name="sets_logs_current">TRENUTAČNO</string>
+    <string name="sets_logs_open_with">Otvori zapisnik pomoću</string>
+    <string name="sets_logs_share_subject">Zapisnik Play Field Portala — %1$s</string>
+    <string name="sets_logs_share_chooser">Dijeli datoteku zapisnika</string>
+    <string name="sets_logs_no_files">Nema datoteka</string>
+    <plurals name="sets_logs_summary">
+    <item quantity="one">%1$d datoteka · %2$s</item>
+    <item quantity="few">%1$d datoteke · %2$s</item>
+    <item quantity="other">%1$d datoteka · %2$s</item>
+</plurals>
+    <plurals name="sets_logs_deleted">
+    <item quantity="one">Izbrisana %1$d datoteka (%2$s)</item>
+    <item quantity="few">Izbrisane %1$d datoteke (%2$s)</item>
+    <item quantity="other">Izbrisano %1$d datoteka (%2$s)</item>
+</plurals>
+    <string name="sets_logs_started_today">Započeto danas, %1$s</string>
+    <string name="sets_logs_started_yesterday">Započeto jučer, %1$s</string>
+    <string name="sets_logs_started_on">Započeto %1$s, %2$s</string>
+
+    <!-- Root folders (shared by Music, Video, Photo) -->
+    <string name="sets_roots_group">Korijenske mape</string>
+    <string name="sets_scanning">Skeniranje…</string>
+    <string name="sets_rescan_help">Ažuriraj biblioteke iz svih korijenskih mapa</string>
+    <string name="sets_playback_group">Reprodukcija</string>
+    <string name="sets_root_kind_music">Glazba</string>
+    <string name="sets_root_kind_video">Video</string>
+    <string name="sets_root_kind_photo">Fotografije</string>
+    <string name="sets_root_kind_rom">ROM</string>
+    <string name="sets_root_fallback_music">Glazba</string>
+    <string name="sets_root_fallback_video">Videozapisi</string>
+    <string name="sets_root_fallback_photo">Fotografije</string>
+    <string name="sets_root_none">Nije postavljena nijedna korijenska mapa (%1$s)</string>
+    <string name="sets_root_none_help">Dodajte mapu u nastavku kako biste počeli upravljati bibliotekom</string>
+    <string name="sets_root_access_lost">Pristup izgubljen — upotrijebite Uredi za ponovno dodjeljivanje pristupa</string>
+    <string name="sets_root_consoles">Konzole: %1$s</string>
+    <string name="sets_root_kind_root">Korijenska mapa (%1$s)</string>
+    <string name="sets_label_edit_folder">Uredi mapu</string>
+    <string name="sets_label_remove_folder">Ukloni mapu</string>
+    <string name="sets_label_options_hint">Savjet za opcije</string>
+    <string name="sets_label_show_on_bar">Prikaži na traci</string>
+    <string name="sets_label_show_in_games">Prikaži u igrama</string>
+    <string name="sets_label_pin_to_top">Prikvači na vrh</string>
+    <string name="sets_root_edit_short">Uredi</string>
+    <string name="sets_root_remove_short">Ukloni</string>
+    <string name="sets_root_remove_title">Ukloniti ovu mapu?</string>
+    <string name="sets_root_remove_message">PFP će prestati koristiti \"%1$s\", a ono što je ondje pronađeno napušta biblioteku. Nijedna datoteka neće se izbrisati iz pohrane.</string>
+    <string name="sets_root_remove_confirm">Ukloni</string>
+    <string name="sets_player_builtin">Play Field Portal</string>
+    <string name="sets_player_system_default">Zadano u sustavu</string>
+
+    <!-- Settings ▸ Music -->
+    <string name="sets_music_title">Glazba</string>
+    <string name="sets_music_player_title">Zadani glazbeni player</string>
+    <string name="sets_music_player_none">Na ovom uređaju nisu pronađeni drugi glazbeni playeri.</string>
+    <string name="sets_music_add_root">Dodaj korijensku mapu glazbe</string>
+    <string name="sets_music_add_root_help">Dodijelite korijensku mapu (npr. /Music) — dodajte ih više za različite lokacije</string>
+    <string name="sets_music_rescan">Ponovno skeniraj biblioteku glazbe</string>
+    <string name="sets_music_player">Zadani glazbeni player</string>
+    <string name="sets_music_player_help">Aplikacija koja otvara glazbene zapise</string>
+
+    <!-- Settings ▸ Video -->
+    <string name="sets_video_title">Video</string>
+    <string name="sets_video_player_title">Zadani video player</string>
+    <string name="sets_video_player_none">Na ovom uređaju nisu pronađeni vanjski video playeri.</string>
+    <string name="sets_video_add_root">Dodaj korijensku mapu videozapisa</string>
+    <string name="sets_video_add_root_help">Dodijelite korijensku mapu (npr. /Movies) — dodajte ih više za različite lokacije</string>
+    <string name="sets_video_rescan">Ponovno skeniraj biblioteku videozapisa</string>
+    <string name="sets_video_player">Zadani video player</string>
+    <string name="sets_video_player_help">Play Field Portal reproducira u aplikaciji; ili odaberite aplikaciju / neka se svaki put pita.</string>
+
+    <!-- Settings ▸ Photo -->
+    <string name="sets_photo_title">Fotografije</string>
+    <string name="sets_photo_add_root">Dodaj korijensku mapu fotografija</string>
+    <string name="sets_photo_add_root_help">Dodijelite korijensku mapu (npr. /Pictures) — dodajte ih više za različite lokacije</string>
+    <string name="sets_photo_rescan">Ponovno skeniraj biblioteku fotografija</string>
+    <string name="sets_photo_group_maintenance">Održavanje</string>
+    <string name="sets_photo_clear_cache">Očisti predmemoriju minijatura</string>
+    <string name="sets_photo_clear_cache_help">Briše generirane minijature. Ponovno skeniranje ponovno ih stvara.</string>
+    <plurals name="sets_photo_cache_cleared">
+    <item quantity="one">Izbrisana %1$d minijatura iz predmemorije. Ponovno skenirajte za ponovno stvaranje.</item>
+    <item quantity="few">Izbrisane %1$d minijature iz predmemorije. Ponovno skenirajte za ponovno stvaranje.</item>
+    <item quantity="other">Izbrisano %1$d minijatura iz predmemorije. Ponovno skenirajte za ponovno stvaranje.</item>
+</plurals>
+
+    <!-- Settings ▸ Interface ▸ Notifications -->
+    <string name="sets_notif_title">Obavijesti</string>
+    <string name="sets_notif_record">Bilježi obavijesti</string>
+    <string name="sets_notif_record_help">Vodi povijest skeniranja, grafika, preuzimanja podataka i rada na postignućima. Isključeno zaustavlja nove unose; poslovi u tijeku i dalje prikazuju napredak.</string>
+    <string name="sets_notif_group_history">Povijest</string>
+    <string name="sets_notif_keep_for">Čuvaj unose</string>
+    <string name="sets_notif_keep_for_help">Stariji unosi uklanjaju se sljedeći put kad se nešto zabilježi. U svakom slučaju vrijedi ograničenje od 200 unosa, a pročitani unosi uklanjaju se prvi.</string>
+    <string name="sets_notif_never">Nikad</string>
+    <plurals name="sets_notif_days">
+    <item quantity="one">%1$d dan</item>
+    <item quantity="few">%1$d dana</item>
+    <item quantity="other">%1$d dana</item>
+</plurals>
+    <string name="sets_notif_mark_read">Označi sve kao pročitano</string>
+    <string name="sets_notif_mark_read_help">Briše broj nepročitanih na traci statusa</string>
+    <plurals name="sets_notif_unread">
+    <item quantity="one">%1$d nepročitana</item>
+    <item quantity="few">%1$d nepročitane</item>
+    <item quantity="other">%1$d nepročitanih</item>
+</plurals>
+    <string name="sets_notif_none_unread">Nema nepročitanih</string>
+    <string name="sets_notif_clear_all">Očisti sve</string>
+    <string name="sets_notif_clear_all_help">Prazni povijest. Poslovi koji su još u tijeku nisu zahvaćeni.</string>
+    <plurals name="sets_notif_stored">
+    <item quantity="one">Pohranjeno: %1$d</item>
+    <item quantity="few">Pohranjeno: %1$d</item>
+    <item quantity="other">Pohranjeno: %1$d</item>
+</plurals>
+
+    <!-- Settings ▸ System ▸ System Update -->
+    <string name="sets_update_title">Ažuriranje sustava</string>
+    <string name="sets_update_group_update">Ažuriranje</string>
+    <string name="sets_update_installed">Instalirana verzija</string>
+    <string name="sets_update_latest">Najnovija verzija</string>
+    <string name="sets_update_check">Provjeri ažuriranja</string>
+    <string name="sets_update_checking">Provjera…</string>
+    <string name="sets_update_notifications">Obavijesti o ažuriranjima</string>
+    <string name="sets_update_notifications_help">Podsjeti me u Obavijestima kad izađe nova verzija, najviše jednom dnevno</string>
+    <string name="sets_update_group_changelog">Popis promjena</string>
+    <string name="sets_update_no_releases">Još nisu učitana izdanja</string>
+    <string name="sets_update_no_releases_help">Provjerite ažuriranja kako biste učitali popis promjena</string>
+    <string name="sets_update_install">Preuzmi i instaliraj %1$s</string>
+    <string name="sets_update_cannot_install">Ova verzija ne može instalirati ažuriranja odavde</string>
+    <string name="sets_update_handed_over">Za završetak potvrdite u Androidovu instalacijskom programu</string>
+    <string name="sets_update_downloading">Preuzimanje…</string>
+    <string name="sets_update_install_help">Android traži potvrdu prije bilo kakve instalacije</string>
+    <string name="sets_update_no_summary">Nema sažetka za ovu verziju</string>
+    <string name="sets_update_full_notes">Potpune bilješke o izdanju</string>
+    <string name="sets_update_full_notes_help">Otvara GitHub u pregledniku</string>
+    <string name="sets_edition_full">Full</string>
+    <string name="sets_edition_lite">Lite</string>
+    <string name="sets_update_installed_label">%1$s · %2$s</string>
+    <string name="sets_update_unknown_version">Nepoznato</string>
+    <string name="sets_update_available">Dostupno: %1$s</string>
+    <string name="sets_update_not_checked">Još nije provjereno</string>
+    <string name="sets_update_up_to_date">Ažurno</string>
+    <string name="sets_update_never_checked">Nikad provjereno</string>
+    <string name="sets_update_checked">Provjereno %1$s</string>
+    <string name="sets_update_tag_new">Novo</string>
+    <string name="sets_update_tag_installed">Instalirano</string>
+    <string name="sets_update_msg_available">Dostupna je nova verzija.</string>
+    <string name="sets_update_msg_latest">Imate najnoviju verziju.</string>
+    <string name="sets_update_msg_offline">Nije moguće povezati se s GitHubom. Pokušajte ponovno kasnije.</string>
+    <string name="sets_update_msg_invalid">GitHub je poslao neočekivan odgovor. Pokušajte ponovno kasnije.</string>
+    <string name="sets_update_no_apk">Verzija %1$s još nema preuzimanje za %2$s. Pokušajte ponovno kasnije.</string>
+    <string name="sets_update_download_failed">Nije moguće preuzeti ažuriranje. Provjerite vezu i pokušajte ponovno.</string>
+    <string name="sets_update_not_newer">Preuzeta datoteka nije novija verzija ove aplikacije pa nije instalirana.</string>
+    <string name="sets_update_no_installer">Androidov instalacijski program nije moguće otvoriti na ovom uređaju.</string>
+    <string name="sets_update_reminder_installed">Verzija %1$s je instalirana.</string>
+    <string name="sets_update_reminder_available">Dostupna je verzija %1$s.</string>
+
+    <!-- Settings ▸ About -->
+    <string name="sets_about_label_version">Verzija</string>
+    <string name="sets_about_label_build">Međuverzija</string>
+    <string name="sets_about_label_edition">Izdanje</string>
+    <string name="sets_about_label_min_android">Min. Android</string>
+    <string name="sets_about_label_target">Ciljni</string>
+    <string name="sets_about_group_open_source">Otvoreni kôd</string>
+    <string name="sets_about_value_compose">Okvir sučelja</string>
+    <string name="sets_about_value_room">Lokalna baza podataka</string>
+    <string name="sets_about_value_hilt">Ubrizgavanje ovisnosti</string>
+    <string name="sets_about_value_ktor">Mrežni klijent</string>
+    <string name="sets_about_value_coil">Učitavanje slika</string>
+    <string name="sets_about_value_media3">Video isječci i reprodukcija</string>
+    <string name="sets_about_value_workmanager">Pozadinski zadaci</string>
+    <string name="sets_about_value_timber">Bilježenje</string>
+    <string name="sets_about_group_credits">Zasluge</string>
+    <string name="sets_about_label_art_media">Grafike i mediji</string>
+    <string name="sets_about_label_metadata">Metapodaci</string>
+    <string name="sets_about_label_inspired">Nadahnuto</string>
+    <string name="sets_about_label_see_also">Vidi također</string>
+    <string name="sets_about_value_see_also">Postavke ▸ Zasluge</string>
+    <string name="sets_about_group_legal">Pravne napomene</string>
+    <string name="sets_about_legal_independent">Play Field Portal neovisan je projekt obožavatelja, nije povezan sa Sony Interactive Entertainmentom.</string>
+    <string name="sets_about_legal_trademarks">PlayStation, PSP i XMB zaštitni su znakovi tvrtke Sony Interactive Entertainment Inc.</string>
+    <string name="sets_about_title">O aplikaciji</string>
+    <string name="sets_about_unknown">nepoznato</string>
+
+    <!-- Artwork orphans (notice shown after linking a file to a game) -->
+    <string name="sets_orphan_linked">Grafika povezana — ostat će povezana i pri budućim skeniranjima.</string>
+    <string name="sets_orphan_link_failed">Tu datoteku nije moguće povezati — pokrenite Skeniraj i ponovno poveži pa pokušajte ponovno.</string>
+
+    <!-- Settings ▸ Sound: parts resolved outside the screen -->
+    <string name="sets_audio_custom_sound">Prilagođeni zvuk</string>
+    <string name="sets_audio_import_failed">Taj zvuk nije moguće uvesti. Pokušajte s drugom datotekom.</string>
+
+    <!-- Importing a PSP theme (.ptf): the notification text. %1$s is the theme\'s name. -->
+    <string name="sets_ptf_wallpaper_only">Uvezeno \"%1$s\" — samo pozadina</string>
+    <plurals name="sets_ptf_icons">
+    <item quantity="one">Uvezeno \"%1$s\" — pozadina i %2$d ikona</item>
+    <item quantity="few">Uvezeno \"%1$s\" — pozadina i %2$d ikone</item>
+    <item quantity="other">Uvezeno \"%1$s\" — pozadina i %2$d ikona</item>
+</plurals>
+    <plurals name="sets_ptf_icons_tint">
+    <item quantity="one">Uvezeno \"%1$s\" — pozadina i %2$d ikona, podudarnost nijanse %3$d%%</item>
+    <item quantity="few">Uvezeno \"%1$s\" — pozadina i %2$d ikone, podudarnost nijanse %3$d%%</item>
+    <item quantity="other">Uvezeno \"%1$s\" — pozadina i %2$d ikona, podudarnost nijanse %3$d%%</item>
+</plurals>
+    <string name="sets_ptf_cxmb_unsupported">CXMB (.ctf) teme nisu podržane — samo službene .ptf teme</string>
+
+    <!-- Connecting services (Steam, IGDB, ScreenScraper): the status line shown after a check. -->
+    <string name="sets_svc_steam_connected">Steam povezan</string>
+    <string name="sets_svc_steam_resolved">Steam povezan — razriješeno \"%1$s\"</string>
+    <string name="sets_svc_steam_unresolved">Ključ je spremljen, ali \"%1$s\" nije moguće razriješiti. Unesite svoj SteamID64.</string>
+    <string name="sets_svc_valid">Valjano</string>
+    <string name="sets_svc_igdb_invalid">Nevaljano — provjerite Client ID i Secret</string>
+    <string name="sets_svc_screenscraper_invalid">Nevaljano — provjerite korisničko ime i zaporku</string>
+    <plurals name="sets_svc_screenscraper_valid_threads">
+    <item quantity="one">Valjano — %1$s nit</item>
+    <item quantity="few">Valjano — %1$s niti</item>
+    <item quantity="other">Valjano — %1$s niti</item>
+</plurals>
+    <plurals name="sets_svc_screenscraper_valid_both">
+    <item quantity="one">Valjano — %1$s nit, %2$s zahtjeva/dan</item>
+    <item quantity="few">Valjano — %1$s niti, %2$s zahtjeva/dan</item>
+    <item quantity="other">Valjano — %1$s niti, %2$s zahtjeva/dan</item>
+</plurals>
+    <string name="sets_svc_screenscraper_valid_requests">Valjano, %1$s zahtjeva/dan</string>
+
+    <!-- Settings ▸ Controller -->
+    <string name="sets_controller_title">Kontroler</string>
+    <string name="sets_controller_group_ab">Potvrda i natrag</string>
+    <string name="sets_controller_ab_help">Određuje koja tipka potvrđuje, a koja vraća natrag. Primjenjuje se globalno na sve izbornike launchera.</string>
+    <string name="sets_controller_group_xy">Opcije i poredak</string>
+    <string name="sets_controller_xy_help">Zamjenjuje radnje X i Y samo u sučelju launchera. Ne utječe na kontrole emulatora.</string>
+    <string name="sets_controller_group_type">Vrsta kontrolera</string>
+    <string name="sets_controller_type_help">Mijenja ikone i oznake tipki prikazane u uputama za pomoć.</string>
+    <string name="sets_controller_type">Vrsta</string>
+    <string name="sets_controller_type_sub">Utječe na traku pomoći pri dnu launchera</string>
+    <string name="sets_controller_group_scroll">Brzina pomicanja</string>
+    <string name="sets_controller_scroll_help">Koliko se brzo popisi pomiču dok se drži smjer. Dulje držanje ubrzava; puni nagib palice pomiče najvećom brzinom.</string>
+    <string name="sets_controller_scroll_sub">Primjenjuje se na kretanje držanjem D-pada i palice</string>
+    <string name="sets_controller_group_navigation">Navigacija</string>
+    <string name="sets_controller_left_backs_out">Lijevo za izlaz</string>
+    <string name="sets_controller_left_backs_out_help">Pritisnite LIJEVO za izlaz iz mape ili izbornika — samo ondje gdje LIJEVO nema drugu funkciju</string>
+    <string name="sets_controller_group_keyboard">Tipkovnica</string>
+    <string name="sets_controller_virtual_keyboard">Virtualna tipkovnica</string>
+    <string name="sets_controller_virtual_keyboard_help">Tipkajte kontrolerom na PFP-ovoj tipkovnici. Kad je isključeno ili kad koristite dodir, otvara se tipkovnica sustava</string>
+    <string name="sets_controller_group_reset">Vraćanje</string>
+    <string name="sets_controller_reset">Vrati sve postavke kontrolera</string>
+    <string name="sets_controller_reset_help">Vraća zadane postavke zamjene i vrste</string>
+</resources>

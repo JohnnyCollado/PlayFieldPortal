@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blur_title">Bakgrundsoskärpa</string>
+    <string name="blur_sublabel">Hur mycket skärmen görs oskarp bakom dialogrutor och alternativmenyn. Dra till noll för att stänga av.</string>
+    <string name="blur_unavailable">Kräver Android 12 eller senare.</string>
+</resources>

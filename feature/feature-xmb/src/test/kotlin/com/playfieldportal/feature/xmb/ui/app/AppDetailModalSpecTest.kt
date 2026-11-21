@@ -8,11 +8,17 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 
 /**
  * Which shared modal App Detail shows for a given UI state. The display name may be cleared (back
  * to the app's own label) while a collection name never can.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class AppDetailModalSpecTest {
 
     private val events = mutableListOf<String>()
@@ -28,6 +34,7 @@ class AppDetailModalSpecTest {
         onCancelCreateCollection = { events += "cancel-collection" },
         onConfirmReset = { events += "reset" },
         onCancelReset = { events += "cancel-reset" },
+        res = RuntimeEnvironment.getApplication().resources,
     )
 
     @Test

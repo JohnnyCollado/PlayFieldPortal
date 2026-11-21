@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared -->
+    <string name="art_error_unexpected">Onverwachte fout</string>
+    <string name="art_no_folder_linked">Geen artworkmap gekoppeld</string>
+    <string name="art_paused_message">Artwork gepauzeerd. Koppel je artworkmap opnieuw om nieuwe art op te slaan.</string>
+    <string name="art_error_game_not_found">Spel niet gevonden</string>
+    <string name="art_error_not_found_any_source">Bij geen enkele bron gevonden</string>
+    <string name="art_found_via">Gevonden via %1$s</string>
+    <string name="art_results_label_updated">Bijgewerkt</string>
+    <string name="art_results_label_imported">Geïmporteerd</string>
+
+    <!-- Live scrape progress -->
+    <string name="art_progress_hashing">ROM-hash berekenen…</string>
+    <string name="art_progress_searching">Zoeken…</string>
+    <string name="art_asset_hero">Hero</string>
+    <string name="art_asset_background">Achtergrond</string>
+    <string name="art_asset_logo">Logo</string>
+    <string name="art_asset_box_art">Hoesafbeelding</string>
+    <string name="art_asset_physical_media">Fysieke media</string>
+    <string name="art_asset_3d_box">3D-hoes</string>
+    <string name="art_asset_screenshot">Screenshot</string>
+    <string name="art_asset_manual">Handleiding</string>
+    <string name="art_asset_video">Video</string>
+    <string name="art_asset_icon_video">Pictogramvideo</string>
+    <string name="art_asset_icon_video_converting">Pictogramvideo (converteren)</string>
+    <string name="art_source_storefronts">Winkels</string>
+
+    <!-- Metadata fields -->
+    <string name="art_field_title">Titel</string>
+    <string name="art_field_description">Beschrijving</string>
+    <string name="art_field_developer">Ontwikkelaar</string>
+    <string name="art_field_publisher">Uitgever</string>
+    <string name="art_field_year">Jaar</string>
+    <string name="art_field_release_date">Releasedatum</string>
+    <string name="art_field_genre">Genre</string>
+    <string name="art_field_age_rating">Leeftijdsclassificatie</string>
+    <string name="art_field_franchise">Franchise</string>
+    <string name="art_field_rating">Beoordeling</string>
+
+    <!-- Ways to apply scraped metadata -->
+    <string name="art_policy_replace_all">Alles vervangen</string>
+    <string name="art_policy_fill_missing">Alleen ontbrekende aanvullen</string>
+    <string name="art_policy_choose_fields">Velden kiezen</string>
+    <string name="art_policy_keep_current">Huidige behouden</string>
+
+    <!-- Scrape (background task) -->
+    <string name="art_scrape_label_all">Alle spellen opnieuw scrapen</string>
+    <string name="art_scrape_label_missing">Ontbrekende artwork scrapen</string>
+    <string name="art_scrape_stop_note">Al opgehaalde artwork blijft behouden.</string>
+    <string name="art_scrape_paused_all_title">Opnieuw scrapen van artwork gepauzeerd</string>
+    <string name="art_scrape_paused_title">Artwork scrapen gepauzeerd</string>
+    <string name="art_scrape_finished_all_title">Opnieuw scrapen van artwork voltooid</string>
+    <string name="art_scrape_finished_title">Artwork scrapen voltooid</string>
+    <string name="art_scrape_stopped_title">Artwork scrapen gestopt</string>
+    <string name="art_scrape_failed_title">Artwork scrapen mislukt</string>
+    <string name="art_scrape_result">%1$d gelukt, %2$d mislukt van %3$d</string>
+    <plurals name="art_scrape_stopped_after">
+        <item quantity="one">Gestopt na %1$d spel — tot nu toe opgehaalde artwork blijft behouden</item>
+        <item quantity="other">Gestopt na %1$d spellen — tot nu toe opgehaalde artwork blijft behouden</item>
+    </plurals>
+
+    <!-- Relink (background task) -->
+    <string name="art_relink_label">Artwork opnieuw koppelen</string>
+    <plurals name="art_relink_label_consoles">
+        <item quantity="one">Artwork opnieuw koppelen voor %1$d console</item>
+        <item quantity="other">Artwork opnieuw koppelen voor %1$d consoles</item>
+    </plurals>
+    <string name="art_relink_stop_note">Al gekoppelde artwork blijft gekoppeld.</string>
+    <string name="art_relink_finished_title">Artwork opnieuw koppelen voltooid</string>
+    <string name="art_relink_stopped_title">Artwork opnieuw koppelen gestopt</string>
+    <string name="art_relink_stopped_note">Tot nu toe gekoppelde artwork blijft behouden</string>
+    <string name="art_relink_failed_title">Artwork opnieuw koppelen mislukt</string>
+    <plurals name="art_relink_games_linked">
+        <item quantity="one">%1$d spel gekoppeld</item>
+        <item quantity="other">%1$d spellen gekoppeld</item>
+    </plurals>
+    <plurals name="art_relink_files">
+        <item quantity="one">%1$d bestand</item>
+        <item quantity="other">%1$d bestanden</item>
+    </plurals>
+    <string name="art_relink_result">%1$s van %2$s</string>
+    <string name="art_relink_result_unmatched">%1$s · %2$d niet gekoppeld</string>
+
+    <!-- Export to ES-DE (background task) -->
+    <string name="art_export_label">Artwork exporteren voor ES-DE</string>
+    <string name="art_export_stop_note">Al geëxporteerde bestanden blijven staan.</string>
+    <string name="art_export_error_no_destination">Geen doelmap</string>
+    <string name="art_export_error_access_lost">Toegang tot de artworkmap is verloren</string>
+    <string name="art_export_dest_not_created">De doelmap kon niet worden aangemaakt.</string>
+    <plurals name="art_export_files_badge">
+        <item quantity="one">%1$d bestand</item>
+        <item quantity="other">%1$d bestanden</item>
+    </plurals>
+    <string name="art_export_failed_title">Artwork exporteren mislukt</string>
+    <string name="art_export_stopped_title">Artwork exporteren gestopt</string>
+    <string name="art_export_finished_title">Artwork exporteren voltooid</string>
+    <plurals name="art_export_stopped_note">
+        <item quantity="one">%1$d bestand al geëxporteerd</item>
+        <item quantity="other">%1$d bestanden al geëxporteerd</item>
+    </plurals>
+    <string name="art_export_result">%1$d gekopieerd, %2$d al aanwezig, %3$d mislukt</string>
+
+    <!-- Import (background task and its notification) -->
+    <string name="art_import_plan_not_found">Importplan niet gevonden</string>
+    <string name="art_import_plan_unreadable">Importplan onleesbaar</string>
+    <string name="art_import_label">Artwork importeren — %1$s</string>
+    <string name="art_import_stop_note">Al geïmporteerde artwork blijft behouden.</string>
+    <string name="art_import_failed_title">Artwork importeren mislukt</string>
+    <string name="art_import_cancelled">Artwork importeren geannuleerd</string>
+    <string name="art_import_done">Artwork geïmporteerd</string>
+    <plurals name="art_import_needs_review">
+        <item quantity="one">Artwork geïmporteerd, %1$d item moet worden nagekeken</item>
+        <item quantity="other">Artwork geïmporteerd, %1$d items moeten worden nagekeken</item>
+    </plurals>
+    <string name="art_import_headline">%1$s: %2$s</string>
+    <string name="art_import_counts">%1$d geïmporteerd, %2$d overgeslagen, %3$d mislukt, %4$d dubbelzinnig, %5$d niet gekoppeld.</string>
+    <string name="art_import_results_summary">%1$d geïmporteerd, %2$d overgeslagen</string>
+
+    <!-- Move artwork into the linked folder (background task) -->
+    <string name="art_move_label">Artwork naar je map verplaatsen</string>
+    <string name="art_move_failed_title">Artwork verplaatsen mislukt</string>
+    <string name="art_move_stopped_title">Artwork verplaatsen gestopt</string>
+    <string name="art_move_finished_title">Artwork verplaatsen voltooid</string>
+    <plurals name="art_move_stopped_note">
+        <item quantity="one">%1$d bestand al verplaatst</item>
+        <item quantity="other">%1$d bestanden al verplaatst</item>
+    </plurals>
+    <string name="art_move_result">%1$d verplaatst, %2$d al aanwezig, %3$d mislukt</string>
+</resources>

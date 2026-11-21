@@ -2,6 +2,7 @@ package com.playfieldportal.feature.launcher
 
 import android.content.ComponentName
 import android.content.pm.PackageManager
+import com.playfieldportal.core.domain.text.UiText
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 
@@ -51,8 +52,8 @@ data class UnknownLauncher(
     val packageName: String,
     val label: String,
     val signerSha256: String?,
-    /** Why it is listed, e.g. "could be GameHub or BannerHub". */
-    val reason: String,
+    /** Why it is listed, e.g. "could be GameHub or BannerHub". Resolve it where it is drawn. */
+    val reasonText: UiText,
     /** What the user already said it is; null while undecided. */
     val choice: LauncherChoice?,
 )
@@ -259,13 +260,13 @@ object PcLauncherCatalog {
      * Never listed: a confidently identified launcher, or a genuine app whose package a variant
      * spoofs (catalog packages are only ever asked about once verified).
      */
-    internal fun unknownReason(packageName: String, label: String?, identity: LauncherIdentity): String? = when {
+    internal fun unknownReason(packageName: String, label: String?, identity: LauncherIdentity): UiText? = when {
         identity == LauncherIdentity.Ambiguous ->
-            if (packageName == GAMEHUB_PACKAGE) "could be GameHub or BannerHub" else "could be GameHub Lite or BannerHub"
+            UiText.res(if (packageName == GAMEHUB_PACKAGE) R.string.launch_unknown_gamehub_or_bannerhub else R.string.launch_unknown_gamehublite_or_bannerhub)
         forPackage(packageName) != null -> null
         WINDOWS_EMULATOR_WORDS.any { word ->
             packageName.contains(word, ignoreCase = true) || label?.contains(word, ignoreCase = true) == true
-        } -> "not in PFP's list"
+        } -> UiText.res(R.string.launch_unknown_not_in_list)
         else -> null
     }
 

@@ -230,13 +230,14 @@ object SampleContent {
 
     // ── Settings (settingsSectionItems) ──────────────────────────────────────
 
-    private fun section(title: String, subtitle: String, vararg rows: Pair<String, String>) =
-        branch("item_settings", title, subtitle, *rows.map { (t, s) -> leaf("item_settings", t, s) }.toTypedArray())
+    // The section row has its own slot (item_settings_section_<id>); the rows inside keep the wrench.
+    private fun section(id: String, title: String, subtitle: String, vararg rows: Pair<String, String>) =
+        branch("item_settings_section_$id", title, subtitle, *rows.map { (t, s) -> leaf("item_settings", t, s) }.toTypedArray())
 
     private val settings = listOf(
         leaf("item_settings", "Android Settings", "Opens device settings"),
         section(
-            "Library", "Sources, cards, artwork & hidden games",
+            "library", "Library", "Sources, cards, artwork & hidden games",
             "Library Manager" to "ROM sources & scanning",
             "Windows Games" to "PC games, launchers & imports",
             "Custom Memory Cards" to "Create & manage custom memory cards",
@@ -244,7 +245,7 @@ object SampleContent {
             "Hidden Games" to "Review apps & games you've hidden",
         ),
         section(
-            "Emulators", "Launch profiles & RetroArch cores",
+            "emulators", "Emulators", "Launch profiles & RetroArch cores",
             "Installed" to "Detected emulator profiles",
             "Custom Emulators" to "Custom profiles & Add Custom Emulator",
             "RetroArch" to "Core detection & linking",
@@ -252,7 +253,7 @@ object SampleContent {
             "Emulator knowledge" to "Updates, your own files & reset to built-in",
         ),
         section(
-            "Interface", "Categories, themes, display & controller",
+            "interface", "Interface", "Categories, themes, display & controller",
             "Display" to "Wave, wallpaper, boot & icons",
             "Sound" to "Menu sounds, levels & ambience",
             "Notifications" to "Panel history & retention",
@@ -261,20 +262,20 @@ object SampleContent {
             "Controller" to "Button mapping",
         ),
         section(
-            "Achievements", "RetroAchievements & Steam",
+            "achievements", "Achievements", "RetroAchievements & Steam",
             "Player Card" to "Levels, ranks & sync status",
             "Provider Credentials" to "RetroAchievements & Steam accounts",
             "Local Windows" to "Track local Windows (Steam-emu) games",
             "Update Achievements" to "Sync & auto-match tracked games",
         ),
         section(
-            "Media", "Music, video & photo settings",
+            "media", "Media", "Music, video & photo settings",
             "Music" to "Music folders & default player",
             "Video" to "Video libraries, scanning & playback",
             "Photo" to "Photo libraries & scanning",
         ),
         section(
-            "System", "About, logs, setup & credits",
+            "system", "System", "About, logs, setup & credits",
             "About" to "Play Field Portal",
             "Logs" to "Open or share session logs",
             "Setup Wizard" to "Guided folder & account setup",

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Slice H2: feature-achievements (achievement updates, Local Steam folders, Vita scan) -->
+<resources>
+    <!-- Achievement update notifications -->
+    <string name="ach_upd_running">Đang cập nhật thành tựu đã cài</string>
+    <string name="ach_upd_running_stop_note">Các thành tựu đã cập nhật sẽ được giữ lại.</string>
+    <string name="ach_upd_progress">Đang kiểm tra %1$d / %2$d trò chơi</string>
+    <string name="ach_upd_stopped">Đã dừng cập nhật thành tựu</string>
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="other">Đã kiểm tra %d trò chơi; giữ lại tiến trình đã lưu</item>
+    </plurals>
+    <string name="ach_upd_some_failed">Một số thành tựu không cập nhật được</string>
+    <plurals name="ach_upd_failed_message">
+        <item quantity="other">%1$d / %2$d trò chơi cần thử lại</item>
+    </plurals>
+    <string name="ach_upd_results_done">Đã cập nhật</string>
+    <string name="ach_upd_updated">Đã cập nhật thành tựu</string>
+    <plurals name="ach_upd_updated_message">
+        <item quantity="other">Đã cập nhật %1$d trò chơi · %2$d không đổi</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">Thành tựu đã được cập nhật mới nhất</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="other">Đã kiểm tra %d trò chơi đã cài</item>
+    </plurals>
+    <string name="ach_upd_paused">Đã tạm dừng cập nhật thành tựu</string>
+    <string name="ach_upd_fact_service">Dịch vụ</string>
+    <string name="ach_upd_pause_offline">Hãy kết nối Internet</string>
+    <string name="ach_upd_pause_reconnect">Kết nối lại %1$s</string>
+    <string name="ach_upd_pause_steam_private">Chi tiết trò chơi Steam không khả dụng</string>
+
+    <!-- Auto-match notifications -->
+    <string name="ach_match_running">Đang tự động khớp trò chơi</string>
+    <string name="ach_match_running_stop_note">Các trò chơi đã khớp vẫn được liên kết.</string>
+    <string name="ach_match_stopped_note">Các trò chơi đã khớp vẫn được liên kết</string>
+    <string name="ach_match_stopped">Đã dừng tự động khớp</string>
+    <string name="ach_match_recognized">Đã nhận diện trò chơi</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="other">Đã khớp %d trò chơi đã cài. Đang cập nhật thành tựu của chúng.</item>
+    </plurals>
+
+    <!-- Clearing achievement records -->
+    <string name="ach_clear_done">Đã xóa dữ liệu thành tựu</string>
+    <string name="ach_clear_done_message">Cần đồng bộ lại các trò chơi đã cài để hiển thị lại thành tựu</string>
+    <string name="ach_clear_failed">Không thể xóa thành tựu</string>
+    <string name="ach_clear_failed_message">Chưa có gì bị xóa. Hãy thử lại từ Cài đặt ▸ Thành tựu</string>
+
+    <!-- Local Steam: why a game's Steam identity could not be checked -->
+    <string name="ach_ls_unavail_store">không thể truy vấn cửa hàng</string>
+    <string name="ach_ls_unavail_steam">Steam hiện không khả dụng</string>
+    <string name="ach_ls_steam_unreachable">Không thể kết nối tới Steam</string>
+    <string name="ach_ls_steam_rate_limited">Steam đang giới hạn tần suất yêu cầu</string>
+    <string name="ach_ls_steam_error">Steam trả về lỗi</string>
+    <string name="ach_ls_steam_needs_key">Steam cần Web API key của bạn</string>
+
+    <!-- Local Steam: linking a picked game folder -->
+    <string name="ach_link_no_match">Steam không có trò chơi nào khớp với \"%1$s\". Hãy đổi tên thư mục theo tên Steam của trò chơi, hoặc liên kết trước từ Chi tiết trò chơi ▸ Khớp trò chơi.</string>
+    <string name="ach_link_unavailable">%1$s, nên không thể xác định app id của thư mục này. Chưa có gì thay đổi — hãy thử lại khi có mạng.</string>
+    <string name="ach_link_marker_failed">Không thể tạo steam_appid.txt trong thư mục đó — có thể PFP chỉ có quyền đọc.</string>
+    <string name="ach_link_not_recorded">Không thể ghi nhận kết quả khớp đã chọn.</string>
+    <string name="ach_link_installer_off">Hãy bật Cài Goldberg &amp; chuyển đổi trò chơi trong cài đặt Thành tựu trước khi PFP ghi vào thư mục trò chơi.</string>
+    <string name="ach_link_no_app_id">Thư mục đó không còn khai báo app id — hãy chọn lại.</string>
+    <string name="ach_link_need_key">Hãy thêm Steam Web API key trong Cài đặt ▸ Thành tựu ▸ Thông tin xác thực nhà cung cấp — danh sách thành tựu được lấy từ đó.</string>
+    <string name="ach_link_no_achievements">Steam không có thành tựu nào cho app id %1$s, nên không có gì để theo dõi.</string>
+    <string name="ach_link_kit_failed">Không thể ghi bộ thành tựu: %1$s</string>
+    <string name="ach_link_read_back_failed">Không thể đọc lại thư mục đó. Nếu nó nằm trên bộ nhớ rời, hãy gắn lại rồi chọn lại.</string>
+    <string name="ach_link_not_steam_build">Không có tệp thư viện Steam (steam_api64.dll) nào trong thư mục đó, nên đây không phải bản Steam và trình giả lập không có gì để theo dõi. Hãy chọn thư mục chứa tệp .exe của trò chơi.</string>
+
+    <!-- Local Steam: convert picker rows -->
+    <string name="ach_pick_checking">Đang kiểm tra Steam…</string>
+    <plurals name="ach_pick_coins">
+        <item quantity="other">%1$d xu  ·  appid %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">Không có danh sách trên Steam  ·  appid %1$s</string>
+    <string name="ach_pick_needs_key">Cần Steam Web API key của bạn  ·  appid %1$s</string>
+    <string name="ach_pick_no_answer">Steam không phản hồi  ·  appid %1$s</string>
+
+    <!-- Local Steam: batch match summary -->
+    <string name="ach_batch_already_running">Một lượt khớp hàng loạt đang chạy.</string>
+    <string name="ach_batch_no_folders">Không có thư mục trò chơi nào trong đó. Hãy chọn thư mục CHỨA các thư mục trò chơi, không phải thư mục của một trò chơi.</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="other">Tìm thấy %d thư mục nhưng không có thư mục nào là bản Steam — không có thư viện steam_api, nên trình giả lập không có gì để theo dõi.</item>
+    </plurals>
+    <string name="ach_batch_linked">%1$d liên kết với trò chơi trong thư viện</string>
+    <string name="ach_batch_tracked">%1$d theo dõi riêng</string>
+    <string name="ach_batch_converting">%1$d đang chờ chuyển đổi</string>
+    <plurals name="ach_batch_matched">
+        <item quantity="other">Đã khớp %1$d / %2$d thư mục.</item>
+    </plurals>
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="other">Đã khớp %1$d / %2$d thư mục: %3$s.</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="other">%1$d mục không thể nhận diện từ tên — hãy mở trang Shiba Coins của từng trò chơi và dùng Tự động khớp để chọn thư mục.</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="other">%1$d mục không có trong thư viện — hãy thêm vào thẻ Windows trước, rồi khớp lại.</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="other">%1$d mục không phải bản Steam.</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="other">%1$d mục thất bại — xem nhật ký.</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">Không thể mở thư mục đó.</string>
+    <string name="ach_batch_fail_read_back">%1$s: không thể đọc lại sau khi nhận diện.</string>
+    <string name="ach_batch_fail_reason">%1$s: %2$s.</string>
+    <string name="ach_batch_fail_marker">%1$s: không thể tạo steam_appid.txt.</string>
+
+    <!-- Vita3K library scan results -->
+    <string name="ach_vita_set_folder">Hãy đặt thư mục dữ liệu Vita3K (ux0) trước.</string>
+    <string name="ach_vita_link_invalid">Liên kết thư mục Vita3K không hợp lệ — hãy cấp quyền lại.</string>
+    <string name="ach_vita_no_ux0">Không tìm thấy ux0/app trong thư mục đã cấp quyền — hãy chọn thư mục ux0 của Vita3K (hoặc thư mục chứa nó).</string>
+    <string name="ach_vita_no_app">Không có thư mục app/ trong ux0 — hãy kiểm tra thư mục đã cấp quyền.</string>
+    <string name="ach_vita_none_installed">Không tìm thấy trò chơi Vita nào đã cài trong ux0/app. Hãy cài trò chơi trong Vita3K trước.</string>
+    <plurals name="ach_vita_no_new">
+        <item quantity="other">Không có trò chơi Vita mới — đã có %d trò chơi trong thư viện.</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="other">Đã nhập %d trò chơi Vita.</item>
+    </plurals>
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="other">Đã nhập %1$d trò chơi Vita, cập nhật %2$d.</item>
+    </plurals>
+</resources>

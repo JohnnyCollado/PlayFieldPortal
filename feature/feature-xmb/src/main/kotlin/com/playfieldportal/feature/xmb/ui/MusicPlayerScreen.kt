@@ -72,6 +72,8 @@ import com.playfieldportal.feature.xmb.ui.visualizer.heroBudget
 import com.playfieldportal.feature.xmb.ui.visualizer.rememberVisualizerHost
 import com.playfieldportal.feature.xmb.ui.visualizer.rememberVisualizerSprite
 import com.playfieldportal.feature.xmb.ui.visualizer.swipeDownToDismissStrip
+import androidx.compose.ui.res.stringResource
+import com.playfieldportal.feature.xmb.R
 
 // Composable getters rather than constants, so the resolved palette reaches every label here
 // without an edit at the call sites — the same treatment as the browser and the picker.
@@ -275,7 +277,7 @@ private fun QueueBanner(
     ) {
         if (showTouchControls) {
             XmbHeaderPill(
-                label = "Back",
+                label = stringResource(R.string.xmbu_common_back),
                 leadingGlyph = "◀",
                 onClick = onBack,
                 modifier = Modifier.align(Alignment.CenterStart),
@@ -291,7 +293,7 @@ private fun QueueBanner(
             Text("♫", color = PrimaryText, fontSize = 15.sp)
             Spacer(Modifier.width(8.dp))
             Text(
-                state.queueName ?: "Now Playing",
+                state.queueName ?: stringResource(R.string.xmbu_music_now_playing),
                 color = PrimaryText, fontSize = 14.sp, fontWeight = FontWeight.Medium,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
@@ -353,7 +355,7 @@ private fun TrackMetadata(track: MusicTrack?, rule: Color) {
             }
             Spacer(Modifier.width(16.dp))
             Text(
-                text = track?.displayTitle ?: "Nothing playing",
+                text = track?.displayTitle ?: stringResource(R.string.xmbu_music_nothing_playing),
                 color = PrimaryText, fontSize = 26.sp, fontWeight = FontWeight.SemiBold,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
@@ -425,16 +427,16 @@ private fun TransportCluster(
         // Dimmed rather than dropped at the ends of the queue, so the row keeps its shape and play
         // never shifts out from under the thumb mid-song.
         TransportButton(
-            Icons.Filled.SkipPrevious, "Previous track", state.queueSize > 1, onPrev,
+            Icons.Filled.SkipPrevious, stringResource(R.string.xmbu_media_previous_track), state.queueSize > 1, onPrev,
             size = 44.dp, iconSize = 24.dp, action = TransportAction.PREVIOUS,
         )
         TransportButton(
-            Icons.Filled.Replay10, "Back 10 seconds", state.isPrepared, onSeekBack,
+            Icons.Filled.Replay10, stringResource(R.string.xmbu_media_back_10), state.isPrepared, onSeekBack,
             size = 48.dp, iconSize = 28.dp, action = TransportAction.BACK_10,
         )
         TransportButton(
             icon = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-            contentDescription = if (state.isPlaying) "Pause" else "Play",
+            contentDescription = stringResource(if (state.isPlaying) R.string.xmbu_common_pause else R.string.xmbu_common_play),
             enabled = state.isPrepared,
             onClick = onPlayPause,
             size = 60.dp,
@@ -442,11 +444,11 @@ private fun TransportCluster(
             action = playPauseAction(state.isPlaying),
         )
         TransportButton(
-            Icons.Filled.Forward10, "Forward 10 seconds", state.isPrepared, onSeekForward,
+            Icons.Filled.Forward10, stringResource(R.string.xmbu_media_forward_10), state.isPrepared, onSeekForward,
             size = 48.dp, iconSize = 28.dp, action = TransportAction.FORWARD_10,
         )
         TransportButton(
-            Icons.Filled.SkipNext, "Next track", state.queueSize > 1, onNext,
+            Icons.Filled.SkipNext, stringResource(R.string.xmbu_media_next_track), state.queueSize > 1, onNext,
             size = 44.dp, iconSize = 24.dp, action = TransportAction.NEXT,
         )
     }
@@ -512,7 +514,7 @@ private fun BottomBand(
                     ThemedGlyph(
                         slotKey = transportSlotKey(playPauseAction(state.isPlaying)),
                         defaultVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = if (state.isPlaying) "Playing" else "Paused",
+                        contentDescription = stringResource(if (state.isPlaying) R.string.xmbu_media_playing else R.string.xmbu_media_paused),
                         tint = PrimaryText,
                         modifier = Modifier.align(Alignment.BottomStart).size(52.dp),
                     )
@@ -556,7 +558,7 @@ private fun BottomBand(
         // Its own line. This is the row that used to sit on top of the scrub bar.
         if (showTouchControls) {
             XmbHeaderPill(
-                label = "Visualizer",
+                label = stringResource(R.string.xmbu_music_visualizer),
                 leadingGlyph = "▦",
                 onClick = onStripAffordanceTapped,
             )
@@ -565,22 +567,22 @@ private fun BottomBand(
                 items = listOfNotNull(
                     ControllerPromptItem(
                         GamepadAction.SELECT,
-                        if (state.isPlaying) "Pause" else "Play",
+                        stringResource(if (state.isPlaying) R.string.xmbu_common_pause else R.string.xmbu_common_play),
                     ),
                     ControllerPromptItem(
                         listOf(GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT),
-                        "Seek",
+                        stringResource(R.string.xmbu_common_seek),
                     ),
                     // Same shoulder pair the video player uses for its library, and named only
                     // when there is a queue to move through.
                     if (state.queueSize > 1) {
                         ControllerPromptItem(
                             listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY),
-                            "Prev / Next",
+                            stringResource(R.string.xmbu_common_prev_next),
                         )
                     } else null,
-                    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
-                    ControllerPromptItem(GamepadAction.BACK, "Back"),
+                    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, stringResource(R.string.xmbu_common_options)),
+                    ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.xmbu_common_back)),
                 ),
                 labelColor = SecondaryText.dimmed(0.7f),
                 labelStyle = TextStyle(fontSize = 12.sp),

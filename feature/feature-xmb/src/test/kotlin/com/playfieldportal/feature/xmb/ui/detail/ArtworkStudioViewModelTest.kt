@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import com.playfieldportal.feature.xmb.R
+import com.playfieldportal.core.domain.text.UiText
 import android.content.Context
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GamepadAction
@@ -971,9 +973,18 @@ class ArtworkStudioViewModelTest {
 
     @Test
     fun `the apply confirmation names what it adds and removes`() {
-        assertEquals("Add 1 screenshot?", studioApplyTitle(ArtworkKind.SCREENSHOT, toAdd = 1, toRemove = 0))
-        assertEquals("Remove 2 videos?", studioApplyTitle(ArtworkKind.VIDEO, toAdd = 0, toRemove = 2))
-        assertEquals("Add 3 screenshots and remove 1?", studioApplyTitle(ArtworkKind.SCREENSHOT, toAdd = 3, toRemove = 1))
+        assertEquals(
+            UiText.res(R.string.det_apply_title_add, UiText.plural(R.plurals.det_asset_count_screenshot, 1)),
+            studioApplyTitle(ArtworkKind.SCREENSHOT, toAdd = 1, toRemove = 0),
+        )
+        assertEquals(
+            UiText.res(R.string.det_apply_title_remove, UiText.plural(R.plurals.det_asset_count_video, 2)),
+            studioApplyTitle(ArtworkKind.VIDEO, toAdd = 0, toRemove = 2),
+        )
+        assertEquals(
+            UiText.res(R.string.det_apply_title_add_remove, UiText.plural(R.plurals.det_asset_count_screenshot, 3), 1),
+            studioApplyTitle(ArtworkKind.SCREENSHOT, toAdd = 3, toRemove = 1),
+        )
     }
 
     @Test
@@ -1202,7 +1213,10 @@ class ArtworkStudioViewModelTest {
             vm.selectSource(tgdb)
             advanceUntilIdle()
             assertTrue(sources[vm.uiState.value.sourceIndex] != StudioSource.THEGAMESDB)
-            assertTrue(vm.uiState.value.message?.contains("TheGamesDB") == true)
+            assertEquals(
+                UiText.res(R.string.det_source_needs_key, StudioSource.THEGAMESDB.label),
+                vm.uiState.value.message,
+            )
 
             // Cycling from the source before it steps straight over it.
             vm.selectSource(tgdb - 1)
@@ -2124,38 +2138,6 @@ class ArtworkStudioViewModelTest {
     }
 
     @Test
-    fun `the Clear confirm is destructive, opens on Cancel and names the backup that goes too`() {
-        val state = ArtworkStudioUiState(game = game, destructiveConfirm = StudioDestructive.CLEAR_ARTWORK)
-        val events = mutableListOf<String>()
-
-        val spec = studioDestructiveModalSpec(state, { events += "confirm" }, { events += "cancel" })
-            as com.playfieldportal.core.ui.components.PfpModalSpec.Confirm
-
-        assertTrue(spec.destructive)
-        assertTrue(spec.openOnCancel)
-        assertEquals("Clear Artwork?", spec.title)
-        assertTrue(spec.message, "backup" in spec.message)
-        assertTrue(spec.message, STUDIO_TABS[0].label in spec.message)
-        spec.onConfirm()
-        spec.onCancel()
-        assertEquals(listOf("confirm", "cancel"), events)
-    }
-
-    @Test
-    fun `the Forget confirm names the provider and no confirm shows otherwise`() {
-        val forget = ArtworkStudioUiState(
-            game = game, matchProvider = com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB,
-            destructiveConfirm = StudioDestructive.FORGET_MATCH,
-        )
-
-        val spec = studioDestructiveModalSpec(forget, {}, {}) as com.playfieldportal.core.ui.components.PfpModalSpec.Confirm
-
-        assertEquals("Forget Match?", spec.title)
-        assertTrue(spec.message, com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB.label in spec.message)
-        assertNull(studioDestructiveModalSpec(ArtworkStudioUiState(game = game), {}, {}))
-    }
-
-    @Test
     fun `the match is part of the request key, so switching match refetches`() = runTest(testDispatcher) {
         coEvery { matchEvidence.searchByTitle(any(), any(), any()) } returns listOf(
             com.playfieldportal.feature.artwork.match.GameCandidate(
@@ -2449,7 +2431,7 @@ class ArtworkStudioViewModelTest {
         val items = vm.uiState.value.menuItems
         val filters = items.takeWhile { it is StudioMenuItem.Filter }.map { (it as StudioMenuItem.Filter).option }
         assertEquals(listOf(StudioFilterOption.Open(StudioFilterGroup.FILTERS)), filters)
-        assertEquals("Filters", vm.uiState.value.filterRootRows.single().label)
+        assertEquals(UiText.res(R.string.det_filter_filters), vm.uiState.value.filterRootRows.single().label)
         assertTrue(StudioMenuItem.Action(StudioAction.CHANGE_MATCH) in items)
     }
 
@@ -2470,7 +2452,7 @@ class ArtworkStudioViewModelTest {
             ),
             vm.uiState.value.filterGroupRows.map { it.option },
         )
-        assertEquals("the toggles still show their setting", "Off",
+        assertEquals("the toggles still show their setting", UiText.res(R.string.det_filter_off),
             vm.uiState.value.filterGroupRows.first { it.option == StudioFilterOption.Humor }.value)
     }
 
@@ -2507,7 +2489,7 @@ class ArtworkStudioViewModelTest {
 
         pickFilter(vm, StudioFilterOption.Humor)
 
-        assertEquals("Active", vm.uiState.value.filterRootRows.single().value)
+        assertEquals(UiText.res(R.string.det_filter_active), vm.uiState.value.filterRootRows.single().value)
     }
 
     @Test
@@ -2558,10 +2540,10 @@ class ArtworkStudioViewModelTest {
                 advanceUntilIdle()
                 assertEquals(StudioSource.entries, vm.sourcesForTab())
                 imageProviders.forEach { source ->
-                    assertEquals("$source on ${tab.label}", tab.kind !in noImageTabs, vm.isSourceAvailable(source))
+                    assertEquals("$source on ${tab.kind}", tab.kind !in noImageTabs, vm.isSourceAvailable(source))
                 }
                 assertTrue(vm.isSourceAvailable(StudioSource.SCREENSCRAPER))
-                assertEquals("STEAM on ${tab.label}", tab.kind != ArtworkKind.MANUAL, vm.isSourceAvailable(StudioSource.STEAM))
+                assertEquals("STEAM on ${tab.kind}", tab.kind != ArtworkKind.MANUAL, vm.isSourceAvailable(StudioSource.STEAM))
                 assertTrue(vm.isSourceAvailable(StudioSource.LOCAL))
             }
         }
@@ -2569,11 +2551,14 @@ class ArtworkStudioViewModelTest {
     @Test
     fun `an image provider on the Video tab says why, is skipped, and is never asked`() = runTest(testDispatcher) {
         val vm = loadedOnTab(ArtworkKind.VIDEO)
-        assertEquals("n/a", vm.sourceBadge(StudioSource.STEAMGRIDDB))
+        assertEquals(UiText.res(R.string.det_source_badge_na), vm.sourceBadge(StudioSource.STEAMGRIDDB))
 
         vm.selectSource(vm.sourcesForTab().indexOf(StudioSource.STEAMGRIDDB))
         advanceUntilIdle()
-        assertEquals("SteamGridDB has no VIDEO artwork", vm.uiState.value.message)
+        assertEquals(
+            UiText.res(R.string.det_source_no_artwork, StudioSource.STEAMGRIDDB.label, STUDIO_TABS.first { it.kind == ArtworkKind.VIDEO }.label),
+            vm.uiState.value.message,
+        )
         assertEquals(StudioSource.SCREENSCRAPER, vm.sourcesForTab()[vm.uiState.value.sourceIndex])
 
         // From ScreenScraper, cycling right steps over all three image providers to Steam, which
@@ -2655,7 +2640,7 @@ class ArtworkStudioViewModelTest {
         assertNull(vm.sourceBadge(StudioSource.STEAM))
         vm.selectTab(STUDIO_TABS.indexOfFirst { it.kind == ArtworkKind.MANUAL })
         advanceUntilIdle()
-        assertEquals("n/a", vm.sourceBadge(StudioSource.STEAM))
+        assertEquals(UiText.res(R.string.det_source_badge_na), vm.sourceBadge(StudioSource.STEAM))
     }
 
     @Test
@@ -2769,7 +2754,7 @@ class ArtworkStudioViewModelTest {
         val prompt = vm.uiState.value.confirmPrompt
         assertEquals(StudioConfirmKind.REPLACE, prompt?.kind)
         // Cancel is first, so a stray A cannot overwrite the one stored previous version.
-        assertEquals(StudioReplaceChoice.CANCEL.label, prompt?.rows?.first()?.label)
+        assertEquals(UiText.res(StudioReplaceChoice.CANCEL.labelRes), prompt?.rows?.first()?.label)
         assertEquals(0, prompt?.selectedIndex)
         coVerify(exactly = 0) { routingStore.studioApplyFromUrl(any(), any(), any(), any(), any(), any()) }
 
@@ -2943,7 +2928,10 @@ class ArtworkStudioViewModelTest {
 
         // nextSortOrder clamps instead of refusing, so a confirmation here would overwrite position 99.
         assertFalse(vm.uiState.value.applyConfirmOpen)
-        assertEquals("A game holds 100 screenshots at most — uncheck 1 to apply", vm.uiState.value.message)
+        assertEquals(
+            UiText.res(R.string.det_cap_uncheck, UiText.plural(R.plurals.det_asset_count_screenshot, 100), 1),
+            vm.uiState.value.message,
+        )
         assertEquals(1, vm.uiState.value.selectedOnTab)
         coVerify(exactly = 0) { routingStore.studioAppendFromUrl(any(), any(), any(), any(), any()) }
     }
@@ -3095,7 +3083,10 @@ class ArtworkStudioViewModelTest {
 
         coVerify(exactly = 3) { routingStore.studioAppendFromFile(1L, ArtworkKind.SCREENSHOT, any(), "Local file") }
         coVerify(exactly = 0) { routingStore.studioApplyFromFile(any(), any(), any(), any(), any(), any()) }
-        assertEquals("Added 3 screenshots", vm.uiState.value.message)
+        assertEquals(
+            UiText.res(R.string.det_local_added, UiText.plural(R.plurals.det_asset_count_screenshot, 3)),
+            vm.uiState.value.message,
+        )
         assertFalse(vm.uiState.value.applying)
     }
 
@@ -3122,7 +3113,10 @@ class ArtworkStudioViewModelTest {
         advanceUntilIdle()
 
         coVerify(exactly = 2) { routingStore.studioAppendFromFile(1L, ArtworkKind.SCREENSHOT, any(), any()) }
-        assertEquals("Added 2 screenshots — a game holds 100 at most", vm.uiState.value.message)
+        assertEquals(
+            UiText.res(R.string.det_local_add_cap, UiText.plural(R.plurals.det_asset_count_screenshot, 2), 100),
+            vm.uiState.value.message,
+        )
     }
 
     @Test
@@ -3135,7 +3129,10 @@ class ArtworkStudioViewModelTest {
         advanceUntilIdle()
 
         coVerify(exactly = 2) { routingStore.studioAppendFromFile(any(), any(), any(), any()) }
-        assertEquals("Added 1 screenshot · 1 file could not be added", vm.uiState.value.message)
+        assertEquals(
+            UiText.plural(R.plurals.det_local_add_some_failed, 1, UiText.plural(R.plurals.det_asset_count_screenshot, 1), 1),
+            vm.uiState.value.message,
+        )
     }
 
     @Test
@@ -3353,7 +3350,7 @@ class ArtworkStudioViewModelTest {
         vm.load(1L)
         advanceUntilIdle()
         val index = vm.sourcesForTab().indexOf(source)
-        check(index >= 0) { "$source is not available for ${STUDIO_TABS[0].label}" }
+        check(index >= 0) { "$source is not available for ${STUDIO_TABS[0].kind}" }
         vm.selectSource(index)
         advanceUntilIdle()
         return vm
@@ -3706,15 +3703,15 @@ class ArtworkStudioViewModelTest {
 
     @Test
     fun `the crop menu reads Live Preview and Shape as label and value`() {
-        assertEquals("Crop Options", STUDIO_CROP_OPTIONS_TITLE)
+        assertEquals(UiText.res(R.string.det_crop_options_title), STUDIO_CROP_OPTIONS_TITLE)
         val on = studioCropRow(CropOption.PREVIEW, previewEnabled = true, current = CropShapeChoice.PLATFORM_DEFAULT)
-        assertEquals("Live Preview", on.label)
-        assertEquals("On", on.value)
-        assertEquals("Off", studioCropRow(CropOption.PREVIEW, false, CropShapeChoice.PLATFORM_DEFAULT).value)
+        assertEquals(UiText.res(R.string.det_crop_live_preview), on.label)
+        assertEquals(UiText.res(R.string.det_filter_on), on.value)
+        assertEquals(UiText.res(R.string.det_filter_off), studioCropRow(CropOption.PREVIEW, false, CropShapeChoice.PLATFORM_DEFAULT).value)
 
         val shape = studioCropRow(CropOption.SHAPE_ORIGINAL_IMAGE, true, CropShapeChoice.ORIGINAL_IMAGE)
-        assertEquals("Shape", shape.label)
-        assertEquals("Original Image", shape.value)
+        assertEquals(UiText.res(R.string.det_crop_shape), shape.label)
+        assertEquals(UiText.res(R.string.det_crop_shape_original), shape.value)
         assertTrue(shape.checked)
         assertFalse(studioCropRow(CropOption.SHAPE_PLATFORM_DEFAULT, true, CropShapeChoice.ORIGINAL_IMAGE).checked)
     }

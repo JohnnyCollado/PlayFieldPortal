@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_title">Brilho de seleção</string>
+    <string name="glow_sub_off">Sem brilho à volta do ícone selecionado.</string>
+    <string name="glow_sub_steady">Uma luz suave à volta do ícone selecionado. Mantém-se fixa.</string>
+    <string name="glow_sub_pulsing">A luz à volta do ícone selecionado aumenta e diminui lentamente. Mantém-se fixa enquanto «Movimento» estiver em «Estático».</string>
+    <string name="glow_value_off">Desativado</string>
+    <string name="glow_value_steady">Fixo</string>
+    <string name="glow_value_pulsing">Pulsante</string>
+</resources>

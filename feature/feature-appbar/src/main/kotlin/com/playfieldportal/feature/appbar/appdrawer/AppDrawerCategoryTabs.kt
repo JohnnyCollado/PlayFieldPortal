@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,7 +57,7 @@ internal fun AppDrawerCategoryTabs(
     ) {
         AppFilter.entries.forEach { filter ->
             AppDrawerCategoryTab(
-                label = filter.label,
+                label = stringResource(filter.labelRes),
                 count = filterCounts[filter] ?: 0,
                 selected = filter == activeFilter,
                 onClick = { onFilterSelected(filter) },

@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -33,6 +34,7 @@ import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
+import com.playfieldportal.feature.xmb.R
 
 // The Studio's paging and options controls, stateless so they can be previewed: the screen itself
 // takes a Hilt ViewModel. Touch mode draws each as a pill a user can see is tappable; controller
@@ -75,8 +77,11 @@ internal fun StudioPageLine(
         // which drew the text ~3 dp below the centred LB/RB glyphs.
         if (totalResults > 0) {
             Text(
-                if (unfilteredTotal > totalResults) "$rangeStart–$rangeEnd · $totalResults of $unfilteredTotal shown"
-                else "$rangeStart–$rangeEnd of $totalResults",
+                if (unfilteredTotal > totalResults) {
+                    stringResource(R.string.det_page_range_shown, rangeStart, rangeEnd, totalResults, unfilteredTotal)
+                } else {
+                    stringResource(R.string.det_page_range, rangeStart, rangeEnd, totalResults)
+                },
                 color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 9.5.sp, lineHeight = 12.sp,
                 maxLines = 1,
             )
@@ -95,14 +100,14 @@ internal fun StudioPageLine(
         Spacer(Modifier.weight(1f))
         // A single page has nothing to move to, so only the range shows.
         if (pageCount > 1 && showTouchControls) {
-            TouchPagePill("‹ Prev", enabled = hasPreviousPage, onClick = onPreviousPage)
+            TouchPagePill(stringResource(R.string.det_page_prev), enabled = hasPreviousPage, onClick = onPreviousPage)
             Text(
-                "Page ${page + 1} / $pageCount",
+                stringResource(R.string.det_page_n_of_m, page + 1, pageCount),
                 color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 11.sp,
                 maxLines = 1,
                 modifier = Modifier.padding(horizontal = 10.dp),
             )
-            TouchPagePill("Next ›", enabled = hasNextPage, onClick = onNextPage)
+            TouchPagePill(stringResource(R.string.det_page_next), enabled = hasNextPage, onClick = onNextPage)
         } else if (pageCount > 1) {
             // The arrows stay tappable; LB/RB page while the grid is focused.
             ControllerPrompt(
@@ -113,7 +118,7 @@ internal fun StudioPageLine(
             )
             PageArrow("‹", enabled = hasPreviousPage, onClick = onPreviousPage)
             Text(
-                "Page ${page + 1} / $pageCount",
+                stringResource(R.string.det_page_n_of_m, page + 1, pageCount),
                 color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 9.5.sp, lineHeight = 12.sp,
                 maxLines = 1,
             )
@@ -153,10 +158,13 @@ private fun StudioPickStatus(
                 listOfNotNull("+${picks.toAdd}".takeIf { picks.toAdd > 0 }, "−${picks.toRemove}".takeIf { picks.toRemove > 0 })
                     .joinToString(" ")
             } else {
-                listOfNotNull(
-                    "${picks.toAdd} to add".takeIf { picks.toAdd > 0 },
-                    "${picks.toRemove} to remove".takeIf { picks.toRemove > 0 },
-                ).joinToString(" · ")
+                when {
+                    picks.toAdd > 0 && picks.toRemove > 0 ->
+                        stringResource(R.string.det_picks_add_remove, picks.toAdd, picks.toRemove)
+                    picks.toAdd > 0 -> stringResource(R.string.det_picks_add, picks.toAdd)
+                    picks.toRemove > 0 -> stringResource(R.string.det_picks_remove, picks.toRemove)
+                    else -> ""
+                }
             }
             Text(
                 changes,
@@ -164,11 +172,11 @@ private fun StudioPickStatus(
                 maxLines = 1,
             )
             if (showTouchControls) {
-                XmbHeaderPill(label = "Apply ›", onClick = onApply)
+                XmbHeaderPill(label = stringResource(R.string.det_picks_apply_pill), onClick = onApply)
             } else {
                 ControllerPrompt(
                     action = GamepadAction.HOME,
-                    label = "Apply",
+                    label = stringResource(R.string.det_picks_apply),
                     glyphSize = 12.dp,
                     labelColor = themedSubText(Color.White.copy(alpha = 0.6f)),
                     labelStyle = TextStyle(fontSize = 9.5.sp, lineHeight = 12.sp),
@@ -178,17 +186,18 @@ private fun StudioPickStatus(
         }
         if (picks.inQueue) {
             Text(
-                buildString {
-                    append("${picks.added} of ${picks.total} added")
-                    if (picks.failed > 0) append(" · ${picks.failed} failed")
+                if (picks.failed > 0) {
+                    stringResource(R.string.det_picks_progress_failed, picks.added, picks.total, picks.failed)
+                } else {
+                    stringResource(R.string.det_picks_progress, picks.added, picks.total)
                 },
                 color = if (picks.failed > 0) Color(0xFFE0A030) else themedSubText(Color.White.copy(alpha = 0.6f)),
                 fontSize = 9.5.sp, lineHeight = 12.sp,
                 maxLines = 1,
             )
             if (picks.failed > 0 && showTouchControls) {
-                XmbHeaderPill(label = "Retry", onClick = onRetryFailed)
-                XmbHeaderPill(label = "Remove", onClick = onRemoveFailed)
+                XmbHeaderPill(label = stringResource(R.string.det_picks_retry), onClick = onRetryFailed)
+                XmbHeaderPill(label = stringResource(R.string.det_picks_remove_failed), onClick = onRemoveFailed)
             }
         }
     }
@@ -216,7 +225,7 @@ internal fun StudioOptionsControl(
             action = GamepadAction.OPEN_CONTEXT_MENU,
             // "Crop, restore, clear" named the menu's contents, which fit under the rail preview
             // but not beside the title and query field. The menu names its own rows.
-            label = "Options",
+            label = stringResource(R.string.det_options),
             glyphSize = 13.dp,
             labelColor = themedSubText(Color.White.copy(alpha = 0.6f)),
             labelStyle = TextStyle(fontSize = 9.5.sp),
@@ -241,13 +250,13 @@ internal fun StudioManualPager(
     val hasPrevious = page > 0
     val hasNext = page < pageCount - 1
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
-        ManualPagerButton("‹ Prev", hasPrevious, showTouchControls, onPreviousPage)
+        ManualPagerButton(stringResource(R.string.det_page_prev), hasPrevious, showTouchControls, onPreviousPage)
         Text(
-            "Page ${page + 1} / ${pageCount.coerceAtLeast(1)}",
+            stringResource(R.string.det_page_n_of_m, page + 1, pageCount.coerceAtLeast(1)),
             color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 11.sp,
             modifier = Modifier.padding(horizontal = 8.dp),
         )
-        ManualPagerButton("Next ›", hasNext, showTouchControls, onNextPage)
+        ManualPagerButton(stringResource(R.string.det_page_next), hasNext, showTouchControls, onNextPage)
     }
 }
 

@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Slice E2: Shiba Coins, Shiba library, Player Status, Video Detail and the manual viewer (feature-xmb ui/detail). -->
+<resources>
+
+    <!-- ===== Shared Shiba page text ===== -->
+
+    <!-- Controller hint labels in a page's footer. Each names the action the button performs. -->
+    <string name="shiba_prompt_select">Select</string>
+    <string name="shiba_prompt_close">Close</string>
+    <string name="shiba_prompt_done">Done</string>
+    <string name="shiba_prompt_back">Back</string>
+    <string name="shiba_prompt_options">Options</string>
+    <string name="shiba_prompt_search">Search</string>
+    <string name="shiba_prompt_type">Type</string>
+    <string name="shiba_prompt_change_view">Change View</string>
+    <string name="shiba_prompt_switch_source">Switch Source</string>
+    <string name="shiba_prompt_view_game">View Game</string>
+    <string name="shiba_prompt_view_achievements">View Achievements</string>
+    <string name="shiba_prompt_attempt_match">Attempt Match</string>
+    <string name="shiba_prompt_search_online">Search online</string>
+    <string name="shiba_prompt_auto_match">Auto-Match</string>
+    <string name="shiba_prompt_pick_game_folder">Pick Game Folder</string>
+    <string name="shiba_prompt_reveal">Reveal</string>
+    <string name="shiba_prompt_hide">Hide</string>
+    <string name="shiba_prompt_navigate">Navigate</string>
+
+    <!-- Buttons in the Auto-Match panels. -->
+    <string name="shiba_action_yes">Yes</string>
+    <string name="shiba_action_no">No</string>
+    <string name="shiba_action_cancel">Cancel</string>
+    <string name="shiba_action_close">Close</string>
+    <!-- Button that links a game to the Steam app id the user typed. -->
+    <string name="shiba_action_link">Link</string>
+
+    <!-- Title of the Options context menu on the Shiba pages and Video Detail. -->
+    <string name="shiba_options_title">Options</string>
+    <!-- Options rows that open a list; the row's current choice is drawn beside it. -->
+    <string name="shiba_options_sort">Sort</string>
+    <string name="shiba_options_provider">Provider</string>
+    <string name="shiba_options_update_installed">Update Installed Achievements</string>
+    <string name="shiba_options_updating">Updating…</string>
+
+    <string name="shiba_sort_newest">Newest</string>
+    <string name="shiba_sort_rarest">Rarest</string>
+    <string name="shiba_sort_tier">Tier</string>
+    <string name="shiba_sort_earned">Earned</string>
+    <!-- Provider filter choice meaning every achievement provider. -->
+    <string name="shiba_filter_all">All</string>
+
+    <!-- Coin tier names. -->
+    <string name="shiba_tier_bronze">Bronze</string>
+    <string name="shiba_tier_silver">Silver</string>
+    <string name="shiba_tier_gold">Gold</string>
+    <string name="shiba_tier_platinum">Platinum</string>
+
+    <!-- Header statistics labels; shown in capitals. -->
+    <string name="shiba_stat_shiba_level">SHIBA LEVEL</string>
+    <string name="shiba_stat_next_level">NEXT LEVEL</string>
+    <string name="shiba_stat_total_coins">TOTAL COINS</string>
+    <string name="shiba_stat_total">TOTAL</string>
+
+    <!-- %1$s is a platform name such as Super Nintendo; the game is no longer on this device. -->
+    <string name="shiba_platform_not_installed">%1$s · Not installed</string>
+
+    <!-- Relative times. %1$d is a number of minutes or hours. -->
+    <string name="shiba_time_just_now">Just now</string>
+    <string name="shiba_time_minutes_ago">%1$d min ago</string>
+    <string name="shiba_time_hours_ago">%1$d hr ago</string>
+    <string name="shiba_time_yesterday">Yesterday</string>
+    <plurals name="shiba_time_days_ago">
+        <item quantity="one">%1$d day ago</item>
+        <item quantity="other">%1$d days ago</item>
+    </plurals>
+
+    <!-- Placeholder in the Search field of the achievements library. -->
+    <string name="shiba_search_games_placeholder">Search games…</string>
+
+    <!-- ===== Player Status ===== -->
+
+    <string name="shiba_player_status_title">Player Status</string>
+    <string name="shiba_player_status_no_rarest">No rarest achievement yet.</string>
+    <string name="shiba_player_status_rarest_unlocked">RAREST UNLOCKED</string>
+    <!-- Caption under a percentage, e.g. "2.1%" of players have this achievement. -->
+    <string name="shiba_player_status_rarity_caption">of players have this</string>
+    <!-- %1$s is a game title, %2$s how long ago a coin was earned (e.g. "5 min ago"). -->
+    <string name="shiba_player_status_game_and_time">%1$s · %2$s</string>
+    <!-- Progress line while updating achievements: %1$d games checked so far out of %2$d. -->
+    <plurals name="shiba_status_checking_games">
+        <item quantity="one">Checking %1$d of %2$d game…</item>
+        <item quantity="other">Checking %1$d of %2$d games…</item>
+    </plurals>
+    <string name="shiba_status_updating_achievements">Updating installed achievements…</string>
+
+    <!-- ===== Achievements library (Tracked / Untracked Games) ===== -->
+
+    <string name="shiba_library_view_tracked">Tracked Games</string>
+    <string name="shiba_library_view_untracked">Untracked Games</string>
+    <!-- Page title; %1$s is "Tracked Games" or "Untracked Games". -->
+    <string name="shiba_library_breadcrumb">Achievements / %1$s</string>
+    <plurals name="shiba_library_game_count">
+        <item quantity="one">%1$d game</item>
+        <item quantity="other">%1$d games</item>
+    </plurals>
+    <!-- %1$s is what the user typed in Search. -->
+    <string name="shiba_library_empty_no_match">No games match \"%1$s\".</string>
+    <string name="shiba_library_empty_tracked">No tracked games yet.</string>
+    <string name="shiba_library_empty_untracked">Every eligible game is tracked.</string>
+    <!-- Sort choices: field and direction in one label. -->
+    <string name="shiba_library_sort_title_asc">Title A–Z</string>
+    <string name="shiba_library_sort_title_desc">Title Z–A</string>
+    <string name="shiba_library_sort_progress_asc">Progress Lowest First</string>
+    <string name="shiba_library_sort_progress_desc">Progress Highest First</string>
+    <string name="shiba_library_sort_platform_asc">Platform A–Z</string>
+    <string name="shiba_library_sort_platform_desc">Platform Z–A</string>
+    <!-- The pinned row that leaves the device to look a game up on a provider. -->
+    <string name="shiba_library_search_online">Search online</string>
+    <string name="shiba_library_search_online_subtitle">Look up a game that isn\'t on this device</string>
+    <!-- Shown on a matched game whose achievements have not been downloaded yet. -->
+    <string name="shiba_library_awaiting_sync">Awaiting sync</string>
+
+    <!-- ===== A game's Shiba Coins page ===== -->
+
+    <string name="shiba_coins_search_placeholder">Search coins…</string>
+    <!-- Header statistics labels; shown in capitals. -->
+    <string name="shiba_coins_stat_completion">COMPLETION</string>
+    <string name="shiba_coins_stat_earned">EARNED</string>
+    <!-- View tabs beside Search; %1$d is how many coins that view holds. -->
+    <string name="shiba_coins_tab_all">All %1$d</string>
+    <string name="shiba_coins_tab_earned">Earned %1$d</string>
+    <string name="shiba_coins_tab_locked">Locked %1$d</string>
+    <!-- Header line: %1$s is how long ago the coins were last synced (e.g. "5 min ago"). -->
+    <string name="shiba_coins_synced">Synced %1$s</string>
+    <string name="shiba_coins_not_linked">Not linked</string>
+    <string name="shiba_coins_never_synced">Never synced</string>
+    <string name="shiba_coins_owned_on_steam">Owned on Steam</string>
+    <string name="shiba_coins_tracked_locally">Tracked locally</string>
+
+    <!-- Empty-list messages. %1$s is what the user typed in Search. -->
+    <string name="shiba_coins_empty_no_match">No coins match \"%1$s\".</string>
+    <string name="shiba_coins_empty_none_earned">No coins earned yet.</string>
+    <string name="shiba_coins_empty_all_earned">Every coin is earned.</string>
+    <string name="shiba_coins_empty_default">No coins to show.</string>
+
+    <!-- Options menu rows. -->
+    <string name="shiba_coins_options_update">Update Achievements</string>
+    <string name="shiba_coins_options_change_match">Change Match</string>
+    <string name="shiba_coins_options_unlink">Unlink Game</string>
+
+    <!-- Unlink confirmation. %1$s is the game title. -->
+    <string name="shiba_coins_unlink_title">Unlink Game?</string>
+    <string name="shiba_coins_unlink_message">%1$s is no longer matched, so its coins stop showing. The coins already cached stay stored and come back when you match it again.</string>
+    <!-- Button that confirms unlinking the game. -->
+    <string name="shiba_coins_unlink_confirm">Unlink</string>
+
+    <!-- Coin rows. A hidden coin hides its real title until the user reveals it. -->
+    <string name="shiba_coin_hidden_title">Hidden Coin</string>
+    <string name="shiba_coin_hidden_hint">Keep playing — or press Confirm to reveal</string>
+    <string name="shiba_coin_description_secret">Steam keeps this one\'s description secret</string>
+    <!-- Caption under a rarity percentage: the share of players who have this coin. -->
+    <string name="shiba_coin_metric_of_players">of players</string>
+    <string name="shiba_coin_status_earned">Earned</string>
+    <string name="shiba_coin_status_locked">Locked</string>
+    <string name="shiba_platinum_crown_title">Platinum Crown</string>
+    <string name="shiba_platinum_crown_description">Earn every other coin in the game</string>
+    <!-- Caption under "3 / 10": coins earned out of all coins. -->
+    <string name="shiba_platinum_crown_metric">coins earned</string>
+
+    <!-- Auto-Match panel for a game that is not linked yet. -->
+    <string name="shiba_link_not_linked_yet_game">This game isn\'t linked yet</string>
+    <string name="shiba_link_not_linked_yet">Not linked yet</string>
+    <string name="shiba_link_steam_body">Auto-Match asks whether this is a legitimate Steam copy, then resolves it against Steam or scans your game folders for Steam-emu data.</string>
+    <string name="shiba_link_retro_body">RetroAchievements identifies games by ROM hash. Auto-Match hashes this ROM and looks it up — only a verified dump registered on RetroAchievements can link.</string>
+    <string name="shiba_link_local_steam_body">Pick this game\'s folder and PFP reads its Steam app id — from steam_appid.txt when it is there, or by matching the title when it is not. It remembers the folder, so nothing has to search for it again.</string>
+    <string name="shiba_link_vita_body">PS Vita trophies link automatically from Vita3K. Set your Vita3K data folder in the library and scan to link this game.</string>
+    <string name="shiba_link_ps3_body">PS3 trophies link from the game\'s own disc — set your PS3 Data Folder in the library and Auto-Match.</string>
+    <string name="shiba_link_x360_body">Xbox 360 achievements link from the game\'s own title ID — set the X360 Mobile or XenDroid Data Folder in the library and Auto-Match.</string>
+    <!-- Buttons of the panel. Auto-Match = link the game automatically. -->
+    <string name="shiba_link_auto_match">Auto-Match</string>
+    <string name="shiba_link_matching">Matching…</string>
+    <string name="shiba_link_pick_game_folder">Pick Game Folder</string>
+
+    <string name="shiba_link_copy_title">Is this a legitimate Steam copy?</string>
+    <string name="shiba_link_copy_body">A legit copy matches against your Steam account. Anything else is tracked from the game\'s own folder, which PFP will ask you to point at.</string>
+
+    <string name="shiba_link_folder_title">Which folder is this game in?</string>
+    <string name="shiba_link_folder_body">Pick the game\'s own folder — the one its .exe is in. PFP reads the Steam app id from it and tracks the unlocks the emulator writes there. Your Windows games can live anywhere; PFP remembers where this one is so it never has to search.</string>
+
+    <string name="shiba_link_identify_title_steam">Finding the Steam match…</string>
+    <string name="shiba_link_identify_title_appid">Working out the Steam app id…</string>
+    <string name="shiba_link_identify_body_steam">Searching Steam for this game\'s title. Pick the right one to link it again.</string>
+    <string name="shiba_link_identify_body_appid">Reading steam_appid.txt from the folder, and matching the game\'s title against Steam if it has none yet.</string>
+
+    <string name="shiba_link_kit_title">That folder has no achievement list yet</string>
+    <string name="shiba_link_kit_body_generic">The emulator needs an achievement list before it can record unlocks.</string>
+    <!-- %1$s is the name of the game folder, %2$s its Steam app id. "Install &amp; Link" and "Link Only" are the names of the two buttons. -->
+    <string name="shiba_link_kit_body">\"%1$s\" is Steam app id %2$s, but the emulator has no achievement list to record against. Install &amp; Link writes achievements.json, stats.json and configs.user.ini into the folder, creates a saves folder, and renames steam_api64.dll to steam_api64_o.dll so the bundled emulator loads through it — back up this game\'s saves first. Link Only tracks it at 0%% and writes nothing more.</string>
+    <string name="shiba_link_kit_installer_off">Install &amp; Link needs Install Goldberg &amp; Convert Games in Achievement settings.</string>
+    <string name="shiba_link_kit_install">Install &amp; Link</string>
+    <string name="shiba_link_kit_link_only">Link Only</string>
+
+    <string name="shiba_link_no_emu_title">Nothing to track in that folder</string>
+    <string name="shiba_link_no_emu_default">That folder holds no Steam-emulator data.</string>
+    <string name="shiba_link_try_another_folder">Try Another Folder</string>
+
+    <string name="shiba_link_appid_title">No automatic match found</string>
+    <string name="shiba_link_appid_body">Enter the game\'s Steam app id:</string>
+    <!-- Label of the text field for the Steam app id. -->
+    <string name="shiba_link_appid_field">Steam app id</string>
+
+    <!-- Messages shown on the page after linking or syncing. -->
+    <string name="shiba_coins_folder_unreadable">That folder could not be read. Pick it again, or remount the storage it is on.</string>
+    <!-- %1$s is the folder name, %2$s the Steam app id. -->
+    <string name="shiba_coins_linked_to">Linked to %1$s (appid %2$s).</string>
+    <string name="shiba_coins_nothing_written">Nothing was written. Set the game\'s Steam match from Game Detail ▸ Match Game, then Auto-Match again — PFP will use that id.</string>
+    <string name="shiba_coins_appid_not_number">A Steam app id is a number — check steamdb.info for more information on the game</string>
+    <!-- %1$s is the app id the user typed. -->
+    <string name="shiba_coins_appid_no_match">App id %1$s doesn\'t match — check steamdb.info for more information on the game</string>
+    <string name="shiba_coins_sync_not_linked">Link this game to a provider id first</string>
+    <string name="shiba_coins_sync_not_installed">This game isn\'t installed — its saved achievements are shown</string>
+    <string name="shiba_coins_sync_missing_credentials">Add your key in Settings ▸ Achievements ▸ Provider Credentials</string>
+    <string name="shiba_coins_sync_profile_private">Your Steam profile\'s Game Details are private</string>
+    <string name="shiba_coins_sync_not_found">No achievements found for this game</string>
+    <!-- %1$s is the reason the provider gave. -->
+    <string name="shiba_coins_sync_failed">Sync failed: %1$s</string>
+
+    <!-- ===== Video Detail ===== -->
+
+    <string name="shiba_video_play">Play</string>
+    <string name="shiba_video_resume">Resume</string>
+    <string name="shiba_video_restart">Start from Beginning</string>
+    <!-- %1$s is a time such as 1:23:45. -->
+    <string name="shiba_video_resume_at">Resume at %1$s</string>
+    <!-- Options menu groups; each is a heading above its rows. -->
+    <string name="shiba_video_group_library">Library</string>
+    <string name="shiba_video_group_customize">Customize</string>
+    <string name="shiba_video_group_manage">Manage</string>
+    <string name="shiba_video_favorite">Favorite</string>
+    <!-- Value drawn beside the Favorite row. -->
+    <string name="shiba_video_favorite_on">On</string>
+    <string name="shiba_video_favorite_off">Off</string>
+    <string name="shiba_video_add_to_playlist">Add to Playlist</string>
+    <string name="shiba_video_create_playlist">Create New Playlist</string>
+    <string name="shiba_video_edit_title">Edit Title</string>
+    <string name="shiba_video_change_thumbnail">Change Thumbnail</string>
+    <string name="shiba_video_view_information">View Information</string>
+    <string name="shiba_video_show_location">Show File Location</string>
+    <string name="shiba_video_remove">Remove from Library</string>
+    <!-- %1$s is the video title. -->
+    <string name="shiba_video_remove_message">\"%1$s\" will be removed from this library. The file on disk is not deleted.</string>
+    <!-- Button that confirms removing the video from the library. -->
+    <string name="shiba_video_remove_confirm">Remove</string>
+    <string name="shiba_video_new_playlist_title">New Playlist</string>
+    <string name="shiba_video_new_playlist_placeholder">Playlist name</string>
+    <!-- Button that creates the playlist. -->
+    <string name="shiba_video_new_playlist_create">Create</string>
+    <string name="shiba_video_launching">Launching…</string>
+    <!-- Shown while the app hands over to another app to play the video. -->
+    <string name="shiba_video_player_ask">an external player</string>
+    <string name="shiba_video_player_fallback">external player</string>
+    <string name="shiba_video_launch_error_title">Can\'t play video</string>
+    <!-- Brief messages after an action. -->
+    <string name="shiba_video_added_favorite">Added to Favorites</string>
+    <string name="shiba_video_removed_favorite">Removed from Favorites</string>
+    <string name="shiba_video_import_failed">Could not import image</string>
+    <string name="shiba_video_thumbnail_updated">Thumbnail updated</string>
+    <!-- %1$s is a folder path. -->
+    <string name="shiba_video_location_in">In: %1$s</string>
+    <!-- Information dialog, one fact per line. %1$s is the value. -->
+    <string name="shiba_video_info_duration">Duration: %1$s</string>
+    <string name="shiba_video_info_resolution">Resolution: %1$s</string>
+    <string name="shiba_video_info_format">Format: %1$s</string>
+    <string name="shiba_video_info_type">Type: %1$s</string>
+    <string name="shiba_video_info_size">Size: %1$s</string>
+    <string name="shiba_video_info_location">Location: %1$s</string>
+    <string name="shiba_video_info_file">File: %1$s</string>
+
+    <!-- ===== Manual viewer ===== -->
+
+    <string name="shiba_manual_failed">This manual could not be displayed.</string>
+    <!-- Accessibility description of a manual page. %1$s is the game title, %2$d the page number. -->
+    <string name="shiba_manual_page_description">%1$s — manual page %2$d</string>
+    <!-- Controller hint line. ◀ ▶ = left/right on the D-pad, ▲ ▼ = up/down, "B" is the pad's B button. Spacing is deliberate and kept by the quotes. -->
+    <string name="shiba_manual_footer_hint">"◀ ▶  Page   •   ▲ ▼  Scroll   •   B  Close"</string>
+
+</resources>

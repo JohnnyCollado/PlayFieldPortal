@@ -13,6 +13,7 @@ import com.playfieldportal.core.data.saf.querySafChildren
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.artwork.portable.PortableNameResolver
+import com.playfieldportal.feature.settings.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -196,10 +197,10 @@ class PcGameExporter @Inject constructor(
      */
     suspend fun exportGame(gameId: Long): PcGameExportReport = withContext(Dispatchers.IO) {
         val game = gameRepository.getById(gameId)
-            ?: return@withContext refusal("That game is no longer in the library.")
-        if (game.platformId != WINDOWS_PLATFORM_ID) return@withContext refusal("Only PC games can be exported.")
+            ?: return@withContext refusal(context.getString(R.string.lib_pc_export_game_gone))
+        if (game.platformId != WINDOWS_PLATFORM_ID) return@withContext refusal(context.getString(R.string.lib_pc_export_pc_only))
         val export = PcGameExportBuilder.exportFor(game, artworkRecordDao.getForGame(game.id))
-            ?: return@withContext refusal("${game.displayTitle} has no launcher to bring it back with, so it can't be exported.")
+            ?: return@withContext refusal(context.getString(R.string.lib_pc_export_no_launcher, game.displayTitle))
         val folder = when (val found = importFolder()) {
             is ImportFolder.Missing -> return@withContext refusal(found.message)
             is ImportFolder.Found -> found
@@ -213,9 +214,9 @@ class PcGameExporter @Inject constructor(
         val written = write(folder.tree, folder.docId, target, PcGameExportFile(fileName, export))
         Timber.i("PC game export — gameId=$gameId file=$fileName written=$written")
         if (written) {
-            PcGameExportReport(1, 0, 0, "Exported ${game.displayTitle} to windows/import as $fileName.")
+            PcGameExportReport(1, 0, 0, context.getString(R.string.lib_pc_export_one_done, game.displayTitle, fileName))
         } else {
-            PcGameExportReport(0, 0, 1, "Couldn't write $fileName to windows/import.")
+            PcGameExportReport(0, 0, 1, context.getString(R.string.lib_pc_export_one_failed, fileName))
         }
     }
 
@@ -228,10 +229,10 @@ class PcGameExporter @Inject constructor(
     private suspend fun importFolder(): ImportFolder {
         val setup = runCatching { windowsLibrarySetup.ensure() }.getOrNull()
         if (setup is WindowsSetupState.NoRomRoot) {
-            return ImportFolder.Missing("Add a ROM Root first — PFP exports PC games into <root>/windows/import.")
+            return ImportFolder.Missing(context.getString(R.string.lib_pc_export_no_root))
         }
         val (treeUri, docId) = windowsLibrarySetup.importFolders().firstOrNull()
-            ?: return ImportFolder.Missing("Couldn't open <windows>/import. Relink the ROM Root and try again.")
+            ?: return ImportFolder.Missing(context.getString(R.string.lib_pc_export_no_folder))
         return ImportFolder.Found(Uri.parse(treeUri), docId)
     }
 
@@ -289,14 +290,12 @@ class PcGameExporter @Inject constructor(
     private fun refusal(message: String) = PcGameExportReport(0, 0, 0, message)
 
     private fun bulkMessage(written: Int, skipped: Int, failed: Int): String = when {
-        written == 0 && failed == 0 ->
-            "No PC games need an export file: launcher exports and pins without artwork come back on their own."
-        else -> buildString {
-            append("Exported $written PC game(s) to windows/import")
-            if (skipped > 0) append(" · $skipped need no file")
-            if (failed > 0) append(" · $failed couldn't be written")
-            append(".")
-        }
+        written == 0 && failed == 0 -> context.getString(R.string.lib_pc_export_nothing_needed)
+        else -> listOfNotNull(
+            context.resources.getQuantityString(R.plurals.lib_pc_export_bulk_done, written, written),
+            if (skipped > 0) context.getString(R.string.lib_pc_export_bulk_skipped, skipped) else null,
+            if (failed > 0) context.getString(R.string.lib_pc_export_bulk_failed, failed) else null,
+        ).joinToString(" · ") + "."
     }
 
     private companion object {

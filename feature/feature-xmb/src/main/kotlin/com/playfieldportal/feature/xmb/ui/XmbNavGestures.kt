@@ -18,7 +18,7 @@ private val CATEGORY_STEP_DP = 100.dp
 // Left-edge band where a rightward drag means Back (matches the prior edge-swipe behaviour).
 private val EDGE_DP = 32.dp
 private val EDGE_COMMIT_DP = 48.dp
-// Leftward travel that commits a swipe-back while drilled in. Larger than [EDGE_COMMIT_DP] because
+// Travel toward the end edge that commits a swipe-back while drilled in. Larger than [EDGE_COMMIT_DP] because
 // this gesture may start anywhere on the screen rather than in a reserved 32dp band, so it has to
 // out-argue an idle finger. Like edge-Back, it is deliberately NOT scaled by TouchSensitivity: the
 // sensitivity slider tunes how far a finger travels per *step*, and a back-out has no steps.
@@ -38,8 +38,9 @@ private val FLING_DP_PER_S = 420f
  *
  * A drag that STARTS in the left-edge band is reserved for Back ([onEdgeBack]) and never steps.
  * While [swipeBackEnabled] (i.e. drilled into a flyout or folder, where category stepping is locked
- * anyway) a leftward drag from anywhere backs out one level on release ([onSwipeBack]) and likewise
- * never steps — the same commit-on-release shape as the edge band, not a second detector.
+ * anyway) a drag toward the end edge from anywhere backs out one level on release ([onSwipeBack]) and
+ * likewise never steps — the same commit-on-release shape as the edge band, not a second detector. It
+ * is the child list being pushed back where it came from, so [rtl] flips the direction.
  * Taps never exceed touch-slop and fall through to the rows' own click handlers. Multi-touch is
  * ignored (the XMB is a single cursor). Guarding (overlays, drill-lock) lives in the ViewModel
  * intents this calls.
@@ -56,8 +57,12 @@ fun Modifier.xmbNavGestures(
     // that state, so the horizontal axis is free to mean "back out" instead.
     swipeBackEnabled: Boolean = false,
     onSwipeBack: () -> Unit = {},
-    // Keyed on swipeBackEnabled too: the detector captures it, so drilling in or out must re-arm it.
-): Modifier = pointerInput(stepScale, swipeBackEnabled) {
+    // Layout direction: the level was entered from the end edge, so the swipe that leaves it runs
+    // toward the end edge, which is rightward in LTR and leftward in RTL.
+    rtl: Boolean = false,
+    // Keyed on swipeBackEnabled and rtl too: the detector captures them, so drilling in or out, or a
+    // layout-direction change, must re-arm it.
+): Modifier = pointerInput(stepScale, swipeBackEnabled, rtl) {
     val slop = viewConfiguration.touchSlop
     val itemStepPx = ITEM_STEP_DP.toPx() * stepScale
     val categoryStepPx = CATEGORY_STEP_DP.toPx() * stepScale
@@ -130,7 +135,7 @@ fun Modifier.xmbNavGestures(
             // Release: commit the edge-Back, or grant a small vertical fling bonus.
             when {
                 axis == Axis.HORIZONTAL && fromEdge && acc > edgeCommitPx -> onEdgeBack()
-                axis == Axis.HORIZONTAL && swipeBackEnabled && commitsSwipeBack(acc, backCommitPx) ->
+                axis == Axis.HORIZONTAL && swipeBackEnabled && commitsSwipeBack(acc, backCommitPx, rtl) ->
                     onSwipeBack()
                 axis == Axis.VERTICAL -> {
                     val vy = tracker.calculateVelocity().y
@@ -168,8 +173,9 @@ fun flingBonusSteps(velocityPxPerS: Float, flingPx: Float): Int {
 }
 
 /**
- * Whether horizontal travel [accumulatedX] commits a swipe-back (pure — unit-tested). Leftward is
- * negative, matching the drill-in metaphor: content came in from the right, so it leaves to the
- * left. A rightward drag never backs out, however far it goes.
+ * Whether horizontal travel [accumulatedX] commits a swipe-back (pure — unit-tested). The child list
+ * arrived from the end edge (right in LTR), so pushing it back toward the end edge steps out: positive
+ * travel in LTR, negative in RTL ([rtl]). A drag the other way never backs out, however far it goes.
  */
-fun commitsSwipeBack(accumulatedX: Float, commitPx: Float): Boolean = accumulatedX <= -commitPx
+fun commitsSwipeBack(accumulatedX: Float, commitPx: Float, rtl: Boolean = false): Boolean =
+    if (rtl) accumulatedX <= -commitPx else accumulatedX >= commitPx

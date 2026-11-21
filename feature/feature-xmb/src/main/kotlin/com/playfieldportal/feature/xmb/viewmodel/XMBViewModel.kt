@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.SystemClock
 import android.provider.MediaStore
+import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -52,6 +53,8 @@ import com.playfieldportal.core.domain.model.XmbSchemeVariant
 import com.playfieldportal.core.domain.model.displayLabel
 import com.playfieldportal.core.domain.model.resolve
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.core.domain.text.labelRes
 import com.playfieldportal.core.domain.model.BackgroundTaskInfo
 import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.DetailAction
@@ -82,7 +85,7 @@ import com.playfieldportal.feature.appbar.LauncherShortcutRepository
 import com.playfieldportal.feature.launcher.LaunchDispatchResult
 import com.playfieldportal.feature.launcher.LaunchRecoveryAction
 import com.playfieldportal.feature.launcher.ResolvedLaunch
-import com.playfieldportal.feature.artwork.api.ARTWORK_PAUSED_MESSAGE
+import com.playfieldportal.feature.artwork.api.ARTWORK_PAUSED_TEXT
 import com.playfieldportal.feature.artwork.api.ArtworkFolderPickerUris
 import com.playfieldportal.feature.artwork.api.ArtworkFolderPrompt
 import com.playfieldportal.feature.artwork.api.ArtworkFolderPrompts
@@ -96,7 +99,7 @@ import com.playfieldportal.feature.artwork.api.relinkAll
 import com.playfieldportal.feature.library.scanner.LibraryScanner
 import com.playfieldportal.feature.library.scanner.ScanStatus
 import com.playfieldportal.feature.library.scanner.isScannable
-import com.playfieldportal.feature.library.scanner.scanOutcomeMessage
+import com.playfieldportal.feature.library.scanner.scanOutcomeBody
 import com.playfieldportal.feature.library.scanner.PlatformScanOutcome
 import com.playfieldportal.feature.library.scanner.failureNotes
 import com.playfieldportal.feature.library.scanner.scanResults
@@ -141,7 +144,7 @@ import timber.log.Timber
 // ── Context menu types ────────────────────────────────────────────────────────
 
 data class XMBContextMenu(
-    val title: String,
+    val title: UiText,
     val items: List<XMBContextMenuItem>,
     val selectedIndex: Int = 0,
     // Identifies the source of the menu (platform card, game, or app)
@@ -242,7 +245,7 @@ internal fun XMBContextMenu.press(
     sounds: com.playfieldportal.core.ui.sound.MenuSoundSink,
 ): PspMenuOutcome {
     val row = items.getOrNull(selectedIndex)
-    val cue = if (row == null) PspMenuCue.NONE else PspMenuRow(row.label, opensMenu = row.opensMenu, silent = row.silent).cue
+    val cue = if (row == null) PspMenuCue.NONE else PspMenuRow("", opensMenu = row.opensMenu, silent = row.silent).cue
     return PspMenuNav.handle(action, selectedIndex, items.size, depth, cue, sounds)
 }
 
@@ -251,19 +254,19 @@ internal fun contextMenuOpened(before: XMBContextMenu?, after: XMBContextMenu?):
     before == null && after != null
 
 /** A second-level list inside the Games Filter menu, opened from its root row. */
-enum class GamesFilterGroup(val title: String) { SORT("Sort") }
+enum class GamesFilterGroup(val title: UiText) { SORT(UiText.res(R.string.xmbm_sort)) }
 
 data class XMBContextMenuItem(
     val id: String,
-    val label: String,
+    val label: UiText,
     val isDestructive: Boolean = false,
     // Renders a checkmark (e.g. collections the game already belongs to).
     val checked: Boolean = false,
     // The row's current setting, drawn dimmer and pinned to the panel's right edge. See
     // [com.playfieldportal.core.ui.components.PspMenuRow.value].
-    val value: String? = null,
+    val value: UiText? = null,
     // A group name drawn above this row — set on the first row of each group.
-    val header: String? = null,
+    val header: UiText? = null,
     // Activating the row opens a list: the panel draws › and the cue is SELECT.
     val opensMenu: Boolean = false,
     // Activating the row plays no cue (Favorite).
@@ -272,12 +275,14 @@ data class XMBContextMenuItem(
 
 // How a media section names itself on screen — the memory card's own title, which is also what
 // its scan row scans ("Music" is already plural).
-private val MediaRootKind.pluralNoun: String
-    get() = when (this) {
-        MediaRootKind.MUSIC -> "Music"
-        MediaRootKind.VIDEO -> "Videos"
-        MediaRootKind.PHOTO -> "Photos"
-    }
+private val MediaRootKind.pluralNoun: UiText
+    get() = UiText.res(
+        when (this) {
+            MediaRootKind.MUSIC -> R.string.xmbm_media_music
+            MediaRootKind.VIDEO -> R.string.xmbm_media_videos
+            MediaRootKind.PHOTO -> R.string.xmbm_media_photos
+        },
+    )
 
 private val MediaRootKind.settingsScreenId: String
     get() = when (this) {
@@ -289,7 +294,7 @@ private val MediaRootKind.settingsScreenId: String
 // Drives the shared text-input dialog. Creating a collection is the default; the optional
 // targets repurpose it for renames and the game Edit Title / Edit Note actions.
 data class CollectionNameDialogState(
-    val title: String,
+    val title: UiText,
     val initialText: String = "",
     val forGameId: Long? = null,
     // The games marked in multi-select: all of them go into the card being created.
@@ -306,8 +311,8 @@ data class CollectionNameDialogState(
 
 // A simple read-only message dialog (e.g. "View File Location"). Dismissed with A/B or tap.
 data class InfoDialogState(
-    val title: String,
-    val message: String,
+    val title: UiText,
+    val message: UiText,
 )
 
 /**
@@ -342,8 +347,8 @@ data class ColorSchemePickerState(
 
 data class ColorSchemeOption(
     val scheme: XmbColorScheme?,
-    val label: String,
-    val sublabel: String,
+    val label: UiText,
+    val sublabel: UiText,
     val swatch: Long,
     val isCustom: Boolean = false,
 )
@@ -387,7 +392,7 @@ data class AppPickerEntry(
 const val PICKER_GRID_COLUMNS = 7
 
 data class AppPickerState(
-    val title: String,
+    val title: UiText,
     val target: AppPickerTarget,
     val apps: List<AppPickerEntry>,
     val selected: Set<String> = emptySet(),
@@ -505,17 +510,17 @@ enum class ShibaLibraryMode { TRACKED, UNTRACKED }
 // callers keep working during migration.
 enum class SettingsSection(
     val id: String,
-    val title: String,
-    val subtitle: String,
+    val title: UiText,
+    val subtitle: UiText,
 ) {
-    LIBRARY     ("settings_section_library",      "Library",      "Sources, cards, artwork & hidden games"),
-    EMULATORS   ("settings_section_emulators",    "Emulators",    "Launch profiles & RetroArch cores"),
-    INTERFACE   ("settings_section_interface",    "Interface",    "Categories, themes, display & controller"),
-    ACHIEVEMENTS("settings_section_achievements", "Achievements", "RetroAchievements & Steam"),
-    MEDIA       ("settings_section_media",        "Media",        "Music, video & photo settings"),
+    LIBRARY     ("settings_section_library",      UiText.res(R.string.xmbm_setsec_library_title),      UiText.res(R.string.xmbm_setsec_library_sub)),
+    EMULATORS   ("settings_section_emulators",    UiText.res(R.string.xmbm_setsec_emulators_title),    UiText.res(R.string.xmbm_setsec_emulators_sub)),
+    INTERFACE   ("settings_section_interface",    UiText.res(R.string.xmbm_setsec_interface_title),    UiText.res(R.string.xmbm_setsec_interface_sub)),
+    ACHIEVEMENTS("settings_section_achievements", UiText.res(R.string.xmbm_setsec_achievements_title), UiText.res(R.string.xmbm_setsec_achievements_sub)),
+    MEDIA       ("settings_section_media",        UiText.res(R.string.xmbm_setsec_media_title),        UiText.res(R.string.xmbm_setsec_media_sub)),
     SYSTEM      (
-        "settings_section_system", "System",
-        if (FeatureFlags.BACKUP_RESTORE) "About, updates, logs, backup, setup & credits" else "About, updates, logs, setup & credits",
+        "settings_section_system", UiText.res(R.string.xmbm_setsec_system_title),
+        UiText.res(if (FeatureFlags.BACKUP_RESTORE) R.string.xmbm_setsec_system_sub else R.string.xmbm_setsec_system_sub_nobackup),
     ),
 }
 
@@ -525,62 +530,68 @@ internal fun isSettingsRouteEnabled(routeId: String): Boolean = routeId != "sett
 fun settingsSectionForId(id: String): SettingsSection? =
     SettingsSection.entries.firstOrNull { it.id == id }
 
+/** The theme slot of the section's own icon (item_settings_section_*); the rows inside keep item_settings. */
+val SettingsSection.iconSlotKey: String get() = "item_$id"
+
+/** [iconSlotKey] for a section row id, or null for any other row (Android Settings, the L2 rows). */
+fun settingsSectionIconSlotKey(id: String): String? = settingsSectionForId(id)?.iconSlotKey
+
 // The L2 rows of a section. Ids must be unique inside the list (list keys + cursor restore) and
 // distinct from every section id (the select handler routes section ids to the flyout and
 // everything else to activeSettingsScreen — see SettingsHierarchyTest).
 fun settingsSectionItems(section: SettingsSection): List<XMBItem> = when (section) {
     SettingsSection.LIBRARY -> listOf(
-        XMBItem(id = "settings_library",        title = "Library Manager",    subtitle = "ROM sources & scanning"),
-        XMBItem(id = "settings_windows_games",  title = "Windows Games", subtitle = "PC games, launchers & imports"),
-        XMBItem(id = "settings_collections",    title = "Custom Memory Cards", subtitle = "Create & manage custom memory cards"),
-        XMBItem(id = "settings_artwork",        title = "Artwork",      subtitle = "Scraping sources & cache"),
-        XMBItem(id = "settings_app_visibility", title = "Hidden Games", subtitle = "Review apps & games you've hidden"),
+        XMBItem(id = "settings_library", titleText = UiText.res(R.string.xmbm_set_library_title), subtitleText = UiText.res(R.string.xmbm_set_library_sub)),
+        XMBItem(id = "settings_windows_games", titleText = UiText.res(R.string.xmbm_set_windows_games_title), subtitleText = UiText.res(R.string.xmbm_set_windows_games_sub)),
+        XMBItem(id = "settings_collections", titleText = UiText.res(R.string.xmbm_set_collections_title), subtitleText = UiText.res(R.string.xmbm_set_collections_sub)),
+        XMBItem(id = "settings_artwork", titleText = UiText.res(R.string.xmbm_set_artwork_title), subtitleText = UiText.res(R.string.xmbm_set_artwork_sub)),
+        XMBItem(id = "settings_app_visibility", titleText = UiText.res(R.string.xmbm_set_app_visibility_title), subtitleText = UiText.res(R.string.xmbm_set_app_visibility_sub)),
     )
     SettingsSection.EMULATORS -> listOf(
         // First pass: all three open the combined Emulators screen (plan §4); distinct ids keep
         // list keys stable so per-section focus targets can land later without migrating callers.
-        XMBItem(id = "settings_emulators_installed", title = "Installed",        subtitle = "Detected emulator profiles"),
-        XMBItem(id = "settings_emulators_custom",    title = "Custom Emulators", subtitle = "Custom profiles & Add Custom Emulator"),
-        XMBItem(id = "settings_emulators_retroarch", title = "RetroArch",        subtitle = "Core detection & linking"),
+        XMBItem(id = "settings_emulators_installed", titleText = UiText.res(R.string.xmbm_set_emulators_installed_title), subtitleText = UiText.res(R.string.xmbm_set_emulators_installed_sub)),
+        XMBItem(id = "settings_emulators_custom", titleText = UiText.res(R.string.xmbm_set_emulators_custom_title), subtitleText = UiText.res(R.string.xmbm_set_emulators_custom_sub)),
+        XMBItem(id = "settings_emulators_retroarch", titleText = UiText.res(R.string.xmbm_set_emulators_retroarch_title), subtitleText = UiText.res(R.string.xmbm_set_emulators_retroarch_sub)),
         // B4: per-platform assignment screen — which emulator + core each console uses, and how
         // many of its games override that (with bulk clearing of those overrides).
-        XMBItem(id = "settings_emulators_assign", title = "Per-System Defaults", subtitle = "Default emulator & core per console, and per-game overrides"),
-        XMBItem(id = "settings_emulators_knowledge", title = "Emulator knowledge", subtitle = "Updates, your own files & reset to built-in"),
+        XMBItem(id = "settings_emulators_assign", titleText = UiText.res(R.string.xmbm_set_emulators_assign_title), subtitleText = UiText.res(R.string.xmbm_set_emulators_assign_sub)),
+        XMBItem(id = "settings_emulators_knowledge", titleText = UiText.res(R.string.xmbm_set_emulators_knowledge_title), subtitleText = UiText.res(R.string.xmbm_set_emulators_knowledge_sub)),
     )
     SettingsSection.INTERFACE -> listOf(
-        XMBItem(id = "settings_display",    title = "Display",    subtitle = "Wave, wallpaper, boot & icons"),
+        XMBItem(id = "settings_display", titleText = UiText.res(R.string.xmbm_set_display_title), subtitleText = UiText.res(R.string.xmbm_set_display_sub)),
         // Phase 3 of the seven-sounds plan: renamed Audio → Sound (it owns the boot sound now).
         // The id deliberately stays settings_audio — the route, SETTINGS_SCREEN_ROUTES, the row
         // focus keys (audio_<slot>) and SettingsHierarchyTest all key off it.
-        XMBItem(id = "settings_audio",      title = "Sound",      subtitle = "Menu sounds, levels & ambience"),
+        XMBItem(id = "settings_audio", titleText = UiText.res(R.string.xmbm_set_audio_title), subtitleText = UiText.res(R.string.xmbm_set_audio_sub)),
         // Sits with Display and Sound: the panel is part of how the launcher presents itself,
         // not a library concern.
-        XMBItem(id = "settings_notifications", title = "Notifications", subtitle = "Panel history & retention"),
-        XMBItem(id = "settings_categories", title = "Categories", subtitle = "Manage XMB categories"),
-        XMBItem(id = "settings_themes",     title = "Themes",     subtitle = "XMB appearance, colors & icons"),
-        XMBItem(id = "settings_controller", title = "Controller", subtitle = "Button mapping"),
+        XMBItem(id = "settings_notifications", titleText = UiText.res(R.string.xmbm_set_notifications_title), subtitleText = UiText.res(R.string.xmbm_set_notifications_sub)),
+        XMBItem(id = "settings_categories", titleText = UiText.res(R.string.xmbm_set_categories_title), subtitleText = UiText.res(R.string.xmbm_set_categories_sub)),
+        XMBItem(id = "settings_themes", titleText = UiText.res(R.string.xmbm_set_themes_title), subtitleText = UiText.res(R.string.xmbm_set_themes_sub)),
+        XMBItem(id = "settings_controller", titleText = UiText.res(R.string.xmbm_set_controller_title), subtitleText = UiText.res(R.string.xmbm_set_controller_sub)),
     )
     SettingsSection.ACHIEVEMENTS -> listOf(
         // Same first-pass note as Emulators: the combined Shiba Coins screen, distinct ids.
-        XMBItem(id = "settings_achievements_player_card",   title = "Player Card",          subtitle = "Levels, ranks & sync status"),
-        XMBItem(id = "settings_achievements_credentials",   title = "Provider Credentials", subtitle = "RetroAchievements & Steam accounts"),
-        XMBItem(id = "settings_achievements_local_windows", title = "Local Windows",        subtitle = "Track local Windows (Steam-emu) games"),
-        XMBItem(id = "settings_achievements_update",        title = "Update Achievements",  subtitle = "Sync & auto-match tracked games"),
+        XMBItem(id = "settings_achievements_player_card", titleText = UiText.res(R.string.xmbm_set_achievements_player_card_title), subtitleText = UiText.res(R.string.xmbm_set_achievements_player_card_sub)),
+        XMBItem(id = "settings_achievements_credentials", titleText = UiText.res(R.string.xmbm_set_achievements_credentials_title), subtitleText = UiText.res(R.string.xmbm_set_achievements_credentials_sub)),
+        XMBItem(id = "settings_achievements_local_windows", titleText = UiText.res(R.string.xmbm_set_achievements_local_windows_title), subtitleText = UiText.res(R.string.xmbm_set_achievements_local_windows_sub)),
+        XMBItem(id = "settings_achievements_update", titleText = UiText.res(R.string.xmbm_set_achievements_update_title), subtitleText = UiText.res(R.string.xmbm_set_achievements_update_sub)),
     )
     SettingsSection.MEDIA -> listOf(
-        XMBItem(id = "settings_music", title = "Music", subtitle = "Music folders & default player"),
-        XMBItem(id = "settings_video", title = "Video", subtitle = "Video libraries, scanning & playback"),
-        XMBItem(id = "settings_photo", title = "Photo", subtitle = "Photo libraries & scanning"),
+        XMBItem(id = "settings_music", titleText = UiText.res(R.string.xmbm_set_music_title), subtitleText = UiText.res(R.string.xmbm_set_music_sub)),
+        XMBItem(id = "settings_video", titleText = UiText.res(R.string.xmbm_set_video_title), subtitleText = UiText.res(R.string.xmbm_set_video_sub)),
+        XMBItem(id = "settings_photo", titleText = UiText.res(R.string.xmbm_set_photo_title), subtitleText = UiText.res(R.string.xmbm_set_photo_sub)),
     )
     SettingsSection.SYSTEM -> listOfNotNull(
-        XMBItem(id = "settings_about",  title = "About",            subtitle = "Play Field Portal"),
-        XMBItem(id = "settings_system_update", title = "System Update", subtitle = "New versions & changelog"),
-        XMBItem(id = "settings_logs",  title = "Logs",             subtitle = "Open or share session logs"),
+        XMBItem(id = "settings_about", titleText = UiText.res(R.string.xmbm_set_about_title), subtitleText = UiText.res(R.string.xmbm_set_about_sub)),
+        XMBItem(id = "settings_system_update", titleText = UiText.res(R.string.xmbm_set_system_update_title), subtitleText = UiText.res(R.string.xmbm_set_system_update_sub)),
+        XMBItem(id = "settings_logs", titleText = UiText.res(R.string.xmbm_set_logs_title), subtitleText = UiText.res(R.string.xmbm_set_logs_sub)),
         // Parked until the backup rework; the route stays registered.
-        XMBItem(id = "settings_backup", title = "Backup & Restore", subtitle = "Export & import")
+        XMBItem(id = "settings_backup", titleText = UiText.res(R.string.xmbm_set_backup_title), subtitleText = UiText.res(R.string.xmbm_set_backup_sub))
             .takeIf { FeatureFlags.BACKUP_RESTORE },
-        XMBItem(id = XMBViewModel.INITIAL_SETUP_SCREEN_ID, title = "Setup Wizard", subtitle = "Guided folder & account setup"),
-        XMBItem(id = "settings_credits", title = "Credits",         subtitle = "Artwork & attributions"),
+        XMBItem(id = XMBViewModel.INITIAL_SETUP_SCREEN_ID, titleText = UiText.res(R.string.xmbm_set_setup_title), subtitleText = UiText.res(R.string.xmbm_set_setup_sub)),
+        XMBItem(id = "settings_credits", titleText = UiText.res(R.string.xmbm_set_credits_title), subtitleText = UiText.res(R.string.xmbm_set_credits_sub)),
     )
 }
 
@@ -597,13 +608,13 @@ sealed interface MusicBrowserView {
 
 data class MusicBrowserState(
     val view: MusicBrowserView,
-    val title: String,
+    val title: UiText,
     val query: String = "",
     val rows: List<XMBItem> = emptyList(),   // already filtered + sorted, ready to render
     val selectedIndex: Int = 0,
     // The bare sort mode ("Title"), non-null on track views (AllMusic / a Playlist's tracks).
     // Deliberately without the "Sort: " prefix, which belongs to the drawing — see [sortPillLabel].
-    val sortLabel: String? = null,
+    val sortLabel: UiText? = null,
     // Bumped to snap the list back to the top (sort change / query change).
     val scrollToTopToken: Int = 0,
     // Whether the controller cursor should be drawn. Owned by [browserNav] (the shared navigation
@@ -626,7 +637,7 @@ data class MusicBrowserState(
      * prefix itself. When [sortLabel] also carried one the pair produced "Sort: Sort: Title", so
      * the prefix lives here, once, and [sortLabel] stays the bare mode name.
      */
-    val sortPillLabel: String? get() = sortLabel?.let { "Sort: $it" }
+    val sortPillLabel: UiText? get() = sortLabel?.let { UiText.res(R.string.xmbm_sort_pill, it) }
 }
 
 /**
@@ -641,7 +652,7 @@ data class GameSearchFieldState(val text: String, val textOnOpen: String)
 // Drives the "New / Rename Playlist" text dialog. When [forTrackId] is set, the freshly created
 // playlist immediately receives that track.
 data class PlaylistNameDialogState(
-    val title: String,
+    val title: UiText,
     val initialText: String = "",
     val forTrackId: String? = null,
     // When set, confirming renames this playlist instead of creating a new one.
@@ -735,7 +746,7 @@ data class XMBUiState(
     val umdInserted: Map<String, Long> = emptyMap(),
     val musicSortMode: XmbSortMode = XmbSortMode.TITLE,
     val videoSortMode: XmbSortMode = XmbSortMode.TITLE,
-    val sortLabel: String? = null,
+    val sortLabel: UiText? = null,
     // In-app music player: visible when a song is selected; playback state mirrors the controller.
     val musicPlayerVisible: Boolean = false,
     val musicPlayback: com.playfieldportal.feature.xmb.music.MusicPlaybackState =
@@ -755,7 +766,7 @@ data class XMBUiState(
     // Non-null while drilled into a Games sub-item (a platform card, All Games, Favorites, or a
     // collection): the parent's label, which drives the two-pane "flyout" listing (parent on the
     // left, children in a centre-locked column on the right). Null = normal single-column list.
-    val drillTitle: String? = null,
+    val drillTitle: UiText? = null,
     // The current category's sibling items (All Games / Favorites / collections / memory cards),
     // shown as the flyout's left icon column (PSP-style); [drillSiblingIndex] is the one currently
     // drilled into, which sits centred on the arrow. Empty when not drilled in.
@@ -1133,8 +1144,8 @@ data class XMBUiState(
 
     // What the CHANGE_SORT half of the hint pill is called here. Games opens a Filter menu rather
     // than cycling, and the pill names actions — so it has to say which action.
-    val sortActionLabel: String
-        get() = if (activeSortModes() === GAME_SORTS) "Filter" else "Sort"
+    val sortActionLabel: UiText
+        get() = UiText.res(if (activeSortModes() === GAME_SORTS) R.string.xmbm_filter else R.string.xmbm_sort)
 
     // Whether the bottom-right contextual button (App Drawer / Back) should be shown, per the
     // user's Touch Navigation Button setting. AUTO follows the last input source.
@@ -1248,14 +1259,16 @@ enum class XMBItemType {
 
 // PSP-style sort cycling (X / Square). Each list type cycles only the modes that make sense for
 // it (see MUSIC_SORTS / GAME_SORTS); a shared enum keeps the status-bar label simple.
-enum class XmbSortMode(val label: String) {
-    TITLE("Title"),
-    ARTIST("Artist"),
-    ALBUM("Album"),
-    RECENT_PLAYED("Recently Played"),
-    DATE_ADDED("Date Added"),
+enum class XmbSortMode(@StringRes val labelRes: Int) {
+    TITLE(R.string.xmbm_sortmode_title),
+    ARTIST(R.string.xmbm_sortmode_artist),
+    ALBUM(R.string.xmbm_sortmode_album),
+    RECENT_PLAYED(R.string.xmbm_sortmode_recent_played),
+    DATE_ADDED(R.string.xmbm_sortmode_date_added),
     // The user's own arrangement of one list, saved per list. Never part of a sort cycle.
-    CUSTOM("Custom"),
+    CUSTOM(R.string.xmbm_sortmode_custom);
+
+    val label: UiText get() = UiText.res(labelRes)
 }
 
 private val MUSIC_SORTS = listOf(XmbSortMode.TITLE, XmbSortMode.ARTIST, XmbSortMode.ALBUM, XmbSortMode.DATE_ADDED)
@@ -1349,16 +1362,16 @@ fun gamesFilterRows(state: XMBUiState, group: GamesFilterGroup?): List<XMBContex
             add(
                 XMBContextMenuItem(
                     GAMES_FILTER_SEARCH_ID,
-                    "Search",
-                    value = if (term.isBlank()) "None" else "\"$term\"",
+                    UiText.res(R.string.xmbm_filter_search),
+                    value = if (term.isBlank()) UiText.res(R.string.xmbm_filter_none) else UiText.res(R.string.xmbm_filter_term, term),
                 )
             )
             // The sort belongs to the list on screen: its own, or "Global: …" while it follows the
             // global setting.
             val sortValue = state.currentListKey()?.let { state.sortValueLabel(it, state.openListSortKind) }
                 ?: state.activeGameSort.label
-            add(XMBContextMenuItem(GAMES_FILTER_SORT_ID, "Sort", value = sortValue))
-            if (term.isNotBlank()) add(XMBContextMenuItem(GAMES_FILTER_CLEAR_ID, "Clear Search"))
+            add(XMBContextMenuItem(GAMES_FILTER_SORT_ID, UiText.res(R.string.xmbm_sort), value = sortValue))
+            if (term.isNotBlank()) add(XMBContextMenuItem(GAMES_FILTER_CLEAR_ID, UiText.res(R.string.xmbm_filter_clear)))
         }
         // The list's own Sort picker: follow the global setting, take a sort of its own, or Custom.
         GamesFilterGroup.SORT -> listSortMenuItems(
@@ -1651,7 +1664,11 @@ fun shouldShowDetailHint(state: XMBUiState, idleMs: Long): Boolean =
 
 data class XMBItem(
     val id: String,
-    val title: String,
+    // Untranslated text: a game or file name the user supplied. Rows whose words come from the app
+    // itself leave this empty and set [titleText] instead — the drawing code reads
+    // `titleText?.asString() ?: title`.
+    val title: String = "",
+    val titleText: UiText? = null,
     val artworkUri: String? = null,
     val heroUri: String? = null,        // PIC1 / hero background art
     val iconUri: String? = null,        // landscape 144:80 icon art (SGDB horizontal grid)
@@ -1663,12 +1680,14 @@ data class XMBItem(
     val box3dUri: String? = null,
     val iconDisplayModeOverride: String? = null,
     val subtitle: String? = null,
+    // The subtitle when it is app text (see [titleText]); wins over [subtitle].
+    val subtitleText: UiText? = null,
     // A controller prompt appended to the subtitle: the physical position plus its label.
     // Deliberately a position and not a GamepadAction — the only user today is the PTT capture,
     // whose cancel reads a RAW keycode before any mapping is applied, so no action describes it.
     // Domain types, so the item model stays free of Compose.
     val subtitleHintIcon: ControllerIcon? = null,
-    val subtitleHintLabel: String? = null,
+    val subtitleHintLabel: UiText? = null,
     val gameId: Long? = null,
     val platformId: String? = null,
     val collectionId: Long? = null,     // set on COLLECTION rows in the Games root
@@ -1700,14 +1719,20 @@ data class XMBItem(
     val textOnly: Boolean = false,
     // When set, the leading slot draws a tinted circle with this text centered (e.g. "Lv 27") —
     // the Shiba Coins player-card summary row.
-    val levelBadge: String? = null,
+    val levelBadge: UiText? = null,
     // Prestige Bones earned (player-card summary row only); renders "• N [bone glyph]" after the
     // title when greater than zero.
     val boneCount: Int = 0,
     // Pinned to the top of its list. Rows only ever move among rows of the same pinned state.
     val pinned: Boolean = false,
     val type: XMBItemType = XMBItemType.STANDARD,
-)
+) {
+    /** The row's title as drawable text: its own words when it has them, else the untranslated [title]. */
+    val titleUi: UiText get() = titleText ?: UiText.raw(title)
+
+    /** The row's subtitle as drawable text, or null when it has none. */
+    val subtitleUi: UiText? get() = subtitleText ?: subtitle?.let(UiText::raw)
+}
 
 /**
  * The tile art [GameIcon] should draw for [item] under the given global mode.
@@ -1891,8 +1916,8 @@ class XMBViewModel @Inject constructor(
         viewModelScope.launch {
             val taskId = "xmb_local_steam_batch"
             val open = NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID)
-            backgroundTasks.startStoppable(taskId, "Matching local Windows games…", TaskKind.SCAN,
-                stopNote = "Games already matched stay linked.")
+            backgroundTasks.startStoppable(taskId, context.getString(R.string.xmbm_lwm_running), TaskKind.SCAN,
+                stopNote = context.getString(R.string.xmbm_lwm_stop_note))
             var error: Throwable? = null
             val report = try {
                 runCatching { localSteamBatchMatcher.run(parentFolder) }
@@ -1902,20 +1927,20 @@ class XMBViewModel @Inject constructor(
                     }
                     .getOrNull()
             } catch (e: kotlinx.coroutines.CancellationException) {
-                backgroundTasks.settleCancelled(taskId, "Stopped before it finished", open,
-                    title = "Windows achievements match stopped")
+                backgroundTasks.settleCancelled(taskId, context.getString(R.string.xmbm_task_stopped), open,
+                    title = context.getString(R.string.xmbm_lwm_stopped_title))
                 throw e
             }
             if (report == null) {
                 backgroundTasks.fail(
-                    taskId, "Batch match failed", open,
+                    taskId, context.getString(R.string.xmbm_lwm_failed), open,
                     detail = NotificationDetail.notes(PfpErrorCode.AC_2001, summary = error?.message,
                         diagnostic = error?.stackTraceToString()?.take(4_000)),
-                    title = "Windows achievements match failed",
+                    title = context.getString(R.string.xmbm_lwm_failed_title),
                 )
                 return@launch
             }
-            backgroundTasks.complete(taskId, report.message, open, title = "Windows achievements match finished")
+            backgroundTasks.complete(taskId, report.messageText.resolve(context), open, title = context.getString(R.string.xmbm_lwm_done_title))
             // The convertible pile — the one place a DLL swap is ever authorised, per game.
             convertPickerController.start(report.convertible) { outcome ->
                 viewModelScope.launch {
@@ -1925,11 +1950,11 @@ class XMBViewModel @Inject constructor(
                     convertOutcomeMessage(outcome)?.let { msg ->
                         val id = "schema_gen_windows"
                         addBackgroundTask(
-                            BackgroundTaskInfo(id = id, label = "Achievement schemas", kind = TaskKind.ACHIEVEMENT)
+                            BackgroundTaskInfo(id = id, label = context.getString(R.string.xmbm_schema_label), kind = TaskKind.ACHIEVEMENT)
                         )
                         completeBackgroundTask(
                             id,
-                            msg + (linked?.let { " ${it.linkedToLibrary} linked to library games." } ?: ""),
+                            msg + (linked?.let { " " + context.getString(R.string.xmbm_convert_linked, it.linkedToLibrary) } ?: ""),
                         )
                     }
                 }
@@ -1981,13 +2006,13 @@ class XMBViewModel @Inject constructor(
         ) {
             return null
         }
-        return buildString {
-            append("Converted ${outcome.converted} game(s)")
-            if (outcome.noAchievements > 0) append(", ${outcome.noAchievements} had no achievements")
-            if (outcome.noKey > 0) append(", ${outcome.noKey} need a Steam Web API key")
-            if (outcome.failed > 0) append(", ${outcome.failed} failed")
-            append(". Play each game to start earning coins.")
+        val parts = buildList {
+            add(context.resources.getQuantityString(R.plurals.xmbm_convert_converted, outcome.converted, outcome.converted))
+            if (outcome.noAchievements > 0) add(context.getString(R.string.xmbm_convert_no_ach, outcome.noAchievements))
+            if (outcome.noKey > 0) add(context.getString(R.string.xmbm_convert_no_key, outcome.noKey))
+            if (outcome.failed > 0) add(context.getString(R.string.xmbm_convert_failed, outcome.failed))
         }
+        return parts.joinToString(", ") + ". " + context.getString(R.string.xmbm_convert_tail)
     }
 
     // The track list currently on screen (in display/sort order), used as the in-app player's queue
@@ -2178,7 +2203,7 @@ class XMBViewModel @Inject constructor(
                 backgroundTasks.report(
                     id = "launch_diag_${request.gameId}",
                     label = request.gameTitle,
-                    message = "Diagnostic copied to clipboard",
+                    message = context.getString(R.string.xmbm_diag_copied),
                     kind = com.playfieldportal.core.domain.model.NotificationKind.LAUNCH,
                     action = NotificationAction.OpenGame(request.gameId),
                 )
@@ -2340,8 +2365,8 @@ class XMBViewModel @Inject constructor(
     private fun reportArtworkLinkFailed() {
         backgroundTasks.report(
             id = "artwork_folder_link",
-            label = "Artwork folder",
-            message = "Couldn't set up that folder. Pick a folder PFP can write to.",
+            label = context.getString(R.string.xmbm_artwork_folder_label),
+            message = context.getString(R.string.xmbm_artwork_folder_failed),
             severity = com.playfieldportal.core.domain.model.NotificationSeverity.ERROR,
             kind = com.playfieldportal.core.domain.model.NotificationKind.ARTWORK,
         )
@@ -2753,6 +2778,26 @@ class XMBViewModel @Inject constructor(
     }
 
     /**
+     * Publishes a Social level's rows. They come from Discord, so they arrive a moment after the
+     * level opens; until then the state would still hold the level the user just left, and the
+     * flyout would show that list in the new level's column and then swap it. Entering a level
+     * therefore empties the column first, the same as [publishAppSectionItems], so Social opens its
+     * levels like every other category: empty, then filled, never the wrong list.
+     *
+     * A reload of the level already on screen (a toggle flipped, a friend coming online, the voice
+     * poll) keeps its rows until the new ones are ready, so the list does not blink.
+     */
+    private suspend fun publishSocialItems(nav: SocialNav, resolve: suspend () -> List<XMBItem>) {
+        if (socialItemsShownFor != nav) _uiState.update { it.copy(currentItems = emptyList()) }
+        val items = resolve()
+        _uiState.update { it.copy(currentItems = items) }
+        socialItemsShownFor = nav
+    }
+
+    // The Social level whose rows are on screen; null whenever another category is.
+    private var socialItemsShownFor: SocialNav? = null
+
+    /**
      * @param keepCursorOnRow when true, even the FIRST game list this load publishes keeps the
      *   cursor on the row it was on, by id. Later emissions of a live game list always do; this is
      *   for a caller that reloads the list already on screen, like Edit Title.
@@ -2769,6 +2814,7 @@ class XMBViewModel @Inject constructor(
         // rebuild a column that is no longer on screen. Each Games branch installs its own.
         rebuildGameRows = null
         if (category == null) { _uiState.update { it.copy(currentItems = emptyList(), sortLabel = null, drillTitle = null, drillSiblings = emptyList(), drillSiblingIndex = 0) }; return }
+        if (category.id != BuiltInCategory.SOCIAL) socialItemsShownFor = null
         val drill = computeDrillTitle()
         val (sibs, sibIdx) = if (drill != null) computeDrillSiblings(category) else (emptyList<XMBItem>() to 0)
         _uiState.update { it.copy(sortLabel = currentSortLabel(), drillTitle = drill, drillSiblings = sibs, drillSiblingIndex = sibIdx) }
@@ -2801,9 +2847,15 @@ class XMBViewModel @Inject constructor(
                 }
                 BuiltInCategory.SOCIAL -> when (_uiState.value.socialNav) {
                     SocialNav.Root -> {
+                        // Back out to the root from a level: empty the column before the root's
+                        // rows arrive, like the levels do on the way in.
+                        if (socialItemsShownFor != null && socialItemsShownFor != SocialNav.Root) {
+                            _uiState.update { it.copy(currentItems = emptyList()) }
+                        }
                         val items = socialRootItems()
                         val avatar = items.firstOrNull { it.type == XMBItemType.SOCIAL_ACCOUNT }?.coverUri
                         _uiState.update { it.copy(currentItems = items, socialAccountAvatarUrl = avatar) }
+                        socialItemsShownFor = SocialNav.Root
                         // Fill in the avatar/name once the gateway is Ready (skip while offline).
                         if (discordAuthRepository.isOnline() &&
                             items.any { it.type == XMBItemType.SOCIAL_ACCOUNT && it.coverUri == null }
@@ -2811,21 +2863,21 @@ class XMBViewModel @Inject constructor(
                             scheduleSocialAccountRefresh()
                         }
                     }
-                    SocialNav.Account -> {
+                    SocialNav.Account -> publishSocialItems(SocialNav.Account) {
                         val online = if (discordAuthRepository.isOnline()) {
                             discordAuthRepository.friends().count { it.presence.isOnline }
                         } else {
                             null
                         }
-                        _uiState.update { it.copy(currentItems = socialHubItems(online)) }
+                        socialHubItems(online)
                     }
-                    SocialNav.Friends -> _uiState.update { it.copy(currentItems = socialFriendItems()) }
-                    SocialNav.Voice -> _uiState.update { it.copy(currentItems = socialVoiceItems()) }
-                    SocialNav.VoiceSettings -> _uiState.update { it.copy(currentItems = socialVoiceSettingsItems()) }
-                    SocialNav.VoiceInvites -> _uiState.update { it.copy(currentItems = socialVoiceInvitesItems()) }
-                    SocialNav.VoiceInviteFriends -> _uiState.update { it.copy(currentItems = socialVoiceInviteFriendsItems()) }
-                    SocialNav.ActivitySettings -> _uiState.update { it.copy(currentItems = socialActivitySettingsItems()) }
-                    SocialNav.DiscordSettings -> _uiState.update { it.copy(currentItems = socialDiscordSettingsItems()) }
+                    SocialNav.Friends -> publishSocialItems(SocialNav.Friends) { socialFriendItems() }
+                    SocialNav.Voice -> publishSocialItems(SocialNav.Voice) { socialVoiceItems() }
+                    SocialNav.VoiceSettings -> publishSocialItems(SocialNav.VoiceSettings) { socialVoiceSettingsItems() }
+                    SocialNav.VoiceInvites -> publishSocialItems(SocialNav.VoiceInvites) { socialVoiceInvitesItems() }
+                    SocialNav.VoiceInviteFriends -> publishSocialItems(SocialNav.VoiceInviteFriends) { socialVoiceInviteFriendsItems() }
+                    SocialNav.ActivitySettings -> publishSocialItems(SocialNav.ActivitySettings) { socialActivitySettingsItems() }
+                    SocialNav.DiscordSettings -> publishSocialItems(SocialNav.DiscordSettings) { socialDiscordSettingsItems() }
                 }
                 BuiltInCategory.GAMES -> {
                     val platformId = _uiState.value.selectedPlatformId
@@ -2872,7 +2924,7 @@ class XMBViewModel @Inject constructor(
                                     // Each row states why it is here, per the plan. The subtitle
                                     // would otherwise carry play stats that are meaningless for a
                                     // file that isn't there.
-                                    rows.map { it.copy(subtitle = MISSING_REASON) }
+                                    rows.map { it.copy(subtitle = null, subtitleText = UiText.res(R.string.xmbm_missing_reason)) }
                                 })
                             }
                             keepCursor = true
@@ -3017,7 +3069,7 @@ class XMBViewModel @Inject constructor(
                                     emptyItem = ::emptyCategoryCardItem,
                                     mapRows = { rows ->
                                         rows.map { row ->
-                                            row.copy(subtitle = categoryCardSubtitle(row.subtitle, sources[row.gameId].orEmpty()))
+                                            row.copy(subtitle = null, subtitleText = categoryCardSubtitle(row.subtitle, sources[row.gameId].orEmpty()))
                                         }
                                     },
                                     dateAdded = addedAt,
@@ -3032,7 +3084,7 @@ class XMBViewModel @Inject constructor(
                             assembleRoot(
                                 umd = umdSlotItem(category.id, cardGames.map { it.game }),
                                 movable = listOf(categoryCardItem(category, cardGames.size)) +
-                                    customCardRows(category.id, noun = "Game"),
+                                    customCardRows(category.id, holdsApps = false),
                                 trailing = listOf(addGamesItem()),
                                 listState = listState(rootKey),
                                 custom = _uiState.value.isCustomSorted(rootKey, XmbListKind.ROOT),
@@ -3055,7 +3107,7 @@ class XMBViewModel @Inject constructor(
                         // source of truth for placement, same as gaming categories) come first in
                         // the default order; under Custom they are arranged with the apps.
                         val rows = arrangeRows(
-                            customCardRows(category.id, noun = "App") + appItems,
+                            customCardRows(category.id, holdsApps = true) + appItems,
                             listState(listKey),
                             custom = mode == XmbSortMode.CUSTOM,
                         )
@@ -3077,7 +3129,7 @@ class XMBViewModel @Inject constructor(
     ): XMBItem = XMBItem(
         id           = "app_$packageName",
         title        = label,
-        subtitle     = if (pinned) "Pinned" else null,
+        subtitleText = if (pinned) UiText.res(R.string.xmbm_pinned) else null,
         packageName  = packageName,
         isAndroidApp = true,
         pinned       = pinned,
@@ -3091,50 +3143,55 @@ class XMBViewModel @Inject constructor(
 
     private fun addAppsItem(): XMBItem = XMBItem(
         id       = ADD_APPS_ITEM_ID,
-        title    = "Add Apps",
-        subtitle = "Pick installed apps to add to this section",
+        titleText    = UiText.res(R.string.xmbm_add_apps),
+        subtitleText = UiText.res(R.string.xmbm_additem_apps_sub),
         type     = XMBItemType.ADD_ACTION,
     )
 
     private fun addGamesItem(): XMBItem = XMBItem(
         id       = ADD_GAMES_ITEM_ID,
-        title    = "Add Games",
-        subtitle = "Pick games and custom memory cards to add to this category",
+        titleText    = UiText.res(R.string.xmbm_add_games),
+        subtitleText = UiText.res(R.string.xmbm_additem_games_sub),
         type     = XMBItemType.ADD_ACTION,
     )
 
     // A custom gaming category's own Memory Card row — the category's counterpart of All Games.
     private fun categoryCardItem(category: Category, count: Int): XMBItem = XMBItem(
         id       = CATEGORY_CARD_ITEM_ID,
-        title    = "${category.name} Memory Card",
-        subtitle = "Total Games $count",
+        titleText    = UiText.res(R.string.xmbm_catcard_title, category.name),
+        subtitleText = UiText.res(R.string.xmbm_total_games, count),
         type     = XMBItemType.CATEGORY_CARD,
     )
 
     // Where a game lives inside its category, after the row's own platform line: "Loose" when it
     // was put in the category directly, otherwise the custom memory card(s) holding it.
-    private fun categoryCardSubtitle(base: String?, cardNames: List<String>): String =
-        listOfNotNull(base, cardNames.joinToString(", ").ifBlank { "Loose" }).joinToString(" · ")
+    private fun categoryCardSubtitle(base: String?, cardNames: List<String>): UiText =
+        UiText.Joined(
+            listOfNotNull(
+                base?.let(UiText::raw),
+                cardNames.joinToString(", ").ifBlank { null }?.let(UiText::raw) ?: UiText.res(R.string.xmbm_catcard_loose),
+            ),
+            " · ",
+        )
 
     private fun emptyCategoryCardItem(): XMBItem = XMBItem(
         id       = EMPTY_CATEGORY_ITEM_ID,
-        title    = "No games in this category yet",
-        subtitle = "Go back and choose Add Games.",
+        titleText    = UiText.res(R.string.xmbm_empty_category_title),
+        subtitleText = UiText.res(R.string.xmbm_empty_category_sub),
         type     = XMBItemType.EMPTY,
     )
 
     // The custom memory cards homed in [categoryId], pinned first, as root rows. [noun] is what
-    // they hold in this kind of column ("Game" / "App").
-    private fun customCardRows(categoryId: String, noun: String): List<XMBItem> =
+    // they hold in this kind of column (games, or apps when [holdsApps]).
+    private fun customCardRows(categoryId: String, holdsApps: Boolean): List<XMBItem> =
         _uiState.value.collections
             .filter { it.categoryId == categoryId }
             .sortedByDescending { it.isPinned }
             .map { collection ->
-                val count = "${collection.gameCount} ${if (collection.gameCount == 1) noun else "${noun}s"}"
                 XMBItem(
                     id = "col_${collection.id}",
                     title = collection.name,
-                    subtitle = customCardSubtitle(collection.isPinned, count),
+                    subtitleText = customCardSubtitle(collection.isPinned, collection.gameCount, holdsApps),
                     collectionId = collection.id,
                     iconKey = collection.iconKey,
                     pinned = collection.isPinned,
@@ -3151,8 +3208,15 @@ class XMBViewModel @Inject constructor(
             .mapNotNullTo(mutableSetOf()) { it.packageName }
 
     // "Custom" tells a custom memory card apart from the Memory Card rows it shares a glyph with.
-    private fun customCardSubtitle(pinned: Boolean, count: String): String =
-        if (pinned) "Custom · Pinned · $count" else "Custom · $count"
+    private fun customCardSubtitle(pinned: Boolean, count: Int, holdsApps: Boolean): UiText = UiText.plural(
+        when {
+            holdsApps && pinned -> R.plurals.xmbm_customcard_apps_pinned
+            holdsApps -> R.plurals.xmbm_customcard_apps
+            pinned -> R.plurals.xmbm_customcard_games_pinned
+            else -> R.plurals.xmbm_customcard_games
+        },
+        count,
+    )
 
     // A media section's app rows (Music / Video / Photo Apps), in that list's own sort.
     private suspend fun sectionAppItems(sectionId: String): List<XMBItem> {
@@ -3214,7 +3278,10 @@ class XMBViewModel @Inject constructor(
                     XMBItem(
                         id       = NOW_PLAYING_ITEM_ID,
                         title    = track.displayTitle,
-                        subtitle = listOfNotNull("Now Playing", track.artist).joinToString("  ·  "),
+                        subtitleText = UiText.Joined(
+                            listOfNotNull(UiText.res(R.string.xmbm_music_now_playing), track.artist?.let(UiText::raw)),
+                            "  ·  ",
+                        ),
                         coverUri = track.artUri,
                         type     = XMBItemType.MUSIC_TRACK,   // renders the album-cover leading tile
                     )
@@ -3223,16 +3290,16 @@ class XMBViewModel @Inject constructor(
             add(
                 XMBItem(
                     id       = PLAYLISTS_ITEM_ID,
-                    title    = "Playlist",
-                    subtitle = "Build and play your own track lists",
+                    titleText    = UiText.res(R.string.xmbm_music_playlist_title),
+                    subtitleText = UiText.res(R.string.xmbm_music_playlist_sub),
                     type     = XMBItemType.PLAYLIST,
                 )
             )
             add(
                 XMBItem(
                     id       = MUSIC_APPS_ITEM_ID,
-                    title    = "Music Apps",
-                    subtitle = "Open your installed music apps",
+                    titleText    = UiText.res(R.string.xmbm_music_apps_title),
+                    subtitleText = UiText.res(R.string.xmbm_music_apps_sub),
                     type     = XMBItemType.MUSIC_APPS,
                 )
             )
@@ -3241,7 +3308,7 @@ class XMBViewModel @Inject constructor(
             add(
                 XMBItem(
                     id       = ALL_MUSIC_ITEM_ID,
-                    title    = "Music",
+                    titleText = UiText.res(R.string.xmbm_media_music),
                     subtitle = "",
                     coverUri = MEMORY_CARD_ASSET_URI,
                     type     = XMBItemType.MEMORY_CARD,
@@ -3255,8 +3322,8 @@ class XMBViewModel @Inject constructor(
 
     private fun addMusicFolderItem(): XMBItem = XMBItem(
         id       = ADD_MUSIC_FOLDER_ITEM_ID,
-        title    = "Add Music Folder",
-        subtitle = "Set your Music root folder in Settings to get started",
+        titleText    = UiText.res(R.string.xmbm_music_add_folder_title),
+        subtitleText = UiText.res(R.string.xmbm_music_add_folder_sub),
         type     = XMBItemType.ADD_ACTION,
     )
 
@@ -3266,16 +3333,16 @@ class XMBViewModel @Inject constructor(
         val appItems = sectionAppItems(MUSIC_APPS_CATEGORY_ID)
         return appItems + XMBItem(
             id       = ADD_MUSIC_APPS_ITEM_ID,
-            title    = "Add Music Apps",
-            subtitle = "Pick installed apps to show here",
+            titleText    = UiText.res(R.string.xmbm_music_add_apps_title),
+            subtitleText = UiText.res(R.string.xmbm_picker_show_here_sub),
             type     = XMBItemType.ADD_ACTION,
         )
     }
 
     private fun addTracksItem(): XMBItem = XMBItem(
         id       = ADD_TRACKS_ITEM_ID,
-        title    = "Add Tracks",
-        subtitle = "Pick songs to add to this playlist",
+        titleText    = UiText.res(R.string.xmbm_music_add_tracks_title),
+        subtitleText = UiText.res(R.string.xmbm_music_add_tracks_sub),
         type     = XMBItemType.ADD_ACTION,
     )
 
@@ -3314,15 +3381,15 @@ class XMBViewModel @Inject constructor(
 
     private fun emptyAllMusicItem(): XMBItem = XMBItem(
         id       = EMPTY_CATEGORY_ITEM_ID,
-        title    = "No music found",
-        subtitle = "Add a music folder in Settings → Music",
+        titleText    = UiText.res(R.string.xmbm_music_empty_title),
+        subtitleText = UiText.res(R.string.xmbm_music_empty_sub),
         type     = XMBItemType.EMPTY,
     )
 
     private fun emptyPlaylistItem(): XMBItem = XMBItem(
         id       = EMPTY_PLAYLIST_ITEM_ID,
-        title    = "This playlist is empty",
-        subtitle = "Add tracks below or from a song's Options menu.",
+        titleText    = UiText.res(R.string.xmbm_playlist_empty_title),
+        subtitleText = UiText.res(R.string.xmbm_playlist_empty_sub),
         type     = XMBItemType.EMPTY,
     )
 
@@ -3368,23 +3435,26 @@ class XMBViewModel @Inject constructor(
     }
 
     private fun categoryDisplayName(id: String): String = when (id) {
-        MUSIC_APPS_CATEGORY_ID -> "Music Apps"
-        VIDEO_APPS_CATEGORY_ID -> "Video Apps"
+        MUSIC_APPS_CATEGORY_ID -> context.getString(R.string.xmbm_music_apps_name)
+        VIDEO_APPS_CATEGORY_ID -> context.getString(R.string.xmbm_video_apps_name)
         else -> _uiState.value.categories.firstOrNull { it.id == id }?.name ?: id
     }
 
     // The location a GAME row is currently being shown in (for "Hide from here"), or null when the
     // current view doesn't support per-location hiding (the Games root).
-    private fun currentHideLocation(): Triple<HideLocationType, String, String>? {
+    private fun currentHideLocation(): Triple<HideLocationType, String, UiText>? {
         val s = _uiState.value
         val cat = currentCategory()
         return when {
             s.selectedCollectionId != null -> {
-                val name = s.collections.firstOrNull { it.id == s.selectedCollectionId }?.name ?: "Custom Card"
-                Triple(HideLocationType.COLLECTION, s.selectedCollectionId.toString(), name)
+                val name = s.collections.firstOrNull { it.id == s.selectedCollectionId }?.name
+                Triple(
+                    HideLocationType.COLLECTION, s.selectedCollectionId.toString(),
+                    name?.let(UiText::raw) ?: UiText.res(R.string.xmbm_hide_custom_card),
+                )
             }
             s.selectedPlatformId == FAVORITES_PLATFORM_ID ->
-                Triple(HideLocationType.FAVORITES, "", "Favorites")
+                Triple(HideLocationType.FAVORITES, "", UiText.res(R.string.xmbm_favorites))
             // No per-location hide in the Missing bucket. It is the only place "Remove permanently"
             // is offered, so hiding a row here would strand the entry: invisible everywhere (it is
             // already filtered out of normal views by is_missing) and no longer removable.
@@ -3392,23 +3462,23 @@ class XMBViewModel @Inject constructor(
             // A custom category's own Memory Card hides from the category, as its games did
             // when they were listed at the category's root.
             s.selectedPlatformId == CATEGORY_CARD_PLATFORM_ID ->
-                cat?.let { Triple(HideLocationType.CATEGORY, it.id, it.name) }
-            s.selectedPlatformId == ANDROID_PLATFORM_ID -> Triple(HideLocationType.ANDROID_PLATFORM, "", "Android")
+                cat?.let { Triple(HideLocationType.CATEGORY, it.id, UiText.raw(it.name)) }
+            s.selectedPlatformId == ANDROID_PLATFORM_ID -> Triple(HideLocationType.ANDROID_PLATFORM, "", UiText.res(R.string.xmbm_hide_android))
             // The aggregated All Games card — hides from THIS view only; the game stays on its
             // own Memory Card, in collections, and in Favorites.
             s.selectedPlatformId == ALL_GAMES_PLATFORM_ID ->
-                Triple(HideLocationType.ALL_GAMES, "", "All Games")
+                Triple(HideLocationType.ALL_GAMES, "", UiText.res(R.string.xmbm_all_games))
             // Any other Memory Card (ROM platforms, Windows Games) — hides from THIS card only;
             // the game stays in All Games, collections, and categories.
             s.selectedPlatformId != null -> {
                 val name = enabledCards.firstOrNull { it.platformId == s.selectedPlatformId }?.displayName
                     ?: s.selectedPlatformId
-                Triple(HideLocationType.PLATFORM, s.selectedPlatformId, name)
+                Triple(HideLocationType.PLATFORM, s.selectedPlatformId, UiText.raw(name))
             }
             // Reached only when no platform or collection is selected — the branches above
             // have already claimed every one of those cases.
             cat != null && cat.isGamingCategory && cat.id != BuiltInCategory.GAMES ->
-                Triple(HideLocationType.CATEGORY, cat.id, cat.name)
+                Triple(HideLocationType.CATEGORY, cat.id, UiText.raw(cat.name))
             else -> null
         }
     }
@@ -3442,16 +3512,16 @@ class XMBViewModel @Inject constructor(
             add(
                 XMBItem(
                     id       = VIDEO_COLLECTIONS_ITEM_ID,
-                    title    = "Collections",
-                    subtitle = "Recently Watched, Favorites & Playlists",
+                    titleText    = UiText.res(R.string.xmbm_video_collections_title),
+                    subtitleText = UiText.res(R.string.xmbm_video_collections_sub),
                     type     = XMBItemType.VIDEO_COLLECTIONS,
                 )
             )
             add(
                 XMBItem(
                     id       = VIDEO_LIBRARIES_ITEM_ID,
-                    title    = "Video Libraries",
-                    subtitle = "${libraries.size} ${if (libraries.size == 1) "library" else "libraries"}",
+                    titleText    = UiText.res(R.string.xmbm_video_libraries_title),
+                    subtitleText = UiText.plural(R.plurals.xmbm_video_libraries_count, libraries.size),
                     type     = XMBItemType.VIDEO_LIBRARY,
                 )
             )
@@ -3459,15 +3529,15 @@ class XMBViewModel @Inject constructor(
             add(
                 XMBItem(
                     id       = VIDEO_APPS_ITEM_ID,
-                    title    = "Video Apps",
-                    subtitle = "Open your installed video apps",
+                    titleText    = UiText.res(R.string.xmbm_video_apps_name),
+                    subtitleText = UiText.res(R.string.xmbm_video_apps_sub),
                     type     = XMBItemType.VIDEO_APPS,
                 )
             )
             add(
                 XMBItem(
                     id       = ALL_VIDEOS_ITEM_ID,
-                    title    = "Videos",
+                    titleText = UiText.res(R.string.xmbm_media_videos),
                     subtitle = "",
                     coverUri = MEMORY_CARD_ASSET_URI,
                     type     = XMBItemType.MEMORY_CARD,
@@ -3481,8 +3551,8 @@ class XMBViewModel @Inject constructor(
 
     private fun addVideosItem(): XMBItem = XMBItem(
         id       = ADD_VIDEOS_ITEM_ID,
-        title    = "Add Videos",
-        subtitle = "Set your Video root folder in Settings to get started",
+        titleText    = UiText.res(R.string.xmbm_video_add_title),
+        subtitleText = UiText.res(R.string.xmbm_video_add_sub),
         type     = XMBItemType.ADD_ACTION,
     )
 
@@ -3490,20 +3560,20 @@ class XMBViewModel @Inject constructor(
     private fun videoCollectionsItems(): List<XMBItem> = listOf(
         XMBItem(
             id       = RECENTLY_WATCHED_ITEM_ID,
-            title    = "Recently Watched",
-            subtitle = "Pick up where you left off",
+            titleText    = UiText.res(R.string.xmbm_video_recent_title),
+            subtitleText = UiText.res(R.string.xmbm_video_recent_sub),
             type     = XMBItemType.VIDEO_RECENT,
         ),
         XMBItem(
             id       = FAVORITE_VIDEOS_ITEM_ID,
-            title    = "Favorites",
-            subtitle = "Your starred videos",
+            titleText    = UiText.res(R.string.xmbm_favorites),
+            subtitleText = UiText.res(R.string.xmbm_video_favorites_sub),
             type     = XMBItemType.VIDEO_FAVORITES,
         ),
         XMBItem(
             id       = VIDEO_PLAYLISTS_ITEM_ID,
-            title    = "Playlists",
-            subtitle = "Build and play your own lists",
+            titleText    = UiText.res(R.string.xmbm_playlists),
+            subtitleText = UiText.res(R.string.xmbm_video_playlists_sub),
             type     = XMBItemType.PLAYLIST,
         ),
     )
@@ -3524,8 +3594,8 @@ class XMBViewModel @Inject constructor(
             listOf(
                 XMBItem(
                     id = EMPTY_CATEGORY_ITEM_ID,
-                    title = "No video libraries yet",
-                    subtitle = "Set a root folder in Settings → Video",
+                    titleText = UiText.res(R.string.xmbm_video_nolibs_title),
+                    subtitleText = UiText.res(R.string.xmbm_video_nolibs_sub),
                     type = XMBItemType.EMPTY,
                 ),
             )
@@ -3536,8 +3606,8 @@ class XMBViewModel @Inject constructor(
         val appItems = sectionAppItems(VIDEO_APPS_CATEGORY_ID)
         return appItems + XMBItem(
             id       = ADD_VIDEO_APPS_ITEM_ID,
-            title    = "Add Video Apps",
-            subtitle = "Pick installed apps to show here",
+            titleText    = UiText.res(R.string.xmbm_video_add_apps_title),
+            subtitleText = UiText.res(R.string.xmbm_picker_show_here_sub),
             type     = XMBItemType.ADD_ACTION,
         )
     }
@@ -3567,29 +3637,29 @@ class XMBViewModel @Inject constructor(
 
     private fun emptyAllVideosItem(): XMBItem = XMBItem(
         id       = EMPTY_CATEGORY_ITEM_ID,
-        title    = "No videos found",
-        subtitle = "Add a video library in Settings → Video",
+        titleText    = UiText.res(R.string.xmbm_video_none_title),
+        subtitleText = UiText.res(R.string.xmbm_video_none_sub),
         type     = XMBItemType.EMPTY,
     )
 
     private fun emptyRecentItem(): XMBItem = XMBItem(
         id       = EMPTY_CATEGORY_ITEM_ID,
-        title    = "Nothing watched yet",
-        subtitle = "Videos you play show up here",
+        titleText    = UiText.res(R.string.xmbm_video_nowatched_title),
+        subtitleText = UiText.res(R.string.xmbm_video_nowatched_sub),
         type     = XMBItemType.EMPTY,
     )
 
     private fun emptyFavoriteVideosItem(): XMBItem = XMBItem(
         id       = EMPTY_CATEGORY_ITEM_ID,
-        title    = "No favorites yet",
-        subtitle = "Star a video from its ⚙ Options menu",
+        titleText    = UiText.res(R.string.xmbm_video_nofav_title),
+        subtitleText = UiText.res(R.string.xmbm_video_nofav_sub),
         type     = XMBItemType.EMPTY,
     )
 
     private fun emptyPlaylistVideosItem(): XMBItem = XMBItem(
         id       = EMPTY_PLAYLIST_ITEM_ID,
-        title    = "This playlist is empty",
-        subtitle = "Add videos from a video's ⚙ Options menu",
+        titleText    = UiText.res(R.string.xmbm_playlist_empty_title),
+        subtitleText = UiText.res(R.string.xmbm_video_playlist_empty_sub),
         type     = XMBItemType.EMPTY,
     )
 
@@ -3627,7 +3697,7 @@ class XMBViewModel @Inject constructor(
         }
         item.id == ADD_VIDEO_APPS_ITEM_ID -> {
             menuSound.play(MenuSound.SELECT)
-            openAppPicker(AppPickerTarget.CategoryShortcuts(VIDEO_APPS_CATEGORY_ID), "Add Video Apps")
+            openAppPicker(AppPickerTarget.CategoryShortcuts(VIDEO_APPS_CATEGORY_ID), UiText.res(R.string.xmbm_video_add_apps_title))
             true
         }
         item.id.startsWith("vlib_") -> {
@@ -3690,7 +3760,7 @@ class XMBViewModel @Inject constructor(
 
     private fun promptCreateVideoPlaylist(forVideoId: String? = null) {
         _uiState.update { it.copy(
-            playlistNameDialog = PlaylistNameDialogState(title = "New Video Playlist", videoContext = true, forVideoId = forVideoId)
+            playlistNameDialog = PlaylistNameDialogState(title = UiText.res(R.string.xmbm_video_new_playlist), videoContext = true, forVideoId = forVideoId)
         )}
     }
 
@@ -3698,7 +3768,7 @@ class XMBViewModel @Inject constructor(
         val name = _uiState.value.currentItems.firstOrNull { it.playlistId == playlistId }?.title.orEmpty()
         _uiState.update { it.copy(
             playlistNameDialog = PlaylistNameDialogState(
-                title = "Rename Playlist",
+                title = UiText.res(R.string.xmbm_rename_playlist),
                 initialText = name,
                 renamePlaylistId = playlistId,
                 videoContext = true,
@@ -3709,7 +3779,7 @@ class XMBViewModel @Inject constructor(
     // Long-press options for a video playlist row: open / rename / delete.
     private fun openVideoPlaylistContextMenu(playlistId: Long, name: String, byTouch: Boolean) {
         val items = videoPlaylistMenuItems(byTouch)
-        _uiState.update { it.copy(activeContextMenu = XMBContextMenu(name, items, videoPlaylistId = playlistId)) }
+        _uiState.update { it.copy(activeContextMenu = XMBContextMenu(UiText.raw(name), items, videoPlaylistId = playlistId)) }
     }
 
     // Opens the △ options menu for a Video row. Returns true when [item] is a video row it owns
@@ -3742,7 +3812,7 @@ class XMBViewModel @Inject constructor(
             val video = videoRepository.getVideo(videoId) ?: return@launch
             val inPlaylist = _uiState.value.videoNav is VideoNav.Playlist
             val items = videoFileMenuItems(video.isFavorite, inPlaylist, byTouch)
-            _uiState.update { it.copy(activeContextMenu = XMBContextMenu(title, items, videoFileId = videoId)) }
+            _uiState.update { it.copy(activeContextMenu = XMBContextMenu(UiText.raw(title), items, videoFileId = videoId)) }
         }
     }
 
@@ -3768,12 +3838,12 @@ class XMBViewModel @Inject constructor(
             val playlists = videoRepository.observePlaylists().first()
             val memberOf = videoRepository.getPlaylistIdsForVideo(videoId).toSet()
             val items = buildList {
-                playlists.forEach { pl -> add(XMBContextMenuItem("vpl_${pl.id}", pl.name, checked = pl.id in memberOf)) }
-                add(XMBContextMenuItem("vpl_new", "Create New Playlist"))
+                playlists.forEach { pl -> add(XMBContextMenuItem("vpl_${pl.id}", UiText.raw(pl.name), checked = pl.id in memberOf)) }
+                add(XMBContextMenuItem("vpl_new", UiText.res(R.string.xmbm_create_new_playlist)))
             }
             _uiState.update { it.copy(
                 activeContextMenu = XMBContextMenu(
-                    title = "Add to Playlist",
+                    title = UiText.res(R.string.xmbm_add_to_playlist),
                     items = items,
                     selectedIndex = selectIndex.coerceIn(0, items.lastIndex.coerceAtLeast(0)),
                     videoPlaylistPickerVideoId = videoId,
@@ -3785,7 +3855,7 @@ class XMBViewModel @Inject constructor(
     // Options for a video library card: open, scan, or manage in Settings.
     private fun openVideoLibraryContextMenu(libraryId: String, name: String, byTouch: Boolean) {
         val items = videoLibraryMenuItems(byTouch)
-        _uiState.update { it.copy(activeContextMenu = XMBContextMenu(name, items, videoLibraryId = libraryId)) }
+        _uiState.update { it.copy(activeContextMenu = XMBContextMenu(UiText.raw(name), items, videoLibraryId = libraryId)) }
     }
 
     private fun handleVideoLibraryAction(libraryId: String, itemId: String) {
@@ -3857,8 +3927,8 @@ class XMBViewModel @Inject constructor(
                 add(
                     XMBItem(
                         id       = CAMERA_ITEM_ID,
-                        title    = "Camera",
-                        subtitle = "Open the camera",
+                        titleText    = UiText.res(R.string.xmbm_photo_camera_title),
+                        subtitleText = UiText.res(R.string.xmbm_photo_camera_sub),
                         type     = XMBItemType.CAMERA,
                     )
                 )
@@ -3866,8 +3936,8 @@ class XMBViewModel @Inject constructor(
             add(
                 XMBItem(
                     id       = PHOTO_ALBUMS_ITEM_ID,
-                    title    = "Albums",
-                    subtitle = "${libraries.size} ${if (libraries.size == 1) "album" else "albums"}",
+                    titleText    = UiText.res(R.string.xmbm_photo_albums_title),
+                    subtitleText = UiText.plural(R.plurals.xmbm_photo_albums_count, libraries.size),
                     type     = XMBItemType.PHOTO_ALBUMS,
                 )
             )
@@ -3875,15 +3945,15 @@ class XMBViewModel @Inject constructor(
             add(
                 XMBItem(
                     id       = PHOTO_APPS_ITEM_ID,
-                    title    = "Photo Apps",
-                    subtitle = "Open your installed photo apps",
+                    titleText    = UiText.res(R.string.xmbm_photo_apps_title),
+                    subtitleText = UiText.res(R.string.xmbm_photo_apps_sub),
                     type     = XMBItemType.PHOTO_APPS,
                 )
             )
             add(
                 XMBItem(
                     id       = ALL_PHOTOS_ITEM_ID,
-                    title    = "Photos",
+                    titleText = UiText.res(R.string.xmbm_media_photos),
                     subtitle = "",
                     coverUri = MEMORY_CARD_ASSET_URI,
                     type     = XMBItemType.MEMORY_CARD,
@@ -3897,8 +3967,8 @@ class XMBViewModel @Inject constructor(
 
     private fun addPhotoLibraryItem(): XMBItem = XMBItem(
         id       = ADD_PHOTO_LIBRARY_ITEM_ID,
-        title    = "Add Photo Library",
-        subtitle = "Set your Photo root folder in Settings to get started",
+        titleText    = UiText.res(R.string.xmbm_photo_add_title),
+        subtitleText = UiText.res(R.string.xmbm_photo_add_sub),
         type     = XMBItemType.ADD_ACTION,
     )
 
@@ -3908,8 +3978,8 @@ class XMBViewModel @Inject constructor(
         val appItems = sectionAppItems(PHOTO_APPS_CATEGORY_ID)
         return appItems + XMBItem(
             id       = ADD_PHOTO_APPS_ITEM_ID,
-            title    = "Add Photo Apps",
-            subtitle = "Pick installed apps to show here",
+            titleText    = UiText.res(R.string.xmbm_photo_add_apps_title),
+            subtitleText = UiText.res(R.string.xmbm_picker_show_here_sub),
             type     = XMBItemType.ADD_ACTION,
         )
     }
@@ -3929,8 +3999,8 @@ class XMBViewModel @Inject constructor(
             listOf(
                 XMBItem(
                     id = EMPTY_CATEGORY_ITEM_ID,
-                    title = "No albums yet",
-                    subtitle = "Set a root folder in Settings → Photo",
+                    titleText = UiText.res(R.string.xmbm_photo_noalbums_title),
+                    subtitleText = UiText.res(R.string.xmbm_photo_noalbums_sub),
                     type = XMBItemType.EMPTY,
                 ),
             )
@@ -3953,7 +4023,7 @@ class XMBViewModel @Inject constructor(
     // "4032×3024  ·  Jul 14, 2026" — whichever parts are known; null when neither is.
     private fun photoSubtitle(photo: com.playfieldportal.core.domain.model.Photo): String? {
         val date = photo.displayDateMs?.let {
-            java.text.SimpleDateFormat("MMM d, yyyy", java.util.Locale.getDefault()).format(java.util.Date(it))
+            com.playfieldportal.core.ui.text.PfpDateFormat.format(com.playfieldportal.core.ui.text.PfpDateStyle.Date, it)
         }
         return listOfNotNull(photo.resolutionLabel, date).joinToString("  ·  ").ifEmpty { null }
     }
@@ -3968,15 +4038,15 @@ class XMBViewModel @Inject constructor(
 
     private fun emptyAllPhotosItem(): XMBItem = XMBItem(
         id       = EMPTY_CATEGORY_ITEM_ID,
-        title    = "No photos found",
-        subtitle = "Add a photo library and scan it",
+        titleText    = UiText.res(R.string.xmbm_photo_none_title),
+        subtitleText = UiText.res(R.string.xmbm_photo_none_sub),
         type     = XMBItemType.EMPTY,
     )
 
     private fun emptyLibraryPhotosItem(): XMBItem = XMBItem(
         id       = EMPTY_CATEGORY_ITEM_ID,
-        title    = "No photos in this album",
-        subtitle = "Scan it from its ⚙ Options menu or in Settings → Photo",
+        titleText    = UiText.res(R.string.xmbm_photo_noalbumphotos_title),
+        subtitleText = UiText.res(R.string.xmbm_photo_noalbumphotos_sub),
         type     = XMBItemType.EMPTY,
     )
 
@@ -3998,7 +4068,7 @@ class XMBViewModel @Inject constructor(
         }
         item.id == ADD_PHOTO_APPS_ITEM_ID -> {
             menuSound.play(MenuSound.SELECT)
-            openAppPicker(AppPickerTarget.CategoryShortcuts(PHOTO_APPS_CATEGORY_ID), "Add Photo Apps")
+            openAppPicker(AppPickerTarget.CategoryShortcuts(PHOTO_APPS_CATEGORY_ID), UiText.res(R.string.xmbm_photo_add_apps_title))
             true
         }
         // Photo-app rows launch the app.
@@ -4070,7 +4140,7 @@ class XMBViewModel @Inject constructor(
     // the fullscreen viewer's own Options menu; the list row only opens/removes.
     private fun openPhotoFileContextMenu(photoId: String, title: String, byTouch: Boolean) {
         val items = photoFileMenuItems(byTouch)
-        _uiState.update { it.copy(activeContextMenu = XMBContextMenu(title, items, photoFileId = photoId)) }
+        _uiState.update { it.copy(activeContextMenu = XMBContextMenu(UiText.raw(title), items, photoFileId = photoId)) }
     }
 
     private fun handlePhotoFileAction(photoId: String, itemId: String) {
@@ -4085,7 +4155,7 @@ class XMBViewModel @Inject constructor(
     // Options for an Album card: open, scan, or manage (rename / change folder / remove) in Settings.
     private fun openPhotoLibraryContextMenu(libraryId: String, name: String, byTouch: Boolean) {
         val items = photoAlbumMenuItems(byTouch)
-        _uiState.update { it.copy(activeContextMenu = XMBContextMenu(name, items, photoLibraryId = libraryId)) }
+        _uiState.update { it.copy(activeContextMenu = XMBContextMenu(UiText.raw(name), items, photoLibraryId = libraryId)) }
     }
 
     private fun handlePhotoLibraryAction(libraryId: String, itemId: String) {
@@ -4107,9 +4177,9 @@ class XMBViewModel @Inject constructor(
     private fun openMusicBrowser(view: MusicBrowserView) {
         musicBrowserJob?.cancel()
         val title = when (view) {
-            MusicBrowserView.AllMusic    -> "Music"
-            MusicBrowserView.Playlists   -> "Playlists"
-            is MusicBrowserView.Playlist -> view.name
+            MusicBrowserView.AllMusic    -> UiText.res(R.string.xmbm_media_music)
+            MusicBrowserView.Playlists   -> UiText.res(R.string.xmbm_playlists)
+            is MusicBrowserView.Playlist -> UiText.raw(view.name)
         }
         // New view, new list: drop the old focus so the engine seeds on the first row rather than
         // trying to preserve a key that belongs to the list we just left.
@@ -4192,7 +4262,7 @@ class XMBViewModel @Inject constructor(
      * survivor (geometry first, then order) when it does not — which is what makes filtering the
      * list under the cursor behave rather than dumping it back at row 0.
      */
-    private fun publishBrowserRows(rows: List<XMBItem>, sortLabel: String?) {
+    private fun publishBrowserRows(rows: List<XMBItem>, sortLabel: UiText?) {
         browserNav.replaceNodes(
             rows.map { row ->
                 val actionable = row.type != XMBItemType.EMPTY
@@ -4233,7 +4303,8 @@ class XMBViewModel @Inject constructor(
     }
 
     private fun browserNoResultsItem(): XMBItem = XMBItem(
-        id = EMPTY_CATEGORY_ITEM_ID, title = "No matches", subtitle = "Try a different search.",
+        id = EMPTY_CATEGORY_ITEM_ID,
+        titleText = UiText.res(R.string.xmbm_no_matches_title), subtitleText = UiText.res(R.string.xmbm_no_matches_sub),
         type = XMBItemType.EMPTY,
     )
 
@@ -4523,7 +4594,7 @@ class XMBViewModel @Inject constructor(
         item.id == IMPORT_PLAYLIST_ITEM_ID -> { menuSound.play(MenuSound.SELECT); requestPlaylistImportPick(PlaylistKind.MUSIC); true }
         item.id == ADD_MUSIC_APPS_ITEM_ID -> {
             menuSound.play(MenuSound.SELECT)
-            openAppPicker(AppPickerTarget.CategoryShortcuts(MUSIC_APPS_CATEGORY_ID), "Add Music Apps")
+            openAppPicker(AppPickerTarget.CategoryShortcuts(MUSIC_APPS_CATEGORY_ID), UiText.res(R.string.xmbm_music_add_apps_title))
             true
         }
         item.id == ADD_TRACKS_ITEM_ID -> {
@@ -4568,7 +4639,7 @@ class XMBViewModel @Inject constructor(
         val state = _uiState.value
         (state.musicBrowser?.view as? MusicBrowserView.Playlist)?.let { return it.name }
         (state.musicNav as? MusicNav.Playlist)?.let { return it.name }
-        return "All Music"
+        return context.getString(R.string.xmbm_queue_all_music)
     }
 
     /**
@@ -4706,7 +4777,7 @@ class XMBViewModel @Inject constructor(
     }
 
     private fun openMusicPlayerOptions() {
-        val title = musicPlayer.currentTrack()?.displayTitle ?: "Now Playing"
+        val title = musicPlayer.currentTrack()?.displayTitle?.let(UiText::raw) ?: UiText.res(R.string.xmbm_music_now_playing)
         _uiState.update {
             it.copy(
                 activeContextMenu = XMBContextMenu(
@@ -4725,7 +4796,7 @@ class XMBViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 activeContextMenu = XMBContextMenu(
-                    title = playback.track.displayTitle,
+                    title = UiText.raw(playback.track.displayTitle),
                     items = nowPlayingMenuItems(playback.isPlaying),
                     musicTrackId = MUSIC_PLAYER_MENU_MARKER,
                 )
@@ -4768,7 +4839,7 @@ class XMBViewModel @Inject constructor(
         val items = musicTrackMenuItems(inPlaylist = playlistId != null, byTouch = byTouch)
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
-                title        = item.title,
+                title        = UiText.raw(item.title),
                 items        = items,
                 musicTrackId = item.id.removePrefix("mt_"),
                 playlistId   = playlistId,
@@ -4779,7 +4850,7 @@ class XMBViewModel @Inject constructor(
     // Options menu for a playlist row: open (touch only) / add tracks / rename / delete.
     private fun openPlaylistRowContextMenu(playlistId: Long, name: String, byTouch: Boolean = false) {
         val items = musicPlaylistMenuItems(byTouch)
-        _uiState.update { it.copy(activeContextMenu = XMBContextMenu(name, items, playlistId = playlistId)) }
+        _uiState.update { it.copy(activeContextMenu = XMBContextMenu(UiText.raw(name), items, playlistId = playlistId)) }
     }
 
     // Second-level menu: the playlists a track can be added to (checkmarks show membership), plus
@@ -4790,13 +4861,13 @@ class XMBViewModel @Inject constructor(
             val memberOf = musicRepository.getPlaylistIdsForTrack(trackId).toSet()
             val items = buildList {
                 playlists.forEach { pl ->
-                    add(XMBContextMenuItem("pl_${pl.id}", pl.name, checked = pl.id in memberOf))
+                    add(XMBContextMenuItem("pl_${pl.id}", UiText.raw(pl.name), checked = pl.id in memberOf))
                 }
-                add(XMBContextMenuItem("pl_new", "Create New Playlist"))
+                add(XMBContextMenuItem("pl_new", UiText.res(R.string.xmbm_create_new_playlist)))
             }
             _uiState.update { it.copy(
                 activeContextMenu = XMBContextMenu(
-                    title                 = "Add to Playlist",
+                    title                 = UiText.res(R.string.xmbm_add_to_playlist),
                     items                 = items,
                     selectedIndex         = selectIndex.coerceIn(0, items.lastIndex.coerceAtLeast(0)),
                     playlistPickerTrackId = trackId,
@@ -4827,7 +4898,7 @@ class XMBViewModel @Inject constructor(
     // ── Playlist name dialog (create / rename) ──────────────────────────────────
     private fun promptCreatePlaylist(forTrackId: String? = null) {
         _uiState.update { it.copy(
-            playlistNameDialog = PlaylistNameDialogState(title = "New Playlist", forTrackId = forTrackId)
+            playlistNameDialog = PlaylistNameDialogState(title = UiText.res(R.string.xmbm_music_new_playlist), forTrackId = forTrackId)
         )}
     }
 
@@ -4835,7 +4906,7 @@ class XMBViewModel @Inject constructor(
         val name = _uiState.value.currentItems.firstOrNull { it.playlistId == playlistId }?.title.orEmpty()
         _uiState.update { it.copy(
             playlistNameDialog = PlaylistNameDialogState(
-                title = "Rename Playlist",
+                title = UiText.res(R.string.xmbm_rename_playlist),
                 initialText = name,
                 renamePlaylistId = playlistId,
             )
@@ -4880,7 +4951,7 @@ class XMBViewModel @Inject constructor(
             _uiState.update { it.copy(
                 musicTrackPicker = MusicTrackPickerState(
                     playlistId   = playlistId,
-                    playlistName = playlist?.name ?: "Playlist",
+                    playlistName = playlist?.name ?: context.getString(R.string.xmbm_music_playlist_title),
                     tracks       = tracks,
                     // A picker opened by a finger starts with no cursor; one opened with a pad
                     // starts on the Confirm row with it drawn, exactly as before.
@@ -5022,7 +5093,7 @@ class XMBViewModel @Inject constructor(
             "add_to_playlist" -> openPlaylistPicker(trackId)
             "track_info" -> activeMusicQueue().firstOrNull { it.id == trackId }?.let { track ->
                 _uiState.update {
-                    it.copy(infoDialog = InfoDialogState(track.displayTitle, musicTrackInfoLines(track).joinToString("\n")))
+                    it.copy(infoDialog = InfoDialogState(UiText.raw(track.displayTitle), UiText.Joined(musicTrackInfoLines(track), "\n")))
                 }
             }
             "remove_from_playlist" -> if (playlistId != null) {
@@ -5085,7 +5156,7 @@ class XMBViewModel @Inject constructor(
         val items = browserSortMenuItems(MUSIC_SORTS, _uiState.value.musicSortMode)
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
-                title = "Sort",
+                title = UiText.res(R.string.xmbm_sort),
                 items = items,
                 selectedIndex = items.indexOfFirst { row -> row.checked }.coerceAtLeast(0),
                 browserList = true,
@@ -5104,7 +5175,7 @@ class XMBViewModel @Inject constructor(
         // A column's root and an app list have no search, so Sort opens their Sort picker directly.
         _uiState.value.arrangeableRootKind()?.let { kind ->
             val key = _uiState.value.currentListKey() ?: return
-            openListSortMenu(key, kind, title = "Sort", withGlobalRow = kind == XmbListKind.APPS)
+            openListSortMenu(key, kind, title = UiText.res(R.string.xmbm_sort), withGlobalRow = kind == XmbListKind.APPS)
             return
         }
         val cycle = activeSortContext() ?: return
@@ -5165,7 +5236,7 @@ class XMBViewModel @Inject constructor(
     }
 
     private fun gamesFilterMenuFor(state: XMBUiState, group: GamesFilterGroup?) = XMBContextMenu(
-        title = group?.title ?: "Filter",
+        title = group?.title ?: UiText.res(R.string.xmbm_filter),
         items = gamesFilterRows(state, group),
         gamesFilterMenu = true,
         gamesFilterGroup = group,
@@ -5227,7 +5298,7 @@ class XMBViewModel @Inject constructor(
     private fun openListSortMenu(
         listKey: String,
         kind: XmbListKind,
-        title: String,
+        title: UiText,
         withGlobalRow: Boolean = false,
         parent: XMBContextMenu? = null,
     ) {
@@ -5236,9 +5307,9 @@ class XMBViewModel @Inject constructor(
         val rows = listSortMenuItems(kind, global, state.listSortOverrides[listKey])
         val items = if (!withGlobalRow) rows else rows + XMBContextMenuItem(
             id = GLOBAL_SORT_ROW_ID,
-            label = "Global Sort",
+            label = UiText.res(R.string.xmbm_card_global_sort),
             value = sortLabel(global, kind),
-            header = "All Lists",
+            header = UiText.res(R.string.xmbm_sort_all_lists),
         )
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
@@ -5259,7 +5330,7 @@ class XMBViewModel @Inject constructor(
         val items = globalSortMenuItems(kind, current)
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
-                title = "Global Sort",
+                title = UiText.res(R.string.xmbm_card_global_sort),
                 items = items,
                 selectedIndex = items.indexOfFirst { row -> row.checked }.coerceAtLeast(0),
                 globalSortKind = kind,
@@ -5362,68 +5433,71 @@ class XMBViewModel @Inject constructor(
     // The parent label for the two-pane flyout, non-null whenever drilled into ANY sub-item — a Games
     // sub-item (platform card / All Games / Favorites / collection) or a Music sub-view (Music Apps /
     // a playlist / All Music). Null = top level, normal single-column list.
-    private fun computeDrillTitle(): String? {
+    private fun computeDrillTitle(): UiText? {
         val s = _uiState.value
         // Settings L1 flyout: the section name parents the L2 rows, like every other drill-in.
         val settingsTitle = s.settingsSectionNav?.title
         if (settingsTitle != null) return settingsTitle
         // Music sub-navigation is a drill-in too — a non-null title makes it show the two-pane flyout.
         val musicTitle = when (val nav = s.musicNav) {
-            MusicNav.MusicApps   -> "Music Apps"
-            MusicNav.AllMusic    -> "Music"
-            MusicNav.Playlists   -> "Playlist"
-            is MusicNav.Playlist -> nav.name
+            MusicNav.MusicApps   -> UiText.res(R.string.xmbm_music_apps_title)
+            MusicNav.AllMusic    -> UiText.res(R.string.xmbm_media_music)
+            MusicNav.Playlists   -> UiText.res(R.string.xmbm_music_playlist_title)
+            is MusicNav.Playlist -> UiText.raw(nav.name)
             MusicNav.Root        -> null
         }
         if (musicTitle != null) return musicTitle
         // Video sub-navigation is a drill-in too — a non-null title shows the two-pane flyout.
         val videoTitle = when (val nav = s.videoNav) {
-            VideoNav.AllVideos       -> "All Videos"
-            VideoNav.Collections     -> "Collections"
-            VideoNav.RecentlyWatched -> "Recently Watched"
-            VideoNav.Favorites       -> "Favorites"
-            VideoNav.Playlists       -> "Playlists"
-            is VideoNav.Playlist     -> nav.name
-            VideoNav.Libraries       -> "Video Libraries"
-            is VideoNav.Library      -> nav.name
-            VideoNav.VideoApps       -> "Video Apps"
+            VideoNav.AllVideos       -> UiText.res(R.string.xmbm_video_all)
+            VideoNav.Collections     -> UiText.res(R.string.xmbm_video_collections_title)
+            VideoNav.RecentlyWatched -> UiText.res(R.string.xmbm_video_recent_title)
+            VideoNav.Favorites       -> UiText.res(R.string.xmbm_favorites)
+            VideoNav.Playlists       -> UiText.res(R.string.xmbm_playlists)
+            is VideoNav.Playlist     -> UiText.raw(nav.name)
+            VideoNav.Libraries       -> UiText.res(R.string.xmbm_video_libraries_title)
+            is VideoNav.Library      -> UiText.raw(nav.name)
+            VideoNav.VideoApps       -> UiText.res(R.string.xmbm_video_apps_name)
             VideoNav.Root            -> null
         }
         if (videoTitle != null) return videoTitle
         // Photo sub-navigation is a drill-in too.
         val photoTitle = when (val nav = s.photoNav) {
-            PhotoNav.AllPhotos  -> "All Photos"
-            PhotoNav.Albums     -> "Albums"
-            PhotoNav.PhotoApps  -> "Photo Apps"
-            is PhotoNav.Library -> nav.name
+            PhotoNav.AllPhotos  -> UiText.res(R.string.xmbm_photo_all)
+            PhotoNav.Albums     -> UiText.res(R.string.xmbm_photo_albums_title)
+            PhotoNav.PhotoApps  -> UiText.res(R.string.xmbm_photo_apps_title)
+            is PhotoNav.Library -> UiText.raw(nav.name)
             PhotoNav.Root       -> null
         }
         if (photoTitle != null) return photoTitle
         // Discord Social sub-navigation.
         val socialTitle = when (s.socialNav) {
-            SocialNav.Account          -> "Account"
-            SocialNav.Friends          -> "Friends"
-            SocialNav.Voice            -> "Voice"
-            SocialNav.VoiceSettings    -> "Voice Settings"
-            SocialNav.VoiceInvites     -> "Invites"
-            SocialNav.VoiceInviteFriends -> "Invite Friends"
-            SocialNav.ActivitySettings -> "Activity Settings"
-            SocialNav.DiscordSettings  -> "Discord Settings"
+            SocialNav.Account          -> UiText.res(R.string.xmbm_social_account)
+            SocialNav.Friends          -> UiText.res(R.string.xmbm_social_friends)
+            SocialNav.Voice            -> UiText.res(R.string.xmbm_social_voice)
+            SocialNav.VoiceSettings    -> UiText.res(R.string.xmbm_social_voice_settings)
+            SocialNav.VoiceInvites     -> UiText.res(R.string.xmbm_social_invites)
+            SocialNav.VoiceInviteFriends -> UiText.res(R.string.xmbm_social_invite_friends)
+            SocialNav.ActivitySettings -> UiText.res(R.string.xmbm_social_activity_settings)
+            SocialNav.DiscordSettings  -> UiText.res(R.string.xmbm_social_discord_settings)
             SocialNav.Root             -> null
         }
         if (socialTitle != null) return socialTitle
         return when {
             s.selectedCollectionId != null ->
-                s.collections.firstOrNull { it.id == s.selectedCollectionId }?.name ?: "Custom Card"
-            s.selectedPlatformId == ALL_GAMES_PLATFORM_ID -> "All Games"
-            s.selectedPlatformId == FAVORITES_PLATFORM_ID -> "Favorites"
-            s.selectedPlatformId == MISSING_PLATFORM_ID   -> "Missing"
+                s.collections.firstOrNull { it.id == s.selectedCollectionId }?.name?.let(UiText::raw)
+                    ?: UiText.res(R.string.xmbm_hide_custom_card)
+            s.selectedPlatformId == ALL_GAMES_PLATFORM_ID -> UiText.res(R.string.xmbm_all_games)
+            s.selectedPlatformId == FAVORITES_PLATFORM_ID -> UiText.res(R.string.xmbm_favorites)
+            s.selectedPlatformId == MISSING_PLATFORM_ID   -> UiText.res(R.string.xmbm_missing)
             s.selectedPlatformId == CATEGORY_CARD_PLATFORM_ID ->
-                currentCategory()?.let { "${it.name} Memory Card" }
+                currentCategory()?.let { UiText.res(R.string.xmbm_catcard_title, it.name) }
             s.selectedPlatformId != null ->
-                enabledCards.firstOrNull { it.platformId == s.selectedPlatformId }?.displayName
-                    ?: platformCache[s.selectedPlatformId]?.name
-                    ?: s.selectedPlatformId
+                UiText.raw(
+                    enabledCards.firstOrNull { it.platformId == s.selectedPlatformId }?.displayName
+                        ?: platformCache[s.selectedPlatformId]?.name
+                        ?: s.selectedPlatformId,
+                )
             else -> null
         }
     }
@@ -5455,8 +5529,8 @@ class XMBViewModel @Inject constructor(
             // column so Library (and every other L1 section) always has a visible parent icon
             // above the category bar, matching the established Music flyout geometry.
             val sibs = listOf(
-                XMBItem(id = ANDROID_SETTINGS_ITEM_ID, title = "Android Settings", subtitle = "Opens device settings"),
-            ) + SettingsSection.entries.map { XMBItem(id = it.id, title = it.title, subtitle = it.subtitle) }
+                XMBItem(id = ANDROID_SETTINGS_ITEM_ID, titleText = UiText.res(R.string.xmbm_android_settings_title), subtitleText = UiText.res(R.string.xmbm_android_settings_sub)),
+            ) + SettingsSection.entries.map { XMBItem(id = it.id, titleText = it.title, subtitleText = it.subtitle) }
             val idx = sibs.indexOfFirst { it.id == s.settingsSectionNav.id }.coerceAtLeast(0)
             return sibs to idx
         }
@@ -5595,7 +5669,7 @@ class XMBViewModel @Inject constructor(
         val openCard = s.collections.firstOrNull { it.id == s.selectedCollectionId }
         val parent = XMBItem(
             id = "drill_parent",
-            title = computeDrillTitle().orEmpty(),
+            titleText = computeDrillTitle(),
             iconKey = openCard?.iconKey,
             type = if (s.selectedPlatformId == CATEGORY_CARD_PLATFORM_ID) XMBItemType.CATEGORY_CARD else XMBItemType.COLLECTION,
         )
@@ -5603,7 +5677,7 @@ class XMBViewModel @Inject constructor(
     }
 
     // Status-bar hint for the current list ("Sort: Title"), or null when the list isn't sortable.
-    private fun currentSortLabel(): String? {
+    private fun currentSortLabel(): UiText? {
         val state = _uiState.value
         // A column's root or an app list: named only once it has left its default, so the chip
         // does not appear on every root that has never been arranged.
@@ -5611,8 +5685,9 @@ class XMBViewModel @Inject constructor(
             val key = state.currentListKey() ?: return null
             val mode = state.activeSortFor(key, kind)
             return when {
-                kind == XmbListKind.ROOT -> if (state.isCustomSorted(key, kind)) "Sort: Custom" else null
-                else -> "Sort: ${sortLabel(mode, kind)}"
+                kind == XmbListKind.ROOT ->
+                    if (state.isCustomSorted(key, kind)) UiText.res(R.string.xmbm_sort_pill, XmbSortMode.CUSTOM.label) else null
+                else -> UiText.res(R.string.xmbm_sort_pill, sortLabel(mode, kind))
             }
         }
         val cycle = activeSortContext() ?: return null
@@ -5622,30 +5697,30 @@ class XMBViewModel @Inject constructor(
         if (cycle === GAME_SORTS) {
             val term = state.gameQuery.trim()
             val sort = sortLabel(state.activeGameSort, state.openListSortKind)
-            return if (term.isBlank()) "Filter: $sort" else "Filter: \"$term\" · $sort"
+            return if (term.isBlank()) UiText.res(R.string.xmbm_filter_chip, sort) else UiText.res(R.string.xmbm_filter_chip_term, term, sort)
         }
         val mode = if (cycle === MUSIC_SORTS) state.musicSortMode else state.videoSortMode
-        return "Sort: ${mode.label}"
+        return UiText.res(R.string.xmbm_sort_pill, mode.label)
     }
 
     private fun emptyCategoryItem(category: Category): XMBItem {
         val (message, subtitle) = if (category.isGamingCategory) {
-            "No games assigned." to "Add games to this category."
+            UiText.res(R.string.xmbm_empty_games_assigned_title) to UiText.res(R.string.xmbm_empty_games_assigned_sub)
         } else {
             val msg = when (category.id) {
-                "videos"    -> "No video apps found."
-                "network"   -> "No browser apps found."
-                "app_store" -> "No app stores found."
-                "music"     -> "No music apps found."
-                "photos"    -> "No photo apps found."
-                else        -> "No apps assigned."
+                "videos"    -> R.string.xmbm_empty_videos_apps
+                "network"   -> R.string.xmbm_empty_network_apps
+                "app_store" -> R.string.xmbm_empty_store_apps
+                "music"     -> R.string.xmbm_empty_music_apps
+                "photos"    -> R.string.xmbm_empty_photo_apps
+                else        -> R.string.xmbm_empty_apps_assigned
             }
-            msg to "Install some apps to get started."
+            UiText.res(msg) to UiText.res(R.string.xmbm_empty_install_apps)
         }
         return XMBItem(
             id       = EMPTY_CATEGORY_ITEM_ID,
-            title    = message,
-            subtitle = subtitle,
+            titleText    = message,
+            subtitleText = subtitle,
             type     = XMBItemType.EMPTY,
         )
     }
@@ -5656,8 +5731,8 @@ class XMBViewModel @Inject constructor(
         val totalGames = _uiState.value.allGamesCount
         val allGamesItem = XMBItem(
             id       = ALL_GAMES_ITEM_ID,
-            title    = "All Games",
-            subtitle = "Total Games $totalGames",
+            titleText    = UiText.res(R.string.xmbm_all_games),
+            subtitleText = UiText.res(R.string.xmbm_total_games, totalGames),
             type     = XMBItemType.ALL_GAMES,
         )
 
@@ -5666,8 +5741,8 @@ class XMBViewModel @Inject constructor(
         val favoritesItem = if (favoritesCount > 0) {
             XMBItem(
                 id       = FAVORITES_ITEM_ID,
-                title    = "Favorites",
-                subtitle = "$favoritesCount ${if (favoritesCount == 1) "Game" else "Games"}",
+                titleText    = UiText.res(R.string.xmbm_favorites),
+                subtitleText = UiText.plural(R.plurals.xmbm_games_count, favoritesCount),
                 type     = XMBItemType.FAVORITES,
             )
         } else null
@@ -5678,8 +5753,8 @@ class XMBViewModel @Inject constructor(
         val missingItem = if (missingCount > 0) {
             XMBItem(
                 id       = MISSING_ITEM_ID,
-                title    = "Missing",
-                subtitle = "$missingCount ${if (missingCount == 1) "Game" else "Games"}",
+                titleText    = UiText.res(R.string.xmbm_missing),
+                subtitleText = UiText.plural(R.plurals.xmbm_games_count, missingCount),
                 type     = XMBItemType.MISSING,
             )
         } else null
@@ -5692,11 +5767,10 @@ class XMBViewModel @Inject constructor(
             .filter { it.categoryId == BuiltInCategory.GAMES }
             .sortedByDescending { it.isPinned }
             .map { collection ->
-            val games = "${collection.gameCount} ${if (collection.gameCount == 1) "Game" else "Games"}"
             XMBItem(
                 id           = "collection_${collection.id}",
                 title        = collection.name,
-                subtitle     = customCardSubtitle(collection.isPinned, games),
+                subtitleText = customCardSubtitle(collection.isPinned, collection.gameCount, holdsApps = false),
                 collectionId = collection.id,
                 iconKey      = collection.iconKey,
                 pinned       = collection.isPinned,
@@ -5710,8 +5784,8 @@ class XMBViewModel @Inject constructor(
                 trailing = listOf(
                     XMBItem(
                         id       = NO_CONSOLES_ITEM_ID,
-                        title    = "No consoles configured",
-                        subtitle = "Open Library Manager to add a Memory Card",
+                        titleText    = UiText.res(R.string.xmbm_noconsoles_title),
+                        subtitleText = UiText.res(R.string.xmbm_noconsoles_sub),
                         type     = XMBItemType.EMPTY,
                     )
                 ),
@@ -5731,7 +5805,7 @@ class XMBViewModel @Inject constructor(
                 XMBItem(
                     id          = "card_${card.platformId}",
                     title       = memoryCardRowTitle(card),
-                    subtitle    = memoryCardRowSubtitle(count, card.pinned),
+                    subtitleText = memoryCardRowSubtitle(count, card.pinned),
                     platformId  = card.platformId,
                     accentColor = platformCache[card.platformId]?.accentColor,
                     pinned      = card.pinned,
@@ -5761,30 +5835,30 @@ class XMBViewModel @Inject constructor(
         if (gap != com.playfieldportal.feature.launcher.SetupGap.NONE) {
             return XMBItem(
                 id       = SETUP_GAP_ITEM_ID,
-                title    = gap.message,
-                subtitle = "Press confirm to open Settings and fix it.",
+                titleText    = gap.message,
+                subtitleText = UiText.res(R.string.xmbm_gap_press_confirm),
                 type     = XMBItemType.EMPTY,
             )
         }
         return XMBItem(
             id       = NO_GAMES_ITEM_ID,
-            title    = "No games imported yet",
-            subtitle = "Open a Memory Card to scan your library.",
+            titleText    = UiText.res(R.string.xmbm_nogames_imported_title),
+            subtitleText = UiText.res(R.string.xmbm_nogames_imported_sub),
             type     = XMBItemType.EMPTY,
         )
     }
 
     private fun emptyCollectionItem(): XMBItem = XMBItem(
         id       = EMPTY_COLLECTION_ITEM_ID,
-        title    = "This custom memory card is empty",
-        subtitle = "Add games from any console with the options (△) menu.",
+        titleText    = UiText.res(R.string.xmbm_emptycard_title),
+        subtitleText = UiText.res(R.string.xmbm_emptycard_sub),
         type     = XMBItemType.EMPTY,
     )
 
     private fun emptyFavoritesItem(): XMBItem = XMBItem(
         id       = EMPTY_FAVORITES_ITEM_ID,
-        title    = "No favorites yet",
-        subtitle = "Mark a game as a favorite from its options (△) menu.",
+        titleText    = UiText.res(R.string.xmbm_emptyfav_title),
+        subtitleText = UiText.res(R.string.xmbm_emptyfav_sub),
         type     = XMBItemType.EMPTY,
     )
 
@@ -5792,8 +5866,8 @@ class XMBViewModel @Inject constructor(
     // disappearing — worth having so the bucket never renders as a blank list.
     private fun emptyMissingItem(): XMBItem = XMBItem(
         id       = EMPTY_MISSING_ITEM_ID,
-        title    = "Nothing missing",
-        subtitle = "Every game's file was found on the last scan.",
+        titleText    = UiText.res(R.string.xmbm_emptymissing_title),
+        subtitleText = UiText.res(R.string.xmbm_emptymissing_sub),
         type     = XMBItemType.EMPTY,
     )
 
@@ -5804,8 +5878,8 @@ class XMBViewModel @Inject constructor(
         if (platformId == ANDROID_PLATFORM_ID) {
             return XMBItem(
                 id         = FIND_GAMES_ITEM_ID,
-                title      = "Find Games",
-                subtitle   = "Pick installed apps to add to this library",
+                titleText    = UiText.res(R.string.xmbm_card_find_games),
+                subtitleText = UiText.res(R.string.xmbm_findgames_sub),
                 platformId = platformId,
             )
         }
@@ -5816,20 +5890,20 @@ class XMBViewModel @Inject constructor(
         if (gap != com.playfieldportal.feature.launcher.SetupGap.NONE) {
             return XMBItem(
                 id         = SETUP_GAP_ITEM_ID,
-                title      = gap.message,
-                subtitle   = "Press confirm to open Settings and fix it.",
+                titleText    = gap.message,
+                subtitleText = UiText.res(R.string.xmbm_gap_press_confirm),
                 platformId = platformId,
                 type       = XMBItemType.EMPTY,
             )
         }
         val subtitle = when {
-            card?.romDirectory == null -> "ROM directory not configured"
-            else                       -> "Press ▲ to scan this console"
+            card?.romDirectory == null -> UiText.res(R.string.xmbm_empty_romdir)
+            else                       -> UiText.res(R.string.xmbm_empty_scan_console)
         }
         return XMBItem(
             id         = NO_GAMES_ITEM_ID,
-            title      = "No games found in this folder",
-            subtitle   = subtitle,
+            titleText    = UiText.res(R.string.xmbm_empty_folder_title),
+            subtitleText = subtitle,
             platformId = platformId,
             type       = XMBItemType.EMPTY,
         )
@@ -5880,8 +5954,8 @@ class XMBViewModel @Inject constructor(
     /** The Games column's "your search matched nothing" row. */
     private fun noGameMatchesItem(term: String): XMBItem = XMBItem(
         id       = EMPTY_CATEGORY_ITEM_ID,
-        title    = "No games match \"$term\"",
-        subtitle = "Open the Filter menu to change or clear it.",
+        titleText    = UiText.res(R.string.xmbm_nomatch_title, term),
+        subtitleText = UiText.res(R.string.xmbm_nomatch_sub),
         type     = XMBItemType.EMPTY,
     )
 
@@ -5981,7 +6055,10 @@ class XMBViewModel @Inject constructor(
         matching: Boolean = false,
     ): List<XMBItem> {
         val untrackedRow = if (standing.untracked.isEmpty()) emptyList() else listOf(
-            XMBItem(id = ACH_UNTRACKED_ITEM_ID, title = "Untracked", subtitle = "${standing.untracked.size} games", type = XMBItemType.STANDARD),
+            XMBItem(
+                id = ACH_UNTRACKED_ITEM_ID, titleText = UiText.res(R.string.xmbm_ach_untracked),
+                subtitleText = UiText.plural(R.plurals.xmbm_ach_games_count, standing.untracked.size), type = XMBItemType.STANDARD,
+            ),
         )
         // Nothing connected yet: the connect prompt is the only entry. Once RA or Steam credentials
         // are saved, or an emulator data folder is linked, the player card shows immediately
@@ -5989,8 +6066,8 @@ class XMBViewModel @Inject constructor(
         if (!connected && standing.gamesTracked == 0) {
             val connect = XMBItem(
                 id = ACH_CONNECT_ITEM_ID,
-                title = "Connect accounts",
-                subtitle = "Set up Shiba Coins and auto-match your library",
+                titleText = UiText.res(R.string.xmbm_ach_connect_title),
+                subtitleText = UiText.res(R.string.xmbm_ach_connect_sub),
                 type = XMBItemType.STANDARD,
             )
             return listOf(connect) + untrackedRow
@@ -5999,10 +6076,10 @@ class XMBViewModel @Inject constructor(
         val allTrackedRow = if (standing.gamesTracked == 0) emptyList() else listOf(
             XMBItem(
                 id = ACH_ALL_ITEM_ID,
-                title = "All Tracked Games",
-                subtitle = syncAll?.let { (done, total) ->
-                    if (matching) "Auto-matching…  $done / $total" else "Syncing coins…  $done / $total"
-                } ?: "${standing.gamesTracked} games",
+                titleText = UiText.res(R.string.xmbm_ach_all_tracked),
+                subtitleText = syncAll?.let { (done, total) ->
+                    UiText.res(if (matching) R.string.xmbm_ach_matching_progress else R.string.xmbm_ach_syncing_progress, done, total)
+                } ?: UiText.plural(R.plurals.xmbm_ach_games_count, standing.gamesTracked),
                 type = XMBItemType.STANDARD,
             ),
         )
@@ -6011,18 +6088,23 @@ class XMBViewModel @Inject constructor(
         // Coins read as earned/available COUNTS (user decision 2026-07-16); the weighted value
         // stays the level economy behind the Lv badge.
         val summarySubtitle = if (standing.gamesTracked == 0 && syncAll != null) {
-            if (matching) "Auto-matching…  ${syncAll.first} / ${syncAll.second}"
-            else "Syncing coins…  ${syncAll.first} / ${syncAll.second}"
+            UiText.res(
+                if (matching) R.string.xmbm_ach_matching_progress else R.string.xmbm_ach_syncing_progress,
+                syncAll.first, syncAll.second,
+            )
         } else {
-            "${"%,d".format(standing.coinsEarned)} / ${"%,d".format(standing.coinsAvailable)} coins  •  " +
-                "${standing.gamesTracked} tracked  •  ${standing.gamesMastered} mastered"
+            UiText.res(
+                R.string.xmbm_ach_summary,
+                "%,d".format(standing.coinsEarned), "%,d".format(standing.coinsAvailable),
+                standing.gamesTracked, standing.gamesMastered,
+            )
         }
         return listOf(
             XMBItem(
                 id = ACH_SUMMARY_ITEM_ID,
-                title = w.rank.label,
-                subtitle = summarySubtitle,
-                levelBadge = "Lv ${w.level}",
+                titleText = UiText.res(w.rank.labelRes),
+                subtitleText = summarySubtitle,
+                levelBadge = UiText.res(R.string.xmbm_ach_level_badge, w.level),
                 boneCount = w.bones,
                 type = XMBItemType.STANDARD,
             ),
@@ -6111,7 +6193,8 @@ class XMBViewModel @Inject constructor(
         viewModelScope.launch {
             var previous: XMBContextMenu? = null
             _uiState.map { it.activeContextMenu }.distinctUntilChanged().collect { menu ->
-                if (contextMenuOpened(previous, menu)) menuSound.play(MenuSound.SELECT)
+                // The shared options panel sounds its own Options cue when it appears (PspContextMenuOverlay).
+                if (contextMenuOpened(previous, menu)) Unit
                 previous = menu
             }
         }
@@ -6724,7 +6807,7 @@ class XMBViewModel @Inject constructor(
         val cardListKey = com.playfieldportal.core.domain.model.ListKeys.card(platformId)
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
-                title      = card.displayName,
+                title      = UiText.raw(card.displayName),
                 items      = platformCardMenuItems(
                     platformId       = platformId,
                     pinned           = card.pinned,
@@ -6742,9 +6825,9 @@ class XMBViewModel @Inject constructor(
     private fun openAllGamesContextMenu() {
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
-                title      = "All Games",
+                title      = UiText.res(R.string.xmbm_all_games),
                 items      = allGamesMenuItems(
-                    iconDisplayLabel = it.iconDisplayMode.label,
+                    iconDisplayLabel = UiText.res(it.iconDisplayMode.labelRes),
                     sortLabel        = it.sortValueLabel(com.playfieldportal.core.domain.model.ListKeys.ALL_GAMES, XmbListKind.GAMES),
                     globalSortLabel  = it.gameSortMode.label,
                     canMove          = canMoveRootRows(),
@@ -6767,7 +6850,7 @@ class XMBViewModel @Inject constructor(
         }
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
-                title            = item.title,
+                title            = item.titleUi,
                 items            = rootRowMenuItems(
                     sortValue = listKey?.let { key -> state.sortValueLabel(key, XmbListKind.GAMES) },
                     canMove   = canMoveRootRows(),
@@ -6820,7 +6903,7 @@ class XMBViewModel @Inject constructor(
             }
             LIST_SORT_ROW_ID -> {
                 val (listKey, kind) = sortTargetOf(menu) ?: return false
-                openListSortMenu(listKey, kind, title = "Sort", parent = menu)
+                openListSortMenu(listKey, kind, title = UiText.res(R.string.xmbm_sort), parent = menu)
             }
             GLOBAL_SORT_ROW_ID -> {
                 if (menu.sortListKey != null) return false   // the Sort picker's own Global row
@@ -7086,10 +7169,11 @@ class XMBViewModel @Inject constructor(
 
     // The label shown on a console's Icon Display row: its own override when it has one,
     // otherwise the global mode it is currently following.
-    private fun platformIconDisplayLabel(platformId: String): String {
+    private fun platformIconDisplayLabel(platformId: String): UiText {
         val state = _uiState.value
         val override = state.iconDisplayModeByPlatform[platformId]
-        return override?.label ?: "Global: ${state.iconDisplayMode.label}"
+        return override?.let { UiText.res(it.labelRes) }
+            ?: UiText.res(R.string.xmbm_icon_global_value, UiText.res(state.iconDisplayMode.labelRes))
     }
 
     // Second-level menu: the icon display mode for ONE console. "Use Global Setting" clears the
@@ -7100,16 +7184,16 @@ class XMBViewModel @Inject constructor(
         val items = buildList {
             add(XMBContextMenuItem(
                 id      = "picondisp_default",
-                label   = "Use Global Setting (${state.iconDisplayMode.label})",
+                label   = UiText.res(R.string.xmbm_icon_use_global, UiText.res(state.iconDisplayMode.labelRes)),
                 checked = override == null,
             ))
             IconDisplayMode.entries.forEach { mode ->
-                add(XMBContextMenuItem("picondisp_${mode.name}", mode.label, checked = override == mode))
+                add(XMBContextMenuItem("picondisp_${mode.name}", UiText.res(mode.labelRes), checked = override == mode))
             }
         }
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
-                title      = "Icon Display",
+                title      = UiText.res(R.string.xmbm_icon_display),
                 items      = items,
                 platformId = platformId,   // routes selection through the platform handler branch
                 parent     = parent,
@@ -7122,11 +7206,11 @@ class XMBViewModel @Inject constructor(
     private fun openGlobalIconDisplayPickerMenu(parent: XMBContextMenu? = null) {
         val current = _uiState.value.iconDisplayMode
         val items = IconDisplayMode.entries.map { mode ->
-            XMBContextMenuItem("gicondisp_${mode.name}", mode.label, checked = mode == current)
+            XMBContextMenuItem("gicondisp_${mode.name}", UiText.res(mode.labelRes), checked = mode == current)
         }
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
-                title      = "Icon Display",
+                title      = UiText.res(R.string.xmbm_icon_display),
                 items      = items,
                 isAllGames = true,   // routes selection through the All Games handler branch
                 parent     = parent,
@@ -7146,19 +7230,21 @@ class XMBViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 activeContextMenu = XMBContextMenu(
-                    title = when (item.id) {
-                        ACH_SUMMARY_ITEM_ID -> "Player Card"
-                        ACH_UNTRACKED_ITEM_ID -> "Untracked"
-                        else -> "All Tracked Games"
-                    },
+                    title = UiText.res(
+                        when (item.id) {
+                            ACH_SUMMARY_ITEM_ID -> R.string.xmbm_ach_player_card
+                            ACH_UNTRACKED_ITEM_ID -> R.string.xmbm_ach_untracked
+                            else -> R.string.xmbm_ach_all_tracked
+                        },
+                    ),
                     items = listOf(
                         XMBContextMenuItem(
                             "ach_auto_match",
-                            if (matching) "Auto-Matching…" else "Auto-Matching",
+                            UiText.res(if (matching) R.string.xmbm_ach_auto_matching_busy else R.string.xmbm_ach_auto_matching),
                         ),
                         XMBContextMenuItem(
                             "ach_sync_all",
-                            if (syncing) "Updating…" else "Update Installed Achievements",
+                            UiText.res(if (syncing) R.string.xmbm_ach_updating_busy else R.string.xmbm_ach_update_installed),
                         ),
                     ),
                     achievementsHubMenu = true,
@@ -7242,13 +7328,15 @@ class XMBViewModel @Inject constructor(
             }.getOrDefault(0)
             // The emulator row shows its override by name, which is a profile lookup.
             val emulatorLabel = game?.emulatorPackage?.let { override ->
-                runCatching { emulatorProfileRepository.getProfilesForPlatform(game.platformId) }
-                    .getOrDefault(emptyList())
-                    .firstOrNull { it.id == override }?.name ?: override
-            } ?: "Default"
+                UiText.raw(
+                    runCatching { emulatorProfileRepository.getProfilesForPlatform(game.platformId) }
+                        .getOrDefault(emptyList())
+                        .firstOrNull { it.id == override }?.name ?: override,
+                )
+            } ?: UiText.res(R.string.xmbm_default)
             // Launch With names the launcher a Windows game runs with; no row without one.
             val launcherLabel = game?.takeIf { it.platformId == WINDOWS_PLATFORM_ID }
-                ?.let { pcLaunchRouter.launchWithLabel(it) }
+                ?.let { pcLaunchRouter.launchWithLabel(it) }?.let(UiText::raw)
             openGameContextMenuCore(item, discCount, emulatorLabel, game?.iconDisplayMode, launcherLabel)
         }
     }
@@ -7256,9 +7344,9 @@ class XMBViewModel @Inject constructor(
     private fun openGameContextMenuCore(
         item: XMBItem,
         discCount: Int,
-        emulatorLabel: String = "Default",
+        emulatorLabel: UiText = UiText.res(R.string.xmbm_default),
         iconDisplayOverride: String? = null,
-        launcherLabel: String? = null,
+        launcherLabel: UiText? = null,
     ) {
         val currentCat = currentCategory()
         val inGamingCategory = currentCat?.isGamingCategory == true
@@ -7298,12 +7386,12 @@ class XMBViewModel @Inject constructor(
             canSelectMultiple = inGamesList && !state.markMode,
             emulatorLabel   = emulatorLabel,
             launcherLabel   = launcherLabel,
-            iconDisplayLabel = iconMode.label,
+            iconDisplayLabel = UiText.res(iconMode.labelRes),
         )
 
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
-                title       = item.title,
+                title       = item.titleUi,
                 items       = items,
                 rowKey      = item.rowKey(),
                 gameId      = item.gameId,
@@ -7324,7 +7412,7 @@ class XMBViewModel @Inject constructor(
             val items = addToCardRows(memberOf, itemIsApp = isAppEntry(gameId))
             _uiState.update { it.copy(
                 activeContextMenu = XMBContextMenu(
-                    title            = "Add to Card",
+                    title            = UiText.res(R.string.xmbm_game_add_to_card),
                     items            = items,
                     selectedIndex    = selectIndex.coerceIn(0, items.lastIndex.coerceAtLeast(0)),
                     gameId           = gameId,
@@ -7365,10 +7453,9 @@ class XMBViewModel @Inject constructor(
         if (marked.isEmpty()) return
         viewModelScope.launch {
             val items = addToCardRows(memberOf = emptySet())
-            val noun = if (marked.size == 1) "Game" else "Games"
             _uiState.update { it.copy(
                 activeContextMenu = XMBContextMenu(
-                    title         = "Add ${marked.size} $noun to Card",
+                    title         = UiText.plural(R.plurals.xmbm_marked_add_to_card, marked.size),
                     items         = items,
                     markedGameIds = marked,
                 )
@@ -7407,7 +7494,7 @@ class XMBViewModel @Inject constructor(
             )).map { XMBContextMenuItem(it.id, it.label, it.isDestructive, value = it.value, header = it.header, opensMenu = it.opensMenu, silent = it.silent) }
             _uiState.update { it.copy(
                 activeContextMenu = XMBContextMenu(
-                    title           = item.title,
+                    title           = item.titleUi,
                     items           = items,
                     rowKey          = item.rowKey(),
                     gameId          = item.gameId,
@@ -7441,7 +7528,7 @@ class XMBViewModel @Inject constructor(
         )
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
-                title           = collection.name,
+                title           = UiText.raw(collection.name),
                 items           = items,
                 rowKey          = com.playfieldportal.core.domain.model.ListKeys.collectionItem(collectionId),
                 collectionRowId = collectionId,
@@ -7464,11 +7551,11 @@ class XMBViewModel @Inject constructor(
 
     private fun openCollectionCategoryPicker(collectionId: Long, fromCategoryId: String) {
         val items = collectionMoveTargets(fromCategoryId)
-            .map { cat -> XMBContextMenuItem("movecol_${cat.id}", cat.name) }
+            .map { cat -> XMBContextMenuItem("movecol_${cat.id}", UiText.raw(cat.name)) }
         if (items.isEmpty()) return
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
-                title           = "Move Custom Card To",
+                title           = UiText.res(R.string.xmbm_move_card_to),
                 items           = items,
                 collectionRowId = collectionId,
             )
@@ -7478,11 +7565,11 @@ class XMBViewModel @Inject constructor(
     // Second-level menu: pick a destination category for Move / Add.
     private fun openCategoryPicker(pkg: String, fromCategory: String?, action: String) {
         val items = _uiState.value.categories.map { cat ->
-            XMBContextMenuItem("pick_${cat.id}", cat.name)
+            XMBContextMenuItem("pick_${cat.id}", UiText.raw(cat.name))
         }
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
-                title            = if (action == "move") "Move To…" else "Add To…",
+                title            = UiText.res(if (action == "move") R.string.xmbm_move_to else R.string.xmbm_add_to),
                 items            = items,
                 packageName      = pkg,
                 categoryContext  = fromCategory,
@@ -7675,7 +7762,10 @@ class XMBViewModel @Inject constructor(
                 itemId == ADD_APPS_TO_CARD_ID -> {
                     closeContextMenu()
                     val name = _uiState.value.collections.firstOrNull { it.id == collectionId }?.name
-                    openAppPicker(AppPickerTarget.CardApps(collectionId), if (name != null) "Add Apps · $name" else "Add Apps")
+                    openAppPicker(
+                        AppPickerTarget.CardApps(collectionId),
+                        if (name != null) UiText.res(R.string.xmbm_picker_add_apps_named, name) else UiText.res(R.string.xmbm_add_apps),
+                    )
                 }
                 itemId == "rename_collection" -> promptRenameCollection(collectionId)
                 itemId == "move_collection_category" -> {
@@ -7739,7 +7829,7 @@ class XMBViewModel @Inject constructor(
                     iconDisplayPreferences.setPlatformMode(pid, IconDisplayMode.fromName(choice))
                 }
             } else when (itemId) {
-                "find_games"       -> openAppPicker(AppPickerTarget.AndroidGames(menu.platformId), "Find Games")
+                "find_games"       -> openAppPicker(AppPickerTarget.AndroidGames(menu.platformId), UiText.res(R.string.xmbm_card_find_games))
                 "import_pc_games"  -> _uiState.update { it.copy(activeSettingsScreen = "settings_import_pc") }
                 // The shell owns the SAF launcher, so this only raises the request.
                 "batch_match_local" -> _uiState.update { it.copy(requestLocalSteamFolderPick = true) }
@@ -7841,7 +7931,7 @@ class XMBViewModel @Inject constructor(
                 "icon_display"           -> openIconDisplayPickerMenu(menu.gameId, parent = menu)
                 "fetch_artwork"          -> fetchArtworkFromMenu(menu.gameId)
                 "hide_here"              -> currentHideLocation()?.let { (type, id, label) ->
-                    persistHide(HiddenPlacement.gameKey(menu.gameId), menu.title, type, id, label)
+                    persistHide(HiddenPlacement.gameKey(menu.gameId), menu.title.resolve(context), type, id, label.resolve(context))
                 }
                 // The way back from "Unmark as Game": the demoted row is still a games-table
                 // entry, and this is the only menu it can be reached from once it lives in a
@@ -7892,7 +7982,7 @@ class XMBViewModel @Inject constructor(
                         val existing = gameRepository.getAppEntry(pkg)
                         if (existing == null) {
                             gameRepository.upsert(Game(
-                                title         = menu.title,
+                                title         = menu.title.resolve(context),
                                 platformId    = ANDROID_PLATFORM_ID,
                                 packageName   = pkg,
                                 isManualEntry = true,
@@ -7919,19 +8009,19 @@ class XMBViewModel @Inject constructor(
                         }
                         memoryCardRepository.recountGames(ANDROID_PLATFORM_ID)
                     }
-                    AppMenuIds.FAVORITE -> toggleAppFavorite(pkg, menu.title)
+                    AppMenuIds.FAVORITE -> toggleAppFavorite(pkg, menu.title.resolve(context))
                     AppMenuIds.APP_INFO -> installedAppRepository.openAppInfo(pkg)
-                    "add_to_collection" -> addAppToCollection(pkg, menu.title)
+                    "add_to_collection" -> addAppToCollection(pkg, menu.title.resolve(context))
                     "move"      -> openCategoryPicker(pkg, menu.categoryContext, "move")
                     "add"       -> openCategoryPicker(pkg, menu.categoryContext, "add")
                     "remove"    -> menu.categoryContext?.let { cat -> appAction { appCategoryRepository.removeFromCategory(pkg, cat) } }
                     "pin"       -> menu.categoryContext?.let { cat -> appAction { appCategoryRepository.pinToCategory(pkg, cat) } }
                     "unpin"     -> menu.categoryContext?.let { cat -> appAction { appCategoryRepository.unpinFromCategory(pkg, cat) } }
                     "hide_from_category" -> menu.categoryContext?.let { cat ->
-                        persistHide(HiddenPlacement.appKey(pkg), menu.title, HideLocationType.CATEGORY, cat, categoryDisplayName(cat))
+                        persistHide(HiddenPlacement.appKey(pkg), menu.title.resolve(context), HideLocationType.CATEGORY, cat, categoryDisplayName(cat))
                     }
                     "hide_everywhere" -> appAction { appCategoryRepository.setHidden(pkg, true) }
-                    "rename"    -> _uiState.update { it.copy(renameAppTarget = pkg, renameAppCurrent = menu.title) }
+                    "rename"    -> _uiState.update { it.copy(renameAppTarget = pkg, renameAppCurrent = menu.title.resolve(context)) }
                 }
             }
         }
@@ -7955,15 +8045,15 @@ class XMBViewModel @Inject constructor(
             val items = buildList {
                 add(XMBContextMenuItem(
                     id      = "icondisp_default",
-                    label   = "Use Default (${inherited.label})",
+                    label   = UiText.res(R.string.xmbm_icon_use_default, UiText.res(inherited.labelRes)),
                     checked = override == null,
                 ))
                 IconDisplayMode.entries.forEach { mode ->
-                    add(XMBContextMenuItem("icondisp_${mode.name}", mode.label, checked = override == mode))
+                    add(XMBContextMenuItem("icondisp_${mode.name}", UiText.res(mode.labelRes), checked = override == mode))
                 }
             }
             _uiState.update { it.copy(activeContextMenu = XMBContextMenu(
-                title  = "Icon Display",
+                title  = UiText.res(R.string.xmbm_icon_display),
                 items  = items,
                 gameId = gameId,
                 parent = parent,
@@ -7976,11 +8066,11 @@ class XMBViewModel @Inject constructor(
             val game = gameRepository.getById(gameId) ?: return@launch
             val profiles = emulatorProfileRepository.getProfilesForPlatform(game.platformId)
             val items = buildList {
-                add(XMBContextMenuItem("emu_pick_default", "Use Platform Default", checked = game.emulatorPackage == null))
-                profiles.forEach { add(XMBContextMenuItem("emu_pick_${it.id}", it.name, checked = game.emulatorPackage == it.id)) }
+                add(XMBContextMenuItem("emu_pick_default", UiText.res(R.string.xmbm_emu_use_platform_default), checked = game.emulatorPackage == null))
+                profiles.forEach { add(XMBContextMenuItem("emu_pick_${it.id}", UiText.raw(it.name), checked = game.emulatorPackage == it.id)) }
             }
             _uiState.update { it.copy(activeContextMenu = XMBContextMenu(
-                title  = "Choose Emulator",
+                title  = UiText.res(R.string.xmbm_emu_choose),
                 items  = items,
                 gameId = gameId,
                 parent = parent,
@@ -7997,14 +8087,14 @@ class XMBViewModel @Inject constructor(
             val items = pcLaunchRouter.options(game).map { option ->
                 XMBContextMenuItem(
                     id      = LAUNCH_WITH_PREFIX + option.packageName,
-                    label   = option.label,
-                    value   = if (option.isOriginal) "Imported from" else null,
+                    label   = UiText.raw(option.label),
+                    value   = if (option.isOriginal) UiText.res(R.string.xmbm_launchwith_imported_from) else null,
                     checked = option.packageName == current,
                 )
             }
             if (items.isEmpty()) return@launch
             _uiState.update { it.copy(activeContextMenu = XMBContextMenu(
-                title  = "Launch With",
+                title  = UiText.res(R.string.xmbm_game_launch_with),
                 items  = items,
                 gameId = gameId,
                 parent = parent,
@@ -8027,12 +8117,12 @@ class XMBViewModel @Inject constructor(
                 .map { member ->
                     XMBContextMenuItem(
                         id      = "disc_pick_${member.id}",
-                        label   = member.discNumber?.let { "Disc $it" } ?: "Playlist",
+                        label   = member.discNumber?.let { UiText.res(R.string.xmbm_disc_n, it) } ?: UiText.res(R.string.xmbm_disc_unnumbered),
                         checked = member.id == preferredDiscId,
                     )
                 }
             _uiState.update { it.copy(activeContextMenu = XMBContextMenu(
-                title  = "Choose Disc",
+                title  = UiText.res(R.string.xmbm_game_choose_disc),
                 items  = items,
                 gameId = gameId,
                 parent = parent,
@@ -8073,7 +8163,7 @@ class XMBViewModel @Inject constructor(
     ) {
         _uiState.update { it.copy(
             collectionNameDialog = CollectionNameDialogState(
-                title = "New Custom Memory Card",
+                title = UiText.res(R.string.xmbm_card_new_title),
                 forGameId = forGameId,
                 forGameIds = forGameIds,
                 homeCategoryId = homeCategoryId,
@@ -8085,7 +8175,7 @@ class XMBViewModel @Inject constructor(
         val name = _uiState.value.collections.firstOrNull { it.id == collectionId }?.name.orEmpty()
         _uiState.update { it.copy(
             collectionNameDialog = CollectionNameDialogState(
-                title = "Rename Custom Memory Card",
+                title = UiText.res(R.string.xmbm_card_rename_title),
                 initialText = name,
                 renameCollectionId = collectionId,
             )
@@ -8139,11 +8229,11 @@ class XMBViewModel @Inject constructor(
     private fun showGameFileLocation(gameId: Long) {
         viewModelScope.launch {
             val game = gameRepository.getById(gameId) ?: return@launch
-            val location = game.romPath
-                ?: game.packageName?.let { "Package: $it" }
-                ?: "No file location on record"
+            val location = game.romPath?.let(UiText::raw)
+                ?: game.packageName?.let { UiText.res(R.string.xmbm_info_package, it) }
+                ?: UiText.res(R.string.xmbm_info_no_location)
             _uiState.update {
-                it.copy(infoDialog = InfoDialogState(title = game.displayTitle, message = location))
+                it.copy(infoDialog = InfoDialogState(title = UiText.raw(game.displayTitle), message = location))
             }
         }
     }
@@ -8161,7 +8251,10 @@ class XMBViewModel @Inject constructor(
                 .onFailure { Timber.e(it, "Export Game failed for gameId=$gameId") }
                 .getOrNull()
             _uiState.update {
-                it.copy(infoDialog = InfoDialogState(title = game.displayTitle, message = report?.message ?: "Export failed — see the log."))
+                it.copy(infoDialog = InfoDialogState(
+                    title = UiText.raw(game.displayTitle),
+                    message = report?.message?.let(UiText::raw) ?: UiText.res(R.string.xmbm_info_export_failed),
+                ))
             }
         }
     }
@@ -8176,32 +8269,29 @@ class XMBViewModel @Inject constructor(
     private fun installGoldbergForGame(gameId: Long) {
         viewModelScope.launch {
             val game = gameRepository.getById(gameId) ?: return@launch
-            fun info(message: String) = _uiState.update {
-                it.copy(infoDialog = InfoDialogState(title = game.displayTitle, message = message))
+            fun info(message: UiText) = _uiState.update {
+                it.copy(infoDialog = InfoDialogState(title = UiText.raw(game.displayTitle), message = message))
             }
             if (!achievementCredentials.goldbergInstallerEnabled()) {
                 // Nothing about the game is checked on this path, so the message says only what
                 // is known: the installer is off (survey U14).
-                info(
-                    "Installing Goldberg achievements is turned off. Turn on \"Install Goldberg & " +
-                        "Convert Games\" in Settings ▸ Achievements ▸ Local Windows, then try again.",
-                )
+                info(UiText.res(R.string.xmbm_goldberg_off))
                 return@launch
             }
             val key = normalizePcTitleKey(game.displayTitle)
             val folder = localSteamDiscovery.scanAll().firstOrNull { normalizePcTitleKey(it.folderName) == key }
             when {
-                folder == null -> info("No Steam-emu setup (steam_settings) found for this game.")
-                folder.hasSchema -> info("${game.displayTitle} already has achievement data.")
+                folder == null -> info(UiText.res(R.string.xmbm_goldberg_no_setup))
+                folder.hasSchema -> info(UiText.res(R.string.xmbm_goldberg_has_schema, game.displayTitle))
                 else -> when (localSteamSchemaGenerator.generate(folder)) {
                     is com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator.Result.Written ->
-                        info("Installed Goldberg achievements. Play it through the emulator to start earning coins.")
+                        info(UiText.res(R.string.xmbm_goldberg_installed))
                     is com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator.Result.NoAchievements ->
-                        info("This game has no achievements to install.")
+                        info(UiText.res(R.string.xmbm_goldberg_none))
                     is com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator.Result.NoKey ->
-                        info("Add your Steam Web API key in Achievement settings first.")
+                        info(UiText.res(R.string.xmbm_goldberg_no_key))
                     is com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator.Result.Failed ->
-                        info("Couldn't install achievements for this game.")
+                        info(UiText.res(R.string.xmbm_goldberg_failed))
                 }
             }
         }
@@ -8230,7 +8320,7 @@ class XMBViewModel @Inject constructor(
 
     // Opens the picker with current membership pre-checked (both `selected` and
     // `initialSelected`), so Apply diffs against the state the picker opened with.
-    private fun openAppPicker(target: AppPickerTarget, title: String) {
+    private fun openAppPicker(target: AppPickerTarget, title: UiText) {
         viewModelScope.launch {
             val installed = appCategoryRepository.allInstalledApps()
             // Icons resolve once, here, on IO — never per-tile in composition.
@@ -8537,7 +8627,7 @@ class XMBViewModel @Inject constructor(
             _uiState.value.categories
                 .filter { it.isGamingCategory && it.id != fromCategoryId && it.id != BuiltInCategory.GAMES }
                 .forEach { cat ->
-                    add(XMBContextMenuItem("cat_${cat.id}", cat.name))
+                    add(XMBContextMenuItem("cat_${cat.id}", UiText.raw(cat.name)))
                 }
         }
 
@@ -8545,7 +8635,7 @@ class XMBViewModel @Inject constructor(
 
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
-                title       = if (action == "move") "Move Game To" else "Add Game To",
+                title       = UiText.res(if (action == "move") R.string.xmbm_move_game_to else R.string.xmbm_add_game_to),
                 items       = items,
                 gameId      = gameId,
                 categoryContext = fromCategoryId,
@@ -8609,9 +8699,9 @@ class XMBViewModel @Inject constructor(
             // <windows>/import exports, emu folder reconcile) — extension scanning means nothing
             // to it, and "Scan for Games" must behave exactly like the Library Manager action.
             if (platformId == WINDOWS_PLATFORM_ID) {
-                val title = "${card.displayName.removeSuffix(" Memory Card")} scan finished"
-                backgroundTasks.startStoppable(taskId, "Scanning ${card.displayName}…", TaskKind.SCAN,
-                    stopNote = "Games found so far are kept.")
+                val title = context.getString(R.string.xmbm_scan_finished_title, card.displayName.removeSuffix(" Memory Card"))
+                backgroundTasks.startStoppable(taskId, context.getString(R.string.xmbm_scan_running, card.displayName), TaskKind.SCAN,
+                    stopNote = context.getString(R.string.xmbm_scan_stop_note))
                 var error: Throwable? = null
                 val report = try {
                     runCatching { pcGameScanner.scan() }
@@ -8621,22 +8711,22 @@ class XMBViewModel @Inject constructor(
                         }
                         .getOrNull()
                 } catch (e: kotlinx.coroutines.CancellationException) {
-                    backgroundTasks.settleCancelled(taskId, "Stopped before it finished",
-                        NotificationAction.OpenMemoryCard(platformId), title = "${card.displayName} scan stopped")
+                    backgroundTasks.settleCancelled(taskId, context.getString(R.string.xmbm_task_stopped),
+                        NotificationAction.OpenMemoryCard(platformId), title = context.getString(R.string.xmbm_scan_stopped_title, card.displayName))
                     throw e
                 }
                 if (report == null) {
                     backgroundTasks.fail(
-                        taskId, "PC scan failed", NotificationAction.OpenMemoryCard(platformId),
+                        taskId, context.getString(R.string.xmbm_pcscan_failed), NotificationAction.OpenMemoryCard(platformId),
                         detail = NotificationDetail.notes(PfpErrorCode.SC_9001, summary = error?.message,
                             diagnostic = error?.stackTraceToString()?.take(4_000)),
-                        title = "${card.displayName} scan failed",
+                        title = context.getString(R.string.xmbm_scan_failed_title, card.displayName),
                     )
                 } else {
                     memoryCardRepository.recordScan(platformId, System.currentTimeMillis())
                     backgroundTasks.complete(
                         taskId,
-                        if (report.newGames == 0) "No new PC games found" else report.message,
+                        if (report.newGames == 0) context.getString(R.string.xmbm_pcscan_no_new) else report.message,
                         NotificationAction.OpenMemoryCard(platformId),
                         title = title,
                     )
@@ -8653,24 +8743,27 @@ class XMBViewModel @Inject constructor(
             // Cards" is the named upgrade path (plan section 4.3) — it needs no counting pre-pass,
             // which is the one thing the media-scan performance work must not pay for again.
             val name = card.displayName.removeSuffix(" Memory Card")
-            backgroundTasks.startStoppable(taskId, "Scanning ${card.displayName}…", TaskKind.SCAN,
-                stopNote = "Games found so far are kept.")
+            backgroundTasks.startStoppable(taskId, context.getString(R.string.xmbm_scan_running, card.displayName), TaskKind.SCAN,
+                stopNote = context.getString(R.string.xmbm_scan_stop_note))
             val outcome = try {
                 libraryScanner.scanPlatform(platformId, removeMissing = true)
             } catch (e: kotlinx.coroutines.CancellationException) {
-                backgroundTasks.settleCancelled(taskId, "Stopped before it finished",
-                    NotificationAction.OpenMemoryCard(platformId), title = "$name scan stopped")
+                backgroundTasks.settleCancelled(taskId, context.getString(R.string.xmbm_task_stopped),
+                    NotificationAction.OpenMemoryCard(platformId), title = context.getString(R.string.xmbm_scan_stopped_title, name))
                 throw e
             }
-            val body = scanOutcomeMessage(outcome, removeMissing = true).removePrefix("${outcome.displayName}: ")
+            val body = scanOutcomeBody(outcome, removeMissing = true).resolve(context)
             when (outcome.status) {
                 ScanStatus.COMPLETED -> backgroundTasks.complete(
-                    taskId, body, NotificationAction.OpenMemoryCard(platformId), title = "$name scan finished",
+                    taskId, body, NotificationAction.OpenMemoryCard(platformId), title = context.getString(R.string.xmbm_scan_finished_title, name),
                 )
                 else -> backgroundTasks.fail(
                     taskId, body, NotificationAction.OpenMemoryCard(platformId),
-                    detail = outcome.failureNotes(),
-                    title = if (outcome.status == ScanStatus.FAILED) "$name scan failed" else "$name scan skipped",
+                    detail = outcome.failureNotes { it.resolve(context) },
+                    title = context.getString(
+                        if (outcome.status == ScanStatus.FAILED) R.string.xmbm_scan_failed_title else R.string.xmbm_scan_skipped_title,
+                        name,
+                    ),
                 )
             }
         }
@@ -8681,7 +8774,7 @@ class XMBViewModel @Inject constructor(
 
     // The scope a card job names in its tray row, and where tapping that row leads. A null
     // platform is the All Games card: every card at once, with no single card to open.
-    private fun jobScopeName(platformId: String?): String = platformId?.let(::cardName) ?: "All Games"
+    private fun jobScopeName(platformId: String?): String = platformId?.let(::cardName) ?: context.getString(R.string.xmbm_all_games)
 
     private fun jobScopeAction(platformId: String?): NotificationAction =
         platformId?.let { NotificationAction.OpenMemoryCard(it) } ?: NotificationAction.None
@@ -8692,11 +8785,11 @@ class XMBViewModel @Inject constructor(
         viewModelScope.launch {
             val cards = enabledCards.filter { it.platformId == WINDOWS_PLATFORM_ID || it.isScannable() }
             val taskId = "scan_all"
-            backgroundTasks.startStoppable(taskId, "Scanning all Memory Cards…", TaskKind.SCAN,
-                stopNote = "Cards already scanned keep their new games.")
+            backgroundTasks.startStoppable(taskId, context.getString(R.string.xmbm_scanall_running), TaskKind.SCAN,
+                stopNote = context.getString(R.string.xmbm_scanall_stop_note))
             if (cards.isEmpty()) {
-                backgroundTasks.fail(taskId, "No Memory Card has a folder to scan",
-                    detail = NotificationDetail.notes(PfpErrorCode.SC_1001), title = "Nothing to scan")
+                backgroundTasks.fail(taskId, context.getString(R.string.xmbm_scanall_nothing),
+                    detail = NotificationDetail.notes(PfpErrorCode.SC_1001), title = context.getString(R.string.xmbm_scanall_nothing_title))
                 return@launch
             }
             var added = 0
@@ -8718,7 +8811,7 @@ class XMBViewModel @Inject constructor(
                         if (report == null) {
                             failed++
                             outcomes += PlatformScanOutcome(card.platformId, card.displayName, ScanStatus.FAILED,
-                                errorMessage = error?.message ?: "PC scan failed")
+                                errorMessage = error?.message?.let(UiText::raw) ?: UiText.res(R.string.xmbm_pcscan_failed))
                         } else {
                             memoryCardRepository.recordScan(card.platformId, System.currentTimeMillis())
                             added += report.newGames
@@ -8733,17 +8826,17 @@ class XMBViewModel @Inject constructor(
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 backgroundTasks.settleCancelled(
-                    taskId, "Stopped after ${outcomes.size} of ${cards.size} cards",
-                    detail = scanResults(outcomes), title = "Scan All Memory Cards stopped",
+                    taskId, context.resources.getQuantityString(R.plurals.xmbm_scanall_stopped_after, cards.size, outcomes.size, cards.size),
+                    detail = scanResults(outcomes) { it.resolve(context) }, title = context.getString(R.string.xmbm_scanall_stopped_title),
                 )
                 throw e
             }
-            val summary = scanAllSummary(added, cards.size, failed)
-            val detail = scanResults(outcomes)
+            val summary = scanAllSummary(added, cards.size, failed).resolve(context)
+            val detail = scanResults(outcomes) { it.resolve(context) }
             if (failed == cards.size) {
-                backgroundTasks.fail(taskId, summary, detail = detail, title = "Scan All Memory Cards failed")
+                backgroundTasks.fail(taskId, summary, detail = detail, title = context.getString(R.string.xmbm_scanall_failed_title))
             } else {
-                backgroundTasks.complete(taskId, summary, detail = detail, title = "Scan All Memory Cards finished")
+                backgroundTasks.complete(taskId, summary, detail = detail, title = context.getString(R.string.xmbm_scanall_finished_title))
             }
         }
     }
@@ -8753,8 +8846,8 @@ class XMBViewModel @Inject constructor(
     private fun scrapeMissingArtwork(platformId: String?) {
         viewModelScope.launch {
             val taskId = "scrape_missing_${platformId ?: "all"}"
-            backgroundTasks.startStoppable(taskId, "Fetching missing artwork: ${jobScopeName(platformId)}",
-                TaskKind.ARTWORK, stopNote = "Artwork already fetched is kept.")
+            backgroundTasks.startStoppable(taskId, context.getString(R.string.xmbm_scrape_running, jobScopeName(platformId)),
+                TaskKind.ARTWORK, stopNote = context.getString(R.string.xmbm_scrape_stop_note))
             // Every game's result, for the Results sheet — which games failed, and why.
             val outcomes = mutableListOf<GameScrapeOutcome>()
             runCatching {
@@ -8770,35 +8863,36 @@ class XMBViewModel @Inject constructor(
             }.onSuccess { result ->
                 if (result.paused) {
                     backgroundTasks.fail(
-                        taskId, ARTWORK_PAUSED_MESSAGE, NotificationAction.OpenSettingsScreen("settings_artwork_import"),
-                        detail = NotificationDetail.notes(PfpErrorCode.AR_1001, summary = ARTWORK_PAUSED_MESSAGE),
-                        title = "Artwork fetch paused: ${jobScopeName(platformId)}",
+                        taskId, ARTWORK_PAUSED_TEXT.resolve(context), NotificationAction.OpenSettingsScreen("settings_artwork_import"),
+                        detail = NotificationDetail.notes(PfpErrorCode.AR_1001, summary = ARTWORK_PAUSED_TEXT.resolve(context)),
+                        title = context.getString(R.string.xmbm_scrape_paused_title, jobScopeName(platformId)),
                     )
                     loadItemsForCategory(currentCategory())
                     return@onSuccess
                 }
                 backgroundTasks.complete(
                     taskId,
-                    if (result.total == 0) "No games are missing artwork"
-                    else "${result.succeeded} of ${result.total} game(s) updated",
+                    if (result.total == 0) context.getString(R.string.xmbm_scrape_none_missing)
+                    else context.resources.getQuantityString(R.plurals.xmbm_scrape_updated, result.total, result.succeeded, result.total),
                     jobScopeAction(platformId),
-                    detail = outcomes.takeIf { it.isNotEmpty() }?.let(::scrapeResults),
-                    title = "Artwork fetch finished: ${jobScopeName(platformId)}",
+                    detail = outcomes.takeIf { it.isNotEmpty() }?.let { scrapeResults(it) { text -> text.resolve(context) } },
+                    title = context.getString(R.string.xmbm_scrape_finished_title, jobScopeName(platformId)),
                 )
                 loadItemsForCategory(currentCategory())
             }.onFailure {
                 if (it is kotlinx.coroutines.CancellationException) {
                     backgroundTasks.settleCancelled(
-                        taskId, "Stopped after ${outcomes.size} game(s)", jobScopeAction(platformId),
-                        detail = scrapeResults(outcomes), title = "Artwork fetch stopped: ${jobScopeName(platformId)}",
+                        taskId, context.resources.getQuantityString(R.plurals.xmbm_stopped_after_games, outcomes.size, outcomes.size), jobScopeAction(platformId),
+                        detail = scrapeResults(outcomes) { text -> text.resolve(context) },
+                        title = context.getString(R.string.xmbm_scrape_stopped_title, jobScopeName(platformId)),
                     )
                     throw it
                 }
                 backgroundTasks.fail(
-                    taskId, "Artwork fetch failed", jobScopeAction(platformId),
+                    taskId, context.getString(R.string.xmbm_fetchart_failed), jobScopeAction(platformId),
                     detail = NotificationDetail.notes(PfpErrorCode.AR_9001, summary = it.message,
                         diagnostic = it.stackTraceToString().take(4_000)),
-                    title = "Artwork fetch failed: ${jobScopeName(platformId)}",
+                    title = context.getString(R.string.xmbm_scrape_failed_title, jobScopeName(platformId)),
                 )
             }
         }
@@ -8809,8 +8903,8 @@ class XMBViewModel @Inject constructor(
     private fun updateMetadata(platformId: String?) {
         viewModelScope.launch {
             val taskId = "update_metadata_${platformId ?: "all"}"
-            backgroundTasks.startStoppable(taskId, "Updating metadata: ${jobScopeName(platformId)}",
-                TaskKind.METADATA, stopNote = "Games already updated keep their details.")
+            backgroundTasks.startStoppable(taskId, context.getString(R.string.xmbm_meta_running, jobScopeName(platformId)),
+                TaskKind.METADATA, stopNote = context.getString(R.string.xmbm_meta_stop_note))
             val outcomes = mutableListOf<GameScrapeOutcome>()
             runCatching {
                 val onProgress: (ScrapeProgress) -> Unit = { p ->
@@ -8823,28 +8917,30 @@ class XMBViewModel @Inject constructor(
                 backgroundTasks.complete(
                     taskId,
                     when {
-                        result.total > 0 -> "${result.succeeded} of ${result.total} game(s) updated"
-                        platformId == null -> "No games in the library"
-                        else -> "No games on this card"
+                        result.total > 0 ->
+                            context.resources.getQuantityString(R.plurals.xmbm_scrape_updated, result.total, result.succeeded, result.total)
+                        platformId == null -> context.getString(R.string.xmbm_meta_no_games_library)
+                        else -> context.getString(R.string.xmbm_meta_no_games_card)
                     },
                     jobScopeAction(platformId),
-                    detail = outcomes.takeIf { it.isNotEmpty() }?.let(::scrapeResults),
-                    title = "Metadata update finished: ${jobScopeName(platformId)}",
+                    detail = outcomes.takeIf { it.isNotEmpty() }?.let { scrapeResults(it) { text -> text.resolve(context) } },
+                    title = context.getString(R.string.xmbm_meta_finished_title, jobScopeName(platformId)),
                 )
                 loadItemsForCategory(currentCategory())
             }.onFailure {
                 if (it is kotlinx.coroutines.CancellationException) {
                     backgroundTasks.settleCancelled(
-                        taskId, "Stopped after ${outcomes.size} game(s)", jobScopeAction(platformId),
-                        detail = scrapeResults(outcomes), title = "Metadata update stopped: ${jobScopeName(platformId)}",
+                        taskId, context.resources.getQuantityString(R.plurals.xmbm_stopped_after_games, outcomes.size, outcomes.size), jobScopeAction(platformId),
+                        detail = scrapeResults(outcomes) { text -> text.resolve(context) },
+                        title = context.getString(R.string.xmbm_meta_stopped_title, jobScopeName(platformId)),
                     )
                     throw it
                 }
                 backgroundTasks.fail(
-                    taskId, "Metadata update failed", jobScopeAction(platformId),
+                    taskId, context.getString(R.string.xmbm_meta_failed), jobScopeAction(platformId),
                     detail = NotificationDetail.notes(PfpErrorCode.AR_9001, summary = it.message,
                         diagnostic = it.stackTraceToString().take(4_000)),
-                    title = "Metadata update failed: ${jobScopeName(platformId)}",
+                    title = context.getString(R.string.xmbm_meta_failed_title, jobScopeName(platformId)),
                 )
             }
         }
@@ -9052,7 +9148,7 @@ class XMBViewModel @Inject constructor(
                 if (request != null) {
                     it.copy(shortcutReview = request)
                 } else {
-                    it.copy(infoDialog = InfoDialogState("Shortcut request", "This request was already handled."))
+                    it.copy(infoDialog = InfoDialogState(UiText.res(R.string.xmbm_shortcut_request_title), UiText.res(R.string.xmbm_shortcut_request_handled)))
                 }
             }
         }
@@ -9128,7 +9224,7 @@ class XMBViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 activeContextMenu = XMBContextMenu(
-                    title = "Notifications",
+                    title = UiText.res(R.string.xmbm_notifications_title),
                     items = items,
                     notificationListMenu = true,
                 ),
@@ -9358,8 +9454,8 @@ class XMBViewModel @Inject constructor(
             return listOf(
                 XMBItem(
                     id = "social_add",
-                    title = "Sign in with Discord",
-                    subtitle = "Scan a QR code with your phone",
+                    titleText = UiText.res(R.string.xmbm_social_signin_title),
+                    subtitleText = UiText.res(R.string.xmbm_social_signin_sub),
                     type = XMBItemType.SOCIAL_ADD,
                 ),
             )
@@ -9370,12 +9466,14 @@ class XMBViewModel @Inject constructor(
         return listOf(
             XMBItem(
                 id = "social_account",
-                title = user?.label ?: "Connected to Discord",
-                subtitle = when {
-                    !online -> "Offline"
-                    user != null -> "Online"
-                    else -> "Connecting…"
-                },
+                titleText = user?.label?.let(UiText::raw) ?: UiText.res(R.string.xmbm_social_connected),
+                subtitleText = UiText.res(
+                    when {
+                        !online -> R.string.xmbm_social_offline
+                        user != null -> R.string.xmbm_social_online
+                        else -> R.string.xmbm_social_connecting
+                    },
+                ),
                 coverUri = user?.avatarUrl?.takeIf { it.isNotBlank() },
                 type = XMBItemType.SOCIAL_ACCOUNT,
             ),
@@ -9388,18 +9486,17 @@ class XMBViewModel @Inject constructor(
     private fun socialHubItems(friendsOnline: Int? = null): List<XMBItem> = listOf(
         XMBItem(
             id = "social_friends",
-            title = "Friends",
-            subtitle = when {
-                friendsOnline == null -> "See who's online"
-                friendsOnline == 0    -> "No friends online"
-                friendsOnline == 1    -> "1 online"
-                else                  -> "$friendsOnline online"
+            titleText = UiText.res(R.string.xmbm_social_friends),
+            subtitleText = when {
+                friendsOnline == null -> UiText.res(R.string.xmbm_social_friends_unknown)
+                friendsOnline == 0    -> UiText.res(R.string.xmbm_social_friends_none_online)
+                else                  -> UiText.plural(R.plurals.xmbm_social_friends_online, friendsOnline)
             },
             type = XMBItemType.SOCIAL_FRIENDS,
         ),
-        XMBItem(id = "social_voice", title = "Voice", subtitle = "Talk in a shared room", type = XMBItemType.SOCIAL_VOICE),
-        XMBItem(id = "social_activity", title = "Activity Settings", subtitle = "Share what you're playing", type = XMBItemType.SOCIAL_ACTIVITY_SETTINGS),
-        XMBItem(id = "social_settings", title = "Discord Settings", subtitle = "Account & sign out", type = XMBItemType.SOCIAL_DISCORD_SETTINGS),
+        XMBItem(id = "social_voice", titleText = UiText.res(R.string.xmbm_social_voice), subtitleText = UiText.res(R.string.xmbm_social_voice_sub), type = XMBItemType.SOCIAL_VOICE),
+        XMBItem(id = "social_activity", titleText = UiText.res(R.string.xmbm_social_activity_settings), subtitleText = UiText.res(R.string.xmbm_social_activity_sub), type = XMBItemType.SOCIAL_ACTIVITY_SETTINGS),
+        XMBItem(id = "social_settings", titleText = UiText.res(R.string.xmbm_social_discord_settings), subtitleText = UiText.res(R.string.xmbm_social_discord_sub), type = XMBItemType.SOCIAL_DISCORD_SETTINGS),
     )
 
     // The hub's drillable sections — the sibling column shown when drilled deeper than the hub.
@@ -9412,16 +9509,14 @@ class XMBViewModel @Inject constructor(
         return listOf(
             XMBItem(
                 id = "activity_share",
-                title = "Share Activity",
-                subtitle = if (sharing) "On · friends can see you're in Playfield Portal"
-                           else "Off · nothing is shared with friends",
+                titleText = UiText.res(R.string.xmbm_social_share_title),
+                subtitleText = UiText.res(if (sharing) R.string.xmbm_social_share_on else R.string.xmbm_social_share_off),
                 type = XMBItemType.SOCIAL_TOGGLE,
             ),
             XMBItem(
                 id = "activity_generic",
-                title = "Generic Mode",
-                subtitle = if (generic) "On · shows \"a game\" instead of the app name"
-                           else "Off · shows the app name",
+                titleText = UiText.res(R.string.xmbm_social_generic_title),
+                subtitleText = UiText.res(if (generic) R.string.xmbm_social_generic_on else R.string.xmbm_social_generic_off),
                 type = XMBItemType.SOCIAL_TOGGLE,
             ),
         )
@@ -9444,8 +9539,9 @@ class XMBViewModel @Inject constructor(
         return listOf(
             XMBItem(
                 id = "social_signout",
-                title = "Sign Out",
-                subtitle = user?.label?.let { "Disconnect $it" } ?: "Disconnect this Discord account",
+                titleText = UiText.res(R.string.xmbm_social_signout_title),
+                subtitleText = user?.label?.let { UiText.res(R.string.xmbm_social_signout_named, it) }
+                    ?: UiText.res(R.string.xmbm_social_signout_sub),
                 type = XMBItemType.SOCIAL_SIGNOUT,
             ),
         )
@@ -9454,13 +9550,13 @@ class XMBViewModel @Inject constructor(
     // L3 (Friends): friends online-first, with offline / empty placeholders.
     private suspend fun socialFriendItems(): List<XMBItem> {
         if (!discordAuthRepository.isOnline()) {
-            return listOf(XMBItem(id = "social_offline", title = "You're offline", subtitle = "Reconnect to see your friends", type = XMBItemType.EMPTY))
+            return listOf(XMBItem(id = "social_offline", titleText = UiText.res(R.string.xmbm_social_you_offline), subtitleText = UiText.res(R.string.xmbm_social_friends_reconnect), type = XMBItemType.EMPTY))
         }
         val friends = discordAuthRepository.friends().sortedWith(
             compareByDescending<DiscordFriend> { it.presence.isOnline }.thenBy { it.label.lowercase() },
         )
         if (friends.isEmpty()) {
-            return listOf(XMBItem(id = "social_nofriends", title = "No friends to show", type = XMBItemType.EMPTY))
+            return listOf(XMBItem(id = "social_nofriends", titleText = UiText.res(R.string.xmbm_social_no_friends), type = XMBItemType.EMPTY))
         }
         return friends.map { f ->
             XMBItem(
@@ -9469,10 +9565,10 @@ class XMBViewModel @Inject constructor(
                 title = f.label,
                 // Subtext under the name: in-lobby → Ask to Join prompt; else what they're playing,
                 // else the presence word — prefixed by the colored presence dot in the row renderer.
-                subtitle = when {
-                    f.inLobby -> "In a voice lobby · Ask to Join"
-                    f.activity != null -> "Playing ${f.activity}"
-                    else -> socialPresenceLabel(f.presence).takeIf { it.isNotBlank() }
+                subtitleText = when {
+                    f.inLobby -> UiText.res(R.string.xmbm_social_in_lobby)
+                    else -> f.activity?.let { UiText.res(R.string.xmbm_social_playing, it) }
+                        ?: socialPresenceLabel(f.presence)
                 },
                 coverUri = f.avatarUrl.takeIf { it.isNotBlank() },
                 socialStatusArgb = socialPresenceArgb(f.presence),
@@ -9481,13 +9577,13 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    private fun socialPresenceLabel(p: DiscordPresence): String = when (p) {
-        DiscordPresence.ONLINE -> "Online"
-        DiscordPresence.IDLE -> "Idle"
-        DiscordPresence.DND -> "Do Not Disturb"
-        DiscordPresence.STREAMING -> "Streaming"
-        DiscordPresence.OFFLINE -> "Offline"
-        DiscordPresence.UNKNOWN -> ""
+    private fun socialPresenceLabel(p: DiscordPresence): UiText? = when (p) {
+        DiscordPresence.ONLINE -> UiText.res(R.string.xmbm_social_online)
+        DiscordPresence.IDLE -> UiText.res(R.string.xmbm_social_idle)
+        DiscordPresence.DND -> UiText.res(R.string.xmbm_social_dnd)
+        DiscordPresence.STREAMING -> UiText.res(R.string.xmbm_social_streaming)
+        DiscordPresence.OFFLINE -> UiText.res(R.string.xmbm_social_offline)
+        DiscordPresence.UNKNOWN -> null
     }
 
     // Discord-style presence colors for the friend-row status dot; null = no dot (unknown).
@@ -9512,19 +9608,19 @@ class XMBViewModel @Inject constructor(
     // Invite Friends, Invites, Mute, Settings, Leave.
     private suspend fun socialVoiceItems(): List<XMBItem> {
         if (!discordAuthRepository.isOnline()) {
-            return listOf(XMBItem(id = "voice_offline", title = "You're offline", subtitle = "Reconnect to use voice", type = XMBItemType.EMPTY))
+            return listOf(XMBItem(id = "voice_offline", titleText = UiText.res(R.string.xmbm_social_you_offline), subtitleText = UiText.res(R.string.xmbm_social_voice_reconnect), type = XMBItemType.EMPTY))
         }
         val vs = _uiState.value.voiceState
         val pending = discordVoice.invites().size
         val invitesRow = XMBItem(
             id = "voice_invites",
-            title = "Invites",
-            subtitle = if (pending == 0) "No pending invites" else "$pending waiting",
+            titleText = UiText.res(R.string.xmbm_social_invites),
+            subtitleText = if (pending == 0) UiText.res(R.string.xmbm_social_invites_none) else UiText.plural(R.plurals.xmbm_social_invites_waiting, pending),
             type = XMBItemType.SOCIAL_VOICE_INVITES,
         )
         if (!vs.inRoom) {
             return listOf(
-                XMBItem(id = "voice_create", title = "Create Lobby", subtitle = "Start a private room and invite friends", type = XMBItemType.SOCIAL_VOICE_CREATE),
+                XMBItem(id = "voice_create", titleText = UiText.res(R.string.xmbm_social_create_lobby), subtitleText = UiText.res(R.string.xmbm_social_create_lobby_sub), type = XMBItemType.SOCIAL_VOICE_CREATE),
                 invitesRow,
                 voiceSettingsEntry(),
             )
@@ -9533,27 +9629,34 @@ class XMBViewModel @Inject constructor(
             val you = p.id == voiceSelfId
             XMBItem(
                 id = "voice_p_${p.id}",
-                title = p.displayName.ifBlank { "Someone" } + if (you) " (You)" else "",
-                subtitle = when { p.muted -> "Muted"; p.speaking -> "Speaking"; else -> null },
+                titleText = p.displayName.ifBlank { null }?.let(UiText::raw).let { name ->
+                    val shown = name ?: UiText.res(R.string.xmbm_social_someone)
+                    if (you) UiText.res(R.string.xmbm_social_participant_you, shown) else shown
+                },
+                subtitleText = when {
+                    p.muted -> UiText.res(R.string.xmbm_social_muted)
+                    p.speaking -> UiText.res(R.string.xmbm_social_speaking)
+                    else -> null
+                },
                 socialStatusArgb = if (p.speaking) 0xFF43B581 else null,   // green while talking
                 type = XMBItemType.SOCIAL_FRIEND,   // reuses the avatar + status-dot row renderer
             )
         }
         val body = participants.ifEmpty {
-            val note = if (vs.connecting) "Connecting…" else "Waiting for others to join"
-            listOf(XMBItem(id = "voice_status", title = note, type = XMBItemType.EMPTY))
+            val note = UiText.res(if (vs.connecting) R.string.xmbm_social_connecting else R.string.xmbm_social_waiting_others)
+            listOf(XMBItem(id = "voice_status", titleText = note, type = XMBItemType.EMPTY))
         }
         val controls = listOf(
-            XMBItem(id = "voice_invite", title = "Invite Friends", subtitle = "Bring friends into this lobby", type = XMBItemType.SOCIAL_VOICE_INVITE),
+            XMBItem(id = "voice_invite", titleText = UiText.res(R.string.xmbm_social_invite_friends), subtitleText = UiText.res(R.string.xmbm_social_invite_friends_sub), type = XMBItemType.SOCIAL_VOICE_INVITE),
             invitesRow,
             XMBItem(
                 id = "voice_mute",
-                title = if (vs.selfMuted) "Unmute" else "Mute",
-                subtitle = if (vs.selfMuted) "Your mic is off" else "Your mic is on",
+                titleText = UiText.res(if (vs.selfMuted) R.string.xmbm_social_unmute else R.string.xmbm_social_mute),
+                subtitleText = UiText.res(if (vs.selfMuted) R.string.xmbm_social_mic_off else R.string.xmbm_social_mic_on),
                 type = XMBItemType.SOCIAL_VOICE_MUTE,
             ),
             voiceSettingsEntry(),
-            XMBItem(id = "voice_leave", title = "Leave Voice", subtitle = "Disconnect from the room", type = XMBItemType.SOCIAL_VOICE_LEAVE),
+            XMBItem(id = "voice_leave", titleText = UiText.res(R.string.xmbm_social_leave_voice), subtitleText = UiText.res(R.string.xmbm_social_leave_voice_sub), type = XMBItemType.SOCIAL_VOICE_LEAVE),
         )
         return body + controls
     }
@@ -9562,13 +9665,14 @@ class XMBViewModel @Inject constructor(
     private suspend fun socialVoiceInvitesItems(): List<XMBItem> {
         val invites = discordVoice.invites()
         if (invites.isEmpty()) {
-            return listOf(XMBItem(id = "voice_noinvites", title = "No invites", subtitle = "Invites and join requests appear here", type = XMBItemType.EMPTY))
+            return listOf(XMBItem(id = "voice_noinvites", titleText = UiText.res(R.string.xmbm_social_no_invites), subtitleText = UiText.res(R.string.xmbm_social_no_invites_sub), type = XMBItemType.EMPTY))
         }
         return invites.map { inv ->
             XMBItem(
                 id = "vinv_${inv.index}_${if (inv.isJoinRequest) 1 else 0}",
-                title = if (inv.isJoinRequest) "${inv.senderName} wants to join" else "Join ${inv.senderName}'s lobby",
-                subtitle = if (inv.isJoinRequest) "Select to approve" else "Select to join",
+                titleText = if (inv.isJoinRequest) UiText.res(R.string.xmbm_social_wants_to_join, inv.senderName)
+                else UiText.res(R.string.xmbm_social_join_lobby, inv.senderName),
+                subtitleText = UiText.res(if (inv.isJoinRequest) R.string.xmbm_social_select_approve else R.string.xmbm_social_select_join),
                 type = XMBItemType.SOCIAL_VOICE_INVITE_ROW,
             )
         }
@@ -9577,19 +9681,25 @@ class XMBViewModel @Inject constructor(
     // L4 (Voice ▸ Invite Friends): online friends to invite to your lobby.
     private suspend fun socialVoiceInviteFriendsItems(): List<XMBItem> {
         if (!discordAuthRepository.isOnline()) {
-            return listOf(XMBItem(id = "voice_pick_offline", title = "You're offline", subtitle = "Reconnect to invite friends", type = XMBItemType.EMPTY))
+            return listOf(XMBItem(id = "voice_pick_offline", titleText = UiText.res(R.string.xmbm_social_you_offline), subtitleText = UiText.res(R.string.xmbm_social_invite_offline), type = XMBItemType.EMPTY))
         }
         val online = discordAuthRepository.friends().filter { it.presence.isOnline }
             .sortedBy { it.label.lowercase() }
         if (online.isEmpty()) {
-            return listOf(XMBItem(id = "voice_pick_none", title = "No friends online", type = XMBItemType.EMPTY))
+            return listOf(XMBItem(id = "voice_pick_none", titleText = UiText.res(R.string.xmbm_social_friends_none_online), type = XMBItemType.EMPTY))
         }
         return online.map { f ->
             val invited = f.id in voiceInvitedIds
             XMBItem(
                 id = "vpick_${f.id}",
                 title = f.label,
-                subtitle = when { invited -> "Invited ✓"; f.inLobby -> "Already in a lobby"; else -> "Select to invite" },
+                subtitleText = UiText.res(
+                    when {
+                        invited -> R.string.xmbm_social_invited
+                        f.inLobby -> R.string.xmbm_social_already_lobby
+                        else -> R.string.xmbm_social_select_invite
+                    },
+                ),
                 coverUri = f.avatarUrl.takeIf { it.isNotBlank() },
                 type = XMBItemType.SOCIAL_VOICE_FRIEND_PICK,
             )
@@ -9598,58 +9708,60 @@ class XMBViewModel @Inject constructor(
 
     private fun voiceSettingsEntry() = XMBItem(
         id = "voice_settings",
-        title = "Voice Settings",
-        subtitle = "Mic sensitivity, noise filter, volume",
+        titleText = UiText.res(R.string.xmbm_social_voice_settings),
+        subtitleText = UiText.res(R.string.xmbm_social_voice_settings_sub),
         type = XMBItemType.SOCIAL_VOICE_SETTINGS,
     )
 
     // L4 (Voice Settings): every audio knob the SDK exposes — booleans toggle, multi-value rows cycle.
     private suspend fun socialVoiceSettingsItems(): List<XMBItem> {
         val s = discordVoice.settings()
-        fun toggle(id: String, title: String, on: Boolean, onText: String) = XMBItem(
-            id = id, title = title,
-            subtitle = if (on) "On · $onText" else "Off",
+        fun toggle(id: String, title: Int, on: Boolean, onText: Int) = XMBItem(
+            id = id, titleText = UiText.res(title),
+            subtitleText = if (on) UiText.res(R.string.xmbm_social_vs_toggle_on, UiText.res(onText)) else UiText.res(R.string.xmbm_common_off),
             type = XMBItemType.SOCIAL_VOICE_TOGGLE,
         )
-        fun cycle(id: String, title: String, value: String) = XMBItem(
-            id = id, title = title, subtitle = value, type = XMBItemType.SOCIAL_VOICE_CYCLE,
+        fun cycle(id: String, title: Int, value: UiText) = XMBItem(
+            id = id, titleText = UiText.res(title), subtitleText = value, type = XMBItemType.SOCIAL_VOICE_CYCLE,
         )
         return buildList {
-            add(cycle("vs_sensitivity", "Mic Sensitivity", "${s.micSensitivity.label} · lower filters clicks"))
-            add(toggle("vs_noise", "Noise Cancellation", s.noiseCancellation, "Krisp removes background + button clicks"))
-            add(toggle("vs_echo", "Echo Cancellation", s.echoCancellation, "stops speaker feedback"))
-            add(toggle("vs_agc", "Auto Gain Control", s.automaticGainControl, "levels your mic volume"))
-            add(cycle("vs_input", "Mic Volume", "${s.inputVolumePercent}%"))
-            add(cycle("vs_balance", "Audio Balance", audioBalanceLabel(s.audioBalance)))
-            add(toggle("vs_ptt", "Push-to-Talk", s.pushToTalk, "hold to talk — mic stays closed otherwise"))
+            add(cycle("vs_sensitivity", R.string.xmbm_social_vs_sens_title, UiText.res(R.string.xmbm_social_vs_sens_value, UiText.res(s.micSensitivity.labelRes))))
+            add(toggle("vs_noise", R.string.xmbm_social_vs_noise_title, s.noiseCancellation, R.string.xmbm_social_vs_noise_on))
+            add(toggle("vs_echo", R.string.xmbm_social_vs_echo_title, s.echoCancellation, R.string.xmbm_social_vs_echo_on))
+            add(toggle("vs_agc", R.string.xmbm_social_vs_agc_title, s.automaticGainControl, R.string.xmbm_social_vs_agc_on))
+            add(cycle("vs_input", R.string.xmbm_social_vs_input_title, UiText.raw("${s.inputVolumePercent}%")))
+            add(cycle("vs_balance", R.string.xmbm_social_vs_balance_title, audioBalanceLabel(s.audioBalance)))
+            add(toggle("vs_ptt", R.string.xmbm_social_vs_ptt_title, s.pushToTalk, R.string.xmbm_social_vs_ptt_on))
             // Only meaningful with PTT on: the floating talk button that works over a running game.
             if (s.pushToTalk) {
                 add(XMBItem(
                     id = "vs_ptt_overlay",
-                    title = "Talk Button Overlay",
-                    subtitle = when {
-                        !pttOverlay.canDraw() -> "Off · needs \"Draw over other apps\""
-                        s.pttOverlay -> "On · floating hold-to-talk button"
-                        else -> "Off · hidden (use a controller button)"
-                    },
+                    titleText = UiText.res(R.string.xmbm_social_vs_overlay_title),
+                    subtitleText = UiText.res(
+                        when {
+                            !pttOverlay.canDraw() -> R.string.xmbm_social_vs_overlay_needs
+                            s.pttOverlay -> R.string.xmbm_social_vs_overlay_on
+                            else -> R.string.xmbm_social_vs_overlay_hidden
+                        },
+                    ),
                     type = XMBItemType.SOCIAL_VOICE_TOGGLE,
                 ))
                 // Controller hold-to-talk while PFP is the foreground app (a game in front routes the
                 // button to the game, so the overlay covers that case).
                 add(XMBItem(
                     id = "vs_ptt_button",
-                    title = "PTT Button",
-                    subtitle = when {
-                        _uiState.value.capturingPttKey -> "Press a controller button…"
-                        s.pttKeyCode != null -> "${pttButtonLabel(s.pttKeyCode)}  ·  hold to talk while in Playfield Portal"
-                        else -> "Not set · select to map a controller button"
+                    titleText = UiText.res(R.string.xmbm_social_vs_pttbtn_title),
+                    subtitleText = when {
+                        _uiState.value.capturingPttKey -> UiText.res(R.string.xmbm_social_vs_pttbtn_press)
+                        s.pttKeyCode != null -> UiText.res(R.string.xmbm_social_vs_pttbtn_set, pttButtonLabel(s.pttKeyCode))
+                        else -> UiText.res(R.string.xmbm_social_vs_pttbtn_unset)
                     },
                     // beginPttCapture cancels on the east face button or hardware Back, matched by
                     // keycode, so the prompt names that position rather than the BACK action — the
                     // two disagree the moment Confirm/Back is reversed.
                     subtitleHintIcon =
                         if (_uiState.value.capturingPttKey) ControllerIcon.FACE_EAST else null,
-                    subtitleHintLabel = if (_uiState.value.capturingPttKey) "cancel" else null,
+                    subtitleHintLabel = if (_uiState.value.capturingPttKey) UiText.res(R.string.xmbm_social_hint_cancel) else null,
                     type = XMBItemType.SOCIAL_VOICE_CYCLE,
                 ))
             }
@@ -9657,30 +9769,31 @@ class XMBViewModel @Inject constructor(
     }
 
     // Friendly name for a mapped gamepad keycode (falls back to a trimmed KEYCODE_ name).
-    private fun pttButtonLabel(code: Int?): String = when (code) {
-        null -> "Not set"
-        android.view.KeyEvent.KEYCODE_BUTTON_A -> "A"
-        android.view.KeyEvent.KEYCODE_BUTTON_B -> "B"
-        android.view.KeyEvent.KEYCODE_BUTTON_X -> "X"
-        android.view.KeyEvent.KEYCODE_BUTTON_Y -> "Y"
-        android.view.KeyEvent.KEYCODE_BUTTON_L1 -> "L1"
-        android.view.KeyEvent.KEYCODE_BUTTON_R1 -> "R1"
-        android.view.KeyEvent.KEYCODE_BUTTON_L2 -> "L2"
-        android.view.KeyEvent.KEYCODE_BUTTON_R2 -> "R2"
-        android.view.KeyEvent.KEYCODE_BUTTON_THUMBL -> "L3 (left stick click)"
-        android.view.KeyEvent.KEYCODE_BUTTON_THUMBR -> "R3 (right stick click)"
-        android.view.KeyEvent.KEYCODE_BUTTON_SELECT -> "Select"
-        android.view.KeyEvent.KEYCODE_BUTTON_START -> "Start"
-        else -> android.view.KeyEvent.keyCodeToString(code)
-            .removePrefix("KEYCODE_BUTTON_").removePrefix("KEYCODE_")
+    private fun pttButtonLabel(code: Int?): UiText = when (code) {
+        null -> UiText.res(R.string.xmbm_ptt_not_set)
+        android.view.KeyEvent.KEYCODE_BUTTON_A -> UiText.raw("A")
+        android.view.KeyEvent.KEYCODE_BUTTON_B -> UiText.raw("B")
+        android.view.KeyEvent.KEYCODE_BUTTON_X -> UiText.raw("X")
+        android.view.KeyEvent.KEYCODE_BUTTON_Y -> UiText.raw("Y")
+        android.view.KeyEvent.KEYCODE_BUTTON_L1 -> UiText.raw("L1")
+        android.view.KeyEvent.KEYCODE_BUTTON_R1 -> UiText.raw("R1")
+        android.view.KeyEvent.KEYCODE_BUTTON_L2 -> UiText.raw("L2")
+        android.view.KeyEvent.KEYCODE_BUTTON_R2 -> UiText.raw("R2")
+        android.view.KeyEvent.KEYCODE_BUTTON_THUMBL -> UiText.res(R.string.xmbm_ptt_l3)
+        android.view.KeyEvent.KEYCODE_BUTTON_THUMBR -> UiText.res(R.string.xmbm_ptt_r3)
+        android.view.KeyEvent.KEYCODE_BUTTON_SELECT -> UiText.res(R.string.xmbm_ptt_select)
+        android.view.KeyEvent.KEYCODE_BUTTON_START -> UiText.res(R.string.xmbm_ptt_start)
+        else -> UiText.raw(
+            android.view.KeyEvent.keyCodeToString(code).removePrefix("KEYCODE_BUTTON_").removePrefix("KEYCODE_"),
+        )
     }
 
     // A controller-friendly "slider": Game ◀ ──●── ▶ Voice with the marker at the current mix.
-    private fun audioBalanceLabel(balance: Int): String {
+    private fun audioBalanceLabel(balance: Int): UiText {
         val slots = 9
         val pos = (balance / 100f * (slots - 1)).roundToInt().coerceIn(0, slots - 1)
         val bar = "─".repeat(pos) + "●" + "─".repeat(slots - 1 - pos)
-        return "Game ◀$bar▶ Voice"
+        return UiText.res(R.string.xmbm_social_vs_balance_bar, bar)
     }
 
     private fun toggleVoiceSetting(id: String) {
@@ -9980,12 +10093,12 @@ class XMBViewModel @Inject constructor(
     // Options (△ / long-press) on the connected account row. "Reconnect" re-hands the stored token
     // to the SDK — the recovery path when the network dropped and came back (the account row shows
     // "Offline" until then).
-    private fun openSocialAccountContextMenu(rowTitle: String?) {
+    private fun openSocialAccountContextMenu(rowTitle: UiText?) {
         _uiState.update {
             it.copy(
                 activeContextMenu = XMBContextMenu(
                     title = socialAccountMenuTitle(rowTitle),
-                    items = listOf(XMBContextMenuItem("social_reconnect", "Reconnect")),
+                    items = listOf(XMBContextMenuItem("social_reconnect", UiText.res(R.string.xmbm_social_reconnect))),
                     socialAccountMenu = true,
                 ),
             )
@@ -10142,7 +10255,7 @@ class XMBViewModel @Inject constructor(
                 return
             }
             ADD_APPS_ITEM_ID -> {
-                category?.id?.let { openAppPicker(AppPickerTarget.CategoryShortcuts(it), "Add Apps") }
+                category?.id?.let { openAppPicker(AppPickerTarget.CategoryShortcuts(it), UiText.res(R.string.xmbm_add_apps)) }
                 return
             }
             ADD_GAMES_ITEM_ID -> {
@@ -10155,7 +10268,7 @@ class XMBViewModel @Inject constructor(
             }
             FIND_GAMES_ITEM_ID -> {
                 (item.platformId ?: _uiState.value.selectedPlatformId)?.let {
-                    openAppPicker(AppPickerTarget.AndroidGames(it), "Find Games")
+                    openAppPicker(AppPickerTarget.AndroidGames(it), UiText.res(R.string.xmbm_card_find_games))
                 }
                 return
             }
@@ -10236,7 +10349,7 @@ class XMBViewModel @Inject constructor(
                     if (id != null) {
                         val section = settingsSectionForId(id)
                         if (section != null) {
-                            Timber.d("Opening settings section flyout: ${section.title}")
+                            Timber.d("Opening settings section flyout: ${section.id}")
                             openSettingsSection(section)
                         } else {
                             Timber.d("Opening settings screen: $id")
@@ -10275,7 +10388,7 @@ class XMBViewModel @Inject constructor(
                     ContextMenuKind.COLLECTION -> item.collectionId?.let { openCollectionRowContextMenu(it, byTouch = target.byTouch) }
                     ContextMenuKind.ALL_GAMES -> openAllGamesContextMenu()
                     ContextMenuKind.ROOT_ROW -> openRootRowContextMenu(item, byTouch = target.byTouch)
-                    ContextMenuKind.SOCIAL_ACCOUNT -> openSocialAccountContextMenu(item.title)
+                    ContextMenuKind.SOCIAL_ACCOUNT -> openSocialAccountContextMenu(item.titleUi)
                     ContextMenuKind.PLATFORM -> item.platformId?.let { openPlatformContextMenu(it) }
                     ContextMenuKind.APP -> openAppContextMenu(item, byTouch = target.byTouch)
                     ContextMenuKind.MARK_MODE -> Unit
@@ -10457,7 +10570,7 @@ class XMBViewModel @Inject constructor(
             launchDispatcher.launchShortcut(game) { launcherShortcutRepository.launch(packageName, shortcutId) }
                 .onFailure { e ->
                     Timber.w(e, "Direct shortcut launch failed")
-                    launchDispatcher.recordPreflightFailure(game, null, "Couldn't launch: ${e.message}")
+                    launchDispatcher.recordPreflightFailure(game, null, context.getString(R.string.xmbm_launch_failed, e.message))
                 }
             return
         }
@@ -10465,11 +10578,11 @@ class XMBViewModel @Inject constructor(
             runCatching {
                 val parsed = Intent.parseUri(game.launchIntentUri, Intent.URI_INTENT_SCHEME)
                 com.playfieldportal.core.common.security.ShortcutIntentSanitizer.sanitize(parsed, context.packageManager)
-                    ?: error("Captured shortcut is not safe to launch")
+                    ?: error(context.getString(R.string.xmbm_shortcut_unsafe))
             }.onSuccess { intent -> launchIntentFromXmb(intent, game, null) }
                 .onFailure { e ->
                     Timber.w(e, "Direct stored-intent launch failed")
-                    launchDispatcher.recordPreflightFailure(game, null, "Couldn't launch: ${e.message}")
+                    launchDispatcher.recordPreflightFailure(game, null, context.getString(R.string.xmbm_launch_failed, e.message))
                 }
             return
         }
@@ -10478,7 +10591,7 @@ class XMBViewModel @Inject constructor(
                 onSuccess = { intent -> launchIntentFromXmb(intent, game, null) },
                 onFailure = { e ->
                     Timber.w(e, "Direct native-app launch failed")
-                    launchDispatcher.recordPreflightFailure(game, null, e.message ?: "Could not launch ${game.title}")
+                    launchDispatcher.recordPreflightFailure(game, null, e.message ?: context.getString(R.string.xmbm_launch_could_not, game.title))
                 },
             )
             return
@@ -10489,8 +10602,7 @@ class XMBViewModel @Inject constructor(
             Timber.w(e, "No emulator resolved for direct launch: ${game.platformId}")
             launchDispatcher.recordPreflightFailure(
                 game, null,
-                e.message ?: ("No emulator is set up for ${game.platformId.uppercase()}. " +
-                    "Assign one under Settings ▸ Emulators ▸ Per-System Defaults."),
+                e.message ?: context.getString(R.string.xmbm_launch_no_emulator, game.platformId.uppercase()),
                 code = com.playfieldportal.core.domain.model.PfpErrorCode.LN_1001,
             )
             return
@@ -10505,7 +10617,7 @@ class XMBViewModel @Inject constructor(
                 "Direct emulator launch blocked by preflight: ${profile.name}",
             )
             launchDispatcher.recordPreflightFailure(
-                game, resolvedLaunch, validation.exceptionOrNull()?.message ?: "Could not launch ${profile.name}",
+                game, resolvedLaunch, validation.exceptionOrNull()?.message ?: context.getString(R.string.xmbm_launch_could_not, profile.name),
             )
             return
         }
@@ -10513,7 +10625,7 @@ class XMBViewModel @Inject constructor(
             onSuccess = { intent -> launchIntentFromXmb(intent, game, resolvedLaunch) },
             onFailure = { e ->
                 Timber.w(e, "Direct emulator launch failed: ${profile.name}")
-                launchDispatcher.recordPreflightFailure(game, resolvedLaunch, e.message ?: "Could not launch ${profile.name}")
+                launchDispatcher.recordPreflightFailure(game, resolvedLaunch, e.message ?: context.getString(R.string.xmbm_launch_could_not, profile.name))
             },
         )
     }
@@ -10604,7 +10716,7 @@ class XMBViewModel @Inject constructor(
                 backgroundTasks.report(
                     id = "shortcut_fav_$packageName",
                     label = label,
-                    message = if (favorite) "Added to Favorites" else "Removed from Favorites",
+                    message = context.getString(if (favorite) R.string.xmbm_shortcut_fav_added else R.string.xmbm_shortcut_fav_removed),
                     severity = NotificationSeverity.SUCCESS,
                 )
             }.onFailure { e ->
@@ -10612,7 +10724,7 @@ class XMBViewModel @Inject constructor(
                 backgroundTasks.report(
                     id = "shortcut_fav_$packageName",
                     label = label,
-                    message = "Couldn't update Favorites: ${e.message}",
+                    message = context.getString(R.string.xmbm_shortcut_fav_failed, e.message),
                     severity = NotificationSeverity.ERROR,
                     detail = NotificationDetail.notes(PfpErrorCode.SY_9001, summary = e.message,
                         diagnostic = e.stackTraceToString().take(4_000)),
@@ -10630,7 +10742,7 @@ class XMBViewModel @Inject constructor(
                     backgroundTasks.report(
                         id = "shortcut_col_$packageName",
                         label = label,
-                        message = "Couldn't create shortcut: ${e.message}",
+                        message = context.getString(R.string.xmbm_shortcut_create_failed, e.message),
                         severity = NotificationSeverity.ERROR,
                         detail = NotificationDetail.notes(PfpErrorCode.SY_9001, summary = e.message,
                             diagnostic = e.stackTraceToString().take(4_000)),
@@ -10646,7 +10758,7 @@ class XMBViewModel @Inject constructor(
             backgroundTasks.report(
                 id = "launch_sc_$shortcutId",
                 label = hostPackage,
-                message = "Couldn't launch: ${e.message}",
+                message = context.getString(R.string.xmbm_launch_failed, e.message),
                 severity = NotificationSeverity.ERROR,
                 kind = com.playfieldportal.core.domain.model.NotificationKind.LAUNCH,
                 detail = NotificationDetail.notes(
@@ -10665,7 +10777,7 @@ class XMBViewModel @Inject constructor(
             // sanitizer existed) so a stored intent can never grant file access or be redirected.
             val launch = (com.playfieldportal.core.common.security.ShortcutIntentSanitizer
                 .sanitize(parsed, context.packageManager)
-                ?: error("Captured shortcut is not safe to launch"))
+                ?: error(context.getString(R.string.xmbm_shortcut_unsafe)))
                 .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(launch)
         }.onFailure { e ->
@@ -10673,7 +10785,7 @@ class XMBViewModel @Inject constructor(
             backgroundTasks.report(
                 id = "launch_intent_${label.hashCode()}",
                 label = label,
-                message = "Couldn't launch: ${e.message}",
+                message = context.getString(R.string.xmbm_launch_failed, e.message),
                 severity = NotificationSeverity.ERROR,
                 kind = com.playfieldportal.core.domain.model.NotificationKind.LAUNCH,
                 detail = NotificationDetail.notes(
@@ -10730,7 +10842,7 @@ class XMBViewModel @Inject constructor(
     // and opens the same picker the XMB Android card uses, so apps are added the one way.
     fun openAndroidLibraryPicker() {
         _uiState.update { it.copy(activeSettingsScreen = null, pendingSettingsAction = null) }
-        openAppPicker(AppPickerTarget.AndroidGames(ANDROID_PLATFORM_ID), "Add Android Apps")
+        openAppPicker(AppPickerTarget.AndroidGames(ANDROID_PLATFORM_ID), UiText.res(R.string.xmbm_picker_add_android_apps))
     }
 
     fun consumeSettingsAction() {
@@ -10787,16 +10899,16 @@ class XMBViewModel @Inject constructor(
             val options = XmbColorScheme.values().map { scheme ->
                 ColorSchemeOption(
                     scheme   = scheme,
-                    label    = scheme.displayLabel(),
-                    sublabel = if (scheme == XmbColorScheme.ORIGINAL) "Changes with the month" else "Fixed color preset",
+                    label    = UiText.res(scheme.labelRes),
+                    sublabel = UiText.res(if (scheme == XmbColorScheme.ORIGINAL) R.string.xmbm_scheme_original_sub else R.string.xmbm_scheme_fixed_sub),
                     swatch   = scheme.resolve(month).waveColor,
                 )
             }
             val custom = prefs[KEY_ACCENT_OVERRIDE]
             val pickerOptions = options + ColorSchemeOption(
                 scheme = null,
-                label = "Custom",
-                sublabel = "Fine-tune any color with sliders",
+                label = UiText.res(R.string.xmbm_scheme_custom),
+                sublabel = UiText.res(R.string.xmbm_scheme_custom_sub),
                 swatch = custom ?: 0xFF888888L,
                 isCustom = true,
             )
@@ -11097,7 +11209,7 @@ class XMBViewModel @Inject constructor(
                 themeIconGridFor(
                     slotKey = slotKey,
                     slotName = slotName,
-                    themeName = themeName ?: "Current theme",
+                    themeName = themeName ?: context.getString(R.string.xmbm_theme_current),
                     slotIcons = slotIcons,
                     ptfIcons = ptfIcons,
                     // Identical images (a PTF's Memory Stick art fills several slots) share one tile.
@@ -11128,7 +11240,7 @@ class XMBViewModel @Inject constructor(
             }
             val chooser = if (customIconPickRoute(slotIcons, ptfIcons) == CustomIconPickRoute.CHOOSER) {
                 val themeName = context.pfpDataStore.data.first()[ThemePrefKeys.APPLIED_THEME_NAME]?.takeIf { it.isNotBlank() }
-                sourceChooserFor(slotKey, slotName, themeName ?: "Current theme", slotIcons + ptfIcons)
+                sourceChooserFor(slotKey, slotName, themeName ?: context.getString(R.string.xmbm_theme_current), slotIcons + ptfIcons)
             } else {
                 null
             }
@@ -11273,7 +11385,7 @@ class XMBViewModel @Inject constructor(
     /** "Save as Theme…" — opens the name dialog (reusing the playlist-dialog pattern). */
     fun requestSaveCurrentLookAsTheme() {
         _uiState.update {
-            it.copy(saveThemeNameDialog = PlaylistNameDialogState(title = "Save Current Look as Theme"))
+            it.copy(saveThemeNameDialog = PlaylistNameDialogState(title = UiText.res(R.string.xmbm_theme_save_title)))
         }
     }
 
@@ -11366,8 +11478,8 @@ class XMBViewModel @Inject constructor(
         viewModelScope.launch {
             val saved = pfpThemeStore.saveCurrentLook(name)
             val message = when {
-                saved == null -> "Couldn't save the theme"
-                else -> "Theme saved — ${saved.name}"
+                saved == null -> context.getString(R.string.xmbm_theme_save_failed)
+                else -> context.getString(R.string.xmbm_theme_saved, saved.name)
             }
             val shareFile = saved?.let { pfpThemeStore.exportForShare(it.id) }
             _uiState.update {
@@ -11507,8 +11619,8 @@ class XMBViewModel @Inject constructor(
         val failure = com.playfieldportal.feature.xmb.ui.PresentationClipFailure.of(gameBoot)
         backgroundTasks.report(
             id = failure.id,
-            label = failure.label,
-            message = failure.message,
+            label = failure.label.resolve(context),
+            message = failure.message.resolve(context),
             severity = com.playfieldportal.core.domain.model.NotificationSeverity.WARNING,
             action = NotificationAction.OpenSettingsScreen("settings_display"),
         )
@@ -11541,7 +11653,7 @@ class XMBViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     activeGameBoot = com.playfieldportal.feature.launcher.GameBootRequest(
-                        gameTitle = "Preview",
+                        gameTitle = context.getString(R.string.xmbm_gameboot_preview_title),
                         videoPath = video,
                         audioPath = audio,
                     ),
@@ -12034,7 +12146,6 @@ class XMBViewModel @Inject constructor(
         private const val EMPTY_MISSING_ITEM_ID = "empty_missing"
         // Shown as each missing row's subtitle. Phrased around the scan rather than the file
         // ("File not found" alone reads as permanent) because dropping the file back reactivates it.
-        private const val MISSING_REASON = "File not found on last scan"
         private const val ADD_APPS_ITEM_ID = "add_apps"
         private const val ADD_GAMES_ITEM_ID = "add_games"
         private const val FIND_GAMES_ITEM_ID = "find_games"
@@ -12112,10 +12223,10 @@ class XMBViewModel @Inject constructor(
         )
 
         private val ANDROID_ITEMS = listOf(
-            XMBItem(id = "drawer_all",       title = "All Apps",      subtitle = "Browse every installed app"),
-            XMBItem(id = "drawer_games",     title = "Games",         subtitle = "Apps categorized as games"),
-            XMBItem(id = "drawer_emulators", title = "Emulators",     subtitle = "RetroArch, PPSSPP, Dolphin and more"),
-            XMBItem(id = "drawer_recent",    title = "Recently Used", subtitle = "Apps you've used lately"),
+            XMBItem(id = "drawer_all",       titleText = UiText.res(R.string.xmbm_drawer_all_title),       subtitleText = UiText.res(R.string.xmbm_drawer_all_sub)),
+            XMBItem(id = "drawer_games",     titleText = UiText.res(R.string.xmbm_drawer_games_title),     subtitleText = UiText.res(R.string.xmbm_drawer_games_sub)),
+            XMBItem(id = "drawer_emulators", titleText = UiText.res(R.string.xmbm_drawer_emulators_title), subtitleText = UiText.res(R.string.xmbm_drawer_emulators_sub)),
+            XMBItem(id = "drawer_recent",    titleText = UiText.res(R.string.xmbm_drawer_recent_title),    subtitleText = UiText.res(R.string.xmbm_drawer_recent_sub)),
         )
 
         // First item opens the device's own Settings app (not a PFP screen).
@@ -12126,8 +12237,8 @@ class XMBViewModel @Inject constructor(
         // two-pane flyout; any other id opens its screen overlay directly. `internal` so the
         // hierarchy unit tests can assert the exact root order.
         internal val SETTINGS_ROOT_ITEMS = listOf(
-            XMBItem(id = ANDROID_SETTINGS_ITEM_ID, title = "Android Settings", subtitle = "Opens device settings"),
-        ) + SettingsSection.entries.map { XMBItem(id = it.id, title = it.title, subtitle = it.subtitle) }
+            XMBItem(id = ANDROID_SETTINGS_ITEM_ID, titleText = UiText.res(R.string.xmbm_android_settings_title), subtitleText = UiText.res(R.string.xmbm_android_settings_sub)),
+        ) + SettingsSection.entries.map { XMBItem(id = it.id, titleText = it.title, subtitleText = it.subtitle) }
     }
 
     // Rebuilds the bar from the canonical built-in definitions (name/icon/position/order) merged with

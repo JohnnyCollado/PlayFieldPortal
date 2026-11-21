@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.settings.ui
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.data.repository.PfpThemeStore
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.sound.MenuSound
@@ -8,17 +10,23 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 /**
  * Themes > My Themes: a saved theme is deleted only after a confirm. The menu's last row is the red
  * "Delete Theme"; activating it only asks, and the delete runs on Confirm alone.
  */
+@RunWith(RobolectricTestRunner::class)
 class SavedThemeMenuTest {
+
+    private val resources = ApplicationProvider.getApplicationContext<Context>().resources
 
     private val theme = PfpThemeStore.SavedTheme("t1", "Summer Trip", 0xFFFF7070L, null)
     private val calls = mutableListOf<String>()
 
     private fun rows() = savedThemeMenuRows(
+        resources,
         theme,
         onShare = { calls += "share:$it" },
         onRequestRename = { calls += "rename:${it.id}" },
@@ -41,7 +49,7 @@ class SavedThemeMenuTest {
     @Test
     fun `the rename entry starts from the current name and commits the typed one`() {
         var renamed: String? = null
-        val spec = renameThemeSpec(theme, onConfirm = { renamed = it }, onCancel = {})
+        val spec = renameThemeSpec(resources, theme, onConfirm = { renamed = it }, onCancel = {})
 
         assertEquals("Summer Trip", spec.initial)
         assertEquals("Rename Theme", spec.title)
@@ -134,7 +142,7 @@ class SavedThemeMenuTest {
 
     @Test
     fun `the confirm is destructive, opens on cancel and names the theme`() {
-        val spec = deleteThemeConfirmSpec(theme, onConfirm = {}, onCancel = {})
+        val spec = deleteThemeConfirmSpec(resources, theme, onConfirm = {}, onCancel = {})
 
         assertTrue(spec.destructive)
         assertTrue(spec.openOnCancel)
@@ -145,7 +153,7 @@ class SavedThemeMenuTest {
     fun `the delete runs on Confirm and not on Cancel`() {
         var deleted = 0
         var cancelled = 0
-        val spec = deleteThemeConfirmSpec(theme, onConfirm = { deleted++ }, onCancel = { cancelled++ })
+        val spec = deleteThemeConfirmSpec(resources, theme, onConfirm = { deleted++ }, onCancel = { cancelled++ })
 
         spec.onCancel()
         assertEquals(0 to 1, deleted to cancelled)

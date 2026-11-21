@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Scan error messages -->
+    <string name="scan_error_card_not_found">メモリーカードが見つかりません。</string>
+    <string name="scan_error_scan_failed">スキャンに失敗しました。ログを確認してください。</string>
+    <string name="scan_error_library_unreadable">ライブラリを読み込めませんでした。</string>
+    <string name="scan_error_save_failed">スキャンしたゲームを保存できませんでした。</string>
+    <string name="scan_error_rom_dir_not_found">ROM ディレクトリが見つかりません: %1$s</string>
+    <string name="scan_error_folder_link_invalid">このライブラリのフォルダリンクが無効です。フォルダを追加し直してください。</string>
+    <string name="scan_error_root_unreadable">ROM フォルダを読み込めませんでした。SD カード上にある場合は、カードが挿入されているか確認してください。</string>
+    <string name="scan_error_permission_lost">権限が失われました。フォルダを選択し直してください。</string>
+    <string name="scan_error_partial_read">フォルダの一部を読み込めなかったため、何も変更されていません。しばらくしてから、もう一度お試しください。</string>
+
+    <!-- One-line scan outcome -->
+    <string name="scan_outcome_line">%1$s: %2$s</string>
+    <string name="scan_outcome_no_source">ROM フォルダが設定されていません。</string>
+    <string name="scan_outcome_busy">スキャンはすでに実行中です。</string>
+    <string name="scan_outcome_failed">スキャンに失敗しました。</string>
+    <string name="scan_outcome_no_new">新しい ROM はありません</string>
+    <string name="scan_outcome_no_new_none_missing">新しい ROM なし、見つからない ROM なし</string>
+    <string name="scan_outcome_no_new_marked_missing">新しい ROM なし、%1$d 件を見つからないとして登録</string>
+    <plurals name="scan_outcome_added">
+        <item quantity="other">新しい ROM を %1$d 件追加</item>
+    </plurals>
+    <plurals name="scan_outcome_added_none_missing">
+        <item quantity="other">新しい ROM を %1$d 件追加、見つからない ROM なし</item>
+    </plurals>
+    <plurals name="scan_outcome_added_marked_missing">
+        <item quantity="other">新しい ROM を %1$d 件追加、%2$d 件を見つからないとして登録</item>
+    </plurals>
+    <string name="scan_with_error_note">%1$s（%2$s）</string>
+
+    <!-- Per-card line in the scan results list -->
+    <string name="scan_badge_no_new">新規なし</string>
+    <string name="scan_reason_no_new">新しいゲームはありません</string>
+    <string name="scan_reason_no_new_marked_missing">新しいゲームなし、%1$d 件を見つからないとして登録</string>
+    <plurals name="scan_reason_added">
+        <item quantity="other">新しいゲームを %1$d 件追加</item>
+    </plurals>
+    <plurals name="scan_reason_added_marked_missing">
+        <item quantity="other">新しいゲームを %1$d 件追加、%2$d 件を見つからないとして登録</item>
+    </plurals>
+</resources>

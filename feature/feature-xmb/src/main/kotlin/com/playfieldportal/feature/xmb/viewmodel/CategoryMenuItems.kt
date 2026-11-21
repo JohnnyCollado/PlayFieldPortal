@@ -2,7 +2,9 @@ package com.playfieldportal.feature.xmb.viewmodel
 
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.icons.UserCategoryIconKeys
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.settings.viewmodel.iconValueLabel
 
 /**
@@ -28,23 +30,28 @@ internal const val CATEGORY_MENU_NEW_CARD_ID = "catmenu_new_card"
  */
 internal fun categoryMenuItems(
     categoryId: String,
-    iconLabel: String,
+    iconLabel: UiText,
     visible: Boolean,
     showsCards: Boolean = false,
 ): List<XMBContextMenuItem> = buildList {
-    add(XMBContextMenuItem(CATEGORY_MENU_RENAME_ID, "Rename Category"))
-    add(XMBContextMenuItem(CATEGORY_MENU_ICON_ID, "Change Icon", value = iconLabel, opensMenu = true))
+    add(XMBContextMenuItem(CATEGORY_MENU_RENAME_ID, UiText.res(R.string.xmbm_catmenu_rename)))
+    add(XMBContextMenuItem(CATEGORY_MENU_ICON_ID, UiText.res(R.string.xmbm_catmenu_change_icon), value = iconLabel, opensMenu = true))
     if (categoryId != BuiltInCategory.SETTINGS) {
-        add(XMBContextMenuItem(CATEGORY_MENU_VISIBLE_ID, "Show on Bar", value = if (visible) "On" else "Off"))
+        add(
+            XMBContextMenuItem(
+                CATEGORY_MENU_VISIBLE_ID, UiText.res(R.string.xmbm_catmenu_show_on_bar),
+                value = UiText.res(if (visible) R.string.xmbm_common_on else R.string.xmbm_common_off),
+            ),
+        )
     }
-    if (visible) add(XMBContextMenuItem(CATEGORY_MENU_MOVE_ID, "Move"))
-    if (showsCards) add(XMBContextMenuItem(CATEGORY_MENU_NEW_CARD_ID, "New Custom Card"))
-    add(XMBContextMenuItem(CATEGORY_MENU_MANAGE_ID, "Manage Categories"))
+    if (visible) add(XMBContextMenuItem(CATEGORY_MENU_MOVE_ID, UiText.res(R.string.xmbm_move)))
+    if (showsCards) add(XMBContextMenuItem(CATEGORY_MENU_NEW_CARD_ID, UiText.res(R.string.xmbm_catmenu_new_card)))
+    add(XMBContextMenuItem(CATEGORY_MENU_MANAGE_ID, UiText.res(R.string.xmbm_catmenu_manage)))
 }
 
 /** [category]'s menu; [hasImage] is whether a device image stands in for its catalog icon. */
 internal fun categoryContextMenu(category: Category, hasImage: Boolean): XMBContextMenu = XMBContextMenu(
-    title = category.name,
+    title = UiText.raw(category.name),
     items = categoryMenuItems(
         category.id,
         iconValueLabel(category.iconKey, hasImage),

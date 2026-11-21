@@ -3,6 +3,8 @@ package com.playfieldportal.feature.xmb.ui.detail
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.Video
 import com.playfieldportal.core.domain.repository.VideoRepository
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.xmb.R
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -251,7 +253,13 @@ class VideoDetailViewModelTest {
     fun `the options menu has no play rows, with or without a resume point`() {
         val resumable = video.copy(resumePositionMs = 90_000)
         val labels = rows(resumable).map { it.label }
-        assertTrue(labels.none { it == "Play" || it == "Resume" || it == "Start from Beginning" })
+        assertTrue(
+            labels.none {
+                it == UiText.res(R.string.shiba_video_play) ||
+                    it == UiText.res(R.string.shiba_video_resume) ||
+                    it == UiText.res(R.string.shiba_video_restart)
+            },
+        )
         assertTrue(videoOptionRows(viewModel.uiState.value.copy(video = resumable)).size == rows().size)
     }
 
@@ -259,11 +267,23 @@ class VideoDetailViewModelTest {
     fun `rows and headers follow mockup 3`() {
         val rows = rows()
         assertEquals(
-            listOf("Favorite", "Add to Playlist", "Edit Title", "Change Thumbnail", "View Information", "Show File Location", "Remove from Library"),
+            listOf(
+                R.string.shiba_video_favorite,
+                R.string.shiba_video_add_to_playlist,
+                R.string.shiba_video_edit_title,
+                R.string.shiba_video_change_thumbnail,
+                R.string.shiba_video_view_information,
+                R.string.shiba_video_show_location,
+                R.string.shiba_video_remove,
+            ).map { UiText.res(it) },
             rows.map { it.label },
         )
         assertEquals(
-            listOf("Library" to 0, "Customize" to 2, "Manage" to 4),
+            listOf(
+                UiText.res(R.string.shiba_video_group_library) to 0,
+                UiText.res(R.string.shiba_video_group_customize) to 2,
+                UiText.res(R.string.shiba_video_group_manage) to 4,
+            ),
             rows.mapIndexedNotNull { i, r -> r.header?.let { it to i } },
         )
     }
@@ -271,16 +291,16 @@ class VideoDetailViewModelTest {
     @Test
     fun `favorite keeps one label and states its value, silently`() {
         val off = rows().first()
-        assertEquals("Favorite", off.label)
-        assertEquals("Off", off.value)
+        assertEquals(UiText.res(R.string.shiba_video_favorite), off.label)
+        assertEquals(UiText.res(R.string.shiba_video_favorite_off), off.value)
         assertTrue(off.silent)
-        assertEquals("On", rows(video.copy(isFavorite = true)).first().value)
+        assertEquals(UiText.res(R.string.shiba_video_favorite_on), rows(video.copy(isFavorite = true)).first().value)
     }
 
     @Test
     fun `Add to Playlist opens a menu and Remove from Library is red and last`() {
         val rows = rows()
-        assertTrue(rows.first { it.label == "Add to Playlist" }.opensMenu)
+        assertTrue(rows.first { it.label == UiText.res(R.string.shiba_video_add_to_playlist) }.opensMenu)
         assertTrue(rows.last().isDestructive)
         assertEquals(1, rows.count { it.isDestructive })
     }

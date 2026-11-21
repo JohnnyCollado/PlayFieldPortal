@@ -1,7 +1,9 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.artwork.match.TitleKey
 import com.playfieldportal.feature.artwork.store.ArtworkKind
+import com.playfieldportal.feature.xmb.R
 
 /**
  * The Artwork Studio's search model — pure, so the whole of C16 Phase 1's correctness (what a
@@ -137,7 +139,7 @@ internal fun screenScraperTiles(
                 url = url,
                 thumb = null,
                 provider = "ScreenScraper",
-                label = listOfNotNull(media.type, regions.joinToString("/").ifEmpty { null }).joinToString(" · "),
+                label = UiText.raw(listOfNotNull(media.type, regions.joinToString("/").ifEmpty { null }).joinToString(" · ")),
                 isVideo = kind == ArtworkKind.VIDEO || kind == ArtworkKind.ICON1,
                 providerAssetId = ScreenScraperAssetId.of(url),
                 facets = StudioArtFacets(
@@ -156,17 +158,17 @@ internal fun screenScraperTiles(
  * reads as the same asset on every tab.
  */
 internal fun steamTiles(kind: ArtworkKind, media: com.playfieldportal.feature.artwork.api.SteamStoreMedia): List<StudioArt> {
-    fun tile(role: String, url: String?, label: String) =
-        url?.let { StudioArt(url = it, thumb = null, provider = STEAM_ART, label = label, providerAssetId = "${media.appId}:$role") }
-    val capsule = tile("library_capsule", media.libraryCapsule, "library capsule")
-    val hero = tile("library_hero", media.libraryHero, "library hero")
-    val logo = tile("logo", media.logo, "logo")
-    val header = tile("header", media.header, "header")
-    val mainCapsule = tile("main_capsule", media.mainCapsule, "store capsule")
-    val background = tile("page_background", media.pageBackground, "store background")
+    fun tile(role: String, url: String?, label: Int) =
+        url?.let { StudioArt(url = it, thumb = null, provider = STEAM_ART, label = UiText.res(label), providerAssetId = "${media.appId}:$role") }
+    val capsule = tile("library_capsule", media.libraryCapsule, R.string.det_steam_art_library_capsule)
+    val hero = tile("library_hero", media.libraryHero, R.string.det_steam_art_library_hero)
+    val logo = tile("logo", media.logo, R.string.det_steam_art_logo)
+    val header = tile("header", media.header, R.string.det_steam_art_header)
+    val mainCapsule = tile("main_capsule", media.mainCapsule, R.string.det_steam_art_store_capsule)
+    val background = tile("page_background", media.pageBackground, R.string.det_steam_art_store_background)
     val shots = media.screenshots.mapIndexed { index, shot ->
         StudioArt(
-            url = shot.url, thumb = shot.thumb, provider = STEAM_ART, label = "screenshot ${index + 1}",
+            url = shot.url, thumb = shot.thumb, provider = STEAM_ART, label = UiText.res(R.string.det_steam_art_screenshot_n, index + 1),
             providerAssetId = "${media.appId}:ss:${shot.url.substringAfterLast('/').substringBefore('?')}",
         )
     }
@@ -187,10 +189,10 @@ internal fun steamTiles(kind: ArtworkKind, media: com.playfieldportal.feature.ar
             val id = "${media.appId}:trailer:${trailer.id}"
             listOfNotNull(
                 trailer.fullUrl?.let {
-                    StudioArt(it, trailer.poster, STEAM_ART, trailer.name, isVideo = true, providerAssetId = id)
+                    StudioArt(it, trailer.poster, STEAM_ART, UiText.raw(trailer.name), isVideo = true, providerAssetId = id)
                 },
                 trailer.shortUrl?.let {
-                    StudioArt(it, trailer.poster, STEAM_ART, "${trailer.name} · short", isVideo = true, providerAssetId = "$id:short")
+                    StudioArt(it, trailer.poster, STEAM_ART, UiText.res(R.string.det_steam_art_trailer_short, trailer.name), isVideo = true, providerAssetId = "$id:short")
                 },
             )
         }
@@ -219,7 +221,7 @@ internal fun localArtTiles(kind: ArtworkKind, library: StudioLibraryAssets): Lis
             url = slot.documentUri,
             thumb = slot.documentUri,
             provider = LOCAL_ART,
-            label = slot.provider,
+            label = slot.provider?.let { UiText.raw(it) },
             isVideo = kind == ArtworkKind.VIDEO,
         )
     }

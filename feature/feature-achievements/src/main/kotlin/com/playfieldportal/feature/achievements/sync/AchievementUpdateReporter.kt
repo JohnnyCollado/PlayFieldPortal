@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.achievements.sync
 
+import android.content.Context
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.NoteFact
@@ -12,6 +13,8 @@ import com.playfieldportal.core.domain.model.NotificationKind
 import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
+import com.playfieldportal.feature.achievements.R
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -29,17 +32,19 @@ import javax.inject.Singleton
 @Singleton
 class AchievementUpdateReporter @Inject constructor(
     private val tasks: BackgroundTaskCenter,
+    // Resolves the tray text in the user's language when each row is posted.
+    @ApplicationContext private val context: Context,
 ) {
     /** A manual run shows a running row the panel can stop: stopping cancels the calling run. */
     suspend fun started(trigger: SyncTrigger) {
         if (trigger != SyncTrigger.MANUAL) return
-        tasks.startStoppable(UPDATE_TASK_ID, "Updating installed achievements", TaskKind.ACHIEVEMENT,
-            stopNote = "Achievements already updated are kept.")
+        tasks.startStoppable(UPDATE_TASK_ID, context.getString(R.string.ach_upd_running), TaskKind.ACHIEVEMENT,
+            stopNote = context.getString(R.string.ach_upd_running_stop_note))
     }
 
     fun progress(trigger: SyncTrigger, done: Int, total: Int) {
         if (trigger != SyncTrigger.MANUAL) return
-        tasks.progress(UPDATE_TASK_ID, done, total, "Checking $done of $total games")
+        tasks.progress(UPDATE_TASK_ID, done, total, context.getString(R.string.ach_upd_progress, done, total))
     }
 
     fun finished(trigger: SyncTrigger, summary: AchievementUpdateSummary, newPauses: Set<UpdatePause>) {
@@ -50,19 +55,19 @@ class AchievementUpdateReporter @Inject constructor(
                 // Stopped from the panel: the user is looking at it, so it settles quietly.
                 tasks.stopped(
                     UPDATE_TASK_ID,
-                    "${summary.checked} ${games(summary.checked)} checked; saved progress kept",
-                    OPEN_ACHIEVEMENTS, null, "Achievement update stopped",
+                    checkedKept(summary.checked),
+                    OPEN_ACHIEVEMENTS, null, context.getString(R.string.ach_upd_stopped),
                 )
             } else if (manual) {
                 report(
-                    UPDATE_TASK_ID, "Achievement update stopped",
-                    "${summary.checked} ${games(summary.checked)} checked; saved progress kept",
+                    UPDATE_TASK_ID, context.getString(R.string.ach_upd_stopped),
+                    checkedKept(summary.checked),
                     NotificationSeverity.INFO, OPEN_ACHIEVEMENTS,
                 )
             } else tasks.cancel(UPDATE_TASK_ID)
             summary.failed > 0 -> report(
-                UPDATE_TASK_ID, "Some achievements couldn't update",
-                "${summary.failed} of ${summary.total} games need another try",
+                UPDATE_TASK_ID, context.getString(R.string.ach_upd_some_failed),
+                context.resources.getQuantityString(R.plurals.ach_upd_failed_message, summary.total, summary.failed, summary.total),
                 NotificationSeverity.WARNING, OPEN_ACHIEVEMENTS,
                 detail = summary.failedGames.takeIf { it.isNotEmpty() }?.let { failed ->
                     NotificationDetail.results(
@@ -74,18 +79,18 @@ class AchievementUpdateReporter @Inject constructor(
                                 code = PfpErrorCode.AC_3004.id,
                             )
                         },
-                        labels = ResultsLabels(done = "Updated"),
+                        labels = ResultsLabels(done = context.getString(R.string.ach_upd_results_done)),
                     )
                 },
             )
             summary.updated > 0 -> report(
-                UPDATE_TASK_ID, "Achievements updated",
-                "${summary.updated} ${games(summary.updated)} updated · ${summary.unchanged} unchanged",
+                UPDATE_TASK_ID, context.getString(R.string.ach_upd_updated),
+                context.resources.getQuantityString(R.plurals.ach_upd_updated_message, summary.updated, summary.updated, summary.unchanged),
                 NotificationSeverity.SUCCESS, OPEN_ACHIEVEMENTS,
             )
             manual && summary.pauses.isEmpty() -> report(
-                UPDATE_TASK_ID, "Achievements are up to date",
-                "${summary.checked} installed ${games(summary.checked)} checked",
+                UPDATE_TASK_ID, context.getString(R.string.ach_upd_up_to_date),
+                context.resources.getQuantityString(R.plurals.ach_upd_up_to_date_message, summary.checked, summary.checked),
                 NotificationSeverity.SUCCESS, OPEN_ACHIEVEMENTS,
             )
             // Quiet: nothing changed, or only a pause (reported on its own below).
@@ -93,21 +98,21 @@ class AchievementUpdateReporter @Inject constructor(
         }
         newPauses.forEach { pause ->
             report(
-                "achievement_paused_${pause.code}", "Achievement update paused",
+                "achievement_paused_${pause.code}", context.getString(R.string.ach_upd_paused),
                 pauseMessage(pause), NotificationSeverity.WARNING, OPEN_CONNECTIONS,
                 detail = pauseNotes(pause),
             )
         }
     }
 
-    suspend fun matchStarted() = tasks.startStoppable(MATCH_TASK_ID, "Auto-matching games", TaskKind.ACHIEVEMENT,
-        stopNote = "Games already matched stay linked.")
+    suspend fun matchStarted() = tasks.startStoppable(MATCH_TASK_ID, context.getString(R.string.ach_match_running), TaskKind.ACHIEVEMENT,
+        stopNote = context.getString(R.string.ach_match_running_stop_note))
 
     fun matchProgress(done: Int, total: Int) = tasks.progress(MATCH_TASK_ID, done, total)
 
     /** An auto-match the user stopped settles quietly; any other cancellation leaves no row. */
-    fun matchStopped() = tasks.settleCancelled(MATCH_TASK_ID, "Games already matched stay linked",
-        OPEN_ACHIEVEMENTS, null, "Auto-match stopped")
+    fun matchStopped() = tasks.settleCancelled(MATCH_TASK_ID, context.getString(R.string.ach_match_stopped_note),
+        OPEN_ACHIEVEMENTS, null, context.getString(R.string.ach_match_stopped))
 
     /**
      * One grouped message per auto-match run, only when it linked anything; a run that matched
@@ -119,8 +124,8 @@ class AchievementUpdateReporter @Inject constructor(
             return
         }
         report(
-            MATCH_TASK_ID, "Games recognized",
-            "$count installed ${games(count)} matched. Updating their achievements.",
+            MATCH_TASK_ID, context.getString(R.string.ach_match_recognized),
+            context.resources.getQuantityString(R.plurals.ach_match_recognized_message, count, count),
             NotificationSeverity.SUCCESS, OPEN_ACHIEVEMENTS,
         )
     }
@@ -128,14 +133,14 @@ class AchievementUpdateReporter @Inject constructor(
     fun cleared(success: Boolean) {
         if (success) {
             report(
-                CLEAR_TASK_ID, "Achievement records cleared",
-                "Installed games need to be resynced to show achievements again",
+                CLEAR_TASK_ID, context.getString(R.string.ach_clear_done),
+                context.getString(R.string.ach_clear_done_message),
                 NotificationSeverity.SUCCESS, OPEN_ACHIEVEMENT_SETTINGS,
             )
         } else {
             report(
-                CLEAR_TASK_ID, "Couldn’t clear achievements",
-                "Nothing was removed. Try again from Settings ▸ Achievements",
+                CLEAR_TASK_ID, context.getString(R.string.ach_clear_failed),
+                context.getString(R.string.ach_clear_failed_message),
                 NotificationSeverity.ERROR, OPEN_ACHIEVEMENT_SETTINGS,
             )
         }
@@ -163,15 +168,15 @@ class AchievementUpdateReporter @Inject constructor(
         UpdatePause.Offline -> NotificationDetail.notes(PfpErrorCode.AC_3001)
         is UpdatePause.Credentials -> NotificationDetail.notes(
             PfpErrorCode.AC_3002,
-            facts = listOf(NoteFact("Service", providerName(pause.provider))),
+            facts = listOf(NoteFact(context.getString(R.string.ach_upd_fact_service), providerName(pause.provider))),
         )
         UpdatePause.SteamPrivate -> NotificationDetail.notes(PfpErrorCode.AC_3003)
     }
 
     private fun pauseMessage(pause: UpdatePause): String = when (pause) {
-        UpdatePause.Offline -> "Connect to the internet"
-        is UpdatePause.Credentials -> "Reconnect ${providerName(pause.provider)}"
-        UpdatePause.SteamPrivate -> "Steam Game Details aren't available"
+        UpdatePause.Offline -> context.getString(R.string.ach_upd_pause_offline)
+        is UpdatePause.Credentials -> context.getString(R.string.ach_upd_pause_reconnect, providerName(pause.provider))
+        UpdatePause.SteamPrivate -> context.getString(R.string.ach_upd_pause_steam_private)
     }
 
     private fun providerName(provider: AchievementProvider): String = when (provider) {
@@ -182,7 +187,8 @@ class AchievementUpdateReporter @Inject constructor(
         AchievementProvider.X360_ACHIEVEMENT -> "Xbox 360"
     }
 
-    private fun games(count: Int) = if (count == 1) "game" else "games"
+    private fun checkedKept(count: Int) =
+        context.resources.getQuantityString(R.plurals.ach_upd_checked_kept, count, count)
 
     companion object {
         const val UPDATE_TASK_ID = "achievement_update"

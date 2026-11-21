@@ -21,6 +21,10 @@ import com.playfieldportal.core.ui.R
  */
 fun UiMediaSlot.bundledDefaultRes(): Int? = when (this) {
     UiMediaSlot.SOUND_SCROLL -> R.raw.sfx_cursor
+    // Category and Options reuse Navigation's sample: no new audio ships, and unassigned they
+    // sound exactly as those moments did when they were Navigation's.
+    UiMediaSlot.SOUND_CATEGORY -> R.raw.sfx_cursor
+    UiMediaSlot.SOUND_OPTIONS -> R.raw.sfx_cursor
     UiMediaSlot.SOUND_BACK -> R.raw.sfx_back
     UiMediaSlot.SOUND_CONFIRM -> R.raw.sfx_confirm
     UiMediaSlot.SOUND_ERROR -> R.raw.sfx_error

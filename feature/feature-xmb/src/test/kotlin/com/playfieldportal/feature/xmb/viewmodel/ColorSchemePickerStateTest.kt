@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.domain.model.XmbColorScheme
 import com.playfieldportal.core.domain.model.XmbSchemeVariant
 import com.playfieldportal.core.domain.model.resolve
@@ -17,12 +18,12 @@ class ColorSchemePickerStateTest {
 
     private fun option(scheme: XmbColorScheme) = ColorSchemeOption(
         scheme = scheme,
-        label = scheme.name,
-        sublabel = "",
+        label = UiText.raw(scheme.name),
+        sublabel = UiText.raw(""),
         swatch = scheme.resolve(1).waveColor,
     )
 
-    private val custom = ColorSchemeOption(scheme = null, label = "Custom", sublabel = "", swatch = 0xFF888888L, isCustom = true)
+    private val custom = ColorSchemeOption(scheme = null, label = UiText.raw("Custom"), sublabel = UiText.raw(""), swatch = 0xFF888888L, isCustom = true)
 
     private val picker = ColorSchemePickerState(
         options = listOf(option(XmbColorScheme.ORIGINAL), option(XmbColorScheme.ROYAL_PURPLE), option(XmbColorScheme.CHARCOAL), custom),

@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Achievement update notifications -->
+    <string name="ach_upd_running">インストール済みゲームの実績を更新しています</string>
+    <string name="ach_upd_running_stop_note">更新済みの実績は保持されます。</string>
+    <string name="ach_upd_progress">ゲームを確認中（%1$d / %2$d）</string>
+    <string name="ach_upd_stopped">実績の更新を停止しました</string>
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="other">%d 本のゲームを確認しました。保存済みの進行状況は保持されます</item>
+    </plurals>
+    <string name="ach_upd_some_failed">一部の実績を更新できませんでした</string>
+    <plurals name="ach_upd_failed_message">
+        <item quantity="other">%2$d 本中 %1$d 本のゲームを再試行する必要があります</item>
+    </plurals>
+    <string name="ach_upd_results_done">更新済み</string>
+    <string name="ach_upd_updated">実績を更新しました</string>
+    <plurals name="ach_upd_updated_message">
+        <item quantity="other">%1$d 本を更新 · %2$d 本は変更なし</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">実績は最新です</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="other">インストール済みのゲーム %d 本を確認しました</item>
+    </plurals>
+    <string name="ach_upd_paused">実績の更新を一時停止しました</string>
+    <string name="ach_upd_fact_service">サービス</string>
+    <string name="ach_upd_pause_offline">インターネットに接続してください</string>
+    <string name="ach_upd_pause_reconnect">%1$s に再接続してください</string>
+    <string name="ach_upd_pause_steam_private">Steam のゲームの詳細を取得できません</string>
+
+    <!-- Auto-match notifications -->
+    <string name="ach_match_running">ゲームを自動照合しています</string>
+    <string name="ach_match_running_stop_note">照合済みのゲームはリンクされたままです。</string>
+    <string name="ach_match_stopped_note">照合済みのゲームはリンクされたままです</string>
+    <string name="ach_match_stopped">自動照合を停止しました</string>
+    <string name="ach_match_recognized">ゲームを認識しました</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="other">インストール済みのゲーム %d 本を照合しました。実績を更新しています。</item>
+    </plurals>
+
+    <!-- Clearing achievement records -->
+    <string name="ach_clear_done">実績の記録を消去しました</string>
+    <string name="ach_clear_done_message">実績を再表示するには、インストール済みのゲームを再同期する必要があります</string>
+    <string name="ach_clear_failed">実績を消去できませんでした</string>
+    <string name="ach_clear_failed_message">何も削除されていません。設定 ▸ 実績からもう一度お試しください</string>
+
+    <!-- Local Steam: reasons -->
+    <string name="ach_ls_unavail_store">ストアに問い合わせできませんでした</string>
+    <string name="ach_ls_unavail_steam">Steam は現在利用できません</string>
+    <string name="ach_ls_steam_unreachable">Steam に接続できませんでした</string>
+    <string name="ach_ls_steam_rate_limited">Steam がリクエストを制限しています</string>
+    <string name="ach_ls_steam_error">Steam からエラーが返されました</string>
+    <string name="ach_ls_steam_needs_key">Steam の Web API キーが必要です</string>
+
+    <!-- Local Steam: linking a picked game folder -->
+    <string name="ach_link_no_match">「%1$s」に一致するゲームが Steam にありません。フォルダ名をゲームの Steam 上の名前に変更するか、先にゲームの詳細 ▸ ゲームを照合でリンクしてください。</string>
+    <string name="ach_link_unavailable">%1$s。そのため、このフォルダのアプリ ID を特定できませんでした。何も変更されていません。オンラインに戻ってから、もう一度お試しください。</string>
+    <string name="ach_link_marker_failed">そのフォルダに steam_appid.txt を作成できませんでした。PFP には読み取り権限しかない可能性があります。</string>
+    <string name="ach_link_not_recorded">選択した照合結果を記録できませんでした。</string>
+    <string name="ach_link_installer_off">PFP がゲームフォルダに書き込む前に、実績の設定で「Goldberg をインストールしてゲームを変換」をオンにしてください。</string>
+    <string name="ach_link_no_app_id">そのフォルダにはアプリ ID が記載されていません。もう一度選択してください。</string>
+    <string name="ach_link_need_key">設定 ▸ 実績 ▸ プロバイダーの認証情報で Steam Web API キーを追加してください。実績リストはこのキーを使って取得されます。</string>
+    <string name="ach_link_no_achievements">アプリ ID %1$s には Steam 上の実績がないため、トラッキングする対象がありません。</string>
+    <string name="ach_link_kit_failed">実績キットを書き込めませんでした: %1$s</string>
+    <string name="ach_link_read_back_failed">そのフォルダを読み戻せませんでした。リムーバブルストレージ上にある場合は、再マウントしてからもう一度選択してください。</string>
+    <string name="ach_link_not_steam_build">そのフォルダには Steam ライブラリファイル（steam_api64.dll）がないため、Steam 版ではなく、エミュレーターでトラッキングする対象がありません。ゲームの .exe があるフォルダを選択してください。</string>
+
+    <!-- Local Steam: convert picker rows -->
+    <string name="ach_pick_checking">Steam を確認しています…</string>
+    <plurals name="ach_pick_coins">
+        <item quantity="other">%1$d コイン  ·  appid %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">Steam にリストなし  ·  appid %1$s</string>
+    <string name="ach_pick_needs_key">Steam Web API キーが必要  ·  appid %1$s</string>
+    <string name="ach_pick_no_answer">Steam から応答なし  ·  appid %1$s</string>
+
+    <!-- Local Steam: batch match summary -->
+    <string name="ach_batch_already_running">一括照合はすでに実行中です。</string>
+    <string name="ach_batch_no_folders">ゲームフォルダがありません。個々のゲームのフォルダではなく、ゲームフォルダを「含む」フォルダを選択してください。</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="other">%d 個のフォルダが見つかりましたが、Steam 版はありません。steam_api ライブラリがないため、エミュレーターでトラッキングする対象がありません。</item>
+    </plurals>
+    <string name="ach_batch_linked">%1$d 個をライブラリのゲームにリンク</string>
+    <string name="ach_batch_tracked">%1$d 個を単独でトラッキング</string>
+    <string name="ach_batch_converting">%1$d 個が変換待ち</string>
+    <plurals name="ach_batch_matched">
+        <item quantity="other">%2$d 個中 %1$d 個のフォルダを照合しました。</item>
+    </plurals>
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="other">%2$d 個中 %1$d 個のフォルダを照合しました: %3$s。</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="other">%1$d 個は名前から特定できませんでした。各ゲームの Shiba Coins ページを開き、自動照合でフォルダを選択してください。</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="other">%1$d 個はライブラリにありません。先に Windows カードに追加してから、もう一度照合してください。</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="other">%1$d 個は Steam 版ではありません。</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="other">%1$d 個が失敗しました。ログを確認してください。</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">そのフォルダを開けませんでした。</string>
+    <string name="ach_batch_fail_read_back">%1$s: 特定後に読み戻せませんでした。</string>
+    <string name="ach_batch_fail_reason">%1$s: %2$s。</string>
+    <string name="ach_batch_fail_marker">%1$s: steam_appid.txt を作成できませんでした。</string>
+
+    <!-- Vita3K library scan results -->
+    <string name="ach_vita_set_folder">先に Vita3K のデータフォルダ（ux0）を設定してください。</string>
+    <string name="ach_vita_link_invalid">Vita3K フォルダのリンクが無効です。もう一度アクセスを許可してください。</string>
+    <string name="ach_vita_no_ux0">許可されたフォルダに ux0/app が見つかりません。Vita3K の ux0 フォルダ（またはそれを含むフォルダ）を選択してください。</string>
+    <string name="ach_vita_no_app">ux0 に app/ フォルダがありません。許可されたフォルダを確認してください。</string>
+    <string name="ach_vita_none_installed">ux0/app にインストール済みの Vita ゲームが見つかりません。先に Vita3K でゲームをインストールしてください。</string>
+    <plurals name="ach_vita_no_new">
+        <item quantity="other">新しい Vita ゲームはありません。%d 本はすでにライブラリにあります。</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="other">Vita ゲームを %d 本インポートしました。</item>
+    </plurals>
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="other">Vita ゲームを %1$d 本インポートし、%2$d 本を更新しました。</item>
+    </plurals>
+</resources>

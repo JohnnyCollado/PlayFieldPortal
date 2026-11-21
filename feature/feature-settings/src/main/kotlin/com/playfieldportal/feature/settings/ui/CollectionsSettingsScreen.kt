@@ -9,6 +9,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.settings.R
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.activity.result.contract.ActivityResultContracts
@@ -60,6 +64,9 @@ fun CollectionsSettingsScreen(
 ) {
     val collections by viewModel.collections.collectAsState()
     val cardCategories by viewModel.cardCategories.collectAsState()
+    // Labels for a card game's menu, read here because the menu is built in a click handler.
+    val viewDetailsLabel = stringResource(R.string.lib_coll_menu_view_details)
+    val removeFromCardLabel = stringResource(R.string.lib_coll_menu_remove)
     // A card in an app category holds apps, so its text says so (survey L28).
     val holdsApps: (GameCollection) -> Boolean = { c ->
         cardCategories.firstOrNull { it.id == c.categoryId }?.isGamingCategory == false
@@ -194,7 +201,7 @@ fun CollectionsSettingsScreen(
     } else if (openCollection == null) {
         CollectionListStep(
             collections = collections,
-            onCreate    = { openNameDialog(CollectionDialog(title = "New Custom Memory Card")) },
+            onCreate    = { openNameDialog(CollectionDialog(title = UiText.res(R.string.lib_coll_new_title))) },
             onOpen      = { openCollectionId = it.id },
             holdsApps   = holdsApps,
             onBack      = handleBack,
@@ -207,7 +214,7 @@ fun CollectionsSettingsScreen(
             collection  = openCollection,
             holdsApps   = holdsApps(openCollection),
             gamesFlow   = { viewModel.gamesIn(openCollection.id) },
-            onRename    = { openNameDialog(CollectionDialog(title = "Rename Custom Memory Card", renameId = openCollection.id, initial = openCollection.name)) },
+            onRename    = { openNameDialog(CollectionDialog(title = UiText.res(R.string.lib_coll_rename_title), renameId = openCollection.id, initial = openCollection.name)) },
             onChangeIcon = { iconPickerFor = openCollection.id },
             onMoveUp    = { viewModel.moveUp(openCollection.id) },
             onMoveDown  = { viewModel.moveDown(openCollection.id) },
@@ -221,6 +228,8 @@ fun CollectionsSettingsScreen(
                     game.displayTitle,
                     collectionGameMenuRows(
                         gameId = game.id,
+                        viewDetailsLabel = viewDetailsLabel,
+                        removeLabel = removeFromCardLabel,
                         onViewDetails = onOpenGameDetail,
                         onRemove = { viewModel.removeGame(openCollection.id, it) },
                     ),
@@ -238,26 +247,28 @@ fun CollectionsSettingsScreen(
     // Name entry (new or rename)
     nameDialog?.let { d ->
         PfpTextEntryModal(
-            title = d.title,
+            title = d.title.asString(),
             value = nameText,
             onValueChange = { nameText = it },
             focus = modalFocus,
             onFocusChange = { modalFocus = it },
             onConfirm = confirmName,
             onCancel = { dialog = null },
-            placeholder = "Card name",
+            placeholder = stringResource(R.string.lib_coll_name_placeholder),
             // A new collection still has its category to pick, so its name is not yet a save.
-            confirmLabel = if (d.renameId != null) "Save" else "Next",
+            confirmLabel = stringResource(if (d.renameId != null) R.string.lib_coll_save else R.string.lib_coll_next),
             showHints = showHints,
         )
     }
 
     deleteTarget?.let { target ->
         PfpConfirmModal(
-            title = "Delete Custom Card",
-            message = "\"${target.name}\" will be deleted. " +
-                if (holdsApps(target)) "The apps on it stay installed." else "The games on it stay in your library.",
-            confirmLabel = "Delete",
+            title = stringResource(R.string.lib_coll_delete_title),
+            message = stringResource(
+                if (holdsApps(target)) R.string.lib_coll_delete_apps_message else R.string.lib_coll_delete_games_message,
+                target.name,
+            ),
+            confirmLabel = stringResource(R.string.lib_coll_delete),
             focus = modalFocus,
             destructive = true,
             onConfirm = confirmDelete,
@@ -272,17 +283,19 @@ fun CollectionsSettingsScreen(
 /** A card game's menu. Remove from Card is reversible (add it back from the game's menu), so it is plain and unconfirmed. */
 internal fun collectionGameMenuRows(
     gameId: Long,
+    viewDetailsLabel: String,
+    removeLabel: String,
     onViewDetails: (Long) -> Unit,
     onRemove: (Long) -> Unit,
 ): List<SettingsMenuItem> = listOf(
-    SettingsMenuItem("View Game Details") { onViewDetails(gameId) },
-    SettingsMenuItem("Remove from Card") { onRemove(gameId) },
+    SettingsMenuItem(viewDetailsLabel) { onViewDetails(gameId) },
+    SettingsMenuItem(removeLabel) { onRemove(gameId) },
 )
 
 internal fun collectionGameSublabel(platformId: String): String = platformId.uppercase()
 
 private data class CollectionDialog(
-    val title: String,
+    val title: UiText,
     val renameId: Long? = null,
     val initial: String = "",
     var pendingName: String? = null,  // Temporarily holds name while category is selected
@@ -300,8 +313,8 @@ private fun CollectionListStep(
     modifier: Modifier = Modifier,
 ) {
     SettingsScaffold(
-        title = "Settings",
-        subtitle = "Custom Memory Cards",
+        title = stringResource(R.string.settings_title),
+        subtitle = stringResource(R.string.lib_coll_title),
         onBack = onBack,
         modifier = modifier,
         modalOpen = modalOpen,
@@ -310,24 +323,24 @@ private fun CollectionListStep(
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
-            SettingsGroup("Manage")
+            SettingsGroup(stringResource(R.string.lib_coll_group_manage))
             SettingsRow(
-                label    = "New custom memory card",
-                sublabel = "For games or apps, e.g. RPGs, Currently Playing, Work Apps",
+                label    = stringResource(R.string.lib_coll_new),
+                sublabel = stringResource(R.string.lib_coll_new_sub),
                 onClick  = onCreate,
             )
 
-            SettingsGroup("Your custom memory cards")
+            SettingsGroup(stringResource(R.string.lib_coll_group_yours))
             if (collections.isEmpty()) {
                 SettingsRow(
-                    label    = "No custom memory cards yet",
-                    sublabel = "Create one above, or use Add to Card in a game's or app's Options menu.",
+                    label    = stringResource(R.string.lib_coll_none),
+                    sublabel = stringResource(R.string.lib_coll_none_sub),
                 )
             } else {
                 collections.forEach { collection ->
                     SettingsRow(
                         label    = collection.name,
-                        sublabel = cardContentsLabel(collection.gameCount, holdsApps(collection)),
+                        sublabel = cardContentsLabel(collection.gameCount, holdsApps(collection)).asString(),
                         onClick  = { onOpen(collection) },
                     )
                 }
@@ -355,7 +368,7 @@ private fun CollectionDetailStep(
     val games by remember(collection.id) { gamesFlow() }.collectAsState(initial = emptyList())
 
     SettingsScaffold(
-        title = "Settings",
+        title = stringResource(R.string.settings_title),
         subtitle = collection.name,
         onBack = onBack,
         modifier = modifier,
@@ -365,27 +378,26 @@ private fun CollectionDetailStep(
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
-            SettingsGroup("Custom Memory Card")
-            SettingsRow(label = "Rename", onClick = onRename)
+            SettingsGroup(stringResource(R.string.lib_coll_group_card))
+            SettingsRow(label = stringResource(R.string.lib_coll_rename), onClick = onRename)
             SettingsRow(
-                label    = "Change icon",
-                sublabel = collection.iconKey?.let { categoryIconFor(it).label } ?: "Default (Memory Card)",
+                label    = stringResource(R.string.lib_coll_change_icon),
+                sublabel = collection.iconKey?.let { categoryIconFor(it).label } ?: stringResource(R.string.lib_coll_default_icon),
                 onClick  = onChangeIcon,
             )
-            SettingsRow(label = "Move up", onClick = onMoveUp)
-            SettingsRow(label = "Move down", onClick = onMoveDown)
-            val noun = if (holdsApps) "apps" else "games"
+            SettingsRow(label = stringResource(R.string.lib_coll_move_up), onClick = onMoveUp)
+            SettingsRow(label = stringResource(R.string.lib_coll_move_down), onClick = onMoveDown)
             SettingsRow(
-                label = "Delete custom card",
-                sublabel = if (holdsApps) "Removes the card; its apps stay installed" else "Removes the card; its games stay in your library",
+                label = stringResource(R.string.lib_coll_delete_row),
+                sublabel = stringResource(if (holdsApps) R.string.lib_coll_delete_row_apps_sub else R.string.lib_coll_delete_row_games_sub),
                 onClick = onDelete,
             )
 
-            SettingsGroup("${noun.replaceFirstChar { it.uppercase() }} (${games.size})")
+            SettingsGroup(stringResource(if (holdsApps) R.string.lib_coll_group_apps else R.string.lib_coll_group_games, games.size))
             if (games.isEmpty()) {
                 SettingsRow(
-                    label    = "No $noun on this card",
-                    sublabel = "Add $noun with Add to Card in their Options menu.",
+                    label    = stringResource(if (holdsApps) R.string.lib_coll_no_apps else R.string.lib_coll_no_games),
+                    sublabel = stringResource(if (holdsApps) R.string.lib_coll_no_apps_sub else R.string.lib_coll_no_games_sub),
                 )
             } else {
                 games.forEach { game ->
@@ -402,16 +414,15 @@ private fun CollectionDetailStep(
 }
 
 /** "3 games" / "1 app": what a custom card holds, worded by its kind (survey L28). */
-internal fun cardContentsLabel(count: Int, holdsApps: Boolean): String {
-    val noun = if (holdsApps) "app" else "game"
-    return "$count ${if (count == 1) noun else noun + "s"}"
-}
+internal fun cardContentsLabel(count: Int, holdsApps: Boolean): UiText =
+    UiText.plural(if (holdsApps) R.plurals.lib_coll_apps_count else R.plurals.lib_coll_games_count, count)
 
 /** The kind of card a category makes, shown under its name in the picker. */
-internal fun cardCategoryDetail(category: Category): String =
-    if (category.isGamingCategory) "Game card" else "App card"
+internal fun cardCategoryDetail(category: Category): UiText =
+    UiText.res(if (category.isGamingCategory) R.string.lib_coll_card_kind_game else R.string.lib_coll_card_kind_app)
 
 /** Where a new card goes: every card category, as the shared Choice modal (survey L28, P6). */
+@Composable
 internal fun cardCategoryChoiceSpec(
     cardName: String,
     categories: List<Category>,
@@ -419,21 +430,21 @@ internal fun cardCategoryChoiceSpec(
     onCancel: () -> Unit,
 ): PfpModalSpec.Choice = PfpModalSpec.Choice(
     key = "card_category:$cardName",
-    title = "Add to Category",
-    message = "Which column should \"$cardName\" appear in?",
-    options = categories.map { PfpChoiceOption(it.name, cardCategoryDetail(it)) },
-    confirmLabel = "Create",
+    title = stringResource(R.string.lib_coll_pick_category_title),
+    message = stringResource(R.string.lib_coll_pick_category_message, cardName),
+    options = categories.map { PfpChoiceOption(it.name, cardCategoryDetail(it).asString()) },
+    confirmLabel = stringResource(R.string.lib_coll_create),
     onConfirm = { index -> categories.getOrNull(index)?.let { onPick(it.id) } },
     onCancel = onCancel,
 )
 
 /** One row of the card icon step: a catalog key (null = the default memory-card art) and its name. */
-internal data class CardIconRow(val key: String?, val label: String)
+internal data class CardIconRow(val key: String?, val label: UiText)
 
 /** The card icon step's rows: the default first, then the shared category icon catalog. */
 internal fun cardIconRows(): List<CardIconRow> =
-    listOf(CardIconRow(null, "Default (Memory Card)")) +
-        CATEGORY_ICON_CATALOG.map { CardIconRow(it.key, it.label) }
+    listOf(CardIconRow(null, UiText.res(R.string.lib_coll_default_icon))) +
+        CATEGORY_ICON_CATALOG.map { CardIconRow(it.key, UiText.raw(it.label)) }
 
 /**
  * Change Icon for a card: the user's own image (still or animated GIF), one of the applied theme's
@@ -464,11 +475,11 @@ private fun CollectionIconStep(
         uri?.let { viewModel.importCardImage(collection.id, it, contentResolver.getType(it)) }
     }
     var previewFocused by remember { mutableStateOf(false) }
-    val builtInLabel = collection.iconKey?.let { categoryIconFor(it).label } ?: "Default (Memory Card)"
+    val builtInLabel = collection.iconKey?.let { categoryIconFor(it).label } ?: stringResource(R.string.lib_coll_default_icon)
 
     SettingsScaffold(
-        title = "Settings",
-        subtitle = "Card Icon · ${collection.name}",
+        title = stringResource(R.string.settings_title),
+        subtitle = stringResource(R.string.lib_coll_icon_title, collection.name),
         onBack = onBack,
         modifier = modifier,
     ) {
@@ -476,43 +487,43 @@ private fun CollectionIconStep(
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
             if (imageKey != null) {
-                SettingsGroup("From your device")
+                SettingsGroup(stringResource(R.string.lib_coll_group_device))
                 if (!hasImage) {
                     SettingsRow(
-                        label = "Choose image…",
-                        sublabel = "PNG, JPG, WEBP, BMP, HEIC or GIF · animated GIFs play",
+                        label = stringResource(R.string.lib_cat_choose_image),
+                        sublabel = stringResource(R.string.lib_cat_choose_image_sub),
                         onClick = { picker.launch(DEVICE_IMAGE_MIME) },
                     )
                 } else {
                     val icon = LocalXmbIcons.current[imageKey]
                     // Read-only preview row: it plays under Animated Images while the cursor is on it.
                     SettingsRow(
-                        label = "Your image",
-                        sublabel = if (icon is CustomIcon.Animated) "Animated · in use" else "In use",
+                        label = stringResource(R.string.lib_cat_your_image_row),
+                        sublabel = stringResource(if (icon is CustomIcon.Animated) R.string.lib_cat_image_animated_in_use else R.string.lib_cat_image_in_use),
                         onFocusChangedExternal = { previewFocused = it },
                         trailing = {
                             if (icon != null) {
                                 CompositionLocalProvider(LocalIconFocused provides previewFocused) {
-                                    CustomIconSurface(icon, contentDescription = "Your Image", modifier = Modifier.size(40.dp))
+                                    CustomIconSurface(icon, contentDescription = stringResource(R.string.lib_cat_your_image), modifier = Modifier.size(40.dp))
                                 }
                             }
                         },
                     )
                     SettingsRow(
-                        label = "Replace image…",
-                        sublabel = "Pick a different file",
+                        label = stringResource(R.string.lib_cat_replace_image),
+                        sublabel = stringResource(R.string.lib_cat_replace_image_sub),
                         onClick = { picker.launch(DEVICE_IMAGE_MIME) },
                     )
                     SettingsRow(
-                        label = "Remove image",
-                        sublabel = "Go back to the built-in icon ($builtInLabel)",
+                        label = stringResource(R.string.lib_cat_remove_image),
+                        sublabel = stringResource(R.string.lib_cat_remove_image_sub, builtInLabel),
                         onClick = { viewModel.removeCardImage(collection.id) },
                     )
                 }
                 // A rejected file: the store's own message; the previous icon stays.
                 message?.let { text ->
                     Text(
-                        text = text,
+                        text = text.asString(),
                         color = SettingsText,
                         fontSize = 12.sp,
                         modifier = Modifier.padding(horizontal = 48.dp, vertical = 8.dp),
@@ -520,12 +531,12 @@ private fun CollectionIconStep(
                 }
 
                 if (themeIcons.isNotEmpty()) {
-                    SettingsGroup("From the applied theme")
+                    SettingsGroup(stringResource(R.string.lib_coll_group_theme))
                     themeIcons.forEach { choice ->
                         var rowFocused by remember(choice.file) { mutableStateOf(false) }
                         SettingsRow(
                             label = choice.label,
-                            sublabel = if (choice.icon is CustomIcon.Animated) "Animated" else null,
+                            sublabel = if (choice.icon is CustomIcon.Animated) stringResource(R.string.lib_coll_animated) else null,
                             onFocusChangedExternal = { rowFocused = it },
                             trailing = {
                                 CompositionLocalProvider(LocalIconFocused provides rowFocused) {
@@ -538,15 +549,16 @@ private fun CollectionIconStep(
                 }
             }
 
-            SettingsGroup("Built-in")
+            SettingsGroup(stringResource(R.string.lib_coll_group_builtin))
             cardIconRows().forEach { row ->
+                val rowLabel = row.label.asString()
                 SettingsRow(
-                    label = row.label,
+                    label = rowLabel,
                     // A card's own image draws over its built-in choice, so that choice reads as in
                     // use only when there is no image.
-                    sublabel = if (!hasImage && row.key == collection.iconKey) "In use" else null,
+                    sublabel = if (!hasImage && row.key == collection.iconKey) stringResource(R.string.lib_cat_image_in_use) else null,
                     trailing = row.key?.let { key ->
-                        { CategoryIconGlyph(key, contentDescription = row.label, modifier = Modifier.size(40.dp)) }
+                        { CategoryIconGlyph(key, contentDescription = rowLabel, modifier = Modifier.size(40.dp)) }
                     },
                     onClick = { onPick(row.key) },
                 )

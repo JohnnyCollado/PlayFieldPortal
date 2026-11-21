@@ -15,7 +15,7 @@ class LibraryManagerRowMenuTest {
 
     @Test
     fun `an app menu is one red Remove from Library row`() {
-        val rows = libraryAppMenuRows(gameId = 9L) { calls += "ask:$it" }
+        val rows = libraryAppMenuRows(gameId = 9L, removeLabel = "Remove from Library") { calls += "ask:$it" }
 
         assertEquals(listOf("Remove from Library"), rows.map { it.label })
         assertTrue(rows.single().destructive)
@@ -23,7 +23,7 @@ class LibraryManagerRowMenuTest {
 
     @Test
     fun `building the app menu asks nothing, and the row hands the game to the confirm`() {
-        val rows = libraryAppMenuRows(gameId = 9L) { calls += "ask:$it" }
+        val rows = libraryAppMenuRows(gameId = 9L, removeLabel = "Remove from Library") { calls += "ask:$it" }
         assertTrue(calls.isEmpty())
 
         rows.single().action()
@@ -33,7 +33,7 @@ class LibraryManagerRowMenuTest {
 
     @Test
     fun `an extension menu is one plain Remove Extension row`() {
-        val rows = libraryExtensionMenuRows("psp", "iso") { p, e -> calls += "remove:$p:$e" }
+        val rows = libraryExtensionMenuRows("psp", "iso", "Remove Extension") { p, e -> calls += "remove:$p:$e" }
 
         assertEquals(listOf("Remove Extension"), rows.map { it.label })
         assertTrue(rows.none { it.destructive })
@@ -41,7 +41,7 @@ class LibraryManagerRowMenuTest {
 
     @Test
     fun `building the extension menu removes nothing, and the row removes that extension`() {
-        val rows = libraryExtensionMenuRows("psp", "iso") { p, e -> calls += "remove:$p:$e" }
+        val rows = libraryExtensionMenuRows("psp", "iso", "Remove Extension") { p, e -> calls += "remove:$p:$e" }
         assertTrue(calls.isEmpty())
 
         rows.single().action()

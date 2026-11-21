@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui.apppicker
 
+import com.playfieldportal.core.ui.text.asString
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -87,6 +88,9 @@ import com.playfieldportal.feature.xmb.viewmodel.removalQuestion
 import com.playfieldportal.feature.xmb.viewmodel.showAppPickerTouchPills
 import com.playfieldportal.feature.xmb.viewmodel.visibleApps
 import kotlinx.coroutines.flow.distinctUntilChanged
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import com.playfieldportal.feature.xmb.R
 
 // ── Installed-app picker (grid) ───────────────────────────────────────────────
 //
@@ -148,8 +152,8 @@ fun AppPickerScreen(
                 val artworkSize = pickerAdaptiveArtworkSize(maxHeight)
                 if (visible.isEmpty()) {
                     Text(
-                        text = if (state.query.isBlank()) "No installed apps"
-                        else "No installed apps match \"${state.query.trim()}\"",
+                        text = if (state.query.isBlank()) stringResource(R.string.xmbu_app_picker_empty)
+                        else stringResource(R.string.xmbu_app_picker_no_match, state.query.trim()),
                         color = sf.textSecondary,
                         fontSize = 14.sp,
                         modifier = Modifier.align(Alignment.Center),
@@ -182,7 +186,7 @@ fun AppPickerScreen(
         // (confirmingRemovals) so controller SELECT and the touch buttons hit one path.
         if (state.confirmingRemovals) {
             RemovalConfirmPanel(
-                question = removalQuestion(state.target, state.pendingRemovals().size),
+                question = removalQuestion(state.target, state.pendingRemovals().size).asString(),
                 labels = state.apps
                     .filter { it.packageName in state.pendingRemovals() }
                     .map { it.label },
@@ -254,7 +258,7 @@ private fun AppPickerHeader(
             // B's twin: closes an open search, then the removal check, then the picker.
             PickerBreadcrumb(onClick = onBack, color = colors.textSecondary)
             Text(
-                text = state.title,
+                text = state.title.asString(),
                 color = colors.textPrimary,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -265,7 +269,7 @@ private fun AppPickerHeader(
         }
 
         Text(
-            text = "${state.selected.size} Selected",
+            text = pluralStringResource(R.plurals.xmbu_app_picker_selected, state.selected.size, state.selected.size),
             color = colors.textSecondary,
             fontSize = 13.sp,
             modifier = Modifier.padding(end = 16.dp),
@@ -284,7 +288,7 @@ private fun AppPickerHeader(
                 decorationBox = { inner ->
                     Box {
                         if (state.query.isEmpty()) Text(
-                            "Search\u2026",
+                            stringResource(R.string.xmbu_common_ellipsis_search),
                             color = colors.textSecondary.dimmed(0.6f),
                             fontSize = 14.sp,
                         )
@@ -525,17 +529,17 @@ private fun AppPickerFooter(
     // the grid behind the scrim is inert.
     val items = if (confirmingRemovals) {
         listOf(
-            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Choose"),
-            ControllerPromptItem(GamepadAction.SELECT, "Confirm"),
-            ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, stringResource(R.string.xmbu_app_picker_choose)),
+            ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.xmbu_common_confirm)),
+            ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.xmbu_common_cancel)),
         )
     } else {
         listOf(
-            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Navigate"),
-            ControllerPromptItem(GamepadAction.SELECT, "Toggle"),
-            ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"),
-            ControllerPromptItem(GamepadAction.HOME, "Done"),
-            ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, stringResource(R.string.xmbu_common_navigate)),
+            ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.xmbu_common_toggle)),
+            ControllerPromptItem(GamepadAction.CHANGE_SORT, stringResource(R.string.xmbu_common_search)),
+            ControllerPromptItem(GamepadAction.HOME, stringResource(R.string.xmbu_common_done)),
+            ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.xmbu_common_cancel)),
         )
     }
     ControllerPromptBar(
@@ -640,13 +644,13 @@ private fun RemovalConfirmPanel(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 ConfirmOption(
-                    label = "Cancel",
+                    label = stringResource(R.string.xmbu_common_cancel),
                     focused = focusedOption == AppPickerState.CONFIRM_CANCEL,
                     onClick = onCancel,
                     colors = colors,
                 )
                 ConfirmOption(
-                    label = "Remove",
+                    label = stringResource(R.string.xmbu_common_remove),
                     focused = focusedOption == AppPickerState.CONFIRM_REMOVE,
                     onClick = onConfirm,
                     destructive = true,

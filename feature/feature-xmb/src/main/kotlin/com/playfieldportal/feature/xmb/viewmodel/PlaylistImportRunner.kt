@@ -2,6 +2,8 @@ package com.playfieldportal.feature.xmb.viewmodel
 
 import com.playfieldportal.core.data.music.AudioFileFilter
 import com.playfieldportal.core.data.video.VideoFileFilter
+import android.content.Context
+import android.content.res.Resources
 import com.playfieldportal.core.domain.model.NotificationDetail
 import com.playfieldportal.core.domain.model.ResultItem
 import com.playfieldportal.core.domain.model.ResultOutcome
@@ -15,6 +17,8 @@ import com.playfieldportal.core.domain.playlist.PlaylistKind
 import com.playfieldportal.core.domain.playlist.PlaylistMatcher
 import com.playfieldportal.core.domain.playlist.PlaylistSkipReason
 import com.playfieldportal.core.domain.repository.MusicRepository
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.core.domain.repository.VideoRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
@@ -28,7 +32,7 @@ sealed interface PickedPlaylistFile {
 
     class Content(override val name: String, val bytes: ByteArray) : PickedPlaylistFile
 
-    data class Unreadable(override val name: String, val reason: String) : PickedPlaylistFile
+    data class Unreadable(override val name: String, val reason: UiText) : PickedPlaylistFile
 }
 
 /**
@@ -44,18 +48,24 @@ data class PlaylistImportReport(
     /** Display titles of the library items by id, for the "found" rows. */
     val titlesById: Map<String, String> = emptyMap(),
     val dropped: Int = 0,
-    val error: String? = null,
+    val error: UiText? = null,
 ) {
-    val title: String
+    val title: UiText
         get() = when {
-            error != null -> "Couldn't import \"$fileName\""
-            playlistId != null -> "Imported \"$playlistName\""
-            else -> "Nothing imported from \"$fileName\""
+            error != null -> UiText.res(R.string.xmbm_plimport_title_error, fileName)
+            playlistId != null -> UiText.res(R.string.xmbm_plimport_title_ok, playlistName.orEmpty())
+            else -> UiText.res(R.string.xmbm_plimport_title_none, fileName)
         }
 
-    /** The §3.6 Results sheet payload: failures first, then skips, then the found items. */
-    fun toResults(): NotificationDetail.Results {
-        if (error != null) return NotificationDetail.results(emptyList(), summary = error)
+    /**
+     * The §3.6 Results sheet payload: failures first, then skips, then the found items. The payload
+     * is plain text (it is also what a notification stores), so it is written in [context]'s language.
+     */
+    fun toResults(context: Context): NotificationDetail.Results = toResults(context.resources)
+
+    /** [toResults] with [res] already in hand, as the shell has it. */
+    fun toResults(res: Resources): NotificationDetail.Results {
+        if (error != null) return NotificationDetail.results(emptyList(), summary = error.resolve(res))
         val items = outcomes.map { outcome ->
             when (outcome) {
                 is PlaylistEntryOutcome.Matched -> ResultItem(
@@ -66,15 +76,17 @@ data class PlaylistImportReport(
                     primary = entryLabel(outcome.entry),
                     outcome = ResultOutcome.SKIPPED,
                     reason = when (outcome.reason) {
-                        PlaylistSkipReason.WEB_LINK -> "not a local file"
-                        PlaylistSkipReason.WRONG_TYPE -> "wrong media type"
-                        PlaylistSkipReason.DUPLICATE -> "already in the playlist"
+                        PlaylistSkipReason.WEB_LINK -> res.getString(R.string.xmbm_plimport_reason_web)
+                        PlaylistSkipReason.WRONG_TYPE -> res.getString(R.string.xmbm_plimport_reason_type)
+                        PlaylistSkipReason.DUPLICATE -> res.getString(R.string.xmbm_plimport_reason_dup)
                     },
                 )
                 is PlaylistEntryOutcome.NotFound -> ResultItem(
                     primary = entryLabel(outcome.entry),
                     outcome = ResultOutcome.FAILED,
-                    reason = if (outcome.ambiguous) "more than one match" else "not in your library",
+                    reason = res.getString(
+                        if (outcome.ambiguous) R.string.xmbm_plimport_reason_ambiguous else R.string.xmbm_plimport_reason_missing,
+                    ),
                 )
             }
         }
@@ -82,22 +94,23 @@ data class PlaylistImportReport(
         val missing = items.count { it.outcome == ResultOutcome.FAILED }
         val skipped = items.count { it.outcome == ResultOutcome.SKIPPED }
         val summary = buildList {
-            add("$found found")
-            if (missing > 0) add("$missing not in your library")
-            if (skipped > 0) add("$skipped skipped")
-            if (dropped > 0) add("$dropped past the ${PlaylistFileParser.MAX_ENTRIES} entry limit ignored")
+            add(res.getString(R.string.xmbm_plimport_sum_found, found))
+            if (missing > 0) add(res.getString(R.string.xmbm_plimport_sum_missing, missing))
+            if (skipped > 0) add(res.getString(R.string.xmbm_plimport_sum_skipped, skipped))
+            if (dropped > 0) add(res.getString(R.string.xmbm_plimport_sum_dropped, dropped, PlaylistFileParser.MAX_ENTRIES))
         }.joinToString(" · ")
-        return NotificationDetail.results(items, summary = summary, labels = LABELS)
+        val labels = ResultsLabels(
+            done = res.getString(R.string.xmbm_plimport_label_found),
+            failed = res.getString(R.string.xmbm_plimport_label_missing),
+            skipped = res.getString(R.string.xmbm_plimport_label_skipped),
+        )
+        return NotificationDetail.results(items, summary = summary, labels = labels)
     }
 
     private fun entryLabel(entry: PlaylistEntry): String {
         val artist = entry.artist?.takeIf { it.isNotBlank() }
         val title = entry.title?.takeIf { it.isNotBlank() }
         return if (artist != null && title != null) "$artist – $title" else entry.location
-    }
-
-    private companion object {
-        val LABELS = ResultsLabels(done = "Found", failed = "Not in your library", skipped = "Skipped")
     }
 }
 
@@ -120,7 +133,7 @@ class PlaylistImportRunner @Inject constructor(
                 when (file) {
                     is PickedPlaylistFile.Unreadable -> errorReport(kind, file.name, file.reason)
                     is PickedPlaylistFile.Content -> {
-                        if (!isPlaylistFile(file.name)) return@map errorReport(kind, file.name, "Not a playlist file")
+                        if (!isPlaylistFile(file.name)) return@map errorReport(kind, file.name, UiText.res(R.string.xmbm_plimport_not_playlist))
                         if (library == null) {
                             val (candidates, byId) = loadLibrary(kind)
                             library = candidates
@@ -133,7 +146,7 @@ class PlaylistImportRunner @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Playlist import failed for ${file.name}")
-                errorReport(kind, file.name, e.message ?: "Unexpected error")
+                errorReport(kind, file.name, e.message?.let(UiText::raw) ?: UiText.res(R.string.xmbm_plimport_unexpected))
             }
         }
     }
@@ -146,7 +159,7 @@ class PlaylistImportRunner @Inject constructor(
         takenNames: MutableList<String>,
     ): PlaylistImportReport {
         val parsed = PlaylistFileParser.parse(file.name, file.bytes)
-        parsed.rejected?.let { return errorReport(kind, file.name, it) }
+        parsed.rejected?.let { return errorReport(kind, file.name, UiText.raw(it)) }
 
         val (own, other) = when (kind) {
             PlaylistKind.MUSIC -> AudioFileFilter.AUDIO_EXTENSIONS to VideoFileFilter.VIDEO_EXTENSIONS
@@ -170,7 +183,7 @@ class PlaylistImportRunner @Inject constructor(
         )
     }
 
-    private fun errorReport(kind: PlaylistKind, fileName: String, reason: String) = PlaylistImportReport(
+    private fun errorReport(kind: PlaylistKind, fileName: String, reason: UiText) = PlaylistImportReport(
         kind = kind, fileName = fileName, playlistName = null, playlistId = null,
         outcomes = emptyList(), error = reason,
     )

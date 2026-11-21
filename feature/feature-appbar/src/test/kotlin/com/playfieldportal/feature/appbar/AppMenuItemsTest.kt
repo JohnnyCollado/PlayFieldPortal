@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.appbar
 
+import com.playfieldportal.core.domain.text.UiText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -27,10 +28,10 @@ class AppMenuItemsTest {
         val off = menu(isFavorite = false).byId("favorite_toggle")
         val on = menu(isFavorite = true).byId("favorite_toggle")
 
-        assertEquals("Favorite", off.label)
-        assertEquals("Off", off.value)
-        assertEquals("On", on.value)
-        assertEquals("Favorite", on.label)
+        assertEquals(UiText.res(R.string.apps_menu_favorite), off.label)
+        assertEquals(UiText.res(R.string.apps_value_off), off.value)
+        assertEquals(UiText.res(R.string.apps_value_on), on.value)
+        assertEquals(UiText.res(R.string.apps_menu_favorite), on.label)
         assertTrue(off.silent)
         assertFalse(menu().any { it.id == "favorite" })
     }
@@ -39,30 +40,30 @@ class AppMenuItemsTest {
     fun `card and category rows use the glossary wording`() {
         val rows = menu()
 
-        assertEquals("Add to Card", rows.byId("add_to_collection").label)
+        assertEquals(UiText.res(R.string.apps_menu_add_to_card), rows.byId("add_to_collection").label)
         assertTrue(rows.byId("add_to_collection").opensMenu)
-        assertEquals("Move to Category", rows.byId("move").label)
+        assertEquals(UiText.res(R.string.apps_menu_move_to_category), rows.byId("move").label)
         assertTrue(rows.byId("move").opensMenu)
-        assertEquals("Add to Category", rows.byId("add").label)
+        assertEquals(UiText.res(R.string.apps_menu_add_to_category), rows.byId("add").label)
         assertTrue(rows.byId("add").opensMenu)
-        assertEquals("Remove from Category", rows.byId("remove").label)
+        assertEquals(UiText.res(R.string.apps_menu_remove_from_category), rows.byId("remove").label)
         assertFalse(rows.byId("remove").isDestructive)
     }
 
     @Test
     fun `launch is only offered to a touch opener`() {
         assertFalse(menu(byTouch = false).any { it.id == "launch" })
-        assertEquals("Launch", menu(byTouch = true).byId("launch").label)
+        assertEquals(UiText.res(R.string.apps_menu_launch), menu(byTouch = true).byId("launch").label)
     }
 
     @Test
     fun `app info is offered and uninstall is red and last`() {
         val rows = menu()
 
-        assertEquals("App Info", rows.byId("app_info").label)
+        assertEquals(UiText.res(R.string.apps_menu_app_info), rows.byId("app_info").label)
         val last = rows.last()
         assertEquals("app_uninstall", last.id)
-        assertEquals("Uninstall", last.label)
+        assertEquals(UiText.res(R.string.apps_menu_uninstall), last.label)
         assertTrue(last.isDestructive)
     }
 
@@ -78,22 +79,29 @@ class AppMenuItemsTest {
     fun `the groups are Library, Arrange and Manage, each headed on its first row`() {
         val rows = menu(byTouch = true, canMove = true)
 
-        assertEquals(listOf("Library", "Arrange", "Manage"), rows.mapNotNull { it.header })
+        assertEquals(
+            listOf(
+                UiText.res(R.string.apps_menu_group_library),
+                UiText.res(R.string.apps_menu_group_arrange),
+                UiText.res(R.string.apps_menu_group_manage),
+            ),
+            rows.mapNotNull { it.header },
+        )
         assertEquals("launch", rows.first().id)
-        assertEquals("Library", rows.first().header)
-        assertEquals("pin", rows.first { it.header == "Arrange" }.id)
-        assertEquals("rename", rows.first { it.header == "Manage" }.id)
+        assertEquals(UiText.res(R.string.apps_menu_group_library), rows.first().header)
+        assertEquals("pin", rows.first { it.header == UiText.res(R.string.apps_menu_group_arrange) }.id)
+        assertEquals("rename", rows.first { it.header == UiText.res(R.string.apps_menu_group_manage) }.id)
         assertNull(rows.byId("favorite_toggle").header)
     }
 
     @Test
     fun `pin shows its state and move needs a custom sorted list`() {
         assertEquals("pin", menu(pinned = false).byId("pin").id)
-        assertEquals("Off", menu(pinned = false).byId("pin").value)
-        assertEquals("On", menu(pinned = true).byId("unpin").value)
-        assertEquals("Pin to Top", menu(pinned = true).byId("unpin").label)
+        assertEquals(UiText.res(R.string.apps_value_off), menu(pinned = false).byId("pin").value)
+        assertEquals(UiText.res(R.string.apps_value_on), menu(pinned = true).byId("unpin").value)
+        assertEquals(UiText.res(R.string.apps_menu_pin_to_top), menu(pinned = true).byId("unpin").label)
         assertFalse(menu(canMove = false).any { it.id == AppMenuIds.MOVE_ROW })
-        assertEquals("Move", menu(canMove = true).byId(AppMenuIds.MOVE_ROW).label)
+        assertEquals(UiText.res(R.string.apps_menu_move), menu(canMove = true).byId(AppMenuIds.MOVE_ROW).label)
     }
 
     @Test
@@ -110,13 +118,13 @@ class AppMenuItemsTest {
 
     @Test
     fun `hide from names the place the app is shown`() {
-        assertEquals("Hide from Tools", menu(categoryName = "Tools").byId("hide_from_category").label)
+        assertEquals(UiText.res(R.string.apps_menu_hide_from, "Tools"), menu(categoryName = "Tools").byId("hide_from_category").label)
     }
 
     @Test
     fun `mark as game flips to unmark for a game`() {
-        assertEquals("Mark as Game", menu(isGame = false).byId("mark_game").label)
-        assertEquals("Unmark as Game", menu(isGame = true).byId("unmark_game").label)
+        assertEquals(UiText.res(R.string.apps_menu_mark_game), menu(isGame = false).byId("mark_game").label)
+        assertEquals(UiText.res(R.string.apps_menu_unmark_game), menu(isGame = true).byId("unmark_game").label)
         assertFalse(menu(isGame = true).any { it.id == "mark_game" })
     }
 
@@ -134,7 +142,10 @@ class AppMenuItemsTest {
             rows.map { it.id },
         )
         assertEquals(
-            listOf("Edit App Details", "Favorite", "Add to Card", "Mark as Game", "App Info", "Uninstall"),
+            listOf(
+                R.string.apps_menu_edit_details, R.string.apps_menu_favorite, R.string.apps_menu_add_to_card,
+                R.string.apps_menu_mark_game, R.string.apps_menu_app_info, R.string.apps_menu_uninstall,
+            ).map { UiText.res(it) },
             rows.map { it.label },
         )
         assertTrue(rows.all { it.header == null })
@@ -145,12 +156,12 @@ class AppMenuItemsTest {
         val off = drawer(isFavorite = false, isGame = false)
         val on = drawer(isFavorite = true, isGame = true)
 
-        assertEquals("Off", off.byId("favorite_toggle").value)
-        assertEquals("Off", off.byId("mark_game").value)
-        assertEquals("On", on.byId("favorite_toggle").value)
+        assertEquals(UiText.res(R.string.apps_value_off), off.byId("favorite_toggle").value)
+        assertEquals(UiText.res(R.string.apps_value_off), off.byId("mark_game").value)
+        assertEquals(UiText.res(R.string.apps_value_on), on.byId("favorite_toggle").value)
         // One label and one id for the toggle whichever way it is set: only the value says the state.
-        assertEquals("Mark as Game", on.single { it.label.endsWith("as Game") }.label)
-        assertEquals("On", on.single { it.label.endsWith("as Game") }.value)
+        assertEquals(UiText.res(R.string.apps_menu_mark_game), on.single { it.id == "unmark_game" || it.id == "mark_game" }.label)
+        assertEquals(UiText.res(R.string.apps_value_on), on.single { it.id == "unmark_game" || it.id == "mark_game" }.value)
         assertTrue(drawer().byId("favorite_toggle").silent)
         assertTrue(drawer().byId("add_to_collection").opensMenu)
     }

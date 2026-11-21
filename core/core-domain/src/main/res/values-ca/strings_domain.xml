@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Rangs Shiba -->
+    <string name="dom_shiba_rank_pup">Cadell</string>
+    <string name="dom_shiba_rank_ruffian">Brivall</string>
+    <string name="dom_shiba_rank_lone_ron_inu">Ron-inu solitari</string>
+    <string name="dom_shiba_rank_inu_master">Mestre Inu</string>
+    <string name="dom_shiba_rank_legendary_hachiko">Hachiko llegendari</string>
+
+    <!-- Edicions de l'aplicació -->
+    <string name="dom_edition_full">Completa</string>
+    <string name="dom_edition_lite">Lite</string>
+
+    <!-- Canals d'àudio -->
+    <string name="dom_audio_channel_navigation">Navegació</string>
+    <string name="dom_audio_channel_back">Enrere / Cancel·la</string>
+    <string name="dom_audio_channel_confirm">Confirma / Aplica</string>
+    <string name="dom_audio_channel_error">Error / No vàlid</string>
+    <string name="dom_audio_channel_category">Categoria</string>
+    <string name="dom_audio_channel_options">Opcions</string>
+    <string name="dom_audio_channel_notification">Notificació</string>
+    <string name="dom_audio_channel_boot">Seqüència d\'arrencada</string>
+    <string name="dom_audio_channel_gameboot">Game Boot</string>
+    <string name="dom_audio_channel_ambience">Ambient</string>
+
+    <!-- Posicions de mitjans -->
+    <string name="dom_media_slot_navigation">Navegació</string>
+    <string name="dom_media_slot_back">Enrere / Cancel·la</string>
+    <string name="dom_media_slot_confirm">Confirma / Aplica</string>
+    <string name="dom_media_slot_error">Error / No vàlid</string>
+    <string name="dom_media_slot_category">Categoria</string>
+    <string name="dom_media_slot_options">Opcions</string>
+    <string name="dom_media_slot_notification">Notificació</string>
+    <string name="dom_media_slot_boot_video">Animació d\'arrencada</string>
+    <string name="dom_media_slot_gameboot_video">Animació de Game Boot</string>
+    <string name="dom_media_slot_ambience_audio">Pista d\'ambient</string>
+
+    <!-- Visualització de les icones -->
+    <string name="dom_icon_display_icon0">Icona personalitzada</string>
+    <string name="dom_icon_display_box_art">Caràtula</string>
+    <string name="dom_icon_display_physical_media">Suport físic</string>
+    <string name="dom_icon_display_box_3d">Caràtula 3D</string>
+
+    <!-- Llegibilitat de les icones -->
+    <string name="dom_icon_legibility_none">Cap</string>
+    <string name="dom_icon_legibility_offset_shadow">Ombra desplaçada (fosca)</string>
+    <string name="dom_icon_legibility_offset_shadow_light">Ombra desplaçada (clara)</string>
+    <string name="dom_icon_legibility_contour_dark">Contorn (fosc)</string>
+    <string name="dom_icon_legibility_contour_light">Contorn (clar)</string>
+    <string name="dom_icon_legibility_contour_auto">Contorn (automàtic)</string>
+
+    <!-- Moviment de les imatges -->
+    <string name="dom_image_motion_animated">Animat</string>
+    <string name="dom_image_motion_reduced">Reduït</string>
+    <string name="dom_image_motion_static">Estàtic</string>
+
+    <!-- Llegibilitat del text -->
+    <string name="dom_text_legibility_none">Cap</string>
+    <string name="dom_text_legibility_shadow">Ombra</string>
+    <string name="dom_text_legibility_outline">Contorn</string>
+    <string name="dom_text_legibility_plate">Placa de contrast</string>
+    <string name="dom_text_legibility_auto">Automàtic</string>
+
+    <!-- Gestos tàctils -->
+    <string name="dom_touch_gesture_tap">Toc</string>
+    <string name="dom_touch_gesture_long_press">Mantén premut</string>
+    <string name="dom_touch_gesture_swipe_left">Llisca cap a l\'esquerra</string>
+    <string name="dom_touch_gesture_swipe_right">Llisca cap a la dreta</string>
+    <string name="dom_touch_gesture_swipe_down">Llisca cap avall</string>
+
+    <!-- Ranura UMD -->
+    <string name="dom_umd_slot_off">Desactivada</string>
+    <string name="dom_umd_slot_inserted">Inserit</string>
+    <string name="dom_umd_slot_inserted_and_recent">Inserit i recent</string>
+
+    <!-- Moviment de la llista -->
+    <string name="dom_list_motion_rewind">Rebobina</string>
+    <string name="dom_list_motion_glide">Llisca</string>
+
+    <!-- Disposició dels botons -->
+    <string name="dom_confirm_back_standard">Estàndard (A = Confirma, B = Enrere)</string>
+    <string name="dom_confirm_back_reversed">Invertit (B = Confirma, A = Enrere)</string>
+    <string name="dom_xy_layout_standard">Estàndard (Y = Opcions, X = Ordena)</string>
+    <string name="dom_xy_layout_swapped">Intercanviat (X = Opcions, Y = Ordena)</string>
+    <string name="dom_controller_type_xbox">Xbox</string>
+    <string name="dom_controller_type_nintendo">Nintendo</string>
+    <string name="dom_controller_type_playstation">PlayStation</string>
+
+    <!-- Velocitat de desplaçament -->
+    <string name="dom_scroll_speed_relaxed">Relaxada</string>
+    <string name="dom_scroll_speed_standard">Estàndard</string>
+    <string name="dom_scroll_speed_fast">Ràpida</string>
+
+    <!-- Esquemes de colors -->
+    <string name="dom_color_scheme_original">Original (mensual)</string>
+    <string name="dom_color_scheme_classic_blue">Blau clàssic</string>
+    <string name="dom_color_scheme_sunset_orange">Taronja posta de sol</string>
+    <string name="dom_color_scheme_fresh_green">Verd fresc</string>
+    <string name="dom_color_scheme_royal_purple">Porpra reial</string>
+    <string name="dom_color_scheme_crimson_red">Vermell carmesí</string>
+    <string name="dom_color_scheme_silver">Plata</string>
+    <string name="dom_color_scheme_sakura_pink">Rosa sakura</string>
+    <string name="dom_color_scheme_golden_amber">Ambre daurat</string>
+    <string name="dom_color_scheme_aqua_teal">Verd blavós</string>
+    <string name="dom_color_scheme_midnight_navy">Blau mitjanit</string>
+    <string name="dom_color_scheme_charcoal">Carbó</string>
+
+    <!-- Accions del comandament -->
+    <string name="dom_action_navigate_up">Navega amunt</string>
+    <string name="dom_action_navigate_down">Navega avall</string>
+    <string name="dom_action_navigate_left">Navega a l\'esquerra (categoria anterior)</string>
+    <string name="dom_action_navigate_right">Navega a la dreta (categoria següent)</string>
+    <string name="dom_action_select">Selecciona / Inicia</string>
+    <string name="dom_action_back">Enrere / Tanca</string>
+    <string name="dom_action_open_context_menu">Opcions / Menú contextual</string>
+    <string name="dom_action_change_sort">Canvia l\'ordre</string>
+    <string name="dom_action_prev_category">Pestanya anterior (calaix d\'aplicacions)</string>
+    <string name="dom_action_next_category">Pestanya següent (calaix d\'aplicacions)</string>
+    <string name="dom_action_home">Start (notificacions / confirmar als selectors)</string>
+    <string name="dom_action_shift">Maj. (teclat)</string>
+    <string name="dom_action_caps_lock">Bloq. Maj. (teclat)</string>
+    <string name="dom_action_category_menu">Menú de categoria</string>
+
+    <!-- Noms de les tecles -->
+    <string name="dom_key_a">A / Creu</string>
+    <string name="dom_key_b">B / Cercle</string>
+    <string name="dom_key_x">X / Quadrat</string>
+    <string name="dom_key_y">Y / Triangle</string>
+    <string name="dom_key_dpad_up">Creueta amunt</string>
+    <string name="dom_key_dpad_down">Creueta avall</string>
+    <string name="dom_key_dpad_left">Creueta esquerra</string>
+    <string name="dom_key_dpad_right">Creueta dreta</string>
+    <string name="dom_key_dpad_center">Centre de la creueta</string>
+    <string name="dom_key_l1">L1</string>
+    <string name="dom_key_r1">R1</string>
+    <string name="dom_key_l2">L2</string>
+    <string name="dom_key_r2">R2</string>
+    <string name="dom_key_start">Start</string>
+    <string name="dom_key_select">Select</string>
+    <string name="dom_key_enter">Retorn</string>
+    <string name="dom_key_back">Enrere</string>
+    <string name="dom_key_unknown">Tecla %1$d</string>
+
+    <!-- Noms dels colors -->
+    <string name="dom_hue_orange">taronja</string>
+    <string name="dom_hue_yellow">groc</string>
+    <string name="dom_hue_green">verd</string>
+    <string name="dom_hue_teal">verd blavós</string>
+    <string name="dom_hue_blue">blau</string>
+    <string name="dom_hue_purple">porpra</string>
+    <string name="dom_hue_pink">rosa</string>
+    <string name="dom_hue_red">vermell</string>
+    <string name="dom_hue_orange_cap">Taronja</string>
+    <string name="dom_hue_yellow_cap">Groc</string>
+    <string name="dom_hue_green_cap">Verd</string>
+    <string name="dom_hue_teal_cap">Verd blavós</string>
+    <string name="dom_hue_blue_cap">Blau</string>
+    <string name="dom_hue_purple_cap">Porpra</string>
+    <string name="dom_hue_pink_cap">Rosa</string>
+    <string name="dom_hue_red_cap">Vermell</string>
+    <string name="dom_hue_lean">%1$s, tirant a %2$s</string>
+    <string name="dom_hue_lean_cap">%1$s, tirant a %2$s</string>
+    <string name="dom_color_dark">To fosc de %1$s</string>
+    <string name="dom_color_very_dark">To molt fosc de %1$s</string>
+    <string name="dom_color_muted">To apagat de %1$s</string>
+    <string name="dom_color_dark_muted">To apagat fosc de %1$s</string>
+    <string name="dom_color_very_dark_muted">To apagat molt fosc de %1$s</string>
+    <string name="dom_color_grey">Gris (%1$s)</string>
+    <string name="dom_saturation_grey">Gris</string>
+    <string name="dom_saturation_muted">Apagat</string>
+    <string name="dom_saturation_vivid">Viu</string>
+    <string name="dom_saturation_intense">Intens</string>
+    <string name="dom_brightness_very_dark">Molt fosc</string>
+    <string name="dom_brightness_dark">Fosc</string>
+    <string name="dom_brightness_medium">Mitjà</string>
+    <string name="dom_brightness_bright">Clar</string>
+    <string name="dom_tint_standard">Estàndard</string>
+    <string name="dom_tint_orange">Més taronja</string>
+    <string name="dom_tint_yellow">Més groc</string>
+    <string name="dom_tint_green">Més verd</string>
+    <string name="dom_tint_teal">Més verd blavós</string>
+    <string name="dom_tint_blue">Més blau</string>
+    <string name="dom_tint_purple">Més porpra</string>
+    <string name="dom_tint_pink">Més rosa</string>
+    <string name="dom_tint_red">Més vermell</string>
+    <string name="dom_tint_much_orange">Molt més taronja</string>
+    <string name="dom_tint_much_yellow">Molt més groc</string>
+    <string name="dom_tint_much_green">Molt més verd</string>
+    <string name="dom_tint_much_teal">Molt més verd blavós</string>
+    <string name="dom_tint_much_blue">Molt més blau</string>
+    <string name="dom_tint_much_purple">Molt més porpra</string>
+    <string name="dom_tint_much_pink">Molt més rosa</string>
+    <string name="dom_tint_much_red">Molt més vermell</string>
+    <string name="dom_tint_cooler">Més fred</string>
+    <string name="dom_tint_warmer">Més càlid</string>
+    <string name="dom_tint_much_cooler">Molt més fred</string>
+    <string name="dom_tint_much_warmer">Molt més càlid</string>
+    <string name="dom_depth_much_lighter">Molt més clar</string>
+    <string name="dom_depth_lighter">Més clar</string>
+    <string name="dom_depth_deeper">Més intens</string>
+    <string name="dom_depth_much_deeper">Molt més intens</string>
+
+    <!-- Límits dels mitjans -->
+    <string name="dom_limit_motion_unsupported_format">Format no compatible — utilitza MP4, WebM, GIF o WebP</string>
+    <string name="dom_limit_motion_too_large_resolution">El vídeo és massa gran — 1080p o menys</string>
+    <string name="dom_limit_motion_too_long">El clip és massa llarg — 60 segons o menys</string>
+    <string name="dom_limit_motion_too_large_bytes">El fitxer és massa gran — menys de 60 MB</string>
+    <string name="dom_limit_motion_undecodable">No s\'ha pogut llegir aquest vídeo — prova un altre fitxer</string>
+    <string name="dom_limit_media_unsupported_audio">Format no compatible — utilitza àudio MP3, WAV, OGG o M4A</string>
+    <string name="dom_limit_media_unsupported_video">Format no compatible — utilitza vídeo MP4 o WebM</string>
+    <string name="dom_limit_media_too_large_sound">El fitxer és massa gran</string>
+    <string name="dom_limit_media_too_large_video">El fitxer és massa gran — els vídeos han de fer menys de 25 MB</string>
+    <string name="dom_limit_media_undecodable">No s\'ha pogut llegir aquest fitxer — prova\'n un altre</string>
+    <string name="dom_limit_media_no_duration">No s\'ha pogut llegir la durada d\'aquest fitxer — prova un altre fitxer o converteix-lo a MP3/WAV/OGG/M4A</string>
+    <string name="dom_limit_media_too_long">Aquest clip és massa llarg — %1$s o menys</string>
+
+    <!-- Codis d'error: inici -->
+    <string name="dom_error_ln_1001_title">No hi ha cap emulador assignat a aquesta plataforma</string>
+    <string name="dom_error_ln_1001_why">PlayFieldPortal no sap quina aplicació ha d\'executar els jocs d\'aquesta plataforma.</string>
+    <string name="dom_error_ln_1001_action">Tria un emulador per a aquesta plataforma a Configuració › Assignació d\'emuladors.</string>
+    <string name="dom_error_ln_1002_title">El nucli de RetroArch seleccionat no està instal·lat</string>
+    <string name="dom_error_ln_1002_why">S\'ha demanat a RetroArch que carregui un nucli que no és en aquest dispositiu.</string>
+    <string name="dom_error_ln_1002_action">Instal·la el nucli des de l\'Online Updater de RetroArch o tria un altre nucli a Assignació d\'emuladors.</string>
+    <string name="dom_error_ln_2001_title">Falta el fitxer del joc o no es pot llegir</string>
+    <string name="dom_error_ln_2001_why">És possible que el fitxer s\'hagi mogut, canviat de nom o suprimit, o que s\'hagi tret la targeta SD que el conté.</string>
+    <string name="dom_error_ln_2001_action">Comprova que el fitxer encara hi sigui i torna a escanejar la seva Memory Card.</string>
+    <string name="dom_error_ln_4001_title">No s\'ha trobat l\'emulador</string>
+    <string name="dom_error_ln_4001_why">L\'emulador assignat a aquest joc no està instal·lat, o Android no ha trobat la pantalla que obre PlayFieldPortal.</string>
+    <string name="dom_error_ln_4001_action">Instal·la l\'emulador o tria\'n un altre a Configuració › Assignació d\'emuladors.</string>
+    <string name="dom_error_ln_4002_title">Android no ha permès obrir l\'emulador</string>
+    <string name="dom_error_ln_4002_why">Android ha denegat el permís perquè PlayFieldPortal iniciés aquest emulador.</string>
+    <string name="dom_error_ln_4002_action">Obre l\'emulador pel seu compte una vegada i torna-ho a provar. Si continua passant, actualitza l\'emulador.</string>
+    <string name="dom_error_ln_4003_title">L\'emulador no ha passat mai a primer pla</string>
+    <string name="dom_error_ln_4003_why">El més probable és que l\'emulador s\'hagi tancat en iniciar-se, o que Android l\'hagi aturat abans que es pogués carregar el joc.</string>
+    <string name="dom_error_ln_4003_action">Obre l\'emulador pel seu compte una vegada per comprovar que s\'inicia i actualitza\'l si hi ha una versió més nova. Si continua passant, tria un altre emulador a Configuració › Assignació d\'emuladors.</string>
+    <string name="dom_error_ln_9001_title">No s\'ha pogut obrir l\'emulador</string>
+    <string name="dom_error_ln_9001_why">Alguna cosa inesperada ha fallat en iniciar l\'emulador.</string>
+    <string name="dom_error_ln_9001_action">Torna-ho a provar. Si continua passant, copia els detalls i informa\'n.</string>
+
+    <!-- Codis d'error: escaneig -->
+    <string name="dom_error_sc_1001_title">No hi ha cap carpeta definida per a aquesta Memory Card</string>
+    <string name="dom_error_sc_1001_why">Aquesta Memory Card encara no té on escanejar.</string>
+    <string name="dom_error_sc_1001_action">Tria una carpeta a les opcions de la Memory Card i escaneja-la.</string>
+    <string name="dom_error_sc_1002_title">Ja hi ha un escaneig en curs</string>
+    <string name="dom_error_sc_1002_why">Aquesta Memory Card ja s\'estava escanejant, així que s\'ha omès el segon escaneig.</string>
+    <string name="dom_error_sc_1002_action">Espera que acabi l\'escaneig en curs. El resultat apareixerà aquí quan acabi.</string>
+    <string name="dom_error_sc_2001_title">S\'ha perdut l\'accés a la carpeta</string>
+    <string name="dom_error_sc_2001_why">PlayFieldPortal ha perdut el permís per llegir aquesta carpeta.</string>
+    <string name="dom_error_sc_2001_action">Torna a triar la carpeta a les opcions de la Memory Card perquè se\'n concedeixi l\'accés i escaneja-la.</string>
+    <string name="dom_error_sc_2002_title">La carpeta ja no existeix</string>
+    <string name="dom_error_sc_2002_why">La carpeta s\'ha mogut o suprimit. Si és en una targeta SD, potser s\'ha tret la targeta.</string>
+    <string name="dom_error_sc_2002_action">Insereix la targeta SD i torna a escanejar, o tria una carpeta nova a les opcions de la Memory Card.</string>
+    <string name="dom_error_sc_2003_title">Carpeta de sistema desconeguda</string>
+    <string name="dom_error_sc_2003_why">Aquesta carpeta dins de la carpeta de ROM principal no correspon a cap sistema que conegui PlayFieldPortal.</string>
+    <string name="dom_error_sc_2003_action">Canvia el nom de la carpeta pel d\'un sistema compatible o mou-ne els jocs a una d\'aquestes carpetes.</string>
+    <string name="dom_error_sc_2004_title">Fitxer no reconegut</string>
+    <string name="dom_error_sc_2004_why">El tipus d\'aquest fitxer no és cap dels que fan servir els jocs d\'aquesta plataforma.</string>
+    <string name="dom_error_sc_2004_action">Comprova que el fitxer sigui un joc d\'aquesta plataforma. Els arxius comprimits i els pedaços s\'ometen expressament.</string>
+    <string name="dom_error_sc_9001_title">L\'escaneig ha fallat de manera inesperada</string>
+    <string name="dom_error_sc_9001_why">Alguna cosa inesperada ha fallat durant l\'escaneig.</string>
+    <string name="dom_error_sc_9001_action">Torna a provar l\'escaneig. Si continua passant, copia els detalls i informa\'n.</string>
+
+    <!-- Codis d'error: imatges -->
+    <string name="dom_error_ar_1001_title">La carpeta d\'imatges no està disponible</string>
+    <string name="dom_error_ar_1001_why">PFP no pot accedir a la carpeta d\'imatges, així que les imatges noves estan en pausa.</string>
+    <string name="dom_error_ar_1001_action">Torna a enllaçar la carpeta a Configuració › Imatges.</string>
+    <string name="dom_error_ar_2001_title">No s\'ha pogut desar el fitxer d\'imatge</string>
+    <string name="dom_error_ar_2001_why">L\'emmagatzematge era ple o no s\'ha pogut escriure a la carpeta d\'imatges.</string>
+    <string name="dom_error_ar_2001_action">Allibera una mica d\'espai i torna-ho a provar.</string>
+    <string name="dom_error_ar_2002_title">No s\'ha pogut copiar un fitxer</string>
+    <string name="dom_error_ar_2002_why">La còpia ha fallat a mitges o no s\'ha pogut escriure a la destinació.</string>
+    <string name="dom_error_ar_2002_action">Comprova que hi hagi espai lliure a la destinació i torna-ho a executar.</string>
+    <string name="dom_error_ar_2003_title">Carpeta de sistema desconeguda a la importació</string>
+    <string name="dom_error_ar_2003_why">Aquesta carpeta de la importació no correspon a cap sistema que conegui PlayFieldPortal.</string>
+    <string name="dom_error_ar_2003_action">Canvia el nom de la carpeta pel d\'un sistema compatible i torna a importar.</string>
+    <string name="dom_error_ar_3001_title">No s\'ha pogut connectar amb la font d\'imatges</string>
+    <string name="dom_error_ar_3001_why">El dispositiu no té connexió o la font no ha respost.</string>
+    <string name="dom_error_ar_3001_action">Comprova la connexió i torna-ho a provar més tard.</string>
+    <string name="dom_error_ar_3002_title">La font ha rebutjat la sol·licitud</string>
+    <string name="dom_error_ar_3002_why">La font està limitant les sol·licituds, o s\'ha rebutjat el compte o la clau que necessita.</string>
+    <string name="dom_error_ar_3002_action">Espera una estona i torna-ho a provar, o comprova el compte de la font a Configuració.</string>
+    <string name="dom_error_ar_3003_title">No s\'ha trobat cap coincidència per a aquest joc</string>
+    <string name="dom_error_ar_3003_why">La font no té cap entrada que coincideixi amb el títol d\'aquest joc.</string>
+    <string name="dom_error_ar_3003_action">Comprova el títol del joc o tria les imatges a mà a l\'Artwork Studio.</string>
+    <string name="dom_error_ar_9001_title">L\'obtenció ha fallat de manera inesperada</string>
+    <string name="dom_error_ar_9001_why">Alguna cosa inesperada ha fallat durant l\'obtenció.</string>
+    <string name="dom_error_ar_9001_action">Torna-ho a provar. Si continua passant, copia els detalls i informa\'n.</string>
+
+    <!-- Codis d'error: assoliments -->
+    <string name="dom_error_ac_1001_title">Cap conjunt d\'assoliments no coincideix amb aquest joc</string>
+    <string name="dom_error_ac_1001_why">Cap dels serveis connectats no té assoliments per a un joc amb aquest títol.</string>
+    <string name="dom_error_ac_1001_action">Associa el joc a mà des de la seva pàgina d\'assoliments.</string>
+    <string name="dom_error_ac_2001_title">No es pot llegir la carpeta d\'assoliments de Windows</string>
+    <string name="dom_error_ac_2001_why">No s\'ha pogut obrir la carpeta triada per als assoliments locals d\'aquest joc.</string>
+    <string name="dom_error_ac_2001_action">Torna a triar la carpeta del joc des de la seva pàgina d\'assoliments.</string>
+    <string name="dom_error_ac_3001_title">El dispositiu no té connexió</string>
+    <string name="dom_error_ac_3001_why">Els assoliments no es poden actualitzar sense connexió a Internet.</string>
+    <string name="dom_error_ac_3001_action">Connecta\'t a Internet. L\'actualització es tornarà a executar sola.</string>
+    <string name="dom_error_ac_3002_title">La sessió ha caducat</string>
+    <string name="dom_error_ac_3002_why">El servei connectat ja no accepta la sessió de PlayFieldPortal.</string>
+    <string name="dom_error_ac_3002_action">Torna a connectar el servei a Configuració › Assoliments.</string>
+    <string name="dom_error_ac_3003_title">Els detalls dels jocs de Steam són privats</string>
+    <string name="dom_error_ac_3003_why">Steam només comparteix els assoliments quan els detalls dels jocs són públics.</string>
+    <string name="dom_error_ac_3003_action">Posa els detalls dels jocs com a públics a la configuració de privadesa de Steam i torna a actualitzar.</string>
+    <string name="dom_error_ac_3004_title">Aquest joc no s\'ha pogut actualitzar</string>
+    <string name="dom_error_ac_3004_why">El servei no ha respost per a aquest joc o ha respost amb un error.</string>
+    <string name="dom_error_ac_3004_action">Torna a provar l\'actualització més tard.</string>
+
+    <!-- Codis d'error: mitjans -->
+    <string name="dom_error_md_2001_title">No es pot llegir la carpeta de mitjans</string>
+    <string name="dom_error_md_2001_why">PlayFieldPortal ha perdut l\'accés a aquesta carpeta o ja no existeix.</string>
+    <string name="dom_error_md_2001_action">Torna a triar la carpeta a la configuració de mitjans i escaneja.</string>
+    <string name="dom_error_md_9001_title">L\'escaneig de mitjans ha fallat de manera inesperada</string>
+    <string name="dom_error_md_9001_why">Alguna cosa inesperada ha fallat durant l\'escaneig.</string>
+    <string name="dom_error_md_9001_action">Torna a provar l\'escaneig. Si continua passant, copia els detalls i informa\'n.</string>
+
+    <!-- Codis d'error: còpia de seguretat -->
+    <string name="dom_error_bk_1001_title">La restauració ha omès un element</string>
+    <string name="dom_error_bk_1001_why">Aquest element no s\'ha pogut restaurar de manera segura, així que s\'ha deixat com estava.</string>
+    <string name="dom_error_bk_1001_action">No afecta res més. Torna a configurar aquest element a mà si el necessites.</string>
+    <string name="dom_error_bk_2001_title">No s\'ha pogut escriure el fitxer de còpia de seguretat</string>
+    <string name="dom_error_bk_2001_why">L\'emmagatzematge era ple o no s\'ha pogut escriure a la carpeta de còpia de seguretat.</string>
+    <string name="dom_error_bk_2001_action">Allibera una mica d\'espai o tria una altra ubicació per a la còpia i torna-ho a provar.</string>
+    <string name="dom_error_bk_2002_title">El fitxer de còpia de seguretat no es pot llegir o està malmès</string>
+    <string name="dom_error_bk_2002_why">El fitxer no és una còpia de seguretat de PlayFieldPortal o està incomplet.</string>
+    <string name="dom_error_bk_2002_action">Tria un altre fitxer de còpia de seguretat.</string>
+
+    <!-- Codis d'error: sistema -->
+    <string name="dom_error_sy_9001_title">Alguna cosa ha fallat</string>
+    <string name="dom_error_sy_9001_why">Alguna cosa inesperada ha fallat.</string>
+    <string name="dom_error_sy_9001_action">Torna-ho a provar. Si continua passant, copia els detalls i informa\'n.</string>
+</resources>

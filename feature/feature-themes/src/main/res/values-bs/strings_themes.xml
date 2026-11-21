@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="thm_error_manifest_missing">U arhivi nedostaje obavezna datoteka theme.json</string>
+    <string name="thm_error_manifest_invalid">Nevažeća datoteka theme.json: %1$s</string>
+    <string name="thm_error_id_invalid">Nevažeći ID teme \'%1$s\' — upotrijebite slova, brojeve, \'.\', \'_\' ili \'-\' (najviše 64)</string>
+    <string name="thm_error_color_invalid">Nevažeće %1$s \'%2$s\' — očekuje se #RRGGBB ili #AARRGGBB</string>
+</resources>

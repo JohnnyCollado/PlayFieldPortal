@@ -13,6 +13,7 @@ import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.IBinder
 import androidx.core.content.ContextCompat
+import com.playfieldportal.feature.xmb.R
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -137,10 +138,10 @@ class MusicPlaybackService : Service() {
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setOnlyAlertOnce(true)
             .setOngoing(state.isPlaying)
-            .addAction(action(android.R.drawable.ic_media_previous, "Previous", ACTION_PREV))
-            .addAction(action(playPauseIcon, "Play/Pause", ACTION_PLAY_PAUSE))
-            .addAction(action(android.R.drawable.ic_media_next, "Next", ACTION_NEXT))
-            .addAction(action(android.R.drawable.ic_menu_close_clear_cancel, "Stop", ACTION_STOP))
+            .addAction(action(android.R.drawable.ic_media_previous, getString(R.string.xmbu_music_notif_previous), ACTION_PREV))
+            .addAction(action(playPauseIcon, getString(R.string.xmbu_music_notif_play_pause), ACTION_PLAY_PAUSE))
+            .addAction(action(android.R.drawable.ic_media_next, getString(R.string.xmbu_music_notif_next), ACTION_NEXT))
+            .addAction(action(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.xmbu_music_notif_stop), ACTION_STOP))
             .setStyle(
                 Notification.MediaStyle()
                     .setMediaSession(mediaSession.sessionToken)
@@ -161,8 +162,8 @@ class MusicPlaybackService : Service() {
     }
 
     private fun createChannel() {
-        val channel = NotificationChannel(CHANNEL_ID, "Music Playback", NotificationManager.IMPORTANCE_LOW)
-            .apply { setShowBadge(false); description = "Now-playing controls" }
+        val channel = NotificationChannel(CHANNEL_ID, getString(R.string.xmbu_music_channel_name), NotificationManager.IMPORTANCE_LOW)
+            .apply { setShowBadge(false); description = getString(R.string.xmbu_music_channel_description) }
         (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
             .createNotificationChannel(channel)
     }

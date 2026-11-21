@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
+import com.playfieldportal.core.ui.components.PfpBusyRing
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -34,12 +34,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
+import com.playfieldportal.feature.xmb.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -143,12 +145,12 @@ fun ManualViewerOverlay(
     ) {
         when {
             failed.value -> Text(
-                "This manual could not be displayed.",
+                stringResource(R.string.shiba_manual_failed),
                 color = Color(0xFFFF8A8A),
                 fontSize = 14.sp,
                 modifier = Modifier.align(Alignment.Center),
             )
-            pageBitmap == null -> CircularProgressIndicator(
+            pageBitmap == null -> PfpBusyRing(
                 Modifier.align(Alignment.Center),
                 color = menuCursorEdge(),
             )
@@ -160,7 +162,7 @@ fun ManualViewerOverlay(
             ) {
                 Image(
                     bitmap = pageBitmap!!.asImageBitmap(),
-                    contentDescription = "$title — manual page ${page + 1}",
+                    contentDescription = stringResource(R.string.shiba_manual_page_description, title, page + 1),
                     contentScale = ContentScale.FillWidth,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -193,7 +195,7 @@ fun ManualViewerOverlay(
         }
 
         Text(
-            "◀ ▶  Page   •   ▲ ▼  Scroll   •   B  Close",
+            stringResource(R.string.shiba_manual_footer_hint),
             color = themedSubText(Color(0x66EEEEEE)),
             fontSize = 10.sp,
             modifier = Modifier

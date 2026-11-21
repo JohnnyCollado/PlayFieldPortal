@@ -1,6 +1,8 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.appbar.AppMenuIds
+import com.playfieldportal.feature.xmb.R
 
 /**
  * A question the XMB asks before an action from a context menu goes ahead. It is drawn by the
@@ -8,43 +10,43 @@ import com.playfieldportal.feature.appbar.AppMenuIds
  */
 sealed interface XmbConfirm {
     /** Take a game out of the library (its file stays). */
-    data class RemoveGame(val gameId: Long, val title: String) : XmbConfirm
+    data class RemoveGame(val gameId: Long, val title: UiText) : XmbConfirm
 
     /** Take a game whose file is already gone out of the library, with nothing left to restore. */
-    data class RemoveMissing(val gameId: Long, val title: String) : XmbConfirm
+    data class RemoveMissing(val gameId: Long, val title: UiText) : XmbConfirm
 
     /** Delete a custom card; its games stay in the library. */
-    data class DeleteCard(val collectionId: Long, val title: String) : XmbConfirm
+    data class DeleteCard(val collectionId: Long, val title: UiText) : XmbConfirm
 
     /** Take a game out of a category that also holds it through custom cards ([cardNames]). */
     data class RemoveFromCategory(
         val gameId: Long,
         val categoryId: String,
         val categoryName: String,
-        val title: String,
+        val title: UiText,
         val cardNames: List<String>,
     ) : XmbConfirm
 
     /** Take an app-style row (a standard app, or one unmarked as a game) out of the library. */
-    data class RemoveAppRow(val gameId: Long, val title: String) : XmbConfirm
+    data class RemoveAppRow(val gameId: Long, val title: UiText) : XmbConfirm
 
     /** Take an Android-library game out of the library (the app stays installed). */
-    data class RemoveAndroidGame(val gameId: Long, val title: String) : XmbConfirm
+    data class RemoveAndroidGame(val gameId: Long, val title: UiText) : XmbConfirm
 
     /** Remove a console's Memory Card; its games leave the library with it, its ROM files stay. */
-    data class RemoveCard(val platformId: String, val title: String) : XmbConfirm
+    data class RemoveCard(val platformId: String, val title: UiText) : XmbConfirm
 
     /** Take a track, video or photo out of its library (the file stays). */
-    data class RemoveTrack(val trackId: String, val title: String) : XmbConfirm
-    data class RemoveVideo(val videoId: String, val title: String) : XmbConfirm
-    data class RemovePhoto(val photoId: String, val title: String) : XmbConfirm
+    data class RemoveTrack(val trackId: String, val title: UiText) : XmbConfirm
+    data class RemoveVideo(val videoId: String, val title: UiText) : XmbConfirm
+    data class RemovePhoto(val photoId: String, val title: UiText) : XmbConfirm
 
     /** Delete a playlist; what it held stays in the library. */
-    data class DeleteMusicPlaylist(val playlistId: Long, val title: String) : XmbConfirm
-    data class DeleteVideoPlaylist(val playlistId: Long, val title: String) : XmbConfirm
+    data class DeleteMusicPlaylist(val playlistId: Long, val title: UiText) : XmbConfirm
+    data class DeleteVideoPlaylist(val playlistId: Long, val title: UiText) : XmbConfirm
 
     /** Uninstall an app from the device; Android asks once more on its own dialog. */
-    data class Uninstall(val packageName: String, val title: String) : XmbConfirm
+    data class Uninstall(val packageName: String, val title: UiText) : XmbConfirm
 
     /** Empty the notification history. */
     data object ClearNotifications : XmbConfirm
@@ -52,9 +54,9 @@ sealed interface XmbConfirm {
 
 /** What the confirm modal shows for one [XmbConfirm]. */
 data class XmbConfirmCopy(
-    val title: String,
-    val message: String,
-    val confirmLabel: String,
+    val title: UiText,
+    val message: UiText,
+    val confirmLabel: UiText,
     /** Drawn red. Every kind opens on Cancel regardless; Remove from Category is the one not red. */
     val destructive: Boolean,
 )
@@ -62,87 +64,91 @@ data class XmbConfirmCopy(
 /** The words for [confirm]: what is lost, and what is explicitly safe. */
 fun xmbConfirmCopy(confirm: XmbConfirm): XmbConfirmCopy = when (confirm) {
     is XmbConfirm.RemoveGame -> XmbConfirmCopy(
-        title = "Remove \"${confirm.title}\" from Library?",
-        message = "The file is not deleted. A later scan adds it back if it is still in a scanned folder.",
-        confirmLabel = "Remove",
+        title = UiText.res(R.string.xmbm_confirm_remove_library_title, confirm.title),
+        message = UiText.res(R.string.xmbm_confirm_remove_game_msg),
+        confirmLabel = UiText.res(R.string.xmbm_confirm_remove),
         destructive = true,
     )
     // The file is already gone, so there is no "put it back" once the entry goes too.
     is XmbConfirm.RemoveMissing -> XmbConfirmCopy(
-        title = "Permanently remove \"${confirm.title}\"?",
-        message = "Its file is already gone, so this entry cannot be restored.",
-        confirmLabel = "Remove permanently",
+        title = UiText.res(R.string.xmbm_confirm_remove_missing_title, confirm.title),
+        message = UiText.res(R.string.xmbm_confirm_remove_missing_msg),
+        confirmLabel = UiText.res(R.string.xmbm_confirm_remove_permanently),
         destructive = true,
     )
     // A console card's Remove takes its games with it; this must never read as that.
     is XmbConfirm.DeleteCard -> XmbConfirmCopy(
-        title = "Delete \"${confirm.title}\"?",
-        message = "Its games stay in your library.",
-        confirmLabel = "Delete Custom Card",
+        title = UiText.res(R.string.xmbm_confirm_delete_card_title, confirm.title),
+        message = UiText.res(R.string.xmbm_confirm_delete_card_msg),
+        confirmLabel = UiText.res(R.string.xmbm_confirm_delete_card_button),
         destructive = true,
     )
     // Leaving a category drops the game from its custom cards too, which Hidden Items cannot
     // restore. Not red: the removal itself is reversible, the prompt is about the cards.
     is XmbConfirm.RemoveFromCategory -> XmbConfirmCopy(
-        title = "Remove from ${confirm.categoryName}?",
-        message = "\"${confirm.title}\" also leaves: ${confirm.cardNames.joinToString(", ")}.",
-        confirmLabel = "Remove",
+        title = UiText.res(R.string.xmbm_confirm_remove_category_title, confirm.categoryName),
+        message = UiText.res(
+            R.string.xmbm_confirm_remove_category_msg,
+            confirm.title,
+            UiText.Joined(confirm.cardNames.map(UiText::raw), ", "),
+        ),
+        confirmLabel = UiText.res(R.string.xmbm_confirm_remove),
         destructive = false,
     )
     is XmbConfirm.RemoveAndroidGame -> XmbConfirmCopy(
-        title = "Remove \"${confirm.title}\" from Library?",
-        message = "The app stays installed. Find Games can add it back.",
-        confirmLabel = "Remove",
+        title = UiText.res(R.string.xmbm_confirm_remove_library_title, confirm.title),
+        message = UiText.res(R.string.xmbm_confirm_remove_android_msg),
+        confirmLabel = UiText.res(R.string.xmbm_confirm_remove),
         destructive = true,
     )
     // The Android card holds installed apps — no ROM files, no scan (survey U27).
     is XmbConfirm.RemoveCard -> XmbConfirmCopy(
-        title = "Remove \"${confirm.title}\" card?",
+        title = UiText.res(R.string.xmbm_confirm_remove_card_title, confirm.title),
         message = if (confirm.platformId == XMBViewModel.ANDROID_PLATFORM_ID) {
-            "Its games leave your library too. The apps stay installed, and Find Games can add them back."
+            UiText.res(R.string.xmbm_confirm_remove_card_android_msg)
         } else {
-            "Its games leave your library too. ROM files stay on disk, and a scan can bring them back."
+            UiText.res(R.string.xmbm_confirm_remove_card_msg)
         },
-        confirmLabel = "Remove Card",
+        confirmLabel = UiText.res(R.string.xmbm_confirm_remove_card_button),
         destructive = true,
     )
     // An app row has no file and no scan to bring it back (survey U28).
     is XmbConfirm.RemoveAppRow -> XmbConfirmCopy(
-        title = "Remove \"${confirm.title}\" from Library?",
-        message = "The app stays installed and stays in its app categories.",
-        confirmLabel = "Remove",
+        title = UiText.res(R.string.xmbm_confirm_remove_library_title, confirm.title),
+        message = UiText.res(R.string.xmbm_confirm_remove_app_row_msg),
+        confirmLabel = UiText.res(R.string.xmbm_confirm_remove),
         destructive = true,
     )
-    is XmbConfirm.RemoveTrack -> removeFromLibraryCopy(confirm.title, "a music folder")
-    is XmbConfirm.RemoveVideo -> removeFromLibraryCopy(confirm.title, "a video library")
-    is XmbConfirm.RemovePhoto -> removeFromLibraryCopy(confirm.title, "an album")
-    is XmbConfirm.DeleteMusicPlaylist -> deletePlaylistCopy(confirm.title, "tracks")
-    is XmbConfirm.DeleteVideoPlaylist -> deletePlaylistCopy(confirm.title, "videos")
+    is XmbConfirm.RemoveTrack -> removeFromLibraryCopy(confirm.title, R.string.xmbm_confirm_remove_track_msg)
+    is XmbConfirm.RemoveVideo -> removeFromLibraryCopy(confirm.title, R.string.xmbm_confirm_remove_video_msg)
+    is XmbConfirm.RemovePhoto -> removeFromLibraryCopy(confirm.title, R.string.xmbm_confirm_remove_photo_msg)
+    is XmbConfirm.DeleteMusicPlaylist -> deletePlaylistCopy(confirm.title, R.string.xmbm_confirm_delete_music_playlist_msg)
+    is XmbConfirm.DeleteVideoPlaylist -> deletePlaylistCopy(confirm.title, R.string.xmbm_confirm_delete_video_playlist_msg)
     is XmbConfirm.Uninstall -> XmbConfirmCopy(
-        title = "Uninstall \"${confirm.title}\"?",
-        message = "The app and its data are removed from this device.",
-        confirmLabel = "Uninstall",
+        title = UiText.res(R.string.xmbm_confirm_uninstall_title, confirm.title),
+        message = UiText.res(R.string.xmbm_confirm_uninstall_msg),
+        confirmLabel = UiText.res(R.string.xmbm_confirm_uninstall_button),
         destructive = true,
     )
     XmbConfirm.ClearNotifications -> XmbConfirmCopy(
-        title = "Clear all notifications?",
-        message = "Running tasks are not affected.",
-        confirmLabel = "Clear All",
+        title = UiText.res(R.string.xmbm_confirm_clear_notifs_title),
+        message = UiText.res(R.string.xmbm_confirm_clear_notifs_msg),
+        confirmLabel = UiText.res(R.string.xmbm_confirm_clear_all_button),
         destructive = true,
     )
 }
 
-private fun removeFromLibraryCopy(title: String, scannedPlace: String) = XmbConfirmCopy(
-    title = "Remove \"$title\" from Library?",
-    message = "The file is not deleted. A later scan adds it back if it is still in $scannedPlace.",
-    confirmLabel = "Remove",
+private fun removeFromLibraryCopy(title: UiText, message: Int) = XmbConfirmCopy(
+    title = UiText.res(R.string.xmbm_confirm_remove_library_title, title),
+    message = UiText.res(message),
+    confirmLabel = UiText.res(R.string.xmbm_confirm_remove),
     destructive = true,
 )
 
-private fun deletePlaylistCopy(title: String, items: String) = XmbConfirmCopy(
-    title = "Delete \"$title\"?",
-    message = "Its $items stay in your library.",
-    confirmLabel = "Delete Playlist",
+private fun deletePlaylistCopy(title: UiText, message: Int) = XmbConfirmCopy(
+    title = UiText.res(R.string.xmbm_confirm_delete_card_title, title),
+    message = UiText.res(message),
+    confirmLabel = UiText.res(R.string.xmbm_confirm_delete_playlist_button),
     destructive = true,
 )
 

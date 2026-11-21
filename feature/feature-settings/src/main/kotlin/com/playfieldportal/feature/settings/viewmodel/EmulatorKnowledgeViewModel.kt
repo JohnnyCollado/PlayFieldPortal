@@ -15,6 +15,7 @@ import com.playfieldportal.core.domain.model.emulatorkb.EmulatorKbDecoder
 import com.playfieldportal.core.domain.model.emulatorkb.EmulatorKbExport
 import com.playfieldportal.core.domain.model.emulatorkb.EmulatorKbImportPlan
 import com.playfieldportal.core.domain.model.emulatorkb.EmulatorKbValidator
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.launcher.kb.EmulatorKbUpdater
 import com.playfieldportal.feature.launcher.kb.EmulatorKnowledgeRefresher
@@ -24,6 +25,9 @@ import com.playfieldportal.feature.launcher.kb.KbUpdateStatus
 import com.playfieldportal.feature.launcher.kb.KbUserFile
 import com.playfieldportal.feature.launcher.kb.KnownPlatformIds
 import com.playfieldportal.feature.launcher.kb.SignerProbe
+import com.playfieldportal.feature.settings.R
+import com.playfieldportal.core.ui.text.PfpDateFormat
+import com.playfieldportal.core.ui.text.PfpDateStyle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -37,8 +41,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.time.Instant
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 import java.util.TimeZone
 import javax.inject.Inject
 
@@ -48,15 +50,15 @@ import javax.inject.Inject
  * not configured"); [errorText] is the last failed check's message, shown under it.
  */
 data class EmulatorKnowledgeUiState(
-    val statusText: String = "Built-in only",
-    val errorText: String? = null,
+    val statusText: UiText = UiText.res(R.string.lib_kb_status_builtin),
+    val errorText: UiText? = null,
     val autoUpdate: Boolean = true,
     /** False while this build has no release key pinned: checking and automatic updates cannot work. */
     val updatesConfigured: Boolean = true,
     /** A manual check is running. */
     val isChecking: Boolean = false,
     /** The message of the manual check that just finished, null while checking or before the first one. */
-    val checkResult: String? = null,
+    val checkResult: UiText? = null,
     val userFiles: List<KbUserFile> = emptyList(),
     /** Consoles that gained file types since the app started; a rescan is suggested for these. */
     val gainedFileTypes: List<PlatformGain> = emptyList(),
@@ -66,7 +68,7 @@ data class EmulatorKnowledgeUiState(
     /** A picked file is being read or planned; the review is not open yet. */
     val isImporting: Boolean = false,
     /** Why the last import attempt ended without a review or a stored file; shown in a Notice modal. */
-    val importNotice: String? = null,
+    val importNotice: UiText? = null,
     /** The export picker (AD-12), open until exported or cancelled; null when no export is under way. */
     val export: KbExportPicker? = null,
     /** The outcome of the last export attempt, or why there was nothing to export; shown in a Notice modal. */
@@ -82,15 +84,19 @@ data class KbImportReview(val displayName: String, val plan: EmulatorKbImportPla
     val confirmEnabled: Boolean get() = plan.selectedCount + plan.selectedPlatformCount > 0
 
     /** "Import 2 emulators", "Import 1 emulator and 1 console update", "Update 1 console". */
-    val confirmLabel: String
+    val confirmLabel: UiText
         get() {
             val emulators = plan.selectedCount
             val consoles = plan.selectedPlatformCount
-            val emulatorText = "$emulators ${if (emulators == 1) "emulator" else "emulators"}"
+            val emulatorText = UiText.plural(R.plurals.lib_kb_emulators_count, emulators)
             return when {
-                consoles == 0 -> "Import $emulatorText"
-                emulators == 0 -> "Update $consoles ${if (consoles == 1) "console" else "consoles"}"
-                else -> "Import $emulatorText and $consoles console ${if (consoles == 1) "update" else "updates"}"
+                consoles == 0 -> UiText.res(R.string.lib_kb_import_label, emulatorText)
+                emulators == 0 -> UiText.res(R.string.lib_kb_update_label, UiText.plural(R.plurals.lib_kb_consoles_count, consoles))
+                else -> UiText.res(
+                    R.string.lib_kb_import_and_update_label,
+                    emulatorText,
+                    UiText.plural(R.plurals.lib_kb_console_updates_count, consoles),
+                )
             }
         }
 }
@@ -106,13 +112,13 @@ data class KbExportPicker(
     val exportEnabled: Boolean get() = selectedCount > 0
 
     /** "Export 2 emulators". */
-    val confirmLabel: String get() = "Export $selectedCount ${if (selectedCount == 1) "emulator" else "emulators"}"
+    val confirmLabel: UiText get() = UiText.res(R.string.lib_kb_export_label, UiText.plural(R.plurals.lib_kb_emulators_count, selectedCount))
 
     /** The ticked profiles, in picker order. */
     val selected: List<EmulatorProfile> get() = entries.filter { it.id in selectedIds }
 }
 
-data class KbExportNotice(val title: String, val message: String)
+data class KbExportNotice(val title: UiText, val message: UiText)
 
 /** What reading a picked document produced. [Content.displayName] is the provider's name, uncapped. */
 internal sealed interface KbPick {
@@ -190,6 +196,8 @@ class EmulatorKnowledgeViewModel internal constructor(
     private val selfPackage: String,
     private val clock: () -> Long,
     private val timeZone: TimeZone,
+    /** Formats a check time for display; production follows the device locale and clock setting, tests pin it. */
+    private val formatStamp: (PfpDateStyle, Long, TimeZone) -> String,
     /** Decoding and validating the picked file is CPU work; tests substitute their own. */
     private val planDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
@@ -204,7 +212,9 @@ class EmulatorKnowledgeViewModel internal constructor(
     ) : this(
         updater, store, refresher, ContentResolverKbFileReader(context), ContentResolverKbFileWriter(context), signerProbe, profiles,
         KnownPlatformIds.ALL, context.packageName,
-        System::currentTimeMillis, TimeZone.getDefault(), Dispatchers.Default,
+        System::currentTimeMillis, TimeZone.getDefault(),
+        { style, ms, zone -> PfpDateFormat.format(context, style, ms, zone) },
+        Dispatchers.Default,
     )
 
     private val _uiState = MutableStateFlow(EmulatorKnowledgeUiState(updatesConfigured = updater.isConfigured))
@@ -233,7 +243,7 @@ class EmulatorKnowledgeViewModel internal constructor(
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "The knowledge update check failed")
-                "The check could not be completed."
+                UiText.res(R.string.lib_kb_check_failed)
             } finally {
                 _uiState.update { it.copy(isChecking = false) }
             }
@@ -254,7 +264,7 @@ class EmulatorKnowledgeViewModel internal constructor(
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to remove the knowledge file")
-                failed("Couldn't remove the file", "The file could not be removed.")
+                failed(UiText.res(R.string.lib_kb_remove_failed_title), UiText.res(R.string.lib_kb_remove_failed_message))
             }
         }
     }
@@ -270,15 +280,15 @@ class EmulatorKnowledgeViewModel internal constructor(
         viewModelScope.launch {
             try {
                 when (val picked = fileReader.read(uri)) {
-                    KbPick.TooLarge -> notice("That file is too large to be an emulator knowledge file.")
-                    KbPick.Unreadable -> notice("That file could not be read.")
+                    KbPick.TooLarge -> notice(UiText.res(R.string.lib_kb_import_too_large))
+                    KbPick.Unreadable -> notice(UiText.res(R.string.lib_kb_import_unreadable))
                     is KbPick.Content -> plan(picked)
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to review the picked knowledge file")
-                notice("That file could not be read.")
+                notice(UiText.res(R.string.lib_kb_import_unreadable))
             } finally {
                 _uiState.update { it.copy(isImporting = false) }
             }
@@ -289,7 +299,7 @@ class EmulatorKnowledgeViewModel internal constructor(
         // Decoding and validating up to 1 MiB, then the plan, stay off Main.
         val planned = withContext(planDispatcher) {
             val document = when (val decoded = EmulatorKbDecoder.decode(String(picked.bytes, Charsets.UTF_8))) {
-                is EmulatorKbDecode.Rejected -> return@withContext Planned.Notice("That file ${decoded.reason}.")
+                is EmulatorKbDecode.Rejected -> return@withContext Planned.Notice(UiText.res(R.string.lib_kb_import_rejected, decoded.reason))
                 is EmulatorKbDecode.Decoded -> decoded.document
             }
             val validated = EmulatorKbValidator.validate(document, knownPlatformIds, selfPackage)
@@ -297,7 +307,7 @@ class EmulatorKnowledgeViewModel internal constructor(
                 .filter { it.userModified }
                 .mapNotNullTo(mutableSetOf()) { it.knowledgeId }
             val plan = EmulatorKbImportPlan.build(store.current(), validated, userEdited, signerProbe::probe)
-            if (plan.items.isEmpty()) return@withContext Planned.Notice("That file has nothing to import on this device.")
+            if (plan.items.isEmpty()) return@withContext Planned.Notice(UiText.res(R.string.lib_kb_import_nothing))
             Planned.Review(KbImportReview(displayName(picked.displayName), plan))
         }
         when (planned) {
@@ -307,7 +317,7 @@ class EmulatorKnowledgeViewModel internal constructor(
     }
 
     private sealed interface Planned {
-        class Notice(val message: String) : Planned
+        class Notice(val message: UiText) : Planned
         class Review(val review: KbImportReview) : Planned
     }
 
@@ -318,9 +328,9 @@ class EmulatorKnowledgeViewModel internal constructor(
         .take(MAX_NAME_CHARS)
         .ifEmpty { FALLBACK_NAME }
 
-    private fun notice(message: String) = _uiState.update { it.copy(review = null, importNotice = message) }
+    private fun notice(message: UiText) = _uiState.update { it.copy(review = null, importNotice = message) }
 
-    private fun failed(title: String, message: String) = _uiState.update { it.copy(exportNotice = KbExportNotice(title, message)) }
+    private fun failed(title: UiText, message: UiText) = _uiState.update { it.copy(exportNotice = KbExportNotice(title, message)) }
 
     fun toggleReviewItem(key: String) =
         _uiState.update { state -> state.review?.let { state.copy(review = it.copy(plan = it.plan.toggle(key))) } ?: state }
@@ -340,7 +350,7 @@ class EmulatorKnowledgeViewModel internal constructor(
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to store the imported knowledge file")
-                notice("The file could not be saved on this device.")
+                notice(UiText.res(R.string.lib_kb_import_save_failed))
                 return@launch
             }
             try {
@@ -349,7 +359,7 @@ class EmulatorKnowledgeViewModel internal constructor(
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh after importing a knowledge file")
-                notice("The file was saved, but refreshing emulator detection failed.")
+                notice(UiText.res(R.string.lib_kb_import_refresh_failed))
             }
         }
     }
@@ -365,11 +375,17 @@ class EmulatorKnowledgeViewModel internal constructor(
             val shareable = candidates.filter { it.id !in blocked }
             if (candidates.isEmpty()) {
                 _uiState.update {
-                    it.copy(exportNotice = KbExportNotice("Nothing to export", "You have no custom or edited emulators to share yet."))
+                    it.copy(
+                        exportNotice = KbExportNotice(
+                            UiText.res(R.string.lib_kb_export_nothing_title),
+                            UiText.res(R.string.lib_kb_export_none_message),
+                        ),
+                    )
                 }
             } else if (shareable.isEmpty()) {
-                val why = cantShare.firstOrNull()?.reason?.let { ": $it" }.orEmpty()
-                _uiState.update { it.copy(exportNotice = KbExportNotice("Nothing to export", "None of your emulators can be shared$why")) }
+                val reason = cantShare.firstOrNull()?.reason
+                val message = if (reason == null) UiText.res(R.string.lib_kb_export_none_shareable) else UiText.res(R.string.lib_kb_export_none_shareable_why, reason)
+                _uiState.update { it.copy(exportNotice = KbExportNotice(UiText.res(R.string.lib_kb_export_nothing_title), message)) }
             } else {
                 // Custom emulators first, then the edited official ones, as the picker groups them.
                 val ordered = shareable.filter { it.isCustom } + shareable.filterNot { it.isCustom }
@@ -404,10 +420,12 @@ class EmulatorKnowledgeViewModel internal constructor(
             val text = EmulatorKbExport.encode(result.document)
             val ok = result.exportedCount > 0 && fileWriter.write(uri, text.toByteArray(Charsets.UTF_8))
             val notice = if (ok) {
-                val n = result.exportedCount
-                KbExportNotice("Exported", "Exported $n ${if (n == 1) "emulator" else "emulators"}")
+                KbExportNotice(
+                    UiText.res(R.string.lib_kb_exported_title),
+                    UiText.plural(R.plurals.lib_kb_exported_message, result.exportedCount),
+                )
             } else {
-                KbExportNotice("Couldn't export", "The file could not be saved.")
+                KbExportNotice(UiText.res(R.string.lib_kb_export_failed_title), UiText.res(R.string.lib_kb_export_failed_message))
             }
             _uiState.update { it.copy(export = null, exportNotice = notice) }
         }
@@ -428,7 +446,7 @@ class EmulatorKnowledgeViewModel internal constructor(
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to reset the knowledge base")
-                failed("Couldn't reset", "The emulator knowledge could not be reset.")
+                failed(UiText.res(R.string.lib_kb_reset_failed_title), UiText.res(R.string.lib_kb_reset_failed_message))
             }
         }
     }
@@ -438,34 +456,34 @@ class EmulatorKnowledgeViewModel internal constructor(
         val failure = result?.takeIf { it !in NOT_FAILURES }
         val text = when {
             officialApplied -> officialLine(status, lastCheckAt)
-            result == KbUpdateResult.NotConfigured -> "Built-in · updates not configured"
-            else -> "Built-in only"
+            result == KbUpdateResult.NotConfigured -> UiText.res(R.string.lib_kb_status_not_configured)
+            else -> UiText.res(R.string.lib_kb_status_builtin)
         }
         return copy(statusText = text, errorText = failure?.message)
     }
 
-    private fun officialLine(status: KbUpdateStatus?, lastCheckAt: Long): String {
+    private fun officialLine(status: KbUpdateStatus?, lastCheckAt: Long): UiText {
         val version = status?.label?.ifBlank { null } ?: status?.version?.takeIf { it > 0 }?.toString()
         val parts = buildList {
-            add(if (version == null) "Official" else "Official v$version")
-            add("verified")
+            add(if (version == null) UiText.res(R.string.lib_kb_status_official) else UiText.res(R.string.lib_kb_status_official_version, version))
+            add(UiText.res(R.string.lib_kb_status_verified))
             if (status != null && status.emulatorCount > 0) {
-                add("${status.emulatorCount} ${if (status.emulatorCount == 1) "emulator" else "emulators"}")
+                add(UiText.plural(R.plurals.lib_kb_emulators_count, status.emulatorCount))
             }
-            if (lastCheckAt > 0) add("checked ${checkedLabel(lastCheckAt)}")
+            if (lastCheckAt > 0) add(checkedLabel(lastCheckAt))
         }
-        return parts.joinToString(" · ")
+        return UiText.Joined(parts, " · ")
     }
 
-    private fun checkedLabel(epochMillis: Long): String {
+    private fun checkedLabel(epochMillis: Long): UiText {
         val zone = timeZone.toZoneId()
         val checked = Instant.ofEpochMilli(epochMillis).atZone(zone)
         val today = Instant.ofEpochMilli(clock()).atZone(zone).toLocalDate()
-        val time = checked.format(TIME)
+        val time = formatStamp(PfpDateStyle.Time, epochMillis, timeZone)
         return when (checked.toLocalDate()) {
-            today -> "today $time"
-            today.minusDays(1) -> "yesterday $time"
-            else -> "${checked.format(DATE)} $time"
+            today -> UiText.res(R.string.lib_kb_checked_today, time)
+            today.minusDays(1) -> UiText.res(R.string.lib_kb_checked_yesterday, time)
+            else -> UiText.res(R.string.lib_kb_checked_on, formatStamp(PfpDateStyle.ShortDate, epochMillis, timeZone), time)
         }
     }
 
@@ -474,7 +492,5 @@ class EmulatorKnowledgeViewModel internal constructor(
         const val FALLBACK_NAME = "Knowledge file"
         val HIDDEN_CHAR_TYPES = setOf(Character.FORMAT, Character.LINE_SEPARATOR, Character.PARAGRAPH_SEPARATOR)
         val NOT_FAILURES = setOf(KbUpdateResult.Installed, KbUpdateResult.NotConfigured, KbUpdateResult.Skipped)
-        val TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH)
-        val DATE: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH)
     }
 }

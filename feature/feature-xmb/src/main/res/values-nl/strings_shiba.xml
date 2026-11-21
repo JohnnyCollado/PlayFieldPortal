@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ===== Shared Shiba page text ===== -->
+
+    <string name="shiba_prompt_select">Selecteren</string>
+    <string name="shiba_prompt_close">Sluiten</string>
+    <string name="shiba_prompt_done">Klaar</string>
+    <string name="shiba_prompt_back">Terug</string>
+    <string name="shiba_prompt_options">Opties</string>
+    <string name="shiba_prompt_search">Zoeken</string>
+    <string name="shiba_prompt_type">Typen</string>
+    <string name="shiba_prompt_change_view">Weergave wijzigen</string>
+    <string name="shiba_prompt_switch_source">Bron wisselen</string>
+    <string name="shiba_prompt_view_game">Spel bekijken</string>
+    <string name="shiba_prompt_view_achievements">Prestaties bekijken</string>
+    <string name="shiba_prompt_attempt_match">Koppeling proberen</string>
+    <string name="shiba_prompt_search_online">Online zoeken</string>
+    <string name="shiba_prompt_auto_match">Automatisch koppelen</string>
+    <string name="shiba_prompt_pick_game_folder">Spelmap kiezen</string>
+    <string name="shiba_prompt_reveal">Onthullen</string>
+    <string name="shiba_prompt_hide">Verbergen</string>
+    <string name="shiba_prompt_navigate">Navigeren</string>
+
+    <string name="shiba_action_yes">Ja</string>
+    <string name="shiba_action_no">Nee</string>
+    <string name="shiba_action_cancel">Annuleren</string>
+    <string name="shiba_action_close">Sluiten</string>
+    <string name="shiba_action_link">Koppelen</string>
+
+    <string name="shiba_options_title">Opties</string>
+    <string name="shiba_options_sort">Sorteren</string>
+    <string name="shiba_options_provider">Provider</string>
+    <string name="shiba_options_update_installed">Geïnstalleerde prestaties bijwerken</string>
+    <string name="shiba_options_updating">Bijwerken…</string>
+
+    <string name="shiba_sort_newest">Nieuwste</string>
+    <string name="shiba_sort_rarest">Zeldzaamste</string>
+    <string name="shiba_sort_tier">Niveau</string>
+    <string name="shiba_sort_earned">Verdiend</string>
+    <string name="shiba_filter_all">Alle</string>
+
+    <!-- Coin tier names. -->
+    <string name="shiba_tier_bronze">Brons</string>
+    <string name="shiba_tier_silver">Zilver</string>
+    <string name="shiba_tier_gold">Goud</string>
+    <string name="shiba_tier_platinum">Platina</string>
+
+    <string name="shiba_stat_shiba_level">SHIBA-LEVEL</string>
+    <string name="shiba_stat_next_level">VOLGEND LEVEL</string>
+    <string name="shiba_stat_total_coins">TOTAAL MUNTEN</string>
+    <string name="shiba_stat_total">TOTAAL</string>
+
+    <string name="shiba_platform_not_installed">%1$s · Niet geïnstalleerd</string>
+
+    <!-- Relative times. -->
+    <string name="shiba_time_just_now">Zojuist</string>
+    <string name="shiba_time_minutes_ago">%1$d min geleden</string>
+    <string name="shiba_time_hours_ago">%1$d uur geleden</string>
+    <string name="shiba_time_yesterday">Gisteren</string>
+    <plurals name="shiba_time_days_ago">
+        <item quantity="one">%1$d dag geleden</item>
+        <item quantity="other">%1$d dagen geleden</item>
+    </plurals>
+
+    <string name="shiba_search_games_placeholder">Spellen zoeken…</string>
+
+    <!-- ===== Player Status ===== -->
+
+    <string name="shiba_player_status_title">Spelersstatus</string>
+    <string name="shiba_player_status_no_rarest">Nog geen zeldzaamste prestatie.</string>
+    <string name="shiba_player_status_rarest_unlocked">ZELDZAAMSTE ONTGRENDELD</string>
+    <string name="shiba_player_status_rarity_caption">van de spelers heeft dit</string>
+    <string name="shiba_player_status_game_and_time">%1$s · %2$s</string>
+    <plurals name="shiba_status_checking_games">
+        <item quantity="one">%1$d van %2$d spel controleren…</item>
+        <item quantity="other">%1$d van %2$d spellen controleren…</item>
+    </plurals>
+    <string name="shiba_status_updating_achievements">Geïnstalleerde prestaties bijwerken…</string>
+
+    <!-- ===== Achievements library ===== -->
+
+    <string name="shiba_library_view_tracked">Gevolgde spellen</string>
+    <string name="shiba_library_view_untracked">Niet-gevolgde spellen</string>
+    <string name="shiba_library_breadcrumb">Prestaties / %1$s</string>
+    <plurals name="shiba_library_game_count">
+        <item quantity="one">%1$d spel</item>
+        <item quantity="other">%1$d spellen</item>
+    </plurals>
+    <string name="shiba_library_empty_no_match">Geen spellen gevonden voor \"%1$s\".</string>
+    <string name="shiba_library_empty_tracked">Nog geen gevolgde spellen.</string>
+    <string name="shiba_library_empty_untracked">Elk geschikt spel wordt gevolgd.</string>
+    <string name="shiba_library_sort_title_asc">Titel A–Z</string>
+    <string name="shiba_library_sort_title_desc">Titel Z–A</string>
+    <string name="shiba_library_sort_progress_asc">Voortgang laagste eerst</string>
+    <string name="shiba_library_sort_progress_desc">Voortgang hoogste eerst</string>
+    <string name="shiba_library_sort_platform_asc">Platform A–Z</string>
+    <string name="shiba_library_sort_platform_desc">Platform Z–A</string>
+    <string name="shiba_library_search_online">Online zoeken</string>
+    <string name="shiba_library_search_online_subtitle">Zoek een spel op dat niet op dit apparaat staat</string>
+    <string name="shiba_library_awaiting_sync">Wacht op synchronisatie</string>
+
+    <!-- ===== A game's Shiba Coins page ===== -->
+
+    <string name="shiba_coins_search_placeholder">Munten zoeken…</string>
+    <string name="shiba_coins_stat_completion">VOLTOOIING</string>
+    <string name="shiba_coins_stat_earned">VERDIEND</string>
+    <string name="shiba_coins_tab_all">Alle %1$d</string>
+    <string name="shiba_coins_tab_earned">Verdiend %1$d</string>
+    <string name="shiba_coins_tab_locked">Vergrendeld %1$d</string>
+    <string name="shiba_coins_synced">%1$s gesynchroniseerd</string>
+    <string name="shiba_coins_not_linked">Niet gekoppeld</string>
+    <string name="shiba_coins_never_synced">Nooit gesynchroniseerd</string>
+    <string name="shiba_coins_owned_on_steam">In bezit op Steam</string>
+    <string name="shiba_coins_tracked_locally">Lokaal gevolgd</string>
+
+    <string name="shiba_coins_empty_no_match">Geen munten gevonden voor \"%1$s\".</string>
+    <string name="shiba_coins_empty_none_earned">Nog geen munten verdiend.</string>
+    <string name="shiba_coins_empty_all_earned">Alle munten zijn verdiend.</string>
+    <string name="shiba_coins_empty_default">Geen munten om te tonen.</string>
+
+    <string name="shiba_coins_options_update">Prestaties bijwerken</string>
+    <string name="shiba_coins_options_change_match">Koppeling wijzigen</string>
+    <string name="shiba_coins_options_unlink">Spel ontkoppelen</string>
+
+    <string name="shiba_coins_unlink_title">Spel ontkoppelen?</string>
+    <string name="shiba_coins_unlink_message">%1$s is niet meer gekoppeld, dus de munten worden niet meer getoond. De al opgeslagen munten blijven bewaard en komen terug als je het opnieuw koppelt.</string>
+    <string name="shiba_coins_unlink_confirm">Ontkoppelen</string>
+
+    <!-- Coin rows. -->
+    <string name="shiba_coin_hidden_title">Verborgen munt</string>
+    <string name="shiba_coin_hidden_hint">Blijf spelen — of druk op Bevestigen om te onthullen</string>
+    <string name="shiba_coin_description_secret">Steam houdt de beschrijving hiervan geheim</string>
+    <string name="shiba_coin_metric_of_players">van de spelers</string>
+    <string name="shiba_coin_status_earned">Verdiend</string>
+    <string name="shiba_coin_status_locked">Vergrendeld</string>
+    <string name="shiba_platinum_crown_title">Platina kroon</string>
+    <string name="shiba_platinum_crown_description">Verdien alle andere munten in het spel</string>
+    <string name="shiba_platinum_crown_metric">munten verdiend</string>
+
+    <!-- Auto-Match panel -->
+    <string name="shiba_link_not_linked_yet_game">Dit spel is nog niet gekoppeld</string>
+    <string name="shiba_link_not_linked_yet">Nog niet gekoppeld</string>
+    <string name="shiba_link_steam_body">Automatisch koppelen vraagt of dit een legitieme Steam-kopie is, en zoekt het dan op bij Steam of scant je spelmappen op Steam-emulatorgegevens.</string>
+    <string name="shiba_link_retro_body">RetroAchievements herkent spellen aan de ROM-hash. Automatisch koppelen berekent de hash van deze ROM en zoekt die op — alleen een geverifieerde dump die bij RetroAchievements is geregistreerd kan worden gekoppeld.</string>
+    <string name="shiba_link_local_steam_body">Kies de map van dit spel en PFP leest de Steam-app-id — uit steam_appid.txt als die er is, of door de titel te vergelijken als die er niet is. De map wordt onthouden, zodat er niet opnieuw naar hoeft te worden gezocht.</string>
+    <string name="shiba_link_vita_body">PS Vita-trophies worden automatisch gekoppeld vanuit Vita3K. Stel je Vita3K-gegevensmap in de bibliotheek in en scan om dit spel te koppelen.</string>
+    <string name="shiba_link_ps3_body">PS3-trophies worden gekoppeld via de eigen schijf van het spel — stel je PS3-gegevensmap in de bibliotheek in en gebruik Automatisch koppelen.</string>
+    <string name="shiba_link_x360_body">Xbox 360-prestaties worden gekoppeld via de eigen titel-ID van het spel — stel de gegevensmap van X360 Mobile of XenDroid in de bibliotheek in en gebruik Automatisch koppelen.</string>
+    <string name="shiba_link_auto_match">Automatisch koppelen</string>
+    <string name="shiba_link_matching">Koppelen…</string>
+    <string name="shiba_link_pick_game_folder">Spelmap kiezen</string>
+
+    <string name="shiba_link_copy_title">Is dit een legitieme Steam-kopie?</string>
+    <string name="shiba_link_copy_body">Een legitieme kopie wordt gekoppeld aan je Steam-account. Al het andere wordt gevolgd vanuit de eigen map van het spel; PFP vraagt je die aan te wijzen.</string>
+
+    <string name="shiba_link_folder_title">In welke map staat dit spel?</string>
+    <string name="shiba_link_folder_body">Kies de eigen map van het spel — die waarin de .exe staat. PFP leest daaruit de Steam-app-id en volgt de ontgrendelingen die de emulator daar wegschrijft. Je Windows-spellen kunnen overal staan; PFP onthoudt waar dit spel staat, zodat er nooit gezocht hoeft te worden.</string>
+
+    <string name="shiba_link_identify_title_steam">Steam-koppeling zoeken…</string>
+    <string name="shiba_link_identify_title_appid">Steam-app-id bepalen…</string>
+    <string name="shiba_link_identify_body_steam">Steam doorzoeken op de titel van dit spel. Kies de juiste om het opnieuw te koppelen.</string>
+    <string name="shiba_link_identify_body_appid">steam_appid.txt uit de map lezen, en de titel van het spel met Steam vergelijken als die er nog geen heeft.</string>
+
+    <string name="shiba_link_kit_title">Die map heeft nog geen prestatielijst</string>
+    <string name="shiba_link_kit_body_generic">De emulator heeft een prestatielijst nodig voordat hij ontgrendelingen kan vastleggen.</string>
+    <string name="shiba_link_kit_body">\"%1$s\" is Steam-app-id %2$s, maar de emulator heeft geen prestatielijst om tegen vast te leggen. Installeren en koppelen schrijft achievements.json, stats.json en configs.user.ini in de map, maakt een map saves aan en hernoemt steam_api64.dll naar steam_api64_o.dll zodat de meegeleverde emulator erdoorheen laadt — maak eerst een back-up van de opslagbestanden van dit spel. Alleen koppelen volgt het op 0%% en schrijft verder niets.</string>
+    <string name="shiba_link_kit_installer_off">Installeren en koppelen vereist Goldberg installeren en spellen converteren in de prestatie-instellingen.</string>
+    <string name="shiba_link_kit_install">Installeren en koppelen</string>
+    <string name="shiba_link_kit_link_only">Alleen koppelen</string>
+
+    <string name="shiba_link_no_emu_title">Niets te volgen in die map</string>
+    <string name="shiba_link_no_emu_default">Die map bevat geen Steam-emulatorgegevens.</string>
+    <string name="shiba_link_try_another_folder">Andere map proberen</string>
+
+    <string name="shiba_link_appid_title">Geen automatische koppeling gevonden</string>
+    <string name="shiba_link_appid_body">Voer de Steam-app-id van het spel in:</string>
+    <string name="shiba_link_appid_field">Steam-app-id</string>
+
+    <!-- Messages shown on the page after linking or syncing. -->
+    <string name="shiba_coins_folder_unreadable">Die map kon niet worden gelezen. Kies hem opnieuw, of koppel de opslag waarop hij staat opnieuw.</string>
+    <string name="shiba_coins_linked_to">Gekoppeld aan %1$s (appid %2$s).</string>
+    <string name="shiba_coins_nothing_written">Er is niets geschreven. Stel de Steam-koppeling van het spel in via Speldetails ▸ Spel koppelen en gebruik daarna opnieuw Automatisch koppelen — PFP gebruikt dan die id.</string>
+    <string name="shiba_coins_appid_not_number">Een Steam-app-id is een getal — kijk op steamdb.info voor meer informatie over het spel</string>
+    <string name="shiba_coins_appid_no_match">App-id %1$s komt niet overeen — kijk op steamdb.info voor meer informatie over het spel</string>
+    <string name="shiba_coins_sync_not_linked">Koppel dit spel eerst aan een provider-id</string>
+    <string name="shiba_coins_sync_not_installed">Dit spel is niet geïnstalleerd — de opgeslagen prestaties worden getoond</string>
+    <string name="shiba_coins_sync_missing_credentials">Voeg je sleutel toe in Instellingen ▸ Prestaties ▸ Inloggegevens van providers</string>
+    <string name="shiba_coins_sync_profile_private">De speldetails van je Steam-profiel zijn privé</string>
+    <string name="shiba_coins_sync_not_found">Geen prestaties gevonden voor dit spel</string>
+    <string name="shiba_coins_sync_failed">Synchroniseren mislukt: %1$s</string>
+
+    <!-- ===== Video Detail ===== -->
+
+    <string name="shiba_video_play">Afspelen</string>
+    <string name="shiba_video_resume">Hervatten</string>
+    <string name="shiba_video_restart">Vanaf het begin</string>
+    <string name="shiba_video_resume_at">Hervatten bij %1$s</string>
+    <string name="shiba_video_group_library">Bibliotheek</string>
+    <string name="shiba_video_group_customize">Aanpassen</string>
+    <string name="shiba_video_group_manage">Beheren</string>
+    <string name="shiba_video_favorite">Favoriet</string>
+    <string name="shiba_video_favorite_on">Aan</string>
+    <string name="shiba_video_favorite_off">Uit</string>
+    <string name="shiba_video_add_to_playlist">Toevoegen aan afspeellijst</string>
+    <string name="shiba_video_create_playlist">Nieuwe afspeellijst maken</string>
+    <string name="shiba_video_edit_title">Titel bewerken</string>
+    <string name="shiba_video_change_thumbnail">Miniatuur wijzigen</string>
+    <string name="shiba_video_view_information">Informatie bekijken</string>
+    <string name="shiba_video_show_location">Bestandslocatie tonen</string>
+    <string name="shiba_video_remove">Verwijderen uit bibliotheek</string>
+    <string name="shiba_video_remove_message">\"%1$s\" wordt uit deze bibliotheek verwijderd. Het bestand op de schijf wordt niet verwijderd.</string>
+    <string name="shiba_video_remove_confirm">Verwijderen</string>
+    <string name="shiba_video_new_playlist_title">Nieuwe afspeellijst</string>
+    <string name="shiba_video_new_playlist_placeholder">Naam van afspeellijst</string>
+    <string name="shiba_video_new_playlist_create">Maken</string>
+    <string name="shiba_video_launching">Starten…</string>
+    <string name="shiba_video_player_ask">een externe speler</string>
+    <string name="shiba_video_player_fallback">externe speler</string>
+    <string name="shiba_video_launch_error_title">Kan video niet afspelen</string>
+    <string name="shiba_video_added_favorite">Toegevoegd aan favorieten</string>
+    <string name="shiba_video_removed_favorite">Verwijderd uit favorieten</string>
+    <string name="shiba_video_import_failed">Kan afbeelding niet importeren</string>
+    <string name="shiba_video_thumbnail_updated">Miniatuur bijgewerkt</string>
+    <string name="shiba_video_location_in">In: %1$s</string>
+    <string name="shiba_video_info_duration">Duur: %1$s</string>
+    <string name="shiba_video_info_resolution">Resolutie: %1$s</string>
+    <string name="shiba_video_info_format">Indeling: %1$s</string>
+    <string name="shiba_video_info_type">Type: %1$s</string>
+    <string name="shiba_video_info_size">Grootte: %1$s</string>
+    <string name="shiba_video_info_location">Locatie: %1$s</string>
+    <string name="shiba_video_info_file">Bestand: %1$s</string>
+
+    <!-- ===== Manual viewer ===== -->
+
+    <string name="shiba_manual_failed">Deze handleiding kan niet worden weergegeven.</string>
+    <string name="shiba_manual_page_description">%1$s — handleiding pagina %2$d</string>
+    <string name="shiba_manual_footer_hint">"◀ ▶  Pagina   •   ▲ ▼  Scrollen   •   B  Sluiten"</string>
+
+</resources>

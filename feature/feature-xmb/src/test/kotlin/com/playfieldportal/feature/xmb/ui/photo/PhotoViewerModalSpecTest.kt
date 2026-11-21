@@ -6,11 +6,17 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 
 /**
  * Which shared modal the photo viewer shows for a given UI state, checked in the order the view
  * model checks these states. Removing a photo is destructive, so it opens on Cancel.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class PhotoViewerModalSpecTest {
 
     private val events = mutableListOf<String>()
@@ -32,6 +38,7 @@ class PhotoViewerModalSpecTest {
         onCancelRemove = { events += "cancel-remove" },
         onConfirmLockScreen = { events += "lock" },
         onCancelLockScreen = { events += "cancel-lock" },
+        res = RuntimeEnvironment.getApplication().resources,
     )
 
     @Test

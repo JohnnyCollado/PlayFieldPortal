@@ -7,12 +7,18 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 
 /**
  * Which shared modal Video Detail shows for a given UI state, checked in the order the view model
  * checks these states. A title may be cleared (back to the file name) while a playlist name never
  * can, and removing a video is destructive, so it opens on Cancel.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class VideoDetailModalSpecTest {
 
     private val events = mutableListOf<String>()
@@ -31,6 +37,7 @@ class VideoDetailModalSpecTest {
     private val baseState = VideoDetailUiState(video = video, isLoading = false)
 
     private fun specFor(state: VideoDetailUiState): PfpModalSpec? = videoDetailModalSpec(
+        resources = RuntimeEnvironment.getApplication().resources,
         state = state,
         onSaveTitle = { events += "title:$it" },
         onCancelTitle = { events += "cancel-title" },

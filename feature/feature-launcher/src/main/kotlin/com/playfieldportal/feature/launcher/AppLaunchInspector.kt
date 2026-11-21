@@ -97,8 +97,7 @@ class AppLaunchInspector @Inject constructor(
                     isCustom             = true,
                 ),
                 confidence = DetectionConfidence.KNOWN,
-                note = "Auto-filled from the built-in profile for ${known.name}. " +
-                    "Confirm the platform(s) and save.",
+                note = context.getString(R.string.launch_inspect_known, known.name),
             )
         }
 
@@ -119,8 +118,7 @@ class AppLaunchInspector @Inject constructor(
                     isCustom             = true,
                 ),
                 confidence = DetectionConfidence.BEST_GUESS,
-                note = "Best-guess from this app's ACTION_VIEW handler. Set the platform(s), then " +
-                    "test a ROM before saving.",
+                note = context.getString(R.string.launch_inspect_best_guess),
             )
         }
 
@@ -138,8 +136,7 @@ class AppLaunchInspector @Inject constructor(
                 isCustom             = true,
             ),
             confidence = DetectionConfidence.MINIMAL,
-            note = "Couldn't detect how this app accepts ROMs. Fill in the activity / intent " +
-                "settings manually, then test a ROM.",
+            note = context.getString(R.string.launch_inspect_minimal),
         )
     }
 

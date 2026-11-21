@@ -12,6 +12,7 @@ import com.playfieldportal.core.data.database.entity.CategoryItemEntity
 import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.core.data.database.entity.PlaySessionEntity
 import com.playfieldportal.core.data.repository.BackupFolderRepository
+import com.playfieldportal.core.domain.text.UiText
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -131,7 +132,7 @@ class BackupManagerTest {
         val result = mgr.createBackup(1, "0.1", 1L)
 
         assertTrue(result is BackupResult.Failure)
-        assertTrue((result as BackupResult.Failure).reason.contains("backup folder", ignoreCase = true))
+        assertEquals(UiText.res(R.string.bak_no_folder), (result as BackupResult.Failure).reason)
     }
 
     @Test
@@ -181,7 +182,7 @@ class BackupManagerTest {
         val result = ExportingBackupManager().restoreBackup(mockk(relaxed = true))
 
         assertTrue(result is RestoreResult.Failure)
-        assertTrue((result as RestoreResult.Failure).reason.contains("open"))
+        assertEquals(UiText.res(R.string.bak_open_failed), (result as RestoreResult.Failure).reason)
     }
 
     @Test
@@ -196,7 +197,10 @@ class BackupManagerTest {
 
         val result = ExportingBackupManager().restoreBackup(uri)
         assertTrue(result is RestoreResult.Failure)
-        assertTrue((result as RestoreResult.Failure).reason.contains("newer"))
+        assertEquals(
+            UiText.res(R.string.bak_format_too_new, 999, BACKUP_FORMAT_VERSION),
+            (result as RestoreResult.Failure).reason,
+        )
     }
 
     @Test

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Slice G2: core-data strings (data-layer messages and enum labels) -->
+<resources>
+
+    <!-- Voice microphone sensitivity (Discord) -->
+    <!-- How strictly the microphone filters out background sound during a voice call. Shown on a settings row. -->
+    <string name="data_mic_sensitivity_auto">Auto</string>
+    <string name="data_mic_sensitivity_high">High</string>
+    <!-- "Low" sensitivity: the microphone opens only for louder sound, so button clicks on a handheld are ignored. -->
+    <string name="data_mic_sensitivity_low">Low · filters clicks</string>
+    <!-- "Minimal" sensitivity: the microphone opens only for loud speech. -->
+    <string name="data_mic_sensitivity_minimal">Minimal · loud speech only</string>
+
+    <!-- Discord sign-in errors -->
+    <!-- Shown on the Discord QR sign-in screen when the device has no internet. -->
+    <string name="data_discord_offline">You\'re offline. Reconnect to the internet and try again.</string>
+    <string name="data_discord_unreachable">Could not reach Discord</string>
+    <string name="data_discord_signin_network_error">Network error while signing in</string>
+
+    <!-- Music and video players -->
+    <!-- Shown when no app can play a music file. "Settings → Music" is a path in this app's settings. -->
+    <string name="data_music_no_player">No music player could open this track. Install a player or pick one in Settings → Music.</string>
+    <!-- Shown when no app can play a video file. "Settings → Video" is a path in this app's settings. -->
+    <string name="data_video_no_player_open">No video player could open this file. Install a player or pick one in Settings → Video.</string>
+    <!-- Title of the Android app chooser for opening a video. -->
+    <string name="data_video_chooser_title">Play video with…</string>
+    <string name="data_video_none_installed">No video player is installed.</string>
+    <string name="data_video_bad_location">This video\'s location is invalid.</string>
+    <string name="data_video_unreachable">This video file could not be found or access was lost. Try re-scanning the library.</string>
+    <!-- %1$s is the name of a video player app, or "That player" when the name is unknown. -->
+    <string name="data_video_player_cannot_open">%1$s can\'t open this video, or isn\'t installed.</string>
+    <!-- Stands in for a video player app's name when it cannot be looked up. -->
+    <string name="data_video_that_player">That player</string>
+    <string name="data_video_none_installed_for_file">No video player is installed to open this file.</string>
+
+    <!-- Lock screen image -->
+    <string name="data_lockscreen_unreadable">That image could not be read</string>
+    <string name="data_lockscreen_rejected">This device did not accept a lock screen image</string>
+
+    <!-- PSP theme import (.ptf) -->
+    <!-- Errors shown when importing a theme file made for the PlayStation Portable (.ptf). -->
+    <string name="data_ptf_unreadable">Could not read the file (or it is too large)</string>
+    <string name="data_ptf_not_ptf">Not a PSP theme (.ptf) file</string>
+    <string name="data_ptf_unparseable">The theme file could not be parsed</string>
+    <string name="data_ptf_wallpaper_missing">The theme has no wallpaper image</string>
+    <string name="data_ptf_wallpaper_unsupported">This theme compresses its wallpaper with a method that isn\'t supported</string>
+    <string name="data_ptf_wallpaper_damaged">The theme\'s wallpaper is damaged and could not be decoded</string>
+    <string name="data_ptf_save_failed">Could not save the theme</string>
+
+    <!-- Custom media names -->
+    <!-- Name shown for a video the user picked when its file name cannot be read. -->
+    <string name="data_custom_video">Custom video</string>
+    <!-- Name shown for a sound the user picked when its file name cannot be read. -->
+    <string name="data_custom_sound">Custom sound</string>
+
+    <!-- Controllers -->
+    <!-- Name shown for a connected game controller that reports no name. -->
+    <string name="data_controller_fallback_name">Controller</string>
+
+    <!-- Xbox 360 emulator names (proper nouns, not translated) -->
+    <string name="data_xbox360_emulator_x360_mobile" translatable="false">X360 Mobile</string>
+    <string name="data_xbox360_emulator_xendroid" translatable="false">XenDroid</string>
+</resources>

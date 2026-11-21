@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="soc_qr_preparing">Préparation de la connexion…</string>
+    <string name="soc_qr_connected">Connecté</string>
+    <string name="soc_qr_expired">Le code a expiré.</string>
+    <string name="soc_qr_declined">La connexion a été refusée.</string>
+    <string name="soc_qr_error">Connexion impossible. %1$s</string>
+    <string name="soc_qr_content_description">Code QR de connexion Discord</string>
+    <string name="soc_qr_title">Se connecter avec Discord</string>
+    <string name="soc_qr_copied">Copié !</string>
+    <string name="soc_qr_tap_to_copy">Sélectionnez le code pour le copier</string>
+    <string name="soc_qr_instructions">Scannez avec l\'appareil photo de votre téléphone, ou rendez-vous sur discord.com/activate et collez le code.</string>
+    <string name="soc_qr_expires_in">Expire dans %1$d s</string>
+    <string name="soc_qr_expired_short">Expiré</string>
+    <string name="soc_qr_cancel">Annuler</string>
+    <string name="soc_qr_try_again">Réessayer</string>
+</resources>

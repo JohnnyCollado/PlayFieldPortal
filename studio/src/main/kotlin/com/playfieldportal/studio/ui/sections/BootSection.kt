@@ -87,11 +87,11 @@ fun BootSection(
     SectionColumn {
         HeadingWithInfo(
             "Boot sequences",
-            "Whether the boot video and GameBoot play at all is a device setting: ${DeviceHints.BOOT}",
+            "Whether the boot video and Game Boot play at all is a device setting: ${DeviceHints.BOOT}",
         )
         MutedText("Choose the built-in sequence or your own MP4 for each.", 11)
         BootPair(BOOT_KEY, "Boot", state, viewModel, window, onPlayInPreview)
-        BootPair(GAMEBOOT_KEY, "GameBoot", state, viewModel, window, onPlayInPreview)
+        BootPair(GAMEBOOT_KEY, "Game Boot", state, viewModel, window, onPlayInPreview)
     }
 }
 

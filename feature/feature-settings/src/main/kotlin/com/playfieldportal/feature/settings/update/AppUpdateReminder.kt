@@ -1,5 +1,8 @@
 package com.playfieldportal.feature.settings.update
 
+import com.playfieldportal.feature.settings.R
+import dagger.hilt.android.qualifiers.ApplicationContext
+import android.content.Context
 import com.playfieldportal.core.data.update.AppUpdateChecker
 import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.NotificationKind
@@ -24,6 +27,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class AppUpdateReminder @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val checker: AppUpdateChecker,
     private val tasks: BackgroundTaskCenter,
 ) {
@@ -48,8 +52,8 @@ class AppUpdateReminder @Inject constructor(
         checker.takeInstalledReminder()?.let { version ->
             tasks.report(
                 id = TRAY_ID,
-                label = "System Update",
-                message = "Version $version is installed.",
+                label = context.getString(R.string.sets_update_title),
+                message = context.getString(R.string.sets_update_reminder_installed, version),
                 severity = NotificationSeverity.INFO,
                 kind = NotificationKind.SYSTEM,
                 action = NotificationAction.OpenSettingsScreen(SCREEN_ROUTE),
@@ -59,8 +63,8 @@ class AppUpdateReminder @Inject constructor(
         val release = checker.takeReminder() ?: return
         tasks.report(
             id = TRAY_ID,
-            label = "System Update",
-            message = "Version ${release.version} is available.",
+            label = context.getString(R.string.sets_update_title),
+            message = context.getString(R.string.sets_update_reminder_available, release.version),
             severity = NotificationSeverity.INFO,
             kind = NotificationKind.SYSTEM,
             action = NotificationAction.OpenSettingsScreen(SCREEN_ROUTE),

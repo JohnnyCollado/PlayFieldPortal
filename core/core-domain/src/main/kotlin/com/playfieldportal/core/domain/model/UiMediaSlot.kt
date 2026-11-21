@@ -25,9 +25,9 @@ enum class UiMediaKind { SOUND, VIDEO, AUDIO_TRACK }
  *
  * [limits] carries this slot's caps from the design doc's table — see [UiMediaLimits].
  *
- * The menu-sound roster is five rows: Navigation covers SCROLL, SELECT and SYSTEM_BROWSE (one
- * sample, three events), then Back,
- * Confirm, Error and Notification.
+ * The menu-sound roster is seven rows: Navigation covers SCROLL and SELECT (one sample, two
+ * events), then Category (SYSTEM_BROWSE) and Options (a context menu opening), which fall back to
+ * Navigation's sound while unassigned, then Back, Confirm, Error and Notification.
  *
  * **A presentation's sound is part of the presentation, not a slot.** Boot Sequence and GameBoot
  * are each ONE thing the user either keeps or replaces wholesale with a clip of their own, which
@@ -49,6 +49,8 @@ enum class UiMediaSlot(
 ) {
     // ── Menu sounds (Interface ▸ Sound) — the roster, in row order ──
     SOUND_SCROLL("sound_scroll", UiMediaKind.SOUND, "Navigation", UiMediaLimits.NAVIGATION),
+    SOUND_CATEGORY("sound_category", UiMediaKind.SOUND, "Category", UiMediaLimits.CATEGORY),
+    SOUND_OPTIONS("sound_options", UiMediaKind.SOUND, "Options", UiMediaLimits.OPTIONS),
     SOUND_BACK("sound_back", UiMediaKind.SOUND, "Back / Cancel", UiMediaLimits.BACK),
     SOUND_CONFIRM("sound_confirm", UiMediaKind.SOUND, "Confirm / Apply", UiMediaLimits.CONFIRM),
     SOUND_ERROR("sound_error", UiMediaKind.SOUND, "Error / Invalid", UiMediaLimits.ERROR),
@@ -63,7 +65,7 @@ enum class UiMediaSlot(
 
     // ── GameBoot (Display ▸ GameBoot) ────────────────────────────────────────
     // ONE slot, symmetrically. The retired `gameboot_audio` AUDIO_TRACK slot is swept the same way.
-    GAMEBOOT_VIDEO("gameboot_video", UiMediaKind.VIDEO, "GameBoot Animation", UiMediaLimits.GAMEBOOT_CLIP),
+    GAMEBOOT_VIDEO("gameboot_video", UiMediaKind.VIDEO, "Game Boot Animation", UiMediaLimits.GAMEBOOT_CLIP),
 
     // ── Ambience (Interface ▸ Sound) ─────────────────────────────────────────
     // The launcher's background music. Unlike every slot above it this is CONTINUOUS, which is
@@ -74,6 +76,18 @@ enum class UiMediaSlot(
     ;
 
     val isSound: Boolean get() = kind == UiMediaKind.SOUND
+
+    /**
+     * The slot that sounds in this one's place while it is unassigned. Category and Options were
+     * Navigation's moments before they had rows of their own, so with nothing assigned they keep
+     * playing Navigation's sound (the user's, or the bundled one): nobody's setup changes.
+     * Null for a slot that has always stood alone.
+     */
+    val fallback: UiMediaSlot?
+        get() = when (this) {
+            SOUND_CATEGORY, SOUND_OPTIONS -> SOUND_SCROLL
+            else -> null
+        }
 
     companion object {
         private val byKey: Map<String, UiMediaSlot> = entries.associateBy { it.key }

@@ -6,8 +6,10 @@ import com.playfieldportal.core.data.repository.CollectionRepository
 import com.playfieldportal.core.data.repository.CustomIconStore
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.CategoryType
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.icons.CustomIconLimits
 import com.playfieldportal.core.ui.icons.UserCategoryIconKeys
+import com.playfieldportal.feature.settings.R
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
@@ -108,7 +110,7 @@ class CategoryManagerDeviceIconTest {
         val job = launch { vm.uiState.collect {} }
         advanceUntilIdle()
         assertEquals(CategoryStep.PICK_ICON, vm.uiState.value.step)
-        assertEquals(CustomIconLimits.MSG_UNSUPPORTED_FORMAT, vm.uiState.value.message)
+        assertEquals(UiText.raw(CustomIconLimits.MSG_UNSUPPORTED_FORMAT), vm.uiState.value.message)
         coVerify(exactly = 0) { repo.setIcon(any(), any()) }
         job.cancel()
     }
@@ -204,18 +206,18 @@ class CategoryManagerDeviceIconTest {
 
         val rows = vm.uiState.value.categories.associateBy { it.id }
         assertTrue(rows.getValue(id).hasImage)
-        assertEquals("Your Image", rows.getValue(id).iconLabel)
+        assertEquals(UiText.res(R.string.lib_cat_your_image), rows.getValue(id).iconLabel)
         assertEquals(key, rows.getValue(id).deviceImageKey)
         assertFalse(rows.getValue("custom_psx_6").hasImage)
-        assertEquals("PlayStation", rows.getValue("custom_psx_6").iconLabel)
+        assertEquals(UiText.raw("PlayStation"), rows.getValue("custom_psx_6").iconLabel)
         assertNull(rows.getValue("custom_prot_7").deviceImageKey)
         job.cancel()
     }
 
     @Test
     fun `iconValueLabel names the image or the catalog entry`() {
-        assertEquals("Your Image", iconValueLabel("ic_favorites", hasImage = true))
-        assertEquals("Favorites", iconValueLabel("ic_favorites", hasImage = false))
+        assertEquals(UiText.res(R.string.lib_cat_your_image), iconValueLabel("ic_favorites", hasImage = true))
+        assertEquals(UiText.raw("Favorites"), iconValueLabel("ic_favorites", hasImage = false))
     }
 
     // ── V6 ────────────────────────────────────────────────────────────────────────
@@ -286,7 +288,7 @@ class CategoryManagerDeviceIconTest {
         val job = launch { vm.uiState.collect {} }
         advanceUntilIdle()
         assertEquals(CategoryStep.LIST, vm.uiState.value.step)
-        assertTrue(vm.uiState.value.message != null)
+        assertEquals(UiText.res(R.string.lib_cat_created_image_failed), vm.uiState.value.message)
         job.cancel()
     }
 }

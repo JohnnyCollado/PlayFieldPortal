@@ -4,7 +4,9 @@ import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.core.domain.model.GameContentType
 import com.playfieldportal.core.domain.model.MetadataOverrides
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.artwork.MetadataRepository
+import com.playfieldportal.feature.artwork.R
 import com.playfieldportal.feature.artwork.match.MatchProvider
 import com.playfieldportal.feature.artwork.match.MetadataApply
 import com.playfieldportal.feature.artwork.match.MetadataApplyPolicy
@@ -28,7 +30,7 @@ data class ArtworkFetchResult(
     val success: Boolean,
     // Another surface is already fetching this game; nothing was scraped by this call.
     val alreadyRunning: Boolean = false,
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
     // The artwork folder is not Ready: nothing was scraped, or the scrape stopped short (AD-4).
     val paused: Boolean = false,
 )
@@ -56,12 +58,12 @@ data class ScrapeProgress(
     val paused: Boolean = false,
 )
 
-/** One game's result in a scrape pass. [message] is the provider's or the exception's words. */
+/** One game's result in a scrape pass. [message] is our own text or the exception's raw words. */
 data class GameScrapeOutcome(
     val gameId: Long,
     val title: String,
     val success: Boolean,
-    val message: String? = null,
+    val message: UiText? = null,
 )
 
 @Singleton
@@ -96,7 +98,7 @@ class ArtworkRepository @Inject constructor(
         onAssetProgress: ((source: String, asset: String) -> Unit)? = null,
     ): ArtworkFetchResult {
         val before = gameDao.getById(gameId)
-            ?: return ArtworkFetchResult(gameId, "", false, errorMessage = "Game not found")
+            ?: return ArtworkFetchResult(gameId, "", false, errorMessage = UiText.res(R.string.art_error_game_not_found))
         if (!folderReadyForScrape()) return ArtworkFetchResult(gameId, before.title, false, paused = true)
         if (!refetching.add(gameId)) {
             return ArtworkFetchResult(gameId, before.title, false, alreadyRunning = true)
@@ -451,7 +453,7 @@ class ArtworkRepository @Inject constructor(
             onProgress(
                 ScrapeProgress(
                     index + 1, games.size, ok, fail, title,
-                    finished = GameScrapeOutcome(id, title, success, result?.message ?: error?.message),
+                    finished = GameScrapeOutcome(id, title, success, result?.message ?: error?.message?.let(UiText::raw)),
                 )
             )
             if (result?.paused == true) {

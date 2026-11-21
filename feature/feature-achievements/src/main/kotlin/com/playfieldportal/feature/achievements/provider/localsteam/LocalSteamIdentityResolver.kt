@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.achievements.provider.localsteam
 
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.achievements.R
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.data.database.dao.GameStorefrontIdentityDao
 import com.playfieldportal.core.data.database.entity.GameEntity
@@ -63,7 +65,7 @@ class LocalSteamIdentityResolver @Inject constructor(
         data object NoMatch : Outcome
 
         /** Steam could not be reached. Temporary by definition, and never "no such game". */
-        data class Unavailable(val reason: String) : Outcome
+        data class Unavailable(val reason: UiText) : Outcome
 
         /** No Steam API DLL anywhere in the folder — there is nothing here to emulate. */
         data object NotASteamBuild : Outcome
@@ -101,7 +103,7 @@ class LocalSteamIdentityResolver @Inject constructor(
         }
             .onFailure { Timber.w(it, "Local Steam identity resolve threw for %s", anchor.folderName) }
             .getOrNull()
-            ?: return Outcome.Unavailable("the store could not be asked")
+            ?: return Outcome.Unavailable(UiText.res(R.string.ach_ls_unavail_store))
 
         val query = StorefrontTitleNormalizer.normalize(displayTitleOf(subject)).searchTitle
         return when (val steam = resolution.byStore[Storefront.STEAM]) {
@@ -120,7 +122,7 @@ class LocalSteamIdentityResolver @Inject constructor(
 
             // No Steam provider answered at all — a missing key or a disabled provider, not a
             // statement about the game.
-            null -> Outcome.Unavailable("Steam is not available right now")
+            null -> Outcome.Unavailable(UiText.res(R.string.ach_ls_unavail_steam))
         }
     }
 
@@ -206,10 +208,10 @@ class LocalSteamIdentityResolver @Inject constructor(
 }
 
 /** The store's own reason, in words a settings row can print. Never "this game does not exist". */
-private fun com.playfieldportal.feature.artwork.match.StorefrontOutcome.Failure.reasonText(): String =
+private fun com.playfieldportal.feature.artwork.match.StorefrontOutcome.Failure.reasonText(): UiText =
     when (reason) {
-        com.playfieldportal.feature.artwork.match.StorefrontFailure.NETWORK_ERROR -> "Steam could not be reached"
-        com.playfieldportal.feature.artwork.match.StorefrontFailure.RATE_LIMITED -> "Steam is rate-limiting requests"
-        com.playfieldportal.feature.artwork.match.StorefrontFailure.PROVIDER_ERROR -> "Steam returned an error"
-        com.playfieldportal.feature.artwork.match.StorefrontFailure.AUTH_REQUIRED -> "Steam needs your Web API key"
+        com.playfieldportal.feature.artwork.match.StorefrontFailure.NETWORK_ERROR -> UiText.res(R.string.ach_ls_steam_unreachable)
+        com.playfieldportal.feature.artwork.match.StorefrontFailure.RATE_LIMITED -> UiText.res(R.string.ach_ls_steam_rate_limited)
+        com.playfieldportal.feature.artwork.match.StorefrontFailure.PROVIDER_ERROR -> UiText.res(R.string.ach_ls_steam_error)
+        com.playfieldportal.feature.artwork.match.StorefrontFailure.AUTH_REQUIRED -> UiText.res(R.string.ach_ls_steam_needs_key)
     }

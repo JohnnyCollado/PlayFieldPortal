@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Missatges d'error de l'escaneig -->
+    <string name="scan_error_card_not_found">No s\'ha trobat la Memory Card.</string>
+    <string name="scan_error_scan_failed">L\'escaneig ha fallat — consulta el registre.</string>
+    <string name="scan_error_library_unreadable">No s\'ha pogut llegir la biblioteca.</string>
+    <string name="scan_error_save_failed">No s\'ha pogut desar un joc escanejat.</string>
+    <string name="scan_error_rom_dir_not_found">No s\'ha trobat el directori de ROM: %1$s</string>
+    <string name="scan_error_folder_link_invalid">L\'enllaç a la carpeta d\'aquesta biblioteca no és vàlid. Torna a afegir la carpeta.</string>
+    <string name="scan_error_root_unreadable">No s\'ha pogut llegir una carpeta de ROM. Si és en una targeta SD, comprova que estigui inserida.</string>
+    <string name="scan_error_permission_lost">S\'ha perdut el permís; torna a seleccionar la carpeta.</string>
+    <string name="scan_error_partial_read">No s\'ha pogut llegir part de la carpeta, així que no s\'ha canviat res. Torna-ho a provar d\'aquí a una estona.</string>
+
+    <!-- Resultat de l'escaneig -->
+    <string name="scan_outcome_line">%1$s: %2$s</string>
+    <string name="scan_outcome_no_source">Carpeta de ROM no configurada.</string>
+    <string name="scan_outcome_busy">ja hi ha un escaneig en curs.</string>
+    <string name="scan_outcome_failed">l\'escaneig ha fallat.</string>
+    <string name="scan_outcome_no_new">cap ROM nova</string>
+    <string name="scan_outcome_no_new_none_missing">cap ROM nova, no en falta cap</string>
+    <string name="scan_outcome_no_new_marked_missing">cap ROM nova, %1$d marcades com a absents</string>
+    <plurals name="scan_outcome_added">
+        <item quantity="one">%1$d ROM nova afegida</item>
+        <item quantity="many">%1$d ROM noves afegides</item>
+        <item quantity="other">%1$d ROM noves afegides</item>
+    </plurals>
+    <plurals name="scan_outcome_added_none_missing">
+        <item quantity="one">%1$d ROM nova afegida, no en falta cap</item>
+        <item quantity="many">%1$d ROM noves afegides, no en falta cap</item>
+        <item quantity="other">%1$d ROM noves afegides, no en falta cap</item>
+    </plurals>
+    <plurals name="scan_outcome_added_marked_missing">
+        <item quantity="one">%1$d ROM nova afegida, %2$d marcades com a absents</item>
+        <item quantity="many">%1$d ROM noves afegides, %2$d marcades com a absents</item>
+        <item quantity="other">%1$d ROM noves afegides, %2$d marcades com a absents</item>
+    </plurals>
+    <string name="scan_with_error_note">%1$s (%2$s)</string>
+
+    <!-- Línia per targeta a la llista de resultats -->
+    <string name="scan_badge_no_new">Res de nou</string>
+    <string name="scan_reason_no_new">Cap joc nou</string>
+    <string name="scan_reason_no_new_marked_missing">Cap joc nou, %1$d marcats com a absents</string>
+    <plurals name="scan_reason_added">
+        <item quantity="one">%1$d joc nou afegit</item>
+        <item quantity="many">%1$d jocs nous afegits</item>
+        <item quantity="other">%1$d jocs nous afegits</item>
+    </plurals>
+    <plurals name="scan_reason_added_marked_missing">
+        <item quantity="one">%1$d joc nou afegit, %2$d marcats com a absents</item>
+        <item quantity="many">%1$d jocs nous afegits, %2$d marcats com a absents</item>
+        <item quantity="other">%1$d jocs nous afegits, %2$d marcats com a absents</item>
+    </plurals>
+</resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_title">Poświata zaznaczenia</string>
+    <string name="glow_sub_off">Brak poświaty wokół wybranej ikony.</string>
+    <string name="glow_sub_steady">Delikatne światło wokół wybranej ikony. Pozostaje nieruchome.</string>
+    <string name="glow_sub_pulsing">Światło wokół wybranej ikony powoli narasta i gaśnie. Pozostaje nieruchome, gdy opcja „Ruch” ma wartość „Statyczne”.</string>
+    <string name="glow_value_off">Wyłączona</string>
+    <string name="glow_value_steady">Stała</string>
+    <string name="glow_value_pulsing">Pulsująca</string>
+</resources>

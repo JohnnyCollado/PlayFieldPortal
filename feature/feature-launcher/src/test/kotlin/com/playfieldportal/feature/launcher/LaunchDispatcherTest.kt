@@ -55,6 +55,13 @@ class LaunchDispatcherTest {
     private class Harness(val scope: TestScope, gameBootOn: Boolean = false) {
         val context: Context = mockk(relaxed = true) {
             every { packageName } returns "com.test"
+            // The two reasons the tests assert on, in English: this context has no resources.
+            every { getString(R.string.launch_err_emulator_not_found) } returns "Emulator not found. Is it installed?"
+            every { getString(R.string.launch_never_foreground) } returns
+                "The emulator never came to the foreground after launch."
+            // The recovery history line of the one case that asserts on it: 2 failed of 3.
+            every { resources.getQuantityString(R.plurals.launch_history_failed, 3, 2, 3) } returns
+                "2 of the last 3 launches for this game failed."
         }
         val recorder: LaunchOutcomeRecorder = mockk(relaxed = true)
         val intent: Intent = mockk(relaxed = true)

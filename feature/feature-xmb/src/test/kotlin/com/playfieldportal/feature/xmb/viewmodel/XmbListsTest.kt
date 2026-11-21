@@ -15,12 +15,17 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * How the XMB arranges a list: which stored list the screen is showing, which sort applies to it
  * (its own, else the global one), where Custom order and pins put each row, and what a Move may
  * and may not do. All pure, so the rules can be pinned without a ViewModel.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class XmbListsTest {
 
     private val games = Category(BuiltInCategory.GAMES, "Game", "ic_games", type = CategoryType.BUILT_IN, position = 4, isGamingCategory = true)
@@ -158,7 +163,7 @@ class XmbListsTest {
     fun `a games list with no sort of its own follows the global sort`() {
         val s = state(games) { copy(selectedPlatformId = "gba", gameSortMode = XmbSortMode.RECENT_PLAYED) }
         assertEquals(XmbSortMode.RECENT_PLAYED, s.activeGameSort)
-        assertEquals("Global: Recently Played", s.sortValueLabel("card:gba", XmbListKind.GAMES))
+        assertEquals("Global: Recently Played", s.sortValueLabel("card:gba", XmbListKind.GAMES).en())
     }
 
     @Test
@@ -167,7 +172,7 @@ class XmbListsTest {
         val gba = state(games) { copy(selectedPlatformId = "gba", listSortOverrides = overrides) }
         val nds = state(games) { copy(selectedPlatformId = "nds", listSortOverrides = overrides) }
         assertEquals(XmbSortMode.CUSTOM, gba.activeGameSort)
-        assertEquals("Custom", gba.sortValueLabel("card:gba", XmbListKind.GAMES))
+        assertEquals("Custom", gba.sortValueLabel("card:gba", XmbListKind.GAMES).en())
         assertEquals(XmbSortMode.TITLE, nds.activeGameSort)
     }
 
@@ -175,7 +180,7 @@ class XmbListsTest {
     fun `an app list follows the global app sort, named for apps`() {
         val s = state(appStore) { copy(appSortMode = XmbSortMode.RECENT_PLAYED) }
         assertEquals(XmbSortMode.RECENT_PLAYED, s.activeSortFor("root:app_store", XmbListKind.APPS))
-        assertEquals("Global: Recently Used", s.sortValueLabel("root:app_store", XmbListKind.APPS))
+        assertEquals("Global: Recently Used", s.sortValueLabel("root:app_store", XmbListKind.APPS).en())
     }
 
     @Test
@@ -191,7 +196,7 @@ class XmbListsTest {
         assertEquals(XmbSortMode.RECENT_PLAYED, s.activeGameSort)
         assertEquals(
             "Global: Recently Used",
-            s.sortValueLabel("collection:8", s.openListSortKind),
+            s.sortValueLabel("collection:8", s.openListSortKind).en(),
         )
     }
 
@@ -210,9 +215,9 @@ class XmbListsTest {
 
     @Test
     fun `a gaming root is either in its default order or custom`() {
-        assertEquals("Default", state(games).sortValueLabel("root:games", XmbListKind.ROOT))
+        assertEquals("Default", state(games).sortValueLabel("root:games", XmbListKind.ROOT).en())
         val customised = state(games) { copy(listSortOverrides = mapOf("root:games" to XmbSortMode.CUSTOM)) }
-        assertEquals("Custom", customised.sortValueLabel("root:games", XmbListKind.ROOT))
+        assertEquals("Custom", customised.sortValueLabel("root:games", XmbListKind.ROOT).en())
         assertTrue(customised.isCustomSorted("root:games", XmbListKind.ROOT))
         assertFalse(state(games).isCustomSorted("root:games", XmbListKind.ROOT))
     }
@@ -224,7 +229,7 @@ class XmbListsTest {
         val rows = listSortMenuItems(XmbListKind.GAMES, global = XmbSortMode.TITLE, override = null)
         assertEquals(
             listOf("Use Global Setting (Title)", "Title", "Recently Played", "Date Added", "Custom"),
-            rows.map { it.label },
+            rows.map { it.label.en() },
         )
         assertEquals(listOf("lsort_default"), rows.filter { it.checked }.map { it.id })
     }
@@ -240,21 +245,21 @@ class XmbListsTest {
         val rows = listSortMenuItems(XmbListKind.APPS, global = XmbSortMode.TITLE, override = null)
         assertEquals(
             listOf("Use Global Setting (A–Z)", "A–Z", "Recently Used", "Date Added", "Custom"),
-            rows.map { it.label },
+            rows.map { it.label.en() },
         )
     }
 
     @Test
     fun `a root's sort picker offers only its default order and custom`() {
         val rows = listSortMenuItems(XmbListKind.ROOT, global = XmbSortMode.TITLE, override = null)
-        assertEquals(listOf("Default Order", "Custom"), rows.map { it.label })
+        assertEquals(listOf("Default Order", "Custom"), rows.map { it.label.en() })
         assertEquals(listOf("lsort_default"), rows.filter { it.checked }.map { it.id })
     }
 
     @Test
     fun `the global sort picker never offers custom`() {
         val rows = globalSortMenuItems(XmbListKind.GAMES, current = XmbSortMode.DATE_ADDED)
-        assertEquals(listOf("Title", "Recently Played", "Date Added"), rows.map { it.label })
+        assertEquals(listOf("Title", "Recently Played", "Date Added"), rows.map { it.label.en() })
         assertEquals(listOf("gsort_DATE_ADDED"), rows.filter { it.checked }.map { it.id })
     }
 
@@ -475,11 +480,11 @@ class XmbListsTest {
     @Test
     fun `pin to top reads on or off and move is offered only when the list is custom sorted`() {
         val off = arrangeMenuItems(pinned = false, canMove = false)
-        assertEquals(listOf("pin_top" to "Off"), off.map { it.id to it.value })
-        assertEquals("Pin to Top", off.single().label)
+        assertEquals(listOf("pin_top" to "Off"), off.map { it.id to it.value.enOrNull() })
+        assertEquals("Pin to Top", off.single().label.en())
 
         val on = arrangeMenuItems(pinned = true, canMove = true)
-        assertEquals(listOf("unpin_top" to "On", "move_row" to null), on.map { it.id to it.value })
+        assertEquals(listOf("unpin_top" to "On", "move_row" to null), on.map { it.id to it.value.enOrNull() })
     }
 
     @Test
@@ -526,13 +531,14 @@ class XmbListsTest {
     fun `an app in a card shows only its name, like the category's own app rows`() {
         val row = XMBItem(id = "g_1", title = "Netflix", subtitle = "Android · Last played yesterday", isAndroidApp = true)
         assertNull(row.asAppRow().subtitle)
+        assertNull(row.asAppRow().subtitleText)
         assertEquals("Netflix", row.asAppRow().title)
     }
 
     @Test
     fun `a pinned app in a card keeps the pinned line`() {
         val row = XMBItem(id = "g_1", title = "Netflix", subtitle = "Android", isAndroidApp = true, pinned = true)
-        assertEquals("Pinned", row.asAppRow().subtitle)
+        assertEquals("Pinned", row.asAppRow().subtitleText.enOrNull())
     }
 
     // ── Landing on a section: its default row ────────────────────────────────

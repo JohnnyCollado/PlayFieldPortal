@@ -1,8 +1,11 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import androidx.annotation.StringRes
 import com.playfieldportal.core.domain.model.GameRegion
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.artwork.api.SgdbArtType
 import com.playfieldportal.feature.artwork.store.ArtworkKind
+import com.playfieldportal.feature.xmb.R
 
 /**
  * The Artwork Studio's per-source filters: pure, so what each filter keeps is testable without a
@@ -20,10 +23,10 @@ import com.playfieldportal.feature.artwork.store.ArtworkKind
  */
 
 /** Which of SteamGridDB's static and animated images to ask for. [param] is its `types` value. */
-enum class SgdbAnimation(val label: String, val param: List<String>) {
-    STATIC("Static", listOf("static")),
-    ANIMATED("Animated", listOf("animated")),
-    ALL("All", listOf("static", "animated")),
+enum class SgdbAnimation(@StringRes val labelRes: Int, val param: List<String>) {
+    STATIC(R.string.det_filter_anim_static, listOf("static")),
+    ANIMATED(R.string.det_filter_anim_animated, listOf("animated")),
+    ALL(R.string.det_filter_all, listOf("static", "animated")),
 }
 
 /** What SteamGridDB is asked to leave out. Part of its request key; other sources never carry one. */
@@ -181,13 +184,13 @@ internal fun sgdbDimensionLabel(size: String): String = size.replace('x', '×')
  * A filter list opened from a row. [FILTERS] is the one the menu's root opens, holding the active
  * source's filters; the rest open from rows inside it. [multiSelect] lists stay open while toggling.
  */
-enum class StudioFilterGroup(val title: String, val multiSelect: Boolean = false) {
-    FILTERS("Filters"),
-    STYLE("Style", multiSelect = true),
-    DIMENSIONS("Dimensions"),
-    ANIMATION("Animation"),
-    REGION("Region"),
-    MEDIA("Media"),
+enum class StudioFilterGroup(@StringRes val titleRes: Int, val multiSelect: Boolean = false) {
+    FILTERS(R.string.det_filter_filters),
+    STYLE(R.string.det_filter_style, multiSelect = true),
+    DIMENSIONS(R.string.det_filter_dimensions),
+    ANIMATION(R.string.det_filter_animation),
+    REGION(R.string.det_filter_region),
+    MEDIA(R.string.det_filter_media),
 }
 
 /** What a filter row does. */
@@ -206,28 +209,39 @@ sealed interface StudioFilterOption {
 
 /** One filter row: its label, the setting shown at the right, and whether it is the active choice. */
 data class StudioFilterRow(
-    val label: String,
+    val label: UiText,
     val option: StudioFilterOption,
-    val value: String? = null,
+    val value: UiText? = null,
     val checked: Boolean = false,
 )
 
-private fun onOff(on: Boolean) = if (on) "On" else "Off"
+private fun onOff(on: Boolean) = UiText.res(if (on) R.string.det_filter_on else R.string.det_filter_off)
+
+private val ALL_LABEL get() = UiText.res(R.string.det_filter_all)
 
 /** ScreenScraper's media codes as a player reads them; a code not listed here shows as it is. */
 private val SS_MEDIA_LABELS = mapOf(
-    "mixrbv2" to "Mix v2", "mixrbv1" to "Mix v1", "screenmarquee" to "Marquee", "steamgrid" to "Steam Grid",
-    "box-2D" to "Box Art 2D", "box-3D" to "Box Art 3D",
-    "support-2D" to "Disc Art 2D", "support-texture" to "Disc Texture",
-    "fanart" to "Fan Art", "ss" to "Screenshot", "sstitle" to "Title Screen",
-    "wheel" to "Logo", "wheel-hd" to "Logo HD", "manuel" to "Manual",
-    "video" to "Video", "video-normalized" to "Video (Normalized)",
+    "mixrbv2" to R.string.det_ssmedia_mix_v2, "mixrbv1" to R.string.det_ssmedia_mix_v1,
+    "screenmarquee" to R.string.det_ssmedia_marquee, "steamgrid" to R.string.det_ssmedia_steam_grid,
+    "box-2D" to R.string.det_ssmedia_box_2d, "box-3D" to R.string.det_ssmedia_box_3d,
+    "support-2D" to R.string.det_ssmedia_disc_art_2d, "support-texture" to R.string.det_ssmedia_disc_texture,
+    "fanart" to R.string.det_ssmedia_fan_art, "ss" to R.string.det_ssmedia_screenshot,
+    "sstitle" to R.string.det_ssmedia_title_screen,
+    "wheel" to R.string.det_ssmedia_logo, "wheel-hd" to R.string.det_ssmedia_logo_hd,
+    "manuel" to R.string.det_ssmedia_manual,
+    "video" to R.string.det_ssmedia_video, "video-normalized" to R.string.det_ssmedia_video_normalized,
 )
 
 /** "box-2D" → "Box Art 2D". */
-internal fun ssMediaLabel(code: String): String = SS_MEDIA_LABELS[code] ?: code
+internal fun ssMediaLabel(code: String): UiText =
+    SS_MEDIA_LABELS[code]?.let { UiText.res(it) } ?: UiText.raw(code)
 
-private fun regionLabel(code: String?) = code?.uppercase() ?: "All"
+private fun regionLabel(code: String?): UiText = code?.uppercase()?.let { UiText.raw(it) } ?: ALL_LABEL
+
+/** A region, with "from disc" added when it is the one the game's disc says. */
+private fun regionRowLabel(code: String?, defaultRegion: String?): UiText =
+    if (code != null && code == defaultRegion) UiText.res(R.string.det_filter_region_from_disc, regionLabel(code))
+    else regionLabel(code)
 
 /**
  * The filter rows of the Options menu for [state], Tracker style. The menu's root ([group] null)
@@ -252,8 +266,8 @@ fun studioFilterRows(
             val hasFilters = studioFilterRows(state, StudioFilterGroup.FILTERS, ssTypes, regions).isNotEmpty()
             if (!hasFilters || source == null) emptyList()
             else listOf(StudioFilterRow(
-                "Filters", StudioFilterOption.Open(StudioFilterGroup.FILTERS),
-                value = if (f.isActive(source, kind, state.includeNsfw)) "Active" else null,
+                UiText.res(R.string.det_filter_filters), StudioFilterOption.Open(StudioFilterGroup.FILTERS),
+                value = if (f.isActive(source, kind, state.includeNsfw)) UiText.res(R.string.det_filter_active) else null,
             ))
         }
         StudioFilterGroup.FILTERS -> when (source) {
@@ -261,45 +275,44 @@ fun studioFilterRows(
                 val styles = type?.let { SGDB_STYLES[it] }.orEmpty()
                 if (styles.isNotEmpty()) {
                     val chosen = f.sgdbStyles[type].orEmpty().count { it in styles }
-                    add(StudioFilterRow("Style", StudioFilterOption.Open(StudioFilterGroup.STYLE),
-                        if (chosen == 0) "All" else "$chosen of ${styles.size}"))
+                    add(StudioFilterRow(UiText.res(R.string.det_filter_style), StudioFilterOption.Open(StudioFilterGroup.STYLE),
+                        if (chosen == 0) ALL_LABEL else UiText.res(R.string.det_filter_n_of_m, chosen, styles.size)))
                 }
                 if (type?.let { SGDB_DIMENSIONS[it] } != null) {
-                    add(StudioFilterRow("Dimensions", StudioFilterOption.Open(StudioFilterGroup.DIMENSIONS),
-                        f.sgdbDimensions[type]?.let(::sgdbDimensionLabel) ?: "All"))
+                    add(StudioFilterRow(UiText.res(R.string.det_filter_dimensions), StudioFilterOption.Open(StudioFilterGroup.DIMENSIONS),
+                        f.sgdbDimensions[type]?.let { UiText.raw(sgdbDimensionLabel(it)) } ?: ALL_LABEL))
                 }
-                add(StudioFilterRow("Animation", StudioFilterOption.Open(StudioFilterGroup.ANIMATION), f.sgdbAnimation.label))
-                add(StudioFilterRow("Mature", StudioFilterOption.Mature, onOff(state.includeNsfw)))
-                add(StudioFilterRow("Humor", StudioFilterOption.Humor, onOff(f.sgdbHumor)))
-                add(StudioFilterRow("Epilepsy Warning", StudioFilterOption.Epilepsy, onOff(f.sgdbEpilepsy)))
-                add(StudioFilterRow("Clear Filters", StudioFilterOption.Clear))
+                add(StudioFilterRow(UiText.res(R.string.det_filter_animation), StudioFilterOption.Open(StudioFilterGroup.ANIMATION), UiText.res(f.sgdbAnimation.labelRes)))
+                add(StudioFilterRow(UiText.res(R.string.det_filter_mature), StudioFilterOption.Mature, onOff(state.includeNsfw)))
+                add(StudioFilterRow(UiText.res(R.string.det_filter_humor), StudioFilterOption.Humor, onOff(f.sgdbHumor)))
+                add(StudioFilterRow(UiText.res(R.string.det_filter_epilepsy), StudioFilterOption.Epilepsy, onOff(f.sgdbEpilepsy)))
+                add(StudioFilterRow(UiText.res(R.string.det_filter_clear), StudioFilterOption.Clear))
             }
             StudioSource.SCREENSCRAPER -> buildList {
                 val region = f.ssRegion
-                val regionValue = if (region != null && region == defaultRegion) "${regionLabel(region)} · from disc" else regionLabel(region)
-                add(StudioFilterRow("Region", StudioFilterOption.Open(StudioFilterGroup.REGION), regionValue))
+                val regionValue = regionRowLabel(region, defaultRegion)
+                add(StudioFilterRow(UiText.res(R.string.det_filter_region), StudioFilterOption.Open(StudioFilterGroup.REGION), regionValue))
                 if (ssTypes.size > 1) {
-                    add(StudioFilterRow("Media", StudioFilterOption.Open(StudioFilterGroup.MEDIA), f.ssMedia[kind]?.let(::ssMediaLabel) ?: "All"))
+                    add(StudioFilterRow(UiText.res(R.string.det_filter_media), StudioFilterOption.Open(StudioFilterGroup.MEDIA), f.ssMedia[kind]?.let(::ssMediaLabel) ?: ALL_LABEL))
                 }
-                add(StudioFilterRow("Clear Filters", StudioFilterOption.Clear))
+                add(StudioFilterRow(UiText.res(R.string.det_filter_clear), StudioFilterOption.Clear))
             }
             else -> emptyList()
         }
         StudioFilterGroup.STYLE -> type?.let { SGDB_STYLES[it] }.orEmpty().map { style ->
-            StudioFilterRow(sgdbStyleLabel(style), StudioFilterOption.Style(style), checked = style in f.sgdbStyles[type].orEmpty())
+            StudioFilterRow(UiText.raw(sgdbStyleLabel(style)), StudioFilterOption.Style(style), checked = style in f.sgdbStyles[type].orEmpty())
         }
         StudioFilterGroup.DIMENSIONS -> listOf<String?>(null).plus(type?.let { SGDB_DIMENSIONS[it] }.orEmpty()).map { size ->
-            StudioFilterRow(size?.let(::sgdbDimensionLabel) ?: "All", StudioFilterOption.Dimension(size), checked = size == f.sgdbDimensions[type])
+            StudioFilterRow(size?.let { UiText.raw(sgdbDimensionLabel(it)) } ?: ALL_LABEL, StudioFilterOption.Dimension(size), checked = size == f.sgdbDimensions[type])
         }
         StudioFilterGroup.ANIMATION -> SgdbAnimation.entries.map {
-            StudioFilterRow(it.label, StudioFilterOption.Animation(it), checked = it == f.sgdbAnimation)
+            StudioFilterRow(UiText.res(it.labelRes), StudioFilterOption.Animation(it), checked = it == f.sgdbAnimation)
         }
         StudioFilterGroup.REGION -> (listOf<String?>(null) + regions).map { code ->
-            val label = if (code != null && code == defaultRegion) "${regionLabel(code)} · from disc" else regionLabel(code)
-            StudioFilterRow(label, StudioFilterOption.Region(code), checked = code == f.ssRegion)
+            StudioFilterRow(regionRowLabel(code, defaultRegion), StudioFilterOption.Region(code), checked = code == f.ssRegion)
         }
         StudioFilterGroup.MEDIA -> (listOf<String?>(null) + ssTypes).map { media ->
-            StudioFilterRow(media?.let(::ssMediaLabel) ?: "All", StudioFilterOption.Media(media), checked = media == f.ssMedia[kind])
+            StudioFilterRow(media?.let(::ssMediaLabel) ?: ALL_LABEL, StudioFilterOption.Media(media), checked = media == f.ssMedia[kind])
         }
     }
 }

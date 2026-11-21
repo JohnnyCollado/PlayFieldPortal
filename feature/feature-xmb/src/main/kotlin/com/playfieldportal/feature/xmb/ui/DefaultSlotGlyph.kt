@@ -52,10 +52,13 @@ import androidx.compose.ui.res.painterResource
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.NotificationKind
 import com.playfieldportal.core.ui.icons.ConsoleIcon
+import com.playfieldportal.core.ui.icons.CustomIconSurface
+import com.playfieldportal.core.ui.icons.LocalXmbIcons
 import com.playfieldportal.core.ui.icons.PortalIcon
 import com.playfieldportal.core.ui.icons.catbarIconKeyFor
 import com.playfieldportal.core.ui.icons.categoryIconFor
 import com.playfieldportal.core.ui.icons.systemIconRes
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.xmb.ui.detail.shibaCoinRes
 import com.playfieldportal.themekit.CustomizableIcons
 import com.playfieldportal.themekit.IconSlot
@@ -121,8 +124,36 @@ internal fun defaultGlyphFor(slot: IconSlot): SlotGlyphDefault {
         "item_umd" -> SlotGlyphDefault.BundledAsset(UMD_SLOT_ART)
         // The Settings rows' wrench badge is console art, not a Material glyph.
         "item_settings" -> SlotGlyphDefault.Drawable(systemIconRes("settings"))
+        // The six Settings sections' own icons: existing art with the wrench badge in the upper left (the rows inside keep the plain wrench).
+        in SETTINGS_SECTION_ICON_RES -> SlotGlyphDefault.Drawable(SETTINGS_SECTION_ICON_RES.getValue(slot.key))
         else -> ITEM_VECTORS[slot.key]?.let { SlotGlyphDefault.Vector(it) } ?: SlotGlyphDefault.None
     }
+}
+
+/** `item_settings_section_*` slot to its white drawable; keys are `"item_" + SettingsSection.id`. */
+internal val SETTINGS_SECTION_ICON_RES: Map<String, Int> = mapOf(
+    "item_settings_section_library" to R.drawable.settings_section_library,
+    "item_settings_section_emulators" to R.drawable.settings_section_emulators,
+    "item_settings_section_interface" to R.drawable.settings_section_interface,
+    "item_settings_section_achievements" to R.drawable.settings_section_achievements,
+    "item_settings_section_media" to R.drawable.settings_section_media,
+    "item_settings_section_system" to R.drawable.settings_section_system,
+)
+
+/**
+ * A Settings section row's leading icon: the user's / theme's override for [slotKey] if there is
+ * one, else the built-in icon, through [PortalIcon] so it takes the theme icon colour and the
+ * Icon Legibility matte like the wrench it replaces. Draws nothing for a key that is no section slot.
+ */
+@Composable
+internal fun SettingsSectionIcon(slotKey: String, modifier: Modifier = Modifier) {
+    val override = LocalXmbIcons.current[slotKey]
+    if (override != null) {
+        CustomIconSurface(icon = override, contentDescription = null, modifier = modifier)
+        return
+    }
+    val res = SETTINGS_SECTION_ICON_RES[slotKey] ?: return
+    PortalIcon(painter = painterResource(res), contentDescription = null, modifier = modifier)
 }
 
 private fun shibaTierFor(slotKey: String): ShibaTier? = when (slotKey) {

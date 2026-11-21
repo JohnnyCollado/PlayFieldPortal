@@ -1,16 +1,26 @@
 package com.playfieldportal.feature.settings.ui
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * A root folder's Remove button asks first. The button used to remove the folder on the press, and
  * with the cursor now landing straight on a row's buttons that press is one stray Confirm away.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class RootRemoveGateTest {
+
+    private fun RootRemoveGate() =
+        RootRemoveGate(ApplicationProvider.getApplicationContext<Context>().resources)
 
     @Test
     fun `pressing Remove removes nothing until it is confirmed`() {

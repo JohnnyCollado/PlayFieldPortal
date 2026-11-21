@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import com.playfieldportal.feature.settings.R
+import com.playfieldportal.core.domain.text.UiText
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.repository.NotificationPreferences
@@ -63,10 +65,9 @@ class NotificationSettingsViewModel @Inject constructor(
         /** 0 is last and means never; the cycle wraps back to 7 from there. */
         val AUTO_CLEAR_CHOICES = listOf(7, 14, 30, 90, 0)
 
-        fun autoClearLabel(days: Int): String = when (days) {
-            0 -> "Never"
-            1 -> "1 Day"
-            else -> "$days Days"
+        fun autoClearLabel(days: Int): UiText = when (days) {
+            0 -> UiText.res(R.string.sets_notif_never)
+            else -> UiText.plural(R.plurals.sets_notif_days, days)
         }
     }
 }

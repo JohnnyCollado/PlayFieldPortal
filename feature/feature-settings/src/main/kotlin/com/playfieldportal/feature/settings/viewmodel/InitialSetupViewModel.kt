@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import com.playfieldportal.core.domain.text.labelRes
 import android.content.Context
 import android.net.Uri
 import androidx.compose.runtime.Immutable
@@ -24,6 +25,7 @@ import com.playfieldportal.core.data.repository.SafGrants
 import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.NotificationKind
 import com.playfieldportal.core.domain.model.NotificationSeverity
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 import com.playfieldportal.feature.achievements.provider.steam.SteamRemoteDataSource
 import com.playfieldportal.feature.artwork.MetadataApiKeyProvider
@@ -36,6 +38,7 @@ import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
 import com.playfieldportal.feature.artwork.importer.DetectedImportSource
 import com.playfieldportal.feature.artwork.portable.PortableArtworkLibrary
 import com.playfieldportal.feature.launcher.kb.EmulatorKnowledgeRefresher
+import com.playfieldportal.feature.settings.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -89,10 +92,10 @@ data class InitialSetupUiState(
     // Xbox 360 data folders, one per emulator (X360 Mobile, XenDroid), null = not set.
     val x360MobileFolderName: String? = null,
     val xenDroidFolderName: String? = null,
-    val message: String? = null,
+    val message: UiText? = null,
     // Per-service validation results (\"Testing…\" / \"Valid …\" / \"Invalid …\"), shown inline.
-    val igdbStatus: String? = null,
-    val ssStatus: String? = null,
+    val igdbStatus: UiText? = null,
+    val ssStatus: UiText? = null,
     // OPTIONAL XMB auto-fit: when checked on the Finish page, finishing the wizard writes an
     // XmbLayoutPreset.autoFit() entry into the same per-form-factor pref the "Adjust XMB
     // Layout" editor uses. Off by default — the feature is never pushed on users, and anything
@@ -207,11 +210,11 @@ class InitialSetupViewModel @Inject constructor(
     // repeat replaces its row. Validation and "nothing to do" guidance stay inline (see the callers).
     private fun announce(
         id: String,
-        message: String,
+        message: UiText,
         severity: NotificationSeverity = NotificationSeverity.SUCCESS,
     ) = tasks.report(
         id = id,
-        label = message,
+        label = message.resolve(context),
         severity = severity,
         kind = NotificationKind.SYSTEM,
         action = NotificationAction.OpenSettingsScreen("settings_initial_setup"),
@@ -433,9 +436,11 @@ class InitialSetupViewModel @Inject constructor(
             val result = romScanner.createSubfolders(firstRoot, names)
             announce(
                 "setup_rom_folders",
-                "Created ${result.created} console folder(s)" +
-                    (if (result.existing > 0) " (${result.existing} already there)" else "") +
-                    ". Copy your games into the matching folders.",
+                if (result.existing > 0) {
+                    UiText.plural(R.plurals.setup_msg_rom_folders_created_existing, result.created, result.created, result.existing)
+                } else {
+                    UiText.plural(R.plurals.setup_msg_rom_folders_created, result.created)
+                },
             )
         }
     }
@@ -491,7 +496,7 @@ class InitialSetupViewModel @Inject constructor(
                 ArtworkImportManager.LinkResult.ForeignLibrary -> return@launch
                 ArtworkImportManager.LinkResult.Failed -> {
                     scratch.update {
-                        it.copy(message = "Could not set up an artwork library in that folder. Pick a writable folder.")
+                        it.copy(message = UiText.res(R.string.setup_msg_artwork_failed))
                     }
                     return@launch
                 }
@@ -506,17 +511,20 @@ class InitialSetupViewModel @Inject constructor(
             }
             announce(
                 "setup_artwork_link",
-                buildString {
-                    append(
-                        if (result.existingLibrary) "Existing artwork library reconnected."
-                        else "Artwork library created."
-                    )
-                    if (scan != null && scan.gamesLinked > 0) {
-                        append(" ${scan.gamesLinked} game(s) linked from files already in the folder.")
-                    } else if (sources.isEmpty()) {
-                        append(" Place other launchers' media under its import/ folder to gather it here.")
-                    }
-                },
+                UiText.Joined(
+                    listOfNotNull(
+                        UiText.res(
+                            if (result.existingLibrary) R.string.setup_msg_artwork_reconnected
+                            else R.string.setup_msg_artwork_created,
+                        ),
+                        if (scan != null && scan.gamesLinked > 0) {
+                            UiText.plural(R.plurals.setup_msg_artwork_games_linked, scan.gamesLinked)
+                        } else if (sources.isEmpty()) {
+                            UiText.res(R.string.setup_msg_artwork_import_hint)
+                        } else null,
+                    ),
+                    " ",
+                ),
             )
         }
     }
@@ -527,24 +535,24 @@ class InitialSetupViewModel @Inject constructor(
         val label = scratch.value.artworkSources.firstOrNull()?.label
         if (detected == null) {
             scratch.update {
-                it.copy(message = "Nothing to import yet — place files under the artwork folder's import/ directory.")
+                it.copy(message = UiText.res(R.string.setup_msg_import_none_yet))
             }
             return
         }
         viewModelScope.launch {
             val plan = runCatching { artworkImportManager.buildPlan(detected) }.getOrNull()
             if (plan == null) {
-                scratch.update { it.copy(message = "Could not read that import source.") }
+                scratch.update { it.copy(message = UiText.res(R.string.setup_msg_import_unreadable)) }
                 return@launch
             }
             if (plan.itemCount == 0) {
-                scratch.update { it.copy(message = "Nothing to import — everything is already present.") }
+                scratch.update { it.copy(message = UiText.res(R.string.setup_msg_import_empty)) }
                 return@launch
             }
             artworkImportManager.startImport(plan, PortableArtworkLibrary.Transfer.COPY)
             announce(
                 "setup_artwork_import",
-                "Importing \"${label ?: plan.sourceLabel}\" — progress shows in notifications; details land in Settings ▸ Artwork Import.",
+                UiText.res(R.string.setup_msg_import_started, label ?: plan.sourceLabel),
             )
         }
     }
@@ -556,7 +564,7 @@ class InitialSetupViewModel @Inject constructor(
             scratch.update { it.copy(retroArchDetecting = true) }
             retroArchLink.save(uri)
             refresher.run()
-            readRetroArchState("RetroArch linked — installed cores are now offered in Emulators.")
+            readRetroArchState(R.string.setup_msg_retroarch_linked)
         }
     }
 
@@ -565,7 +573,7 @@ class InitialSetupViewModel @Inject constructor(
         viewModelScope.launch {
             scratch.update { it.copy(retroArchDetecting = true) }
             refresher.run()
-            readRetroArchState("RetroArch cores re-checked.")
+            readRetroArchState(R.string.setup_msg_retroarch_rechecked)
         }
     }
 
@@ -580,11 +588,11 @@ class InitialSetupViewModel @Inject constructor(
                     retroArchDetecting = false,
                 )
             }
-            announce("setup_retroarch", "RetroArch link removed — no RetroArch cores will be offered until you link again.")
+            announce("setup_retroarch", UiText.res(R.string.setup_msg_retroarch_unlinked))
         }
     }
 
-    private suspend fun readRetroArchState(doneMessage: String? = null) {
+    private suspend fun readRetroArchState(doneMessage: Int? = null) {
         val inventory = retroArchLink.inventory()
         scratch.update {
             it.copy(
@@ -593,7 +601,7 @@ class InitialSetupViewModel @Inject constructor(
                 retroArchCoreCount = if (inventory is CoreInventory.Unlinked) null else inventory.coreFiles.size,
             )
         }
-        if (doneMessage != null) announce("setup_retroarch", doneMessage)
+        if (doneMessage != null) announce("setup_retroarch", UiText.res(doneMessage))
     }
 
     // ── Vita3K data folder (ux0) ───────────────────────────────────────────────
@@ -607,8 +615,7 @@ class InitialSetupViewModel @Inject constructor(
             // it updates itself once the grant persists — no scratch write needed here.
             announce(
                 "setup_vita",
-                "Vita3K data folder set. Installed titles can be scanned from the " +
-                    "PS Vita Memory Card in Library Manager.",
+                UiText.res(R.string.setup_msg_vita_set),
             )
         }
     }
@@ -617,7 +624,7 @@ class InitialSetupViewModel @Inject constructor(
     fun forgetVitaFolder() {
         viewModelScope.launch {
             vita3KLibrary.clear()
-            announce("setup_vita", "Vita3K data folder released — files on disk were not touched.")
+            announce("setup_vita", UiText.res(R.string.setup_msg_vita_released))
         }
     }
 
@@ -629,7 +636,7 @@ class InitialSetupViewModel @Inject constructor(
             ps3DataLibrary.setDataFolder(uri)
             announce(
                 "setup_ps3",
-                "PS3 data folder set. Run Auto-Match in Settings ▸ Achievements ▸ Update Achievements to link PS3 trophies.",
+                UiText.res(R.string.setup_msg_ps3_set),
             )
         }
     }
@@ -638,7 +645,7 @@ class InitialSetupViewModel @Inject constructor(
     fun forgetPs3Folder() {
         viewModelScope.launch {
             ps3DataLibrary.clear()
-            announce("setup_ps3", "PS3 data folder released — files on disk were not touched.")
+            announce("setup_ps3", UiText.res(R.string.setup_msg_ps3_released))
         }
     }
 
@@ -650,8 +657,7 @@ class InitialSetupViewModel @Inject constructor(
             xbox360DataLibrary.setFolder(emulator, uri)
             announce(
                 "setup_x360_${emulator.name.lowercase()}",
-                "${emulator.label} data folder set. Run Auto-Match in Settings ▸ Achievements ▸ Update Achievements to link " +
-                    "Xbox 360 achievements.",
+                UiText.res(R.string.setup_msg_x360_set, UiText.res(emulator.labelRes)),
             )
         }
     }
@@ -662,7 +668,7 @@ class InitialSetupViewModel @Inject constructor(
             xbox360DataLibrary.clear(emulator)
             announce(
                 "setup_x360_${emulator.name.lowercase()}",
-                "${emulator.label} data folder released — files on disk were not touched.",
+                UiText.res(R.string.setup_msg_x360_released, UiText.res(emulator.labelRes)),
             )
         }
     }
@@ -673,7 +679,7 @@ class InitialSetupViewModel @Inject constructor(
         if (apiKey.isBlank()) return
         viewModelScope.launch {
             sgdbKeys.saveKey(apiKey)
-            announce("setup_svc_sgdb", "SteamGridDB connected")
+            announce("setup_svc_sgdb", UiText.res(R.string.setup_msg_sgdb_connected))
         }
     }
 
@@ -682,7 +688,7 @@ class InitialSetupViewModel @Inject constructor(
         if (apiKey.isBlank()) return
         viewModelScope.launch {
             metadataKeys.saveTgdbKey(apiKey)
-            announce("setup_svc_tgdb", "TheGamesDB connected")
+            announce("setup_svc_tgdb", UiText.res(R.string.setup_msg_tgdb_connected))
         }
     }
 
@@ -691,14 +697,14 @@ class InitialSetupViewModel @Inject constructor(
         viewModelScope.launch {
             metadataKeys.saveIgdbCredentials(clientId, clientSecret)
             scratch.update { it.copy(igdbStatus = null) }
-            announce("setup_svc_igdb", "IGDB connected")
+            announce("setup_svc_igdb", UiText.res(R.string.setup_msg_igdb_connected))
         }
     }
 
     /** Same live check as Settings ▸ Artwork (shared via [ServiceConnectors]). */
     fun testIgdbCredentials(clientId: String, clientSecret: String) {
         viewModelScope.launch {
-            scratch.update { it.copy(igdbStatus = "Testing…") }
+            scratch.update { it.copy(igdbStatus = UiText.res(R.string.setup_status_testing)) }
             val status = ServiceConnectors.testIgdb(igdbApi, clientId, clientSecret)
             scratch.update { it.copy(igdbStatus = status) }
         }
@@ -707,7 +713,7 @@ class InitialSetupViewModel @Inject constructor(
     /** Same live check as Settings ▸ Artwork (shared via [ServiceConnectors]). */
     fun testSsCredentials(username: String, password: String) {
         viewModelScope.launch {
-            scratch.update { it.copy(ssStatus = "Testing…") }
+            scratch.update { it.copy(ssStatus = UiText.res(R.string.setup_status_testing)) }
             val status = ServiceConnectors.testScreenScraper(screenScraperApi, username, password)
             scratch.update { it.copy(ssStatus = status) }
         }
@@ -747,7 +753,7 @@ class InitialSetupViewModel @Inject constructor(
         viewModelScope.launch {
             metadataKeys.saveSsCredentials(username, password)
             scratch.update { it.copy(ssStatus = null) }
-            announce("setup_svc_ss", "ScreenScraper connected")
+            announce("setup_svc_ss", UiText.res(R.string.setup_msg_ss_connected))
         }
     }
 
@@ -756,7 +762,7 @@ class InitialSetupViewModel @Inject constructor(
         viewModelScope.launch {
             achievementCredentials.saveRetroAchievements(username, apiKey)
             achievementCredentials.setEnabled(true)
-            announce("setup_svc_ra", "RetroAchievements connected")
+            announce("setup_svc_ra", UiText.res(R.string.setup_msg_ra_connected))
         }
     }
 

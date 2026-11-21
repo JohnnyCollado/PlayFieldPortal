@@ -9,13 +9,15 @@ import com.playfieldportal.core.domain.achievement.RecentCoin
 import com.playfieldportal.core.domain.achievement.ShibaLevel
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
-import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.core.domain.text.labelRes
 import com.playfieldportal.core.ui.components.PspMenuCue
 import com.playfieldportal.core.ui.components.PspMenuNav
 import com.playfieldportal.core.ui.components.PspMenuOutcome
 import com.playfieldportal.core.ui.sound.MenuSoundPlayer
 import com.playfieldportal.core.ui.sound.MenuSoundSink
 import com.playfieldportal.feature.achievements.AchievementController
+import com.playfieldportal.feature.xmb.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -48,22 +50,25 @@ data class RarestCard(
     val coinsTarget: ShibaCoinsTarget?,
 )
 
-enum class PlayerStatusSort(val label: String) {
-    NEWEST("Newest"),
-    RAREST("Rarest"),
+enum class PlayerStatusSort(val label: UiText) {
+    NEWEST(UiText.res(R.string.shiba_sort_newest)),
+    RAREST(UiText.res(R.string.shiba_sort_rarest)),
 }
 
-enum class PlayerStatusProviderFilter(val label: String, val provider: AchievementProvider?) {
-    ALL("All", null),
-    RETRO("RetroAchievements", AchievementProvider.RETRO_ACHIEVEMENTS),
-    STEAM("Steam", AchievementProvider.STEAM),
-    LOCAL_STEAM("Local Steam", AchievementProvider.LOCAL_STEAM),
-    VITA("PS Vita", AchievementProvider.VITA_TROPHY),
-    PS3("PS3", AchievementProvider.PS3_TROPHY),
-    X360("Xbox 360", AchievementProvider.X360_ACHIEVEMENT),
+enum class PlayerStatusProviderFilter(val label: UiText, val provider: AchievementProvider?) {
+    ALL(UiText.res(R.string.shiba_filter_all), null),
+    RETRO(UiText.raw("RetroAchievements"), AchievementProvider.RETRO_ACHIEVEMENTS),
+    STEAM(UiText.raw("Steam"), AchievementProvider.STEAM),
+    LOCAL_STEAM(UiText.raw("Local Steam"), AchievementProvider.LOCAL_STEAM),
+    VITA(UiText.raw("PS Vita"), AchievementProvider.VITA_TROPHY),
+    PS3(UiText.raw("PS3"), AchievementProvider.PS3_TROPHY),
+    X360(UiText.raw("Xbox 360"), AchievementProvider.X360_ACHIEVEMENT),
 }
 
-enum class PlayerStatusOptionGroup(val title: String) { SORT("Sort"), PROVIDER("Provider") }
+enum class PlayerStatusOptionGroup(val title: UiText) {
+    SORT(UiText.res(R.string.shiba_options_sort)),
+    PROVIDER(UiText.res(R.string.shiba_options_provider)),
+}
 
 sealed interface PlayerStatusOption {
     data class OpenGroup(val group: PlayerStatusOptionGroup) : PlayerStatusOption
@@ -73,11 +78,11 @@ sealed interface PlayerStatusOption {
 }
 
 data class PlayerStatusOptionRow(
-    val label: String,
+    val label: UiText,
     val option: PlayerStatusOption,
     val checked: Boolean = false,
     /** The row's current setting, drawn at the right edge (Sort: "Newest"). */
-    val value: String? = null,
+    val value: UiText? = null,
     /** Activating this row opens a list, so a › is drawn. */
     val opensMenu: Boolean = false,
 )
@@ -86,11 +91,11 @@ data class PlayerStatusOptionsMenu(
     val selectedIndex: Int = 0,
     val group: PlayerStatusOptionGroup? = null,
 ) {
-    val title: String get() = group?.title ?: "Options"
+    val title: UiText get() = group?.title ?: UiText.res(R.string.shiba_options_title)
 }
 
 data class PlayerStatusUiState(
-    val rankLabel: String = "",
+    val rankLabel: UiText? = null,
     val level: Int = 1,
     val bones: Int = 0,
     val totalXp: Int = 0,
@@ -114,7 +119,7 @@ data class PlayerStatusUiState(
     val onRarest: Boolean = false,
     val options: PlayerStatusOptionsMenu? = null,
     val isSyncing: Boolean = false,
-    val message: String? = null,
+    val message: UiText? = null,
     val closed: Boolean = false,
     val openCoins: ShibaCoinsTarget? = null,
 ) {
@@ -127,9 +132,12 @@ data class PlayerStatusUiState(
 
 fun playerStatusOptionRows(state: PlayerStatusUiState): List<PlayerStatusOptionRow> = when (state.options?.group) {
     null -> listOf(
-        PlayerStatusOptionRow("Sort", PlayerStatusOption.OpenGroup(PlayerStatusOptionGroup.SORT), value = state.sort.label, opensMenu = true),
-        PlayerStatusOptionRow("Provider", PlayerStatusOption.OpenGroup(PlayerStatusOptionGroup.PROVIDER), value = state.providerFilter.label, opensMenu = true),
-        PlayerStatusOptionRow(if (state.isSyncing) "Updating…" else "Update Installed Achievements", PlayerStatusOption.SyncAll),
+        PlayerStatusOptionRow(UiText.res(R.string.shiba_options_sort), PlayerStatusOption.OpenGroup(PlayerStatusOptionGroup.SORT), value = state.sort.label, opensMenu = true),
+        PlayerStatusOptionRow(UiText.res(R.string.shiba_options_provider), PlayerStatusOption.OpenGroup(PlayerStatusOptionGroup.PROVIDER), value = state.providerFilter.label, opensMenu = true),
+        PlayerStatusOptionRow(
+            UiText.res(if (state.isSyncing) R.string.shiba_options_updating else R.string.shiba_options_update_installed),
+            PlayerStatusOption.SyncAll,
+        ),
     )
     PlayerStatusOptionGroup.SORT -> PlayerStatusSort.entries.map {
         PlayerStatusOptionRow(it.label, PlayerStatusOption.Sort(it), checked = it == state.sort)
@@ -139,17 +147,17 @@ fun playerStatusOptionRows(state: PlayerStatusUiState): List<PlayerStatusOptionR
     }
 }
 
-fun playerStatusHelperItems(state: PlayerStatusUiState): List<ControllerPromptItem> = when {
+internal fun playerStatusHelperItems(state: PlayerStatusUiState): List<DetailPrompt> = when {
     state.options != null -> listOf(
-        ControllerPromptItem(GamepadAction.SELECT, "Select"),
-        ControllerPromptItem(GamepadAction.BACK, "Close"),
+        DetailPrompt(GamepadAction.SELECT, UiText.res(R.string.shiba_prompt_select)),
+        DetailPrompt(GamepadAction.BACK, UiText.res(R.string.shiba_prompt_close)),
     )
     else -> buildList {
         if (state.focusedRecent?.coinsTarget != null || state.rarestFocused && state.rarest?.coinsTarget != null) {
-            add(ControllerPromptItem(GamepadAction.SELECT, "View Game"))
+            add(DetailPrompt(GamepadAction.SELECT, UiText.res(R.string.shiba_prompt_view_game)))
         }
-        add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
-        add(ControllerPromptItem(GamepadAction.BACK, "Back"))
+        add(DetailPrompt(GamepadAction.OPEN_CONTEXT_MENU, UiText.res(R.string.shiba_prompt_options)))
+        add(DetailPrompt(GamepadAction.BACK, UiText.res(R.string.shiba_prompt_back)))
     }
 }
 
@@ -208,7 +216,7 @@ class PlayerStatusViewModel @Inject constructor(
             val initialLoad = old.recent.isEmpty() && old.rarest == null && old.focusedId == null
             val keepFocus = old.focusedId?.takeIf { id -> rows.any { it.id == id } }
             old.copy(
-                rankLabel = w.rank.label,
+                rankLabel = UiText.res(w.rank.labelRes),
                 level = w.level,
                 bones = w.bones,
                 totalXp = w.totalCoins,
@@ -360,7 +368,13 @@ class PlayerStatusViewModel @Inject constructor(
             try {
                 achievements.updateInstalledAchievements { done, total ->
                     _state.update {
-                        it.copy(message = if (total > 0) "Checking $done of $total games…" else "Updating installed achievements…")
+                        it.copy(
+                            message = if (total > 0) {
+                                UiText.plural(R.plurals.shiba_status_checking_games, total, done, total)
+                            } else {
+                                UiText.res(R.string.shiba_status_updating_achievements)
+                            },
+                        )
                     }
                 }
             } finally {

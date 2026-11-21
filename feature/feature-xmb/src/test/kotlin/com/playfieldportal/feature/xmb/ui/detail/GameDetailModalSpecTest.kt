@@ -9,13 +9,22 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 
 /**
  * Which shared modal Game Detail shows for a given UI state. Edit Title and Edit Note are the same
  * text entry the XMB's own use, with the same rule: a cleared field is a valid answer, and means
  * "back to the default title" or "no note". Removing a game is destructive, so it opens on Cancel.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class GameDetailModalSpecTest {
+
+    private val res get() = RuntimeEnvironment.getApplication().resources
+
 
     private val events = mutableListOf<String>()
 
@@ -36,6 +45,7 @@ class GameDetailModalSpecTest {
         onCancelMetadataField = { events += "cancel-meta" },
         onConfirmTitleReplace = { events += "replace" },
         onCancelTitleReplace = { events += "keep" },
+        res = res,
     )
 
     // ── Manual metadata (the Current-vs-Incoming overlay) ──────────────────────

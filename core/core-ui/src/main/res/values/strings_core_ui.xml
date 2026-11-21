@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Localization slice G1: core-ui shared components -->
+<resources>
+
+    <!-- Shared button and prompt labels -->
+    <!-- Button label that dismisses a dialog without acting -->
+    <string name="core_cancel">Cancel</string>
+    <!-- Button label that acknowledges a message dialog -->
+    <string name="core_ok">OK</string>
+    <!-- Button label that saves the entered text -->
+    <string name="core_save">Save</string>
+    <!-- Button label that applies the chosen colour -->
+    <string name="core_apply">Apply</string>
+    <!-- Controller hint: the button that confirms the highlighted choice -->
+    <string name="core_select">Select</string>
+    <!-- Controller hint and button label: close the open sheet or keyboard -->
+    <string name="core_close">Close</string>
+    <!-- Accessibility description of the back arrow in a detail screen header -->
+    <string name="core_back">Back</string>
+
+    <!-- Modals (text entry) -->
+    <!-- Default caption above a text field in a name-entry dialog -->
+    <string name="core_modal_name_label">Name</string>
+    <!-- Character counter under a text field: %1$d characters typed, %2$d maximum -->
+    <string name="core_modal_counter">%1$d / %2$d</string>
+
+    <!-- Convert-to-achievement-tracking picker -->
+    <string name="core_steam_convert_title">Install achievement tracking?</string>
+    <!-- %1$d games ticked out of %2$d listed -->
+    <string name="core_steam_convert_selected_count">%1$d of %2$d</string>
+    <!-- %1$d games listed that can be converted -->
+    <string name="core_steam_convert_found_count">%1$d found</string>
+    <!-- Controller hint line. Keep the double spaces and bullets; button names (Select, Start, B, Up/Down) are the controller's own -->
+    <string name="core_steam_convert_hints">"Up/Down  Rows  •  Select  Toggle  •  △  All/None  •  Start  Install  •  B  Cancel"</string>
+    <string name="core_steam_convert_loading">Reading each game\'s achievement list from Steam…</string>
+    <!-- Button: install tracking into the %1$d ticked games -->
+    <string name="core_steam_convert_install">Install (%1$d)</string>
+    <!-- Button that unticks every game -->
+    <string name="core_steam_convert_none">None</string>
+    <!-- Button that ticks every game -->
+    <string name="core_steam_convert_all">All</string>
+    <!-- Button: skip installing, but still link the games that were already ready -->
+    <string name="core_steam_convert_skip_sync">Skip &amp; Sync</string>
+    <!-- Keep the file names exactly as written -->
+    <string name="core_steam_convert_write_notice">Into each checked game\'s folder PFP writes achievements.json, stats.json and configs.user.ini, creates a saves folder, and renames steam_api64.dll to steam_api64_o.dll so the bundled emulator can load through it.</string>
+    <string name="core_steam_convert_backup_warning">Back up the save files of any game you already played before converting it — the emulator will start reading from the new save location.</string>
+
+    <!-- Shiba player card -->
+    <!-- Experience points total; %1$s is an already formatted number such as 1,250 -->
+    <string name="core_shiba_xp">%1$s XP</string>
+    <!-- Level progress; %1$s coins earned so far in this level, %2$s coins needed. A Bone is the in-app reward earned every 100 levels -->
+    <string name="core_shiba_progress_next_bone">%1$s / %2$s to your next Bone</string>
+    <!-- Level progress; %1$s coins earned so far, %2$s coins needed, %3$d the level number being worked toward -->
+    <string name="core_shiba_progress_next_level">%1$s / %2$s to level %3$d</string>
+    <!-- Short abbreviation of "Level", printed above the level number in a small badge -->
+    <string name="core_shiba_level_abbrev">LV</string>
+
+    <!-- Colour picker -->
+    <!-- Caption above the hexadecimal colour code field -->
+    <string name="core_hsv_hex">Hex</string>
+    <string name="core_hsv_hue">Hue</string>
+    <string name="core_hsv_saturation">Saturation</string>
+    <string name="core_hsv_brightness">Brightness</string>
+    <!-- Controller hints under the picker -->
+    <string name="core_hsv_hint_move">Move</string>
+    <string name="core_hsv_hint_type_hex">Type hex</string>
+    <string name="core_hsv_hint_adjust">Adjust</string>
+    <!-- Preview text shown in the chosen colour on dark and light backgrounds -->
+    <string name="core_hsv_sample_text">Sample text</string>
+    <!-- Preset colour names -->
+    <string name="core_color_default">Default</string>
+    <string name="core_color_pink">Pink</string>
+    <string name="core_color_gold">Gold</string>
+    <string name="core_color_aqua">Aqua</string>
+    <string name="core_color_sky_blue">Sky Blue</string>
+    <string name="core_color_green">Green</string>
+    <string name="core_color_coral">Coral</string>
+    <string name="core_color_slate">Slate</string>
+    <!-- Swatch that opens the full colour picker -->
+    <string name="core_color_custom">Custom</string>
+
+    <!-- Notification detail sheets -->
+    <!-- Controller hint after copying: the details were copied to the clipboard -->
+    <string name="core_sheet_copied">Copied</string>
+    <!-- Controller hint: copy the full details of a notification to the clipboard -->
+    <string name="core_sheet_copy_details">Copy Details</string>
+    <!-- Controller hint: copy the list of results to the clipboard -->
+    <string name="core_sheet_copy_list">Copy List</string>
+    <!-- Controller hint: switch between result filters (All, Failed, ...) -->
+    <string name="core_sheet_filter">Filter</string>
+    <!-- Heading above the plain-language summary of a notification -->
+    <string name="core_sheet_what_happened">What happened</string>
+    <!-- Expandable row: technical details, shown collapsed (▸) or expanded (▾). Keep the arrow and two spaces -->
+    <string name="core_sheet_diagnostic_open">"▾  Diagnostic details"</string>
+    <string name="core_sheet_diagnostic_closed">"▸  Diagnostic details"</string>
+    <!-- Heading of the technical block in the copied plain text -->
+    <string name="core_sheet_diagnostic_heading">Diagnostic</string>
+    <!-- Chip: %1$d items with the outcome named by %2$s (for example "3 Updated") -->
+    <string name="core_sheet_summary_chip">%1$d %2$s</string>
+    <!-- Results filter tab that shows every item -->
+    <string name="core_sheet_filter_all">All</string>
+    <!-- %1$d further items are not listed -->
+    <string name="core_sheet_more">+%1$d more</string>
+    <!-- Heading above suggested remedies for a failed item -->
+    <string name="core_sheet_what_you_can_do">What you can do</string>
+
+    <!-- On-screen keyboard (function keys and controller prompts; the letter rows are not translated) -->
+    <!-- Controller hint: type the highlighted key -->
+    <string name="core_vk_prompt_type">Type</string>
+    <!-- Controller hint: delete the character before the cursor -->
+    <string name="core_vk_prompt_delete">Delete</string>
+    <!-- Controller hint: move the text cursor left or right -->
+    <string name="core_vk_prompt_cursor">Cursor</string>
+    <!-- Controller hint: toggle Caps Lock -->
+    <string name="core_vk_prompt_caps">Caps</string>
+    <!-- Key names, also read aloud by screen readers -->
+    <string name="core_vk_key_space">Space</string>
+    <string name="core_vk_key_shift">Shift</string>
+    <string name="core_vk_key_backspace">Backspace</string>
+    <!-- Key that finishes typing -->
+    <string name="core_vk_key_done">Done</string>
+    <!-- Screen-reader state of the Shift key -->
+    <string name="core_vk_shift_off">Off</string>
+    <string name="core_vk_shift_once">On for the next letter</string>
+    <string name="core_vk_shift_held">On while held</string>
+    <string name="core_vk_shift_locked">Caps lock on</string>
+
+    <!-- Background tasks -->
+    <!-- Fallback notification title when a task failed and gave no title -->
+    <string name="core_task_failed">Task failed</string>
+    <!-- Fallback notification title when a task finished and gave no title -->
+    <string name="core_task_done">Done</string>
+
+    <!-- Detail screens -->
+    <!-- Small badge on a favourite game's banner; shown in capitals -->
+    <string name="core_detail_favorite_badge">FAVORITE</string>
+    <!-- Small badge over a video thumbnail; shown in capitals -->
+    <string name="core_detail_video_badge">VIDEO</string>
+    <string name="core_detail_confirm_collapse">Confirm to collapse</string>
+    <string name="core_detail_confirm_read_more">Confirm to read more</string>
+
+    <!-- Rotate-to-landscape prompt -->
+    <string name="core_rotate_title">Rotate to landscape</string>
+    <string name="core_rotate_message">PlayField Portal runs in landscape. Turn your device sideways to continue.</string>
+    <!-- Button that opens the system chooser to switch to another home app (launcher) -->
+    <string name="core_rotate_switch_launcher">Switch Launcher</string>
+</resources>

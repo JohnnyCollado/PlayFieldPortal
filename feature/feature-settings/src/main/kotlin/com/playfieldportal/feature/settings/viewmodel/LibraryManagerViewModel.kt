@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import com.playfieldportal.core.domain.text.labelRes
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -15,6 +16,8 @@ import com.playfieldportal.core.domain.model.GameContentType
 import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.TaskKind
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 import com.playfieldportal.core.ui.notification.TaskScope
@@ -37,7 +40,7 @@ import com.playfieldportal.feature.library.scanner.LibraryScanner
 import com.playfieldportal.feature.library.scanner.RomScanner
 import com.playfieldportal.feature.library.scanner.ScanStatus
 import com.playfieldportal.feature.library.scanner.isScannable
-import com.playfieldportal.feature.library.scanner.scanOutcomeMessage
+import com.playfieldportal.feature.library.scanner.scanOutcomeBody
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,9 +63,6 @@ const val ADD_CONSOLE_FOCUS_KEY = "add_console"
 private const val ANDROID_PLATFORM_ID = "android"
 private const val WINDOWS_PLATFORM_ID = "windows"
 private const val PSVITA_PLATFORM_ID = "psvita"
-
-private const val INVALID_GAME_ID_MESSAGE =
-    "Enter a valid game ID — a number, or a local_… ID copied from the game's page in the launcher."
 
 enum class LibraryStep { LIST, PICK_PLATFORM, PICK_EMULATOR, SCAN_PROMPT, CARD_DETAIL, IMPORT_PC, GAME_LIST }
 
@@ -115,18 +115,18 @@ data class UnknownLauncherRow(
     val label: String,
     val signerSha256: String?,
     /** "com.xiaoji.egggame · could be GameHub or BannerHub". */
-    val sublabel: String,
+    val sublabel: UiText,
     val choice: LauncherChoice?,
 ) {
     /** The cycling value: the choice, or "Choose…" while undecided. */
-    val value: String get() = choice?.label ?: "Choose…"
+    val value: UiText get() = choice?.label ?: UiText.res(R.string.lib_lm_unknown_choose)
 }
 
 internal fun unknownLauncherRow(app: UnknownLauncher): UnknownLauncherRow = UnknownLauncherRow(
     packageName = app.packageName,
     label = app.label,
     signerSha256 = app.signerSha256,
-    sublabel = "${app.packageName} · ${app.reason}",
+    sublabel = UiText.Joined(listOf(UiText.raw(app.packageName), app.reasonText), " · "),
     choice = app.choice,
 )
 
@@ -162,6 +162,7 @@ data class LibraryCardRow(
 data class PlatformOption(val id: String, val name: String, val shortName: String)
 data class LibraryAppRow(val gameId: Long, val label: String)
 
+/** One emulator choice. The "Decide later" option has a null [id] and no name; the screen words it. */
 data class EmulatorOption(val id: String?, val name: String)
 
 data class LibraryManagerUiState(
@@ -206,7 +207,7 @@ data class LibraryManagerUiState(
     val awaitingRomRootSetup: Boolean = false,
     val renameTargetPlatformId: String? = null,
     val scanningPlatformIds: Set<String> = emptySet(),
-    val message: String? = null,
+    val message: UiText? = null,
     // Row to restore focus to when returning to the LIST from a child screen.
     val returnFocusKey: String? = null,
     // True when this manager was opened directly from the XMB Windows Games item.
@@ -237,16 +238,21 @@ data class LocalSteamFolderRow(
     val hasSchema: Boolean,
 ) {
     /** `appid 620 · from steam_appid.txt · tracking`. */
-    val detail: String
-        get() = listOf(
-            "appid $appId",
-            when (appIdSource) {
-                "MARKER" -> "from steam_appid.txt"
-                "STORED_IDENTITY" -> "from its stored Steam match"
-                else -> "matched by title"
-            },
-            if (hasSchema) "tracking" else "no achievement list yet",
-        ).joinToString("  ·  ")
+    val detail: UiText
+        get() = UiText.Joined(
+            listOf(
+                UiText.res(R.string.lib_lm_local_appid, appId),
+                UiText.res(
+                    when (appIdSource) {
+                        "MARKER" -> R.string.lib_lm_local_from_marker
+                        "STORED_IDENTITY" -> R.string.lib_lm_local_from_stored
+                        else -> R.string.lib_lm_local_by_title
+                    },
+                ),
+                UiText.res(if (hasSchema) R.string.lib_lm_local_tracking else R.string.lib_lm_local_no_list),
+            ),
+            "  ·  ",
+        )
 }
 
 @HiltViewModel
@@ -539,7 +545,7 @@ class LibraryManagerViewModel @Inject constructor(
                 .filter { it.id != WINDOWS_PLATFORM_ID }
                 .map { PlatformOption(it.id, it.name, it.shortName) }
             if (options.isEmpty()) {
-                _scratch.update { it.copy(message = "Every supported platform already has a Memory Card.") }
+                _scratch.update { it.copy(message = UiText.res(R.string.lib_lm_all_platforms_added)) }
                 return@launch
             }
             _scratch.update {
@@ -570,8 +576,8 @@ class LibraryManagerViewModel @Inject constructor(
                 )
                 resetToList()
                 tasks.report(
-                    "lm_add_android", "Android library added",
-                    "Open it in Games → Find Games to add apps.",
+                    "lm_add_android", context.getString(R.string.lib_lm_android_added_title),
+                    context.getString(R.string.lib_lm_android_added_message),
                     NotificationSeverity.SUCCESS,
                     action = NotificationAction.OpenMemoryCard(ANDROID_PLATFORM_ID),
                 )
@@ -587,7 +593,7 @@ class LibraryManagerViewModel @Inject constructor(
             val roots = romRootRepository.getAll()
             if (roots.isEmpty()) {
                 _scratch.update {
-                    it.copy(message = "Set up a ROM Root first — grant your ROM folder under ROM Root Access, then add consoles.")
+                    it.copy(message = UiText.res(R.string.lib_lm_need_rom_root))
                 }
                 return@launch
             }
@@ -668,7 +674,7 @@ class LibraryManagerViewModel @Inject constructor(
             platformId?.let { emulatorProfileRepository.getProfilesForPlatform(it) } ?: emptyList()
         return buildList {
             installed.forEach { add(EmulatorOption(it.id, it.name)) }
-            add(EmulatorOption(null, "Decide later"))
+            add(EmulatorOption(null, ""))
         }
     }
 
@@ -774,7 +780,7 @@ class LibraryManagerViewModel @Inject constructor(
             _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds + PSVITA_PLATFORM_ID) }
             val taskId = "lm_scan_$PSVITA_PLATFORM_ID"
             val open = NotificationAction.OpenMemoryCard(PSVITA_PLATFORM_ID)
-            tasks.startStoppable(taskId, "Scanning PS Vita", TaskKind.SCAN, stopNote = "Games found so far are kept.")
+            tasks.startStoppable(taskId, context.getString(R.string.lib_lm_scanning_vita), TaskKind.SCAN, stopNote = context.getString(R.string.lib_lm_stop_note_games))
             var error: Throwable? = null
             try {
                 val result = runCatching { vitaGameScanner.scan() }
@@ -787,17 +793,17 @@ class LibraryManagerViewModel @Inject constructor(
                     runCatching { memoryCardRepository.recountGames(PSVITA_PLATFORM_ID) }
                 }
                 if (result != null) {
-                    tasks.complete(taskId, result.message, open, title = "PS Vita scan finished")
+                    tasks.complete(taskId, result.message.resolve(context), open, title = context.getString(R.string.lib_lm_vita_finished))
                 } else {
                     tasks.fail(
-                        taskId, "Vita scan failed", open,
+                        taskId, context.getString(R.string.lib_lm_vita_failed_message), open,
                         detail = NotificationDetail.notes(PfpErrorCode.SC_9001, summary = error?.message,
                             diagnostic = error?.stackTraceToString()?.take(4_000)),
-                        title = "PS Vita scan failed",
+                        title = context.getString(R.string.lib_lm_vita_failed),
                     )
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
-                tasks.settleCancelled(taskId, "Stopped before it finished", open, title = "PS Vita scan stopped")
+                tasks.settleCancelled(taskId, context.getString(R.string.lib_lm_stopped), open, title = context.getString(R.string.lib_lm_vita_stopped))
                 throw e
             } finally {
                 _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds - PSVITA_PLATFORM_ID) }
@@ -820,7 +826,7 @@ class LibraryManagerViewModel @Inject constructor(
         viewModelScope.launch {
             ps3DataLibrary.setDataFolder(uri)   // persists the SAF read grant
             _scratch.update {
-                it.copy(message = "PS3 data folder set. Run Auto-Match in Settings ▸ Achievements ▸ Update Achievements to link PS3 trophies.")
+                it.copy(message = UiText.res(R.string.lib_lm_ps3_folder_set))
             }
         }
     }
@@ -836,8 +842,7 @@ class LibraryManagerViewModel @Inject constructor(
             xbox360DataLibrary.setFolder(emulator, uri)   // persists the SAF read grant
             _scratch.update {
                 it.copy(
-                    message = "${emulator.label} data folder set. Run Auto-Match in Settings ▸ Achievements ▸ Update Achievements " +
-                        "to link Xbox 360 achievements.",
+                    message = UiText.res(R.string.lib_lm_x360_folder_set, UiText.res(emulator.labelRes)),
                 )
             }
         }
@@ -868,23 +873,23 @@ class LibraryManagerViewModel @Inject constructor(
             val taskId = "lm_scan_$platformId"
             val name = scanLabel(platformId)
             val open = NotificationAction.OpenMemoryCard(platformId)
-            tasks.startStoppable(taskId, "Scanning $name", TaskKind.SCAN, stopNote = "Games found so far are kept.")
+            tasks.startStoppable(taskId, context.getString(R.string.lib_lm_scanning, name), TaskKind.SCAN, stopNote = context.getString(R.string.lib_lm_stop_note_games))
             val outcome = try {
                 libraryScanner.scanPlatform(platformId, removeMissing)
             } catch (e: kotlinx.coroutines.CancellationException) {
-                tasks.settleCancelled(taskId, "Stopped before it finished", open, title = "$name scan stopped")
+                tasks.settleCancelled(taskId, context.getString(R.string.lib_lm_stopped), open, title = context.getString(R.string.lib_lm_scan_stopped, name))
                 _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds - platformId) }
                 throw e
             }
-            val body = scanOutcomeMessage(outcome, removeMissing).removePrefix("${outcome.displayName}: ")
+            val body = scanOutcomeBody(outcome, removeMissing).resolve(context)
             val cardName = outcome.displayName.removeSuffix(" Memory Card")
             // A failed or skipped card used to be reported as a success; it is a failure, with its code.
             if (outcome.status == ScanStatus.COMPLETED) {
-                tasks.complete(taskId, body, open, null, "$cardName scan finished")
+                tasks.complete(taskId, body, open, null, context.getString(R.string.lib_lm_scan_finished, cardName))
             } else {
                 tasks.fail(
-                    taskId, body, open, outcome.failureNotes(),
-                    if (outcome.status == ScanStatus.FAILED) "$cardName scan failed" else "$cardName scan skipped",
+                    taskId, body, open, outcome.failureNotes { it.resolve(context) },
+                    context.getString(if (outcome.status == ScanStatus.FAILED) R.string.lib_lm_scan_failed else R.string.lib_lm_scan_skipped, cardName),
                 )
             }
             _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds - platformId) }
@@ -1039,13 +1044,13 @@ class LibraryManagerViewModel @Inject constructor(
         val intent = PcLauncherAdapters.forType(row.type, context.packageManager)
             ?.buildLaunchIntent(pkg, id, source)
         if (intent == null) {
-            _scratch.update { it.copy(message = INVALID_GAME_ID_MESSAGE) }
+            _scratch.update { it.copy(message = UiText.res(R.string.lib_lm_invalid_game_id)) }
             return
         }
         runCatching { context.startActivity(intent) }.onFailure { e ->
             Timber.e(e, "PC test launch failed for ${row.name}")
             _scratch.update {
-                it.copy(message = "Test launch failed: ${e.message}. The launcher may block external starts.")
+                it.copy(message = UiText.res(R.string.lib_lm_test_launch_failed, e.message.orEmpty()))
             }
         }
     }
@@ -1059,13 +1064,13 @@ class LibraryManagerViewModel @Inject constructor(
         val pkg = row.packageName ?: return
         val displayName = title?.trim().orEmpty()
         if (displayName.isBlank()) {
-            _scratch.update { it.copy(message = "Enter the game's name — it's shown next to the ID in ${row.name}.") }
+            _scratch.update { it.copy(message = UiText.res(R.string.lib_lm_enter_game_name, row.name)) }
             return
         }
         val intent = PcLauncherAdapters.forType(row.type, context.packageManager)
             ?.buildLaunchIntent(pkg, id, source)
         if (intent == null) {
-            _scratch.update { it.copy(message = INVALID_GAME_ID_MESSAGE) }
+            _scratch.update { it.copy(message = UiText.res(R.string.lib_lm_invalid_game_id)) }
             return
         }
         val intentUri = intent.toUri(Intent.URI_INTENT_SCHEME)
@@ -1089,15 +1094,15 @@ class LibraryManagerViewModel @Inject constructor(
             }.fold(
                 onSuccess = {
                     tasks.report(
-                        "lm_pc_add", "Windows Games",
-                        "\"$displayName\" added to Windows Games.",
+                        "lm_pc_add", context.getString(R.string.lib_lm_windows_games),
+                        context.getString(R.string.lib_lm_pc_game_added, displayName),
                         NotificationSeverity.SUCCESS,
                         action = NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID),
                     )
                 },
                 onFailure = { e ->
                     Timber.e(e, "Add PC game by id failed for ${row.name}")
-                    tasks.report("lm_pc_add", "Windows Games", "Couldn't add game: ${e.message}", NotificationSeverity.ERROR)
+                    tasks.report("lm_pc_add", context.getString(R.string.lib_lm_windows_games), context.getString(R.string.lib_lm_pc_add_failed, e.message.orEmpty()), NotificationSeverity.ERROR)
                 },
             )
         }
@@ -1116,7 +1121,7 @@ class LibraryManagerViewModel @Inject constructor(
             if (folder != null) romRootRepository.persist(folder)
             val taskId = "lm_pc_scan"
             val open = NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID)
-            tasks.startStoppable(taskId, "Scanning Windows Games", TaskKind.SCAN, stopNote = "Games found so far are kept.")
+            tasks.startStoppable(taskId, context.getString(R.string.lib_lm_scanning_windows), TaskKind.SCAN, stopNote = context.getString(R.string.lib_lm_stop_note_games))
             var error: Throwable? = null
             val report = try {
                 runCatching { pcGameScanner.scan(folder) }
@@ -1126,20 +1131,20 @@ class LibraryManagerViewModel @Inject constructor(
                     }
                     .getOrNull()
             } catch (e: kotlinx.coroutines.CancellationException) {
-                tasks.settleCancelled(taskId, "Stopped before it finished", open, title = "Windows Games scan stopped")
+                tasks.settleCancelled(taskId, context.getString(R.string.lib_lm_stopped), open, title = context.getString(R.string.lib_lm_windows_scan_stopped))
                 throw e
             }
             if (report == null) {
                 tasks.fail(
-                    taskId, "PC scan failed", open,
+                    taskId, context.getString(R.string.lib_lm_pc_scan_failed_message), open,
                     detail = NotificationDetail.notes(PfpErrorCode.SC_9001, summary = error?.message,
                         diagnostic = error?.stackTraceToString()?.take(4_000)),
-                    title = "Windows Games scan failed",
+                    title = context.getString(R.string.lib_lm_windows_scan_failed),
                 )
                 return@launch
             }
             if (report.newGames > 0) ensureWindowsCard()
-            tasks.complete(taskId, report.message, open, title = "Windows Games scan finished")
+            tasks.complete(taskId, report.message, open, title = context.getString(R.string.lib_lm_windows_scan_finished))
             // No emulator work here, by design: Local Steam folders are pointed at once through
             // Batch Match Local Games, not searched for on every scan.
         }
@@ -1195,8 +1200,8 @@ class LibraryManagerViewModel @Inject constructor(
         taskScope.launch {
             val taskId = "lm_local_steam_batch"
             val open = NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID)
-            tasks.startStoppable(taskId, "Matching local Windows games", TaskKind.SCAN,
-                stopNote = "Games already matched stay linked.")
+            tasks.startStoppable(taskId, context.getString(R.string.lib_lm_matching), TaskKind.SCAN,
+                stopNote = context.getString(R.string.lib_lm_matching_stop_note))
             _scratch.update { it.copy(batchMatching = true) }
             var error: Throwable? = null
             val report = try {
@@ -1207,22 +1212,22 @@ class LibraryManagerViewModel @Inject constructor(
                     }
                     .getOrNull()
             } catch (e: kotlinx.coroutines.CancellationException) {
-                tasks.settleCancelled(taskId, "Stopped before it finished", open,
-                    title = "Windows achievements match stopped")
+                tasks.settleCancelled(taskId, context.getString(R.string.lib_lm_stopped), open,
+                    title = context.getString(R.string.lib_lm_match_stopped))
                 throw e
             } finally {
                 _scratch.update { it.copy(batchMatching = false) }
             }
             if (report == null) {
                 tasks.fail(
-                    taskId, "Batch match failed", open,
+                    taskId, context.getString(R.string.lib_lm_match_failed_message), open,
                     detail = NotificationDetail.notes(PfpErrorCode.AC_2001, summary = error?.message,
                         diagnostic = error?.stackTraceToString()?.take(4_000)),
-                    title = "Windows achievements match failed",
+                    title = context.getString(R.string.lib_lm_match_failed),
                 )
                 return@launch
             }
-            tasks.complete(taskId, report.message, open, title = "Windows achievements match finished")
+            tasks.complete(taskId, report.messageText.resolve(context), open, title = context.getString(R.string.lib_lm_match_finished))
             refreshLocalWindows()
 
             // The convertible pile is the ONLY place a DLL swap is authorised, and only per game.
@@ -1237,8 +1242,8 @@ class LibraryManagerViewModel @Inject constructor(
                     convertOutcomeMessage(outcome)?.let { msg ->
                         tasks.report(
                             id = "lm_convert",
-                            label = "Goldberg convert",
-                            message = msg + (linked?.let { " ${it.linkedToLibrary} linked to library games." } ?: ""),
+                            label = context.getString(R.string.lib_lm_convert_label),
+                            message = msg + (linked?.let { " " + context.getString(R.string.lib_lm_convert_linked, it.linkedToLibrary) } ?: ""),
                             severity = NotificationSeverity.SUCCESS,
                             action = NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID),
                         )
@@ -1259,9 +1264,9 @@ class LibraryManagerViewModel @Inject constructor(
                 .onFailure { Timber.e(it, "Manual PC game export failed") }
                 .getOrNull()
             if (report != null) {
-                tasks.report("lm_pc_export", "Export Manual Games", report.message, NotificationSeverity.SUCCESS)
+                tasks.report("lm_pc_export", context.getString(R.string.lib_lm_export_label), report.message, NotificationSeverity.SUCCESS)
             } else {
-                tasks.report("lm_pc_export", "Export Manual Games", "Export failed — see the log.", NotificationSeverity.ERROR)
+                tasks.report("lm_pc_export", context.getString(R.string.lib_lm_export_label), context.getString(R.string.lib_lm_export_failed), NotificationSeverity.ERROR)
             }
         }
     }
@@ -1274,13 +1279,13 @@ class LibraryManagerViewModel @Inject constructor(
         ) {
             return null
         }
-        return buildString {
-            append("Converted ${outcome.converted} game(s)")
-            if (outcome.noAchievements > 0) append(", ${outcome.noAchievements} had no achievements")
-            if (outcome.noKey > 0) append(", ${outcome.noKey} need a Steam Web API key")
-            if (outcome.failed > 0) append(", ${outcome.failed} failed")
-            append(". Play each game through the emulator to start earning coins.")
-        }
+        val parts = listOfNotNull(
+            context.resources.getQuantityString(R.plurals.lib_lm_converted, outcome.converted, outcome.converted),
+            if (outcome.noAchievements > 0) context.getString(R.string.lib_lm_convert_no_achievements, outcome.noAchievements) else null,
+            if (outcome.noKey > 0) context.getString(R.string.lib_lm_convert_no_key, outcome.noKey) else null,
+            if (outcome.failed > 0) context.getString(R.string.lib_lm_convert_failed, outcome.failed) else null,
+        )
+        return parts.joinToString(", ") + ". " + context.getString(R.string.lib_lm_convert_play_note)
     }
 
     // ── Windows Games card helpers ────────────────────────────────────────────
@@ -1311,7 +1316,7 @@ class LibraryManagerViewModel @Inject constructor(
     fun importPcGame(row: PcGameRow) {
         viewModelScope.launch {
             runCatching {
-                val game = gameRepository.getById(row.gameId) ?: error("Game not found")
+                val game = gameRepository.getById(row.gameId) ?: error(context.getString(R.string.lib_lm_game_not_found))
                 gameRepository.upsert(
                     game.copy(platformId = WINDOWS_PLATFORM_ID, contentType = GameContentType.GAME)
                 )
@@ -1319,15 +1324,15 @@ class LibraryManagerViewModel @Inject constructor(
             }.fold(
                 onSuccess = {
                     tasks.report(
-                        "lm_pc_import", "Windows Games",
-                        "\"${row.title}\" added to Windows Games.",
+                        "lm_pc_import", context.getString(R.string.lib_lm_windows_games),
+                        context.getString(R.string.lib_lm_pc_game_added, row.title),
                         NotificationSeverity.SUCCESS,
                         action = NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID),
                     )
                 },
                 onFailure = { e ->
                     Timber.e(e, "PC game import failed for ${row.gameId}")
-                    tasks.report("lm_pc_import", "Windows Games", "Couldn't import \"${row.title}\": ${e.message}", NotificationSeverity.ERROR)
+                    tasks.report("lm_pc_import", context.getString(R.string.lib_lm_windows_games), context.getString(R.string.lib_lm_pc_import_failed, row.title, e.message.orEmpty()), NotificationSeverity.ERROR)
                 },
             )
         }
@@ -1342,7 +1347,7 @@ class LibraryManagerViewModel @Inject constructor(
             var failed = 0
             rows.forEach { row ->
                 runCatching {
-                    val game = gameRepository.getById(row.gameId) ?: error("Game not found")
+                    val game = gameRepository.getById(row.gameId) ?: error(context.getString(R.string.lib_lm_game_not_found))
                     gameRepository.upsert(
                         game.copy(
                             platformId = WINDOWS_PLATFORM_ID,
@@ -1358,9 +1363,9 @@ class LibraryManagerViewModel @Inject constructor(
             }
             if (added > 0) ensureWindowsCard()
             // Failures are counted and reported, never shown as a success (survey L26).
-            val (message, severity) = pcImportAllSummary(added, failed)
+            val (message, severity) = pcImportAllSummary(context, added, failed)
             tasks.report(
-                "lm_pc_import_all", "Windows Games",
+                "lm_pc_import_all", context.getString(R.string.lib_lm_windows_games),
                 message,
                 severity,
                 action = NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID),
@@ -1395,10 +1400,11 @@ class LibraryManagerViewModel @Inject constructor(
             Timber.i("ES-DE setup — root=$uri created=${result.created} existing=${result.existing}")
             tasks.report(
                 id = "lm_esde_setup",
-                label = "ROM Root ready",
-                message = "${result.created} folder(s) created" +
-                    (if (result.existing > 0) ", ${result.existing} already there" else "") +
-                    ". Copy your games into the matching folders, then choose Scan ROM Roots.",
+                label = context.getString(R.string.lib_lm_rom_root_ready),
+                message = listOfNotNull(
+                    context.resources.getQuantityString(R.plurals.lib_lm_folders_created, result.created, result.created),
+                    if (result.existing > 0) context.getString(R.string.lib_lm_folders_existing, result.existing) else null,
+                ).joinToString(", ") + ". " + context.getString(R.string.lib_lm_rom_root_next),
                 severity = NotificationSeverity.SUCCESS,
             )
         }
@@ -1414,18 +1420,18 @@ class LibraryManagerViewModel @Inject constructor(
     fun scanRomRoot() {
         taskScope.launch {
             val taskId = "lm_rom_root_scan"
-            tasks.startStoppable(taskId, "Scanning ROM Root", TaskKind.SCAN,
-                stopNote = "Systems already scanned keep their new games.")
+            tasks.startStoppable(taskId, context.getString(R.string.lib_lm_scanning_rom_root), TaskKind.SCAN,
+                stopNote = context.getString(R.string.lib_lm_rom_root_stop_note))
             val report = try {
                 romRootScanRunner.scan()
             } catch (e: kotlinx.coroutines.CancellationException) {
-                tasks.settleCancelled(taskId, "Stopped before it finished", title = "ROM Root scan stopped")
+                tasks.settleCancelled(taskId, context.getString(R.string.lib_lm_stopped), title = context.getString(R.string.lib_lm_rom_root_stopped))
                 throw e
             }
             tasks.complete(
-                taskId, report.message,
-                detail = report.outcomes.takeIf { it.isNotEmpty() }?.let { scanResults(it) },
-                title = "ROM Root scan finished",
+                taskId, report.message.resolve(context),
+                detail = report.outcomes.takeIf { it.isNotEmpty() }?.let { scanResults(it) { text -> text.resolve(context) } },
+                title = context.getString(R.string.lib_lm_rom_root_finished),
             )
         }
     }
@@ -1433,11 +1439,13 @@ class LibraryManagerViewModel @Inject constructor(
 }
 
 /** Import All's tray line and severity: a success, a warning naming the failures, or an error. */
-internal fun pcImportAllSummary(added: Int, failed: Int): Pair<String, NotificationSeverity> {
-    fun games(n: Int) = if (n == 1) "1 PC game" else "$n PC games"
+internal fun pcImportAllSummary(context: Context, added: Int, failed: Int): Pair<String, NotificationSeverity> {
+    val res = context.resources
     return when {
-        failed == 0 -> "Imported ${games(added)} into Windows Games." to NotificationSeverity.SUCCESS
-        added == 0 -> "None of the ${games(failed)} could be imported." to NotificationSeverity.ERROR
-        else -> "Imported ${games(added)} into Windows Games. $failed couldn't be imported." to NotificationSeverity.WARNING
+        failed == 0 ->
+            res.getQuantityString(R.plurals.lib_lm_import_all_done, added, added) to NotificationSeverity.SUCCESS
+        added == 0 ->
+            res.getQuantityString(R.plurals.lib_lm_import_all_none, failed, failed) to NotificationSeverity.ERROR
+        else -> res.getQuantityString(R.plurals.lib_lm_import_all_some, added, added, failed) to NotificationSeverity.WARNING
     }
 }

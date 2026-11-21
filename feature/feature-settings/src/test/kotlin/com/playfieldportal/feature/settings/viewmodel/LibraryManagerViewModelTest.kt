@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.settings.viewmodel
 
 import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
 import com.playfieldportal.core.data.repository.MemoryCardRepository
@@ -8,6 +9,7 @@ import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.core.data.repository.Vita3KLibrary
 import com.playfieldportal.core.data.repository.WindowsLibrarySetup
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator
 import com.playfieldportal.feature.achievements.provider.vita.VitaGameScanner
 import com.playfieldportal.feature.appbar.LauncherShortcutRepository
@@ -20,6 +22,7 @@ import com.playfieldportal.feature.library.scanner.PlatformScanOutcome
 import com.playfieldportal.feature.library.scanner.RomScanner
 import com.playfieldportal.feature.library.scanner.scanOutcomeMessage
 import com.playfieldportal.feature.library.scanner.ScanStatus
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.feature.settings.pc.PcGameScanner
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -42,7 +45,13 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+// Robolectric: the notification titles come from string resources, read through a real context.
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 @OptIn(ExperimentalCoroutinesApi::class)
 class LibraryManagerViewModelTest {
 
@@ -82,6 +91,14 @@ class LibraryManagerViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
+        // The mocked context still words its strings and plurals with the real English resources.
+        val appContext = ApplicationProvider.getApplicationContext<Context>()
+        every { context.getString(any<Int>()) } answers { appContext.getString(firstArg<Int>()) }
+        every { context.getString(any<Int>(), *anyVararg()) } answers {
+            val formatArgs = args.drop(1).flatMap { if (it is Array<*>) it.toList() else listOf(it) }
+            appContext.getString(firstArg<Int>(), *formatArgs.toTypedArray())
+        }
+        every { context.resources } returns appContext.resources
         every { romRootRepository.roots } returns flowOf(emptyList())
         every { memoryCardRepository.observeAll() } returns flowOf(emptyList())
         every { gameRepository.observeAll() } returns flowOf(emptyList())
@@ -164,7 +181,7 @@ class LibraryManagerViewModelTest {
 
         val row = vm.uiState.value.unknownLaunchers.single()
         assertEquals("Wine Fork", row.label)
-        assertEquals("Choose…", row.value)
+        assertEquals(UiText.res(R.string.lib_lm_unknown_choose), row.value)
         assertEquals(0, vm.uiState.value.hiddenUnknownLaunchers.size)
         job.cancel()
     }
@@ -185,7 +202,7 @@ class LibraryManagerViewModelTest {
 
             coVerify { launcherChoices.set("com.example.winefork", null, LauncherChoice.NOT_A_LAUNCHER) }
             coVerify { launcherChoices.set("com.example.winefork", null, LauncherChoice.GAMEHUB) }
-            assertEquals("GameHub", vm.uiState.value.unknownLaunchers.single().value)
+            assertEquals(UiText.raw("GameHub"), vm.uiState.value.unknownLaunchers.single().value)
             job.cancel()
         }
 
@@ -204,7 +221,7 @@ class LibraryManagerViewModelTest {
         vm.showHiddenUnknownLaunchers()
         advanceUntilIdle()
 
-        assertEquals("Not a launcher", vm.uiState.value.unknownLaunchers.single().value)
+        assertEquals(LauncherChoice.NOT_A_LAUNCHER.label, vm.uiState.value.unknownLaunchers.single().value)
         assertTrue(vm.uiState.value.hiddenUnknownLaunchers.isEmpty())
         job.cancel()
     }
@@ -245,7 +262,7 @@ class LibraryManagerViewModelTest {
         advanceUntilIdle()
 
         // The menu opens on exactly what was loaded for this card, never a list left from another.
-        assertEquals(listOf(EmulatorOption("x360mobile", "X360 Mobile"), EmulatorOption(null, "Decide later")), received)
+        assertEquals(listOf(EmulatorOption("x360mobile", "X360 Mobile"), EmulatorOption(null, "")), received)
         job.cancel()
     }
 
@@ -361,7 +378,7 @@ class LibraryManagerViewModelTest {
         io.mockk.verify {
             tasks.complete(
                 "lm_scan_psx",
-                "3 new ROM(s) added",
+                "3 new ROMs added",
                 com.playfieldportal.core.domain.model.NotificationAction.OpenMemoryCard("psx"),
                 null,
                 "PlayStation scan finished",
@@ -375,7 +392,7 @@ class LibraryManagerViewModelTest {
     @Test
     fun `scanConsole reports a failed or skipped card as a failure with its code, not a success`() = runTest(dispatcher) {
         coEvery { libraryScanner.scanPlatform("psx", false) } returns
-            PlatformScanOutcome("psx", "PlayStation Memory Card", ScanStatus.FAILED, errorMessage = "Folder not found")
+            PlatformScanOutcome("psx", "PlayStation Memory Card", ScanStatus.FAILED, errorMessage = UiText.raw("Folder not found"))
         coEvery { libraryScanner.scanPlatform("snes", false) } returns
             PlatformScanOutcome("snes", "SNES Memory Card", ScanStatus.SKIPPED_NO_SOURCE)
 
@@ -412,7 +429,7 @@ class LibraryManagerViewModelTest {
         val outcome = PlatformScanOutcome("psx", "PlayStation Memory Card", ScanStatus.SKIPPED_NO_SOURCE)
         assertEquals(
             "PlayStation Memory Card: ROM folder not configured.",
-            scanOutcomeMessage(outcome, removeMissing = false),
+            scanOutcomeMessage(outcome, removeMissing = false).resolve(ApplicationProvider.getApplicationContext<Context>()),
         )
     }
 
@@ -420,11 +437,11 @@ class LibraryManagerViewModelTest {
     fun `SKIPPED_NO_SOURCE with an error surfaces the error message`() {
         val outcome = PlatformScanOutcome(
             "psx", "PlayStation Memory Card", ScanStatus.SKIPPED_NO_SOURCE,
-            errorMessage = "Memory Card not found.",
+            errorMessage = UiText.raw("Memory Card not found."),
         )
         assertEquals(
             "PlayStation Memory Card: Memory Card not found.",
-            scanOutcomeMessage(outcome, removeMissing = false),
+            scanOutcomeMessage(outcome, removeMissing = false).resolve(ApplicationProvider.getApplicationContext<Context>()),
         )
     }
 
@@ -433,7 +450,7 @@ class LibraryManagerViewModelTest {
         val outcome = PlatformScanOutcome("psx", "PlayStation Memory Card", ScanStatus.SKIPPED_BUSY)
         assertEquals(
             "PlayStation Memory Card: scan already in progress.",
-            scanOutcomeMessage(outcome, removeMissing = false),
+            scanOutcomeMessage(outcome, removeMissing = false).resolve(ApplicationProvider.getApplicationContext<Context>()),
         )
     }
 
@@ -441,11 +458,11 @@ class LibraryManagerViewModelTest {
     fun `FAILED with an error surfaces it`() {
         val outcome = PlatformScanOutcome(
             "psx", "PlayStation Memory Card", ScanStatus.FAILED,
-            errorMessage = "disk full",
+            errorMessage = UiText.raw("disk full"),
         )
         assertEquals(
             "PlayStation Memory Card: disk full",
-            scanOutcomeMessage(outcome, removeMissing = false),
+            scanOutcomeMessage(outcome, removeMissing = false).resolve(ApplicationProvider.getApplicationContext<Context>()),
         )
     }
 
@@ -454,7 +471,7 @@ class LibraryManagerViewModelTest {
         val outcome = PlatformScanOutcome("psx", "PlayStation Memory Card", ScanStatus.FAILED)
         assertEquals(
             "PlayStation Memory Card: scan failed.",
-            scanOutcomeMessage(outcome, removeMissing = false),
+            scanOutcomeMessage(outcome, removeMissing = false).resolve(ApplicationProvider.getApplicationContext<Context>()),
         )
     }
 
@@ -462,8 +479,8 @@ class LibraryManagerViewModelTest {
     fun `COMPLETED without removeMissing reports the added count only`() {
         val outcome = PlatformScanOutcome("psx", "PlayStation Memory Card", ScanStatus.COMPLETED, added = 3)
         assertEquals(
-            "PlayStation Memory Card: 3 new ROM(s) added",
-            scanOutcomeMessage(outcome, removeMissing = false),
+            "PlayStation Memory Card: 3 new ROMs added",
+            scanOutcomeMessage(outcome, removeMissing = false).resolve(ApplicationProvider.getApplicationContext<Context>()),
         )
     }
 
@@ -472,7 +489,7 @@ class LibraryManagerViewModelTest {
         val outcome = PlatformScanOutcome("psx", "PlayStation Memory Card", ScanStatus.COMPLETED)
         assertEquals(
             "PlayStation Memory Card: no new ROMs",
-            scanOutcomeMessage(outcome, removeMissing = false),
+            scanOutcomeMessage(outcome, removeMissing = false).resolve(ApplicationProvider.getApplicationContext<Context>()),
         )
     }
 
@@ -481,7 +498,7 @@ class LibraryManagerViewModelTest {
         val outcome = PlatformScanOutcome("psx", "PlayStation Memory Card", ScanStatus.COMPLETED)
         assertEquals(
             "PlayStation Memory Card: no new ROMs, none missing",
-            scanOutcomeMessage(outcome, removeMissing = true),
+            scanOutcomeMessage(outcome, removeMissing = true).resolve(ApplicationProvider.getApplicationContext<Context>()),
         )
     }
 
@@ -492,8 +509,8 @@ class LibraryManagerViewModelTest {
             added = 1, markedMissing = 2,
         )
         assertEquals(
-            "PlayStation Memory Card: 1 new ROM(s) added, 2 marked missing",
-            scanOutcomeMessage(outcome, removeMissing = true),
+            "PlayStation Memory Card: 1 new ROM added, 2 marked missing",
+            scanOutcomeMessage(outcome, removeMissing = true).resolve(ApplicationProvider.getApplicationContext<Context>()),
         )
     }
 
@@ -501,11 +518,11 @@ class LibraryManagerViewModelTest {
     fun `COMPLETED with an error message appends it in parentheses`() {
         val outcome = PlatformScanOutcome(
             "psx", "PlayStation Memory Card", ScanStatus.COMPLETED,
-            errorMessage = "one source failed",
+            errorMessage = UiText.raw("one source failed"),
         )
         assertEquals(
             "PlayStation Memory Card: no new ROMs (one source failed)",
-            scanOutcomeMessage(outcome, removeMissing = false),
+            scanOutcomeMessage(outcome, removeMissing = false).resolve(ApplicationProvider.getApplicationContext<Context>()),
         )
     }
 }

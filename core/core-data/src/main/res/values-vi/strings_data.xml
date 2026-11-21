@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Slice G2: core-data strings (data-layer messages and enum labels) -->
+<resources>
+
+    <!-- Voice microphone sensitivity (Discord) -->
+    <string name="data_mic_sensitivity_auto">Tự động</string>
+    <string name="data_mic_sensitivity_high">Cao</string>
+    <string name="data_mic_sensitivity_low">Thấp · lọc tiếng bấm</string>
+    <string name="data_mic_sensitivity_minimal">Tối thiểu · chỉ giọng nói to</string>
+
+    <!-- Discord sign-in errors -->
+    <string name="data_discord_offline">Bạn đang ngoại tuyến. Hãy kết nối lại Internet và thử lại.</string>
+    <string name="data_discord_unreachable">Không thể kết nối tới Discord</string>
+    <string name="data_discord_signin_network_error">Lỗi mạng khi đăng nhập</string>
+
+    <!-- Music and video players -->
+    <string name="data_music_no_player">Không trình phát nhạc nào mở được bản nhạc này. Hãy cài một trình phát hoặc chọn trong Cài đặt → Nhạc.</string>
+    <string name="data_video_no_player_open">Không trình phát video nào mở được tệp này. Hãy cài một trình phát hoặc chọn trong Cài đặt → Video.</string>
+    <string name="data_video_chooser_title">Phát video bằng…</string>
+    <string name="data_video_none_installed">Chưa cài trình phát video nào.</string>
+    <string name="data_video_bad_location">Vị trí của video này không hợp lệ.</string>
+    <string name="data_video_unreachable">Không tìm thấy tệp video này hoặc đã mất quyền truy cập. Hãy thử quét lại thư viện.</string>
+    <string name="data_video_player_cannot_open">%1$s không mở được video này hoặc chưa được cài.</string>
+    <string name="data_video_that_player">Trình phát đó</string>
+    <string name="data_video_none_installed_for_file">Chưa cài trình phát video nào để mở tệp này.</string>
+
+    <!-- Lock screen image -->
+    <string name="data_lockscreen_unreadable">Không thể đọc hình ảnh đó</string>
+    <string name="data_lockscreen_rejected">Thiết bị này không chấp nhận hình màn hình khóa</string>
+
+    <!-- PSP theme import (.ptf) -->
+    <string name="data_ptf_unreadable">Không thể đọc tệp (hoặc tệp quá lớn)</string>
+    <string name="data_ptf_not_ptf">Không phải tệp chủ đề PSP (.ptf)</string>
+    <string name="data_ptf_unparseable">Không thể phân tích tệp chủ đề</string>
+    <string name="data_ptf_wallpaper_missing">Chủ đề không có hình nền</string>
+    <string name="data_ptf_wallpaper_unsupported">Chủ đề này nén hình nền bằng phương thức không được hỗ trợ</string>
+    <string name="data_ptf_wallpaper_damaged">Hình nền của chủ đề bị hỏng và không thể giải mã</string>
+    <string name="data_ptf_save_failed">Không thể lưu chủ đề</string>
+
+    <!-- Custom media names -->
+    <string name="data_custom_video">Video tùy chỉnh</string>
+    <string name="data_custom_sound">Âm thanh tùy chỉnh</string>
+
+    <!-- Controllers -->
+    <string name="data_controller_fallback_name">Tay cầm</string>
+</resources>

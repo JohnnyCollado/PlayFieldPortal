@@ -34,7 +34,7 @@ enum class StudioSection(val id: String, val label: String) {
     LAYOUT("layout", "Layout"),
     ICONS("icons", "Icons"),
     SOUNDS("sounds", "Sounds"),
-    BOOT("boot", "Boot & GameBoot"),
+    BOOT("boot", "Boot & Game Boot"),
     EXPORT_CHECK("export", "Export check"),
     ;
 

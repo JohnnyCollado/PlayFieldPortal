@@ -1,14 +1,25 @@
 package com.playfieldportal.core.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.absoluteOffset
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -16,6 +27,8 @@ import com.playfieldportal.core.domain.model.ControllerDisplayType
 import com.playfieldportal.core.domain.model.ControllerIcon
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.GamepadMappings
+import com.playfieldportal.core.domain.model.IconLegibilityStyle
+import com.playfieldportal.core.ui.icons.matteColorFor
 
 // ── Controller prompts ───────────────────────────────────────────────────────
 //
@@ -148,12 +161,88 @@ fun ControllerPromptGlyphs(
         label = label,
         modifier = modifier,
         labelColor = labelColor,
-        labelStyle = labelStyle,
+        // A crisp zero-blur twin replaces any softer drop shadow the caller's style carried.
+        labelStyle = shadowTwinTextStyle(labelColor, labelStyle),
         glyphSize = glyphSize,
         spacing = spacing,
         glyphSpacing = glyphSpacing,
-        glyph = { icon -> ControllerIconGlyph(icon = icon, family = family, size = glyphSize) },
+        glyph = { icon ->
+            ShadowTwinControllerGlyph(icon = icon, family = family, size = glyphSize, matteSource = labelColor)
+        },
     )
+}
+
+// ── Shadow twin ──────────────────────────────────────────────────────────────
+//
+// A matte copy of an element, offset down and right, drawn behind it so it stays readable over any
+// wallpaper or game art without a plate or gradient. The matte colour is the luminance opposite of
+// the element, picked by the icon-legibility machinery (CONTOUR_AUTO) so the two never disagree.
+
+/** How far the twin sits right and down of its element. */
+val ShadowTwinOffset: Dp = 1.5.dp
+
+/**
+ * The matte colour for [content]: dark for light content, light for dark content. Its alpha follows
+ * the content's, so a deliberately faint element (an unlit signal bar) gets a faint twin.
+ */
+fun shadowTwinColor(content: Color): Color {
+    val matte = matteColorFor(IconLegibilityStyle.CONTOUR_AUTO, content) ?: return Color.Transparent
+    return matte.copy(alpha = matte.alpha * content.alpha)
+}
+
+/**
+ * [base] with a zero-blur [Shadow] in the twin colour for text drawn in [color]; a crisp copy,
+ * not a fog. The default base is the ambient style, so a [androidx.compose.material3.Text] given
+ * the result as its `style` keeps the look it had.
+ */
+@Composable
+fun shadowTwinTextStyle(color: Color, base: TextStyle = LocalTextStyle.current): TextStyle {
+    val px = with(LocalDensity.current) { ShadowTwinOffset.toPx() }
+    return base.copy(shadow = Shadow(color = shadowTwinColor(color), offset = Offset(px, px), blurRadius = 0f))
+}
+
+/**
+ * Draws [twin] offset right and down behind [content]. Both should be the same size; the twin
+ * carries no semantics of its own, so [content] stays the only thing a screen reader meets.
+ */
+@Composable
+fun ShadowTwin(
+    twin: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Box(modifier) {
+        Box(Modifier.absoluteOffset(ShadowTwinOffset, ShadowTwinOffset)) { twin() }
+        content()
+    }
+}
+
+/** A controller glyph with its twin: the art's own silhouette in the matte colour, or text shadow. */
+@Composable
+private fun ShadowTwinControllerGlyph(
+    icon: ControllerIcon,
+    family: ControllerDisplayType,
+    size: Dp,
+    matteSource: Color,
+) {
+    val drawable = icon.drawableForOrNull(family)
+    if (drawable == null) {
+        // Printed-label fallback is text, so it takes the text twin.
+        CompositionLocalProvider(
+            LocalTextStyle provides shadowTwinTextStyle(matteSource, LocalTextStyle.current),
+        ) { ControllerIconGlyph(icon = icon, family = family, size = size) }
+        return
+    }
+    ShadowTwin(
+        twin = {
+            Image(
+                painter = painterResource(drawable),
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(shadowTwinColor(matteSource), BlendMode.SrcIn),
+                modifier = Modifier.size(size),
+            )
+        },
+    ) { ControllerIconGlyph(icon = icon, family = family, size = size) }
 }
 
 /**

@@ -2,6 +2,7 @@ package com.playfieldportal.feature.settings.viewmodel
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.content.res.Resources
 import android.net.Uri
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.data.repository.MediaRootKind
@@ -23,7 +24,9 @@ import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
 import com.playfieldportal.feature.artwork.importer.DetectedImportSource
 import com.playfieldportal.feature.artwork.importer.ImportPlan
 import com.playfieldportal.feature.artwork.portable.PortableArtworkLibrary
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.launcher.kb.EmulatorKnowledgeRefresher
+import com.playfieldportal.feature.settings.R
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -56,6 +59,10 @@ class InitialSetupViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val context = mockk<Context>(relaxed = true)
     private val packageManager = mockk<PackageManager>(relaxed = true)
+    // Tray labels are resolved through the context's resources; this fake names the resource id so
+    // a test can assert WHICH text was announced without depending on the English wording.
+    private val resources = mockk<Resources>(relaxed = true)
+    private fun announced(id: Int) = "string-$id"
     private val romRoots = mockk<RomRootRepository>(relaxed = true)
     private val mediaRoots = mockk<MediaRootRepository>(relaxed = true)
     private val artworkImport = mockk<ArtworkImportManager>(relaxed = true)
@@ -95,6 +102,9 @@ class InitialSetupViewModelTest {
     @Before fun setUp() {
         Dispatchers.setMain(dispatcher)
         every { context.packageManager } returns packageManager
+        every { context.resources } returns resources
+        every { resources.getString(any<Int>()) } answers { announced(firstArg()) }
+        every { resources.getString(any<Int>(), *anyVararg()) } answers { announced(firstArg()) }
         every { romRoots.roots } returns flowOf(emptyList())
         every { mediaRoots.roots(any()) } returns flowOf(emptyList())
         every { artworkImport.folderState } returns folderState
@@ -456,7 +466,7 @@ class InitialSetupViewModelTest {
 
         coVerify { artworkImport.startImport(plan, PortableArtworkLibrary.Transfer.COPY) }
         io.mockk.verify {
-            tasks.report(id = "setup_artwork_import", label = match { it.contains("Importing") }, message = any(), severity = any(), kind = any(), action = any())
+            tasks.report(id = "setup_artwork_import", label = announced(R.string.setup_msg_import_started), message = any(), severity = any(), kind = any(), action = any())
         }
         job.cancel()
     }
@@ -469,7 +479,7 @@ class InitialSetupViewModelTest {
             vm.importArtworkNow()
             advanceUntilIdle()
 
-            assertTrue(vm.uiState.value.message.orEmpty().contains("Nothing to import"))
+            assertEquals(UiText.res(R.string.setup_msg_import_none_yet), vm.uiState.value.message)
             coVerify(exactly = 0) { artworkImport.startImport(any(), any()) }
             job.cancel()
         }
@@ -647,12 +657,12 @@ class InitialSetupViewModelTest {
 
         vm.testIgdbCredentials("id", "secret")
         advanceUntilIdle()
-        assertEquals("Valid", vm.uiState.value.igdbStatus)
+        assertEquals(UiText.res(R.string.sets_svc_valid), vm.uiState.value.igdbStatus)
 
         coEvery { igdbApi.testCredentials("id", "wrong") } returns false
         vm.testIgdbCredentials("id", "wrong")
         advanceUntilIdle()
-        assertEquals("Invalid — check Client ID and Secret", vm.uiState.value.igdbStatus)
+        assertEquals(UiText.res(R.string.sets_svc_igdb_invalid), vm.uiState.value.igdbStatus)
         job.cancel()
     }
 
@@ -665,7 +675,7 @@ class InitialSetupViewModelTest {
         vm.nextStep()
         vm.testIgdbCredentials("id", "secret")
         advanceUntilIdle()
-        assertEquals("Valid", vm.uiState.value.igdbStatus)
+        assertEquals(UiText.res(R.string.sets_svc_valid), vm.uiState.value.igdbStatus)
 
         vm.nextStep()
         advanceUntilIdle()
@@ -683,7 +693,7 @@ class InitialSetupViewModelTest {
         // Trimming belongs to the provider (saveTgdbKey trims), so the raw draft is handed over.
         coVerify(exactly = 1) { metadataKeys.saveTgdbKey("  tgdb-key-123  ") }
         // The "connected" confirmation is a tray notification now, not an in-screen row.
-        io.mockk.verify { tasks.report(id = "setup_svc_tgdb", label = "TheGamesDB connected", message = any(), severity = any(), kind = any(), action = any()) }
+        io.mockk.verify { tasks.report(id = "setup_svc_tgdb", label = announced(R.string.setup_msg_tgdb_connected), message = any(), severity = any(), kind = any(), action = any()) }
         job.cancel()
     }
 

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="motion_title">Chuyển động</string>
+    <string name="motion_summary">Mức độ mọi thứ tự chuyển động.</string>
+    <string name="motion_detail_animated">Mọi thứ chuyển động</string>
+    <string name="motion_detail_reduced">Chỉ mục đang chọn</string>
+    <string name="motion_detail_static">Không gì tự chuyển động</string>
+    <string name="motion_sub_animated">Mọi thứ có thể chuyển động đều chuyển động: ảnh bìa, biểu tượng, hình nền, nền và vầng sáng. Tốn pin nhất.</string>
+    <string name="motion_sub_reduced">Chỉ mục đang chọn chuyển động: ảnh bìa, đoạn video và vầng sáng của nó. Nền vẫn chuyển động.</string>
+    <string name="motion_sub_static">Không gì tự chuyển động. Menu vẫn trượt khi bạn di chuyển qua chúng.</string>
+    <string name="motion_holds_background">Đứng yên khi “Chuyển động” được đặt thành “Tĩnh”.</string>
+    <string name="motion_holds_glow">Đứng yên khi “Chuyển động” được đặt thành “Tĩnh”.</string>
+</resources>

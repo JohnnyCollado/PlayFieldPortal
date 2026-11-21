@@ -30,4 +30,11 @@ enum class WaveStyle {
             ANIMATED, STATIC -> STATIC
             REDUCED, REDUCED_STATIC -> REDUCED_STATIC
         }
+
+    /**
+     * This style as Display ▸ Motion allows it. Static holds the background still whatever the
+     * style says, keeping its dim-or-full look; Animated and Reduced leave it as set.
+     */
+    fun under(motion: com.playfieldportal.core.domain.model.ImageMotion): WaveStyle =
+        if (motion == com.playfieldportal.core.domain.model.ImageMotion.STATIC) frozen else this
 }

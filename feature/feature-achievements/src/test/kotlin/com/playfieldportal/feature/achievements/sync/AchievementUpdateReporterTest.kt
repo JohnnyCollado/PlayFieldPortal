@@ -5,6 +5,7 @@ import com.playfieldportal.core.domain.model.NotificationKind
 import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
+import com.playfieldportal.feature.achievements.EnglishText
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -19,7 +20,7 @@ import kotlin.test.Test
 class AchievementUpdateReporterTest {
 
     private val tasks = mockk<BackgroundTaskCenter>(relaxed = true)
-    private val reporter = AchievementUpdateReporter(tasks)
+    private val reporter = AchievementUpdateReporter(tasks, EnglishText.context())
     private val id = AchievementUpdateReporter.UPDATE_TASK_ID
 
     private fun summary(

@@ -50,8 +50,15 @@ data class SystemStatus(
 
 const val SIGNAL_MAX_LEVEL = 4
 
+/**
+ * A fixed status for previews and screenshot renders, where there is no radio or controller to read.
+ * Null in the app, so the live readings below are used.
+ */
+val LocalSystemStatusOverride = androidx.compose.runtime.compositionLocalOf<SystemStatus?> { null }
+
 @Composable
 fun rememberSystemStatus(): SystemStatus {
+    LocalSystemStatusOverride.current?.let { return it }
     val context = LocalContext.current
     var status by remember { mutableStateOf(SystemStatus()) }
 

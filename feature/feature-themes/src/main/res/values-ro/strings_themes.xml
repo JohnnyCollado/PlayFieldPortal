@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="thm_error_manifest_missing">Lipsește fișierul obligatoriu theme.json din arhivă</string>
+    <string name="thm_error_manifest_invalid">theme.json nevalid: %1$s</string>
+    <string name="thm_error_id_invalid">ID de temă nevalid \'%1$s\' — folosește litere, cifre, \'.\', \'_\' sau \'-\' (max. 64)</string>
+    <string name="thm_error_color_invalid">%1$s nevalid \'%2$s\' — se așteaptă #RRGGBB sau #AARRGGBB</string>
+</resources>

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Slice H2: feature-achievements (achievement updates, Local Steam folders, Vita scan) -->
+<resources>
+    <!-- Achievement update notifications -->
+    <string name="ach_upd_running">Installierte Errungenschaften werden aktualisiert</string>
+    <string name="ach_upd_running_stop_note">Bereits aktualisierte Errungenschaften bleiben erhalten.</string>
+    <string name="ach_upd_progress">Prüfe %1$d von %2$d Spielen</string>
+    <string name="ach_upd_stopped">Errungenschaftsaktualisierung gestoppt</string>
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="one">%d Spiel geprüft; gespeicherter Fortschritt bleibt erhalten</item>
+        <item quantity="other">%d Spiele geprüft; gespeicherter Fortschritt bleibt erhalten</item>
+    </plurals>
+    <string name="ach_upd_some_failed">Einige Errungenschaften konnten nicht aktualisiert werden</string>
+    <plurals name="ach_upd_failed_message">
+        <item quantity="one">%1$d von %2$d Spiel braucht einen neuen Versuch</item>
+        <item quantity="other">%1$d von %2$d Spielen brauchen einen neuen Versuch</item>
+    </plurals>
+    <string name="ach_upd_results_done">Aktualisiert</string>
+    <string name="ach_upd_updated">Errungenschaften aktualisiert</string>
+    <plurals name="ach_upd_updated_message">
+        <item quantity="one">%1$d Spiel aktualisiert · %2$d unverändert</item>
+        <item quantity="other">%1$d Spiele aktualisiert · %2$d unverändert</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">Errungenschaften sind aktuell</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="one">%d installiertes Spiel geprüft</item>
+        <item quantity="other">%d installierte Spiele geprüft</item>
+    </plurals>
+    <string name="ach_upd_paused">Errungenschaftsaktualisierung pausiert</string>
+    <string name="ach_upd_fact_service">Dienst</string>
+    <string name="ach_upd_pause_offline">Mit dem Internet verbinden</string>
+    <string name="ach_upd_pause_reconnect">%1$s erneut verbinden</string>
+    <string name="ach_upd_pause_steam_private">Steam-Spieldetails sind nicht verfügbar</string>
+
+    <!-- Auto-match notifications -->
+    <string name="ach_match_running">Spiele werden automatisch zugeordnet</string>
+    <string name="ach_match_running_stop_note">Bereits zugeordnete Spiele bleiben verknüpft.</string>
+    <string name="ach_match_stopped_note">Bereits zugeordnete Spiele bleiben verknüpft</string>
+    <string name="ach_match_stopped">Automatische Zuordnung gestoppt</string>
+    <string name="ach_match_recognized">Spiele erkannt</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="one">%d installiertes Spiel zugeordnet. Seine Errungenschaften werden aktualisiert.</item>
+        <item quantity="other">%d installierte Spiele zugeordnet. Ihre Errungenschaften werden aktualisiert.</item>
+    </plurals>
+
+    <!-- Clearing achievement records -->
+    <string name="ach_clear_done">Errungenschaftsdaten gelöscht</string>
+    <string name="ach_clear_done_message">Installierte Spiele müssen neu synchronisiert werden, damit Errungenschaften wieder angezeigt werden</string>
+    <string name="ach_clear_failed">Errungenschaften konnten nicht gelöscht werden</string>
+    <string name="ach_clear_failed_message">Es wurde nichts entfernt. Versuche es erneut unter Einstellungen ▸ Errungenschaften</string>
+
+    <!-- Local Steam: why a game's Steam identity could not be checked -->
+    <string name="ach_ls_unavail_store">der Store konnte nicht abgefragt werden</string>
+    <string name="ach_ls_unavail_steam">Steam ist gerade nicht verfügbar</string>
+    <string name="ach_ls_steam_unreachable">Steam war nicht erreichbar</string>
+    <string name="ach_ls_steam_rate_limited">Steam drosselt die Anfragen</string>
+    <string name="ach_ls_steam_error">Steam hat einen Fehler gemeldet</string>
+    <string name="ach_ls_steam_needs_key">Steam benötigt deinen Web-API-Schlüssel</string>
+
+    <!-- Local Steam: linking a picked game folder -->
+    <string name="ach_link_no_match">Steam hat kein Spiel, das zu \"%1$s\" passt. Benenne den Ordner nach dem Steam-Namen des Spiels um oder verknüpfe es zuerst über Spieldetails ▸ Spiel zuordnen.</string>
+    <string name="ach_link_unavailable">%1$s, daher konnte die App-ID dieses Ordners nicht ermittelt werden. Es wurde nichts geändert – versuche es erneut, wenn du wieder online bist.</string>
+    <string name="ach_link_marker_failed">steam_appid.txt konnte in diesem Ordner nicht erstellt werden – PFP hat dort möglicherweise nur Lesezugriff.</string>
+    <string name="ach_link_not_recorded">Die gewählte Zuordnung konnte nicht gespeichert werden.</string>
+    <string name="ach_link_installer_off">Aktiviere „Goldberg installieren &amp; Spiele konvertieren“ in den Errungenschafts-Einstellungen, bevor PFP in einen Spielordner schreibt.</string>
+    <string name="ach_link_no_app_id">Dieser Ordner gibt keine App-ID mehr an – wähle ihn erneut aus.</string>
+    <string name="ach_link_need_key">Füge deinen Steam-Web-API-Schlüssel unter Einstellungen ▸ Errungenschaften ▸ Anbieter-Zugangsdaten hinzu – die Errungenschaftsliste stammt von dort.</string>
+    <string name="ach_link_no_achievements">Steam listet keine Errungenschaften für App-ID %1$s, daher gibt es nichts zu verfolgen.</string>
+    <string name="ach_link_kit_failed">Das Errungenschafts-Kit konnte nicht geschrieben werden: %1$s</string>
+    <string name="ach_link_read_back_failed">Dieser Ordner konnte nicht erneut gelesen werden. Liegt er auf einem Wechselspeicher, binde ihn neu ein und wähle ihn erneut aus.</string>
+    <string name="ach_link_not_steam_build">In diesem Ordner gibt es keine Steam-Bibliotheksdatei (steam_api64.dll), es ist also kein Steam-Build und der Emulator hat nichts zu verfolgen. Wähle den Ordner, in dem die .exe des Spiels liegt.</string>
+
+    <!-- Local Steam: convert picker rows -->
+    <string name="ach_pick_checking">Steam wird geprüft…</string>
+    <plurals name="ach_pick_coins">
+        <item quantity="one">%1$d Münze  ·  App-ID %2$s</item>
+        <item quantity="other">%1$d Münzen  ·  App-ID %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">Keine Liste auf Steam  ·  App-ID %1$s</string>
+    <string name="ach_pick_needs_key">Benötigt deinen Steam-Web-API-Schlüssel  ·  App-ID %1$s</string>
+    <string name="ach_pick_no_answer">Steam hat nicht geantwortet  ·  App-ID %1$s</string>
+
+    <!-- Local Steam: batch match summary -->
+    <string name="ach_batch_already_running">Eine Sammelzuordnung läuft bereits.</string>
+    <string name="ach_batch_no_folders">Dort gibt es keine Spielordner. Wähle den Ordner, der deine Spielordner ENTHÄLT, nicht den Ordner eines einzelnen Spiels.</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="one">%d Ordner gefunden, aber er ist kein Steam-Build – keine steam_api-Bibliothek, der Emulator hat also nichts zu verfolgen.</item>
+        <item quantity="other">%d Ordner gefunden, aber keiner davon ist ein Steam-Build – keine steam_api-Bibliothek, der Emulator hat also nichts zu verfolgen.</item>
+    </plurals>
+    <string name="ach_batch_linked">%1$d mit Bibliotheksspielen verknüpft</string>
+    <string name="ach_batch_tracked">%1$d eigenständig verfolgt</string>
+    <string name="ach_batch_converting">%1$d warten auf Konvertierung</string>
+    <plurals name="ach_batch_matched">
+        <item quantity="one">%1$d von %2$d Ordner zugeordnet.</item>
+        <item quantity="other">%1$d von %2$d Ordnern zugeordnet.</item>
+    </plurals>
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="one">%1$d von %2$d Ordner zugeordnet: %3$s.</item>
+        <item quantity="other">%1$d von %2$d Ordnern zugeordnet: %3$s.</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="one">%1$d konnte nicht anhand des Namens erkannt werden – öffne die Shiba-Coins-Seite des Spiels und wähle per Auto-Zuordnung seinen Ordner.</item>
+        <item quantity="other">%1$d konnten nicht anhand ihrer Namen erkannt werden – öffne die Shiba-Coins-Seite jedes Spiels und wähle per Auto-Zuordnung seinen Ordner.</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="one">%1$d ist nicht in deiner Bibliothek – füge es zuerst der Windows-Karte hinzu und ordne dann erneut zu.</item>
+        <item quantity="other">%1$d sind nicht in deiner Bibliothek – füge sie zuerst der Windows-Karte hinzu und ordne dann erneut zu.</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="one">%1$d ist kein Steam-Build.</item>
+        <item quantity="other">%1$d sind keine Steam-Builds.</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="one">%1$d fehlgeschlagen – siehe Protokoll.</item>
+        <item quantity="other">%1$d fehlgeschlagen – siehe Protokoll.</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">Dieser Ordner konnte nicht geöffnet werden.</string>
+    <string name="ach_batch_fail_read_back">%1$s: konnte nach der Erkennung nicht erneut gelesen werden.</string>
+    <string name="ach_batch_fail_reason">%1$s: %2$s.</string>
+    <string name="ach_batch_fail_marker">%1$s: steam_appid.txt konnte nicht erstellt werden.</string>
+
+    <!-- Vita3K library scan results -->
+    <string name="ach_vita_set_folder">Lege zuerst deinen Vita3K-Datenordner (ux0) fest.</string>
+    <string name="ach_vita_link_invalid">Die Verknüpfung zum Vita3K-Ordner ist ungültig – erteile den Zugriff erneut.</string>
+    <string name="ach_vita_no_ux0">ux0/app wurde im freigegebenen Ordner nicht gefunden – wähle deinen Vita3K-ux0-Ordner (oder den Ordner, der ihn enthält).</string>
+    <string name="ach_vita_no_app">Kein app/-Ordner unter ux0 – prüfe den freigegebenen Ordner.</string>
+    <string name="ach_vita_none_installed">Keine installierten Vita-Spiele unter ux0/app gefunden. Installiere zuerst ein Spiel in Vita3K.</string>
+    <plurals name="ach_vita_no_new">
+        <item quantity="one">Keine neuen Vita-Spiele – %d bereits in deiner Bibliothek.</item>
+        <item quantity="other">Keine neuen Vita-Spiele – %d bereits in deiner Bibliothek.</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="one">%d Vita-Spiel importiert.</item>
+        <item quantity="other">%d Vita-Spiele importiert.</item>
+    </plurals>
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="one">%1$d Vita-Spiel importiert, %2$d aktualisiert.</item>
+        <item quantity="other">%1$d Vita-Spiele importiert, %2$d aktualisiert.</item>
+    </plurals>
+</resources>

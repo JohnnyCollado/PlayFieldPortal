@@ -31,7 +31,7 @@ class BackupWorker @AssistedInject constructor(
                 workDataOf(KEY_OUTPUT_PATH to result.displayName)
             )
             is BackupResult.Failure -> Result.failure(
-                workDataOf(KEY_ERROR to result.reason)
+                workDataOf(KEY_ERROR to result.reason.resolve(applicationContext))
             )
         }
     }

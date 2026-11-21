@@ -1,5 +1,6 @@
 package com.playfieldportal.core.ui.notification
 
+import android.content.Context
 import com.playfieldportal.core.domain.model.BackgroundTaskInfo
 import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.NotificationDetail
@@ -9,8 +10,10 @@ import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.core.domain.repository.NotificationRepository
 import com.playfieldportal.core.domain.repository.NotificationSettings
+import com.playfieldportal.core.ui.R
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.sound.MenuSoundPlayer
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Collections
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -54,6 +57,8 @@ class BackgroundTaskCenter @Inject constructor(
     // The one place a tray notification rings. A row settling here is exactly "a notification
     // popped up", so the cue fires here and nowhere else (no chimes on automatic rescans or backups).
     private val menuSound: MenuSoundPlayer,
+    // Resolves the fallback row titles ("Task failed" / "Done") in the user's language.
+    @ApplicationContext private val context: Context,
 ) {
     // Process-lifetime singleton, so its own scope rather than a plumbed one: a task that settles
     // must still get its row written even if the ViewModel that started it is already gone.
@@ -259,7 +264,9 @@ class BackgroundTaskCenter @Inject constructor(
         publish()
         val title = label
             ?: task?.label?.trimEnd(ELLIPSIS, '.', ' ')
-            ?: if (severity == NotificationSeverity.ERROR) "Task failed" else "Done"
+            ?: context.getString(
+                if (severity == NotificationSeverity.ERROR) R.string.core_task_failed else R.string.core_task_done,
+            )
         if (!recordHistory) return
         // A row is about to land in the panel — ring the notification cue, unless the user already
         // knows (a read row: a stop they asked for). Fired off the DB write so it is not held by IO.

@@ -27,6 +27,9 @@ import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.components.PfpModalSpec
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
+import android.content.res.Resources
+import androidx.compose.ui.res.stringResource
+import com.playfieldportal.feature.xmb.R
 
 // ── Shared, controller-navigable "Add to Collection" picker ──────────────────
 // Used by both the console Game Detail and the Android App Detail screens. The owning
@@ -77,9 +80,9 @@ fun CollectionPickerPanel(
                 .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text("Add to Card", color = themedText(TextPrimary), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.xmbu_common_add_to_card), color = themedText(TextPrimary), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Text(
-                "Up/Down  Navigate  •  Select  Toggle  •  B  Close",
+                stringResource(R.string.xmbu_collection_picker_hint),
                 color = themedSubText(TextMuted.copy(alpha = 0.5f)),
                 fontSize = 10.sp,
             )
@@ -98,7 +101,7 @@ fun CollectionPickerPanel(
                 }
                 // Final row — create a brand-new collection.
                 PickerRow(
-                    label = "＋  New Custom Memory Card",
+                    label = stringResource(R.string.xmbu_collection_picker_new_row),
                     trailingCheck = false,
                     isFocused = ui.isCreateRow,
                     onClick = { onRowClick(ui.options.size) },
@@ -106,7 +109,7 @@ fun CollectionPickerPanel(
 
                 if (ui.options.isEmpty()) {
                     Text(
-                        "No custom memory cards yet — create one to get started.",
+                        stringResource(R.string.xmbu_collection_picker_empty),
                         color = themedSubText(TextMuted),
                         fontSize = 12.sp,
                         modifier = Modifier.padding(top = 4.dp, start = 4.dp),
@@ -124,11 +127,12 @@ fun CollectionPickerPanel(
 fun collectionNameModalSpec(
     onCreate: (String) -> Unit,
     onCancel: () -> Unit,
+    res: Resources,
 ): PfpModalSpec.TextEntry = PfpModalSpec.TextEntry(
     key = "new_collection",
-    title = "New Custom Memory Card",
-    placeholder = "e.g. RPGs, Currently Playing",
-    confirmLabel = "Create",
+    title = res.getString(R.string.xmbu_collection_new_title),
+    placeholder = res.getString(R.string.xmbu_collection_new_placeholder),
+    confirmLabel = res.getString(R.string.xmbu_collection_new_create),
     onConfirm = onCreate,
     onCancel = onCancel,
 )

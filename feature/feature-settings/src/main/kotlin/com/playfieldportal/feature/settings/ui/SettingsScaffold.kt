@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.feature.settings.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -93,6 +95,9 @@ import com.playfieldportal.core.domain.model.isDirectional
 import com.playfieldportal.core.ui.components.ControllerHintBar
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.components.LocalPfpBackdropBlur
+import com.playfieldportal.core.ui.components.PfpScrollBar
+import com.playfieldportal.core.ui.detail.pfpBackdropBlurLayer
 import com.playfieldportal.core.ui.gesture.dragToScroll
 import com.playfieldportal.core.ui.keyboard.InputSource
 import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
@@ -290,10 +295,11 @@ private val ActionSwitchIcons = listOf(
     com.playfieldportal.core.domain.model.ControllerIcon.DPAD_RIGHT,
 )
 
-val SettingsDefaultHelperItems = listOf(
-    ControllerPromptItem(GamepadAction.SELECT, "Enter"),
-    ControllerPromptItem(GamepadAction.BACK, "Back"),
-)
+val SettingsDefaultHelperItems: List<ControllerPromptItem>
+    @Composable get() = listOf(
+        ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.sets_prompt_enter)),
+        ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.sets_prompt_back)),
+    )
 
 /**
  * The shared controller-helper section is present on every ordinary fullscreen settings screen.
@@ -910,7 +916,11 @@ fun SettingsScaffold(
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize(),
+                    .fillMaxSize()
+                    // The screen's content layer. A prompt or panel is the screen's own sibling
+                    // (`modal.Content()` beside this scaffold), so it is outside this node and stays
+                    // sharp; SettingsNavHost provides the state it raises. The scrim stays crisp.
+                    .pfpBackdropBlurLayer(LocalPfpBackdropBlur.current),
             ) {
                 // Header band — chrome, and therefore a SIBLING of the scrolling body, which is
                 // why a drag here used to die. dragToScroll hands it the body's own scroll state
@@ -926,15 +936,19 @@ fun SettingsScaffold(
                 if (header != null) {
                     header()
                 } else {
-                // ── Header — breadcrumb form, matching the detail menus: the ◀ back arrow
-                // leads, followed by the title stack. Excluded from focus traversal: the arrow
-                // is clickable (touch only — the controller uses the B button), so without this,
-                // pressing UP on the first row would jump focus up into the header.
+                // ── Header: the same breadcrumb shape as every detail screen (Player Status is the
+                // model, chosen as the uniform design on 21 Nov 2026): the ◀ back arrow, the
+                // screen's own name, and under it where the screen sits. Excluded from focus
+                // traversal: the arrow is clickable (touch only — the controller uses the B button),
+                // so without this, pressing UP on the first row would jump focus up into the header.
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .focusProperties { canFocus = false }
-                        .padding(horizontal = 48.dp, vertical = 20.dp),
+                        .padding(
+                            horizontal = com.playfieldportal.core.ui.detail.DetailContentPadding,
+                            vertical = 8.dp,
+                        ),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     // Arrow AND title stack both trigger back — one tap target, no press highlight.
@@ -947,27 +961,33 @@ fun SettingsScaffold(
                             indication = null,
                         ) { menuSounds.play(MenuSound.BACK); onBack() },
                     ) {
-                        Text(
-                            text = "◀",
-                            color = SettingsSubtext,
-                            fontSize = 18.sp,
-                            style = TextStyle(shadow = SettingsTextShadow),
-                            modifier = Modifier.padding(end = 20.dp),
-                        )
+                        // 48dp touch target (Android's minimum) around the glyph.
+                        Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "◀",
+                                color = SettingsSubtext,
+                                fontSize = 16.sp,
+                                style = TextStyle(shadow = SettingsTextShadow),
+                            )
+                        }
+                        Spacer(Modifier.width(4.dp))
                         Column {
-                            // Where this screen sits: its parent, as written. The screen's own
-                            // name is the line below, so it is not repeated here.
+                            // The screen's own name first, then its parent, as written.
+                            Text(
+                                text = subtitle,
+                                color = SettingsText,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                style = TextStyle(shadow = SettingsTextShadow),
+                            )
                             Text(
                                 text = title,
                                 color = SettingsSubtext,
                                 fontSize = 12.sp,
-                                style = TextStyle(shadow = SettingsTextShadow),
-                            )
-                            Text(
-                                text = subtitle,
-                                color = SettingsText,
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Light,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                 style = TextStyle(shadow = SettingsTextShadow),
                             )
                         }
@@ -1001,10 +1021,13 @@ fun SettingsScaffold(
                 // Content owns the remaining height; with a wizard footer the content Box is
                 // weighted so the measured viewport (below) excludes the footer band and
                 // keep-in-view clamping never walks a row underneath it.
+                //
+                // The outer Box owns the height; the fade lives on the inner one so the slim scroll
+                // bar, drawn over it in the end gutter, is never dissolved by the bottom fade.
+                Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
+                        .fillMaxSize()
                         // NOTE: deliberately NOT dragToScroll'd. This Box is an ANCESTOR of the
                         // body's own verticalScroll, and both would drive the SAME ScrollState.
                         // Modifier.scrollable takes part in nested scrolling, so the two contend
@@ -1046,6 +1069,10 @@ fun SettingsScaffold(
                 ) {
                     content()
                 }
+                // The rows keep 48dp clear at each end, so the bar sits in that gutter. Drawn from
+                // the state the screen registered, so no screen opts in.
+                contentScrollState.value?.let { PfpScrollBar(it, Modifier.align(Alignment.CenterEnd)) }
+                }
 
                 // Footer band — the other half of the dead zone, wired to the same scroll owner
                 // as the header. The wizard's Enter/Back chrome arrives through the [footer] slot,
@@ -1077,9 +1104,9 @@ fun SettingsScaffold(
                             buildList {
                                 add(ControllerPromptItem(GamepadAction.SELECT, actionLabel))
                                 if (navigationState.focusedActionSiblingCount > 1) {
-                                    add(ControllerPromptItem.fixed(ActionSwitchIcons, "Switch"))
+                                    add(ControllerPromptItem.fixed(ActionSwitchIcons, stringResource(R.string.sets_prompt_switch)))
                                 }
-                                add(ControllerPromptItem(GamepadAction.BACK, "Back"))
+                                add(ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.sets_prompt_back)))
                             }
                         } else {
                             helperFooterItems.ifEmpty { SettingsDefaultHelperItems }
@@ -1088,7 +1115,7 @@ fun SettingsScaffold(
                             prompts.none { GamepadAction.OPEN_CONTEXT_MENU in it.actions }
                         SettingsHelperFooter(
                             if (offersOptions) {
-                                prompts + ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options")
+                                prompts + ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, stringResource(R.string.sets_prompt_options))
                             } else {
                                 prompts
                             },

@@ -13,10 +13,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.NotificationDetail
 import com.playfieldportal.core.domain.model.ResultItem
+import com.playfieldportal.core.ui.R
 import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -56,7 +58,8 @@ sealed interface PfpModalSpec {
         val title: String,
         val message: String,
         val confirmLabel: String,
-        val cancelLabel: String = "Cancel",
+        /** Null reads the shared "Cancel". */
+        val cancelLabel: String? = null,
         val destructive: Boolean = false,
         val openOnCancel: Boolean = destructive,
         val onConfirm: () -> Unit,
@@ -74,7 +77,8 @@ sealed interface PfpModalSpec {
         val message: String,
         val options: List<PfpChoiceOption>,
         val confirmLabel: String,
-        val cancelLabel: String = "Cancel",
+        /** Null reads the shared "Cancel". */
+        val cancelLabel: String? = null,
         val destructive: Boolean = false,
         val initialSelected: Int = 0,
         val onConfirm: (Int) -> Unit,
@@ -86,7 +90,8 @@ sealed interface PfpModalSpec {
         override val key: Any,
         val title: String,
         val message: String,
-        val buttonLabel: String = "OK",
+        /** Null reads the shared "OK". */
+        val buttonLabel: String? = null,
         val onDismiss: () -> Unit,
     ) : PfpModalSpec
 
@@ -99,9 +104,11 @@ sealed interface PfpModalSpec {
         val title: String,
         val initial: String = "",
         val placeholder: String = "",
-        val confirmLabel: String = "Save",
+        /** Null reads the shared "Save". */
+        val confirmLabel: String? = null,
         val allowBlank: Boolean = false,
-        val label: String = "Name",
+        /** Null reads the shared "Name". */
+        val label: String? = null,
         /** Several lines (a description), rather than one name. */
         val multiline: Boolean = false,
         /** The system keyboard opens on its number page. */
@@ -182,6 +189,8 @@ fun rememberPfpModalHost(spec: PfpModalSpec?, showHints: Boolean = true): PfpMod
     val menuSounds = LocalMenuSounds.current
     val scope = rememberCoroutineScope()
     val scrollStepPx = with(LocalDensity.current) { 96.dp.toPx() }
+    // Heading of the diagnostic block in the copied Notes text; read here because copy runs outside composition.
+    val diagnosticHeading = stringResource(R.string.core_sheet_diagnostic_heading)
 
     val key = spec?.key
     var focus by remember(key) {
@@ -288,7 +297,7 @@ fun rememberPfpModalHost(spec: PfpModalSpec?, showHints: Boolean = true): PfpMod
                     onScroll = { step -> scope.launch { messageScroll.animateScrollBy(step * scrollStepPx) } },
                     onAction = spec.onAction,
                     onCopy = {
-                        spec.onCopy(DetailSheetText.notes(spec.title, spec.detail))
+                        spec.onCopy(DetailSheetText.notes(spec.title, spec.detail, diagnosticHeading))
                         copiedAt = System.currentTimeMillis()
                     },
                     onToggleDiagnostic = { diagnosticOpen = !diagnosticOpen },
@@ -327,7 +336,7 @@ fun rememberPfpModalHost(spec: PfpModalSpec?, showHints: Boolean = true): PfpMod
                 title = spec.title,
                 message = spec.message,
                 confirmLabel = spec.confirmLabel,
-                cancelLabel = spec.cancelLabel,
+                cancelLabel = spec.cancelLabel ?: stringResource(R.string.core_cancel),
                 focus = focus,
                 destructive = spec.destructive,
                 onConfirm = spec.onConfirm,
@@ -345,7 +354,7 @@ fun rememberPfpModalHost(spec: PfpModalSpec?, showHints: Boolean = true): PfpMod
                 focus = focus,
                 onConfirm = { spec.onConfirm(selected) },
                 onCancel = spec.onCancel,
-                cancelLabel = spec.cancelLabel,
+                cancelLabel = spec.cancelLabel ?: stringResource(R.string.core_cancel),
                 destructive = spec.destructive,
                 showHints = showHints,
                 messageScroll = messageScroll,
@@ -353,7 +362,7 @@ fun rememberPfpModalHost(spec: PfpModalSpec?, showHints: Boolean = true): PfpMod
             is PfpModalSpec.Notice -> PfpNoticeModal(
                 title = spec.title,
                 message = spec.message,
-                buttonLabel = spec.buttonLabel,
+                buttonLabel = spec.buttonLabel ?: stringResource(R.string.core_ok),
                 onDismiss = spec.onDismiss,
                 showHints = showHints,
                 messageScroll = messageScroll,
@@ -367,9 +376,9 @@ fun rememberPfpModalHost(spec: PfpModalSpec?, showHints: Boolean = true): PfpMod
                 onConfirm = { spec.onConfirm(text.trim()) },
                 onCancel = spec.onCancel,
                 placeholder = spec.placeholder,
-                confirmLabel = spec.confirmLabel,
+                confirmLabel = spec.confirmLabel ?: stringResource(R.string.core_save),
                 allowBlank = spec.allowBlank,
-                label = spec.label,
+                label = spec.label ?: stringResource(R.string.core_modal_name_label),
                 multiline = spec.multiline,
                 numeric = spec.numeric,
                 showHints = showHints,

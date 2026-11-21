@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_title">Fokusglöd</string>
+    <string name="glow_sub_off">Ingen glöd runt den valda ikonen.</string>
+    <string name="glow_sub_steady">Ett mjukt ljus runt den valda ikonen. Det är stilla.</string>
+    <string name="glow_sub_pulsing">Ljuset runt den valda ikonen växer och avtar långsamt. Det är stilla så länge ”Rörelse” är inställt på ”Statisk”.</string>
+    <string name="glow_value_off">Av</string>
+    <string name="glow_value_steady">Stilla</string>
+    <string name="glow_value_pulsing">Pulserande</string>
+</resources>

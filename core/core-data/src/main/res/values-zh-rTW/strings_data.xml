@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Voice microphone sensitivity (Discord) -->
+    <string name="data_mic_sensitivity_auto">自動</string>
+    <string name="data_mic_sensitivity_high">高</string>
+    <string name="data_mic_sensitivity_low">低 · 過濾按鍵聲</string>
+    <string name="data_mic_sensitivity_minimal">最低 · 僅限大聲說話</string>
+
+    <!-- Discord sign-in errors -->
+    <string name="data_discord_offline">你目前處於離線狀態。請重新連上網際網路後再試一次。</string>
+    <string name="data_discord_unreachable">無法連線至 Discord</string>
+    <string name="data_discord_signin_network_error">登入時發生網路錯誤</string>
+
+    <!-- Music and video players -->
+    <string name="data_music_no_player">沒有音樂播放器能開啟這首曲目。請安裝播放器，或在「設定 → 音樂」中選擇一個。</string>
+    <string name="data_video_no_player_open">沒有影片播放器能開啟這個檔案。請安裝播放器，或在「設定 → 影片」中選擇一個。</string>
+    <string name="data_video_chooser_title">選擇播放影片的應用程式…</string>
+    <string name="data_video_none_installed">未安裝任何影片播放器。</string>
+    <string name="data_video_bad_location">這部影片的位置無效。</string>
+    <string name="data_video_unreachable">找不到這個影片檔案，或已失去存取權。請嘗試重新掃描收藏庫。</string>
+    <string name="data_video_player_cannot_open">%1$s 無法開啟這部影片，或尚未安裝。</string>
+    <string name="data_video_that_player">該播放器</string>
+    <string name="data_video_none_installed_for_file">未安裝可開啟這個檔案的影片播放器。</string>
+
+    <!-- Lock screen image -->
+    <string name="data_lockscreen_unreadable">無法讀取該圖片</string>
+    <string name="data_lockscreen_rejected">這部裝置不接受鎖定畫面圖片</string>
+
+    <!-- PSP theme import (.ptf) -->
+    <string name="data_ptf_unreadable">無法讀取檔案（或檔案過大）</string>
+    <string name="data_ptf_not_ptf">不是 PSP 主題（.ptf）檔案</string>
+    <string name="data_ptf_unparseable">無法解析主題檔案</string>
+    <string name="data_ptf_wallpaper_missing">這個主題沒有桌布圖片</string>
+    <string name="data_ptf_wallpaper_unsupported">這個主題的桌布使用了不支援的壓縮方式</string>
+    <string name="data_ptf_wallpaper_damaged">主題的桌布已損毀，無法解碼</string>
+    <string name="data_ptf_save_failed">無法儲存主題</string>
+
+    <!-- Custom media names -->
+    <string name="data_custom_video">自訂影片</string>
+    <string name="data_custom_sound">自訂音效</string>
+
+    <!-- Controllers -->
+    <string name="data_controller_fallback_name">控制器</string>
+
+    <!-- Xbox 360 emulator names (proper nouns, not translated) -->
+</resources>

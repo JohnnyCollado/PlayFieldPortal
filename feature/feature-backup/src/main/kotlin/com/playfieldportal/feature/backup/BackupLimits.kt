@@ -24,9 +24,4 @@ object BackupLimits {
     /** True when an archive of this shape can be restored. */
     fun fits(entries: Int, totalBytes: Long, largestEntryBytes: Long): Boolean =
         entries <= ZIP.maxEntries && totalBytes <= ZIP.maxTotalBytes && largestEntryBytes <= ZIP.maxEntryBytes
-
-    /** Why a backup was not made, in words the user can act on. */
-    const val TOO_LARGE_MESSAGE =
-        "This backup would be too large to restore (it can hold up to 20,000 files and 2 GB). " +
-            "Remove unused artwork or media and try again."
 }

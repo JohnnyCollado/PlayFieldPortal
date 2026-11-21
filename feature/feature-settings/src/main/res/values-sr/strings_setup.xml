@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Initial Setup wizard (first-run setup), its summary lines, and the scans it starts. -->
+
+    <!-- Wizard chrome -->
+    <string name="setup_title">Почетно подешавање</string>
+    <!-- Controller prompt labels beside a button glyph (and the touch pills that replace them). -->
+    <string name="setup_prompt_enter">Уђи</string>
+    <string name="setup_prompt_change">Промени</string>
+    <string name="setup_prompt_back">Назад</string>
+    <string name="setup_prompt_skip">Прескочи</string>
+    <!-- Row actions: short labels of the pencil and bin buttons on a folder row. -->
+    <string name="setup_row_edit">Измени</string>
+    <string name="setup_row_remove">Уклони</string>
+    <string name="setup_message_dismiss_hint">Изаберите да одбаците — или потврдите на овом реду</string>
+
+    <!-- Page names, used as "Next: ..." on the previous page -->
+    <string name="setup_step_welcome">Добро дошли</string>
+    <string name="setup_step_controller">Контролер</string>
+    <string name="setup_step_rom_roots">ROM фасцикле</string>
+    <string name="setup_step_music">Музика</string>
+    <string name="setup_step_video">Видео</string>
+    <string name="setup_step_photo">Фотографије</string>
+    <string name="setup_step_artwork">Графика</string>
+    <string name="setup_step_services">Онлајн услуге</string>
+    <string name="setup_step_achievements">Услуге достигнућа</string>
+    <string name="setup_step_local_achievements">Локална достигнућа</string>
+    <string name="setup_step_retroarch">RetroArch</string>
+    <string name="setup_step_emulators">Емулатори</string>
+    <string name="setup_step_windows">Windows игре</string>
+    <string name="setup_step_hints">Савети и додир</string>
+    <string name="setup_step_home_app">Почетна апликација</string>
+    <string name="setup_step_finish">Крај</string>
+
+    <!-- Page headings -->
+    <string name="setup_heading_welcome">Добро дошли у Play Field Portal.</string>
+    <string name="setup_heading_controller">Изаберите контролер.</string>
+    <string name="setup_heading_rom_roots">Изаберите ROM фасцикле.</string>
+    <string name="setup_heading_music">Изаберите фасцикле са музиком.</string>
+    <string name="setup_heading_video">Изаберите фасцикле са видео снимцима.</string>
+    <string name="setup_heading_photo">Изаберите фасцикле са фотографијама.</string>
+    <string name="setup_heading_artwork">Изаберите фасциклу за графику.</string>
+    <string name="setup_heading_services">Повежите изворе графике.</string>
+    <string name="setup_heading_achievements">Повежите услуге достигнућа.</string>
+    <string name="setup_heading_local_achievements">Повежите фасцикле са подацима емулатора.</string>
+    <string name="setup_heading_retroarch">Повежите фасциклу са RetroArch језгрима.</string>
+    <string name="setup_heading_emulators">Проверите емулаторе.</string>
+    <string name="setup_heading_windows">Подесите Windows игре.</string>
+    <string name="setup_heading_hints">Изаберите како вам лаунчер помаже.</string>
+    <string name="setup_heading_home_app">Нека Play Field Portal буде ваш почетни екран.</string>
+    <string name="setup_heading_finish">Све је спремно!</string>
+
+    <!-- Page hints (the line under a heading) -->
+    <string name="setup_hint_welcome">Већина корака је опционална. Мораћете да изаберете фасциклу за графику.</string>
+    <string name="setup_hint_controller">Подешава иконице дугмади и које дугме потврђује, тако да сваки упит од сада одговара вашем контролеру.</string>
+    <string name="setup_hint_rom_roots">Додајте једну или више ROM фасцикли — игре сваке конзоле налазе се у подфасцикли унутар њих.</string>
+    <string name="setup_hint_media_roots">Додајте више коренских фасцикли да бисте обухватили унутрашњу меморију и SD картицу.</string>
+    <string name="setup_hint_artwork">Обавезно. Ваша графика се чува овде, ван апликације, па остаје и после поновне инсталације.</string>
+    <string name="setup_hint_services">Све је опционално и бесплатно. SteamGridDB, TheGamesDB, IGDB и ScreenScraper преузимају графику и метаподатке игара.</string>
+    <string name="setup_hint_achievements">RetroAchievements и Steam прате достигнућа као Shiba Coins.</string>
+    <string name="setup_hint_local_achievements">Трофеји и достигнућа које ваши емулатори чувају на овом уређају. Једна дозвола по емулатору повезује све наслове.</string>
+    <string name="setup_hint_retroarch">Омогућава лаунчеру да тачно зна која језгра имате, па нуди само њих.</string>
+    <string name="setup_hint_emulators">Подразумевани емулатор сваке конзоле, изабран међу инсталиранима. Промените оне који делују погрешно.</string>
+    <string name="setup_hint_windows">Инсталиран је Windows емулатор — изаберите где се налазе ваше PC игре.</string>
+    <string name="setup_hint_hints">Савети за дугмад се појављују када застанете и нестају чим било шта притиснете.</string>
+    <string name="setup_hint_home_app">Дугме за почетни екран ће вас тада враћати овде уместо у фабрички лаунчер.</string>
+    <string name="setup_hint_finish">Све испод можете било када да промените у Подешавањима.</string>
+
+    <!-- Continue row (bottom of every page) -->
+    <string name="setup_continue">Настави</string>
+    <!-- %1$s is the name of the next page, e.g. "Music". -->
+    <string name="setup_continue_next">Следеће: %1$s</string>
+    <string name="setup_continue_blocked">Прво изаберите фасциклу</string>
+
+    <!-- Welcome page -->
+    <string name="setup_welcome_intro">Ово брзо подешавање усмерава лаунчер на ваше фасцикле са медијима и повезује онлајн услуге за графику и достигнућа.</string>
+    <string name="setup_welcome_start">Започни</string>
+    <string name="setup_welcome_start_sub">Прво изаберите контролер</string>
+    <string name="setup_welcome_skip">Прескочи подешавање</string>
+    <string name="setup_welcome_skip_sub">Идите право у лаунчер — чаробњак за подешавање можете било када покренути у Подешавања ▸ Систем</string>
+
+    <!-- Folder rows shared by the ROM, Music, Video and Photo pages -->
+    <string name="setup_root_access_lost">Приступ је изгубљен — користите ✎ да поново доделите приступ</string>
+
+    <!-- ROM roots page -->
+    <string name="setup_rom_empty">Још нема ROM фасцикли. Додајте фасциклу у којој се налазе игре ваших конзола — једна подфасцикла по конзоли, скенира се аутоматски.</string>
+    <string name="setup_rom_add">Додај ROM фасциклу</string>
+    <string name="setup_rom_add_sub">Доделите ROM фасциклу са по једном подфасциклом за сваку конзолу</string>
+    <string name="setup_rom_rescan">Поново скенирај ROM фасцикле</string>
+    <string name="setup_rom_rescan_sub">Аутоматски откриј конзоле и скенирај њихове игре</string>
+    <string name="setup_rom_root_linked">Повезано — фасцикле конзола се читају одавде</string>
+    <string name="setup_rom_create_folders">Направи стандардне фасцикле</string>
+    <string name="setup_rom_create_folders_sub">Једна подфасцикла по конзоли, именована за ваше игре</string>
+
+    <!-- Music roots page -->
+    <string name="setup_music_empty">Још нема коренских фасцикли са музиком. Додајте фасциклу у којој се налази ваша музика — више фасцикли може да обухвати унутрашњу меморију и SD картицу.</string>
+    <string name="setup_music_add">Додај фасциклу са музиком</string>
+    <string name="setup_music_add_sub">Доделите коренску фасциклу (нпр. /Music) — додајте више њих за различите локације</string>
+    <string name="setup_music_root_linked">Овде је музичка библиотека</string>
+    <string name="setup_music_rescan">Поново скенирај музичку библиотеку</string>
+
+    <!-- Video roots page -->
+    <string name="setup_video_empty">Још нема коренских фасцикли са видео снимцима. Додајте фасциклу у којој се налазе ваши видео снимци — више фасцикли може да обухвати унутрашњу меморију и SD картицу.</string>
+    <string name="setup_video_add">Додај фасциклу са видео снимцима</string>
+    <string name="setup_video_add_sub">Доделите коренску фасциклу (нпр. /Videos) — додајте више њих за различите локације</string>
+    <string name="setup_video_root_linked">Овде је видео библиотека</string>
+    <string name="setup_video_rescan">Поново скенирај видео библиотеку</string>
+
+    <!-- Photo roots page -->
+    <string name="setup_photo_empty">Још нема коренских фасцикли са фотографијама. Додајте фасциклу у којој се налазе ваше фотографије — више фасцикли може да обухвати унутрашњу меморију и SD картицу.</string>
+    <string name="setup_photo_add">Додај фасциклу са фотографијама</string>
+    <string name="setup_photo_add_sub">Доделите коренску фасциклу (нпр. /Photos) — додајте више њих за различите локације</string>
+    <string name="setup_photo_root_linked">Овде је библиотека фотографија</string>
+    <string name="setup_photo_rescan">Поново скенирај библиотеку фотографија</string>
+
+    <string name="setup_media_rescan_sub">Ажурирај библиотеке из свих коренских фасцикли</string>
+
+    <!-- Artwork page -->
+    <string name="setup_artwork_empty">Изаберите фасциклу у коју може да се уписује. Лаунчер у њој аутоматски прави библиотеку графике — игре добијају графику чим се додају.</string>
+    <string name="setup_artwork_unavailable">Није доступно. Поново повежите да бисте наставили са новом графиком</string>
+    <string name="setup_artwork_folder_sub">Библиотека графике — користите ✎ да изаберете другу фасциклу</string>
+    <string name="setup_artwork_choose">Изабери фасциклу за графику</string>
+    <string name="setup_artwork_choose_sub">Једна фасцикла садржи библиотеку графике</string>
+    <string name="setup_artwork_import_title">Увести графику сада?</string>
+    <!-- %1$s is the name of the one detected source (a launcher or emulator name). -->
+    <string name="setup_artwork_import_sub_one">Копирај %1$s из фасцикле import/ у библиотеку</string>
+    <plurals name="setup_artwork_import_sub_many">
+        <item quantity="one">Копирај %1$d изворну фасциклу из фасцикле import/ у библиотеку</item>
+        <item quantity="few">Копирај %1$d изворне фасцикле из фасцикле import/ у библиотеку</item>
+        <item quantity="other">Копирај %1$d изворних фасцикли из фасцикле import/ у библиотеку</item>
+    </plurals>
+    <string name="setup_artwork_import_row">Увоз графике</string>
+    <string name="setup_artwork_import_none_sub">Још нема шта да се увезе — додајте фасциклу са медијима другог лаунчера у import/</string>
+
+    <!-- Online services page -->
+    <string name="setup_services_intro">Сви налози су опционални и бесплатни. SteamGridDB, TheGamesDB, IGDB и ScreenScraper преузимају графику и метаподатке игара за вашу библиотеку.</string>
+    <string name="setup_field_api_key">API кључ</string>
+    <string name="setup_field_api_key_saved">API кључ (сачуван)</string>
+    <string name="setup_field_web_api_key">Web API кључ</string>
+    <string name="setup_field_web_api_key_saved">Web API кључ (сачуван)</string>
+    <string name="setup_field_client_id">ID клијента</string>
+    <string name="setup_field_client_id_saved">ID клијента (сачуван)</string>
+    <string name="setup_field_client_secret">Тајна клијента</string>
+    <string name="setup_field_client_secret_saved">Тајна клијента (сачувана)</string>
+    <string name="setup_field_username">Корисничко име</string>
+    <string name="setup_field_username_saved">Корисничко име (сачувано)</string>
+    <string name="setup_field_password">Лозинка</string>
+    <string name="setup_field_password_saved">Лозинка (сачувана)</string>
+    <string name="setup_field_steam_id">SteamID64 или прилагођено име</string>
+    <string name="setup_field_steam_id_saved">SteamID64 или прилагођено име (сачувано)</string>
+    <string name="setup_placeholder_tap_to_replace">Изаберите да замените</string>
+    <!-- The bullets stand in for a saved secret that is hidden. -->
+    <string name="setup_placeholder_secret_saved">••••••••  (изаберите да замените)</string>
+    <string name="setup_placeholder_sgdb_key">Налепите SteamGridDB кључ</string>
+    <string name="setup_placeholder_tgdb_key">Налепите TheGamesDB кључ</string>
+    <string name="setup_placeholder_twitch_client_id">Twitch ID клијента</string>
+    <string name="setup_placeholder_twitch_client_secret">Twitch тајна клијента</string>
+    <string name="setup_placeholder_ss_username">ScreenScraper корисничко име</string>
+    <string name="setup_placeholder_ss_password">ScreenScraper лозинка</string>
+    <string name="setup_placeholder_ra_username">Ваше RA корисничко име</string>
+    <string name="setup_placeholder_ra_key">Налепите свој RA Web API кључ</string>
+    <string name="setup_placeholder_steam_id">7656119… или име из прилагођеног URL-а</string>
+    <string name="setup_placeholder_steam_key">Налепите свој Steam Web API кључ</string>
+    <!-- Buttons that save the credentials typed above. -->
+    <string name="setup_connect_sgdb">Повежи SteamGridDB</string>
+    <string name="setup_connect_tgdb">Повежи TheGamesDB</string>
+    <string name="setup_connect_igdb">Повежи IGDB</string>
+    <string name="setup_connect_ss">Повежи ScreenScraper</string>
+    <string name="setup_connect_ra">Повежи RetroAchievements</string>
+    <string name="setup_connect_steam">Повежи Steam</string>
+    <string name="setup_test_credentials">Тестирај акредитиве</string>
+    <string name="setup_test_account">Тестирај налог</string>
+    <string name="setup_connected_as">Повезано као</string>
+
+    <!-- Achievement services page -->
+    <string name="setup_achievements_intro">Опционално и бесплатно. RetroAchievements и Steam прате достигнућа као Shiba Coins.</string>
+
+    <!-- Controller page -->
+    <string name="setup_controller_type">Тип контролера</string>
+    <string name="setup_controller_type_sub">Мења иконице дугмади у сваком упиту</string>
+    <!-- A / B swap: exchanges which of the two face buttons confirms and which goes back. -->
+    <string name="setup_controller_ab_swap">Замени потврду и назад</string>
+    <string name="setup_controller_xy_swap">Замени опције и сортирање</string>
+    <string name="setup_controller_xy_swap_sub">Само менији лаунчера — контроле емулатора остају непромењене</string>
+    <string name="setup_on">Укључено</string>
+    <string name="setup_off">Искључено</string>
+    <!-- %1$s is the pad style (Xbox, PlayStation, Nintendo); %2$s is the button that confirms. -->
+    <string name="setup_controller_summary">%1$s · %2$s потврђује</string>
+    <!-- Name of a PlayStation face button. -->
+    <string name="setup_button_circle">Круг</string>
+    <!-- Name of a PlayStation face button. -->
+    <string name="setup_button_cross">Крстић</string>
+    <!-- %1$s is the button that confirms, %2$s the one that goes back (button names such as A or B). -->
+    <string name="setup_confirm_swap_off">Искључено — %1$s потврђује, %2$s враћа назад</string>
+    <string name="setup_confirm_swap_on">Укључено — %1$s потврђује, %2$s враћа назад</string>
+
+    <!-- Local achievements page -->
+    <string name="setup_local_vita_header">PS Vita · Vita3K</string>
+    <string name="setup_local_vita_set">Подеси фасциклу са подацима за Vita3K</string>
+    <string name="setup_local_vita_set_sub">Доделите фасциклу ux0 (или фасциклу која је садржи)</string>
+    <string name="setup_local_vita_folder_sub">Фасцикла са подацима за Vita3K — користите ✎ да изаберете другу</string>
+    <string name="setup_local_ps3_header">PS3 · ARMSX3</string>
+    <string name="setup_local_ps3_set">Подеси фасциклу са подацима за ARMSX3</string>
+    <string name="setup_local_ps3_set_sub">Доделите PS3/config/dev_hdd0 — или било коју фасциклу изнад или испод ње</string>
+    <string name="setup_local_ps3_folder_sub">Фасцикла са подацима за ARMSX3 — користите ✎ да изаберете другу</string>
+    <string name="setup_local_x360_header">Xbox 360 · X360 Mobile</string>
+    <string name="setup_local_x360_set">Подеси фасциклу са подацима за X360 Mobile</string>
+    <string name="setup_local_x360_set_sub">Изаберите X360 Mobile у бочном менију бирача фасцикли, па дозволите приступ</string>
+    <string name="setup_local_x360_folder_sub">Фасцикла са подацима за X360 Mobile — користите ✎ да изаберете другу</string>
+    <string name="setup_local_xendroid_header">Xbox 360 · XenDroid</string>
+    <string name="setup_local_xendroid_set">Подеси фасциклу са подацима за XenDroid</string>
+    <string name="setup_local_xendroid_set_sub">Доделите Android/data/xendroid.compose — или било коју фасциклу изнад или испод ње</string>
+    <string name="setup_local_xendroid_folder_sub">Фасцикла са подацима за XenDroid — користите ✎ да изаберете другу</string>
+
+    <!-- RetroArch page -->
+    <string name="setup_retroarch_cores_folder">Фасцикла са језгрима</string>
+    <plurals name="setup_retroarch_cores_detected">
+        <item quantity="one">Откривено је %1$d језгро</item>
+        <item quantity="few">Откривена су %1$d језгра</item>
+        <item quantity="other">Откривено је %1$d језгара</item>
+    </plurals>
+    <string name="setup_retroarch_linked">Повезано</string>
+    <string name="setup_retroarch_relink">Поново повежи фасциклу</string>
+    <string name="setup_retroarch_relink_sub">Поново изаберите RetroArch фасциклу</string>
+    <string name="setup_retroarch_recheck">Поново провери језгра</string>
+    <string name="setup_retroarch_recheck_sub">Након инсталирања нових језгара</string>
+    <string name="setup_retroarch_unlink">Прекини везу са RetroArch-ом</string>
+    <string name="setup_retroarch_unlink_sub">Врати се на нуђење свих одабраних језгара</string>
+    <string name="setup_retroarch_intro">RetroArch је инсталиран. Повежите његову фасциклу како би се при покретању игара нудила само језгра која заиста имате — у супротном се приказују сва одабрана језгра (непроверено).</string>
+    <string name="setup_retroarch_link">Повежи RetroArch фасциклу</string>
+    <string name="setup_retroarch_link_sub">Изаберите стабло докумената com.retroarch</string>
+
+    <!-- Emulators page -->
+    <string name="setup_emulators_empty">Још нема конзола са играма. Када се ROM фасцикле скенирају, свака конзола ће се појавити овде са емулатором који ће покретати — промените га било када у Подешавања ▸ Емулатори.</string>
+    <!-- Shown as the emulator for a console that has none installed. -->
+    <string name="setup_emulators_none">Ниједан</string>
+
+    <!-- Windows games page -->
+    <string name="setup_windows_intro">Изаберите фасциклу која садржи по једну подфасциклу за сваку игру. PFP у њој тражи ваше Windows игре; ништа у њој се не мења.</string>
+    <string name="setup_windows_detected">Откривено</string>
+    <string name="setup_windows_set">Подеси фасциклу Windows игара</string>
+    <string name="setup_windows_change">Промени фасциклу Windows игара</string>
+    <string name="setup_windows_set_sub">Доделите фасциклу у којој су игре инсталиране</string>
+
+    <!-- Hints and touch page -->
+    <string name="setup_hints_enabled">Савети за дугмад</string>
+    <string name="setup_hints_enabled_sub">Ознака са саветом током мировања на XMB-у, у Подешавањима и на екранима медија</string>
+    <string name="setup_hints_delay">Кашњење савета</string>
+    <string name="setup_hints_delay_sub">Колико дуго треба застати пре него што се савети појаве (1–5 секунди)</string>
+    <plurals name="setup_hints_delay_seconds">
+        <item quantity="one">%1$d секунда</item>
+        <item quantity="few">%1$d секунде</item>
+        <item quantity="other">%1$d секунди</item>
+    </plurals>
+    <!-- %1$s is a fractional number of seconds, such as 2.5. -->
+    <string name="setup_hints_delay_fraction">%1$s секунди</string>
+    <string name="setup_hints_touch">Дугме за додир</string>
+    <string name="setup_hints_touch_sub">Дугме фиоке апликација на екрану — „Аутоматски“ га приказује када додирнете екран</string>
+    <string name="setup_touch_auto">Аутоматски</string>
+    <string name="setup_touch_always_show">Увек прикажи</string>
+    <string name="setup_touch_always_hide">Увек сакриј</string>
+    <!-- %1$s is how long the delay is, such as "2 seconds". -->
+    <string name="setup_hints_summary_on">Укључено · %1$s</string>
+
+    <!-- Home app page -->
+    <string name="setup_home_intro">Android ће од вас тражити да изаберете почетну апликацију и потврдите избор. Можете се вратити било када у подешавањима подразумеваних апликација на Android-у.</string>
+    <string name="setup_home_current">Тренутна почетна апликација</string>
+    <string name="setup_home_set">Подеси као почетну апликацију</string>
+    <string name="setup_home_set_sub">Отвара Android бирач почетне апликације</string>
+    <string name="setup_home_is_pfp">Play Field Portal</string>
+    <string name="setup_home_not_pfp">Није Play Field Portal</string>
+
+    <!-- Finish page -->
+    <string name="setup_finish_nothing">Још ништа није подешено — сваку фасциклу и услугу можете било када додати у Подешавањима.</string>
+    <string name="setup_finish_summary">Резиме</string>
+    <string name="setup_summary_controller">Контролер</string>
+    <string name="setup_summary_rom">ROM библиотека</string>
+    <string name="setup_summary_music">Музика</string>
+    <string name="setup_summary_video">Видео</string>
+    <string name="setup_summary_photo">Фотографије</string>
+    <string name="setup_summary_artwork">Библиотека графике</string>
+    <string name="setup_summary_vita">Фасцикла са Vita подацима</string>
+    <string name="setup_summary_ps3">Фасцикла са PS3 подацима</string>
+    <string name="setup_summary_x360">Фасцикла са подацима за X360 Mobile</string>
+    <string name="setup_summary_xendroid">Фасцикла са подацима за XenDroid</string>
+    <string name="setup_summary_windows">Windows игре</string>
+    <string name="setup_summary_hints">Савети за дугмад</string>
+    <string name="setup_summary_home">Почетна апликација</string>
+    <!-- Value shown for a service or folder that has not been set up. -->
+    <string name="setup_not_set">Није подешено</string>
+    <string name="setup_connected">Повезано</string>
+    <string name="setup_retroarch_not_linked">Није повезано</string>
+    <plurals name="setup_retroarch_cores_count">
+        <item quantity="one">%1$d језгро</item>
+        <item quantity="few">%1$d језгра</item>
+        <item quantity="other">%1$d језгара</item>
+    </plurals>
+    <!-- %1$s is the name of the first folder; %2$d is how many more folders there are. -->
+    <string name="setup_roots_more">%1$s и још %2$d</string>
+    <string name="setup_finish_xmb_header">Распоред XMB-а</string>
+    <string name="setup_finish_autofit">Аутоматски уклопи распоред XMB-а (PSP пропорције) — може се било када променити у Подешавањима</string>
+    <string name="setup_finish_open_lm">Отвори менаџер библиотеке</string>
+    <string name="setup_finish_open_lm_sub">Додајте конзоле и скенирајте управо подешене ROM фасцикле</string>
+    <string name="setup_finish_go_library">Иди у библиотеку</string>
+    <string name="setup_finish_go_library_sub">Пређите директно на Све игре</string>
+    <!-- Button that closes the wizard. -->
+    <string name="setup_finish_done">Заврши</string>
+    <string name="setup_finish_done_sub">Идите у лаунчер</string>
+
+    <!-- Messages the wizard shows or sends to the notification tray -->
+    <string name="setup_status_testing">Тестирање…</string>
+    <plurals name="setup_msg_rom_folders_created">
+        <item quantity="one">Направљена је %1$d фасцикла конзоле. Копирајте игре у одговарајуће фасцикле.</item>
+        <item quantity="few">Направљене су %1$d фасцикле конзола. Копирајте игре у одговарајуће фасцикле.</item>
+        <item quantity="other">Направљено је %1$d фасцикли конзола. Копирајте игре у одговарајуће фасцикле.</item>
+    </plurals>
+    <!-- %1$d is the number of folders that already existed. -->
+    <plurals name="setup_msg_rom_folders_created_existing">
+        <item quantity="one">Направљена је %1$d фасцикла конзоле (већ постоји: %2$d). Копирајте игре у одговарајуће фасцикле.</item>
+        <item quantity="few">Направљене су %1$d фасцикле конзола (већ постоји: %2$d). Копирајте игре у одговарајуће фасцикле.</item>
+        <item quantity="other">Направљено је %1$d фасцикли конзола (већ постоји: %2$d). Копирајте игре у одговарајуће фасцикле.</item>
+    </plurals>
+    <string name="setup_msg_artwork_failed">Прављење библиотеке графике у тој фасцикли није успело. Изаберите фасциклу у коју може да се уписује.</string>
+    <string name="setup_msg_artwork_reconnected">Постојећа библиотека графике је поново повезана.</string>
+    <string name="setup_msg_artwork_created">Библиотека графике је направљена.</string>
+    <plurals name="setup_msg_artwork_games_linked">
+        <item quantity="one">%1$d игра је повезана из датотека које су већ у фасцикли.</item>
+        <item quantity="few">%1$d игре су повезане из датотека које су већ у фасцикли.</item>
+        <item quantity="other">%1$d игара је повезано из датотека које су већ у фасцикли.</item>
+    </plurals>
+    <string name="setup_msg_artwork_import_hint">Ставите медије других лаунчера у њену фасциклу import/ да бисте их окупили овде.</string>
+    <string name="setup_msg_import_none_yet">Још нема шта да се увезе — ставите датотеке у директоријум import/ фасцикле за графику.</string>
+    <string name="setup_msg_import_unreadable">Читање тог извора за увоз није успело.</string>
+    <string name="setup_msg_import_empty">Нема шта да се увезе — све већ постоји.</string>
+    <!-- %1$s is the name of the artwork source being imported. -->
+    <string name="setup_msg_import_started">Увоз „%1$s“ — напредак се приказује у обавештењима; детаљи су у Подешавања ▸ Увоз графике.</string>
+    <string name="setup_msg_retroarch_linked">RetroArch је повезан — инсталирана језгра се сада нуде у Емулаторима.</string>
+    <string name="setup_msg_retroarch_rechecked">RetroArch језгра су поново проверена.</string>
+    <string name="setup_msg_retroarch_unlinked">Веза са RetroArch-ом је уклоњена — RetroArch језгра неће бити понуђена док поново не повежете.</string>
+    <string name="setup_msg_vita_set">Фасцикла са подацима за Vita3K је подешена. Инсталирани наслови могу да се скенирају са PS Vita меморијске картице у менаџеру библиотеке.</string>
+    <string name="setup_msg_vita_released">Фасцикла са подацима за Vita3K је ослобођена — датотеке на диску нису дирнуте.</string>
+    <string name="setup_msg_ps3_set">Фасцикла са PS3 подацима је подешена. Покрените аутоматско повезивање у Подешавања ▸ Достигнућа ▸ Ажурирај достигнућа да бисте повезали PS3 трофеје.</string>
+    <string name="setup_msg_ps3_released">Фасцикла са PS3 подацима је ослобођена — датотеке на диску нису дирнуте.</string>
+    <!-- %1$s is the emulator name (X360 Mobile or XenDroid). -->
+    <string name="setup_msg_x360_set">Фасцикла са подацима за %1$s је подешена. Покрените аутоматско повезивање у Подешавања ▸ Достигнућа ▸ Ажурирај достигнућа да бисте повезали Xbox 360 достигнућа.</string>
+    <string name="setup_msg_x360_released">Фасцикла са подацима за %1$s је ослобођена — датотеке на диску нису дирнуте.</string>
+    <string name="setup_msg_sgdb_connected">SteamGridDB је повезан</string>
+    <string name="setup_msg_tgdb_connected">TheGamesDB је повезан</string>
+    <string name="setup_msg_igdb_connected">IGDB је повезан</string>
+    <string name="setup_msg_ss_connected">ScreenScraper је повезан</string>
+    <string name="setup_msg_ra_connected">RetroAchievements је повезан</string>
+
+    <!-- ROM root scan report (also shown by Library Manager) -->
+    <string name="setup_rom_scan_no_root">Прво додајте ROM фасциклу у Подешавања ▸ Библиотека ▸ Менаџер библиотеке.</string>
+    <!-- %1$s is a folder count ("3 folders"); %2$s a root count ("2 roots"). -->
+    <string name="setup_rom_scan_none">Скенирано: %1$s (%2$s); нису пронађени нови ROM-ови. Копирајте игре у одговарајуће системске фасцикле и покушајте поново.</string>
+    <!-- %1$s is a system count with optional new-console count; %2$s a ROM count; %3$s a root count. -->
+    <string name="setup_rom_scan_loaded">Учитано: %1$s, %2$s (извор: %3$s).</string>
+    <!-- %1$s is a system count ("3 systems"); %2$s a count of new consoles ("2 new consoles"). -->
+    <string name="setup_rom_scan_systems_new">%1$s (%2$s)</string>
+    <plurals name="setup_rom_scan_folders">
+        <item quantity="one">%1$d фасцикла</item>
+        <item quantity="few">%1$d фасцикле</item>
+        <item quantity="other">%1$d фасцикли</item>
+    </plurals>
+    <plurals name="setup_rom_scan_systems">
+        <item quantity="one">%1$d систем</item>
+        <item quantity="few">%1$d система</item>
+        <item quantity="other">%1$d система</item>
+    </plurals>
+    <plurals name="setup_rom_scan_new_consoles">
+        <item quantity="one">%1$d нова конзола</item>
+        <item quantity="few">%1$d нове конзоле</item>
+        <item quantity="other">%1$d нових конзола</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roms">
+        <item quantity="one">%1$d ROM</item>
+        <item quantity="few">%1$d ROM-а</item>
+        <item quantity="other">%1$d ROM-ова</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roots">
+        <item quantity="one">%1$d ROM фасцикла</item>
+        <item quantity="few">%1$d ROM фасцикле</item>
+        <item quantity="other">%1$d ROM фасцикли</item>
+    </plurals>
+    <plurals name="setup_rom_scan_skipped">
+        <item quantity="one">Прескочена је %1$d фасцикла (библиотеку није могуће прочитати).</item>
+        <item quantity="few">Прескочене су %1$d фасцикле (библиотеку није могуће прочитати).</item>
+        <item quantity="other">Прескочено је %1$d фасцикли (библиотеку није могуће прочитати).</item>
+    </plurals>
+
+    <!-- Media library scans started by the wizard and Settings -->
+    <string name="setup_media_add_root_first">Прво додајте коренску фасциклу.</string>
+    <string name="setup_media_not_ready">Меморија ове фасцикле још није спремна. Покушајте поново за тренутак.</string>
+    <!-- %1$s is the name of the library folder. -->
+    <string name="setup_media_scan_failed_title">Скенирање није успело: %1$s</string>
+    <string name="setup_media_scan_finished_title">Скенирање је завршено: %1$s</string>
+    <string name="setup_media_scan_stopped_title">Скенирање је заустављено: %1$s</string>
+    <string name="setup_media_scanning_title">Скенирање: %1$s</string>
+    <string name="setup_media_stop_note">Фасцикла ће се поново скенирати следећи пут.</string>
+    <string name="setup_media_stopped">Заустављено пре завршетка</string>
+    <plurals name="setup_media_tracks">
+        <item quantity="one">%1$d нумера</item>
+        <item quantity="few">%1$d нумере</item>
+        <item quantity="other">%1$d нумера</item>
+    </plurals>
+    <plurals name="setup_media_photos">
+        <item quantity="one">%1$d фотографија</item>
+        <item quantity="few">%1$d фотографије</item>
+        <item quantity="other">%1$d фотографија</item>
+    </plurals>
+    <plurals name="setup_media_videos">
+        <item quantity="one">%1$d видео</item>
+        <item quantity="few">%1$d видео снимка</item>
+        <item quantity="other">%1$d видео снимака</item>
+    </plurals>
+    <plurals name="setup_media_roots">
+        <item quantity="one">%1$d коренска фасцикла</item>
+        <item quantity="few">%1$d коренске фасцикле</item>
+        <item quantity="other">%1$d коренских фасцикли</item>
+    </plurals>
+    <!-- %1$s is an item count ("12 tracks"); %2$s a root count ("2 roots"). -->
+    <string name="setup_media_found">Пронађено: %1$s (%2$s).</string>
+</resources>

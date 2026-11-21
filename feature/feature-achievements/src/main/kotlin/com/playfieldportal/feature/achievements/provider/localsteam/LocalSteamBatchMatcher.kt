@@ -6,6 +6,8 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.entity.GameEntity
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.achievements.R
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.provider.steam.SteamAppListResolver
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -63,41 +65,42 @@ class LocalSteamBatchMatcher @Inject constructor(
         /** Registered folders with no achievement list yet — the convert picker's input. */
         val convertible: List<LocalSteamGame> = emptyList(),
         /** One line per failure, so the summary can say what went wrong rather than only how often. */
-        val failures: List<String> = emptyList(),
+        val failureTexts: List<UiText> = emptyList(),
         /** True when a run was already going and this call did nothing. */
         val alreadyRunning: Boolean = false,
     ) {
         val registered: Int get() = linkedToLibrary + trackedWithoutLibrary + convertible.size
 
-        val message: String
+        val messageText: UiText
             get() = when {
-                alreadyRunning -> "A batch match is already running."
-                discovered == 0 ->
-                    "No game folders in there. Pick the folder that CONTAINS your game folders, " +
-                        "not one game's own folder."
+                alreadyRunning -> UiText.res(R.string.ach_batch_already_running)
+                discovered == 0 -> UiText.res(R.string.ach_batch_no_folders)
                 registered == 0 && needsIdentifying == 0 && notInLibrary == 0 ->
-                    "Found $discovered folder(s), but none of them is a Steam build — no steam_api " +
-                        "library, so there is nothing for the emulator to track."
-                else -> buildString {
-                    append("Matched $registered of $discovered folder(s)")
-                    if (linkedToLibrary > 0) append(": $linkedToLibrary linked to library games")
-                    if (trackedWithoutLibrary > 0) append(", $trackedWithoutLibrary tracked on their own")
-                    if (convertible.isNotEmpty()) append(", ${convertible.size} awaiting conversion")
-                    append(".")
-                    if (needsIdentifying > 0) {
-                        append(
-                            " $needsIdentifying could not be identified from their names — open each " +
-                                "game's Shiba Coins page and Auto-Match to pick its folder."
+                    UiText.plural(R.plurals.ach_batch_none_steam, discovered, discovered)
+                else -> {
+                    val details = buildList {
+                        if (linkedToLibrary > 0) add(UiText.res(R.string.ach_batch_linked, linkedToLibrary))
+                        if (trackedWithoutLibrary > 0) add(UiText.res(R.string.ach_batch_tracked, trackedWithoutLibrary))
+                        if (convertible.isNotEmpty()) add(UiText.res(R.string.ach_batch_converting, convertible.size))
+                    }
+                    val matched = if (details.isEmpty()) {
+                        UiText.plural(R.plurals.ach_batch_matched, discovered, registered, discovered)
+                    } else {
+                        UiText.plural(
+                            R.plurals.ach_batch_matched_detail, discovered,
+                            registered, discovered, UiText.Joined(details, ", "),
                         )
                     }
-                    if (notInLibrary > 0) {
-                        append(
-                            " $notInLibrary are not in your library — add them to the Windows card " +
-                                "first, then match again."
-                        )
-                    }
-                    if (notSteamBuilds > 0) append(" $notSteamBuilds are not Steam builds.")
-                    if (failed > 0) append(" $failed failed — see the log.")
+                    UiText.Joined(
+                        buildList {
+                            add(matched)
+                            if (needsIdentifying > 0) add(UiText.plural(R.plurals.ach_batch_needs_identifying, needsIdentifying, needsIdentifying))
+                            if (notInLibrary > 0) add(UiText.plural(R.plurals.ach_batch_not_in_library, notInLibrary, notInLibrary))
+                            if (notSteamBuilds > 0) add(UiText.plural(R.plurals.ach_batch_not_steam_builds, notSteamBuilds, notSteamBuilds))
+                            if (failed > 0) add(UiText.plural(R.plurals.ach_batch_failed, failed, failed))
+                        },
+                        " ",
+                    )
                 }
             }
     }
@@ -121,7 +124,7 @@ class LocalSteamBatchMatcher @Inject constructor(
             takePersistableGrant(treeUri)
             val tree = treeUri.toString()
             val parentDocId = runCatching { DocumentsContract.getTreeDocumentId(treeUri) }.getOrNull()
-                ?: return BatchReport(failed = 1, failures = listOf("That folder could not be opened."))
+                ?: return BatchReport(failed = 1, failureTexts = listOf(UiText.res(R.string.ach_batch_cannot_open)))
 
             val children = discovery.childFolders(tree, parentDocId)
             onProgress(0, children.size)
@@ -140,7 +143,7 @@ class LocalSteamBatchMatcher @Inject constructor(
             var failed = 0
             val ready = mutableListOf<LocalSteamGame>()
             val convertible = mutableListOf<LocalSteamGame>()
-            val failures = mutableListOf<String>()
+            val failures = mutableListOf<UiText>()
 
             for ((index, child) in children.withIndex()) {
                 val anchor = discovery.anchor(tree, child.documentId)
@@ -163,7 +166,7 @@ class LocalSteamBatchMatcher @Inject constructor(
                         val folder = discovery.inspect(tree, anchor.folderDocId)
                         if (folder == null) {
                             failed++
-                            failures += "${anchor.folderName}: could not be read back after identifying."
+                            failures += UiText.res(R.string.ach_batch_fail_read_back, anchor.folderName)
                         } else {
                             discovery.register(folder, outcome.source)
                             // No list yet: the convert picker is the only place a DLL swap is
@@ -178,12 +181,12 @@ class LocalSteamBatchMatcher @Inject constructor(
 
                     is LocalSteamIdentityResolver.Outcome.Unavailable -> {
                         needsIdentifying++
-                        failures += "${anchor.folderName}: ${outcome.reason}."
+                        failures += UiText.res(R.string.ach_batch_fail_reason, anchor.folderName, outcome.reason)
                     }
                     LocalSteamIdentityResolver.Outcome.NotASteamBuild -> notSteamBuilds++
                     is LocalSteamIdentityResolver.Outcome.WriteFailed -> {
                         failed++
-                        failures += "${anchor.folderName}: steam_appid.txt could not be created."
+                        failures += UiText.res(R.string.ach_batch_fail_marker, anchor.folderName)
                     }
                 }
                 onProgress(index + 1, children.size)
@@ -201,7 +204,7 @@ class LocalSteamBatchMatcher @Inject constructor(
                 notSteamBuilds = notSteamBuilds,
                 failed = failed,
                 convertible = convertible,
-                failures = failures,
+                failureTexts = failures,
             )
             Timber.i(
                 "LOCAL_STEAM batch — ${children.size} folder(s): ${linkResult.linkedToLibrary} linked, " +

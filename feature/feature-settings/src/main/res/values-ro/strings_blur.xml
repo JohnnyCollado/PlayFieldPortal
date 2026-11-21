@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blur_title">Estompare fundal</string>
+    <string name="blur_sublabel">Cât de puternic este estompat ecranul în spatele mesajelor și al meniului de opțiuni. Trage la zero pentru a o dezactiva.</string>
+    <string name="blur_unavailable">Necesită Android 12 sau o versiune ulterioară.</string>
+</resources>

@@ -18,7 +18,7 @@ class RestoreWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         val uriString = inputData.getString(KEY_URI)
-            ?: return Result.failure(workDataOf(KEY_ERROR to "No URI provided"))
+            ?: return Result.failure(workDataOf(KEY_ERROR to applicationContext.getString(R.string.bak_no_uri)))
 
         val uri = Uri.parse(uriString)
 
@@ -27,10 +27,10 @@ class RestoreWorker @AssistedInject constructor(
             // backup owns, or an emulator profile that failed admission. Carrying the list out
             // means the user is told rather than left with silently missing data.
             is RestoreResult.Success -> Result.success(
-                workDataOf(KEY_REFUSALS to result.refusals.toTypedArray())
+                workDataOf(KEY_REFUSALS to result.refusals.map { it.resolve(applicationContext) }.toTypedArray())
             )
             is RestoreResult.Failure -> Result.failure(
-                workDataOf(KEY_ERROR to result.reason)
+                workDataOf(KEY_ERROR to result.reason.resolve(applicationContext))
             )
         }
     }

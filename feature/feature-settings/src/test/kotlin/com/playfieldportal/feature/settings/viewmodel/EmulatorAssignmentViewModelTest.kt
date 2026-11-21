@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.entity.PlatformEntity
 import com.playfieldportal.core.data.repository.MemoryCardRepository
@@ -30,7 +31,13 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+// Robolectric: the notification text is resolved from string resources with a real context.
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 @OptIn(ExperimentalCoroutinesApi::class)
 class EmulatorAssignmentViewModelTest {
 
@@ -104,6 +111,7 @@ class EmulatorAssignmentViewModelTest {
             profileRepository,
             autoCoreMemory,
             tasks,
+            ApplicationProvider.getApplicationContext(),
         )
     }
 

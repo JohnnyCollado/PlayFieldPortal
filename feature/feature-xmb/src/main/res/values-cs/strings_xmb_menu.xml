@@ -1,0 +1,783 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- App picker -->
+    <string name="xmbm_picker_touch_toggle">Přepnout</string>
+    <plurals name="xmbm_picker_remove_from_card">
+        <item quantity="one">Odebrat %d aplikaci z této karty?</item>
+        <item quantity="few">Odebrat %d aplikace z této karty?</item>
+        <item quantity="many">Odebrat %d aplikace z této karty?</item>
+        <item quantity="other">Odebrat %d aplikací z této karty?</item>
+    </plurals>
+    <plurals name="xmbm_picker_remove_from_library">
+        <item quantity="one">Odebrat %d aplikaci z této knihovny?</item>
+        <item quantity="few">Odebrat %d aplikace z této knihovny?</item>
+        <item quantity="many">Odebrat %d aplikace z této knihovny?</item>
+        <item quantity="other">Odebrat %d aplikací z této knihovny?</item>
+    </plurals>
+
+    <!-- Category menu -->
+    <string name="xmbm_catmenu_rename">Přejmenovat kategorii</string>
+    <string name="xmbm_catmenu_change_icon">Změnit ikonu</string>
+    <string name="xmbm_catmenu_show_on_bar">Zobrazit na liště</string>
+    <string name="xmbm_catmenu_new_card">Nová vlastní karta</string>
+    <string name="xmbm_catmenu_manage">Spravovat kategorie</string>
+
+    <!-- Shared menu rows -->
+    <string name="xmbm_common_on">Zap.</string>
+    <string name="xmbm_common_off">Vyp.</string>
+    <string name="xmbm_sort">Řazení</string>
+    <string name="xmbm_move">Přesunout</string>
+    <string name="xmbm_resume">Pokračovat</string>
+    <string name="xmbm_open">Otevřít</string>
+    <string name="xmbm_pin_to_top">Připnout nahoru</string>
+    <string name="xmbm_icon_display">Zobrazení ikon</string>
+    <string name="xmbm_manage_custom_cards">Spravovat vlastní karty</string>
+    <string name="xmbm_play_in_background">Přehrávat na pozadí</string>
+    <string name="xmbm_add_to_playlist">Přidat do playlistu</string>
+    <string name="xmbm_remove_from_library">Odebrat z knihovny</string>
+    <string name="xmbm_remove_from_this_playlist">Odebrat z tohoto playlistu</string>
+    <string name="xmbm_rename_playlist">Přejmenovat playlist</string>
+    <string name="xmbm_delete_playlist">Smazat playlist</string>
+    <string name="xmbm_manage_in_settings">Spravovat v Nastavení</string>
+    <string name="xmbm_favorite">Oblíbené</string>
+    <string name="xmbm_visualizer">Vizualizace</string>
+    <string name="xmbm_stop_and_close">Zastavit a zavřít</string>
+    <string name="xmbm_pause">Pozastavit</string>
+    <string name="xmbm_add_games">Přidat hry</string>
+    <string name="xmbm_add_apps">Přidat aplikace</string>
+    <string name="xmbm_pinned">Připnuto</string>
+    <string name="xmbm_update_metadata">Aktualizovat metadata</string>
+    <string name="xmbm_fetch_missing_artwork">Stáhnout chybějící grafiku</string>
+    <string name="xmbm_library_manager">Správce knihovny</string>
+    <string name="xmbm_default">Výchozí</string>
+    <string name="xmbm_favorites">Oblíbené</string>
+    <string name="xmbm_all_games">Všechny hry</string>
+    <string name="xmbm_playlists">Playlisty</string>
+    <string name="xmbm_create_new_playlist">Vytvořit nový playlist</string>
+
+    <!-- Custom icon source chooser -->
+    <string name="xmbm_srcchooser_title">Vyberte ikonu pro %1$s</string>
+    <string name="xmbm_srcchooser_message">Použijte ikonu z použitého motivu nebo obrázek ze zařízení.</string>
+    <plurals name="xmbm_srcchooser_theme_detail">
+        <item quantity="one">%2$s · %1$d ikona</item>
+        <item quantity="few">%2$s · %1$d ikony</item>
+        <item quantity="many">%2$s · %1$d ikony</item>
+        <item quantity="other">%2$s · %1$d ikon</item>
+    </plurals>
+
+    <!-- Theme icon grid -->
+    <string name="xmbm_themegrid_title">%1$s · ikona pro %2$s</string>
+
+    <!-- Notification panel and music browser list menus -->
+    <string name="xmbm_notifmenu_mark_all_read">Označit vše jako přečtené</string>
+    <string name="xmbm_notifmenu_clear_read">Vymazat přečtené</string>
+    <string name="xmbm_notifmenu_clear_all">Vymazat vše</string>
+    <string name="xmbm_social_account">Účet</string>
+
+    <!-- Playlist list rows -->
+    <string name="xmbm_playlist_create_title">Vytvořit playlist</string>
+    <string name="xmbm_playlist_create_music_sub">Založit nový playlist</string>
+    <string name="xmbm_playlist_create_video_sub">Založit nový playlist videí</string>
+    <string name="xmbm_playlist_import_title">Importovat playlist</string>
+    <string name="xmbm_playlist_import_sub">Ze souboru .m3u, .m3u8, .pls nebo .xspf</string>
+
+    <!-- Menu group headers -->
+    <string name="xmbm_group_play">Hraní</string>
+    <string name="xmbm_group_library">Knihovna</string>
+    <string name="xmbm_group_arrange">Uspořádat</string>
+    <string name="xmbm_group_customize">Přizpůsobit</string>
+    <string name="xmbm_group_pc">PC</string>
+    <string name="xmbm_group_manage">Spravovat</string>
+    <string name="xmbm_group_games">Hry</string>
+    <string name="xmbm_group_update">Aktualizace</string>
+    <string name="xmbm_group_display">Zobrazení</string>
+
+    <!-- Sort and arrange rows -->
+    <string name="xmbm_sort_default">Výchozí</string>
+    <string name="xmbm_sort_default_order">Výchozí pořadí</string>
+    <string name="xmbm_sort_global_value">Globální: %1$s</string>
+    <string name="xmbm_sort_use_global">Použít globální nastavení (%1$s)</string>
+    <string name="xmbm_sort_az">A–Z</string>
+    <string name="xmbm_sort_recently_used">Nedávno použité</string>
+    <string name="xmbm_umd_insert">Vložit jako UMD</string>
+    <string name="xmbm_umd_eject">Vysunout UMD</string>
+    <string name="xmbm_card_rename">Přejmenovat kartu</string>
+    <string name="xmbm_card_move_to_category">Přesunout do kategorie</string>
+    <string name="xmbm_card_delete">Smazat vlastní kartu</string>
+    <string name="xmbm_card_in_category">V kategorii %1$s</string>
+    <string name="xmbm_card_other_categories">Ostatní kategorie</string>
+    <string name="xmbm_card_new_here">Nová vlastní karta zde…</string>
+    <string name="xmbm_sort_all_lists">Všechny seznamy</string>
+    <plurals name="xmbm_memcard_sub_games">
+        <item quantity="one">Paměťová karta · %d hra</item>
+        <item quantity="few">Paměťová karta · %d hry</item>
+        <item quantity="many">Paměťová karta · %d hry</item>
+        <item quantity="other">Paměťová karta · %d her</item>
+    </plurals>
+    <plurals name="xmbm_memcard_sub_games_pinned">
+        <item quantity="one">Paměťová karta · Připnuto · %d hra</item>
+        <item quantity="few">Paměťová karta · Připnuto · %d hry</item>
+        <item quantity="many">Paměťová karta · Připnuto · %d hry</item>
+        <item quantity="other">Paměťová karta · Připnuto · %d her</item>
+    </plurals>
+
+    <!-- Memory Card menus -->
+    <string name="xmbm_card_find_games">Najít hry</string>
+    <string name="xmbm_card_scan_roms">Prohledat hry</string>
+    <string name="xmbm_card_import_pc">Importovat hry pro PC</string>
+    <string name="xmbm_card_match_achievements">Přiřadit achievementy</string>
+    <string name="xmbm_card_hide">Skrýt kartu</string>
+    <string name="xmbm_card_remove">Odebrat kartu</string>
+    <string name="xmbm_card_scan_all">Prohledat všechny karty</string>
+    <string name="xmbm_card_relink_artwork">Znovu propojit grafiku</string>
+    <string name="xmbm_card_global_sort">Globální řazení</string>
+    <string name="xmbm_scan_none_new">Nebyly nalezeny žádné nové hry</string>
+    <plurals name="xmbm_scan_new_games">
+        <item quantity="one">%d nová hra</item>
+        <item quantity="few">%d nové hry</item>
+        <item quantity="many">%d nové hry</item>
+        <item quantity="other">%d nových her</item>
+    </plurals>
+    <plurals name="xmbm_scan_cards_scanned">
+        <item quantity="one">Prohledána %d Paměťová karta</item>
+        <item quantity="few">Prohledány %d Paměťové karty</item>
+        <item quantity="many">Prohledáno %d Paměťové karty</item>
+        <item quantity="other">Prohledáno %d Paměťových karet</item>
+    </plurals>
+    <plurals name="xmbm_scan_cards_failed">
+        <item quantity="one">%d kartu nelze prohledat</item>
+        <item quantity="few">%d karty nelze prohledat</item>
+        <item quantity="many">%d karty nelze prohledat</item>
+        <item quantity="other">%d karet nelze prohledat</item>
+    </plurals>
+
+    <!-- Game row menu -->
+    <string name="xmbm_game_view_details">Zobrazit podrobnosti hry</string>
+    <string name="xmbm_game_choose_disc">Vybrat disk</string>
+    <string name="xmbm_game_view_shiba_coins">Zobrazit Shiba Coins</string>
+    <string name="xmbm_game_change_emulator">Změnit emulátor</string>
+    <string name="xmbm_game_add_to_card">Přidat na kartu</string>
+    <string name="xmbm_game_remove_from_card">Odebrat z karty</string>
+    <string name="xmbm_game_select_multiple">Vybrat více</string>
+    <string name="xmbm_game_add_to_category">Přidat do kategorie</string>
+    <string name="xmbm_game_move_to_category">Přesunout do kategorie</string>
+    <string name="xmbm_game_remove_from_category">Odebrat z kategorie</string>
+    <string name="xmbm_game_fetch_artwork">Stáhnout grafiku</string>
+    <string name="xmbm_game_launch_with">Spustit pomocí</string>
+    <string name="xmbm_game_install_goldberg">Instalovat achievementy Goldberg</string>
+    <string name="xmbm_game_export">Exportovat hru</string>
+    <string name="xmbm_game_file_location">Zobrazit umístění souboru</string>
+    <string name="xmbm_game_hide_from">Skrýt v: %1$s</string>
+    <string name="xmbm_game_remove_permanently">Trvale odebrat</string>
+    <string name="xmbm_game_mark_as_game">Označit jako hru</string>
+    <string name="xmbm_game_unmark_as_game">Zrušit označení hry</string>
+
+    <!-- Media row menus -->
+    <string name="xmbm_play">Přehrát</string>
+    <string name="xmbm_media_view_information">Zobrazit informace</string>
+    <string name="xmbm_media_add_tracks">Přidat skladby</string>
+    <string name="xmbm_media_view_details">Zobrazit podrobnosti</string>
+    <string name="xmbm_media_scan_library">Prohledat knihovnu</string>
+    <string name="xmbm_media_scan_album">Prohledat album</string>
+    <string name="xmbm_media_set_wallpaper">Nastavit jako tapetu launcheru</string>
+    <string name="xmbm_media_set_lockscreen">Nastavit jako zamykací obrazovku</string>
+    <string name="xmbm_media_scan_section">Prohledat: %1$s</string>
+    <string name="xmbm_info_artist">Interpret: %1$s</string>
+    <string name="xmbm_info_album">Album: %1$s</string>
+    <string name="xmbm_info_duration">Délka: %1$s</string>
+    <string name="xmbm_info_type">Typ: %1$s</string>
+    <string name="xmbm_info_size">Velikost: %1$s</string>
+    <string name="xmbm_info_location">Umístění: %1$s</string>
+    <string name="xmbm_info_file">Soubor: %1$s</string>
+
+    <!-- Confirmation dialogs -->
+    <string name="xmbm_confirm_remove_library_title">Odebrat „%1$s“ z knihovny?</string>
+    <string name="xmbm_confirm_remove_game_msg">Soubor se nesmaže. Pozdější prohledání jej přidá zpět, pokud bude stále v prohledávané složce.</string>
+    <string name="xmbm_confirm_remove">Odebrat</string>
+    <string name="xmbm_confirm_remove_missing_title">Trvale odebrat „%1$s“?</string>
+    <string name="xmbm_confirm_remove_missing_msg">Jeho soubor již neexistuje, takže tuto položku nelze obnovit.</string>
+    <string name="xmbm_confirm_remove_permanently">Trvale odebrat</string>
+    <string name="xmbm_confirm_delete_card_title">Smazat „%1$s“?</string>
+    <string name="xmbm_confirm_delete_card_msg">Hry zůstanou ve vaší knihovně.</string>
+    <string name="xmbm_confirm_delete_card_button">Smazat vlastní kartu</string>
+    <string name="xmbm_confirm_remove_category_title">Odebrat z %1$s?</string>
+    <string name="xmbm_confirm_remove_category_msg">„%1$s“ zmizí také z: %2$s.</string>
+    <string name="xmbm_confirm_remove_android_msg">Aplikace zůstane nainstalována. Najít hry ji může přidat zpět.</string>
+    <string name="xmbm_confirm_remove_card_title">Odebrat kartu „%1$s“?</string>
+    <string name="xmbm_confirm_remove_card_android_msg">Její hry z knihovny také zmizí. Aplikace zůstanou nainstalovány a Najít hry je může přidat zpět.</string>
+    <string name="xmbm_confirm_remove_card_msg">Její hry z knihovny také zmizí. Soubory ROM zůstanou na disku a prohledání je může vrátit.</string>
+    <string name="xmbm_confirm_remove_card_button">Odebrat kartu</string>
+    <string name="xmbm_confirm_remove_app_row_msg">Aplikace zůstane nainstalována i ve svých kategoriích aplikací.</string>
+    <string name="xmbm_confirm_remove_track_msg">Soubor se nesmaže. Pozdější prohledání jej přidá zpět, pokud bude stále ve složce s hudbou.</string>
+    <string name="xmbm_confirm_remove_video_msg">Soubor se nesmaže. Pozdější prohledání jej přidá zpět, pokud bude stále v knihovně videí.</string>
+    <string name="xmbm_confirm_remove_photo_msg">Soubor se nesmaže. Pozdější prohledání jej přidá zpět, pokud bude stále v albu.</string>
+    <string name="xmbm_confirm_delete_music_playlist_msg">Jeho skladby zůstanou ve vaší knihovně.</string>
+    <string name="xmbm_confirm_delete_video_playlist_msg">Jeho videa zůstanou ve vaší knihovně.</string>
+    <string name="xmbm_confirm_delete_playlist_button">Smazat playlist</string>
+    <string name="xmbm_confirm_uninstall_title">Odinstalovat „%1$s“?</string>
+    <string name="xmbm_confirm_uninstall_msg">Aplikace a její data budou z tohoto zařízení odebrány.</string>
+    <string name="xmbm_confirm_uninstall_button">Odinstalovat</string>
+    <string name="xmbm_confirm_clear_notifs_title">Vymazat všechna oznámení?</string>
+    <string name="xmbm_confirm_clear_notifs_msg">Probíhající úlohy nejsou ovlivněny.</string>
+    <string name="xmbm_confirm_clear_all_button">Vymazat vše</string>
+
+    <!-- Notification panel -->
+    <string name="xmbm_stop_confirm_title">Zastavit „%1$s“?</string>
+    <string name="xmbm_stop_confirm_kept_default">Dosud provedená práce zůstane zachována.</string>
+    <string name="xmbm_stop_confirm_progress">Hotovo %1$d z %2$d.</string>
+    <string name="xmbm_panel_prompt_open">Otevřít</string>
+    <string name="xmbm_panel_prompt_stop">Zastavit</string>
+    <string name="xmbm_panel_prompt_options">Možnosti</string>
+    <string name="xmbm_panel_prompt_close">Zavřít</string>
+
+    <!-- Fetch Artwork notifications -->
+    <string name="xmbm_fetchart_running">Stahování grafiky: %1$s</string>
+    <string name="xmbm_fetchart_failed">Stažení grafiky selhalo</string>
+    <string name="xmbm_fetchart_failed_title">Grafiku pro %1$s nelze stáhnout</string>
+    <string name="xmbm_fetchart_paused_title">Grafika pro %1$s pozastavena</string>
+    <string name="xmbm_fetchart_done_title">Grafika pro %1$s aktualizována</string>
+
+    <!-- Playlist import -->
+    <string name="xmbm_plimport_cant_open">Soubor nelze otevřít</string>
+    <string name="xmbm_plimport_too_large">Soubor je větší než %1$d MiB</string>
+    <string name="xmbm_plimport_cant_read">Soubor nelze přečíst</string>
+    <string name="xmbm_plimport_default_name">playlist</string>
+    <string name="xmbm_plimport_not_playlist">Nejde o soubor playlistu</string>
+    <string name="xmbm_plimport_unexpected">Neočekávaná chyba</string>
+    <string name="xmbm_plimport_title_error">„%1$s“ nelze importovat</string>
+    <string name="xmbm_plimport_title_ok">Importováno „%1$s“</string>
+    <string name="xmbm_plimport_title_none">Z „%1$s“ nebylo nic importováno</string>
+    <string name="xmbm_plimport_reason_web">není místní soubor</string>
+    <string name="xmbm_plimport_reason_type">nesprávný typ média</string>
+    <string name="xmbm_plimport_reason_dup">již je v playlistu</string>
+    <string name="xmbm_plimport_reason_ambiguous">více než jedna shoda</string>
+    <string name="xmbm_plimport_reason_missing">není ve vaší knihovně</string>
+    <string name="xmbm_plimport_sum_found">nalezeno %1$d</string>
+    <string name="xmbm_plimport_sum_missing">%1$d není ve vaší knihovně</string>
+    <string name="xmbm_plimport_sum_skipped">přeskočeno %1$d</string>
+    <string name="xmbm_plimport_sum_dropped">%1$d nad limit %2$d položek ignorováno</string>
+    <string name="xmbm_plimport_label_found">Nalezeno</string>
+    <string name="xmbm_plimport_label_missing">Není ve vaší knihovně</string>
+    <string name="xmbm_plimport_label_skipped">Přeskočeno</string>
+
+    <!-- Settings menu -->
+    <string name="xmbm_setsec_library_title">Knihovna</string>
+    <string name="xmbm_setsec_library_sub">Zdroje, karty, grafika a skryté položky</string>
+    <string name="xmbm_setsec_emulators_title">Emulátory</string>
+    <string name="xmbm_setsec_emulators_sub">Profily spouštění a jádra RetroArch</string>
+    <string name="xmbm_setsec_interface_title">Rozhraní</string>
+    <string name="xmbm_setsec_interface_sub">Kategorie, motivy, zobrazení a ovladač</string>
+    <string name="xmbm_setsec_achievements_title">Achievementy</string>
+    <string name="xmbm_setsec_achievements_sub">RetroAchievements a Steam</string>
+    <string name="xmbm_setsec_media_title">Média</string>
+    <string name="xmbm_setsec_media_sub">Nastavení hudby, videa a fotek</string>
+    <string name="xmbm_setsec_system_title">Systém</string>
+    <string name="xmbm_setsec_system_sub">O aplikaci, aktualizace, protokoly, zálohy, nastavení a poděkování</string>
+    <string name="xmbm_setsec_system_sub_nobackup">O aplikaci, aktualizace, protokoly, nastavení a poděkování</string>
+    <string name="xmbm_set_library_title">Správce knihovny</string>
+    <string name="xmbm_set_library_sub">Zdroje ROM a prohledávání</string>
+    <string name="xmbm_set_windows_games_title">Hry pro Windows</string>
+    <string name="xmbm_set_windows_games_sub">Hry pro PC, launchery a importy</string>
+    <string name="xmbm_set_collections_title">Vlastní Paměťové karty</string>
+    <string name="xmbm_set_collections_sub">Vytvářet a spravovat vlastní Paměťové karty</string>
+    <string name="xmbm_set_artwork_title">Grafika</string>
+    <string name="xmbm_set_artwork_sub">Zdroje stahování a mezipaměť</string>
+    <string name="xmbm_set_app_visibility_title">Skryté položky</string>
+    <string name="xmbm_set_app_visibility_sub">Zkontrolovat skryté aplikace a hry</string>
+    <string name="xmbm_set_emulators_installed_title">Nainstalované</string>
+    <string name="xmbm_set_emulators_installed_sub">Rozpoznané profily emulátorů</string>
+    <string name="xmbm_set_emulators_custom_title">Vlastní emulátory</string>
+    <string name="xmbm_set_emulators_custom_sub">Vlastní profily a Přidat vlastní emulátor</string>
+    <string name="xmbm_set_emulators_retroarch_title">RetroArch</string>
+    <string name="xmbm_set_emulators_retroarch_sub">Rozpoznání a propojení jader</string>
+    <string name="xmbm_set_emulators_assign_title">Výchozí pro systémy</string>
+    <string name="xmbm_set_emulators_assign_sub">Výchozí emulátor a jádro pro konzoli a přepsání pro hry</string>
+    <string name="xmbm_set_emulators_knowledge_title">Znalosti emulátorů</string>
+    <string name="xmbm_set_emulators_knowledge_sub">Aktualizace, vlastní soubory a obnovení vestavěných</string>
+    <string name="xmbm_set_display_title">Zobrazení</string>
+    <string name="xmbm_set_display_sub">Vlna, tapeta, spouštění a ikony</string>
+    <string name="xmbm_set_audio_title">Zvuk</string>
+    <string name="xmbm_set_audio_sub">Zvuky nabídky, úrovně a zvuk na pozadí</string>
+    <string name="xmbm_set_notifications_title">Oznámení</string>
+    <string name="xmbm_set_notifications_sub">Historie panelu a uchovávání</string>
+    <string name="xmbm_set_categories_title">Kategorie</string>
+    <string name="xmbm_set_categories_sub">Spravovat kategorie XMB</string>
+    <string name="xmbm_set_themes_title">Motivy</string>
+    <string name="xmbm_set_themes_sub">Vzhled XMB, barvy a ikony</string>
+    <string name="xmbm_set_controller_title">Ovladač</string>
+    <string name="xmbm_set_controller_sub">Mapování tlačítek</string>
+    <string name="xmbm_set_achievements_player_card_title">Karta hráče</string>
+    <string name="xmbm_set_achievements_player_card_sub">Úrovně, hodnosti a stav synchronizace</string>
+    <string name="xmbm_set_achievements_credentials_title">Přihlašovací údaje poskytovatelů</string>
+    <string name="xmbm_set_achievements_credentials_sub">Účty RetroAchievements a Steam</string>
+    <string name="xmbm_set_achievements_local_windows_title">Místní Windows</string>
+    <string name="xmbm_set_achievements_local_windows_sub">Sledovat místní hry pro Windows (emulace Steamu)</string>
+    <string name="xmbm_set_achievements_update_title">Aktualizovat achievementy</string>
+    <string name="xmbm_set_achievements_update_sub">Synchronizace a automatické přiřazení sledovaných her</string>
+    <string name="xmbm_set_music_title">Hudba</string>
+    <string name="xmbm_set_music_sub">Složky s hudbou a výchozí přehrávač</string>
+    <string name="xmbm_set_video_title">Video</string>
+    <string name="xmbm_set_video_sub">Knihovny videí, prohledávání a přehrávání</string>
+    <string name="xmbm_set_photo_title">Fotky</string>
+    <string name="xmbm_set_photo_sub">Knihovny fotek a prohledávání</string>
+    <string name="xmbm_set_about_title">O aplikaci</string>
+    <string name="xmbm_set_about_sub">Play Field Portal</string>
+    <string name="xmbm_set_system_update_title">Aktualizace systému</string>
+    <string name="xmbm_set_system_update_sub">Nové verze a seznam změn</string>
+    <string name="xmbm_set_logs_title">Protokoly</string>
+    <string name="xmbm_set_logs_sub">Otevřít nebo sdílet protokoly relací</string>
+    <string name="xmbm_set_backup_title">Zálohování a obnovení</string>
+    <string name="xmbm_set_backup_sub">Export a import</string>
+    <string name="xmbm_set_setup_title">Průvodce nastavením</string>
+    <string name="xmbm_set_setup_sub">Řízené nastavení složek a účtů</string>
+    <string name="xmbm_set_credits_title">Poděkování</string>
+    <string name="xmbm_set_credits_sub">Grafika a uvedení autorů</string>
+
+    <!-- Media sections -->
+    <string name="xmbm_media_music">Hudba</string>
+    <string name="xmbm_media_videos">Videa</string>
+    <string name="xmbm_media_photos">Fotky</string>
+    <string name="xmbm_sort_pill">Řazení: %1$s</string>
+    <string name="xmbm_filter">Filtr</string>
+
+    <!-- Sort modes -->
+    <string name="xmbm_sortmode_title">Název</string>
+    <string name="xmbm_sortmode_artist">Interpret</string>
+    <string name="xmbm_sortmode_album">Album</string>
+    <string name="xmbm_sortmode_recent_played">Nedávno hrané</string>
+    <string name="xmbm_sortmode_date_added">Datum přidání</string>
+    <string name="xmbm_sortmode_custom">Vlastní</string>
+    <string name="xmbm_filter_search">Hledat</string>
+    <string name="xmbm_filter_none">Žádné</string>
+    <string name="xmbm_filter_term">„%1$s“</string>
+    <string name="xmbm_filter_clear">Vymazat hledání</string>
+
+    <!-- Local Windows games notifications -->
+    <string name="xmbm_lwm_running">Přiřazování místních her pro Windows…</string>
+    <string name="xmbm_lwm_stop_note">Již přiřazené hry zůstanou propojené.</string>
+    <string name="xmbm_task_stopped">Zastaveno před dokončením</string>
+    <string name="xmbm_lwm_stopped_title">Přiřazování achievementů Windows zastaveno</string>
+    <string name="xmbm_lwm_failed">Hromadné přiřazení selhalo</string>
+    <string name="xmbm_lwm_failed_title">Přiřazování achievementů Windows selhalo</string>
+    <string name="xmbm_lwm_done_title">Přiřazování achievementů Windows dokončeno</string>
+    <string name="xmbm_schema_label">Schémata achievementů</string>
+    <string name="xmbm_convert_no_ach" formatted="false">%d bez achievementů</string>
+    <string name="xmbm_convert_no_key" formatted="false">%d vyžaduje klíč Steam Web API</string>
+    <string name="xmbm_convert_failed" formatted="false">%d selhalo</string>
+    <string name="xmbm_convert_tail">Hrajte každou hru a začněte získávat mince.</string>
+    <string name="xmbm_convert_linked" formatted="false">%d propojeno s hrami v knihovně.</string>
+    <string name="xmbm_diag_copied">Diagnostika zkopírována do schránky</string>
+    <string name="xmbm_artwork_folder_label">Složka grafiky</string>
+    <string name="xmbm_artwork_folder_failed">Tuto složku nelze nastavit. Vyberte složku, do které může PFP zapisovat.</string>
+    <plurals name="xmbm_convert_converted">
+        <item quantity="one">Převedena %d hra</item>
+        <item quantity="few">Převedeny %d hry</item>
+        <item quantity="many">Převedeno %d hry</item>
+        <item quantity="other">Převedeno %d her</item>
+    </plurals>
+
+    <!-- Games and apps list rows -->
+    <string name="xmbm_additem_apps_sub">Vyberte nainstalované aplikace k přidání do této sekce</string>
+    <string name="xmbm_additem_games_sub">Vyberte hry a vlastní Paměťové karty k přidání do této kategorie</string>
+    <string name="xmbm_catcard_title">Paměťová karta %1$s</string>
+    <string name="xmbm_total_games">Celkem her %1$d</string>
+    <string name="xmbm_catcard_loose">Volně</string>
+    <string name="xmbm_empty_category_title">V této kategorii zatím nejsou žádné hry</string>
+    <string name="xmbm_empty_category_sub">Vraťte se a zvolte Přidat hry.</string>
+    <plurals name="xmbm_customcard_games">
+        <item quantity="one">Vlastní · %d hra</item>
+        <item quantity="few">Vlastní · %d hry</item>
+        <item quantity="many">Vlastní · %d hry</item>
+        <item quantity="other">Vlastní · %d her</item>
+    </plurals>
+    <plurals name="xmbm_customcard_games_pinned">
+        <item quantity="one">Vlastní · Připnuto · %d hra</item>
+        <item quantity="few">Vlastní · Připnuto · %d hry</item>
+        <item quantity="many">Vlastní · Připnuto · %d hry</item>
+        <item quantity="other">Vlastní · Připnuto · %d her</item>
+    </plurals>
+    <plurals name="xmbm_customcard_apps">
+        <item quantity="one">Vlastní · %d aplikace</item>
+        <item quantity="few">Vlastní · %d aplikace</item>
+        <item quantity="many">Vlastní · %d aplikace</item>
+        <item quantity="other">Vlastní · %d aplikací</item>
+    </plurals>
+    <plurals name="xmbm_customcard_apps_pinned">
+        <item quantity="one">Vlastní · Připnuto · %d aplikace</item>
+        <item quantity="few">Vlastní · Připnuto · %d aplikace</item>
+        <item quantity="many">Vlastní · Připnuto · %d aplikace</item>
+        <item quantity="other">Vlastní · Připnuto · %d aplikací</item>
+    </plurals>
+
+    <!-- Music list rows -->
+    <string name="xmbm_music_now_playing">Právě hraje</string>
+    <string name="xmbm_music_playlist_title">Playlist</string>
+    <string name="xmbm_music_playlist_sub">Vytvářejte a přehrávejte vlastní seznamy skladeb</string>
+    <string name="xmbm_music_apps_title">Hudební aplikace</string>
+    <string name="xmbm_music_apps_sub">Otevřít nainstalované hudební aplikace</string>
+    <string name="xmbm_music_add_folder_title">Přidat složku s hudbou</string>
+    <string name="xmbm_music_add_folder_sub">Začněte nastavením kořenové složky hudby v Nastavení</string>
+    <string name="xmbm_music_add_apps_title">Přidat hudební aplikace</string>
+    <string name="xmbm_picker_show_here_sub">Vyberte nainstalované aplikace k zobrazení zde</string>
+    <string name="xmbm_music_add_tracks_title">Přidat skladby</string>
+    <string name="xmbm_music_add_tracks_sub">Vyberte skladby k přidání do tohoto playlistu</string>
+    <string name="xmbm_music_empty_title">Nebyla nalezena žádná hudba</string>
+    <string name="xmbm_music_empty_sub">Přidejte složku s hudbou v Nastavení → Hudba</string>
+    <string name="xmbm_playlist_empty_title">Tento playlist je prázdný</string>
+    <string name="xmbm_playlist_empty_sub">Přidejte skladby níže nebo z nabídky Možnosti skladby.</string>
+
+    <!-- Hide locations -->
+    <string name="xmbm_hide_custom_card">Vlastní karta</string>
+    <string name="xmbm_hide_android">Android</string>
+    <string name="xmbm_music_apps_name">Hudební aplikace</string>
+    <string name="xmbm_video_apps_name">Video aplikace</string>
+
+    <!-- Video list rows -->
+    <string name="xmbm_video_collections_title">Kolekce</string>
+    <string name="xmbm_video_collections_sub">Nedávno sledované, Oblíbené a Playlisty</string>
+    <string name="xmbm_video_libraries_title">Knihovny videí</string>
+    <string name="xmbm_video_apps_sub">Otevřít nainstalované video aplikace</string>
+    <string name="xmbm_video_add_title">Přidat videa</string>
+    <string name="xmbm_video_add_sub">Začněte nastavením kořenové složky videa v Nastavení</string>
+    <string name="xmbm_video_recent_title">Nedávno sledované</string>
+    <string name="xmbm_video_recent_sub">Pokračujte, kde jste skončili</string>
+    <string name="xmbm_video_favorites_sub">Vaše videa označená hvězdičkou</string>
+    <string name="xmbm_video_playlists_sub">Vytvářejte a přehrávejte vlastní seznamy</string>
+    <string name="xmbm_video_nolibs_title">Zatím žádné knihovny videí</string>
+    <string name="xmbm_video_nolibs_sub">Nastavte kořenovou složku v Nastavení → Video</string>
+    <string name="xmbm_video_add_apps_title">Přidat video aplikace</string>
+    <string name="xmbm_video_none_title">Nebyla nalezena žádná videa</string>
+    <string name="xmbm_video_none_sub">Přidejte knihovnu videí v Nastavení → Video</string>
+    <string name="xmbm_video_nowatched_title">Zatím nic sledováno</string>
+    <string name="xmbm_video_nowatched_sub">Zde se zobrazí přehraná videa</string>
+    <string name="xmbm_video_nofav_title">Zatím žádné oblíbené</string>
+    <string name="xmbm_video_nofav_sub">Označte video hvězdičkou v jeho nabídce ⚙ Možnosti</string>
+    <string name="xmbm_video_playlist_empty_sub">Přidejte videa z nabídky ⚙ Možnosti videa</string>
+    <string name="xmbm_video_new_playlist">Nový playlist videí</string>
+    <string name="xmbm_music_new_playlist">Nový playlist</string>
+    <plurals name="xmbm_video_libraries_count">
+        <item quantity="one">%d knihovna</item>
+        <item quantity="few">%d knihovny</item>
+        <item quantity="many">%d knihovny</item>
+        <item quantity="other">%d knihoven</item>
+    </plurals>
+
+    <!-- Photo list rows -->
+    <string name="xmbm_photo_camera_title">Fotoaparát</string>
+    <string name="xmbm_photo_camera_sub">Otevřít fotoaparát</string>
+    <string name="xmbm_photo_albums_title">Alba</string>
+    <string name="xmbm_photo_apps_title">Aplikace pro fotky</string>
+    <string name="xmbm_photo_apps_sub">Otevřít nainstalované aplikace pro fotky</string>
+    <string name="xmbm_photo_add_title">Přidat knihovnu fotek</string>
+    <string name="xmbm_photo_add_sub">Začněte nastavením kořenové složky fotek v Nastavení</string>
+    <string name="xmbm_photo_add_apps_title">Přidat aplikace pro fotky</string>
+    <string name="xmbm_photo_noalbums_title">Zatím žádná alba</string>
+    <string name="xmbm_photo_noalbums_sub">Nastavte kořenovou složku v Nastavení → Fotky</string>
+    <string name="xmbm_photo_none_title">Nebyly nalezeny žádné fotky</string>
+    <string name="xmbm_photo_none_sub">Přidejte knihovnu fotek a prohledejte ji</string>
+    <string name="xmbm_photo_noalbumphotos_title">V tomto albu nejsou žádné fotky</string>
+    <string name="xmbm_photo_noalbumphotos_sub">Prohledejte jej z nabídky ⚙ Možnosti nebo v Nastavení → Fotky</string>
+    <plurals name="xmbm_photo_albums_count">
+        <item quantity="one">%d album</item>
+        <item quantity="few">%d alba</item>
+        <item quantity="many">%d alba</item>
+        <item quantity="other">%d alb</item>
+    </plurals>
+
+    <!-- Music browser -->
+    <string name="xmbm_no_matches_title">Žádné shody</string>
+    <string name="xmbm_no_matches_sub">Zkuste jiné hledání.</string>
+    <string name="xmbm_queue_all_music">Veškerá hudba</string>
+
+    <!-- Flyout titles and Social rows -->
+    <string name="xmbm_video_all">Všechna videa</string>
+    <string name="xmbm_photo_all">Všechny fotky</string>
+    <string name="xmbm_missing">Chybějící</string>
+    <string name="xmbm_social_friends">Přátelé</string>
+    <string name="xmbm_social_voice">Hlas</string>
+    <string name="xmbm_social_voice_settings">Nastavení hlasu</string>
+    <string name="xmbm_social_invites">Pozvánky</string>
+    <string name="xmbm_social_invite_friends">Pozvat přátele</string>
+    <string name="xmbm_social_activity_settings">Nastavení aktivity</string>
+    <string name="xmbm_social_discord_settings">Nastavení Discordu</string>
+    <string name="xmbm_android_settings_title">Nastavení Androidu</string>
+    <string name="xmbm_android_settings_sub">Otevře nastavení zařízení</string>
+    <string name="xmbm_filter_chip">Filtr: %1$s</string>
+    <string name="xmbm_filter_chip_term">Filtr: „%1$s“ · %2$s</string>
+
+    <!-- Empty rows -->
+    <string name="xmbm_empty_games_assigned_title">Nejsou přiřazeny žádné hry.</string>
+    <string name="xmbm_empty_games_assigned_sub">Přidejte do této kategorie hry.</string>
+    <string name="xmbm_empty_videos_apps">Nebyly nalezeny žádné video aplikace.</string>
+    <string name="xmbm_empty_network_apps">Nebyly nalezeny žádné prohlížeče.</string>
+    <string name="xmbm_empty_store_apps">Nebyly nalezeny žádné obchody s aplikacemi.</string>
+    <string name="xmbm_empty_music_apps">Nebyly nalezeny žádné hudební aplikace.</string>
+    <string name="xmbm_empty_photo_apps">Nebyly nalezeny žádné aplikace pro fotky.</string>
+    <string name="xmbm_empty_apps_assigned">Nejsou přiřazeny žádné aplikace.</string>
+    <string name="xmbm_empty_install_apps">Začněte instalací aplikací.</string>
+    <string name="xmbm_noconsoles_title">Nejsou nastaveny žádné konzole</string>
+    <string name="xmbm_noconsoles_sub">Otevřete Správce knihovny a přidejte Paměťovou kartu</string>
+    <string name="xmbm_gap_press_confirm">Stisknutím potvrzení otevřete Nastavení a opravíte to.</string>
+    <string name="xmbm_nogames_imported_title">Zatím nejsou importovány žádné hry</string>
+    <string name="xmbm_nogames_imported_sub">Otevřete Paměťovou kartu a prohledejte knihovnu.</string>
+    <string name="xmbm_emptycard_title">Tato vlastní Paměťová karta je prázdná</string>
+    <string name="xmbm_emptycard_sub">Přidejte hry z libovolné konzole přes nabídku možností (△).</string>
+    <string name="xmbm_emptyfav_title">Zatím žádné oblíbené</string>
+    <string name="xmbm_emptyfav_sub">Označte hru jako oblíbenou v její nabídce možností (△).</string>
+    <string name="xmbm_emptymissing_title">Nic nechybí</string>
+    <string name="xmbm_emptymissing_sub">Při posledním prohledání byly nalezeny soubory všech her.</string>
+    <string name="xmbm_findgames_sub">Vyberte nainstalované aplikace k přidání do této knihovny</string>
+    <string name="xmbm_empty_romdir">Složka ROM není nastavena</string>
+    <string name="xmbm_empty_scan_console">Stisknutím ▲ prohledáte tuto konzoli</string>
+    <string name="xmbm_empty_folder_title">V této složce nebyly nalezeny žádné hry</string>
+    <plurals name="xmbm_games_count">
+        <item quantity="one">%d hra</item>
+        <item quantity="few">%d hry</item>
+        <item quantity="many">%d hry</item>
+        <item quantity="other">%d her</item>
+    </plurals>
+
+    <!-- Games search and Shiba Coins hub -->
+    <string name="xmbm_nomatch_title">Výrazu „%1$s“ neodpovídají žádné hry</string>
+    <string name="xmbm_nomatch_sub">Změňte jej nebo vymažte v nabídce Filtr.</string>
+    <string name="xmbm_ach_untracked">Nesledované</string>
+    <string name="xmbm_ach_connect_title">Připojit účty</string>
+    <string name="xmbm_ach_connect_sub">Nastavte Shiba Coins a automaticky přiřaďte knihovnu</string>
+    <string name="xmbm_ach_all_tracked">Všechny sledované hry</string>
+    <string name="xmbm_ach_matching_progress">Automatické přiřazování…  %1$d / %2$d</string>
+    <string name="xmbm_ach_syncing_progress">Synchronizace mincí…  %1$d / %2$d</string>
+    <string name="xmbm_ach_summary">%1$s / %2$s mincí  •  sledováno %3$d  •  dokončeno %4$d</string>
+    <string name="xmbm_ach_level_badge">Úr. %1$d</string>
+    <plurals name="xmbm_ach_games_count">
+        <item quantity="one">%d hra</item>
+        <item quantity="few">%d hry</item>
+        <item quantity="many">%d hry</item>
+        <item quantity="other">%d her</item>
+    </plurals>
+
+    <!-- Games menus -->
+    <string name="xmbm_icon_global_value">Globální: %1$s</string>
+    <string name="xmbm_icon_use_global">Použít globální nastavení (%1$s)</string>
+    <string name="xmbm_ach_player_card">Karta hráče</string>
+    <string name="xmbm_ach_auto_matching_busy">Automatické přiřazování…</string>
+    <string name="xmbm_ach_auto_matching">Automatické přiřazení</string>
+    <string name="xmbm_ach_updating_busy">Aktualizace…</string>
+    <string name="xmbm_ach_update_installed">Aktualizovat achievementy nainstalovaných her</string>
+
+    <!-- Game and app menus -->
+    <string name="xmbm_move_card_to">Přesunout vlastní kartu do</string>
+    <string name="xmbm_move_to">Přesunout do…</string>
+    <string name="xmbm_add_to">Přidat do…</string>
+    <string name="xmbm_move_game_to">Přesunout hru do</string>
+    <string name="xmbm_add_game_to">Přidat hru do</string>
+    <string name="xmbm_picker_add_apps_named">Přidat aplikace · %1$s</string>
+    <string name="xmbm_picker_add_android_apps">Přidat aplikace pro Android</string>
+    <string name="xmbm_icon_use_default">Použít výchozí (%1$s)</string>
+    <string name="xmbm_emu_use_platform_default">Použít výchozí pro platformu</string>
+    <string name="xmbm_emu_choose">Vybrat emulátor</string>
+    <string name="xmbm_launchwith_imported_from">Importováno z</string>
+    <string name="xmbm_disc_n">Disk %1$d</string>
+    <string name="xmbm_disc_unnumbered">Playlist</string>
+    <string name="xmbm_card_new_title">Nová vlastní Paměťová karta</string>
+    <string name="xmbm_card_rename_title">Přejmenovat vlastní Paměťovou kartu</string>
+    <plurals name="xmbm_marked_add_to_card">
+        <item quantity="one">Přidat %d hru na kartu</item>
+        <item quantity="few">Přidat %d hry na kartu</item>
+        <item quantity="many">Přidat %d hry na kartu</item>
+        <item quantity="other">Přidat %d her na kartu</item>
+    </plurals>
+
+    <!-- Game info dialogs -->
+    <string name="xmbm_info_package">Balíček: %1$s</string>
+    <string name="xmbm_info_no_location">Umístění souboru není zaznamenáno</string>
+    <string name="xmbm_info_export_failed">Export selhal — viz protokol.</string>
+    <string name="xmbm_goldberg_off">Instalace achievementů Goldberg je vypnutá. Zapněte „Instalovat Goldberg a převést hry“ v Nastavení ▸ Achievementy ▸ Místní Windows a zkuste to znovu.</string>
+    <string name="xmbm_goldberg_no_setup">Pro tuto hru nebylo nalezeno nastavení emulace Steamu (steam_settings).</string>
+    <string name="xmbm_goldberg_has_schema">%1$s již má data achievementů.</string>
+    <string name="xmbm_goldberg_installed">Achievementy Goldberg nainstalovány. Hrajte hru přes emulátor a začněte získávat mince.</string>
+    <string name="xmbm_goldberg_none">Tato hra nemá žádné achievementy k instalaci.</string>
+    <string name="xmbm_goldberg_no_key">Nejprve přidejte klíč Steam Web API v nastavení achievementů.</string>
+    <string name="xmbm_goldberg_failed">Achievementy pro tuto hru nelze nainstalovat.</string>
+
+    <!-- Scan and artwork notifications -->
+    <string name="xmbm_scan_running">Prohledávání: %1$s…</string>
+    <string name="xmbm_scan_stop_note">Dosud nalezené hry zůstanou zachovány.</string>
+    <string name="xmbm_scan_stopped_title">Prohledání %1$s zastaveno</string>
+    <string name="xmbm_scan_failed_title">Prohledání %1$s selhalo</string>
+    <string name="xmbm_scan_finished_title">Prohledání %1$s dokončeno</string>
+    <string name="xmbm_scan_skipped_title">Prohledání %1$s přeskočeno</string>
+    <string name="xmbm_pcscan_failed">Prohledání PC selhalo</string>
+    <string name="xmbm_pcscan_no_new">Nebyly nalezeny žádné nové hry pro PC</string>
+    <string name="xmbm_scanall_running">Prohledávání všech Paměťových karet…</string>
+    <string name="xmbm_scanall_stop_note">Již prohledané karty si ponechají nové hry.</string>
+    <string name="xmbm_scanall_nothing">Žádná Paměťová karta nemá složku k prohledání</string>
+    <string name="xmbm_scanall_nothing_title">Není co prohledat</string>
+    <string name="xmbm_scanall_stopped_title">Prohledání všech Paměťových karet zastaveno</string>
+    <string name="xmbm_scanall_failed_title">Prohledání všech Paměťových karet selhalo</string>
+    <string name="xmbm_scanall_finished_title">Prohledání všech Paměťových karet dokončeno</string>
+    <string name="xmbm_scrape_running">Stahování chybějící grafiky: %1$s</string>
+    <string name="xmbm_scrape_stop_note">Již stažená grafika zůstane zachována.</string>
+    <string name="xmbm_scrape_paused_title">Stahování grafiky pozastaveno: %1$s</string>
+    <string name="xmbm_scrape_none_missing">Žádným hrám nechybí grafika</string>
+    <string name="xmbm_scrape_finished_title">Stahování grafiky dokončeno: %1$s</string>
+    <string name="xmbm_scrape_stopped_title">Stahování grafiky zastaveno: %1$s</string>
+    <string name="xmbm_scrape_failed_title">Stahování grafiky selhalo: %1$s</string>
+    <string name="xmbm_meta_running">Aktualizace metadat: %1$s</string>
+    <string name="xmbm_meta_stop_note">Již aktualizované hry si ponechají podrobnosti.</string>
+    <string name="xmbm_meta_no_games_library">V knihovně nejsou žádné hry</string>
+    <string name="xmbm_meta_no_games_card">Na této kartě nejsou žádné hry</string>
+    <string name="xmbm_meta_finished_title">Aktualizace metadat dokončena: %1$s</string>
+    <string name="xmbm_meta_stopped_title">Aktualizace metadat zastavena: %1$s</string>
+    <string name="xmbm_meta_failed">Aktualizace metadat selhala</string>
+    <string name="xmbm_meta_failed_title">Aktualizace metadat selhala: %1$s</string>
+    <plurals name="xmbm_scanall_stopped_after">
+        <item quantity="one">Zastaveno po %1$d z %2$d karet</item>
+        <item quantity="few">Zastaveno po %1$d z %2$d karet</item>
+        <item quantity="many">Zastaveno po %1$d z %2$d karet</item>
+        <item quantity="other">Zastaveno po %1$d z %2$d karet</item>
+    </plurals>
+    <plurals name="xmbm_scrape_updated">
+        <item quantity="one">Aktualizována %1$d z %2$d her</item>
+        <item quantity="few">Aktualizovány %1$d z %2$d her</item>
+        <item quantity="many">Aktualizováno %1$d z %2$d her</item>
+        <item quantity="other">Aktualizováno %1$d z %2$d her</item>
+    </plurals>
+    <plurals name="xmbm_stopped_after_games">
+        <item quantity="one">Zastaveno po %d hře</item>
+        <item quantity="few">Zastaveno po %d hrách</item>
+        <item quantity="many">Zastaveno po %d hry</item>
+        <item quantity="other">Zastaveno po %d hrách</item>
+    </plurals>
+
+    <!-- Notifications panel and shortcut requests -->
+    <string name="xmbm_shortcut_request_title">Žádost o zástupce</string>
+    <string name="xmbm_shortcut_request_handled">Tato žádost již byla vyřízena.</string>
+    <string name="xmbm_notifications_title">Oznámení</string>
+
+    <!-- Discord Social rows -->
+    <string name="xmbm_social_signin_title">Přihlásit se přes Discord</string>
+    <string name="xmbm_social_signin_sub">Naskenujte QR kód telefonem</string>
+    <string name="xmbm_social_connected">Připojeno k Discordu</string>
+    <string name="xmbm_social_online">Online</string>
+    <string name="xmbm_social_offline">Offline</string>
+    <string name="xmbm_social_connecting">Připojování…</string>
+    <string name="xmbm_social_idle">Nečinný</string>
+    <string name="xmbm_social_dnd">Nerušit</string>
+    <string name="xmbm_social_streaming">Streamuje</string>
+    <string name="xmbm_social_friends_unknown">Zjistěte, kdo je online</string>
+    <string name="xmbm_social_friends_none_online">Žádní přátelé online</string>
+    <string name="xmbm_social_voice_sub">Mluvte ve sdílené místnosti</string>
+    <string name="xmbm_social_activity_sub">Sdílejte, co hrajete</string>
+    <string name="xmbm_social_discord_sub">Účet a odhlášení</string>
+    <string name="xmbm_social_share_title">Sdílet aktivitu</string>
+    <string name="xmbm_social_share_on">Zap. · přátelé vidí, že jste v Playfield Portal</string>
+    <string name="xmbm_social_share_off">Vyp. · s přáteli se nic nesdílí</string>
+    <string name="xmbm_social_generic_title">Obecný režim</string>
+    <string name="xmbm_social_generic_on">Zap. · místo názvu aplikace zobrazuje „hru“</string>
+    <string name="xmbm_social_generic_off">Vyp. · zobrazuje název aplikace</string>
+    <string name="xmbm_social_signout_title">Odhlásit se</string>
+    <string name="xmbm_social_signout_named">Odpojit %1$s</string>
+    <string name="xmbm_social_signout_sub">Odpojit tento účet Discord</string>
+    <string name="xmbm_social_you_offline">Jste offline</string>
+    <string name="xmbm_social_friends_reconnect">Znovu se připojte, abyste viděli přátele</string>
+    <string name="xmbm_social_no_friends">Žádní přátelé k zobrazení</string>
+    <string name="xmbm_social_in_lobby">V hlasové místnosti · Požádat o připojení</string>
+    <string name="xmbm_social_playing">Hraje %1$s</string>
+    <string name="xmbm_social_voice_reconnect">Pro hlas se znovu připojte</string>
+    <string name="xmbm_social_invites_none">Žádné čekající pozvánky</string>
+    <string name="xmbm_social_create_lobby">Vytvořit místnost</string>
+    <string name="xmbm_social_create_lobby_sub">Založte soukromou místnost a pozvěte přátele</string>
+    <string name="xmbm_social_someone">Někdo</string>
+    <string name="xmbm_social_participant_you">%1$s (vy)</string>
+    <string name="xmbm_social_muted">Ztlumeno</string>
+    <string name="xmbm_social_speaking">Mluví</string>
+    <string name="xmbm_social_waiting_others">Čekání na připojení ostatních</string>
+    <string name="xmbm_social_invite_friends_sub">Přiveďte přátele do této místnosti</string>
+    <string name="xmbm_social_unmute">Zrušit ztlumení</string>
+    <string name="xmbm_social_mute">Ztlumit</string>
+    <string name="xmbm_social_mic_off">Mikrofon je vypnutý</string>
+    <string name="xmbm_social_mic_on">Mikrofon je zapnutý</string>
+    <string name="xmbm_social_leave_voice">Opustit hlas</string>
+    <string name="xmbm_social_leave_voice_sub">Odpojit se z místnosti</string>
+    <string name="xmbm_social_no_invites">Žádné pozvánky</string>
+    <string name="xmbm_social_no_invites_sub">Zde se zobrazí pozvánky a žádosti o připojení</string>
+    <string name="xmbm_social_wants_to_join">%1$s se chce připojit</string>
+    <string name="xmbm_social_join_lobby">Připojit se do místnosti: %1$s</string>
+    <string name="xmbm_social_select_approve">Vyberte pro schválení</string>
+    <string name="xmbm_social_select_join">Vyberte pro připojení</string>
+    <string name="xmbm_social_invite_offline">Pro pozvání přátel se znovu připojte</string>
+    <string name="xmbm_social_invited">Pozváno ✓</string>
+    <string name="xmbm_social_already_lobby">Již v místnosti</string>
+    <string name="xmbm_social_select_invite">Vyberte pro pozvání</string>
+    <string name="xmbm_social_voice_settings_sub">Citlivost mikrofonu, filtr šumu, hlasitost</string>
+    <string name="xmbm_social_vs_toggle_on">Zap. · %1$s</string>
+    <string name="xmbm_social_vs_sens_title">Citlivost mikrofonu</string>
+    <string name="xmbm_social_vs_sens_value">%1$s · nižší filtruje cvakání</string>
+    <string name="xmbm_social_vs_noise_title">Potlačení šumu</string>
+    <string name="xmbm_social_vs_noise_on">Krisp odstraní šum na pozadí i cvakání tlačítek</string>
+    <string name="xmbm_social_vs_echo_title">Potlačení ozvěny</string>
+    <string name="xmbm_social_vs_echo_on">zabraňuje zpětné vazbě z reproduktoru</string>
+    <string name="xmbm_social_vs_agc_title">Automatické řízení zisku</string>
+    <string name="xmbm_social_vs_agc_on">vyrovnává hlasitost mikrofonu</string>
+    <string name="xmbm_social_vs_input_title">Hlasitost mikrofonu</string>
+    <string name="xmbm_social_vs_balance_title">Vyvážení zvuku</string>
+    <string name="xmbm_social_vs_balance_bar">Hra ◀%1$s▶ Hlas</string>
+    <string name="xmbm_social_vs_ptt_title">Push-to-Talk</string>
+    <string name="xmbm_social_vs_ptt_on">držte pro mluvení — jinak zůstane mikrofon zavřený</string>
+    <string name="xmbm_social_vs_overlay_title">Překryvné tlačítko mluvení</string>
+    <string name="xmbm_social_vs_overlay_needs">Vyp. · vyžaduje „Zobrazení přes ostatní aplikace“</string>
+    <string name="xmbm_social_vs_overlay_on">Zap. · plovoucí tlačítko pro mluvení při držení</string>
+    <string name="xmbm_social_vs_overlay_hidden">Vyp. · skryto (použijte tlačítko ovladače)</string>
+    <string name="xmbm_social_vs_pttbtn_title">Tlačítko PTT</string>
+    <string name="xmbm_social_vs_pttbtn_press">Stiskněte tlačítko ovladače…</string>
+    <string name="xmbm_social_vs_pttbtn_set">%1$s  ·  držte pro mluvení v Playfield Portal</string>
+    <string name="xmbm_social_vs_pttbtn_unset">Nenastaveno · vyberte a namapujte tlačítko ovladače</string>
+    <string name="xmbm_social_hint_cancel">zrušit</string>
+    <string name="xmbm_ptt_not_set">Nenastaveno</string>
+    <string name="xmbm_ptt_l3">L3 (stisk levé páčky)</string>
+    <string name="xmbm_ptt_r3">R3 (stisk pravé páčky)</string>
+    <string name="xmbm_ptt_select">Select</string>
+    <string name="xmbm_ptt_start">Start</string>
+    <plurals name="xmbm_social_friends_online">
+        <item quantity="one">Online: %d</item>
+        <item quantity="few">Online: %d</item>
+        <item quantity="many">Online: %d</item>
+        <item quantity="other">Online: %d</item>
+    </plurals>
+    <plurals name="xmbm_social_invites_waiting">
+        <item quantity="one">Čeká: %d</item>
+        <item quantity="few">Čekají: %d</item>
+        <item quantity="many">Čeká: %d</item>
+        <item quantity="other">Čeká: %d</item>
+    </plurals>
+
+    <!-- Launch, shortcut and theme messages -->
+    <string name="xmbm_missing_reason">Soubor nebyl při posledním prohledání nalezen</string>
+    <string name="xmbm_social_reconnect">Znovu připojit</string>
+    <string name="xmbm_launch_failed">Nelze spustit: %1$s</string>
+    <string name="xmbm_launch_could_not">%1$s nelze spustit</string>
+    <string name="xmbm_launch_no_emulator">Pro %1$s není nastaven žádný emulátor. Přiřaďte jej v Nastavení ▸ Emulátory ▸ Výchozí pro systémy.</string>
+    <string name="xmbm_shortcut_fav_added">Přidáno do Oblíbených</string>
+    <string name="xmbm_shortcut_fav_removed">Odebráno z Oblíbených</string>
+    <string name="xmbm_shortcut_fav_failed">Oblíbené nelze aktualizovat: %1$s</string>
+    <string name="xmbm_shortcut_create_failed">Zástupce nelze vytvořit: %1$s</string>
+    <string name="xmbm_scheme_original_sub">Mění se s měsícem</string>
+    <string name="xmbm_scheme_fixed_sub">Pevná barevná předvolba</string>
+    <string name="xmbm_scheme_custom">Vlastní</string>
+    <string name="xmbm_scheme_custom_sub">Dolaďte libovolnou barvu posuvníky</string>
+    <string name="xmbm_theme_current">Aktuální motiv</string>
+    <string name="xmbm_theme_save_title">Uložit aktuální vzhled jako motiv</string>
+    <string name="xmbm_theme_save_failed">Motiv nelze uložit</string>
+    <string name="xmbm_theme_saved">Motiv uložen — %1$s</string>
+    <string name="xmbm_gameboot_preview_title">Náhled</string>
+    <string name="xmbm_drawer_all_title">Všechny aplikace</string>
+    <string name="xmbm_drawer_all_sub">Procházet všechny nainstalované aplikace</string>
+    <string name="xmbm_drawer_games_title">Hry</string>
+    <string name="xmbm_drawer_games_sub">Aplikace zařazené jako hry</string>
+    <string name="xmbm_drawer_emulators_title">Emulátory</string>
+    <string name="xmbm_drawer_emulators_sub">RetroArch, PPSSPP, Dolphin a další</string>
+    <string name="xmbm_drawer_recent_title">Nedávno použité</string>
+    <string name="xmbm_drawer_recent_sub">Nedávno použité aplikace</string>
+    <string name="xmbm_shortcut_unsafe">Zachycený zástupce není bezpečné spustit</string>
+</resources>

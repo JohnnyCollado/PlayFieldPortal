@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Scan error messages -->
+    <string name="scan_error_card_not_found">Paměťová karta nebyla nalezena.</string>
+    <string name="scan_error_scan_failed">Prohledávání selhalo — viz protokol.</string>
+    <string name="scan_error_library_unreadable">Knihovnu nelze přečíst.</string>
+    <string name="scan_error_save_failed">Nalezenou hru nelze uložit.</string>
+    <string name="scan_error_rom_dir_not_found">Složka ROM nebyla nalezena: %1$s</string>
+    <string name="scan_error_folder_link_invalid">Odkaz na složku této knihovny je neplatný. Přidejte složku znovu.</string>
+    <string name="scan_error_root_unreadable">Složku ROM nelze přečíst. Pokud je na SD kartě, zkontrolujte, zda je karta vložena.</string>
+    <string name="scan_error_permission_lost">Oprávnění ztraceno, vyberte složku znovu.</string>
+    <string name="scan_error_partial_read">Část složky nelze přečíst, proto nebylo nic změněno. Zkuste to znovu za chvíli.</string>
+
+    <!-- One-line scan outcome -->
+    <string name="scan_outcome_line">%1$s: %2$s</string>
+    <string name="scan_outcome_no_source">Složka ROM není nastavena.</string>
+    <string name="scan_outcome_busy">prohledávání již probíhá.</string>
+    <string name="scan_outcome_failed">prohledávání selhalo.</string>
+    <string name="scan_outcome_no_new">žádné nové ROM</string>
+    <string name="scan_outcome_no_new_none_missing">žádné nové ROM, žádné nechybí</string>
+    <string name="scan_outcome_no_new_marked_missing">žádné nové ROM, %1$d označeno jako chybějící</string>
+    <plurals name="scan_outcome_added">
+        <item quantity="one">přidána %1$d nová ROM</item>
+        <item quantity="few">přidány %1$d nové ROM</item>
+        <item quantity="many">přidáno %1$d nové ROM</item>
+        <item quantity="other">přidáno %1$d nových ROM</item>
+    </plurals>
+    <plurals name="scan_outcome_added_none_missing">
+        <item quantity="one">přidána %1$d nová ROM, žádné nechybí</item>
+        <item quantity="few">přidány %1$d nové ROM, žádné nechybí</item>
+        <item quantity="many">přidáno %1$d nové ROM, žádné nechybí</item>
+        <item quantity="other">přidáno %1$d nových ROM, žádné nechybí</item>
+    </plurals>
+    <plurals name="scan_outcome_added_marked_missing">
+        <item quantity="one">přidána %1$d nová ROM, %2$d označeno jako chybějící</item>
+        <item quantity="few">přidány %1$d nové ROM, %2$d označeno jako chybějící</item>
+        <item quantity="many">přidáno %1$d nové ROM, %2$d označeno jako chybějící</item>
+        <item quantity="other">přidáno %1$d nových ROM, %2$d označeno jako chybějící</item>
+    </plurals>
+    <string name="scan_with_error_note">%1$s (%2$s)</string>
+
+    <!-- Per-card line in the scan results list -->
+    <string name="scan_badge_no_new">Nic nového</string>
+    <string name="scan_reason_no_new">Žádné nové hry</string>
+    <string name="scan_reason_no_new_marked_missing">Žádné nové hry, %1$d označeno jako chybějící</string>
+    <plurals name="scan_reason_added">
+        <item quantity="one">Přidána %1$d nová hra</item>
+        <item quantity="few">Přidány %1$d nové hry</item>
+        <item quantity="many">Přidáno %1$d nové hry</item>
+        <item quantity="other">Přidáno %1$d nových her</item>
+    </plurals>
+    <plurals name="scan_reason_added_marked_missing">
+        <item quantity="one">Přidána %1$d nová hra, %2$d označeno jako chybějící</item>
+        <item quantity="few">Přidány %1$d nové hry, %2$d označeno jako chybějící</item>
+        <item quantity="many">Přidáno %1$d nové hry, %2$d označeno jako chybějící</item>
+        <item quantity="other">Přidáno %1$d nových her, %2$d označeno jako chybějící</item>
+    </plurals>
+</resources>

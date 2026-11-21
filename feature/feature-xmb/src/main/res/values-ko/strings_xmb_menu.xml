@@ -1,0 +1,800 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App picker -->
+    <string name="xmbm_picker_touch_toggle">전환</string>
+    <plurals name="xmbm_picker_remove_from_card">
+        <item quantity="other">이 카드에서 앱 %d개를 제거할까요?</item>
+    </plurals>
+    <plurals name="xmbm_picker_remove_from_library">
+        <item quantity="other">이 라이브러리에서 앱 %d개를 제거할까요?</item>
+    </plurals>
+    <!-- Category menu (long-press on a category icon) -->
+    <string name="xmbm_catmenu_rename">카테고리 이름 변경</string>
+    <string name="xmbm_catmenu_change_icon">아이콘 변경</string>
+    <string name="xmbm_catmenu_show_on_bar">바에 표시</string>
+    <string name="xmbm_catmenu_new_card">새 사용자 지정 카드</string>
+    <string name="xmbm_catmenu_manage">카테고리 관리</string>
+    <!-- Value of an on/off setting row. -->
+    <string name="xmbm_common_on">켜짐</string>
+    <!-- Value of an on/off setting row. -->
+    <string name="xmbm_common_off">꺼짐</string>
+    <!-- Menu row / title that opens the list of sort orders. -->
+    <string name="xmbm_sort">정렬</string>
+    <!-- Menu row: lets the user reorder this category on the bar. -->
+    <string name="xmbm_move">이동</string>
+    <string name="xmbm_resume">이어서 재생</string>
+    <!-- Menu row that opens the focused item. -->
+    <string name="xmbm_open">열기</string>
+    <string name="xmbm_pin_to_top">맨 위에 고정</string>
+    <string name="xmbm_icon_display">아이콘 표시</string>
+    <string name="xmbm_manage_custom_cards">사용자 지정 카드 관리</string>
+    <string name="xmbm_play_in_background">백그라운드에서 재생</string>
+    <string name="xmbm_add_to_playlist">재생목록에 추가</string>
+    <!-- Destructive menu row. -->
+    <string name="xmbm_remove_from_library">라이브러리에서 제거</string>
+    <string name="xmbm_remove_from_this_playlist">이 재생목록에서 제거</string>
+    <string name="xmbm_rename_playlist">재생목록 이름 변경</string>
+    <string name="xmbm_delete_playlist">재생목록 삭제</string>
+    <string name="xmbm_manage_in_settings">설정에서 관리</string>
+    <!-- Menu row with an On/Off value. -->
+    <string name="xmbm_favorite">즐겨찾기</string>
+    <!-- Menu row that opens the music visualizer picker. -->
+    <string name="xmbm_visualizer">비주얼라이저</string>
+    <!-- Music player menu row: stops playback and closes the player. -->
+    <string name="xmbm_stop_and_close">정지 후 닫기</string>
+    <string name="xmbm_pause">일시정지</string>
+    <!-- Menu row / list row that opens a picker to add games. -->
+    <string name="xmbm_add_games">게임 추가</string>
+    <string name="xmbm_add_apps">앱 추가</string>
+    <!-- Subtitle on a row that is pinned to the top of its list. -->
+    <string name="xmbm_pinned">고정됨</string>
+    <string name="xmbm_update_metadata">메타데이터 업데이트</string>
+    <string name="xmbm_fetch_missing_artwork">누락된 아트워크 가져오기</string>
+    <string name="xmbm_library_manager">라이브러리 관리자</string>
+    <string name="xmbm_default">기본값</string>
+    <string name="xmbm_favorites">즐겨찾기</string>
+    <string name="xmbm_all_games">모든 게임</string>
+    <string name="xmbm_playlists">재생목록</string>
+    <string name="xmbm_create_new_playlist">새 재생목록 만들기</string>
+    <!-- Custom icon source chooser -->
+    <string name="xmbm_srcchooser_title">%1$s의 아이콘 선택</string>
+    <string name="xmbm_srcchooser_message">적용된 테마의 아이콘이나 기기의 이미지를 사용하세요.</string>
+    <plurals name="xmbm_srcchooser_theme_detail">
+        <item quantity="other">%2$s · 아이콘 %1$d개</item>
+    </plurals>
+    <!-- Theme icon grid -->
+    <string name="xmbm_themegrid_title">%1$s · %2$s용 아이콘</string>
+    <!-- Notification panel and music browser list menus -->
+    <string name="xmbm_notifmenu_mark_all_read">모두 읽음으로 표시</string>
+    <string name="xmbm_notifmenu_clear_read">읽은 알림 지우기</string>
+    <string name="xmbm_notifmenu_clear_all">모두 지우기</string>
+    <!-- Title of the connected Discord account's menu and sub-list. -->
+    <string name="xmbm_social_account">계정</string>
+    <!-- List row that starts a new playlist. -->
+    <string name="xmbm_playlist_create_title">재생목록 만들기</string>
+    <string name="xmbm_playlist_create_music_sub">새 재생목록 시작</string>
+    <string name="xmbm_playlist_create_video_sub">새 동영상 재생목록 시작</string>
+    <!-- Row / menu entry that imports a playlist file. -->
+    <string name="xmbm_playlist_import_title">재생목록 가져오기</string>
+    <string name="xmbm_playlist_import_sub">.m3u, .m3u8, .pls 또는 .xspf 파일에서</string>
+    <!-- Group heading drawn above a block of rows in a context menu. -->
+    <string name="xmbm_group_play">플레이</string>
+    <!-- Group heading drawn above a block of rows in a context menu. -->
+    <string name="xmbm_group_library">라이브러리</string>
+    <!-- Group heading drawn above a block of rows in a context menu. -->
+    <string name="xmbm_group_arrange">정렬</string>
+    <!-- Group heading drawn above a block of rows in a context menu. -->
+    <string name="xmbm_group_customize">사용자 지정</string>
+    <!-- Group heading drawn above a block of rows in a context menu. -->
+    <string name="xmbm_group_pc">PC</string>
+    <!-- Group heading drawn above a block of rows in a context menu. -->
+    <string name="xmbm_group_manage">관리</string>
+    <!-- Group heading drawn above a block of rows in a context menu. -->
+    <string name="xmbm_group_games">게임</string>
+    <!-- Group heading drawn above a block of rows in a context menu. -->
+    <string name="xmbm_group_update">업데이트</string>
+    <!-- Group heading drawn above a block of rows in a context menu. -->
+    <string name="xmbm_group_display">디스플레이</string>
+    <!-- Value of a Sort row when the list is in its default order. -->
+    <string name="xmbm_sort_default">기본값</string>
+    <string name="xmbm_sort_default_order">기본 순서</string>
+    <string name="xmbm_sort_global_value">전체: %1$s</string>
+    <string name="xmbm_sort_use_global">전체 설정 사용(%1$s)</string>
+    <!-- Sort order name for app lists: alphabetical. -->
+    <string name="xmbm_sort_az">가나다순</string>
+    <!-- Sort order name for app lists. -->
+    <string name="xmbm_sort_recently_used">최근 사용</string>
+    <string name="xmbm_umd_insert">UMD로 삽입</string>
+    <string name="xmbm_umd_eject">UMD 꺼내기</string>
+    <string name="xmbm_card_rename">카드 이름 변경</string>
+    <string name="xmbm_card_move_to_category">카테고리로 이동</string>
+    <string name="xmbm_card_delete">사용자 지정 카드 삭제</string>
+    <string name="xmbm_card_in_category">%1$s 안</string>
+    <string name="xmbm_card_other_categories">다른 카테고리</string>
+    <string name="xmbm_card_new_here">여기에 새 사용자 지정 카드…</string>
+    <string name="xmbm_sort_all_lists">모든 목록</string>
+    <plurals name="xmbm_memcard_sub_games">
+        <item quantity="other">메모리 카드 · 게임 %d개</item>
+    </plurals>
+    <plurals name="xmbm_memcard_sub_games_pinned">
+        <item quantity="other">메모리 카드 · 고정됨 · 게임 %d개</item>
+    </plurals>
+    <!-- Memory Card menus -->
+    <string name="xmbm_card_find_games">게임 찾기</string>
+    <string name="xmbm_card_scan_roms">게임 스캔</string>
+    <string name="xmbm_card_import_pc">PC 게임 가져오기</string>
+    <string name="xmbm_card_match_achievements">도전 과제 매칭</string>
+    <string name="xmbm_card_hide">카드 숨기기</string>
+    <string name="xmbm_card_remove">카드 제거</string>
+    <string name="xmbm_card_scan_all">모든 카드 스캔</string>
+    <string name="xmbm_card_relink_artwork">아트워크 다시 연결</string>
+    <string name="xmbm_card_global_sort">전체 정렬</string>
+    <string name="xmbm_scan_none_new">새 게임이 없습니다</string>
+    <plurals name="xmbm_scan_new_games">
+        <item quantity="other">새 게임 %d개</item>
+    </plurals>
+    <plurals name="xmbm_scan_cards_scanned">
+        <item quantity="other">메모리 카드 %d개 스캔됨</item>
+    </plurals>
+    <plurals name="xmbm_scan_cards_failed">
+        <item quantity="other">카드 %d개를 스캔할 수 없습니다</item>
+    </plurals>
+    <!-- Game row menu -->
+    <string name="xmbm_game_view_details">게임 세부 정보 보기</string>
+    <string name="xmbm_game_choose_disc">디스크 선택</string>
+    <!-- Shiba Coins is the app's achievements feature. -->
+    <string name="xmbm_game_view_shiba_coins">Shiba Coins 보기</string>
+    <string name="xmbm_game_change_emulator">에뮬레이터 변경</string>
+    <string name="xmbm_game_add_to_card">카드에 추가</string>
+    <string name="xmbm_game_remove_from_card">카드에서 제거</string>
+    <string name="xmbm_game_select_multiple">여러 개 선택</string>
+    <string name="xmbm_game_add_to_category">카테고리에 추가</string>
+    <string name="xmbm_game_move_to_category">카테고리로 이동</string>
+    <string name="xmbm_game_remove_from_category">카테고리에서 제거</string>
+    <string name="xmbm_game_fetch_artwork">아트워크 가져오기</string>
+    <string name="xmbm_game_launch_with">실행 프로그램</string>
+    <!-- Goldberg is a Steam emulator name; keep it. -->
+    <string name="xmbm_game_install_goldberg">Goldberg 도전 과제 설치</string>
+    <string name="xmbm_game_export">게임 내보내기</string>
+    <string name="xmbm_game_file_location">파일 위치 표시</string>
+    <string name="xmbm_game_hide_from">%1$s에서 숨기기</string>
+    <!-- Destructive menu row for a game whose file is missing. -->
+    <string name="xmbm_game_remove_permanently">영구적으로 제거</string>
+    <string name="xmbm_game_mark_as_game">게임으로 표시</string>
+    <string name="xmbm_game_unmark_as_game">게임 표시 해제</string>
+    <!-- Media row menus -->
+    <string name="xmbm_play">재생</string>
+    <string name="xmbm_media_view_information">정보 보기</string>
+    <string name="xmbm_media_add_tracks">트랙 추가</string>
+    <string name="xmbm_media_view_details">세부 정보 보기</string>
+    <string name="xmbm_media_scan_library">라이브러리 스캔</string>
+    <string name="xmbm_media_scan_album">앨범 스캔</string>
+    <string name="xmbm_media_set_wallpaper">런처 배경화면으로 설정</string>
+    <string name="xmbm_media_set_lockscreen">잠금 화면으로 설정</string>
+    <string name="xmbm_media_scan_section">%1$s 스캔</string>
+    <!-- One line of the track information dialog. -->
+    <string name="xmbm_info_artist">아티스트: %1$s</string>
+    <!-- One line of the track information dialog. -->
+    <string name="xmbm_info_album">앨범: %1$s</string>
+    <string name="xmbm_info_duration">길이: %1$s</string>
+    <string name="xmbm_info_type">유형: %1$s</string>
+    <string name="xmbm_info_size">크기: %1$s</string>
+    <string name="xmbm_info_location">위치: %1$s</string>
+    <string name="xmbm_info_file">파일: %1$s</string>
+    <!-- Confirmation dialogs -->
+    <string name="xmbm_confirm_remove_library_title">라이브러리에서 \"%1$s\"을(를) 제거할까요?</string>
+    <string name="xmbm_confirm_remove_game_msg">파일은 삭제되지 않습니다. 스캔한 폴더에 아직 있으면 나중에 스캔할 때 다시 추가됩니다.</string>
+    <!-- Confirm button of a removal dialog. -->
+    <string name="xmbm_confirm_remove">제거</string>
+    <string name="xmbm_confirm_remove_missing_title">\"%1$s\"을(를) 영구적으로 제거할까요?</string>
+    <string name="xmbm_confirm_remove_missing_msg">파일이 이미 없으므로 이 항목은 복원할 수 없습니다.</string>
+    <!-- Confirm button of a removal dialog. -->
+    <string name="xmbm_confirm_remove_permanently">영구적으로 제거</string>
+    <string name="xmbm_confirm_delete_card_title">\"%1$s\"을(를) 삭제할까요?</string>
+    <string name="xmbm_confirm_delete_card_msg">게임은 라이브러리에 그대로 남습니다.</string>
+    <!-- Confirm button. -->
+    <string name="xmbm_confirm_delete_card_button">사용자 지정 카드 삭제</string>
+    <string name="xmbm_confirm_remove_category_title">%1$s에서 제거할까요?</string>
+    <string name="xmbm_confirm_remove_category_msg">\"%1$s\"은(는) 다음에서도 제거됩니다: %2$s.</string>
+    <string name="xmbm_confirm_remove_android_msg">앱은 설치된 상태로 유지됩니다. 게임 찾기로 다시 추가할 수 있습니다.</string>
+    <string name="xmbm_confirm_remove_card_title">\"%1$s\" 카드를 제거할까요?</string>
+    <string name="xmbm_confirm_remove_card_android_msg">게임도 라이브러리에서 제거됩니다. 앱은 설치된 상태로 유지되며 게임 찾기로 다시 추가할 수 있습니다.</string>
+    <string name="xmbm_confirm_remove_card_msg">게임도 라이브러리에서 제거됩니다. ROM 파일은 디스크에 남아 있으며 스캔하면 다시 추가할 수 있습니다.</string>
+    <!-- Confirm button. -->
+    <string name="xmbm_confirm_remove_card_button">카드 제거</string>
+    <string name="xmbm_confirm_remove_app_row_msg">앱은 설치된 상태로 유지되며 앱 카테고리에도 그대로 남습니다.</string>
+    <string name="xmbm_confirm_remove_track_msg">파일은 삭제되지 않습니다. 음악 폴더에 아직 있으면 나중에 스캔할 때 다시 추가됩니다.</string>
+    <string name="xmbm_confirm_remove_video_msg">파일은 삭제되지 않습니다. 동영상 라이브러리에 아직 있으면 나중에 스캔할 때 다시 추가됩니다.</string>
+    <string name="xmbm_confirm_remove_photo_msg">파일은 삭제되지 않습니다. 앨범에 아직 있으면 나중에 스캔할 때 다시 추가됩니다.</string>
+    <string name="xmbm_confirm_delete_music_playlist_msg">트랙은 라이브러리에 그대로 남습니다.</string>
+    <string name="xmbm_confirm_delete_video_playlist_msg">동영상은 라이브러리에 그대로 남습니다.</string>
+    <!-- Confirm button. -->
+    <string name="xmbm_confirm_delete_playlist_button">재생목록 삭제</string>
+    <string name="xmbm_confirm_uninstall_title">\"%1$s\"을(를) 제거할까요?</string>
+    <string name="xmbm_confirm_uninstall_msg">앱과 앱 데이터가 이 기기에서 삭제됩니다.</string>
+    <!-- Confirm button. -->
+    <string name="xmbm_confirm_uninstall_button">제거</string>
+    <string name="xmbm_confirm_clear_notifs_title">모든 알림을 지울까요?</string>
+    <string name="xmbm_confirm_clear_notifs_msg">실행 중인 작업에는 영향이 없습니다.</string>
+    <!-- Confirm button. -->
+    <string name="xmbm_confirm_clear_all_button">모두 지우기</string>
+    <!-- Notification panel -->
+    <string name="xmbm_stop_confirm_title">\"%1$s\"을(를) 중지할까요?</string>
+    <string name="xmbm_stop_confirm_kept_default">지금까지 완료된 작업은 유지됩니다.</string>
+    <!-- Progress of a background task that is about to be stopped. -->
+    <string name="xmbm_stop_confirm_progress">%2$d개 중 %1$d개 완료되었습니다.</string>
+    <string name="xmbm_panel_prompt_open">열기</string>
+    <string name="xmbm_panel_prompt_stop">중지</string>
+    <!-- Controller prompt: opens the panel's options menu. -->
+    <string name="xmbm_panel_prompt_options">옵션</string>
+    <!-- Controller prompt: closes the notification panel. -->
+    <string name="xmbm_panel_prompt_close">닫기</string>
+    <!-- Fetch Artwork notifications -->
+    <string name="xmbm_fetchart_running">아트워크 가져오는 중: %1$s</string>
+    <string name="xmbm_fetchart_failed">아트워크 가져오기 실패</string>
+    <string name="xmbm_fetchart_failed_title">%1$s의 아트워크를 가져올 수 없습니다</string>
+    <string name="xmbm_fetchart_paused_title">%1$s의 아트워크 일시 중지됨</string>
+    <string name="xmbm_fetchart_done_title">%1$s의 아트워크 업데이트됨</string>
+    <!-- Playlist import -->
+    <string name="xmbm_plimport_cant_open">파일을 열 수 없습니다</string>
+    <!-- MiB = mebibytes, a file size unit. -->
+    <string name="xmbm_plimport_too_large">파일이 %1$dMiB보다 큽니다</string>
+    <string name="xmbm_plimport_cant_read">파일을 읽을 수 없습니다</string>
+    <string name="xmbm_plimport_default_name">재생목록</string>
+    <string name="xmbm_plimport_not_playlist">재생목록 파일이 아닙니다</string>
+    <string name="xmbm_plimport_unexpected">예기치 않은 오류</string>
+    <string name="xmbm_plimport_title_error">\"%1$s\"을(를) 가져올 수 없습니다</string>
+    <string name="xmbm_plimport_title_ok">\"%1$s\" 가져옴</string>
+    <string name="xmbm_plimport_title_none">\"%1$s\"에서 가져온 항목 없음</string>
+    <string name="xmbm_plimport_reason_web">로컬 파일이 아님</string>
+    <string name="xmbm_plimport_reason_type">잘못된 미디어 유형</string>
+    <string name="xmbm_plimport_reason_dup">이미 재생목록에 있음</string>
+    <string name="xmbm_plimport_reason_ambiguous">일치 항목이 여러 개임</string>
+    <string name="xmbm_plimport_reason_missing">라이브러리에 없음</string>
+    <string name="xmbm_plimport_sum_found">%1$d개 찾음</string>
+    <!-- Part of a one-line summary. -->
+    <string name="xmbm_plimport_sum_missing">%1$d개 라이브러리에 없음</string>
+    <!-- Part of a one-line summary. -->
+    <string name="xmbm_plimport_sum_skipped">%1$d개 건너뜀</string>
+    <string name="xmbm_plimport_sum_dropped">%2$d개 항목 제한을 초과한 %1$d개 무시됨</string>
+    <string name="xmbm_plimport_label_found">찾음</string>
+    <string name="xmbm_plimport_label_missing">라이브러리에 없음</string>
+    <string name="xmbm_plimport_label_skipped">건너뜀</string>
+    <!-- Settings menu (mirrors Settings screen titles) -->
+    <string name="xmbm_setsec_library_title">라이브러리</string>
+    <!-- Settings section description. -->
+    <string name="xmbm_setsec_library_sub">소스, 카드, 아트워크 및 숨긴 항목</string>
+    <string name="xmbm_setsec_emulators_title">에뮬레이터</string>
+    <!-- Settings section description. -->
+    <string name="xmbm_setsec_emulators_sub">실행 프로필 및 RetroArch 코어</string>
+    <string name="xmbm_setsec_interface_title">인터페이스</string>
+    <!-- Settings section description. -->
+    <string name="xmbm_setsec_interface_sub">카테고리, 테마, 디스플레이 및 컨트롤러</string>
+    <string name="xmbm_setsec_achievements_title">도전 과제</string>
+    <!-- Settings section description. -->
+    <string name="xmbm_setsec_achievements_sub">RetroAchievements 및 Steam</string>
+    <string name="xmbm_setsec_media_title">미디어</string>
+    <!-- Settings section description. -->
+    <string name="xmbm_setsec_media_sub">음악, 동영상 및 사진 설정</string>
+    <!-- Settings section name. -->
+    <string name="xmbm_setsec_system_title">시스템</string>
+    <!-- Settings section description. -->
+    <string name="xmbm_setsec_system_sub">정보, 업데이트, 로그, 백업, 설정 마법사 및 크레딧</string>
+    <string name="xmbm_setsec_system_sub_nobackup">정보, 업데이트, 로그, 설정 마법사 및 크레딧</string>
+    <string name="xmbm_set_library_title">라이브러리 관리자</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_library_sub">ROM 소스 및 스캔</string>
+    <string name="xmbm_set_windows_games_title">Windows 게임</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_windows_games_sub">PC 게임, 런처 및 가져오기</string>
+    <string name="xmbm_set_collections_title">사용자 지정 메모리 카드</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_collections_sub">사용자 지정 메모리 카드 만들기 및 관리</string>
+    <string name="xmbm_set_artwork_title">아트워크</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_artwork_sub">스크랩 소스 및 캐시</string>
+    <string name="xmbm_set_app_visibility_title">숨긴 항목</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_app_visibility_sub">숨긴 앱 및 게임 검토</string>
+    <string name="xmbm_set_emulators_installed_title">설치됨</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_emulators_installed_sub">감지된 에뮬레이터 프로필</string>
+    <string name="xmbm_set_emulators_custom_title">사용자 지정 에뮬레이터</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_emulators_custom_sub">사용자 지정 프로필 및 사용자 지정 에뮬레이터 추가</string>
+    <string name="xmbm_set_emulators_retroarch_title">RetroArch</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_emulators_retroarch_sub">코어 감지 및 연결</string>
+    <string name="xmbm_set_emulators_assign_title">시스템별 기본값</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_emulators_assign_sub">콘솔별 기본 에뮬레이터 및 코어, 게임별 지정</string>
+    <string name="xmbm_set_emulators_knowledge_title">에뮬레이터 지식</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_emulators_knowledge_sub">업데이트, 내 파일 및 기본값으로 초기화</string>
+    <string name="xmbm_set_display_title">디스플레이</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_display_sub">웨이브, 배경화면, 부팅 및 아이콘</string>
+    <string name="xmbm_set_audio_title">사운드</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_audio_sub">메뉴 사운드, 레벨 및 배경음</string>
+    <string name="xmbm_set_notifications_title">알림</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_notifications_sub">패널 기록 및 보관</string>
+    <string name="xmbm_set_categories_title">카테고리</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_categories_sub">XMB 카테고리 관리</string>
+    <string name="xmbm_set_themes_title">테마</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_themes_sub">XMB 모양, 색상 및 아이콘</string>
+    <string name="xmbm_set_controller_title">컨트롤러</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_controller_sub">버튼 매핑</string>
+    <string name="xmbm_set_achievements_player_card_title">플레이어 카드</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_achievements_player_card_sub">레벨, 등급 및 동기화 상태</string>
+    <string name="xmbm_set_achievements_credentials_title">제공자 인증 정보</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_achievements_credentials_sub">RetroAchievements 및 Steam 계정</string>
+    <string name="xmbm_set_achievements_local_windows_title">로컬 Windows</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_achievements_local_windows_sub">로컬 Windows(Steam 에뮬) 게임 추적</string>
+    <string name="xmbm_set_achievements_update_title">도전 과제 업데이트</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_achievements_update_sub">추적 중인 게임 동기화 및 자동 매칭</string>
+    <string name="xmbm_set_music_title">음악</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_music_sub">음악 폴더 및 기본 플레이어</string>
+    <string name="xmbm_set_video_title">동영상</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_video_sub">동영상 라이브러리, 스캔 및 재생</string>
+    <string name="xmbm_set_photo_title">사진</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_photo_sub">사진 라이브러리 및 스캔</string>
+    <string name="xmbm_set_about_title">정보</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_about_sub">Play Field Portal</string>
+    <string name="xmbm_set_system_update_title">시스템 업데이트</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_system_update_sub">새 버전 및 변경 내역</string>
+    <string name="xmbm_set_logs_title">로그</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_logs_sub">세션 로그 열기 또는 공유</string>
+    <string name="xmbm_set_backup_title">백업 및 복원</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_backup_sub">내보내기 및 가져오기</string>
+    <string name="xmbm_set_setup_title">설정 마법사</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_setup_sub">폴더 및 계정 설정 안내</string>
+    <string name="xmbm_set_credits_title">크레딧</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_credits_sub">아트워크 및 출처 표기</string>
+    <!-- Name of the Music section / its memory card. -->
+    <string name="xmbm_media_music">음악</string>
+    <!-- Name of the Video section's memory card (plural). -->
+    <string name="xmbm_media_videos">동영상</string>
+    <!-- Name of the Photo section's memory card (plural). -->
+    <string name="xmbm_media_photos">사진</string>
+    <string name="xmbm_sort_pill">정렬: %1$s</string>
+    <string name="xmbm_filter">필터</string>
+    <!-- Name of a sort order. -->
+    <string name="xmbm_sortmode_title">제목</string>
+    <!-- Name of a sort order. -->
+    <string name="xmbm_sortmode_artist">아티스트</string>
+    <!-- Name of a sort order. -->
+    <string name="xmbm_sortmode_album">앨범</string>
+    <!-- Name of a sort order. -->
+    <string name="xmbm_sortmode_recent_played">최근 플레이</string>
+    <!-- Name of a sort order. -->
+    <string name="xmbm_sortmode_date_added">추가한 날짜</string>
+    <!-- Name of a sort order. -->
+    <string name="xmbm_sortmode_custom">사용자 지정</string>
+    <string name="xmbm_filter_search">검색</string>
+    <!-- Value of the Search row when no search term is set. -->
+    <string name="xmbm_filter_none">없음</string>
+    <!-- Value of the Search row: the search term in quotes. -->
+    <string name="xmbm_filter_term">\"%1$s\"</string>
+    <string name="xmbm_filter_clear">검색 지우기</string>
+    <!-- Local Windows games notifications -->
+    <string name="xmbm_lwm_running">로컬 Windows 게임 매칭 중…</string>
+    <string name="xmbm_lwm_stop_note">이미 매칭된 게임은 연결이 유지됩니다.</string>
+    <!-- Notification text for a background task the user stopped. -->
+    <string name="xmbm_task_stopped">완료되기 전에 중지됨</string>
+    <string name="xmbm_lwm_stopped_title">Windows 도전 과제 매칭 중지됨</string>
+    <string name="xmbm_lwm_failed">일괄 매칭 실패</string>
+    <string name="xmbm_lwm_failed_title">Windows 도전 과제 매칭 실패</string>
+    <string name="xmbm_lwm_done_title">Windows 도전 과제 매칭 완료</string>
+    <string name="xmbm_schema_label">도전 과제 스키마</string>
+    <string name="xmbm_convert_no_ach" formatted="false">%d개는 도전 과제가 없음</string>
+    <string name="xmbm_convert_no_key" formatted="false">%d개는 Steam Web API 키 필요</string>
+    <string name="xmbm_convert_failed" formatted="false">%d개 실패</string>
+    <string name="xmbm_convert_tail">각 게임을 플레이하면 코인을 획득할 수 있습니다.</string>
+    <string name="xmbm_convert_linked" formatted="false">%d개 라이브러리 게임에 연결되었습니다.</string>
+    <string name="xmbm_diag_copied">진단 정보가 클립보드에 복사되었습니다</string>
+    <string name="xmbm_artwork_folder_label">아트워크 폴더</string>
+    <string name="xmbm_artwork_folder_failed">해당 폴더를 설정할 수 없습니다. PFP가 쓸 수 있는 폴더를 선택하세요.</string>
+    <plurals name="xmbm_convert_converted">
+        <item quantity="other">게임 %d개 변환됨</item>
+    </plurals>
+    <!-- Games and apps list rows -->
+    <string name="xmbm_additem_apps_sub">이 섹션에 추가할 설치된 앱 선택</string>
+    <string name="xmbm_additem_games_sub">이 카테고리에 추가할 게임 및 사용자 지정 메모리 카드 선택</string>
+    <string name="xmbm_catcard_title">%1$s 메모리 카드</string>
+    <string name="xmbm_total_games">전체 게임 %1$d</string>
+    <string name="xmbm_catcard_loose">개별 추가</string>
+    <string name="xmbm_empty_category_title">이 카테고리에 아직 게임이 없습니다</string>
+    <string name="xmbm_empty_category_sub">돌아가서 게임 추가를 선택하세요.</string>
+    <plurals name="xmbm_customcard_games">
+        <item quantity="other">사용자 지정 · 게임 %d개</item>
+    </plurals>
+    <plurals name="xmbm_customcard_games_pinned">
+        <item quantity="other">사용자 지정 · 고정됨 · 게임 %d개</item>
+    </plurals>
+    <plurals name="xmbm_customcard_apps">
+        <item quantity="other">사용자 지정 · 앱 %d개</item>
+    </plurals>
+    <plurals name="xmbm_customcard_apps_pinned">
+        <item quantity="other">사용자 지정 · 고정됨 · 앱 %d개</item>
+    </plurals>
+    <!-- Music list rows -->
+    <string name="xmbm_music_now_playing">현재 재생 중</string>
+    <!-- Row that opens the list of playlists (singular on purpose). -->
+    <string name="xmbm_music_playlist_title">재생목록</string>
+    <string name="xmbm_music_playlist_sub">나만의 트랙 목록을 만들어 재생하세요</string>
+    <string name="xmbm_music_apps_title">음악 앱</string>
+    <string name="xmbm_music_apps_sub">설치된 음악 앱 열기</string>
+    <string name="xmbm_music_add_folder_title">음악 폴더 추가</string>
+    <string name="xmbm_music_add_folder_sub">시작하려면 설정에서 음악 루트 폴더를 지정하세요</string>
+    <string name="xmbm_music_add_apps_title">음악 앱 추가</string>
+    <string name="xmbm_picker_show_here_sub">여기에 표시할 설치된 앱 선택</string>
+    <string name="xmbm_music_add_tracks_title">트랙 추가</string>
+    <string name="xmbm_music_add_tracks_sub">이 재생목록에 추가할 노래 선택</string>
+    <string name="xmbm_music_empty_title">음악이 없습니다</string>
+    <string name="xmbm_music_empty_sub">설정 → 음악에서 음악 폴더를 추가하세요</string>
+    <string name="xmbm_playlist_empty_title">이 재생목록은 비어 있습니다</string>
+    <string name="xmbm_playlist_empty_sub">아래에서 또는 노래의 옵션 메뉴에서 트랙을 추가하세요.</string>
+    <!-- Fallback name of a custom memory card in a hide location. -->
+    <string name="xmbm_hide_custom_card">사용자 지정 카드</string>
+    <!-- Name of the Android apps library card. -->
+    <string name="xmbm_hide_android">Android</string>
+    <!-- Name of the Music apps list, used as a hide location. -->
+    <string name="xmbm_music_apps_name">음악 앱</string>
+    <!-- Name of the Video apps list, used as a hide location. -->
+    <string name="xmbm_video_apps_name">동영상 앱</string>
+    <!-- Video list rows -->
+    <string name="xmbm_video_collections_title">모음집</string>
+    <string name="xmbm_video_collections_sub">최근 시청, 즐겨찾기 및 재생목록</string>
+    <string name="xmbm_video_libraries_title">동영상 라이브러리</string>
+    <string name="xmbm_video_apps_sub">설치된 동영상 앱 열기</string>
+    <string name="xmbm_video_add_title">동영상 추가</string>
+    <string name="xmbm_video_add_sub">시작하려면 설정에서 동영상 루트 폴더를 지정하세요</string>
+    <string name="xmbm_video_recent_title">최근 시청</string>
+    <string name="xmbm_video_recent_sub">보던 곳부터 이어서 보기</string>
+    <string name="xmbm_video_favorites_sub">별표한 동영상</string>
+    <string name="xmbm_video_playlists_sub">나만의 목록을 만들어 재생하세요</string>
+    <string name="xmbm_video_nolibs_title">아직 동영상 라이브러리가 없습니다</string>
+    <string name="xmbm_video_nolibs_sub">설정 → 동영상에서 루트 폴더를 지정하세요</string>
+    <string name="xmbm_video_add_apps_title">동영상 앱 추가</string>
+    <string name="xmbm_video_none_title">동영상이 없습니다</string>
+    <string name="xmbm_video_none_sub">설정 → 동영상에서 동영상 라이브러리를 추가하세요</string>
+    <string name="xmbm_video_nowatched_title">아직 시청한 항목이 없습니다</string>
+    <string name="xmbm_video_nowatched_sub">재생한 동영상이 여기에 표시됩니다</string>
+    <string name="xmbm_video_nofav_title">아직 즐겨찾기가 없습니다</string>
+    <string name="xmbm_video_nofav_sub">동영상의 ⚙ 옵션 메뉴에서 별표하세요</string>
+    <string name="xmbm_video_playlist_empty_sub">동영상의 ⚙ 옵션 메뉴에서 동영상을 추가하세요</string>
+    <!-- Title of the text dialog that names a new video playlist. -->
+    <string name="xmbm_video_new_playlist">새 동영상 재생목록</string>
+    <!-- Title of the text dialog that names a new playlist. -->
+    <string name="xmbm_music_new_playlist">새 재생목록</string>
+    <plurals name="xmbm_video_libraries_count">
+        <item quantity="other">라이브러리 %d개</item>
+    </plurals>
+    <!-- Row that opens the device's camera app. -->
+    <string name="xmbm_photo_camera_title">카메라</string>
+    <string name="xmbm_photo_camera_sub">카메라 열기</string>
+    <string name="xmbm_photo_albums_title">앨범</string>
+    <string name="xmbm_photo_apps_title">사진 앱</string>
+    <string name="xmbm_photo_apps_sub">설치된 사진 앱 열기</string>
+    <string name="xmbm_photo_add_title">사진 라이브러리 추가</string>
+    <string name="xmbm_photo_add_sub">시작하려면 설정에서 사진 루트 폴더를 지정하세요</string>
+    <string name="xmbm_photo_add_apps_title">사진 앱 추가</string>
+    <string name="xmbm_photo_noalbums_title">아직 앨범이 없습니다</string>
+    <string name="xmbm_photo_noalbums_sub">설정 → 사진에서 루트 폴더를 지정하세요</string>
+    <string name="xmbm_photo_none_title">사진이 없습니다</string>
+    <string name="xmbm_photo_none_sub">사진 라이브러리를 추가하고 스캔하세요</string>
+    <string name="xmbm_photo_noalbumphotos_title">이 앨범에 사진이 없습니다</string>
+    <string name="xmbm_photo_noalbumphotos_sub">⚙ 옵션 메뉴나 설정 → 사진에서 스캔하세요</string>
+    <plurals name="xmbm_photo_albums_count">
+        <item quantity="other">앨범 %d개</item>
+    </plurals>
+    <!-- Music browser -->
+    <string name="xmbm_no_matches_title">일치하는 항목 없음</string>
+    <string name="xmbm_no_matches_sub">다른 검색어를 사용해 보세요.</string>
+    <string name="xmbm_queue_all_music">모든 음악</string>
+    <!-- Flyout titles and Social rows -->
+    <string name="xmbm_video_all">모든 동영상</string>
+    <string name="xmbm_photo_all">모든 사진</string>
+    <string name="xmbm_missing">누락됨</string>
+    <string name="xmbm_social_friends">친구</string>
+    <string name="xmbm_social_voice">음성</string>
+    <string name="xmbm_social_voice_settings">음성 설정</string>
+    <string name="xmbm_social_invites">초대</string>
+    <string name="xmbm_social_invite_friends">친구 초대</string>
+    <string name="xmbm_social_activity_settings">활동 설정</string>
+    <string name="xmbm_social_discord_settings">Discord 설정</string>
+    <string name="xmbm_android_settings_title">Android 설정</string>
+    <string name="xmbm_android_settings_sub">기기 설정 열기</string>
+    <string name="xmbm_filter_chip">필터: %1$s</string>
+    <string name="xmbm_filter_chip_term">필터: \"%1$s\" · %2$s</string>
+    <!-- Empty rows -->
+    <string name="xmbm_empty_games_assigned_title">지정된 게임이 없습니다.</string>
+    <string name="xmbm_empty_games_assigned_sub">이 카테고리에 게임을 추가하세요.</string>
+    <string name="xmbm_empty_videos_apps">동영상 앱이 없습니다.</string>
+    <string name="xmbm_empty_network_apps">브라우저 앱이 없습니다.</string>
+    <string name="xmbm_empty_store_apps">앱 스토어가 없습니다.</string>
+    <string name="xmbm_empty_music_apps">음악 앱이 없습니다.</string>
+    <string name="xmbm_empty_photo_apps">사진 앱이 없습니다.</string>
+    <string name="xmbm_empty_apps_assigned">지정된 앱이 없습니다.</string>
+    <string name="xmbm_empty_install_apps">시작하려면 앱을 설치하세요.</string>
+    <string name="xmbm_noconsoles_title">설정된 콘솔이 없습니다</string>
+    <string name="xmbm_noconsoles_sub">라이브러리 관리자를 열어 메모리 카드를 추가하세요</string>
+    <string name="xmbm_gap_press_confirm">확인을 눌러 설정을 열고 해결하세요.</string>
+    <string name="xmbm_nogames_imported_title">아직 가져온 게임이 없습니다</string>
+    <string name="xmbm_nogames_imported_sub">메모리 카드를 열어 라이브러리를 스캔하세요.</string>
+    <string name="xmbm_emptycard_title">이 사용자 지정 메모리 카드는 비어 있습니다</string>
+    <string name="xmbm_emptycard_sub">옵션(△) 메뉴에서 어느 콘솔의 게임이든 추가하세요.</string>
+    <string name="xmbm_emptyfav_title">아직 즐겨찾기가 없습니다</string>
+    <string name="xmbm_emptyfav_sub">게임의 옵션(△) 메뉴에서 즐겨찾기로 표시하세요.</string>
+    <string name="xmbm_emptymissing_title">누락된 항목 없음</string>
+    <string name="xmbm_emptymissing_sub">마지막 스캔에서 모든 게임 파일을 찾았습니다.</string>
+    <string name="xmbm_findgames_sub">이 라이브러리에 추가할 설치된 앱 선택</string>
+    <string name="xmbm_empty_romdir">ROM 폴더가 설정되지 않았습니다</string>
+    <!-- ▲ is the controller's Triangle button symbol. -->
+    <string name="xmbm_empty_scan_console">▲를 눌러 이 콘솔을 스캔하세요</string>
+    <string name="xmbm_empty_folder_title">이 폴더에 게임이 없습니다</string>
+    <!-- Subtitle of a card: how many games it holds. -->
+    <plurals name="xmbm_games_count">
+        <item quantity="other">게임 %d개</item>
+    </plurals>
+    <!-- Games search and Shiba Coins hub -->
+    <string name="xmbm_nomatch_title">\"%1$s\"와(과) 일치하는 게임이 없습니다</string>
+    <string name="xmbm_nomatch_sub">필터 메뉴를 열어 변경하거나 지우세요.</string>
+    <string name="xmbm_ach_untracked">추적하지 않음</string>
+    <string name="xmbm_ach_connect_title">계정 연결</string>
+    <string name="xmbm_ach_connect_sub">Shiba Coins를 설정하고 라이브러리를 자동 매칭하세요</string>
+    <string name="xmbm_ach_all_tracked">추적 중인 모든 게임</string>
+    <string name="xmbm_ach_matching_progress">자동 매칭 중…  %1$d / %2$d</string>
+    <string name="xmbm_ach_syncing_progress">코인 동기화 중…  %1$d / %2$d</string>
+    <string name="xmbm_ach_summary">코인 %1$s / %2$s  •  %3$d개 추적 중  •  %4$d개 마스터</string>
+    <string name="xmbm_ach_level_badge">Lv %1$d</string>
+    <plurals name="xmbm_ach_games_count">
+        <item quantity="other">게임 %d개</item>
+    </plurals>
+    <!-- Games menus -->
+    <string name="xmbm_icon_global_value">전체: %1$s</string>
+    <string name="xmbm_icon_use_global">전체 설정 사용(%1$s)</string>
+    <!-- Title of the Shiba Coins player-card menu. -->
+    <string name="xmbm_ach_player_card">플레이어 카드</string>
+    <!-- Menu row while auto-matching is running. -->
+    <string name="xmbm_ach_auto_matching_busy">자동 매칭 중…</string>
+    <!-- Menu row: matches the library's games to achievement sets. -->
+    <string name="xmbm_ach_auto_matching">자동 매칭</string>
+    <!-- Menu row while installed achievements are updating. -->
+    <string name="xmbm_ach_updating_busy">업데이트 중…</string>
+    <string name="xmbm_ach_update_installed">설치된 게임의 도전 과제 업데이트</string>
+    <!-- Game and app menus -->
+    <string name="xmbm_move_card_to">사용자 지정 카드 이동 위치</string>
+    <!-- Title of the list of categories an item can be moved into. -->
+    <string name="xmbm_move_to">이동할 위치…</string>
+    <!-- Title of the list of categories an item can be added to. -->
+    <string name="xmbm_add_to">추가할 위치…</string>
+    <string name="xmbm_move_game_to">게임 이동 위치</string>
+    <string name="xmbm_add_game_to">게임 추가 위치</string>
+    <string name="xmbm_picker_add_apps_named">앱 추가 · %1$s</string>
+    <string name="xmbm_picker_add_android_apps">Android 앱 추가</string>
+    <string name="xmbm_icon_use_default">기본값 사용(%1$s)</string>
+    <string name="xmbm_emu_use_platform_default">플랫폼 기본값 사용</string>
+    <!-- Title of the list of emulators a game can use. -->
+    <string name="xmbm_emu_choose">에뮬레이터 선택</string>
+    <string name="xmbm_launchwith_imported_from">가져온 출처</string>
+    <!-- Label of one disc of a multi-disc game. -->
+    <string name="xmbm_disc_n">디스크 %1$d</string>
+    <string name="xmbm_disc_unnumbered">재생목록</string>
+    <string name="xmbm_card_new_title">새 사용자 지정 메모리 카드</string>
+    <!-- Title of the text dialog that renames a custom memory card. -->
+    <string name="xmbm_card_rename_title">사용자 지정 메모리 카드 이름 변경</string>
+    <plurals name="xmbm_marked_add_to_card">
+        <item quantity="other">게임 %d개를 카드에 추가</item>
+    </plurals>
+    <!-- Game info dialogs -->
+    <string name="xmbm_info_package">패키지: %1$s</string>
+    <string name="xmbm_info_no_location">기록된 파일 위치가 없습니다</string>
+    <string name="xmbm_info_export_failed">내보내기 실패 — 로그를 확인하세요.</string>
+    <!-- The quoted name must match the Settings toggle's label. -->
+    <string name="xmbm_goldberg_off">Goldberg 도전 과제 설치가 꺼져 있습니다. 설정 ▸ 도전 과제 ▸ 로컬 Windows에서 \"Goldberg 설치 및 게임 변환\"을 켠 후 다시 시도하세요.</string>
+    <string name="xmbm_goldberg_no_setup">이 게임의 Steam 에뮬 설정(steam_settings)을 찾을 수 없습니다.</string>
+    <string name="xmbm_goldberg_has_schema">%1$s에는 이미 도전 과제 데이터가 있습니다.</string>
+    <string name="xmbm_goldberg_installed">Goldberg 도전 과제를 설치했습니다. 에뮬레이터로 플레이하면 코인을 획득할 수 있습니다.</string>
+    <string name="xmbm_goldberg_none">이 게임에는 설치할 도전 과제가 없습니다.</string>
+    <string name="xmbm_goldberg_no_key">먼저 도전 과제 설정에서 Steam Web API 키를 추가하세요.</string>
+    <string name="xmbm_goldberg_failed">이 게임의 도전 과제를 설치할 수 없습니다.</string>
+    <!-- Scan and artwork notifications -->
+    <string name="xmbm_scan_running">%1$s 스캔 중…</string>
+    <string name="xmbm_scan_stop_note">지금까지 찾은 게임은 유지됩니다.</string>
+    <string name="xmbm_scan_stopped_title">%1$s 스캔 중지됨</string>
+    <string name="xmbm_scan_failed_title">%1$s 스캔 실패</string>
+    <string name="xmbm_scan_finished_title">%1$s 스캔 완료</string>
+    <string name="xmbm_scan_skipped_title">%1$s 스캔 건너뜀</string>
+    <string name="xmbm_pcscan_failed">PC 스캔 실패</string>
+    <string name="xmbm_pcscan_no_new">새 PC 게임이 없습니다</string>
+    <string name="xmbm_scanall_running">모든 메모리 카드 스캔 중…</string>
+    <string name="xmbm_scanall_stop_note">이미 스캔한 카드의 새 게임은 유지됩니다.</string>
+    <string name="xmbm_scanall_nothing">스캔할 폴더가 있는 메모리 카드가 없습니다</string>
+    <string name="xmbm_scanall_nothing_title">스캔할 항목 없음</string>
+    <string name="xmbm_scanall_stopped_title">모든 메모리 카드 스캔 중지됨</string>
+    <string name="xmbm_scanall_failed_title">모든 메모리 카드 스캔 실패</string>
+    <string name="xmbm_scanall_finished_title">모든 메모리 카드 스캔 완료</string>
+    <string name="xmbm_scrape_running">누락된 아트워크 가져오는 중: %1$s</string>
+    <string name="xmbm_scrape_stop_note">이미 가져온 아트워크는 유지됩니다.</string>
+    <string name="xmbm_scrape_paused_title">아트워크 가져오기 일시 중지됨: %1$s</string>
+    <string name="xmbm_scrape_none_missing">아트워크가 누락된 게임이 없습니다</string>
+    <string name="xmbm_scrape_finished_title">아트워크 가져오기 완료: %1$s</string>
+    <string name="xmbm_scrape_stopped_title">아트워크 가져오기 중지됨: %1$s</string>
+    <string name="xmbm_scrape_failed_title">아트워크 가져오기 실패: %1$s</string>
+    <string name="xmbm_meta_running">메타데이터 업데이트 중: %1$s</string>
+    <string name="xmbm_meta_stop_note">이미 업데이트된 게임의 정보는 유지됩니다.</string>
+    <string name="xmbm_meta_no_games_library">라이브러리에 게임이 없습니다</string>
+    <string name="xmbm_meta_no_games_card">이 카드에 게임이 없습니다</string>
+    <string name="xmbm_meta_finished_title">메타데이터 업데이트 완료: %1$s</string>
+    <string name="xmbm_meta_stopped_title">메타데이터 업데이트 중지됨: %1$s</string>
+    <string name="xmbm_meta_failed">메타데이터 업데이트 실패</string>
+    <string name="xmbm_meta_failed_title">메타데이터 업데이트 실패: %1$s</string>
+    <plurals name="xmbm_scanall_stopped_after">
+        <item quantity="other">카드 %2$d개 중 %1$d개 처리 후 중지됨</item>
+    </plurals>
+    <plurals name="xmbm_scrape_updated">
+        <item quantity="other">게임 %2$d개 중 %1$d개 업데이트됨</item>
+    </plurals>
+    <plurals name="xmbm_stopped_after_games">
+        <item quantity="other">게임 %d개 처리 후 중지됨</item>
+    </plurals>
+    <!-- Title of a dialog about a home-screen shortcut request. -->
+    <string name="xmbm_shortcut_request_title">바로 가기 요청</string>
+    <string name="xmbm_shortcut_request_handled">이 요청은 이미 처리되었습니다.</string>
+    <!-- Title of the notification panel's options menu. -->
+    <string name="xmbm_notifications_title">알림</string>
+    <!-- Discord Social rows -->
+    <string name="xmbm_social_signin_title">Discord로 로그인</string>
+    <string name="xmbm_social_signin_sub">휴대전화로 QR 코드를 스캔하세요</string>
+    <string name="xmbm_social_connected">Discord에 연결됨</string>
+    <!-- Discord presence / connection state. -->
+    <string name="xmbm_social_online">온라인</string>
+    <!-- Discord presence / connection state. -->
+    <string name="xmbm_social_offline">오프라인</string>
+    <string name="xmbm_social_connecting">연결 중…</string>
+    <!-- Discord presence state. -->
+    <string name="xmbm_social_idle">자리 비움</string>
+    <!-- Discord presence state. -->
+    <string name="xmbm_social_dnd">방해 금지</string>
+    <!-- Discord presence state. -->
+    <string name="xmbm_social_streaming">방송 중</string>
+    <string name="xmbm_social_friends_unknown">온라인 친구 보기</string>
+    <string name="xmbm_social_friends_none_online">온라인 친구 없음</string>
+    <string name="xmbm_social_voice_sub">공유 방에서 대화하기</string>
+    <string name="xmbm_social_activity_sub">플레이 중인 게임 공유</string>
+    <string name="xmbm_social_discord_sub">계정 및 로그아웃</string>
+    <string name="xmbm_social_share_title">활동 공유</string>
+    <string name="xmbm_social_share_on">켜짐 · 친구가 Playfield Portal 사용 중임을 볼 수 있음</string>
+    <string name="xmbm_social_share_off">꺼짐 · 친구와 아무것도 공유하지 않음</string>
+    <string name="xmbm_social_generic_title">일반 모드</string>
+    <string name="xmbm_social_generic_on">켜짐 · 앱 이름 대신 \"게임\"으로 표시</string>
+    <string name="xmbm_social_generic_off">꺼짐 · 앱 이름 표시</string>
+    <string name="xmbm_social_signout_title">로그아웃</string>
+    <string name="xmbm_social_signout_named">%1$s 연결 해제</string>
+    <string name="xmbm_social_signout_sub">이 Discord 계정 연결 해제</string>
+    <string name="xmbm_social_you_offline">오프라인 상태입니다</string>
+    <string name="xmbm_social_friends_reconnect">친구를 보려면 다시 연결하세요</string>
+    <string name="xmbm_social_no_friends">표시할 친구가 없습니다</string>
+    <string name="xmbm_social_in_lobby">음성 로비에 있음 · 참여 요청</string>
+    <string name="xmbm_social_playing">%1$s 플레이 중</string>
+    <string name="xmbm_social_voice_reconnect">음성을 사용하려면 다시 연결하세요</string>
+    <string name="xmbm_social_invites_none">대기 중인 초대 없음</string>
+    <string name="xmbm_social_create_lobby">로비 만들기</string>
+    <string name="xmbm_social_create_lobby_sub">비공개 방을 만들고 친구를 초대하세요</string>
+    <!-- Name shown for a voice participant who has no display name. -->
+    <string name="xmbm_social_someone">누군가</string>
+    <string name="xmbm_social_participant_you">%1$s(나)</string>
+    <string name="xmbm_social_muted">음소거됨</string>
+    <string name="xmbm_social_speaking">말하는 중</string>
+    <string name="xmbm_social_waiting_others">다른 사람이 참여하기를 기다리는 중</string>
+    <string name="xmbm_social_invite_friends_sub">이 로비에 친구 초대</string>
+    <string name="xmbm_social_unmute">음소거 해제</string>
+    <string name="xmbm_social_mute">음소거</string>
+    <string name="xmbm_social_mic_off">마이크가 꺼져 있습니다</string>
+    <string name="xmbm_social_mic_on">마이크가 켜져 있습니다</string>
+    <string name="xmbm_social_leave_voice">음성 나가기</string>
+    <string name="xmbm_social_leave_voice_sub">방에서 연결 해제</string>
+    <string name="xmbm_social_no_invites">초대 없음</string>
+    <string name="xmbm_social_no_invites_sub">초대와 참여 요청이 여기에 표시됩니다</string>
+    <string name="xmbm_social_wants_to_join">%1$s님이 참여를 원합니다</string>
+    <string name="xmbm_social_join_lobby">%1$s님의 로비에 참여</string>
+    <string name="xmbm_social_select_approve">선택하여 승인</string>
+    <string name="xmbm_social_select_join">선택하여 참여</string>
+    <string name="xmbm_social_invite_offline">친구를 초대하려면 다시 연결하세요</string>
+    <string name="xmbm_social_invited">초대함 ✓</string>
+    <string name="xmbm_social_already_lobby">이미 로비에 있음</string>
+    <string name="xmbm_social_select_invite">선택하여 초대</string>
+    <string name="xmbm_social_voice_settings_sub">마이크 감도, 소음 필터, 볼륨</string>
+    <string name="xmbm_social_vs_toggle_on">켜짐 · %1$s</string>
+    <string name="xmbm_social_vs_sens_title">마이크 감도</string>
+    <string name="xmbm_social_vs_sens_value">%1$s · 낮을수록 클릭 소리를 걸러냄</string>
+    <string name="xmbm_social_vs_noise_title">소음 제거</string>
+    <!-- Krisp is a noise-suppression technology name; keep it. -->
+    <string name="xmbm_social_vs_noise_on">Krisp가 배경 소음과 버튼 클릭 소리를 제거함</string>
+    <string name="xmbm_social_vs_echo_title">에코 제거</string>
+    <string name="xmbm_social_vs_echo_on">스피커 하울링 방지</string>
+    <string name="xmbm_social_vs_agc_title">자동 게인 조절</string>
+    <string name="xmbm_social_vs_agc_on">마이크 볼륨을 고르게 맞춤</string>
+    <string name="xmbm_social_vs_input_title">마이크 볼륨</string>
+    <string name="xmbm_social_vs_balance_title">오디오 밸런스</string>
+    <string name="xmbm_social_vs_balance_bar">게임 ◀%1$s▶ 음성</string>
+    <string name="xmbm_social_vs_ptt_title">눌러서 말하기</string>
+    <string name="xmbm_social_vs_ptt_on">누르고 있는 동안 말하기 — 그 외에는 마이크가 꺼짐</string>
+    <string name="xmbm_social_vs_overlay_title">말하기 버튼 오버레이</string>
+    <string name="xmbm_social_vs_overlay_needs">꺼짐 · \"다른 앱 위에 표시\" 권한 필요</string>
+    <string name="xmbm_social_vs_overlay_on">켜짐 · 떠 있는 누르고 말하기 버튼</string>
+    <string name="xmbm_social_vs_overlay_hidden">꺼짐 · 숨김(컨트롤러 버튼 사용)</string>
+    <!-- PTT = push-to-talk. -->
+    <string name="xmbm_social_vs_pttbtn_title">PTT 버튼</string>
+    <string name="xmbm_social_vs_pttbtn_press">컨트롤러 버튼을 누르세요…</string>
+    <string name="xmbm_social_vs_pttbtn_set">%1$s  ·  Playfield Portal에서 누르고 있는 동안 말하기</string>
+    <string name="xmbm_social_vs_pttbtn_unset">설정 안 됨 · 선택하여 컨트롤러 버튼 지정</string>
+    <string name="xmbm_social_hint_cancel">취소</string>
+    <string name="xmbm_ptt_not_set">설정 안 됨</string>
+    <string name="xmbm_ptt_l3">L3(왼쪽 스틱 누르기)</string>
+    <string name="xmbm_ptt_r3">R3(오른쪽 스틱 누르기)</string>
+    <!-- Name of the controller's Select button. -->
+    <string name="xmbm_ptt_select">Select</string>
+    <!-- Name of the controller's Start button. -->
+    <string name="xmbm_ptt_start">Start</string>
+    <plurals name="xmbm_social_friends_online">
+        <item quantity="other">%d명 온라인</item>
+    </plurals>
+    <plurals name="xmbm_social_invites_waiting">
+        <item quantity="other">%d개 대기 중</item>
+    </plurals>
+    <!-- Subtitle of a game in the Missing list: why it is there. -->
+    <string name="xmbm_missing_reason">마지막 스캔에서 파일을 찾을 수 없음</string>
+    <string name="xmbm_social_reconnect">다시 연결</string>
+    <string name="xmbm_launch_failed">시작할 수 없습니다: %1$s</string>
+    <string name="xmbm_launch_could_not">%1$s을(를) 시작할 수 없습니다</string>
+    <string name="xmbm_launch_no_emulator">%1$s용으로 설정된 에뮬레이터가 없습니다. 설정 ▸ 에뮬레이터 ▸ 시스템별 기본값에서 지정하세요.</string>
+    <string name="xmbm_shortcut_fav_added">즐겨찾기에 추가됨</string>
+    <string name="xmbm_shortcut_fav_removed">즐겨찾기에서 제거됨</string>
+    <string name="xmbm_shortcut_fav_failed">즐겨찾기를 업데이트할 수 없습니다: %1$s</string>
+    <string name="xmbm_shortcut_create_failed">바로 가기를 만들 수 없습니다: %1$s</string>
+    <!-- Description of the monthly colour scheme. -->
+    <string name="xmbm_scheme_original_sub">월마다 바뀜</string>
+    <!-- Description of a fixed colour scheme. -->
+    <string name="xmbm_scheme_fixed_sub">고정 색상 프리셋</string>
+    <!-- Colour scheme row that opens the free colour picker. -->
+    <string name="xmbm_scheme_custom">사용자 지정</string>
+    <string name="xmbm_scheme_custom_sub">슬라이더로 원하는 색상을 세밀하게 조정</string>
+    <!-- Name shown for the applied theme when it has no name. -->
+    <string name="xmbm_theme_current">현재 테마</string>
+    <!-- Title of the text dialog that names a new theme. -->
+    <string name="xmbm_theme_save_title">현재 모양을 테마로 저장</string>
+    <string name="xmbm_theme_save_failed">테마를 저장할 수 없습니다</string>
+    <string name="xmbm_theme_saved">테마 저장됨 — %1$s</string>
+    <string name="xmbm_gameboot_preview_title">미리보기</string>
+    <string name="xmbm_drawer_all_title">모든 앱</string>
+    <string name="xmbm_drawer_all_sub">설치된 모든 앱 찾아보기</string>
+    <!-- App Drawer filter: apps categorized as games. -->
+    <string name="xmbm_drawer_games_title">게임</string>
+    <string name="xmbm_drawer_games_sub">게임으로 분류된 앱</string>
+    <!-- App Drawer filter. -->
+    <string name="xmbm_drawer_emulators_title">에뮬레이터</string>
+    <string name="xmbm_drawer_emulators_sub">RetroArch, PPSSPP, Dolphin 등</string>
+    <string name="xmbm_drawer_recent_title">최근 사용</string>
+    <string name="xmbm_drawer_recent_sub">최근에 사용한 앱</string>
+    <string name="xmbm_shortcut_unsafe">캡처한 바로 가기는 실행하기에 안전하지 않습니다</string>
+</resources>

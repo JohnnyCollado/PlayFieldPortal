@@ -1,0 +1,742 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Localization slice E1: game detail, Artwork Studio, storefront matching, search online -->
+    <!-- Stored-assets manager -->
+    <!-- %1$s is the artwork slot name, e.g. Screenshots. Shown in capitals. -->
+    <string name="det_assets_reorder_title">Промени редослед: %1$s</string>
+    <string name="det_assets_first_hint">Прва је она коју игра приказује.</string>
+    <string name="det_assets_empty">За ово место ништа није сачувано.</string>
+    <!-- Button: move the highlighted item one place up -->
+    <string name="det_assets_up">Горе</string>
+    <!-- Button: move the highlighted item one place down -->
+    <string name="det_assets_down">Доле</string>
+    <!-- Button and controller prompt: make the highlighted item the first one -->
+    <string name="det_assets_make_first">Постави као прву</string>
+    <!-- Controller prompt for the shoulder buttons: move the item in the list -->
+    <string name="det_assets_move">Премести</string>
+    <string name="det_assets_relink_note">Поновно повезивање библиотеке поново гради овај редослед на основу назива датотека, јер се тако графика поново повезује са поново увезеним играма.</string>
+    <string name="det_assets_primary">Главна</string>
+    <string name="det_assets_stored_artwork">Сачувана графика</string>
+
+    <!-- Shared -->
+    <string name="det_close">Затвори</string>
+
+    <!-- Crop preview captions: the slot the live preview stands for -->
+    <string name="det_crop_caption_tile">XMB плочица</string>
+    <string name="det_crop_caption_icon_anim">Анимација XMB иконице</string>
+    <string name="det_crop_caption_box_art">Плочица омота</string>
+    <string name="det_crop_caption_box_3d">Плочица 3D кутије</string>
+    <string name="det_crop_caption_phys_media">Плочица физ. медија</string>
+    <string name="det_crop_caption_media_strip">Трака медија</string>
+
+    <!-- Artwork Studio: filters (options menu rows, lists and values) -->
+    <string name="det_filter_filters">Филтери</string>
+    <string name="det_filter_style">Стил</string>
+    <string name="det_filter_dimensions">Димензије</string>
+    <string name="det_filter_animation">Анимација</string>
+    <string name="det_filter_region">Регион</string>
+    <string name="det_filter_media">Медији</string>
+    <!-- Filter value meaning "no filter applied" -->
+    <string name="det_filter_all">Све</string>
+    <string name="det_filter_anim_static">Статично</string>
+    <string name="det_filter_anim_animated">Анимирано</string>
+    <string name="det_filter_on">Укључено</string>
+    <string name="det_filter_off">Искључено</string>
+    <!-- Value on the Filters row when a filter narrows the results -->
+    <string name="det_filter_active">Активно</string>
+    <!-- Filter value: %1$d options chosen out of %2$d, e.g. 3 of 5 -->
+    <string name="det_filter_n_of_m">%1$d од %2$d</string>
+    <!-- Content rating filter: adult content -->
+    <string name="det_filter_mature">За одрасле</string>
+    <string name="det_filter_humor">Хумор</string>
+    <string name="det_filter_epilepsy">Упозорење о епилепсији</string>
+    <string name="det_filter_clear">Обриши филтере</string>
+    <!-- %1$s is a region code such as US; the region comes from the game's disc -->
+    <string name="det_filter_region_from_disc">%1$s · са диска</string>
+    <!-- ScreenScraper media type names -->
+    <string name="det_ssmedia_mix_v2">Микс v2</string>
+    <string name="det_ssmedia_mix_v1">Микс v1</string>
+    <string name="det_ssmedia_marquee">Маркиза</string>
+    <string name="det_ssmedia_steam_grid">Steam Grid</string>
+    <string name="det_ssmedia_box_2d">2D омот</string>
+    <string name="det_ssmedia_box_3d">3D омот</string>
+    <string name="det_ssmedia_disc_art_2d">2D слика диска</string>
+    <string name="det_ssmedia_disc_texture">Текстура диска</string>
+    <string name="det_ssmedia_fan_art">Фан-арт</string>
+    <string name="det_ssmedia_screenshot">Снимак екрана</string>
+    <string name="det_ssmedia_title_screen">Насловни екран</string>
+    <string name="det_ssmedia_logo">Лого</string>
+    <string name="det_ssmedia_logo_hd">Лого HD</string>
+    <string name="det_ssmedia_manual">Упутство</string>
+    <string name="det_ssmedia_video">Видео</string>
+    <string name="det_ssmedia_video_normalized">Видео (нормализован)</string>
+
+    <!-- Steam artwork tile captions (small caption under each picture in the Artwork Studio grid) -->
+    <string name="det_steam_art_library_capsule">капсула библиотеке</string>
+    <string name="det_steam_art_library_hero">херој библиотеке</string>
+    <string name="det_steam_art_logo">лого</string>
+    <string name="det_steam_art_header">заглавље</string>
+    <string name="det_steam_art_store_capsule">капсула продавнице</string>
+    <string name="det_steam_art_store_background">позадина продавнице</string>
+    <!-- %1$d is the screenshot's number in the list -->
+    <string name="det_steam_art_screenshot_n">снимак екрана %1$d</string>
+    <!-- %1$s is the trailer's name; "short" marks the shorter cut of the trailer -->
+    <string name="det_steam_art_trailer_short">%1$s · кратко</string>
+    <string name="det_art_best_title_match">најбоље подударање наслова</string>
+
+    <!-- Artwork Studio: page line, paging and pick status -->
+    <!-- Range of results on this page: %1$d first, %2$d last, %3$d total -->
+    <string name="det_page_range">%1$d–%2$d од %3$d</string>
+    <!-- Filters hid some results: %1$d first, %2$d last, %3$d shown, %4$d before filtering -->
+    <string name="det_page_range_shown">%1$d–%2$d · приказано %3$d од %4$d</string>
+    <!-- Button: go to the previous page -->
+    <string name="det_page_prev">‹ Претх.</string>
+    <!-- Button: go to the next page -->
+    <string name="det_page_next">След. ›</string>
+    <!-- %1$d is the current page, %2$d the number of pages -->
+    <string name="det_page_n_of_m">Страница %1$d / %2$d</string>
+    <!-- Pending picks before Apply: how many artwork pictures will be added and/or removed -->
+    <string name="det_picks_add">За додавање: %1$d</string>
+    <string name="det_picks_remove">За уклањање: %1$d</string>
+    <string name="det_picks_add_remove">За додавање: %1$d · за уклањање: %2$d</string>
+    <!-- Touch button that applies the pending picks -->
+    <string name="det_picks_apply_pill">Примени ›</string>
+    <!-- Controller prompt: apply the pending picks -->
+    <string name="det_picks_apply">Примени</string>
+    <!-- Download progress: %1$d done out of %2$d -->
+    <string name="det_picks_progress">Додато %1$d од %2$d</string>
+    <string name="det_picks_progress_failed">Додато %1$d од %2$d · неуспешно: %3$d</string>
+    <!-- Button: retry the failed downloads -->
+    <string name="det_picks_retry">Покушај поново</string>
+    <!-- Button: remove the failed downloads from the queue -->
+    <string name="det_picks_remove_failed">Уклони</string>
+    <!-- Controller prompt / touch label that opens the Options menu -->
+    <string name="det_options">Опције</string>
+
+    <!-- Storefront match picker ("Match Game") -->
+    <string name="det_store_match_title">Повежи игру</string>
+    <!-- Controller hint line. Up/Down, L1/R1, Select and B are controller buttons; △ is the Triangle button -->
+    <string name="det_store_hint_multi">"Горе/доле  Редови  •  L1/R1  Продавница  •  Select  Изабери  •  △  Више информација  •  B  Откажи"</string>
+    <!-- Controller hint line. Up/Down, Select and B are controller buttons; △ is the Triangle button -->
+    <string name="det_store_hint_single">"Горе/доле  Редови  •  Select  Изабери  •  △  Више информација  •  B  Откажи"</string>
+    <string name="det_store_notice_tied">Два уноса у продавници имају потпуно исти наслов. Нерешено стање код идентичног назива не може да се разреши доказима, па ништа није повезано док не изаберете.</string>
+    <string name="det_store_notice_low">Ниједно од ових није поуздано подударање — називи се само делимично поклапају. Пре избора проверите годину и програмера или оставите неповезано.</string>
+    <!-- %1$s is a comma-separated list of store names that could not be reached -->
+    <string name="det_store_empty_unavailable_title">%1$s није одговорио.</string>
+    <string name="det_store_empty_unavailable_detail">Ништа није промењено. Ово је проблем са везом, а не игра која недостаје — покушајте поново касније.</string>
+    <string name="det_store_empty_not_windows_title">Ово није Windows игра.</string>
+    <string name="det_store_empty_not_windows_detail">Идентитети у продавницама постоје само за PC игре. ROM-ови конзола се повезују преко своје датотеке.</string>
+    <string name="det_store_empty_settled_title">Већ повезано.</string>
+    <!-- %1$s is the title of the store entry the game is already linked to -->
+    <string name="det_store_empty_settled_detail">%1$s — није било између чега да се бира. Користите „Повезивање са продавницом“ да промените.</string>
+    <!-- %1$s is the name the user typed into the search bar -->
+    <string name="det_store_empty_typed_title">Ниједна продавница нема „%1$s“.</string>
+    <string name="det_store_empty_typed_detail">Ништа није промењено и ништа није повезано. Вратите се да пробате други назив.</string>
+    <string name="det_store_empty_none_title">Ниједна продавница нема ову игру.</string>
+    <string name="det_store_empty_none_detail">Ништа није промењено и ништа није повезано. Користите траку за претрагу у „Повезивање са продавницом“ да пробате други назив.</string>
+    <!-- %1$s: store names that did not answer; %2$s: the one store whose list is shown -->
+    <string name="det_store_note_unreachable">%1$s није одговорио, па ова листа потиче само од: %2$s. Покушајте поново касније за %1$s.</string>
+    <!-- %1$s: names of stores the game is already linked on -->
+    <string name="det_store_note_linked">Већ повезано на %1$s. Та веза се овде не мења.</string>
+    <!-- Label above the game's own title -->
+    <string name="det_store_your_game">Ваша игра</string>
+    <!-- Label above the search text that was sent to the stores -->
+    <string name="det_store_searched_as">Претражено као</string>
+    <string name="det_store_quoted">„%1$s“</string>
+    <!-- Match score of a candidate, %1$d is the number of points -->
+    <string name="det_store_score">оцена %1$d</string>
+    <string name="det_store_no_match">Нема тачног подударања</string>
+    <!-- %1$s is the game's title -->
+    <string name="det_store_no_match_detail">Оставите %1$s неповезано. Ништа се не уписује, а можете поново покушати касније.</string>
+    <!-- Button: pick the highlighted candidate -->
+    <string name="det_store_choose">Изабери</string>
+    <string name="det_store_more_info">Више информација</string>
+    <!-- Controller hint line on the More Information panel -->
+    <string name="det_store_hint_more_info">"Select  Изабери ову игру  •  B  Назад"</string>
+    <string name="det_store_why_ranked">Зашто је овде рангирано</string>
+    <!-- Row label above the total of the match points -->
+    <string name="det_store_total">Укупно</string>
+    <!-- %1$s is the store's own id of the other entry with the same title -->
+    <string name="det_store_notice_rival">И даље није аутоматски повезано: други унос у продавници (%1$s) има потпуно исти наслов, а идентичан назив није нешто што бодови смеју да разреше.</string>
+    <string name="det_store_choose_this">Изабери ову игру</string>
+    <string name="det_store_back_to_matches">Назад на подударања</string>
+    <!-- Store identifiers: %1$s is the id number. The word is the store's own term for its id -->
+    <string name="det_store_id_steam">appid %1$s</string>
+    <string name="det_store_id_gog">производ %1$s</string>
+    <string name="det_store_id_epic">каталог %1$s</string>
+    <!-- Small chips on a candidate showing a strong sign that it is the right game -->
+    <string name="det_signal_chip_store_id">ID у продавници</string>
+    <string name="det_signal_chip_exact_title">Тачан наслов</string>
+    <string name="det_signal_chip_developer">Програмер се поклапа</string>
+    <string name="det_signal_chip_publisher">Издавач се поклапа</string>
+    <string name="det_signal_chip_year">Година се поклапа</string>
+    <string name="det_signal_chip_other_edition">Иста игра, друго издање</string>
+    <string name="det_signal_chip_partial_title">Делимичан наслов</string>
+    <string name="det_signal_chip_year_conflict">Година се не поклапа</string>
+    <!-- Lines of the "Why it ranked here" list -->
+    <string name="det_signal_desc_store_id">ID у продавници — лаунчер је сам пријавио овај ID</string>
+    <string name="det_signal_desc_exact_title">Тачан наслов — нормализовани називи су идентични</string>
+    <string name="det_signal_desc_developer">Програмер — поклапа се са оним на вашој копији</string>
+    <string name="det_signal_desc_publisher">Издавач — поклапа се са оним на вашој копији</string>
+    <string name="det_signal_desc_year">Година изласка — поклапа се са оном на вашој копији</string>
+    <string name="det_signal_desc_other_edition">Иста игра, друго издање</string>
+    <string name="det_signal_desc_partial_title">Делимичан наслов — један назив садржи други</string>
+    <string name="det_signal_desc_year_conflict">Година изласка — не поклапа се са вашом копијом</string>
+    <string name="det_signal_field_release_year">Година изласка</string>
+    <string name="det_signal_field_developer">Програмер</string>
+    <string name="det_signal_field_publisher">Издавач</string>
+    <!-- %1$s is a field name such as Developer -->
+    <string name="det_signal_absent_no_match">%1$s — нема поклапања са вашом копијом</string>
+    <string name="det_signal_absent_silent">%1$s — продавница није навела</string>
+
+    <!-- Storefront rematch ("Store Match") -->
+    <string name="det_rematch_title">Повезивање са продавницом</string>
+    <!-- Controller hint lines. Up/Down, Left/Right, Select, B and Keyboard Search are controller or keyboard buttons -->
+    <string name="det_rematch_hint_editing">"Тастатура: Претрага  Пронађи подударања  •  B  Готово куцање"</string>
+    <string name="det_rematch_hint_query">"Горе/доле  Редови  •  Select  Унеси назив  •  B  Затвори"</string>
+    <string name="det_rematch_hint_rows">"Горе/доле  Редови  •  Лево/десно  Радња  •  Select  Потврди  •  B  Затвори"</string>
+    <string name="det_rematch_remove_note">Уклањање везе уклања само везу. Ваш опис, програмер и сва остала поља остају потпуно исти — укључујући све што сте ручно унели.</string>
+    <string name="det_rematch_searching">Претрага…</string>
+    <string name="det_rematch_search_all">Поново претражи све продавнице</string>
+    <string name="det_rematch_search_by_name">Претражи по називу</string>
+    <!-- Button: search the stores for the typed name, also the action on a store row -->
+    <string name="det_rematch_search">Претражи</string>
+    <!-- Action on a store row: replace the current link with another -->
+    <string name="det_rematch_replace">Замени</string>
+    <!-- Action on a store row: remove the link -->
+    <string name="det_rematch_remove">Уклони</string>
+    <string name="det_rematch_search_help">Претражује продавнице за овај назив. Наслов ваше игре се не мења.</string>
+    <string name="det_rematch_confirmed">Потврдили сте ви</string>
+    <string name="det_rematch_not_linked">Није повезано</string>
+    <string name="det_rematch_note_not_searchable">Не може да се претражује — ова продавница нема јавни каталог</string>
+    <string name="det_rematch_note_nothing_stored">Ништа није сачувано за ову продавницу</string>
+    <string name="det_rematch_note_auto">Аутоматски повезано</string>
+
+    <!-- Shared buttons -->
+    <string name="det_cancel">Откажи</string>
+    <string name="det_back">Назад</string>
+
+    <!-- Metadata preview ("Update Metadata") -->
+    <string name="det_meta_title">Ажурирај метаподатке</string>
+    <!-- Controller hint lines. Select and B are controller buttons -->
+    <string name="det_meta_hint_nothing">"Select или B  Затвори"</string>
+    <string name="det_meta_hint_manual">"Горе/доле  Редови  •  Лево/десно  Правило  •  L1/R1  Извор  •  Select  Измени / примени  •  B  Откажи"</string>
+    <string name="det_meta_hint_rows">"Горе/доле  Редови  •  Лево/десно  Правило  •  L1/R1  Извор  •  Select  Укључи/искључи / примени  •  B  Откажи"</string>
+    <string name="det_meta_failed_title">Извори метаподатака нису одговорили.</string>
+    <string name="det_meta_unreadable_title">Ову игру није могуће прочитати.</string>
+    <string name="det_meta_failed_detail">Ништа није промењено. Проверите везу и покушајте поново.</string>
+    <string name="det_meta_unreadable_detail">Ништа није промењено. Пробајте поново да отворите ову игру.</string>
+    <string name="det_meta_no_source">Ниједан извор није препознао ову игру — ручно попуните поља која желите.</string>
+    <!-- Table column headings: the field name, the game\'s current value, the value from the chosen source -->
+    <string name="det_meta_col_field">Поље</string>
+    <string name="det_meta_col_current">Тренутно</string>
+    <string name="det_meta_col_yours">Ваша вредност</string>
+    <string name="det_meta_col_incoming">Долазно</string>
+    <string name="det_meta_applying">Примењивање…</string>
+    <string name="det_meta_keep_close">Задржи тренутно и затвори</string>
+    <string name="det_meta_nothing_to_change">Нема шта да се промени</string>
+    <string name="det_meta_tap_to_type">Изаберите за унос</string>
+    <plurals name="det_meta_apply_changes">
+        <item quantity="one">Примени %1$d измену</item>
+        <item quantity="few">Примени %1$d измене</item>
+        <item quantity="other">Примени %1$d измена</item>
+    </plurals>
+
+    <!-- Search online (achievement preview lookup) -->
+    <string name="det_search_title">Претражи на мрежи</string>
+    <!-- Options menu list names -->
+    <string name="det_search_group_provider">Добављач</string>
+    <!-- A game system / console, e.g. Super Nintendo -->
+    <string name="det_search_group_system">Систем</string>
+    <!-- %1$s is the game\'s platform name; the game is not installed on this device -->
+    <string name="det_search_subtitle_not_installed">%1$s · Није инсталирано</string>
+    <!-- %1$s is the provider (and console), %2$s is the number of results, e.g. 12 results -->
+    <string name="det_search_subtitle_results">%1$s · %2$s</string>
+    <plurals name="det_search_result_count">
+        <item quantity="one">%1$d резултат</item>
+        <item quantity="few">%1$d резултата</item>
+        <item quantity="other">%1$d резултата</item>
+    </plurals>
+    <string name="det_search_placeholder_coins">Претражи новчиће…</string>
+    <!-- %1$s is a provider name, e.g. Steam -->
+    <string name="det_search_placeholder_provider">Претражи %1$s…</string>
+    <string name="det_search_loading_achievements">Учитавање достигнућа…</string>
+    <!-- %1$s is a game title, %2$s a provider name -->
+    <string name="det_search_no_achievements">%1$s нема достигнућа на %2$s.</string>
+    <!-- %1$s is the text the user typed in the coin filter -->
+    <string name="det_search_no_coins_match">Ниједан новчић не одговара упиту „%1$s“.</string>
+    <string name="det_search_no_coins_in_view">Нема новчића у овом приказу.</string>
+    <!-- %1$d is the minimum number of letters, %2$s a provider name -->
+    <string name="det_search_idle">Унесите бар %1$d слова за претрагу: %2$s.</string>
+    <string name="det_search_searching">Претрага: %1$s…</string>
+    <!-- %1$s is a provider name, %2$s what the user typed -->
+    <string name="det_search_no_games_match">Ниједна %1$s игра не одговара упиту „%2$s“.</string>
+    <string name="det_search_offline">За претрагу је потребна интернет веза.</string>
+    <!-- %1$s is a provider name; the user has to sign in or add credentials for it -->
+    <string name="det_search_not_connected">Повежите %1$s да бисте претраживали његове игре.</string>
+    <string name="det_search_failed">Повезивање са %1$s није успело. Покушајте поново.</string>
+    <!-- Button shown on an error: search again -->
+    <string name="det_search_retry">Покушај поново</string>
+    <string name="det_search_open_settings">Отвори подешавања</string>
+    <string name="det_search_refresh_preview">Освежи преглед</string>
+    <!-- Controller prompts in the footer. Each names what the button does -->
+    <string name="det_search_prompt_select">Изабери</string>
+    <string name="det_search_prompt_done">Готово</string>
+    <string name="det_search_prompt_hide">Сакриј</string>
+    <string name="det_search_prompt_reveal">Откриј</string>
+    <string name="det_search_prompt_search">Претражи</string>
+    <string name="det_search_prompt_change_view">Промени приказ</string>
+    <string name="det_search_prompt_close_preview">Затвори преглед</string>
+    <string name="det_search_prompt_type">Унеси</string>
+    <string name="det_search_prompt_preview">Преглед</string>
+    <!-- Reasons a preview could not be shown -->
+    <string name="det_search_err_missing_credentials">Повежите овог добављача у Подешавањима да бисте тражили његове игре.</string>
+    <string name="det_search_err_not_linked">Ова игра нема скуп достигнућа за приказ.</string>
+    <string name="det_search_err_profile_private">Детаљи игара на Steam-у нису доступни за ваш профил.</string>
+    <string name="det_search_err_not_found">Ова игра нема достигнућа код овог добављача.</string>
+    <string name="det_search_lookup_only">Резултати се само претражују — ништа одавде се не додаје у библиотеку или новчаник новчића.</string>
+    <!-- Small heading above the number of achievements in a game, shown in capitals -->
+    <string name="det_search_available">ДОСТУПНО</string>
+    <plurals name="det_search_achievement_count">
+        <item quantity="one">%1$d достигнуће</item>
+        <item quantity="few">%1$d достигнућа</item>
+        <item quantity="other">%1$d достигнућа</item>
+    </plurals>
+    <!-- Gold chip: this is only a preview of a game that is not on the device -->
+    <string name="det_search_preview_chip">ПРЕГЛЕД</string>
+    <string name="det_search_preview_notice">Само преглед. Ова игра није на овом уређају, па се ништа овде не прати, не броји нити синхронизује. Затварање прегледа га одбацује.</string>
+    <!-- Search result subtitle: %1$s is the platform, %2$s the provider\'s id of the game -->
+    <string name="det_search_candidate_app">%1$s · апликација %2$s</string>
+    <string name="det_search_candidate_game">%1$s · игра %2$s</string>
+
+    <!-- Game Detail page -->
+    <!-- Breadcrumb header shown when the game row no longer exists -->
+    <string name="det_library">Библиотека</string>
+    <string name="det_game_not_found">Игра није пронађена</string>
+    <string name="det_game_gone">Ова игра више није у библиотеци.</string>
+    <string name="det_game_gone_hint">Притисните „Назад“ да се вратите у библиотеку.</string>
+    <string name="det_meta_replace_title">Заменити ваш наслов?</string>
+    <!-- %1$s is the title the user typed by hand, %2$s the new title from the source -->
+    <string name="det_meta_replace_message">Овај наслов сте подесили ручно. Примена новог брише ваш.\n\nВаш: %1$s\nНови: %2$s</string>
+    <!-- Button: replace the hand-typed title with the new one -->
+    <string name="det_meta_replace">Замени</string>
+    <!-- Button: keep the title the user typed -->
+    <string name="det_meta_keep_mine">Задржи мој</string>
+    <!-- %1$s is a metadata field name, e.g. Developer -->
+    <string name="det_meta_edit_field">Измени: %1$s</string>
+    <string name="det_remove_title">Уклони из библиотеке</string>
+    <!-- %1$s is the game\'s title -->
+    <string name="det_remove_message">„%1$s“ ће бити уклоњена из библиотеке. Датотеке остају на уређају.</string>
+    <!-- Button: confirm removing the game -->
+    <string name="det_remove">Уклони</string>
+    <string name="det_edit_note">Измени белешку</string>
+    <string name="det_edit_title">Измени наслов</string>
+    <!-- Hero banner facts. %1$s is a relative time such as Today or 3 days ago, or a play time such as 2 h 5 min -->
+    <string name="det_fact_last_played">Последњи пут играно %1$s</string>
+    <string name="det_fact_play_time">Време играња %1$s</string>
+    <!-- Main buttons -->
+    <string name="det_launch">Покрени</string>
+    <string name="det_favorite">Омиљено</string>
+    <string name="det_favorite_remove_cd">Уклони из омиљених</string>
+    <string name="det_favorite_add_cd">Додај у омиљене</string>
+    <!-- Button that opens the artwork tools -->
+    <string name="det_artwork">Графика</string>
+    <string name="det_artwork_edit_cd">Измени графику</string>
+    <!-- Button that opens the game\'s manual -->
+    <string name="det_manual">Упутство</string>
+    <string name="det_manual_open_cd">Отвори упутство</string>
+    <!-- Link next to a launch error that opens help -->
+    <string name="det_get_help">Помоћ</string>
+    <string name="det_shiba_coins">Shiba Coins</string>
+    <string name="det_coins_not_tracked">Још се не прати</string>
+    <string name="det_no_description">Нема описа.</string>
+    <!-- Heading of the game description row -->
+    <string name="det_overview">Преглед</string>
+    <string name="det_media_preview">Преглед медија</string>
+    <string name="det_media_play_video_cd">Пусти видео</string>
+    <string name="det_media_screenshot_cd">Снимак екрана</string>
+    <string name="det_media_preview_cd">Преглед медија</string>
+    <!-- %1$s is the game\'s title -->
+    <string name="det_manual_viewer_title">%1$s — Упутство</string>
+    <!-- Disc row for multi-disc games -->
+    <string name="det_discs">Дискови</string>
+    <string name="det_disc_n">Диск %1$d</string>
+    <string name="det_disc_playlist">Плејлиста</string>
+    <string name="det_disc_missing">Недостаје</string>
+    <string name="det_disc_preferred">Жељени</string>
+    <string name="det_disc_available">Доступан</string>
+    <!-- Game information fields -->
+    <string name="det_info_released">Изашло</string>
+    <string name="det_info_developer">Програмер</string>
+    <string name="det_info_publisher">Издавач</string>
+    <string name="det_info_genre">Жанр</string>
+    <string name="det_info_last_played">Последњи пут играно</string>
+    <string name="det_info_play_time">Време играња</string>
+    <string name="det_info_emulator">Емулатор</string>
+    <!-- %1$s is the RetroArch core\'s name -->
+    <string name="det_info_core">Језгро: %1$s</string>
+    <!-- Helper footer prompts. Each names what a controller button does -->
+    <string name="det_prompt_page">Страница</string>
+    <string name="det_prompt_scroll">Померање</string>
+    <string name="det_prompt_navigate">Навигација</string>
+    <string name="det_prompt_apply_toggle">Примени / укључи-искључи</string>
+    <!-- Controller prompt: change how metadata is applied (Left/Right) -->
+    <string name="det_prompt_policy">Правило</string>
+    <!-- Controller prompt: change the metadata source (shoulder buttons) -->
+    <string name="det_prompt_source">Извор</string>
+    <string name="det_prompt_toggle">Укључи/искључи</string>
+    <string name="det_prompt_select">Изабери</string>
+    <string name="det_choose">Изабери</string>
+    <!-- What the Confirm button does on the focused item -->
+    <string name="det_confirm_play">Играј</string>
+    <string name="det_confirm_preview">Преглед</string>
+    <string name="det_confirm_view">Прикажи</string>
+    <string name="det_confirm_collapse">Скупи</string>
+    <string name="det_confirm_read_more">Прочитај више</string>
+    <string name="det_confirm_choose_disc">Изабери диск</string>
+    <string name="det_confirm_change_emulator">Промени емулатор</string>
+    <!-- What kind of library entry a game is, shown under the title -->
+    <string name="det_kind_app">Апликација</string>
+    <string name="det_kind_pc_shortcut">PC пречица</string>
+    <string name="det_kind_game_app">Апликација игре</string>
+    <string name="det_kind_rom">ROM</string>
+    <!-- Play time -->
+    <string name="det_time_under_minute">Мање од минута</string>
+    <string name="det_time_minutes">%1$d мин</string>
+    <!-- %1$d is hours, %2$d is minutes -->
+    <string name="det_time_hours_minutes">%1$d ч %2$d мин</string>
+    <string name="det_days_today">Данас</string>
+    <string name="det_days_yesterday">Јуче</string>
+    <plurals name="det_days_ago">
+        <item quantity="one">Пре %1$d дан</item>
+        <item quantity="few">Пре %1$d дана</item>
+        <item quantity="other">Пре %1$d дана</item>
+    </plurals>
+    <string name="det_fetching_artwork">Преузимање графике…</string>
+    <!-- Options menu value when nothing is set -->
+    <string name="det_none">Ништа</string>
+    <string name="det_emulator_picker_title">Изаберите емулатор</string>
+    <string name="det_emulator_picker_hint">"Горе/доле  Навигација  •  Select  Потврди  •  B  Откажи"</string>
+
+    <!-- Options menu: panel titles, group headings and row labels -->
+    <string name="det_menu_options">Опције</string>
+    <string name="det_menu_artwork">Графика</string>
+    <string name="det_menu_information">Информације</string>
+    <string name="det_menu_file">Датотека</string>
+    <string name="det_group_library">Библиотека</string>
+    <string name="det_group_play">Играње</string>
+    <string name="det_group_customize">Прилагођавање</string>
+    <string name="det_group_manage">Управљање</string>
+    <string name="det_action_favorite">Омиљено</string>
+    <!-- Adds the game to a card (a collection) -->
+    <string name="det_action_collections">Додај на картицу</string>
+    <string name="det_action_emulator">Емулатор</string>
+    <string name="det_action_manual">Упутство</string>
+    <string name="det_action_menu_artwork">Графика</string>
+    <string name="det_action_menu_information">Информације</string>
+    <string name="det_action_menu_file">Датотека</string>
+    <string name="det_action_remove">Уклони из библиотеке</string>
+    <string name="det_action_artwork_studio">Artwork Studio</string>
+    <string name="det_action_fetch_artwork">Преузми графику</string>
+    <string name="det_action_metadata">Ажурирај метаподатке</string>
+    <string name="det_action_rename">Измени наслов</string>
+    <string name="det_action_edit_note">Измени белешку</string>
+    <string name="det_action_storefront">Повезивање са продавницом</string>
+    <string name="det_action_location">Прикажи локацију датотеке</string>
+    <string name="det_action_export">Извези игру</string>
+    <!-- Artwork kind names -->
+    <string name="det_arttype_icon">Иконица игре</string>
+    <string name="det_arttype_hero">Херој банер</string>
+    <string name="det_arttype_background">Позадина</string>
+
+    <!-- Game Detail messages -->
+    <!-- %1$s is a package name -->
+    <string name="det_location_package">Пакет: %1$s</string>
+    <string name="det_location_none">Нема забележене локације датотеке</string>
+    <string name="det_export_failed">Извоз није успео — погледајте дневник.</string>
+    <string name="det_no_video_snap">Нема видео исечка — укључите „Преузимај видео исечке“ и поново преузмите</string>
+    <string name="det_no_manual">За ову игру нема упутства</string>
+    <string name="det_launch_loading">Игра се још учитава</string>
+    <string name="det_launch_file_missing">Датотека није пронађена при последњем скенирању. Поново повежите картицу или вратите датотеку, па поново скенирајте.</string>
+    <!-- %1$s is the game\'s title -->
+    <string name="det_launching">Покретање: %1$s...</string>
+    <!-- %1$s is the reason the system gave -->
+    <string name="det_launch_failed">Покретање није успело: %1$s</string>
+    <!-- %1$s is a game title or an emulator name -->
+    <string name="det_launch_could_not">Покретање није успело: %1$s</string>
+    <string name="det_launch_no_emulator">Није могуће одредити емулатор за %1$s</string>
+    <!-- %1$s is a platform code such as PS2 -->
+    <string name="det_no_emulators">Нема инсталираних емулатора за %1$s</string>
+    <!-- %1$s is an emulator name -->
+    <string name="det_emulator_set">Емулатор је подешен на %1$s</string>
+    <string name="det_title_updated">Наслов је ажуриран на „%1$s“</string>
+    <string name="det_title_reset">Наслов је враћен на „%1$s“</string>
+    <string name="det_artwork_updated">Графика је ажурирана</string>
+    <string name="det_artwork_already_fetching">Графика за ову игру се већ преузима</string>
+    <string name="det_artwork_fetch_failed">Преузимање графике није успело</string>
+    <!-- %1$s is a metadata field name, e.g. Developer -->
+    <string name="det_meta_reverted">%1$s је враћено на преузету вредност</string>
+    <string name="det_meta_kept_current">Тренутни метаподаци су задржани</string>
+    <string name="det_meta_msg_nothing">Нема шта да се промени</string>
+    <!-- %1$d is how many fields were written, %2$s the source name, e.g. ScreenScraper -->
+    <plurals name="det_meta_updated_from">
+        <item quantity="one">Ажурирано је %1$d поље из %2$s</item>
+        <item quantity="few">Ажурирана су %1$d поља из %2$s</item>
+        <item quantity="other">Ажурирано је %1$d поља из %2$s</item>
+    </plurals>
+    <plurals name="det_meta_updated_by_hand">
+        <item quantity="one">Ажурирано је %1$d ручно подешено поље</item>
+        <item quantity="few">Ажурирана су %1$d ручно подешена поља</item>
+        <item quantity="other">Ажурирано је %1$d ручно подешених поља</item>
+    </plurals>
+    <string name="det_meta_update_failed">Ажурирање метаподатака није успело</string>
+    <!-- %1$s is a store name, e.g. GOG -->
+    <string name="det_rematch_cant_search">%1$s не може да се претражује</string>
+    <string name="det_rematch_link_removed">Веза са %1$s је уклоњена. Метаподаци нису промењени.</string>
+    <!-- %1$s is a store name, %2$s the title of the store entry -->
+    <string name="det_rematch_linked">Повезано са %1$s: %2$s</string>
+
+    <!-- Artwork Studio -->
+    <!-- Artwork source: pictures chosen from this device -->
+    <string name="det_source_local">Локална датотека</string>
+    <!-- Tab names, shown in capitals. ICON0 and ICON1 are the PSP file names of the XMB tile picture and its animation -->
+    <string name="det_tab_tile">ICON0</string>
+    <string name="det_tab_icon1">ICON1</string>
+    <string name="det_tab_box_art">ОМОТ</string>
+    <string name="det_tab_box_3d">3D КУТИЈА</string>
+    <string name="det_tab_phys">ФИЗ. МЕДИЈ</string>
+    <string name="det_tab_hero">ХЕРОЈ</string>
+    <string name="det_tab_background">ПОЗАДИНА</string>
+    <string name="det_tab_logo">ЛОГО</string>
+    <string name="det_tab_screenshot">СНИМАК ЕКРАНА</string>
+    <string name="det_tab_manual">УПУТСТВО</string>
+    <string name="det_tab_video">ВИДЕО</string>
+    <!-- What each tab is used for. XMB is the app\'s main menu; PIC0 is the PSP file name of the overlay picture -->
+    <string name="det_tab_tile_contract">XMB плочица · 144×80 · исецање</string>
+    <string name="det_tab_icon1_contract">Анимација XMB иконице · 60 с исечак без звука</string>
+    <string name="det_tab_box_art_contract">XMB плочица (режим омота) · природни однос</string>
+    <string name="det_tab_box_3d_contract">XMB плочица (режим 3D кутије) · природни однос</string>
+    <string name="det_tab_phys_contract">XMB плочица (режим физичког медија) · природни однос</string>
+    <string name="det_tab_hero_contract">Банер детаља игре · широко · исецање</string>
+    <string name="det_tab_background_contract">XMB позадина при задржавању · цео екран</string>
+    <string name="det_tab_logo_contract">PIC0 слој · провидни PNG · уклапање</string>
+    <string name="det_tab_screenshot_contract">Трака медија у детаљима игре</string>
+    <string name="det_tab_manual_contract">PDF упутство у апликацији</string>
+    <string name="det_tab_video_contract">Трака медија у детаљима игре · цео видео</string>
+    <!-- Leave prompt rows: shown when the user leaves with picks that were not applied -->
+    <string name="det_leave_apply">Примени и затвори</string>
+    <string name="det_leave_discard">Одбаци измене</string>
+    <string name="det_leave_stay">Остани</string>
+    <plurals name="det_leave_changes_waiting">
+        <item quantity="one">%1$d измена није примењена</item>
+        <item quantity="few">%1$d измене нису примењене</item>
+        <item quantity="other">%1$d измена није примењено</item>
+    </plurals>
+    <!-- Crop editor menu -->
+    <string name="det_crop_options_title">Опције исецања</string>
+    <string name="det_crop_live_preview">Преглед уживо</string>
+    <!-- Row label: the shape of the crop frame -->
+    <string name="det_crop_shape">Облик</string>
+    <string name="det_crop_shape_platform_default">Подразумевано за платформу</string>
+    <string name="det_crop_shape_original">Оригинална слика</string>
+    <string name="det_no_options">Овде нема доступних опција</string>
+    <string name="det_replace_anyway">Ипак замени</string>
+    <!-- %1$s is a tab name such as BOX ART -->
+    <string name="det_replace_title">%1$s већ је ова слика</string>
+    <string name="det_replace_title_default">Ова графика већ је ова слика</string>
+    <string name="det_apply_title_default">Применити измене?</string>
+    <!-- %1$s is a count such as 3 screenshots, %2$d the number of stored pictures that will be removed -->
+    <string name="det_apply_title_add_remove">Додати %1$s и уклонити %2$d?</string>
+    <string name="det_apply_title_remove">Уклонити %1$s?</string>
+    <string name="det_apply_title_add">Додати %1$s?</string>
+    <plurals name="det_asset_count_screenshot">
+        <item quantity="one">%1$d снимак екрана</item>
+        <item quantity="few">%1$d снимка екрана</item>
+        <item quantity="other">%1$d снимака екрана</item>
+    </plurals>
+    <plurals name="det_asset_count_video">
+        <item quantity="one">%1$d видео</item>
+        <item quantity="few">%1$d видео снимка</item>
+        <item quantity="other">%1$d видео снимака</item>
+    </plurals>
+    <plurals name="det_asset_count_image">
+        <item quantity="one">%1$d слику</item>
+        <item quantity="few">%1$d слике</item>
+        <item quantity="other">%1$d слика</item>
+    </plurals>
+    <!-- %1$s is a count such as 3 screenshots -->
+    <string name="det_local_add_cap_only">Игра може да садржи највише %1$s</string>
+    <string name="det_local_add_cap">Додато: %1$s — игра може да садржи највише %2$d</string>
+    <plurals name="det_local_add_failed">
+        <item quantity="one">%1$d датотеку није могуће додати</item>
+        <item quantity="few">%1$d датотеке није могуће додати</item>
+        <item quantity="other">%1$d датотека није могуће додати</item>
+    </plurals>
+    <!-- %1$s is a count such as 3 screenshots, %2$d the number of files that failed -->
+    <plurals name="det_local_add_some_failed">
+        <item quantity="one">Додато: %1$s · %2$d датотеку није могуће додати</item>
+        <item quantity="few">Додато: %1$s · %2$d датотеке није могуће додати</item>
+        <item quantity="other">Додато: %1$s · %2$d датотека није могуће додати</item>
+    </plurals>
+    <string name="det_local_added">Додато: %1$s</string>
+    <!-- %1$s is a count such as 3 screenshots, %2$d how many to uncheck -->
+    <string name="det_cap_uncheck">Игра може да садржи највише %1$s — поништите избор за %2$d да бисте применили</string>
+    <!-- Actions in the Options menu -->
+    <string name="det_action_apply_changes">Примени измене</string>
+    <string name="det_action_retry_failed">Понови неуспела преузимања</string>
+    <string name="det_action_remove_failed">Уклони неуспела преузимања</string>
+    <string name="det_action_reorder">Промени редослед сачуване графике</string>
+    <string name="det_action_crop">Подеси исецање / положај</string>
+    <string name="det_action_crop_before">Исеци пре примене</string>
+    <string name="det_action_restore_previous">Врати претходно</string>
+    <string name="det_action_reset_default">Врати на преузето подразумевано</string>
+    <string name="det_action_clear">Обриши графику</string>
+    <string name="det_action_file_info">Прикажи информације о датотеци</string>
+    <string name="det_action_change_match">Промени повезивање</string>
+    <string name="det_action_forget_match">Заборави повезивање</string>
+    <!-- Small tags beside a source that cannot be used: no artwork of this type, or no API key -->
+    <string name="det_source_badge_na">н/д</string>
+    <string name="det_source_badge_no_key">нема кључа</string>
+    <!-- %1$s is a source name, %2$s an uppercase tab name -->
+    <string name="det_source_no_artwork">%1$s нема графику: %2$s</string>
+    <string name="det_source_igdb_needs">IGDB захтева ID клијента и тајну — додајте их у Подешавања ▸ Графика</string>
+    <!-- %1$s is a source name -->
+    <string name="det_source_needs_key">%1$s захтева API кључ — додајте га у Подешавања ▸ Графика</string>
+    <!-- Source chip with a status tag: %1$s is the source, %2$s the tag -->
+    <string name="det_source_with_badge">%1$s · %2$s</string>
+    <!-- %1$s is a provider name -->
+    <string name="det_match_cant_search">%1$s не може да се претражује по наслову — нема алтернатива за избор.</string>
+    <string name="det_match_no_answer">%1$s није одговорио. Притисните „Претражи“ да покушате поново.</string>
+    <string name="det_matched_as">Повезано као %1$s</string>
+    <string name="det_msg_reorder_failed">Промена редоследа графике није успела</string>
+    <string name="det_msg_remove_failed">Део графике није могуће уклонити</string>
+    <string name="det_msg_no_previous">Нема претходне верзије за враћање</string>
+    <!-- %1$s is a tab name such as BOX ART -->
+    <string name="det_msg_restored">%1$s је враћено на претходно</string>
+    <string name="det_msg_redownload_failed">Поновно преузимање подразумеваног није успело</string>
+    <string name="det_msg_reset">%1$s је враћено на преузето подразумевано</string>
+    <string name="det_msg_crop_download_failed">Преузимање тог избора за исецање није успело</string>
+    <string name="det_msg_crop_not_image">Тај избор није слика која може да се исече</string>
+    <string name="det_msg_crop_open_failed">Отварање оригинала за исецање није успело</string>
+    <string name="det_msg_crop_failed">Исецање није успело</string>
+    <string name="det_msg_crop_save_failed">Чување исечене графике није успело</string>
+    <string name="det_msg_cropped">%1$s је исечено</string>
+    <string name="det_msg_apply_rejected">Примена није успела — преузимање или датотека је одбијена</string>
+    <!-- %1$s is a tab name, %2$s a provider name -->
+    <string name="det_msg_updated_from">%1$s је ажурирано из %2$s</string>
+    <string name="det_msg_cleared">%1$s је обрисано</string>
+    <!-- Small captions on picture tiles from TheGamesDB and IGDB -->
+    <string name="det_tgdb_box_art">омот</string>
+    <string name="det_tgdb_fanart">фан-арт</string>
+    <string name="det_tgdb_clear_logo">провидни лого</string>
+    <string name="det_tgdb_box_art_crop">омот · исецање на плочицу</string>
+    <string name="det_tgdb_hero_crop">херој · исецање на плочицу</string>
+    <string name="det_igdb_cover">омот</string>
+    <string name="det_igdb_artwork">графика</string>
+    <string name="det_igdb_cover_crop">омот · исецање на плочицу</string>
+    <string name="det_igdb_artwork_crop">графика · исецање на плочицу</string>
+
+    <!-- Artwork Studio screen -->
+    <string name="det_studio_title">Artwork Studio</string>
+    <!-- %1$s is the platform code in capitals, e.g. WINDOWS -->
+    <string name="det_studio_title_platform">Artwork Studio · %1$s</string>
+    <string name="det_studio_artwork_word">графика</string>
+    <string name="det_clear_title">Обрисати графику?</string>
+    <!-- %1$s is a tab name such as BOX ART, %2$s the game\'s title -->
+    <string name="det_clear_message">Графика „%1$s“ за %2$s биће избрисана, заједно са резервном копијом и оригиналом. Ово не може да се опозове.</string>
+    <string name="det_clear">Обриши</string>
+    <string name="det_forget_title">Заборавити повезивање?</string>
+    <!-- %1$s is the provider\'s name, %2$s the game\'s title -->
+    <string name="det_forget_message">%1$s ће поново бити упитан за %2$s. Ваша графика и метаподаци остају непромењени.</string>
+    <string name="det_forget_the_provider">Добављач</string>
+    <string name="det_forget">Заборави</string>
+    <!-- Button: clear the search text back to the game\'s own title -->
+    <string name="det_studio_reset">Врати</string>
+    <!-- Small label in the search box when it holds the game\'s own title -->
+    <string name="det_studio_game_title_chip">наслов игре</string>
+    <string name="det_studio_game_title_placeholder">Наслов игре</string>
+    <string name="det_studio_pdf_stored">PDF је сачуван</string>
+    <string name="det_studio_icon_video_stored">Видео иконице је сачуван</string>
+    <string name="det_studio_video_stored">Видео је сачуван</string>
+    <string name="det_studio_no_artwork">Графика није подешена</string>
+    <!-- Mature-content filter toggle chip -->
+    <string name="det_mature_on">За одрасле: укључено</string>
+    <string name="det_mature_off">За одрасле: искључено</string>
+    <!-- %1$s is the title the source matched the game to -->
+    <string name="det_studio_matched_as">Повезано као %1$s</string>
+    <!-- %1$s is a provider name -->
+    <string name="det_studio_matching_on">Повезивање на %1$s…</string>
+    <string name="det_studio_no_answer">%1$s није одговорио</string>
+    <string name="det_studio_no_match">Нема подударања на %1$s</string>
+    <string name="det_studio_confirmed">Потврђено</string>
+    <!-- Small buttons in capitals beside the match line -->
+    <string name="det_studio_forget_btn">ЗАБОРАВИ</string>
+    <string name="det_studio_change_match_btn">ПРОМЕНИ ПОВЕЗИВАЊЕ</string>
+    <string name="det_studio_add_files">"+  Додај датотеке са овог уређаја"</string>
+    <string name="det_studio_choose_file">"+  Изабери датотеку са овог уређаја"</string>
+    <string name="det_studio_none_videos">Још нема сачуваних видео снимака</string>
+    <string name="det_studio_none_screenshots">Још нема сачуваних снимака екрана</string>
+    <!-- %1$s is a tab name such as BOX ART -->
+    <string name="det_studio_replaces_this">Датотека коју изаберете замењује ово: %1$s</string>
+    <!-- %1$d is how many results the filters hid -->
+    <string name="det_studio_filters_hide_all">Ништа не одговара овим филтерима · скривено: %1$d</string>
+    <string name="det_studio_no_results">Нема резултата</string>
+    <string name="det_studio_ss_looking">Тражење ове игре на ScreenScraper-у…</string>
+    <string name="det_studio_ss_no_answer">ScreenScraper није одговорио. Користите „Промени повезивање“ да поново претражите.</string>
+    <string name="det_studio_ss_no_match">Нема ScreenScraper подударања за ову игру. Користите „Промени повезивање“ да изаберете.</string>
+    <string name="det_studio_ss_nothing">ScreenScraper нема ништа овог типа за ову игру</string>
+    <!-- Label on a video tile -->
+    <string name="det_studio_tile_video">▶ ВИДЕО</string>
+    <!-- Controller prompts in the footer -->
+    <string name="det_studio_prompt_browse">Прегледај / изабери датотеку</string>
+    <string name="det_studio_prompt_check">Означи</string>
+    <string name="det_studio_prompt_preview_apply">Преглед / примени</string>
+    <string name="det_studio_downloading_manual">Преузимање упутства…</string>
+    <!-- %1$s is a provider name -->
+    <string name="det_studio_video_snap_from">Видео исечак са %1$s</string>
+    <!-- Buttons in the preview. Ⓐ and Ⓑ stand for the controller\'s A and B buttons -->
+    <string name="det_studio_candidate_apply">"Ⓐ  ПРИМЕНИ"</string>
+    <string name="det_studio_candidate_cancel">"Ⓑ  ОТКАЖИ"</string>
+    <string name="det_studio_close_btn">"Ⓑ  ЗАТВОРИ"</string>
+    <string name="det_studio_manual_page_cd">Страница упутства</string>
+    <!-- Change Match panel -->
+    <!-- %1$s is a provider name -->
+    <string name="det_cm_title">Промени повезивање на %1$s</string>
+    <string name="det_cm_help">Говори добављачу о којој игри се ради. Ваша графика и метаподаци остају непромењени.</string>
+    <string name="det_cm_other_platforms">Обухвата и друге платформе. Проверите платформу пре избора.</string>
+    <string name="det_cm_searching_every">Претрага свих платформи. ScreenScraper-у може бити потребно око 10 секунди…</string>
+    <string name="det_cm_no_games">Нису пронађене игре. Пробајте краћи наслов или наслов без ознаке издања.</string>
+    <string name="det_cm_no_media">нема медија</string>
+    <!-- %1$d is how many pictures the release has -->
+    <string name="det_cm_media">медији: %1$d</string>
+    <!-- Controller hint line. A, X and B are controller buttons -->
+    <string name="det_cm_hint">"Горе/доле  Помери  •  A  Изабери  •  X  Измени наслов  •  B  Назад"</string>
+    <!-- Search panel -->
+    <string name="det_sq_title">Претражи добављаче графике</string>
+    <string name="det_sq_help">Мења оно што се тражи од добављача. Никада не преименује игру.</string>
+    <string name="det_sq_use_title">Користи наслов игре</string>
+    <!-- File information panel -->
+    <string name="det_fi_title">ИНФОРМАЦИЈЕ О ДАТОТЕЦИ</string>
+    <string name="det_fi_no_record">Нема сачуваног записа за ово место (доступно када графика буде у повезаној библиотеци).</string>
+    <string name="det_fi_type">Тип</string>
+    <string name="det_fi_provider">Добављач</string>
+    <string name="det_fi_source">Извор</string>
+    <string name="det_fi_pinned">Закачено</string>
+    <string name="det_fi_pinned_yes">Да (закључано)</string>
+    <string name="det_fi_dimensions">Димензије</string>
+    <string name="det_fi_size">Величина</string>
+    <string name="det_fi_cropped">Исечено</string>
+    <string name="det_fi_previous">Претходна верзија</string>
+    <string name="det_fi_path">Путања</string>
+    <string name="det_fi_origin">Порекло</string>
+    <string name="det_yes">Да</string>
+    <string name="det_no">Не</string>
+    <!-- Crop editor. Ⓐ, Ⓑ and Ⓨ stand for the controller\'s A, B and Y buttons -->
+    <string name="det_crop_title">ПОДЕСИ ИСЕЦАЊЕ / ПОЛОЖАЈ</string>
+    <!-- %1$s is the crop shape name in capitals -->
+    <string name="det_crop_title_shape">"ПОДЕСИ ИСЕЦАЊЕ / ПОЛОЖАЈ  ·  %1$s"</string>
+    <string name="det_crop_baking">Обрада…</string>
+    <string name="det_crop_apply">"Ⓐ  ПРИМЕНИ ИСЕЦАЊЕ"</string>
+    <string name="det_crop_options_btn">"Ⓨ  ОПЦИЈЕ"</string>
+    <string name="det_crop_hint">"превуците да померите слику   ·   скупите прсте за зум   ·   D-Pad померање   ·   LB / RB зум"</string>
+</resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="fb_sound_slot_category">Kategorie</string>
+    <string name="fb_sound_channel_category">Kategorie</string>
+    <string name="fb_sound_slot_options">Možnosti</string>
+    <string name="fb_sound_channel_options">Možnosti</string>
+    <string name="fb_haptic_feedback">Haptická odezva</string>
+    <string name="fb_haptic_feedback_help">Lehké ťuknutí při každém kroku a výraznější při potvrzení, na tomto zařízení i na ovladači, který umí vibrovat.</string>
+</resources>

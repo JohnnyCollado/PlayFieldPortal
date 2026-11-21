@@ -10,6 +10,8 @@ import com.playfieldportal.core.data.saf.matchesCachedFile
 import com.playfieldportal.core.data.saf.walkSafTree
 import com.playfieldportal.core.domain.model.MusicFolder
 import com.playfieldportal.core.domain.model.MusicTrack
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.library.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -52,7 +54,7 @@ sealed interface MusicScanResult {
         /** Store this alongside the rows; pass it back as `knownSignature` next time. */
         val signature: String,
     ) : MusicScanResult
-    data class Error(val folderId: String, val message: String) : MusicScanResult
+    data class Error(val folderId: String, val message: UiText) : MusicScanResult
 }
 
 /**
@@ -84,7 +86,7 @@ class MusicScanner @Inject constructor(
         val root = treeUri?.let { DocumentFile.fromTreeUri(context, it) }
         if (treeUri == null || root == null || !root.canRead()) {
             // SAF permission revoked or the volume is gone — surface a recoverable message.
-            send(MusicScanResult.Error(folder.id, "Permission lost, re-select folder."))
+            send(MusicScanResult.Error(folder.id, UiText.res(R.string.scan_error_permission_lost)))
             return@channelFlow
         }
 
@@ -97,7 +99,7 @@ class MusicScanner @Inject constructor(
         // Part of the tree could not be listed: replacing the library from this walk would drop
         // everything in the unread folders (survey L17). Nothing is changed; the next scan retries.
         if (walk.incomplete) {
-            send(MusicScanResult.Error(folder.id, "Part of the folder couldn't be read, so nothing was changed. Try again in a moment."))
+            send(MusicScanResult.Error(folder.id, UiText.res(R.string.scan_error_partial_read)))
             return@channelFlow
         }
         if (!deep && knownSignature != null && walk.signature == knownSignature) {

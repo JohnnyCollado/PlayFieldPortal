@@ -3,6 +3,7 @@ package com.playfieldportal.feature.xmb.ui.detail
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.database.dao.PlatformDao
@@ -10,6 +11,7 @@ import com.playfieldportal.core.data.database.entity.PlatformEntity
 import com.playfieldportal.core.data.repository.CollectionRepository
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.isDirectional
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerOption
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerUi
@@ -17,7 +19,7 @@ import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.navigation.NavigationLogger
 import com.playfieldportal.core.navigation.NavigationNode
-import com.playfieldportal.feature.artwork.api.ARTWORK_PAUSED_MESSAGE
+import com.playfieldportal.feature.artwork.api.ARTWORK_PAUSED_TEXT
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.feature.artwork.match.MatchConfidence
 import com.playfieldportal.feature.artwork.match.MatchProvider
@@ -35,6 +37,7 @@ import com.playfieldportal.core.data.datastore.pfpDataStore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import com.playfieldportal.feature.artwork.store.ArtworkStore
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.launcher.EmulatorIntentResolver
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.launcher.LaunchDispatchResult
@@ -57,11 +60,11 @@ import kotlin.math.roundToInt
 // ── Artwork type ──────────────────────────────────────────────────────────────
 enum class ArtworkType { ICON, HERO, BACKGROUND }
 
-val ArtworkType.displayLabel: String
-    get() = when (this) {
-        ArtworkType.ICON       -> "Game Icon"
-        ArtworkType.HERO       -> "Hero Banner"
-        ArtworkType.BACKGROUND -> "Background"
+val ArtworkType.labelRes: Int
+    @StringRes get() = when (this) {
+        ArtworkType.ICON       -> R.string.det_arttype_icon
+        ArtworkType.HERO       -> R.string.det_arttype_hero
+        ArtworkType.BACKGROUND -> R.string.det_arttype_background
     }
 
 // ── Unified artwork picker item ───────────────────────────────────────────────
@@ -91,8 +94,8 @@ data class GameDetailUiState(
     val isLoading: Boolean = true,
     val isEditingNote: Boolean = false,
     val isFetchingArtwork: Boolean = false,
-    val artworkMessage: String? = null,
-    val launchError: String? = null,
+    val artworkMessage: UiText? = null,
+    val launchError: UiText? = null,
 
     // Shiba Coins summary for the glance strip; null when this game isn't tracked yet.
     val coins: com.playfieldportal.core.domain.achievement.GameCoins? = null,
@@ -126,7 +129,7 @@ data class GameDetailUiState(
     // game; null while nothing resolves (loading / no emulator / package-backed entry).
     val resolvedLaunch: ResolvedLaunch? = null,
     val confirmRemove: Boolean = false,
-    val actionMessage: String? = null,
+    val actionMessage: UiText? = null,
     val closed: Boolean = false,
 
     // ── Title editing ─────────────────────────────────────────────────────
@@ -383,48 +386,48 @@ internal fun metadataEditText(field: MetadataField, value: Any?): String = when 
 // top level stays short and Remove is never beside a row pressed often.
 
 /** One Options panel: the top level, or a sub-panel one of its rows opens. */
-enum class DetailMenu(val title: String) {
-    ROOT("Options"),
-    ARTWORK("Artwork"),
-    INFORMATION("Information"),
-    FILE("File"),
+enum class DetailMenu(@StringRes val titleRes: Int) {
+    ROOT(R.string.det_menu_options),
+    ARTWORK(R.string.det_menu_artwork),
+    INFORMATION(R.string.det_menu_information),
+    FILE(R.string.det_menu_file),
 }
 
 /** The named bands of the top level. */
-enum class DetailGroup(val label: String) {
-    LIBRARY("Library"),
-    PLAY("Play"),
-    CUSTOMIZE("Customize"),
-    MANAGE("Manage"),
+enum class DetailGroup(@StringRes val labelRes: Int) {
+    LIBRARY(R.string.det_group_library),
+    PLAY(R.string.det_group_play),
+    CUSTOMIZE(R.string.det_group_customize),
+    MANAGE(R.string.det_group_manage),
 }
 
 /** Declaration order is display order within a panel. */
 enum class DetailAction(
-    val label: String,
+    @StringRes val labelRes: Int,
     val menu: DetailMenu = DetailMenu.ROOT,
     val group: DetailGroup? = null,
     /** Set on a row that opens a sub-panel instead of doing something itself. */
     val opens: DetailMenu? = null,
 ) {
-    FAVORITE("Favorite", group = DetailGroup.LIBRARY),
-    COLLECTIONS("Add to Card", group = DetailGroup.LIBRARY),
-    EMULATOR("Emulator", group = DetailGroup.PLAY),
-    MANUAL("Manual", group = DetailGroup.PLAY),
-    MENU_ARTWORK("Artwork", group = DetailGroup.CUSTOMIZE, opens = DetailMenu.ARTWORK),
-    MENU_INFORMATION("Information", group = DetailGroup.CUSTOMIZE, opens = DetailMenu.INFORMATION),
-    MENU_FILE("File", group = DetailGroup.MANAGE, opens = DetailMenu.FILE),
-    REMOVE("Remove from Library", group = DetailGroup.MANAGE),
+    FAVORITE(R.string.det_action_favorite, group = DetailGroup.LIBRARY),
+    COLLECTIONS(R.string.det_action_collections, group = DetailGroup.LIBRARY),
+    EMULATOR(R.string.det_action_emulator, group = DetailGroup.PLAY),
+    MANUAL(R.string.det_action_manual, group = DetailGroup.PLAY),
+    MENU_ARTWORK(R.string.det_action_menu_artwork, group = DetailGroup.CUSTOMIZE, opens = DetailMenu.ARTWORK),
+    MENU_INFORMATION(R.string.det_action_menu_information, group = DetailGroup.CUSTOMIZE, opens = DetailMenu.INFORMATION),
+    MENU_FILE(R.string.det_action_menu_file, group = DetailGroup.MANAGE, opens = DetailMenu.FILE),
+    REMOVE(R.string.det_action_remove, group = DetailGroup.MANAGE),
 
-    ARTWORK("Artwork Studio", DetailMenu.ARTWORK),
-    FETCH_ARTWORK("Fetch Artwork", DetailMenu.ARTWORK),
+    ARTWORK(R.string.det_action_artwork_studio, DetailMenu.ARTWORK),
+    FETCH_ARTWORK(R.string.det_action_fetch_artwork, DetailMenu.ARTWORK),
 
-    METADATA("Update Metadata", DetailMenu.INFORMATION),
-    RENAME("Edit Title", DetailMenu.INFORMATION),
-    EDIT("Edit Note", DetailMenu.INFORMATION),
-    STOREFRONT("Store Match", DetailMenu.INFORMATION),
+    METADATA(R.string.det_action_metadata, DetailMenu.INFORMATION),
+    RENAME(R.string.det_action_rename, DetailMenu.INFORMATION),
+    EDIT(R.string.det_action_edit_note, DetailMenu.INFORMATION),
+    STOREFRONT(R.string.det_action_storefront, DetailMenu.INFORMATION),
 
-    LOCATION("Show File Location", DetailMenu.FILE),
-    EXPORT("Export Game", DetailMenu.FILE),
+    LOCATION(R.string.det_action_location, DetailMenu.FILE),
+    EXPORT(R.string.det_action_export, DetailMenu.FILE),
 }
 
 private const val WINDOWS_PLATFORM_ID = "windows"
@@ -1285,16 +1288,16 @@ class GameDetailViewModel @Inject constructor(
             DetailAction.LOCATION  -> {
                 menuSound.play(MenuSound.SELECT)
                 showActionMessage(
-                    _uiState.value.game?.romPath
-                        ?: _uiState.value.game?.packageName?.let { "Package: $it" }
-                        ?: "No file location on record"
+                    _uiState.value.game?.romPath?.let { UiText.raw(it) }
+                        ?: _uiState.value.game?.packageName?.let { UiText.res(R.string.det_location_package, it) }
+                        ?: UiText.res(R.string.det_location_none)
                 )
             }
             DetailAction.REMOVE    -> requestRemove()
         }
     }
 
-    private fun showActionMessage(msg: String) = _uiState.update { it.copy(actionMessage = msg) }
+    private fun showActionMessage(msg: UiText) = _uiState.update { it.copy(actionMessage = msg) }
 
     /**
      * Export Game (C18 task X.7): writes this PC game's `.pfpgame` file into `windows/import`, so a
@@ -1306,7 +1309,7 @@ class GameDetailViewModel @Inject constructor(
             val report = runCatching { pcGameExporter.exportGame(gameId) }
                 .onFailure { Timber.e(it, "Export Game failed for gameId=$gameId") }
                 .getOrNull()
-            showActionMessage(report?.message ?: "Export failed — see the log.")
+            showActionMessage(report?.message?.let { UiText.raw(it) } ?: UiText.res(R.string.det_export_failed))
         }
     }
 
@@ -1319,7 +1322,7 @@ class GameDetailViewModel @Inject constructor(
         val uri = _uiState.value.videoUri ?: run {
             // A refusal, not an activation — the message is the only thing that happens.
             menuSound.play(MenuSound.ERROR)
-            _uiState.update { it.copy(actionMessage = "No video snap — enable Download Video Snaps and re-scrape") }
+            _uiState.update { it.copy(actionMessage = UiText.res(R.string.det_no_video_snap)) }
             return
         }
         menuSound.play(MenuSound.SELECT)
@@ -1384,7 +1387,7 @@ class GameDetailViewModel @Inject constructor(
             val path = manualPath(game.id)
             if (path == null) {
                 menuSound.play(MenuSound.ERROR)
-                showActionMessage("No manual available for this game")
+                showActionMessage(UiText.res(R.string.det_no_manual))
                 return@launch
             }
             menuSound.play(MenuSound.SELECT)
@@ -1487,7 +1490,7 @@ class GameDetailViewModel @Inject constructor(
     fun launch(playSound: Boolean = true) {
         val selectedGame = _uiState.value.selectedDisc ?: run {
             Timber.w("Play requested before game detail state was loaded")
-            _uiState.update { it.copy(actionMessage = null, launchError = "Game is still loading") }
+            _uiState.update { it.copy(actionMessage = null, launchError = UiText.res(R.string.det_launch_loading)) }
             return
         }
         // A missing game's file was gone on the last trustworthy scan, so every launch handle below
@@ -1503,8 +1506,7 @@ class GameDetailViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     actionMessage = null,
-                    launchError = "File not found on the last scan. Reconnect the card or restore " +
-                        "the file, then rescan.",
+                    launchError = UiText.res(R.string.det_launch_file_missing),
                 )
             }
             return
@@ -1518,7 +1520,7 @@ class GameDetailViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 launchError = null,
-                actionMessage = "Launching ${selectedGame.displayTitle}...",
+                actionMessage = UiText.res(R.string.det_launching, selectedGame.displayTitle),
             )
         }
         viewModelScope.launch {
@@ -1555,7 +1557,7 @@ class GameDetailViewModel @Inject constructor(
                             offerRecovery = true,
                         )
                         _uiState.update {
-                            it.copy(actionMessage = null, launchError = "Couldn't launch: ${e.message}")
+                            it.copy(actionMessage = null, launchError = UiText.res(R.string.det_launch_failed, e.message.orEmpty()))
                         }
                     }
                 return@launch
@@ -1575,7 +1577,7 @@ class GameDetailViewModel @Inject constructor(
                     Timber.e(e, "Stored-intent launch failed for gameId=${game.id}")
                     launchDispatcher.recordPreflightFailure(game, null, "Couldn't launch: ${e.message}", offerRecovery = false)
                     _uiState.update {
-                        it.copy(actionMessage = null, launchError = "Couldn't launch: ${e.message}")
+                        it.copy(actionMessage = null, launchError = UiText.res(R.string.det_launch_failed, e.message.orEmpty()))
                     }
                 }
                 return@launch
@@ -1588,7 +1590,7 @@ class GameDetailViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             actionMessage = null,
-                            launchError = e.message ?: "Could not launch ${game.title}",
+                            launchError = e.message?.let { UiText.raw(it) } ?: UiText.res(R.string.det_launch_could_not, game.title),
                         )
                     }
                     return@launch
@@ -1603,12 +1605,19 @@ class GameDetailViewModel @Inject constructor(
 
             val resolved = resolveLaunchProfile(game, platform)
             if (resolved.isFailure) {
-                val reason = resolved.exceptionOrNull()?.message ?: "Could not resolve emulator for ${game.title}"
+                val failure = resolved.exceptionOrNull()?.message
+                // The persisted outcome keeps its English wording; only the line on screen is localised.
+                val reason = failure ?: "Could not resolve emulator for ${game.title}"
                 Timber.w(
                     "Launch blocked: gameId=${game.id}, title=${game.title}, platform=${game.platformId}, reason=$reason"
                 )
                 launchDispatcher.recordPreflightFailure(game, null, reason, offerRecovery = false)
-                _uiState.update { it.copy(actionMessage = null, launchError = reason) }
+                _uiState.update {
+                    it.copy(
+                        actionMessage = null,
+                        launchError = failure?.let { text -> UiText.raw(text) } ?: UiText.res(R.string.det_launch_no_emulator, game.title),
+                    )
+                }
                 return@launch
             }
             val resolvedLaunch = resolved.getOrThrow()
@@ -1629,7 +1638,7 @@ class GameDetailViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         actionMessage = null,
-                        launchError = e.message ?: "Could not launch ${profile.name}",
+                        launchError = e.message?.let { UiText.raw(it) } ?: UiText.res(R.string.det_launch_could_not, profile.name),
                     )
                 }
                 return@launch
@@ -1657,7 +1666,7 @@ class GameDetailViewModel @Inject constructor(
         when (val result = launchDispatcher.launch(game, resolved, intent)) {
             is LaunchDispatchResult.Rejected -> {
                 _uiState.update {
-                    it.copy(actionMessage = null, launchError = result.message)
+                    it.copy(actionMessage = null, launchError = UiText.raw(result.message))
                 }
             }
             LaunchDispatchResult.Accepted -> {
@@ -1676,7 +1685,7 @@ class GameDetailViewModel @Inject constructor(
         val game = _uiState.value.game ?: return
         val error = _uiState.value.launchError ?: return
         viewModelScope.launch {
-            launchDispatcher.requestRecovery(game, _uiState.value.resolvedLaunch, error)
+            launchDispatcher.requestRecovery(game, _uiState.value.resolvedLaunch, error.resolve(context))
         }
     }
 
@@ -1698,7 +1707,7 @@ class GameDetailViewModel @Inject constructor(
             .byLaunchPreference()
         if (options.isEmpty()) {
             menuSound.play(MenuSound.ERROR)
-            showActionMessage("No emulators installed for ${game.platformId.uppercase()}")
+            showActionMessage(UiText.res(R.string.det_no_emulators, game.platformId.uppercase()))
             return
         }
         menuSound.play(MenuSound.SELECT)
@@ -1751,7 +1760,7 @@ class GameDetailViewModel @Inject constructor(
                     game               = updated ?: it.game,
                     resolvedLaunch     = resolved,
                     showEmulatorPicker = false,
-                    actionMessage      = profile?.let { p -> "Emulator set to ${p.name}" },
+                    actionMessage      = profile?.let { p -> UiText.res(R.string.det_emulator_set, p.name) },
                 )
             }
         }
@@ -1905,8 +1914,8 @@ class GameDetailViewModel @Inject constructor(
                 it.copy(
                     game           = updated ?: it.game,
                     isEditingTitle = false,
-                    actionMessage  = if (newTitle != null) "Title updated to \"$newTitle\""
-                                     else "Title reset to \"${updated?.displayTitle ?: game.title}\"",
+                    actionMessage  = if (newTitle != null) UiText.res(R.string.det_title_updated, newTitle)
+                                     else UiText.res(R.string.det_title_reset, updated?.displayTitle ?: game.title),
                 )
             }
         }
@@ -1932,10 +1941,10 @@ class GameDetailViewModel @Inject constructor(
                     game              = updated ?: it.game,
                     isFetchingArtwork = false,
                     artworkMessage    = when {
-                        result.success        -> "Artwork updated"
-                        result.paused         -> ARTWORK_PAUSED_MESSAGE
-                        result.alreadyRunning -> "Already fetching artwork for this game"
-                        else                  -> result.errorMessage ?: "Artwork fetch failed"
+                        result.success        -> UiText.res(R.string.det_artwork_updated)
+                        result.paused         -> ARTWORK_PAUSED_TEXT
+                        result.alreadyRunning -> UiText.res(R.string.det_artwork_already_fetching)
+                        else                  -> result.errorMessage ?: UiText.res(R.string.det_artwork_fetch_failed)
                     },
                 )
             }
@@ -2135,7 +2144,7 @@ class GameDetailViewModel @Inject constructor(
                         editingField = null,
                         editText = "",
                     ),
-                    actionMessage = if (reverted) "Reverted ${field.label} to the scraped value" else s.actionMessage,
+                    actionMessage = if (reverted) UiText.res(R.string.det_meta_reverted, UiText.res(field.labelRes)) else s.actionMessage,
                 )
             }
         }
@@ -2149,14 +2158,14 @@ class GameDetailViewModel @Inject constructor(
         val preset = p.preset ?: return closeMetadataPreview()
         if (p.policy == MetadataApplyPolicy.KEEP_CURRENT) {
             closeMetadataPreview()
-            showActionMessage("Kept current metadata")
+            showActionMessage(UiText.res(R.string.det_meta_kept_current))
             return
         }
         // The button already says "Nothing to Change"; asking the writer to confirm that costs a
         // row read and can only agree, since it plans from the same function.
         if (p.willWrite.isEmpty()) {
             closeMetadataPreview()
-            showActionMessage("Nothing to change")
+            showActionMessage(UiText.res(R.string.det_meta_msg_nothing))
             return
         }
         // Their typed title is the one thing here that an apply replaces rather than layers over,
@@ -2209,16 +2218,15 @@ class GameDetailViewModel @Inject constructor(
                         onSuccess = { fields ->
                             // "set by hand" rather than "from Manual": the provider wording reads
                             // as a source name, and for this one the source is the user.
-                            val from =
-                                if (preset.provider == MatchProvider.MANUAL) "set by hand"
-                                else "from ${preset.provider.label}"
-                            when (fields.size) {
-                                0    -> "Nothing to change"
-                                1    -> "Updated 1 field $from"
-                                else -> "Updated ${fields.size} fields $from"
+                            when {
+                                fields.isEmpty() -> UiText.res(R.string.det_meta_msg_nothing)
+                                preset.provider == MatchProvider.MANUAL ->
+                                    UiText.plural(R.plurals.det_meta_updated_by_hand, fields.size)
+                                else ->
+                                    UiText.plural(R.plurals.det_meta_updated_from, fields.size, fields.size, preset.provider.label)
                             }
                         },
-                        onFailure = { "Metadata update failed" },
+                        onFailure = { UiText.res(R.string.det_meta_update_failed) },
                     ),
                 )
             }
@@ -2333,7 +2341,7 @@ class GameDetailViewModel @Inject constructor(
     private fun takeRematchAction(store: Storefront) {
         val row = _uiState.value.storefrontRematch?.rows?.firstOrNull { it.store == store } ?: return
         if (!row.enabled) {
-            showActionMessage(row.storeLabel + " can't be searched")
+            showActionMessage(UiText.res(R.string.det_rematch_cant_search, row.storeLabel))
             return
         }
         when (row.selectedAction) {
@@ -2357,7 +2365,7 @@ class GameDetailViewModel @Inject constructor(
                 val current = state.storefrontRematch ?: return@update state
                 state.copy(storefrontRematch = current.copy(rows = rows.map(::storefrontRematchRowOf)))
             }
-            showActionMessage(store.label + " link removed. Your metadata is unchanged.")
+            showActionMessage(UiText.res(R.string.det_rematch_link_removed, store.label))
             refreshStoreLinks()
             syncNavStack()
         }
@@ -2569,7 +2577,7 @@ class GameDetailViewModel @Inject constructor(
                         searching = false,
                         rows = rematchRows.map(::storefrontRematchRowOf),
                     ),
-                    actionMessage = "Linked to " + row.storeLabel + ": " + row.title,
+                    actionMessage = UiText.res(R.string.det_rematch_linked, row.storeLabel, row.title),
                 )
             }
             if (_uiState.value.storefrontMatch != null) seatCursorOnFirstCandidate() else syncNavStack()

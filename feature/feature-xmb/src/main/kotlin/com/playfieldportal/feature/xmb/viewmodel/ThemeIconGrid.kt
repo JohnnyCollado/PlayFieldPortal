@@ -1,7 +1,9 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.icons.CustomIcon
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.themekit.PtfIcons
 import com.playfieldportal.themekit.ThemeIconChoices
 import java.io.File
@@ -25,7 +27,7 @@ data class ThemeIconGridState(
     /** Tiles per section, the shape [ThemeIconGridNav] walks. */
     val sectionSizes: List<Int> get() = sections.map { it.choices.size }
 
-    val title: String get() = "$themeName · icon for $slotName"
+    val title: UiText get() = UiText.res(R.string.xmbm_themegrid_title, themeName, slotName)
 }
 
 /**

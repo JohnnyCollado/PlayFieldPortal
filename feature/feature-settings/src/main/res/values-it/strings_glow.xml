@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_title">Bagliore di selezione</string>
+    <string name="glow_sub_off">Nessun bagliore attorno all\'icona selezionata.</string>
+    <string name="glow_sub_steady">Una luce tenue attorno all\'icona selezionata. Resta fissa.</string>
+    <string name="glow_sub_pulsing">La luce attorno all\'icona selezionata cresce e si attenua lentamente. Resta fissa finché «Movimento» è impostato su «Statiche».</string>
+    <string name="glow_value_off">Disattivato</string>
+    <string name="glow_value_steady">Fisso</string>
+    <string name="glow_value_pulsing">Pulsante</string>
+</resources>

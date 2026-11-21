@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings > Sound: two more assignable sounds. Each follows Navigation until set. -->
+    <!-- Name of the sound that plays when a category changes (row and level slider). -->
+    <string name="fb_sound_slot_category">Categoría</string>
+    <string name="fb_sound_channel_category">Categoría</string>
+    <!-- Name of the sound that plays when an options menu opens (row and level slider). -->
+    <string name="fb_sound_slot_options">Opciones</string>
+    <string name="fb_sound_channel_options">Opciones</string>
+
+    <!-- Settings > Controller: haptic feedback switch. -->
+    <string name="fb_haptic_feedback">Respuesta háptica</string>
+    <string name="fb_haptic_feedback_help">Una vibración leve en cada paso y otra más firme al confirmar, en este dispositivo y en un mando que pueda vibrar.</string>
+</resources>

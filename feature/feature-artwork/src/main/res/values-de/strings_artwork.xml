@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Localization slice H1: artwork scraping, import, export, relink and move -->
+<resources>
+    <!-- Shared -->
+    <string name="art_error_unexpected">Unerwarteter Fehler</string>
+    <string name="art_no_folder_linked">Kein Artwork-Ordner verknüpft</string>
+    <string name="art_paused_message">Artwork pausiert. Verknüpfe deinen Artwork-Ordner erneut, um neue Bilder zu speichern.</string>
+    <string name="art_error_game_not_found">Spiel nicht gefunden</string>
+    <string name="art_error_not_found_any_source">In keiner Quelle gefunden</string>
+    <string name="art_found_via">Gefunden über %1$s</string>
+    <string name="art_results_label_updated">Aktualisiert</string>
+    <string name="art_results_label_imported">Importiert</string>
+
+    <!-- Live scrape progress -->
+    <string name="art_progress_hashing">ROM-Hash wird berechnet…</string>
+    <string name="art_progress_searching">Suche läuft…</string>
+    <string name="art_asset_hero">Hero</string>
+    <string name="art_asset_background">Hintergrund</string>
+    <string name="art_asset_logo">Logo</string>
+    <string name="art_asset_box_art">Cover</string>
+    <string name="art_asset_physical_media">Datenträger</string>
+    <string name="art_asset_3d_box">3D-Box</string>
+    <string name="art_asset_screenshot">Screenshot</string>
+    <string name="art_asset_manual">Handbuch</string>
+    <string name="art_asset_video">Video</string>
+    <string name="art_asset_icon_video">Symbolvideo</string>
+    <string name="art_asset_icon_video_converting">Symbolvideo (wird konvertiert)</string>
+    <string name="art_source_storefronts">Stores</string>
+
+    <!-- Metadata fields -->
+    <string name="art_field_title">Titel</string>
+    <string name="art_field_description">Beschreibung</string>
+    <string name="art_field_developer">Entwickler</string>
+    <string name="art_field_publisher">Publisher</string>
+    <string name="art_field_year">Jahr</string>
+    <string name="art_field_release_date">Erscheinungsdatum</string>
+    <string name="art_field_genre">Genre</string>
+    <string name="art_field_age_rating">Altersfreigabe</string>
+    <string name="art_field_franchise">Reihe</string>
+    <string name="art_field_rating">Bewertung</string>
+
+    <!-- Ways to apply scraped metadata -->
+    <string name="art_policy_replace_all">Alles ersetzen</string>
+    <string name="art_policy_fill_missing">Nur Fehlendes ergänzen</string>
+    <string name="art_policy_choose_fields">Felder wählen</string>
+    <string name="art_policy_keep_current">Aktuelles behalten</string>
+
+    <!-- Scrape (background task) -->
+    <string name="art_scrape_label_all">Alle Spiele werden neu gescrapt</string>
+    <string name="art_scrape_label_missing">Fehlendes Artwork wird gescrapt</string>
+    <string name="art_scrape_stop_note">Bereits geladenes Artwork bleibt erhalten.</string>
+    <string name="art_scrape_paused_all_title">Erneutes Artwork-Scrapen pausiert</string>
+    <string name="art_scrape_paused_title">Artwork-Scrapen pausiert</string>
+    <string name="art_scrape_finished_all_title">Erneutes Artwork-Scrapen abgeschlossen</string>
+    <string name="art_scrape_finished_title">Artwork-Scrapen abgeschlossen</string>
+    <string name="art_scrape_stopped_title">Artwork-Scrapen gestoppt</string>
+    <string name="art_scrape_failed_title">Artwork-Scrapen fehlgeschlagen</string>
+    <string name="art_scrape_result">%1$d erfolgreich, %2$d fehlgeschlagen von %3$d</string>
+    <plurals name="art_scrape_stopped_after">
+        <item quantity="one">Nach %1$d Spiel gestoppt – bisher geladenes Artwork bleibt erhalten</item>
+        <item quantity="other">Nach %1$d Spielen gestoppt – bisher geladenes Artwork bleibt erhalten</item>
+    </plurals>
+
+    <!-- Relink (background task) -->
+    <string name="art_relink_label">Artwork wird neu verknüpft</string>
+    <plurals name="art_relink_label_consoles">
+        <item quantity="one">Artwork für %1$d Konsole wird neu verknüpft</item>
+        <item quantity="other">Artwork für %1$d Konsolen wird neu verknüpft</item>
+    </plurals>
+    <string name="art_relink_stop_note">Bereits verknüpftes Artwork bleibt verknüpft.</string>
+    <string name="art_relink_finished_title">Artwork-Verknüpfung abgeschlossen</string>
+    <string name="art_relink_stopped_title">Artwork-Verknüpfung gestoppt</string>
+    <string name="art_relink_stopped_note">Bisher verknüpftes Artwork bleibt erhalten</string>
+    <string name="art_relink_failed_title">Artwork-Verknüpfung fehlgeschlagen</string>
+    <plurals name="art_relink_games_linked">
+        <item quantity="one">%1$d Spiel verknüpft</item>
+        <item quantity="other">%1$d Spiele verknüpft</item>
+    </plurals>
+    <plurals name="art_relink_files">
+        <item quantity="one">%1$d Datei</item>
+        <item quantity="other">%1$d Dateien</item>
+    </plurals>
+    <string name="art_relink_result">%1$s von %2$s</string>
+    <string name="art_relink_result_unmatched">%1$s · %2$d ohne Zuordnung</string>
+
+    <!-- Export to ES-DE (background task) -->
+    <string name="art_export_label">Artwork wird für ES-DE exportiert</string>
+    <string name="art_export_stop_note">Bereits exportierte Dateien bleiben erhalten.</string>
+    <string name="art_export_error_no_destination">Kein Zielordner</string>
+    <string name="art_export_error_access_lost">Zugriff auf den Artwork-Ordner verloren</string>
+    <string name="art_export_dest_not_created">Der Zielordner konnte nicht erstellt werden.</string>
+    <plurals name="art_export_files_badge">
+        <item quantity="one">%1$d Datei</item>
+        <item quantity="other">%1$d Dateien</item>
+    </plurals>
+    <string name="art_export_failed_title">Artwork-Export fehlgeschlagen</string>
+    <string name="art_export_stopped_title">Artwork-Export gestoppt</string>
+    <string name="art_export_finished_title">Artwork-Export abgeschlossen</string>
+    <plurals name="art_export_stopped_note">
+        <item quantity="one">%1$d Datei zuvor exportiert</item>
+        <item quantity="other">%1$d Dateien zuvor exportiert</item>
+    </plurals>
+    <string name="art_export_result">%1$d kopiert, %2$d bereits vorhanden, %3$d fehlgeschlagen</string>
+
+    <!-- Import (background task and its notification) -->
+    <string name="art_import_plan_not_found">Importplan nicht gefunden</string>
+    <string name="art_import_plan_unreadable">Importplan nicht lesbar</string>
+    <string name="art_import_label">Artwork wird importiert – %1$s</string>
+    <string name="art_import_stop_note">Bereits importiertes Artwork bleibt erhalten.</string>
+    <string name="art_import_failed_title">Artwork-Import fehlgeschlagen</string>
+    <string name="art_import_cancelled">Artwork-Import abgebrochen</string>
+    <string name="art_import_done">Artwork importiert</string>
+    <plurals name="art_import_needs_review">
+        <item quantity="one">Artwork importiert, %1$d Element muss geprüft werden</item>
+        <item quantity="other">Artwork importiert, %1$d Elemente müssen geprüft werden</item>
+    </plurals>
+    <string name="art_import_headline">%1$s: %2$s</string>
+    <string name="art_import_counts">%1$d importiert, %2$d übersprungen, %3$d fehlgeschlagen, %4$d mehrdeutig, %5$d ohne Zuordnung.</string>
+    <string name="art_import_results_summary">%1$d importiert, %2$d übersprungen</string>
+
+    <!-- Move artwork into the linked folder (background task) -->
+    <string name="art_move_label">Artwork wird in deinen Ordner verschoben</string>
+    <string name="art_move_failed_title">Verschieben des Artworks fehlgeschlagen</string>
+    <string name="art_move_stopped_title">Verschieben des Artworks gestoppt</string>
+    <string name="art_move_finished_title">Verschieben des Artworks abgeschlossen</string>
+    <plurals name="art_move_stopped_note">
+        <item quantity="one">%1$d Datei zuvor verschoben</item>
+        <item quantity="other">%1$d Dateien zuvor verschoben</item>
+    </plurals>
+    <string name="art_move_result">%1$d verschoben, %2$d bereits vorhanden, %3$d fehlgeschlagen</string>
+</resources>

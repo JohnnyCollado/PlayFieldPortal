@@ -24,7 +24,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
+import com.playfieldportal.core.ui.components.PfpBusyRing
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,18 +42,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.text.asString
 import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
 import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
 import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
 import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.xmb.ui.SearchGlyph
 
 // ── Rematch Storefront Metadata (C23 T6, Phase 18) ───────────────────────────
@@ -100,7 +103,7 @@ fun StorefrontRematchPanel(
         ) {
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
-                    "Store Match",
+                    stringResource(R.string.det_rematch_title),
                     color = themedText(TextPrimary),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -114,9 +117,9 @@ fun StorefrontRematchPanel(
                     // The hints follow the stop: the bar has no Left/Right, and while it is taking
                     // text the keyboard's own Search key is the confirm.
                     when {
-                        ui.editingQuery -> "Keyboard Search  Find matches  •  B  Done typing"
-                        ui.queryFocused -> "Up/Down  Rows  •  Select  Type a name  •  B  Close"
-                        else -> "Up/Down  Rows  •  Left/Right  Action  •  Select  Confirm  •  B  Close"
+                        ui.editingQuery -> stringResource(R.string.det_rematch_hint_editing)
+                        ui.queryFocused -> stringResource(R.string.det_rematch_hint_query)
+                        else -> stringResource(R.string.det_rematch_hint_rows)
                     },
                     color = themedSubText(TextMuted.copy(alpha = 0.55f)),
                     fontSize = 10.sp,
@@ -125,7 +128,7 @@ fun StorefrontRematchPanel(
 
             if (ui.loading) {
                 Box(Modifier.fillMaxWidth().padding(vertical = 28.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = focusEdge)
+                    PfpBusyRing(color = focusEdge)
                 }
                 return@Column
             }
@@ -179,8 +182,7 @@ fun StorefrontRematchPanel(
                 ) {
                     Box(Modifier.padding(top = 5.dp).size(6.dp).clip(CircleShape).background(ConfirmedGreen))
                     Text(
-                        "Removing a link removes the link and nothing else. Your description, developer and " +
-                            "every other field stay exactly as they are — including anything you typed by hand.",
+                        stringResource(R.string.det_rematch_remove_note),
                         color = themedText(TextPrimary),
                         fontSize = 12.sp,
                         lineHeight = 17.sp,
@@ -200,7 +202,7 @@ fun StorefrontRematchPanel(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    if (ui.searching) "Searching…" else "Search every store again",
+                    if (ui.searching) stringResource(R.string.det_rematch_searching) else stringResource(R.string.det_rematch_search_all),
                     color = themedText(TextPrimary),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -283,7 +285,7 @@ private fun NameSearchBar(
                 decorationBox = { inner ->
                     Box {
                         if (ui.query.isEmpty()) {
-                            Text("Search by name", color = themedSubText(TextMuted.copy(alpha = 0.6f)), fontSize = 14.sp)
+                            Text(stringResource(R.string.det_rematch_search_by_name), color = themedSubText(TextMuted.copy(alpha = 0.6f)), fontSize = 14.sp)
                         }
                         inner()
                     }
@@ -304,14 +306,14 @@ private fun NameSearchBar(
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             ) {
                 Text(
-                    if (ui.searching) "Searching…" else "Search",
+                    if (ui.searching) stringResource(R.string.det_rematch_searching) else stringResource(R.string.det_rematch_search),
                     color = themedText(if (ui.canSearchByName) TextPrimary else TextMuted.copy(alpha = 0.45f)),
                     fontSize = 12.sp,
                 )
             }
         }
         Text(
-            "Searches the stores for this name. Your game's title is not changed.",
+            stringResource(R.string.det_rematch_search_help),
             color = themedSubText(TextMuted.copy(alpha = 0.6f)),
             fontSize = 10.sp,
         )
@@ -348,7 +350,7 @@ private fun StoreRow(
                 Text(row.storeLabel, color = themedText(TextPrimary), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 if (row.userConfirmed) {
                     Text(
-                        "Confirmed by you",
+                        stringResource(R.string.det_rematch_confirmed),
                         color = ConfirmedGreen,
                         fontSize = 10.sp,
                         modifier = Modifier
@@ -358,8 +360,8 @@ private fun StoreRow(
                     )
                 }
             }
-            Text(row.detail, color = themedSubText(TextMuted), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            row.note?.let { Text(it, color = themedSubText(TextMuted.copy(alpha = 0.6f)), fontSize = 10.sp) }
+            Text(row.detail.asString(), color = themedSubText(TextMuted), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            row.note?.let { Text(it.asString(), color = themedSubText(TextMuted.copy(alpha = 0.6f)), fontSize = 10.sp) }
         }
 
         // The actions this row offers. On a controller only the selected one is highlighted —
@@ -379,7 +381,7 @@ private fun StoreRow(
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                 ) {
                     Text(
-                        action.label,
+                        stringResource(action.labelRes),
                         color = themedText(if (row.enabled) TextPrimary else TextMuted.copy(alpha = 0.45f)),
                         fontSize = 12.sp,
                     )

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Cài đặt</string>
+    <string name="sound_title">Âm thanh</string>
+    <string name="sound_group_master">Tổng</string>
+    <string name="sound_group_levels">Mức âm lượng</string>
+    <string name="sound_group_sounds">Các âm thanh</string>
+    <string name="sound_master_volume">Âm lượng tổng</string>
+    <string name="sound_master_volume_help">Điều chỉnh mọi âm thanh của launcher. Ở mức 0, launcher sẽ im lặng.</string>
+    <string name="sound_ambience_help">Phát lặp trong khi bạn duyệt. OGG lặp liền mạch; MP3 có thể bị tiếng lách tách.</string>
+    <string name="sound_rejected_title">Không thể dùng âm thanh đó</string>
+    <string name="sound_reset_confirm_title">Đặt lại âm thanh về mặc định?</string>
+    <string name="sound_reset_confirm_message">Mọi âm thanh menu trở về mẫu PFP đi kèm và mọi mức âm lượng, kể cả âm lượng tổng, trở về mức tối đa. Bản nhạc nền cùng nội dung Boot Video và Game Boot của bạn không bị ảnh hưởng.</string>
+    <string name="sound_reset_confirm_action">Đặt lại</string>
+    <string name="sound_reset_row">Đặt lại âm thanh về mặc định</string>
+    <string name="sound_reset_row_help">Đưa mọi âm thanh menu về mẫu PFP đi kèm và mọi mức âm lượng về tối đa. Giữ nguyên bản nhạc nền của bạn.</string>
+    <string name="sound_channel_navigation">Điều hướng</string>
+    <string name="sound_channel_back">Quay lại / Hủy</string>
+    <string name="sound_channel_confirm">Xác nhận / Áp dụng</string>
+    <string name="sound_channel_error">Lỗi / Không hợp lệ</string>
+    <string name="sound_channel_notification">Thông báo</string>
+    <string name="sound_channel_boot">Trình tự khởi động</string>
+    <string name="sound_channel_ambience">Nhạc nền</string>
+    <string name="sound_slot_navigation">Điều hướng</string>
+    <string name="sound_slot_back">Quay lại / Hủy</string>
+    <string name="sound_slot_confirm">Xác nhận / Áp dụng</string>
+    <string name="sound_slot_error">Lỗi / Không hợp lệ</string>
+    <string name="sound_slot_notification">Thông báo</string>
+    <string name="sound_slot_ambience">Bản nhạc nền</string>
+</resources>

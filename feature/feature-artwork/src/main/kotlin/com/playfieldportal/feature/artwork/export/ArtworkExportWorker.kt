@@ -19,6 +19,8 @@ import com.playfieldportal.core.domain.model.PfpErrorCode
 import com.playfieldportal.core.domain.model.ResultItem
 import com.playfieldportal.core.domain.model.ResultOutcome
 import com.playfieldportal.core.domain.model.TaskKind
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.artwork.R
 import com.playfieldportal.feature.artwork.importer.ImportSummary
 import com.playfieldportal.feature.artwork.portable.ArtworkPathResolver
 import com.playfieldportal.feature.artwork.portable.PortableArtworkLibrary
@@ -56,12 +58,12 @@ class ArtworkExportWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         val destUriString = inputData.getString(KEY_DEST_TREE_URI)
-            ?: return Result.failure(workDataOf(KEY_ERROR to "No destination folder"))
+            ?: return Result.failure(workDataOf(KEY_ERROR to applicationContext.getString(R.string.art_export_error_no_destination)))
         val destTree = Uri.parse(destUriString)
         val sourceTreeString = folderRepository.getTreeUri()
-            ?: return Result.failure(workDataOf(KEY_ERROR to "No artwork folder linked"))
+            ?: return Result.failure(workDataOf(KEY_ERROR to applicationContext.getString(R.string.art_no_folder_linked)))
         if (!folderRepository.hasLiveGrant()) {
-            return Result.failure(workDataOf(KEY_ERROR to "Artwork folder access was lost"))
+            return Result.failure(workDataOf(KEY_ERROR to applicationContext.getString(R.string.art_export_error_access_lost)))
         }
         val sourceTree = Uri.parse(sourceTreeString)
         val startedAt = System.currentTimeMillis()
@@ -76,9 +78,9 @@ class ArtworkExportWorker @AssistedInject constructor(
         // export copies thousands of files and the user only needs the ones that did not make it.
         val failures = mutableListOf<ResultItem>()
         tasks.start(
-            TASK_ID, LABEL, TaskKind.ARTWORK,
+            TASK_ID, applicationContext.getString(R.string.art_export_label), TaskKind.ARTWORK,
             onStop = { WorkManager.getInstance(applicationContext).cancelUniqueWork(UNIQUE_NAME) },
-            stopNote = "Files already exported stay in place.",
+            stopNote = applicationContext.getString(R.string.art_export_stop_note),
         )
 
         try {
@@ -97,8 +99,8 @@ class ArtworkExportWorker @AssistedInject constructor(
                         failures += ResultItem(
                             primary = "$destPlatformName/${mediaDir.name.lowercase(Locale.ROOT)}",
                             outcome = ResultOutcome.FAILED,
-                            badge = "${files.size} files",
-                            reason = "The destination folder could not be created.",
+                            badge = UiText.plural(R.plurals.art_export_files_badge, files.size).resolve(applicationContext),
+                            reason = applicationContext.getString(R.string.art_export_dest_not_created),
                             code = PfpErrorCode.AR_2002.id,
                         )
                         continue
@@ -135,30 +137,30 @@ class ArtworkExportWorker @AssistedInject constructor(
         } catch (e: Exception) {
             Timber.e(e, "Export failed")
             tasks.fail(
-                TASK_ID, e.message ?: "Unexpected error", NotificationAction.OpenSettingsScreen("settings_artwork"),
+                TASK_ID, e.message ?: applicationContext.getString(R.string.art_error_unexpected), NotificationAction.OpenSettingsScreen("settings_artwork"),
                 detail = NotificationDetail.notes(PfpErrorCode.AR_2002, summary = e.message,
                     diagnostic = e.stackTraceToString().take(4_000)),
-                title = "Artwork export failed",
+                title = applicationContext.getString(R.string.art_export_failed_title),
             )
             persistReport(startedAt, copied, skipped, failed, bytes, cancelled = false)
-            return Result.failure(workDataOf(KEY_ERROR to (e.message ?: "Unexpected error")))
+            return Result.failure(workDataOf(KEY_ERROR to (e.message ?: applicationContext.getString(R.string.art_error_unexpected))))
         }
 
         persistReport(startedAt, copied, skipped, failed, bytes, cancelled)
         if (cancelled) {
             tasks.stopped(
-                TASK_ID, "$copied file(s) exported first",
+                TASK_ID, UiText.plural(R.plurals.art_export_stopped_note, copied).resolve(applicationContext),
                 detail = failures.takeIf { it.isNotEmpty() }?.let { NotificationDetail.results(it) },
-                title = "Artwork export stopped",
+                title = applicationContext.getString(R.string.art_export_stopped_title),
             )
             throw CancellationException("Export cancelled")
         }
         tasks.complete(
             TASK_ID,
-            "$copied copied, $skipped already present, $failed failed",
+            applicationContext.getString(R.string.art_export_result, copied, skipped, failed),
             NotificationAction.OpenSettingsScreen("settings_artwork"),
             detail = failures.takeIf { it.isNotEmpty() }?.let { NotificationDetail.results(it) },
-            title = "Artwork export finished",
+            title = applicationContext.getString(R.string.art_export_finished_title),
         )
         return Result.success(workDataOf(KEY_COPIED to copied, KEY_FAILED to failed))
     }
@@ -197,7 +199,6 @@ class ArtworkExportWorker @AssistedInject constructor(
     companion object {
         const val UNIQUE_NAME = "pfp_artwork_export"
         const val TASK_ID = "artwork_export"
-        private const val LABEL = "Exporting artwork for ES-DE"
         const val KEY_DEST_TREE_URI = "dest_tree_uri"
         const val KEY_ERROR = "error"
         const val KEY_COPIED = "copied"

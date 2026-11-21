@@ -1,0 +1,915 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- App picker -->
+    <string name="xmbm_picker_touch_toggle">Отметить</string>
+    <plurals name="xmbm_picker_remove_from_card">
+        <item quantity="one">Убрать %d приложение с этой карты?</item>
+        <item quantity="few">Убрать %d приложения с этой карты?</item>
+        <item quantity="many">Убрать %d приложений с этой карты?</item>
+        <item quantity="other">Убрать %d приложения с этой карты?</item>
+    </plurals>
+    <plurals name="xmbm_picker_remove_from_library">
+        <item quantity="one">Убрать %d приложение из этой библиотеки?</item>
+        <item quantity="few">Убрать %d приложения из этой библиотеки?</item>
+        <item quantity="many">Убрать %d приложений из этой библиотеки?</item>
+        <item quantity="other">Убрать %d приложения из этой библиотеки?</item>
+    </plurals>
+    <string name="xmbm_catmenu_rename">Переименовать категорию</string>
+    <string name="xmbm_catmenu_change_icon">Сменить значок</string>
+    <string name="xmbm_catmenu_show_on_bar">Показывать на панели</string>
+    <string name="xmbm_catmenu_new_card">Новая своя карта</string>
+    <string name="xmbm_catmenu_manage">Управление категориями</string>
+
+    <!-- Shared menu rows -->
+
+    <!-- Value of an on/off setting row. -->
+    <string name="xmbm_common_on">Вкл.</string>
+
+    <!-- Value of an on/off setting row. -->
+    <string name="xmbm_common_off">Выкл.</string>
+    <string name="xmbm_sort">Сортировка</string>
+    <string name="xmbm_move">Переместить</string>
+    <string name="xmbm_resume">Продолжить</string>
+
+    <!-- Menu row that opens the focused item. -->
+    <string name="xmbm_open">Открыть</string>
+    <string name="xmbm_pin_to_top">Закрепить вверху</string>
+    <string name="xmbm_icon_display">Вид значков</string>
+    <string name="xmbm_manage_custom_cards">Управление своими картами</string>
+    <string name="xmbm_play_in_background">Играть в фоне</string>
+    <string name="xmbm_add_to_playlist">Добавить в плейлист</string>
+
+    <!-- Destructive menu row. -->
+    <string name="xmbm_remove_from_library">Удалить из библиотеки</string>
+    <string name="xmbm_remove_from_this_playlist">Убрать из плейлиста</string>
+    <string name="xmbm_rename_playlist">Переименовать плейлист</string>
+    <string name="xmbm_delete_playlist">Удалить плейлист</string>
+    <string name="xmbm_manage_in_settings">Управление в настройках</string>
+
+    <!-- Menu row with an On/Off value. -->
+    <string name="xmbm_favorite">Избранное</string>
+    <string name="xmbm_visualizer">Визуализация</string>
+    <string name="xmbm_stop_and_close">Остановить и закрыть</string>
+    <string name="xmbm_pause">Пауза</string>
+    <string name="xmbm_add_games">Добавить игры</string>
+    <string name="xmbm_add_apps">Добавить приложения</string>
+    <string name="xmbm_pinned">Закреплено</string>
+    <string name="xmbm_update_metadata">Обновить метаданные</string>
+    <string name="xmbm_fetch_missing_artwork">Загрузить недостающие обложки</string>
+    <string name="xmbm_library_manager">Менеджер библиотеки</string>
+    <string name="xmbm_default">По умолчанию</string>
+    <string name="xmbm_favorites">Избранное</string>
+    <string name="xmbm_all_games">Все игры</string>
+    <string name="xmbm_playlists">Плейлисты</string>
+    <string name="xmbm_create_new_playlist">Новый плейлист</string>
+
+    <!-- Custom icon source chooser -->
+    <string name="xmbm_srcchooser_title">Выберите значок для «%1$s»</string>
+    <string name="xmbm_srcchooser_message">Возьмите значок из применённой темы или изображение с устройства.</string>
+    <plurals name="xmbm_srcchooser_theme_detail">
+        <item quantity="one">%2$s · %1$d значок</item>
+        <item quantity="few">%2$s · %1$d значка</item>
+        <item quantity="many">%2$s · %1$d значков</item>
+        <item quantity="other">%2$s · %1$d значка</item>
+    </plurals>
+
+    <!-- Theme icon grid -->
+    <string name="xmbm_themegrid_title">%1$s · значок для «%2$s»</string>
+    <string name="xmbm_notifmenu_mark_all_read">Отметить все прочитанными</string>
+    <string name="xmbm_notifmenu_clear_read">Очистить прочитанные</string>
+    <string name="xmbm_notifmenu_clear_all">Очистить всё</string>
+    <string name="xmbm_social_account">Аккаунт</string>
+
+    <!-- Playlist list rows -->
+
+    <!-- List row that starts a new playlist. -->
+    <string name="xmbm_playlist_create_title">Создать плейлист</string>
+    <string name="xmbm_playlist_create_music_sub">Начать новый плейлист</string>
+    <string name="xmbm_playlist_create_video_sub">Начать новый видеоплейлист</string>
+    <string name="xmbm_playlist_import_title">Импорт плейлиста</string>
+    <string name="xmbm_playlist_import_sub">Из файла .m3u, .m3u8, .pls или .xspf</string>
+
+    <!-- Menu group headers -->
+    <string name="xmbm_group_play">Игра</string>
+    <string name="xmbm_group_library">Библиотека</string>
+    <string name="xmbm_group_arrange">Порядок</string>
+    <string name="xmbm_group_customize">Настройка</string>
+    <string name="xmbm_group_pc">ПК</string>
+    <string name="xmbm_group_manage">Управление</string>
+    <string name="xmbm_group_games">Игры</string>
+    <string name="xmbm_group_update">Обновление</string>
+    <string name="xmbm_group_display">Вид</string>
+
+    <!-- Sort and arrange rows -->
+    <string name="xmbm_sort_default">По умолчанию</string>
+    <string name="xmbm_sort_default_order">Порядок по умолчанию</string>
+    <string name="xmbm_sort_global_value">Общая: %1$s</string>
+    <string name="xmbm_sort_use_global">Общая настройка (%1$s)</string>
+    <string name="xmbm_sort_az">А–Я</string>
+
+    <!-- Sort order name for app lists. -->
+    <string name="xmbm_sort_recently_used">Недавние</string>
+    <string name="xmbm_umd_insert">Вставить как UMD</string>
+    <string name="xmbm_umd_eject">Извлечь UMD</string>
+    <string name="xmbm_card_rename">Переименовать карту</string>
+    <string name="xmbm_card_move_to_category">Переместить в категорию</string>
+    <string name="xmbm_card_delete">Удалить свою карту</string>
+    <string name="xmbm_card_in_category">В «%1$s»</string>
+    <string name="xmbm_card_other_categories">Другие категории</string>
+    <string name="xmbm_card_new_here">Новая своя карта здесь…</string>
+    <string name="xmbm_sort_all_lists">Все списки</string>
+    <plurals name="xmbm_memcard_sub_games">
+        <item quantity="one">Карта памяти · %d игра</item>
+        <item quantity="few">Карта памяти · %d игры</item>
+        <item quantity="many">Карта памяти · %d игр</item>
+        <item quantity="other">Карта памяти · %d игры</item>
+    </plurals>
+    <plurals name="xmbm_memcard_sub_games_pinned">
+        <item quantity="one">Карта памяти · Закреплена · %d игра</item>
+        <item quantity="few">Карта памяти · Закреплена · %d игры</item>
+        <item quantity="many">Карта памяти · Закреплена · %d игр</item>
+        <item quantity="other">Карта памяти · Закреплена · %d игры</item>
+    </plurals>
+
+    <!-- Memory Card menus -->
+    <string name="xmbm_card_find_games">Найти игры</string>
+    <string name="xmbm_card_scan_roms">Искать игры</string>
+    <string name="xmbm_card_import_pc">Импорт игр для ПК</string>
+    <string name="xmbm_card_match_achievements">Сопоставить достижения</string>
+    <string name="xmbm_card_hide">Скрыть карту</string>
+    <string name="xmbm_card_remove">Удалить карту</string>
+    <string name="xmbm_card_scan_all">Сканировать все карты</string>
+    <string name="xmbm_card_relink_artwork">Перепривязать обложки</string>
+    <string name="xmbm_card_global_sort">Общая сортировка</string>
+    <string name="xmbm_scan_none_new">Новых игр не найдено</string>
+    <plurals name="xmbm_scan_new_games">
+        <item quantity="one">%d новая игра</item>
+        <item quantity="few">%d новые игры</item>
+        <item quantity="many">%d новых игр</item>
+        <item quantity="other">%d новой игры</item>
+    </plurals>
+    <plurals name="xmbm_scan_cards_scanned">
+        <item quantity="one">Просканирована %d карта памяти</item>
+        <item quantity="few">Просканировано %d карты памяти</item>
+        <item quantity="many">Просканировано %d карт памяти</item>
+        <item quantity="other">Просканировано %d карты памяти</item>
+    </plurals>
+    <plurals name="xmbm_scan_cards_failed">
+        <item quantity="one">Не удалось просканировать %d карту</item>
+        <item quantity="few">Не удалось просканировать %d карты</item>
+        <item quantity="many">Не удалось просканировать %d карт</item>
+        <item quantity="other">Не удалось просканировать %d карты</item>
+    </plurals>
+
+    <!-- Game row menu -->
+    <string name="xmbm_game_view_details">Сведения об игре</string>
+    <string name="xmbm_game_choose_disc">Выбрать диск</string>
+    <string name="xmbm_game_view_shiba_coins">Shiba Coins</string>
+    <string name="xmbm_game_change_emulator">Сменить эмулятор</string>
+    <string name="xmbm_game_add_to_card">Добавить на карту</string>
+    <string name="xmbm_game_remove_from_card">Убрать с карты</string>
+    <string name="xmbm_game_select_multiple">Выбрать несколько</string>
+    <string name="xmbm_game_add_to_category">Добавить в категорию</string>
+    <string name="xmbm_game_move_to_category">Переместить в категорию</string>
+    <string name="xmbm_game_remove_from_category">Убрать из категории</string>
+    <string name="xmbm_game_fetch_artwork">Загрузить обложки</string>
+    <string name="xmbm_game_launch_with">Запустить через</string>
+    <string name="xmbm_game_install_goldberg">Установить достижения Goldberg</string>
+    <string name="xmbm_game_export">Экспорт игры</string>
+    <string name="xmbm_game_file_location">Расположение файла</string>
+    <string name="xmbm_game_hide_from">Скрыть из «%1$s»</string>
+    <string name="xmbm_game_remove_permanently">Удалить навсегда</string>
+    <string name="xmbm_game_mark_as_game">Отметить как игру</string>
+    <string name="xmbm_game_unmark_as_game">Это не игра</string>
+
+    <!-- Media row menus -->
+    <string name="xmbm_play">Воспроизвести</string>
+    <string name="xmbm_media_view_information">Информация</string>
+    <string name="xmbm_media_add_tracks">Добавить треки</string>
+    <string name="xmbm_media_view_details">Подробности</string>
+    <string name="xmbm_media_scan_library">Сканировать библиотеку</string>
+    <string name="xmbm_media_scan_album">Сканировать альбом</string>
+    <string name="xmbm_media_set_wallpaper">Сделать обоями лаунчера</string>
+    <string name="xmbm_media_set_lockscreen">На экран блокировки</string>
+    <string name="xmbm_media_scan_section">Сканировать: %1$s</string>
+    <string name="xmbm_info_artist">Исполнитель: %1$s</string>
+    <string name="xmbm_info_album">Альбом: %1$s</string>
+    <string name="xmbm_info_duration">Длительность: %1$s</string>
+    <string name="xmbm_info_type">Тип: %1$s</string>
+    <string name="xmbm_info_size">Размер: %1$s</string>
+    <string name="xmbm_info_location">Расположение: %1$s</string>
+    <string name="xmbm_info_file">Файл: %1$s</string>
+
+    <!-- Confirmation dialogs -->
+    <string name="xmbm_confirm_remove_library_title">Удалить «%1$s» из библиотеки?</string>
+    <string name="xmbm_confirm_remove_game_msg">Файл не удаляется. Следующее сканирование вернёт его, если он всё ещё в сканируемой папке.</string>
+
+    <!-- Confirm button of a removal dialog. -->
+    <string name="xmbm_confirm_remove">Удалить</string>
+    <string name="xmbm_confirm_remove_missing_title">Удалить «%1$s» навсегда?</string>
+    <string name="xmbm_confirm_remove_missing_msg">Её файла уже нет, поэтому запись нельзя будет восстановить.</string>
+
+    <!-- Confirm button of a removal dialog. -->
+    <string name="xmbm_confirm_remove_permanently">Удалить навсегда</string>
+    <string name="xmbm_confirm_delete_card_title">Удалить «%1$s»?</string>
+    <string name="xmbm_confirm_delete_card_msg">Её игры останутся в библиотеке.</string>
+
+    <!-- Confirm button. -->
+    <string name="xmbm_confirm_delete_card_button">Удалить свою карту</string>
+    <string name="xmbm_confirm_remove_category_title">Убрать из «%1$s»?</string>
+    <string name="xmbm_confirm_remove_category_msg">«%1$s» также уйдёт из: %2$s.</string>
+    <string name="xmbm_confirm_remove_android_msg">Приложение останется установленным. «Найти игры» может добавить его снова.</string>
+    <string name="xmbm_confirm_remove_card_title">Удалить карту «%1$s»?</string>
+    <string name="xmbm_confirm_remove_card_android_msg">Её игры тоже уйдут из библиотеки. Приложения останутся установленными, и «Найти игры» может добавить их снова.</string>
+    <string name="xmbm_confirm_remove_card_msg">Её игры тоже уйдут из библиотеки. Файлы ROM останутся на диске, и сканирование может вернуть их.</string>
+
+    <!-- Confirm button. -->
+    <string name="xmbm_confirm_remove_card_button">Удалить карту</string>
+    <string name="xmbm_confirm_remove_app_row_msg">Приложение останется установленным и в своих категориях приложений.</string>
+    <string name="xmbm_confirm_remove_track_msg">Файл не удаляется. Следующее сканирование вернёт его, если он всё ещё в папке с музыкой.</string>
+    <string name="xmbm_confirm_remove_video_msg">Файл не удаляется. Следующее сканирование вернёт его, если он всё ещё в видеобиблиотеке.</string>
+    <string name="xmbm_confirm_remove_photo_msg">Файл не удаляется. Следующее сканирование вернёт его, если он всё ещё в альбоме.</string>
+    <string name="xmbm_confirm_delete_music_playlist_msg">Его треки останутся в библиотеке.</string>
+    <string name="xmbm_confirm_delete_video_playlist_msg">Его видео останутся в библиотеке.</string>
+
+    <!-- Confirm button. -->
+    <string name="xmbm_confirm_delete_playlist_button">Удалить плейлист</string>
+    <string name="xmbm_confirm_uninstall_title">Удалить «%1$s»?</string>
+    <string name="xmbm_confirm_uninstall_msg">Приложение и его данные будут удалены с устройства.</string>
+
+    <!-- Confirm button. -->
+    <string name="xmbm_confirm_uninstall_button">Удалить</string>
+    <string name="xmbm_confirm_clear_notifs_title">Очистить все уведомления?</string>
+    <string name="xmbm_confirm_clear_notifs_msg">Выполняющиеся задачи не затрагиваются.</string>
+
+    <!-- Confirm button. -->
+    <string name="xmbm_confirm_clear_all_button">Очистить всё</string>
+
+    <!-- Notification panel -->
+    <string name="xmbm_stop_confirm_title">Остановить «%1$s»?</string>
+    <string name="xmbm_stop_confirm_kept_default">Уже сделанное сохранится.</string>
+    <string name="xmbm_stop_confirm_progress">Готово %1$d из %2$d.</string>
+    <string name="xmbm_panel_prompt_open">Открыть</string>
+    <string name="xmbm_panel_prompt_stop">Остановить</string>
+    <string name="xmbm_panel_prompt_options">Параметры</string>
+    <string name="xmbm_panel_prompt_close">Закрыть</string>
+
+    <!-- Fetch Artwork notifications -->
+    <string name="xmbm_fetchart_running">Загрузка обложек: %1$s</string>
+    <string name="xmbm_fetchart_failed">Ошибка загрузки обложек</string>
+    <string name="xmbm_fetchart_failed_title">Не удалось загрузить обложки для %1$s</string>
+    <string name="xmbm_fetchart_paused_title">Обложки приостановлены для %1$s</string>
+    <string name="xmbm_fetchart_done_title">Обложки обновлены для %1$s</string>
+
+    <!-- Playlist import -->
+    <string name="xmbm_plimport_cant_open">Не удалось открыть файл</string>
+
+    <!-- MiB = mebibytes, a file size unit. -->
+    <string name="xmbm_plimport_too_large">Файл больше %1$d МиБ</string>
+    <string name="xmbm_plimport_cant_read">Не удалось прочитать файл</string>
+    <string name="xmbm_plimport_default_name">плейлист</string>
+    <string name="xmbm_plimport_not_playlist">Это не файл плейлиста</string>
+    <string name="xmbm_plimport_unexpected">Непредвиденная ошибка</string>
+    <string name="xmbm_plimport_title_error">Не удалось импортировать «%1$s»</string>
+    <string name="xmbm_plimport_title_ok">Импортирован «%1$s»</string>
+    <string name="xmbm_plimport_title_none">Из «%1$s» ничего не импортировано</string>
+    <string name="xmbm_plimport_reason_web">не локальный файл</string>
+    <string name="xmbm_plimport_reason_type">не тот тип медиа</string>
+    <string name="xmbm_plimport_reason_dup">уже в плейлисте</string>
+    <string name="xmbm_plimport_reason_ambiguous">несколько совпадений</string>
+    <string name="xmbm_plimport_reason_missing">нет в библиотеке</string>
+    <string name="xmbm_plimport_sum_found">найдено: %1$d</string>
+
+    <!-- Part of a one-line summary. -->
+    <string name="xmbm_plimport_sum_missing">нет в библиотеке: %1$d</string>
+
+    <!-- Part of a one-line summary. -->
+    <string name="xmbm_plimport_sum_skipped">пропущено: %1$d</string>
+    <string name="xmbm_plimport_sum_dropped">сверх лимита в %2$d записей проигнорировано: %1$d</string>
+    <string name="xmbm_plimport_label_found">Найдено</string>
+    <string name="xmbm_plimport_label_missing">Нет в библиотеке</string>
+    <string name="xmbm_plimport_label_skipped">Пропущено</string>
+    <string name="xmbm_setsec_library_title">Библиотека</string>
+
+    <!-- Settings section description. -->
+    <string name="xmbm_setsec_library_sub">Источники, карты, обложки и скрытые элементы</string>
+    <string name="xmbm_setsec_emulators_title">Эмуляторы</string>
+
+    <!-- Settings section description. -->
+    <string name="xmbm_setsec_emulators_sub">Профили запуска и ядра RetroArch</string>
+    <string name="xmbm_setsec_interface_title">Интерфейс</string>
+
+    <!-- Settings section description. -->
+    <string name="xmbm_setsec_interface_sub">Категории, темы, экран и контроллер</string>
+    <string name="xmbm_setsec_achievements_title">Достижения</string>
+
+    <!-- Settings section description. -->
+    <string name="xmbm_setsec_achievements_sub">RetroAchievements и Steam</string>
+    <string name="xmbm_setsec_media_title">Медиа</string>
+
+    <!-- Settings section description. -->
+    <string name="xmbm_setsec_media_sub">Музыка, видео и фото</string>
+
+    <!-- Settings section name. -->
+    <string name="xmbm_setsec_system_title">Система</string>
+
+    <!-- Settings section description. -->
+    <string name="xmbm_setsec_system_sub">О приложении, обновления, журналы, копии, настройка и благодарности</string>
+    <string name="xmbm_setsec_system_sub_nobackup">О приложении, обновления, журналы, настройка и благодарности</string>
+    <string name="xmbm_set_library_title">Менеджер библиотеки</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_library_sub">Источники ROM и сканирование</string>
+    <string name="xmbm_set_windows_games_title">Игры Windows</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_windows_games_sub">Игры для ПК, лаунчеры и импорт</string>
+    <string name="xmbm_set_collections_title">Свои карты памяти</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_collections_sub">Создание и управление своими картами памяти</string>
+    <string name="xmbm_set_artwork_title">Обложки</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_artwork_sub">Источники загрузки и кеш</string>
+    <string name="xmbm_set_app_visibility_title">Скрытые элементы</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_app_visibility_sub">Скрытые вами приложения и игры</string>
+    <string name="xmbm_set_emulators_installed_title">Установленные</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_emulators_installed_sub">Найденные профили эмуляторов</string>
+    <string name="xmbm_set_emulators_custom_title">Свои эмуляторы</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_emulators_custom_sub">Свои профили и «Добавить свой эмулятор»</string>
+    <string name="xmbm_set_emulators_retroarch_title">RetroArch</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_emulators_retroarch_sub">Определение ядер и привязка</string>
+    <string name="xmbm_set_emulators_assign_title">Эмуляторы систем по умолчанию</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_emulators_assign_sub">Эмулятор и ядро по умолчанию для консоли и переопределения для игр</string>
+    <string name="xmbm_set_emulators_knowledge_title">База эмуляторов</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_emulators_knowledge_sub">Обновления, свои файлы и сброс до встроенной</string>
+    <string name="xmbm_set_display_title">Экран</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_display_sub">Волна, обои, заставка и значки</string>
+    <string name="xmbm_set_audio_title">Звук</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_audio_sub">Звуки меню, уровни и фон</string>
+    <string name="xmbm_set_notifications_title">Уведомления</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_notifications_sub">История панели и срок хранения</string>
+    <string name="xmbm_set_categories_title">Категории</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_categories_sub">Управление категориями XMB</string>
+    <string name="xmbm_set_themes_title">Темы</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_themes_sub">Оформление XMB, цвета и значки</string>
+    <string name="xmbm_set_controller_title">Контроллер</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_controller_sub">Назначение кнопок</string>
+    <string name="xmbm_set_achievements_player_card_title">Карточка игрока</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_achievements_player_card_sub">Уровни, ранги и синхронизация</string>
+    <string name="xmbm_set_achievements_credentials_title">Учётные данные</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_achievements_credentials_sub">Аккаунты RetroAchievements и Steam</string>
+    <string name="xmbm_set_achievements_local_windows_title">Локальные Windows</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_achievements_local_windows_sub">Отслеживание локальных игр Windows (эмуляция Steam)</string>
+    <string name="xmbm_set_achievements_update_title">Обновить достижения</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_achievements_update_sub">Синхронизация и автосопоставление игр</string>
+    <string name="xmbm_set_music_title">Музыка</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_music_sub">Папки с музыкой и плеер по умолчанию</string>
+    <string name="xmbm_set_video_title">Видео</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_video_sub">Видеобиблиотеки, сканирование и воспроизведение</string>
+    <string name="xmbm_set_photo_title">Фото</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_photo_sub">Фотобиблиотеки и сканирование</string>
+    <string name="xmbm_set_about_title">О приложении</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_about_sub">Play Field Portal</string>
+    <string name="xmbm_set_system_update_title">Обновление системы</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_system_update_sub">Новые версии и список изменений</string>
+    <string name="xmbm_set_logs_title">Журналы</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_logs_sub">Открыть или поделиться журналами сеансов</string>
+    <string name="xmbm_set_backup_title">Резервное копирование</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_backup_sub">Экспорт и импорт</string>
+    <string name="xmbm_set_setup_title">Мастер настройки</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_setup_sub">Пошаговая настройка папок и аккаунтов</string>
+    <string name="xmbm_set_credits_title">Благодарности</string>
+
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_credits_sub">Обложки и авторство</string>
+
+    <!-- Media sections -->
+    <string name="xmbm_media_music">Музыка</string>
+    <string name="xmbm_media_videos">Видео</string>
+    <string name="xmbm_media_photos">Фото</string>
+    <string name="xmbm_sort_pill">Сортировка: %1$s</string>
+    <string name="xmbm_filter">Фильтр</string>
+
+    <!-- Sort modes -->
+
+    <!-- Name of a sort order. -->
+    <string name="xmbm_sortmode_title">Название</string>
+
+    <!-- Name of a sort order. -->
+    <string name="xmbm_sortmode_artist">Исполнитель</string>
+
+    <!-- Name of a sort order. -->
+    <string name="xmbm_sortmode_album">Альбом</string>
+
+    <!-- Name of a sort order. -->
+    <string name="xmbm_sortmode_recent_played">Недавно запущенные</string>
+
+    <!-- Name of a sort order. -->
+    <string name="xmbm_sortmode_date_added">Дата добавления</string>
+
+    <!-- Name of a sort order. -->
+    <string name="xmbm_sortmode_custom">Свой порядок</string>
+    <string name="xmbm_filter_search">Поиск</string>
+    <string name="xmbm_filter_none">Нет</string>
+    <string name="xmbm_filter_term">«%1$s»</string>
+    <string name="xmbm_filter_clear">Сбросить поиск</string>
+
+    <!-- Local Windows games notifications -->
+    <string name="xmbm_lwm_running">Сопоставление локальных игр Windows…</string>
+    <string name="xmbm_lwm_stop_note">Уже сопоставленные игры останутся привязанными.</string>
+    <string name="xmbm_task_stopped">Остановлено до завершения</string>
+    <string name="xmbm_lwm_stopped_title">Сопоставление достижений Windows остановлено</string>
+    <string name="xmbm_lwm_failed">Ошибка пакетного сопоставления</string>
+    <string name="xmbm_lwm_failed_title">Ошибка сопоставления достижений Windows</string>
+    <string name="xmbm_lwm_done_title">Сопоставление достижений Windows завершено</string>
+    <string name="xmbm_schema_label">Схемы достижений</string>
+    <string name="xmbm_convert_no_ach" formatted="false">без достижений: %d</string>
+    <string name="xmbm_convert_no_key" formatted="false">нужен ключ Steam Web API: %d</string>
+    <string name="xmbm_convert_failed" formatted="false">ошибок: %d</string>
+    <string name="xmbm_convert_tail">Играйте в каждую игру, чтобы начать получать монеты.</string>
+    <string name="xmbm_convert_linked" formatted="false">Привязано к играм библиотеки: %d.</string>
+    <string name="xmbm_diag_copied">Диагностика скопирована в буфер обмена</string>
+    <string name="xmbm_artwork_folder_label">Папка обложек</string>
+    <string name="xmbm_artwork_folder_failed">Не удалось настроить эту папку. Выберите папку, в которую PFP может записывать.</string>
+    <plurals name="xmbm_convert_converted">
+        <item quantity="one">Конвертирована %d игра</item>
+        <item quantity="few">Конвертировано %d игры</item>
+        <item quantity="many">Конвертировано %d игр</item>
+        <item quantity="other">Конвертировано %d игры</item>
+    </plurals>
+
+    <!-- Games and apps list rows -->
+    <string name="xmbm_additem_apps_sub">Выберите установленные приложения для этого раздела</string>
+    <string name="xmbm_additem_games_sub">Выберите игры и свои карты памяти для этой категории</string>
+    <string name="xmbm_catcard_title">Карта памяти «%1$s»</string>
+    <string name="xmbm_total_games">Всего игр: %1$d</string>
+    <string name="xmbm_catcard_loose">Отдельно</string>
+    <string name="xmbm_empty_category_title">В этой категории пока нет игр</string>
+    <string name="xmbm_empty_category_sub">Вернитесь и выберите «Добавить игры».</string>
+    <plurals name="xmbm_customcard_games">
+        <item quantity="one">Своя · %d игра</item>
+        <item quantity="few">Своя · %d игры</item>
+        <item quantity="many">Своя · %d игр</item>
+        <item quantity="other">Своя · %d игры</item>
+    </plurals>
+    <plurals name="xmbm_customcard_games_pinned">
+        <item quantity="one">Своя · Закреплена · %d игра</item>
+        <item quantity="few">Своя · Закреплена · %d игры</item>
+        <item quantity="many">Своя · Закреплена · %d игр</item>
+        <item quantity="other">Своя · Закреплена · %d игры</item>
+    </plurals>
+    <plurals name="xmbm_customcard_apps">
+        <item quantity="one">Своя · %d приложение</item>
+        <item quantity="few">Своя · %d приложения</item>
+        <item quantity="many">Своя · %d приложений</item>
+        <item quantity="other">Своя · %d приложения</item>
+    </plurals>
+    <plurals name="xmbm_customcard_apps_pinned">
+        <item quantity="one">Своя · Закреплена · %d приложение</item>
+        <item quantity="few">Своя · Закреплена · %d приложения</item>
+        <item quantity="many">Своя · Закреплена · %d приложений</item>
+        <item quantity="other">Своя · Закреплена · %d приложения</item>
+    </plurals>
+
+    <!-- Music list rows -->
+    <string name="xmbm_music_now_playing">Сейчас играет</string>
+    <string name="xmbm_music_playlist_title">Плейлист</string>
+    <string name="xmbm_music_playlist_sub">Создавайте и слушайте свои списки треков</string>
+    <string name="xmbm_music_apps_title">Музыкальные приложения</string>
+    <string name="xmbm_music_apps_sub">Открыть установленные музыкальные приложения</string>
+    <string name="xmbm_music_add_folder_title">Добавить папку с музыкой</string>
+    <string name="xmbm_music_add_folder_sub">Укажите корневую папку музыки в настройках, чтобы начать</string>
+    <string name="xmbm_music_add_apps_title">Добавить музыкальные приложения</string>
+    <string name="xmbm_picker_show_here_sub">Выберите установленные приложения для показа здесь</string>
+    <string name="xmbm_music_add_tracks_title">Добавить треки</string>
+    <string name="xmbm_music_add_tracks_sub">Выберите песни для этого плейлиста</string>
+    <string name="xmbm_music_empty_title">Музыка не найдена</string>
+    <string name="xmbm_music_empty_sub">Добавьте папку с музыкой в «Настройки → Музыка»</string>
+    <string name="xmbm_playlist_empty_title">Плейлист пуст</string>
+    <string name="xmbm_playlist_empty_sub">Добавьте треки ниже или через меню параметров песни.</string>
+
+    <!-- Hide locations -->
+    <string name="xmbm_hide_custom_card">Своя карта</string>
+
+    <!-- Name of the Android apps library card. -->
+    <string name="xmbm_hide_android">Android</string>
+    <string name="xmbm_music_apps_name">Музыкальные приложения</string>
+    <string name="xmbm_video_apps_name">Видеоприложения</string>
+
+    <!-- Video list rows -->
+    <string name="xmbm_video_collections_title">Коллекции</string>
+    <string name="xmbm_video_collections_sub">Недавно просмотренные, избранное и плейлисты</string>
+    <string name="xmbm_video_libraries_title">Видеобиблиотеки</string>
+    <string name="xmbm_video_apps_sub">Открыть установленные видеоприложения</string>
+    <string name="xmbm_video_add_title">Добавить видео</string>
+    <string name="xmbm_video_add_sub">Укажите корневую папку видео в настройках, чтобы начать</string>
+    <string name="xmbm_video_recent_title">Недавно просмотренные</string>
+    <string name="xmbm_video_recent_sub">Продолжите с того же места</string>
+    <string name="xmbm_video_favorites_sub">Отмеченные вами видео</string>
+    <string name="xmbm_video_playlists_sub">Создавайте и смотрите свои списки</string>
+    <string name="xmbm_video_nolibs_title">Видеобиблиотек пока нет</string>
+    <string name="xmbm_video_nolibs_sub">Укажите корневую папку в «Настройки → Видео»</string>
+    <string name="xmbm_video_add_apps_title">Добавить видеоприложения</string>
+    <string name="xmbm_video_none_title">Видео не найдены</string>
+    <string name="xmbm_video_none_sub">Добавьте видеобиблиотеку в «Настройки → Видео»</string>
+    <string name="xmbm_video_nowatched_title">Пока ничего не просмотрено</string>
+    <string name="xmbm_video_nowatched_sub">Здесь появятся воспроизведённые видео</string>
+    <string name="xmbm_video_nofav_title">Избранного пока нет</string>
+    <string name="xmbm_video_nofav_sub">Отметьте видео звёздочкой в меню ⚙ параметров</string>
+    <string name="xmbm_video_playlist_empty_sub">Добавляйте видео через меню ⚙ параметров видео</string>
+    <string name="xmbm_video_new_playlist">Новый видеоплейлист</string>
+    <string name="xmbm_music_new_playlist">Новый плейлист</string>
+    <plurals name="xmbm_video_libraries_count">
+        <item quantity="one">%d библиотека</item>
+        <item quantity="few">%d библиотеки</item>
+        <item quantity="many">%d библиотек</item>
+        <item quantity="other">%d библиотеки</item>
+    </plurals>
+
+    <!-- Photo list rows -->
+    <string name="xmbm_photo_camera_title">Камера</string>
+    <string name="xmbm_photo_camera_sub">Открыть камеру</string>
+    <string name="xmbm_photo_albums_title">Альбомы</string>
+    <string name="xmbm_photo_apps_title">Фотоприложения</string>
+    <string name="xmbm_photo_apps_sub">Открыть установленные фотоприложения</string>
+    <string name="xmbm_photo_add_title">Добавить фотобиблиотеку</string>
+    <string name="xmbm_photo_add_sub">Укажите корневую папку фото в настройках, чтобы начать</string>
+    <string name="xmbm_photo_add_apps_title">Добавить фотоприложения</string>
+    <string name="xmbm_photo_noalbums_title">Альбомов пока нет</string>
+    <string name="xmbm_photo_noalbums_sub">Укажите корневую папку в «Настройки → Фото»</string>
+    <string name="xmbm_photo_none_title">Фото не найдены</string>
+    <string name="xmbm_photo_none_sub">Добавьте фотобиблиотеку и просканируйте её</string>
+    <string name="xmbm_photo_noalbumphotos_title">В альбоме нет фото</string>
+    <string name="xmbm_photo_noalbumphotos_sub">Просканируйте его через меню ⚙ параметров или в «Настройки → Фото»</string>
+    <plurals name="xmbm_photo_albums_count">
+        <item quantity="one">%d альбом</item>
+        <item quantity="few">%d альбома</item>
+        <item quantity="many">%d альбомов</item>
+        <item quantity="other">%d альбома</item>
+    </plurals>
+
+    <!-- Music browser -->
+    <string name="xmbm_no_matches_title">Совпадений нет</string>
+    <string name="xmbm_no_matches_sub">Попробуйте другой запрос.</string>
+    <string name="xmbm_queue_all_music">Вся музыка</string>
+
+    <!-- Flyout titles and Social rows -->
+    <string name="xmbm_video_all">Все видео</string>
+    <string name="xmbm_photo_all">Все фото</string>
+    <string name="xmbm_missing">Пропавшие</string>
+    <string name="xmbm_social_friends">Друзья</string>
+    <string name="xmbm_social_voice">Голос</string>
+    <string name="xmbm_social_voice_settings">Настройки голоса</string>
+    <string name="xmbm_social_invites">Приглашения</string>
+    <string name="xmbm_social_invite_friends">Пригласить друзей</string>
+    <string name="xmbm_social_activity_settings">Настройки активности</string>
+    <string name="xmbm_social_discord_settings">Настройки Discord</string>
+    <string name="xmbm_android_settings_title">Настройки Android</string>
+    <string name="xmbm_android_settings_sub">Открывает настройки устройства</string>
+    <string name="xmbm_filter_chip">Фильтр: %1$s</string>
+    <string name="xmbm_filter_chip_term">Фильтр: «%1$s» · %2$s</string>
+
+    <!-- Empty rows -->
+    <string name="xmbm_empty_games_assigned_title">Игры не назначены.</string>
+    <string name="xmbm_empty_games_assigned_sub">Добавьте игры в эту категорию.</string>
+    <string name="xmbm_empty_videos_apps">Видеоприложения не найдены.</string>
+    <string name="xmbm_empty_network_apps">Браузеры не найдены.</string>
+    <string name="xmbm_empty_store_apps">Магазины приложений не найдены.</string>
+    <string name="xmbm_empty_music_apps">Музыкальные приложения не найдены.</string>
+    <string name="xmbm_empty_photo_apps">Фотоприложения не найдены.</string>
+    <string name="xmbm_empty_apps_assigned">Приложения не назначены.</string>
+    <string name="xmbm_empty_install_apps">Установите приложения, чтобы начать.</string>
+    <string name="xmbm_noconsoles_title">Консоли не настроены</string>
+    <string name="xmbm_noconsoles_sub">Откройте менеджер библиотеки, чтобы добавить карту памяти</string>
+    <string name="xmbm_gap_press_confirm">Подтвердите, чтобы открыть настройки и исправить.</string>
+    <string name="xmbm_nogames_imported_title">Игры ещё не импортированы</string>
+    <string name="xmbm_nogames_imported_sub">Откройте карту памяти, чтобы просканировать библиотеку.</string>
+    <string name="xmbm_emptycard_title">Эта своя карта памяти пуста</string>
+    <string name="xmbm_emptycard_sub">Добавляйте игры любой консоли через меню параметров (△).</string>
+    <string name="xmbm_emptyfav_title">Избранного пока нет</string>
+    <string name="xmbm_emptyfav_sub">Отметьте игру как избранную в её меню параметров (△).</string>
+    <string name="xmbm_emptymissing_title">Ничего не пропало</string>
+    <string name="xmbm_emptymissing_sub">При последнем сканировании найдены файлы всех игр.</string>
+    <string name="xmbm_findgames_sub">Выберите установленные приложения для этой библиотеки</string>
+    <string name="xmbm_empty_romdir">Папка ROM не настроена</string>
+    <string name="xmbm_empty_scan_console">Нажмите ▲, чтобы просканировать консоль</string>
+    <string name="xmbm_empty_folder_title">В этой папке игр не найдено</string>
+    <plurals name="xmbm_games_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+
+    <!-- Games search and Shiba Coins hub -->
+    <string name="xmbm_nomatch_title">Нет игр по запросу «%1$s»</string>
+    <string name="xmbm_nomatch_sub">Откройте меню фильтра, чтобы изменить или сбросить его.</string>
+    <string name="xmbm_ach_untracked">Неотслеживаемые</string>
+    <string name="xmbm_ach_connect_title">Подключить аккаунты</string>
+    <string name="xmbm_ach_connect_sub">Настройте Shiba Coins и автосопоставление библиотеки</string>
+    <string name="xmbm_ach_all_tracked">Все отслеживаемые игры</string>
+    <string name="xmbm_ach_matching_progress">Автосопоставление…  %1$d / %2$d</string>
+    <string name="xmbm_ach_syncing_progress">Синхронизация монет…  %1$d / %2$d</string>
+    <string name="xmbm_ach_summary">Монеты: %1$s / %2$s  •  отслеживается: %3$d  •  пройдено: %4$d</string>
+    <string name="xmbm_ach_level_badge">Ур. %1$d</string>
+    <plurals name="xmbm_ach_games_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+
+    <!-- Games menus -->
+    <string name="xmbm_icon_global_value">Общий: %1$s</string>
+    <string name="xmbm_icon_use_global">Общая настройка (%1$s)</string>
+    <string name="xmbm_ach_player_card">Карточка игрока</string>
+
+    <!-- Menu row while auto-matching is running. -->
+    <string name="xmbm_ach_auto_matching_busy">Автосопоставление…</string>
+    <string name="xmbm_ach_auto_matching">Автосопоставление</string>
+    <string name="xmbm_ach_updating_busy">Обновление…</string>
+    <string name="xmbm_ach_update_installed">Обновить установленные достижения</string>
+
+    <!-- Game and app menus -->
+    <string name="xmbm_move_card_to">Переместить свою карту в</string>
+    <string name="xmbm_move_to">Переместить в…</string>
+    <string name="xmbm_add_to">Добавить в…</string>
+    <string name="xmbm_move_game_to">Переместить игру в</string>
+    <string name="xmbm_add_game_to">Добавить игру в</string>
+    <string name="xmbm_picker_add_apps_named">Добавить приложения · %1$s</string>
+    <string name="xmbm_picker_add_android_apps">Добавить приложения Android</string>
+    <string name="xmbm_icon_use_default">По умолчанию (%1$s)</string>
+    <string name="xmbm_emu_use_platform_default">Эмулятор платформы по умолчанию</string>
+    <string name="xmbm_emu_choose">Выбор эмулятора</string>
+    <string name="xmbm_launchwith_imported_from">Импортировано из</string>
+
+    <!-- Label of one disc of a multi-disc game. -->
+    <string name="xmbm_disc_n">Диск %1$d</string>
+    <string name="xmbm_disc_unnumbered">Плейлист</string>
+    <string name="xmbm_card_new_title">Новая своя карта памяти</string>
+    <string name="xmbm_card_rename_title">Переименовать карту памяти</string>
+    <plurals name="xmbm_marked_add_to_card">
+        <item quantity="one">Добавить %d игру на карту</item>
+        <item quantity="few">Добавить %d игры на карту</item>
+        <item quantity="many">Добавить %d игр на карту</item>
+        <item quantity="other">Добавить %d игры на карту</item>
+    </plurals>
+
+    <!-- Game info dialogs -->
+    <string name="xmbm_info_package">Пакет: %1$s</string>
+    <string name="xmbm_info_no_location">Расположение файла не записано</string>
+    <string name="xmbm_info_export_failed">Ошибка экспорта — см. журнал.</string>
+    <string name="xmbm_goldberg_off">Установка достижений Goldberg выключена. Включите «Установка Goldberg и конвертация игр» в «Настройки ▸ Достижения ▸ Локальные Windows» и повторите.</string>
+    <string name="xmbm_goldberg_no_setup">Для этой игры не найдена настройка эмуляции Steam (steam_settings).</string>
+    <string name="xmbm_goldberg_has_schema">У %1$s уже есть данные достижений.</string>
+    <string name="xmbm_goldberg_installed">Достижения Goldberg установлены. Играйте через эмулятор, чтобы начать получать монеты.</string>
+    <string name="xmbm_goldberg_none">У этой игры нет достижений для установки.</string>
+    <string name="xmbm_goldberg_no_key">Сначала добавьте ключ Steam Web API в настройках достижений.</string>
+    <string name="xmbm_goldberg_failed">Не удалось установить достижения для этой игры.</string>
+
+    <!-- Scan and artwork notifications -->
+    <string name="xmbm_scan_running">Сканирование: %1$s…</string>
+    <string name="xmbm_scan_stop_note">Уже найденные игры сохранятся.</string>
+    <string name="xmbm_scan_stopped_title">%1$s: сканирование остановлено</string>
+    <string name="xmbm_scan_failed_title">%1$s: ошибка сканирования</string>
+    <string name="xmbm_scan_finished_title">%1$s: сканирование завершено</string>
+    <string name="xmbm_scan_skipped_title">%1$s: сканирование пропущено</string>
+    <string name="xmbm_pcscan_failed">Ошибка сканирования ПК</string>
+    <string name="xmbm_pcscan_no_new">Новых игр для ПК не найдено</string>
+    <string name="xmbm_scanall_running">Сканирование всех карт памяти…</string>
+    <string name="xmbm_scanall_stop_note">Уже просканированные карты сохранят новые игры.</string>
+    <string name="xmbm_scanall_nothing">Ни у одной карты памяти нет папки для сканирования</string>
+    <string name="xmbm_scanall_nothing_title">Нечего сканировать</string>
+    <string name="xmbm_scanall_stopped_title">Сканирование всех карт остановлено</string>
+    <string name="xmbm_scanall_failed_title">Ошибка сканирования всех карт</string>
+    <string name="xmbm_scanall_finished_title">Сканирование всех карт завершено</string>
+    <string name="xmbm_scrape_running">Загрузка недостающих обложек: %1$s</string>
+    <string name="xmbm_scrape_stop_note">Уже загруженные обложки сохранятся.</string>
+    <string name="xmbm_scrape_paused_title">Загрузка обложек приостановлена: %1$s</string>
+    <string name="xmbm_scrape_none_missing">У всех игр есть обложки</string>
+    <string name="xmbm_scrape_finished_title">Загрузка обложек завершена: %1$s</string>
+    <string name="xmbm_scrape_stopped_title">Загрузка обложек остановлена: %1$s</string>
+    <string name="xmbm_scrape_failed_title">Ошибка загрузки обложек: %1$s</string>
+    <string name="xmbm_meta_running">Обновление метаданных: %1$s</string>
+    <string name="xmbm_meta_stop_note">Уже обновлённые игры сохранят сведения.</string>
+    <string name="xmbm_meta_no_games_library">В библиотеке нет игр</string>
+    <string name="xmbm_meta_no_games_card">На этой карте нет игр</string>
+    <string name="xmbm_meta_finished_title">Обновление метаданных завершено: %1$s</string>
+    <string name="xmbm_meta_stopped_title">Обновление метаданных остановлено: %1$s</string>
+    <string name="xmbm_meta_failed">Ошибка обновления метаданных</string>
+    <string name="xmbm_meta_failed_title">Ошибка обновления метаданных: %1$s</string>
+    <plurals name="xmbm_scanall_stopped_after">
+        <item quantity="one">Остановлено после %1$d из %2$d карты</item>
+        <item quantity="few">Остановлено после %1$d из %2$d карт</item>
+        <item quantity="many">Остановлено после %1$d из %2$d карт</item>
+        <item quantity="other">Остановлено после %1$d из %2$d карты</item>
+    </plurals>
+    <plurals name="xmbm_scrape_updated">
+        <item quantity="one">Обновлено %1$d из %2$d игры</item>
+        <item quantity="few">Обновлено %1$d из %2$d игр</item>
+        <item quantity="many">Обновлено %1$d из %2$d игр</item>
+        <item quantity="other">Обновлено %1$d из %2$d игры</item>
+    </plurals>
+    <plurals name="xmbm_stopped_after_games">
+        <item quantity="one">Остановлено после %d игры</item>
+        <item quantity="few">Остановлено после %d игр</item>
+        <item quantity="many">Остановлено после %d игр</item>
+        <item quantity="other">Остановлено после %d игры</item>
+    </plurals>
+    <string name="xmbm_shortcut_request_title">Запрос ярлыка</string>
+    <string name="xmbm_shortcut_request_handled">Этот запрос уже обработан.</string>
+    <string name="xmbm_notifications_title">Уведомления</string>
+
+    <!-- Discord Social rows -->
+    <string name="xmbm_social_signin_title">Войти через Discord</string>
+    <string name="xmbm_social_signin_sub">Отсканируйте QR-код телефоном</string>
+    <string name="xmbm_social_connected">Подключено к Discord</string>
+
+    <!-- Discord presence / connection state. -->
+    <string name="xmbm_social_online">В сети</string>
+
+    <!-- Discord presence / connection state. -->
+    <string name="xmbm_social_offline">Не в сети</string>
+    <string name="xmbm_social_connecting">Подключение…</string>
+
+    <!-- Discord presence state. -->
+    <string name="xmbm_social_idle">Неактивен</string>
+
+    <!-- Discord presence state. -->
+    <string name="xmbm_social_dnd">Не беспокоить</string>
+
+    <!-- Discord presence state. -->
+    <string name="xmbm_social_streaming">Стримит</string>
+    <string name="xmbm_social_friends_unknown">Посмотрите, кто в сети</string>
+    <string name="xmbm_social_friends_none_online">Нет друзей в сети</string>
+    <string name="xmbm_social_voice_sub">Общайтесь в общей комнате</string>
+    <string name="xmbm_social_activity_sub">Показывайте, во что играете</string>
+    <string name="xmbm_social_discord_sub">Аккаунт и выход</string>
+    <string name="xmbm_social_share_title">Делиться активностью</string>
+    <string name="xmbm_social_share_on">Вкл. · друзья видят, что вы в Playfield Portal</string>
+    <string name="xmbm_social_share_off">Выкл. · друзьям ничего не показывается</string>
+    <string name="xmbm_social_generic_title">Обезличенный режим</string>
+    <string name="xmbm_social_generic_on">Вкл. · показывается «игра» вместо названия приложения</string>
+    <string name="xmbm_social_generic_off">Выкл. · показывается название приложения</string>
+    <string name="xmbm_social_signout_title">Выйти</string>
+    <string name="xmbm_social_signout_named">Отключить %1$s</string>
+    <string name="xmbm_social_signout_sub">Отключить этот аккаунт Discord</string>
+    <string name="xmbm_social_you_offline">Вы не в сети</string>
+    <string name="xmbm_social_friends_reconnect">Переподключитесь, чтобы увидеть друзей</string>
+    <string name="xmbm_social_no_friends">Нет друзей для показа</string>
+    <string name="xmbm_social_in_lobby">В голосовом лобби · Попроситься</string>
+    <string name="xmbm_social_playing">Играет в %1$s</string>
+    <string name="xmbm_social_voice_reconnect">Переподключитесь, чтобы использовать голос</string>
+    <string name="xmbm_social_invites_none">Нет приглашений</string>
+    <string name="xmbm_social_create_lobby">Создать лобби</string>
+    <string name="xmbm_social_create_lobby_sub">Создайте закрытую комнату и пригласите друзей</string>
+    <string name="xmbm_social_someone">Кто-то</string>
+    <string name="xmbm_social_participant_you">%1$s (вы)</string>
+    <string name="xmbm_social_muted">Без звука</string>
+    <string name="xmbm_social_speaking">Говорит</string>
+    <string name="xmbm_social_waiting_others">Ожидание других участников</string>
+    <string name="xmbm_social_invite_friends_sub">Позовите друзей в это лобби</string>
+    <string name="xmbm_social_unmute">Включить звук</string>
+    <string name="xmbm_social_mute">Выключить звук</string>
+    <string name="xmbm_social_mic_off">Ваш микрофон выключен</string>
+    <string name="xmbm_social_mic_on">Ваш микрофон включён</string>
+    <string name="xmbm_social_leave_voice">Покинуть голос</string>
+    <string name="xmbm_social_leave_voice_sub">Отключиться от комнаты</string>
+    <string name="xmbm_social_no_invites">Нет приглашений</string>
+    <string name="xmbm_social_no_invites_sub">Здесь появятся приглашения и запросы на вход</string>
+    <string name="xmbm_social_wants_to_join">%1$s хочет присоединиться</string>
+    <string name="xmbm_social_join_lobby">Войти в лобби %1$s</string>
+    <string name="xmbm_social_select_approve">Выберите, чтобы одобрить</string>
+    <string name="xmbm_social_select_join">Выберите, чтобы войти</string>
+    <string name="xmbm_social_invite_offline">Переподключитесь, чтобы приглашать друзей</string>
+    <string name="xmbm_social_invited">Приглашён ✓</string>
+    <string name="xmbm_social_already_lobby">Уже в лобби</string>
+    <string name="xmbm_social_select_invite">Выберите, чтобы пригласить</string>
+    <string name="xmbm_social_voice_settings_sub">Чувствительность микрофона, шумоподавление, громкость</string>
+    <string name="xmbm_social_vs_toggle_on">Вкл. · %1$s</string>
+    <string name="xmbm_social_vs_sens_title">Чувствительность микрофона</string>
+    <string name="xmbm_social_vs_sens_value">%1$s · ниже — меньше щелчков</string>
+    <string name="xmbm_social_vs_noise_title">Шумоподавление</string>
+    <string name="xmbm_social_vs_noise_on">Krisp убирает фон и щелчки кнопок</string>
+    <string name="xmbm_social_vs_echo_title">Эхоподавление</string>
+    <string name="xmbm_social_vs_echo_on">убирает обратную связь динамика</string>
+    <string name="xmbm_social_vs_agc_title">Автоусиление</string>
+    <string name="xmbm_social_vs_agc_on">выравнивает громкость микрофона</string>
+    <string name="xmbm_social_vs_input_title">Громкость микрофона</string>
+    <string name="xmbm_social_vs_balance_title">Баланс звука</string>
+    <string name="xmbm_social_vs_balance_bar">Игра ◀%1$s▶ Голос</string>
+    <string name="xmbm_social_vs_ptt_title">Рация (push-to-talk)</string>
+    <string name="xmbm_social_vs_ptt_on">удерживайте, чтобы говорить, — иначе микрофон закрыт</string>
+    <string name="xmbm_social_vs_overlay_title">Кнопка рации поверх</string>
+    <string name="xmbm_social_vs_overlay_needs">Выкл. · нужно разрешение «Поверх других приложений»</string>
+    <string name="xmbm_social_vs_overlay_on">Вкл. · плавающая кнопка рации</string>
+    <string name="xmbm_social_vs_overlay_hidden">Выкл. · скрыта (используйте кнопку контроллера)</string>
+
+    <!-- PTT = push-to-talk. -->
+    <string name="xmbm_social_vs_pttbtn_title">Кнопка PTT</string>
+    <string name="xmbm_social_vs_pttbtn_press">Нажмите кнопку контроллера…</string>
+    <string name="xmbm_social_vs_pttbtn_set">%1$s  ·  удерживайте, чтобы говорить, в Playfield Portal</string>
+    <string name="xmbm_social_vs_pttbtn_unset">Не задана · выберите, чтобы назначить кнопку контроллера</string>
+    <string name="xmbm_social_hint_cancel">отмена</string>
+    <string name="xmbm_ptt_not_set">Не задана</string>
+    <string name="xmbm_ptt_l3">L3 (нажатие левого стика)</string>
+    <string name="xmbm_ptt_r3">R3 (нажатие правого стика)</string>
+    <string name="xmbm_ptt_select">Select</string>
+    <string name="xmbm_ptt_start">Start</string>
+    <plurals name="xmbm_social_friends_online">
+        <item quantity="one">В сети: %d</item>
+        <item quantity="few">В сети: %d</item>
+        <item quantity="many">В сети: %d</item>
+        <item quantity="other">В сети: %d</item>
+    </plurals>
+    <plurals name="xmbm_social_invites_waiting">
+        <item quantity="one">Ожидает: %d</item>
+        <item quantity="few">Ожидают: %d</item>
+        <item quantity="many">Ожидают: %d</item>
+        <item quantity="other">Ожидают: %d</item>
+    </plurals>
+
+    <!-- Launch, shortcut and theme messages -->
+    <string name="xmbm_missing_reason">Файл не найден при последнем сканировании</string>
+    <string name="xmbm_social_reconnect">Переподключиться</string>
+    <string name="xmbm_launch_failed">Не удалось запустить: %1$s</string>
+    <string name="xmbm_launch_could_not">Не удалось запустить %1$s</string>
+    <string name="xmbm_launch_no_emulator">Для %1$s не настроен эмулятор. Назначьте его в «Настройки ▸ Эмуляторы ▸ Эмуляторы систем по умолчанию».</string>
+    <string name="xmbm_shortcut_fav_added">Добавлено в избранное</string>
+    <string name="xmbm_shortcut_fav_removed">Удалено из избранного</string>
+    <string name="xmbm_shortcut_fav_failed">Не удалось обновить избранное: %1$s</string>
+    <string name="xmbm_shortcut_create_failed">Не удалось создать ярлык: %1$s</string>
+    <string name="xmbm_scheme_original_sub">Меняется каждый месяц</string>
+
+    <!-- Description of a fixed colour scheme. -->
+    <string name="xmbm_scheme_fixed_sub">Фиксированный цвет</string>
+    <string name="xmbm_scheme_custom">Свой</string>
+    <string name="xmbm_scheme_custom_sub">Точная настройка любого цвета ползунками</string>
+    <string name="xmbm_theme_current">Текущая тема</string>
+    <string name="xmbm_theme_save_title">Сохранить оформление как тему</string>
+    <string name="xmbm_theme_save_failed">Не удалось сохранить тему</string>
+    <string name="xmbm_theme_saved">Тема сохранена — %1$s</string>
+    <string name="xmbm_gameboot_preview_title">Просмотр</string>
+    <string name="xmbm_drawer_all_title">Все приложения</string>
+    <string name="xmbm_drawer_all_sub">Все установленные приложения</string>
+    <string name="xmbm_drawer_games_title">Игры</string>
+    <string name="xmbm_drawer_games_sub">Приложения из категории игр</string>
+
+    <!-- App Drawer filter. -->
+    <string name="xmbm_drawer_emulators_title">Эмуляторы</string>
+    <string name="xmbm_drawer_emulators_sub">RetroArch, PPSSPP, Dolphin и другие</string>
+    <string name="xmbm_drawer_recent_title">Недавние</string>
+    <string name="xmbm_drawer_recent_sub">Недавно использованные приложения</string>
+    <string name="xmbm_shortcut_unsafe">Перехваченный ярлык небезопасно запускать</string>
+</resources>

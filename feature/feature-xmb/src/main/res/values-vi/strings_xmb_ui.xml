@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Music playback notification -->
+    <string name="xmbu_music_channel_name">Phát nhạc</string>
+    <string name="xmbu_music_channel_description">Điều khiển bài đang phát</string>
+    <string name="xmbu_music_notif_previous">Trước</string>
+    <string name="xmbu_music_notif_play_pause">Phát/Tạm dừng</string>
+    <string name="xmbu_music_notif_next">Tiếp</string>
+    <string name="xmbu_music_notif_stop">Dừng</string>
+
+    <string name="xmbu_ptt_hold">"🎙  GIỮ"</string>
+
+    <!-- Tray notification when a custom boot / Game Boot video cannot play -->
+    <string name="xmbu_clipfail_boot_label">Trình tự khởi động</string>
+    <string name="xmbu_clipfail_gameboot_label">Game Boot</string>
+    <string name="xmbu_clipfail_boot_message">Video khởi động của bạn không phát được trên thiết bị này, nên trình tự có sẵn đã được phát thay thế. Hãy xuất lại chủ đề từ Theme Studio (nó sẽ chuyển đổi video), hoặc chọn clip khác trong cài đặt Hiển thị.</string>
+    <string name="xmbu_clipfail_gameboot_message">Video Game Boot của bạn không phát được trên thiết bị này, nên trình tự có sẵn đã được phát thay thế. Hãy xuất lại chủ đề từ Theme Studio (nó sẽ chuyển đổi video), hoặc chọn clip khác trong cài đặt Hiển thị.</string>
+
+    <string name="xmbu_common_options">Tùy chọn</string>
+    <string name="xmbu_common_back">Quay lại</string>
+    <string name="xmbu_common_cancel">Hủy</string>
+    <string name="xmbu_common_done">Xong</string>
+    <string name="xmbu_common_close">Đóng</string>
+    <string name="xmbu_common_reset">Đặt lại</string>
+    <string name="xmbu_common_remove">Xóa</string>
+    <string name="xmbu_common_open">Mở</string>
+    <string name="xmbu_common_toggle">Bật/tắt</string>
+    <string name="xmbu_common_search">Tìm kiếm</string>
+    <string name="xmbu_common_artwork">Ảnh minh họa</string>
+    <string name="xmbu_common_edit_title">Sửa tiêu đề</string>
+    <string name="xmbu_common_add_to_card">Thêm vào thẻ</string>
+    <string name="xmbu_common_on">Bật</string>
+    <string name="xmbu_common_off">Tắt</string>
+    <string name="xmbu_common_move">Di chuyển</string>
+    <string name="xmbu_common_navigate">Điều hướng</string>
+    <string name="xmbu_common_play">Phát</string>
+    <string name="xmbu_common_pause">Tạm dừng</string>
+    <string name="xmbu_common_prev_next">Trước / Tiếp</string>
+    <string name="xmbu_common_seek">Tua</string>
+    <string name="xmbu_common_confirm">Xác nhận</string>
+    <string name="xmbu_common_close_search">Đóng tìm kiếm</string>
+    <string name="xmbu_common_ellipsis_search">Tìm kiếm…</string>
+
+    <!-- App Detail: Options menu rows -->
+    <string name="xmbu_app_opt_favorite">Yêu thích</string>
+    <string name="xmbu_app_opt_app_info">Thông tin ứng dụng</string>
+    <string name="xmbu_app_opt_hide">Ẩn ở mọi nơi</string>
+    <string name="xmbu_app_opt_change_icon">Đổi biểu tượng</string>
+    <string name="xmbu_app_opt_change_background">Đổi hình nền</string>
+    <string name="xmbu_app_opt_reset_artwork">Đặt lại mọi ảnh minh họa</string>
+
+    <!-- App Detail: artwork kind names, used inside the messages below -->
+    <string name="xmbu_app_art_type_icon">Biểu tượng trò chơi</string>
+    <string name="xmbu_app_art_type_hero">Banner hero</string>
+    <string name="xmbu_app_art_type_background">Hình nền</string>
+
+    <string name="xmbu_app_art_no_api_key">Chưa cấu hình khóa API SteamGridDB — hãy thêm trong Cài đặt ảnh minh họa</string>
+    <string name="xmbu_app_art_search_failed">Tìm kiếm thất bại: %1$s</string>
+    <string name="xmbu_app_art_no_results">Không có kết quả cho \"%1$s\" trên SteamGridDB</string>
+    <string name="xmbu_app_art_load_failed">Không tải được ảnh minh họa: %1$s</string>
+    <string name="xmbu_app_art_none_found">Không tìm thấy %1$s nào trên SteamGridDB</string>
+    <string name="xmbu_app_art_download_failed">Không thể tải xuống %1$s</string>
+    <string name="xmbu_app_art_import_failed">Không thể nhập %1$s</string>
+    <string name="xmbu_app_art_updated">Đã cập nhật %1$s</string>
+    <string name="xmbu_app_art_reset">Đã đặt lại %1$s</string>
+    <string name="xmbu_app_art_all_reset">Đã đặt lại mọi ảnh minh họa</string>
+    <string name="xmbu_app_no_launchable_package">Ứng dụng này không có gói nào để khởi động</string>
+    <string name="xmbu_common_launch">Khởi động</string>
+
+    <!-- App Detail screen -->
+    <string name="xmbu_app_breadcrumb_apps">Ứng dụng</string>
+    <string name="xmbu_app_breadcrumb_android_app">Ứng dụng Android</string>
+    <string name="xmbu_app_edit_artwork_description">Sửa ảnh minh họa</string>
+    <string name="xmbu_app_no_icon">Không có biểu tượng</string>
+    <string name="xmbu_app_art_change">Đổi %1$s</string>
+    <string name="xmbu_app_art_saving">Đang lưu…</string>
+    <string name="xmbu_app_art_pick_local">Chọn tệp trên máy</string>
+    <string name="xmbu_app_art_restore_icon">Khôi phục biểu tượng gốc</string>
+    <string name="xmbu_app_art_remove_custom">Xóa ảnh tùy chỉnh</string>
+    <string name="xmbu_app_art_picker_hint">"◄ ►  Duyệt   A  Chọn   B  Quay lại"</string>
+    <string name="xmbu_app_reset_title">Đặt lại mọi ảnh minh họa?</string>
+    <string name="xmbu_app_reset_message">Biểu tượng và hình nền tùy chỉnh của %1$s sẽ bị xóa và biểu tượng gốc của ứng dụng sẽ trở lại.</string>
+
+    <!-- Add to Card (collection) picker panel -->
+    <string name="xmbu_collection_picker_hint">"Lên/Xuống  Điều hướng  •  Select  Bật/tắt  •  B  Đóng"</string>
+    <string name="xmbu_collection_picker_new_row">"＋  Memory Card tùy chỉnh mới"</string>
+    <string name="xmbu_collection_picker_empty">Chưa có Memory Card tùy chỉnh nào — hãy tạo một thẻ để bắt đầu.</string>
+    <string name="xmbu_collection_new_title">Memory Card tùy chỉnh mới</string>
+    <string name="xmbu_collection_new_placeholder">vd: RPG, Đang chơi</string>
+    <string name="xmbu_collection_new_create">Tạo</string>
+    <string name="xmbu_common_sort">Sắp xếp</string>
+    <string name="xmbu_common_notifications">Thông báo</string>
+
+    <!-- App picker (Add Apps / Remove Apps) -->
+    <string name="xmbu_app_picker_empty">Không có ứng dụng đã cài</string>
+    <string name="xmbu_app_picker_no_match">Không có ứng dụng đã cài nào khớp với \"%1$s\"</string>
+    <string name="xmbu_app_picker_choose">Chọn</string>
+
+    <!-- Arrange mode bars (moving a card or marking games) -->
+    <string name="xmbu_arrange_place">Đặt</string>
+    <string name="xmbu_arrange_mark">Đánh dấu</string>
+    <string name="xmbu_arrange_move_left">Sang trái</string>
+    <string name="xmbu_arrange_move_right">Sang phải</string>
+    <string name="xmbu_arrange_move_up">Lên trên</string>
+    <string name="xmbu_arrange_move_down">Xuống dưới</string>
+
+    <!-- Color Scheme picker overlay -->
+    <string name="xmbu_color_scheme_title">Bảng màu</string>
+    <string name="xmbu_color_scheme_tint">Sắc</string>
+    <string name="xmbu_color_scheme_depth">Độ đậm</string>
+    <string name="xmbu_color_scheme_contrast_top">"%1$s Chữ ở trên  %2$s"</string>
+    <string name="xmbu_color_scheme_contrast_bottom">"%1$s Chữ ở dưới  %2$s"</string>
+    <string name="xmbu_color_scheme_custom_title">Màu tùy chỉnh</string>
+
+    <!-- Customize XMB Icons overlay -->
+    <string name="xmbu_icons_title">Tùy chỉnh biểu tượng XMB</string>
+    <string name="xmbu_icons_source_user">Bạn chọn</string>
+    <string name="xmbu_icons_source_theme">Từ chủ đề</string>
+    <string name="xmbu_icons_source_default">Mặc định</string>
+    <string name="xmbu_icons_source_with_column">%1$s · cột %2$s</string>
+    <string name="xmbu_icons_column">Cột</string>
+    <string name="xmbu_icons_tab">Tab</string>
+    <string name="xmbu_icons_pick">Chọn</string>
+    <string name="xmbu_icons_reset_all">Đặt lại tất cả</string>
+    <string name="xmbu_icons_save_as_theme">Lưu thành chủ đề</string>
+    <string name="xmbu_icons_save_as_theme_button">Lưu thành chủ đề…</string>
+
+    <!-- Search box -->
+    <string name="xmbu_game_search_placeholder">Tìm trò chơi…</string>
+
+    <!-- Game picker (Add Games to a category) -->
+    <string name="xmbu_picker_in_this_category">Trong danh mục này</string>
+    <string name="xmbu_picker_in_category">Trong %1$s</string>
+    <string name="xmbu_picker_custom_cards">Memory Card tùy chỉnh</string>
+    <string name="xmbu_picker_no_changes">Không có thay đổi</string>
+    <string name="xmbu_picker_menu_view">Chế độ xem</string>
+    <string name="xmbu_picker_menu_select_all">Chọn tất cả</string>
+    <string name="xmbu_picker_open_toggle">Mở / Bật/tắt</string>
+    <string name="xmbu_picker_no_games">Thư viện của bạn chưa có trò chơi nào</string>
+    <string name="xmbu_picker_add_games">Thêm trò chơi</string>
+    <string name="xmbu_picker_view_mode">Xem: %1$s</string>
+    <string name="xmbu_picker_removing_prefix">"Đang xóa · "</string>
+    <string name="xmbu_picker_search_placeholder">Tìm trong kệ này…</string>
+    <string name="xmbu_picker_shelves">Các kệ</string>
+    <string name="xmbu_picker_shelf">Kệ</string>
+
+    <!-- Music browser -->
+    <string name="xmbu_music_breadcrumb_playlists">"Nhạc  ›  Danh sách phát"</string>
+    <string name="xmbu_music_breadcrumb_music">Nhạc</string>
+    <string name="xmbu_music_breadcrumb_all_tracks">Tất cả bài hát</string>
+    <string name="xmbu_music_resume">Tiếp tục: %1$s</string>
+
+    <!-- Music player -->
+    <string name="xmbu_music_now_playing">Đang phát</string>
+    <string name="xmbu_music_nothing_playing">Không có gì đang phát</string>
+    <string name="xmbu_music_visualizer">Hiệu ứng hình ảnh</string>
+
+    <string name="xmbu_media_previous_track">Bài trước</string>
+    <string name="xmbu_media_next_track">Bài tiếp</string>
+    <string name="xmbu_media_previous_video">Video trước</string>
+    <string name="xmbu_media_next_video">Video tiếp</string>
+    <string name="xmbu_media_back_10">Lùi 10 giây</string>
+    <string name="xmbu_media_forward_10">Tới 10 giây</string>
+    <string name="xmbu_media_playing">Đang phát</string>
+    <string name="xmbu_media_paused">Đã tạm dừng</string>
+
+    <!-- Music track picker (add songs to a playlist) -->
+    <string name="xmbu_track_picker_title">Thêm vào %1$s</string>
+    <string name="xmbu_track_picker_add">Thêm</string>
+    <string name="xmbu_track_picker_empty">Không còn bài nào để thêm — mọi bài đã quét đều có trong danh sách phát này.</string>
+
+    <!-- Notification panel and notification detail sheets -->
+    <string name="xmbu_notif_options_description">Tùy chọn thông báo</string>
+    <string name="xmbu_notif_task_stopping">%1$s — Đang dừng…</string>
+    <string name="xmbu_notif_task_detail">%1$s — %2$s</string>
+    <string name="xmbu_notif_kind_scan">Quét</string>
+    <string name="xmbu_notif_kind_metadata">Siêu dữ liệu</string>
+    <string name="xmbu_notif_kind_achievements">Thành tựu</string>
+    <string name="xmbu_notif_kind_system">Hệ thống</string>
+    <string name="xmbu_notif_kind_download">Tải xuống</string>
+    <string name="xmbu_notif_kind_feed">Bảng tin</string>
+    <string name="xmbu_notif_action_go_to_game">Đến trò chơi</string>
+    <string name="xmbu_notif_action_open_card">Mở Memory Card</string>
+    <string name="xmbu_notif_action_open_settings">Mở Cài đặt</string>
+    <string name="xmbu_notif_action_open_category">Mở danh mục</string>
+    <string name="xmbu_notif_action_review">Xem lại</string>
+    <string name="xmbu_time_just_now">Vừa xong</string>
+
+    <!-- XMB shell: share sheet title when sharing a saved icon theme -->
+    <string name="xmbu_share_theme">Chia sẻ chủ đề</string>
+    <string name="xmbu_move_position">Đang di chuyển · %1$d / %2$d</string>
+    <string name="xmbu_common_later">Để sau</string>
+
+    <!-- XMB shell dialogs -->
+    <string name="xmbu_shell_rename_shortcut">Đổi tên lối tắt</string>
+    <string name="xmbu_shell_playlist_name">Tên danh sách phát</string>
+    <string name="xmbu_shell_theme_name">Tên chủ đề</string>
+    <string name="xmbu_shell_source_theme">Từ chủ đề đang áp dụng</string>
+    <string name="xmbu_shell_source_device">Từ thiết bị của bạn</string>
+    <string name="xmbu_shell_source_device_detail">PNG hoặc GIF</string>
+    <string name="xmbu_shell_continue">Tiếp tục</string>
+    <string name="xmbu_shell_shortcut_title">Thêm lối tắt?</string>
+    <string name="xmbu_shell_shortcut_message">Một ứng dụng yêu cầu thêm lối tắt \"%1$s\" mở %2$s. Chỉ thêm nếu chính bạn vừa tạo lối tắt này.</string>
+    <string name="xmbu_shell_shortcut_add">Thêm</string>
+    <string name="xmbu_shell_shortcut_ignore">Bỏ qua</string>
+    <string name="xmbu_shell_windows_title">Hoàn tất Thư viện Windows</string>
+    <string name="xmbu_shell_windows_message">Một trò chơi PC đã được thêm, nhưng thư viện Trò chơi Windows chưa có thư mục. Hãy thiết lập trong Trình quản lý thư viện để có thể quét thư mục trò chơi và thành tựu.</string>
+    <string name="xmbu_shell_windows_set_up">Thiết lập</string>
+    <string name="xmbu_shell_import_position">%1$d / %2$d</string>
+    <string name="xmbu_shell_open_playlist">Mở danh sách phát</string>
+    <string name="xmbu_shell_stop">Dừng</string>
+    <string name="xmbu_shell_keep_running">Tiếp tục chạy</string>
+
+    <!-- Launch recovery dialog (a game failed to start) -->
+    <string name="xmbu_recovery_retry">Thử lại</string>
+    <string name="xmbu_recovery_change_emulator">Đổi trình giả lập</string>
+    <string name="xmbu_recovery_change_default">Đổi mặc định theo hệ máy</string>
+    <string name="xmbu_recovery_copy_diagnostics">Sao chép chẩn đoán</string>
+    <string name="xmbu_recovery_title">Không thể khởi động %1$s</string>
+    <string name="xmbu_recovery_select">Chọn</string>
+    <string name="xmbu_recovery_dismiss">Bỏ qua</string>
+
+    <string name="xmbu_artfolder_unavailable_title">Thư mục ảnh minh họa không khả dụng</string>
+    <string name="xmbu_artfolder_unavailable_message">PFP không truy cập được %1$s. Việc tải ảnh mới tạm dừng cho đến khi bạn liên kết lại. Ảnh bạn đã có vẫn hiển thị.</string>
+    <string name="xmbu_artfolder_relink">Liên kết lại thư mục</string>
+    <string name="xmbu_artfolder_not_now">Để sau</string>
+    <string name="xmbu_artfolder_move_title">Chuyển ảnh minh họa sang thư mục của bạn</string>
+    <string name="xmbu_artfolder_choose">Chọn thư mục ảnh minh họa</string>
+    <string name="xmbu_artfolder_choose_title">Chọn thư mục ảnh minh họa</string>
+    <string name="xmbu_artfolder_choose_message">Ảnh minh họa mới được lưu vào thư mục của bạn. Hãy chọn một thư mục và PFP sẽ lưu ảnh ở đó.</string>
+    <string name="xmbu_artfolder_foreign_title">Thư mục này chứa thư viện ảnh minh họa khác</string>
+    <string name="xmbu_artfolder_use_library">Dùng thư viện này</string>
+    <string name="xmbu_artfolder_choose_another">Chọn thư mục khác</string>
+
+    <!-- Status strip: spoken descriptions of the icons -->
+    <string name="xmbu_status_controller_connected">Đã kết nối tay cầm</string>
+    <string name="xmbu_status_battery">Pin</string>
+    <string name="xmbu_status_battery_charging">Pin, đang sạc</string>
+    <string name="xmbu_status_battery_plugged">Pin, đã cắm nguồn</string>
+
+    <!-- Adjust XMB Layout overlay -->
+    <string name="xmbu_layout_title">Điều chỉnh bố cục XMB</string>
+    <string name="xmbu_layout_readout">"Tỷ lệ %1$sx    Ngang %2$d%%    Dọc %3$d%%"</string>
+    <string name="xmbu_layout_scale">Tỷ lệ</string>
+    <string name="xmbu_layout_horizontal">Ngang</string>
+    <string name="xmbu_layout_vertical">Dọc</string>
+    <string name="xmbu_layout_sliders">Thanh trượt</string>
+    <string name="xmbu_layout_hide_sliders">Ẩn thanh trượt</string>
+    <string name="xmbu_layout_save">Lưu</string>
+
+    <!-- Theme icon picker -->
+    <string name="xmbu_icon_grid_use">Dùng biểu tượng này</string>
+    <string name="xmbu_status_cellular_signal">Tín hiệu di động</string>
+
+    <string name="xmbu_notif_header_running">ĐANG CHẠY</string>
+    <string name="xmbu_notif_header_earlier">TRƯỚC ĐÓ</string>
+    <string name="xmbu_notif_empty">Không có thông báo</string>
+
+    <!-- Video player -->
+    <!-- Screen modes: how the picture fills the screen (fit with bars, crop to zoom, stretch to fill) -->
+    <string name="xmbu_video_fit">Vừa khít</string>
+    <string name="xmbu_video_zoom">Phóng to</string>
+    <string name="xmbu_video_fill">Lấp đầy</string>
+    <string name="xmbu_video_speed">Tốc độ phát</string>
+    <string name="xmbu_video_subtitles">Phụ đề</string>
+    <string name="xmbu_video_audio_track">Rãnh âm thanh</string>
+    <string name="xmbu_video_screen_mode">Chế độ màn hình</string>
+    <string name="xmbu_video_none">Không</string>
+    <string name="xmbu_video_default">Mặc định</string>
+    <string name="xmbu_video_track">Rãnh</string>
+    <string name="xmbu_video_err_not_found">Không tìm thấy video.</string>
+    <string name="xmbu_video_err_permission">Bị từ chối quyền với tệp này.</string>
+    <string name="xmbu_video_err_decode">Không thể giải mã video này trên thiết bị này.</string>
+    <string name="xmbu_video_err_unable">Không thể phát video này.</string>
+    <string name="xmbu_video_go_back">Quay lại</string>
+    <string name="xmbu_video_status">%1$s× · %2$s</string>
+
+    <!-- Photo viewer -->
+    <!-- Options menu rows -->
+    <string name="xmbu_photo_rotate_left">Xoay trái</string>
+    <string name="xmbu_photo_rotate_right">Xoay phải</string>
+    <string name="xmbu_photo_zoom_in">Phóng to</string>
+    <string name="xmbu_photo_zoom_out">Thu nhỏ</string>
+    <string name="xmbu_photo_reset_zoom">Đặt lại thu phóng</string>
+    <string name="xmbu_photo_set_wallpaper">Đặt làm hình nền launcher</string>
+    <string name="xmbu_photo_set_lock_screen">Đặt làm màn hình khóa</string>
+    <string name="xmbu_photo_view_info">Xem thông tin</string>
+    <string name="xmbu_photo_show_location">Hiện vị trí tệp</string>
+    <string name="xmbu_photo_remove">Xóa khỏi thư viện</string>
+    <string name="xmbu_photo_group_view">Xem</string>
+    <string name="xmbu_photo_group_manage">Quản lý</string>
+    <string name="xmbu_photo_in_folder">Trong: %1$s</string>
+    <string name="xmbu_photo_wallpaper_unreadable">Không thể đặt hình nền — không đọc được hình ảnh</string>
+    <string name="xmbu_photo_wallpaper_applied">Đã áp dụng hình nền</string>
+    <string name="xmbu_photo_unreadable">Không thể đọc ảnh đó</string>
+    <string name="xmbu_photo_lock_screen_set">Đã đặt màn hình khóa</string>
+    <string name="xmbu_photo_hide_controls">Ẩn điều khiển</string>
+    <string name="xmbu_photo_show_controls">Hiện điều khiển</string>
+    <string name="xmbu_photo_wallpaper_title">Đặt làm hình nền launcher?</string>
+    <string name="xmbu_photo_wallpaper_note">Hình này sẽ thay thế nền sóng XMB.</string>
+    <string name="xmbu_photo_apply">Áp dụng</string>
+    <string name="xmbu_photo_applying">Đang áp dụng…</string>
+    <string name="xmbu_photo_remove_message">\"%1$s\" sẽ bị xóa khỏi thư viện này. Ảnh trên bộ nhớ không bị xóa.</string>
+    <string name="xmbu_photo_lock_message">\"%1$s\" sẽ trở thành hình màn hình khóa của thiết bị, được cắt cho vừa màn hình.</string>
+    <string name="xmbu_photo_set">Đặt</string>
+    <string name="xmbu_photo_info_resolution">Độ phân giải: %1$s</string>
+    <string name="xmbu_photo_info_taken">Ngày chụp: %1$s</string>
+    <string name="xmbu_photo_info_modified">Ngày sửa: %1$s</string>
+    <string name="xmbu_photo_info_size">Kích thước: %1$s</string>
+    <string name="xmbu_photo_info_type">Loại: %1$s</string>
+    <string name="xmbu_photo_info_location">Vị trí: %1$s</string>
+    <string name="xmbu_photo_info_file">Tệp: %1$s</string>
+
+    <!-- Music visualizer picker -->
+    <string name="xmbu_visualizer_portal">Cổng</string>
+    <string name="xmbu_visualizer_ripple">Gợn sóng</string>
+    <string name="xmbu_visualizer_off">Tắt</string>
+    <string name="xmbu_visualizer_off_tile">TẮT</string>
+
+    <!-- App picker header: how many apps are ticked -->
+    <plurals name="xmbu_app_picker_selected">
+        <item quantity="other">Đã chọn %d</item>
+    </plurals>
+
+    <!-- Arrange mode: how many games are marked -->
+    <plurals name="xmbu_arrange_marked">
+        <item quantity="other">Đã đánh dấu %d</item>
+    </plurals>
+
+    <!-- Game picker header: pending changes -->
+    <plurals name="xmbu_picker_to_add">
+        <item quantity="other">%d để thêm</item>
+    </plurals>
+    <plurals name="xmbu_picker_to_remove">
+        <item quantity="other">%d để xóa</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_games">
+        <item quantity="other">%1$d trò chơi · %2$d đã chọn</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_cards">
+        <item quantity="other">%d thẻ · chọn một thẻ để chuyển nó vào đây</item>
+    </plurals>
+    <plurals name="xmbu_picker_card_games">
+        <item quantity="other">%d trò chơi</item>
+    </plurals>
+
+    <!-- Music track picker -->
+    <plurals name="xmbu_track_picker_add_count">
+        <item quantity="other">Thêm %d</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_selected">
+        <item quantity="other">Đã chọn %d</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_add_tracks">
+        <item quantity="other">Thêm %d bài</item>
+    </plurals>
+
+    <!-- Notification age -->
+    <plurals name="xmbu_time_minutes_ago">
+        <item quantity="other">%d phút trước</item>
+    </plurals>
+    <plurals name="xmbu_time_hours_ago">
+        <item quantity="other">%d giờ trước</item>
+    </plurals>
+
+    <plurals name="xmbu_artfolder_move_message">
+        <item quantity="other">%d hình ảnh đang được lưu bên trong ứng dụng và sẽ mất nếu bạn gỡ cài đặt. Hãy chọn một thư mục và PFP sẽ chuyển chúng vào đó.</item>
+    </plurals>
+    <plurals name="xmbu_artfolder_foreign_message">
+        <item quantity="other">%1$s được thiết lập bởi một bản cài khác (%2$d tệp). Dùng nó và PFP sẽ liên kết lại trò chơi của bạn với ảnh trong đó, hoặc chọn thư mục khác.</item>
+    </plurals>
+
+    <!-- Status strip: spoken description of the notification bell when some are unread -->
+    <plurals name="xmbu_status_notifications_unread">
+        <item quantity="other">Thông báo, %d chưa đọc</item>
+    </plurals>
+</resources>

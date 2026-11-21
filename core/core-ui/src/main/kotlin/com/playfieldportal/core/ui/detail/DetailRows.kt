@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.R
 import com.playfieldportal.core.ui.theme.dimmed
 
 // ── Full-width information rows ───────────────────────────────────────────────
@@ -195,7 +197,7 @@ fun PfpDetailTextRow(
         if (onClick != null) {
             Spacer(Modifier.size(6.dp))
             Text(
-                text = if (expanded) "Confirm to collapse" else "Confirm to read more",
+                text = stringResource(if (expanded) R.string.core_detail_confirm_collapse else R.string.core_detail_confirm_read_more),
                 color = if (focused) DetailFocusEdge else DetailTextMuted.dimmed(0.7f),
                 fontSize = 11.sp,
                 maxLines = 1,

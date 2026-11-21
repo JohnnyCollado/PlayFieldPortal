@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shiba rank titles -->
+    <string name="dom_shiba_rank_pup">Štene</string>
+    <string name="dom_shiba_rank_ruffian">Mangup</string>
+    <string name="dom_shiba_rank_lone_ron_inu">Usamljeni Ron-inu</string>
+    <string name="dom_shiba_rank_inu_master">Inu majstor</string>
+    <string name="dom_shiba_rank_legendary_hachiko">Legendarni Hachiko</string>
+
+    <!-- App editions -->
+    <string name="dom_edition_full">Full</string>
+    <string name="dom_edition_lite">Lite</string>
+
+    <!-- Audio channels (volume rows) -->
+    <string name="dom_audio_channel_navigation">Navigacija</string>
+    <string name="dom_audio_channel_back">Natrag / odustani</string>
+    <string name="dom_audio_channel_confirm">Potvrdi / primijeni</string>
+    <string name="dom_audio_channel_error">Pogreška / nevažeće</string>
+    <string name="dom_audio_channel_category">Kategorija</string>
+    <string name="dom_audio_channel_options">Opcije</string>
+    <string name="dom_audio_channel_notification">Obavijest</string>
+    <string name="dom_audio_channel_boot">Slijed pokretanja</string>
+    <string name="dom_audio_channel_gameboot">Game Boot</string>
+    <string name="dom_audio_channel_ambience">Ambijent</string>
+
+    <!-- Customisable media slots -->
+    <string name="dom_media_slot_navigation">Navigacija</string>
+    <string name="dom_media_slot_back">Natrag / Odustani</string>
+    <string name="dom_media_slot_confirm">Potvrdi / Primijeni</string>
+    <string name="dom_media_slot_error">Pogreška / Nevažeće</string>
+    <string name="dom_media_slot_category">Kategorija</string>
+    <string name="dom_media_slot_options">Opcije</string>
+    <string name="dom_media_slot_notification">Obavijest</string>
+    <string name="dom_media_slot_boot_video">Animacija pokretanja</string>
+    <string name="dom_media_slot_gameboot_video">Animacija Game Boot</string>
+    <string name="dom_media_slot_ambience_audio">Ambijentalna pjesma</string>
+
+    <!-- Game tile display modes -->
+    <string name="dom_icon_display_icon0">Prilagođena ikona</string>
+    <string name="dom_icon_display_box_art">Omot</string>
+    <string name="dom_icon_display_physical_media">Fizički medij</string>
+    <string name="dom_icon_display_box_3d">3D omot</string>
+
+    <!-- Icon legibility styles -->
+    <string name="dom_icon_legibility_none">Ništa</string>
+    <string name="dom_icon_legibility_offset_shadow">Pomaknuta sjena (tamna)</string>
+    <string name="dom_icon_legibility_offset_shadow_light">Pomaknuta sjena (svijetla)</string>
+    <string name="dom_icon_legibility_contour_dark">Obrub (tamni)</string>
+    <string name="dom_icon_legibility_contour_light">Obrub (svijetli)</string>
+    <string name="dom_icon_legibility_contour_auto">Obrub (automatski)</string>
+
+    <!-- Animated image playback -->
+    <string name="dom_image_motion_animated">Animirano</string>
+    <string name="dom_image_motion_reduced">Smanjeno</string>
+    <string name="dom_image_motion_static">Statično</string>
+
+    <!-- Text legibility styles -->
+    <string name="dom_text_legibility_none">Ništa</string>
+    <string name="dom_text_legibility_shadow">Sjena</string>
+    <string name="dom_text_legibility_outline">Obrub</string>
+    <string name="dom_text_legibility_plate">Kontrastna podloga</string>
+    <string name="dom_text_legibility_auto">Automatski</string>
+
+    <!-- Touch gestures -->
+    <string name="dom_touch_gesture_tap">Dodir</string>
+    <string name="dom_touch_gesture_long_press">Držanje</string>
+    <string name="dom_touch_gesture_swipe_left">Prelazak ulijevo</string>
+    <string name="dom_touch_gesture_swipe_right">Prelazak udesno</string>
+    <string name="dom_touch_gesture_swipe_down">Prelazak prema dolje</string>
+
+    <!-- UMD slot display modes -->
+    <string name="dom_umd_slot_off">Isključeno</string>
+    <string name="dom_umd_slot_inserted">Umetnuto</string>
+    <string name="dom_umd_slot_inserted_and_recent">Umetnuto i nedavno</string>
+
+    <!-- Item list motion styles -->
+    <string name="dom_list_motion_rewind">Premotavanje</string>
+    <string name="dom_list_motion_glide">Klizanje</string>
+
+    <!-- Confirm / Back button layouts -->
+    <string name="dom_confirm_back_standard">Standardno (A = Potvrdi, B = Natrag)</string>
+    <string name="dom_confirm_back_reversed">Obrnuto (B = Potvrdi, A = Natrag)</string>
+
+    <!-- X / Y button layouts -->
+    <string name="dom_xy_layout_standard">Standardno (Y = Opcije, X = Poredak)</string>
+    <string name="dom_xy_layout_swapped">Zamijenjeno (X = Opcije, Y = Poredak)</string>
+
+    <!-- Controller prompt styles -->
+    <string name="dom_controller_type_xbox">Xbox</string>
+    <string name="dom_controller_type_nintendo">Nintendo</string>
+    <string name="dom_controller_type_playstation">PlayStation</string>
+
+    <!-- Held-navigation scroll speeds -->
+    <string name="dom_scroll_speed_relaxed">Opušteno</string>
+    <string name="dom_scroll_speed_standard">Standardno</string>
+    <string name="dom_scroll_speed_fast">Brzo</string>
+
+    <!-- Colour schemes -->
+    <string name="dom_color_scheme_original">Izvorno (mjesečno)</string>
+    <string name="dom_color_scheme_classic_blue">Klasična plava</string>
+    <string name="dom_color_scheme_sunset_orange">Narančasta zalaska sunca</string>
+    <string name="dom_color_scheme_fresh_green">Svježa zelena</string>
+    <string name="dom_color_scheme_royal_purple">Kraljevska ljubičasta</string>
+    <string name="dom_color_scheme_crimson_red">Grimizna crvena</string>
+    <string name="dom_color_scheme_silver">Srebrna</string>
+    <string name="dom_color_scheme_sakura_pink">Sakura ružičasta</string>
+    <string name="dom_color_scheme_golden_amber">Zlatni jantar</string>
+    <string name="dom_color_scheme_aqua_teal">Akvamarin tirkizna</string>
+    <string name="dom_color_scheme_midnight_navy">Ponoćno modra</string>
+    <string name="dom_color_scheme_charcoal">Ugljena</string>
+
+    <!-- Controller actions -->
+    <string name="dom_action_navigate_up">Kretanje gore</string>
+    <string name="dom_action_navigate_down">Kretanje dolje</string>
+    <string name="dom_action_navigate_left">Kretanje lijevo (prethodna kategorija)</string>
+    <string name="dom_action_navigate_right">Kretanje desno (sljedeća kategorija)</string>
+    <string name="dom_action_select">Odaberi / Pokreni</string>
+    <string name="dom_action_back">Natrag / Zatvori</string>
+    <string name="dom_action_open_context_menu">Opcije / kontekstni izbornik</string>
+    <string name="dom_action_change_sort">Promijeni poredak</string>
+    <string name="dom_action_prev_category">Prethodna kartica (ladica aplikacija)</string>
+    <string name="dom_action_next_category">Sljedeća kartica (ladica aplikacija)</string>
+    <string name="dom_action_home">Start (obavijesti / potvrda u odabirima)</string>
+    <string name="dom_action_shift">Shift (tipkovnica)</string>
+    <string name="dom_action_caps_lock">Caps Lock (tipkovnica)</string>
+    <string name="dom_action_category_menu">Izbornik kategorija</string>
+
+    <!-- Controller button names -->
+    <string name="dom_key_a">A / Križić</string>
+    <string name="dom_key_b">B / Krug</string>
+    <string name="dom_key_x">X / Kvadrat</string>
+    <string name="dom_key_y">Y / Trokut</string>
+    <string name="dom_key_dpad_up">D-Pad gore</string>
+    <string name="dom_key_dpad_down">D-Pad dolje</string>
+    <string name="dom_key_dpad_left">D-Pad lijevo</string>
+    <string name="dom_key_dpad_right">D-Pad desno</string>
+    <string name="dom_key_dpad_center">D-Pad sredina</string>
+    <string name="dom_key_l1">L1</string>
+    <string name="dom_key_r1">R1</string>
+    <string name="dom_key_l2">L2</string>
+    <string name="dom_key_r2">R2</string>
+    <string name="dom_key_start">Start</string>
+    <string name="dom_key_select">Select</string>
+    <string name="dom_key_enter">Enter</string>
+    <string name="dom_key_back">Natrag</string>
+    <string name="dom_key_unknown">Tipka %1$d</string>
+
+    <!-- Colour naming (ColorNaming): descriptions of a colour and the steps of the colour steppers -->
+    <string name="dom_hue_orange">narančasta</string>
+    <string name="dom_hue_yellow">žuta</string>
+    <string name="dom_hue_green">zelena</string>
+    <string name="dom_hue_teal">tirkizna</string>
+    <string name="dom_hue_blue">plava</string>
+    <string name="dom_hue_purple">ljubičasta</string>
+    <string name="dom_hue_pink">ružičasta</string>
+    <string name="dom_hue_red">crvena</string>
+    <string name="dom_hue_orange_cap">Narančasta</string>
+    <string name="dom_hue_yellow_cap">Žuta</string>
+    <string name="dom_hue_green_cap">Zelena</string>
+    <string name="dom_hue_teal_cap">Tirkizna</string>
+    <string name="dom_hue_blue_cap">Plava</string>
+    <string name="dom_hue_purple_cap">Ljubičasta</string>
+    <string name="dom_hue_pink_cap">Ružičasta</string>
+    <string name="dom_hue_red_cap">Crvena</string>
+    <string name="dom_hue_lean">%1$s, prema: %2$s</string>
+    <string name="dom_hue_lean_cap">%1$s, prema: %2$s</string>
+    <string name="dom_color_dark">Tamna %1$s</string>
+    <string name="dom_color_very_dark">Vrlo tamna %1$s</string>
+    <string name="dom_color_muted">Prigušena %1$s</string>
+    <string name="dom_color_dark_muted">Tamna prigušena %1$s</string>
+    <string name="dom_color_very_dark_muted">Vrlo tamna prigušena %1$s</string>
+    <string name="dom_color_grey">Siva (%1$s)</string>
+    <string name="dom_saturation_grey">Siva</string>
+    <string name="dom_saturation_muted">Prigušena</string>
+    <string name="dom_saturation_vivid">Živa</string>
+    <string name="dom_saturation_intense">Intenzivna</string>
+    <string name="dom_brightness_very_dark">Vrlo tamna</string>
+    <string name="dom_brightness_dark">Tamna</string>
+    <string name="dom_brightness_medium">Srednja</string>
+    <string name="dom_brightness_bright">Svijetla</string>
+    <string name="dom_tint_standard">Standardno</string>
+    <string name="dom_tint_orange">Narančastije</string>
+    <string name="dom_tint_yellow">Žuće</string>
+    <string name="dom_tint_green">Zelenije</string>
+    <string name="dom_tint_teal">Tirkiznije</string>
+    <string name="dom_tint_blue">Plavije</string>
+    <string name="dom_tint_purple">Ljubičastije</string>
+    <string name="dom_tint_pink">Ružičastije</string>
+    <string name="dom_tint_red">Crvenije</string>
+    <string name="dom_tint_much_orange">Puno narančastije</string>
+    <string name="dom_tint_much_yellow">Puno žuće</string>
+    <string name="dom_tint_much_green">Puno zelenije</string>
+    <string name="dom_tint_much_teal">Puno tirkiznije</string>
+    <string name="dom_tint_much_blue">Puno plavije</string>
+    <string name="dom_tint_much_purple">Puno ljubičastije</string>
+    <string name="dom_tint_much_pink">Puno ružičastije</string>
+    <string name="dom_tint_much_red">Puno crvenije</string>
+    <string name="dom_tint_cooler">Hladnije</string>
+    <string name="dom_tint_warmer">Toplije</string>
+    <string name="dom_tint_much_cooler">Puno hladnije</string>
+    <string name="dom_tint_much_warmer">Puno toplije</string>
+    <string name="dom_depth_much_lighter">Puno svjetlije</string>
+    <string name="dom_depth_lighter">Svjetlije</string>
+    <string name="dom_depth_deeper">Dublje</string>
+    <string name="dom_depth_much_deeper">Puno dublje</string>
+
+    <!-- File limit messages (theme-kit's MotionLimits / UiMediaLimits wording, shown for rejected picks) -->
+    <string name="dom_limit_motion_unsupported_format">Nepodržani format — upotrijebite MP4, WebM, GIF ili WebP</string>
+    <string name="dom_limit_motion_too_large_resolution">Videozapis je prevelik — najviše 1080p</string>
+    <string name="dom_limit_motion_too_long">Isječak je predug — najviše 60 sekundi</string>
+    <string name="dom_limit_motion_too_large_bytes">Datoteka je prevelika — manje od 60 MB</string>
+    <string name="dom_limit_motion_undecodable">Taj videozapis nije moguće pročitati — pokušajte s drugom datotekom</string>
+    <string name="dom_limit_media_unsupported_audio">Nepodržani format — upotrijebite zvuk MP3, WAV, OGG ili M4A</string>
+    <string name="dom_limit_media_unsupported_video">Nepodržani format — upotrijebite videozapis MP4 ili WebM</string>
+    <string name="dom_limit_media_too_large_sound">Datoteka je prevelika</string>
+    <string name="dom_limit_media_too_large_video">Datoteka je prevelika — videozapisi moraju biti manji od 25 MB</string>
+    <string name="dom_limit_media_undecodable">Tu datoteku nije moguće pročitati — pokušajte s drugom</string>
+    <string name="dom_limit_media_no_duration">Nije moguće pročitati trajanje datoteke — pokušajte s drugom datotekom ili je pretvorite u MP3/WAV/OGG/M4A</string>
+    <string name="dom_limit_media_too_long">Taj je isječak predug — najviše %1$s</string>
+
+    <!-- Error codes: title, why it happened, and what the user can do (docs/dev/notification-error-codes.md) -->
+    <string name="dom_error_ln_1001_title">Ovoj platformi nije dodijeljen emulator</string>
+    <string name="dom_error_ln_1001_why">PlayFieldPortal ne zna koja bi aplikacija trebala pokretati igre za ovu platformu.</string>
+    <string name="dom_error_ln_1001_action">Odaberite emulator za ovu platformu u Postavke › Dodjela emulatora.</string>
+    <string name="dom_error_ln_1002_title">Odabrana RetroArch jezgra nije instalirana</string>
+    <string name="dom_error_ln_1002_why">Od RetroArcha je zatraženo učitavanje jezgre koja nije na ovom uređaju.</string>
+    <string name="dom_error_ln_1002_action">Instalirajte jezgru putem RetroArchova Online Updatera ili odaberite drugu jezgru u Dodjeli emulatora.</string>
+    <string name="dom_error_ln_2001_title">Datoteka igre nedostaje ili nije čitljiva</string>
+    <string name="dom_error_ln_2001_why">Datoteka je možda premještena, preimenovana ili izbrisana ili je uklonjena SD kartica na kojoj se nalazi.</string>
+    <string name="dom_error_ln_2001_action">Provjerite je li datoteka još uvijek tamo, a zatim ponovno skenirajte njezinu memorijsku karticu.</string>
+    <string name="dom_error_ln_4001_title">Emulator nije pronađen</string>
+    <string name="dom_error_ln_4001_why">Emulator dodijeljen ovoj igri nije instaliran ili Android nije pronašao zaslon koji PlayFieldPortal otvara.</string>
+    <string name="dom_error_ln_4001_action">Instalirajte emulator ili odaberite drugi u Postavke › Dodjela emulatora.</string>
+    <string name="dom_error_ln_4002_title">Android nije dopustio otvaranje emulatora</string>
+    <string name="dom_error_ln_4002_why">Android je odbio dopuštenje PlayFieldPortalu za pokretanje ovog emulatora.</string>
+    <string name="dom_error_ln_4002_action">Jednom samostalno otvorite emulator, a zatim pokušajte ponovno. Ako se to ponavlja, ažurirajte emulator.</string>
+    <string name="dom_error_ln_4003_title">Emulator se nije prikazao u prvom planu</string>
+    <string name="dom_error_ln_4003_why">Emulator se najvjerojatnije zatvorio pri pokretanju ili ga je Android zaustavio prije nego što se igra učitala.</string>
+    <string name="dom_error_ln_4003_action">Jednom samostalno otvorite emulator kako biste provjerili pokreće li se i ažurirajte ga ako je dostupna novija verzija. Ako se to ponavlja, odaberite drugi emulator u Postavke › Dodjela emulatora.</string>
+    <string name="dom_error_ln_9001_title">Emulator nije bilo moguće otvoriti</string>
+    <string name="dom_error_ln_9001_why">Došlo je do neočekivane pogreške pri pokretanju emulatora.</string>
+    <string name="dom_error_ln_9001_action">Pokušajte ponovno. Ako se to ponavlja, kopirajte pojedinosti i prijavite problem.</string>
+    <string name="dom_error_sc_1001_title">Za ovu memorijsku karticu nije postavljena mapa</string>
+    <string name="dom_error_sc_1001_why">Ova memorijska kartica još nema što skenirati.</string>
+    <string name="dom_error_sc_1001_action">Odaberite mapu u Opcijama memorijske kartice, a zatim je skenirajte.</string>
+    <string name="dom_error_sc_1002_title">Skeniranje je već u tijeku</string>
+    <string name="dom_error_sc_1002_why">Ova se memorijska kartica već skenirala pa je drugo skeniranje preskočeno.</string>
+    <string name="dom_error_sc_1002_action">Pričekajte da se trenutačno skeniranje završi. Rezultat će se prikazati ovdje kad bude gotovo.</string>
+    <string name="dom_error_sc_2001_title">Pristup mapi je izgubljen</string>
+    <string name="dom_error_sc_2001_why">PlayFieldPortal je izgubio dopuštenje za čitanje ove mape.</string>
+    <string name="dom_error_sc_2001_action">Ponovno odaberite mapu u Opcijama memorijske kartice kako bi se dodijelio pristup, a zatim je skenirajte.</string>
+    <string name="dom_error_sc_2002_title">Mapa više ne postoji</string>
+    <string name="dom_error_sc_2002_why">Mapa je premještena ili izbrisana. Ako je na SD kartici, kartica je možda uklonjena.</string>
+    <string name="dom_error_sc_2002_action">Umetnite SD karticu i ponovno skenirajte ili odaberite novu mapu u Opcijama memorijske kartice.</string>
+    <string name="dom_error_sc_2003_title">Nepoznata mapa sustava</string>
+    <string name="dom_error_sc_2003_why">Ova mapa u glavnoj mapi ROM-ova ne odgovara nijednom sustavu koji PlayFieldPortal poznaje.</string>
+    <string name="dom_error_sc_2003_action">Preimenujte mapu u naziv podržanog sustava ili premjestite njezine igre u takvu mapu.</string>
+    <string name="dom_error_sc_2004_title">Datoteka nije prepoznata</string>
+    <string name="dom_error_sc_2004_why">Vrsta ove datoteke nije ona koju koriste igre ove platforme.</string>
+    <string name="dom_error_sc_2004_action">Provjerite je li datoteka igra za ovu platformu. Arhive i zakrpe namjerno se preskaču.</string>
+    <string name="dom_error_sc_9001_title">Skeniranje neočekivano nije uspjelo</string>
+    <string name="dom_error_sc_9001_why">Došlo je do neočekivane pogreške tijekom skeniranja.</string>
+    <string name="dom_error_sc_9001_action">Pokušajte ponovno skenirati. Ako se to ponavlja, kopirajte pojedinosti i prijavite problem.</string>
+    <string name="dom_error_ar_1001_title">Mapa s grafikama nije dostupna</string>
+    <string name="dom_error_ar_1001_why">PFP ne može pristupiti mapi s grafikama pa su nove grafike pauzirane.</string>
+    <string name="dom_error_ar_1001_action">Ponovno povežite mapu u Postavke › Grafike.</string>
+    <string name="dom_error_ar_2001_title">Datoteku grafike nije bilo moguće spremiti</string>
+    <string name="dom_error_ar_2001_why">Pohrana je bila puna ili nije bilo moguće pisati u mapu s grafikama.</string>
+    <string name="dom_error_ar_2001_action">Oslobodite malo prostora i pokušajte ponovno.</string>
+    <string name="dom_error_ar_2002_title">Datoteku nije bilo moguće kopirati</string>
+    <string name="dom_error_ar_2002_why">Kopiranje je prekinuto na pola ili nije bilo moguće pisati na odredište.</string>
+    <string name="dom_error_ar_2002_action">Provjerite ima li na odredištu slobodnog prostora, a zatim pokrenite ponovno.</string>
+    <string name="dom_error_ar_2003_title">Nepoznata mapa sustava u uvozu</string>
+    <string name="dom_error_ar_2003_why">Ova mapa u uvozu ne odgovara nijednom sustavu koji PlayFieldPortal poznaje.</string>
+    <string name="dom_error_ar_2003_action">Preimenujte mapu u naziv podržanog sustava i ponovno uvezite.</string>
+    <string name="dom_error_ar_3001_title">Izvor grafika nije dostupan</string>
+    <string name="dom_error_ar_3001_why">Uređaj nije povezan s mrežom ili izvor nije odgovorio.</string>
+    <string name="dom_error_ar_3001_action">Provjerite vezu i pokušajte ponovno kasnije.</string>
+    <string name="dom_error_ar_3002_title">Izvor je odbio zahtjev</string>
+    <string name="dom_error_ar_3002_why">Izvor ograničava zahtjeve ili je potreban račun ili ključ odbijen.</string>
+    <string name="dom_error_ar_3002_action">Pričekajte malo i pokušajte ponovno ili provjerite račun izvora u Postavkama.</string>
+    <string name="dom_error_ar_3003_title">Za ovu igru nije pronađeno podudaranje</string>
+    <string name="dom_error_ar_3003_why">Izvor nema unos koji odgovara naslovu ove igre.</string>
+    <string name="dom_error_ar_3003_action">Provjerite naslov igre ili ručno odaberite grafike u Artwork Studiju.</string>
+    <string name="dom_error_ar_9001_title">Preuzimanje neočekivano nije uspjelo</string>
+    <string name="dom_error_ar_9001_why">Došlo je do neočekivane pogreške pri preuzimanju.</string>
+    <string name="dom_error_ar_9001_action">Pokušajte ponovno. Ako se to ponavlja, kopirajte pojedinosti i prijavite problem.</string>
+    <string name="dom_error_ac_1001_title">Nijedan skup postignuća ne odgovara ovoj igri</string>
+    <string name="dom_error_ac_1001_why">Nijedna povezana usluga nema postignuća za igru s ovim naslovom.</string>
+    <string name="dom_error_ac_1001_action">Ručno povežite igru na njezinoj stranici postignuća.</string>
+    <string name="dom_error_ac_2001_title">Mapu s Windows postignućima nije moguće pročitati</string>
+    <string name="dom_error_ac_2001_why">Mapu odabranu za lokalna postignuća ove igre nije bilo moguće otvoriti.</string>
+    <string name="dom_error_ac_2001_action">Ponovno odaberite mapu igre na njezinoj stranici postignuća.</string>
+    <string name="dom_error_ac_3001_title">Uređaj nije povezan s mrežom</string>
+    <string name="dom_error_ac_3001_why">Postignuća se ne mogu ažurirati bez internetske veze.</string>
+    <string name="dom_error_ac_3001_action">Povežite se s internetom. Ažuriranje će se ponovno pokrenuti samo.</string>
+    <string name="dom_error_ac_3002_title">Prijava je istekla</string>
+    <string name="dom_error_ac_3002_why">Povezana usluga više ne prihvaća prijavu PlayFieldPortala.</string>
+    <string name="dom_error_ac_3002_action">Ponovno povežite uslugu u Postavke › Postignuća.</string>
+    <string name="dom_error_ac_3003_title">Pojedinosti o igrama na Steamu su privatne</string>
+    <string name="dom_error_ac_3003_why">Steam dijeli postignuća samo kad su vaše pojedinosti o igrama javne.</string>
+    <string name="dom_error_ac_3003_action">U postavkama privatnosti na Steamu postavite Pojedinosti o igrama na Javno, a zatim ponovno ažurirajte.</string>
+    <string name="dom_error_ac_3004_title">Ovu igru nije bilo moguće ažurirati</string>
+    <string name="dom_error_ac_3004_why">Usluga nije odgovorila za ovu igru ili je odgovorila pogreškom.</string>
+    <string name="dom_error_ac_3004_action">Pokušajte ponovno ažurirati kasnije.</string>
+    <string name="dom_error_md_2001_title">Mapu s medijima nije moguće pročitati</string>
+    <string name="dom_error_md_2001_why">PlayFieldPortal je izgubio pristup ovoj mapi ili ona više ne postoji.</string>
+    <string name="dom_error_md_2001_action">Ponovno odaberite mapu u postavkama medija, a zatim skenirajte.</string>
+    <string name="dom_error_md_9001_title">Skeniranje medija neočekivano nije uspjelo</string>
+    <string name="dom_error_md_9001_why">Došlo je do neočekivane pogreške tijekom skeniranja.</string>
+    <string name="dom_error_md_9001_action">Pokušajte ponovno skenirati. Ako se to ponavlja, kopirajte pojedinosti i prijavite problem.</string>
+    <string name="dom_error_bk_1001_title">Vraćanje je preskočilo stavku</string>
+    <string name="dom_error_bk_1001_why">Ovu stavku nije bilo moguće sigurno vratiti pa je ostavljena kakva je bila.</string>
+    <string name="dom_error_bk_1001_action">Ništa drugo nije zahvaćeno. Ako vam treba, ručno ponovno postavite ovu stavku.</string>
+    <string name="dom_error_bk_2001_title">Datoteku sigurnosne kopije nije bilo moguće zapisati</string>
+    <string name="dom_error_bk_2001_why">Pohrana je bila puna ili nije bilo moguće pisati u mapu za sigurnosne kopije.</string>
+    <string name="dom_error_bk_2001_action">Oslobodite malo prostora ili odaberite drugu lokaciju za sigurnosne kopije, a zatim pokušajte ponovno.</string>
+    <string name="dom_error_bk_2002_title">Datoteka sigurnosne kopije nije čitljiva ili je oštećena</string>
+    <string name="dom_error_bk_2002_why">Datoteka nije sigurnosna kopija PlayFieldPortala ili je skraćena.</string>
+    <string name="dom_error_bk_2002_action">Odaberite drugu datoteku sigurnosne kopije.</string>
+    <string name="dom_error_sy_9001_title">Nešto nije u redu</string>
+    <string name="dom_error_sy_9001_why">Došlo je do neočekivane pogreške.</string>
+    <string name="dom_error_sy_9001_action">Pokušajte ponovno. Ako se to ponavlja, kopirajte pojedinosti i prijavite problem.</string>
+</resources>

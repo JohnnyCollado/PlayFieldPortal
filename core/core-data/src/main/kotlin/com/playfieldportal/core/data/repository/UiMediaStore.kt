@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.playfieldportal.core.data.R
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.domain.model.UiMediaKind
 import com.playfieldportal.core.domain.model.UiMediaSlot
@@ -266,7 +267,9 @@ class UiMediaStore internal constructor(
      * a label. Falls back to "Custom sound"/"Custom video" when the provider reports nothing.
      */
     suspend fun recordDisplayName(slot: UiMediaSlot, uri: Uri) {
-        val fallback = if (slot.kind == UiMediaKind.VIDEO) "Custom video" else "Custom sound"
+        val fallback = context.getString(
+            if (slot.kind == UiMediaKind.VIDEO) R.string.data_custom_video else R.string.data_custom_sound,
+        )
         val name = MediaDisplayNames.queryDisplayName(context, uri) ?: fallback
         context.pfpDataStore.edit { prefs -> prefs[displayNameKey(slot)] = name }
     }

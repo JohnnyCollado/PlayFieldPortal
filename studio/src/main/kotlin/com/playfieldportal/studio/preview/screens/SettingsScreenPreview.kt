@@ -346,18 +346,18 @@ private fun ColumnScope.DisplayRows(state: DisplayState, text: Color, cursorFill
         text, cursorFill,
     )
 
-    SettingsGroup("GameBoot")
+    SettingsGroup("Game Boot")
     ToggleRow(
-        "GameBoot",
+        "Game Boot",
         "A short presentation between confirming a game and the emulator " +
             "opening — five seconds built in, up to ten with your own clip — skippable " +
             "with Confirm or Back.  Off is a silent launch — no animation, no sound.",
         checked = true, text = text, cursorFill = cursorFill,
     )
     MediaRow(
-        "GameBoot Video",
+        "Game Boot Video",
         "Replace the built-in sequence with your own clip, which plays with " +
-            "its own sound, at the GameBoot level in Sound ▸ Levels (MP4 or WebM, up to ${UiMediaLimits.GAMEBOOT_CLIP.hardMaxMs / 1000} seconds)",
+            "its own sound, at the Game Boot level in Sound ▸ Levels (MP4 or WebM, up to ${UiMediaLimits.GAMEBOOT_CLIP.hardMaxMs / 1000} seconds)",
         text, cursorFill,
     )
 

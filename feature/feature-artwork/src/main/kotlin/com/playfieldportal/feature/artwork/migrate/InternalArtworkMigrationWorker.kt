@@ -20,6 +20,8 @@ import com.playfieldportal.core.domain.model.ResultItem
 import com.playfieldportal.core.domain.model.ResultOutcome
 import com.playfieldportal.core.domain.model.toDetailAction
 import com.playfieldportal.core.domain.model.TaskKind
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.artwork.R
 import com.playfieldportal.feature.artwork.importer.ImportSummary
 import com.playfieldportal.feature.artwork.importer.RelinkBackgroundRule
 import com.playfieldportal.feature.artwork.store.ArtworkKind
@@ -67,7 +69,7 @@ class InternalArtworkMigrationWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         if (folderRepository.getTreeUri() == null || !folderRepository.hasLiveGrant()) {
-            return Result.failure(workDataOf(KEY_ERROR to "No artwork folder linked"))
+            return Result.failure(workDataOf(KEY_ERROR to applicationContext.getString(R.string.art_no_folder_linked)))
         }
 
         val assets = internal.enumerateForMigration()
@@ -84,7 +86,7 @@ class InternalArtworkMigrationWorker @AssistedInject constructor(
         val failures = mutableListOf<ResultItem>()
         // Not stoppable from the panel: a move stopped halfway leaves columns pointing at files
         // in two places (the notification details plan, D7). Settings keeps its own cancel.
-        tasks.start(TASK_ID, LABEL, TaskKind.ARTWORK)
+        tasks.start(TASK_ID, applicationContext.getString(R.string.art_move_label), TaskKind.ARTWORK)
 
         try {
             assets.forEachIndexed { index, asset ->
@@ -147,30 +149,30 @@ class InternalArtworkMigrationWorker @AssistedInject constructor(
         } catch (e: Exception) {
             Timber.e(e, "Internal artwork migration failed")
             tasks.fail(
-                TASK_ID, e.message ?: "Unexpected error", NotificationAction.OpenSettingsScreen("settings_artwork"),
+                TASK_ID, e.message ?: applicationContext.getString(R.string.art_error_unexpected), NotificationAction.OpenSettingsScreen("settings_artwork"),
                 detail = NotificationDetail.notes(PfpErrorCode.AR_2002, summary = e.message,
                     diagnostic = e.stackTraceToString().take(4_000)),
-                title = "Artwork move failed",
+                title = applicationContext.getString(R.string.art_move_failed_title),
             )
             persistReport(startedAt, migrated, skipped, failed, bytes, cancelled = false)
-            return Result.failure(workDataOf(KEY_ERROR to (e.message ?: "Unexpected error")))
+            return Result.failure(workDataOf(KEY_ERROR to (e.message ?: applicationContext.getString(R.string.art_error_unexpected))))
         }
 
         persistReport(startedAt, migrated, skipped, failed, bytes, cancelled)
         if (cancelled) {
             tasks.stopped(
-                TASK_ID, "$migrated file(s) moved first",
+                TASK_ID, UiText.plural(R.plurals.art_move_stopped_note, migrated).resolve(applicationContext),
                 detail = failures.takeIf { it.isNotEmpty() }?.let { NotificationDetail.results(it) },
-                title = "Artwork move stopped",
+                title = applicationContext.getString(R.string.art_move_stopped_title),
             )
             throw CancellationException("Migration cancelled")
         }
         tasks.complete(
             TASK_ID,
-            "$migrated moved, $skipped already covered, $failed failed",
+            applicationContext.getString(R.string.art_move_result, migrated, skipped, failed),
             NotificationAction.OpenSettingsScreen("settings_artwork"),
             detail = failures.takeIf { it.isNotEmpty() }?.let { NotificationDetail.results(it) },
-            title = "Artwork move finished",
+            title = applicationContext.getString(R.string.art_move_finished_title),
         )
         return Result.success(workDataOf(KEY_MIGRATED to migrated, KEY_FAILED to failed))
     }
@@ -229,7 +231,6 @@ class InternalArtworkMigrationWorker @AssistedInject constructor(
     companion object {
         const val UNIQUE_NAME = "pfp_internal_artwork_migration"
         const val TASK_ID = "internal_artwork_migration"
-        private const val LABEL = "Moving artwork into your folder"
         private const val REPORT_SOURCE = "Internal Migration"
         const val KEY_ERROR = "error"
         const val KEY_MIGRATED = "migrated"

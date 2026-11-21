@@ -104,6 +104,11 @@ import com.playfieldportal.core.ui.theme.dimmed
 import com.playfieldportal.core.ui.theme.unselectedLabel
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 import kotlinx.coroutines.flow.distinctUntilChanged
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.xmb.R
+import com.playfieldportal.core.domain.text.labelRes
 
 // ── Game picker ("Add Games to Category"): a library of shelves ──────────────
 //
@@ -208,7 +213,7 @@ fun GamePickerScreen(
                         CircularProgressIndicator(color = sf.tileSelectedEdge)
                     }
                     state.shelves.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No games in your library yet", color = sf.textSecondary, fontSize = 14.sp)
+                        Text(stringResource(R.string.xmbu_picker_no_games), color = sf.textSecondary, fontSize = 14.sp)
                     }
                     else -> {
                         ShelfList(state, onShelfTapped = viewModel::tapShelf, colors = sf)
@@ -243,8 +248,8 @@ fun GamePickerScreen(
         // Y's menu: the shared PSP panel, driven by PspMenuNav in the ViewModel.
         state.menu?.let { menu ->
             PspContextMenuOverlay(
-                title = if (menu.level == PickerMenuLevel.ROOT) "Options" else "View",
-                rows = state.menuRows(),
+                title = stringResource(if (menu.level == PickerMenuLevel.ROOT) R.string.xmbu_common_options else R.string.xmbu_picker_menu_view),
+                rows = uiResources().let { res -> state.menuRows { res.getString(it) } },
                 selectedIndex = menu.selectedIndex,
                 onRowActivated = viewModel::tapMenuRow,
                 onDismiss = viewModel::dismissMenu,
@@ -284,7 +289,7 @@ private fun PickerHeader(
             PickerBreadcrumb(onClick = onBack, color = colors.textSecondary)
             Text(
                 text = buildAnnotatedString {
-                    append("Add Games")
+                    append(stringResource(R.string.xmbu_picker_add_games))
                     if (categoryTitle.isNotBlank()) {
                         withStyle(SpanStyle(color = colors.textSecondary, fontWeight = FontWeight.Normal)) {
                             append(" · $categoryTitle")
@@ -299,7 +304,7 @@ private fun PickerHeader(
             )
         }
         Text(
-            text = pendingChangeLabel(state.pendingAddCount(), state.pendingRemovals().size),
+            text = pendingChangeLabel(state.pendingAddCount(), state.pendingRemovals().size).asString(),
             color = colors.textSecondary,
             fontSize = 13.sp,
         )
@@ -311,7 +316,7 @@ private fun PickerHeader(
             when (pill) {
                 GamePickerPill.SEARCH -> StorefrontSearchPill(onSearch, colors)
                 GamePickerPill.DONE ->
-                    StorefrontTouchPill("Done", "✓", onDone, colors, Modifier.testTag(PickerHeaderTags.DONE))
+                    StorefrontTouchPill(stringResource(R.string.xmbu_common_done), "✓", onDone, colors, Modifier.testTag(PickerHeaderTags.DONE))
                 GamePickerPill.OPTIONS -> StorefrontKebabPill(onOptions, colors)
             }
         }
@@ -410,7 +415,7 @@ private fun ShelfListEntry(
         Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 9.dp, bottom = 10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = shelf.title,
+                    text = shelf.title.asString(),
                     color = if (isCurrent) colors.textPrimary else colors.unselectedLabel(),
                     fontSize = 13.sp,
                     fontWeight = if (isCurrent) FontWeight.Medium else FontWeight.Normal,
@@ -451,12 +456,12 @@ private fun ShelfPane(
 ) {
     Column(modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(shelf.title, color = colors.textPrimary, fontSize = 17.sp, fontWeight = FontWeight.Medium)
+            Text(shelf.title.asString(), color = colors.textPrimary, fontSize = 17.sp, fontWeight = FontWeight.Medium)
             Spacer(Modifier.width(12.dp))
             Text(
                 text = when (shelf) {
-                    is GameShelf -> "${shelf.size} games · ${state.checkedCount(shelf)} checked"
-                    is CardShelf -> "${shelf.size} cards · picking one moves it here"
+                    is GameShelf -> pluralStringResource(R.plurals.xmbu_picker_shelf_games, shelf.size, shelf.size, state.checkedCount(shelf))
+                    is CardShelf -> pluralStringResource(R.plurals.xmbu_picker_shelf_cards, shelf.size, shelf.size)
                 },
                 color = colors.textSecondary,
                 fontSize = 12.sp,
@@ -464,7 +469,7 @@ private fun ShelfPane(
             )
             if (shelf is GameShelf) {
                 Text(
-                    text = "View: ${state.viewMode.label}",
+                    text = stringResource(R.string.xmbu_picker_view_mode, stringResource(state.viewMode.labelRes)),
                     color = colors.textSecondary,
                     fontSize = 11.sp,
                     modifier = Modifier
@@ -650,9 +655,10 @@ private fun PickerTile(
             }
         }
         Spacer(Modifier.height(6.dp))
+        val removingPrefix = stringResource(R.string.xmbu_picker_removing_prefix)
         Text(
             text = buildAnnotatedString {
-                if (isRemoving) withStyle(SpanStyle(color = colors.destructive)) { append("Removing · ") }
+                if (isRemoving) withStyle(SpanStyle(color = colors.destructive)) { append(removingPrefix) }
                 append(label)
             },
             color = if (isFocused) colors.textPrimary else colors.unselectedLabel(),
@@ -722,7 +728,7 @@ private fun CardArt(card: GameCollection, colors: StorefrontColors) {
             overflow = TextOverflow.Ellipsis,
         )
         Text(
-            text = if (card.gameCount == 1) "1 game" else "${card.gameCount} games",
+            text = pluralStringResource(R.plurals.xmbu_picker_card_games, card.gameCount, card.gameCount),
             color = colors.textSecondary,
             fontSize = 9.sp,
         )
@@ -797,7 +803,7 @@ private fun ShelfSearchField(
                 decorationBox = { inner ->
                     Box {
                         if (state.query.isEmpty()) Text(
-                            "Search this shelf\u2026",
+                            stringResource(R.string.xmbu_picker_search_placeholder),
                             color = colors.textSecondary.dimmed(0.6f),
                             fontSize = 14.sp,
                         )
@@ -828,7 +834,7 @@ private fun PickerFooter(
 ) {
     if (showTouchControls) {
         TouchPromptBar(
-            items = gamePickerTouchPrompts(),
+            items = gamePickerTouchPrompts(uiResources()),
             labelColor = colors.textSecondary,
             labelStyle = LocalTextStyle.current.merge(TextStyle(fontSize = 12.sp)),
             glyphSize = 16.dp,
@@ -839,25 +845,25 @@ private fun PickerFooter(
     }
     // B names what it will do: close a search first, then climb, then cancel.
     val back = when {
-        state.searchActive -> "Close Search"
-        state.focusZone == PickerZone.GRID -> "Shelves"
-        else -> "Cancel"
+        state.searchActive -> stringResource(R.string.xmbu_common_close_search)
+        state.focusZone == PickerZone.GRID -> stringResource(R.string.xmbu_picker_shelves)
+        else -> stringResource(R.string.xmbu_common_cancel)
     }
     val items = when (state.focusZone) {
         PickerZone.RAIL -> listOf(
-            ControllerPromptItem.fixed(listOf(ControllerIcon.DPAD_UP, ControllerIcon.DPAD_DOWN), "Shelf"),
-            ControllerPromptItem(GamepadAction.SELECT, "Open"),
-            ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"),
-            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
-            ControllerPromptItem(GamepadAction.HOME, "Done"),
+            ControllerPromptItem.fixed(listOf(ControllerIcon.DPAD_UP, ControllerIcon.DPAD_DOWN), stringResource(R.string.xmbu_picker_shelf)),
+            ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.xmbu_common_open)),
+            ControllerPromptItem(GamepadAction.CHANGE_SORT, stringResource(R.string.xmbu_common_search)),
+            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, stringResource(R.string.xmbu_common_options)),
+            ControllerPromptItem(GamepadAction.HOME, stringResource(R.string.xmbu_common_done)),
             ControllerPromptItem(GamepadAction.BACK, back),
         )
         PickerZone.GRID -> listOf(
-            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Navigate"),
-            ControllerPromptItem(GamepadAction.SELECT, "Toggle"),
-            ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"),
-            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
-            ControllerPromptItem(GamepadAction.HOME, "Done"),
+            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, stringResource(R.string.xmbu_common_navigate)),
+            ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.xmbu_common_toggle)),
+            ControllerPromptItem(GamepadAction.CHANGE_SORT, stringResource(R.string.xmbu_common_search)),
+            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, stringResource(R.string.xmbu_common_options)),
+            ControllerPromptItem(GamepadAction.HOME, stringResource(R.string.xmbu_common_done)),
             ControllerPromptItem(GamepadAction.BACK, back),
         )
     }

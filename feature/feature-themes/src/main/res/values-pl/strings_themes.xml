@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="thm_error_manifest_missing">Brak wymaganego pliku theme.json w archiwum</string>
+    <string name="thm_error_manifest_invalid">Nieprawidłowy theme.json: %1$s</string>
+    <string name="thm_error_id_invalid">Nieprawidłowy identyfikator motywu \'%1$s\' — użyj liter, cyfr, \'.\', \'_\' lub \'-\' (maks. 64)</string>
+    <string name="thm_error_color_invalid">Nieprawidłowe %1$s \'%2$s\' — oczekiwano #RRGGBB lub #AARRGGBB</string>
+</resources>

@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Achievement update notifications -->
+    <string name="ach_upd_running">Aktualizowanie osiągnięć zainstalowanych gier</string>
+    <string name="ach_upd_running_stop_note">Już zaktualizowane osiągnięcia zostaną zachowane.</string>
+    <string name="ach_upd_progress">Sprawdzanie gier: %1$d z %2$d</string>
+    <string name="ach_upd_stopped">Zatrzymano aktualizację osiągnięć</string>
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="one">Sprawdzono %d grę; zapisany postęp zachowano</item>
+        <item quantity="few">Sprawdzono %d gry; zapisany postęp zachowano</item>
+        <item quantity="many">Sprawdzono %d gier; zapisany postęp zachowano</item>
+        <item quantity="other">Sprawdzono %d gry; zapisany postęp zachowano</item>
+    </plurals>
+    <string name="ach_upd_some_failed">Nie udało się zaktualizować części osiągnięć</string>
+    <plurals name="ach_upd_failed_message">
+        <item quantity="one">Ponownej próby wymaga gier: %1$d z %2$d</item>
+        <item quantity="few">Ponownej próby wymaga gier: %1$d z %2$d</item>
+        <item quantity="many">Ponownej próby wymaga gier: %1$d z %2$d</item>
+        <item quantity="other">Ponownej próby wymaga gier: %1$d z %2$d</item>
+    </plurals>
+    <string name="ach_upd_results_done">Zaktualizowano</string>
+    <string name="ach_upd_updated">Zaktualizowano osiągnięcia</string>
+    <plurals name="ach_upd_updated_message">
+        <item quantity="one">Zaktualizowano %1$d grę · bez zmian: %2$d</item>
+        <item quantity="few">Zaktualizowano %1$d gry · bez zmian: %2$d</item>
+        <item quantity="many">Zaktualizowano %1$d gier · bez zmian: %2$d</item>
+        <item quantity="other">Zaktualizowano %1$d gry · bez zmian: %2$d</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">Osiągnięcia są aktualne</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="one">Sprawdzono %d zainstalowaną grę</item>
+        <item quantity="few">Sprawdzono %d zainstalowane gry</item>
+        <item quantity="many">Sprawdzono %d zainstalowanych gier</item>
+        <item quantity="other">Sprawdzono %d zainstalowanej gry</item>
+    </plurals>
+    <string name="ach_upd_paused">Wstrzymano aktualizację osiągnięć</string>
+    <string name="ach_upd_fact_service">Usługa</string>
+    <string name="ach_upd_pause_offline">Połącz się z internetem</string>
+    <string name="ach_upd_pause_reconnect">Połącz ponownie: %1$s</string>
+    <string name="ach_upd_pause_steam_private">Szczegóły gier Steam są niedostępne</string>
+
+    <!-- Auto-match notifications -->
+    <string name="ach_match_running">Automatyczne dopasowywanie gier</string>
+    <string name="ach_match_running_stop_note">Już dopasowane gry pozostaną połączone.</string>
+    <string name="ach_match_stopped_note">Już dopasowane gry pozostają połączone</string>
+    <string name="ach_match_stopped">Zatrzymano automatyczne dopasowywanie</string>
+    <string name="ach_match_recognized">Rozpoznano gry</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="one">Dopasowano %d zainstalowaną grę. Aktualizowanie osiągnięć.</item>
+        <item quantity="few">Dopasowano %d zainstalowane gry. Aktualizowanie osiągnięć.</item>
+        <item quantity="many">Dopasowano %d zainstalowanych gier. Aktualizowanie osiągnięć.</item>
+        <item quantity="other">Dopasowano %d zainstalowanej gry. Aktualizowanie osiągnięć.</item>
+    </plurals>
+
+    <!-- Clearing achievement records -->
+    <string name="ach_clear_done">Wyczyszczono zapisy osiągnięć</string>
+    <string name="ach_clear_done_message">Zainstalowane gry trzeba ponownie zsynchronizować, aby znów pokazać osiągnięcia</string>
+    <string name="ach_clear_failed">Nie udało się wyczyścić osiągnięć</string>
+    <string name="ach_clear_failed_message">Nic nie usunięto. Spróbuj ponownie w Ustawienia ▸ Osiągnięcia</string>
+
+    <!-- Local Steam: reason phrases -->
+    <string name="ach_ls_unavail_store">nie można było zapytać sklepu</string>
+    <string name="ach_ls_unavail_steam">Steam jest teraz niedostępny</string>
+    <string name="ach_ls_steam_unreachable">Nie można połączyć się ze Steam</string>
+    <string name="ach_ls_steam_rate_limited">Steam ogranicza liczbę zapytań</string>
+    <string name="ach_ls_steam_error">Steam zwrócił błąd</string>
+    <string name="ach_ls_steam_needs_key">Steam wymaga klucza Web API</string>
+
+    <!-- Local Steam: linking a picked game folder -->
+    <string name="ach_link_no_match">Steam nie ma gry pasującej do „%1$s”. Zmień nazwę folderu na nazwę gry ze Steam lub najpierw połącz ją w Szczegóły gry ▸ Dopasuj grę.</string>
+    <string name="ach_link_unavailable">%1$s, więc nie ustalono app id tego folderu. Nic nie zmieniono — spróbuj ponownie po odzyskaniu połączenia.</string>
+    <string name="ach_link_marker_failed">Nie można utworzyć steam_appid.txt w tym folderze — PFP może mieć do niego tylko dostęp do odczytu.</string>
+    <string name="ach_link_not_recorded">Nie można zapisać wybranego dopasowania.</string>
+    <string name="ach_link_installer_off">Włącz „Instaluj Goldberg i konwertuj gry” w ustawieniach osiągnięć, zanim PFP zapisze coś w folderze gry.</string>
+    <string name="ach_link_no_app_id">Ten folder nie deklaruje już app id — wybierz go ponownie.</string>
+    <string name="ach_link_need_key">Dodaj klucz Steam Web API w Ustawienia ▸ Osiągnięcia ▸ Dane logowania dostawców — z niego pochodzi lista osiągnięć.</string>
+    <string name="ach_link_no_achievements">Steam nie podaje żadnych osiągnięć dla app id %1$s, więc nie ma czego śledzić.</string>
+    <string name="ach_link_kit_failed">Nie można zapisać zestawu osiągnięć: %1$s</string>
+    <string name="ach_link_read_back_failed">Nie można ponownie odczytać tego folderu. Jeśli jest na pamięci wymiennej, zamontuj ją ponownie i wybierz folder jeszcze raz.</string>
+    <string name="ach_link_not_steam_build">W tym folderze nie ma biblioteki Steam (steam_api64.dll), więc to nie jest wersja Steam i emulator nie ma czego śledzić. Wybierz folder, w którym jest plik .exe gry.</string>
+
+    <!-- Local Steam: convert picker rows -->
+    <string name="ach_pick_checking">Sprawdzanie Steam…</string>
+    <plurals name="ach_pick_coins">
+        <item quantity="one">%1$d moneta  ·  appid %2$s</item>
+        <item quantity="few">%1$d monety  ·  appid %2$s</item>
+        <item quantity="many">%1$d monet  ·  appid %2$s</item>
+        <item quantity="other">%1$d monety  ·  appid %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">Brak listy na Steam  ·  appid %1$s</string>
+    <string name="ach_pick_needs_key">Wymaga klucza Steam Web API  ·  appid %1$s</string>
+    <string name="ach_pick_no_answer">Steam nie odpowiedział  ·  appid %1$s</string>
+
+    <!-- Local Steam: batch match summary -->
+    <string name="ach_batch_already_running">Dopasowywanie zbiorcze już trwa.</string>
+    <string name="ach_batch_no_folders">Brak tu folderów gier. Wybierz folder, który ZAWIERA foldery gier, a nie folder jednej gry.</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="one">Znaleziono %d folder, ale nie jest to wersja Steam — brak biblioteki steam_api, więc emulator nie ma czego śledzić.</item>
+        <item quantity="few">Znaleziono %d foldery, ale żaden nie jest wersją Steam — brak biblioteki steam_api, więc emulator nie ma czego śledzić.</item>
+        <item quantity="many">Znaleziono %d folderów, ale żaden nie jest wersją Steam — brak biblioteki steam_api, więc emulator nie ma czego śledzić.</item>
+        <item quantity="other">Znaleziono %d folderu, ale żaden nie jest wersją Steam — brak biblioteki steam_api, więc emulator nie ma czego śledzić.</item>
+    </plurals>
+    <string name="ach_batch_linked">połączone z grami w bibliotece: %1$d</string>
+    <string name="ach_batch_tracked">śledzone samodzielnie: %1$d</string>
+    <string name="ach_batch_converting">oczekujące na konwersję: %1$d</string>
+    <plurals name="ach_batch_matched">
+        <item quantity="one">Dopasowano folderów: %1$d z %2$d.</item>
+        <item quantity="few">Dopasowano folderów: %1$d z %2$d.</item>
+        <item quantity="many">Dopasowano folderów: %1$d z %2$d.</item>
+        <item quantity="other">Dopasowano folderów: %1$d z %2$d.</item>
+    </plurals>
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="one">Dopasowano folderów: %1$d z %2$d: %3$s.</item>
+        <item quantity="few">Dopasowano folderów: %1$d z %2$d: %3$s.</item>
+        <item quantity="many">Dopasowano folderów: %1$d z %2$d: %3$s.</item>
+        <item quantity="other">Dopasowano folderów: %1$d z %2$d: %3$s.</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="one">%1$d folderu nie rozpoznano po nazwie — otwórz stronę Shiba Coins gry i użyj automatycznego dopasowania, aby wybrać jej folder.</item>
+        <item quantity="few">%1$d folderów nie rozpoznano po nazwach — otwórz stronę Shiba Coins każdej gry i użyj automatycznego dopasowania, aby wybrać jej folder.</item>
+        <item quantity="many">%1$d folderów nie rozpoznano po nazwach — otwórz stronę Shiba Coins każdej gry i użyj automatycznego dopasowania, aby wybrać jej folder.</item>
+        <item quantity="other">%1$d folderu nie rozpoznano po nazwach — otwórz stronę Shiba Coins każdej gry i użyj automatycznego dopasowania, aby wybrać jej folder.</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="one">%1$d gry nie ma w bibliotece — najpierw dodaj ją do karty Windows, a potem dopasuj ponownie.</item>
+        <item quantity="few">%1$d gier nie ma w bibliotece — najpierw dodaj je do karty Windows, a potem dopasuj ponownie.</item>
+        <item quantity="many">%1$d gier nie ma w bibliotece — najpierw dodaj je do karty Windows, a potem dopasuj ponownie.</item>
+        <item quantity="other">%1$d gry nie ma w bibliotece — najpierw dodaj je do karty Windows, a potem dopasuj ponownie.</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="one">Inne niż wersje Steam: %1$d.</item>
+        <item quantity="few">Inne niż wersje Steam: %1$d.</item>
+        <item quantity="many">Inne niż wersje Steam: %1$d.</item>
+        <item quantity="other">Inne niż wersje Steam: %1$d.</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="one">Nieudane: %1$d — zobacz dziennik.</item>
+        <item quantity="few">Nieudane: %1$d — zobacz dziennik.</item>
+        <item quantity="many">Nieudane: %1$d — zobacz dziennik.</item>
+        <item quantity="other">Nieudane: %1$d — zobacz dziennik.</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">Nie można otworzyć tego folderu.</string>
+    <string name="ach_batch_fail_read_back">%1$s: nie można ponownie odczytać po identyfikacji.</string>
+    <string name="ach_batch_fail_reason">%1$s: %2$s.</string>
+    <string name="ach_batch_fail_marker">%1$s: nie można utworzyć steam_appid.txt.</string>
+
+    <!-- Vita3K library scan results -->
+    <string name="ach_vita_set_folder">Najpierw ustaw folder danych Vita3K (ux0).</string>
+    <string name="ach_vita_link_invalid">Łącze do folderu Vita3K jest nieprawidłowe — przyznaj dostęp ponownie.</string>
+    <string name="ach_vita_no_ux0">Nie znaleziono ux0/app w udostępnionym folderze — wybierz folder ux0 Vita3K (lub folder, który go zawiera).</string>
+    <string name="ach_vita_no_app">Brak folderu app/ w ux0 — sprawdź udostępniony folder.</string>
+    <string name="ach_vita_none_installed">Nie znaleziono zainstalowanych gier Vita w ux0/app. Najpierw zainstaluj grę w Vita3K.</string>
+    <plurals name="ach_vita_no_new">
+        <item quantity="one">Brak nowych gier Vita — w bibliotece jest już %d.</item>
+        <item quantity="few">Brak nowych gier Vita — w bibliotece są już %d.</item>
+        <item quantity="many">Brak nowych gier Vita — w bibliotece jest już %d.</item>
+        <item quantity="other">Brak nowych gier Vita — w bibliotece jest już %d.</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="one">Zaimportowano %d grę Vita.</item>
+        <item quantity="few">Zaimportowano %d gry Vita.</item>
+        <item quantity="many">Zaimportowano %d gier Vita.</item>
+        <item quantity="other">Zaimportowano %d gry Vita.</item>
+    </plurals>
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="one">Zaimportowano %1$d grę Vita, zaktualizowano %2$d.</item>
+        <item quantity="few">Zaimportowano %1$d gry Vita, zaktualizowano %2$d.</item>
+        <item quantity="many">Zaimportowano %1$d gier Vita, zaktualizowano %2$d.</item>
+        <item quantity="other">Zaimportowano %1$d gry Vita, zaktualizowano %2$d.</item>
+    </plurals>
+</resources>

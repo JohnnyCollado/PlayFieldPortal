@@ -1,5 +1,7 @@
 package com.playfieldportal.core.domain.discord
 
+import com.playfieldportal.core.domain.text.UiText
+
 /**
  * A pending device-authorization challenge to render as a QR code on the TV.
  *
@@ -48,5 +50,5 @@ sealed interface DeviceLoginState {
     data object Denied : DeviceLoginState
 
     /** Network / unexpected error — the screen offers a retry. [message] carries no secrets. */
-    data class Error(val message: String) : DeviceLoginState
+    data class Error(val message: UiText) : DeviceLoginState
 }

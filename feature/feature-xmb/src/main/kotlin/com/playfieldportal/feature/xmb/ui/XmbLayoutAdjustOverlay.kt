@@ -42,6 +42,8 @@ import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.themekit.XmbLayoutAdjust
 import kotlin.math.roundToInt
+import androidx.compose.ui.res.stringResource
+import com.playfieldportal.feature.xmb.R
 
 /**
  * Live "Adjust XMB Layout" editor chrome, drawn OVER the real XMB (which reflects [draft] in real
@@ -95,16 +97,19 @@ fun XmbLayoutAdjustOverlay(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                text = "Adjust XMB Layout",
+                text = stringResource(R.string.xmbu_layout_title),
                 color = themedText(Color.White),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
             )
             // Live read-out of the three axes.
             Text(
-                text = "Scale ${"%.2f".format(draft.scale)}x    " +
-                    "Horizontal ${(draft.barLeftFraction * 100).roundToInt()}%    " +
-                    "Vertical ${(draft.barTopFraction * 100).roundToInt()}%",
+                text = stringResource(
+                    R.string.xmbu_layout_readout,
+                    "%.2f".format(draft.scale),
+                    (draft.barLeftFraction * 100).roundToInt(),
+                    (draft.barTopFraction * 100).roundToInt(),
+                ),
                 color = themedSubText(Color(0xFFB9C6DC), SECONDARY_TEXT_WEIGHT),
                 fontSize = 13.sp,
             )
@@ -113,15 +118,15 @@ fun XmbLayoutAdjustOverlay(
                 items = listOf(
                     // The whole D-pad moves the bar; four direction glyphs in a row would
                     // read as four separate prompts.
-                    ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Move"),
+                    ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, stringResource(R.string.xmbu_common_move)),
                     ControllerPromptItem(
                         listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY),
-                        "Scale",
+                        stringResource(R.string.xmbu_layout_scale),
                     ),
-                    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Reset"),
-                    ControllerPromptItem(GamepadAction.CHANGE_SORT, "Sliders"),
-                    ControllerPromptItem(GamepadAction.SELECT, "Save"),
-                    ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+                    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, stringResource(R.string.xmbu_common_reset)),
+                    ControllerPromptItem(GamepadAction.CHANGE_SORT, stringResource(R.string.xmbu_layout_sliders)),
+                    ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.xmbu_layout_save)),
+                    ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.xmbu_common_cancel)),
                 ),
                 labelColor = themedSubText(Color(0x99B9C6DC)),
                 labelStyle = TextStyle(fontSize = 11.sp),
@@ -131,9 +136,9 @@ fun XmbLayoutAdjustOverlay(
             )
 
             if (slidersVisible) {
-                AxisSlider("Scale", draft.scale, XmbLayoutAdjust.SCALE_MIN, XmbLayoutAdjust.SCALE_MAX, onScale)
-                AxisSlider("Horizontal", draft.barLeftFraction, XmbLayoutAdjust.LEFT_MIN, XmbLayoutAdjust.LEFT_MAX, onHorizontal)
-                AxisSlider("Vertical", draft.barTopFraction, XmbLayoutAdjust.TOP_MIN, XmbLayoutAdjust.TOP_MAX, onVertical)
+                AxisSlider(stringResource(R.string.xmbu_layout_scale), draft.scale, XmbLayoutAdjust.SCALE_MIN, XmbLayoutAdjust.SCALE_MAX, onScale)
+                AxisSlider(stringResource(R.string.xmbu_layout_horizontal), draft.barLeftFraction, XmbLayoutAdjust.LEFT_MIN, XmbLayoutAdjust.LEFT_MAX, onHorizontal)
+                AxisSlider(stringResource(R.string.xmbu_layout_vertical), draft.barTopFraction, XmbLayoutAdjust.TOP_MIN, XmbLayoutAdjust.TOP_MAX, onVertical)
             }
 
             if (showTouchControls) Row(
@@ -141,15 +146,15 @@ fun XmbLayoutAdjustOverlay(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 OutlinedButton(onClick = onToggleSliders) {
-                    Text(if (slidersVisible) "Hide Sliders" else "Sliders")
+                    Text(stringResource(if (slidersVisible) R.string.xmbu_layout_hide_sliders else R.string.xmbu_layout_sliders))
                 }
-                OutlinedButton(onClick = onReset) { Text("Reset") }
+                OutlinedButton(onClick = onReset) { Text(stringResource(R.string.xmbu_common_reset)) }
                 Box(Modifier.width(1.dp)) // spacer flex
-                OutlinedButton(onClick = onCancel) { Text("Cancel") }
+                OutlinedButton(onClick = onCancel) { Text(stringResource(R.string.xmbu_common_cancel)) }
                 Button(
                     onClick = onSave,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3A82F6)),
-                ) { Text("Save") }
+                ) { Text(stringResource(R.string.xmbu_layout_save)) }
             }
         }
     }

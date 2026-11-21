@@ -3,6 +3,7 @@ package com.playfieldportal.core.data.repository
 import android.content.Context
 import android.net.Uri
 import androidx.datastore.preferences.core.edit
+import com.playfieldportal.core.data.R
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.themekit.AccentDeriver
 import com.playfieldportal.themekit.BmpImage
@@ -56,10 +57,10 @@ class PtfThemeImporter @Inject constructor(
         // Capped read: a mispicked multi-GB file fails fast instead of OOMing the app.
         val bytes = runCatching {
             context.contentResolver.openInputStream(uri)?.use { with(SafeMedia) { it.readCapped() } }
-        }.getOrNull() ?: return@withContext Result.Failed("Could not read the file (or it is too large)")
+        }.getOrNull() ?: return@withContext Result.Failed(context.getString(R.string.data_ptf_unreadable))
 
         when (PtfParser.detect(bytes)) {
-            PtfParser.Kind.NOT_PTF -> return@withContext Result.Failed("Not a PSP theme (.ptf) file")
+            PtfParser.Kind.NOT_PTF -> return@withContext Result.Failed(context.getString(R.string.data_ptf_not_ptf))
             PtfParser.Kind.CXMB -> return@withContext Result.CxmbNotSupported
             PtfParser.Kind.OFFICIAL_PTF -> Unit
         }
@@ -70,13 +71,13 @@ class PtfThemeImporter @Inject constructor(
         val theme = runCatching { PtfParser.parse(bytes) }
             .onFailure { Timber.w(it, "PTF parse threw on a malformed theme") }
             .getOrNull()
-            ?: return@withContext Result.Failed("The theme file could not be parsed")
+            ?: return@withContext Result.Failed(context.getString(R.string.data_ptf_unparseable))
         val wallpaper = theme.wallpaper ?: return@withContext Result.Failed(
             when (theme.wallpaperStatus) {
-                PtfParser.WallpaperStatus.MISSING -> "The theme has no wallpaper image"
+                PtfParser.WallpaperStatus.MISSING -> context.getString(R.string.data_ptf_wallpaper_missing)
                 PtfParser.WallpaperStatus.UNSUPPORTED_COMPRESSION ->
-                    "This theme compresses its wallpaper with a method that isn't supported"
-                else -> "The theme's wallpaper is damaged and could not be decoded"
+                    context.getString(R.string.data_ptf_wallpaper_unsupported)
+                else -> context.getString(R.string.data_ptf_wallpaper_damaged)
             },
         )
 
@@ -102,7 +103,7 @@ class PtfThemeImporter @Inject constructor(
             icons = icons,
             iconColorArgb = PtfIconTint.iconColorFor(tint),
             ptfIcons = extras,
-        ) ?: return@withContext Result.Failed("Could not save the theme")
+        ) ?: return@withContext Result.Failed(context.getString(R.string.data_ptf_save_failed))
 
         Result.Success(
             themeId = saved.id,

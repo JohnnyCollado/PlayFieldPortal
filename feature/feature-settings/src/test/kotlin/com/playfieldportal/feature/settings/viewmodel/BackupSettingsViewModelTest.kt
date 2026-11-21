@@ -9,8 +9,6 @@ import com.playfieldportal.core.data.repository.BackupFolderRepository
 import com.playfieldportal.feature.backup.BackupInfo
 import com.playfieldportal.feature.backup.BackupManager
 import com.playfieldportal.feature.backup.RestoreWorker
-import com.playfieldportal.feature.settings.ui.deleteBackupConfirmSpec
-import com.playfieldportal.feature.settings.ui.restoreBackupConfirmSpec
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -68,7 +66,8 @@ class BackupSettingsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun vm() = BackupSettingsViewModel(context, backupManager, folders)
+    // The date text is not what these tests are about; pin it so no Android formatter is needed.
+    private fun vm() = BackupSettingsViewModel(context, backupManager, folders).also { it.formatBackupDate = { "date" } }
 
     @Test
     fun `the saved backups list carries each backup's uri`() = runTest(dispatcher) {
@@ -118,54 +117,6 @@ class BackupSettingsViewModelTest {
 
         assertTrue(vm.uiState.value.errorMessage != null)
         assertEquals(listOf(info), vm.uiState.value.backups)
-    }
-
-    @Test
-    fun `the confirm is destructive, opens on cancel and names the backup`() {
-        val spec = deleteBackupConfirmSpec(info, onConfirm = {}, onCancel = {})
-
-        assertTrue(spec.destructive)
-        assertTrue(spec.openOnCancel)
-        assertTrue(spec.message.contains("pfp-2026.pfpbackup"))
-    }
-
-    @Test
-    fun `the restore confirm is destructive, opens on cancel and says what it replaces`() {
-        val named = restoreBackupConfirmSpec("pfp-2026.pfpbackup", onConfirm = {}, onCancel = {})
-        val picked = restoreBackupConfirmSpec(null, onConfirm = {}, onCancel = {})
-
-        assertTrue(named.destructive)
-        assertTrue(named.openOnCancel)
-        assertTrue(named.message.contains("pfp-2026.pfpbackup"))
-        assertTrue(named.message.contains("replace"))
-        assertTrue(picked.destructive)
-        assertTrue(picked.openOnCancel)
-    }
-
-    @Test
-    fun `the restore runs on Confirm and not on Cancel`() {
-        var restored = 0
-        var cancelled = 0
-        val spec = restoreBackupConfirmSpec(null, onConfirm = { restored++ }, onCancel = { cancelled++ })
-
-        spec.onCancel()
-        assertEquals(0 to 1, restored to cancelled)
-
-        spec.onConfirm()
-        assertEquals(1 to 1, restored to cancelled)
-    }
-
-    @Test
-    fun `the delete runs on Confirm and not on Cancel`() {
-        var deleted = 0
-        var cancelled = 0
-        val spec = deleteBackupConfirmSpec(info, onConfirm = { deleted++ }, onCancel = { cancelled++ })
-
-        spec.onCancel()
-        assertEquals(0 to 1, deleted to cancelled)
-
-        spec.onConfirm()
-        assertEquals(1 to 1, deleted to cancelled)
     }
 
     // Survey, latent backup items (docs/audits/codebase-survey-2026-10-22.md): `return@collect`

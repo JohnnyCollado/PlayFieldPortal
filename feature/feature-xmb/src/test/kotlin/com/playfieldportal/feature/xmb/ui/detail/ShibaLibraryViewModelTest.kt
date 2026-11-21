@@ -10,8 +10,10 @@ import com.playfieldportal.core.domain.achievement.UntrackedGame
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.sound.MenuSoundPlayer
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.xmb.viewmodel.ShibaLibraryMode
 import io.mockk.coEvery
@@ -257,8 +259,18 @@ class ShibaLibraryViewModelTest {
         val menu = requireNotNull(state.options)
         assertNull(menu.group)
         assertEquals(0, menu.selectedIndex)
-        assertEquals(listOf("Sort", "Provider", "Update Installed Achievements"), state.optionRows.map { it.label })
-        assertEquals(listOf("Title A–Z", "All", null), state.optionRows.map { it.value })
+        assertEquals(
+            listOf(
+                UiText.res(R.string.shiba_options_sort),
+                UiText.res(R.string.shiba_options_provider),
+                UiText.res(R.string.shiba_options_update_installed),
+            ),
+            state.optionRows.map { it.label },
+        )
+        assertEquals(
+            listOf(UiText.res(R.string.shiba_library_sort_title_asc), UiText.res(R.string.shiba_filter_all), null),
+            state.optionRows.map { it.value },
+        )
         assertEquals(listOf(true, true, false), state.optionRows.map { it.opensMenu })
 
         press(GamepadAction.NAVIGATE_DOWN)
@@ -348,7 +360,14 @@ class ShibaLibraryViewModelTest {
         press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.SELECT)
 
         assertEquals(
-            listOf("Title A–Z", "Title Z–A", "Progress Highest First", "Progress Lowest First", "Platform A–Z", "Platform Z–A"),
+            listOf(
+                R.string.shiba_library_sort_title_asc,
+                R.string.shiba_library_sort_title_desc,
+                R.string.shiba_library_sort_progress_desc,
+                R.string.shiba_library_sort_progress_asc,
+                R.string.shiba_library_sort_platform_asc,
+                R.string.shiba_library_sort_platform_desc,
+            ).map { UiText.res(it) },
             state.optionRows.map { it.label },
         )
     }
@@ -373,7 +392,7 @@ class ShibaLibraryViewModelTest {
     fun `Update Installed Achievements runs the same update Player Status uses and closes the menu`() {
         viewModel.load(ShibaLibraryMode.TRACKED)
         press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.NAVIGATE_DOWN, GamepadAction.NAVIGATE_DOWN)
-        assertEquals("Update Installed Achievements", state.optionRows[state.options!!.selectedIndex].label)
+        assertEquals(UiText.res(R.string.shiba_options_update_installed), state.optionRows[state.options!!.selectedIndex].label)
 
         press(GamepadAction.SELECT)
 
@@ -388,7 +407,10 @@ class ShibaLibraryViewModelTest {
         assertTrue(state.optionRows.any { it.option == LibraryOption.OpenGroup(LibraryOptionGroup.PROVIDER) })
 
         viewModel.setMode(ShibaLibraryMode.UNTRACKED)
-        assertEquals(listOf("Sort", "Update Installed Achievements"), state.optionRows.map { it.label })
+        assertEquals(
+            listOf(UiText.res(R.string.shiba_options_sort), UiText.res(R.string.shiba_options_update_installed)),
+            state.optionRows.map { it.label },
+        )
 
         press(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.SELECT)
         assertFalse(

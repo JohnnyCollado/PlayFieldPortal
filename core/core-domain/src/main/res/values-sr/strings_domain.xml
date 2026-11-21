@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Slice G2: core-domain strings (enum labels, controller names, colour naming, error codes) -->
+
+    <!-- Shiba rank titles -->
+    <!-- Rank title on the player card, from lowest to highest. Shiba is a dog breed; the ranks are dog-themed names. -->
+    <string name="dom_shiba_rank_pup">Штене</string>
+    <string name="dom_shiba_rank_ruffian">Мангуп</string>
+    <string name="dom_shiba_rank_lone_ron_inu">Усамљени Рон-ину</string>
+    <string name="dom_shiba_rank_inu_master">Ину мајстор</string>
+    <string name="dom_shiba_rank_legendary_hachiko">Легендарни Хачико</string>
+
+    <!-- App editions -->
+    <!-- Which build of the app is installed: the Full build or the Lite build (without Discord). -->
+    <string name="dom_edition_full">Full</string>
+    <string name="dom_edition_lite">Lite</string>
+
+    <!-- Audio channels (volume rows) -->
+    <!-- Name of a launcher sound whose volume the user sets. -->
+    <string name="dom_audio_channel_navigation">Навигација</string>
+    <string name="dom_audio_channel_back">Назад / Откажи</string>
+    <string name="dom_audio_channel_confirm">Потврди / Примени</string>
+    <string name="dom_audio_channel_error">Грешка / Неважеће</string>
+    <string name="dom_audio_channel_category">Категорија</string>
+    <string name="dom_audio_channel_options">Опције</string>
+    <string name="dom_audio_channel_notification">Обавештење</string>
+    <string name="dom_audio_channel_boot">Секвенца покретања</string>
+    <string name="dom_audio_channel_gameboot">Game Boot</string>
+    <string name="dom_audio_channel_ambience">Амбијент</string>
+
+    <!-- Customisable media slots -->
+    <!-- Name of a sound or clip the user can replace with their own file. -->
+    <string name="dom_media_slot_navigation">Навигација</string>
+    <string name="dom_media_slot_back">Назад / Откажи</string>
+    <string name="dom_media_slot_confirm">Потврди / Примени</string>
+    <string name="dom_media_slot_error">Грешка / Неважеће</string>
+    <string name="dom_media_slot_category">Категорија</string>
+    <string name="dom_media_slot_options">Опције</string>
+    <string name="dom_media_slot_notification">Обавештење</string>
+    <string name="dom_media_slot_boot_video">Анимација покретања</string>
+    <string name="dom_media_slot_gameboot_video">Game Boot анимација</string>
+    <string name="dom_media_slot_ambience_audio">Амбијентална нумера</string>
+
+    <!-- Game tile display modes -->
+    <string name="dom_icon_display_icon0">Прилагођена иконица</string>
+    <string name="dom_icon_display_box_art">Омот</string>
+    <string name="dom_icon_display_physical_media">Физички медиј</string>
+    <string name="dom_icon_display_box_3d">3D омот</string>
+
+    <!-- Icon legibility styles -->
+    <!-- How icons separate from the background: a shadow or an outline (contour) in a dark or light colour. -->
+    <string name="dom_icon_legibility_none">Ништа</string>
+    <string name="dom_icon_legibility_offset_shadow">Померена сенка (тамна)</string>
+    <string name="dom_icon_legibility_offset_shadow_light">Померена сенка (светла)</string>
+    <string name="dom_icon_legibility_contour_dark">Обрис (тамни)</string>
+    <string name="dom_icon_legibility_contour_light">Обрис (светли)</string>
+    <string name="dom_icon_legibility_contour_auto">Обрис (аутоматски)</string>
+
+    <!-- Animated image playback -->
+    <!-- How animated artwork plays: everything, only the focused item, or nothing. -->
+    <string name="dom_image_motion_animated">Анимирано</string>
+    <string name="dom_image_motion_reduced">Смањено</string>
+    <string name="dom_image_motion_static">Статично</string>
+
+    <!-- Text legibility styles -->
+    <!-- How text separates from the background behind it. -->
+    <string name="dom_text_legibility_none">Ништа</string>
+    <string name="dom_text_legibility_shadow">Сенка</string>
+    <string name="dom_text_legibility_outline">Обрис</string>
+    <string name="dom_text_legibility_plate">Контрастна подлога</string>
+    <string name="dom_text_legibility_auto">Аутоматски</string>
+
+    <!-- Touch gestures -->
+    <string name="dom_touch_gesture_tap">Додир</string>
+    <string name="dom_touch_gesture_long_press">Задржавање</string>
+    <string name="dom_touch_gesture_swipe_left">Превлачење улево</string>
+    <string name="dom_touch_gesture_swipe_right">Превлачење удесно</string>
+    <string name="dom_touch_gesture_swipe_down">Превлачење надоле</string>
+
+    <!-- UMD slot display modes -->
+    <!-- UMD is the disc format of the PlayStation Portable. The slot shows the inserted game and/or the most recently played one. -->
+    <string name="dom_umd_slot_off">Искључено</string>
+    <string name="dom_umd_slot_inserted">Уметнуто</string>
+    <string name="dom_umd_slot_inserted_and_recent">Уметнуто и недавно</string>
+
+    <!-- Item list motion styles -->
+    <!-- How the item list animates between rows: the focused row rewinds up behind the icon, or the whole column glides together. -->
+    <string name="dom_list_motion_rewind">Премотавање</string>
+    <string name="dom_list_motion_glide">Клизање</string>
+
+    <!-- Confirm / Back button layouts -->
+    <!-- A and B are controller button names; keep them as printed on the controller. -->
+    <string name="dom_confirm_back_standard">Стандардно (A = потврди, B = назад)</string>
+    <string name="dom_confirm_back_reversed">Обрнуто (B = потврди, A = назад)</string>
+
+    <!-- X / Y button layouts -->
+    <!-- X and Y are controller button names; keep them as printed on the controller. -->
+    <string name="dom_xy_layout_standard">Стандардно (Y = опције, X = сортирање)</string>
+    <string name="dom_xy_layout_swapped">Замењено (X = опције, Y = сортирање)</string>
+
+    <!-- Controller prompt styles -->
+    <!-- Brand names of controller families. Normally left as is. -->
+    <string name="dom_controller_type_xbox">Xbox</string>
+    <string name="dom_controller_type_nintendo">Nintendo</string>
+    <string name="dom_controller_type_playstation">PlayStation</string>
+
+    <!-- Held-navigation scroll speeds -->
+    <string name="dom_scroll_speed_relaxed">Опуштено</string>
+    <string name="dom_scroll_speed_standard">Стандардно</string>
+    <string name="dom_scroll_speed_fast">Брзо</string>
+
+    <!-- Colour schemes -->
+    <!-- Name of a background colour scheme. 'Original (Monthly)' changes colour with the calendar month. -->
+    <string name="dom_color_scheme_original">Оригинална (месечна)</string>
+    <string name="dom_color_scheme_classic_blue">Класична плава</string>
+    <string name="dom_color_scheme_sunset_orange">Наранџасти залазак</string>
+    <string name="dom_color_scheme_fresh_green">Свежа зелена</string>
+    <string name="dom_color_scheme_royal_purple">Краљевска љубичаста</string>
+    <string name="dom_color_scheme_crimson_red">Гримизна црвена</string>
+    <string name="dom_color_scheme_silver">Сребрна</string>
+    <string name="dom_color_scheme_sakura_pink">Сакура ружичаста</string>
+    <string name="dom_color_scheme_golden_amber">Златни ћилибар</string>
+    <string name="dom_color_scheme_aqua_teal">Аква тиркизна</string>
+    <string name="dom_color_scheme_midnight_navy">Поноћно плава</string>
+    <string name="dom_color_scheme_charcoal">Угљено сива</string>
+
+    <!-- Controller actions -->
+    <!-- What a controller input does, shown beside the button that triggers it in Settings > Controller. -->
+    <string name="dom_action_navigate_up">Навигација нагоре</string>
+    <string name="dom_action_navigate_down">Навигација надоле</string>
+    <string name="dom_action_navigate_left">Навигација улево (претходна категорија)</string>
+    <string name="dom_action_navigate_right">Навигација удесно (следећа категорија)</string>
+    <string name="dom_action_select">Изабери / Покрени</string>
+    <string name="dom_action_back">Назад / Затвори</string>
+    <string name="dom_action_open_context_menu">Опције / Контекстуални мени</string>
+    <string name="dom_action_change_sort">Промени редослед сортирања</string>
+    <string name="dom_action_prev_category">Претходна картица (фиока апликација)</string>
+    <string name="dom_action_next_category">Следећа картица (фиока апликација)</string>
+    <string name="dom_action_home">Start (обавештења / потврда у бирачима)</string>
+    <string name="dom_action_shift">Shift (тастатура)</string>
+    <string name="dom_action_caps_lock">Caps Lock (тастатура)</string>
+    <string name="dom_action_category_menu">Мени категорије</string>
+
+    <!-- Controller button names -->
+    <!-- Name of a physical controller button or key. Letters and shoulder buttons (L1, R2) are printed on the device and are normally left as is. -->
+    <string name="dom_key_a">A / Крстић</string>
+    <string name="dom_key_b">B / Круг</string>
+    <string name="dom_key_x">X / Квадрат</string>
+    <string name="dom_key_y">Y / Троугао</string>
+    <string name="dom_key_dpad_up">D-Pad горе</string>
+    <string name="dom_key_dpad_down">D-Pad доле</string>
+    <string name="dom_key_dpad_left">D-Pad лево</string>
+    <string name="dom_key_dpad_right">D-Pad десно</string>
+    <string name="dom_key_dpad_center">D-Pad центар</string>
+    <string name="dom_key_l1">L1</string>
+    <string name="dom_key_r1">R1</string>
+    <string name="dom_key_l2">L2</string>
+    <string name="dom_key_r2">R2</string>
+    <string name="dom_key_start">Start</string>
+    <string name="dom_key_select">Select</string>
+    <string name="dom_key_enter">Enter</string>
+    <string name="dom_key_back">Назад</string>
+    <!-- A button with no known name. %1$d is Android's numeric key code. -->
+    <string name="dom_key_unknown">Дугме %1$d</string>
+
+    <!-- Colour naming (ColorNaming): descriptions of a colour and the steps of the colour steppers -->
+    <!-- Colour name in lower case, used inside a longer description such as "Dark blue" or "Red, leaning orange". -->
+    <string name="dom_hue_orange">наранџаста</string>
+    <string name="dom_hue_yellow">жута</string>
+    <string name="dom_hue_green">зелена</string>
+    <string name="dom_hue_teal">тиркизна</string>
+    <string name="dom_hue_blue">плава</string>
+    <string name="dom_hue_purple">љубичаста</string>
+    <string name="dom_hue_pink">ружичаста</string>
+    <string name="dom_hue_red">црвена</string>
+    <!-- Colour name starting a description by itself, such as "Purple, leaning blue" (capitalised where the language does). -->
+    <string name="dom_hue_orange_cap">Наранџаста</string>
+    <string name="dom_hue_yellow_cap">Жута</string>
+    <string name="dom_hue_green_cap">Зелена</string>
+    <string name="dom_hue_teal_cap">Тиркизна</string>
+    <string name="dom_hue_blue_cap">Плава</string>
+    <string name="dom_hue_purple_cap">Љубичаста</string>
+    <string name="dom_hue_pink_cap">Ружичаста</string>
+    <string name="dom_hue_red_cap">Црвена</string>
+    <!-- A colour that sits near the edge of another colour. %1$s is the colour name, %2$s the neighbouring colour it leans toward. Lower case, used inside a longer description. -->
+    <string name="dom_hue_lean">%1$s, ка: %2$s</string>
+    <!-- Same as the lower-case version, but %1$s is already capitalised because this description starts the sentence. -->
+    <string name="dom_hue_lean_cap">%1$s, ка: %2$s</string>
+    <!-- Describes a colour: %1$s is a colour description (for example "blue" or "muted green"). Word order may be changed. -->
+    <string name="dom_color_dark">Тамна %1$s</string>
+    <!-- Same as "Dark %1$s" but darker. -->
+    <string name="dom_color_very_dark">Веома тамна %1$s</string>
+    <!-- Describes a washed-out colour: %1$s is a colour name. -->
+    <string name="dom_color_muted">Пригушена %1$s</string>
+    <!-- A dark, washed-out colour: %1$s is a colour name. -->
+    <string name="dom_color_dark_muted">Тамна пригушена %1$s</string>
+    <!-- A very dark, washed-out colour: %1$s is a colour name. -->
+    <string name="dom_color_very_dark_muted">Веома тамна пригушена %1$s</string>
+    <!-- A grey. %1$s is a brightness word such as "Dark" or "Bright", capitalised. -->
+    <string name="dom_color_grey">Сива (%1$s)</string>
+    <!-- How colourful a colour is, from none to strongest. Shown beside a slider. -->
+    <string name="dom_saturation_grey">Сива</string>
+    <string name="dom_saturation_muted">Пригушена</string>
+    <string name="dom_saturation_vivid">Жива</string>
+    <string name="dom_saturation_intense">Интензивна</string>
+    <!-- How bright a colour is, from darkest to lightest. Shown beside a slider. -->
+    <string name="dom_brightness_very_dark">Веома тамна</string>
+    <string name="dom_brightness_dark">Тамна</string>
+    <string name="dom_brightness_medium">Средња</string>
+    <string name="dom_brightness_bright">Светла</string>
+    <!-- Label of the centre step of a colour or depth stepper: the colour exactly as designed. -->
+    <string name="dom_tint_standard">Стандардно</string>
+    <!-- Label of a stepper step that moves the colour toward this neighbouring colour. -->
+    <string name="dom_tint_orange">Више наранџасто</string>
+    <string name="dom_tint_yellow">Више жуто</string>
+    <string name="dom_tint_green">Више зелено</string>
+    <string name="dom_tint_teal">Више тиркизно</string>
+    <string name="dom_tint_blue">Више плаво</string>
+    <string name="dom_tint_purple">Више љубичасто</string>
+    <string name="dom_tint_pink">Више ружичасто</string>
+    <string name="dom_tint_red">Више црвено</string>
+    <string name="dom_tint_much_orange">Знатно више наранџасто</string>
+    <string name="dom_tint_much_yellow">Знатно више жуто</string>
+    <string name="dom_tint_much_green">Знатно више зелено</string>
+    <string name="dom_tint_much_teal">Знатно више тиркизно</string>
+    <string name="dom_tint_much_blue">Знатно више плаво</string>
+    <string name="dom_tint_much_purple">Знатно више љубичасто</string>
+    <string name="dom_tint_much_pink">Знатно више ружичасто</string>
+    <string name="dom_tint_much_red">Знатно више црвено</string>
+    <!-- Steps for a grey colour: toward cool (bluish) or warm (reddish) tones. -->
+    <string name="dom_tint_cooler">Хладније</string>
+    <string name="dom_tint_warmer">Топлије</string>
+    <string name="dom_tint_much_cooler">Знатно хладније</string>
+    <string name="dom_tint_much_warmer">Знатно топлије</string>
+    <!-- Labels of the lightness stepper under a colour scheme. -->
+    <string name="dom_depth_much_lighter">Знатно светлије</string>
+    <string name="dom_depth_lighter">Светлије</string>
+    <string name="dom_depth_deeper">Дубље</string>
+    <string name="dom_depth_much_deeper">Знатно дубље</string>
+
+    <!-- File limit messages (theme-kit's MotionLimits / UiMediaLimits wording, shown for rejected picks) -->
+    <!-- Shown when the picked file is not a supported motion wallpaper format. -->
+    <string name="dom_limit_motion_unsupported_format">Формат није подржан — користите MP4, WebM, GIF или WebP</string>
+    <string name="dom_limit_motion_too_large_resolution">Видео је превелик — највише 1080p</string>
+    <string name="dom_limit_motion_too_long">Снимак је предугачак — највише 60 секунди</string>
+    <string name="dom_limit_motion_too_large_bytes">Датотека је превелика — мање од 60 MB</string>
+    <string name="dom_limit_motion_undecodable">Читање тог видеа није успело — покушајте са другом датотеком</string>
+    <!-- Shown when a picked sound or clip does not meet the limits. -->
+    <string name="dom_limit_media_unsupported_audio">Формат није подржан — користите MP3, WAV, OGG или M4A звук</string>
+    <string name="dom_limit_media_unsupported_video">Формат није подржан — користите MP4 или WebM видео</string>
+    <string name="dom_limit_media_too_large_sound">Датотека је превелика</string>
+    <string name="dom_limit_media_too_large_video">Датотека је превелика — видео снимци морају бити мањи од 25 MB</string>
+    <string name="dom_limit_media_undecodable">Читање те датотеке није успело — покушајте са другом</string>
+    <string name="dom_limit_media_no_duration">Читање трајања те датотеке није успело — покушајте са другом датотеком или је конвертујте у MP3/WAV/OGG/M4A</string>
+    <!-- %1$s is a duration such as "0.5 s" or "10 s". -->
+    <string name="dom_limit_media_too_long">Тај снимак је предугачак — највише %1$s</string>
+
+    <!-- Error codes: title, why it happened, and what the user can do (docs/dev/notification-error-codes.md) -->
+    <!-- Error code LN-1001: title of the error. -->
+    <string name="dom_error_ln_1001_title">Овој платформи није додељен ниједан емулатор</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_1001_why">PlayFieldPortal не зна која апликација треба да покреће игре за ову платформу.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_1001_action">Изаберите емулатор за ову платформу у Подешавања › Додела емулатора.</string>
+    <!-- Error code LN-1002: title of the error. -->
+    <string name="dom_error_ln_1002_title">Изабрано RetroArch језгро није инсталирано</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_1002_why">Од RetroArch-а је затражено да учита језгро које није на овом уређају.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_1002_action">Инсталирајте језгро преко RetroArch Online Updater-а или изаберите друго језгро у Додели емулатора.</string>
+    <!-- Error code LN-2001: title of the error. -->
+    <string name="dom_error_ln_2001_title">Датотека игре недостаје или није читљива</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_2001_why">Датотека је можда премештена, преименована или избрисана, или је уклоњена SD картица на којој се налази.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_2001_action">Проверите да ли је датотека још увек ту, па поново скенирајте њену меморијску картицу.</string>
+    <!-- Error code LN-4001: title of the error. -->
+    <string name="dom_error_ln_4001_title">Емулатор није пронађен</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_4001_why">Емулатор додељен овој игри није инсталиран или Android није пронашао екран који PlayFieldPortal отвара.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_4001_action">Инсталирајте емулатор или изаберите други у Подешавања › Додела емулатора.</string>
+    <!-- Error code LN-4002: title of the error. -->
+    <string name="dom_error_ln_4002_title">Android није дозволио отварање емулатора</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_4002_why">Android је одбио дозволу да PlayFieldPortal покрене овај емулатор.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_4002_action">Једном отворите емулатор самостално, па покушајте поново. Ако се то понавља, ажурирајте емулатор.</string>
+    <!-- Error code LN-4003: title of the error. -->
+    <string name="dom_error_ln_4003_title">Емулатор није прешао у први план</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_4003_why">Емулатор се највероватније затворио при покретању или га је Android зауставио пре него што је игра учитана.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_4003_action">Једном отворите емулатор самостално да проверите да ли се покреће и ажурирајте га ако постоји новија верзија. Ако се то понавља, изаберите други емулатор у Подешавања › Додела емулатора.</string>
+    <!-- Error code LN-9001: title of the error. -->
+    <string name="dom_error_ln_9001_title">Емулатор није могуће отворити</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_9001_why">Дошло је до неочекиване грешке при покретању емулатора.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_9001_action">Покушајте поново. Ако се то понавља, копирајте детаље и пријавите проблем.</string>
+    <!-- Error code SC-1001: title of the error. -->
+    <string name="dom_error_sc_1001_title">За ову меморијску картицу није подешена фасцикла</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_1001_why">Ова меморијска картица још нема шта да скенира.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_1001_action">Изаберите фасциклу у опцијама меморијске картице, па је скенирајте.</string>
+    <!-- Error code SC-1002: title of the error. -->
+    <string name="dom_error_sc_1002_title">Скенирање је већ у току</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_1002_why">Ова меморијска картица се већ скенирала, па је друго скенирање прескочено.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_1002_action">Сачекајте да се текуће скенирање заврши. Резултат ће се приказати овде када се заврши.</string>
+    <!-- Error code SC-2001: title of the error. -->
+    <string name="dom_error_sc_2001_title">Приступ фасцикли је изгубљен</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_2001_why">PlayFieldPortal је изгубио дозволу за читање ове фасцикле.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_2001_action">Поново изаберите фасциклу у опцијама меморијске картице да бисте доделили приступ, па је скенирајте.</string>
+    <!-- Error code SC-2002: title of the error. -->
+    <string name="dom_error_sc_2002_title">Фасцикла више не постоји</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_2002_why">Фасцикла је премештена или избрисана. Ако је на SD картици, картица је можда уклоњена.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_2002_action">Уметните SD картицу и поново скенирајте или изаберите нову фасциклу у опцијама меморијске картице.</string>
+    <!-- Error code SC-2003: title of the error. -->
+    <string name="dom_error_sc_2003_title">Непозната системска фасцикла</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_2003_why">Ова фасцикла у главној ROM фасцикли не одговара ниједном систему који PlayFieldPortal познаје.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_2003_action">Преименујте фасциклу у назив подржаног система или преместите њене игре у такву фасциклу.</string>
+    <!-- Error code SC-2004: title of the error. -->
+    <string name="dom_error_sc_2004_title">Датотека није препозната</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_2004_why">Тип ове датотеке не користе игре за ову платформу.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_2004_action">Проверите да ли је датотека игра за ову платформу. Архиве и закрпе се намерно прескачу.</string>
+    <!-- Error code SC-9001: title of the error. -->
+    <string name="dom_error_sc_9001_title">Скенирање је неочекивано пропало</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_9001_why">Дошло је до неочекиване грешке током скенирања.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_9001_action">Покушајте поново да скенирате. Ако се то понавља, копирајте детаље и пријавите проблем.</string>
+    <!-- Error code AR-1001: title of the error. -->
+    <string name="dom_error_ar_1001_title">Фасцикла за графику није доступна</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_1001_why">PFP не може да приступи фасцикли за графику, па је нова графика паузирана.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_1001_action">Поново повежите фасциклу у Подешавања › Графика.</string>
+    <!-- Error code AR-2001: title of the error. -->
+    <string name="dom_error_ar_2001_title">Датотеку графике није могуће сачувати</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_2001_why">Меморија је била пуна или није било могуће уписати у фасциклу за графику.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_2001_action">Ослободите мало простора и покушајте поново.</string>
+    <!-- Error code AR-2002: title of the error. -->
+    <string name="dom_error_ar_2002_title">Датотеку није могуће копирати</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_2002_why">Копирање је прекинуто на пола или није било могуће уписати на одредиште.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_2002_action">Проверите да ли на одредишту има слободног простора, па покрените поново.</string>
+    <!-- Error code AR-2003: title of the error. -->
+    <string name="dom_error_ar_2003_title">Непозната системска фасцикла у увозу</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_2003_why">Ова фасцикла у увозу не одговара ниједном систему који PlayFieldPortal познаје.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_2003_action">Преименујте фасциклу у назив подржаног система и поново увезите.</string>
+    <!-- Error code AR-3001: title of the error. -->
+    <string name="dom_error_ar_3001_title">Извор графике није доступан</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_3001_why">Уређај није на мрежи или извор није одговорио.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_3001_action">Проверите везу и покушајте поново касније.</string>
+    <!-- Error code AR-3002: title of the error. -->
+    <string name="dom_error_ar_3002_title">Извор је одбио захтев</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_3002_why">Извор ограничава захтеве или је одбијен налог или кључ који му је потребан.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_3002_action">Сачекајте мало и покушајте поново или проверите налог извора у Подешавањима.</string>
+    <!-- Error code AR-3003: title of the error. -->
+    <string name="dom_error_ar_3003_title">За ову игру није пронађено подударање</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_3003_why">Извор нема унос који одговара наслову ове игре.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_3003_action">Проверите наслов игре или ручно изаберите графику у Artwork Studio.</string>
+    <!-- Error code AR-9001: title of the error. -->
+    <string name="dom_error_ar_9001_title">Преузимање је неочекивано пропало</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_9001_why">Дошло је до неочекиване грешке током преузимања.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_9001_action">Покушајте поново. Ако се то понавља, копирајте детаље и пријавите проблем.</string>
+    <!-- Error code AC-1001: title of the error. -->
+    <string name="dom_error_ac_1001_title">Ниједан скуп достигнућа не одговара овој игри</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ac_1001_why">Ниједна повезана услуга нема достигнућа за игру са овим насловом.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ac_1001_action">Ручно повежите игру на њеној страници достигнућа.</string>
+    <!-- Error code AC-2001: title of the error. -->
+    <string name="dom_error_ac_2001_title">Фасциклу са Windows достигнућима није могуће прочитати</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ac_2001_why">Фасциклу изабрану за локална достигнућа ове игре није могуће отворити.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ac_2001_action">Поново изаберите фасциклу игре на њеној страници достигнућа.</string>
+    <!-- Error code AC-3001: title of the error. -->
+    <string name="dom_error_ac_3001_title">Уређај није на мрежи</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ac_3001_why">Достигнућа не могу да се ажурирају без интернет везе.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ac_3001_action">Повежите се на интернет. Ажурирање ће се поново покренути само.</string>
+    <!-- Error code AC-3002: title of the error. -->
+    <string name="dom_error_ac_3002_title">Пријава је истекла</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ac_3002_why">Повезана услуга више не прихвата пријаву PlayFieldPortal-а.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ac_3002_action">Поново повежите услугу у Подешавања › Достигнућа.</string>
+    <!-- Error code AC-3003: title of the error. -->
+    <string name="dom_error_ac_3003_title">Детаљи игара на Steam-у су приватни</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ac_3003_why">Steam дели достигнућа само када су ваши детаљи игара јавни.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ac_3003_action">Подесите детаље игара на „Јавно“ у подешавањима приватности на Steam-у, па поново ажурирајте.</string>
+    <!-- Error code AC-3004: title of the error. -->
+    <string name="dom_error_ac_3004_title">Ову игру није могуће ажурирати</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ac_3004_why">Услуга није одговорила за ову игру или је одговорила грешком.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ac_3004_action">Покушајте поново да ажурирате касније.</string>
+    <!-- Error code MD-2001: title of the error. -->
+    <string name="dom_error_md_2001_title">Фасциклу са медијима није могуће прочитати</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_md_2001_why">PlayFieldPortal је изгубио приступ овој фасцикли или она више не постоји.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_md_2001_action">Поново изаберите фасциклу у подешавањима медија, па скенирајте.</string>
+    <!-- Error code MD-9001: title of the error. -->
+    <string name="dom_error_md_9001_title">Скенирање медија је неочекивано пропало</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_md_9001_why">Дошло је до неочекиване грешке током скенирања.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_md_9001_action">Покушајте поново да скенирате. Ако се то понавља, копирајте детаље и пријавите проблем.</string>
+    <!-- Error code BK-1001: title of the error. -->
+    <string name="dom_error_bk_1001_title">Враћање је прескочило ставку</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_bk_1001_why">Ову ставку није било могуће безбедно вратити, па је остављена каква је била.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_bk_1001_action">Ништа друго није погођено. Ако вам је потребна, поново ручно подесите ову ставку.</string>
+    <!-- Error code BK-2001: title of the error. -->
+    <string name="dom_error_bk_2001_title">Датотеку резервне копије није могуће уписати</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_bk_2001_why">Меморија је била пуна или није било могуће уписати у фасциклу за резервне копије.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_bk_2001_action">Ослободите мало простора или изаберите другу локацију за резервне копије, па покушајте поново.</string>
+    <!-- Error code BK-2002: title of the error. -->
+    <string name="dom_error_bk_2002_title">Датотека резервне копије није читљива или је оштећена</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_bk_2002_why">Датотека није резервна копија PlayFieldPortal-а или је скраћена.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_bk_2002_action">Изаберите другу датотеку резервне копије.</string>
+    <!-- Error code SY-9001: title of the error. -->
+    <string name="dom_error_sy_9001_title">Нешто није у реду</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_sy_9001_why">Дошло је до неочекиване грешке.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sy_9001_action">Покушајте поново. Ако се то понавља, копирајте детаље и пријавите проблем.</string>
+</resources>

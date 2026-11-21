@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Backup failures -->
+    <string name="bak_no_folder">Папка для резервных копий не задана. Выберите её в разделе «Настройки → Резервное копирование → Папка резервных копий».</string>
+    <string name="bak_too_large">Эта копия слишком велика для восстановления (не более 20 000 файлов и 2 ГБ). Удалите ненужные обложки или медиафайлы и повторите попытку.</string>
+    <string name="bak_write_failed">Не удалось записать в папку резервных копий. Выберите её заново в разделе «Настройки ▸ Система ▸ Резервное копирование».</string>
+    <string name="bak_unknown_error">Неизвестная ошибка</string>
+
+    <!-- Restore failures -->
+    <string name="bak_open_failed">Не удалось открыть файл резервной копии</string>
+    <string name="bak_missing_manifest">В резервной копии нет манифеста</string>
+    <string name="bak_format_too_new">Формат копии v%1$d новее, чем поддерживает приложение (v%2$d)</string>
+    <string name="bak_no_uri">URI не указан</string>
+
+    <!-- Notification titles -->
+    <string name="bak_task_created">Резервная копия создана</string>
+    <string name="bak_task_failed">Ошибка резервного копирования</string>
+    <string name="bak_task_restored">Копия восстановлена</string>
+    <string name="bak_task_restore_failed">Ошибка восстановления</string>
+    <string name="bak_results_restored">Восстановлено</string>
+    <plurals name="bak_items_skipped">
+        <item quantity="one">Пропущен %d элемент</item>
+        <item quantity="few">Пропущено %d элемента</item>
+        <item quantity="many">Пропущено %d элементов</item>
+        <item quantity="other">Пропущено %d элемента</item>
+    </plurals>
+    <string name="bak_refused_out_of_root">Отклонено \'%1$s\': вне папок, доступных для восстановления</string>
+    <string name="bak_refused_profiles_unparseable">Отклонены профили эмуляторов: не удалось разобрать файл</string>
+    <string name="bak_refused_profile">Отклонён профиль эмулятора \'%1$s\': %2$s</string>
+</resources>
