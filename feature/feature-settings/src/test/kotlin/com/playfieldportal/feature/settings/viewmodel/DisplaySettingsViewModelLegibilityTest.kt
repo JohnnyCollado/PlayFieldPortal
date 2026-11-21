@@ -67,7 +67,9 @@ class DisplaySettingsViewModelLegibilityTest {
     @Test
     fun `cycle advances through every style and persists the enum name`() = runTest(dispatcher) {
         observeUntilSettled(vm.uiState)
-        val expected = IconLegibilityStyle.entries
+        // The cycle starts from the default (the dark offset shadow), not from the first entry.
+        val start = IconLegibilityStyle.entries.indexOf(IconLegibilityStyle.DEFAULT)
+        val expected = IconLegibilityStyle.entries.drop(start) + IconLegibilityStyle.entries.take(start)
         val seen = mutableListOf<IconLegibilityStyle>()
 
         repeat(expected.size) { index ->
@@ -87,21 +89,21 @@ class DisplaySettingsViewModelLegibilityTest {
     }
 
     @Test
-    fun `an unknown persisted value surfaces as NONE and still cycles`() = runTest(dispatcher) {
+    fun `an unknown persisted value surfaces as the default and still cycles`() = runTest(dispatcher) {
         observeUntilSettled(vm.uiState)
         context.pfpDataStore.edit {
             it[KEY_ICON_LEGIBILITY] = "CONTOUR_MEDIUM" // a style that no longer exists
         }
 
         eventually("stale value tolerated") {
-            vm.uiState.value.iconLegibility == IconLegibilityStyle.NONE
+            vm.uiState.value.iconLegibility == IconLegibilityStyle.DEFAULT
         }
 
         // The pipeline genuinely works with the stale key present: cycling lands on the first
-        // entry after NONE, proving the read neither crashed nor wedged the state flow.
+        // entry after the default, proving the read neither crashed nor wedged the state flow.
         vm.cycleIconLegibility()
         eventually("cycle works after stale value") {
-            vm.uiState.value.iconLegibility == IconLegibilityStyle.OFFSET_SHADOW
+            vm.uiState.value.iconLegibility == IconLegibilityStyle.OFFSET_SHADOW_LIGHT
         }
     }
 

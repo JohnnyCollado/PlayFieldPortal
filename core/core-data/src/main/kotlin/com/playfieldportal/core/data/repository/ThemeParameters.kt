@@ -79,7 +79,7 @@ internal object ThemeParameters {
 
     // TextLegibilityStyle.DEFAULT / IconLegibilityStyle.DEFAULT names (core-domain is not a dependency here).
     private const val DEFAULT_TEXT_LEGIBILITY = "AUTO"
-    private const val DEFAULT_ICON_LEGIBILITY = "NONE"
+    private const val DEFAULT_ICON_LEGIBILITY = "OFFSET_SHADOW"
 
     private fun PfpThemeManifest.withLegibility(edit: (ThemeLegibility) -> ThemeLegibility) =
         copy(legibility = edit(legibility ?: ThemeLegibility()))

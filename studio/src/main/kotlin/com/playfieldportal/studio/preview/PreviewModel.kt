@@ -460,7 +460,7 @@ object SampleContent {
 
     private val shiba = listOf(
         Row(
-            null, "Ruffian", "1,240 / 3,600 coins  •  $TRACKED tracked  •  1 mastered",
+            null, "Ruffian  •  Lv 27", "1,240 / 3,600 coins  •  $TRACKED tracked  •  1 mastered",
             leading = Leading.LEVEL, badge = "Lv 27", menu = RowKind.SHIBA,
         ),
         leaf("item_shiba_track", "All Tracked Games", "$TRACKED games", menu = RowKind.SHIBA),

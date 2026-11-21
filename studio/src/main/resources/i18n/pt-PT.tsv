@@ -1,0 +1,173 @@
+# Theme Studio in pt-PT. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	Novo
+Open…	Abrir…
+Upgrade folder…	Atualizar pasta…
+Convert .ptf…	Converter .ptf…
+Batch convert…	Conversão em lote…
+Unpack assets…	Extrair recursos…
+Undo	Anular
+Redo	Refazer
+Export .pfptheme…	Exportar .pfptheme…
+Import PSP theme ▾	Importar tema da PSP ▾
+Working…	A processar…
+Open ▾	Abrir ▾
+Open: {0} ▾	Abrir: {0} ▾
+XMB (back to the crossbar)	XMB (voltar à barra)
+Stop {0}	Parar {0}
+Play {0}	Reproduzir {0}
+Video only — sound plays on the device	Só vídeo — o som é reproduzido no dispositivo
+This theme uses an older format. Saving upgrades it to the current one.	Este tema usa um formato antigo. Guardar atualiza-o para o atual.
+See changes	Ver alterações
+Something went wrong	Algo correu mal
+OK	OK
+Cancel	Cancelar
+Open theme	Abrir tema
+PSP theme to convert	Tema da PSP a converter
+Export theme	Exportar tema
+Info	Informações
+Color	Cor
+Background	Fundo
+Legibility	Legibilidade
+Layout	Disposição
+Icons	Ícones
+Sounds	Sons
+Boot & Game Boot	Boot e Game Boot
+Export check	Verificação de exportação
+Untitled	Sem título
+Video	Vídeo
+Image	Imagem
+Wave	Onda
+Not set	Não definido
+Set	Definido
+Preview only	Só pré-visualização
+None custom	Nenhum personalizado
+{0} custom	{0} personalizados
+None set	Nenhum definido
+{0} set	{0} definidos
+{0} of 2	{0} de 2
+Ready	Pronto
+Untitled Theme	Tema sem título
+App Drawer	Gaveta de aplicações
+Settings	Definições
+App Picker	Seletor de aplicações
+Game Picker	Seletor de jogos
+Artwork Studio	Estúdio de ilustrações
+Game Detail Screen	Detalhes do jogo
+Achievement Screen	Conquistas
+Per-Game Achievement Screen	Conquistas por jogo
+Lock Screen	Ecrã de bloqueio
+Boot	Boot
+Game Boot	Game Boot
+In this file	Neste ficheiro
+Nothing embedded yet	Ainda nada incorporado
+Theme name	Nome do tema
+Author	Autor
+Short description	Descrição curta
+New theme — not saved yet	Tema novo — ainda não guardado
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	Guardado: nome, autor e descrição seguem dentro do .pfptheme. A data de atualização é definida ao exportar.
+Accent color	Cor de destaque
+Auto (from the wallpaper)	Automática (da imagem de fundo)
+Custom	Personalizada
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	Cada nova imagem de fundo ou vídeo define o destaque. Escolha uma cor para manter a sua.
+Your accent stays when the wallpaper or video changes.	O seu destaque mantém-se quando a imagem de fundo ou o vídeo muda.
+Custom accent	Destaque personalizado
+Icon color	Cor dos ícones
+Auto (follows the theme)	Automática (segue o tema)
+White	Branco
+Main text color	Cor do texto principal
+Titles and labels: the crossbar, list rows and status strip, and every screen.	Títulos e etiquetas: a barra, as linhas, a faixa de estado e todos os ecrãs.
+Auto (built-in colors)	Automática (cores integradas)
+Use my exact color	Usar a minha cor exata
+Subtext color	Cor do subtexto
+Subtitles, sublabels and values.	Subtítulos, subetiquetas e valores.
+Same as main text	Igual ao texto principal
+Source	Origem
+Wave motion	Movimento da onda
+Video playback	Reprodução de vídeo
+Moving	Em movimento
+Moving, dim	Em movimento, ténue
+Still	Parado
+Still, dim	Parado, ténue
+None — live wave background	Nenhum — fundo de onda animado
+Replace…	Substituir…
+Re-crop…	Recortar de novo…
+Clear	Limpar
+Clear video	Limpar vídeo
+Pick frame…	Escolher fotograma…
+The preview always shows a frozen wave; the style plays on the device.	A pré-visualização mostra sempre uma onda parada; o estilo é animado no dispositivo.
+Lock screen	Ecrã de bloqueio
+None — the theme leaves the device lock screen alone	Nenhum — o tema não altera o ecrã de bloqueio do dispositivo
+Choose Image…	Escolher imagem…
+Use Poster	Usar póster
+Use Wallpaper	Usar imagem de fundo
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	Apenas uma imagem estática. O dispositivo recorta-a para o seu ecrã e só a define se o utilizador concordar ao aplicar.
+Crop	Recortar
+Zoom	Zoom
+Center	Centrar
+Apply	Aplicar
+Reset	Repor
+Text	Texto
+Automatic	Automático
+None	Nenhum
+Drop shadow	Sombra
+Outline	Contorno
+Contrast plate	Placa de contraste
+Offset shadow (dark)	Sombra deslocada (escura)
+Offset shadow (light)	Sombra deslocada (clara)
+Contour dark	Contorno escuro
+Contour light	Contorno claro
+Contour auto	Contorno automático
+Solid unfocused icons	Ícones sem foco sólidos
+Older launchers ignore these and show plain text and icons.	Os launchers antigos ignoram isto e mostram texto e ícones simples.
+Preview with my layout	Pré-visualização com a minha disposição
+Preview only — never saved in the theme. Remembered on this computer.	Só pré-visualização — nunca guardado no tema. Memorizado neste computador.
+Use my layout in the preview	Usar a minha disposição na pré-visualização
+Scale — {0}	Escala — {0}
+Horizontal — {0}	Horizontal — {0}
+Vertical — {0}	Vertical — {0}
+Biblically Accurate preview	Pré-visualização fiel ao original
+Adjust on preview	Ajustar na pré-visualização
+All {0}	Todos {0}
+Crossbar {0}	Barra {0}
+Items {0}	Itens {0}
+Consoles {0}	Consolas {0}
+Physical Media {0}	Suportes físicos {0}
+On screen	No ecrã
+Customized {0}	Personalizados {0}
+Showing {0} of {1}	A mostrar {0} de {1}
+Select a slot to see it at real size, replace it, or export its template.	Selecione um espaço para o ver em tamanho real, substituir ou exportar o modelo.
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	Largue um ficheiro de imagem (png, gif, jpg, bmp, webp) em qualquer espaço para substituir o ícone.
+Import icon pack… ▾	Importar pacote de ícones… ▾
+Export templates…	Exportar modelos…
+Reset all	Repor tudo
+Local file…	Ficheiro local…
+From theme…	Do tema…
+Export template	Exportar modelo
+Menu sounds	Sons do menu
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	O que ficar vazio mantém o som integrado. Os clipes têm de caber no limite de cada linha.
+Navigation	Navegação
+Category change	Mudança de categoria
+Options panel	Painel de opções
+Back / cancel	Voltar / cancelar
+Confirm / apply	Confirmar / aplicar
+Error / invalid	Erro / inválido
+Notification	Notificação
+Ambience (loops)	Ambiente (em ciclo)
+Built-in	Integrado
+Up to {0}	Até {0}
+Choose…	Escolher…
+▶ Play	▶ Reproduzir
+■ Stop	■ Parar
+Boot sequences	Sequências de arranque
+Choose the built-in sequence or your own MP4 for each.	Escolha a sequência integrada ou o seu próprio MP4 para cada uma.
+The launcher's own {0} sequence.	A sequência {0} do próprio launcher.
+Your own MP4 (H.264).	O seu próprio MP4 (H.264).
+Choose MP4…	Escolher MP4…
+Play in preview	Reproduzir na pré-visualização
+Use built-in	Usar a integrada
+All media is within limits	Todos os conteúdos estão dentro dos limites
+Opens on older launchers	Abre em launchers antigos
+Fix the items marked ✕ before exporting.	Corrija os itens marcados com ✕ antes de exportar.
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	Ao exportar é gerada uma imagem de pré-visualização do tema final, que aparece como miniatura na galeria de temas do launcher.
+Opened {0}	{0} aberto
+Exported {0}	{0} exportado

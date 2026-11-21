@@ -1,0 +1,173 @@
+# Theme Studio in ca. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	Nou
+Open…	Obre…
+Upgrade folder…	Actualitza la carpeta…
+Convert .ptf…	Converteix .ptf…
+Batch convert…	Conversió per lots…
+Unpack assets…	Desempaqueta els recursos…
+Undo	Desfés
+Redo	Refés
+Export .pfptheme…	Exporta .pfptheme…
+Import PSP theme ▾	Importa un tema de PSP ▾
+Working…	S'està treballant…
+Open ▾	Obre ▾
+Open: {0} ▾	Obre: {0} ▾
+XMB (back to the crossbar)	XMB (torna a la barra)
+Stop {0}	Atura {0}
+Play {0}	Reprodueix {0}
+Video only — sound plays on the device	Només vídeo: el so es reprodueix al dispositiu
+This theme uses an older format. Saving upgrades it to the current one.	Aquest tema fa servir un format antic. En desar-lo s'actualitza a l'actual.
+See changes	Mostra els canvis
+Something went wrong	Alguna cosa ha anat malament
+OK	D'acord
+Cancel	Cancel·la
+Open theme	Obre un tema
+PSP theme to convert	Tema de PSP per convertir
+Export theme	Exporta el tema
+Info	Informació
+Color	Color
+Background	Fons
+Legibility	Llegibilitat
+Layout	Disposició
+Icons	Icones
+Sounds	Sons
+Boot & Game Boot	Boot i Game Boot
+Export check	Comprovació d'exportació
+Untitled	Sense títol
+Video	Vídeo
+Image	Imatge
+Wave	Ona
+Not set	Sense definir
+Set	Definit
+Preview only	Només previsualització
+None custom	Cap de personalitzada
+{0} custom	{0} personalitzades
+None set	Cap de definit
+{0} set	{0} definits
+{0} of 2	{0} de 2
+Ready	A punt
+Untitled Theme	Tema sense títol
+App Drawer	Calaix d'aplicacions
+Settings	Configuració
+App Picker	Selector d'aplicacions
+Game Picker	Selector de jocs
+Artwork Studio	Estudi d'il·lustracions
+Game Detail Screen	Detalls del joc
+Achievement Screen	Assoliments
+Per-Game Achievement Screen	Assoliments per joc
+Lock Screen	Pantalla de bloqueig
+Boot	Boot
+Game Boot	Game Boot
+In this file	En aquest fitxer
+Nothing embedded yet	Encara no hi ha res incrustat
+Theme name	Nom del tema
+Author	Autor
+Short description	Descripció breu
+New theme — not saved yet	Tema nou: encara no desat
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	Desat: el nom, l'autor i la descripció viatgen dins del .pfptheme. La data d'actualització es fixa en exportar.
+Accent color	Color d'accent
+Auto (from the wallpaper)	Automàtic (del fons de pantalla)
+Custom	Personalitzat
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	Cada fons o vídeo nou defineix l'accent. Tria un color per conservar el teu.
+Your accent stays when the wallpaper or video changes.	El teu accent es manté quan canvia el fons o el vídeo.
+Custom accent	Accent personalitzat
+Icon color	Color de les icones
+Auto (follows the theme)	Automàtic (segueix el tema)
+White	Blanc
+Main text color	Color del text principal
+Titles and labels: the crossbar, list rows and status strip, and every screen.	Títols i etiquetes: la barra, les files, la franja d'estat i totes les pantalles.
+Auto (built-in colors)	Automàtic (colors integrats)
+Use my exact color	Fes servir el meu color exacte
+Subtext color	Color del subtext
+Subtitles, sublabels and values.	Subtítols, subetiquetes i valors.
+Same as main text	Igual que el text principal
+Source	Origen
+Wave motion	Moviment de l'ona
+Video playback	Reproducció de vídeo
+Moving	En moviment
+Moving, dim	En moviment, tènue
+Still	Quiet
+Still, dim	Quiet, tènue
+None — live wave background	Cap: fons d'ona animat
+Replace…	Substitueix…
+Re-crop…	Torna a retallar…
+Clear	Esborra
+Clear video	Esborra el vídeo
+Pick frame…	Tria el fotograma…
+The preview always shows a frozen wave; the style plays on the device.	La previsualització sempre mostra una ona aturada; l'estil es reprodueix al dispositiu.
+Lock screen	Pantalla de bloqueig
+None — the theme leaves the device lock screen alone	Cap: el tema no toca la pantalla de bloqueig del dispositiu
+Choose Image…	Tria una imatge…
+Use Poster	Fes servir el pòster
+Use Wallpaper	Fes servir el fons
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	Només una imatge fixa. El dispositiu la retalla a la seva pantalla i només l'aplica si l'usuari hi està d'acord en aplicar el tema.
+Crop	Retalla
+Zoom	Zoom
+Center	Centra
+Apply	Aplica
+Reset	Restableix
+Text	Text
+Automatic	Automàtic
+None	Cap
+Drop shadow	Ombra
+Outline	Contorn
+Contrast plate	Placa de contrast
+Offset shadow (dark)	Ombra desplaçada (fosca)
+Offset shadow (light)	Ombra desplaçada (clara)
+Contour dark	Contorn fosc
+Contour light	Contorn clar
+Contour auto	Contorn automàtic
+Solid unfocused icons	Icones sense focus opaques
+Older launchers ignore these and show plain text and icons.	Els llançadors antics ho ignoren i mostren text i icones sense tractament.
+Preview with my layout	Previsualització amb la meva disposició
+Preview only — never saved in the theme. Remembered on this computer.	Només previsualització: mai es desa al tema. Es recorda en aquest ordinador.
+Use my layout in the preview	Fes servir la meva disposició a la previsualització
+Scale — {0}	Escala — {0}
+Horizontal — {0}	Horitzontal — {0}
+Vertical — {0}	Vertical — {0}
+Biblically Accurate preview	Previsualització fidel a l'original
+Adjust on preview	Ajusta a la previsualització
+All {0}	Tots {0}
+Crossbar {0}	Barra {0}
+Items {0}	Elements {0}
+Consoles {0}	Consoles {0}
+Physical Media {0}	Suports físics {0}
+On screen	En pantalla
+Customized {0}	Personalitzades {0}
+Showing {0} of {1}	Es mostren {0} de {1}
+Select a slot to see it at real size, replace it, or export its template.	Selecciona un espai per veure'l a mida real, substituir-lo o exportar-ne la plantilla.
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	Deixa anar un fitxer d'imatge (png, gif, jpg, bmp, webp) sobre qualsevol espai per substituir-ne la icona.
+Import icon pack… ▾	Importa un paquet d'icones… ▾
+Export templates…	Exporta les plantilles…
+Reset all	Restableix-ho tot
+Local file…	Fitxer local…
+From theme…	Del tema…
+Export template	Exporta la plantilla
+Menu sounds	Sons del menú
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	El que deixis buit conserva el so integrat. Els clips han de cabre dins del límit de cada fila.
+Navigation	Navegació
+Category change	Canvi de categoria
+Options panel	Tauler d'opcions
+Back / cancel	Enrere / cancel·la
+Confirm / apply	Confirma / aplica
+Error / invalid	Error / no vàlid
+Notification	Notificació
+Ambience (loops)	Ambient (en bucle)
+Built-in	Integrat
+Up to {0}	Fins a {0}
+Choose…	Tria…
+▶ Play	▶ Reprodueix
+■ Stop	■ Atura
+Boot sequences	Seqüències d'arrencada
+Choose the built-in sequence or your own MP4 for each.	Tria per a cadascuna la seqüència integrada o el teu propi MP4.
+The launcher's own {0} sequence.	La seqüència {0} pròpia del llançador.
+Your own MP4 (H.264).	El teu propi MP4 (H.264).
+Choose MP4…	Tria un MP4…
+Play in preview	Reprodueix a la previsualització
+Use built-in	Fes servir la integrada
+All media is within limits	Tots els mitjans són dins dels límits
+Opens on older launchers	S'obre en llançadors antics
+Fix the items marked ✕ before exporting.	Corregeix els elements marcats amb ✕ abans d'exportar.
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	En exportar es genera una imatge de previsualització del tema acabat, que es mostra com a miniatura a la galeria de temes del llançador.
+Opened {0}	S'ha obert {0}
+Exported {0}	S'ha exportat {0}

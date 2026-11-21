@@ -136,9 +136,12 @@ class IconMatteTest {
     }
 
     @Test
-    fun `fromName falls back to NONE for null blank and stale values`() {
-        assertEquals(IconLegibilityStyle.NONE, IconLegibilityStyle.fromName(null))
-        assertEquals(IconLegibilityStyle.NONE, IconLegibilityStyle.fromName(""))
-        assertEquals(IconLegibilityStyle.NONE, IconLegibilityStyle.fromName("CONTOUR_MEDIUM"))
+    fun `fromName falls back to the default, the dark offset shadow, for null blank and stale values`() {
+        assertEquals(IconLegibilityStyle.OFFSET_SHADOW, IconLegibilityStyle.DEFAULT)
+        assertEquals(IconLegibilityStyle.OFFSET_SHADOW, IconLegibilityStyle.fromName(null))
+        assertEquals(IconLegibilityStyle.OFFSET_SHADOW, IconLegibilityStyle.fromName(""))
+        assertEquals(IconLegibilityStyle.OFFSET_SHADOW, IconLegibilityStyle.fromName("CONTOUR_MEDIUM"))
+        // None is still a choice a user can store and get back.
+        assertEquals(IconLegibilityStyle.NONE, IconLegibilityStyle.fromName("NONE"))
     }
 }

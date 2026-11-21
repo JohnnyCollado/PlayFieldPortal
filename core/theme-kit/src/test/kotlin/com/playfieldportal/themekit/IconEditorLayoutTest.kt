@@ -95,7 +95,7 @@ class IconEditorLayoutTest {
             ),
             byLabel["Social"],
         )
-        assertEquals(listOf("item_shiba_connect", "item_shiba_track", "item_shiba_untracked"), byLabel["Shiba Coins"])
+        assertEquals(listOf("item_shiba_player", "item_shiba_connect", "item_shiba_track", "item_shiba_untracked"), byLabel["Shiba Coins"])
     }
 
     @Test
@@ -154,13 +154,13 @@ class IconEditorLayoutTest {
         assertEquals(
             mapOf(
                 IconEditorTab.CROSSBAR to 9,
-                IconEditorTab.ITEMS to 44,
+                IconEditorTab.ITEMS to 45,
                 IconEditorTab.CONSOLES to 45,
                 IconEditorTab.PHYSICAL_MEDIA to 42,
             ),
             IconEditorTab.entries.associateWith { IconEditorLayout.slots(it).size },
         )
-        assertEquals(140, IconEditorLayout.ALL.size)
+        assertEquals(141, IconEditorLayout.ALL.size)
     }
 
     @Test

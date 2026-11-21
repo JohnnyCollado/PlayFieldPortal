@@ -1,0 +1,173 @@
+# Theme Studio in ru. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	Создать
+Open…	Открыть…
+Upgrade folder…	Обновить папку…
+Convert .ptf…	Преобразовать .ptf…
+Batch convert…	Пакетное преобразование…
+Unpack assets…	Распаковать ресурсы…
+Undo	Отменить
+Redo	Повторить
+Export .pfptheme…	Экспорт .pfptheme…
+Import PSP theme ▾	Импорт темы PSP ▾
+Working…	Выполняется…
+Open ▾	Открыть ▾
+Open: {0} ▾	Открыть: {0} ▾
+XMB (back to the crossbar)	XMB (назад к панели)
+Stop {0}	Остановить {0}
+Play {0}	Воспроизвести {0}
+Video only — sound plays on the device	Только видео — звук воспроизводится на устройстве
+This theme uses an older format. Saving upgrades it to the current one.	Эта тема использует старый формат. При сохранении она обновится до текущего.
+See changes	Показать изменения
+Something went wrong	Что-то пошло не так
+OK	ОК
+Cancel	Отмена
+Open theme	Открыть тему
+PSP theme to convert	Тема PSP для преобразования
+Export theme	Экспорт темы
+Info	Сведения
+Color	Цвет
+Background	Фон
+Legibility	Читаемость
+Layout	Расположение
+Icons	Значки
+Sounds	Звуки
+Boot & Game Boot	Boot и Game Boot
+Export check	Проверка экспорта
+Untitled	Без названия
+Video	Видео
+Image	Изображение
+Wave	Волна
+Not set	Не задано
+Set	Задано
+Preview only	Только предпросмотр
+None custom	Нет своих
+{0} custom	Своих: {0}
+None set	Ничего не задано
+{0} set	Задано: {0}
+{0} of 2	{0} из 2
+Ready	Готово
+Untitled Theme	Тема без названия
+App Drawer	Меню приложений
+Settings	Настройки
+App Picker	Выбор приложений
+Game Picker	Выбор игр
+Artwork Studio	Студия обложек
+Game Detail Screen	Сведения об игре
+Achievement Screen	Достижения
+Per-Game Achievement Screen	Достижения игры
+Lock Screen	Экран блокировки
+Boot	Boot
+Game Boot	Game Boot
+In this file	В этом файле
+Nothing embedded yet	Пока ничего не встроено
+Theme name	Название темы
+Author	Автор
+Short description	Краткое описание
+New theme — not saved yet	Новая тема — ещё не сохранена
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	Сохраняется: название, автор и описание хранятся внутри .pfptheme. Дата обновления задаётся при экспорте.
+Accent color	Цвет акцента
+Auto (from the wallpaper)	Авто (по обоям)
+Custom	Свой
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	Каждые новые обои или видео задают акцент. Выберите цвет, чтобы сохранить свой.
+Your accent stays when the wallpaper or video changes.	Ваш акцент сохраняется при смене обоев или видео.
+Custom accent	Свой акцент
+Icon color	Цвет значков
+Auto (follows the theme)	Авто (по теме)
+White	Белый
+Main text color	Цвет основного текста
+Titles and labels: the crossbar, list rows and status strip, and every screen.	Заголовки и подписи: панель, строки списков, строка состояния и все экраны.
+Auto (built-in colors)	Авто (встроенные цвета)
+Use my exact color	Использовать мой точный цвет
+Subtext color	Цвет вспомогательного текста
+Subtitles, sublabels and values.	Подзаголовки, пояснения и значения.
+Same as main text	Как основной текст
+Source	Источник
+Wave motion	Движение волны
+Video playback	Воспроизведение видео
+Moving	В движении
+Moving, dim	В движении, приглушённо
+Still	Неподвижно
+Still, dim	Неподвижно, приглушённо
+None — live wave background	Нет — анимированный фон с волной
+Replace…	Заменить…
+Re-crop…	Обрезать заново…
+Clear	Очистить
+Clear video	Удалить видео
+Pick frame…	Выбрать кадр…
+The preview always shows a frozen wave; the style plays on the device.	В предпросмотре волна всегда неподвижна; стиль воспроизводится на устройстве.
+Lock screen	Экран блокировки
+None — the theme leaves the device lock screen alone	Нет — тема не меняет экран блокировки устройства
+Choose Image…	Выбрать изображение…
+Use Poster	Использовать постер
+Use Wallpaper	Использовать обои
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	Только неподвижное изображение. Устройство обрезает его под свой экран и устанавливает, только если пользователь согласится при применении.
+Crop	Обрезать
+Zoom	Масштаб
+Center	По центру
+Apply	Применить
+Reset	Сбросить
+Text	Текст
+Automatic	Авто
+None	Нет
+Drop shadow	Тень
+Outline	Контур
+Contrast plate	Контрастная подложка
+Offset shadow (dark)	Смещённая тень (тёмная)
+Offset shadow (light)	Смещённая тень (светлая)
+Contour dark	Контур тёмный
+Contour light	Контур светлый
+Contour auto	Контур авто
+Solid unfocused icons	Непрозрачные значки без фокуса
+Older launchers ignore these and show plain text and icons.	Старые лаунчеры игнорируют эти параметры и показывают обычный текст и значки.
+Preview with my layout	Предпросмотр с моим расположением
+Preview only — never saved in the theme. Remembered on this computer.	Только предпросмотр — никогда не сохраняется в теме. Запоминается на этом компьютере.
+Use my layout in the preview	Использовать моё расположение в предпросмотре
+Scale — {0}	Масштаб — {0}
+Horizontal — {0}	По горизонтали — {0}
+Vertical — {0}	По вертикали — {0}
+Biblically Accurate preview	Предпросмотр как в оригинале
+Adjust on preview	Настроить в предпросмотре
+All {0}	Все {0}
+Crossbar {0}	Панель {0}
+Items {0}	Элементы {0}
+Consoles {0}	Консоли {0}
+Physical Media {0}	Физические носители {0}
+On screen	На экране
+Customized {0}	Изменённые {0}
+Showing {0} of {1}	Показано {0} из {1}
+Select a slot to see it at real size, replace it, or export its template.	Выберите слот, чтобы увидеть его в реальном размере, заменить или экспортировать шаблон.
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	Перетащите файл изображения (png, gif, jpg, bmp, webp) на любой слот, чтобы заменить его значок.
+Import icon pack… ▾	Импорт набора значков… ▾
+Export templates…	Экспорт шаблонов…
+Reset all	Сбросить всё
+Local file…	Локальный файл…
+From theme…	Из темы…
+Export template	Экспорт шаблона
+Menu sounds	Звуки меню
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	Пустые поля сохраняют встроенный звук. Клипы должны укладываться в лимит каждой строки.
+Navigation	Навигация
+Category change	Смена категории
+Options panel	Панель параметров
+Back / cancel	Назад / отмена
+Confirm / apply	Подтвердить / применить
+Error / invalid	Ошибка / недопустимо
+Notification	Уведомление
+Ambience (loops)	Фоновый звук (по кругу)
+Built-in	Встроенный
+Up to {0}	До {0}
+Choose…	Выбрать…
+▶ Play	▶ Воспроизвести
+■ Stop	■ Остановить
+Boot sequences	Заставки запуска
+Choose the built-in sequence or your own MP4 for each.	Выберите для каждой встроенную заставку или свой MP4.
+The launcher's own {0} sequence.	Собственная заставка {0} лаунчера.
+Your own MP4 (H.264).	Ваш MP4 (H.264).
+Choose MP4…	Выбрать MP4…
+Play in preview	Воспроизвести в предпросмотре
+Use built-in	Использовать встроенную
+All media is within limits	Все медиафайлы в пределах лимитов
+Opens on older launchers	Открывается в старых лаунчерах
+Fix the items marked ✕ before exporting.	Перед экспортом исправьте пункты, отмеченные ✕.
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	При экспорте создаётся изображение готовой темы, которое показывается как миниатюра в галерее тем лаунчера.
+Opened {0}	Открыто: {0}
+Exported {0}	Экспортировано: {0}

@@ -13,7 +13,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import com.playfieldportal.studio.i18n.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -40,6 +40,9 @@ private const val AMBIENCE_KEY = "ambience_audio"
 /** (media slot key, label) in display order: the five menu sounds, then the looping ambience. */
 val SOUND_ROWS: List<Pair<String, String>> = listOf(
     "sound_scroll" to "Navigation",
+    // Added with the launcher's two extra menu sounds (Nov 2026). Left empty, each falls back to Navigation.
+    "sound_category" to "Category change",
+    "sound_options" to "Options panel",
     "sound_back" to "Back / cancel",
     "sound_confirm" to "Confirm / apply",
     "sound_error" to "Error / invalid",
@@ -187,7 +190,7 @@ private fun SoundRowCard(
             modifier = Modifier.fillMaxWidth(),
         )
         MutedText(row.lengthLine, 11)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        ButtonRow {
             OutlinedButton(onClick = onPick) { Text(if (row.builtIn) "Choose…" else "Replace…", fontSize = 12.sp) }
             if (!row.builtIn) OutlinedButton(onClick = onReset) { Text("Reset", fontSize = 12.sp) }
         }

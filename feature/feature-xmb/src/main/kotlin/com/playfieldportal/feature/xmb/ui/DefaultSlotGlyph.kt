@@ -126,6 +126,8 @@ internal fun defaultGlyphFor(slot: IconSlot): SlotGlyphDefault {
         "item_settings" -> SlotGlyphDefault.Drawable(systemIconRes("settings"))
         // The six Settings sections' own icons: existing art with the wrench badge in the upper left (the rows inside keep the plain wrench).
         in SETTINGS_SECTION_ICON_RES -> SlotGlyphDefault.Drawable(SETTINGS_SECTION_ICON_RES.getValue(slot.key))
+        // The player card's Shiba head.
+        PLAYER_CARD_SLOT_KEY -> SlotGlyphDefault.Drawable(R.drawable.player_shiba_head)
         else -> ITEM_VECTORS[slot.key]?.let { SlotGlyphDefault.Vector(it) } ?: SlotGlyphDefault.None
     }
 }

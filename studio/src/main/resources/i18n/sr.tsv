@@ -1,0 +1,173 @@
+# Theme Studio in sr. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	Ново
+Open…	Отвори…
+Upgrade folder…	Надогради фасциклу…
+Convert .ptf…	Претвори .ptf…
+Batch convert…	Групна конверзија…
+Unpack assets…	Распакуј ресурсе…
+Undo	Опозови
+Redo	Понови
+Export .pfptheme…	Извези .pfptheme…
+Import PSP theme ▾	Увези PSP тему ▾
+Working…	У току…
+Open ▾	Отвори ▾
+Open: {0} ▾	Отвори: {0} ▾
+XMB (back to the crossbar)	XMB (назад на траку)
+Stop {0}	Заустави {0}
+Play {0}	Пусти {0}
+Video only — sound plays on the device	Само видео — звук се репродукује на уређају
+This theme uses an older format. Saving upgrades it to the current one.	Ова тема користи старији формат. Чувањем се надограђује на тренутни.
+See changes	Погледај промене
+Something went wrong	Нешто је пошло наопако
+OK	У реду
+Cancel	Откажи
+Open theme	Отвори тему
+PSP theme to convert	PSP тема за конверзију
+Export theme	Извези тему
+Info	Информације
+Color	Боја
+Background	Позадина
+Legibility	Читљивост
+Layout	Распоред
+Icons	Иконе
+Sounds	Звукови
+Boot & Game Boot	Boot и Game Boot
+Export check	Провера извоза
+Untitled	Без наслова
+Video	Видео
+Image	Слика
+Wave	Талас
+Not set	Није подешено
+Set	Подешено
+Preview only	Само преглед
+None custom	Нема прилагођених
+{0} custom	Прилагођених: {0}
+None set	Ништа подешено
+{0} set	Подешено: {0}
+{0} of 2	{0} од 2
+Ready	Спремно
+Untitled Theme	Тема без наслова
+App Drawer	Фиока апликација
+Settings	Подешавања
+App Picker	Избор апликација
+Game Picker	Избор игара
+Artwork Studio	Студио илустрација
+Game Detail Screen	Детаљи игре
+Achievement Screen	Достигнућа
+Per-Game Achievement Screen	Достигнућа игре
+Lock Screen	Закључани екран
+Boot	Boot
+Game Boot	Game Boot
+In this file	У овој датотеци
+Nothing embedded yet	Још ништа уграђено
+Theme name	Назив теме
+Author	Аутор
+Short description	Кратак опис
+New theme — not saved yet	Нова тема — још није сачувана
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	Сачувано: назив, аутор и опис путују унутар .pfptheme датотеке. Датум ажурирања се поставља при извозу.
+Accent color	Боја нагласка
+Auto (from the wallpaper)	Аутоматски (из позадинске слике)
+Custom	Прилагођена
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	Свака нова позадина или видео поставља нагласак. Изаберите боју да задржите своју.
+Your accent stays when the wallpaper or video changes.	Ваш нагласак остаје када се промени позадина или видео.
+Custom accent	Прилагођени нагласак
+Icon color	Боја икона
+Auto (follows the theme)	Аутоматски (прати тему)
+White	Бела
+Main text color	Боја главног текста
+Titles and labels: the crossbar, list rows and status strip, and every screen.	Наслови и ознаке: трака, редови листе, статусна трака и сваки екран.
+Auto (built-in colors)	Аутоматски (уграђене боје)
+Use my exact color	Користи моју тачну боју
+Subtext color	Боја подтекста
+Subtitles, sublabels and values.	Поднаслови, подознаке и вредности.
+Same as main text	Исто као главни текст
+Source	Извор
+Wave motion	Кретање таласа
+Video playback	Репродукција видеа
+Moving	Покретно
+Moving, dim	Покретно, пригушено
+Still	Мирно
+Still, dim	Мирно, пригушено
+None — live wave background	Ништа — жива таласна позадина
+Replace…	Замени…
+Re-crop…	Поново исеци…
+Clear	Обриши
+Clear video	Обриши видео
+Pick frame…	Изабери кадар…
+The preview always shows a frozen wave; the style plays on the device.	Преглед увек приказује замрзнут талас; стил се репродукује на уређају.
+Lock screen	Закључани екран
+None — the theme leaves the device lock screen alone	Ништа — тема не дира закључани екран уређаја
+Choose Image…	Изабери слику…
+Use Poster	Користи постер
+Use Wallpaper	Користи позадину
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	Само непокретна слика. Уређај је исеца према свом екрану и поставља је само ако корисник пристане при примени.
+Crop	Исецање
+Zoom	Зум
+Center	Центрирај
+Apply	Примени
+Reset	Ресетуј
+Text	Текст
+Automatic	Аутоматски
+None	Ништа
+Drop shadow	Сенка
+Outline	Контура
+Contrast plate	Контрастна плоча
+Offset shadow (dark)	Померена сенка (тамна)
+Offset shadow (light)	Померена сенка (светла)
+Contour dark	Тамни обрис
+Contour light	Светли обрис
+Contour auto	Аутоматски обрис
+Solid unfocused icons	Пуне иконе без фокуса
+Older launchers ignore these and show plain text and icons.	Старији покретачи ово занемарују и приказују обичан текст и иконе.
+Preview with my layout	Преглед са мојим распоредом
+Preview only — never saved in the theme. Remembered on this computer.	Само за преглед — никада се не чува у теми. Памти се на овом рачунару.
+Use my layout in the preview	Користи мој распоред у прегледу
+Scale — {0}	Размера — {0}
+Horizontal — {0}	Хоризонтално — {0}
+Vertical — {0}	Вертикално — {0}
+Biblically Accurate preview	Библијски веран преглед
+Adjust on preview	Подеси на прегледу
+All {0}	Све {0}
+Crossbar {0}	Трака {0}
+Items {0}	Ставке {0}
+Consoles {0}	Конзоле {0}
+Physical Media {0}	Физички медији {0}
+On screen	На екрану
+Customized {0}	Прилагођено {0}
+Showing {0} of {1}	Приказано {0} од {1}
+Select a slot to see it at real size, replace it, or export its template.	Изаберите место да га видите у стварној величини, замените или извезете његов шаблон.
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	Превуците датотеку слике (png, gif, jpg, bmp, webp) на било које место да замените његову икону.
+Import icon pack… ▾	Увези пакет икона… ▾
+Export templates…	Извези шаблоне…
+Reset all	Ресетуј све
+Local file…	Локална датотека…
+From theme…	Из теме…
+Export template	Извези шаблон
+Menu sounds	Звукови менија
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	Све што оставите празно задржава уграђени звук. Клипови морају да стану у ограничење сваког реда.
+Navigation	Навигација
+Category change	Промена категорије
+Options panel	Панел опција
+Back / cancel	Назад / откажи
+Confirm / apply	Потврди / примени
+Error / invalid	Грешка / неважеће
+Notification	Обавештење
+Ambience (loops)	Амбијент (понавља се)
+Built-in	Уграђено
+Up to {0}	До {0}
+Choose…	Изабери…
+▶ Play	▶ Пусти
+■ Stop	■ Заустави
+Boot sequences	Boot секвенце
+Choose the built-in sequence or your own MP4 for each.	За сваку изаберите уграђену секвенцу или свој MP4.
+The launcher's own {0} sequence.	Сопствена {0} секвенца покретача.
+Your own MP4 (H.264).	Ваш MP4 (H.264).
+Choose MP4…	Изабери MP4…
+Play in preview	Пусти у прегледу
+Use built-in	Користи уграђено
+All media is within limits	Сви медији су у границама
+Opens on older launchers	Отвара се на старијим покретачима
+Fix the items marked ✕ before exporting.	Исправите ставке означене са ✕ пре извоза.
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	Слика прегледа готове теме прави се при извозу и приказује се као њена сличица у галерији тема покретача.
+Opened {0}	Отворено: {0}
+Exported {0}	Извезено: {0}

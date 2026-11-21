@@ -367,11 +367,12 @@ class PreviewInteractionTest {
     // ── Legibility ───────────────────────────────────────────────────────────
 
     @Test
-    fun `a theme that says nothing renders today's shadow, plain icons, dimmed unfocused icons`() {
+    fun `a theme that says nothing renders the shadow, the default icon shadow, dimmed unfocused icons`() {
         val none = PreviewLegibility.of(null)
         assertEquals(PreviewLegibility.DEFAULT, none)
         assertEquals(LabelProtection.SHADOW, none.text)
-        assertEquals(IconMatteStyle.NONE, none.icon)
+        // The launcher's default since 21 Nov 2026: the dark offset shadow.
+        assertEquals(IconMatteStyle.OFFSET_SHADOW, none.icon)
         assertFalse(none.solidUnfocusedIcons)
         assertEquals(0.58f, none.categoryIconAlpha(selected = false))
     }
@@ -403,7 +404,8 @@ class PreviewInteractionTest {
         val light = icon("contour_light").matteColor(Color.White)!!
         assertEquals(dark, icon("contour_auto").matteColor(Color.White))
         assertEquals(light, icon("contour_auto").matteColor(Color.Black))
-        assertEquals(IconMatteStyle.NONE, icon("junk").icon)
+        assertEquals(IconMatteStyle.OFFSET_SHADOW, icon("junk").icon)
+        assertEquals(IconMatteStyle.NONE, icon("none").icon)
     }
 
     @Test

@@ -62,7 +62,8 @@ class PanelsBTest {
             MOTION_CHOICES.map { it.first },
         )
         assertEquals(
-            listOf("Animated", "Reduced", "Static", "Reduced + Static"),
+            // The launcher renamed its wave options on 21 Nov 2026; the Studio shows the same names.
+            listOf("Moving", "Moving, dim", "Still", "Still, dim"),
             MOTION_CHOICES.map { it.second },
         )
         MOTION_CHOICES.forEach { (value, _) -> assertTrue(WaveStyles.isExact(value), value) }
@@ -155,13 +156,13 @@ class PanelsBTest {
     // ── Sounds ──────────────────────────────────────────────────────────────
 
     @Test
-    fun `six sound rows in the documented order`() {
+    fun `eight sound rows in the documented order`() {
         assertEquals(
-            listOf("sound_scroll", "sound_back", "sound_confirm", "sound_error", "sound_notification", "ambience_audio"),
+            listOf("sound_scroll", "sound_category", "sound_options", "sound_back", "sound_confirm", "sound_error", "sound_notification", "ambience_audio"),
             SOUND_ROWS.map { it.first },
         )
         assertEquals(
-            listOf("Navigation", "Back / cancel", "Confirm / apply", "Error / invalid", "Notification", "Ambience (loops)"),
+            listOf("Navigation", "Category change", "Options panel", "Back / cancel", "Confirm / apply", "Error / invalid", "Notification", "Ambience (loops)"),
             SOUND_ROWS.map { it.second },
         )
     }

@@ -1,0 +1,173 @@
+# Theme Studio in zh-CN. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	新建
+Open…	打开…
+Upgrade folder…	升级文件夹…
+Convert .ptf…	转换 .ptf…
+Batch convert…	批量转换…
+Unpack assets…	解包资源…
+Undo	撤销
+Redo	重做
+Export .pfptheme…	导出 .pfptheme…
+Import PSP theme ▾	导入 PSP 主题 ▾
+Working…	处理中…
+Open ▾	打开 ▾
+Open: {0} ▾	打开：{0} ▾
+XMB (back to the crossbar)	XMB（返回横栏）
+Stop {0}	停止{0}
+Play {0}	播放{0}
+Video only — sound plays on the device	仅视频 — 声音在设备上播放
+This theme uses an older format. Saving upgrades it to the current one.	此主题使用旧格式。保存时会升级到当前格式。
+See changes	查看更改
+Something went wrong	出了点问题
+OK	确定
+Cancel	取消
+Open theme	打开主题
+PSP theme to convert	要转换的 PSP 主题
+Export theme	导出主题
+Info	信息
+Color	颜色
+Background	背景
+Legibility	可读性
+Layout	布局
+Icons	图标
+Sounds	声音
+Boot & Game Boot	Boot 和 Game Boot
+Export check	导出检查
+Untitled	未命名
+Video	视频
+Image	图片
+Wave	波浪
+Not set	未设置
+Set	已设置
+Preview only	仅预览
+None custom	无自定义
+{0} custom	{0} 个自定义
+None set	未设置
+{0} set	已设置 {0} 个
+{0} of 2	{0} / 2
+Ready	就绪
+Untitled Theme	未命名主题
+App Drawer	应用抽屉
+Settings	设置
+App Picker	应用选择器
+Game Picker	游戏选择器
+Artwork Studio	封面工作室
+Game Detail Screen	游戏详情界面
+Achievement Screen	成就界面
+Per-Game Achievement Screen	单个游戏成就界面
+Lock Screen	锁屏
+Boot	Boot
+Game Boot	Game Boot
+In this file	此文件包含
+Nothing embedded yet	尚未嵌入任何内容
+Theme name	主题名称
+Author	作者
+Short description	简短说明
+New theme — not saved yet	新主题 — 尚未保存
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	已保存：名称、作者和说明保存在 .pfptheme 中。更新日期在导出时设置。
+Accent color	强调色
+Auto (from the wallpaper)	自动（来自壁纸）
+Custom	自定义
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	每次更换壁纸或视频都会设置强调色。选择一种颜色即可保留你自己的。
+Your accent stays when the wallpaper or video changes.	更换壁纸或视频时，你的强调色保持不变。
+Custom accent	自定义强调色
+Icon color	图标颜色
+Auto (follows the theme)	自动（跟随主题）
+White	白色
+Main text color	主文字颜色
+Titles and labels: the crossbar, list rows and status strip, and every screen.	标题和标签：横栏、列表行、状态栏以及所有界面。
+Auto (built-in colors)	自动（内置颜色）
+Use my exact color	使用我指定的颜色
+Subtext color	副文字颜色
+Subtitles, sublabels and values.	副标题、副标签和数值。
+Same as main text	与主文字相同
+Source	来源
+Wave motion	波浪动态
+Video playback	视频播放
+Moving	动态
+Moving, dim	动态，较暗
+Still	静止
+Still, dim	静止，较暗
+None — live wave background	无 — 实时波浪背景
+Replace…	替换…
+Re-crop…	重新裁剪…
+Clear	清除
+Clear video	清除视频
+Pick frame…	选取帧…
+The preview always shows a frozen wave; the style plays on the device.	预览始终显示静止的波浪；样式会在设备上播放。
+Lock screen	锁定屏幕
+None — the theme leaves the device lock screen alone	无 — 主题不改动设备的锁定屏幕
+Choose Image…	选择图片…
+Use Poster	使用海报
+Use Wallpaper	使用壁纸
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	仅限静态图片。设备会按自身屏幕裁剪，并且只在用户应用时同意后才设置。
+Crop	裁剪
+Zoom	缩放
+Center	居中
+Apply	应用
+Reset	重置
+Text	文字
+Automatic	自动
+None	无
+Drop shadow	投影
+Outline	描边
+Contrast plate	对比底板
+Offset shadow (dark)	偏移阴影（深色）
+Offset shadow (light)	偏移阴影（浅色）
+Contour dark	深色轮廓
+Contour light	浅色轮廓
+Contour auto	自动轮廓
+Solid unfocused icons	未聚焦图标实心显示
+Older launchers ignore these and show plain text and icons.	较旧的启动器会忽略这些设置，显示普通文字和图标。
+Preview with my layout	用我的布局预览
+Preview only — never saved in the theme. Remembered on this computer.	仅用于预览 — 不会保存到主题中。会记在这台电脑上。
+Use my layout in the preview	在预览中使用我的布局
+Scale — {0}	缩放 — {0}
+Horizontal — {0}	水平 — {0}
+Vertical — {0}	垂直 — {0}
+Biblically Accurate preview	忠于原版的预览
+Adjust on preview	在预览上调整
+All {0}	全部 {0}
+Crossbar {0}	横栏 {0}
+Items {0}	项目 {0}
+Consoles {0}	主机 {0}
+Physical Media {0}	实体媒体 {0}
+On screen	屏幕上
+Customized {0}	已自定义 {0}
+Showing {0} of {1}	显示 {0} / {1}
+Select a slot to see it at real size, replace it, or export its template.	选择一个槽位即可按实际大小查看、替换或导出其模板。
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	将图片文件（png、gif、jpg、bmp、webp）拖到任意槽位即可替换其图标。
+Import icon pack… ▾	导入图标包… ▾
+Export templates…	导出模板…
+Reset all	全部重置
+Local file…	本地文件…
+From theme…	来自主题…
+Export template	导出模板
+Menu sounds	菜单音效
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	留空的项目会保留内置音效。音频片段必须符合每行的上限。
+Navigation	导航
+Category change	切换类别
+Options panel	选项面板
+Back / cancel	返回 / 取消
+Confirm / apply	确认 / 应用
+Error / invalid	错误 / 无效
+Notification	通知
+Ambience (loops)	环境音（循环）
+Built-in	内置
+Up to {0}	最长 {0}
+Choose…	选择…
+▶ Play	▶ 播放
+■ Stop	■ 停止
+Boot sequences	启动序列
+Choose the built-in sequence or your own MP4 for each.	为每一项选择内置序列或你自己的 MP4。
+The launcher's own {0} sequence.	启动器自带的 {0} 序列。
+Your own MP4 (H.264).	你自己的 MP4（H.264）。
+Choose MP4…	选择 MP4…
+Play in preview	在预览中播放
+Use built-in	使用内置
+All media is within limits	所有媒体均在限制范围内
+Opens on older launchers	可在较旧的启动器上打开
+Fix the items marked ✕ before exporting.	导出前请修正标有 ✕ 的项目。
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	导出时会渲染成品主题的预览图，并在启动器的主题库中显示为缩略图。
+Opened {0}	已打开 {0}
+Exported {0}	已导出 {0}

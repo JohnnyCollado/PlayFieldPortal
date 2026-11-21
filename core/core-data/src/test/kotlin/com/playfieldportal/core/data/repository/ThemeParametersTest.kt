@@ -106,6 +106,6 @@ class ThemeParametersTest {
         assertNull(saved.layout)
         assertEquals(PfpThemeManifest.WAVE_ANIMATED, saved.waveStyleV4)
         assertEquals(false, saved.textColorExact)
-        assertEquals(ThemeLegibility(text = "auto", icon = "none", solidUnfocusedIcons = false), saved.legibility)
+        assertEquals(ThemeLegibility(text = "auto", icon = "offset_shadow", solidUnfocusedIcons = false), saved.legibility)
     }
 }

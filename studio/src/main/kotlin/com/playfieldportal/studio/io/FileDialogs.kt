@@ -13,7 +13,7 @@ import javax.swing.JFileChooser
 object FileDialogs {
 
     fun openFile(parent: Frame?, title: String, extensions: Set<String>): File? {
-        val dialog = FileDialog(parent, title, FileDialog.LOAD)
+        val dialog = FileDialog(parent, com.playfieldportal.studio.i18n.tr(title), FileDialog.LOAD)
         dialog.setFilenameFilter { _, name -> name.substringAfterLast('.').lowercase() in extensions }
         dialog.isVisible = true
         val dir = dialog.directory ?: return null
@@ -23,7 +23,7 @@ object FileDialogs {
 
     /** Save dialog that guarantees the returned path carries [extension]. */
     fun saveFile(parent: Frame?, title: String, suggestedName: String, extension: String): File? {
-        val dialog = FileDialog(parent, title, FileDialog.SAVE)
+        val dialog = FileDialog(parent, com.playfieldportal.studio.i18n.tr(title), FileDialog.SAVE)
         dialog.file = suggestedName
         dialog.isVisible = true
         val dir = dialog.directory ?: return null
@@ -34,7 +34,7 @@ object FileDialogs {
 
     fun pickDirectory(title: String): File? {
         val chooser = JFileChooser().apply {
-            dialogTitle = title
+            dialogTitle = com.playfieldportal.studio.i18n.tr(title)
             fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
             isMultiSelectionEnabled = false
         }

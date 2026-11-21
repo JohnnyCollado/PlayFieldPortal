@@ -1,0 +1,173 @@
+# Theme Studio in ro. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	Nou
+Open…	Deschide…
+Upgrade folder…	Actualizează dosarul…
+Convert .ptf…	Convertește .ptf…
+Batch convert…	Conversie în lot…
+Unpack assets…	Despachetează resursele…
+Undo	Anulează
+Redo	Refă
+Export .pfptheme…	Exportă .pfptheme…
+Import PSP theme ▾	Importă temă PSP ▾
+Working…	Se lucrează…
+Open ▾	Deschide ▾
+Open: {0} ▾	Deschide: {0} ▾
+XMB (back to the crossbar)	XMB (înapoi la bară)
+Stop {0}	Oprește {0}
+Play {0}	Redă {0}
+Video only — sound plays on the device	Doar video — sunetul se redă pe dispozitiv
+This theme uses an older format. Saving upgrades it to the current one.	Această temă folosește un format mai vechi. Salvarea o actualizează la cel curent.
+See changes	Vezi modificările
+Something went wrong	Ceva nu a mers bine
+OK	OK
+Cancel	Anulează
+Open theme	Deschide tema
+PSP theme to convert	Temă PSP de convertit
+Export theme	Exportă tema
+Info	Informații
+Color	Culoare
+Background	Fundal
+Legibility	Lizibilitate
+Layout	Aspect
+Icons	Pictograme
+Sounds	Sunete
+Boot & Game Boot	Boot și Game Boot
+Export check	Verificare export
+Untitled	Fără titlu
+Video	Video
+Image	Imagine
+Wave	Val
+Not set	Nesetat
+Set	Setat
+Preview only	Doar previzualizare
+None custom	Niciuna personalizată
+{0} custom	{0} personalizate
+None set	Niciunul setat
+{0} set	{0} setate
+{0} of 2	{0} din 2
+Ready	Gata
+Untitled Theme	Temă fără titlu
+App Drawer	Sertar de aplicații
+Settings	Setări
+App Picker	Selector de aplicații
+Game Picker	Selector de jocuri
+Artwork Studio	Studio de ilustrații
+Game Detail Screen	Detalii joc
+Achievement Screen	Realizări
+Per-Game Achievement Screen	Realizări per joc
+Lock Screen	Ecran de blocare
+Boot	Boot
+Game Boot	Game Boot
+In this file	În acest fișier
+Nothing embedded yet	Nimic încorporat încă
+Theme name	Numele temei
+Author	Autor
+Short description	Descriere scurtă
+New theme — not saved yet	Temă nouă — încă nesalvată
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	Salvat: numele, autorul și descrierea se află în .pfptheme. Data actualizării se stabilește la export.
+Accent color	Culoare de accent
+Auto (from the wallpaper)	Automat (din imaginea de fundal)
+Custom	Personalizată
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	Fiecare imagine de fundal sau videoclip nou stabilește accentul. Alege o culoare ca să o păstrezi pe a ta.
+Your accent stays when the wallpaper or video changes.	Accentul tău rămâne când se schimbă imaginea de fundal sau videoclipul.
+Custom accent	Accent personalizat
+Icon color	Culoarea pictogramelor
+Auto (follows the theme)	Automat (urmează tema)
+White	Alb
+Main text color	Culoarea textului principal
+Titles and labels: the crossbar, list rows and status strip, and every screen.	Titluri și etichete: bara, rândurile listelor, banda de stare și fiecare ecran.
+Auto (built-in colors)	Automat (culori încorporate)
+Use my exact color	Folosește culoarea mea exactă
+Subtext color	Culoarea subtextului
+Subtitles, sublabels and values.	Subtitluri, subetichete și valori.
+Same as main text	La fel ca textul principal
+Source	Sursă
+Wave motion	Mișcarea valului
+Video playback	Redare video
+Moving	În mișcare
+Moving, dim	În mișcare, estompat
+Still	Nemișcat
+Still, dim	Nemișcat, estompat
+None — live wave background	Niciuna — fundal cu val animat
+Replace…	Înlocuiește…
+Re-crop…	Decupează din nou…
+Clear	Șterge
+Clear video	Șterge videoclipul
+Pick frame…	Alege cadrul…
+The preview always shows a frozen wave; the style plays on the device.	Previzualizarea arată mereu un val oprit; stilul rulează pe dispozitiv.
+Lock screen	Ecran de blocare
+None — the theme leaves the device lock screen alone	Niciuna — tema nu modifică ecranul de blocare al dispozitivului
+Choose Image…	Alege o imagine…
+Use Poster	Folosește posterul
+Use Wallpaper	Folosește imaginea de fundal
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	Doar o imagine statică. Dispozitivul o decupează pentru ecranul său și o setează doar dacă utilizatorul acceptă la aplicare.
+Crop	Decupează
+Zoom	Zoom
+Center	Centrează
+Apply	Aplică
+Reset	Resetează
+Text	Text
+Automatic	Automat
+None	Niciuna
+Drop shadow	Umbră
+Outline	Contur
+Contrast plate	Placă de contrast
+Offset shadow (dark)	Umbră decalată (închisă)
+Offset shadow (light)	Umbră decalată (deschisă)
+Contour dark	Contur închis
+Contour light	Contur deschis
+Contour auto	Contur automat
+Solid unfocused icons	Pictograme nefocalizate pline
+Older launchers ignore these and show plain text and icons.	Lansatoarele mai vechi ignoră aceste opțiuni și afișează text și pictograme simple.
+Preview with my layout	Previzualizare cu aspectul meu
+Preview only — never saved in the theme. Remembered on this computer.	Doar previzualizare — nu se salvează niciodată în temă. Reținut pe acest computer.
+Use my layout in the preview	Folosește aspectul meu în previzualizare
+Scale — {0}	Scară — {0}
+Horizontal — {0}	Orizontal — {0}
+Vertical — {0}	Vertical — {0}
+Biblically Accurate preview	Previzualizare fidelă originalului
+Adjust on preview	Ajustează în previzualizare
+All {0}	Toate {0}
+Crossbar {0}	Bara {0}
+Items {0}	Elemente {0}
+Consoles {0}	Console {0}
+Physical Media {0}	Suporturi fizice {0}
+On screen	Pe ecran
+Customized {0}	Personalizate {0}
+Showing {0} of {1}	Se afișează {0} din {1}
+Select a slot to see it at real size, replace it, or export its template.	Selectează un loc pentru a-l vedea la dimensiune reală, a-l înlocui sau a-i exporta șablonul.
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	Trage un fișier imagine (png, gif, jpg, bmp, webp) peste orice loc pentru a-i înlocui pictograma.
+Import icon pack… ▾	Importă pachet de pictograme… ▾
+Export templates…	Exportă șabloanele…
+Reset all	Resetează tot
+Local file…	Fișier local…
+From theme…	Din temă…
+Export template	Exportă șablonul
+Menu sounds	Sunete de meniu
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	Ce lași gol păstrează sunetul încorporat. Clipurile trebuie să se încadreze în limita fiecărui rând.
+Navigation	Navigare
+Category change	Schimbare de categorie
+Options panel	Panoul de opțiuni
+Back / cancel	Înapoi / anulare
+Confirm / apply	Confirmare / aplicare
+Error / invalid	Eroare / nevalid
+Notification	Notificare
+Ambience (loops)	Ambianță (în buclă)
+Built-in	Încorporat
+Up to {0}	Până la {0}
+Choose…	Alege…
+▶ Play	▶ Redă
+■ Stop	■ Oprește
+Boot sequences	Secvențe de pornire
+Choose the built-in sequence or your own MP4 for each.	Alege pentru fiecare secvența încorporată sau propriul MP4.
+The launcher's own {0} sequence.	Secvența {0} proprie a lansatorului.
+Your own MP4 (H.264).	Propriul tău MP4 (H.264).
+Choose MP4…	Alege MP4…
+Play in preview	Redă în previzualizare
+Use built-in	Folosește-o pe cea încorporată
+All media is within limits	Toate fișierele media se încadrează în limite
+Opens on older launchers	Se deschide în lansatoarele mai vechi
+Fix the items marked ✕ before exporting.	Corectează elementele marcate cu ✕ înainte de export.
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	La export se generează o imagine de previzualizare a temei finale, care apare ca miniatură în galeria de teme a lansatorului.
+Opened {0}	S-a deschis {0}
+Exported {0}	S-a exportat {0}

@@ -164,6 +164,8 @@ object IconSlots {
         item("item_settings_section_achievements", "Settings: Achievements"),
         item("item_settings_section_media", "Settings: Media"),
         item("item_settings_section_system", "Settings: System"),
+        // The Shiba Coins player card's icon: the Shiba's head (Nov 2026). Appended like the rest.
+        item("item_shiba_player", "Player card"),
     )
 
     /**

@@ -73,7 +73,7 @@ object IconEditorLayout {
                 "item_social_voice_leave", "item_social_activity", "item_social_discord_settings", "item_social_signout",
             ),
         ),
-        Run("Shiba Coins", listOf("catbar_achievements"), listOf("item_shiba_connect", "item_shiba_track", "item_shiba_untracked")),
+        Run("Shiba Coins", listOf("catbar_achievements"), listOf("item_shiba_player", "item_shiba_connect", "item_shiba_track", "item_shiba_untracked")),
     )
 
     private fun slot(key: String): IconSlot = requireNotNull(CustomizableIcons.byKey(key)) { "unregistered slot $key" }

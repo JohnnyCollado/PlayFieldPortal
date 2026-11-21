@@ -1,0 +1,173 @@
+# Theme Studio in nl. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	Nieuw
+Open…	Openen…
+Upgrade folder…	Map bijwerken…
+Convert .ptf…	.ptf converteren…
+Batch convert…	Batchconversie…
+Unpack assets…	Assets uitpakken…
+Undo	Ongedaan maken
+Redo	Opnieuw
+Export .pfptheme…	Exporteren als .pfptheme…
+Import PSP theme ▾	PSP-thema importeren ▾
+Working…	Bezig…
+Open ▾	Openen ▾
+Open: {0} ▾	Openen: {0} ▾
+XMB (back to the crossbar)	XMB (terug naar de balk)
+Stop {0}	{0} stoppen
+Play {0}	{0} afspelen
+Video only — sound plays on the device	Alleen video — het geluid speelt op het apparaat
+This theme uses an older format. Saving upgrades it to the current one.	Dit thema gebruikt een oudere indeling. Opslaan werkt het bij naar de huidige.
+See changes	Wijzigingen bekijken
+Something went wrong	Er is iets misgegaan
+OK	OK
+Cancel	Annuleren
+Open theme	Thema openen
+PSP theme to convert	PSP-thema om te converteren
+Export theme	Thema exporteren
+Info	Info
+Color	Kleur
+Background	Achtergrond
+Legibility	Leesbaarheid
+Layout	Indeling
+Icons	Pictogrammen
+Sounds	Geluiden
+Boot & Game Boot	Boot en Game Boot
+Export check	Exportcontrole
+Untitled	Naamloos
+Video	Video
+Image	Afbeelding
+Wave	Golf
+Not set	Niet ingesteld
+Set	Ingesteld
+Preview only	Alleen voorbeeld
+None custom	Geen aangepast
+{0} custom	{0} aangepast
+None set	Geen ingesteld
+{0} set	{0} ingesteld
+{0} of 2	{0} van 2
+Ready	Gereed
+Untitled Theme	Naamloos thema
+App Drawer	App-lade
+Settings	Instellingen
+App Picker	App-kiezer
+Game Picker	Gamekiezer
+Artwork Studio	Artwork Studio
+Game Detail Screen	Gamedetails
+Achievement Screen	Prestaties
+Per-Game Achievement Screen	Prestaties per game
+Lock Screen	Vergrendelscherm
+Boot	Boot
+Game Boot	Game Boot
+In this file	In dit bestand
+Nothing embedded yet	Nog niets ingesloten
+Theme name	Themanaam
+Author	Auteur
+Short description	Korte beschrijving
+New theme — not saved yet	Nieuw thema — nog niet opgeslagen
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	Opgeslagen: naam, auteur en beschrijving reizen mee in het .pfptheme. De bijwerkdatum wordt bij het exporteren gezet.
+Accent color	Accentkleur
+Auto (from the wallpaper)	Automatisch (van de achtergrond)
+Custom	Aangepast
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	Elke nieuwe achtergrond of video bepaalt het accent. Kies een kleur om je eigen te houden.
+Your accent stays when the wallpaper or video changes.	Je accent blijft wanneer de achtergrond of video verandert.
+Custom accent	Aangepast accent
+Icon color	Pictogramkleur
+Auto (follows the theme)	Automatisch (volgt het thema)
+White	Wit
+Main text color	Kleur van hoofdtekst
+Titles and labels: the crossbar, list rows and status strip, and every screen.	Titels en labels: de balk, lijstrijen, de statusstrook en elk scherm.
+Auto (built-in colors)	Automatisch (ingebouwde kleuren)
+Use my exact color	Mijn exacte kleur gebruiken
+Subtext color	Kleur van subtekst
+Subtitles, sublabels and values.	Ondertitels, sublabels en waarden.
+Same as main text	Zelfde als hoofdtekst
+Source	Bron
+Wave motion	Golfbeweging
+Video playback	Videoweergave
+Moving	Bewegend
+Moving, dim	Bewegend, gedimd
+Still	Stil
+Still, dim	Stil, gedimd
+None — live wave background	Geen — bewegende golfachtergrond
+Replace…	Vervangen…
+Re-crop…	Opnieuw bijsnijden…
+Clear	Wissen
+Clear video	Video wissen
+Pick frame…	Frame kiezen…
+The preview always shows a frozen wave; the style plays on the device.	Het voorbeeld toont altijd een stilstaande golf; de stijl beweegt op het apparaat.
+Lock screen	Vergrendelscherm
+None — the theme leaves the device lock screen alone	Geen — het thema laat het vergrendelscherm van het apparaat ongemoeid
+Choose Image…	Afbeelding kiezen…
+Use Poster	Poster gebruiken
+Use Wallpaper	Achtergrond gebruiken
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	Alleen een stilstaand beeld. Het apparaat snijdt het bij tot het eigen scherm en stelt het alleen in als de gebruiker bij het toepassen akkoord gaat.
+Crop	Bijsnijden
+Zoom	Zoom
+Center	Centreren
+Apply	Toepassen
+Reset	Herstellen
+Text	Tekst
+Automatic	Automatisch
+None	Geen
+Drop shadow	Slagschaduw
+Outline	Omlijning
+Contrast plate	Contrastvlak
+Offset shadow (dark)	Verschoven schaduw (donker)
+Offset shadow (light)	Verschoven schaduw (licht)
+Contour dark	Contour donker
+Contour light	Contour licht
+Contour auto	Contour automatisch
+Solid unfocused icons	Niet-gefocuste pictogrammen dekkend
+Older launchers ignore these and show plain text and icons.	Oudere launchers negeren dit en tonen gewone tekst en pictogrammen.
+Preview with my layout	Voorbeeld met mijn indeling
+Preview only — never saved in the theme. Remembered on this computer.	Alleen voorbeeld — nooit opgeslagen in het thema. Onthouden op deze computer.
+Use my layout in the preview	Mijn indeling in het voorbeeld gebruiken
+Scale — {0}	Schaal — {0}
+Horizontal — {0}	Horizontaal — {0}
+Vertical — {0}	Verticaal — {0}
+Biblically Accurate preview	Origineelgetrouw voorbeeld
+Adjust on preview	Aanpassen in het voorbeeld
+All {0}	Alle {0}
+Crossbar {0}	Balk {0}
+Items {0}	Items {0}
+Consoles {0}	Consoles {0}
+Physical Media {0}	Fysieke media {0}
+On screen	Op het scherm
+Customized {0}	Aangepast {0}
+Showing {0} of {1}	{0} van {1} getoond
+Select a slot to see it at real size, replace it, or export its template.	Selecteer een vak om het op ware grootte te zien, te vervangen of de sjabloon te exporteren.
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	Sleep een afbeeldingsbestand (png, gif, jpg, bmp, webp) op een vak om het pictogram te vervangen.
+Import icon pack… ▾	Pictogrampakket importeren… ▾
+Export templates…	Sjablonen exporteren…
+Reset all	Alles herstellen
+Local file…	Lokaal bestand…
+From theme…	Uit thema…
+Export template	Sjabloon exporteren
+Menu sounds	Menugeluiden
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	Wat je leeg laat, houdt het ingebouwde geluid. Clips moeten binnen de limiet van elke rij passen.
+Navigation	Navigatie
+Category change	Categoriewissel
+Options panel	Optiepaneel
+Back / cancel	Terug / annuleren
+Confirm / apply	Bevestigen / toepassen
+Error / invalid	Fout / ongeldig
+Notification	Melding
+Ambience (loops)	Sfeer (herhaalt)
+Built-in	Ingebouwd
+Up to {0}	Tot {0}
+Choose…	Kiezen…
+▶ Play	▶ Afspelen
+■ Stop	■ Stoppen
+Boot sequences	Opstartsequenties
+Choose the built-in sequence or your own MP4 for each.	Kies voor elk de ingebouwde sequentie of je eigen MP4.
+The launcher's own {0} sequence.	De eigen {0}-sequentie van de launcher.
+Your own MP4 (H.264).	Je eigen MP4 (H.264).
+Choose MP4…	MP4 kiezen…
+Play in preview	Afspelen in het voorbeeld
+Use built-in	Ingebouwde gebruiken
+All media is within limits	Alle media vallen binnen de limieten
+Opens on older launchers	Opent in oudere launchers
+Fix the items marked ✕ before exporting.	Los de met ✕ gemarkeerde punten op voordat je exporteert.
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	Bij het exporteren wordt een voorbeeldafbeelding van het voltooide thema gemaakt, die als miniatuur in de themagalerij van de launcher verschijnt.
+Opened {0}	{0} geopend
+Exported {0}	{0} geëxporteerd

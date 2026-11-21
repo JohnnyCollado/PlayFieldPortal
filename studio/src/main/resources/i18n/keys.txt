@@ -1,0 +1,172 @@
+New
+Open…
+Upgrade folder…
+Convert .ptf…
+Batch convert…
+Unpack assets…
+Undo
+Redo
+Export .pfptheme…
+Import PSP theme ▾
+Working…
+Open ▾
+Open: {0} ▾
+XMB (back to the crossbar)
+Stop {0}
+Play {0}
+Video only — sound plays on the device
+This theme uses an older format. Saving upgrades it to the current one.
+See changes
+Something went wrong
+OK
+Cancel
+Open theme
+PSP theme to convert
+Export theme
+Info
+Color
+Background
+Legibility
+Layout
+Icons
+Sounds
+Boot & Game Boot
+Export check
+Untitled
+Video
+Image
+Wave
+Not set
+Set
+Preview only
+None custom
+{0} custom
+None set
+{0} set
+{0} of 2
+Ready
+Untitled Theme
+App Drawer
+Settings
+App Picker
+Game Picker
+Artwork Studio
+Game Detail Screen
+Achievement Screen
+Per-Game Achievement Screen
+Lock Screen
+Boot
+Game Boot
+In this file
+Nothing embedded yet
+Theme name
+Author
+Short description
+New theme — not saved yet
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.
+Accent color
+Auto (from the wallpaper)
+Custom
+Each new wallpaper or video sets the accent. Pick a color to keep your own.
+Your accent stays when the wallpaper or video changes.
+Custom accent
+Icon color
+Auto (follows the theme)
+White
+Main text color
+Titles and labels: the crossbar, list rows and status strip, and every screen.
+Auto (built-in colors)
+Use my exact color
+Subtext color
+Subtitles, sublabels and values.
+Same as main text
+Source
+Wave motion
+Video playback
+Moving
+Moving, dim
+Still
+Still, dim
+None — live wave background
+Replace…
+Re-crop…
+Clear
+Clear video
+Pick frame…
+The preview always shows a frozen wave; the style plays on the device.
+Lock screen
+None — the theme leaves the device lock screen alone
+Choose Image…
+Use Poster
+Use Wallpaper
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.
+Crop
+Zoom
+Center
+Apply
+Reset
+Text
+Automatic
+None
+Drop shadow
+Outline
+Contrast plate
+Offset shadow (dark)
+Offset shadow (light)
+Contour dark
+Contour light
+Contour auto
+Solid unfocused icons
+Older launchers ignore these and show plain text and icons.
+Preview with my layout
+Preview only — never saved in the theme. Remembered on this computer.
+Use my layout in the preview
+Scale — {0}
+Horizontal — {0}
+Vertical — {0}
+Biblically Accurate preview
+Adjust on preview
+All {0}
+Crossbar {0}
+Items {0}
+Consoles {0}
+Physical Media {0}
+On screen
+Customized {0}
+Showing {0} of {1}
+Select a slot to see it at real size, replace it, or export its template.
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.
+Import icon pack… ▾
+Export templates…
+Reset all
+Local file…
+From theme…
+Export template
+Menu sounds
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.
+Navigation
+Category change
+Options panel
+Back / cancel
+Confirm / apply
+Error / invalid
+Notification
+Ambience (loops)
+Built-in
+Up to {0}
+Choose…
+▶ Play
+■ Stop
+Boot sequences
+Choose the built-in sequence or your own MP4 for each.
+The launcher's own {0} sequence.
+Your own MP4 (H.264).
+Choose MP4…
+Play in preview
+Use built-in
+All media is within limits
+Opens on older launchers
+Fix the items marked ✕ before exporting.
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.
+Opened {0}
+Exported {0}

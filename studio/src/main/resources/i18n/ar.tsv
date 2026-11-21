@@ -1,0 +1,173 @@
+# Theme Studio in ar. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	جديد
+Open…	فتح…
+Upgrade folder…	ترقية مجلد…
+Convert .ptf…	تحويل ‎.ptf…
+Batch convert…	تحويل مجمّع…
+Unpack assets…	فك حزمة الموارد…
+Undo	تراجع
+Redo	إعادة
+Export .pfptheme…	تصدير ‎.pfptheme…
+Import PSP theme ▾	استيراد سمة PSP ▾
+Working…	جارٍ العمل…
+Open ▾	فتح ▾
+Open: {0} ▾	فتح: {0} ▾
+XMB (back to the crossbar)	XMB (العودة إلى الشريط)
+Stop {0}	إيقاف {0}
+Play {0}	تشغيل {0}
+Video only — sound plays on the device	فيديو فقط — يُشغَّل الصوت على الجهاز
+This theme uses an older format. Saving upgrades it to the current one.	تستخدم هذه السمة تنسيقًا أقدم. الحفظ يرقّيها إلى التنسيق الحالي.
+See changes	عرض التغييرات
+Something went wrong	حدث خطأ ما
+OK	موافق
+Cancel	إلغاء
+Open theme	فتح سمة
+PSP theme to convert	سمة PSP المراد تحويلها
+Export theme	تصدير السمة
+Info	معلومات
+Color	اللون
+Background	الخلفية
+Legibility	الوضوح
+Layout	التخطيط
+Icons	الأيقونات
+Sounds	الأصوات
+Boot & Game Boot	Boot و Game Boot
+Export check	فحص التصدير
+Untitled	بلا عنوان
+Video	فيديو
+Image	صورة
+Wave	موجة
+Not set	غير معيّن
+Set	معيّن
+Preview only	للمعاينة فقط
+None custom	لا مخصصة
+{0} custom	{0} مخصصة
+None set	لا شيء معيّن
+{0} set	{0} معيّنة
+{0} of 2	{0} من 2
+Ready	جاهز
+Untitled Theme	سمة بلا عنوان
+App Drawer	درج التطبيقات
+Settings	الإعدادات
+App Picker	منتقي التطبيقات
+Game Picker	منتقي الألعاب
+Artwork Studio	استوديو الأعمال الفنية
+Game Detail Screen	تفاصيل اللعبة
+Achievement Screen	الإنجازات
+Per-Game Achievement Screen	إنجازات اللعبة
+Lock Screen	شاشة القفل
+Boot	Boot
+Game Boot	Game Boot
+In this file	في هذا الملف
+Nothing embedded yet	لا شيء مضمَّن بعد
+Theme name	اسم السمة
+Author	المؤلف
+Short description	وصف قصير
+New theme — not saved yet	سمة جديدة — لم تُحفظ بعد
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	محفوظ: الاسم والمؤلف والوصف تنتقل داخل ملف ‎.pfptheme. يُضبط تاريخ التحديث عند التصدير.
+Accent color	لون التمييز
+Auto (from the wallpaper)	تلقائي (من الخلفية)
+Custom	مخصص
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	كل خلفية أو فيديو جديد يضبط لون التمييز. اختر لونًا للاحتفاظ بلونك.
+Your accent stays when the wallpaper or video changes.	يبقى لون التمييز عند تغيير الخلفية أو الفيديو.
+Custom accent	تمييز مخصص
+Icon color	لون الأيقونات
+Auto (follows the theme)	تلقائي (يتبع السمة)
+White	أبيض
+Main text color	لون النص الرئيسي
+Titles and labels: the crossbar, list rows and status strip, and every screen.	العناوين والتسميات: الشريط وصفوف القوائم وشريط الحالة وكل شاشة.
+Auto (built-in colors)	تلقائي (الألوان المضمّنة)
+Use my exact color	استخدام لوني بالضبط
+Subtext color	لون النص الفرعي
+Subtitles, sublabels and values.	العناوين الفرعية والتسميات الفرعية والقيم.
+Same as main text	مثل النص الرئيسي
+Source	المصدر
+Wave motion	حركة الموجة
+Video playback	تشغيل الفيديو
+Moving	متحركة
+Moving, dim	متحركة، خافتة
+Still	ثابتة
+Still, dim	ثابتة، خافتة
+None — live wave background	لا شيء — خلفية موجة حية
+Replace…	استبدال…
+Re-crop…	إعادة القص…
+Clear	مسح
+Clear video	مسح الفيديو
+Pick frame…	اختيار إطار…
+The preview always shows a frozen wave; the style plays on the device.	تعرض المعاينة دائمًا موجة مجمّدة؛ يعمل النمط على الجهاز.
+Lock screen	شاشة القفل
+None — the theme leaves the device lock screen alone	لا شيء — السمة لا تغيّر شاشة قفل الجهاز
+Choose Image…	اختيار صورة…
+Use Poster	استخدام الملصق
+Use Wallpaper	استخدام الخلفية
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	صورة ثابتة فقط. يقصّها الجهاز لتناسب شاشته، ولا يعيّنها إلا إذا وافق المستخدم عند التطبيق.
+Crop	قص
+Zoom	تكبير
+Center	توسيط
+Apply	تطبيق
+Reset	إعادة ضبط
+Text	النص
+Automatic	تلقائي
+None	بلا
+Drop shadow	ظل
+Outline	حد خارجي
+Contrast plate	لوحة تباين
+Offset shadow (dark)	ظل مُزاح (داكن)
+Offset shadow (light)	ظل مُزاح (فاتح)
+Contour dark	محيط داكن
+Contour light	محيط فاتح
+Contour auto	محيط تلقائي
+Solid unfocused icons	أيقونات غير محددة مصمتة
+Older launchers ignore these and show plain text and icons.	تتجاهل المشغّلات الأقدم هذه الإعدادات وتعرض نصًا وأيقونات عادية.
+Preview with my layout	المعاينة بتخطيطي
+Preview only — never saved in the theme. Remembered on this computer.	للمعاينة فقط — لا يُحفظ في السمة أبدًا. يُحفظ على هذا الحاسوب.
+Use my layout in the preview	استخدام تخطيطي في المعاينة
+Scale — {0}	المقياس — {0}
+Horizontal — {0}	أفقي — {0}
+Vertical — {0}	عمودي — {0}
+Biblically Accurate preview	معاينة مطابقة للأصل تمامًا
+Adjust on preview	الضبط على المعاينة
+All {0}	الكل {0}
+Crossbar {0}	الشريط {0}
+Items {0}	العناصر {0}
+Consoles {0}	الأجهزة {0}
+Physical Media {0}	الوسائط المادية {0}
+On screen	على الشاشة
+Customized {0}	مخصّصة {0}
+Showing {0} of {1}	عرض {0} من {1}
+Select a slot to see it at real size, replace it, or export its template.	اختر خانة لرؤيتها بالحجم الحقيقي أو استبدالها أو تصدير قالبها.
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	أسقط ملف صورة (png, gif, jpg, bmp, webp) على أي خانة لاستبدال أيقونتها.
+Import icon pack… ▾	استيراد حزمة أيقونات… ▾
+Export templates…	تصدير القوالب…
+Reset all	إعادة ضبط الكل
+Local file…	ملف محلي…
+From theme…	من سمة…
+Export template	تصدير القالب
+Menu sounds	أصوات القائمة
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	كل ما تتركه فارغًا يحتفظ بالصوت المضمّن. يجب أن تلائم المقاطع الحد الأقصى لكل صف.
+Navigation	التنقل
+Category change	تغيير الفئة
+Options panel	لوحة الخيارات
+Back / cancel	رجوع / إلغاء
+Confirm / apply	تأكيد / تطبيق
+Error / invalid	خطأ / غير صالح
+Notification	إشعار
+Ambience (loops)	أجواء (متكررة)
+Built-in	مضمّن
+Up to {0}	حتى {0}
+Choose…	اختيار…
+▶ Play	▶ تشغيل
+■ Stop	■ إيقاف
+Boot sequences	تسلسلات الإقلاع
+Choose the built-in sequence or your own MP4 for each.	اختر التسلسل المضمّن أو ملف MP4 خاصًا بك لكل منها.
+The launcher's own {0} sequence.	تسلسل {0} الخاص بالمشغّل.
+Your own MP4 (H.264).	ملف MP4 خاص بك (H.264).
+Choose MP4…	اختيار MP4…
+Play in preview	تشغيل في المعاينة
+Use built-in	استخدام المضمّن
+All media is within limits	كل الوسائط ضمن الحدود
+Opens on older launchers	تُفتح على المشغّلات الأقدم
+Fix the items marked ✕ before exporting.	أصلح العناصر المعلّمة بـ ✕ قبل التصدير.
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	تُنشأ صورة معاينة للسمة المكتملة عند التصدير وتظهر كصورة مصغّرة لها في معرض السمات بالمشغّل.
+Opened {0}	تم فتح {0}
+Exported {0}	تم تصدير {0}

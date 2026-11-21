@@ -1,0 +1,173 @@
+# Theme Studio in ko. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	새로 만들기
+Open…	열기…
+Upgrade folder…	폴더 업그레이드…
+Convert .ptf…	.ptf 변환…
+Batch convert…	일괄 변환…
+Unpack assets…	에셋 풀기…
+Undo	실행 취소
+Redo	다시 실행
+Export .pfptheme…	.pfptheme 내보내기…
+Import PSP theme ▾	PSP 테마 가져오기 ▾
+Working…	작업 중…
+Open ▾	열기 ▾
+Open: {0} ▾	열기: {0} ▾
+XMB (back to the crossbar)	XMB(크로스바로 돌아가기)
+Stop {0}	{0} 중지
+Play {0}	{0} 재생
+Video only — sound plays on the device	영상만 — 소리는 기기에서 재생됩니다
+This theme uses an older format. Saving upgrades it to the current one.	이 테마는 이전 형식입니다. 저장하면 현재 형식으로 업그레이드됩니다.
+See changes	변경 사항 보기
+Something went wrong	문제가 발생했습니다
+OK	확인
+Cancel	취소
+Open theme	테마 열기
+PSP theme to convert	변환할 PSP 테마
+Export theme	테마 내보내기
+Info	정보
+Color	색상
+Background	배경
+Legibility	가독성
+Layout	레이아웃
+Icons	아이콘
+Sounds	사운드
+Boot & Game Boot	Boot 및 Game Boot
+Export check	내보내기 점검
+Untitled	제목 없음
+Video	비디오
+Image	이미지
+Wave	웨이브
+Not set	설정 안 됨
+Set	설정됨
+Preview only	미리보기 전용
+None custom	사용자 지정 없음
+{0} custom	사용자 지정 {0}개
+None set	설정 없음
+{0} set	{0}개 설정
+{0} of 2	{0} / 2
+Ready	준비됨
+Untitled Theme	제목 없는 테마
+App Drawer	앱 서랍
+Settings	설정
+App Picker	앱 선택기
+Game Picker	게임 선택기
+Artwork Studio	아트워크 스튜디오
+Game Detail Screen	게임 상세 화면
+Achievement Screen	업적 화면
+Per-Game Achievement Screen	게임별 업적 화면
+Lock Screen	잠금 화면
+Boot	Boot
+Game Boot	Game Boot
+In this file	이 파일의 내용
+Nothing embedded yet	아직 포함된 항목이 없습니다
+Theme name	테마 이름
+Author	제작자
+Short description	짧은 설명
+New theme — not saved yet	새 테마 — 아직 저장되지 않음
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	저장됨: 이름, 제작자, 설명은 .pfptheme 안에 저장됩니다. 업데이트 날짜는 내보낼 때 설정됩니다.
+Accent color	강조 색상
+Auto (from the wallpaper)	자동(배경화면에서)
+Custom	사용자 지정
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	새 배경화면이나 비디오마다 강조 색상이 정해집니다. 내 색상을 유지하려면 색상을 고르세요.
+Your accent stays when the wallpaper or video changes.	배경화면이나 비디오가 바뀌어도 강조 색상이 유지됩니다.
+Custom accent	사용자 지정 강조
+Icon color	아이콘 색상
+Auto (follows the theme)	자동(테마를 따름)
+White	흰색
+Main text color	기본 텍스트 색상
+Titles and labels: the crossbar, list rows and status strip, and every screen.	제목과 라벨: 크로스바, 목록 행, 상태 표시줄 및 모든 화면.
+Auto (built-in colors)	자동(기본 제공 색상)
+Use my exact color	내 색상 그대로 사용
+Subtext color	보조 텍스트 색상
+Subtitles, sublabels and values.	부제, 보조 라벨 및 값.
+Same as main text	기본 텍스트와 동일
+Source	소스
+Wave motion	물결 움직임
+Video playback	동영상 재생
+Moving	움직임
+Moving, dim	움직임, 어둡게
+Still	정지
+Still, dim	정지, 어둡게
+None — live wave background	없음 — 라이브 물결 배경
+Replace…	교체…
+Re-crop…	다시 자르기…
+Clear	지우기
+Clear video	동영상 지우기
+Pick frame…	프레임 선택…
+The preview always shows a frozen wave; the style plays on the device.	미리보기에는 항상 멈춘 물결이 표시됩니다. 스타일은 기기에서 재생됩니다.
+Lock screen	잠금 화면
+None — the theme leaves the device lock screen alone	없음 — 테마가 기기의 잠금 화면을 건드리지 않습니다
+Choose Image…	이미지 선택…
+Use Poster	포스터 사용
+Use Wallpaper	배경화면 사용
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	정지 이미지만 가능합니다. 기기가 자체 화면에 맞게 자르며, 적용할 때 사용자가 동의한 경우에만 설정합니다.
+Crop	자르기
+Zoom	확대/축소
+Center	가운데
+Apply	적용
+Reset	초기화
+Text	텍스트
+Automatic	자동
+None	없음
+Drop shadow	그림자
+Outline	윤곽선
+Contrast plate	대비 판
+Offset shadow (dark)	오프셋 그림자(어둡게)
+Offset shadow (light)	오프셋 그림자(밝게)
+Contour dark	어두운 외곽선
+Contour light	밝은 외곽선
+Contour auto	자동 외곽선
+Solid unfocused icons	포커스 없는 아이콘 채우기
+Older launchers ignore these and show plain text and icons.	이전 런처는 이 설정을 무시하고 일반 텍스트와 아이콘을 표시합니다.
+Preview with my layout	내 레이아웃으로 미리보기
+Preview only — never saved in the theme. Remembered on this computer.	미리보기 전용 — 테마에 저장되지 않습니다. 이 컴퓨터에 기억됩니다.
+Use my layout in the preview	미리보기에서 내 레이아웃 사용
+Scale — {0}	크기 — {0}
+Horizontal — {0}	가로 — {0}
+Vertical — {0}	세로 — {0}
+Biblically Accurate preview	원본에 충실한 미리보기
+Adjust on preview	미리보기에서 조정
+All {0}	전체 {0}
+Crossbar {0}	크로스바 {0}
+Items {0}	항목 {0}
+Consoles {0}	콘솔 {0}
+Physical Media {0}	실물 미디어 {0}
+On screen	화면에 표시
+Customized {0}	사용자 지정 {0}
+Showing {0} of {1}	{1}개 중 {0}개 표시
+Select a slot to see it at real size, replace it, or export its template.	슬롯을 선택하면 실제 크기로 보거나 교체하거나 템플릿을 내보낼 수 있습니다.
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	이미지 파일(png, gif, jpg, bmp, webp)을 슬롯에 끌어다 놓으면 아이콘이 교체됩니다.
+Import icon pack… ▾	아이콘 팩 가져오기… ▾
+Export templates…	템플릿 내보내기…
+Reset all	모두 초기화
+Local file…	로컬 파일…
+From theme…	테마에서…
+Export template	템플릿 내보내기
+Menu sounds	메뉴 사운드
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	비워 둔 항목은 내장 사운드를 유지합니다. 클립은 각 행의 한도에 맞아야 합니다.
+Navigation	탐색
+Category change	카테고리 변경
+Options panel	옵션 패널
+Back / cancel	뒤로 / 취소
+Confirm / apply	확인 / 적용
+Error / invalid	오류 / 잘못됨
+Notification	알림
+Ambience (loops)	배경음(반복)
+Built-in	내장
+Up to {0}	최대 {0}
+Choose…	선택…
+▶ Play	▶ 재생
+■ Stop	■ 정지
+Boot sequences	부팅 시퀀스
+Choose the built-in sequence or your own MP4 for each.	각각 내장 시퀀스 또는 직접 만든 MP4를 선택하세요.
+The launcher's own {0} sequence.	런처 자체의 {0} 시퀀스입니다.
+Your own MP4 (H.264).	직접 만든 MP4(H.264).
+Choose MP4…	MP4 선택…
+Play in preview	미리보기에서 재생
+Use built-in	내장 사용
+All media is within limits	모든 미디어가 한도 내에 있습니다
+Opens on older launchers	이전 런처에서도 열립니다
+Fix the items marked ✕ before exporting.	내보내기 전에 ✕ 표시된 항목을 수정하세요.
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	완성된 테마의 미리보기 이미지는 내보낼 때 만들어지며 런처의 테마 갤러리에서 썸네일로 표시됩니다.
+Opened {0}	{0} 열림
+Exported {0}	{0} 내보냄

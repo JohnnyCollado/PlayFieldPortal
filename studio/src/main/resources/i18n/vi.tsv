@@ -1,0 +1,173 @@
+# Theme Studio in vi. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	Mới
+Open…	Mở…
+Upgrade folder…	Nâng cấp thư mục…
+Convert .ptf…	Chuyển đổi .ptf…
+Batch convert…	Chuyển đổi hàng loạt…
+Unpack assets…	Giải nén tài nguyên…
+Undo	Hoàn tác
+Redo	Làm lại
+Export .pfptheme…	Xuất .pfptheme…
+Import PSP theme ▾	Nhập chủ đề PSP ▾
+Working…	Đang xử lý…
+Open ▾	Mở ▾
+Open: {0} ▾	Mở: {0} ▾
+XMB (back to the crossbar)	XMB (quay lại thanh ngang)
+Stop {0}	Dừng {0}
+Play {0}	Phát {0}
+Video only — sound plays on the device	Chỉ video — âm thanh phát trên thiết bị
+This theme uses an older format. Saving upgrades it to the current one.	Chủ đề này dùng định dạng cũ. Lưu sẽ nâng cấp lên định dạng hiện tại.
+See changes	Xem thay đổi
+Something went wrong	Đã xảy ra lỗi
+OK	OK
+Cancel	Hủy
+Open theme	Mở chủ đề
+PSP theme to convert	Chủ đề PSP cần chuyển đổi
+Export theme	Xuất chủ đề
+Info	Thông tin
+Color	Màu
+Background	Nền
+Legibility	Độ dễ đọc
+Layout	Bố cục
+Icons	Biểu tượng
+Sounds	Âm thanh
+Boot & Game Boot	Boot và Game Boot
+Export check	Kiểm tra xuất
+Untitled	Chưa đặt tên
+Video	Video
+Image	Hình ảnh
+Wave	Sóng
+Not set	Chưa đặt
+Set	Đã đặt
+Preview only	Chỉ xem trước
+None custom	Không tùy chỉnh
+{0} custom	{0} tùy chỉnh
+None set	Chưa đặt
+{0} set	Đã đặt {0}
+{0} of 2	{0} trên 2
+Ready	Sẵn sàng
+Untitled Theme	Chủ đề chưa đặt tên
+App Drawer	Ngăn ứng dụng
+Settings	Cài đặt
+App Picker	Trình chọn ứng dụng
+Game Picker	Trình chọn trò chơi
+Artwork Studio	Xưởng ảnh bìa
+Game Detail Screen	Màn hình chi tiết trò chơi
+Achievement Screen	Màn hình thành tích
+Per-Game Achievement Screen	Màn hình thành tích từng trò chơi
+Lock Screen	Màn hình khóa
+Boot	Boot
+Game Boot	Game Boot
+In this file	Trong tệp này
+Nothing embedded yet	Chưa nhúng gì
+Theme name	Tên chủ đề
+Author	Tác giả
+Short description	Mô tả ngắn
+New theme — not saved yet	Chủ đề mới — chưa lưu
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	Đã lưu: tên, tác giả và mô tả nằm trong tệp .pfptheme. Ngày cập nhật được đặt khi bạn xuất.
+Accent color	Màu nhấn
+Auto (from the wallpaper)	Tự động (từ hình nền)
+Custom	Tùy chỉnh
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	Mỗi hình nền hoặc video mới sẽ đặt màu nhấn. Chọn một màu để giữ màu của bạn.
+Your accent stays when the wallpaper or video changes.	Màu nhấn của bạn được giữ khi hình nền hoặc video thay đổi.
+Custom accent	Màu nhấn tùy chỉnh
+Icon color	Màu biểu tượng
+Auto (follows the theme)	Tự động (theo chủ đề)
+White	Trắng
+Main text color	Màu văn bản chính
+Titles and labels: the crossbar, list rows and status strip, and every screen.	Tiêu đề và nhãn: thanh ngang, các hàng danh sách, dải trạng thái và mọi màn hình.
+Auto (built-in colors)	Tự động (màu có sẵn)
+Use my exact color	Dùng đúng màu của tôi
+Subtext color	Màu văn bản phụ
+Subtitles, sublabels and values.	Phụ đề, nhãn phụ và giá trị.
+Same as main text	Giống văn bản chính
+Source	Nguồn
+Wave motion	Chuyển động sóng
+Video playback	Phát video
+Moving	Chuyển động
+Moving, dim	Chuyển động, mờ
+Still	Tĩnh
+Still, dim	Tĩnh, mờ
+None — live wave background	Không — nền sóng động
+Replace…	Thay thế…
+Re-crop…	Cắt lại…
+Clear	Xóa
+Clear video	Xóa video
+Pick frame…	Chọn khung hình…
+The preview always shows a frozen wave; the style plays on the device.	Bản xem trước luôn hiển thị sóng đứng yên; kiểu sẽ chạy trên thiết bị.
+Lock screen	Màn hình khóa
+None — the theme leaves the device lock screen alone	Không — chủ đề không thay đổi màn hình khóa của thiết bị
+Choose Image…	Chọn ảnh…
+Use Poster	Dùng áp phích
+Use Wallpaper	Dùng hình nền
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	Chỉ ảnh tĩnh. Thiết bị cắt ảnh theo màn hình của nó và chỉ đặt khi người dùng đồng ý lúc áp dụng.
+Crop	Cắt
+Zoom	Thu phóng
+Center	Căn giữa
+Apply	Áp dụng
+Reset	Đặt lại
+Text	Văn bản
+Automatic	Tự động
+None	Không
+Drop shadow	Đổ bóng
+Outline	Viền
+Contrast plate	Tấm tương phản
+Offset shadow (dark)	Bóng lệch (tối)
+Offset shadow (light)	Bóng lệch (sáng)
+Contour dark	Đường bao tối
+Contour light	Đường bao sáng
+Contour auto	Đường bao tự động
+Solid unfocused icons	Biểu tượng không được chọn hiển thị đặc
+Older launchers ignore these and show plain text and icons.	Các trình khởi chạy cũ bỏ qua các mục này và hiển thị văn bản, biểu tượng thường.
+Preview with my layout	Xem trước với bố cục của tôi
+Preview only — never saved in the theme. Remembered on this computer.	Chỉ để xem trước — không bao giờ lưu vào chủ đề. Được ghi nhớ trên máy tính này.
+Use my layout in the preview	Dùng bố cục của tôi trong bản xem trước
+Scale — {0}	Tỷ lệ — {0}
+Horizontal — {0}	Ngang — {0}
+Vertical — {0}	Dọc — {0}
+Biblically Accurate preview	Bản xem trước đúng nguyên bản
+Adjust on preview	Chỉnh trên bản xem trước
+All {0}	Tất cả {0}
+Crossbar {0}	Thanh ngang {0}
+Items {0}	Mục {0}
+Consoles {0}	Máy chơi game {0}
+Physical Media {0}	Phương tiện vật lý {0}
+On screen	Trên màn hình
+Customized {0}	Đã tùy chỉnh {0}
+Showing {0} of {1}	Hiển thị {0} trên {1}
+Select a slot to see it at real size, replace it, or export its template.	Chọn một ô để xem ở kích thước thật, thay thế hoặc xuất mẫu của nó.
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	Thả tệp ảnh (png, gif, jpg, bmp, webp) vào ô bất kỳ để thay biểu tượng của ô đó.
+Import icon pack… ▾	Nhập gói biểu tượng… ▾
+Export templates…	Xuất mẫu…
+Reset all	Đặt lại tất cả
+Local file…	Tệp cục bộ…
+From theme…	Từ chủ đề…
+Export template	Xuất mẫu
+Menu sounds	Âm thanh menu
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	Mục nào để trống sẽ giữ âm thanh có sẵn. Đoạn âm thanh phải vừa giới hạn của từng hàng.
+Navigation	Điều hướng
+Category change	Đổi danh mục
+Options panel	Bảng tùy chọn
+Back / cancel	Quay lại / hủy
+Confirm / apply	Xác nhận / áp dụng
+Error / invalid	Lỗi / không hợp lệ
+Notification	Thông báo
+Ambience (loops)	Âm nền (lặp)
+Built-in	Có sẵn
+Up to {0}	Tối đa {0}
+Choose…	Chọn…
+▶ Play	▶ Phát
+■ Stop	■ Dừng
+Boot sequences	Chuỗi khởi động
+Choose the built-in sequence or your own MP4 for each.	Chọn chuỗi có sẵn hoặc tệp MP4 của riêng bạn cho từng mục.
+The launcher's own {0} sequence.	Chuỗi {0} của chính trình khởi chạy.
+Your own MP4 (H.264).	MP4 của riêng bạn (H.264).
+Choose MP4…	Chọn MP4…
+Play in preview	Phát trong bản xem trước
+Use built-in	Dùng có sẵn
+All media is within limits	Tất cả phương tiện đều trong giới hạn
+Opens on older launchers	Mở được trên các trình khởi chạy cũ
+Fix the items marked ✕ before exporting.	Hãy sửa các mục đánh dấu ✕ trước khi xuất.
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	Ảnh xem trước của chủ đề hoàn chỉnh được tạo khi bạn xuất và hiển thị làm hình thu nhỏ trong thư viện chủ đề của trình khởi chạy.
+Opened {0}	Đã mở {0}
+Exported {0}	Đã xuất {0}

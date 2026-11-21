@@ -1,0 +1,173 @@
+# Theme Studio in cs. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	Nový
+Open…	Otevřít…
+Upgrade folder…	Aktualizovat složku…
+Convert .ptf…	Převést .ptf…
+Batch convert…	Hromadný převod…
+Unpack assets…	Rozbalit zdroje…
+Undo	Zpět
+Redo	Znovu
+Export .pfptheme…	Exportovat .pfptheme…
+Import PSP theme ▾	Importovat motiv PSP ▾
+Working…	Pracuje se…
+Open ▾	Otevřít ▾
+Open: {0} ▾	Otevřít: {0} ▾
+XMB (back to the crossbar)	XMB (zpět na lištu)
+Stop {0}	Zastavit {0}
+Play {0}	Přehrát {0}
+Video only — sound plays on the device	Jen video — zvuk se přehrává v zařízení
+This theme uses an older format. Saving upgrades it to the current one.	Tento motiv používá starší formát. Uložením se převede na aktuální.
+See changes	Zobrazit změny
+Something went wrong	Něco se pokazilo
+OK	OK
+Cancel	Zrušit
+Open theme	Otevřít motiv
+PSP theme to convert	Motiv PSP k převodu
+Export theme	Exportovat motiv
+Info	Informace
+Color	Barva
+Background	Pozadí
+Legibility	Čitelnost
+Layout	Rozložení
+Icons	Ikony
+Sounds	Zvuky
+Boot & Game Boot	Boot a Game Boot
+Export check	Kontrola exportu
+Untitled	Bez názvu
+Video	Video
+Image	Obrázek
+Wave	Vlna
+Not set	Nenastaveno
+Set	Nastaveno
+Preview only	Jen náhled
+None custom	Žádné vlastní
+{0} custom	Vlastní: {0}
+None set	Nic nenastaveno
+{0} set	Nastaveno: {0}
+{0} of 2	{0} ze 2
+Ready	Připraveno
+Untitled Theme	Motiv bez názvu
+App Drawer	Zásuvka aplikací
+Settings	Nastavení
+App Picker	Výběr aplikací
+Game Picker	Výběr her
+Artwork Studio	Studio obrázků
+Game Detail Screen	Podrobnosti hry
+Achievement Screen	Úspěchy
+Per-Game Achievement Screen	Úspěchy hry
+Lock Screen	Zamykací obrazovka
+Boot	Boot
+Game Boot	Game Boot
+In this file	V tomto souboru
+Nothing embedded yet	Zatím nic vloženo
+Theme name	Název motivu
+Author	Autor
+Short description	Krátký popis
+New theme — not saved yet	Nový motiv — zatím neuložen
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	Uloženo: název, autor a popis jsou součástí souboru .pfptheme. Datum aktualizace se nastaví při exportu.
+Accent color	Barva zvýraznění
+Auto (from the wallpaper)	Automaticky (z tapety)
+Custom	Vlastní
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	Každá nová tapeta nebo video nastaví zvýraznění. Vyberte barvu, chcete-li si ponechat svou.
+Your accent stays when the wallpaper or video changes.	Vaše zvýraznění zůstane, když se změní tapeta nebo video.
+Custom accent	Vlastní zvýraznění
+Icon color	Barva ikon
+Auto (follows the theme)	Automaticky (podle motivu)
+White	Bílá
+Main text color	Barva hlavního textu
+Titles and labels: the crossbar, list rows and status strip, and every screen.	Nadpisy a popisky: lišta, řádky seznamů, stavový pruh a každá obrazovka.
+Auto (built-in colors)	Automaticky (vestavěné barvy)
+Use my exact color	Použít mou přesnou barvu
+Subtext color	Barva vedlejšího textu
+Subtitles, sublabels and values.	Podtitulky, vedlejší popisky a hodnoty.
+Same as main text	Stejná jako hlavní text
+Source	Zdroj
+Wave motion	Pohyb vlny
+Video playback	Přehrávání videa
+Moving	Pohyblivé
+Moving, dim	Pohyblivé, ztlumené
+Still	Nehybné
+Still, dim	Nehybné, ztlumené
+None — live wave background	Žádný — živé pozadí s vlnou
+Replace…	Nahradit…
+Re-crop…	Znovu oříznout…
+Clear	Vymazat
+Clear video	Vymazat video
+Pick frame…	Vybrat snímek…
+The preview always shows a frozen wave; the style plays on the device.	Náhled vždy ukazuje zastavenou vlnu; styl se přehrává v zařízení.
+Lock screen	Zamykací obrazovka
+None — the theme leaves the device lock screen alone	Žádná — motiv ponechá zamykací obrazovku zařízení beze změny
+Choose Image…	Vybrat obrázek…
+Use Poster	Použít plakát
+Use Wallpaper	Použít tapetu
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	Jen statický obrázek. Zařízení jej ořízne na svou obrazovku a nastaví jen tehdy, když uživatel při použití souhlasí.
+Crop	Oříznout
+Zoom	Přiblížení
+Center	Vystředit
+Apply	Použít
+Reset	Obnovit
+Text	Text
+Automatic	Automaticky
+None	Žádné
+Drop shadow	Stín
+Outline	Obrys
+Contrast plate	Kontrastní podklad
+Offset shadow (dark)	Posunutý stín (tmavý)
+Offset shadow (light)	Posunutý stín (světlý)
+Contour dark	Obrys tmavý
+Contour light	Obrys světlý
+Contour auto	Obrys automatický
+Solid unfocused icons	Plné nevybrané ikony
+Older launchers ignore these and show plain text and icons.	Starší launchery to ignorují a zobrazí obyčejný text a ikony.
+Preview with my layout	Náhled s mým rozložením
+Preview only — never saved in the theme. Remembered on this computer.	Jen náhled — nikdy se neukládá do motivu. Zapamatováno v tomto počítači.
+Use my layout in the preview	Použít mé rozložení v náhledu
+Scale — {0}	Měřítko — {0}
+Horizontal — {0}	Vodorovně — {0}
+Vertical — {0}	Svisle — {0}
+Biblically Accurate preview	Náhled věrný originálu
+Adjust on preview	Upravit v náhledu
+All {0}	Vše {0}
+Crossbar {0}	Lišta {0}
+Items {0}	Položky {0}
+Consoles {0}	Konzole {0}
+Physical Media {0}	Fyzická média {0}
+On screen	Na obrazovce
+Customized {0}	Upravené {0}
+Showing {0} of {1}	Zobrazeno {0} z {1}
+Select a slot to see it at real size, replace it, or export its template.	Vyberte pozici, abyste ji viděli ve skutečné velikosti, nahradili ji nebo exportovali její šablonu.
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	Přetáhněte soubor obrázku (png, gif, jpg, bmp, webp) na libovolnou pozici a nahraďte její ikonu.
+Import icon pack… ▾	Importovat balíček ikon… ▾
+Export templates…	Exportovat šablony…
+Reset all	Obnovit vše
+Local file…	Místní soubor…
+From theme…	Z motivu…
+Export template	Exportovat šablonu
+Menu sounds	Zvuky nabídky
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	Co necháte prázdné, ponechá vestavěný zvuk. Klipy se musí vejít do limitu daného řádku.
+Navigation	Navigace
+Category change	Změna kategorie
+Options panel	Panel možností
+Back / cancel	Zpět / zrušit
+Confirm / apply	Potvrdit / použít
+Error / invalid	Chyba / neplatné
+Notification	Oznámení
+Ambience (loops)	Atmosféra (smyčka)
+Built-in	Vestavěný
+Up to {0}	Až {0}
+Choose…	Vybrat…
+▶ Play	▶ Přehrát
+■ Stop	■ Zastavit
+Boot sequences	Spouštěcí sekvence
+Choose the built-in sequence or your own MP4 for each.	Pro každou vyberte vestavěnou sekvenci, nebo vlastní MP4.
+The launcher's own {0} sequence.	Vlastní sekvence {0} launcheru.
+Your own MP4 (H.264).	Vaše vlastní MP4 (H.264).
+Choose MP4…	Vybrat MP4…
+Play in preview	Přehrát v náhledu
+Use built-in	Použít vestavěnou
+All media is within limits	Všechna média jsou v limitech
+Opens on older launchers	Otevře se ve starších launcherech
+Fix the items marked ✕ before exporting.	Před exportem opravte položky označené ✕.
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	Při exportu se vytvoří náhledový obrázek hotového motivu, který se zobrazí jako miniatura v galerii motivů launcheru.
+Opened {0}	Otevřeno: {0}
+Exported {0}	Exportováno: {0}

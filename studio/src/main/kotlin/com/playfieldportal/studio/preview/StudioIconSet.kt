@@ -95,17 +95,19 @@ object StudioIconSet {
         "item_settings_section_achievements" to "xmb/settings_section_achievements.png",
         "item_settings_section_media" to "xmb/settings_section_media.png",
         "item_settings_section_system" to "xmb/settings_section_system.png",
+        // The Shiba Coins player card (launcher: drawable-nodpi/player_shiba_head.png).
+        "item_shiba_player" to "xmb/player_shiba_head.png",
         "status_battery_full" to "xmb/ic_status_battery_full.xml",
         "status_battery_high" to "xmb/ic_status_battery_high.xml",
         "status_battery_medium" to "xmb/ic_status_battery_medium.xml",
         "status_battery_low" to "xmb/ic_status_battery_low.xml",
         "status_battery_charging" to "xmb/ic_status_battery_charging.xml",
         "status_bluetooth" to "xmb/ic_status_bluetooth.xml",
-        // Tier medallions (launcher: drawable/shiba_coin_*.webp).
-        "shiba_coin_bronze" to "xmb/shiba_coin_bronze.webp",
-        "shiba_coin_silver" to "xmb/shiba_coin_silver.webp",
-        "shiba_coin_gold" to "xmb/shiba_coin_gold.webp",
-        "shiba_coin_platinum" to "xmb/shiba_coin_platinum.webp",
+        // Tier medallions (launcher: drawable/shiba_coin_*.png, 64 px pixel art shipped at 4x).
+        "shiba_coin_bronze" to "xmb/shiba_coin_bronze.png",
+        "shiba_coin_silver" to "xmb/shiba_coin_silver.png",
+        "shiba_coin_gold" to "xmb/shiba_coin_gold.png",
+        "shiba_coin_platinum" to "xmb/shiba_coin_platinum.png",
     ) +
         // Default memory-card art (launcher: systems/physical-media/_default.png): one asset for
         // every item slot that shares it, All Games and "All Tracked Games" included.

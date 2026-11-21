@@ -1,5 +1,6 @@
 package com.playfieldportal.studio.ui
 
+import com.playfieldportal.studio.ui.sections.ButtonRow
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -17,7 +18,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import com.playfieldportal.studio.i18n.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -173,7 +174,7 @@ fun SlotCard(
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            ButtonRow {
                 OutlinedButton(onClick = onLocalFile) { Text("Local file…", fontSize = 12.sp) }
                 OutlinedButton(onClick = onFromTheme, enabled = IconPicker.fromThemeAvailable(state)) {
                     Text("From theme…", fontSize = 12.sp)

@@ -89,12 +89,12 @@ class CustomizableIconsTest {
     // -- TS-06: 29 new icons/ slots in 5 new groups (the plan's "36" miscounts; 52 + 29 + 47 = 128) --
 
     @Test
-    fun `registry totals 175 slots, 87 of them icons slots`() {
+    fun `registry totals 176 slots, 88 of them icons slots`() {
         // 171 / 82 until catbar_favorites retired onto sysicon_favorites, then 170 until
         // sysicon_allgames retired onto item_memcard_games (IconSlots.RETIRED); then 169 / 81 plus
-        // the six Settings section icons (175 / 87).
-        assertEquals(87, IconSlots.ALL.size)
-        assertEquals(175, CustomizableIcons.ALL.size)
+        // the six Settings section icons (175 / 87); then the player card (176 / 88).
+        assertEquals(88, IconSlots.ALL.size)
+        assertEquals(176, CustomizableIcons.ALL.size)
     }
 
     // -- Physical media: one slot per console that ships on a disc, cart or UMD --
@@ -127,8 +127,8 @@ class CustomizableIconsTest {
         val umd = IconSlots.byKey("item_umd")!!
         assertEquals(IconSlot.Group.ITEMS, umd.group)
         assertEquals("UMD slot", umd.displayName)
-        // Appended after every earlier key; only the six Settings section icons come later.
-        assertEquals(IconSlots.ALL.size - 7, IconSlots.ALL.indexOfFirst { it.key == "item_umd" })
+        // Appended after every earlier key; only the six Settings section icons and the player card come later.
+        assertEquals(IconSlots.ALL.size - 8, IconSlots.ALL.indexOfFirst { it.key == "item_umd" })
         assertTrue(CustomizableIcons.isValidKey("item_umd"))
     }
 
@@ -150,7 +150,7 @@ class CustomizableIconsTest {
     fun `group counts follow the plan`() {
         fun n(g: IconSlot.Group) = CustomizableIcons.group(g).size
         assertEquals(9, n(IconSlot.Group.CATEGORY_BAR))
-        assertEquals(43, n(IconSlot.Group.ITEMS))
+        assertEquals(44, n(IconSlot.Group.ITEMS)) // 43 plus the player card (Nov 2026)
         assertEquals(10, n(IconSlot.Group.STATUS))
         assertEquals(4, n(IconSlot.Group.SHIBA))
         assertEquals(6, n(IconSlot.Group.MEDIA))
@@ -191,10 +191,11 @@ class CustomizableIconsTest {
     }
 
     @Test
-    fun `the six Settings section icons are item slots appended last, in section order`() {
+    fun `the six Settings section icons are item slots appended in section order, then the player card`() {
         val keys = listOf("library", "emulators", "interface", "achievements", "media", "system")
             .map { "item_settings_section_$it" }
-        assertEquals(keys, IconSlots.ALL.takeLast(6).map { it.key })
+        assertEquals(keys + "item_shiba_player", IconSlots.ALL.takeLast(7).map { it.key })
+        assertEquals("Player card", IconSlots.ALL.last().displayName)
         for (key in keys) {
             val slot = IconSlots.byKey(key)!!
             assertEquals(IconSlot.Group.ITEMS, slot.group)
@@ -204,7 +205,7 @@ class CustomizableIconsTest {
         assertEquals(
             listOf("Settings: Library", "Settings: Emulators", "Settings: Interface",
                 "Settings: Achievements", "Settings: Media", "Settings: System"),
-            IconSlots.ALL.takeLast(6).map { it.displayName },
+            IconSlots.ALL.takeLast(7).dropLast(1).map { it.displayName },
         )
     }
 

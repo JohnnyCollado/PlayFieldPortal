@@ -24,7 +24,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import com.playfieldportal.studio.i18n.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -187,4 +187,19 @@ fun ColorField(label: String, argb: Int, onChange: (Int) -> Unit) {
             }
         }
     }
+}
+
+/**
+ * A group of buttons that wraps onto another line when it runs out of width. A plain row squeezes
+ * its buttons instead, which breaks their labels across lines; that showed on a 1080p screen at
+ * 125% and 150% scaling and with longer translated labels. Every button group uses this.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun ButtonRow(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    FlowRow(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) { content() }
 }

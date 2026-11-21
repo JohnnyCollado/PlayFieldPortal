@@ -207,6 +207,9 @@ internal const val MEMORY_CARD_DEFAULT_ART = "file:///android_asset/systems/phys
 // The UMD slot's unfocused icon: the PSP's physical media, for a game of any platform.
 internal const val UMD_SLOT_ART = "file:///android_asset/systems/physical-media/psp.png"
 
+/** The Shiba Coins player card's themeable icon (theme-kit IconSlots key). */
+internal const val PLAYER_CARD_SLOT_KEY = "item_shiba_player"
+
 /** The UMD slot's themeable art (theme-kit IconSlots key). */
 internal const val UMD_SLOT_KEY = "item_umd"
 
@@ -1619,11 +1622,21 @@ private fun XmbItemLeadingIcon(
         // row's title line now (Title · Level · Bones).
         item.levelBadge != null -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                PortalIcon(
-                    painter = painterResource(com.playfieldportal.feature.xmb.R.drawable.player_shiba_head),
-                    contentDescription = null,
-                    modifier = Modifier.size(LEADING_ICON_SIZE),
-                )
+                // Two-tier like every themeable icon: the user's pick, then the applied theme's art.
+                val playerOverride = LocalXmbIcons.current[PLAYER_CARD_SLOT_KEY]
+                if (playerOverride != null) {
+                    com.playfieldportal.core.ui.icons.CustomIconSurface(
+                        icon = playerOverride,
+                        contentDescription = null,
+                        modifier = Modifier.size(LEADING_ICON_SIZE),
+                    )
+                } else {
+                    PortalIcon(
+                        painter = painterResource(com.playfieldportal.feature.xmb.R.drawable.player_shiba_head),
+                        contentDescription = null,
+                        modifier = Modifier.size(LEADING_ICON_SIZE),
+                    )
+                }
             }
         }
         // "All Tracked Games" reads as a memory card (its list is the tracked games), using the

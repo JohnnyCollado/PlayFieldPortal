@@ -1,5 +1,6 @@
 package com.playfieldportal.studio.ui
 
+import com.playfieldportal.studio.ui.sections.ButtonRow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,7 +21,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import com.playfieldportal.studio.i18n.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.darkColorScheme
@@ -194,11 +195,16 @@ private fun studioChromeColors() = darkColorScheme(
 )
 
 @Composable
-fun StudioApp(viewModel: StudioViewModel, window: Frame) {
+fun StudioApp(
+    viewModel: StudioViewModel,
+    window: Frame,
+    // The section shown first. The app always starts on the default; a render test asks for others.
+    initialSection: StudioSection = StudioSection.DEFAULT,
+) {
     val state by viewModel.state.collectAsState()
     val canUndo by viewModel.canUndo.collectAsState()
     val canRedo by viewModel.canRedo.collectAsState()
-    var sectionId by rememberSaveable { mutableStateOf(StudioSection.DEFAULT.id) }
+    var sectionId by rememberSaveable { mutableStateOf(initialSection.id) }
     val section = StudioSection.fromId(sectionId)
     val check = remember(state) { ExportCheck.of(state) }
     val files = remember(window) { windowToolbarFiles(window) }
@@ -332,6 +338,8 @@ private fun Toolbar(state: StudioState, canUndo: Boolean, canRedo: Boolean, onAc
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
+      // The commands wrap onto a second line before any of them is squeezed.
+      ButtonRow(Modifier.weight(1f)) {
         Tool(ToolbarAction.NEW)
         Tool(ToolbarAction.OPEN)
         Tool(ToolbarAction.UPGRADE_FOLDER)
@@ -348,14 +356,34 @@ private fun Toolbar(state: StudioState, canUndo: Boolean, canRedo: Boolean, onAc
 
         Tool(ToolbarAction.UNDO)
         Tool(ToolbarAction.REDO)
-
-        Box(Modifier.weight(1f))
+      }
         if (state.busy) {
             CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp)
             Text("Working…", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        LanguageMenu()
         Button(onClick = { onAction(ToolbarAction.EXPORT) }, enabled = enabled(ToolbarAction.EXPORT)) {
             Text(ToolbarAction.EXPORT.label)
+        }
+    }
+}
+
+/** The language of the Studio itself: every shipped language by its own name, remembered on this computer. */
+@Composable
+private fun LanguageMenu() {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        OutlinedButton(onClick = { open = true }) {
+            // The name is shown as written; it is a language's own name, not text to translate.
+            androidx.compose.material3.Text(com.playfieldportal.studio.i18n.StudioI18n.current.nativeName + " ▾")
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            com.playfieldportal.studio.i18n.StudioI18n.LANGUAGES.forEach { language ->
+                DropdownMenuItem(
+                    text = { androidx.compose.material3.Text(language.nativeName) },
+                    onClick = { open = false; com.playfieldportal.studio.i18n.StudioI18n.choose(language.tag) },
+                )
+            }
         }
     }
 }
@@ -372,11 +400,7 @@ private fun PlayBootRow(
     screen: PreviewScreen,
     onOpenScreen: (PreviewScreen) -> Unit,
 ) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-    ) {
+    ButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
         var openMenu by remember { mutableStateOf(false) }
         Box {
             OutlinedButton(onClick = { openMenu = true }) {
@@ -400,6 +424,7 @@ private fun PlayBootRow(
             "Video only — sound plays on the device",
             fontSize = 11.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 12.dp),
         )
     }
 }

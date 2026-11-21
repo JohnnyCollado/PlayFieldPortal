@@ -20,7 +20,13 @@ import com.playfieldportal.core.ui.icons.CustomIconSurface
 import com.playfieldportal.core.ui.icons.LocalXmbIcons
 import com.playfieldportal.feature.xmb.R
 
-/** The bundled Shiba coin medallion for a tier. */
+/**
+ * The bundled Shiba coin medallion for a tier: 64 px pixel art, shipped enlarged four times (256 px)
+ * with hard pixel edges. It is shipped enlarged, and drawn with ordinary smooth scaling, because the
+ * coin is shown at many sizes that are not whole multiples of 64: scaling the 64 px master with hard
+ * edges at those sizes drops or doubles whole rows (an eye can vanish), while scaling the enlarged
+ * copy smoothly keeps every pixel of the art. Sources and build scripts: assets/pixel-art/.
+ */
 @DrawableRes
 fun shibaCoinRes(tier: ShibaTier): Int = when (tier) {
     ShibaTier.BRONZE -> R.drawable.shiba_coin_bronze
