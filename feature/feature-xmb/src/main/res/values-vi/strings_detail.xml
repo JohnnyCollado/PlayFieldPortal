@@ -169,9 +169,6 @@
 
     <!-- Metadata preview ("Update Metadata") -->
     <string name="det_meta_title">Cập nhật siêu dữ liệu</string>
-    <string name="det_meta_hint_nothing">"Select hoặc B  Đóng"</string>
-    <string name="det_meta_hint_manual">"Lên/Xuống  Hàng  •  Trái/Phải  Quy tắc  •  L1/R1  Nguồn  •  Select  Sửa / Áp dụng  •  B  Hủy"</string>
-    <string name="det_meta_hint_rows">"Lên/Xuống  Hàng  •  Trái/Phải  Quy tắc  •  L1/R1  Nguồn  •  Select  Bật/tắt / Áp dụng  •  B  Hủy"</string>
     <string name="det_meta_failed_title">Các nguồn siêu dữ liệu không phản hồi.</string>
     <string name="det_meta_unreadable_title">Không thể đọc trò chơi này.</string>
     <string name="det_meta_failed_detail">Chưa có gì thay đổi. Hãy kiểm tra kết nối và thử lại.</string>
@@ -316,7 +313,6 @@
     <string name="det_fetching_artwork">Đang tải ảnh minh họa…</string>
     <string name="det_none">Không</string>
     <string name="det_emulator_picker_title">Chọn trình giả lập</string>
-    <string name="det_emulator_picker_hint">"Lên/Xuống  Điều hướng  •  Select  Xác nhận  •  B  Hủy"</string>
 
     <!-- Options menu: panel titles, group headings and row labels -->
     <string name="det_menu_options">Tùy chọn</string>
@@ -569,4 +565,9 @@
     <string name="det_crop_apply">"Ⓐ  ÁP DỤNG CẮT"</string>
     <string name="det_crop_options_btn">"Ⓨ  TÙY CHỌN"</string>
     <string name="det_crop_hint">"kéo để di chuyển ảnh   ·   chụm để thu phóng   ·   D-Pad di chuyển   ·   LB / RB thu phóng"</string>
+    <string name="det_meta_prompt_rows">Hàng</string>
+    <string name="det_meta_prompt_policy">Quy tắc</string>
+    <string name="det_meta_prompt_source">Nguồn</string>
+    <string name="det_meta_prompt_toggle_apply">Bật/tắt / Áp dụng</string>
+    <string name="det_meta_prompt_edit_apply">Sửa / Áp dụng</string>
 </resources>

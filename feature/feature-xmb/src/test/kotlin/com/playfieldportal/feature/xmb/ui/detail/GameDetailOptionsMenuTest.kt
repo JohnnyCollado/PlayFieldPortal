@@ -42,6 +42,39 @@ class GameDetailOptionsMenuTest {
         game = Game(id = 2L, title = "Portal 2", platformId = "windows", packageName = "banner.hub"),
     )
 
+    private fun profile(id: String, name: String, pkg: String) = com.playfieldportal.core.domain.model.EmulatorProfile(
+        id = id,
+        name = name,
+        packageName = pkg,
+        intentType = com.playfieldportal.core.domain.model.IntentType.ACTION_VIEW,
+        supportedPlatformIds = listOf("psx"),
+    )
+
+    private val emulators = listOf(
+        profile("duckstation", "DuckStation", "com.github.stenzek.duckstation"),
+        profile("retroarch_swanstation", "RetroArch (SwanStation)", "com.retroarch.aarch64"),
+    )
+
+    @Test
+    fun `Choose Emulator is drawn as Options rows, one per emulator, the current one checked`() {
+        val rows = emulatorPickerRows(emulators, selectedId = "retroarch_swanstation")
+        assertEquals(listOf("DuckStation", "RetroArch (SwanStation)"), rows.map { it.label })
+        assertEquals(listOf(false, true), rows.map { it.checked })
+        // A pick commits; nothing here opens a further list or is destructive.
+        assertFalse(rows.any { it.opensMenu || it.isDestructive })
+    }
+
+    @Test
+    fun `an override stored as a package name still checks its emulator`() {
+        val rows = emulatorPickerRows(emulators, selectedId = "com.github.stenzek.duckstation")
+        assertEquals(listOf(true, false), rows.map { it.checked })
+    }
+
+    @Test
+    fun `with no override nothing is checked`() {
+        assertFalse(emulatorPickerRows(emulators, selectedId = null).any { it.checked })
+    }
+
     @Test
     fun `the top level is eight rows, most-used first and Remove last`() {
         assertEquals(

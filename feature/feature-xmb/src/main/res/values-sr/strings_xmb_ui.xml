@@ -95,9 +95,7 @@
 
     <!-- Add to Card (collection) picker panel -->
     <!-- Controller hint line: "B" is the name of a controller button -->
-    <string name="xmbu_collection_picker_hint">"Горе/доле  Навигација  •  Select  Укључи/искључи  •  B  Затвори"</string>
     <string name="xmbu_collection_picker_new_row">"＋  Нова прилагођена меморијска картица"</string>
-    <string name="xmbu_collection_picker_empty">Још нема прилагођених меморијских картица — направите једну да бисте почели.</string>
     <string name="xmbu_collection_new_title">Нова прилагођена меморијска картица</string>
     <string name="xmbu_collection_new_placeholder">нпр. RPG, Тренутно играм</string>
     <!-- Button that confirms the new card name -->

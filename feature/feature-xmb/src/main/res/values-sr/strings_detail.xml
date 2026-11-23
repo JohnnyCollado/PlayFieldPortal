@@ -219,9 +219,6 @@
     <!-- Metadata preview ("Update Metadata") -->
     <string name="det_meta_title">Ажурирај метаподатке</string>
     <!-- Controller hint lines. Select and B are controller buttons -->
-    <string name="det_meta_hint_nothing">"Select или B  Затвори"</string>
-    <string name="det_meta_hint_manual">"Горе/доле  Редови  •  Лево/десно  Правило  •  L1/R1  Извор  •  Select  Измени / примени  •  B  Откажи"</string>
-    <string name="det_meta_hint_rows">"Горе/доле  Редови  •  Лево/десно  Правило  •  L1/R1  Извор  •  Select  Укључи/искључи / примени  •  B  Откажи"</string>
     <string name="det_meta_failed_title">Извори метаподатака нису одговорили.</string>
     <string name="det_meta_unreadable_title">Ову игру није могуће прочитати.</string>
     <string name="det_meta_failed_detail">Ништа није промењено. Проверите везу и покушајте поново.</string>
@@ -416,7 +413,6 @@
     <!-- Options menu value when nothing is set -->
     <string name="det_none">Ништа</string>
     <string name="det_emulator_picker_title">Изаберите емулатор</string>
-    <string name="det_emulator_picker_hint">"Горе/доле  Навигација  •  Select  Потврди  •  B  Откажи"</string>
 
     <!-- Options menu: panel titles, group headings and row labels -->
     <string name="det_menu_options">Опције</string>
@@ -739,4 +735,9 @@
     <string name="det_crop_apply">"Ⓐ  ПРИМЕНИ ИСЕЦАЊЕ"</string>
     <string name="det_crop_options_btn">"Ⓨ  ОПЦИЈЕ"</string>
     <string name="det_crop_hint">"превуците да померите слику   ·   скупите прсте за зум   ·   D-Pad померање   ·   LB / RB зум"</string>
+    <string name="det_meta_prompt_rows">Редови</string>
+    <string name="det_meta_prompt_policy">Правило</string>
+    <string name="det_meta_prompt_source">Извор</string>
+    <string name="det_meta_prompt_toggle_apply">Укључи/искључи / примени</string>
+    <string name="det_meta_prompt_edit_apply">Измени / примени</string>
 </resources>

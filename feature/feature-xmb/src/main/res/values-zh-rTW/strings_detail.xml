@@ -168,9 +168,6 @@
 
     <!-- Metadata preview ("Update Metadata") -->
     <string name="det_meta_title">更新中繼資料</string>
-    <string name="det_meta_hint_nothing">"Select 或 B  關閉"</string>
-    <string name="det_meta_hint_manual">"上/下  列  •  左/右  方式  •  L1/R1  來源  •  Select  編輯 / 套用  •  B  取消"</string>
-    <string name="det_meta_hint_rows">"上/下  列  •  左/右  方式  •  L1/R1  來源  •  Select  切換 / 套用  •  B  取消"</string>
     <string name="det_meta_failed_title">中繼資料來源沒有回應。</string>
     <string name="det_meta_unreadable_title">無法讀取這款遊戲。</string>
     <string name="det_meta_failed_detail">未做任何變更。請檢查連線後再試一次。</string>
@@ -315,7 +312,6 @@
     <string name="det_fetching_artwork">正在取得圖片…</string>
     <string name="det_none">無</string>
     <string name="det_emulator_picker_title">選擇模擬器</string>
-    <string name="det_emulator_picker_hint">"上/下  導覽  •  Select  確認  •  B  取消"</string>
 
     <!-- Options menu: panel titles, group headings and row labels -->
     <string name="det_menu_options">選項</string>
@@ -567,4 +563,9 @@
     <string name="det_crop_apply">"Ⓐ  套用裁剪"</string>
     <string name="det_crop_options_btn">"Ⓨ  選項"</string>
     <string name="det_crop_hint">"拖曳以移動圖片   ·   雙指縮放   ·   方向鍵移動   ·   LB / RB 縮放"</string>
+    <string name="det_meta_prompt_rows">列</string>
+    <string name="det_meta_prompt_policy">方式</string>
+    <string name="det_meta_prompt_source">來源</string>
+    <string name="det_meta_prompt_toggle_apply">切換 / 套用</string>
+    <string name="det_meta_prompt_edit_apply">編輯 / 套用</string>
 </resources>

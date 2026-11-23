@@ -75,9 +75,7 @@
     <string name="xmbu_app_reset_message">S\'eliminen la icona i el fons personalitzats de %1$s i torna la icona pròpia de l\'aplicació.</string>
 
     <!-- Selector d'afegir a una targeta -->
-    <string name="xmbu_collection_picker_hint">"Amunt/Avall  Navega  •  Select  Marca  •  B  Tanca"</string>
     <string name="xmbu_collection_picker_new_row">"＋  Memory Card personalitzada nova"</string>
-    <string name="xmbu_collection_picker_empty">Encara no hi ha cap Memory Card personalitzada — crea\'n una per començar.</string>
     <string name="xmbu_collection_new_title">Memory Card personalitzada nova</string>
     <string name="xmbu_collection_new_placeholder">p. ex. RPG, Jugant ara</string>
     <string name="xmbu_collection_new_create">Crea</string>

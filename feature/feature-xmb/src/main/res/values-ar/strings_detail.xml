@@ -172,9 +172,6 @@
 
     <!-- Metadata preview ("Update Metadata") -->
     <string name="det_meta_title">تحديث البيانات الوصفية</string>
-    <string name="det_meta_hint_nothing">"Select أو B  إغلاق"</string>
-    <string name="det_meta_hint_manual">"Up/Down  الصفوف  •  Left/Right  السياسة  •  L1/R1  المصدر  •  Select  تعديل / تطبيق  •  B  إلغاء"</string>
-    <string name="det_meta_hint_rows">"Up/Down  الصفوف  •  Left/Right  السياسة  •  L1/R1  المصدر  •  Select  تبديل / تطبيق  •  B  إلغاء"</string>
     <string name="det_meta_failed_title">لم تستجب مصادر البيانات الوصفية.</string>
     <string name="det_meta_unreadable_title">تعذّرت قراءة هذه اللعبة.</string>
     <string name="det_meta_failed_detail">لم يتغير شيء. تحقّق من الاتصال وحاول مجددًا.</string>
@@ -340,7 +337,6 @@
     <string name="det_fetching_artwork">جارٍ جلب الصور الفنية…</string>
     <string name="det_none">لا شيء</string>
     <string name="det_emulator_picker_title">اختيار المحاكي</string>
-    <string name="det_emulator_picker_hint">"Up/Down  تنقل  •  Select  تأكيد  •  B  إلغاء"</string>
 
     <!-- Options menu: panel titles, group headings and row labels -->
     <string name="det_menu_options">الخيارات</string>
@@ -634,4 +630,9 @@
     <string name="det_crop_apply">"Ⓐ  تطبيق القص"</string>
     <string name="det_crop_options_btn">"Ⓨ  الخيارات"</string>
     <string name="det_crop_hint">"اسحب لتحريك الصورة   ·   اقرص للتكبير   ·   D-Pad للتحريك   ·   LB / RB للتكبير"</string>
+    <string name="det_meta_prompt_rows">الصفوف</string>
+    <string name="det_meta_prompt_policy">السياسة</string>
+    <string name="det_meta_prompt_source">المصدر</string>
+    <string name="det_meta_prompt_toggle_apply">تبديل / تطبيق</string>
+    <string name="det_meta_prompt_edit_apply">تعديل / تطبيق</string>
 </resources>

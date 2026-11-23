@@ -196,15 +196,28 @@ fun AppDetailScreen(
             )
         },
         overlay = {
-        AnimatedVisibility(state.showOptions, enter = fadeIn(), exit = fadeOut()) {
-            val options = viewModel.menuRows(state.menuGroup)
-            PspContextMenuOverlay(
-                title = stringResource(if (state.menuGroup == AppDetailMenuGroup.ARTWORK) R.string.xmbu_common_artwork else R.string.xmbu_common_options),
-                rows = appDetailMenuRows(options, state.game?.isFavorite == true, uiResources()),
-                selectedIndex = state.optionsIndex,
-                onRowActivated = { viewModel.activateOption(options[it]) },
-                onDismiss = viewModel::closeMenus,
-            )
+        // Options and Add to Card share one panel, so Options ▸ Add to Card swaps the list in place.
+        // Which list it shows is held while it fades out, so a closing list fades as itself.
+        val panelShown = state.showOptions || state.collectionPicker.visible
+        val heldCards = remember { booleanArrayOf(false) }
+        if (panelShown) heldCards[0] = state.collectionPicker.visible
+        AnimatedVisibility(panelShown, enter = fadeIn(), exit = fadeOut()) {
+            if (heldCards[0]) {
+                CollectionPickerPanel(
+                    ui = state.collectionPicker,
+                    onRowClick = viewModel::onCollectionRowClick,
+                    onDismiss = viewModel::dismissCollectionPicker,
+                )
+            } else {
+                val options = viewModel.menuRows(state.menuGroup)
+                PspContextMenuOverlay(
+                    title = stringResource(if (state.menuGroup == AppDetailMenuGroup.ARTWORK) R.string.xmbu_common_artwork else R.string.xmbu_common_options),
+                    rows = appDetailMenuRows(options, state.game?.isFavorite == true, uiResources()),
+                    selectedIndex = state.optionsIndex,
+                    onRowActivated = { viewModel.activateOption(options[it]) },
+                    onDismiss = viewModel::closeMenus,
+                )
+            }
         }
 
         // Artwork picker overlay
@@ -219,19 +232,6 @@ fun AppDetailScreen(
                 onPickLocal = { viewModel.requestLocalFilePick(state.artworkPickerType) },
                 onClear     = { viewModel.clearArtwork(state.artworkPickerType) },
                 onClose     = viewModel::closeArtworkPicker,
-            )
-        }
-
-        // Add-to-collection overlay
-        AnimatedVisibility(
-            visible = state.collectionPicker.visible,
-            enter   = fadeIn(),
-            exit    = fadeOut(),
-        ) {
-            CollectionPickerPanel(
-                ui                  = state.collectionPicker,
-                onRowClick          = viewModel::onCollectionRowClick,
-                onClose             = viewModel::closeCollectionPicker,
             )
         }
 

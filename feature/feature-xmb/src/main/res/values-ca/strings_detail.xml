@@ -167,9 +167,6 @@
 
     <!-- Actualitza les metadades -->
     <string name="det_meta_title">Actualitza les metadades</string>
-    <string name="det_meta_hint_nothing">"Select o B  Tanca"</string>
-    <string name="det_meta_hint_manual">"Amunt/Avall  Files  •  Esquerra/Dreta  Política  •  L1/R1  Font  •  Select  Edita / Aplica  •  B  Cancel·la"</string>
-    <string name="det_meta_hint_rows">"Amunt/Avall  Files  •  Esquerra/Dreta  Política  •  L1/R1  Font  •  Select  Marca / Aplica  •  B  Cancel·la"</string>
     <string name="det_meta_failed_title">Les fonts de metadades no han respost.</string>
     <string name="det_meta_unreadable_title">No s\'ha pogut llegir aquest joc.</string>
     <string name="det_meta_failed_detail">No s\'ha canviat res. Comprova la connexió i torna-ho a provar.</string>
@@ -322,7 +319,6 @@
     <string name="det_fetching_artwork">S\'estan obtenint les imatges…</string>
     <string name="det_none">Cap</string>
     <string name="det_emulator_picker_title">Tria l\'emulador</string>
-    <string name="det_emulator_picker_hint">"Amunt/Avall  Navega  •  Select  Confirma  •  B  Cancel·la"</string>
     <string name="det_menu_options">Opcions</string>
     <string name="det_menu_artwork">Imatges</string>
     <string name="det_menu_information">Informació</string>
@@ -600,4 +596,9 @@
     <string name="det_crop_apply">"Ⓐ  APLICA EL RETALL"</string>
     <string name="det_crop_options_btn">"Ⓨ  OPCIONS"</string>
     <string name="det_crop_hint">"arrossega per moure la imatge   ·   pessiga per fer zoom   ·   creueta: mou   ·   LB / RB: zoom"</string>
+    <string name="det_meta_prompt_rows">Files</string>
+    <string name="det_meta_prompt_policy">Política</string>
+    <string name="det_meta_prompt_source">Font</string>
+    <string name="det_meta_prompt_toggle_apply">Marca / Aplica</string>
+    <string name="det_meta_prompt_edit_apply">Edita / Aplica</string>
 </resources>

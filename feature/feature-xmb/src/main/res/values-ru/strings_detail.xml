@@ -180,9 +180,6 @@
 
     <!-- Metadata preview ("Update Metadata") -->
     <string name="det_meta_title">Обновить метаданные</string>
-    <string name="det_meta_hint_nothing">"Select или B  Закрыть"</string>
-    <string name="det_meta_hint_manual">"Вверх/Вниз  Строки  •  Влево/Вправо  Режим  •  L1/R1  Источник  •  Select  Изменить / Применить  •  B  Отмена"</string>
-    <string name="det_meta_hint_rows">"Вверх/Вниз  Строки  •  Влево/Вправо  Режим  •  L1/R1  Источник  •  Select  Отметить / Применить  •  B  Отмена"</string>
     <string name="det_meta_failed_title">Источники метаданных не ответили.</string>
     <string name="det_meta_unreadable_title">Не удалось прочитать эту игру.</string>
     <string name="det_meta_failed_detail">Ничего не изменено. Проверьте подключение и повторите.</string>
@@ -361,7 +358,6 @@
     <!-- Options menu value when nothing is set -->
     <string name="det_none">Нет</string>
     <string name="det_emulator_picker_title">Выбор эмулятора</string>
-    <string name="det_emulator_picker_hint">"Вверх/Вниз  Навигация  •  Select  Подтвердить  •  B  Отмена"</string>
     <string name="det_menu_options">Параметры</string>
     <string name="det_menu_artwork">Обложки</string>
     <string name="det_menu_information">Информация</string>
@@ -657,4 +653,9 @@
     <string name="det_crop_apply">"Ⓐ  ОБРЕЗАТЬ"</string>
     <string name="det_crop_options_btn">"Ⓨ  ПАРАМЕТРЫ"</string>
     <string name="det_crop_hint">"перетащите, чтобы сдвинуть   ·   сведите пальцы для масштаба   ·   крестовина — сдвиг   ·   LB / RB — масштаб"</string>
+    <string name="det_meta_prompt_rows">Строки</string>
+    <string name="det_meta_prompt_policy">Режим</string>
+    <string name="det_meta_prompt_source">Источник</string>
+    <string name="det_meta_prompt_toggle_apply">Отметить / Применить</string>
+    <string name="det_meta_prompt_edit_apply">Изменить / Применить</string>
 </resources>

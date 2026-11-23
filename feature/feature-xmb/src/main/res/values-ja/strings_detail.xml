@@ -161,9 +161,6 @@
     <string name="det_back">戻る</string>
     <!-- Metadata preview -->
     <string name="det_meta_title">メタデータを更新</string>
-    <string name="det_meta_hint_nothing">"Select または B  閉じる"</string>
-    <string name="det_meta_hint_manual">"上/下  行  •  左/右  方式  •  L1/R1  ソース  •  Select  編集 / 適用  •  B  キャンセル"</string>
-    <string name="det_meta_hint_rows">"上/下  行  •  左/右  方式  •  L1/R1  ソース  •  Select  切り替え / 適用  •  B  キャンセル"</string>
     <string name="det_meta_failed_title">メタデータのソースから応答がありませんでした。</string>
     <string name="det_meta_unreadable_title">このゲームを読み込めませんでした。</string>
     <string name="det_meta_failed_detail">何も変更されていません。接続を確認して、もう一度お試しください。</string>
@@ -312,7 +309,6 @@
     <string name="det_fetching_artwork">アートワークを取得中…</string>
     <string name="det_none">なし</string>
     <string name="det_emulator_picker_title">エミュレーターを選択</string>
-    <string name="det_emulator_picker_hint">"上/下  移動  •  Select  決定  •  B  キャンセル"</string>
     <!-- Options menu -->
     <string name="det_menu_options">オプション</string>
     <string name="det_menu_artwork">アートワーク</string>
@@ -568,4 +564,9 @@
     <string name="det_crop_apply">"Ⓐ  トリミングを適用"</string>
     <string name="det_crop_options_btn">"Ⓨ  オプション"</string>
     <string name="det_crop_hint">"ドラッグで画像を移動   ·   ピンチでズーム   ·   方向キーで移動   ·   LB / RB でズーム"</string>
+    <string name="det_meta_prompt_rows">行</string>
+    <string name="det_meta_prompt_policy">方式</string>
+    <string name="det_meta_prompt_source">ソース</string>
+    <string name="det_meta_prompt_toggle_apply">切り替え / 適用</string>
+    <string name="det_meta_prompt_edit_apply">編集 / 適用</string>
 </resources>

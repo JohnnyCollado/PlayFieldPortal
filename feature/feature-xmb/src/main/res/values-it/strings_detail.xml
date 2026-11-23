@@ -170,9 +170,6 @@
 
     <!-- Metadata preview ("Update Metadata") -->
     <string name="det_meta_title">Aggiorna metadati</string>
-    <string name="det_meta_hint_nothing">"Select o B  Chiudi"</string>
-    <string name="det_meta_hint_manual">"Su/Giù  Righe  •  Sinistra/Destra  Criterio  •  L1/R1  Fonte  •  Select  Modifica / Applica  •  B  Annulla"</string>
-    <string name="det_meta_hint_rows">"Su/Giù  Righe  •  Sinistra/Destra  Criterio  •  L1/R1  Fonte  •  Select  Attiva/disattiva / Applica  •  B  Annulla"</string>
     <string name="det_meta_failed_title">Le fonti dei metadati non hanno risposto.</string>
     <string name="det_meta_unreadable_title">Impossibile leggere questo gioco.</string>
     <string name="det_meta_failed_detail">Non è stato modificato nulla. Controlla la connessione e riprova.</string>
@@ -325,7 +322,6 @@
     <string name="det_fetching_artwork">Download delle immagini…</string>
     <string name="det_none">Nessuno</string>
     <string name="det_emulator_picker_title">Scegli emulatore</string>
-    <string name="det_emulator_picker_hint">"Su/Giù  Naviga  •  Select  Conferma  •  B  Annulla"</string>
 
     <!-- Options menu -->
     <string name="det_menu_options">Opzioni</string>
@@ -597,4 +593,9 @@
     <string name="det_crop_apply">"Ⓐ  APPLICA RITAGLIO"</string>
     <string name="det_crop_options_btn">"Ⓨ  OPZIONI"</string>
     <string name="det_crop_hint">"trascina per spostare l\'immagine   ·   pizzica per lo zoom   ·   croce direzionale sposta   ·   LB / RB zoom"</string>
+    <string name="det_meta_prompt_rows">Righe</string>
+    <string name="det_meta_prompt_policy">Criterio</string>
+    <string name="det_meta_prompt_source">Fonte</string>
+    <string name="det_meta_prompt_toggle_apply">Attiva/disattiva / Applica</string>
+    <string name="det_meta_prompt_edit_apply">Modifica / Applica</string>
 </resources>

@@ -85,9 +85,7 @@
     <string name="xmbu_app_reset_message">L\'icona e lo sfondo personalizzati di %1$s vengono rimossi e torna l\'icona originale dell\'app.</string>
 
     <!-- Add to Card (collection) picker panel -->
-    <string name="xmbu_collection_picker_hint">"Su/Giù  Naviga  •  Select  Attiva/disattiva  •  B  Chiudi"</string>
     <string name="xmbu_collection_picker_new_row">"＋  Nuova Memory Card personalizzata"</string>
-    <string name="xmbu_collection_picker_empty">Ancora nessuna Memory Card personalizzata: creane una per iniziare.</string>
     <string name="xmbu_collection_new_title">Nuova Memory Card personalizzata</string>
     <string name="xmbu_collection_new_placeholder">ad es. GDR, In corso</string>
     <string name="xmbu_collection_new_create">Crea</string>

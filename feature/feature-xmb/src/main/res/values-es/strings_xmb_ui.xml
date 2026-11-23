@@ -85,9 +85,7 @@
     <string name="xmbu_app_reset_message">Se quitan el icono y el fondo personalizados de %1$s y vuelve el icono propio de la app.</string>
 
     <!-- Add to Card picker panel -->
-    <string name="xmbu_collection_picker_hint">"Arriba/Abajo  Navegar  •  Select  Marcar  •  B  Cerrar"</string>
     <string name="xmbu_collection_picker_new_row">"＋  Nueva memory card personalizada"</string>
-    <string name="xmbu_collection_picker_empty">Aún no hay memory cards personalizadas: crea una para empezar.</string>
     <string name="xmbu_collection_new_title">Nueva memory card personalizada</string>
     <string name="xmbu_collection_new_placeholder">p. ej. RPG, Jugando ahora</string>
     <string name="xmbu_collection_new_create">Crear</string>

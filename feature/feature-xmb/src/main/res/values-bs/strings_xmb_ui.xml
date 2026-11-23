@@ -86,9 +86,7 @@
     <string name="xmbu_app_reset_message">Prilagođena ikona i pozadina za %1$s uklanjaju se i vraća se vlastita ikona aplikacije.</string>
 
     <!-- Add to Card (collection) picker panel -->
-    <string name="xmbu_collection_picker_hint">"Gore/Dolje  Kretanje  •  Select  Uklj./isklj.  •  B  Zatvori"</string>
     <string name="xmbu_collection_picker_new_row">"＋  Nova prilagođena memorijska kartica"</string>
-    <string name="xmbu_collection_picker_empty">Još nema prilagođenih memorijskih kartica — izradite jednu za početak.</string>
     <string name="xmbu_collection_new_title">Nova prilagođena memorijska kartica</string>
     <string name="xmbu_collection_new_placeholder">npr. RPG-ovi, Trenutno igram</string>
     <string name="xmbu_collection_new_create">Izradi</string>

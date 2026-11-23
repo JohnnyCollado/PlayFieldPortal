@@ -95,9 +95,7 @@
 
     <!-- Add to Card (collection) picker panel -->
     <!-- Controller hint line: "B" is the name of a controller button -->
-    <string name="xmbu_collection_picker_hint">"Up/Down  Navigate  •  Select  Toggle  •  B  Close"</string>
     <string name="xmbu_collection_picker_new_row">"＋  New Custom Memory Card"</string>
-    <string name="xmbu_collection_picker_empty">No custom memory cards yet — create one to get started.</string>
     <string name="xmbu_collection_new_title">New Custom Memory Card</string>
     <string name="xmbu_collection_new_placeholder">e.g. RPGs, Currently Playing</string>
     <!-- Button that confirms the new card name -->

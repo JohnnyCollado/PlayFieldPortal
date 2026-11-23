@@ -168,9 +168,6 @@
 
     <!-- Metadata preview ("Update Metadata") -->
     <string name="det_meta_title">Ažuriraj metapodatke</string>
-    <string name="det_meta_hint_nothing">"Select ili B  Zatvori"</string>
-    <string name="det_meta_hint_manual">"Gore/Dolje  Retci  •  Lijevo/Desno  Pravilo  •  L1/R1  Izvor  •  Select  Uredi / Primijeni  •  B  Odustani"</string>
-    <string name="det_meta_hint_rows">"Gore/Dolje  Retci  •  Lijevo/Desno  Pravilo  •  L1/R1  Izvor  •  Select  Uklj./isklj. / Primijeni  •  B  Odustani"</string>
     <string name="det_meta_failed_title">Izvori metapodataka nisu odgovorili.</string>
     <string name="det_meta_unreadable_title">Ovu igru nije moguće pročitati.</string>
     <string name="det_meta_failed_detail">Ništa nije promijenjeno. Provjerite vezu i pokušajte ponovno.</string>
@@ -323,7 +320,6 @@
     <string name="det_fetching_artwork">Preuzimanje grafika…</string>
     <string name="det_none">Ništa</string>
     <string name="det_emulator_picker_title">Odaberi emulator</string>
-    <string name="det_emulator_picker_hint">"Gore/Dolje  Kretanje  •  Select  Potvrdi  •  B  Odustani"</string>
 
     <!-- Options menu: panel titles, group headings and row labels -->
     <string name="det_menu_options">Opcije</string>
@@ -591,4 +587,9 @@
     <string name="det_crop_apply">"Ⓐ  PRIMIJENI OBREZIVANJE"</string>
     <string name="det_crop_options_btn">"Ⓨ  OPCIJE"</string>
     <string name="det_crop_hint">"povucite za pomicanje slike   ·   raširite prste za zum   ·   D-Pad pomicanje   ·   LB / RB zum"</string>
+    <string name="det_meta_prompt_rows">Retci</string>
+    <string name="det_meta_prompt_policy">Pravilo</string>
+    <string name="det_meta_prompt_source">Izvor</string>
+    <string name="det_meta_prompt_toggle_apply">Uklj./isklj. / Primijeni</string>
+    <string name="det_meta_prompt_edit_apply">Uredi / Primijeni</string>
 </resources>

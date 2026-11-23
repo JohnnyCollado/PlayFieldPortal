@@ -219,9 +219,6 @@
     <!-- Metadata preview ("Update Metadata") -->
     <string name="det_meta_title">Update Metadata</string>
     <!-- Controller hint lines. Select and B are controller buttons -->
-    <string name="det_meta_hint_nothing">"Select or B  Close"</string>
-    <string name="det_meta_hint_manual">"Up/Down  Rows  •  Left/Right  Policy  •  L1/R1  Source  •  Select  Edit / Apply  •  B  Cancel"</string>
-    <string name="det_meta_hint_rows">"Up/Down  Rows  •  Left/Right  Policy  •  L1/R1  Source  •  Select  Toggle / Apply  •  B  Cancel"</string>
     <string name="det_meta_failed_title">The metadata sources didn\'t answer.</string>
     <string name="det_meta_unreadable_title">This game couldn\'t be read.</string>
     <string name="det_meta_failed_detail">Nothing was changed. Check the connection and try again.</string>
@@ -412,7 +409,6 @@
     <!-- Options menu value when nothing is set -->
     <string name="det_none">None</string>
     <string name="det_emulator_picker_title">Choose Emulator</string>
-    <string name="det_emulator_picker_hint">"Up/Down  Navigate  •  Select  Confirm  •  B  Cancel"</string>
 
     <!-- Options menu: panel titles, group headings and row labels -->
     <string name="det_menu_options">Options</string>
@@ -727,4 +723,10 @@
     <string name="det_crop_apply">"Ⓐ  APPLY CROP"</string>
     <string name="det_crop_options_btn">"Ⓨ  OPTIONS"</string>
     <string name="det_crop_hint">"drag to move the image   ·   pinch to zoom   ·   D-Pad move   ·   LB / RB zoom"</string>
+    <!-- The metadata panel's button hints: what Up/Down, Left/Right, L1/R1 and Select do. -->
+    <string name="det_meta_prompt_rows">Rows</string>
+    <string name="det_meta_prompt_policy">Policy</string>
+    <string name="det_meta_prompt_source">Source</string>
+    <string name="det_meta_prompt_toggle_apply">Toggle / Apply</string>
+    <string name="det_meta_prompt_edit_apply">Edit / Apply</string>
 </resources>

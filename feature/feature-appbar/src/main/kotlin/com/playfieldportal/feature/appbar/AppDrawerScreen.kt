@@ -350,7 +350,9 @@ internal fun AppDrawerContent(
             // BoxWithConstraints puts the viewport height in composition scope, so the adaptive
             // artwork size is resolved BEFORE the first tile composes — tiles render at their
             // final size on frame one, no resize jump.
-            BoxWithConstraints(modifier = Modifier.weight(1f)) {
+            // Full width as well as the leftover height: the grid fills it on its own, but an empty
+            // tab's message would otherwise centre in a box only as wide as the message, at the left.
+            BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 val artworkSize = adaptiveArtworkSize(maxHeight)
                 when {
                     state.isLoading -> {

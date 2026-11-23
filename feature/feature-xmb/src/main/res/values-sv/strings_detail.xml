@@ -161,9 +161,6 @@
     <string name="det_back">Tillbaka</string>
     <!-- Metadata preview ("Update Metadata") -->
     <string name="det_meta_title">Uppdatera metadata</string>
-    <string name="det_meta_hint_nothing">"Select eller B  Stäng"</string>
-    <string name="det_meta_hint_manual">"Upp/Ned  Rader  •  Vänster/Höger  Policy  •  L1/R1  Källa  •  Select  Redigera / Verkställ  •  B  Avbryt"</string>
-    <string name="det_meta_hint_rows">"Upp/Ned  Rader  •  Vänster/Höger  Policy  •  L1/R1  Källa  •  Select  Växla / Verkställ  •  B  Avbryt"</string>
     <string name="det_meta_failed_title">Metadatakällorna svarade inte.</string>
     <string name="det_meta_unreadable_title">Spelet kunde inte läsas.</string>
     <string name="det_meta_failed_detail">Inget ändrades. Kontrollera anslutningen och försök igen.</string>
@@ -317,7 +314,6 @@
     <string name="det_fetching_artwork">Hämtar grafik …</string>
     <string name="det_none">Ingen</string>
     <string name="det_emulator_picker_title">Välj emulator</string>
-    <string name="det_emulator_picker_hint">"Upp/Ned  Navigera  •  Select  Bekräfta  •  B  Avbryt"</string>
     <!-- Options menu -->
     <string name="det_menu_options">Alternativ</string>
     <string name="det_menu_artwork">Grafik</string>
@@ -581,4 +577,9 @@
     <string name="det_crop_apply">"Ⓐ  VERKSTÄLL BESKÄRNING"</string>
     <string name="det_crop_options_btn">"Ⓨ  ALTERNATIV"</string>
     <string name="det_crop_hint">"dra för att flytta bilden   ·   nyp för att zooma   ·   styrkors flytta   ·   LB / RB zooma"</string>
+    <string name="det_meta_prompt_rows">Rader</string>
+    <string name="det_meta_prompt_policy">Policy</string>
+    <string name="det_meta_prompt_source">Källa</string>
+    <string name="det_meta_prompt_toggle_apply">Växla / Verkställ</string>
+    <string name="det_meta_prompt_edit_apply">Redigera / Verkställ</string>
 </resources>

@@ -42,6 +42,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -129,12 +132,17 @@ internal fun detailFooterSurface(): Color = detailPalette().footer
 @Composable
 fun PfpDetailBackground(
     modifier: Modifier = Modifier,
+    // False draws no surface of its own: the page is hidden under another page, whose surface is the
+    // one that shows (two stacked would read darker than every other page).
+    drawSurface: Boolean = true,
     content: @Composable BoxScope.() -> Unit,
 ) {
     Box(
-        modifier = modifier.background(
-            Brush.verticalGradient(0f to detailSurfaceTop(), 1f to detailSurfaceBottom()),
-        ),
+        modifier = if (drawSurface) {
+            modifier.background(Brush.verticalGradient(0f to detailSurfaceTop(), 1f to detailSurfaceBottom()))
+        } else {
+            modifier
+        },
         content = content,
     )
 }
@@ -156,6 +164,10 @@ fun PfpDetailScaffold(
     contentMaxWidth: Dp = DetailContentMaxWidth,
     horizontalPadding: Dp = DetailContentPadding,
     showScrollBar: Boolean = true,
+    // Covered by a page of its own in [overlay] (Game Detail under Update Metadata): the page is kept
+    // laid out — its scroll, cursor and geometry are exactly as left — but not drawn, not touchable
+    // and not read out, until the user comes back to it.
+    pageHidden: Boolean = false,
     header: @Composable () -> Unit = {},
     footer: @Composable () -> Unit = {},
     overlay: @Composable BoxScope.() -> Unit = {},
@@ -164,8 +176,13 @@ fun PfpDetailScaffold(
     // The page keeps its own blur state: its prompts and panels sit in [overlay], above the layer
     // that gets blurred, and must not blur the enclosing host (the shell) they are drawn inside.
     ProvidePfpBackdropBlur { blur ->
-    PfpDetailBackground(modifier = modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize().pfpBackdropBlurLayer(blur)) {
+    // The page is see-through: while it blurs, what shows through it blurs too (see LocalPfpBackdropBehind).
+    com.playfieldportal.core.ui.components.RaiseWhile(
+        com.playfieldportal.core.ui.components.LocalPfpBackdropBehind.current,
+        active = Build.VERSION.SDK_INT >= 31 && blur.active,
+    )
+    PfpDetailBackground(modifier = modifier.fillMaxSize(), drawSurface = !pageHidden) {
+        Column(modifier = Modifier.fillMaxSize().pfpBackdropBlurLayer(blur).hiddenPage(pageHidden)) {
             header()
             // Hard viewport edge: nothing in the body may paint into the header or footer rows.
             BoxWithConstraints(modifier = Modifier.fillMaxWidth().weight(1f).clipToBounds()) {
@@ -194,6 +211,20 @@ fun PfpDetailScaffold(
     }
     }
 }
+
+/** See PfpDetailScaffold's pageHidden: invisible, every touch stopped before it reaches the page, no semantics. */
+private fun Modifier.hiddenPage(hidden: Boolean): Modifier =
+    if (!hidden) {
+        this
+    } else {
+        alpha(0f)
+            .clearAndSetSemantics {}
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
+                }
+            }
+    }
 
 // ── Backdrop blur: one layer for the content, a sibling above it for prompts and panels ────────
 //

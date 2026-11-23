@@ -163,9 +163,6 @@
     <string name="det_back">Terug</string>
     <!-- Metadata preview -->
     <string name="det_meta_title">Metadata bijwerken</string>
-    <string name="det_meta_hint_nothing">"Select of B  Sluiten"</string>
-    <string name="det_meta_hint_manual">"Omhoog/omlaag  Rijen  •  Links/rechts  Beleid  •  L1/R1  Bron  •  Select  Bewerken / toepassen  •  B  Annuleren"</string>
-    <string name="det_meta_hint_rows">"Omhoog/omlaag  Rijen  •  Links/rechts  Beleid  •  L1/R1  Bron  •  Select  Wisselen / toepassen  •  B  Annuleren"</string>
     <string name="det_meta_failed_title">De metadatabronnen gaven geen antwoord.</string>
     <string name="det_meta_unreadable_title">Dit spel kon niet worden gelezen.</string>
     <string name="det_meta_failed_detail">Er is niets gewijzigd. Controleer de verbinding en probeer het opnieuw.</string>
@@ -317,7 +314,6 @@
     <string name="det_fetching_artwork">Artwork ophalen…</string>
     <string name="det_none">Geen</string>
     <string name="det_emulator_picker_title">Emulator kiezen</string>
-    <string name="det_emulator_picker_hint">"Omhoog/omlaag  Navigeren  •  Select  Bevestigen  •  B  Annuleren"</string>
     <!-- Options menu -->
     <string name="det_menu_options">Opties</string>
     <string name="det_menu_artwork">Artwork</string>
@@ -583,4 +579,9 @@
     <string name="det_crop_apply">"Ⓐ  BIJSNIJDEN TOEPASSEN"</string>
     <string name="det_crop_options_btn">"Ⓨ  OPTIES"</string>
     <string name="det_crop_hint">"sleep om de afbeelding te verplaatsen   ·   knijp om te zoomen   ·   D-pad verplaatsen   ·   LB / RB zoomen"</string>
+    <string name="det_meta_prompt_rows">Rijen</string>
+    <string name="det_meta_prompt_policy">Beleid</string>
+    <string name="det_meta_prompt_source">Bron</string>
+    <string name="det_meta_prompt_toggle_apply">Wisselen / toepassen</string>
+    <string name="det_meta_prompt_edit_apply">Bewerken / toepassen</string>
 </resources>

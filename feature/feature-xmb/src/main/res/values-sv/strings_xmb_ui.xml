@@ -72,9 +72,7 @@
     <string name="xmbu_app_reset_title">Återställ all grafik?</string>
     <string name="xmbu_app_reset_message">Den egna ikonen och bakgrunden för %1$s tas bort och appens egen ikon kommer tillbaka.</string>
     <!-- Add to Card (collection) picker panel -->
-    <string name="xmbu_collection_picker_hint">"Upp/Ned  Navigera  •  Select  Markera  •  B  Stäng"</string>
     <string name="xmbu_collection_picker_new_row">"＋  Nytt eget minneskort"</string>
-    <string name="xmbu_collection_picker_empty">Inga egna minneskort ännu – skapa ett för att komma igång.</string>
     <string name="xmbu_collection_new_title">Nytt eget minneskort</string>
     <string name="xmbu_collection_new_placeholder">t.ex. Rollspel, Spelar nu</string>
     <string name="xmbu_collection_new_create">Skapa</string>

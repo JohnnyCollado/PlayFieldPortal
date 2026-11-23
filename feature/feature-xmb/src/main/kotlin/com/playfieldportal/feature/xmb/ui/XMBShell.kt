@@ -661,6 +661,11 @@ fun XMBShell(
     // drawn in two blurred layers (XmbBlurredLayer) with the options panel between them; the panel
     // and the shared modal host sit outside both, so they raise this state and are never blurred.
     val blurState = remember { PfpBackdropBlurState() }
+    // Raised by a see-through page in layer B (a detail page) while it blurs itself under its own
+    // prompt or panel: layer A (the wallpaper showing through that page) blurs with it, or its sharp
+    // lines read through the blurred page like screen burn-in. Layer B keeps its own blur, so the
+    // page's panel stays sharp.
+    val behindBlur = remember { PfpBackdropBlurState() }
     PFPTheme(colors = uiState.themeColors) {
       // The applied theme's custom icon slots ride alongside the palette: every themeable
       // glyph (crossbar, item rows, status strip) checks this map before its built-in art.
@@ -681,6 +686,7 @@ fun XMBShell(
           com.playfieldportal.core.ui.icons.LocalIconLegibility provides uiState.iconLegibility,
           com.playfieldportal.core.ui.keyboard.LocalVirtualKeyboard provides virtualKeyboard,
           LocalPfpBackdropBlur provides blurState,
+          com.playfieldportal.core.ui.components.LocalPfpBackdropBehind provides behindBlur,
       ) {
         // XMB-ONLY canvas scale. On screens taller than the handheld baseline (tablets), the
         // XMB cross is magnified so the tuned layout fills the screen. The override scope ends
@@ -747,7 +753,10 @@ fun XMBShell(
             )
             // The blur is a GPU cost: it obeys the same budget (battery saver / thermal throttle, unless
             // the user opted out in Display > Performance), and Settings / detail pages follow it.
-            SideEffect { blurState.enabled = !powerThrottled }
+            SideEffect {
+                blurState.enabled = !powerThrottled
+                behindBlur.enabled = !powerThrottled
+            }
             // The icon-animation budget: focused-row GIFs play only when the wave isn't
             // throttled (battery saver / thermal — the same budget the background obeys) and
             // no blocking overlay covers the XMB (reuses hasBlockingOverlay rather than
@@ -808,7 +817,7 @@ fun XMBShell(
             )
             // Layer A: the wave, the cross and every screen below the options panel. Blurred while a
             // prompt or the panel is up. Closed just before the panel (see "end: layer A").
-            XmbBlurredLayer(blurState) {
+            XmbBlurredLayer(blurState, behind = behindBlur) {
             XmbBackground(
                 waveStyle           = effectiveWaveStyle,
                 customWallpaperPath = uiState.customWallpaperPath,
@@ -1769,9 +1778,15 @@ fun XMBShell(
  * and detail pages inside it start their own blur from that state's switch.
  */
 @Composable
-internal fun XmbBlurredLayer(state: PfpBackdropBlurState, content: @Composable BoxScope.() -> Unit) {
+internal fun XmbBlurredLayer(
+    state: PfpBackdropBlurState,
+    // Also blur while a page drawn over this layer blurs itself (see behindBlur in the shell).
+    behind: PfpBackdropBlurState? = null,
+    content: @Composable BoxScope.() -> Unit,
+) {
     ProvidePfpBackdropBlur(enabled = state.enabled) {
-        Box(Modifier.fillMaxSize().pfpBackdropBlurLayer(state), content = content)
+        val applied = if (behind != null && behind.active && !state.active) behind else state
+        Box(Modifier.fillMaxSize().pfpBackdropBlurLayer(applied), content = content)
     }
 }
 

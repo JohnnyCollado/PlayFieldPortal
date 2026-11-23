@@ -87,9 +87,7 @@
 
     <!-- Add to Card (collection) picker panel -->
     <!-- Controller hint line: "B" is the name of a controller button -->
-    <string name="xmbu_collection_picker_hint">"Up/Down  تنقل  •  Select  تبديل  •  B  إغلاق"</string>
     <string name="xmbu_collection_picker_new_row">"＋  بطاقة ذاكرة مخصصة جديدة"</string>
-    <string name="xmbu_collection_picker_empty">لا توجد بطاقات ذاكرة مخصصة بعد — أنشئ واحدة للبدء.</string>
     <string name="xmbu_collection_new_title">بطاقة ذاكرة مخصصة جديدة</string>
     <string name="xmbu_collection_new_placeholder">مثل: ألعاب RPG، ألعبها حاليًا</string>
     <string name="xmbu_collection_new_create">إنشاء</string>

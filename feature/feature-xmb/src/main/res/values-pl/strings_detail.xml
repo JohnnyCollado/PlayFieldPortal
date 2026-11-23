@@ -170,9 +170,6 @@
 
     <!-- Metadata preview -->
     <string name="det_meta_title">Aktualizuj metadane</string>
-    <string name="det_meta_hint_nothing">"Select lub B  Zamknij"</string>
-    <string name="det_meta_hint_manual">"Góra/Dół  Wiersze  •  Lewo/Prawo  Zasada  •  L1/R1  Źródło  •  Select  Edytuj / Zastosuj  •  B  Anuluj"</string>
-    <string name="det_meta_hint_rows">"Góra/Dół  Wiersze  •  Lewo/Prawo  Zasada  •  L1/R1  Źródło  •  Select  Przełącz / Zastosuj  •  B  Anuluj"</string>
     <string name="det_meta_failed_title">Źródła metadanych nie odpowiedziały.</string>
     <string name="det_meta_unreadable_title">Nie można odczytać tej gry.</string>
     <string name="det_meta_failed_detail">Nic nie zmieniono. Sprawdź połączenie i spróbuj ponownie.</string>
@@ -329,7 +326,6 @@
     <string name="det_fetching_artwork">Pobieranie grafik…</string>
     <string name="det_none">Brak</string>
     <string name="det_emulator_picker_title">Wybierz emulator</string>
-    <string name="det_emulator_picker_hint">"Góra/Dół  Nawiguj  •  Select  Potwierdź  •  B  Anuluj"</string>
 
     <!-- Options menu -->
     <string name="det_menu_options">Opcje</string>
@@ -611,4 +607,9 @@
     <string name="det_crop_apply">"Ⓐ  ZASTOSUJ PRZYCIĘCIE"</string>
     <string name="det_crop_options_btn">"Ⓨ  OPCJE"</string>
     <string name="det_crop_hint">"przeciągnij, aby przesunąć obraz   ·   zsuń palce, aby powiększyć   ·   D-pad ruch   ·   LB / RB powiększenie"</string>
+    <string name="det_meta_prompt_rows">Wiersze</string>
+    <string name="det_meta_prompt_policy">Zasada</string>
+    <string name="det_meta_prompt_source">Źródło</string>
+    <string name="det_meta_prompt_toggle_apply">Przełącz / Zastosuj</string>
+    <string name="det_meta_prompt_edit_apply">Edytuj / Zastosuj</string>
 </resources>

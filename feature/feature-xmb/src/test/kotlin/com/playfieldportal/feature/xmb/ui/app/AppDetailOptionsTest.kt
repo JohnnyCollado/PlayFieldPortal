@@ -112,6 +112,33 @@ class AppDetailOptionsTest {
     }
 
     @Test
+    fun `back from Add to Card returns to options with the cursor on Add to Card`() {
+        viewModel.openOptions()
+        viewModel.activateOption(AppDetailOption.ADD_TO_COLLECTION)
+        scheduler.advanceUntilIdle()
+        assertTrue(state.collectionPicker.visible)
+
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+
+        assertFalse(state.collectionPicker.visible)
+        assertTrue("Options stays up", state.showOptions)
+        assertNull(state.menuGroup)
+        assertEquals(AppDetailOption.ADD_TO_COLLECTION, AppDetailOption.OPTIONS_MENU[state.optionsIndex])
+    }
+
+    @Test
+    fun `a tap outside Add to Card closes the whole menu`() {
+        viewModel.openOptions()
+        viewModel.activateOption(AppDetailOption.ADD_TO_COLLECTION)
+        scheduler.advanceUntilIdle()
+
+        viewModel.dismissCollectionPicker()
+
+        assertFalse(state.collectionPicker.visible)
+        assertFalse(state.showOptions)
+    }
+
+    @Test
     fun `triangle closes the options menu`() {
         viewModel.openOptions()
 

@@ -175,9 +175,6 @@
     <string name="det_back">뒤로</string>
     <string name="det_meta_title">메타데이터 업데이트</string>
     <!-- Controller hint lines. Select and B are controller buttons -->
-    <string name="det_meta_hint_nothing">"Select 또는 B  닫기"</string>
-    <string name="det_meta_hint_manual">"Up/Down  행  •  Left/Right  정책  •  L1/R1  소스  •  Select  편집 / 적용  •  B  취소"</string>
-    <string name="det_meta_hint_rows">"Up/Down  행  •  Left/Right  정책  •  L1/R1  소스  •  Select  전환 / 적용  •  B  취소"</string>
     <string name="det_meta_failed_title">메타데이터 소스에서 응답하지 않았습니다.</string>
     <string name="det_meta_unreadable_title">이 게임을 읽을 수 없습니다.</string>
     <string name="det_meta_failed_detail">아무것도 변경되지 않았습니다. 연결을 확인하고 다시 시도하세요.</string>
@@ -338,7 +335,6 @@
     <!-- Options menu value when nothing is set -->
     <string name="det_none">없음</string>
     <string name="det_emulator_picker_title">에뮬레이터 선택</string>
-    <string name="det_emulator_picker_hint">"Up/Down  탐색  •  Select  확인  •  B  취소"</string>
     <!-- Options menu: panel titles, group headings and row labels -->
     <string name="det_menu_options">옵션</string>
     <string name="det_menu_artwork">아트워크</string>
@@ -601,4 +597,9 @@
     <string name="det_crop_apply">"Ⓐ  자르기 적용"</string>
     <string name="det_crop_options_btn">"Ⓨ  옵션"</string>
     <string name="det_crop_hint">"드래그하여 이미지 이동   ·   핀치하여 확대/축소   ·   방향 패드 이동   ·   LB / RB 확대/축소"</string>
+    <string name="det_meta_prompt_rows">행</string>
+    <string name="det_meta_prompt_policy">정책</string>
+    <string name="det_meta_prompt_source">소스</string>
+    <string name="det_meta_prompt_toggle_apply">전환 / 적용</string>
+    <string name="det_meta_prompt_edit_apply">편집 / 적용</string>
 </resources>

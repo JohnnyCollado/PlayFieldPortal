@@ -83,9 +83,7 @@
     <string name="xmbu_app_reset_message">Pictograma și fundalul personalizate pentru %1$s sunt eliminate și revine pictograma proprie a aplicației.</string>
 
     <!-- Add to Card (collection) picker panel -->
-    <string name="xmbu_collection_picker_hint">"Sus/Jos  Navighează  •  Select  Comută  •  B  Închide"</string>
     <string name="xmbu_collection_picker_new_row">"＋  Card de memorie personalizat nou"</string>
-    <string name="xmbu_collection_picker_empty">Încă nu există carduri de memorie personalizate — creează unul pentru a începe.</string>
     <string name="xmbu_collection_new_title">Card de memorie personalizat nou</string>
     <string name="xmbu_collection_new_placeholder">de ex. RPG-uri, În curs de joc</string>
     <string name="xmbu_collection_new_create">Creează</string>

@@ -171,9 +171,6 @@
 
     <!-- Metadata preview ("Update Metadata") -->
     <string name="det_meta_title">Metadaten aktualisieren</string>
-    <string name="det_meta_hint_nothing">"Select oder B  Schließen"</string>
-    <string name="det_meta_hint_manual">"Hoch/Runter  Zeilen  •  Links/Rechts  Regel  •  L1/R1  Quelle  •  Select  Bearbeiten / Anwenden  •  B  Abbrechen"</string>
-    <string name="det_meta_hint_rows">"Hoch/Runter  Zeilen  •  Links/Rechts  Regel  •  L1/R1  Quelle  •  Select  Umschalten / Anwenden  •  B  Abbrechen"</string>
     <string name="det_meta_failed_title">Die Metadatenquellen haben nicht geantwortet.</string>
     <string name="det_meta_unreadable_title">Dieses Spiel konnte nicht gelesen werden.</string>
     <string name="det_meta_failed_detail">Es wurde nichts geändert. Prüfe die Verbindung und versuche es erneut.</string>
@@ -327,7 +324,6 @@
     <string name="det_fetching_artwork">Artwork wird geladen…</string>
     <string name="det_none">Keine</string>
     <string name="det_emulator_picker_title">Emulator wählen</string>
-    <string name="det_emulator_picker_hint">"Hoch/Runter  Navigieren  •  Select  Bestätigen  •  B  Abbrechen"</string>
 
     <!-- Options menu: panel titles, group headings and row labels -->
     <string name="det_menu_options">Optionen</string>
@@ -593,4 +589,9 @@
     <string name="det_crop_apply">"Ⓐ  ZUSCHNITT ANWENDEN"</string>
     <string name="det_crop_options_btn">"Ⓨ  OPTIONEN"</string>
     <string name="det_crop_hint">"ziehen zum Verschieben   ·   zusammenziehen zum Zoomen   ·   Steuerkreuz bewegen   ·   LB / RB zoomen"</string>
+    <string name="det_meta_prompt_rows">Zeilen</string>
+    <string name="det_meta_prompt_policy">Regel</string>
+    <string name="det_meta_prompt_source">Quelle</string>
+    <string name="det_meta_prompt_toggle_apply">Umschalten / Anwenden</string>
+    <string name="det_meta_prompt_edit_apply">Bearbeiten / Anwenden</string>
 </resources>

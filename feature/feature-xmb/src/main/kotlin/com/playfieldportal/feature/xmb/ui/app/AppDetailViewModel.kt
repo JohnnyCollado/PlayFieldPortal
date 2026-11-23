@@ -468,6 +468,8 @@ class AppDetailViewModel @Inject constructor(
                 _uiState.update { it.copy(menuGroup = AppDetailMenuGroup.ARTWORK, optionsIndex = 0) }
                 return
             }
+            // Reads its cards first, then takes the menu's place itself: the shared panel never empties.
+            AppDetailOption.ADD_TO_COLLECTION -> Unit
             else -> closeMenus()
         }
         when (option) {
@@ -523,12 +525,13 @@ class AppDetailViewModel @Inject constructor(
     private fun openCollectionPicker() {
         val gameId = _uiState.value.game?.id ?: return
         viewModelScope.launch {
+            val options = buildCollectionOptions(gameId)
             _uiState.update {
-                it.copy(collectionPicker = CollectionPickerUi(
-                    visible = true,
-                    options = buildCollectionOptions(gameId),
-                    selectedIndex = 0,
-                ))
+                it.copy(
+                    showOptions = false,
+                    menuGroup = null,
+                    collectionPicker = CollectionPickerUi(visible = true, options = options, selectedIndex = 0, fromOptions = true),
+                )
             }
         }
     }
@@ -589,8 +592,18 @@ class AppDetailViewModel @Inject constructor(
         _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(showCreateDialog = false)) }
     }
 
+    /** Back: up one level to Options, on the Add to Card row, when that is where it came from. */
     fun closeCollectionPicker() {
-        _uiState.update { it.copy(collectionPicker = CollectionPickerUi()) }
+        _uiState.update { s ->
+            if (!s.collectionPicker.fromOptions) return@update s.copy(collectionPicker = CollectionPickerUi())
+            val row = AppDetailOption.OPTIONS_MENU.indexOf(AppDetailOption.ADD_TO_COLLECTION).coerceAtLeast(0)
+            s.copy(collectionPicker = CollectionPickerUi(), showOptions = true, menuGroup = null, optionsIndex = row)
+        }
+    }
+
+    /** A tap outside the panel: the whole menu closes, as a tap outside Options does. */
+    fun dismissCollectionPicker() {
+        _uiState.update { it.copy(collectionPicker = CollectionPickerUi(), showOptions = false, menuGroup = null) }
     }
 
     private fun handleCollectionPickerInput(action: GamepadAction) {

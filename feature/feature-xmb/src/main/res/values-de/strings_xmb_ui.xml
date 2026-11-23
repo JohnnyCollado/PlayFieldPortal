@@ -87,9 +87,7 @@
     <string name="xmbu_app_reset_message">Das eigene Symbol und der Hintergrund für %1$s werden entfernt, und das App-eigene Symbol kehrt zurück.</string>
 
     <!-- Add to Card (collection) picker panel -->
-    <string name="xmbu_collection_picker_hint">"Hoch/Runter  Navigieren  •  Select  Umschalten  •  B  Schließen"</string>
     <string name="xmbu_collection_picker_new_row">"＋  Neue eigene Memory Card"</string>
-    <string name="xmbu_collection_picker_empty">Noch keine eigenen Memory Cards – erstelle eine, um loszulegen.</string>
     <string name="xmbu_collection_new_title">Neue eigene Memory Card</string>
     <string name="xmbu_collection_new_placeholder">z. B. RPGs, Aktuell gespielt</string>
     <string name="xmbu_collection_new_create">Erstellen</string>

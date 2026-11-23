@@ -497,6 +497,9 @@ private fun GameDetailContent(
             // scrolling and buttons keep working while the controller cursor hides.
             .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false); onTouchInput() } },
         scrollState = pageScrollState,
+        // Update Metadata is a page of its own, drawn in the overlay: this one stays out of sight
+        // (and out of reach) until the user comes back to it.
+        pageHidden = state.metadataPreview != null,
         header = {
             PfpDetailBreadcrumb(
                 title = game.platformLabel(state.platform),
@@ -765,30 +768,50 @@ private fun GameDetailOverlays(
             )
         }
 
-        AnimatedVisibility(state.showOptions, enter = fadeIn(), exit = fadeOut()) {
-            PspContextMenuOverlay(
-                title = stringResource(state.optionsMenu.titleRes),
-                rows = detailMenuRows(state, emulatorName = state.resolvedLaunch?.profile?.name, res = uiResources()),
-                selectedIndex = state.optionsIndex,
-                onRowActivated = { viewModel.onOptionRowTapped(state.visibleActions[it]) },
-                onDismiss = viewModel::closeOptions,
-            )
+        // Options, Choose Emulator and Add to Card share one panel: stepping from Options into either
+        // list swaps it in place, the way the Options sub-lists do, rather than fading out one panel
+        // and in another. Which list it shows is held while it fades out, so a closing list fades as
+        // itself rather than flashing the Options list on its way out.
+        val shown = when {
+            state.showEmulatorPicker -> DetailPanel.EMULATORS
+            state.collectionPicker.visible -> DetailPanel.CARDS
+            state.showOptions -> DetailPanel.OPTIONS
+            else -> null
         }
-
-        AnimatedVisibility(state.showEmulatorPicker, enter = fadeIn(), exit = fadeOut()) {
-            EmulatorPickerPanel(
-                options      = state.emulatorPickerOptions,
-                selectedId   = game.emulatorPackage,
-                focusedIndex = state.emulatorPickerIndex,
-                onPick       = viewModel::onEmulatorPickTapped,
-                onClose      = viewModel::closeEmulatorPicker,
-            )
+        val heldPanel = remember { arrayOf(DetailPanel.OPTIONS) }
+        if (shown != null) heldPanel[0] = shown
+        AnimatedVisibility(shown != null, enter = fadeIn(), exit = fadeOut()) {
+            when (heldPanel[0]) {
+                DetailPanel.EMULATORS -> {
+                    val options = state.emulatorPickerOptions
+                    PspContextMenuOverlay(
+                        title = stringResource(R.string.det_emulator_picker_title),
+                        rows = emulatorPickerRows(options, selectedId = game.emulatorPackage),
+                        selectedIndex = state.emulatorPickerIndex,
+                        onRowActivated = { index -> options.getOrNull(index)?.let { viewModel.onEmulatorPickTapped(it.id) } },
+                        onDismiss = viewModel::dismissEmulatorPicker,
+                    )
+                }
+                DetailPanel.CARDS -> CollectionPickerPanel(
+                    ui = state.collectionPicker,
+                    onRowClick = viewModel::onCollectionRowClick,
+                    onDismiss = viewModel::dismissCollectionPicker,
+                )
+                DetailPanel.OPTIONS -> PspContextMenuOverlay(
+                    title = stringResource(state.optionsMenu.titleRes),
+                    rows = detailMenuRows(state, emulatorName = state.resolvedLaunch?.profile?.name, res = uiResources()),
+                    selectedIndex = state.optionsIndex,
+                    onRowActivated = { viewModel.onOptionRowTapped(state.visibleActions[it]) },
+                    onDismiss = viewModel::closeOptions,
+                )
+            }
         }
 
         AnimatedVisibility(state.metadataPreview != null, enter = fadeIn(), exit = fadeOut()) {
             state.metadataPreview?.let { preview ->
-                MetadataPreviewPanel(
+                MetadataUpdatePage(
                     ui                = preview,
+                    gameTitle         = game.title,
                     focusFill         = menuCursorFill(),
                     focusEdge         = menuCursorEdge(),
                     onSelectPolicy    = viewModel::selectMetadataPolicy,
@@ -798,6 +821,7 @@ private fun GameDetailOverlays(
                     onRevertField     = viewModel::revertMetadataField,
                     onApply           = viewModel::applyMetadataPreview,
                     onClose           = viewModel::closeMetadataPreview,
+                    showHints         = !showTouchControls,
                 )
             }
         }
@@ -838,14 +862,6 @@ private fun GameDetailOverlays(
                     onClose           = viewModel::closeStorefrontMatch,
                 )
             }
-        }
-
-        AnimatedVisibility(state.collectionPicker.visible, enter = fadeIn(), exit = fadeOut()) {
-            CollectionPickerPanel(
-                ui                  = state.collectionPicker,
-                onRowClick          = viewModel::onCollectionRowClick,
-                onClose             = viewModel::closeCollectionPicker,
-            )
         }
 
         // Topmost overlay — the ViewModel routes all gamepad input here while it's open.
@@ -1194,91 +1210,23 @@ internal fun detailMenuRows(state: GameDetailUiState, emulatorName: String?, res
     }
 }
 
-// ── Emulator Picker Panel ─────────────────────────────────────────────────────
+/** Which list the detail page's one side panel is showing. */
+private enum class DetailPanel { OPTIONS, EMULATORS, CARDS }
 
-@Composable
-private fun EmulatorPickerPanel(
+// ── Choose Emulator rows ──────────────────────────────────────────────────────
+
+/**
+ * Choose Emulator as Options rows: one per emulator, the game's current override checked. An
+ * override may be stored as a profile id or (older games) a package name, so either checks it.
+ */
+internal fun emulatorPickerRows(
     options: List<com.playfieldportal.core.domain.model.EmulatorProfile>,
     selectedId: String?,
-    focusedIndex: Int,
-    onPick: (String) -> Unit,
-    onClose: () -> Unit,
-) {
-    Box(
-        Modifier.fillMaxSize().background(Color(0xCC000000)).clickable(onClick = onClose),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier
-                .widthIn(min = 280.dp, max = 460.dp)
-                .fillMaxWidth(0.86f)
-                .heightIn(max = OptionsPanelMaxHeight)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xF20A0A14))
-                .clickable(enabled = false) {}
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Text(
-                stringResource(R.string.det_emulator_picker_title),
-                color = themedText(TextPrimary),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                stringResource(R.string.det_emulator_picker_hint),
-                color = themedSubText(TextMuted.copy(alpha = 0.5f)),
-                fontSize = 10.sp,
-            )
-
-            val scrollState = rememberScrollState()
-            val stepPx = with(androidx.compose.ui.platform.LocalDensity.current) { OptionsRowScrollStep.roundToPx() }
-            LaunchedEffect(focusedIndex) { scrollState.animateScrollTo(focusedIndex * stepPx) }
-
-            Column(
-                modifier = Modifier.verticalScroll(scrollState),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                options.forEachIndexed { index, profile ->
-                    val isFocused  = focusedIndex == index
-                    val isSelected = selectedId != null && (profile.id == selectedId || profile.packageName == selectedId)
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(
-                                when {
-                                    isFocused  -> menuCursorFill()
-                                    isSelected -> menuCursorFill().copy(alpha = 0.17f)
-                                    else       -> Color(0xFF1B1B26)
-                                }
-                            )
-                            .then(
-                                if (isFocused) Modifier.border(1.5.dp, menuCursorEdge(), RoundedCornerShape(8.dp))
-                                else if (isSelected) Modifier.border(1.dp, menuCursorEdge().copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                                else Modifier
-                            )
-                            .clickable { onPick(profile.id) }
-                            .padding(vertical = 12.dp, horizontal = 12.dp),
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(profile.name, color = themedText(TextPrimary), fontSize = 14.sp, maxLines = 1)
-                            Text(
-                                profile.packageName,
-                                color = themedSubText(TextMuted),
-                                fontSize = 11.sp,
-                                maxLines = 1,
-                            )
-                        }
-                        if (isSelected) {
-                            com.playfieldportal.core.ui.components.PfpCheckMark(PlayGreen, Modifier.padding(start = 8.dp))
-                        }
-                    }
-                }
-            }
-        }
-    }
+): List<PspMenuRow> = options.map { profile ->
+    PspMenuRow(
+        label = profile.name,
+        checked = selectedId != null && (profile.id == selectedId || profile.packageName == selectedId),
+    )
 }
 
 // Fullscreen built-in player for the game's video snap: standard transport controls, black

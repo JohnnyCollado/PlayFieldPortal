@@ -1305,7 +1305,8 @@ class GameDetailViewModelTest {
         // Non-destructive by default: only the empty Developer would be written.
         assertEquals(MetadataApplyPolicy.FILL_MISSING_ONLY, preview.policy)
         assertEquals(setOf(MetadataField.DEVELOPER), preview.willWrite)
-        assertEquals(preview.applyIndex, preview.focus)
+        // The page opens at its top, on the first field row, not scrolled down to Apply.
+        assertEquals(0, preview.focus)
         coVerify(exactly = 0) { artworkRepository.applyMetadata(any(), any(), any(), any()) }
     }
 
@@ -1351,6 +1352,7 @@ class GameDetailViewModelTest {
         assertNull(viewModel.uiState.value.actionMessage)
 
         // Nothing typed yet, so Apply has nothing to write and never reaches the writer.
+        focusMetadataApply()
         viewModel.handleGamepadAction(GamepadAction.SELECT)
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -1452,7 +1454,8 @@ class GameDetailViewModelTest {
 
         viewModel.handleGamepadAction(GamepadAction.NAVIGATE_LEFT)   // Fill Missing Only → Replace All
         assertEquals(MetadataApplyPolicy.REPLACE_ALL, viewModel.uiState.value.metadataPreview?.policy)
-        viewModel.handleGamepadAction(GamepadAction.SELECT)          // focus starts on Apply
+        focusMetadataApply()
+        viewModel.handleGamepadAction(GamepadAction.SELECT)          // Apply
         testDispatcher.scheduler.advanceUntilIdle()
 
         coVerify {
@@ -1488,10 +1491,14 @@ class GameDetailViewModelTest {
 
         // Retrieval is asynchronous: the overlay opens before it has any row, so the cursor can
         // only be anywhere once the rows have been handed to the engine.
+        // The cursor lands on the first row, at the top of the page.
         assertTrue(GameDetailKeys.METADATA_APPLY in viewModel.focusableNodeKeys())
-        assertEquals(GameDetailKeys.METADATA_APPLY, viewModel.uiState.value.navFocusKey)
+        assertEquals(
+            GameDetailKeys.metadataField(MetadataField.DESCRIPTION.name),
+            viewModel.uiState.value.navFocusKey,
+        )
 
-        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_UP)
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)
 
         assertEquals(
             GameDetailKeys.metadataField(MetadataField.DEVELOPER.name),
@@ -1502,6 +1509,7 @@ class GameDetailViewModelTest {
     @Test
     fun `switching source re-ticks its changes and toggling a row chooses fields`() = runTest {
         openLoadedPreview()
+        focusMetadataApply()
 
         viewModel.handleGamepadAction(GamepadAction.NEXT_CATEGORY)   // ScreenScraper → TheGamesDB
         var preview = viewModel.uiState.value.metadataPreview!!
@@ -1516,6 +1524,14 @@ class GameDetailViewModelTest {
         assertEquals(MetadataApplyPolicy.CHOOSE_FIELDS, preview.policy)
         assertTrue(preview.chosen.isEmpty())
         assertTrue(preview.willWrite.isEmpty())
+    }
+
+    /** Down from the first field row to Apply, the last stop on the page. */
+    private fun focusMetadataApply() {
+        repeat(viewModel.uiState.value.metadataPreview!!.applyIndex) {
+            viewModel.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)
+        }
+        assertEquals(viewModel.uiState.value.metadataPreview!!.applyIndex, viewModel.uiState.value.metadataPreview!!.focus)
     }
 
     // ── Navigation (unified engine) ───────────────────────────────────────
@@ -2254,6 +2270,95 @@ class GameDetailViewModelTest {
         verify(exactly = 1) { menuSound.play(back, any()) }
         // Still on the page — Back closed the overlay, not the screen.
         assertFalse(viewModel.uiState.value.closed)
+    }
+
+    private fun installDuckStation() {
+        every { profileRepository.getInstalledProfiles() } returns listOf(
+            com.playfieldportal.core.domain.model.EmulatorProfile(
+                id                   = "duckstation",
+                name                 = "DuckStation",
+                packageName          = "com.github.stenzek.duckstation",
+                intentType           = com.playfieldportal.core.domain.model.IntentType.ACTION_VIEW,
+                supportedPlatformIds = listOf(fakeGame.platformId),
+            ),
+        )
+    }
+
+    @Test
+    fun `Back on Choose Emulator opened from Options returns to Options on the Emulator row`() = runTest {
+        installDuckStation()
+        loadedAndLaidOut()
+        viewModel.openOptions()
+        viewModel.activateAction(DetailAction.EMULATOR)
+        assertTrue(viewModel.uiState.value.showEmulatorPicker)
+
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+
+        val s = viewModel.uiState.value
+        assertFalse(s.showEmulatorPicker)
+        assertTrue("Options stays up", s.showOptions)
+        assertEquals(DetailMenu.ROOT, s.optionsMenu)
+        assertEquals(DetailAction.EMULATOR, s.visibleActions[s.optionsIndex])
+        assertFalse(s.closed)
+    }
+
+    @Test
+    fun `Back on Choose Emulator opened from the page closes it`() = runTest {
+        installDuckStation()
+        loadedAndLaidOut()
+        viewModel.requestChangeEmulator()
+        assertTrue(viewModel.uiState.value.showEmulatorPicker)
+
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+
+        val s = viewModel.uiState.value
+        assertFalse(s.showEmulatorPicker)
+        assertFalse(s.showOptions)
+        assertFalse(s.closed)
+    }
+
+    @Test
+    fun `Back on Add to Card returns to Options on the Add to Card row`() = runTest {
+        loadedAndLaidOut()
+        viewModel.openOptions()
+        viewModel.activateAction(DetailAction.COLLECTIONS)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.collectionPicker.visible)
+
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+
+        val s = viewModel.uiState.value
+        assertFalse(s.collectionPicker.visible)
+        assertTrue("Options stays up", s.showOptions)
+        assertEquals(DetailMenu.ROOT, s.optionsMenu)
+        assertEquals(DetailAction.COLLECTIONS, s.visibleActions[s.optionsIndex])
+    }
+
+    @Test
+    fun `a tap outside Add to Card closes the whole menu`() = runTest {
+        loadedAndLaidOut()
+        viewModel.openOptions()
+        viewModel.activateAction(DetailAction.COLLECTIONS)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.dismissCollectionPicker()
+
+        val s = viewModel.uiState.value
+        assertFalse(s.collectionPicker.visible)
+        assertFalse(s.showOptions)
+    }
+
+    @Test
+    fun `stepping from Options into Choose Emulator plays the step cue`() = runTest {
+        installDuckStation()
+        loadedAndLaidOut()
+        viewModel.openOptions()
+        verify(exactly = 1) { menuSound.play(select, any()) }
+
+        viewModel.activateAction(DetailAction.EMULATOR)
+
+        // The panel stays up and only its list changes, so the step is heard like any sub-list's.
+        verify(exactly = 2) { menuSound.play(select, any()) }
     }
 
     @Test

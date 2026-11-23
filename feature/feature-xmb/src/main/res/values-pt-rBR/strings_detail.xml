@@ -180,9 +180,6 @@
 
     <!-- Metadata preview ("Update Metadata") -->
     <string name="det_meta_title">Atualizar metadados</string>
-    <string name="det_meta_hint_nothing">"Select ou B  Fechar"</string>
-    <string name="det_meta_hint_manual">"Cima/Baixo  Linhas  •  Esquerda/Direita  Política  •  L1/R1  Fonte  •  Select  Editar / Aplicar  •  B  Cancelar"</string>
-    <string name="det_meta_hint_rows">"Cima/Baixo  Linhas  •  Esquerda/Direita  Política  •  L1/R1  Fonte  •  Select  Marcar / Aplicar  •  B  Cancelar"</string>
     <string name="det_meta_failed_title">As fontes de metadados não responderam.</string>
     <string name="det_meta_unreadable_title">Não foi possível ler este jogo.</string>
     <string name="det_meta_failed_detail">Nada foi alterado. Verifique a conexão e tente de novo.</string>
@@ -357,7 +354,6 @@
     <!-- Options menu value when nothing is set -->
     <string name="det_none">Nenhum</string>
     <string name="det_emulator_picker_title">Escolher emulador</string>
-    <string name="det_emulator_picker_hint">"Cima/Baixo  Navegar  •  Select  Confirmar  •  B  Cancelar"</string>
     <string name="det_menu_options">Opções</string>
     <string name="det_menu_artwork">Artes</string>
     <string name="det_menu_information">Informações</string>
@@ -645,4 +641,9 @@
     <string name="det_crop_apply">"Ⓐ  APLICAR CORTE"</string>
     <string name="det_crop_options_btn">"Ⓨ  OPÇÕES"</string>
     <string name="det_crop_hint">"arraste para mover a imagem   ·   pince para dar zoom   ·   direcional move   ·   LB / RB zoom"</string>
+    <string name="det_meta_prompt_rows">Linhas</string>
+    <string name="det_meta_prompt_policy">Política</string>
+    <string name="det_meta_prompt_source">Fonte</string>
+    <string name="det_meta_prompt_toggle_apply">Marcar / Aplicar</string>
+    <string name="det_meta_prompt_edit_apply">Editar / Aplicar</string>
 </resources>

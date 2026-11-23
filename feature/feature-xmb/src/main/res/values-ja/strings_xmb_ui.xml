@@ -75,9 +75,7 @@
     <string name="xmbu_app_reset_message">%1$s のカスタムアイコンと背景が削除され、アプリ本来のアイコンに戻ります。</string>
 
     <!-- Add to Card picker -->
-    <string name="xmbu_collection_picker_hint">"上/下  移動  •  Select  切り替え  •  B  閉じる"</string>
     <string name="xmbu_collection_picker_new_row">"＋  新しいカスタムメモリーカード"</string>
-    <string name="xmbu_collection_picker_empty">カスタムメモリーカードはまだありません。作成して始めましょう。</string>
     <string name="xmbu_collection_new_title">新しいカスタムメモリーカード</string>
     <string name="xmbu_collection_new_placeholder">例: RPG、プレイ中</string>
     <string name="xmbu_collection_new_create">作成</string>

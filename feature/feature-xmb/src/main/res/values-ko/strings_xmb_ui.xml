@@ -73,9 +73,7 @@
     <string name="xmbu_app_reset_title">모든 아트워크를 초기화할까요?</string>
     <string name="xmbu_app_reset_message">%1$s의 사용자 지정 아이콘과 배경이 제거되고 앱 자체 아이콘이 다시 표시됩니다.</string>
     <!-- Add to Card (collection) picker panel -->
-    <string name="xmbu_collection_picker_hint">"Up/Down  탐색  •  Select  전환  •  B  닫기"</string>
     <string name="xmbu_collection_picker_new_row">"＋  새 사용자 지정 메모리 카드"</string>
-    <string name="xmbu_collection_picker_empty">아직 사용자 지정 메모리 카드가 없습니다 — 새로 만들어 시작하세요.</string>
     <string name="xmbu_collection_new_title">새 사용자 지정 메모리 카드</string>
     <string name="xmbu_collection_new_placeholder">예: RPG, 플레이 중</string>
     <!-- Button that confirms the new card name -->

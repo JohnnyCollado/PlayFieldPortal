@@ -167,9 +167,6 @@
 
     <!-- Mettre à jour les métadonnées -->
     <string name="det_meta_title">Mettre à jour les métadonnées</string>
-    <string name="det_meta_hint_nothing">"Select ou B  Fermer"</string>
-    <string name="det_meta_hint_manual">"Haut/Bas  Lignes  •  Gauche/Droite  Règle  •  L1/R1  Source  •  Select  Modifier / Appliquer  •  B  Annuler"</string>
-    <string name="det_meta_hint_rows">"Haut/Bas  Lignes  •  Gauche/Droite  Règle  •  L1/R1  Source  •  Select  Cocher / Appliquer  •  B  Annuler"</string>
     <string name="det_meta_failed_title">Les sources de métadonnées n\'ont pas répondu.</string>
     <string name="det_meta_unreadable_title">Impossible de lire ce jeu.</string>
     <string name="det_meta_failed_detail">Rien n\'a été modifié. Vérifiez la connexion et réessayez.</string>
@@ -322,7 +319,6 @@
     <string name="det_fetching_artwork">Récupération des illustrations…</string>
     <string name="det_none">Aucun</string>
     <string name="det_emulator_picker_title">Choisir l\'émulateur</string>
-    <string name="det_emulator_picker_hint">"Haut/Bas  Naviguer  •  Select  Confirmer  •  B  Annuler"</string>
 
     <!-- Menu Options -->
     <string name="det_menu_options">Options</string>
@@ -590,4 +586,9 @@
     <string name="det_crop_apply">"Ⓐ  APPLIQUER LE RECADRAGE"</string>
     <string name="det_crop_options_btn">"Ⓨ  OPTIONS"</string>
     <string name="det_crop_hint">"faites glisser pour déplacer l\'image   ·   pincez pour zoomer   ·   croix dir. déplacer   ·   LB / RB zoom"</string>
+    <string name="det_meta_prompt_rows">Lignes</string>
+    <string name="det_meta_prompt_policy">Règle</string>
+    <string name="det_meta_prompt_source">Source</string>
+    <string name="det_meta_prompt_toggle_apply">Cocher / Appliquer</string>
+    <string name="det_meta_prompt_edit_apply">Modifier / Appliquer</string>
 </resources>

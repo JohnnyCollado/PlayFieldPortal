@@ -85,9 +85,7 @@
     <string name="xmbu_app_reset_message">Własna ikona i tło dla %1$s zostaną usunięte, a aplikacja odzyska swoją ikonę.</string>
 
     <!-- Add to Card picker panel -->
-    <string name="xmbu_collection_picker_hint">"Góra/Dół  Nawiguj  •  Select  Przełącz  •  B  Zamknij"</string>
     <string name="xmbu_collection_picker_new_row">"＋  Nowa własna karta pamięci"</string>
-    <string name="xmbu_collection_picker_empty">Brak własnych kart pamięci — utwórz pierwszą, aby zacząć.</string>
     <string name="xmbu_collection_new_title">Nowa własna karta pamięci</string>
     <string name="xmbu_collection_new_placeholder">np. RPG, Obecnie grane</string>
     <string name="xmbu_collection_new_create">Utwórz</string>

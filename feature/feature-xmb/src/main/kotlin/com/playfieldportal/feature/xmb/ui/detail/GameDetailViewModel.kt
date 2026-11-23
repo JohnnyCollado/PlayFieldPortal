@@ -161,6 +161,8 @@ data class GameDetailUiState(
     val showEmulatorPicker: Boolean = false,
     val emulatorPickerOptions: List<EmulatorProfile> = emptyList(),
     val emulatorPickerIndex: Int = 0,
+    /** Opened from Options ▸ Emulator, so Back returns there; from the page's emulator line it closes. */
+    val emulatorPickerFromOptions: Boolean = false,
 
     // ── Add-to-collection picker ──────────────────────────────────────────
     val collectionPicker: CollectionPickerUi = CollectionPickerUi(),
@@ -779,8 +781,10 @@ class GameDetailViewModel @Inject constructor(
         GameDetailKeys.MODAL_EMULATOR_PICKER ->
             s.emulatorPickerOptions.getOrNull(s.emulatorPickerIndex)?.let { GameDetailKeys.emulatorPick(it.id) }
         GameDetailKeys.MODAL_COLLECTION_PICKER -> collectionKeyAt(s, s.collectionPicker.selectedIndex)
-        // The metadata overlay opens on Apply: the default policy is the non-destructive one.
-        GameDetailKeys.MODAL_METADATA -> GameDetailKeys.METADATA_APPLY
+        // The metadata page opens at its top, on the first field row (Apply when it has none yet).
+        GameDetailKeys.MODAL_METADATA ->
+            s.metadataPreview?.shownFields?.firstOrNull()?.let { GameDetailKeys.metadataField(it.name) }
+                ?: GameDetailKeys.METADATA_APPLY
         // The picker opens on the strongest candidate, which is the one the user most likely
         // wants — but it is still a CHOICE, so nothing is written until they press Select.
         GameDetailKeys.MODAL_STOREFRONT_MATCH ->
@@ -1270,14 +1274,16 @@ class GameDetailViewModel @Inject constructor(
     fun activateAction(action: DetailAction) {
         // A row that opens a sub-panel keeps the menu up; every other row is an answer and closes it.
         action.opens?.let { return openOptionsSubmenu(it) }
-        _uiState.update { it.copy(showOptions = false) }
+        // Add to Card reads its cards first and then takes Options' place itself, so the shared panel
+        // never empties in between.
+        if (action != DetailAction.COLLECTIONS) _uiState.update { it.copy(showOptions = false) }
         when (action) {
             // Sub-panel rows never get this far: `opens` took them above.
             DetailAction.MENU_ARTWORK, DetailAction.MENU_INFORMATION, DetailAction.MENU_FILE -> Unit
             DetailAction.FAVORITE  -> toggleFavorite()
             DetailAction.COLLECTIONS -> openCollectionPicker()
             DetailAction.ARTWORK   -> openArtworkManager()
-            DetailAction.EMULATOR  -> openEmulatorPicker()
+            DetailAction.EMULATOR  -> openEmulatorPicker(fromOptions = true)
             DetailAction.MANUAL    -> openManual()
             DetailAction.FETCH_ARTWORK -> fetchArtwork()
             DetailAction.METADATA  -> openMetadataPreview()
@@ -1700,7 +1706,7 @@ class GameDetailViewModel @Inject constructor(
 
     // ── Emulator picker ───────────────────────────────────────────────────
 
-    private fun openEmulatorPicker() {
+    private fun openEmulatorPicker(fromOptions: Boolean = false) {
         val game = _uiState.value.game ?: return
         val options = profileRepository.getInstalledProfiles()
             .filter { it.isAvailable && it.supportsPlatform(game.platformId) }
@@ -1710,7 +1716,9 @@ class GameDetailViewModel @Inject constructor(
             showActionMessage(UiText.res(R.string.det_no_emulators, game.platformId.uppercase()))
             return
         }
-        menuSound.play(MenuSound.SELECT)
+        // From Options the panel stays up and only its list changes, so the step gets SELECT. From
+        // the page's emulator line the panel opens, and plays its own Options cue as it appears.
+        if (fromOptions) menuSound.play(MenuSound.SELECT)
         val stored = game.emulatorPackage
         val currentIndex = if (stored != null) {
             options.indexOfFirst { it.id == stored || it.packageName == stored }.coerceAtLeast(0)
@@ -1721,13 +1729,25 @@ class GameDetailViewModel @Inject constructor(
                 showEmulatorPicker    = true,
                 emulatorPickerOptions = options,
                 emulatorPickerIndex   = currentIndex,
+                emulatorPickerFromOptions = fromOptions,
             )
         }
     }
 
+    /** Back: up one level to Options, on the Emulator row, when that is where it came from. */
     fun closeEmulatorPicker() {
         menuSound.play(MenuSound.BACK)
-        _uiState.update { it.copy(showEmulatorPicker = false) }
+        _uiState.update { s ->
+            if (!s.emulatorPickerFromOptions) return@update s.copy(showEmulatorPicker = false)
+            val row = s.actionsIn(DetailMenu.ROOT).indexOf(DetailAction.EMULATOR).coerceAtLeast(0)
+            s.copy(showEmulatorPicker = false, showOptions = true, optionsMenu = DetailMenu.ROOT, optionsIndex = row)
+        }
+    }
+
+    /** A tap outside the panel: the whole menu closes, as a tap outside Options does. */
+    fun dismissEmulatorPicker() {
+        menuSound.play(MenuSound.BACK)
+        _uiState.update { it.copy(showEmulatorPicker = false, showOptions = false) }
     }
 
     /** Tap on the Game Detail emulator line — same per-game-only override flow as Options ▸ Emulator. */
@@ -1783,6 +1803,7 @@ class GameDetailViewModel @Inject constructor(
                         visible = true,
                         options = buildCollectionOptions(gameId),
                         selectedIndex = 0,
+                        fromOptions = true,
                     ),
                 )
             }
@@ -1856,9 +1877,20 @@ class GameDetailViewModel @Inject constructor(
         _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(showCreateDialog = false)) }
     }
 
+    /** Back: up one level to Options, on the Add to Card row, when that is where it came from. */
     fun closeCollectionPicker() {
         menuSound.play(MenuSound.BACK)
-        _uiState.update { it.copy(collectionPicker = CollectionPickerUi()) }
+        _uiState.update { s ->
+            if (!s.collectionPicker.fromOptions) return@update s.copy(collectionPicker = CollectionPickerUi())
+            val row = s.actionsIn(DetailMenu.ROOT).indexOf(DetailAction.COLLECTIONS).coerceAtLeast(0)
+            s.copy(collectionPicker = CollectionPickerUi(), showOptions = true, optionsMenu = DetailMenu.ROOT, optionsIndex = row)
+        }
+    }
+
+    /** A tap outside the panel: the whole menu closes, as a tap outside Options does. */
+    fun dismissCollectionPicker() {
+        menuSound.play(MenuSound.BACK)
+        _uiState.update { it.copy(collectionPicker = CollectionPickerUi(), showOptions = false) }
     }
 
     // ── Favorite ──────────────────────────────────────────────────────────
@@ -2005,8 +2037,9 @@ class GameDetailViewModel @Inject constructor(
                     policy = if (preview.presets.isEmpty()) MetadataApplyPolicy.REPLACE_ALL
                     else MetadataApplyPolicy.FILL_MISSING_ONLY,
                 )
-                // Focus starts on Apply: the default policy is the non-destructive one.
-                s.copy(metadataPreview = loaded.copy(focus = loaded.applyIndex))
+                // Focus starts on the first field row, at the top of the page: Source and Policy are
+                // read before anything is applied. (It started on Apply when this was a pop-up.)
+                s.copy(metadataPreview = loaded.copy(focus = 0))
             }
         }
     }

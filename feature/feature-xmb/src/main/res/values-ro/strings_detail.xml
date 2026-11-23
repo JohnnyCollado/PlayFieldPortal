@@ -170,9 +170,6 @@
 
     <!-- Metadata preview -->
     <string name="det_meta_title">Actualizează metadatele</string>
-    <string name="det_meta_hint_nothing">"Select sau B  Închide"</string>
-    <string name="det_meta_hint_manual">"Sus/Jos  Rânduri  •  Stânga/Dreapta  Regulă  •  L1/R1  Sursă  •  Select  Editează / Aplică  •  B  Anulează"</string>
-    <string name="det_meta_hint_rows">"Sus/Jos  Rânduri  •  Stânga/Dreapta  Regulă  •  L1/R1  Sursă  •  Select  Comută / Aplică  •  B  Anulează"</string>
     <string name="det_meta_failed_title">Sursele de metadate nu au răspuns.</string>
     <string name="det_meta_unreadable_title">Acest joc nu a putut fi citit.</string>
     <string name="det_meta_failed_detail">Nu s-a modificat nimic. Verifică conexiunea și încearcă din nou.</string>
@@ -325,7 +322,6 @@
     <string name="det_fetching_artwork">Se descarcă artwork-ul…</string>
     <string name="det_none">Niciunul</string>
     <string name="det_emulator_picker_title">Alege emulatorul</string>
-    <string name="det_emulator_picker_hint">"Sus/Jos  Navighează  •  Select  Confirmă  •  B  Anulează"</string>
 
     <!-- Options menu -->
     <string name="det_menu_options">Opțiuni</string>
@@ -597,4 +593,9 @@
     <string name="det_crop_apply">"Ⓐ  APLICĂ DECUPAREA"</string>
     <string name="det_crop_options_btn">"Ⓨ  OPȚIUNI"</string>
     <string name="det_crop_hint">"trage pentru a muta imaginea   ·   ciupește pentru zoom   ·   D-Pad mută   ·   LB / RB zoom"</string>
+    <string name="det_meta_prompt_rows">Rânduri</string>
+    <string name="det_meta_prompt_policy">Regulă</string>
+    <string name="det_meta_prompt_source">Sursă</string>
+    <string name="det_meta_prompt_toggle_apply">Comută / Aplică</string>
+    <string name="det_meta_prompt_edit_apply">Editează / Aplică</string>
 </resources>

@@ -170,9 +170,6 @@
 
     <!-- Metadata preview -->
     <string name="det_meta_title">Actualizar metadatos</string>
-    <string name="det_meta_hint_nothing">"Select o B  Cerrar"</string>
-    <string name="det_meta_hint_manual">"Arriba/Abajo  Filas  •  Izquierda/Derecha  Política  •  L1/R1  Fuente  •  Select  Editar / Aplicar  •  B  Cancelar"</string>
-    <string name="det_meta_hint_rows">"Arriba/Abajo  Filas  •  Izquierda/Derecha  Política  •  L1/R1  Fuente  •  Select  Marcar / Aplicar  •  B  Cancelar"</string>
     <string name="det_meta_failed_title">Las fuentes de metadatos no respondieron.</string>
     <string name="det_meta_unreadable_title">No se pudo leer este juego.</string>
     <string name="det_meta_failed_detail">No se cambió nada. Comprueba la conexión y vuelve a intentarlo.</string>
@@ -325,7 +322,6 @@
     <string name="det_fetching_artwork">Obteniendo ilustraciones…</string>
     <string name="det_none">Ninguno</string>
     <string name="det_emulator_picker_title">Elegir emulador</string>
-    <string name="det_emulator_picker_hint">"Arriba/Abajo  Navegar  •  Select  Confirmar  •  B  Cancelar"</string>
 
     <!-- Options menu -->
     <string name="det_menu_options">Opciones</string>
@@ -597,4 +593,9 @@
     <string name="det_crop_apply">"Ⓐ  APLICAR RECORTE"</string>
     <string name="det_crop_options_btn">"Ⓨ  OPCIONES"</string>
     <string name="det_crop_hint">"arrastra para mover la imagen   ·   pellizca para hacer zoom   ·   cruceta mover   ·   LB / RB zoom"</string>
+    <string name="det_meta_prompt_rows">Filas</string>
+    <string name="det_meta_prompt_policy">Política</string>
+    <string name="det_meta_prompt_source">Fuente</string>
+    <string name="det_meta_prompt_toggle_apply">Marcar / Aplicar</string>
+    <string name="det_meta_prompt_edit_apply">Editar / Aplicar</string>
 </resources>

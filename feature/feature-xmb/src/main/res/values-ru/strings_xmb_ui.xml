@@ -76,9 +76,7 @@
     <string name="xmbu_app_reset_message">Свой значок и фон %1$s будут удалены, и вернётся родной значок приложения.</string>
 
     <!-- Add to Card (collection) picker panel -->
-    <string name="xmbu_collection_picker_hint">"Вверх/Вниз  Навигация  •  Select  Отметить  •  B  Закрыть"</string>
     <string name="xmbu_collection_picker_new_row">"＋  Новая своя карта памяти"</string>
-    <string name="xmbu_collection_picker_empty">Своих карт памяти пока нет — создайте первую.</string>
     <string name="xmbu_collection_new_title">Новая своя карта памяти</string>
     <string name="xmbu_collection_new_placeholder">например, RPG, «Сейчас играю»</string>
 

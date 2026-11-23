@@ -86,9 +86,7 @@
     <string name="xmbu_app_reset_message">%1$s 的自定义图标和背景将被移除，并恢复应用自身的图标。</string>
 
     <!-- Add to Card (collection) picker panel -->
-    <string name="xmbu_collection_picker_hint">"上/下  导航  •  Select  切换  •  B  关闭"</string>
     <string name="xmbu_collection_picker_new_row">"＋  新建自定义记忆卡"</string>
-    <string name="xmbu_collection_picker_empty">还没有自定义记忆卡，创建一张即可开始。</string>
     <string name="xmbu_collection_new_title">新建自定义记忆卡</string>
     <string name="xmbu_collection_new_placeholder">例如：角色扮演、正在玩</string>
     <string name="xmbu_collection_new_create">创建</string>

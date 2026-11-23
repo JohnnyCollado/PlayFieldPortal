@@ -76,9 +76,7 @@
     <string name="xmbu_app_reset_title">Alle artwork terugzetten?</string>
     <string name="xmbu_app_reset_message">Het eigen pictogram en de eigen achtergrond voor %1$s worden verwijderd en het eigen pictogram van de app komt terug.</string>
     <!-- Add to Card (collection) picker panel -->
-    <string name="xmbu_collection_picker_hint">"Omhoog/omlaag  Navigeren  •  Select  Wisselen  •  B  Sluiten"</string>
     <string name="xmbu_collection_picker_new_row">"＋  Nieuwe eigen geheugenkaart"</string>
-    <string name="xmbu_collection_picker_empty">Nog geen eigen geheugenkaarten — maak er een om te beginnen.</string>
     <string name="xmbu_collection_new_title">Nieuwe eigen geheugenkaart</string>
     <string name="xmbu_collection_new_placeholder">bijv. RPG\'s, Nu aan het spelen</string>
     <string name="xmbu_collection_new_create">Maken</string>

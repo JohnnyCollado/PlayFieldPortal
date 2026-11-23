@@ -169,9 +169,6 @@
 
     <!-- Metadata preview -->
     <string name="det_meta_title">Aktualizovat metadata</string>
-    <string name="det_meta_hint_nothing">"Select nebo B  Zavřít"</string>
-    <string name="det_meta_hint_manual">"Nahoru/Dolů  Řádky  •  Doleva/Doprava  Pravidlo  •  L1/R1  Zdroj  •  Select  Upravit / Použít  •  B  Zrušit"</string>
-    <string name="det_meta_hint_rows">"Nahoru/Dolů  Řádky  •  Doleva/Doprava  Pravidlo  •  L1/R1  Zdroj  •  Select  Přepnout / Použít  •  B  Zrušit"</string>
     <string name="det_meta_failed_title">Zdroje metadat neodpověděly.</string>
     <string name="det_meta_unreadable_title">Tuto hru nelze přečíst.</string>
     <string name="det_meta_failed_detail">Nic nebylo změněno. Zkontrolujte připojení a zkuste to znovu.</string>
@@ -328,7 +325,6 @@
     <string name="det_fetching_artwork">Stahování grafiky…</string>
     <string name="det_none">Žádný</string>
     <string name="det_emulator_picker_title">Vybrat emulátor</string>
-    <string name="det_emulator_picker_hint">"Nahoru/Dolů  Navigace  •  Select  Potvrdit  •  B  Zrušit"</string>
 
     <!-- Options menu -->
     <string name="det_menu_options">Možnosti</string>
@@ -604,4 +600,9 @@
     <string name="det_crop_apply">"Ⓐ  POUŽÍT OŘÍZNUTÍ"</string>
     <string name="det_crop_options_btn">"Ⓨ  MOŽNOSTI"</string>
     <string name="det_crop_hint">"tažením posunete obrázek   ·   roztažením prstů přiblížíte   ·   D-pad posun   ·   LB / RB přiblížení"</string>
+    <string name="det_meta_prompt_rows">Řádky</string>
+    <string name="det_meta_prompt_policy">Pravidlo</string>
+    <string name="det_meta_prompt_source">Zdroj</string>
+    <string name="det_meta_prompt_toggle_apply">Přepnout / Použít</string>
+    <string name="det_meta_prompt_edit_apply">Upravit / Použít</string>
 </resources>

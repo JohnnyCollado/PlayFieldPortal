@@ -353,6 +353,26 @@ class PfpBackdropBlurState(initiallyEnabled: Boolean = true) {
 /** The host's blur state. Null (the default) means nobody blurs and prompts stay a flat tint. */
 val LocalPfpBackdropBlur = staticCompositionLocalOf<PfpBackdropBlurState?> { null }
 
+/**
+ * The blur of what lies BEHIND a see-through page (the shell's wallpaper layer). A page that blurs its
+ * own content raises it too, so the wallpaper showing through the page blurs with it; otherwise its
+ * sharp lines read through the blurred page like screen burn-in. Null: nothing behind to blur.
+ */
+val LocalPfpBackdropBehind = staticCompositionLocalOf<PfpBackdropBlurState?> { null }
+
+/** Raises [state] while [active], lowering it again when that stops or this leaves the composition. */
+@Composable
+internal fun RaiseWhile(state: PfpBackdropBlurState?, active: Boolean) {
+    DisposableEffect(state, active) {
+        if (state != null && active) {
+            state.raise()
+            onDispose { state.lower() }
+        } else {
+            onDispose { }
+        }
+    }
+}
+
 /** Blurs the content it is applied to while a prompt or panel is showing, on Android 12+. */
 @Composable
 fun Modifier.pfpBackdropBlur(state: PfpBackdropBlurState?): Modifier {

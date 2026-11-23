@@ -84,9 +84,7 @@
     <string name="xmbu_app_reset_message">L\'icône et l\'arrière-plan personnalisés de %1$s sont supprimés et l\'icône d\'origine de l\'appli revient.</string>
 
     <!-- Panneau Ajouter à une carte -->
-    <string name="xmbu_collection_picker_hint">"Haut/Bas  Naviguer  •  Select  Cocher  •  B  Fermer"</string>
     <string name="xmbu_collection_picker_new_row">"＋  Nouvelle carte mémoire personnalisée"</string>
-    <string name="xmbu_collection_picker_empty">Aucune carte mémoire personnalisée — créez-en une pour commencer.</string>
     <string name="xmbu_collection_new_title">Nouvelle carte mémoire personnalisée</string>
     <string name="xmbu_collection_new_placeholder">ex. RPG, En cours</string>
     <string name="xmbu_collection_new_create">Créer</string>
