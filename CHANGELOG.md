@@ -13,7 +13,7 @@ All notable changes to Play Field Portal are documented here. This project follo
 - **22 languages.** The launcher follows the device language in Arabic, Bosnian, Catalan, Czech,
   Chinese (Simplified and Traditional), Croatian, Dutch, French, German, Italian, Japanese, Korean,
   Polish, Portuguese (Brazil and Portugal), Romanian, Russian, Serbian, Spanish, Swedish and
-  Vietnamese, with dates and times in the region's format. The Theme Studio (1.3.1) follows too, from
+  Vietnamese, with dates and times in the region's format. The Theme Studio (1.3.2) follows too, from
   a language menu in its toolbar.
 - **Focus glow.** The selected icon glows in its own shape; *Display › Focus glow* sets Steady,
   Pulsing (slow) or Off.
@@ -60,6 +60,10 @@ All notable changes to Play Field Portal are documented here. This project follo
   only when the scan saw other ROMs in the same folder.
 - In the App Drawer, an empty tab's message is centred; on a game page the wallpaper no longer shows
   sharp through the menu blur.
+- **Theme Studio 1.3.2: the preview's status bar matches the launcher's.** Studio 1.3.1, first
+  shipped with this release, still drew the old bar (date and time on the left, dimmed icons). The
+  preview now packs it into the right corner in one colour with the launcher's crisp shadow behind
+  each word and icon, and the idle hint pill's labels and buttons carry the same shadow.
 - **RetroArch uses your own settings when a game is started from PFP** (GitHub issue 19). A launch
   named only the game and the core, so RetroArch up to 1.22.2 started on built-in defaults: your
   hotkeys, controller mapping, shaders and overlays were ignored and nothing you changed could be

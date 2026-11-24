@@ -187,7 +187,7 @@ private fun batteryCapacity(context: Context): Int =
 
 // ── PSP-style full-width status strip ────────────────────────────────────────
 //
-// Layout:  DATE  ┊  TIME  ┊  SORT        [🔔] [Ctrl] [BT] [WiFi] [Signal] [Bat] [⚡]%
+// Layout, packed against the end edge:   [SORT] [🔔] [Ctrl] [BT] [Signal] [WiFi]  ┊  DATE ┊ TIME  [Bat] [⚡]%
 //
 // On power the bolt appears before the %; while actually gaining charge [Bat] also cycles its
 // fill tiers up to full (see [BatteryPowerState]).

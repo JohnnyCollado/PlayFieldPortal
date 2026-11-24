@@ -920,35 +920,49 @@ internal val LocalPreviewClock = androidx.compose.runtime.staticCompositionLocal
 
 // XmbStatusStrip.kt: palette, metrics and the sample device state the strip reads.
 private val StripPrimary = Color(0xFFEEEEEE)
-private val StripMuted = Color(0xAAEEEEEE)
 private val StripSep = Color(0x55FFFFFF)
 private val MeterInactive = Color(0x40EEEEEE)
 
 /**
- * XmbStatusStrip's icon tints: the strip's greys, repainted by the theme's Main text colour at their
- * own weight (themedText), so a muted icon stays muted and an unlit meter bar stays faint. The Sub
- * colour never reaches them, and a theme's own status art still draws as authored.
+ * XmbStatusStrip's tints: one tone for every word and icon (themedText(StripPrimary)), repainted by
+ * the theme's Main text colour once set; only an unlit meter bar is fainter. The Sub colour never
+ * reaches the strip, and a theme's own status art still draws as authored.
  */
 internal object StatusStripTints {
-    /** The built-in status glyphs (bell, controller, Bluetooth, battery): muted. */
-    fun icon(model: XmbPreviewModel): Color = model.textOr(StripMuted)
+    /** The built-in status glyphs (bell, controller, Bluetooth, battery): the strip's one tone. */
+    fun icon(model: XmbPreviewModel): Color = model.textOr(StripPrimary)
 
-    /** The date: the Main colour at full weight, matching the time, once set; else the strip's muted grey. */
-    fun date(model: XmbPreviewModel): Color = model.textOr(StripMuted, 1f)
+    /** The date: the same tone and weight as the time. */
+    fun date(model: XmbPreviewModel): Color = model.textOr(StripPrimary)
 
     /** A Wi-Fi / signal meter segment, lit or not. */
     fun meter(model: XmbPreviewModel, lit: Boolean): Color = model.textOr(if (lit) StripPrimary else MeterInactive)
+
+    /**
+     * core-ui shadowTwinColor: the matte behind a strip piece of [content], the luminance opposite
+     * (IconMatte's CONTOUR_AUTO), at the content's own alpha so a faint bar gets a faint twin.
+     */
+    fun twin(content: Color): Color {
+        val matte = TwinLegibility.matteColor(content) ?: return Color.Transparent
+        return matte.copy(alpha = matte.alpha * content.alpha)
+    }
+
+    private val TwinLegibility = PreviewLegibility(LabelProtection.NONE, IconMatteStyle.CONTOUR_AUTO, solidUnfocusedIcons = false)
 }
 private val StripHeight = 28.dp
 private val StripSidePadding = 20.dp
 private val StripFontSize = 12.sp
 private const val SampleBatteryPercent = 84
 
+/** core-ui ShadowTwinOffset: how far each strip piece's twin sits right and down of it. */
+private val ShadowTwinOffset = 1.5.dp
+
 /**
- * XmbPspStatusStrip as a controller user sees it: date | time [| sort label] on the left; bell,
- * controller, Bluetooth, Wi-Fi, battery and percentage on the right. The sample device has a
- * controller connected, Bluetooth on, full Wi-Fi, no cellular, and is unplugged. Status icons draw
- * in the strip's muted white (not the theme icon colour); a theme override draws as authored.
+ * XmbPspStatusStrip as a controller user sees it: the whole strip packed against the end edge, as
+ * on the PSP, in reading order: [sort label,] bell, controller, Bluetooth, Wi-Fi ┊ date ┊ time,
+ * battery, percentage. The sample device has a controller connected, Bluetooth on, full Wi-Fi, no
+ * cellular, and is unplugged. Every word and icon is the strip's one tone with its shadow twin; a
+ * theme override draws as authored.
  */
 @Composable
 private fun BoxScope.StatusStrip(model: XmbPreviewModel, sortLabel: String?) {
@@ -958,26 +972,20 @@ private fun BoxScope.StatusStrip(model: XmbPreviewModel, sortLabel: String?) {
         val now = java.util.Date(clock())
         java.text.SimpleDateFormat("MM/dd/yyyy").format(now) to java.text.SimpleDateFormat("h:mm a").format(now)
     }
+    val tone = model.textOr(StripPrimary)
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+        // End, not right: it mirrors in RTL, as the launcher's does.
+        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
         modifier = Modifier
             .align(Alignment.TopCenter)
             .fillMaxWidth()
             .height(StripHeight)
             .padding(horizontal = StripSidePadding),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            // XmbStatusStrip: the date, time and sort label are all main text (the date at its muted weight).
-            Text(date, color = StatusStripTints.date(model), fontSize = StripFontSize, fontWeight = FontWeight.Normal)
-            StripSeparator()
-            Text(time, color = model.textOr(StripPrimary), fontSize = StripFontSize, fontWeight = FontWeight.Medium)
-            if (sortLabel != null) {
-                StripSeparator()
-                Text(sortLabel, color = model.textOr(StripPrimary), fontSize = StripFontSize, fontWeight = FontWeight.Medium, maxLines = 1)
-            }
-        }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            // Under a controller the sort label is a plain readout (X cycles it), first in the group.
+            if (sortLabel != null) StripText(sortLabel, tone)
             StatusGlyph(model, "status_notifications", Modifier.size(13.dp))
             StatusGlyph(model, "status_controller", Modifier.size(15.dp))
             StatusGlyph(model, "status_bluetooth", Modifier.size(width = 9.dp, height = 13.dp))
@@ -987,10 +995,32 @@ private fun BoxScope.StatusStrip(model: XmbPreviewModel, sortLabel: String?) {
             } else {
                 WifiMeter(model, level = 4, Modifier.size(width = 16.dp, height = 13.dp))
             }
+        }
+        StripSeparator(model)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            StripText(date, StatusStripTints.date(model))
+            StripSeparator(model)
+            StripText(time, tone)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             StatusGlyph(model, batterySlotKey(SampleBatteryPercent), Modifier.size(width = 24.dp, height = 11.dp))
-            Text("$SampleBatteryPercent%", color = model.textOr(StripPrimary), fontSize = StripFontSize, fontWeight = FontWeight.Medium)
+            StripText("$SampleBatteryPercent%", tone)
         }
     }
+}
+
+/** XmbStatusStrip.StripText: the strip's size and weight, with a crisp zero-blur twin. */
+@Composable
+private fun StripText(text: String, color: Color) {
+    val px = with(LocalDensity.current) { ShadowTwinOffset.toPx() }
+    Text(
+        text,
+        color = color,
+        fontSize = StripFontSize,
+        fontWeight = FontWeight.Medium,
+        maxLines = 1,
+        style = TextStyle(shadow = Shadow(color = StatusStripTints.twin(color), offset = Offset(px, px), blurRadius = 0f)),
+    )
 }
 
 /** XmbStatusIcons.batterySlotKey while unplugged: the fill tier by level. */
@@ -1002,31 +1032,49 @@ private fun batterySlotKey(level: Int): String = when {
 }
 
 @Composable
-private fun StripSeparator() {
-    Box(Modifier.width(1.dp).height(10.dp).background(StripSep))
+private fun StripSeparator(model: XmbPreviewModel) {
+    // The Main font colour like the rest of the strip, at the separator's faint weight.
+    Box(Modifier.width(1.dp).height(10.dp).background(model.textOr(StripSep, StripSep.alpha)))
 }
 
-/** XmbStatusStrip.StatusIcon: the built-in glyph in the strip's muted tint (Main colour once set), or the theme's art as authored. */
+/** core-ui ShadowTwin: [twin] drawn right and down of [content], behind it. */
+@Composable
+private fun StripTwin(twin: @Composable () -> Unit, content: @Composable () -> Unit) {
+    Box {
+        Box(Modifier.offset(ShadowTwinOffset, ShadowTwinOffset)) { twin() }
+        content()
+    }
+}
+
+/** XmbStatusStrip.StatusIcon: the built-in glyph in the strip's tone with its twin, or the theme's art as authored. */
 @Composable
 private fun StatusGlyph(model: XmbPreviewModel, key: String, modifier: Modifier) {
     val override = model.iconOverrides[key]
     if (override != null) {
         Image(bitmap = override, contentDescription = null, modifier = modifier)
-    } else {
-        Image(
-            painter = StudioIconSet.defaultPainter(key),
-            contentDescription = null,
-            colorFilter = ColorFilter.tint(StatusStripTints.icon(model)),
-            modifier = modifier,
-        )
+        return
+    }
+    val painter = StudioIconSet.defaultPainter(key)
+    val tint = StatusStripTints.icon(model)
+    StripTwin(
+        twin = { Image(painter, contentDescription = null, colorFilter = ColorFilter.tint(StatusStripTints.twin(tint)), modifier = modifier) },
+    ) {
+        Image(painter, contentDescription = null, colorFilter = ColorFilter.tint(tint), modifier = modifier)
     }
 }
 
-/** XmbStatusStrip.WifiMeter: a base dot and three arcs, lit up to [level] (0..4). */
+/** XmbStatusStrip.WifiMeter: a base dot and three arcs, lit up to [level] (0..4), with its twin. */
 @Composable
 private fun WifiMeter(model: XmbPreviewModel, level: Int, modifier: Modifier) {
     val lit = StatusStripTints.meter(model, lit = true)
     val unlit = StatusStripTints.meter(model, lit = false)
+    StripTwin(twin = { WifiMeterCanvas(StatusStripTints.twin(lit), StatusStripTints.twin(unlit), level, modifier) }) {
+        WifiMeterCanvas(lit, unlit, level, modifier)
+    }
+}
+
+@Composable
+private fun WifiMeterCanvas(lit: Color, unlit: Color, level: Int, modifier: Modifier) {
     Canvas(modifier) {
         val cx = size.width / 2f
         val cy = size.height * 0.92f
@@ -1051,7 +1099,6 @@ private fun WifiMeter(model: XmbPreviewModel, level: Int, modifier: Modifier) {
 
 // ContextMenuHint / core-ui ControllerHintBar(compact): the idle hint pill, with the Xbox glyphs for
 // the default bindings (CHANGE_SORT = X, OPEN_CONTEXT_MENU = Y, HOME = Menu).
-private val HintTextShadow = ThemeTokens.TextShadow
 
 /**
  * The idle hint pill in the bottom-right corner, as it stands once a controller user has been idle:
@@ -1076,16 +1123,29 @@ private fun BoxScope.IdleHintPill(nav: PreviewNavState) {
     }
 }
 
+/**
+ * ControllerPromptGlyphs: the glyph with its silhouette twin, and the label whose crisp zero-blur twin
+ * replaces the pill style's softer drop shadow.
+ */
 @Composable
 private fun HintPrompt(glyph: String, label: String) {
+    val twin = StatusStripTints.twin(Color.White)
+    val px = with(LocalDensity.current) { ShadowTwinOffset.toPx() }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        Image(StudioIconSet.chromePainter(glyph), contentDescription = null, modifier = Modifier.size(15.dp))
+        val painter = StudioIconSet.chromePainter(glyph)
+        StripTwin(
+            twin = {
+                Image(painter, contentDescription = null, colorFilter = ColorFilter.tint(twin, BlendMode.SrcIn), modifier = Modifier.size(15.dp))
+            },
+        ) {
+            Image(painter, contentDescription = null, modifier = Modifier.size(15.dp))
+        }
         Text(
             text = label,
             color = Color.White,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
-            style = TextStyle(shadow = HintTextShadow),
+            style = TextStyle(shadow = Shadow(color = twin, offset = Offset(px, px), blurRadius = 0f)),
         )
     }
 }

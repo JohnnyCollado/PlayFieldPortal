@@ -62,12 +62,13 @@ class PreviewTextColorTest {
     @Test
     fun `status strip icons and meters take the main colour at their own weight`() {
         val m = model(TextColorChoice.Custom(orange))
-        assertEquals(Color(orange).copy(alpha = 0xAA / 255f), StatusStripTints.icon(m))
+        // One tone for the whole strip (XmbStatusStrip 1.3.5): icons are not muted.
+        assertEquals(Color(orange), StatusStripTints.icon(m))
         assertEquals(Color(orange), StatusStripTints.meter(m, lit = true))
         assertEquals(Color(orange).copy(alpha = 0x40 / 255f), StatusStripTints.meter(m, lit = false))
         // The sub colour never reaches the icons.
         val subOnly = model(TextColorChoice.Auto, TextColorChoice.Custom(teal))
-        assertEquals(Color(0xAAEEEEEE), StatusStripTints.icon(subOnly))
+        assertEquals(Color(0xFFEEEEEE), StatusStripTints.icon(subOnly))
         assertEquals(Color(0xFFEEEEEE), StatusStripTints.meter(subOnly, lit = true))
         assertEquals(Color(0x40EEEEEE), StatusStripTints.meter(subOnly, lit = false))
     }
@@ -75,9 +76,9 @@ class PreviewTextColorTest {
     @Test
     fun `the status strip date matches the time in the main colour`() {
         assertEquals(Color(orange), StatusStripTints.date(model(TextColorChoice.Custom(orange))))
-        assertEquals(Color(0xAAEEEEEE), StatusStripTints.date(model(TextColorChoice.Auto)), "unthemed, the date keeps its quieter grey")
+        assertEquals(Color(0xFFEEEEEE), StatusStripTints.date(model(TextColorChoice.Auto)), "unthemed, the date matches the time too")
         val subOnly = model(TextColorChoice.Auto, TextColorChoice.Custom(teal))
-        assertEquals(Color(0xAAEEEEEE), StatusStripTints.date(subOnly), "the Sub colour no longer reaches the date")
+        assertEquals(Color(0xFFEEEEEE), StatusStripTints.date(subOnly), "the Sub colour no longer reaches the date")
     }
 
     @Test
