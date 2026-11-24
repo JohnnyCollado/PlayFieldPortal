@@ -482,7 +482,6 @@
     <string name="lib_kb_import_failed_title">تعذّر استيراد ذلك الملف</string>
     <string name="lib_kb_import_too_large">هذا الملف أكبر من أن يكون ملف معرفة محاكيات.</string>
     <string name="lib_kb_import_unreadable">تعذّرت قراءة ذلك الملف.</string>
-    <string name="lib_kb_import_rejected">لا يمكن استخدام ذلك الملف (%1$s).</string>
     <string name="lib_kb_import_nothing">لا يحتوي ذلك الملف على شيء لاستيراده على هذا الجهاز.</string>
     <string name="lib_kb_import_save_failed">تعذّر حفظ الملف على هذا الجهاز.</string>
     <string name="lib_kb_import_refresh_failed">تم حفظ الملف، لكن فشل تحديث اكتشاف المحاكيات.</string>
@@ -524,7 +523,6 @@
     <string name="lib_kb_export_nothing_title">لا شيء لتصديره</string>
     <string name="lib_kb_export_none_message">ليست لديك محاكيات مخصصة أو معدّلة لمشاركتها بعد.</string>
     <string name="lib_kb_export_none_shareable">لا يمكن مشاركة أي من محاكياتك</string>
-    <string name="lib_kb_export_none_shareable_why">لا يمكن مشاركة أي من محاكياتك: %1$s</string>
     <string name="lib_kb_exported_title">تم التصدير</string>
     <plurals name="lib_kb_exported_message">
         <item quantity="zero">لم يُصدَّر أي محاكٍ</item>
@@ -919,4 +917,6 @@
     <string name="lib_lm_local_by_title">مطابَق بالعنوان</string>
     <string name="lib_lm_local_tracking">قيد التتبّع</string>
     <string name="lib_lm_local_no_list">لا توجد قائمة إنجازات بعد</string>
+    <string name="lib_kb_import_invalid">هذا الملف ليس ملف معرفة محاكيات من PlayFieldPortal، أو أنه تالف.</string>
+    <string name="lib_kb_import_too_many">يسرد هذا الملف محاكيات أو أجهزة أكثر مما يستطيع PlayFieldPortal استيراده.</string>
 </resources>

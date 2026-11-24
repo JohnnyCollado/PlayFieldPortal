@@ -47,7 +47,7 @@ import java.io.File
  * drawable or Material glyph the app already ships, each with the wrench badge (sysicon_settings) in
  * the approved upper-left spot at the approved size.
  *
- *     ./gradlew :feature:feature-xmb:testDebugUnitTest --tests "*InterfaceIconOptionsMockupTest*"
+ *     ./gradlew :feature:feature-xmb:testDebugUnitTest -Pmockups --tests "*InterfaceIconOptionsMockupTest*"
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

@@ -100,7 +100,7 @@ fun Modifier.focusGlow(active: Boolean, key: Any? = null, prepare: Boolean = act
     var halo by remember(key) { mutableStateOf<ShapeHalo?>(null) }
     LaunchedEffect(key, hasSize) {
         if (!hasSize) return@LaunchedEffect
-        for (wait in CAPTURE_DELAYS_MS) {
+        for (wait in captureDelaysMs(active)) {
             delay(wait)
             // Fails until the first frame has been drawn (the recording is still empty): try again.
             val captured = runCatching { layer.toImageBitmap().asAndroidBitmap() }.getOrNull() ?: continue
@@ -149,6 +149,11 @@ fun Modifier.focusGlow(active: Boolean, key: Any? = null, prepare: Boolean = act
         }
 }
 
-// When the picture of the icon is taken, after it first has a size: soon, then twice more for art
-// that arrives late (a cover still loading, a theme icon decoding).
-private val CAPTURE_DELAYS_MS = listOf(60L, 300L, 1200L)
+/**
+ * The waits between pictures of the icon, after it first has a size: soon, then twice more for art
+ * that arrives late (a cover still loading, a theme icon decoding). A focused icon looks twice more,
+ * out to about nine seconds, for a cover still being fetched; each look is a GPU read and a blur, so
+ * icons prepared in the background (the crossbar's, static art) keep the short schedule.
+ */
+internal fun captureDelaysMs(active: Boolean): List<Long> =
+    if (active) listOf(60L, 300L, 1200L, 2500L, 5000L) else listOf(60L, 300L, 1200L)

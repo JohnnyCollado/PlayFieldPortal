@@ -171,3 +171,160 @@ Fix the items marked ✕ before exporting.	Corrija os itens marcados com ✕ ant
 A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	Uma imagem de prévia do tema pronto é gerada na exportação e aparece como miniatura na galeria de temas do launcher.
 Opened {0}	{0} aberto
 Exported {0}	{0} exportado
+Folder of .pfptheme files to upgrade	Pasta de arquivos .pfptheme para atualizar
+Folder with .ptf files	Pasta com arquivos .ptf
+Output folder for .pfptheme files	Pasta de saída para os arquivos .pfptheme
+PSP theme to unpack	Tema de PSP para descompactar
+Folder for unpacked assets	Pasta para os recursos descompactados
+Converting {0}  ({1}/{2})	Convertendo {0}  ({1}/{2})
+This theme was made by a newer version (format v{0}). Parts this version doesn't know are kept when you save.	Este tema foi criado por uma versão mais nova (formato v{0}). As partes que esta versão não conhece são mantidas ao salvar.
+CXMB theme	Tema CXMB
+This file is a CXMB custom firmware theme (.ctf). Those replace PSP system files rather than describing wallpaper and colors, so they can't be converted. Official PSP themes (.ptf) open fine.	Este arquivo é um tema CXMB de firmware personalizado (.ctf). Esses temas substituem arquivos de sistema do PSP em vez de descrever papel de parede e cores, por isso não podem ser convertidos. Temas oficiais de PSP (.ptf) abrem normalmente.
+Batch conversion finished	Conversão em lote concluída
+Converted: {0}	Convertidos: {0}
+Converted with caveats: {0}	Convertidos com ressalvas: {0}
+Skipped (CXMB): {0} — {1}	Ignorados (CXMB): {0} — {1}
+Failed: {0}	Com falha: {0}
+Theme upgrade finished	Atualização de temas concluída
+Upgraded: {0} (originals kept as .bak)	Atualizados: {0} (originais mantidos como .bak)
+Already current: {0}	Já atualizados: {0}
+Made by a newer version, left alone: {0}	De uma versão mais nova, sem alteração: {0}
+Report: {0}	Relatório: {0}
+Background motion	Movimento do fundo
+Still: frame at {0}	Imagem fixa: quadro em {0}
+Still: baked into the theme	Imagem fixa: embutida no tema
+Import wallpaper	Importar papel de parede
+Import video	Importar vídeo
+Lock screen image	Imagem da tela de bloqueio
+(embedded image)	(imagem embutida)
+Fit	Ajuste
+Busy wallpaper — labels may be hard to read. Softer, low-contrast images work best.	Papel de parede carregado — os rótulos podem ficar difíceis de ler. Imagens suaves e de pouco contraste funcionam melhor.
+The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, a Still style, or Motion set to Static on the device).	A imagem fixa é o pôster do vídeo — aparece sempre que a reprodução está parada (economia de bateria, um jogo, um estilo Parado ou Movimento em Estático no aparelho).
+The theme offers this image for the device lock screen	O tema oferece esta imagem para a tela de bloqueio do aparelho
+Output {0}×{1}	Saída {0}×{1}
+{0}–{1} recommended, {2} max, {3} MB max	{0}–{1} recomendado, {2} máx., {3} MB máx.
+Whether the boot video and Game Boot play at all is a device setting: {0}	Se o vídeo de inicialização e o Game Boot tocam é uma configuração do aparelho: {0}
+This clip is longer than the cap — the launcher will refuse it.	Este clipe passa do limite — o launcher vai recusá-lo.
+Choose a {0} video	Escolher um vídeo de {0}
+Dark icon color — icons may be hard to see over the wallpaper scrim.	Cor de ícone escura — os ícones podem ficar difíceis de ver sobre o véu do papel de parede.
+Saved in the theme for a later update. The launcher currently shows the color exactly as picked.	Salvo no tema para uma atualização futura. Por enquanto o launcher mostra a cor exatamente como escolhida.
+Original	Original
+Classic Blue	Azul clássico
+Sunset Orange	Laranja pôr do sol
+Fresh Green	Verde fresco
+Royal Purple	Roxo real
+Crimson Red	Vermelho carmesim
+Silver	Prata
+Sakura Pink	Rosa sakura
+Golden Amber	Âmbar dourado
+Aqua Teal	Azul-piscina
+Midnight Navy	Azul meia-noite
+Charcoal	Carvão
+Format: schema {0} → {1}	Formato: esquema {0} → {1}
+Format: new theme → {0}	Formato: tema novo → {0}
+Kept	Mantido
+Added	Adicionado
+Repaired	Reparado
+Can't recover	Irrecuperável
+What saving does	O que salvar faz
+Motion has a still poster	O movimento tem um pôster fixo
+Motion needs a still wallpaper as its poster - add one or remove the video	O movimento precisa de um papel de parede fixo como pôster - adicione um ou remova o vídeo
+Media outside limits: {0}	Mídia fora dos limites: {0}
+This wallpaper is busy behind the labels - pick a text legibility style so they stay readable	Este papel de parede está carregado atrás dos rótulos - escolha um estilo de legibilidade de texto para que continuem legíveis
+Text should read clearly on this wallpaper	O texto deve ficar legível sobre este papel de parede
+{0} - launchers from before this format refuse files over 64 MB	{0} - launchers anteriores a este formato recusam arquivos acima de 64 MB
+Opens on older launchers, which ignore sounds, boot clips, legibility and crop	Abre em launchers antigos, que ignoram sons, clipes de inicialização, legibilidade e recorte
+{0} is over the {1} MB limit for a theme file	{0} passa do limite de {1} MB para um arquivo de tema
+Saving upgrades this theme from {0}; {1} part(s) can't be recovered	Salvar atualiza este tema de {0}; {1} parte(s) não podem ser recuperadas
+Saving upgrades this theme from {0}	Salvar atualiza este tema de {0}
+an older format	um formato anterior
+Imported from {0}	Importado de {0}
+Imported from {0} — firmware {1}	Importado de {0} — firmware {1}
+a PSP theme	um tema de PSP
+Created {0}	Criado {0}
+On the device these live in {0}.	No aparelho, elas ficam em {0}.
+Scale	Escala
+Horizontal	Horizontal
+Vertical	Vertical
+This wallpaper is busy behind the labels — a text style helps them stay readable.	Este papel de parede está carregado atrás dos rótulos — um estilo de texto ajuda a mantê-los legíveis.
+Settings › Interface › Display › Adjust XMB Layout	Configurações › Interface › Tela › Ajustar layout do XMB
+Settings › Interface › Sound	Configurações › Interface › Som
+Settings › Interface › Display › Show Boot Sequence / Game Boot	Configurações › Interface › Tela › Mostrar sequência de inicialização / Game Boot
+Battery Saver and Thermal Throttle (Settings › Interface › Display) freeze the animated wave on the device.	Economia de bateria e Limitação térmica (Configurações › Interface › Tela) congelam a onda animada no aparelho.
+Pick…	Escolher…
+Plays on the device	Toca no aparelho
+Length unknown	Duração desconhecida
+Volumes stay on the device: {0}	O volume fica no aparelho: {0}
+Couldn't play {0} here — it will play on the device.	Não foi possível tocar {0} aqui — vai tocar no aparelho.
+Choose a sound for {0}	Escolher um som para {0}
+Icon image for {0}	Imagem de ícone para {0}
+Template for {0}	Modelo para {0}
+Template written to {0}	Modelo salvo em {0}
+Template export failed: {0}	Falha ao exportar o modelo: {0}
+Search {0} slots: battery, PS3, voice…	Pesquisar {0} posições: bateria, PS3, voz…
+No slot matches. Clear the search or a filter.	Nenhuma posição corresponde. Limpe a pesquisa ou um filtro.
+Pack folder…	Pasta de pacote…
+Icon pack folder	Pasta do pacote de ícones
+Pack .zip…	Pacote .zip…
+Icon pack zip	Pacote de ícones .zip
+Folder for icon templates	Pasta para os modelos de ícones
+Packs are folders or zips of <slot key>.png / .gif, the names the templates use. Multi-frame GIFs animate on the launcher when focused; they must stay within 512px, 120 frames and 10 seconds.	Pacotes são pastas ou zips de <chave da posição>.png / .gif, os nomes que os modelos usam. GIFs com vários quadros são animados no launcher quando focados; devem ficar em até 512 px, 120 quadros e 10 segundos.
+Icon pack imported	Pacote de ícones importado
+Icon pack refused	Pacote de ícones recusado
+{0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	{0}: {1} adicionados, {2} substituídos, {3} sem correspondência, {4} recusados
+Icon pack {0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	Pacote de ícones {0}: {1} adicionados, {2} substituídos, {3} sem correspondência, {4} recusados
+{0} - did you mean {1}?	{0} - você quis dizer {1}?
+{0} - no matching slot	{0} - nenhuma posição correspondente
+{0} error	{0} erro
+{0} errors	{0} erros
+{0} warning	{0} aviso
+{0} warnings	{0} avisos
+{0} of {1} MB	{0} de {1} MB
+{0} of {1} MB - older launchers refuse over 64 MB	{0} de {1} MB - launchers antigos recusam acima de 64 MB
+Wallpaper	Papel de parede
+Preview	Prévia
+Motion	Movimento
+Ambience	Ambiente
+Other files	Outros arquivos
+{0} is too large to be a theme file	{0} é grande demais para ser um arquivo de tema
+Imported {0}	{0} importado
+Imported with a caveat	Importado com uma ressalva
+{0} is not a valid .pfptheme bundle	{0} não é um pacote .pfptheme válido
+{0} — {1} icon(s) for parts themes don't customize were left out	{0} — {1} ícone(s) de partes que os temas não personalizam ficaram de fora
+Motion wallpaper: {0}	Papel de parede animado: {0}
+Could not keep: {0}	Não foi possível manter: {0}
+Parts of the theme not kept	Partes do tema não mantidas
+Motion wallpaper not kept	Papel de parede animado não mantido
+{0} is not a readable image	{0} não é uma imagem legível
+{0} converted to H.264 for Android ({1})	{0} convertido para H.264 para Android ({1})
+Couldn't read that frame of the video	Não foi possível ler esse quadro do vídeo
+The crop does not match this image	O recorte não corresponde a esta imagem
+Wallpaper: {0} ({1}×{2})	Papel de parede: {0} ({1}×{2})
+Added {0} — converted to H.264 for Android ({1})	{0} adicionado — convertido para H.264 para Android ({1})
+Added {0}	{0} adicionado
+Export failed: {0}	Falha ao exportar: {0}
+{0} is not a PSP theme file	{0} não é um arquivo de tema de PSP
+Unpack failed: {0}	Falha ao descompactar: {0}
+Theme unpacked	Tema descompactado
+{0} images written to {1} (see report.txt).	{0} imagens gravadas em {1} (veja report.txt).
+{0} images and {1} data files written to {2} (see report.txt).	{0} imagens e {1} arquivos de dados gravados em {2} (veja report.txt).
+Unpacked {0}: {1} images	{0} descompactado: {1} imagens
+Templates exported to {0} ({1} icons)	Modelos exportados para {0} ({1} ícones)
+WebM clips can't be checked in the Studio (it reads MP4/H.264 only) — convert the clip to MP4	Clipes WebM não podem ser verificados no Studio (ele só lê MP4/H.264) — converta o clipe para MP4
+That isn't a media slot this import can fill	Essa não é uma posição de mídia que esta importação possa preencher
+That file is too large for a theme — {0} MB or less	Esse arquivo é grande demais para um tema — {0} MB ou menos
+Unsupported video — use an MP4 (H.264)	Vídeo não suportado — use um MP4 (H.264)
+{0} video isn't guaranteed to play on Android	Não há garantia de que um vídeo {0} toque no Android
+H.264 {0} doesn't play on Android	H.264 {0} não toca no Android
+{0} video doesn't play on Android	Um vídeo {0} não toca no Android
+Couldn't convert this video for Android ({0}). Re-encode it as MP4 H.264 and try again.	Não foi possível converter este vídeo para Android ({0}). Recodifique-o como MP4 H.264 e tente de novo.
+{0} is not a folder or .zip	{0} não é uma pasta nem um .zip
+Pack refused: {0}	Pacote recusado: {0}
+Pack could not be read	Não foi possível ler o pacote
+Pack could not be read: {0}	Não foi possível ler o pacote: {0}
+Pack has more than {0} files	O pacote tem mais de {0} arquivos
+Not a PSP theme file	Não é um arquivo de tema de PSP
+Corrupt or truncated PTF	PTF corrompido ou incompleto
+This theme contains no wallpaper image.	Este tema não contém imagem de papel de parede.
+The wallpaper could not be extracted: this theme uses a compression method this importer doesn't recognize. The theme was imported without its wallpaper.	Não foi possível extrair o papel de parede: este tema usa um método de compressão que este importador não reconhece. O tema foi importado sem o papel de parede.
+The wallpaper data in this theme is damaged and could not be decoded. The theme was imported without its wallpaper.	Os dados do papel de parede deste tema estão danificados e não puderam ser decodificados. O tema foi importado sem o papel de parede.

@@ -415,7 +415,6 @@
     <string name="lib_kb_import_failed_title">無法匯入該檔案</string>
     <string name="lib_kb_import_too_large">該檔案過大，不可能是模擬器知識檔案。</string>
     <string name="lib_kb_import_unreadable">無法讀取該檔案。</string>
-    <string name="lib_kb_import_rejected">無法使用該檔案（%1$s）。</string>
     <string name="lib_kb_import_nothing">該檔案中沒有可匯入這部裝置的內容。</string>
     <string name="lib_kb_import_save_failed">無法將檔案儲存在這部裝置上。</string>
     <string name="lib_kb_import_refresh_failed">檔案已儲存，但重新整理模擬器偵測失敗。</string>
@@ -457,7 +456,6 @@
     <string name="lib_kb_export_nothing_title">沒有可匯出的內容</string>
     <string name="lib_kb_export_none_message">你目前沒有可分享的自訂或已編輯模擬器。</string>
     <string name="lib_kb_export_none_shareable">你的模擬器都無法分享</string>
-    <string name="lib_kb_export_none_shareable_why">你的模擬器都無法分享：%1$s</string>
     <string name="lib_kb_exported_title">已匯出</string>
     <plurals name="lib_kb_exported_message">
         <item quantity="other">已匯出 %d 個模擬器</item>
@@ -767,4 +765,6 @@
     <string name="lib_lm_local_by_title">依標題配對</string>
     <string name="lib_lm_local_tracking">追蹤中</string>
     <string name="lib_lm_local_no_list">尚無成就清單</string>
+    <string name="lib_kb_import_invalid">此檔案不是 PlayFieldPortal 模擬器資訊檔案，或已損毀。</string>
+    <string name="lib_kb_import_too_many">此檔案列出的模擬器或主機數量超過 PlayFieldPortal 可匯入的上限。</string>
 </resources>

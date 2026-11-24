@@ -22,7 +22,7 @@ import java.io.File
  * here is wired to a preference. Two pictures: Motion on Reduced (today's default behaviour) and on
  * Static, where the rows it overrides say so.
  *
- *     ./gradlew :feature:feature-settings:testDebugUnitTest --tests "*MotionSettingMockupTest*"
+ *     ./gradlew :feature:feature-settings:testDebugUnitTest -Pmockups --tests "*MotionSettingMockupTest*"
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

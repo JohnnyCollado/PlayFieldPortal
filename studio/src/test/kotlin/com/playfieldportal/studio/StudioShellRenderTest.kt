@@ -18,7 +18,7 @@ import org.jetbrains.skia.EncodedImageFormat
  * squeezed button or a wrapped label shows before anyone opens the app.
  * Saved to studio/build/test-screenshots/.
  *
- *     ./gradlew :studio:test --tests "*StudioShellRenderTest*"
+ *     ./gradlew :studio:test -Pmockups --tests "*StudioShellRenderTest*"
  */
 class StudioShellRenderTest {
 

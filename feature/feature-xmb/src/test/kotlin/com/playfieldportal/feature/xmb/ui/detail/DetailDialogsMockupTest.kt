@@ -32,7 +32,7 @@ import java.io.File
  * Pictures for the game-detail dialog sweep, drawn by the real composables: each old dark-box
  * dialog beside the shared style it would move to. Pictures only; nothing is asserted.
  *
- *     ./gradlew :feature:feature-xmb:testDebugUnitTest --tests "*DetailDialogsMockupTest*"
+ *     ./gradlew :feature:feature-xmb:testDebugUnitTest -Pmockups --tests "*DetailDialogsMockupTest*"
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

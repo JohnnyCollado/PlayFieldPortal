@@ -48,6 +48,35 @@ class StudioI18nTest {
         assertTrue(problems.isEmpty(), problems.joinToString("\n"))
     }
 
+    /**
+     * Every text written straight into the Studio's UI code (`Text("…")`, a hint, a heading, a file
+     * dialog title) has a line in keys.txt, so a new string cannot slip in untranslated. A `$value`
+     * in the code stands for a `{n}` gap in the key. Messages built elsewhere and shown later (status
+     * lines, check results) are not reachable this way; keys.txt lists them by hand.
+     */
+    @Test
+    fun `text written into the UI code has a translation line`() {
+        val keys = keys().toSet()
+        val shapes = keys.filter { gap.containsMatchIn(it) }.map { key ->
+            Regex(gap.split(key).joinToString("(.+?)") { Regex.escape(it) })
+        }
+        val call = Regex("""\b(?:Text|HintText|MutedText|SectionHeading|HeadingWithInfo|openFile|saveFile|pickDirectory|folder|open)\(\s*(?:window,\s*)?"((?:[^"\\]|\\.)*)"""")
+        val template = Regex("""\$\{[^}]*\}|\$[A-Za-z_]\w*""")
+        val missing = java.io.File("src/main/kotlin/com/playfieldportal/studio/ui").walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .flatMap { file ->
+                // A sentence split over lines ("…on the " + "launcher…") is one text at run time.
+                val source = file.readText(Charsets.UTF_8).replace(Regex(""""\s*\+\s*""""), "")
+                call.findAll(source).map { it.groupValues[1] }
+                    .map { text -> template.replace(text, "7") }
+                    .filter { text -> text.any { it.isLetter() } }
+                    .filterNot { text -> text in keys || shapes.any { it.matches(text) } }
+                    .map { "${file.name}: $it" }
+            }
+            .toList()
+        assertTrue(missing.isEmpty(), "no translation line for:\n" + missing.joinToString("\n"))
+    }
+
     @Test
     fun `English passes straight through`() {
         StudioI18n.useForNow("en")

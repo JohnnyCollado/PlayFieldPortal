@@ -440,7 +440,6 @@
     <string name="lib_kb_import_failed_title">No s\'ha pogut importar aquest fitxer</string>
     <string name="lib_kb_import_too_large">Aquest fitxer és massa gran per ser un fitxer de coneixement d\'emuladors.</string>
     <string name="lib_kb_import_unreadable">No s\'ha pogut llegir aquest fitxer.</string>
-    <string name="lib_kb_import_rejected">Aquest fitxer no es pot utilitzar (%1$s).</string>
     <string name="lib_kb_import_nothing">Aquest fitxer no té res per importar en aquest dispositiu.</string>
     <string name="lib_kb_import_save_failed">No s\'ha pogut desar el fitxer en aquest dispositiu.</string>
     <string name="lib_kb_import_refresh_failed">S\'ha desat el fitxer, però no s\'ha pogut actualitzar la detecció d\'emuladors.</string>
@@ -482,7 +481,6 @@
     <string name="lib_kb_export_nothing_title">No hi ha res per exportar</string>
     <string name="lib_kb_export_none_message">Encara no tens emuladors personalitzats ni editats per compartir.</string>
     <string name="lib_kb_export_none_shareable">Cap dels teus emuladors no es pot compartir</string>
-    <string name="lib_kb_export_none_shareable_why">Cap dels teus emuladors no es pot compartir: %1$s</string>
     <string name="lib_kb_exported_title">Exportat</string>
     <plurals name="lib_kb_exported_message">
         <item quantity="one">S\'ha exportat %d emulador</item>
@@ -832,4 +830,6 @@
     <string name="lib_lm_local_by_title">associat pel títol</string>
     <string name="lib_lm_local_tracking">en seguiment</string>
     <string name="lib_lm_local_no_list">encara sense llista d\'assoliments</string>
+    <string name="lib_kb_import_invalid">Aquest fitxer no és un fitxer de coneixement d\'emuladors de PlayFieldPortal, o està malmès.</string>
+    <string name="lib_kb_import_too_many">Aquest fitxer inclou més emuladors o consoles dels que PlayFieldPortal pot importar.</string>
 </resources>

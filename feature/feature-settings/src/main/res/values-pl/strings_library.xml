@@ -453,7 +453,6 @@
     <string name="lib_kb_import_failed_title">Nie udało się zaimportować pliku</string>
     <string name="lib_kb_import_too_large">Ten plik jest za duży, aby był plikiem wiedzy o emulatorach.</string>
     <string name="lib_kb_import_unreadable">Nie można odczytać tego pliku.</string>
-    <string name="lib_kb_import_rejected">Nie można użyć tego pliku (%1$s).</string>
     <string name="lib_kb_import_nothing">Ten plik nie zawiera niczego do importu na tym urządzeniu.</string>
     <string name="lib_kb_import_save_failed">Nie można zapisać pliku na tym urządzeniu.</string>
     <string name="lib_kb_import_refresh_failed">Plik zapisano, ale odświeżenie wykrywania emulatorów nie powiodło się.</string>
@@ -495,7 +494,6 @@
     <string name="lib_kb_export_nothing_title">Nie ma czego eksportować</string>
     <string name="lib_kb_export_none_message">Nie masz jeszcze własnych ani edytowanych emulatorów do udostępnienia.</string>
     <string name="lib_kb_export_none_shareable">Żadnego z Twoich emulatorów nie można udostępnić</string>
-    <string name="lib_kb_export_none_shareable_why">Żadnego z Twoich emulatorów nie można udostępnić: %1$s</string>
     <string name="lib_kb_exported_title">Wyeksportowano</string>
     <plurals name="lib_kb_exported_message">
         <item quantity="one">Wyeksportowano %d emulator</item>
@@ -857,4 +855,6 @@
     <string name="lib_lm_local_by_title">dopasowano po tytule</string>
     <string name="lib_lm_local_tracking">śledzenie</string>
     <string name="lib_lm_local_no_list">brak jeszcze listy osiągnięć</string>
+    <string name="lib_kb_import_invalid">Ten plik nie jest plikiem wiedzy o emulatorach PlayFieldPortal albo jest uszkodzony.</string>
+    <string name="lib_kb_import_too_many">Ten plik zawiera więcej emulatorów lub konsol, niż PlayFieldPortal może zaimportować.</string>
 </resources>

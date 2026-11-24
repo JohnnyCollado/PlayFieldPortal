@@ -434,7 +434,6 @@
     <string name="lib_kb_import_failed_title">Det gick inte att importera filen</string>
     <string name="lib_kb_import_too_large">Filen är för stor för att vara en kunskapsfil för emulatorer.</string>
     <string name="lib_kb_import_unreadable">Filen kunde inte läsas.</string>
-    <string name="lib_kb_import_rejected">Filen kan inte användas (%1$s).</string>
     <string name="lib_kb_import_nothing">Filen har inget att importera på den här enheten.</string>
     <string name="lib_kb_import_save_failed">Filen kunde inte sparas på enheten.</string>
     <string name="lib_kb_import_refresh_failed">Filen sparades, men uppdateringen av emulatoridentifieringen misslyckades.</string>
@@ -478,7 +477,6 @@
     <string name="lib_kb_export_nothing_title">Inget att exportera</string>
     <string name="lib_kb_export_none_message">Du har inga egna eller redigerade emulatorer att dela ännu.</string>
     <string name="lib_kb_export_none_shareable">Ingen av dina emulatorer kan delas</string>
-    <string name="lib_kb_export_none_shareable_why">Ingen av dina emulatorer kan delas: %1$s</string>
     <string name="lib_kb_exported_title">Exporterat</string>
     <plurals name="lib_kb_exported_message">
         <item quantity="one">Exporterade %d emulator</item>
@@ -805,4 +803,6 @@
     <string name="lib_lm_local_by_title">matchad via titel</string>
     <string name="lib_lm_local_tracking">spåras</string>
     <string name="lib_lm_local_no_list">ingen lista över prestationer ännu</string>
+    <string name="lib_kb_import_invalid">Filen är inte en kunskapsfil för emulatorer från PlayFieldPortal, eller så är den skadad.</string>
+    <string name="lib_kb_import_too_many">Filen innehåller fler emulatorer eller konsoler än PlayFieldPortal kan importera.</string>
 </resources>

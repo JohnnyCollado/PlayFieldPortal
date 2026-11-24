@@ -171,3 +171,160 @@ Fix the items marked ✕ before exporting.	Corregeix els elements marcats amb �
 A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	En exportar es genera una imatge de previsualització del tema acabat, que es mostra com a miniatura a la galeria de temes del llançador.
 Opened {0}	S'ha obert {0}
 Exported {0}	S'ha exportat {0}
+Folder of .pfptheme files to upgrade	Carpeta de fitxers .pfptheme per actualitzar
+Folder with .ptf files	Carpeta amb fitxers .ptf
+Output folder for .pfptheme files	Carpeta de sortida per als fitxers .pfptheme
+PSP theme to unpack	Tema de PSP per desempaquetar
+Folder for unpacked assets	Carpeta per als recursos desempaquetats
+Converting {0}  ({1}/{2})	S'està convertint {0}  ({1}/{2})
+This theme was made by a newer version (format v{0}). Parts this version doesn't know are kept when you save.	Aquest tema es va crear amb una versió més nova (format v{0}). Les parts que aquesta versió no coneix es conserven en desar.
+CXMB theme	Tema CXMB
+This file is a CXMB custom firmware theme (.ctf). Those replace PSP system files rather than describing wallpaper and colors, so they can't be converted. Official PSP themes (.ptf) open fine.	Aquest fitxer és un tema CXMB de firmware personalitzat (.ctf). Aquests temes substitueixen fitxers del sistema de la PSP en lloc de descriure el fons i els colors, així que no es poden convertir. Els temes oficials de PSP (.ptf) s'obren sense problemes.
+Batch conversion finished	Conversió per lots acabada
+Converted: {0}	Convertits: {0}
+Converted with caveats: {0}	Convertits amb reserves: {0}
+Skipped (CXMB): {0} — {1}	Omesos (CXMB): {0} — {1}
+Failed: {0}	Fallits: {0}
+Theme upgrade finished	Actualització de temes acabada
+Upgraded: {0} (originals kept as .bak)	Actualitzats: {0} (originals desats com a .bak)
+Already current: {0}	Ja al dia: {0}
+Made by a newer version, left alone: {0}	D'una versió més nova, sense tocar: {0}
+Report: {0}	Informe: {0}
+Background motion	Moviment del fons
+Still: frame at {0}	Imatge fixa: fotograma a {0}
+Still: baked into the theme	Imatge fixa: inclosa al tema
+Import wallpaper	Importa un fons
+Import video	Importa un vídeo
+Lock screen image	Imatge de la pantalla de bloqueig
+(embedded image)	(imatge incrustada)
+Fit	Ajust
+Busy wallpaper — labels may be hard to read. Softer, low-contrast images work best.	Fons recarregat — pot costar llegir les etiquetes. Funcionen millor les imatges suaus i de poc contrast.
+The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, a Still style, or Motion set to Static on the device).	La imatge fixa és el pòster del vídeo — es mostra quan la reproducció està aturada (estalvi de bateria, un joc, un estil Quiet o Moviment en Estàtic al dispositiu).
+The theme offers this image for the device lock screen	El tema ofereix aquesta imatge per a la pantalla de bloqueig del dispositiu
+Output {0}×{1}	Sortida {0}×{1}
+{0}–{1} recommended, {2} max, {3} MB max	{0}–{1} recomanat, {2} màx., {3} MB màx.
+Whether the boot video and Game Boot play at all is a device setting: {0}	Que el vídeo d'arrencada i el Game Boot es reprodueixin és un ajust del dispositiu: {0}
+This clip is longer than the cap — the launcher will refuse it.	Aquest clip supera el límit — el launcher el rebutjarà.
+Choose a {0} video	Tria un vídeo de {0}
+Dark icon color — icons may be hard to see over the wallpaper scrim.	Color d'icona fosc — les icones es poden veure malament sobre el vel del fons.
+Saved in the theme for a later update. The launcher currently shows the color exactly as picked.	Es desa al tema per a una actualització futura. De moment el launcher mostra el color tal com s'ha triat.
+Original	Original
+Classic Blue	Blau clàssic
+Sunset Orange	Taronja de posta
+Fresh Green	Verd fresc
+Royal Purple	Porpra reial
+Crimson Red	Vermell carmesí
+Silver	Plata
+Sakura Pink	Rosa sakura
+Golden Amber	Ambre daurat
+Aqua Teal	Turquesa
+Midnight Navy	Blau mitjanit
+Charcoal	Carbó
+Format: schema {0} → {1}	Format: esquema {0} → {1}
+Format: new theme → {0}	Format: tema nou → {0}
+Kept	Conservat
+Added	Afegit
+Repaired	Reparat
+Can't recover	No recuperable
+What saving does	Què fa desar
+Motion has a still poster	El moviment té un pòster fix
+Motion needs a still wallpaper as its poster - add one or remove the video	El moviment necessita un fons fix com a pòster: afegeix-ne un o treu el vídeo
+Media outside limits: {0}	Mitjans fora dels límits: {0}
+This wallpaper is busy behind the labels - pick a text legibility style so they stay readable	Aquest fons és recarregat darrere les etiquetes: tria un estil de llegibilitat del text perquè es llegeixin bé
+Text should read clearly on this wallpaper	El text s'hauria de llegir bé sobre aquest fons
+{0} - launchers from before this format refuse files over 64 MB	{0}: els launchers anteriors a aquest format rebutgen fitxers de més de 64 MB
+Opens on older launchers, which ignore sounds, boot clips, legibility and crop	S'obre en launchers antics, que ignoren sons, clips d'arrencada, llegibilitat i retall
+{0} is over the {1} MB limit for a theme file	{0} supera el límit de {1} MB d'un fitxer de tema
+Saving upgrades this theme from {0}; {1} part(s) can't be recovered	En desar s'actualitza aquest tema des de {0}; {1} part(s) no es poden recuperar
+Saving upgrades this theme from {0}	En desar s'actualitza aquest tema des de {0}
+an older format	un format anterior
+Imported from {0}	Importat de {0}
+Imported from {0} — firmware {1}	Importat de {0} — firmware {1}
+a PSP theme	un tema de PSP
+Created {0}	Creat {0}
+On the device these live in {0}.	Al dispositiu són a {0}.
+Scale	Escala
+Horizontal	Horitzontal
+Vertical	Vertical
+This wallpaper is busy behind the labels — a text style helps them stay readable.	Aquest fons és recarregat darrere les etiquetes — un estil de text ajuda que es llegeixin bé.
+Settings › Interface › Display › Adjust XMB Layout	Configuració › Interfície › Pantalla › Ajusta la disposició del XMB
+Settings › Interface › Sound	Configuració › Interfície › So
+Settings › Interface › Display › Show Boot Sequence / Game Boot	Configuració › Interfície › Pantalla › Mostra la seqüència d'arrencada / Game Boot
+Battery Saver and Thermal Throttle (Settings › Interface › Display) freeze the animated wave on the device.	L'estalvi de bateria i la limitació tèrmica (Configuració › Interfície › Pantalla) congelen l'ona animada al dispositiu.
+Pick…	Tria…
+Plays on the device	Es reprodueix al dispositiu
+Length unknown	Durada desconeguda
+Volumes stay on the device: {0}	El volum es queda al dispositiu: {0}
+Couldn't play {0} here — it will play on the device.	No s'ha pogut reproduir {0} aquí — es reproduirà al dispositiu.
+Choose a sound for {0}	Tria un so per a {0}
+Icon image for {0}	Imatge d'icona per a {0}
+Template for {0}	Plantilla per a {0}
+Template written to {0}	Plantilla desada a {0}
+Template export failed: {0}	No s'ha pogut exportar la plantilla: {0}
+Search {0} slots: battery, PS3, voice…	Cerca entre {0} posicions: bateria, PS3, veu…
+No slot matches. Clear the search or a filter.	Cap posició coincideix. Esborra la cerca o un filtre.
+Pack folder…	Carpeta de paquet…
+Icon pack folder	Carpeta del paquet d'icones
+Pack .zip…	Paquet .zip…
+Icon pack zip	Paquet d'icones .zip
+Folder for icon templates	Carpeta per a les plantilles d'icones
+Packs are folders or zips of <slot key>.png / .gif, the names the templates use. Multi-frame GIFs animate on the launcher when focused; they must stay within 512px, 120 frames and 10 seconds.	Els paquets són carpetes o zips amb <clau de posició>.png / .gif, els noms que fan servir les plantilles. Els GIF de diversos fotogrames s'animen al launcher quan tenen el focus; han de quedar dins de 512 px, 120 fotogrames i 10 segons.
+Icon pack imported	Paquet d'icones importat
+Icon pack refused	Paquet d'icones rebutjat
+{0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	{0}: {1} afegides, {2} substituïdes, {3} sense coincidència, {4} rebutjades
+Icon pack {0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	Paquet d'icones {0}: {1} afegides, {2} substituïdes, {3} sense coincidència, {4} rebutjades
+{0} - did you mean {1}?	{0}: volies dir {1}?
+{0} - no matching slot	{0}: cap posició coincident
+{0} error	{0} error
+{0} errors	{0} errors
+{0} warning	{0} avís
+{0} warnings	{0} avisos
+{0} of {1} MB	{0} de {1} MB
+{0} of {1} MB - older launchers refuse over 64 MB	{0} de {1} MB: els launchers antics rebutgen més de 64 MB
+Wallpaper	Fons
+Preview	Previsualització
+Motion	Moviment
+Ambience	Ambient
+Other files	Altres fitxers
+{0} is too large to be a theme file	{0} és massa gran per ser un fitxer de tema
+Imported {0}	{0} importat
+Imported with a caveat	Importat amb una reserva
+{0} is not a valid .pfptheme bundle	{0} no és un paquet .pfptheme vàlid
+{0} — {1} icon(s) for parts themes don't customize were left out	{0} — s'han deixat fora {1} icona(es) de parts que els temes no personalitzen
+Motion wallpaper: {0}	Fons animat: {0}
+Could not keep: {0}	No s'ha pogut conservar: {0}
+Parts of the theme not kept	Parts del tema no conservades
+Motion wallpaper not kept	Fons animat no conservat
+{0} is not a readable image	{0} no és una imatge llegible
+{0} converted to H.264 for Android ({1})	{0} convertit a H.264 per a Android ({1})
+Couldn't read that frame of the video	No s'ha pogut llegir aquest fotograma del vídeo
+The crop does not match this image	El retall no coincideix amb aquesta imatge
+Wallpaper: {0} ({1}×{2})	Fons: {0} ({1}×{2})
+Added {0} — converted to H.264 for Android ({1})	{0} afegit — convertit a H.264 per a Android ({1})
+Added {0}	{0} afegit
+Export failed: {0}	Error en exportar: {0}
+{0} is not a PSP theme file	{0} no és un fitxer de tema de PSP
+Unpack failed: {0}	Error en desempaquetar: {0}
+Theme unpacked	Tema desempaquetat
+{0} images written to {1} (see report.txt).	{0} imatges escrites a {1} (vegeu report.txt).
+{0} images and {1} data files written to {2} (see report.txt).	{0} imatges i {1} fitxers de dades escrits a {2} (vegeu report.txt).
+Unpacked {0}: {1} images	{0} desempaquetat: {1} imatges
+Templates exported to {0} ({1} icons)	Plantilles exportades a {0} ({1} icones)
+WebM clips can't be checked in the Studio (it reads MP4/H.264 only) — convert the clip to MP4	Els clips WebM no es poden comprovar a l'Studio (només llegeix MP4/H.264) — converteix el clip a MP4
+That isn't a media slot this import can fill	Aquesta no és una posició multimèdia que aquesta importació pugui omplir
+That file is too large for a theme — {0} MB or less	Aquest fitxer és massa gran per a un tema — {0} MB o menys
+Unsupported video — use an MP4 (H.264)	Vídeo no compatible — fes servir un MP4 (H.264)
+{0} video isn't guaranteed to play on Android	No es garanteix que un vídeo {0} es reprodueixi a Android
+H.264 {0} doesn't play on Android	L'H.264 {0} no es reprodueix a Android
+{0} video doesn't play on Android	Un vídeo {0} no es reprodueix a Android
+Couldn't convert this video for Android ({0}). Re-encode it as MP4 H.264 and try again.	No s'ha pogut convertir aquest vídeo per a Android ({0}). Torna'l a codificar com a MP4 H.264 i torna-ho a provar.
+{0} is not a folder or .zip	{0} no és una carpeta ni un .zip
+Pack refused: {0}	Paquet rebutjat: {0}
+Pack could not be read	No s'ha pogut llegir el paquet
+Pack could not be read: {0}	No s'ha pogut llegir el paquet: {0}
+Pack has more than {0} files	El paquet té més de {0} fitxers
+Not a PSP theme file	No és un fitxer de tema de PSP
+Corrupt or truncated PTF	PTF malmès o incomplet
+This theme contains no wallpaper image.	Aquest tema no conté cap imatge de fons.
+The wallpaper could not be extracted: this theme uses a compression method this importer doesn't recognize. The theme was imported without its wallpaper.	No s'ha pogut extreure el fons: aquest tema fa servir un mètode de compressió que aquest importador no reconeix. El tema s'ha importat sense el fons.
+The wallpaper data in this theme is damaged and could not be decoded. The theme was imported without its wallpaper.	Les dades del fons d'aquest tema estan malmeses i no s'han pogut descodificar. El tema s'ha importat sense el fons.

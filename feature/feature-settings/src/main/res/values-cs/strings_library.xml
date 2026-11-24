@@ -454,7 +454,6 @@
     <string name="lib_kb_import_failed_title">Tento soubor nelze importovat</string>
     <string name="lib_kb_import_too_large">Tento soubor je příliš velký na to, aby byl znalostním souborem emulátorů.</string>
     <string name="lib_kb_import_unreadable">Tento soubor nelze přečíst.</string>
-    <string name="lib_kb_import_rejected">Tento soubor nelze použít (%1$s).</string>
     <string name="lib_kb_import_nothing">Tento soubor nemá pro toto zařízení nic k importu.</string>
     <string name="lib_kb_import_save_failed">Soubor nelze v tomto zařízení uložit.</string>
     <string name="lib_kb_import_refresh_failed">Soubor byl uložen, ale obnovení rozpoznání emulátorů selhalo.</string>
@@ -496,7 +495,6 @@
     <string name="lib_kb_export_nothing_title">Není co exportovat</string>
     <string name="lib_kb_export_none_message">Zatím nemáte žádné vlastní ani upravené emulátory ke sdílení.</string>
     <string name="lib_kb_export_none_shareable">Žádný z vašich emulátorů nelze sdílet</string>
-    <string name="lib_kb_export_none_shareable_why">Žádný z vašich emulátorů nelze sdílet: %1$s</string>
     <string name="lib_kb_exported_title">Exportováno</string>
     <plurals name="lib_kb_exported_message">
         <item quantity="one">Exportován %d emulátor</item>
@@ -857,4 +855,6 @@
     <string name="lib_lm_local_by_title">přiřazeno podle názvu</string>
     <string name="lib_lm_local_tracking">sledováno</string>
     <string name="lib_lm_local_no_list">zatím bez seznamu achievementů</string>
+    <string name="lib_kb_import_invalid">Soubor není souborem znalostí o emulátorech PlayFieldPortal, nebo je poškozený.</string>
+    <string name="lib_kb_import_too_many">Soubor obsahuje více emulátorů nebo konzolí, než dokáže PlayFieldPortal importovat.</string>
 </resources>

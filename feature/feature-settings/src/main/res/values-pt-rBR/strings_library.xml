@@ -483,7 +483,6 @@
     <string name="lib_kb_import_failed_title">Não foi possível importar esse arquivo</string>
     <string name="lib_kb_import_too_large">Esse arquivo é grande demais para ser um arquivo de conhecimento de emuladores.</string>
     <string name="lib_kb_import_unreadable">Não foi possível ler esse arquivo.</string>
-    <string name="lib_kb_import_rejected">Esse arquivo não pode ser usado (%1$s).</string>
     <string name="lib_kb_import_nothing">Esse arquivo não tem nada para importar neste dispositivo.</string>
     <string name="lib_kb_import_save_failed">Não foi possível salvar o arquivo neste dispositivo.</string>
     <string name="lib_kb_import_refresh_failed">O arquivo foi salvo, mas a atualização da detecção de emuladores falhou.</string>
@@ -529,7 +528,6 @@
     <string name="lib_kb_export_nothing_title">Nada para exportar</string>
     <string name="lib_kb_export_none_message">Você ainda não tem emuladores personalizados ou editados para compartilhar.</string>
     <string name="lib_kb_export_none_shareable">Nenhum dos seus emuladores pode ser compartilhado</string>
-    <string name="lib_kb_export_none_shareable_why">Nenhum dos seus emuladores pode ser compartilhado: %1$s</string>
     <string name="lib_kb_exported_title">Exportado</string>
     <plurals name="lib_kb_exported_message">
         <item quantity="one">%d emulador exportado</item>
@@ -887,4 +885,6 @@
     <string name="lib_lm_local_by_title">associado pelo título</string>
     <string name="lib_lm_local_tracking">acompanhando</string>
     <string name="lib_lm_local_no_list">ainda sem lista de conquistas</string>
+    <string name="lib_kb_import_invalid">Esse arquivo não é um arquivo de conhecimento de emuladores do PlayFieldPortal ou está danificado.</string>
+    <string name="lib_kb_import_too_many">Esse arquivo lista mais emuladores ou consoles do que o PlayFieldPortal consegue importar.</string>
 </resources>

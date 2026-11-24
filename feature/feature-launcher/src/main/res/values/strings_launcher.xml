@@ -2,7 +2,7 @@
 <!-- Slice H2: feature-launcher (launching games and apps, emulator setup) -->
 <resources>
     <!-- Launch refusals shown before an emulator starts. %1$s names a game or an emulator unless noted -->
-    <string name="launch_err_custom_command">Custom command profiles are no longer supported. Switch this emulator to the "Open the ROM with the app" or "Open an app screen" launch method.</string>
+    <string name="launch_err_custom_command">Custom command profiles are no longer supported. Switch this emulator to the \"Open the ROM with the app\" or \"Open an app screen\" launch method.</string>
     <string name="launch_err_shortcut_unsupported">Shortcut launch not supported from this screen</string>
     <!-- %1$s is a game title -->
     <string name="launch_err_no_package">No Android package recorded for %1$s</string>

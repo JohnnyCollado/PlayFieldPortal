@@ -20,7 +20,7 @@ import java.io.File
 /**
  * A picture of the real App Drawer at the Odin's size, to look at its header: the shared breadcrumb.
  *
- *     ./gradlew :feature:feature-appbar:testDebugUnitTest --tests "*AppDrawerHeaderMockupTest*"
+ *     ./gradlew :feature:feature-appbar:testDebugUnitTest -Pmockups --tests "*AppDrawerHeaderMockupTest*"
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

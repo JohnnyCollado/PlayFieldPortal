@@ -249,7 +249,7 @@
     <string name="lib_emu_test_rom_unloadable">Could not load that ROM.</string>
     <string name="lib_emu_test_resolves_ok">Resolves OK — press Launch Now to try it.</string>
     <string name="lib_emu_test_launched">Launched — check the emulator.</string>
-    <string name="lib_emu_error_activity_not_found">That app screen wasn\'t found, or the app doesn\'t allow it to be opened from outside. Check the screen name, or try the "Open the ROM with the app" launch method instead.</string>
+    <string name="lib_emu_error_activity_not_found">That app screen wasn\'t found, or the app doesn\'t allow it to be opened from outside. Check the screen name, or try the \"Open the ROM with the app\" launch method instead.</string>
     <string name="lib_emu_error_permission_denied">Permission denied — the app rejected the ROM URI. Try toggling SAF (content://) vs file URI.</string>
     <!-- %1$s is the error text the emulator or launcher reported. -->
     <string name="lib_emu_error_rom_not_accepted">%1$s The app didn\'t accept this MIME type / URI mode — try the other URI mode.</string>
@@ -502,7 +502,6 @@
     <string name="lib_kb_import_too_large">That file is too large to be an emulator knowledge file.</string>
     <string name="lib_kb_import_unreadable">That file could not be read.</string>
     <!-- %1$s is a short technical reason in English, e.g. "has an unknown key \"x\"". -->
-    <string name="lib_kb_import_rejected">That file can\'t be used (%1$s).</string>
     <string name="lib_kb_import_nothing">That file has nothing to import on this device.</string>
     <string name="lib_kb_import_save_failed">The file could not be saved on this device.</string>
     <string name="lib_kb_import_refresh_failed">The file was saved, but refreshing emulator detection failed.</string>
@@ -556,7 +555,6 @@
     <string name="lib_kb_export_none_message">You have no custom or edited emulators to share yet.</string>
     <string name="lib_kb_export_none_shareable">None of your emulators can be shared</string>
     <!-- %1$s is the reason the first emulator cannot be shared. -->
-    <string name="lib_kb_export_none_shareable_why">None of your emulators can be shared: %1$s</string>
     <string name="lib_kb_exported_title">Exported</string>
     <plurals name="lib_kb_exported_message">
         <item quantity="one">Exported %d emulator</item>
@@ -935,4 +933,6 @@
     <string name="lib_lm_local_by_title">matched by title</string>
     <string name="lib_lm_local_tracking">tracking</string>
     <string name="lib_lm_local_no_list">no achievement list yet</string>
+    <string name="lib_kb_import_invalid">That file isn\'t a PlayFieldPortal emulator knowledge file, or it is damaged.</string>
+    <string name="lib_kb_import_too_many">That file lists more emulators or consoles than PlayFieldPortal can import.</string>
 </resources>

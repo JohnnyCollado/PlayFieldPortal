@@ -440,7 +440,6 @@
     <string name="lib_kb_import_failed_title">파일을 가져올 수 없습니다</string>
     <string name="lib_kb_import_too_large">파일이 너무 커서 에뮬레이터 지식 파일일 수 없습니다.</string>
     <string name="lib_kb_import_unreadable">파일을 읽을 수 없습니다.</string>
-    <string name="lib_kb_import_rejected">이 파일은 사용할 수 없습니다(%1$s).</string>
     <string name="lib_kb_import_nothing">이 파일에는 이 기기로 가져올 항목이 없습니다.</string>
     <string name="lib_kb_import_save_failed">이 기기에 파일을 저장할 수 없습니다.</string>
     <string name="lib_kb_import_refresh_failed">파일은 저장되었지만 에뮬레이터 감지를 새로 고치지 못했습니다.</string>
@@ -485,7 +484,6 @@
     <string name="lib_kb_export_nothing_title">내보낼 항목 없음</string>
     <string name="lib_kb_export_none_message">아직 공유할 사용자 지정 또는 편집한 에뮬레이터가 없습니다.</string>
     <string name="lib_kb_export_none_shareable">공유할 수 있는 에뮬레이터가 없습니다</string>
-    <string name="lib_kb_export_none_shareable_why">공유할 수 있는 에뮬레이터가 없습니다: %1$s</string>
     <string name="lib_kb_exported_title">내보냄</string>
     <plurals name="lib_kb_exported_message">
         <item quantity="other">에뮬레이터 %d개를 내보냈습니다</item>
@@ -808,4 +806,6 @@
     <string name="lib_lm_local_by_title">제목으로 매칭됨</string>
     <string name="lib_lm_local_tracking">추적 중</string>
     <string name="lib_lm_local_no_list">아직 도전 과제 목록 없음</string>
+    <string name="lib_kb_import_invalid">이 파일은 PlayFieldPortal 에뮬레이터 정보 파일이 아니거나 손상되었습니다.</string>
+    <string name="lib_kb_import_too_many">이 파일에는 PlayFieldPortal이 가져올 수 있는 것보다 많은 에뮬레이터나 기종이 들어 있습니다.</string>
 </resources>

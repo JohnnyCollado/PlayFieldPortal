@@ -38,7 +38,7 @@ import java.io.File
  * pre-AGSL path, which Robolectric can draw; One UI cutouts, taskbars and fold posture are not
  * modelled. Run:
  *
- *     ./gradlew :feature:feature-xmb:testDebugUnitTest --tests "*XmbDeviceFormatScreenshotTest*"
+ *     ./gradlew :feature:feature-xmb:testDebugUnitTest -Pmockups --tests "*XmbDeviceFormatScreenshotTest*"
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

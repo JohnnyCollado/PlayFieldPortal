@@ -37,7 +37,7 @@ import java.io.File
  * device screenshot twice: as it is on the left, with the glow on the right, at the icon's measured
  * place (216 px at 110, 73 in this crop).
  *
- *     ./gradlew :feature:feature-xmb:testDebugUnitTest --tests "*ShapeGlowPrototypeScreenshotTest*"
+ *     ./gradlew :feature:feature-xmb:testDebugUnitTest -Pmockups --tests "*ShapeGlowPrototypeScreenshotTest*"
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

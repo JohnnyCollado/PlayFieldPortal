@@ -515,7 +515,6 @@
     <string name="lib_kb_import_too_large">Та датотека је превелика да би била датотека базе знања о емулаторима.</string>
     <string name="lib_kb_import_unreadable">Читање те датотеке није успело.</string>
     <!-- %1$s is a short technical reason in English, e.g. "has an unknown key \"x\"". -->
-    <string name="lib_kb_import_rejected">Та датотека не може да се користи (%1$s).</string>
     <string name="lib_kb_import_nothing">Та датотека нема ништа за увоз на овом уређају.</string>
     <string name="lib_kb_import_save_failed">Датотеку није могуће сачувати на овом уређају.</string>
     <string name="lib_kb_import_refresh_failed">Датотека је сачувана, али освежавање откривања емулатора није успело.</string>
@@ -569,7 +568,6 @@
     <string name="lib_kb_export_none_message">Још немате прилагођених или измењених емулатора за дељење.</string>
     <string name="lib_kb_export_none_shareable">Ниједан ваш емулатор не може да се дели</string>
     <!-- %1$s is the reason the first emulator cannot be shared. -->
-    <string name="lib_kb_export_none_shareable_why">Ниједан ваш емулатор не може да се дели: %1$s</string>
     <string name="lib_kb_exported_title">Извезено</string>
     <plurals name="lib_kb_exported_message">
         <item quantity="one">Извезен је %d емулатор</item>
@@ -965,4 +963,6 @@
     <string name="lib_lm_local_by_title">повезано по наслову</string>
     <string name="lib_lm_local_tracking">праћење</string>
     <string name="lib_lm_local_no_list">још нема листе достигнућа</string>
+    <string name="lib_kb_import_invalid">Датотека није PlayFieldPortal датотека знања о емулаторима или је оштећена.</string>
+    <string name="lib_kb_import_too_many">Датотека наводи више емулатора или конзола него што PlayFieldPortal може да увезе.</string>
 </resources>

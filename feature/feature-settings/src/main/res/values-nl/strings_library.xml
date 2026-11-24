@@ -437,7 +437,6 @@
     <string name="lib_kb_import_failed_title">Kan dat bestand niet importeren</string>
     <string name="lib_kb_import_too_large">Dat bestand is te groot voor een emulatorkennisbestand.</string>
     <string name="lib_kb_import_unreadable">Dat bestand kon niet worden gelezen.</string>
-    <string name="lib_kb_import_rejected">Dat bestand kan niet worden gebruikt (%1$s).</string>
     <string name="lib_kb_import_nothing">Dat bestand bevat niets om op dit apparaat te importeren.</string>
     <string name="lib_kb_import_save_failed">Het bestand kon niet op dit apparaat worden opgeslagen.</string>
     <string name="lib_kb_import_refresh_failed">Het bestand is opgeslagen, maar het vernieuwen van de emulatordetectie is mislukt.</string>
@@ -481,7 +480,6 @@
     <string name="lib_kb_export_nothing_title">Niets te exporteren</string>
     <string name="lib_kb_export_none_message">Je hebt nog geen eigen of bewerkte emulators om te delen.</string>
     <string name="lib_kb_export_none_shareable">Geen van je emulators kan worden gedeeld</string>
-    <string name="lib_kb_export_none_shareable_why">Geen van je emulators kan worden gedeeld: %1$s</string>
     <string name="lib_kb_exported_title">Geëxporteerd</string>
     <plurals name="lib_kb_exported_message">
         <item quantity="one">%d emulator geëxporteerd</item>
@@ -811,4 +809,6 @@
     <string name="lib_lm_local_by_title">gekoppeld op titel</string>
     <string name="lib_lm_local_tracking">wordt gevolgd</string>
     <string name="lib_lm_local_no_list">nog geen prestatielijst</string>
+    <string name="lib_kb_import_invalid">Dit bestand is geen PlayFieldPortal-emulatorkennisbestand of het is beschadigd.</string>
+    <string name="lib_kb_import_too_many">Dit bestand bevat meer emulators of consoles dan PlayFieldPortal kan importeren.</string>
 </resources>

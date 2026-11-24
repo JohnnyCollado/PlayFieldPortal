@@ -31,7 +31,7 @@ import java.io.File
  * controller (plain readouts) and under touch (the filter and bell as raised pills), and the touch
  * strip in four colour schemes. The strip is packed to the end edge, one tone throughout.
  *
- *     ./gradlew :feature:feature-xmb:testDebugUnitTest --tests "*StatusStripAnchorMockupTest*"
+ *     ./gradlew :feature:feature-xmb:testDebugUnitTest -Pmockups --tests "*StatusStripAnchorMockupTest*"
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

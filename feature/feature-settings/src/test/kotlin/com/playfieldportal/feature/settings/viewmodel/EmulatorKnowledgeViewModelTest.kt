@@ -513,7 +513,11 @@ class EmulatorKnowledgeViewModelTest {
         importFile()
 
         assertNull(vm.uiState.value.review)
-        assertTrue(vm.uiState.value.importNotice.en()!!.contains("not a PlayFieldPortal emulator knowledge file"))
+        // A translated sentence for the kind of refusal; the decoder's English detail goes to the log.
+        assertEquals(
+            "That file isn't a PlayFieldPortal emulator knowledge file, or it is damaged.",
+            vm.uiState.value.importNotice.en(),
+        )
         vm.dismissImportNotice()
         assertNull(vm.uiState.value.importNotice)
     }
@@ -899,7 +903,8 @@ class EmulatorKnowledgeViewModelTest {
         assertNull(vm.uiState.value.export)
         val notice = vm.uiState.value.exportNotice!!
         assertEquals("Nothing to export", notice.title.en())
-        assertTrue(notice.message.en()!!.startsWith("None of your emulators can be shared: "))
+        // The validator's English reasons are logged, not put inside the translated sentence.
+        assertEquals("None of your emulators can be shared", notice.message.en())
     }
 
     @Test

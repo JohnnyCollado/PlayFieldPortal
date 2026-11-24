@@ -16,6 +16,17 @@ plugins {
 subprojects {
     tasks.withType<Test>().configureEach {
         jvmArgs("-Xshare:off")
+        // Picture-only tests (mockups and screenshots: they draw PNGs into build/test-screenshots
+        // and assert nothing) cost Robolectric native-graphics time on every run, so they run only
+        // when asked for:  ./gradlew <module>:testDebugUnitTest -Pmockups --tests "*SomeMockupTest*"
+        if (!providers.gradleProperty("mockups").isPresent) {
+            exclude(
+                "**/*MockupTest*",
+                "**/*ScreenshotTest*",
+                "**/ShibaCoinSizesRenderTest*",
+                "**/StudioShellRenderTest*",
+            )
+        }
     }
 }
 

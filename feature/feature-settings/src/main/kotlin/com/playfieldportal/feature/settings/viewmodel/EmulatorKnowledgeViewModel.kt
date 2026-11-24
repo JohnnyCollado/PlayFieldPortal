@@ -299,7 +299,11 @@ class EmulatorKnowledgeViewModel internal constructor(
         // Decoding and validating up to 1 MiB, then the plan, stay off Main.
         val planned = withContext(planDispatcher) {
             val document = when (val decoded = EmulatorKbDecoder.decode(String(picked.bytes, Charsets.UTF_8))) {
-                is EmulatorKbDecode.Rejected -> return@withContext Planned.Notice(UiText.res(R.string.lib_kb_import_rejected, decoded.reason))
+                is EmulatorKbDecode.Rejected -> {
+                    // The reason is English detail for the log; the user gets a translated sentence.
+                    Timber.i("Knowledge file rejected: %s", decoded.reason)
+                    return@withContext Planned.Notice(UiText.res(rejectionMessage(decoded.kind)))
+                }
                 is EmulatorKbDecode.Decoded -> decoded.document
             }
             val validated = EmulatorKbValidator.validate(document, knownPlatformIds, selfPackage)
@@ -383,8 +387,9 @@ class EmulatorKnowledgeViewModel internal constructor(
                     )
                 }
             } else if (shareable.isEmpty()) {
-                val reason = cantShare.firstOrNull()?.reason
-                val message = if (reason == null) UiText.res(R.string.lib_kb_export_none_shareable) else UiText.res(R.string.lib_kb_export_none_shareable_why, reason)
+                // The reasons are English validator detail: logged, not shown inside a translated sentence.
+                cantShare.firstOrNull()?.let { Timber.i("Nothing shareable, first reason: %s", it.reason) }
+                val message = UiText.res(R.string.lib_kb_export_none_shareable)
                 _uiState.update { it.copy(exportNotice = KbExportNotice(UiText.res(R.string.lib_kb_export_nothing_title), message)) }
             } else {
                 // Custom emulators first, then the edited official ones, as the picker groups them.
@@ -493,4 +498,11 @@ class EmulatorKnowledgeViewModel internal constructor(
         val HIDDEN_CHAR_TYPES = setOf(Character.FORMAT, Character.LINE_SEPARATOR, Character.PARAGRAPH_SEPARATOR)
         val NOT_FAILURES = setOf(KbUpdateResult.Installed, KbUpdateResult.NotConfigured, KbUpdateResult.Skipped)
     }
+}
+
+/** The translated sentence for a knowledge file refused as a whole. */
+internal fun rejectionMessage(kind: EmulatorKbDecode.Rejected.Kind): Int = when (kind) {
+    EmulatorKbDecode.Rejected.Kind.TOO_LARGE -> R.string.lib_kb_import_too_large
+    EmulatorKbDecode.Rejected.Kind.TOO_MANY -> R.string.lib_kb_import_too_many
+    EmulatorKbDecode.Rejected.Kind.INVALID -> R.string.lib_kb_import_invalid
 }

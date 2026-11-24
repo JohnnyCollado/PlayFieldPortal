@@ -15,8 +15,20 @@ import kotlinx.serialization.json.longOrNull
 sealed interface EmulatorKbDecode {
     data class Decoded(val document: EmulatorKbDocument) : EmulatorKbDecode
 
-    /** The whole file is unusable. [reason] is readable on its own. */
-    data class Rejected(val reason: String) : EmulatorKbDecode
+    /**
+     * The whole file is unusable. [reason] is readable on its own, in English, for logs; [kind] picks
+     * the translated sentence a user is shown.
+     */
+    data class Rejected(val reason: String, val kind: Kind = Kind.INVALID) : EmulatorKbDecode {
+        enum class Kind {
+            /** Over the size cap. */
+            TOO_LARGE,
+            /** Lists more emulators or consoles than can be imported. */
+            TOO_MANY,
+            /** Not a knowledge file, or a damaged one: every other refusal. */
+            INVALID,
+        }
+    }
 }
 
 /**
@@ -48,7 +60,7 @@ object EmulatorKbDecoder {
     private val json = Json { ignoreUnknownKeys = false }
 
     fun decode(text: String): EmulatorKbDecode {
-        if (text.length > MAX_CHARS) return EmulatorKbDecode.Rejected("is too large to be an emulator knowledge file")
+        if (text.length > MAX_CHARS) return EmulatorKbDecode.Rejected("is too large to be an emulator knowledge file", EmulatorKbDecode.Rejected.Kind.TOO_LARGE)
         if (isNestedTooDeeply(text)) return EmulatorKbDecode.Rejected("is nested too deeply to be an emulator knowledge file")
         val root = try {
             Json.parseToJsonElement(text) as? JsonObject
@@ -79,10 +91,10 @@ object EmulatorKbDecoder {
         val platforms = root.items("platforms")
             ?: return EmulatorKbDecode.Rejected("has a \"platforms\" value that is not a list")
         if (emulators.size > MAX_EMULATORS) {
-            return EmulatorKbDecode.Rejected("lists too many emulators (${emulators.size}, at most $MAX_EMULATORS)")
+            return EmulatorKbDecode.Rejected("lists too many emulators (${emulators.size}, at most $MAX_EMULATORS)", EmulatorKbDecode.Rejected.Kind.TOO_MANY)
         }
         if (platforms.size > MAX_PLATFORMS) {
-            return EmulatorKbDecode.Rejected("lists too many platforms (${platforms.size}, at most $MAX_PLATFORMS)")
+            return EmulatorKbDecode.Rejected("lists too many platforms (${platforms.size}, at most $MAX_PLATFORMS)", EmulatorKbDecode.Rejected.Kind.TOO_MANY)
         }
 
         return EmulatorKbDecode.Decoded(

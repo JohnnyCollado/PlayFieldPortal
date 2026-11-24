@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -252,9 +253,10 @@ private fun Modifier.stripPill(onClick: () -> Unit): Modifier {
             )
             .border(1.dp, rim, capsule)
             .clickable(onClick = onClick)
-            // A fixed, slim height with the content centred in it by the caller's row, rather than
-            // a height that follows the text plus padding: the pill is the same on every row of text.
-            .height(StripPillHeight)
+            // A slim height with the content centred in it by the caller's row, the same on every row
+            // of text; a minimum rather than fixed, so a large system font grows the pill instead of
+            // cutting its text.
+            .heightIn(min = StripPillHeight)
             .padding(horizontal = 11.dp)
 }
 
@@ -546,7 +548,6 @@ private fun NotificationButton(
 ) {
     // The count wins when both apply: "3 unread" is more actionable than "something is running",
     // and the running state is already spelled out by a live bar inside the panel.
-    val active = unread > 0 || running
     // One tone for the whole strip: the bell does not dim when it has nothing to say. The count and
     // the activity dot are what say something happened.
     val tint = themedText(StripPrimary)
@@ -789,7 +790,8 @@ private fun StripSeparator() {
         modifier = Modifier
             .width(1.dp)
             .height(10.dp)
-            .background(StripSep),
+            // The Main font colour like the rest of the strip, at the separator's faint weight.
+            .background(themedText(StripSep, StripSep.alpha)),
     )
 }
 

@@ -28,7 +28,7 @@ import java.io.File
  * they appear at on the Odin: 20, 32, 62 and 96 dp. To look at, since the coins are pixel art shown
  * at sizes that are not whole multiples of their 64 px.
  *
- *     ./gradlew :feature:feature-xmb:testDebugUnitTest --tests "*ShibaCoinSizesRenderTest*"
+ *     ./gradlew :feature:feature-xmb:testDebugUnitTest -Pmockups --tests "*ShibaCoinSizesRenderTest*"
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

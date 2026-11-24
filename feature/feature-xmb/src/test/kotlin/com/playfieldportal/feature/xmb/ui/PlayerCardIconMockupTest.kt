@@ -28,7 +28,7 @@ import java.io.File
  * A picture of the Shiba Coins column with the player card focused, drawn by the real XMB shell:
  * the Shiba's head as the player's icon, and the title line reading Title · Level · Bones.
  *
- *     ./gradlew :feature:feature-xmb:testDebugUnitTest --tests "*PlayerCardIconMockupTest*"
+ *     ./gradlew :feature:feature-xmb:testDebugUnitTest -Pmockups --tests "*PlayerCardIconMockupTest*"
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

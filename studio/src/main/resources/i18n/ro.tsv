@@ -171,3 +171,160 @@ Fix the items marked ✕ before exporting.	Corectează elementele marcate cu ✕
 A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	La export se generează o imagine de previzualizare a temei finale, care apare ca miniatură în galeria de teme a lansatorului.
 Opened {0}	S-a deschis {0}
 Exported {0}	S-a exportat {0}
+Folder of .pfptheme files to upgrade	Dosar cu fișiere .pfptheme de actualizat
+Folder with .ptf files	Dosar cu fișiere .ptf
+Output folder for .pfptheme files	Dosar de ieșire pentru fișierele .pfptheme
+PSP theme to unpack	Temă PSP de despachetat
+Folder for unpacked assets	Dosar pentru resursele despachetate
+Converting {0}  ({1}/{2})	Se convertește {0}  ({1}/{2})
+This theme was made by a newer version (format v{0}). Parts this version doesn't know are kept when you save.	Această temă a fost creată cu o versiune mai nouă (format v{0}). Părțile pe care această versiune nu le cunoaște se păstrează la salvare.
+CXMB theme	Temă CXMB
+This file is a CXMB custom firmware theme (.ctf). Those replace PSP system files rather than describing wallpaper and colors, so they can't be converted. Official PSP themes (.ptf) open fine.	Acest fișier este o temă CXMB pentru firmware personalizat (.ctf). Aceste teme înlocuiesc fișiere de sistem ale PSP în loc să descrie fundalul și culorile, deci nu pot fi convertite. Temele PSP oficiale (.ptf) se deschid fără probleme.
+Batch conversion finished	Conversia în lot s-a încheiat
+Converted: {0}	Convertite: {0}
+Converted with caveats: {0}	Convertite cu rezerve: {0}
+Skipped (CXMB): {0} — {1}	Omise (CXMB): {0} — {1}
+Failed: {0}	Eșuate: {0}
+Theme upgrade finished	Actualizarea temelor s-a încheiat
+Upgraded: {0} (originals kept as .bak)	Actualizate: {0} (originalele păstrate ca .bak)
+Already current: {0}	Deja actuale: {0}
+Made by a newer version, left alone: {0}	Dintr-o versiune mai nouă, lăsate neschimbate: {0}
+Report: {0}	Raport: {0}
+Background motion	Mișcarea fundalului
+Still: frame at {0}	Imagine statică: cadru la {0}
+Still: baked into the theme	Imagine statică: inclusă în temă
+Import wallpaper	Importă fundal
+Import video	Importă video
+Lock screen image	Imagine pentru ecranul de blocare
+(embedded image)	(imagine încorporată)
+Fit	Încadrare
+Busy wallpaper — labels may be hard to read. Softer, low-contrast images work best.	Fundal încărcat — etichetele pot fi greu de citit. Imaginile blânde, cu contrast redus, funcționează cel mai bine.
+The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, a Still style, or Motion set to Static on the device).	Imaginea statică este afișul videoclipului — apare ori de câte ori redarea e oprită (economisirea bateriei, un joc, un stil Static sau Mișcare setată pe Static pe dispozitiv).
+The theme offers this image for the device lock screen	Tema oferă această imagine pentru ecranul de blocare al dispozitivului
+Output {0}×{1}	Ieșire {0}×{1}
+{0}–{1} recommended, {2} max, {3} MB max	{0}–{1} recomandat, maxim {2}, maxim {3} MB
+Whether the boot video and Game Boot play at all is a device setting: {0}	Dacă videoclipul de pornire și Game Boot rulează depinde de o setare a dispozitivului: {0}
+This clip is longer than the cap — the launcher will refuse it.	Acest clip depășește limita — launcherul îl va refuza.
+Choose a {0} video	Alege un videoclip {0}
+Dark icon color — icons may be hard to see over the wallpaper scrim.	Culoare de pictogramă închisă — pictogramele pot fi greu de văzut peste vălul fundalului.
+Saved in the theme for a later update. The launcher currently shows the color exactly as picked.	Salvat în temă pentru o actualizare ulterioară. Deocamdată launcherul afișează culoarea exact cum a fost aleasă.
+Original	Original
+Classic Blue	Albastru clasic
+Sunset Orange	Portocaliu de apus
+Fresh Green	Verde proaspăt
+Royal Purple	Mov regal
+Crimson Red	Roșu carmin
+Silver	Argintiu
+Sakura Pink	Roz sakura
+Golden Amber	Chihlimbar auriu
+Aqua Teal	Turcoaz
+Midnight Navy	Albastru miezul nopții
+Charcoal	Cărbune
+Format: schema {0} → {1}	Format: schemă {0} → {1}
+Format: new theme → {0}	Format: temă nouă → {0}
+Kept	Păstrat
+Added	Adăugat
+Repaired	Reparat
+Can't recover	Nu se poate recupera
+What saving does	Ce face salvarea
+Motion has a still poster	Mișcarea are un afiș static
+Motion needs a still wallpaper as its poster - add one or remove the video	Mișcarea are nevoie de un fundal static ca afiș - adaugă unul sau elimină videoclipul
+Media outside limits: {0}	Elemente media în afara limitelor: {0}
+This wallpaper is busy behind the labels - pick a text legibility style so they stay readable	Acest fundal e încărcat în spatele etichetelor - alege un stil de lizibilitate a textului ca să rămână lizibile
+Text should read clearly on this wallpaper	Textul ar trebui să se citească bine pe acest fundal
+{0} - launchers from before this format refuse files over 64 MB	{0} - launcherele anterioare acestui format refuză fișierele de peste 64 MB
+Opens on older launchers, which ignore sounds, boot clips, legibility and crop	Se deschide în launcherele mai vechi, care ignoră sunetele, clipurile de pornire, lizibilitatea și decuparea
+{0} is over the {1} MB limit for a theme file	{0} depășește limita de {1} MB pentru un fișier de temă
+Saving upgrades this theme from {0}; {1} part(s) can't be recovered	Salvarea actualizează această temă din {0}; {1} parte/părți nu pot fi recuperate
+Saving upgrades this theme from {0}	Salvarea actualizează această temă din {0}
+an older format	un format mai vechi
+Imported from {0}	Importat din {0}
+Imported from {0} — firmware {1}	Importat din {0} — firmware {1}
+a PSP theme	o temă PSP
+Created {0}	Creat {0}
+On the device these live in {0}.	Pe dispozitiv se află în {0}.
+Scale	Scară
+Horizontal	Orizontal
+Vertical	Vertical
+This wallpaper is busy behind the labels — a text style helps them stay readable.	Acest fundal e încărcat în spatele etichetelor — un stil de text le ajută să rămână lizibile.
+Settings › Interface › Display › Adjust XMB Layout	Setări › Interfață › Afișaj › Ajustează aranjamentul XMB
+Settings › Interface › Sound	Setări › Interfață › Sunet
+Settings › Interface › Display › Show Boot Sequence / Game Boot	Setări › Interfață › Afișaj › Afișează secvența de pornire / Game Boot
+Battery Saver and Thermal Throttle (Settings › Interface › Display) freeze the animated wave on the device.	Economisirea bateriei și Limitarea termică (Setări › Interfață › Afișaj) îngheață valul animat pe dispozitiv.
+Pick…	Alege…
+Plays on the device	Se redă pe dispozitiv
+Length unknown	Durată necunoscută
+Volumes stay on the device: {0}	Volumul se reglează pe dispozitiv: {0}
+Couldn't play {0} here — it will play on the device.	{0} nu poate fi redat aici — se va reda pe dispozitiv.
+Choose a sound for {0}	Alege un sunet pentru {0}
+Icon image for {0}	Imagine de pictogramă pentru {0}
+Template for {0}	Șablon pentru {0}
+Template written to {0}	Șablon salvat ca {0}
+Template export failed: {0}	Exportul șablonului a eșuat: {0}
+Search {0} slots: battery, PS3, voice…	Caută printre {0} poziții: baterie, PS3, voce…
+No slot matches. Clear the search or a filter.	Nicio poziție nu se potrivește. Golește căutarea sau un filtru.
+Pack folder…	Dosar de pachet…
+Icon pack folder	Dosarul pachetului de pictograme
+Pack .zip…	Pachet .zip…
+Icon pack zip	Pachet de pictograme .zip
+Folder for icon templates	Dosar pentru șabloanele de pictograme
+Packs are folders or zips of <slot key>.png / .gif, the names the templates use. Multi-frame GIFs animate on the launcher when focused; they must stay within 512px, 120 frames and 10 seconds.	Pachetele sunt dosare sau arhive zip cu <cheie poziție>.png / .gif, numele folosite de șabloane. GIF-urile cu mai multe cadre se animă în launcher când sunt selectate; trebuie să rămână în 512 px, 120 de cadre și 10 secunde.
+Icon pack imported	Pachet de pictograme importat
+Icon pack refused	Pachet de pictograme refuzat
+{0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	{0}: {1} adăugate, {2} înlocuite, {3} fără potrivire, {4} refuzate
+Icon pack {0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	Pachet de pictograme {0}: {1} adăugate, {2} înlocuite, {3} fără potrivire, {4} refuzate
+{0} - did you mean {1}?	{0} - te refereai la {1}?
+{0} - no matching slot	{0} - nicio poziție potrivită
+{0} error	{0} eroare
+{0} errors	{0} erori
+{0} warning	{0} avertisment
+{0} warnings	{0} avertismente
+{0} of {1} MB	{0} din {1} MB
+{0} of {1} MB - older launchers refuse over 64 MB	{0} din {1} MB - launcherele mai vechi refuză peste 64 MB
+Wallpaper	Fundal
+Preview	Previzualizare
+Motion	Mișcare
+Ambience	Ambianță
+Other files	Alte fișiere
+{0} is too large to be a theme file	{0} este prea mare pentru un fișier de temă
+Imported {0}	{0} importat
+Imported with a caveat	Importat cu o rezervă
+{0} is not a valid .pfptheme bundle	{0} nu este un pachet .pfptheme valid
+{0} — {1} icon(s) for parts themes don't customize were left out	{0} — {1} pictogramă/pictograme pentru părți pe care temele nu le personalizează au fost omise
+Motion wallpaper: {0}	Fundal animat: {0}
+Could not keep: {0}	Nu s-a putut păstra: {0}
+Parts of the theme not kept	Părți din temă nepăstrate
+Motion wallpaper not kept	Fundal animat nepăstrat
+{0} is not a readable image	{0} nu este o imagine lizibilă
+{0} converted to H.264 for Android ({1})	{0} convertit în H.264 pentru Android ({1})
+Couldn't read that frame of the video	Nu s-a putut citi acel cadru al videoclipului
+The crop does not match this image	Decuparea nu se potrivește cu această imagine
+Wallpaper: {0} ({1}×{2})	Fundal: {0} ({1}×{2})
+Added {0} — converted to H.264 for Android ({1})	{0} adăugat — convertit în H.264 pentru Android ({1})
+Added {0}	{0} adăugat
+Export failed: {0}	Exportul a eșuat: {0}
+{0} is not a PSP theme file	{0} nu este un fișier de temă PSP
+Unpack failed: {0}	Despachetarea a eșuat: {0}
+Theme unpacked	Tema a fost despachetată
+{0} images written to {1} (see report.txt).	{0} imagini scrise în {1} (vezi report.txt).
+{0} images and {1} data files written to {2} (see report.txt).	{0} imagini și {1} fișiere de date scrise în {2} (vezi report.txt).
+Unpacked {0}: {1} images	{0} despachetat: {1} imagini
+Templates exported to {0} ({1} icons)	Șabloane exportate în {0} ({1} pictograme)
+WebM clips can't be checked in the Studio (it reads MP4/H.264 only) — convert the clip to MP4	Clipurile WebM nu pot fi verificate în Studio (citește doar MP4/H.264) — convertește clipul în MP4
+That isn't a media slot this import can fill	Aceasta nu e o poziție media pe care acest import o poate completa
+That file is too large for a theme — {0} MB or less	Fișierul e prea mare pentru o temă — cel mult {0} MB
+Unsupported video — use an MP4 (H.264)	Videoclip neacceptat — folosește un MP4 (H.264)
+{0} video isn't guaranteed to play on Android	Un videoclip {0} nu rulează garantat pe Android
+H.264 {0} doesn't play on Android	H.264 {0} nu rulează pe Android
+{0} video doesn't play on Android	Un videoclip {0} nu rulează pe Android
+Couldn't convert this video for Android ({0}). Re-encode it as MP4 H.264 and try again.	Videoclipul nu a putut fi convertit pentru Android ({0}). Recodifică-l ca MP4 H.264 și încearcă din nou.
+{0} is not a folder or .zip	{0} nu este un dosar sau un .zip
+Pack refused: {0}	Pachet refuzat: {0}
+Pack could not be read	Pachetul nu a putut fi citit
+Pack could not be read: {0}	Pachetul nu a putut fi citit: {0}
+Pack has more than {0} files	Pachetul are mai mult de {0} fișiere
+Not a PSP theme file	Nu este un fișier de temă PSP
+Corrupt or truncated PTF	PTF deteriorat sau incomplet
+This theme contains no wallpaper image.	Această temă nu conține o imagine de fundal.
+The wallpaper could not be extracted: this theme uses a compression method this importer doesn't recognize. The theme was imported without its wallpaper.	Fundalul nu a putut fi extras: această temă folosește o metodă de compresie pe care acest importator nu o recunoaște. Tema a fost importată fără fundal.
+The wallpaper data in this theme is damaged and could not be decoded. The theme was imported without its wallpaper.	Datele fundalului din această temă sunt deteriorate și nu au putut fi decodate. Tema a fost importată fără fundal.

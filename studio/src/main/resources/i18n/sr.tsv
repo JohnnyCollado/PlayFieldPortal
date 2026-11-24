@@ -171,3 +171,160 @@ Fix the items marked ✕ before exporting.	Исправите ставке оз�
 A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	Слика прегледа готове теме прави се при извозу и приказује се као њена сличица у галерији тема покретача.
 Opened {0}	Отворено: {0}
 Exported {0}	Извезено: {0}
+Folder of .pfptheme files to upgrade	Фасцикла са .pfptheme датотекама за надоградњу
+Folder with .ptf files	Фасцикла са .ptf датотекама
+Output folder for .pfptheme files	Излазна фасцикла за .pfptheme датотеке
+PSP theme to unpack	PSP тема за распакивање
+Folder for unpacked assets	Фасцикла за распаковане ресурсе
+Converting {0}  ({1}/{2})	Претварање {0}  ({1}/{2})
+This theme was made by a newer version (format v{0}). Parts this version doesn't know are kept when you save.	Ова тема је направљена у новијој верзији (формат v{0}). Делови које ова верзија не познаје задржавају се при чувању.
+CXMB theme	CXMB тема
+This file is a CXMB custom firmware theme (.ctf). Those replace PSP system files rather than describing wallpaper and colors, so they can't be converted. Official PSP themes (.ptf) open fine.	Ова датотека је CXMB тема за прилагођени фирмвер (.ctf). Такве теме замењују системске датотеке PSP-а уместо да описују позадину и боје, па не могу да се претворе. Званичне PSP теме (.ptf) отварају се без проблема.
+Batch conversion finished	Групно претварање је завршено
+Converted: {0}	Претворено: {0}
+Converted with caveats: {0}	Претворено уз напомене: {0}
+Skipped (CXMB): {0} — {1}	Прескочено (CXMB): {0} — {1}
+Failed: {0}	Неуспело: {0}
+Theme upgrade finished	Надоградња тема је завршена
+Upgraded: {0} (originals kept as .bak)	Надограђено: {0} (оригинали сачувани као .bak)
+Already current: {0}	Већ ажурно: {0}
+Made by a newer version, left alone: {0}	Из новије верзије, остављено нетакнуто: {0}
+Report: {0}	Извештај: {0}
+Background motion	Покрет позадине
+Still: frame at {0}	Мирна слика: кадар на {0}
+Still: baked into the theme	Мирна слика: уграђена у тему
+Import wallpaper	Увези позадину
+Import video	Увези видео
+Lock screen image	Слика закључаног екрана
+(embedded image)	(уграђена слика)
+Fit	Уклапање
+Busy wallpaper — labels may be hard to read. Softer, low-contrast images work best.	Претрпана позадина — натписи могу бити тешко читљиви. Најбоље раде благе слике ниског контраста.
+The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, a Still style, or Motion set to Static on the device).	Мирна слика је плакат видеа — приказује се кад је репродукција заустављена (уштеда батерије, игра, стил Мирно или Покрет подешен на Статично на уређају).
+The theme offers this image for the device lock screen	Тема нуди ову слику за закључани екран уређаја
+Output {0}×{1}	Излаз {0}×{1}
+{0}–{1} recommended, {2} max, {3} MB max	{0}–{1} препоручено, највише {2}, највише {3} MB
+Whether the boot video and Game Boot play at all is a device setting: {0}	Да ли ће се покретачки видео и Game Boot уопште пуштати зависи од подешавања уређаја: {0}
+This clip is longer than the cap — the launcher will refuse it.	Овај исечак је дужи од ограничења — покретач ће га одбити.
+Choose a {0} video	Изабери видео: {0}
+Dark icon color — icons may be hard to see over the wallpaper scrim.	Тамна боја икона — иконе би могле тешко да се виде преко затамњене позадине.
+Saved in the theme for a later update. The launcher currently shows the color exactly as picked.	Сачувано у теми за касније ажурирање. Покретач засад приказује боју тачно како је изабрана.
+Original	Оригинална
+Classic Blue	Класична плава
+Sunset Orange	Наранџасти залазак
+Fresh Green	Свежа зелена
+Royal Purple	Краљевска љубичаста
+Crimson Red	Гримизна
+Silver	Сребрна
+Sakura Pink	Сакура роза
+Golden Amber	Златни ћилибар
+Aqua Teal	Тиркизна
+Midnight Navy	Поноћна плава
+Charcoal	Угљена
+Format: schema {0} → {1}	Формат: шема {0} → {1}
+Format: new theme → {0}	Формат: нова тема → {0}
+Kept	Задржано
+Added	Додато
+Repaired	Поправљено
+Can't recover	Не може да се поврати
+What saving does	Шта чување ради
+Motion has a still poster	Покрет има мирни плакат
+Motion needs a still wallpaper as its poster - add one or remove the video	Покрету треба мирна позадина као плакат - додај је или уклони видео
+Media outside limits: {0}	Медији ван ограничења: {0}
+This wallpaper is busy behind the labels - pick a text legibility style so they stay readable	Ова позадина је иза натписа претрпана - изабери стил читљивости текста да остану читљиви
+Text should read clearly on this wallpaper	Текст би на овој позадини требало добро да се чита
+{0} - launchers from before this format refuse files over 64 MB	{0} - покретачи старији од овог формата одбијају датотеке веће од 64 MB
+Opens on older launchers, which ignore sounds, boot clips, legibility and crop	Отвара се у старијим покретачима, који занемарују звукове, покретачке исечке, читљивост и исецање
+{0} is over the {1} MB limit for a theme file	{0} прелази ограничење од {1} MB за датотеку теме
+Saving upgrades this theme from {0}; {1} part(s) can't be recovered	Чување надограђује ову тему из {0}; делова који не могу да се поврате: {1}
+Saving upgrades this theme from {0}	Чување надограђује ову тему из {0}
+an older format	старијег формата
+Imported from {0}	Увезено из {0}
+Imported from {0} — firmware {1}	Увезено из {0} — фирмвер {1}
+a PSP theme	PSP теме
+Created {0}	Направљено {0}
+On the device these live in {0}.	На уређају се налазе у {0}.
+Scale	Размера
+Horizontal	Хоризонтално
+Vertical	Вертикално
+This wallpaper is busy behind the labels — a text style helps them stay readable.	Ова позадина је иза натписа претрпана — стил текста помаже да остану читљиви.
+Settings › Interface › Display › Adjust XMB Layout	Подешавања › Интерфејс › Екран › Прилагоди распоред XMB-а
+Settings › Interface › Sound	Подешавања › Интерфејс › Звук
+Settings › Interface › Display › Show Boot Sequence / Game Boot	Подешавања › Интерфејс › Екран › Прикажи покретачки низ / Game Boot
+Battery Saver and Thermal Throttle (Settings › Interface › Display) freeze the animated wave on the device.	Уштеда батерије и Термално ограничење (Подешавања › Интерфејс › Екран) замрзавају анимирани талас на уређају.
+Pick…	Изабери…
+Plays on the device	Пушта се на уређају
+Length unknown	Трајање непознато
+Volumes stay on the device: {0}	Јачина звука остаје на уређају: {0}
+Couldn't play {0} here — it will play on the device.	{0} не може да се пусти овде — на уређају ће радити.
+Choose a sound for {0}	Изабери звук за {0}
+Icon image for {0}	Слика иконе за {0}
+Template for {0}	Шаблон за {0}
+Template written to {0}	Шаблон сачуван као {0}
+Template export failed: {0}	Извоз шаблона није успео: {0}
+Search {0} slots: battery, PS3, voice…	Претражи {0} места: батерија, PS3, глас…
+No slot matches. Clear the search or a filter.	Ниједно место не одговара. Обриши претрагу или филтер.
+Pack folder…	Фасцикла пакета…
+Icon pack folder	Фасцикла пакета икона
+Pack .zip…	Пакет .zip…
+Icon pack zip	Пакет икона .zip
+Folder for icon templates	Фасцикла за шаблоне икона
+Packs are folders or zips of <slot key>.png / .gif, the names the templates use. Multi-frame GIFs animate on the launcher when focused; they must stay within 512px, 120 frames and 10 seconds.	Пакети су фасцикле или zip датотеке са <кључ места>.png / .gif, називима које користе шаблони. GIF-ови са више кадрова анимирају се у покретачу кад су у фокусу; морају да остану у оквиру 512 px, 120 кадрова и 10 секунди.
+Icon pack imported	Пакет икона је увезен
+Icon pack refused	Пакет икона је одбијен
+{0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	{0}: додато {1}, замењено {2}, без подударања {3}, одбијено {4}
+Icon pack {0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	Пакет икона {0}: додато {1}, замењено {2}, без подударања {3}, одбијено {4}
+{0} - did you mean {1}?	{0} - да ли сте мислили {1}?
+{0} - no matching slot	{0} - нема одговарајућег места
+{0} error	Грешке: {0}
+{0} errors	Грешке: {0}
+{0} warning	Упозорења: {0}
+{0} warnings	Упозорења: {0}
+{0} of {1} MB	{0} од {1} MB
+{0} of {1} MB - older launchers refuse over 64 MB	{0} од {1} MB - старији покретачи одбијају више од 64 MB
+Wallpaper	Позадина
+Preview	Преглед
+Motion	Покрет
+Ambience	Амбијент
+Other files	Остале датотеке
+{0} is too large to be a theme file	{0} је превелик за датотеку теме
+Imported {0}	Увезено: {0}
+Imported with a caveat	Увезено уз напомену
+{0} is not a valid .pfptheme bundle	{0} није исправан .pfptheme пакет
+{0} — {1} icon(s) for parts themes don't customize were left out	{0} — изостављене иконе за делове које теме не мењају: {1}
+Motion wallpaper: {0}	Покретна позадина: {0}
+Could not keep: {0}	Није могуће задржати: {0}
+Parts of the theme not kept	Делови теме нису задржани
+Motion wallpaper not kept	Покретна позадина није задржана
+{0} is not a readable image	{0} није читљива слика
+{0} converted to H.264 for Android ({1})	{0} претворено у H.264 за Android ({1})
+Couldn't read that frame of the video	Тај кадар видеа није могуће прочитати
+The crop does not match this image	Исецање не одговара овој слици
+Wallpaper: {0} ({1}×{2})	Позадина: {0} ({1}×{2})
+Added {0} — converted to H.264 for Android ({1})	Додато {0} — претворено у H.264 за Android ({1})
+Added {0}	Додато {0}
+Export failed: {0}	Извоз није успео: {0}
+{0} is not a PSP theme file	{0} није датотека PSP теме
+Unpack failed: {0}	Распакивање није успело: {0}
+Theme unpacked	Тема је распакована
+{0} images written to {1} (see report.txt).	Слике ({0}) записане у {1} (види report.txt).
+{0} images and {1} data files written to {2} (see report.txt).	Слике ({0}) и датотеке са подацима ({1}) записане у {2} (види report.txt).
+Unpacked {0}: {1} images	Распаковано {0}: слике {1}
+Templates exported to {0} ({1} icons)	Шаблони извезени у {0} (иконе: {1})
+WebM clips can't be checked in the Studio (it reads MP4/H.264 only) — convert the clip to MP4	WebM исечци не могу да се провере у Студију (чита само MP4/H.264) — претвори исечак у MP4
+That isn't a media slot this import can fill	То није место за медије које овај увоз може да попуни
+That file is too large for a theme — {0} MB or less	Та датотека је превелика за тему — највише {0} MB
+Unsupported video — use an MP4 (H.264)	Неподржан видео — користи MP4 (H.264)
+{0} video isn't guaranteed to play on Android	Видео {0} не мора да ради на Android-у
+H.264 {0} doesn't play on Android	H.264 {0} не ради на Android-у
+{0} video doesn't play on Android	Видео {0} не ради на Android-у
+Couldn't convert this video for Android ({0}). Re-encode it as MP4 H.264 and try again.	Видео није могуће претворити за Android ({0}). Поново га кодирај као MP4 H.264 и покушај опет.
+{0} is not a folder or .zip	{0} није фасцикла ни .zip
+Pack refused: {0}	Пакет одбијен: {0}
+Pack could not be read	Пакет није могуће прочитати
+Pack could not be read: {0}	Пакет није могуће прочитати: {0}
+Pack has more than {0} files	Пакет има више од {0} датотека
+Not a PSP theme file	Није датотека PSP теме
+Corrupt or truncated PTF	Оштећен или непотпун PTF
+This theme contains no wallpaper image.	Ова тема не садржи слику позадине.
+The wallpaper could not be extracted: this theme uses a compression method this importer doesn't recognize. The theme was imported without its wallpaper.	Позадину није могуће издвојити: ова тема користи методу компресије коју овај увозник не препознаје. Тема је увезена без позадине.
+The wallpaper data in this theme is damaged and could not be decoded. The theme was imported without its wallpaper.	Подаци позадине у овој теми су оштећени и није их могуће декодирати. Тема је увезена без позадине.

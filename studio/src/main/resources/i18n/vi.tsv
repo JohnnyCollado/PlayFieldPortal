@@ -171,3 +171,160 @@ Fix the items marked ✕ before exporting.	Hãy sửa các mục đánh dấu �
 A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	Ảnh xem trước của chủ đề hoàn chỉnh được tạo khi bạn xuất và hiển thị làm hình thu nhỏ trong thư viện chủ đề của trình khởi chạy.
 Opened {0}	Đã mở {0}
 Exported {0}	Đã xuất {0}
+Folder of .pfptheme files to upgrade	Thư mục chứa tệp .pfptheme cần nâng cấp
+Folder with .ptf files	Thư mục chứa tệp .ptf
+Output folder for .pfptheme files	Thư mục xuất tệp .pfptheme
+PSP theme to unpack	Chủ đề PSP cần giải nén
+Folder for unpacked assets	Thư mục chứa tài nguyên đã giải nén
+Converting {0}  ({1}/{2})	Đang chuyển đổi {0}  ({1}/{2})
+This theme was made by a newer version (format v{0}). Parts this version doesn't know are kept when you save.	Chủ đề này được tạo bằng phiên bản mới hơn (định dạng v{0}). Những phần mà phiên bản này không biết vẫn được giữ khi lưu.
+CXMB theme	Chủ đề CXMB
+This file is a CXMB custom firmware theme (.ctf). Those replace PSP system files rather than describing wallpaper and colors, so they can't be converted. Official PSP themes (.ptf) open fine.	Tệp này là chủ đề CXMB cho firmware tùy biến (.ctf). Loại chủ đề này thay thế tệp hệ thống của PSP thay vì mô tả hình nền và màu sắc, nên không thể chuyển đổi. Chủ đề PSP chính thức (.ptf) mở bình thường.
+Batch conversion finished	Đã chuyển đổi hàng loạt xong
+Converted: {0}	Đã chuyển đổi: {0}
+Converted with caveats: {0}	Đã chuyển đổi kèm lưu ý: {0}
+Skipped (CXMB): {0} — {1}	Bỏ qua (CXMB): {0} — {1}
+Failed: {0}	Thất bại: {0}
+Theme upgrade finished	Đã nâng cấp chủ đề xong
+Upgraded: {0} (originals kept as .bak)	Đã nâng cấp: {0} (bản gốc giữ dưới dạng .bak)
+Already current: {0}	Đã là mới nhất: {0}
+Made by a newer version, left alone: {0}	Tạo bằng phiên bản mới hơn, giữ nguyên: {0}
+Report: {0}	Báo cáo: {0}
+Background motion	Chuyển động nền
+Still: frame at {0}	Ảnh tĩnh: khung hình tại {0}
+Still: baked into the theme	Ảnh tĩnh: đã gắn vào chủ đề
+Import wallpaper	Nhập hình nền
+Import video	Nhập video
+Lock screen image	Ảnh màn hình khóa
+(embedded image)	(ảnh nhúng)
+Fit	Vừa khung
+Busy wallpaper — labels may be hard to read. Softer, low-contrast images work best.	Hình nền rối mắt — nhãn có thể khó đọc. Ảnh dịu, độ tương phản thấp cho kết quả tốt nhất.
+The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, a Still style, or Motion set to Static on the device).	Ảnh tĩnh là áp phích của video — hiện ra mỗi khi phát lại bị dừng (tiết kiệm pin, đang chơi game, kiểu Tĩnh, hoặc Chuyển động đặt là Tĩnh trên thiết bị).
+The theme offers this image for the device lock screen	Chủ đề đề xuất ảnh này cho màn hình khóa của thiết bị
+Output {0}×{1}	Đầu ra {0}×{1}
+{0}–{1} recommended, {2} max, {3} MB max	Khuyên dùng {0}–{1}, tối đa {2}, tối đa {3} MB
+Whether the boot video and Game Boot play at all is a device setting: {0}	Video khởi động và Game Boot có phát hay không là cài đặt của thiết bị: {0}
+This clip is longer than the cap — the launcher will refuse it.	Đoạn này dài hơn giới hạn — trình khởi chạy sẽ từ chối.
+Choose a {0} video	Chọn video {0}
+Dark icon color — icons may be hard to see over the wallpaper scrim.	Màu biểu tượng tối — biểu tượng có thể khó thấy trên lớp phủ hình nền.
+Saved in the theme for a later update. The launcher currently shows the color exactly as picked.	Đã lưu trong chủ đề cho bản cập nhật sau. Hiện trình khởi chạy hiển thị đúng màu đã chọn.
+Original	Gốc
+Classic Blue	Xanh cổ điển
+Sunset Orange	Cam hoàng hôn
+Fresh Green	Xanh lá tươi
+Royal Purple	Tím hoàng gia
+Crimson Red	Đỏ thẫm
+Silver	Bạc
+Sakura Pink	Hồng anh đào
+Golden Amber	Hổ phách vàng
+Aqua Teal	Xanh ngọc
+Midnight Navy	Xanh nửa đêm
+Charcoal	Than chì
+Format: schema {0} → {1}	Định dạng: lược đồ {0} → {1}
+Format: new theme → {0}	Định dạng: chủ đề mới → {0}
+Kept	Giữ lại
+Added	Đã thêm
+Repaired	Đã sửa
+Can't recover	Không khôi phục được
+What saving does	Lưu sẽ làm gì
+Motion has a still poster	Chuyển động có áp phích tĩnh
+Motion needs a still wallpaper as its poster - add one or remove the video	Chuyển động cần một hình nền tĩnh làm áp phích - hãy thêm một ảnh hoặc bỏ video
+Media outside limits: {0}	Phương tiện vượt giới hạn: {0}
+This wallpaper is busy behind the labels - pick a text legibility style so they stay readable	Hình nền này rối mắt phía sau nhãn - hãy chọn kiểu dễ đọc cho văn bản để nhãn vẫn dễ đọc
+Text should read clearly on this wallpaper	Văn bản sẽ dễ đọc trên hình nền này
+{0} - launchers from before this format refuse files over 64 MB	{0} - các trình khởi chạy trước định dạng này từ chối tệp trên 64 MB
+Opens on older launchers, which ignore sounds, boot clips, legibility and crop	Mở được trên trình khởi chạy cũ, nhưng chúng bỏ qua âm thanh, đoạn khởi động, độ dễ đọc và cắt ảnh
+{0} is over the {1} MB limit for a theme file	{0} vượt giới hạn {1} MB của tệp chủ đề
+Saving upgrades this theme from {0}; {1} part(s) can't be recovered	Lưu sẽ nâng cấp chủ đề này từ {0}; số phần không khôi phục được: {1}
+Saving upgrades this theme from {0}	Lưu sẽ nâng cấp chủ đề này từ {0}
+an older format	định dạng cũ hơn
+Imported from {0}	Nhập từ {0}
+Imported from {0} — firmware {1}	Nhập từ {0} — firmware {1}
+a PSP theme	một chủ đề PSP
+Created {0}	Tạo lúc {0}
+On the device these live in {0}.	Trên thiết bị, các mục này nằm ở {0}.
+Scale	Tỷ lệ
+Horizontal	Ngang
+Vertical	Dọc
+This wallpaper is busy behind the labels — a text style helps them stay readable.	Hình nền này rối mắt phía sau nhãn — một kiểu văn bản giúp nhãn dễ đọc.
+Settings › Interface › Display › Adjust XMB Layout	Cài đặt › Giao diện › Hiển thị › Điều chỉnh bố cục XMB
+Settings › Interface › Sound	Cài đặt › Giao diện › Âm thanh
+Settings › Interface › Display › Show Boot Sequence / Game Boot	Cài đặt › Giao diện › Hiển thị › Hiện chuỗi khởi động / Game Boot
+Battery Saver and Thermal Throttle (Settings › Interface › Display) freeze the animated wave on the device.	Tiết kiệm pin và Giới hạn nhiệt (Cài đặt › Giao diện › Hiển thị) làm đứng yên sóng động trên thiết bị.
+Pick…	Chọn…
+Plays on the device	Phát trên thiết bị
+Length unknown	Không rõ độ dài
+Volumes stay on the device: {0}	Âm lượng chỉnh trên thiết bị: {0}
+Couldn't play {0} here — it will play on the device.	Không thể phát {0} ở đây — trên thiết bị sẽ phát được.
+Choose a sound for {0}	Chọn âm thanh cho {0}
+Icon image for {0}	Ảnh biểu tượng cho {0}
+Template for {0}	Mẫu cho {0}
+Template written to {0}	Đã ghi mẫu vào {0}
+Template export failed: {0}	Xuất mẫu thất bại: {0}
+Search {0} slots: battery, PS3, voice…	Tìm trong {0} ô: pin, PS3, giọng nói…
+No slot matches. Clear the search or a filter.	Không có ô nào khớp. Hãy xóa tìm kiếm hoặc một bộ lọc.
+Pack folder…	Thư mục gói…
+Icon pack folder	Thư mục gói biểu tượng
+Pack .zip…	Gói .zip…
+Icon pack zip	Gói biểu tượng .zip
+Folder for icon templates	Thư mục mẫu biểu tượng
+Packs are folders or zips of <slot key>.png / .gif, the names the templates use. Multi-frame GIFs animate on the launcher when focused; they must stay within 512px, 120 frames and 10 seconds.	Gói là thư mục hoặc tệp zip chứa <khóa ô>.png / .gif, đúng tên mà các mẫu dùng. GIF nhiều khung hình sẽ chuyển động trong trình khởi chạy khi được chọn; phải nằm trong 512 px, 120 khung hình và 10 giây.
+Icon pack imported	Đã nhập gói biểu tượng
+Icon pack refused	Gói biểu tượng bị từ chối
+{0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	{0}: thêm {1}, thay {2}, không khớp {3}, từ chối {4}
+Icon pack {0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	Gói biểu tượng {0}: thêm {1}, thay {2}, không khớp {3}, từ chối {4}
+{0} - did you mean {1}?	{0} - ý bạn là {1}?
+{0} - no matching slot	{0} - không có ô phù hợp
+{0} error	{0} lỗi
+{0} errors	{0} lỗi
+{0} warning	{0} cảnh báo
+{0} warnings	{0} cảnh báo
+{0} of {1} MB	{0} trên {1} MB
+{0} of {1} MB - older launchers refuse over 64 MB	{0} trên {1} MB - trình khởi chạy cũ từ chối khi quá 64 MB
+Wallpaper	Hình nền
+Preview	Xem trước
+Motion	Chuyển động
+Ambience	Âm nền
+Other files	Tệp khác
+{0} is too large to be a theme file	{0} quá lớn để làm tệp chủ đề
+Imported {0}	Đã nhập {0}
+Imported with a caveat	Đã nhập kèm lưu ý
+{0} is not a valid .pfptheme bundle	{0} không phải gói .pfptheme hợp lệ
+{0} — {1} icon(s) for parts themes don't customize were left out	{0} — đã bỏ {1} biểu tượng cho các phần mà chủ đề không tùy chỉnh
+Motion wallpaper: {0}	Hình nền động: {0}
+Could not keep: {0}	Không giữ được: {0}
+Parts of the theme not kept	Một số phần của chủ đề không được giữ
+Motion wallpaper not kept	Hình nền động không được giữ
+{0} is not a readable image	{0} không phải ảnh đọc được
+{0} converted to H.264 for Android ({1})	Đã chuyển {0} sang H.264 cho Android ({1})
+Couldn't read that frame of the video	Không đọc được khung hình đó của video
+The crop does not match this image	Vùng cắt không khớp với ảnh này
+Wallpaper: {0} ({1}×{2})	Hình nền: {0} ({1}×{2})
+Added {0} — converted to H.264 for Android ({1})	Đã thêm {0} — đã chuyển sang H.264 cho Android ({1})
+Added {0}	Đã thêm {0}
+Export failed: {0}	Xuất thất bại: {0}
+{0} is not a PSP theme file	{0} không phải tệp chủ đề PSP
+Unpack failed: {0}	Giải nén thất bại: {0}
+Theme unpacked	Đã giải nén chủ đề
+{0} images written to {1} (see report.txt).	Đã ghi {0} ảnh vào {1} (xem report.txt).
+{0} images and {1} data files written to {2} (see report.txt).	Đã ghi {0} ảnh và {1} tệp dữ liệu vào {2} (xem report.txt).
+Unpacked {0}: {1} images	Đã giải nén {0}: {1} ảnh
+Templates exported to {0} ({1} icons)	Đã xuất mẫu vào {0} ({1} biểu tượng)
+WebM clips can't be checked in the Studio (it reads MP4/H.264 only) — convert the clip to MP4	Studio không kiểm tra được đoạn WebM (chỉ đọc MP4/H.264) — hãy chuyển đoạn video sang MP4
+That isn't a media slot this import can fill	Đây không phải ô phương tiện mà lần nhập này có thể điền
+That file is too large for a theme — {0} MB or less	Tệp quá lớn cho một chủ đề — tối đa {0} MB
+Unsupported video — use an MP4 (H.264)	Video không được hỗ trợ — hãy dùng MP4 (H.264)
+{0} video isn't guaranteed to play on Android	Video {0} không chắc phát được trên Android
+H.264 {0} doesn't play on Android	H.264 {0} không phát được trên Android
+{0} video doesn't play on Android	Video {0} không phát được trên Android
+Couldn't convert this video for Android ({0}). Re-encode it as MP4 H.264 and try again.	Không thể chuyển video này cho Android ({0}). Hãy mã hóa lại thành MP4 H.264 rồi thử lại.
+{0} is not a folder or .zip	{0} không phải thư mục hay .zip
+Pack refused: {0}	Gói bị từ chối: {0}
+Pack could not be read	Không đọc được gói
+Pack could not be read: {0}	Không đọc được gói: {0}
+Pack has more than {0} files	Gói có hơn {0} tệp
+Not a PSP theme file	Không phải tệp chủ đề PSP
+Corrupt or truncated PTF	PTF bị hỏng hoặc thiếu
+This theme contains no wallpaper image.	Chủ đề này không có ảnh hình nền.
+The wallpaper could not be extracted: this theme uses a compression method this importer doesn't recognize. The theme was imported without its wallpaper.	Không trích xuất được hình nền: chủ đề này dùng cách nén mà trình nhập không nhận ra. Chủ đề đã được nhập mà không có hình nền.
+The wallpaper data in this theme is damaged and could not be decoded. The theme was imported without its wallpaper.	Dữ liệu hình nền trong chủ đề này bị hỏng và không giải mã được. Chủ đề đã được nhập mà không có hình nền.

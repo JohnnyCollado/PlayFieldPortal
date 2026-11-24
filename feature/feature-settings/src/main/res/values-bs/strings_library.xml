@@ -441,7 +441,6 @@
     <string name="lib_kb_import_failed_title">Tu datoteku nije moguće uvesti</string>
     <string name="lib_kb_import_too_large">Ta je datoteka prevelika da bi bila datoteka znanja o emulatorima.</string>
     <string name="lib_kb_import_unreadable">Tu datoteku nije bilo moguće pročitati.</string>
-    <string name="lib_kb_import_rejected">Ta se datoteka ne može upotrijebiti (%1$s).</string>
     <string name="lib_kb_import_nothing">Ta datoteka nema ništa za uvoz na ovom uređaju.</string>
     <string name="lib_kb_import_save_failed">Datoteku nije bilo moguće sačuvati na ovaj uređaj.</string>
     <string name="lib_kb_import_refresh_failed">Datoteka je sačuvana, ali osvježavanje prepoznavanja emulatora nije uspjelo.</string>
@@ -483,7 +482,6 @@
     <string name="lib_kb_export_nothing_title">Nema ničega za izvoz</string>
     <string name="lib_kb_export_none_message">Još nemate prilagođenih ili uređenih emulatora za dijeljenje.</string>
     <string name="lib_kb_export_none_shareable">Nijedan od vaših emulatora ne može se dijeliti</string>
-    <string name="lib_kb_export_none_shareable_why">Nijedan od vaših emulatora ne može se dijeliti: %1$s</string>
     <string name="lib_kb_exported_title">Izvezeno</string>
     <plurals name="lib_kb_exported_message">
     <item quantity="one">Izvezen %d emulator</item>
@@ -827,4 +825,6 @@
     <string name="lib_lm_local_by_title">povezano po naslovu</string>
     <string name="lib_lm_local_tracking">praćenje</string>
     <string name="lib_lm_local_no_list">još nema spiska dostignuća</string>
+    <string name="lib_kb_import_invalid">Datoteka nije PlayFieldPortal datoteka znanja o emulatorima ili je oštećena.</string>
+    <string name="lib_kb_import_too_many">Datoteka navodi više emulatora ili konzola nego što PlayFieldPortal može uvesti.</string>
 </resources>

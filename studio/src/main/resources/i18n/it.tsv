@@ -171,3 +171,160 @@ Fix the items marked ✕ before exporting.	Correggi gli elementi contrassegnati 
 A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	All'esportazione viene generata un'immagine di anteprima del tema finito, mostrata come miniatura nella galleria dei temi del launcher.
 Opened {0}	{0} aperto
 Exported {0}	{0} esportato
+Folder of .pfptheme files to upgrade	Cartella di file .pfptheme da aggiornare
+Folder with .ptf files	Cartella con file .ptf
+Output folder for .pfptheme files	Cartella di destinazione per i file .pfptheme
+PSP theme to unpack	Tema PSP da estrarre
+Folder for unpacked assets	Cartella per le risorse estratte
+Converting {0}  ({1}/{2})	Conversione di {0}  ({1}/{2})
+This theme was made by a newer version (format v{0}). Parts this version doesn't know are kept when you save.	Questo tema è stato creato con una versione più recente (formato v{0}). Le parti che questa versione non conosce vengono mantenute al salvataggio.
+CXMB theme	Tema CXMB
+This file is a CXMB custom firmware theme (.ctf). Those replace PSP system files rather than describing wallpaper and colors, so they can't be converted. Official PSP themes (.ptf) open fine.	Questo file è un tema CXMB per firmware personalizzato (.ctf). Questi temi sostituiscono file di sistema della PSP invece di descrivere sfondo e colori, quindi non si possono convertire. I temi PSP ufficiali (.ptf) si aprono senza problemi.
+Batch conversion finished	Conversione in blocco completata
+Converted: {0}	Convertiti: {0}
+Converted with caveats: {0}	Convertiti con riserve: {0}
+Skipped (CXMB): {0} — {1}	Saltati (CXMB): {0} — {1}
+Failed: {0}	Non riusciti: {0}
+Theme upgrade finished	Aggiornamento dei temi completato
+Upgraded: {0} (originals kept as .bak)	Aggiornati: {0} (originali conservati come .bak)
+Already current: {0}	Già aggiornati: {0}
+Made by a newer version, left alone: {0}	Creati da una versione più recente, lasciati com'erano: {0}
+Report: {0}	Rapporto: {0}
+Background motion	Movimento dello sfondo
+Still: frame at {0}	Immagine fissa: fotogramma a {0}
+Still: baked into the theme	Immagine fissa: inclusa nel tema
+Import wallpaper	Importa sfondo
+Import video	Importa video
+Lock screen image	Immagine della schermata di blocco
+(embedded image)	(immagine incorporata)
+Fit	Adattamento
+Busy wallpaper — labels may be hard to read. Softer, low-contrast images work best.	Sfondo carico — le etichette potrebbero essere difficili da leggere. Funzionano meglio immagini morbide e poco contrastate.
+The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, a Still style, or Motion set to Static on the device).	L'immagine fissa è la locandina del video — compare quando la riproduzione è ferma (risparmio energetico, un gioco, uno stile Fisso o Movimento impostato su Statico sul dispositivo).
+The theme offers this image for the device lock screen	Il tema offre questa immagine per la schermata di blocco del dispositivo
+Output {0}×{1}	Uscita {0}×{1}
+{0}–{1} recommended, {2} max, {3} MB max	{0}–{1} consigliati, {2} max, {3} MB max
+Whether the boot video and Game Boot play at all is a device setting: {0}	Se il video di avvio e il Game Boot vengono riprodotti dipende da un'impostazione del dispositivo: {0}
+This clip is longer than the cap — the launcher will refuse it.	Questo clip supera il limite — il launcher lo rifiuterà.
+Choose a {0} video	Scegli un video {0}
+Dark icon color — icons may be hard to see over the wallpaper scrim.	Colore delle icone scuro — le icone potrebbero vedersi male sopra il velo dello sfondo.
+Saved in the theme for a later update. The launcher currently shows the color exactly as picked.	Salvato nel tema per un aggiornamento futuro. Per ora il launcher mostra il colore esattamente come scelto.
+Original	Originale
+Classic Blue	Blu classico
+Sunset Orange	Arancio tramonto
+Fresh Green	Verde fresco
+Royal Purple	Viola reale
+Crimson Red	Rosso cremisi
+Silver	Argento
+Sakura Pink	Rosa sakura
+Golden Amber	Ambra dorata
+Aqua Teal	Verde acqua
+Midnight Navy	Blu notte
+Charcoal	Antracite
+Format: schema {0} → {1}	Formato: schema {0} → {1}
+Format: new theme → {0}	Formato: nuovo tema → {0}
+Kept	Mantenuto
+Added	Aggiunto
+Repaired	Riparato
+Can't recover	Non recuperabile
+What saving does	Cosa fa il salvataggio
+Motion has a still poster	Il movimento ha una locandina fissa
+Motion needs a still wallpaper as its poster - add one or remove the video	Il movimento ha bisogno di uno sfondo fisso come locandina - aggiungine uno o rimuovi il video
+Media outside limits: {0}	Media oltre i limiti: {0}
+This wallpaper is busy behind the labels - pick a text legibility style so they stay readable	Questo sfondo è carico dietro le etichette - scegli uno stile di leggibilità del testo perché restino leggibili
+Text should read clearly on this wallpaper	Il testo dovrebbe leggersi bene su questo sfondo
+{0} - launchers from before this format refuse files over 64 MB	{0} - i launcher precedenti a questo formato rifiutano file oltre 64 MB
+Opens on older launchers, which ignore sounds, boot clips, legibility and crop	Si apre nei launcher più vecchi, che ignorano suoni, clip di avvio, leggibilità e ritaglio
+{0} is over the {1} MB limit for a theme file	{0} supera il limite di {1} MB per un file di tema
+Saving upgrades this theme from {0}; {1} part(s) can't be recovered	Il salvataggio aggiorna questo tema da {0}; {1} parte/i non si possono recuperare
+Saving upgrades this theme from {0}	Il salvataggio aggiorna questo tema da {0}
+an older format	un formato precedente
+Imported from {0}	Importato da {0}
+Imported from {0} — firmware {1}	Importato da {0} — firmware {1}
+a PSP theme	un tema PSP
+Created {0}	Creato {0}
+On the device these live in {0}.	Sul dispositivo si trovano in {0}.
+Scale	Scala
+Horizontal	Orizzontale
+Vertical	Verticale
+This wallpaper is busy behind the labels — a text style helps them stay readable.	Questo sfondo è carico dietro le etichette — uno stile del testo aiuta a mantenerle leggibili.
+Settings › Interface › Display › Adjust XMB Layout	Impostazioni › Interfaccia › Schermo › Regola layout XMB
+Settings › Interface › Sound	Impostazioni › Interfaccia › Audio
+Settings › Interface › Display › Show Boot Sequence / Game Boot	Impostazioni › Interfaccia › Schermo › Mostra sequenza di avvio / Game Boot
+Battery Saver and Thermal Throttle (Settings › Interface › Display) freeze the animated wave on the device.	Risparmio energetico e Limitazione termica (Impostazioni › Interfaccia › Schermo) bloccano l'onda animata sul dispositivo.
+Pick…	Scegli…
+Plays on the device	Si riproduce sul dispositivo
+Length unknown	Durata sconosciuta
+Volumes stay on the device: {0}	Il volume resta sul dispositivo: {0}
+Couldn't play {0} here — it will play on the device.	Impossibile riprodurre {0} qui — si riprodurrà sul dispositivo.
+Choose a sound for {0}	Scegli un suono per {0}
+Icon image for {0}	Immagine dell'icona per {0}
+Template for {0}	Modello per {0}
+Template written to {0}	Modello salvato in {0}
+Template export failed: {0}	Esportazione del modello non riuscita: {0}
+Search {0} slots: battery, PS3, voice…	Cerca tra {0} slot: batteria, PS3, voce…
+No slot matches. Clear the search or a filter.	Nessuno slot corrisponde. Cancella la ricerca o un filtro.
+Pack folder…	Cartella del pacchetto…
+Icon pack folder	Cartella del pacchetto di icone
+Pack .zip…	Pacchetto .zip…
+Icon pack zip	Pacchetto di icone .zip
+Folder for icon templates	Cartella per i modelli delle icone
+Packs are folders or zips of <slot key>.png / .gif, the names the templates use. Multi-frame GIFs animate on the launcher when focused; they must stay within 512px, 120 frames and 10 seconds.	I pacchetti sono cartelle o zip di <chiave slot>.png / .gif, i nomi usati dai modelli. Le GIF a più fotogrammi si animano nel launcher quando sono selezionate; devono restare entro 512 px, 120 fotogrammi e 10 secondi.
+Icon pack imported	Pacchetto di icone importato
+Icon pack refused	Pacchetto di icone rifiutato
+{0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	{0}: {1} aggiunte, {2} sostituite, {3} senza corrispondenza, {4} rifiutate
+Icon pack {0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	Pacchetto di icone {0}: {1} aggiunte, {2} sostituite, {3} senza corrispondenza, {4} rifiutate
+{0} - did you mean {1}?	{0} - intendevi {1}?
+{0} - no matching slot	{0} - nessuno slot corrispondente
+{0} error	{0} errore
+{0} errors	{0} errori
+{0} warning	{0} avviso
+{0} warnings	{0} avvisi
+{0} of {1} MB	{0} di {1} MB
+{0} of {1} MB - older launchers refuse over 64 MB	{0} di {1} MB - i launcher più vecchi rifiutano oltre 64 MB
+Wallpaper	Sfondo
+Preview	Anteprima
+Motion	Movimento
+Ambience	Ambiente
+Other files	Altri file
+{0} is too large to be a theme file	{0} è troppo grande per essere un file di tema
+Imported {0}	{0} importato
+Imported with a caveat	Importato con una riserva
+{0} is not a valid .pfptheme bundle	{0} non è un pacchetto .pfptheme valido
+{0} — {1} icon(s) for parts themes don't customize were left out	{0} — {1} icona/e per parti che i temi non personalizzano sono state escluse
+Motion wallpaper: {0}	Sfondo animato: {0}
+Could not keep: {0}	Impossibile mantenere: {0}
+Parts of the theme not kept	Parti del tema non mantenute
+Motion wallpaper not kept	Sfondo animato non mantenuto
+{0} is not a readable image	{0} non è un'immagine leggibile
+{0} converted to H.264 for Android ({1})	{0} convertito in H.264 per Android ({1})
+Couldn't read that frame of the video	Impossibile leggere quel fotogramma del video
+The crop does not match this image	Il ritaglio non corrisponde a questa immagine
+Wallpaper: {0} ({1}×{2})	Sfondo: {0} ({1}×{2})
+Added {0} — converted to H.264 for Android ({1})	{0} aggiunto — convertito in H.264 per Android ({1})
+Added {0}	{0} aggiunto
+Export failed: {0}	Esportazione non riuscita: {0}
+{0} is not a PSP theme file	{0} non è un file di tema PSP
+Unpack failed: {0}	Estrazione non riuscita: {0}
+Theme unpacked	Tema estratto
+{0} images written to {1} (see report.txt).	{0} immagini scritte in {1} (vedi report.txt).
+{0} images and {1} data files written to {2} (see report.txt).	{0} immagini e {1} file di dati scritti in {2} (vedi report.txt).
+Unpacked {0}: {1} images	{0} estratto: {1} immagini
+Templates exported to {0} ({1} icons)	Modelli esportati in {0} ({1} icone)
+WebM clips can't be checked in the Studio (it reads MP4/H.264 only) — convert the clip to MP4	I clip WebM non si possono controllare nello Studio (legge solo MP4/H.264) — converti il clip in MP4
+That isn't a media slot this import can fill	Non è uno slot multimediale che questa importazione può riempire
+That file is too large for a theme — {0} MB or less	Il file è troppo grande per un tema — al massimo {0} MB
+Unsupported video — use an MP4 (H.264)	Video non supportato — usa un MP4 (H.264)
+{0} video isn't guaranteed to play on Android	Un video {0} non è garantito su Android
+H.264 {0} doesn't play on Android	H.264 {0} non si riproduce su Android
+{0} video doesn't play on Android	Un video {0} non si riproduce su Android
+Couldn't convert this video for Android ({0}). Re-encode it as MP4 H.264 and try again.	Impossibile convertire questo video per Android ({0}). Ricodificalo come MP4 H.264 e riprova.
+{0} is not a folder or .zip	{0} non è una cartella né uno .zip
+Pack refused: {0}	Pacchetto rifiutato: {0}
+Pack could not be read	Impossibile leggere il pacchetto
+Pack could not be read: {0}	Impossibile leggere il pacchetto: {0}
+Pack has more than {0} files	Il pacchetto ha più di {0} file
+Not a PSP theme file	Non è un file di tema PSP
+Corrupt or truncated PTF	PTF danneggiato o troncato
+This theme contains no wallpaper image.	Questo tema non contiene un'immagine di sfondo.
+The wallpaper could not be extracted: this theme uses a compression method this importer doesn't recognize. The theme was imported without its wallpaper.	Impossibile estrarre lo sfondo: questo tema usa un metodo di compressione che questo importatore non riconosce. Il tema è stato importato senza sfondo.
+The wallpaper data in this theme is damaged and could not be decoded. The theme was imported without its wallpaper.	I dati dello sfondo di questo tema sono danneggiati e non si possono decodificare. Il tema è stato importato senza sfondo.

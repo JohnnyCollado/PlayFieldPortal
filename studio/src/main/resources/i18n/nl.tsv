@@ -171,3 +171,160 @@ Fix the items marked ✕ before exporting.	Los de met ✕ gemarkeerde punten op 
 A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	Bij het exporteren wordt een voorbeeldafbeelding van het voltooide thema gemaakt, die als miniatuur in de themagalerij van de launcher verschijnt.
 Opened {0}	{0} geopend
 Exported {0}	{0} geëxporteerd
+Folder of .pfptheme files to upgrade	Map met .pfptheme-bestanden om bij te werken
+Folder with .ptf files	Map met .ptf-bestanden
+Output folder for .pfptheme files	Uitvoermap voor .pfptheme-bestanden
+PSP theme to unpack	PSP-thema om uit te pakken
+Folder for unpacked assets	Map voor uitgepakte bestanden
+Converting {0}  ({1}/{2})	{0} omzetten  ({1}/{2})
+This theme was made by a newer version (format v{0}). Parts this version doesn't know are kept when you save.	Dit thema is gemaakt met een nieuwere versie (formaat v{0}). Onderdelen die deze versie niet kent, blijven bij opslaan behouden.
+CXMB theme	CXMB-thema
+This file is a CXMB custom firmware theme (.ctf). Those replace PSP system files rather than describing wallpaper and colors, so they can't be converted. Official PSP themes (.ptf) open fine.	Dit bestand is een CXMB-thema voor custom firmware (.ctf). Zulke thema's vervangen PSP-systeembestanden in plaats van achtergrond en kleuren te beschrijven, dus ze kunnen niet worden omgezet. Officiële PSP-thema's (.ptf) openen gewoon.
+Batch conversion finished	Batchconversie voltooid
+Converted: {0}	Omgezet: {0}
+Converted with caveats: {0}	Omgezet met kanttekeningen: {0}
+Skipped (CXMB): {0} — {1}	Overgeslagen (CXMB): {0} — {1}
+Failed: {0}	Mislukt: {0}
+Theme upgrade finished	Thema-update voltooid
+Upgraded: {0} (originals kept as .bak)	Bijgewerkt: {0} (originelen bewaard als .bak)
+Already current: {0}	Al actueel: {0}
+Made by a newer version, left alone: {0}	Van een nieuwere versie, ongemoeid gelaten: {0}
+Report: {0}	Rapport: {0}
+Background motion	Achtergrondbeweging
+Still: frame at {0}	Stilstaand beeld: frame op {0}
+Still: baked into the theme	Stilstaand beeld: in het thema opgenomen
+Import wallpaper	Achtergrond importeren
+Import video	Video importeren
+Lock screen image	Afbeelding voor vergrendelscherm
+(embedded image)	(ingesloten afbeelding)
+Fit	Passend maken
+Busy wallpaper — labels may be hard to read. Softer, low-contrast images work best.	Drukke achtergrond — labels kunnen moeilijk leesbaar zijn. Rustige afbeeldingen met weinig contrast werken het best.
+The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, a Still style, or Motion set to Static on the device).	Het stilstaande beeld is de poster van de video — het verschijnt zodra afspelen stilstaat (batterijbesparing, een game, een Stil-stijl of Beweging op Statisch op het apparaat).
+The theme offers this image for the device lock screen	Het thema biedt deze afbeelding aan voor het vergrendelscherm van het apparaat
+Output {0}×{1}	Uitvoer {0}×{1}
+{0}–{1} recommended, {2} max, {3} MB max	{0}–{1} aanbevolen, {2} max, {3} MB max
+Whether the boot video and Game Boot play at all is a device setting: {0}	Of de opstartvideo en Game Boot überhaupt spelen, is een apparaatinstelling: {0}
+This clip is longer than the cap — the launcher will refuse it.	Deze clip is langer dan toegestaan — de launcher weigert hem.
+Choose a {0} video	Een {0}-video kiezen
+Dark icon color — icons may be hard to see over the wallpaper scrim.	Donkere pictogramkleur — pictogrammen zijn mogelijk slecht zichtbaar boven de achtergrondsluier.
+Saved in the theme for a later update. The launcher currently shows the color exactly as picked.	Opgeslagen in het thema voor een latere update. De launcher toont de kleur nu precies zoals gekozen.
+Original	Origineel
+Classic Blue	Klassiek blauw
+Sunset Orange	Zonsondergangoranje
+Fresh Green	Fris groen
+Royal Purple	Koninklijk paars
+Crimson Red	Karmozijnrood
+Silver	Zilver
+Sakura Pink	Sakuraroze
+Golden Amber	Goudamber
+Aqua Teal	Aquablauw
+Midnight Navy	Middernachtblauw
+Charcoal	Antraciet
+Format: schema {0} → {1}	Formaat: schema {0} → {1}
+Format: new theme → {0}	Formaat: nieuw thema → {0}
+Kept	Behouden
+Added	Toegevoegd
+Repaired	Hersteld
+Can't recover	Niet te herstellen
+What saving does	Wat opslaan doet
+Motion has a still poster	Beweging heeft een stilstaande poster
+Motion needs a still wallpaper as its poster - add one or remove the video	Beweging heeft een stilstaande achtergrond als poster nodig - voeg er een toe of verwijder de video
+Media outside limits: {0}	Media buiten de grenzen: {0}
+This wallpaper is busy behind the labels - pick a text legibility style so they stay readable	Deze achtergrond is druk achter de labels - kies een tekstleesbaarheidsstijl zodat ze leesbaar blijven
+Text should read clearly on this wallpaper	Tekst zou goed leesbaar moeten zijn op deze achtergrond
+{0} - launchers from before this format refuse files over 64 MB	{0} - launchers van vóór dit formaat weigeren bestanden boven 64 MB
+Opens on older launchers, which ignore sounds, boot clips, legibility and crop	Opent op oudere launchers, die geluiden, opstartclips, leesbaarheid en bijsnijden negeren
+{0} is over the {1} MB limit for a theme file	{0} is groter dan de limiet van {1} MB voor een themabestand
+Saving upgrades this theme from {0}; {1} part(s) can't be recovered	Opslaan werkt dit thema bij vanaf {0}; {1} onderde(e)l(en) kunnen niet worden hersteld
+Saving upgrades this theme from {0}	Opslaan werkt dit thema bij vanaf {0}
+an older format	een ouder formaat
+Imported from {0}	Geïmporteerd uit {0}
+Imported from {0} — firmware {1}	Geïmporteerd uit {0} — firmware {1}
+a PSP theme	een PSP-thema
+Created {0}	Gemaakt {0}
+On the device these live in {0}.	Op het apparaat staan ze onder {0}.
+Scale	Schaal
+Horizontal	Horizontaal
+Vertical	Verticaal
+This wallpaper is busy behind the labels — a text style helps them stay readable.	Deze achtergrond is druk achter de labels — een tekststijl helpt ze leesbaar te houden.
+Settings › Interface › Display › Adjust XMB Layout	Instellingen › Interface › Scherm › XMB-indeling aanpassen
+Settings › Interface › Sound	Instellingen › Interface › Geluid
+Settings › Interface › Display › Show Boot Sequence / Game Boot	Instellingen › Interface › Scherm › Opstartreeks / Game Boot tonen
+Battery Saver and Thermal Throttle (Settings › Interface › Display) freeze the animated wave on the device.	Batterijbesparing en Thermische beperking (Instellingen › Interface › Scherm) bevriezen de geanimeerde golf op het apparaat.
+Pick…	Kiezen…
+Plays on the device	Speelt op het apparaat
+Length unknown	Lengte onbekend
+Volumes stay on the device: {0}	Volume blijft op het apparaat: {0}
+Couldn't play {0} here — it will play on the device.	{0} kan hier niet worden afgespeeld — op het apparaat werkt het.
+Choose a sound for {0}	Een geluid kiezen voor {0}
+Icon image for {0}	Pictogramafbeelding voor {0}
+Template for {0}	Sjabloon voor {0}
+Template written to {0}	Sjabloon opgeslagen als {0}
+Template export failed: {0}	Sjabloon exporteren mislukt: {0}
+Search {0} slots: battery, PS3, voice…	{0} plekken doorzoeken: batterij, PS3, spraak…
+No slot matches. Clear the search or a filter.	Geen plek komt overeen. Wis de zoekopdracht of een filter.
+Pack folder…	Pakketmap…
+Icon pack folder	Map met pictogrampakket
+Pack .zip…	Pakket-.zip…
+Icon pack zip	Pictogrampakket-.zip
+Folder for icon templates	Map voor pictogramsjablonen
+Packs are folders or zips of <slot key>.png / .gif, the names the templates use. Multi-frame GIFs animate on the launcher when focused; they must stay within 512px, 120 frames and 10 seconds.	Pakketten zijn mappen of zips met <plek-sleutel>.png / .gif, de namen die de sjablonen gebruiken. GIF's met meerdere frames bewegen in de launcher als ze gefocust zijn; ze moeten binnen 512 px, 120 frames en 10 seconden blijven.
+Icon pack imported	Pictogrampakket geïmporteerd
+Icon pack refused	Pictogrampakket geweigerd
+{0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	{0}: {1} toegevoegd, {2} vervangen, {3} zonder match, {4} geweigerd
+Icon pack {0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	Pictogrampakket {0}: {1} toegevoegd, {2} vervangen, {3} zonder match, {4} geweigerd
+{0} - did you mean {1}?	{0} - bedoel je {1}?
+{0} - no matching slot	{0} - geen passende plek
+{0} error	{0} fout
+{0} errors	{0} fouten
+{0} warning	{0} waarschuwing
+{0} warnings	{0} waarschuwingen
+{0} of {1} MB	{0} van {1} MB
+{0} of {1} MB - older launchers refuse over 64 MB	{0} van {1} MB - oudere launchers weigeren boven 64 MB
+Wallpaper	Achtergrond
+Preview	Voorbeeld
+Motion	Beweging
+Ambience	Sfeer
+Other files	Andere bestanden
+{0} is too large to be a theme file	{0} is te groot voor een themabestand
+Imported {0}	{0} geïmporteerd
+Imported with a caveat	Geïmporteerd met een kanttekening
+{0} is not a valid .pfptheme bundle	{0} is geen geldig .pfptheme-pakket
+{0} — {1} icon(s) for parts themes don't customize were left out	{0} — {1} pictogram(men) voor onderdelen die thema's niet aanpassen zijn weggelaten
+Motion wallpaper: {0}	Bewegende achtergrond: {0}
+Could not keep: {0}	Kon niet behouden: {0}
+Parts of the theme not kept	Onderdelen van het thema niet behouden
+Motion wallpaper not kept	Bewegende achtergrond niet behouden
+{0} is not a readable image	{0} is geen leesbare afbeelding
+{0} converted to H.264 for Android ({1})	{0} omgezet naar H.264 voor Android ({1})
+Couldn't read that frame of the video	Dat frame van de video kon niet worden gelezen
+The crop does not match this image	De uitsnede past niet bij deze afbeelding
+Wallpaper: {0} ({1}×{2})	Achtergrond: {0} ({1}×{2})
+Added {0} — converted to H.264 for Android ({1})	{0} toegevoegd — omgezet naar H.264 voor Android ({1})
+Added {0}	{0} toegevoegd
+Export failed: {0}	Exporteren mislukt: {0}
+{0} is not a PSP theme file	{0} is geen PSP-themabestand
+Unpack failed: {0}	Uitpakken mislukt: {0}
+Theme unpacked	Thema uitgepakt
+{0} images written to {1} (see report.txt).	{0} afbeeldingen geschreven naar {1} (zie report.txt).
+{0} images and {1} data files written to {2} (see report.txt).	{0} afbeeldingen en {1} gegevensbestanden geschreven naar {2} (zie report.txt).
+Unpacked {0}: {1} images	{0} uitgepakt: {1} afbeeldingen
+Templates exported to {0} ({1} icons)	Sjablonen geëxporteerd naar {0} ({1} pictogrammen)
+WebM clips can't be checked in the Studio (it reads MP4/H.264 only) — convert the clip to MP4	WebM-clips kunnen niet in de Studio worden gecontroleerd (die leest alleen MP4/H.264) — zet de clip om naar MP4
+That isn't a media slot this import can fill	Dat is geen mediaplek die deze import kan vullen
+That file is too large for a theme — {0} MB or less	Dat bestand is te groot voor een thema — {0} MB of minder
+Unsupported video — use an MP4 (H.264)	Niet-ondersteunde video — gebruik een MP4 (H.264)
+{0} video isn't guaranteed to play on Android	Een {0}-video speelt niet gegarandeerd op Android
+H.264 {0} doesn't play on Android	H.264 {0} speelt niet op Android
+{0} video doesn't play on Android	Een {0}-video speelt niet op Android
+Couldn't convert this video for Android ({0}). Re-encode it as MP4 H.264 and try again.	Deze video kon niet voor Android worden omgezet ({0}). Codeer hem opnieuw als MP4 H.264 en probeer het nog eens.
+{0} is not a folder or .zip	{0} is geen map of .zip
+Pack refused: {0}	Pakket geweigerd: {0}
+Pack could not be read	Pakket kon niet worden gelezen
+Pack could not be read: {0}	Pakket kon niet worden gelezen: {0}
+Pack has more than {0} files	Het pakket heeft meer dan {0} bestanden
+Not a PSP theme file	Geen PSP-themabestand
+Corrupt or truncated PTF	Beschadigde of afgekapte PTF
+This theme contains no wallpaper image.	Dit thema bevat geen achtergrondafbeelding.
+The wallpaper could not be extracted: this theme uses a compression method this importer doesn't recognize. The theme was imported without its wallpaper.	De achtergrond kon niet worden uitgepakt: dit thema gebruikt een compressiemethode die deze import niet herkent. Het thema is zonder achtergrond geïmporteerd.
+The wallpaper data in this theme is damaged and could not be decoded. The theme was imported without its wallpaper.	De achtergrondgegevens in dit thema zijn beschadigd en konden niet worden gedecodeerd. Het thema is zonder achtergrond geïmporteerd.

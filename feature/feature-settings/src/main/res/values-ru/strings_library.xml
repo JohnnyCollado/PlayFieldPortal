@@ -496,7 +496,6 @@
     <string name="lib_kb_import_failed_title">Не удалось импортировать файл</string>
     <string name="lib_kb_import_too_large">Файл слишком большой для файла базы эмуляторов.</string>
     <string name="lib_kb_import_unreadable">Не удалось прочитать файл.</string>
-    <string name="lib_kb_import_rejected">Этот файл нельзя использовать (%1$s).</string>
     <string name="lib_kb_import_nothing">В файле нет ничего для импорта на это устройство.</string>
     <string name="lib_kb_import_save_failed">Не удалось сохранить файл на устройстве.</string>
     <string name="lib_kb_import_refresh_failed">Файл сохранён, но обновить определение эмуляторов не удалось.</string>
@@ -542,7 +541,6 @@
     <string name="lib_kb_export_nothing_title">Нечего экспортировать</string>
     <string name="lib_kb_export_none_message">У вас пока нет своих или изменённых эмуляторов.</string>
     <string name="lib_kb_export_none_shareable">Ни одним из ваших эмуляторов нельзя поделиться</string>
-    <string name="lib_kb_export_none_shareable_why">Ни одним из ваших эмуляторов нельзя поделиться: %1$s</string>
     <string name="lib_kb_exported_title">Экспортировано</string>
     <plurals name="lib_kb_exported_message">
         <item quantity="one">Экспортирован %d эмулятор</item>
@@ -917,4 +915,6 @@
     <string name="lib_lm_local_by_title">по названию</string>
     <string name="lib_lm_local_tracking">отслеживается</string>
     <string name="lib_lm_local_no_list">списка достижений пока нет</string>
+    <string name="lib_kb_import_invalid">Это не файл знаний об эмуляторах PlayFieldPortal, или он повреждён.</string>
+    <string name="lib_kb_import_too_many">В файле больше эмуляторов или консолей, чем PlayFieldPortal может импортировать.</string>
 </resources>

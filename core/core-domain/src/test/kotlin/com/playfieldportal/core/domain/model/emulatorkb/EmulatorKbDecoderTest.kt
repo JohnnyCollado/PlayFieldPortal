@@ -83,6 +83,19 @@ class EmulatorKbDecoderTest {
         rejectedReason("{\"format\":")
     }
 
+    private fun rejectedKind(text: String): EmulatorKbDecode.Rejected.Kind =
+        (EmulatorKbDecoder.decode(text) as EmulatorKbDecode.Rejected).kind
+
+    /** The kind picks the translated sentence the user sees; the reason itself is English, for logs. */
+    @Test
+    fun `each rejection says what kind it is`() {
+        assertEquals(EmulatorKbDecode.Rejected.Kind.TOO_LARGE, rejectedKind(" ".repeat(EmulatorKbDecoder.MAX_CHARS + 1)))
+        val many = (0..EmulatorKbDecoder.MAX_EMULATORS).joinToString(",") { emulator("e$it") }
+        assertEquals(EmulatorKbDecode.Rejected.Kind.TOO_MANY, rejectedKind(doc(many)))
+        assertEquals(EmulatorKbDecode.Rejected.Kind.INVALID, rejectedKind("""{"format":"other","schemaVersion":1}"""))
+        assertEquals(EmulatorKbDecode.Rejected.Kind.INVALID, rejectedKind("not json at all"))
+    }
+
     @Test
     fun `input over the character cap is rejected`() {
         val reason = rejectedReason(" ".repeat(EmulatorKbDecoder.MAX_CHARS + 1))
