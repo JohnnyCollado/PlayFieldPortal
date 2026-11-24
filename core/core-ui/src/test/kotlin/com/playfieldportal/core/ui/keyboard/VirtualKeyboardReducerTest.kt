@@ -20,12 +20,12 @@ class VirtualKeyboardReducerTest {
 
     private fun KeyboardReduction.sounds() = effects.filterIsInstance<KeyboardEffect.Sound>().map { it.sound }
 
-    // Row 4 cells: Shift 0, layer 1, Space 2, Backspace 3, Done 4.
-    private val shift = 4 to 0
-    private val layer = 4 to 1
-    private val space = 4 to 2
-    private val backspace = 4 to 3
-    private val done = 4 to 4
+    // Bottom row (3) cells: Shift 0, layer 1, Space 2, Backspace 3, Done 4.
+    private val shift = 3 to 0
+    private val layer = 3 to 1
+    private val space = 3 to 2
+    private val backspace = 3 to 3
+    private val done = 3 to 4
 
     private fun VirtualKeyboardState.on(key: Pair<Int, Int>) = focusOn(key.first, key.second)
 
@@ -33,20 +33,20 @@ class VirtualKeyboardReducerTest {
         val state = open("abc")
         assertEquals(KeyboardLayer.LETTERS, state.layer)
         assertEquals(ShiftMode.OFF, state.shift)
-        assertEquals(SpanGridCursor(1, 0), state.focus)
+        assertEquals(SpanGridCursor(0, 0), state.focus)
         assertEquals(TextEditBuffer("abc", 3), state.buffer)
     }
 
     @Test fun `select on a character inserts it once and focus stays`() {
-        val result = open().focusOn(1, 1).press(GamepadAction.SELECT) // w
+        val result = open().focusOn(0, 1).press(GamepadAction.SELECT) // w
         assertEquals(listOf(KeyboardEffect.Edit("w", 1)), result.edits())
-        assertEquals(SpanGridCursor(1, 1), result.state.focus)
+        assertEquals(SpanGridCursor(0, 1), result.state.focus)
     }
 
     @Test fun `shift then a letter types uppercase and clears shift`() {
         val shifted = open().on(shift).press(GamepadAction.SELECT).state
         assertEquals(ShiftMode.ONCE, shifted.shift)
-        val result = shifted.focusOn(1, 0).press(GamepadAction.SELECT)
+        val result = shifted.focusOn(0, 0).press(GamepadAction.SELECT)
         assertEquals("Q", result.state.buffer.text)
         assertEquals(ShiftMode.OFF, result.state.shift)
     }
@@ -60,17 +60,17 @@ class VirtualKeyboardReducerTest {
 
     @Test fun `caps lock keeps every letter uppercase`() {
         val locked = open().on(shift).press(GamepadAction.SELECT).state.press(GamepadAction.SELECT).state
-        val q = locked.focusOn(1, 0).press(GamepadAction.SELECT).state
-        val qw = q.focusOn(1, 1).press(GamepadAction.SELECT).state
+        val q = locked.focusOn(0, 0).press(GamepadAction.SELECT).state
+        val qw = q.focusOn(0, 1).press(GamepadAction.SELECT).state
         assertEquals("QW", qw.buffer.text)
         assertEquals(ShiftMode.LOCKED, qw.shift)
     }
 
-    @Test fun `shift leaves digits and punctuation alone`() {
+    @Test fun `shift leaves punctuation alone`() {
         val shifted = open().on(shift).press(GamepadAction.SELECT).state
-        assertEquals("1", shifted.focusOn(0, 0).press(GamepadAction.SELECT).state.buffer.text)
+        assertEquals("-", shifted.focusOn(1, 9).press(GamepadAction.SELECT).state.buffer.text)
         val again = open().on(shift).press(GamepadAction.SELECT).state
-        assertEquals("@", again.focusOn(3, 9).press(GamepadAction.SELECT).state.buffer.text)
+        assertEquals("@", again.focusOn(2, 9).press(GamepadAction.SELECT).state.buffer.text)
     }
 
     @Test fun `the layer key toggles layers, keeps focus and clears shift`() {
@@ -78,7 +78,7 @@ class VirtualKeyboardReducerTest {
         val symbols = shifted.on(layer).press(GamepadAction.SELECT).state
         assertEquals(KeyboardLayer.SYMBOLS, symbols.layer)
         assertEquals(ShiftMode.OFF, symbols.shift)
-        assertEquals(SpanGridCursor(4, 1), symbols.focus)
+        assertEquals(SpanGridCursor(3, 1), symbols.focus)
         assertEquals(KeyboardLayer.LETTERS, symbols.press(GamepadAction.SELECT).state.layer)
     }
 
@@ -91,8 +91,8 @@ class VirtualKeyboardReducerTest {
 
     @Test fun `focus row and column survive a layer switch`() {
         val state = open().on(layer).press(GamepadAction.SELECT).state
-        assertEquals(SpanGridCursor(4, 1), state.focus)
-        val typed = state.focusOn(1, 2).press(GamepadAction.SELECT).state
+        assertEquals(SpanGridCursor(3, 1), state.focus)
+        val typed = state.focusOn(1, 1).press(GamepadAction.SELECT).state
         assertEquals("#", typed.buffer.text)
     }
 
@@ -120,7 +120,7 @@ class VirtualKeyboardReducerTest {
 
     @Test fun `a character typed after moving the caret lands at the caret`() {
         val moved = open("ac").press(GamepadAction.PREV_CATEGORY).state
-        val result = moved.focusOn(3, 4).press(GamepadAction.SELECT) // b
+        val result = moved.focusOn(2, 4).press(GamepadAction.SELECT) // b
         assertEquals(listOf(KeyboardEffect.Edit("abc", 2)), result.edits())
     }
 
@@ -140,9 +140,9 @@ class VirtualKeyboardReducerTest {
 
     @Test fun `directions move focus on the span grid and cycle around every edge`() {
         val down = open().press(GamepadAction.NAVIGATE_DOWN)
-        assertEquals(SpanGridCursor(2, 0, anchorColumn = 0), down.state.focus)
+        assertEquals(SpanGridCursor(1, 0, anchorColumn = 0), down.state.focus)
         // Up from the top row comes round to the bottom row (Shift covers column 0).
-        assertEquals(SpanGridCursor(4, 0, anchorColumn = 0), open().focusOn(0, 0).press(GamepadAction.NAVIGATE_UP).state.focus)
+        assertEquals(SpanGridCursor(3, 0, anchorColumn = 0), open().focusOn(0, 0).press(GamepadAction.NAVIGATE_UP).state.focus)
         // Right from the end of a row comes round to its start.
         assertEquals(0, open().focusOn(1, 9).press(GamepadAction.NAVIGATE_RIGHT).state.focus.cell)
         assertEquals(9, open().focusOn(1, 0).press(GamepadAction.NAVIGATE_LEFT).state.focus.cell)

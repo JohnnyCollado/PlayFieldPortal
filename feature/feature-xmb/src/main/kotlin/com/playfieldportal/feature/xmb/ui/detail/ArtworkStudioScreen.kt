@@ -88,7 +88,7 @@ import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.components.PfpModalSpec
 import com.playfieldportal.core.ui.components.rememberPfpModalHost
 import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
-import com.playfieldportal.core.ui.keyboard.VirtualKeyboardBottomReserve
+import com.playfieldportal.core.ui.keyboard.virtualKeyboardBottomReserve
 import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
 import com.playfieldportal.core.ui.keyboard.isVirtualKeyboardOverlayOpen
 import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
@@ -1316,7 +1316,7 @@ internal fun ArtworkStudioContent(
                     .background(Color(0xC0000000))
                     .clickable(onClick = actions::cancelSearch)
                     // Keeps the card above PFP's keyboard, which imePadding() cannot see.
-                    .padding(bottom = if (queryEdit.isOpen) VirtualKeyboardBottomReserve else 0.dp),
+                    .padding(bottom = if (queryEdit.isOpen) virtualKeyboardBottomReserve() else 0.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(

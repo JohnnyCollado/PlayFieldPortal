@@ -19,9 +19,15 @@ import androidx.compose.ui.unit.dp
 /** The least room above the system keyboard a full modal card fits in. */
 internal val CompactImeThreshold = 260.dp
 
-/** Whether a modal collapses to its one-strip keyboard layout. PFP's keyboard never triggers it. */
-internal fun useCompactImeLayout(systemKeyboardOpen: Boolean, spaceAboveKeyboard: Dp): Boolean =
-    systemKeyboardOpen && spaceAboveKeyboard < CompactImeThreshold
+/** Below this much room above a keyboard, the keyboard layout drops its title too: field and buttons. */
+internal val TightImeThreshold = 150.dp
+
+/**
+ * Whether a modal collapses to its keyboard layout. Either keyboard counts: PFP's reserves its own
+ * room, but on a 468dp-tall handheld that room (about 140dp) is still short of a full card.
+ */
+internal fun useCompactImeLayout(keyboardOpen: Boolean, spaceAboveKeyboard: Dp): Boolean =
+    keyboardOpen && spaceAboveKeyboard < CompactImeThreshold
 
 /** Test seam: a fixed system keyboard height, since Robolectric reports no IME inset. */
 internal val LocalSystemKeyboardHeightOverride = staticCompositionLocalOf<Dp?> { null }

@@ -175,7 +175,7 @@ class PfpTextEntryModalKeyboardTest {
 
         val cardBottom = composeRule.onNodeWithTag(PfpModalTags.CARD).fetchSemanticsNode().boundsInRoot.bottom
         val rootHeight = composeRule.onNodeWithTag(PfpModalTags.SCRIM).fetchSemanticsNode().boundsInRoot.bottom
-        val reserved = with(composeRule.density) { com.playfieldportal.core.ui.keyboard.VirtualKeyboardBottomReserve.toPx() }
+        val reserved = with(composeRule.density) { pfpKeyboardReserve(rootHeight.toDp()).toPx() }
         assertTrue("card bottom $cardBottom must clear the keyboard (${rootHeight - reserved})", cardBottom <= rootHeight - reserved)
     }
 }
